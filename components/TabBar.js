@@ -1,7 +1,8 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
 const TABS = [
   { href: '/', nombre: 'Resumen', icono: <path d="M5 20V11M10 20V5M15 20v-7M20 20V9" /> },
@@ -10,18 +11,70 @@ const TABS = [
   { href: '/ajustes', nombre: 'Ajustes', icono: <><circle cx="12" cy="8" r="4" /><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6" /></> },
 ];
 
+// Vibración suave: Android con vibrate; iPhone (iOS 18+) con el truco del interruptor nativo.
+let interruptor;
+function vibrar() {
+  if (navigator.vibrate) { navigator.vibrate(8); return; }
+  if (!interruptor) {
+    interruptor = document.createElement('label');
+    interruptor.style.display = 'none';
+    const i = document.createElement('input');
+    i.type = 'checkbox'; i.setAttribute('switch', '');
+    interruptor.appendChild(i);
+    document.body.appendChild(interruptor);
+  }
+  interruptor.click();
+}
+
+const seccion = (path) => (path === '/' ? '/' : TABS.find((t) => t.href !== '/' && path.startsWith(t.href))?.href ?? null);
+
 export default function TabBar() {
   const path = usePathname();
+  const router = useRouter();
+  const [activo, setActivo] = useState(seccion(path));
+  const [dedo, setDedo] = useState(null);
+  const nav = useRef(null);
+
+  useEffect(() => { setActivo(seccion(path)); }, [path]);
+
   if (path === '/login' || path.startsWith('/invitacion') || path.endsWith('/pdf')) return null;
-  const activa = (href) => (href === '/' ? path === '/' : path.startsWith(href));
+
+  const ir = (h) => { if (h !== path) { setActivo(h); router.push(h); } };
+  const tabEn = (x, y) => document.elementFromPoint(x, y)?.closest('[data-href]')?.dataset.href ?? null;
+  const marcado = dedo ?? activo;
+
   return (
-    <nav className="tabbar cuatro">
-      {TABS.map((t) => (
-        <Link key={t.href} href={t.href} className={activa(t.href) ? 'activo' : ''}>
-          <svg viewBox="0 0 24 24" aria-hidden>{t.icono}</svg>
-          <span>{t.nombre}</span>
-        </Link>
-      ))}
-    </nav>
+    <div className="tabbar">
+      <nav
+        ref={nav}
+        className="tabs"
+        onPointerDown={(e) => {
+          const h = tabEn(e.clientX, e.clientY);
+          if (!h) return;
+          nav.current.setPointerCapture(e.pointerId);
+          setDedo(h);
+          if (h !== activo) vibrar();
+        }}
+        onPointerMove={(e) => {
+          if (dedo === null) return;
+          const h = tabEn(e.clientX, e.clientY);
+          if (h && h !== dedo) { setDedo(h); vibrar(); }
+        }}
+        onPointerUp={() => { if (dedo === null) return; const h = dedo; setDedo(null); ir(h); }}
+        onPointerCancel={() => setDedo(null)}
+      >
+        {TABS.map((t) => (
+          <Link key={t.href} href={t.href} prefetch draggable={false} data-href={t.href}
+            className={marcado === t.href ? 'activo' : ''} aria-current={activo === t.href ? 'page' : undefined} aria-label={t.nombre}
+            onClick={(e) => { e.preventDefault(); if (e.detail === 0) ir(t.href); }}>
+            <svg viewBox="0 0 24 24" aria-hidden>{t.icono}</svg>
+            <span>{t.nombre}</span>
+          </Link>
+        ))}
+      </nav>
+      <Link href="/facturas/nueva" className={`mas${path === '/facturas/nueva' ? ' abierta' : ''}`} aria-label="Nueva factura" onClick={() => vibrar()}>
+        <svg viewBox="0 0 24 24" aria-hidden><path d="M12 5v14M5 12h14" /></svg>
+      </Link>
+    </div>
   );
 }

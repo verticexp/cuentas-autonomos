@@ -13,7 +13,7 @@ export async function GET(req) {
   const e = u.emisor || {};
   if (!e.nif || !e.iban) return error('Rellena tus datos de facturación en Ajustes', 400);
   const nombre = `${numeroFactura(f)} ${f.cliente.nombre.toUpperCase().replace(/[^A-Z0-9 ]+/g, '')}.pdf`;
-  return new Response(await facturaPdf(f, e), {
+  return new Response(await facturaPdf(f, e, u.marca), {
     headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': `inline; filename="${encodeURIComponent(nombre)}"; filename*=UTF-8''${encodeURIComponent(nombre)}` },
   });
 }

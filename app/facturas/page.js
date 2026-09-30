@@ -2,45 +2,101 @@ import Link from 'next/link';
 import { requerir } from '@/lib/auth';
 import { leer } from '@/lib/redis';
 import { ACTIVIDADES, importes, numeroFactura, vencida } from '@/lib/calculos';
-import { eur, fechaCorta, hoy } from '@/lib/formato';
+import { eur, hoy } from '@/lib/formato';
 import SinBD from '@/components/SinBD';
+import Avatar from '@/components/Avatar';
 
 export const dynamic = 'force-dynamic';
+const diaMes = (f) => new Date(`${f}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
 export default async function Facturas({ searchParams }) {
   const u = await requerir();
   const todas = await leer(u, 'facturas');
   if (!todas) return <SinBD />;
-  const { a } = await searchParams;
+  const { a, estado } = await searchParams;
   const h = hoy();
-  const lista = todas.filter((f) => !ACTIVIDADES[a] || f.actividad === a).sort((x, y) => y.fecha.localeCompare(x.fecha) || y.numero - x.numero);
+  const plazo = u.emisor?.plazo;
+  const estadoDe = (f) => (f.cobrada ? 'cobrada' : vencida(f, plazo, h) ? 'vencida' : 'pendiente');
+  const lista = todas
+    .filter((f) => !ACTIVIDADES[a] || f.actividad === a)
+    .filter((f) => estado !== 'pendientes' || !f.cobrada)
+    .sort((x, y) => y.fecha.localeCompare(x.fecha) || y.numero - x.numero);
+  const porCobrar = todas.filter((f) => !f.cobrada).reduce((s, f) => s + importes(f).total, 0);
+  const vencidas = todas.filter((f) => estadoDe(f) === 'vencida');
+
+  // Agrupadas por mes, con lo facturado de cada uno.
+  const grupos = [];
+  for (const f of lista) {
+    const m = f.fecha.slice(0, 7);
+    if (grupos.at(-1)?.m !== m) grupos.push({ m, facturas: [] });
+    grupos.at(-1).facturas.push(f);
+  }
+  const url = (cambios) => {
+    const q = new URLSearchParams(Object.entries({ a, estado, ...cambios }).filter(([, v]) => v));
+    return `/facturas${q.size ? `?${q}` : ''}`;
+  };
 
   return (
     <main className="pagina">
       <header className="cabecera">
         <h1 className="titulo">Facturas</h1>
-        <Link href="/facturas/nueva" className="boton pequeno">+ Nueva</Link>
+        <Link href="/facturas/nueva" className="boton pequeno">Nueva factura</Link>
       </header>
+
+      {todas.length > 0 && (
+        <div className="cifras-fila">
+          <div><small>Por cobrar</small><strong>{eur(porCobrar)}</strong></div>
+          <div className={vencidas.length ? 'alerta' : ''}><small>Vencidas</small><strong>{vencidas.length}</strong></div>
+          <div><small>Este año</small><strong>{todas.filter((f) => f.fecha.startsWith(h.slice(0, 4))).length}</strong></div>
+        </div>
+      )}
+
       <nav className="chips">
-        <Link href="/facturas" className={!ACTIVIDADES[a] ? 'activo' : ''}>Todas</Link>
-        {Object.entries(ACTIVIDADES).map(([id, n]) => <Link key={id} href={`/facturas?a=${id}`} className={a === id ? 'activo' : ''}>{n}</Link>)}
+        <Link href={url({ a: null })} className={!ACTIVIDADES[a] ? 'activo' : ''}>Todas</Link>
+        {Object.entries(ACTIVIDADES).map(([id, n]) => <Link key={id} href={url({ a: id })} className={a === id ? 'activo' : ''}>{n}</Link>)}
+        <Link href={url({ estado: estado === 'pendientes' ? null : 'pendientes' })} className={estado === 'pendientes' ? 'activo' : ''}>Sin cobrar</Link>
       </nav>
-      {lista.length ? (
-        <ul className="grupo-lista">
-          {lista.map((f) => (
-            <li key={f.id}>
-              <Link href={`/facturas/${f.id}`} className="fila">
-                <span className="num">{numeroFactura(f)}</span>
-                <span className="txt">
-                  <strong>{f.cliente.nombre}</strong>
-                  <small>{fechaCorta(f.fecha)} · {ACTIVIDADES[f.actividad]}{f.cobrada ? '' : vencida(f, u.emisor?.plazo, h) ? ' · Vencida' : ' · Pendiente'}</small>
-                </span>
-                <span className={`imp ${f.cobrada ? '' : 'pend'}`}>{eur(importes(f).total)}</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      ) : <div className="vacio"><p>No hay facturas</p></div>}
+
+      {grupos.map((g) => {
+        const [y, m] = g.m.split('-');
+        const total = g.facturas.reduce((s, f) => s + importes(f).base, 0);
+        return (
+          <section key={g.m} className="grupo-mes">
+            <h2><span>{MESES[m - 1]} {y !== h.slice(0, 4) ? y : ''}</span><small>{eur(total)} sin IVA</small></h2>
+            <ul className="grupo-lista">
+              {g.facturas.map((f) => {
+                const e = estadoDe(f);
+                return (
+                  <li key={f.id}>
+                    <Link href={`/facturas/${f.id}`} className="fila">
+                      <Avatar nombre={f.cliente.nombre} />
+                      <span className="txt">
+                        <strong>{f.cliente.nombre}</strong>
+                        <small>{numeroFactura(f)} · {diaMes(f.fecha)}{!a && Object.keys(ACTIVIDADES).length > 1 ? ` · ${ACTIVIDADES[f.actividad]}` : ''}</small>
+                      </span>
+                      <span className="imp-col">
+                        <span className="imp">{eur(importes(f).total)}</span>
+                        <span className={`pastilla p-${e}`}>{e === 'cobrada' ? 'Cobrada' : e === 'vencida' ? 'Vencida' : 'Pendiente'}</span>
+                      </span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        );
+      })}
+
+      {!lista.length && (
+        <div className="vacio grande-vacio">
+          {todas.length ? <><p>Nada con este filtro</p><p>Prueba con otra actividad o quita «Sin cobrar».</p></> : <>
+            <p>Aún no has hecho ninguna factura</p>
+            <p>Se numeran solas y puedes descargarlas en PDF con tu logo.</p>
+            <Link href="/facturas/nueva" className="boton">Crear la primera</Link>
+          </>}
+        </div>
+      )}
     </main>
   );
 }

@@ -5,6 +5,8 @@ import { ACTIVIDADES, casillas303, importes, proximoPlazo, r2, resumenAnual, tri
 import { eur, fechaCorta, hoy } from '@/lib/formato';
 import SinBD from '@/components/SinBD';
 import { Presentado } from '@/components/Acciones';
+import Avatar from '@/components/Avatar';
+import Grafica from '@/components/Grafica';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,7 +30,6 @@ export default async function Resumen({ searchParams }) {
     const s = (l) => l.filter((x) => x.fecha.startsWith(mm)).reduce((a, x) => a + x.base, 0);
     return { m: 'EFMAMJJASOND'[i], ing: s(facturas), gas: s(gastos) };
   });
-  const tope = Math.max(1, ...meses.map((x) => Math.max(x.ing, x.gas)));
   // Apartar: lo que hoy le debes a Hacienda del trimestre en curso (303 + 130), aunque aún no toque pagar.
   const esteAnio = anio === anioActual;
   const tHoy = trimestre(h);
@@ -48,6 +49,21 @@ export default async function Resumen({ searchParams }) {
   const porCliente = {};
   for (const f of facturas.filter((x) => x.fecha.startsWith(`${anio}-`))) porCliente[f.cliente.nombre] = (porCliente[f.cliente.nombre] || 0) + f.base;
   const top = Object.entries(porCliente).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  // Reparto de lo facturado en el año: lo tuyo, gastos, IVA neto y la estimación de IRPF que falta por pagar.
+  const suma = (l, k) => l.filter((x) => x.fecha.startsWith(`${anio}-`)).map(importes).reduce((a, x) => a + x[k], 0);
+  const entra = suma(facturas, 'total');
+  const gastado = suma(gastos, 'total');
+  const qFin = r.trimestres[esteAnio ? tHoy - 1 : 3];
+  const ivaNeto = Math.max(0, r.trimestres.reduce((a, q) => a + q.m303, 0));
+  const irpfFalta = Math.max(0, r2(0.2 * qFin.rendAcum - qFin.retAcum));
+  const tuyo = entra - gastado - ivaNeto - irpfFalta;
+  const trozos = [
+    { k: 'tuyo', n: 'Para ti', v: tuyo },
+    { k: 'gastos', n: 'Gastos', v: gastado },
+    { k: 'iva', n: 'IVA', v: ivaNeto },
+    { k: 'irpf', n: 'IRPF', v: irpfFalta },
+  ];
+  const de100 = (v) => (entra > 0 ? Math.round((Math.max(0, v) / entra) * 100) : 0);
   const exportar = (tipo, t) => `/api/exportar?tipo=${tipo}&anio=${anio}${t ? `&t=${t}` : ''}`;
 
   return (
@@ -61,12 +77,11 @@ export default async function Resumen({ searchParams }) {
         </nav>
       </header>
 
-      {!facturas.length && <div className="vacio"><p>Aún no hay facturas</p><p>Empieza creando la primera en Facturas.</p></div>}
-
-      {qPlazo && !qPlazo.presentado && (
-        <div className="aviso-plazo">
-          <strong>{plazo.dias === 0 ? 'Hoy' : `En ${plazo.dias} días`} ({fechaCorta(plazo.fecha)}) acaba el plazo del {plazo.t}T {plazo.anio}</strong>
-          <span>303: {qPlazo.m303 < 0 ? `${eur(-qPlazo.m303)} a compensar` : eur(qPlazo.m303)} · 130: {eur(qPlazo.m130)}</span>
+      {!facturas.length && (
+        <div className="vacio grande-vacio">
+          <p>Crea tu primera factura</p>
+          <p>Aquí verás cuánto de lo que facturas es tuyo y cuánto tienes que apartar para Hacienda.</p>
+          <Link href="/facturas/nueva" className="boton">Nueva factura</Link>
         </div>
       )}
 
@@ -76,6 +91,46 @@ export default async function Resumen({ searchParams }) {
           <span>{eur(vencidas.reduce((s, f) => s + importes(f).total, 0))} · {vencidas.map((f) => f.cliente.nombre).slice(0, 3).join(', ')}</span>
         </Link>
       )}
+
+      {entra > 0 && (
+        <section className="reparto bloque" aria-label="Reparto de lo facturado">
+          <p className="reparto-t">De cada 100 € que facturas{esteAnio ? '' : ` en ${anio}`}</p>
+          <p className="reparto-cifra"><strong>{de100(tuyo)} €</strong> son para ti</p>
+          <div className="reparto-barra" role="img" aria-label={trozos.map((t) => `${t.n}: ${de100(t.v)} €`).join(', ')}>
+            {trozos.filter((t) => de100(t.v) > 0).map((t) => <span key={t.k} className={t.k} style={{ flexGrow: Math.max(0, t.v) }} />)}
+          </div>
+          <dl className="reparto-leyenda">
+            {trozos.map((t) => (
+              <div key={t.k}><dt><i className={t.k} />{t.n}</dt><dd><strong>{de100(t.v)} €</strong><small>{eur(t.v)}</small></dd></div>
+            ))}
+          </dl>
+          {tuyo < 0 && <p className="nota">Este año los gastos e impuestos superan lo facturado.</p>}
+          <p className="nota">Sobre {eur(entra)} facturados (IVA incluido, retenciones descontadas). IVA e IRPF son lo que te toca pagar en los modelos 303 y 130 del año; orientativo.</p>
+        </section>
+      )}
+
+      {esteAnio && facturas.length > 0 && (
+        <div className="mosaico bloque">
+          <div className="tarjeta hacienda">
+            <h3>Aparta para Hacienda</h3>
+            <p className="grande">{eur(apartado)}</p>
+            <p className="nota">Del {tHoy}T: IVA {eur(Math.max(0, qHoy.m303))} + IRPF {eur(qHoy.m130)}</p>
+          </div>
+          <div className="tarjeta">
+            <h3>Próximo plazo</h3>
+            <p className="grande">{plazo.dias === 0 ? 'Hoy' : `${plazo.dias} días`}</p>
+            <p className="nota">{plazo.t}T {plazo.anio}, hasta el {fechaCorta(plazo.fecha)}{qPlazo && !qPlazo.presentado ? `: 303 ${qPlazo.m303 < 0 ? `${eur(-qPlazo.m303)} a compensar` : eur(qPlazo.m303)} y 130 ${eur(qPlazo.m130)}` : ''}</p>
+          </div>
+          {r.pendiente > 0 && (
+            <Link href="/facturas?estado=pendientes" className="tarjeta enlace-tarjeta">
+              <h3>Por cobrar</h3>
+              <p className="grande">{eur(r.pendiente)}</p>
+              <p className="nota">{facturas.filter((f) => !f.cobrada && f.fecha.startsWith(`${anio}-`)).length} facturas pendientes ›</p>
+            </Link>
+          )}
+        </div>
+      )}
+
 
       {limite > 0 && (
         <div className="tarjeta bloque">
@@ -88,11 +143,6 @@ export default async function Resumen({ searchParams }) {
 
       {esteAnio && (
         <>
-          <div className="tarjeta bloque">
-            <h3>Aparta para Hacienda</h3>
-            <p className="grande">{eur(apartado)}</p>
-            <p className="nota">Lo que ya debes del {tHoy}T aunque aún no toque pagarlo: 303 {eur(Math.max(0, qHoy.m303))} + 130 {eur(qHoy.m130)}.</p>
-          </div>
           <div className="tarjeta bloque">
             <h3>Si sigues a este ritmo, en {anio}…</h3>
             <div className="dos-valores">
@@ -116,19 +166,8 @@ export default async function Resumen({ searchParams }) {
 
       <section className="tarjeta bloque">
         <h3>Evolución {anio}</h3>
-        <div className="grafica">
-          {meses.map((x, i) => (
-            <Link key={i} href={`/mes/${anio}-${String(i + 1).padStart(2, '0')}`} className="mes" title={`Facturado ${eur(x.ing)} · Gastos ${eur(x.gas)}`} style={{ textDecoration: 'none', color: 'inherit', borderRadius: 8 }}>
-              <div className="barras">
-                <span className="b i" style={{ height: `${Math.max(0, x.ing) / tope * 100}%` }} />
-                <span className="b g" style={{ height: `${Math.max(0, x.gas) / tope * 100}%` }} />
-              </div>
-              <small>{x.m}</small>
-            </Link>
-          ))}
-        </div>
+        <Grafica meses={meses} anio={anio} actual={esteAnio ? Number(h.slice(5, 7)) - 1 : undefined} />
         <p className="nota">{cambio === null ? `Sin datos de ${anio - 1} para comparar.` : `${cambio >= 0 ? '▲' : '▼'} ${Math.abs(cambio).toFixed(0)} % facturado respecto al mismo periodo de ${anio - 1}.`}</p>
-        <div className="leyenda"><span>Toca un mes para ver el detalle</span><span><i style={{ background: 'var(--in)' }} />Facturado</span><span><i style={{ background: 'var(--out)', opacity: 0.75 }} />Gastos</span><span>Mejor mes: {eur(Math.max(...meses.map((x) => x.ing)))}</span></div>
       </section>
 
       {top.length > 0 && (
@@ -136,7 +175,7 @@ export default async function Resumen({ searchParams }) {
           <h3>Clientes que más facturan en {anio}</h3>
           {top.map(([n, v]) => (
             <div key={n} style={{ marginBottom: 10 }}>
-              <div className="top-cliente"><span>{n}</span><strong>{eur(v)}</strong></div>
+              <div className="top-cliente"><Avatar nombre={n} size={32} /><span>{n}</span><strong>{eur(v)}</strong></div>
               <div className="barra-limite" style={{ marginTop: 4 }}><span style={{ width: `${(v / top[0][1]) * 100}%` }} /></div>
             </div>
           ))}
@@ -144,7 +183,7 @@ export default async function Resumen({ searchParams }) {
         </section>
       )}
 
-      {r.pendiente > 0 && <p className="pendiente">Pendiente de cobro: <strong>{eur(r.pendiente)}</strong></p>}
+      {!esteAnio && r.pendiente > 0 && <p className="pendiente">Pendiente de cobro: <strong>{eur(r.pendiente)}</strong></p>}
 
       <p className="descargas">Avisos de los modelos: <a href="/api/avisos">añadir al calendario</a> (7 días y 1 día antes de cada plazo)</p>
       <p className="descargas">Todo {anio} en Excel: <a href={exportar('facturas')}>facturas</a> · <a href={exportar('gastos')}>gastos</a></p>

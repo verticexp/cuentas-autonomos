@@ -2,7 +2,10 @@ import { Suspense } from 'react';
 import './globals.css';
 import './cuentas.css';
 import './movil.css';
+import './diseno.css';
 import TabBar from '@/components/TabBar';
+import { usuarioActual } from '@/lib/auth';
+import { COLOR_BASE } from '@/lib/marca';
 
 export const metadata = {
   title: 'Cuentas',
@@ -17,15 +20,18 @@ export const viewport = {
   ],
 };
 
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
+  // El color de la empresa tiñe la app (botones, barra, gráficas).
+  const propio = (await usuarioActual().catch(() => null))?.marca?.color;
+  const color = propio || COLOR_BASE;
   return (
     <html lang="es">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400..900&display=swap" rel="stylesheet" />
       </head>
-      <body>
+      <body style={{ '--acento': color }} data-marca={propio ? 'propia' : 'base'}>
         {children}
         <Suspense><TabBar /></Suspense>
       </body>

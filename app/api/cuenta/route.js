@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { actualizarUsuario, cambiarPassword, opcionesCookie } from '@/lib/auth';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
+import { colorValido, logoValido } from '@/lib/marca';
 
 const CAMPOS = ['nombre', 'nif', 'direccion', 'ciudad', 'iban'];
 
@@ -16,6 +17,14 @@ export async function PATCH(req) {
     if (importe === null) delete pagos[anio][t];
     else pagos[anio][t] = Math.max(0, Number(importe) || 0);
     await actualizarUsuario(u, { pagos130: pagos });
+    return Response.json({ ok: true });
+  }
+  if (b.marca) {
+    const color = b.marca.color ? colorValido(b.marca.color) : null;
+    const logo = b.marca.logo ? logoValido(b.marca.logo) : null;
+    if (b.marca.color && !color) return error('Color no válido');
+    if (b.marca.logo && !logo) return error('El logo debe ser una imagen PNG o JPG de menos de 300 KB');
+    await actualizarUsuario(u, { marca: { color, logo } });
     return Response.json({ ok: true });
   }
   if (b.drive) {

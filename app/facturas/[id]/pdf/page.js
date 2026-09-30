@@ -6,6 +6,7 @@ import { eur, fechaCorta, pct } from '@/lib/formato';
 import Volver from '@/components/Volver';
 import VistaA4 from '@/components/VistaA4';
 import DescargarPdf from '@/components/DescargarPdf';
+import { aclarar, colorValido } from '@/lib/marca';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,7 +35,8 @@ export default async function PDF({ params }) {
         <DescargarPdf id={f.id} nombre={nombre} />
       </div>
       <VistaA4>
-      <article className="factura-a4" style={{ width: 794, minHeight: 1123, margin: 0, padding: '83px 76px', boxShadow: '0 4px 24px rgba(0,0,0,.12)' }}>
+      <article className="factura-a4" style={{ ...(colorValido(u.marca?.color) ? { '--f-oro': u.marca.color, '--f-verde': u.marca.color, '--f-fondo': aclarar(u.marca.color, 0.92), '--f-linea': aclarar(u.marca.color, 0.6) } : {}), position: 'relative', width: 794, minHeight: 1123, margin: 0, padding: '83px 76px', boxShadow: '0 4px 24px rgba(0,0,0,.12)' }}>
+        {u.marca?.logo && <img src={u.marca.logo} alt="" style={{ position: 'absolute', top: 60, right: 76, maxWidth: 150, maxHeight: 64 }} />}
         <p className="f-num">{f.serie === 'R' ? `FACTURA RECTIFICATIVA ${numeroFactura(f)}` : numeroFactura(f)}</p>
         <h1 className="f-nombre" style={{ fontSize: '30pt' }}>{EMISOR.nombre}</h1>
         <p className="f-gris">NIF: {EMISOR.nif}<br />{EMISOR.direccion}<br />{EMISOR.ciudad}</p>

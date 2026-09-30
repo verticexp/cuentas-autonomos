@@ -12,7 +12,7 @@ body { background: var(--paper); color: var(--ink); font-family: var(--font); fo
 a { color: inherit; }
 a, button { touch-action: manipulation; }
 button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; transition: transform 0.15s ease, opacity 0.2s ease; }
-button:active, .tabbar a:active { transform: scale(0.96); }
+button:active { transform: scale(0.96); }
 button:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 input, select { font: inherit; color: inherit; }
 
@@ -29,19 +29,6 @@ input, select { font: inherit; color: inherit; }
 .tarjeta { background: var(--surface); border-radius: 22px; padding: 18px; }
 .tarjeta h3 { font-size: 1rem; font-weight: 700; margin-bottom: 14px; }
 .tarjeta .nota { margin-bottom: 0; }
-
-.tabbar {
-  position: fixed; z-index: 8; left: 50%; transform: translateX(-50%);
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
-  display: grid; align-items: center;
-  background: color-mix(in srgb, var(--surface) 88%, transparent);
-  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--line); border-radius: 26px; padding: 6px;
-  box-shadow: 0 12px 32px -12px rgba(10, 16, 32, 0.35);
-}
-.tabbar a { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0; color: var(--muted); text-decoration: none; font-size: 0.6875rem; font-weight: 600; border-radius: 18px; }
-.tabbar a svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.tabbar a.activo { color: var(--ink); }
 
 .fila { width: 100%; display: flex; align-items: center; gap: 14px; padding: 14px 16px; text-align: left; }
 .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
