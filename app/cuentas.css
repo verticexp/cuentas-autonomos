@@ -1,0 +1,95 @@
+.tabbar.cuatro { grid-template-columns: repeat(4, 1fr); width: min(calc(100% - 24px), 420px); }
+.cabecera { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+.cabecera .titulo { margin-bottom: 0; }
+.anios { display: flex; align-items: center; gap: 12px; }
+.anios a, .anios .off { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--surface); text-decoration: none; font-size: 1.3rem; }
+.anios .off { opacity: 0.3; }
+.tarjetas.dos { grid-template-columns: 1fr 1fr; }
+.grande { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.03em; }
+.pendiente { background: var(--surface); border-radius: 16px; padding: 14px 16px; margin: -20px 0 28px; }
+.trimestre dl { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; font-size: 0.9375rem; }
+.trimestre dt { color: var(--muted); }
+.trimestre dd { margin: 0; text-align: right; }
+
+.boton { display: inline-block; text-align: center; text-decoration: none; padding: 14px 20px; border-radius: 14px; font-weight: 700; background: var(--ink); color: var(--paper); }
+.boton:disabled { opacity: 0.6; }
+.boton.pequeno { padding: 10px 16px; }
+.vacio .boton { margin-top: 14px; }
+
+.chips a { padding: 8px 14px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); text-decoration: none; font-size: 0.9375rem; }
+.chips a.activo { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.grupo-lista { list-style: none; padding: 0; margin-top: 16px; background: var(--surface); border-radius: 20px; overflow: hidden; }
+.grupo-lista li + li { border-top: 1px solid var(--line); }
+.grupo-lista a.fila { text-decoration: none; }
+.num { flex: none; font-weight: 700; color: var(--muted); font-size: 0.875rem; width: 64px; }
+.imp.pend { color: var(--out); }
+
+.formulario { display: flex; flex-direction: column; gap: 12px; }
+.formulario label { display: flex; flex-direction: column; gap: 6px; color: var(--muted); font-size: 0.875rem; }
+.formulario .campo { color: var(--ink); font-size: 1rem; }
+.formulario fieldset { border: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.formulario legend { color: var(--muted); font-size: 0.875rem; margin-bottom: 6px; }
+.formulario .check { flex-direction: row; align-items: center; gap: 10px; color: var(--ink); font-size: 1rem; }
+.tipo.dos .activo { background: var(--ink); color: var(--paper); }
+.dos-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.totales { display: flex; flex-wrap: wrap; gap: 6px 16px; justify-content: space-between; background: var(--surface); border-radius: 14px; padding: 14px 16px; }
+.tarjeta.formulario { margin-bottom: 8px; }
+.tarjeta.formulario h3 { margin-bottom: 0; }
+.tarjeta.formulario .campo, .tarjeta.formulario .tipo { background: var(--paper); }
+
+.acciones-factura { display: flex; gap: 10px; align-items: center; margin-bottom: 24px; }
+.borrar { color: var(--out); font-weight: 600; padding: 8px 14px; border-radius: 999px; background: color-mix(in srgb, var(--out) 12%, transparent); }
+.estado { padding: 8px 14px; border-radius: 999px; font-weight: 600; }
+.estado.ok { background: color-mix(in srgb, var(--in) 15%, transparent); color: var(--in); }
+.estado.pend { background: color-mix(in srgb, var(--out) 12%, transparent); color: var(--out); }
+
+/* Factura imprimible (misma plantilla que las de 2026) */
+.pdf-fondo { background: #d9dbe0; min-height: 100%; padding: 16px 0 40px; }
+.pdf-barra { max-width: 210mm; margin: 0 auto 12px; display: flex; justify-content: space-between; align-items: center; padding: 0 12px; color: #16213A; }
+.factura-a4 {
+  width: 210mm; min-height: 297mm; margin: 0 auto; background: #fff; color: #3F3F3F;
+  padding: 22mm 20mm; font-family: Helvetica, Arial, sans-serif; font-size: 10pt; line-height: 1.45;
+}
+.factura-a4 h2 { color: #9B7A35; font-size: 12pt; font-weight: 700; margin: 0 0 6px; }
+.f-num { color: #0F4F32; font-weight: 700; font-size: 11pt; }
+.f-nombre { color: #9B7A35; font-family: 'Times New Roman', Times, serif; font-weight: 400; font-size: 30pt; margin: 10mm 0 3mm; letter-spacing: 0; }
+.f-gris { color: #7F7F7F; font-size: 9pt; }
+.f-oro { color: #9B7A35; }
+.f-seccion { display: flex; justify-content: space-between; align-items: flex-start; margin: 22mm 0 14mm; font-size: 10.5pt; }
+.f-tabla { width: 100%; border-collapse: collapse; margin-bottom: 8mm; }
+.f-tabla th { color: #9B7A35; text-align: left; font-size: 11pt; padding: 0 2mm 3mm; }
+.f-tabla th:last-child, .f-tabla td:last-child { text-align: right; }
+.f-tabla td { background: #F5EFE5; border-bottom: 1px solid #C8B59A; padding: 3mm 2mm; }
+.f-resumen { margin-left: auto; border-collapse: collapse; min-width: 75mm; margin-bottom: 18mm; }
+.f-resumen td { padding: 2mm 2mm; }
+.f-resumen td:last-child { text-align: right; }
+.f-total td { background: #F5EFE5; font-weight: 700; font-size: 11pt; }
+.f-nota { margin: -10mm 0 12mm; font-size: 9pt; color: #7F7F7F; }
+@media screen and (max-width: 820px) { .factura-a4 { width: 100%; min-height: 0; padding: 24px; } .f-nombre { font-size: 22pt; } }
+@media print {
+  @page { size: A4; margin: 0; }
+  html, body { background: #fff !important; }
+  .no-print { display: none !important; }
+  .pdf-fondo { padding: 0; background: #fff; }
+  .factura-a4 { width: 210mm; min-height: 297mm; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+
+.boton.sec { background: var(--surface); color: var(--ink); }
+.ancho { display: block; width: 100%; margin-top: 12px; padding: 14px; text-align: center; }
+.enlace { display: flex; flex-direction: column; gap: 8px; }
+.grupo-lista li.fila .borrar { flex: none; }
+.login .nota { margin: 0 0 6px; }
+
+.aviso-plazo { display: flex; flex-direction: column; gap: 2px; background: color-mix(in srgb, #E9A23B 18%, var(--surface)); border-radius: 16px; padding: 14px 16px; margin-bottom: 14px; text-decoration: none; }
+.aviso-plazo span { color: var(--muted); font-size: 0.9375rem; }
+.aviso-plazo.rojo { background: color-mix(in srgb, var(--out) 14%, var(--surface)); }
+.barra-limite { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; margin-top: 10px; }
+.barra-limite span { display: block; height: 100%; background: var(--in); border-radius: 4px; }
+.barra-limite span.cerca { background: #E9A23B; }
+.barra-limite span.pasado { background: var(--out); }
+.grande small { font-size: 0.9375rem; font-weight: 500; letter-spacing: 0; }
+.descargas { color: var(--muted); font-size: 0.875rem; margin: 10px 0 0; }
+.descargas a { color: var(--ink); font-weight: 600; }
+.acciones-factura { flex-wrap: wrap; }
+.trimestre .cabecera { margin-bottom: 10px; } .trimestre .cabecera h3 { margin: 0; } .trimestre .estado { padding: 6px 12px; font-size: 0.8125rem; }

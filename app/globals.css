@@ -1,0 +1,69 @@
+:root {
+  --paper: #EDF0F5; --surface: #FFFFFF; --ink: #16213A; --muted: #647089; --line: #DCE1EA; --in: #1F9D74; --out: #D1495B;
+  --font: 'Bricolage Grotesque', ui-rounded, system-ui, -apple-system, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --paper: #121A2E; --surface: #1B2540; --ink: #EEF1F7; --muted: #97A1B8; --line: #2A3555; --in: #3DC495; --out: #F0707F; color-scheme: dark; }
+}
+* { box-sizing: border-box; margin: 0; }
+html, body { height: 100%; }
+body { background: var(--paper); color: var(--ink); font-family: var(--font); font-size: 16px; line-height: 1.4; font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; }
+a { color: inherit; }
+a, button { touch-action: manipulation; }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; transition: transform 0.15s ease, opacity 0.2s ease; }
+button:active, .tabbar a:active { transform: scale(0.96); }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+input, select { font: inherit; color: inherit; }
+
+.pagina { max-width: 640px; margin: 0 auto; padding: calc(env(safe-area-inset-top, 0px) + 20px) 20px calc(env(safe-area-inset-bottom, 0px) + 120px); animation: entrar 0.32s cubic-bezier(.2,.8,.2,1); }
+@keyframes entrar { from { opacity: 0; transform: translateY(8px); } }
+@media (min-width: 900px) { .pagina { padding-top: 40px; } }
+.titulo { font-size: 2rem; font-weight: 800; letter-spacing: -0.035em; margin-bottom: 18px; }
+.bloque { margin-bottom: 36px; }
+.nota { color: var(--muted); font-size: 0.9375rem; margin: 12px 0; }
+.rotulo { color: var(--muted); font-size: 0.875rem; margin-bottom: 10px; }
+
+.tarjetas { display: grid; gap: 14px; }
+@media (min-width: 820px) { .tarjetas { grid-template-columns: 1fr 1fr; } }
+.tarjeta { background: var(--surface); border-radius: 22px; padding: 18px; }
+.tarjeta h3 { font-size: 1rem; font-weight: 700; margin-bottom: 14px; }
+.tarjeta .nota { margin-bottom: 0; }
+
+.tabbar {
+  position: fixed; z-index: 8; left: 50%; transform: translateX(-50%);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+  display: grid; align-items: center;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--line); border-radius: 26px; padding: 6px;
+  box-shadow: 0 12px 32px -12px rgba(10, 16, 32, 0.35);
+}
+.tabbar a { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0; color: var(--muted); text-decoration: none; font-size: 0.6875rem; font-weight: 600; border-radius: 18px; }
+.tabbar a svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.tabbar a.activo { color: var(--ink); }
+
+.fila { width: 100%; display: flex; align-items: center; gap: 14px; padding: 14px 16px; text-align: left; }
+.txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.txt strong { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.txt small { color: var(--muted); font-size: 0.875rem; }
+.imp { font-weight: 600; white-space: nowrap; }
+.vacio { background: var(--surface); border-radius: 20px; padding: 32px 24px; text-align: center; color: var(--muted); margin: 18px 0; }
+.vacio p:first-child { color: var(--ink); font-weight: 600; margin-bottom: 4px; }
+
+.tipo { display: grid; grid-template-columns: 1fr 1fr; background: var(--surface); padding: 4px; border-radius: 14px; }
+.tipo button { padding: 10px; border-radius: 10px; font-weight: 600; color: var(--muted); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.campo { width: 100%; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); }
+.error { color: var(--out); font-size: 0.9375rem; }
+
+.login, .aviso { min-height: 100%; display: grid; place-items: center; padding: 24px; }
+.login form { width: 100%; max-width: 340px; display: flex; flex-direction: column; gap: 10px; }
+.login h1 { font-size: 2.5rem; font-weight: 800; letter-spacing: -0.04em; margin-bottom: 16px; }
+.login label { color: var(--muted); font-size: 0.875rem; }
+.login input { padding: 14px 16px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); }
+.login button { margin-top: 6px; padding: 15px; border-radius: 14px; background: var(--ink); color: var(--paper); font-weight: 700; }
+.aviso { text-align: center; max-width: 480px; margin: 0 auto; }
+.aviso h1 { font-size: 1.5rem; margin-bottom: 8px; }
+.aviso p { color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
