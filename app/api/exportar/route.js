@@ -11,10 +11,10 @@ const csv = (filas) => '\uFEFF' + filas.map((f) => f.map(celda).join(';')).join(
 
 // CSV para Excel (separador «;», coma decimal). ?tipo=facturas|gastos&anio=2026&t=3 (sin t: todo el año)
 export async function GET(req) {
-  const { u, res } = await usuarioApi();
-  if (res) return res;
   const q = req.nextUrl.searchParams;
   const tipo = q.get('tipo') === 'gastos' ? 'gastos' : 'facturas';
+  const { u, res } = await usuarioApi({ permiso: tipo });
+  if (res) return res;
   const anio = Number(q.get('anio')) || new Date().getFullYear();
   const t = Number(q.get('t')) || 0;
   const lista = (await leer(u, tipo))

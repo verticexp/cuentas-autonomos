@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { actualizarUsuario, cambiarPassword, opcionesCookie } from '@/lib/auth';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
+import { puede } from '@/lib/permisos';
 import { colorValido, logoValido } from '@/lib/marca';
 
 const CAMPOS = ['nombre', 'nif', 'direccion', 'ciudad', 'iban'];
@@ -9,7 +10,9 @@ export async function PATCH(req) {
   const { u, res } = await usuarioApi();
   if (res) return res;
   const b = await cuerpo(req);
+  const sin = (p) => !puede(u, p) && error('No tienes permiso para esto. Pídeselo al administrador de tu empresa.', 403);
   if (b.presentado) {
+    if (sin('resumen')) return sin('resumen');
     const { anio, t, importe } = b.presentado;
     if (!Number.isInteger(anio) || anio < 2000 || anio > 2100 || ![1, 2, 3, 4].includes(t)) return error('Trimestre no válido');
     const pagos = { ...(u.pagos130 || {}) };
@@ -20,6 +23,7 @@ export async function PATCH(req) {
     return Response.json({ ok: true });
   }
   if (b.marca) {
+    if (sin('empresa')) return sin('empresa');
     const color = b.marca.color ? colorValido(b.marca.color) : null;
     const logo = b.marca.logo ? logoValido(b.marca.logo) : null;
     if (b.marca.color && !color) return error('Color no válido');
@@ -28,6 +32,7 @@ export async function PATCH(req) {
     return Response.json({ ok: true });
   }
   if (b.drive) {
+    if (sin('empresa')) return sin('empresa');
     const url = String(b.drive.url || '').trim();
     if (url && !/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(url)) return error('La URL debe ser la de la aplicación web de Apps Script (acaba en /exec)');
     await actualizarUsuario(u, { drive: url ? { url, token: String(b.drive.token || '').trim().slice(0, 100) } : null });
@@ -39,6 +44,7 @@ export async function PATCH(req) {
     (await cookies()).set('t', r.token, opcionesCookie);
     return Response.json({ ok: true });
   }
+  if (sin('empresa')) return sin('empresa');
   const emisor = Object.fromEntries(CAMPOS.map((k) => [k, String(b[k] || '').trim().slice(0, 120)]));
   emisor.plazo = Math.max(0, Math.min(365, Number(b.plazo) || 30));
   emisor.limite = Math.max(0, Number(b.limite) || 0);

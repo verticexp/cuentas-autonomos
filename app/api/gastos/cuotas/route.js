@@ -5,7 +5,7 @@ import { leerImporte, r2 } from '@/lib/calculos';
 // Crea la cuota de autónomos de cada mes (sin IVA) desde el mes indicado hasta el actual.
 // Si un mes ya estaba, lo actualiza en vez de duplicarlo.
 export async function POST(req) {
-  const { u, res } = await usuarioApi();
+  const { u, res } = await usuarioApi({ permiso: 'gastar' });
   if (res) return res;
   const b = await cuerpo(req);
   const importe = r2(leerImporte(b.importe));

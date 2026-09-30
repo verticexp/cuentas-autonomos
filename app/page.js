@@ -7,11 +7,12 @@ import SinBD from '@/components/SinBD';
 import { Presentado } from '@/components/Acciones';
 import Avatar from '@/components/Avatar';
 import Grafica from '@/components/Grafica';
+import { puede } from '@/lib/permisos';
 
 export const dynamic = 'force-dynamic';
 
 export default async function Resumen({ searchParams }) {
-  const u = await requerir();
+  const u = await requerir('resumen');
   const [facturas, gastos] = await Promise.all([leer(u, 'facturas'), leer(u, 'gastos')]);
   if (!facturas) return <SinBD />;
   const anioActual = new Date().getFullYear();
@@ -81,7 +82,7 @@ export default async function Resumen({ searchParams }) {
         <div className="vacio grande-vacio">
           <p>Crea tu primera factura</p>
           <p>Aquí verás cuánto de lo que facturas es tuyo y cuánto tienes que apartar para Hacienda.</p>
-          <Link href="/facturas/nueva" className="boton">Nueva factura</Link>
+          {puede(u, 'facturar') && <Link href="/facturas/nueva" className="boton">Nueva factura</Link>}
         </div>
       )}
 

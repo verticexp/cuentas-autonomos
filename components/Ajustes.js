@@ -48,10 +48,11 @@ function ProbarDrive({ error }) {
   );
 }
 
-export default function Ajustes({ emisor, drive, driveError }) {
+export default function Ajustes({ emisor, drive, driveError, empresa = true }) {
   const router = useRouter();
   return (
     <div className="tarjetas bloque">
+      {empresa && <>
       <Formulario
         titulo="Datos de facturación"
         inicial={{ plazo: 30, ...emisor }}
@@ -81,6 +82,7 @@ export default function Ajustes({ emisor, drive, driveError }) {
           </>
         )}
       </Formulario>
+      </>}
       <Formulario
         titulo="Cambiar contraseña"
         inicial={{ actual: '', nueva: '' }}

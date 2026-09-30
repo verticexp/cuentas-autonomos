@@ -5,19 +5,20 @@ import { hoy } from '@/lib/formato';
 import FormGasto from '@/components/FormGasto';
 import Volver from '@/components/Volver';
 import { Borrar } from '@/components/Acciones';
+import { puede } from '@/lib/permisos';
 
 export const dynamic = 'force-dynamic';
 
 export default async function Gasto({ params }) {
-  const u = await requerir();
+  const u = await requerir('gastos');
   const id = decodeURIComponent((await params).id);
   const g = await leerUno(u, 'gastos', id);
   if (!g) notFound();
   return (
     <main className="pagina">
       <Volver href="/gastos">Gastos</Volver>
-      <FormGasto hoy={hoy()} gasto={g} />
-      <div style={{ marginTop: 16 }}><Borrar url={`/api/gastos?id=${encodeURIComponent(g.id)}`} pregunta={`¿Borrar «${g.concepto}»?`} volver="/gastos" /></div>
+      <fieldset className="solo-ver" disabled={!puede(u, 'gastar')}><FormGasto hoy={hoy()} gasto={g} /></fieldset>
+      {puede(u, 'gastar') && <div style={{ marginTop: 16 }}><Borrar url={`/api/gastos?id=${encodeURIComponent(g.id)}`} pregunta={`¿Borrar «${g.concepto}»?`} volver="/gastos" /></div>}
     </main>
   );
 }

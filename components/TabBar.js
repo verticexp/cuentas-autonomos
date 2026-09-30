@@ -5,9 +5,9 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 
 const TABS = [
-  { href: '/', nombre: 'Resumen', icono: <path d="M5 20V11M10 20V5M15 20v-7M20 20V9" /> },
-  { href: '/facturas', nombre: 'Facturas', icono: <path d="M7 3h7l4 4v14H7zM14 3v4h4M10 12h5M10 16h5" /> },
-  { href: '/gastos', nombre: 'Gastos', icono: <><rect x="4" y="6" width="16" height="12" rx="2" /><path d="M4 10h16" /></> },
+  { href: '/', permiso: 'resumen', nombre: 'Resumen', icono: <path d="M5 20V11M10 20V5M15 20v-7M20 20V9" /> },
+  { href: '/facturas', permiso: 'facturas', nombre: 'Facturas', icono: <path d="M7 3h7l4 4v14H7zM14 3v4h4M10 12h5M10 16h5" /> },
+  { href: '/gastos', permiso: 'gastos', nombre: 'Gastos', icono: <><rect x="4" y="6" width="16" height="12" rx="2" /><path d="M4 10h16" /></> },
   { href: '/ajustes', nombre: 'Ajustes', icono: <><circle cx="12" cy="8" r="4" /><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6" /></> },
 ];
 
@@ -28,7 +28,8 @@ function vibrar() {
 
 const seccion = (path) => (path === '/' ? '/' : TABS.find((t) => t.href !== '/' && path.startsWith(t.href))?.href ?? null);
 
-export default function TabBar() {
+export default function TabBar({ permisos = [] }) {
+  const tabs = TABS.filter((t) => !t.permiso || permisos.includes(t.permiso));
   const path = usePathname();
   const router = useRouter();
   const [activo, setActivo] = useState(seccion(path));
@@ -63,7 +64,7 @@ export default function TabBar() {
         onPointerUp={() => { if (dedo === null) return; const h = dedo; setDedo(null); ir(h); }}
         onPointerCancel={() => setDedo(null)}
       >
-        {TABS.map((t) => (
+        {tabs.map((t) => (
           <Link key={t.href} href={t.href} prefetch draggable={false} data-href={t.href}
             className={marcado === t.href ? 'activo' : ''} aria-current={activo === t.href ? 'page' : undefined} aria-label={t.nombre}
             onClick={(e) => { e.preventDefault(); if (e.detail === 0) ir(t.href); }}>
@@ -72,9 +73,9 @@ export default function TabBar() {
           </Link>
         ))}
       </nav>
-      <Link href="/facturas/nueva" className={`mas${path === '/facturas/nueva' ? ' abierta' : ''}`} aria-label="Nueva factura" onClick={() => vibrar()}>
+      {permisos.includes('facturar') && <Link href="/facturas/nueva" className={`mas${path === '/facturas/nueva' ? ' abierta' : ''}`} aria-label="Nueva factura" onClick={() => vibrar()}>
         <svg viewBox="0 0 24 24" aria-hidden><path d="M12 5v14M5 12h14" /></svg>
-      </Link>
+      </Link>}
     </div>
   );
 }

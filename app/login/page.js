@@ -1,6 +1,7 @@
 import { hayUsuarios } from '@/lib/auth';
 import { redis } from '@/lib/redis';
 import SinBD from '@/components/SinBD';
+import EntrarFaceId from '@/components/EntrarFaceId';
 
 export const dynamic = 'force-dynamic';
 const ERRORES = { 1: 'Email o contraseña incorrectos.', bloqueado: 'Demasiados intentos. Espera 15 minutos.' };
@@ -15,6 +16,7 @@ export default async function Login({ searchParams }) {
         <h1>Cuentas</h1>
         {primera && <p className="nota">Crea la cuenta de administrador.</p>}
         {error && <p className="error">{ERRORES[error] || error}</p>}
+        {!primera && <EntrarFaceId />}
         {primera && <><label htmlFor="nombre">Nombre</label><input id="nombre" name="nombre" required /></>}
         <label htmlFor="email">Email</label>
         <input id="email" name="email" type="email" autoComplete="username" required />

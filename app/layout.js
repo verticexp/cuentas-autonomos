@@ -6,6 +6,8 @@ import './diseno.css';
 import TabBar from '@/components/TabBar';
 import { usuarioActual } from '@/lib/auth';
 import { COLOR_BASE } from '@/lib/marca';
+import { permisosDe } from '@/lib/permisos';
+import Bloqueo from '@/components/Bloqueo';
 
 export const metadata = {
   title: 'Cuentas',
@@ -22,7 +24,8 @@ export const viewport = {
 
 export default async function RootLayout({ children }) {
   // El color de la empresa tiñe la app (botones, barra, gráficas).
-  const propio = (await usuarioActual().catch(() => null))?.marca?.color;
+  const u = await usuarioActual().catch(() => null);
+  const propio = u?.marca?.color;
   const color = propio || COLOR_BASE;
   return (
     <html lang="es">
@@ -33,7 +36,8 @@ export default async function RootLayout({ children }) {
       </head>
       <body style={{ '--acento': color }} data-marca={propio ? 'propia' : 'base'}>
         {children}
-        <Suspense><TabBar /></Suspense>
+        <Suspense><TabBar permisos={permisosDe(u)} /></Suspense>
+        {u && <Bloqueo usuario={u.id} />}
       </body>
     </html>
   );

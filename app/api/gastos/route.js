@@ -7,7 +7,7 @@ import { ACTIVIDADES, leerImporte, r2 } from '@/lib/calculos';
 export const dynamic = 'force-dynamic';
 
 export async function POST(req) {
-  const { u, res } = await usuarioApi();
+  const { u, res } = await usuarioApi({ permiso: 'gastar' });
   if (res) return res;
   const b = await cuerpo(req);
   const base = r2(leerImporte(b.base));
@@ -28,7 +28,7 @@ export async function POST(req) {
 }
 
 export async function PATCH(req) {
-  const { u, res } = await usuarioApi();
+  const { u, res } = await usuarioApi({ permiso: 'gastar' });
   if (res) return res;
   const b = await cuerpo(req);
   const antes = b.id && (await leerUno(u, 'gastos', b.id));
@@ -44,7 +44,7 @@ export async function PATCH(req) {
 }
 
 export async function DELETE(req) {
-  const { u, res } = await usuarioApi();
+  const { u, res } = await usuarioApi({ permiso: 'gastar' });
   if (res) return res;
   const id = req.nextUrl.searchParams.get('id');
   if (!id) return error('Falta id');

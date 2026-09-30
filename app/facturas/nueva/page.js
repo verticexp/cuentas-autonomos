@@ -9,7 +9,7 @@ import Volver from '@/components/Volver';
 export const dynamic = 'force-dynamic';
 
 export default async function Nueva({ searchParams }) {
-  const u = await requerir();
+  const u = await requerir('facturar');
   const [facturas, todos] = await Promise.all([leer(u, 'facturas'), leer(u, 'clientes')]);
   if (!facturas) return <SinBD />;
   const clientes = todos.sort((a, b) => a.nombre.localeCompare(b.nombre));

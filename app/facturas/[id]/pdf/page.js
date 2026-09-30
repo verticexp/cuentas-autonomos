@@ -17,7 +17,7 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function PDF({ params }) {
-  const u = await requerir();
+  const u = await requerir('facturas');
   const f = await leerUno(u, 'facturas', (await params).id);
   if (!f) notFound();
   const t = importes(f);

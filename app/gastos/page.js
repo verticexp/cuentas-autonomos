@@ -8,11 +8,12 @@ import FormGasto from '@/components/FormGasto';
 import Cuotas from '@/components/Cuotas';
 import Link from 'next/link';
 import Avatar from '@/components/Avatar';
+import { puede } from '@/lib/permisos';
 
 export const dynamic = 'force-dynamic';
 
 export default async function Gastos() {
-  const u = await requerir();
+  const u = await requerir('gastos');
   const gastos = await leer(u, 'gastos');
   if (!gastos) return <SinBD />;
   const h = hoy();
@@ -30,8 +31,10 @@ export default async function Gastos() {
           <div><small>IVA que recuperas</small><strong>{eur(delAnio.reduce((s, g) => s + importes(g).iva, 0))}</strong></div>
         </div>
       )}
-      <FormGasto hoy={h} />
-      <Cuotas desde={`${h.slice(0, 4)}-01`} />
+      {puede(u, 'gastar') && <>
+        <FormGasto hoy={h} />
+        <Cuotas desde={`${h.slice(0, 4)}-01`} />
+      </>}
 
       <details className="tarjeta bloque" open={pendientes > 0}>
         <summary><strong>Deducciones que no deberías olvidar</strong> <span className="nota">· {pendientes ? `${pendientes} sin ningún gasto este año` : 'todas cubiertas'}</span></summary>

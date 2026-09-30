@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
 export default async function Mes({ params }) {
-  const u = await requerir();
+  const u = await requerir('resumen');
   const { mes } = await params;
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) notFound();
   const [facturas, gastos] = await Promise.all([leer(u, 'facturas'), leer(u, 'gastos')]);

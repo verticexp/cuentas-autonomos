@@ -1,0 +1,105 @@
+import { randomBytes } from 'crypto';
+import { cookies } from 'next/headers';
+import { generateAuthenticationOptions, generateRegistrationOptions, verifyAuthenticationResponse, verifyRegistrationResponse } from '@simplewebauthn/server';
+import { redis } from '@/lib/redis';
+import { crearSesion, opcionesCookie, usuarioActual } from '@/lib/auth';
+import { cuerpo, error } from '@/lib/api';
+
+// Face ID / Touch ID con llaves de acceso (passkeys). La cara nunca sale del móvil:
+// el iPhone firma un reto y aquí se comprueba la firma con la clave pública guardada al activarlo.
+// passkeys:<usuario> → id de llave → { publicKey, counter, transports, nombre, creada } · passkey-usuario: id de llave → usuario
+export const dynamic = 'force-dynamic';
+
+const b64 = (u8) => Buffer.from(u8).toString('base64url');
+const sitio = (req) => {
+  const origin = req.headers.get('origin') || new URL(req.url).origin;
+  return { origin, rpID: new URL(origin).hostname };
+};
+
+async function guardarReto(challenge) {
+  const id = randomBytes(12).toString('base64url');
+  await redis.set(`reto:${id}`, challenge, { ex: 300 });
+  (await cookies()).set('reto', id, { ...opcionesCookie, maxAge: 300 });
+}
+async function leerReto() {
+  const id = (await cookies()).get('reto')?.value;
+  const r = id && (await redis.get(`reto:${id}`));
+  if (id) await redis.del(`reto:${id}`);
+  return r;
+}
+
+export async function POST(req) {
+  if (!redis) return error('Base de datos no conectada', 503);
+  const b = await cuerpo(req);
+  const { origin, rpID } = sitio(req);
+  const u = await usuarioActual();
+
+  // Activar Face ID en este dispositivo (con la sesión ya abierta).
+  if (b.accion === 'registro-opciones' || b.accion === 'registro') {
+    if (!u) return error('No autorizado', 401);
+    const mias = (await redis.hgetall(`passkeys:${u.id}`)) || {};
+    if (b.accion === 'registro-opciones') {
+      const opciones = await generateRegistrationOptions({
+        rpName: 'Cuentas', rpID, userName: u.email, userDisplayName: u.nombre, userID: new TextEncoder().encode(u.id),
+        attestationType: 'none',
+        excludeCredentials: Object.entries(mias).map(([id, k]) => ({ id, transports: k.transports })),
+        authenticatorSelection: { residentKey: 'required', userVerification: 'required' },
+      });
+      await guardarReto(opciones.challenge);
+      return Response.json(opciones);
+    }
+    const reto = await leerReto();
+    if (!reto) return error('Ha tardado demasiado. Vuelve a intentarlo.');
+    try {
+      const v = await verifyRegistrationResponse({ response: b.respuesta, expectedChallenge: reto, expectedOrigin: origin, expectedRPID: rpID, requireUserVerification: true });
+      if (!v.verified) return error('No se pudo activar Face ID');
+      const c = v.registrationInfo.credential;
+      const nombre = String(b.nombre || 'Este dispositivo').slice(0, 60);
+      await redis.hset(`passkeys:${u.id}`, { [c.id]: { publicKey: b64(c.publicKey), counter: c.counter, transports: c.transports || [], nombre, creada: new Date().toISOString() } });
+      await redis.hset('passkey-usuario', { [c.id]: u.id });
+      return Response.json({ ok: true, id: c.id });
+    } catch (e) { return error(`No se pudo activar Face ID: ${e.message}`); }
+  }
+
+  // Entrar (o desbloquear la app) con Face ID.
+  if (b.accion === 'entrar-opciones') {
+    const mias = u ? Object.entries((await redis.hgetall(`passkeys:${u.id}`)) || {}) : [];
+    const opciones = await generateAuthenticationOptions({
+      rpID, userVerification: 'required',
+      allowCredentials: mias.map(([id, k]) => ({ id, transports: k.transports })),
+    });
+    await guardarReto(opciones.challenge);
+    return Response.json(opciones);
+  }
+  if (b.accion === 'entrar') {
+    const reto = await leerReto();
+    if (!reto) return error('Ha tardado demasiado. Vuelve a intentarlo.');
+    const id = b.respuesta?.id;
+    const dueno = id && (await redis.hget('passkey-usuario', id));
+    const k = dueno && (await redis.hget(`passkeys:${dueno}`, id));
+    if (!k) return error('Este Face ID ya no está activado. Entra con tu contraseña y vuelve a activarlo en Ajustes.');
+    if (u && u.id !== dueno) return error('Este Face ID es de otra persona');
+    try {
+      const v = await verifyAuthenticationResponse({
+        response: b.respuesta, expectedChallenge: reto, expectedOrigin: origin, expectedRPID: rpID, requireUserVerification: true,
+        credential: { id, publicKey: Buffer.from(k.publicKey, 'base64url'), counter: k.counter, transports: k.transports },
+      });
+      if (!v.verified) return error('Face ID no válido');
+      await redis.hset(`passkeys:${dueno}`, { [id]: { ...k, counter: v.authenticationInfo.newCounter, usada: new Date().toISOString() } });
+    } catch (e) { return error(`Face ID no válido: ${e.message}`); }
+    if (!(await redis.hget('usuarios', dueno))) return error('Esta cuenta ya no existe');
+    if (!u) (await cookies()).set('t', await crearSesion(dueno), opcionesCookie);
+    return Response.json({ ok: true });
+  }
+  return error('Acción no válida');
+}
+
+// Desactivar Face ID en un dispositivo.
+export async function DELETE(req) {
+  const u = await usuarioActual();
+  if (!u) return error('No autorizado', 401);
+  const id = req.nextUrl.searchParams.get('id') || '';
+  await redis.hdel(`passkeys:${u.id}`, id);
+  if ((await redis.hget('passkey-usuario', id)) === u.id) await redis.hdel('passkey-usuario', id);
+  return Response.json({ ok: true });
+}

@@ -6,7 +6,7 @@ const PLAZOS = [
 ];
 
 export async function GET() {
-  const { res } = await usuarioApi();
+  const { res } = await usuarioApi({ permiso: 'resumen' });
   if (res) return res;
   const y = new Date().getFullYear();
   const eventos = PLAZOS.map(([md, t]) => {

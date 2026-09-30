@@ -5,13 +5,14 @@ import { ACTIVIDADES, importes, numeroFactura, vencida } from '@/lib/calculos';
 import { eur, hoy } from '@/lib/formato';
 import SinBD from '@/components/SinBD';
 import Avatar from '@/components/Avatar';
+import { puede } from '@/lib/permisos';
 
 export const dynamic = 'force-dynamic';
 const diaMes = (f) => new Date(`${f}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
 export default async function Facturas({ searchParams }) {
-  const u = await requerir();
+  const u = await requerir('facturas');
   const todas = await leer(u, 'facturas');
   if (!todas) return <SinBD />;
   const { a, estado } = await searchParams;
@@ -41,7 +42,7 @@ export default async function Facturas({ searchParams }) {
     <main className="pagina">
       <header className="cabecera">
         <h1 className="titulo">Facturas</h1>
-        <Link href="/facturas/nueva" className="boton pequeno">Nueva factura</Link>
+        {puede(u, 'facturar') && <Link href="/facturas/nueva" className="boton pequeno">Nueva factura</Link>}
       </header>
 
       {todas.length > 0 && (
@@ -93,7 +94,7 @@ export default async function Facturas({ searchParams }) {
           {todas.length ? <><p>Nada con este filtro</p><p>Prueba con otra actividad o quita «Sin cobrar».</p></> : <>
             <p>Aún no has hecho ninguna factura</p>
             <p>Se numeran solas y puedes descargarlas en PDF con tu logo.</p>
-            <Link href="/facturas/nueva" className="boton">Crear la primera</Link>
+            {puede(u, 'facturar') && <Link href="/facturas/nueva" className="boton">Crear la primera</Link>}
           </>}
         </div>
       )}

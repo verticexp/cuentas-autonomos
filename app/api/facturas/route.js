@@ -29,7 +29,7 @@ function limpiar(b) {
 const guardarCliente = (u, c) => guardar(u, 'clientes', { id: c.nombre.toUpperCase(), ...c });
 
 export async function POST(req) {
-  const { u, res } = await usuarioApi();
+  const { u, res } = await usuarioApi({ permiso: 'facturar' });
   if (res) return res;
   const b = await cuerpo(req);
   const datos = limpiar(b);
@@ -50,7 +50,7 @@ export async function POST(req) {
 
 // El número y el año no cambian al editar: la numeración debe ser correlativa.
 export async function PATCH(req) {
-  const { u, res } = await usuarioApi();
+  const { u, res } = await usuarioApi({ permiso: 'facturar' });
   if (res) return res;
   const b = await cuerpo(req);
   const antes = b.id && (await leerUno(u, 'facturas', b.id));
@@ -71,7 +71,7 @@ export async function PATCH(req) {
 }
 
 export async function DELETE(req) {
-  const { u, res } = await usuarioApi();
+  const { u, res } = await usuarioApi({ permiso: 'facturar' });
   if (res) return res;
   const id = req.nextUrl.searchParams.get('id');
   if (!id) return error('Falta id');

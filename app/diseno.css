@@ -153,3 +153,46 @@ button:focus-visible, input:focus-visible, a:focus-visible, select:focus-visible
 .logo-botones { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .logo-botones label.boton { cursor: pointer; }
 @media (prefers-reduced-motion: reduce) { .reparto-barra span { animation: none; } }
+
+/* Solo lectura: se ve el formulario pero no se puede cambiar ni guardar */
+fieldset.solo-ver { border: 0; padding: 0; margin: 0; min-width: 0; }
+fieldset.solo-ver:disabled .boton, fieldset.solo-ver:disabled button[type="submit"], fieldset.solo-ver:disabled form > .boton { display: none; }
+fieldset.solo-ver:disabled .campo { opacity: 1; color: var(--ink); -webkit-text-fill-color: var(--ink); }
+
+/* Face ID */
+.dispositivos { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.dispositivos li { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 14px; background: var(--paper); }
+.entrar-faceid { display: flex; flex-direction: column; gap: 10px; margin-bottom: 4px; }
+.login .boton-faceid { display: flex; align-items: center; justify-content: center; gap: 10px; background: var(--marca); color: #fff; margin: 0; }
+.boton-faceid svg, .icono-faceid { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.separador { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 0.8125rem; margin: 6px 0 2px; }
+.separador::before, .separador::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+.pantalla-bloqueo { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; background: var(--paper); padding: 24px; text-align: center; }
+.pantalla-bloqueo > div { display: flex; flex-direction: column; align-items: center; gap: 14px; width: 100%; max-width: 320px; }
+.pantalla-bloqueo .icono-faceid { width: 64px; height: 64px; color: var(--marca); stroke-width: 1.3; }
+.pantalla-bloqueo h1 { font-size: 1.75rem; font-weight: 850; letter-spacing: -0.04em; }
+.pantalla-bloqueo .boton { width: 100%; }
+.enlace-claro { color: var(--muted); font-weight: 600; padding: 8px; }
+
+/* Usuarios y permisos */
+.subtitulo { font-size: 1.375rem; font-weight: 850; letter-spacing: -0.03em; margin: 8px 0 4px; }
+.perfil small + small { font-size: 0.8125rem; }
+.personas li.abierta { background: color-mix(in srgb, var(--marca) 4%, var(--surface)); }
+.personas button.fila:disabled { opacity: 1; cursor: default; }
+.persona-editar { padding: 4px 16px 16px; display: flex; flex-direction: column; gap: 12px; }
+.perfiles button { padding: 8px 14px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); font-size: 0.9375rem; }
+.perfiles button.activo { background: var(--marca); border-color: var(--marca); color: #fff; }
+.chip-info { padding: 8px 14px; border-radius: 999px; font-size: 0.9375rem; color: var(--muted); border: 1px dashed var(--line); }
+.chip-info.activo { color: var(--ink); border-color: var(--ink); }
+.permisos { display: flex; flex-direction: column; border-radius: 16px; background: var(--paper); overflow: hidden; }
+.permiso { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; cursor: pointer; }
+.permiso + .permiso { border-top: 1px solid var(--line); }
+.permiso input { width: 20px; height: 20px; margin-top: 2px; accent-color: var(--marca); flex: none; }
+.permiso span { display: flex; flex-direction: column; }
+.permiso small { color: var(--muted); font-size: 0.8125rem; }
+.pastilla.p-admin { color: var(--marca); background: color-mix(in srgb, var(--marca) 12%, transparent); }
+.pastilla.p-perfil { color: var(--muted); background: var(--paper); }
+.botones-fila { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.tarjeta.formulario .permisos { background: var(--paper); }
+.formulario label.permiso { flex-direction: row; color: var(--ink); font-size: 1rem; }
+.formulario .permiso strong { font-weight: 600; }

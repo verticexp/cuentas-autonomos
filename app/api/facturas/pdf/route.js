@@ -6,7 +6,7 @@ import { facturaPdf } from '@/lib/pdf';
 export const dynamic = 'force-dynamic';
 
 export async function GET(req) {
-  const { u, res } = await usuarioApi();
+  const { u, res } = await usuarioApi({ permiso: 'facturas' });
   if (res) return res;
   const f = await leerUno(u, 'facturas', req.nextUrl.searchParams.get('id') || '');
   if (!f) return error('Esa factura no existe', 404);
