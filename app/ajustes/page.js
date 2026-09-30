@@ -21,7 +21,9 @@ export default async function Page() {
         <Avatar nombre={u.nombre} size={48} />
         <div><strong>{u.nombre}</strong><small>{u.email}</small><small>{perfilDe(u)} en {u.empresaNombre}</small></div>
       </div>
-      {(puede(u, 'usuarios') || u.admin) && <Link href="/usuarios" className="boton sec ancho" style={{ marginBottom: 14 }}>Usuarios y permisos</Link>}
+      {(puede(u, 'usuarios') || u.admin) && (
+        <section className="grupo"><div className="grupo-c"><Link href="/usuarios" className="celda ir"><span className="txt">Usuarios y permisos</span></Link></div></section>
+      )}
       <FaceId lista={llaves} />
       {empresa && <Marca marca={u.marca} nombre={u.emisor?.nombre} />}
       <Ajustes emisor={u.emisor || {}} drive={u.drive} driveError={u.driveError} empresa={empresa} />

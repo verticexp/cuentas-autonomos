@@ -5,7 +5,6 @@ import { ACTIVIDADES, casillas303, importes, proximoPlazo, r2, resumenAnual, tri
 import { eur, fechaCorta, hoy } from '@/lib/formato';
 import SinBD from '@/components/SinBD';
 import { Presentado } from '@/components/Acciones';
-import Avatar from '@/components/Avatar';
 import Grafica from '@/components/Grafica';
 import { puede } from '@/lib/permisos';
 
@@ -79,7 +78,7 @@ export default async function Resumen({ searchParams }) {
       </header>
 
       {!facturas.length && (
-        <div className="vacio grande-vacio">
+        <div className="vacio">
           <p>Crea tu primera factura</p>
           <p>Aquí verás cuánto de lo que facturas es tuyo y cuánto tienes que apartar para Hacienda.</p>
           {puede(u, 'facturar') && <Link href="/facturas/nueva" className="boton">Nueva factura</Link>}
@@ -87,110 +86,127 @@ export default async function Resumen({ searchParams }) {
       )}
 
       {vencidas.length > 0 && (
-        <Link href="/facturas" className="aviso-plazo rojo">
-          <strong>{vencidas.length === 1 ? '1 factura vencida sin cobrar' : `${vencidas.length} facturas vencidas sin cobrar`}</strong>
-          <span>{eur(vencidas.reduce((s, f) => s + importes(f).total, 0))} · {vencidas.map((f) => f.cliente.nombre).slice(0, 3).join(', ')}</span>
-        </Link>
+        <section className="grupo">
+          <div className="grupo-c">
+            <Link href="/facturas?estado=pendientes" className="celda ir">
+              <span className="txt"><strong className="rojo">{vencidas.length === 1 ? '1 factura vencida' : `${vencidas.length} facturas vencidas`}</strong><small>{vencidas.map((f) => f.cliente.nombre).slice(0, 3).join(', ')}</small></span>
+              <span className="v">{eur(vencidas.reduce((s, f) => s + importes(f).total, 0))}</span>
+            </Link>
+          </div>
+        </section>
       )}
 
       {entra > 0 && (
-        <section className="reparto bloque" aria-label="Reparto de lo facturado">
-          <p className="reparto-t">De cada 100 € que facturas{esteAnio ? '' : ` en ${anio}`}</p>
-          <p className="reparto-cifra"><strong>{de100(tuyo)} €</strong> son para ti</p>
-          <div className="reparto-barra" role="img" aria-label={trozos.map((t) => `${t.n}: ${de100(t.v)} €`).join(', ')}>
-            {trozos.filter((t) => de100(t.v) > 0).map((t) => <span key={t.k} className={t.k} style={{ flexGrow: Math.max(0, t.v) }} />)}
+        <section className="grupo" aria-label="Reparto de lo facturado">
+          <h2 className="grupo-t">De cada 100 € que facturas{esteAnio ? '' : ` en ${anio}`}</h2>
+          <div className="grupo-c reparto">
+            <p className="reparto-cifra">{de100(tuyo)} € son para ti</p>
+            <div className="reparto-barra" role="img" aria-label={trozos.map((t) => `${t.n}: ${de100(t.v)} €`).join(', ')}>
+              {trozos.filter((t) => de100(t.v) > 0).map((t) => <span key={t.k} className={t.k} style={{ flexGrow: Math.max(0, t.v) }} />)}
+            </div>
+            <ul className="reparto-leyenda">
+              {trozos.map((t) => (
+                <li key={t.k}><i className={t.k} />{t.n}<span className="pct">{de100(t.v)} €</span><span className="v">{eur(t.v)}</span></li>
+              ))}
+            </ul>
           </div>
-          <dl className="reparto-leyenda">
-            {trozos.map((t) => (
-              <div key={t.k}><dt><i className={t.k} />{t.n}</dt><dd><strong>{de100(t.v)} €</strong><small>{eur(t.v)}</small></dd></div>
-            ))}
-          </dl>
-          {tuyo < 0 && <p className="nota">Este año los gastos e impuestos superan lo facturado.</p>}
-          <p className="nota">Sobre {eur(entra)} facturados (IVA incluido, retenciones descontadas). IVA e IRPF son lo que te toca pagar en los modelos 303 y 130 del año; orientativo.</p>
+          <p className="grupo-pie">{tuyo < 0 ? 'Este año los gastos e impuestos superan lo facturado. ' : ''}Sobre {eur(entra)} facturados, con IVA y sin las retenciones. IVA e IRPF son lo que te toca pagar en los modelos 303 y 130 del año (orientativo).</p>
         </section>
       )}
 
       {esteAnio && facturas.length > 0 && (
-        <div className="mosaico bloque">
-          <div className="tarjeta hacienda">
-            <h3>Aparta para Hacienda</h3>
-            <p className="grande">{eur(apartado)}</p>
-            <p className="nota">Del {tHoy}T: IVA {eur(Math.max(0, qHoy.m303))} + IRPF {eur(qHoy.m130)}</p>
-          </div>
-          <div className="tarjeta">
-            <h3>Próximo plazo</h3>
-            <p className="grande">{plazo.dias === 0 ? 'Hoy' : `${plazo.dias} días`}</p>
-            <p className="nota">{plazo.t}T {plazo.anio}, hasta el {fechaCorta(plazo.fecha)}{qPlazo && !qPlazo.presentado ? `: 303 ${qPlazo.m303 < 0 ? `${eur(-qPlazo.m303)} a compensar` : eur(qPlazo.m303)} y 130 ${eur(qPlazo.m130)}` : ''}</p>
-          </div>
-          {r.pendiente > 0 && (
-            <Link href="/facturas?estado=pendientes" className="tarjeta enlace-tarjeta">
-              <h3>Por cobrar</h3>
-              <p className="grande">{eur(r.pendiente)}</p>
-              <p className="nota">{facturas.filter((f) => !f.cobrada && f.fecha.startsWith(`${anio}-`)).length} facturas pendientes ›</p>
-            </Link>
-          )}
-        </div>
-      )}
-
-
-      {limite > 0 && (
-        <div className="tarjeta bloque">
-          <h3>Tarifa plana · rendimiento neto {anio}</h3>
-          <p className="grande">{eur(rendimiento)} <small className="nota">de {eur(limite)}</small></p>
-          <div className="barra-limite"><span className={rendimiento > limite ? 'pasado' : rendimiento > limite * 0.8 ? 'cerca' : ''} style={{ width: `${Math.min(100, Math.max(0, (rendimiento / limite) * 100))}%` }} /></div>
-          <p className="nota">{rendimiento > limite ? `Te pasas en ${eur(rendimiento - limite)}.` : `Te quedan ${eur(limite - rendimiento)} de margen.`} Solo cuenta facturas menos gastos de la app; resta tu cuota de autónomos y otros gastos que no tengas aquí.</p>
-        </div>
-      )}
-
-      {esteAnio && (
-        <>
-          <div className="tarjeta bloque">
-            <h3>Si sigues a este ritmo, en {anio}…</h3>
-            <div className="dos-valores">
-              <div><small>Facturarás</small><p className="grande">{eur(prevFact)}</p></div>
-              <div><small>Ganarás tras gastos</small><p className="grande">{eur(prevRend)}</p></div>
+        <section className="grupo">
+          <h2 className="grupo-t">Este trimestre</h2>
+          <div className="grupo-c">
+            <div className="celda">
+              <span className="txt">Aparta para Hacienda<small>IVA {eur(Math.max(0, qHoy.m303))} + IRPF {eur(qHoy.m130)}</small></span>
+              <span className="v naranja">{eur(apartado)}</span>
             </div>
-            <p className="nota">Lo facturado hasta hoy ({eur(facturado)}) llevado a los 12 meses.{limite > 0 ? (prevRend > limite ? ` Te pasarías del límite de la tarifa plana en ${eur(prevRend - limite)}.` : ` Quedarías ${eur(limite - prevRend)} por debajo del límite de la tarifa plana.`) : ''}</p>
-          </div>
-        </>
-      )}
-
-      <section className="bloque tarjetas dos">
-        {r.porActividad.map((a) => (
-          <div key={a.actividad} className="tarjeta">
-            <h3>{ACTIVIDADES[a.actividad]}</h3>
-            <p className="grande">{eur(a.rendimiento)}</p>
-            <p className="nota">Facturado {eur(a.ingresos)} · Gastos {eur(a.gastos)}</p>
-          </div>
-        ))}
-      </section>
-
-      <section className="tarjeta bloque">
-        <h3>Evolución {anio}</h3>
-        <Grafica meses={meses} anio={anio} actual={esteAnio ? Number(h.slice(5, 7)) - 1 : undefined} />
-        <p className="nota">{cambio === null ? `Sin datos de ${anio - 1} para comparar.` : `${cambio >= 0 ? '▲' : '▼'} ${Math.abs(cambio).toFixed(0)} % facturado respecto al mismo periodo de ${anio - 1}.`}</p>
-      </section>
-
-      {top.length > 0 && (
-        <section className="tarjeta bloque">
-          <h3>Clientes que más facturan en {anio}</h3>
-          {top.map(([n, v]) => (
-            <div key={n} style={{ marginBottom: 10 }}>
-              <div className="top-cliente"><Avatar nombre={n} size={32} /><span>{n}</span><strong>{eur(v)}</strong></div>
-              <div className="barra-limite" style={{ marginTop: 4 }}><span style={{ width: `${(v / top[0][1]) * 100}%` }} /></div>
+            <div className="celda">
+              <span className="txt">Plazo del {plazo.t}T<small>Hasta el {fechaCorta(plazo.fecha)}{qPlazo && !qPlazo.presentado ? ` · 303 ${qPlazo.m303 < 0 ? `${eur(-qPlazo.m303)} a compensar` : eur(qPlazo.m303)}, 130 ${eur(qPlazo.m130)}` : ''}</small></span>
+              <span className="v">{plazo.dias === 0 ? 'Hoy' : plazo.dias === 1 ? 'Mañana' : `${plazo.dias} días`}</span>
             </div>
-          ))}
-          <p className="nota">{facturado > 0 ? `El primero supone el ${((top[0][1] / facturado) * 100).toFixed(0)} % de lo facturado.` : ''}</p>
+            {r.pendiente > 0 && (
+              <Link href="/facturas?estado=pendientes" className="celda ir">
+                <span className="txt">Por cobrar<small>{facturas.filter((f) => !f.cobrada && f.fecha.startsWith(`${anio}-`)).length} facturas</small></span>
+                <span className="v">{eur(r.pendiente)}</span>
+              </Link>
+            )}
+          </div>
         </section>
       )}
 
+      {limite > 0 && (
+        <section className="grupo">
+          <h2 className="grupo-t">Tarifa plana</h2>
+          <div className="grupo-c">
+            <div className="celda columna">
+              <div className="linea"><span>Rendimiento neto {anio}</span><span className="v">{eur(rendimiento)} <small>de {eur(limite)}</small></span></div>
+              <div className="barra-limite"><span className={rendimiento > limite ? 'pasado' : rendimiento > limite * 0.8 ? 'cerca' : ''} style={{ width: `${Math.min(100, Math.max(0, (rendimiento / limite) * 100))}%` }} /></div>
+            </div>
+          </div>
+          <p className="grupo-pie">{rendimiento > limite ? `Te pasas en ${eur(rendimiento - limite)}.` : `Te quedan ${eur(limite - rendimiento)} de margen.`} Solo cuenta facturas menos gastos de la app; resta tu cuota de autónomos y otros gastos que no tengas aquí.</p>
+        </section>
+      )}
+
+      {esteAnio && facturas.length > 0 && (
+        <section className="grupo">
+          <h2 className="grupo-t">Si sigues a este ritmo</h2>
+          <div className="grupo-c">
+            <div className="celda"><span className="txt">Facturarás en {anio}</span><span className="v">{eur(prevFact)}</span></div>
+            <div className="celda"><span className="txt">Ganarás tras gastos</span><span className="v">{eur(prevRend)}</span></div>
+          </div>
+          <p className="grupo-pie">Lo facturado hasta hoy ({eur(facturado)}) llevado a 12 meses.{limite > 0 ? (prevRend > limite ? ` Te pasarías del límite de la tarifa plana en ${eur(prevRend - limite)}.` : ` Quedarías ${eur(limite - prevRend)} por debajo del límite de la tarifa plana.`) : ''}</p>
+        </section>
+      )}
+
+      <section className="grupo">
+        <h2 className="grupo-t">Por actividad</h2>
+        <div className="grupo-c">
+          {r.porActividad.map((a) => (
+            <div key={a.actividad} className="celda">
+              <span className="txt">{ACTIVIDADES[a.actividad]}<small>Facturado {eur(a.ingresos)}, gastos {eur(a.gastos)}</small></span>
+              <span className="v">{eur(a.rendimiento)}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="grupo">
+        <h2 className="grupo-t">Mes a mes</h2>
+        <div className="grupo-c relleno">
+          <Grafica meses={meses} anio={anio} actual={esteAnio ? Number(h.slice(5, 7)) - 1 : undefined} />
+        </div>
+        <p className="grupo-pie">{cambio === null ? `Sin datos de ${anio - 1} para comparar.` : `${cambio >= 0 ? 'Has facturado un' : 'Has facturado un'} ${Math.abs(cambio).toFixed(0)} % ${cambio >= 0 ? 'más' : 'menos'} que en el mismo periodo de ${anio - 1}.`}</p>
+      </section>
+
+      {top.length > 0 && (
+        <section className="grupo">
+          <h2 className="grupo-t">Mejores clientes</h2>
+          <div className="grupo-c">
+            {top.map(([n, v]) => (
+              <div key={n} className="celda"><span className="txt">{n}</span><span className="v">{eur(v)}</span></div>
+            ))}
+          </div>
+          {facturado > 0 && <p className="grupo-pie">El primero supone el {((top[0][1] / facturado) * 100).toFixed(0)} % de lo facturado en {anio}.</p>}
+        </section>
+      )}
+
+      <section className="grupo">
+        <h2 className="grupo-t">Descargas</h2>
+        <div className="grupo-c">
+          <a href={exportar('facturas')} className="celda ir"><span className="txt">Facturas de {anio} en Excel</span></a>
+          <a href={exportar('gastos')} className="celda ir"><span className="txt">Gastos de {anio} en Excel</span></a>
+          <a href="/api/avisos" className="celda ir"><span className="txt">Plazos de Hacienda en tu calendario<small>Aviso 7 días y 1 día antes</small></span></a>
+        </div>
+      </section>
+
       {!esteAnio && r.pendiente > 0 && <p className="pendiente">Pendiente de cobro: <strong>{eur(r.pendiente)}</strong></p>}
 
-      <p className="descargas">Avisos de los modelos: <a href="/api/avisos">añadir al calendario</a> (7 días y 1 día antes de cada plazo)</p>
-      <p className="descargas">Todo {anio} en Excel: <a href={exportar('facturas')}>facturas</a> · <a href={exportar('gastos')}>gastos</a></p>
 
       <section className="bloque">
-        <p className="rotulo">Hacienda por trimestre (orientativo, confírmalo con tu gestor). En cada trimestre elige si el 130 lo pagaste o no: lo que no pagaste se suma al siguiente.</p>
+        <h2 className="grupo-t">Hacienda por trimestre</h2>
+        <p className="grupo-pie arriba">Orientativo; confírmalo con tu gestor. Marca en cada trimestre si pagaste el 130: lo que no pagaste se suma al siguiente.</p>
         <div className="tarjetas">
           {r.trimestres.map((q) => (
             <div key={q.t} className="tarjeta trimestre">

@@ -7,7 +7,6 @@ import SinBD from '@/components/SinBD';
 import FormGasto from '@/components/FormGasto';
 import Cuotas from '@/components/Cuotas';
 import Link from 'next/link';
-import Avatar from '@/components/Avatar';
 import { puede } from '@/lib/permisos';
 
 export const dynamic = 'force-dynamic';
@@ -26,10 +25,10 @@ export default async function Gastos() {
         <h1 className="titulo">Gastos</h1>
       </header>
       {delAnio.length > 0 && (
-        <div className="cifras-fila">
-          <div><small>Gastado este año</small><strong>{eur(delAnio.reduce((s, g) => s + importes(g).total, 0))}</strong></div>
-          <div><small>IVA que recuperas</small><strong>{eur(delAnio.reduce((s, g) => s + importes(g).iva, 0))}</strong></div>
-        </div>
+        <p className="resumen-linea">
+          <span>Este año <strong>{eur(delAnio.reduce((s, g) => s + importes(g).total, 0))}</strong></span>
+          <span>IVA que recuperas <strong>{eur(delAnio.reduce((s, g) => s + importes(g).iva, 0))}</strong></span>
+        </p>
       )}
       {puede(u, 'gastar') && <>
         <FormGasto hoy={h} />
@@ -57,7 +56,6 @@ export default async function Gastos() {
           {lista.map((g) => (
             <li key={g.id}>
               <Link href={`/gastos/${encodeURIComponent(g.id)}`} className="fila">
-                <Avatar nombre={g.concepto} />
                 <span className="txt">
                   <strong>{g.concepto}</strong>
                   <small>{fechaCorta(g.fecha)}{Object.keys(ACTIVIDADES).length > 1 ? ` · ${ACTIVIDADES[g.actividad]}` : ''}{importes(g).iva ? ` · IVA ${eur(importes(g).iva)}` : ''}</small>
@@ -67,7 +65,7 @@ export default async function Gastos() {
             </li>
           ))}
         </ul>
-      ) : <div className="vacio grande-vacio"><p>Aún no hay gastos</p><p>Apunta arriba lo que pagas por tu actividad: el IVA se resta del 303 y el gasto baja tu IRPF.</p></div>}
+      ) : <div className="vacio"><p>Aún no hay gastos</p><p>Apunta arriba lo que pagas por tu actividad: el IVA se resta del 303 y el gasto baja tu IRPF.</p></div>}
     </main>
   );
 }

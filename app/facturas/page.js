@@ -4,7 +4,6 @@ import { leer } from '@/lib/redis';
 import { ACTIVIDADES, importes, numeroFactura, vencida } from '@/lib/calculos';
 import { eur, hoy } from '@/lib/formato';
 import SinBD from '@/components/SinBD';
-import Avatar from '@/components/Avatar';
 import { puede } from '@/lib/permisos';
 
 export const dynamic = 'force-dynamic';
@@ -46,14 +45,13 @@ export default async function Facturas({ searchParams }) {
       </header>
 
       {todas.length > 0 && (
-        <div className="cifras-fila">
-          <div><small>Por cobrar</small><strong>{eur(porCobrar)}</strong></div>
-          <div className={vencidas.length ? 'alerta' : ''}><small>Vencidas</small><strong>{vencidas.length}</strong></div>
-          <div><small>Este año</small><strong>{todas.filter((f) => f.fecha.startsWith(h.slice(0, 4))).length}</strong></div>
-        </div>
+        <p className="resumen-linea">
+          <span>Por cobrar <strong>{eur(porCobrar)}</strong></span>
+          {vencidas.length > 0 && <span className="rojo">{vencidas.length === 1 ? '1 vencida' : `${vencidas.length} vencidas`}</span>}
+        </p>
       )}
 
-      <nav className="chips">
+      <nav className="segmentado">
         <Link href={url({ a: null })} className={!ACTIVIDADES[a] ? 'activo' : ''}>Todas</Link>
         {Object.entries(ACTIVIDADES).map(([id, n]) => <Link key={id} href={url({ a: id })} className={a === id ? 'activo' : ''}>{n}</Link>)}
         <Link href={url({ estado: estado === 'pendientes' ? null : 'pendientes' })} className={estado === 'pendientes' ? 'activo' : ''}>Sin cobrar</Link>
@@ -71,14 +69,13 @@ export default async function Facturas({ searchParams }) {
                 return (
                   <li key={f.id}>
                     <Link href={`/facturas/${f.id}`} className="fila">
-                      <Avatar nombre={f.cliente.nombre} />
                       <span className="txt">
                         <strong>{f.cliente.nombre}</strong>
                         <small>{numeroFactura(f)} · {diaMes(f.fecha)}{!a && Object.keys(ACTIVIDADES).length > 1 ? ` · ${ACTIVIDADES[f.actividad]}` : ''}</small>
                       </span>
                       <span className="imp-col">
                         <span className="imp">{eur(importes(f).total)}</span>
-                        <span className={`pastilla p-${e}`}>{e === 'cobrada' ? 'Cobrada' : e === 'vencida' ? 'Vencida' : 'Pendiente'}</span>
+                        <span className={`estado-txt e-${e}`}>{e === 'cobrada' ? 'Cobrada' : e === 'vencida' ? 'Vencida' : 'Pendiente'}</span>
                       </span>
                     </Link>
                   </li>
@@ -90,7 +87,7 @@ export default async function Facturas({ searchParams }) {
       })}
 
       {!lista.length && (
-        <div className="vacio grande-vacio">
+        <div className="vacio">
           {todas.length ? <><p>Nada con este filtro</p><p>Prueba con otra actividad o quita «Sin cobrar».</p></> : <>
             <p>Aún no has hecho ninguna factura</p>
             <p>Se numeran solas y puedes descargarlas en PDF con tu logo.</p>

@@ -17,8 +17,8 @@ export const metadata = {
 export const viewport = {
   width: 'device-width', initialScale: 1, viewportFit: 'cover',
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#EDF0F5' },
-    { media: '(prefers-color-scheme: dark)', color: '#121A2E' },
+    { media: '(prefers-color-scheme: light)', color: '#F2F2F7' },
+    { media: '(prefers-color-scheme: dark)', color: '#000000' },
   ],
 };
 
@@ -30,9 +30,6 @@ export default async function RootLayout({ children }) {
   return (
     <html lang="es">
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400..900&display=swap" rel="stylesheet" />
       </head>
       <body style={{ '--acento': color }} data-marca={propio ? 'propia' : 'base'}>
         {children}
