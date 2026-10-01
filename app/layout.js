@@ -10,8 +10,8 @@ import { permisosDe } from '@/lib/permisos';
 import Bloqueo from '@/components/Bloqueo';
 
 export const metadata = {
-  title: 'Cuentas',
-  appleWebApp: { capable: true, title: 'Cuentas', statusBarStyle: 'default' },
+  title: 'Netto',
+  appleWebApp: { capable: true, title: 'Netto', statusBarStyle: 'default' },
 };
 
 export const viewport = {

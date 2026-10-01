@@ -19,12 +19,12 @@ export async function GET() {
       `DTSTART;VALUE=DATE:${inicio}`,
       'RRULE:FREQ=YEARLY',
       `SUMMARY:Último día modelos 303 y 130 (${t})${extra}`,
-      'DESCRIPTION:Revisa los importes en la app Cuentas y márcalo como presentado.',
+      'DESCRIPTION:Revisa los importes en la app Netto y márcalo como presentado.',
       'BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:Modelos 303 y 130 en 7 días', 'TRIGGER:-P6DT15H', 'END:VALARM',
       'BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:Mañana acaba el plazo del 303 y 130', 'TRIGGER:-PT15H', 'END:VALARM',
       'END:VEVENT',
     ].join('\r\n');
   });
-  const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Cuentas//ES', 'CALSCALE:GREGORIAN', ...eventos, 'END:VCALENDAR'].join('\r\n');
+  const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Netto//ES', 'CALSCALE:GREGORIAN', ...eventos, 'END:VCALENDAR'].join('\r\n');
   return new Response(ics, { headers: { 'Content-Type': 'text/calendar; charset=utf-8', 'Content-Disposition': 'attachment; filename="plazos-hacienda.ics"' } });
 }

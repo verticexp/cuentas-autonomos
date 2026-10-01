@@ -13,7 +13,7 @@ export default async function Login({ searchParams }) {
   return (
     <main className="login">
       <form method="post" action={primera ? '/api/registro' : '/api/login'}>
-        <h1>Cuentas</h1>
+        <h1>Netto</h1>
         {primera && <p className="nota">Crea la cuenta de administrador.</p>}
         {error && <p className="error">{ERRORES[error] || error}</p>}
         {!primera && <EntrarFaceId />}

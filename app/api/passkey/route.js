@@ -40,7 +40,7 @@ export async function POST(req) {
     const mias = (await redis.hgetall(`passkeys:${u.id}`)) || {};
     if (b.accion === 'registro-opciones') {
       const opciones = await generateRegistrationOptions({
-        rpName: 'Cuentas', rpID, userName: u.email, userDisplayName: u.nombre, userID: new TextEncoder().encode(u.id),
+        rpName: 'Netto', rpID, userName: u.email, userDisplayName: u.nombre, userID: new TextEncoder().encode(u.id),
         attestationType: 'none',
         excludeCredentials: Object.entries(mias).map(([id, k]) => ({ id, transports: k.transports })),
         authenticatorSelection: { residentKey: 'required', userVerification: 'required' },
