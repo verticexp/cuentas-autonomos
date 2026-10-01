@@ -69,6 +69,10 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
       </fieldset>
 
       <label>Concepto<input className="campo" placeholder="Bolos DJ mayo" value={f.concepto} onChange={(e) => poner('concepto', e.target.value)} /></label>
+      <div className="dos-col">
+        <label>Fecha del evento (opcional)<input className="campo" type="date" value={f.evento?.fecha || ''} onChange={(e) => poner('evento', { ...f.evento, fecha: e.target.value })} /></label>
+        <label>Lugar (opcional)<input className="campo" placeholder="Hotel Arts" value={f.evento?.lugar || ''} onChange={(e) => poner('evento', { ...f.evento, lugar: e.target.value })} /></label>
+      </div>
       <label>Base (sin IVA)<input className="campo" inputMode="decimal" placeholder="0,00" value={f.base} onChange={(e) => poner('base', e.target.value)} required /></label>
 
       <div className="dos-col">

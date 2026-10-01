@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import { requerir, usuarioActual } from '@/lib/auth';
 import { leerUno } from '@/lib/redis';
 import { importes, numeroFactura } from '@/lib/calculos';
-import { eur, fechaCorta, pct } from '@/lib/formato';
+import { eur, fechaCorta, pct, textoEvento } from '@/lib/formato';
 import Volver from '@/components/Volver';
 import VistaA4 from '@/components/VistaA4';
 import DescargarPdf from '@/components/DescargarPdf';
@@ -51,7 +51,7 @@ export default async function PDF({ params }) {
 
         <table className="f-tabla">
           <thead><tr><th>Detalles</th><th>IMPORTE</th></tr></thead>
-          <tbody><tr><td>{f.concepto}</td><td>{eur(t.base)}</td></tr></tbody>
+          <tbody><tr><td>{f.concepto}{textoEvento(f) && <><br />{textoEvento(f)}</>}</td><td>{eur(t.base)}</td></tr></tbody>
         </table>
 
         <table className="f-resumen">
