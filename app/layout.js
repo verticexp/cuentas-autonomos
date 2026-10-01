@@ -8,6 +8,7 @@ import { usuarioActual } from '@/lib/auth';
 import { COLOR_BASE } from '@/lib/marca';
 import { permisosDe } from '@/lib/permisos';
 import Bloqueo from '@/components/Bloqueo';
+import Llegada from '@/components/Llegada';
 
 export const metadata = {
   title: 'Netto',
@@ -33,7 +34,7 @@ export default async function RootLayout({ children }) {
       </head>
       <body style={{ '--acento': color }} data-marca={propio ? 'propia' : 'base'}>
         {children}
-        <Suspense><TabBar permisos={permisosDe(u)} /></Suspense>
+        <Suspense><TabBar permisos={permisosDe(u)} /><Llegada /></Suspense>
         {u && <Bloqueo usuario={u.id} />}
       </body>
     </html>

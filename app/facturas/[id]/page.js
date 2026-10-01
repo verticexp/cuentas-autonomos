@@ -9,7 +9,6 @@ import Volver from '@/components/Volver';
 import { Borrar, Cobrada } from '@/components/Acciones';
 import { puede } from '@/lib/permisos';
 import { actividadesDe, fiscalDe, nombresActividad, usa130, usa303 } from '@/lib/empresa';
-import Llegada from '@/components/Llegada';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,7 +25,6 @@ export default async function Factura({ params }) {
   return (
     <main className="pagina">
       <Volver href="/facturas">Facturas</Volver>
-      <Llegada />
       <section className="factura-hero" style={{ viewTransitionName: 'factura-tarjeta' }}>
         <p className="fh-num">Factura {numeroFactura(f)}{actividades.length > 1 ? ` · ${nombresActividad(actividades)[f.actividad] || ''}` : ''}</p>
         <h1 className="fh-cliente" style={{ viewTransitionName: 'factura-cliente' }}>{f.cliente.nombre}</h1>

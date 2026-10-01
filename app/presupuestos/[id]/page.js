@@ -26,10 +26,10 @@ export default async function Presupuesto({ params }) {
   return (
     <main className="pagina">
       <Volver href="/presupuestos">Presupuestos</Volver>
-      <section className="factura-hero">
+      <section className="factura-hero" style={{ viewTransitionName: 'factura-tarjeta' }}>
         <p className="fh-num">Presupuesto {numeroPresupuesto(p)}</p>
-        <h1 className="fh-cliente">{p.cliente.nombre}</h1>
-        <p className="fh-total">{eur(i.total)}</p>
+        <h1 className="fh-cliente" style={{ viewTransitionName: 'factura-cliente' }}>{p.cliente.nombre}</h1>
+        <p className="fh-total" style={{ viewTransitionName: 'factura-total' }}>{eur(i.total)}</p>
         <dl className="fh-desglose">
           <div><dt>Base</dt><dd>{eur(i.base)}</dd></div>
           <div><dt>IVA {p.ivaPct} %</dt><dd>{eur(i.iva)}</dd></div>

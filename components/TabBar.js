@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { alPulsar, navegar } from '@/lib/transicion';
 
 const TABS = [
   { href: '/', permiso: 'resumen', nombre: 'Resumen', icono: <path d="M5 20V11M10 20V5M15 20v-7M20 20V9" /> },
@@ -40,7 +41,7 @@ export default function TabBar({ permisos = [] }) {
 
   if (path === '/login' || path.startsWith('/invitacion') || path.startsWith('/p/') || path.endsWith('/pdf')) return null;
 
-  const ir = (h) => { if (h !== path) { setActivo(h); router.push(h); } };
+  const ir = (h) => { if (h !== path) { setActivo(h); navegar(router, h, 'fundido'); } };
   const tabEn = (x, y) => document.elementFromPoint(x, y)?.closest('[data-href]')?.dataset.href ?? null;
   const marcado = dedo ?? activo;
   // En presupuestos, el + crea un presupuesto; en el resto, una factura.
@@ -75,7 +76,7 @@ export default function TabBar({ permisos = [] }) {
           </Link>
         ))}
       </nav>
-      {permisos.includes('facturar') && <Link href={nuevo} className={`mas${path === nuevo ? ' abierta' : ''}`} aria-label={path.startsWith('/presupuestos') ? 'Nuevo presupuesto' : 'Nueva factura'} onClick={() => vibrar()}>
+      {permisos.includes('facturar') && <Link href={nuevo} prefetch className={`mas${path === nuevo ? ' abierta' : ''}`} aria-label={path.startsWith('/presupuestos') ? 'Nuevo presupuesto' : 'Nueva factura'} onClick={(e) => { vibrar(); if (path !== nuevo) alPulsar(router, nuevo, 'subir')(e); }}>
         <svg viewBox="0 0 24 24" aria-hidden><path d="M12 5v14M5 12h14" /></svg>
       </Link>}
     </div>

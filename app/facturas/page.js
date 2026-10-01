@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Ir from '@/components/Ir';
 import { requerir } from '@/lib/auth';
 import { leer } from '@/lib/redis';
 import { importes, numeroFactura, r2, vencida } from '@/lib/calculos';
@@ -45,12 +46,12 @@ export default async function Facturas({ searchParams }) {
     <main className="pagina">
       <header className="cabecera">
         <h1 className="titulo">Facturas</h1>
-        {puede(u, 'facturar') && <Link href="/facturas/nueva" className="boton pequeno">Nueva factura</Link>}
+        {puede(u, 'facturar') && <Ir href="/facturas/nueva" tipo="subir" className="boton pequeno">Nueva factura</Ir>}
       </header>
 
-      <nav className="segmentado">
-        <Link href="/facturas" className="activo">Facturas</Link>
-        <Link href="/presupuestos">Presupuestos</Link>
+      <nav className="segmentado vt">
+        <Ir href="/facturas" tipo="fundido" className="activo">Facturas</Ir>
+        <Ir href="/presupuestos" tipo="fundido">Presupuestos</Ir>
       </nav>
 
       {todas.length > 0 && (
@@ -100,7 +101,7 @@ export default async function Facturas({ searchParams }) {
           {todas.length ? <><p>Nada con este filtro</p><p>Prueba con otra actividad o quita «Sin cobrar».</p></> : <>
             <p>Aún no has hecho ninguna factura</p>
             <p>Se numeran solas y puedes descargarlas en PDF con tu logo.</p>
-            {puede(u, 'facturar') && <Link href="/facturas/nueva" className="boton">Crear la primera</Link>}
+            {puede(u, 'facturar') && <Ir href="/facturas/nueva" tipo="subir" className="boton">Crear la primera</Ir>}
           </>}
         </div>
       )}

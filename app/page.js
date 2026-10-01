@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Ir from '@/components/Ir';
 import { requerir } from '@/lib/auth';
 import { leer } from '@/lib/redis';
 import { casillas303, importes, r2 } from '@/lib/calculos';
@@ -32,9 +33,9 @@ export default async function Resumen({ searchParams }) {
       <header className="cabecera">
         <h1 className="titulo">Resumen</h1>
         <nav className="anios">
-          <Link href={`/?anio=${anio - 1}`} aria-label="Año anterior">‹</Link>
+          <Ir href={`/?anio=${anio - 1}`} tipo="atras" aria-label="Año anterior">‹</Ir>
           <strong>{anio}</strong>
-          {anio < anioActual ? <Link href={`/?anio=${anio + 1}`} aria-label="Año siguiente">›</Link> : <span className="off">›</span>}
+          {anio < anioActual ? <Ir href={`/?anio=${anio + 1}`} tipo="adelante" aria-label="Año siguiente">›</Ir> : <span className="off">›</span>}
         </nav>
       </header>
 
@@ -42,7 +43,7 @@ export default async function Resumen({ searchParams }) {
         <div className="vacio">
           <p>Crea tu primera factura</p>
           <p>Aquí verás cuánto de lo que facturas es tuyo y cuánto tienes que apartar para Hacienda.</p>
-          {puede(u, 'facturar') && <Link href="/facturas/nueva" className="boton">Nueva factura</Link>}
+          {puede(u, 'facturar') && <Ir href="/facturas/nueva" tipo="subir" className="boton">Nueva factura</Ir>}
         </div>
       )}
 
@@ -75,11 +76,11 @@ export default async function Resumen({ searchParams }) {
           )}
 
           {porCobrar > 0 && (
-            <Link href="/facturas?estado=pendientes" className="hcard ir" style={{ '--c': '#C69500' }}>
+            <Ir href="/facturas?estado=pendientes" className="hcard ir" style={{ '--c': '#C69500' }}>
               <h2 className="hcard-t"><Ico n="cobrar" solo />Por cobrar<span>{sinCobrar.length === 1 ? '1 factura' : `${sinCobrar.length} facturas`}</span></h2>
               <p className="hcard-v">{eurSin(porCobrar)}<small>€</small></p>
               {vencidas.length > 0 && <p className="hcard-s rojo">{vencidas.length === 1 ? '1 vencida' : `${vencidas.length} vencidas`}: {vencidas.map((f) => f.cliente.nombre).slice(0, 3).join(', ')}</p>}
-            </Link>
+            </Ir>
           )}
         </div>
       )}

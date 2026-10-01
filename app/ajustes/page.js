@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Ir from '@/components/Ir';
 import { requerir } from '@/lib/auth';
 import { redis } from '@/lib/redis';
 import { perfilDe, puede } from '@/lib/permisos';
@@ -10,10 +10,10 @@ import { modoDe } from '@/lib/verifactu';
 export const dynamic = 'force-dynamic';
 
 const Celda = ({ href, ico, titulo, detalle, aviso }) => (
-  <Link href={href} className="celda ir">
+  <Ir href={href} className="celda ir">
     <Ico n={ico} />
     <span className="txt">{titulo}{detalle && <small className={aviso ? 'aviso' : ''}>{detalle}</small>}</span>
-  </Link>
+  </Ir>
 );
 
 // Ajustes como en el iPhone: una lista corta y cada cosa en su pantalla.

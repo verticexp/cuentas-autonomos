@@ -1,5 +1,5 @@
-import Link from 'next/link';
+import Ir from './Ir';
 
 export default function Volver({ href, children = 'Atrás' }) {
-  return <Link href={href} className="volver">‹ {children}</Link>;
+  return <Ir href={href} tipo="atras" className="volver">‹ {children}</Ir>;
 }

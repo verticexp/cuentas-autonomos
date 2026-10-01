@@ -329,3 +329,26 @@ a.fila:active { transform: scale(0.985); }
 /* En las pantallas de Ajustes el título ya dice qué es: fuera el de la primera tarjeta */
 .pagina > .titulo + .tarjeta > h3, .pagina > .titulo + .tarjetas > .tarjeta:first-child > h3 { display: none; }
 .pagina > .titulo + .tarjeta > h3 + .nota { margin-top: 0; }
+
+/* Transiciones entre pantallas (lib/transicion.js). La barra de pestañas se queda quieta. */
+.tabbar { view-transition-name: tabbar; }
+::view-transition-group(tabbar) { animation: none; z-index: 10; }
+.segmentado.vt a.activo { view-transition-name: segmento; }
+::view-transition-group(segmento) { animation-duration: 0.28s; animation-timing-function: cubic-bezier(0.3, 0.9, 0.3, 1); }
+html[data-vt]::view-transition-group(root) { animation-duration: 0.34s; }
+html[data-vt=adelante]::view-transition-old(root) { animation: 0.34s cubic-bezier(0.3, 0.9, 0.3, 1) both vt-a-izq; }
+html[data-vt=adelante]::view-transition-new(root) { animation: 0.34s cubic-bezier(0.3, 0.9, 0.3, 1) both vt-desde-der; }
+html[data-vt=atras]::view-transition-old(root) { animation: 0.3s cubic-bezier(0.3, 0.9, 0.3, 1) both vt-a-der; z-index: 1; }
+html[data-vt=atras]::view-transition-new(root) { animation: 0.3s cubic-bezier(0.3, 0.9, 0.3, 1) both vt-desde-izq; }
+html[data-vt=subir]::view-transition-old(root) { animation: 0.36s ease both vt-al-fondo; }
+html[data-vt=subir]::view-transition-new(root) { animation: 0.36s cubic-bezier(0.3, 0.9, 0.3, 1) both vt-desde-abajo; }
+html[data-vt=fundido]::view-transition-old(root) { animation: 0.14s ease both vt-fuera; }
+html[data-vt=fundido]::view-transition-new(root) { animation: 0.2s ease both vt-dentro; }
+@keyframes vt-a-izq { to { transform: translateX(-28%); opacity: 0.5; } }
+@keyframes vt-desde-der { from { transform: translateX(100%); box-shadow: -8px 0 24px rgba(0, 0, 0, 0.08); } }
+@keyframes vt-a-der { to { transform: translateX(100%); box-shadow: -8px 0 24px rgba(0, 0, 0, 0.08); } }
+@keyframes vt-desde-izq { from { transform: translateX(-28%); opacity: 0.5; } }
+@keyframes vt-al-fondo { to { transform: scale(0.94); opacity: 0.4; } }
+@keyframes vt-desde-abajo { from { transform: translateY(100%); } }
+@keyframes vt-fuera { to { opacity: 0; } }
+@keyframes vt-dentro { from { opacity: 0; transform: translateY(6px); } }
