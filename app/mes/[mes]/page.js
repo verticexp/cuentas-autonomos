@@ -3,7 +3,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requerir } from '@/lib/auth';
 import { leer } from '@/lib/redis';
-import { ACTIVIDADES, importes, numeroFactura, r2 } from '@/lib/calculos';
+import { importes, numeroFactura, r2 } from '@/lib/calculos';
+import { actividadesDe, nombresActividad } from '@/lib/empresa';
 import { eur, fechaCorta } from '@/lib/formato';
 import Volver from '@/components/Volver';
 
@@ -12,6 +13,7 @@ const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', '
 
 export default async function Mes({ params }) {
   const u = await requerir('resumen');
+  const ACTIVIDADES = nombresActividad(actividadesDe(u));
   const { mes } = await params;
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) notFound();
   const [facturas, gastos] = await Promise.all([leer(u, 'facturas'), leer(u, 'gastos')]);

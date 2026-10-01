@@ -7,6 +7,7 @@ import Controlat from '@/components/Controlat';
 import Marca from '@/components/Marca';
 import Avatar from '@/components/Avatar';
 import FaceId from '@/components/FaceId';
+import { actividadesDe, fiscalDe } from '@/lib/empresa';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,6 +24,9 @@ export default async function Page() {
       </div>
       {(puede(u, 'usuarios') || u.admin) && (
         <section className="grupo"><div className="grupo-c"><Link href="/usuarios" className="celda ir"><span className="txt">Usuarios y permisos</span></Link></div></section>
+      )}
+      {empresa && (
+        <section className="grupo"><div className="grupo-c"><Link href="/bienvenida?editar=1" className="celda ir"><span className="txt">Actividades y modelos<small>{actividadesDe(u).map((x) => x.nombre).join(', ')} · {fiscalDe(u).tipo === 'sociedad' ? 'Sociedad' : 'Autónomo'}</small></span></Link></div></section>
       )}
       <FaceId lista={llaves} />
       {empresa && <Marca marca={u.marca} nombre={u.emisor?.nombre} />}

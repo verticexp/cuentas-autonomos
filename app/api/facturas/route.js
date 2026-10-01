@@ -2,11 +2,12 @@ import { leer, guardar, borrar, leerUno } from '@/lib/redis';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { subirFactura } from '@/lib/drive';
 import { enviarNomina } from '@/lib/controlat';
-import { ACTIVIDADES, leerImporte, numeroFactura, r2, serieDe, siguienteNumero } from '@/lib/calculos';
+import { leerImporte, numeroFactura, r2, siguienteNumero } from '@/lib/calculos';
+import { actividadesDe, actividadValida, fiscalDe, serieDeActividad } from '@/lib/empresa';
 
 export const dynamic = 'force-dynamic';
 
-function limpiar(b) {
+function limpiar(b, actividades, sociedad = false) {
   const base = r2(leerImporte(b.base));
   if (!base) return { error: 'Importe no válido' };
   if (!/^\d{4}-\d{2}-\d{2}$/.test(b.fecha || '')) return { error: 'Fecha no válida' };
@@ -15,12 +16,13 @@ function limpiar(b) {
   const txt = (v, n = 120) => String(v || '').trim().slice(0, n);
   return {
     fecha: b.fecha,
-    actividad: ACTIVIDADES[b.actividad] ? b.actividad : 'dj',
+    actividad: actividadValida(actividades, b.actividad),
     cliente: { nombre: txt(c.nombre), nif: txt(c.nif, 20), direccion: txt(c.direccion), ciudad: txt(c.ciudad) },
     concepto: txt(b.concepto, 200),
     base,
     ivaPct: Math.min(100, Math.max(0, Number(b.ivaPct) || 0)),
-    irpfPct: Math.min(100, Math.max(0, Number(b.irpfPct) || 0)),
+    // A una sociedad no se le practica retención de IRPF.
+    irpfPct: sociedad ? 0 : Math.min(100, Math.max(0, Number(b.irpfPct) || 0)),
     nota: txt(b.nota, 300),
     cobrada: Boolean(b.cobrada),
   };
@@ -32,11 +34,11 @@ export async function POST(req) {
   const { u, res } = await usuarioApi({ permiso: 'facturar' });
   if (res) return res;
   const b = await cuerpo(req);
-  const datos = limpiar(b);
+  const datos = limpiar(b, actividadesDe(u), fiscalDe(u).tipo === 'sociedad');
   if (datos.error) return error(datos.error);
   const original = b.rectifica && (await leerUno(u, 'facturas', b.rectifica));
   if (b.rectifica && !original) return error('La factura a rectificar no existe');
-  const serie = original ? 'R' : serieDe(datos.actividad);
+  const serie = original ? 'R' : serieDeActividad(actividadesDe(u), datos.actividad);
   const anio = Number(datos.fecha.slice(0, 4));
   const numero = siguienteNumero(await leer(u, 'facturas'), anio, serie);
   const f = { id: `${serie}${anio}-${numero}`, numero, anio, ...datos };
@@ -61,7 +63,7 @@ export async function PATCH(req) {
     await subirFactura(u, f);
     return Response.json({ ok: true });
   }
-  const datos = limpiar(b);
+  const datos = limpiar(b, actividadesDe(u), fiscalDe(u).tipo === 'sociedad');
   if (datos.error) return error(datos.error);
   if (Number(datos.fecha.slice(0, 4)) !== antes.anio) return error(`La fecha debe ser de ${antes.anio}`);
   await guardar(u, 'facturas', { ...antes, ...datos });

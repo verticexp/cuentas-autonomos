@@ -5,6 +5,7 @@ import { hoy } from '@/lib/formato';
 import SinBD from '@/components/SinBD';
 import FormFactura from '@/components/FormFactura';
 import Volver from '@/components/Volver';
+import { actividadesDe } from '@/lib/empresa';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,12 +20,13 @@ export default async function Nueva({ searchParams }) {
   const original = facturas.find((f) => f.id === rectifica);
   const plantilla = !original && facturas.find((f) => f.id === duplica);
   const num = (serie) => numeroFactura({ numero: siguienteNumero(facturas, anio, serie), anio, serie });
-  const numeros = original ? { dj: num('R'), vertice: num('R') } : { dj: num(''), vertice: num('V') };
+  const actividades = actividadesDe(u);
+  const numeros = Object.fromEntries(actividades.map((a) => [a.id, num(original ? 'R' : a.serie)]));
   return (
     <main className="pagina">
       <Volver href={original || plantilla ? `/facturas/${(original || plantilla).id}` : '/facturas'} />
       <h1 className="titulo">{original ? 'Factura rectificativa' : plantilla ? 'Duplicar factura' : 'Nueva factura'}</h1>
-      <FormFactura clientes={clientes} hoy={h} rectifica={original} plantilla={plantilla || null} numeros={numeros} />
+      <FormFactura clientes={clientes} hoy={h} rectifica={original} plantilla={plantilla || null} numeros={numeros} actividades={actividades} />
     </main>
   );
 }

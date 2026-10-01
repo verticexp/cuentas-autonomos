@@ -3,12 +3,13 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
-import { ACTIVIDADES, importes, leerImporte, numeroFactura } from '@/lib/calculos';
+import { importes, leerImporte, numeroFactura } from '@/lib/calculos';
 import { eur } from '@/lib/formato';
 
-const POR_DEFECTO = { dj: { ivaPct: 21, irpfPct: 15 }, vertice: { ivaPct: 21, irpfPct: 0 } };
 
-export default function FormFactura({ factura, clientes, numeros, hoy, rectifica: orig, plantilla }) {
+export default function FormFactura({ factura, clientes, numeros, hoy, rectifica: orig, plantilla, actividades }) {
+  // IVA y retención de cada actividad, para rellenar la factura nueva.
+  const defecto = (id) => { const a = actividades.find((x) => x.id === id) || actividades[0]; return { ivaPct: a.ivaPct, irpfPct: a.irpfPct }; };
   const router = useRouter();
   const nueva = !factura;
   const [f, setF] = useState(() => factura
@@ -17,7 +18,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
       ? { actividad: orig.actividad, fecha: hoy, cliente: orig.cliente, concepto: `Anulación de la factura ${numeroFactura(orig)}`, base: String(-orig.base).replace('.', ','), ivaPct: orig.ivaPct, irpfPct: orig.irpfPct, nota: '', cobrada: false, rectifica: orig.id }
       : plantilla
         ? { actividad: plantilla.actividad, fecha: hoy, cliente: plantilla.cliente, concepto: plantilla.concepto, base: String(plantilla.base).replace('.', ','), ivaPct: plantilla.ivaPct, irpfPct: plantilla.irpfPct, nota: plantilla.nota || '', cobrada: false }
-      : { actividad: 'dj', fecha: hoy, cliente: { nombre: '', nif: '', direccion: '', ciudad: '' }, concepto: '', base: '', nota: '', cobrada: false, ...POR_DEFECTO.dj });
+      : { actividad: actividades[0].id, fecha: hoy, cliente: { nombre: '', nif: '', direccion: '', ciudad: '' }, concepto: '', base: '', nota: '', cobrada: false, ...defecto(actividades[0].id) });
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
 
@@ -29,7 +30,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
     const c = clientes.find((x) => x.id === id);
     poner('cliente', c ? { nombre: c.nombre, nif: c.nif, direccion: c.direccion, ciudad: c.ciudad } : { nombre: '', nif: '', direccion: '', ciudad: '' });
   };
-  const cambiarActividad = (a) => setF((x) => ({ ...x, actividad: a, ...(nueva ? POR_DEFECTO[a] : {}) }));
+  const cambiarActividad = (a) => setF((x) => ({ ...x, actividad: a, ...(nueva && !orig ? defecto(a) : {}) }));
 
   const base = leerImporte(f.base) || 0;
   const t = importes({ base, ivaPct: Number(f.ivaPct), irpfPct: Number(f.irpfPct) });
@@ -47,11 +48,11 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
   return (
     <form className="formulario" onSubmit={enviar}>
       <p className="rotulo">{nueva ? `Se numerará como ${numeros[f.actividad]}` : `Factura ${numeroFactura(f)}`}{orig ? ` · rectifica la ${numeroFactura(orig)} (pon el importe que corrige; en negativo si anula)` : ''}</p>
-      <div className="tipo dos">
-        {Object.entries(ACTIVIDADES).map(([id, nombre]) => (
+      {actividades.length > 1 && <div className={`tipo ${actividades.length === 2 ? 'dos' : 'varias'}`}>
+        {actividades.map(({ id, nombre }) => (
           <button type="button" key={id} className={f.actividad === id ? 'activo' : ''} onClick={() => cambiarActividad(id)}>{nombre}</button>
         ))}
-      </div>
+      </div>}
 
       <label>Fecha<input className="campo" type="date" value={f.fecha} onChange={(e) => poner('fecha', e.target.value)} required /></label>
 

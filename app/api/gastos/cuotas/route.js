@@ -1,4 +1,5 @@
 import { redis, clave } from '@/lib/redis';
+import { actividadesDe } from '@/lib/empresa';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { leerImporte, r2 } from '@/lib/calculos';
 
@@ -16,7 +17,7 @@ export async function POST(req) {
   for (let [y, m] = b.desde.split('-').map(Number); `${y}-${String(m).padStart(2, '0')}` <= hoy; m === 12 ? (y++, m = 1) : m++) {
     const mes = `${y}-${String(m).padStart(2, '0')}`;
     const ultimo = new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);
-    nuevos[`cuota-${mes}`] = { id: `cuota-${mes}`, fecha: ultimo, actividad: 'dj', concepto: `Cuota de autónomos ${mes}`, base: importe, ivaPct: 0 };
+    nuevos[`cuota-${mes}`] = { id: `cuota-${mes}`, fecha: ultimo, actividad: actividadesDe(u)[0].id, concepto: `Cuota de autónomos ${mes}`, base: importe, ivaPct: 0 };
   }
   if (!Object.keys(nuevos).length) return error('El mes de inicio es posterior al actual');
   await redis.hset(clave(u, 'gastos'), nuevos);

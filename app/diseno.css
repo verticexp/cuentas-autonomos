@@ -245,3 +245,67 @@ fieldset.solo-ver:disabled .campo { opacity: 1; color: var(--ink); -webkit-text-
 .ico-cuadro { flex: none; width: 29px; height: 29px; border-radius: 7px; display: grid; place-items: center; color: #fff; }
 .ico-cuadro svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .celda:has(.ico-cuadro) + .celda::before { left: 57px; }
+.modelo-num { flex: none; min-width: 40px; height: 29px; padding: 0 6px; border-radius: 7px; background: var(--relleno); display: grid; place-items: center; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.tipo.varias { display: flex; overflow-x: auto; }
+.tipo.varias button { flex: 1 0 auto; padding: 7px 12px; white-space: nowrap; }
+
+/* Cuestionario de bienvenida */
+.cuestionario { display: flex; flex-direction: column; gap: 14px; padding-bottom: 120px; }
+.bienvenida ~ .tabbar, body:has(.bienvenida) .tabbar { display: none; }
+.progreso { display: flex; gap: 6px; margin-top: 8px; }
+.progreso span { flex: 1; height: 4px; border-radius: 2px; background: var(--relleno); transition: background-color 0.3s ease; }
+.progreso span.hecho { background: var(--marca); }
+.hola { color: var(--muted); font-size: 15px; }
+.paso { display: flex; flex-direction: column; gap: 12px; animation: paso 0.32s cubic-bezier(0.2, 0.8, 0.2, 1); }
+@keyframes paso { from { opacity: 0; transform: translateX(24px); } }
+.paso .titulo { margin-bottom: 0; }
+.opciones { display: flex; flex-direction: column; background: var(--surface); border-radius: 12px; overflow: hidden; }
+.opcion { display: flex; align-items: center; gap: 12px; padding: 13px 16px; text-align: left; position: relative; border-radius: 0; color: var(--ink); }
+.opcion + .opcion::before { content: ''; position: absolute; top: 0; left: 16px; right: 0; height: 0.5px; background: var(--line); }
+.opcion > span { flex: 1; display: flex; flex-direction: column; }
+.opcion strong { font-weight: 400; font-size: 17px; }
+.opcion small { color: var(--muted); font-size: 13px; margin-top: 2px; }
+.opcion i { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--line); flex: none; }
+.opcion.activa i { border: 0; background: var(--marca); box-shadow: inset 0 0 0 6px var(--marca), inset 0 0 0 11px #fff; }
+.opcion:active { background: var(--relleno); transform: none; }
+.campos { display: flex; flex-direction: column; }
+.campos .campo { border-radius: 0; background: transparent; padding: 13px 16px; position: relative; border-bottom: 0.5px solid var(--line); }
+.campos .campo:last-child { border-bottom: 0; }
+.actividad-form { padding: 12px 16px 14px; display: flex; flex-direction: column; gap: 8px; }
+.actividad-form .campo { background: var(--relleno); }
+.fila-act { display: flex; gap: 10px; align-items: center; }
+.fila-act .campo { flex: 1; }
+.quitar { color: var(--out); font-size: 15px; padding: 6px; }
+.mini-t { font-size: 13px; color: var(--muted); margin-top: 4px; }
+.mini-t.fuera { margin: 2px 0 -4px 16px; }
+.sino input[type="checkbox"] { appearance: none; -webkit-appearance: none; width: 51px; height: 31px; border-radius: 16px; background: var(--relleno); position: relative; flex: none; transition: background-color 0.2s ease; cursor: pointer; }
+.sino input[type="checkbox"]::after { content: ''; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 3px 8px rgba(0,0,0,.15), 0 3px 1px rgba(0,0,0,.06); transition: transform 0.2s ease; }
+.sino input[type="checkbox"]:checked { background: #34C759; }
+.sino input[type="checkbox"]:checked::after { transform: translateX(20px); }
+.cuestionario-botones { position: fixed; left: 0; right: 0; bottom: 0; display: flex; justify-content: space-between; gap: 12px; padding: 12px 16px calc(env(safe-area-inset-bottom, 0px) + 12px); background: color-mix(in srgb, var(--paper) 88%, transparent); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); border-top: 0.5px solid var(--line); z-index: 9; }
+.cuestionario-botones .boton { flex: 1; max-width: 240px; text-decoration: none; }
+.cuestionario-botones .boton:disabled { opacity: 0.4; }
+@media (prefers-reduced-motion: reduce) { .paso { animation: none; } }
+
+/* Factura: cabecera que nace de la fila de la lista */
+.factura-hero { background: var(--surface); border-radius: 16px; padding: 16px 18px 14px; margin: 6px 0 16px; animation: hero 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); }
+@keyframes hero { from { opacity: 0; transform: translateY(14px) scale(0.98); } }
+html:active-view-transition .factura-hero { animation: none; }
+.fh-num { color: var(--muted); font-size: 13px; font-weight: 500; }
+.fh-cliente { font-size: 22px; font-weight: 600; line-height: 1.2; margin-top: 2px; width: fit-content; }
+.fh-total { font-family: ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; font-size: 40px; font-weight: 600; font-variant-numeric: tabular-nums; margin: 6px 0 10px; width: fit-content; }
+.fh-desglose { display: flex; gap: 18px; flex-wrap: wrap; padding: 10px 0; border-top: 0.5px solid var(--line); border-bottom: 0.5px solid var(--line); }
+.fh-desglose div { display: flex; flex-direction: column; }
+.fh-desglose dt { color: var(--muted); font-size: 12px; }
+.fh-desglose dd { margin: 0; font-size: 15px; font-variant-numeric: tabular-nums; }
+.fh-pie { display: flex; justify-content: space-between; gap: 10px; color: var(--muted); font-size: 13px; padding-top: 10px; }
+.fh-estado.e-vencida { color: var(--out); } .fh-estado.e-pendiente { color: var(--hacienda); } .fh-estado.e-cobrada { color: var(--in); }
+.fh-cobrada { margin-top: 12px; }
+.fh-cobrada > * { width: 100%; }
+::view-transition-group(factura-tarjeta), ::view-transition-group(factura-cliente), ::view-transition-group(factura-total) { animation-duration: 0.42s; animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1); }
+::view-transition-old(root) { animation: 0.3s ease both salir-vt; }
+::view-transition-new(root) { animation: 0.35s ease both entrar-vt; }
+@keyframes salir-vt { to { opacity: 0; transform: scale(0.98); } }
+@keyframes entrar-vt { from { opacity: 0; } }
+a.fila { transition: background-color 0.15s ease, transform 0.15s ease; }
+a.fila:active { transform: scale(0.985); }

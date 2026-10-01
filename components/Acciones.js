@@ -35,9 +35,9 @@ export function Imprimir() {
 }
 
 // Estado del trimestre: pendiente, presentado y 130 pagado (resta en los siguientes) o presentado sin pagar el 130 (se arrastra).
-export function Presentado({ anio, t, importe, pagado }) {
+export function Presentado({ anio, t, importe, pagado, con130 = true }) {
   const router = useRouter();
-  const valor = pagado === undefined || pagado === null ? 'pendiente' : pagado > 0 ? 'pagado' : 'sinpagar';
+  const valor = pagado === undefined || pagado === null ? 'pendiente' : pagado > 0 && con130 ? 'pagado' : 'sinpagar';
   const cambiar = async (e) => {
     const v = e.target.value;
     const imp = v === 'pendiente' ? null : v === 'pagado' ? importe : 0;
@@ -47,10 +47,12 @@ export function Presentado({ anio, t, importe, pagado }) {
     } catch (err) { alert(err.message); }
   };
   return (
-    <select className={`estado ${valor === 'pagado' ? 'ok' : 'pend'}`} value={valor} onChange={cambiar}>
+    <select className={`estado ${valor === 'pagado' || (!con130 && valor !== 'pendiente') ? 'ok' : 'pend'}`} value={valor} onChange={cambiar}>
       <option value="pendiente">Pendiente</option>
-      <option value="pagado">Presentado y 130 pagado</option>
-      <option value="sinpagar">Presentado, 130 sin pagar</option>
+      {con130 ? <>
+        <option value="pagado">Presentado y 130 pagado</option>
+        <option value="sinpagar">Presentado, 130 sin pagar</option>
+      </> : <option value="sinpagar">Presentado</option>}
     </select>
   );
 }

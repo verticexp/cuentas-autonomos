@@ -3,6 +3,8 @@ import { actualizarUsuario, cambiarPassword, opcionesCookie } from '@/lib/auth';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { puede } from '@/lib/permisos';
 import { colorValido, logoValido } from '@/lib/marca';
+import { actividadesDe, limpiarActividades, limpiarFiscal } from '@/lib/empresa';
+import { leer, redis } from '@/lib/redis';
 
 const CAMPOS = ['nombre', 'nif', 'direccion', 'ciudad', 'iban'];
 
@@ -30,6 +32,24 @@ export async function PATCH(req) {
     if (b.marca.logo && !logo) return error('El logo debe ser una imagen PNG o JPG de menos de 300 KB');
     await actualizarUsuario(u, { marca: { color, logo } });
     return Response.json({ ok: true });
+  }
+  // Cuestionario: situación fiscal, actividades y datos de facturación.
+  if (b.configuracion) {
+    if (sin('empresa')) return sin('empresa');
+    const c = b.configuracion;
+    const facturas = (await leer(u, 'facturas')) || [];
+    const conFacturas = new Set(facturas.map((f) => f.actividad));
+    const antes = Array.isArray(u.actividades) && u.actividades.length ? u.actividades : (u.pendiente ? [] : actividadesDe(u));
+    const a = limpiarActividades(c.actividades, antes, conFacturas);
+    if (a.error) return error(a.error);
+    const e = c.emisor || {};
+    if (!String(e.nombre || '').trim()) return error('Falta el nombre o la razón social');
+    const emisor = { ...(u.emisor || {}), ...Object.fromEntries(CAMPOS.map((k) => [k, String(e[k] || '').trim().slice(0, 120)])) };
+    emisor.plazo = Math.max(0, Math.min(365, Number(e.plazo ?? emisor.plazo) || 30));
+    await actualizarUsuario(u, { fiscal: limpiarFiscal(c.fiscal), actividades: a.actividades, emisor, pendiente: false });
+    const emp = await redis.hget('empresas', u.empresa);
+    if (emp && emisor.nombre) await redis.hset('empresas', { [u.empresa]: { ...emp, nombre: emisor.nombre } });
+    return Response.json({ ok: true, actividades: a.actividades });
   }
   if (b.drive) {
     if (sin('empresa')) return sin('empresa');

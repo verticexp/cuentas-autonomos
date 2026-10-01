@@ -1,6 +1,7 @@
 import { leer } from '@/lib/redis';
 import { usuarioApi } from '@/lib/api';
-import { ACTIVIDADES, importes, numeroFactura, trimestre } from '@/lib/calculos';
+import { importes, numeroFactura, trimestre } from '@/lib/calculos';
+import { actividadesDe, nombresActividad } from '@/lib/empresa';
 import { fechaCorta } from '@/lib/formato';
 
 export const dynamic = 'force-dynamic';
@@ -15,6 +16,7 @@ export async function GET(req) {
   const tipo = q.get('tipo') === 'gastos' ? 'gastos' : 'facturas';
   const { u, res } = await usuarioApi({ permiso: tipo });
   if (res) return res;
+  const ACTIVIDADES = nombresActividad(actividadesDe(u));
   const anio = Number(q.get('anio')) || new Date().getFullYear();
   const t = Number(q.get('t')) || 0;
   const lista = (await leer(u, tipo))

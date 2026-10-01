@@ -1,7 +1,9 @@
 import Link from 'next/link';
 import { requerir } from '@/lib/auth';
 import { leer } from '@/lib/redis';
-import { ACTIVIDADES, importes, numeroFactura, r2, vencida } from '@/lib/calculos';
+import { importes, numeroFactura, r2, vencida } from '@/lib/calculos';
+import { actividadesDe, nombresActividad } from '@/lib/empresa';
+import FilaFactura from '@/components/FilaFactura';
 import { eur, hoy } from '@/lib/formato';
 import SinBD from '@/components/SinBD';
 import { puede } from '@/lib/permisos';
@@ -14,6 +16,7 @@ export default async function Facturas({ searchParams }) {
   const u = await requerir('facturas');
   const todas = await leer(u, 'facturas');
   if (!todas) return <SinBD />;
+  const ACTIVIDADES = nombresActividad(actividadesDe(u));
   const { a, estado } = await searchParams;
   const h = hoy();
   const plazo = u.emisor?.plazo;
@@ -68,16 +71,16 @@ export default async function Facturas({ searchParams }) {
                 const e = estadoDe(f);
                 return (
                   <li key={f.id}>
-                    <Link href={`/facturas/${f.id}`} className="fila">
+                    <FilaFactura href={`/facturas/${f.id}`}>
                       <span className="txt">
-                        <strong>{f.cliente.nombre}</strong>
+                        <strong data-vt="cliente">{f.cliente.nombre}</strong>
                         <small>{numeroFactura(f)} · {diaMes(f.fecha)}{!a && Object.keys(ACTIVIDADES).length > 1 ? ` · ${ACTIVIDADES[f.actividad]}` : ''}</small>
                       </span>
                       <span className="imp-col">
-                        <span className="imp">{eur(importes(f).total)}</span>
+                        <span className="imp" data-vt="total">{eur(importes(f).total)}</span>
                         <span className={`estado-txt e-${e}`}>{e === 'cobrada' ? 'Cobrada' : e === 'vencida' ? 'Vencida' : 'Pendiente'}</span>
                       </span>
-                    </Link>
+                    </FilaFactura>
                   </li>
                 );
               })}

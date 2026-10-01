@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { requerir } from '@/lib/auth';
 import { leer } from '@/lib/redis';
-import { ACTIVIDADES, casillas303, importes, r2 } from '@/lib/calculos';
+import { casillas303, importes, r2 } from '@/lib/calculos';
+import { actividadesDe, fiscalDe, modelosDe, nombresActividad } from '@/lib/empresa';
 import { panelResumen } from '@/lib/panel';
 import { eur, eurSin, fechaCorta, fechaTexto, hoy } from '@/lib/formato';
 import SinBD from '@/components/SinBD';
@@ -17,8 +18,11 @@ export default async function Resumen({ searchParams }) {
   const [facturas, gastos] = await Promise.all([leer(u, 'facturas'), leer(u, 'gastos')]);
   if (!facturas) return <SinBD />;
   const h = hoy();
-  const P = panelResumen({ facturas, gastos, pagos130: u.pagos130, emisor: u.emisor, anio: Number((await searchParams).anio) || undefined, hoy: h });
-  const { anio, anioActual, esteAnio, r, facturado, gastado, beneficio, plazo, debe, tHoy, qAhora, apartado, aPagar, mesPago,
+  const actividades = actividadesDe(u);
+  const fiscal = fiscalDe(u);
+  const ACTIVIDADES = nombresActividad(actividades);
+  const P = panelResumen({ facturas, gastos, pagos130: u.pagos130, emisor: u.emisor, anio: Number((await searchParams).anio) || undefined, hoy: h, actividades, fiscal });
+  const { anio, anioActual, esteAnio, r, c303, c130, facturado, gastado, beneficio, plazo, debe, tHoy, qAhora, apartado, aPagar, mesPago,
     sinCobrar, porCobrar, vencidas, prevFact, prevBeneficio, meses, cambio, ultimoMes, top, limite } = P;
   const pagos = (y) => u.pagos130?.[y] || {};
   const exportar = (tipo, t) => `/api/exportar?tipo=${tipo}&anio=${anio}${t ? `&t=${t}` : ''}`;
@@ -52,19 +56,19 @@ export default async function Resumen({ searchParams }) {
             <div className="mini-barras" aria-hidden>{meses.map((m, i) => <span key={i} style={{ height: `${Math.max(4, (Math.max(0, m.ing - m.gas) / Math.max(1, ...meses.map((x) => x.ing - x.gas))) * 100)}%` }} />)}</div>
           </section>
 
-          {esteAnio && (
+          {esteAnio && (c303 || c130) && (
             <section className="hcard" style={{ '--c': '#FF9500' }}>
               <h2 className="hcard-t"><Ico n="hacienda" solo />Hacienda<span>{debe ? `${plazo.t}T ${plazo.anio}` : `${tHoy}T ${anioActual}`}</span></h2>
               {debe ? (
                 <>
                   <p className="hcard-v">{eurSin(aPagar)}<small>€ a pagar</small></p>
-                  <p className="hcard-s">Hasta el {fechaTexto(plazo.fecha)}, {plazo.dias === 0 ? 'hoy es el último día' : plazo.dias === 1 ? 'queda 1 día' : `quedan ${plazo.dias} días`} · 303 {debe.m303 < 0 ? `${eur(-debe.m303)} a compensar` : eur(debe.m303)}, 130 {eur(debe.m130)}</p>
+                  <p className="hcard-s">Hasta el {fechaTexto(plazo.fecha)}, {plazo.dias === 0 ? 'hoy es el último día' : plazo.dias === 1 ? 'queda 1 día' : `quedan ${plazo.dias} días`}{c303 ? ` · 303 ${debe.m303 < 0 ? `${eur(-debe.m303)} a compensar` : eur(debe.m303)}` : ''}{c130 ? ` · 130 ${eur(debe.m130)}` : ''}</p>
                   <p className="hcard-s">Del {tHoy}T llevas {eur(apartado)} para apartar.</p>
                 </>
               ) : (
                 <>
                   <p className="hcard-v">{eurSin(apartado)}<small>€ para apartar</small></p>
-                  <p className="hcard-s">IVA {eur(Math.max(0, qAhora.m303))} + IRPF {eur(qAhora.m130)} · se paga del 1 al 20 de {mesPago}</p>
+                  <p className="hcard-s">{[c303 && `IVA ${eur(Math.max(0, qAhora.m303))}`, c130 && `IRPF ${eur(qAhora.m130)}`].filter(Boolean).join(' + ')} · se paga del 1 al {tHoy === 4 ? 30 : 20} de {mesPago}</p>
                 </>
               )}
             </section>
@@ -80,7 +84,7 @@ export default async function Resumen({ searchParams }) {
         </div>
       )}
 
-      {limite > 0 && (
+      {limite > 0 && fiscal.tipo === 'autonomo' && (
         <section className="grupo">
           <h2 className="grupo-t">Tarifa plana</h2>
           <div className="grupo-c">
@@ -110,7 +114,7 @@ export default async function Resumen({ searchParams }) {
           {r.porActividad.map((a) => (
             <div key={a.actividad} className="celda">
               <Ico n="actividad" />
-              <span className="txt">{ACTIVIDADES[a.actividad]}<small>Facturado {eur(a.ingresos)}, gastos {eur(a.gastos)}</small></span>
+              <span className="txt">{ACTIVIDADES[a.actividad] || 'Otra actividad'}<small>Facturado {eur(a.ingresos)}, gastos {eur(a.gastos)}</small></span>
               <span className="v">{eur(a.rendimiento)}</span>
             </div>
           ))}
@@ -137,6 +141,16 @@ export default async function Resumen({ searchParams }) {
       )}
 
       <section className="grupo">
+        <h2 className="grupo-t">Tus modelos</h2>
+        <div className="grupo-c">
+          {modelosDe(fiscal).map((m) => (
+            <div key={m.id} className="celda"><span className="modelo-num">{m.id}</span><span className="txt">{m.nombre}<small>{m.cuando}</small></span>{m.calcula && <span className="v">Calculado</span>}</div>
+          ))}
+        </div>
+        <p className="grupo-pie">Según lo que respondiste al empezar ({fiscal.tipo === 'sociedad' ? 'sociedad' : 'autónomo'}). La app calcula los que pone «Calculado»; el resto, tu gestor. Puedes cambiarlo en Ajustes.</p>
+      </section>
+
+      <section className="grupo">
         <h2 className="grupo-t">Descargas</h2>
         <div className="grupo-c">
           <a href={exportar('facturas')} className="celda ir"><Ico n="factura" /><span className="txt">Facturas de {anio} en Excel</span></a>
@@ -150,29 +164,35 @@ export default async function Resumen({ searchParams }) {
 
       <section className="bloque">
         <h2 className="grupo-t">Hacienda por trimestre</h2>
-        <p className="grupo-pie arriba">Orientativo; confírmalo con tu gestor. Marca en cada trimestre si pagaste el 130: lo que no pagaste se suma al siguiente.</p>
+        <p className="grupo-pie arriba">Orientativo; confírmalo con tu gestor.{c130 ? ' Marca en cada trimestre si pagaste el 130: lo que no pagaste se suma al siguiente.' : ' Marca cada trimestre cuando lo presentes.'}</p>
         <div className="tarjetas">
           {r.trimestres.map((q) => (
             <div key={q.t} className="tarjeta trimestre">
-              <div className="cabecera"><h3>{q.t}T {anio}</h3><Presentado anio={anio} t={q.t} importe={q.m130} pagado={pagos(anio)[q.t]} /></div>
+              <div className="cabecera"><h3>{q.t}T {anio}</h3><Presentado anio={anio} t={q.t} importe={c130 ? q.m130 : 0} pagado={pagos(anio)[q.t]} con130={c130} /></div>
               <dl>
                 <dt>Base facturada</dt><dd>{eur(q.ingresos)}</dd>
+                <dt>Gastos</dt><dd>{eur(q.gastos)}</dd>
+                {c303 && <>
                 <dt>IVA repercutido</dt><dd>{eur(q.ivaRep)}</dd>
                 <dt>IVA deducible</dt><dd>−{eur(q.ivaDed)}</dd>
                 <dt><strong>Modelo 303</strong></dt><dd><strong>{q.m303 < 0 ? `${eur(-q.m303)} a compensar` : eur(q.m303)}</strong></dd>
+                </>}
+                {c130 && <>
                 <dt>5 % gastos difícil justificación</dt><dd>−{eur(q.difJust)}</dd>
-                <dt>20 % rendimiento acumulado</dt><dd>{eur(0.2 * q.rendAcum)}</dd>
+                <dt>20 % rendimiento acumulado</dt><dd>{eur(r2(0.2 * Math.max(0, q.rendAcum)))}</dd>
                 <dt>Retenciones acumuladas</dt><dd>−{eur(q.retAcum)}</dd>
                 <dt>130 pagados antes</dt><dd>−{eur(q.pagosPrev)}</dd>
                 {pagos(anio)[q.t] > 0 && <><dt>Pagado este trimestre</dt><dd>{eur(pagos(anio)[q.t])}</dd></>}
                 <dt><strong>Modelo 130</strong></dt><dd><strong>{eur(q.m130)}</strong></dd>
+                </>}
               </dl>
-              {(() => {
+              {(c303 || c130) && (() => {
                 const c = casillas303(facturas, gastos, anio, q.t);
                 const fila = (n, t, v) => <><dt>{n} · {t}</dt><dd>{eur(v)}</dd></>;
                 return (
                   <details style={{ marginTop: 12 }}>
                     <summary style={{ cursor: 'pointer', fontWeight: 600, fontSize: '0.9375rem' }}>Casillas para Hacienda</summary>
+                    {c303 && <>
                     <p className="nota" style={{ margin: '10px 0 6px' }}><strong>Modelo 303</strong></p>
                     <dl>
                       {c['04'] > 0 && <>{fila('04', 'Base al 10 %', c['04'])}{fila('06', 'Cuota al 10 %', c['06'])}</>}
@@ -185,6 +205,8 @@ export default async function Resumen({ searchParams }) {
                       {fila('46', 'Resultado', c['46'])}
                     </dl>
                     {c.sinIva !== 0 && <p className="nota">Facturas sin IVA por {eur(c.sinIva)}: van en otra casilla según el tipo de operación (por ejemplo, servicios a empresas de la UE). Pregúntale a tu gestor cuál.</p>}
+                    </>}
+                    {c130 && <>
                     <p className="nota" style={{ margin: '12px 0 6px' }}><strong>Modelo 130</strong> (acumulado desde enero)</p>
                     <dl>
                       {fila('01', 'Ingresos', q.ingAcum)}
@@ -195,6 +217,7 @@ export default async function Resumen({ searchParams }) {
                       {fila('06', 'Retenciones', q.retAcum)}
                       {fila('07', 'Resultado', q.m130)}
                     </dl>
+                    </>}
                   </details>
                 );
               })()}

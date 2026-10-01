@@ -3,11 +3,10 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
-import { ACTIVIDADES } from '@/lib/calculos';
 
-export default function FormGasto({ hoy, gasto }) {
+export default function FormGasto({ hoy, gasto, actividades }) {
   const router = useRouter();
-  const vacio = { fecha: hoy, actividad: 'dj', concepto: '', base: '', ivaPct: 21 };
+  const vacio = { fecha: hoy, actividad: actividades[0].id, concepto: '', base: '', ivaPct: 21 };
   const [g, setG] = useState(gasto ? { ...gasto, base: String(gasto.base).replace('.', ',') } : vacio);
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
@@ -28,11 +27,11 @@ export default function FormGasto({ hoy, gasto }) {
   return (
     <form className="formulario tarjeta" onSubmit={enviar}>
       <h3>{gasto ? 'Editar gasto' : 'Añadir gasto deducible'}</h3>
-      <div className="tipo dos">
-        {Object.entries(ACTIVIDADES).map(([id, nombre]) => (
+      {actividades.length > 1 && <div className={`tipo ${actividades.length === 2 ? 'dos' : 'varias'}`}>
+        {actividades.map(({ id, nombre }) => (
           <button type="button" key={id} className={g.actividad === id ? 'activo' : ''} onClick={() => poner('actividad', id)}>{nombre}</button>
         ))}
-      </div>
+      </div>}
       <input className="campo" placeholder="Concepto" value={g.concepto} onChange={(e) => poner('concepto', e.target.value)} required />
       <div className="dos-col">
         <input className="campo" inputMode="decimal" placeholder="Base sin IVA" value={g.base} onChange={(e) => poner('base', e.target.value)} required />

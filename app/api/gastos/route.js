@@ -2,7 +2,8 @@ import { guardar, borrar, leerUno } from '@/lib/redis';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { subirGasto } from '@/lib/drive';
 import { enviarNomina } from '@/lib/controlat';
-import { ACTIVIDADES, leerImporte, r2 } from '@/lib/calculos';
+import { leerImporte, r2 } from '@/lib/calculos';
+import { actividadesDe, actividadValida } from '@/lib/empresa';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,7 +18,7 @@ export async function POST(req) {
   const g = {
     id: crypto.randomUUID(),
     fecha: b.fecha,
-    actividad: ACTIVIDADES[b.actividad] ? b.actividad : 'dj',
+    actividad: actividadValida(actividadesDe(u), b.actividad),
     concepto: String(b.concepto).trim().slice(0, 140),
     base,
     ivaPct: Math.min(100, Math.max(0, Number(b.ivaPct) || 0)),
@@ -37,7 +38,7 @@ export async function PATCH(req) {
   if (!base) return error('Importe no válido');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(b.fecha || '')) return error('Fecha no válida');
   if (!String(b.concepto || '').trim()) return error('Falta el concepto');
-  const g = { ...antes, fecha: b.fecha, actividad: ACTIVIDADES[b.actividad] ? b.actividad : 'dj', concepto: String(b.concepto).trim().slice(0, 140), base, ivaPct: Math.min(100, Math.max(0, Number(b.ivaPct) || 0)) };
+  const g = { ...antes, fecha: b.fecha, actividad: actividadValida(actividadesDe(u), b.actividad), concepto: String(b.concepto).trim().slice(0, 140), base, ivaPct: Math.min(100, Math.max(0, Number(b.ivaPct) || 0)) };
   await guardar(u, 'gastos', g);
   await enviarNomina(u, [antes.fecha, g.fecha]);
   return Response.json({ ok: true });
