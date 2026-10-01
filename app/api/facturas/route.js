@@ -1,4 +1,5 @@
-import { leer, guardar, borrar, leerUno } from '@/lib/redis';
+import { leer, guardar, borrar, leerUno, redis, clave } from '@/lib/redis';
+import { MODO, registroAlta } from '@/lib/verifactu';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { subirFactura } from '@/lib/drive';
 import { enviarNomina } from '@/lib/controlat';
@@ -44,6 +45,14 @@ export async function POST(req) {
   const f = { id: `${serie}${anio}-${numero}`, numero, anio, ...datos };
   if (serie) f.serie = serie;
   if (original) f.rectifica = { id: original.id, numero: numeroFactura(original), fecha: original.fecha };
+  if (MODO) {
+    const nif = u.emisor?.nif;
+    if (!nif) return error('Rellena tu NIF en Ajustes');
+    const r = registroAlta(f, nif, (await redis.get(clave(u, 'verifactu'))) || '');
+    f.verifactu = { huella: r.Huella, fechaHora: r.FechaHoraHusoGenRegistro, modo: MODO };
+    await guardar(u, 'registros', { id: r.Huella, factura: f.id, ...r });
+    await redis.set(clave(u, 'verifactu'), r.Huella);
+  }
   await guardar(u, 'facturas', f);
   await guardarCliente(u, f.cliente);
   await Promise.all([subirFactura(u, f), enviarNomina(u, [f.fecha])]);
@@ -63,6 +72,7 @@ export async function PATCH(req) {
     await subirFactura(u, f);
     return Response.json({ ok: true });
   }
+  if (antes.verifactu) return error('Esta factura ya está registrada en Verifactu: para corregirla, haz una rectificativa');
   const datos = limpiar(b, actividadesDe(u), fiscalDe(u).tipo === 'sociedad');
   if (datos.error) return error(datos.error);
   if (Number(datos.fecha.slice(0, 4)) !== antes.anio) return error(`La fecha debe ser de ${antes.anio}`);
@@ -78,6 +88,7 @@ export async function DELETE(req) {
   const id = req.nextUrl.searchParams.get('id');
   if (!id) return error('Falta id');
   const antes = await leerUno(u, 'facturas', id);
+  if (antes?.verifactu) return error('Esta factura ya está registrada en Verifactu: no se puede borrar, haz una rectificativa');
   await borrar(u, 'facturas', id);
   if (antes) await enviarNomina(u, [antes.fecha]);
   return Response.json({ ok: true });
