@@ -302,9 +302,9 @@ html:active-view-transition .factura-hero { animation: none; }
 .fh-estado.e-vencida { color: var(--out); } .fh-estado.e-pendiente { color: var(--hacienda); } .fh-estado.e-cobrada { color: var(--in); }
 .fh-cobrada { margin-top: 12px; }
 .fh-cobrada > * { width: 100%; }
-::view-transition-group(factura-tarjeta), ::view-transition-group(factura-cliente), ::view-transition-group(factura-total) { animation-duration: 0.42s; animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1); }
-::view-transition-old(root) { animation: 0.3s ease both salir-vt; }
-::view-transition-new(root) { animation: 0.35s ease both entrar-vt; }
+::view-transition-group(factura-tarjeta), ::view-transition-group(factura-cliente), ::view-transition-group(factura-total) { animation-duration: 0.3s; animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1); }
+::view-transition-old(root) { animation: 0.18s ease both salir-vt; }
+::view-transition-new(root) { animation: 0.24s ease both entrar-vt; }
 @keyframes salir-vt { to { opacity: 0; transform: scale(0.98); } }
 @keyframes entrar-vt { from { opacity: 0; } }
 a.fila { transition: background-color 0.15s ease, transform 0.15s ease; }

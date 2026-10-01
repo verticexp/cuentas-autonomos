@@ -1,9 +1,10 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 // Al tocar una factura, su fila se convierte en la cabecera de la factura (transición de vista del navegador).
-// Donde no hay soporte, se navega normal y la cabecera entra con una animación propia.
+// prefetch: las facturas que se ven en pantalla se cargan por adelantado, así se abren al instante.
 export default function FilaFactura({ href, children }) {
   const router = useRouter();
   const abrir = (e) => {
@@ -16,10 +17,10 @@ export default function FilaFactura({ href, children }) {
     navigator.vibrate?.(6);
     const t = document.startViewTransition(() => new Promise((listo) => {
       window.__facturaLista = listo;
-      setTimeout(listo, 1500); // si tarda, se hace sin esperar
+      setTimeout(listo, 450); // si aún no ha llegado, no se congela la pantalla esperando
       router.push(href);
     }));
     t.finished.finally(() => { window.__facturaLista = null; });
   };
-  return <a href={href} className="fila" onClick={abrir}>{children}</a>;
+  return <Link href={href} prefetch className="fila" onClick={abrir} onPointerDown={() => router.prefetch(href)}>{children}</Link>;
 }
