@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
+import Deslizable from './Deslizable';
 
 export default function FormGasto({ hoy, gasto, actividades }) {
   const router = useRouter();
@@ -27,11 +28,11 @@ export default function FormGasto({ hoy, gasto, actividades }) {
   return (
     <form className="formulario tarjeta" onSubmit={enviar}>
       <h3>{gasto ? 'Editar gasto' : 'Añadir gasto deducible'}</h3>
-      {actividades.length > 1 && <div className={`tipo ${actividades.length === 2 ? 'dos' : 'varias'}`}>
+      {actividades.length > 1 && <Deslizable className={`tipo ${actividades.length === 2 ? 'dos' : 'varias'}`}>
         {actividades.map(({ id, nombre }) => (
           <button type="button" key={id} className={g.actividad === id ? 'activo' : ''} onClick={() => poner('actividad', id)}>{nombre}</button>
         ))}
-      </div>}
+      </Deslizable>}
       <input className="campo" placeholder="Concepto" value={g.concepto} onChange={(e) => poner('concepto', e.target.value)} required />
       <div className="dos-col">
         <input className="campo" inputMode="decimal" placeholder="Base sin IVA" value={g.base} onChange={(e) => poner('base', e.target.value)} required />

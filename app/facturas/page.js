@@ -7,6 +7,7 @@ import FilaFactura from '@/components/FilaFactura';
 import { eur, hoy } from '@/lib/formato';
 import SinBD from '@/components/SinBD';
 import { puede } from '@/lib/permisos';
+import Deslizable from '@/components/Deslizable';
 
 export const dynamic = 'force-dynamic';
 const diaMes = (f) => new Date(`${f}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
@@ -47,6 +48,11 @@ export default async function Facturas({ searchParams }) {
         {puede(u, 'facturar') && <Link href="/facturas/nueva" className="boton pequeno">Nueva factura</Link>}
       </header>
 
+      <nav className="segmentado">
+        <Link href="/facturas" className="activo">Facturas</Link>
+        <Link href="/presupuestos">Presupuestos</Link>
+      </nav>
+
       {todas.length > 0 && (
         <p className="resumen-linea">
           <span>Por cobrar <strong>{eur(porCobrar)}</strong></span>
@@ -54,11 +60,11 @@ export default async function Facturas({ searchParams }) {
         </p>
       )}
 
-      <nav className="segmentado">
+      <Deslizable className="chips">
         <Link href={url({ a: null })} className={!ACTIVIDADES[a] ? 'activo' : ''}>Todas</Link>
         {Object.entries(ACTIVIDADES).map(([id, n]) => <Link key={id} href={url({ a: id })} className={a === id ? 'activo' : ''}>{n}</Link>)}
         <Link href={url({ estado: estado === 'pendientes' ? null : 'pendientes' })} className={estado === 'pendientes' ? 'activo' : ''}>Sin cobrar</Link>
-      </nav>
+      </Deslizable>
 
       {grupos.map((g) => {
         const [y, m] = g.m.split('-');

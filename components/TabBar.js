@@ -7,7 +7,6 @@ import { usePathname, useRouter } from 'next/navigation';
 const TABS = [
   { href: '/', permiso: 'resumen', nombre: 'Resumen', icono: <path d="M5 20V11M10 20V5M15 20v-7M20 20V9" /> },
   { href: '/facturas', permiso: 'facturas', nombre: 'Facturas', icono: <path d="M7 3h7l4 4v14H7zM14 3v4h4M10 12h5M10 16h5" /> },
-  { href: '/presupuestos', permiso: 'facturas', nombre: 'Presupuestos', icono: <path d="M7 3h7l4 4v14H7zM14 3v4h4M9.5 14l2 2 3.5-4" /> },
   { href: '/gastos', permiso: 'gastos', nombre: 'Gastos', icono: <><rect x="4" y="6" width="16" height="12" rx="2" /><path d="M4 10h16" /></> },
   { href: '/ajustes', nombre: 'Ajustes', icono: <><circle cx="12" cy="8" r="4" /><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6" /></> },
 ];
@@ -27,7 +26,7 @@ function vibrar() {
   interruptor.click();
 }
 
-const seccion = (path) => (path === '/' ? '/' : TABS.find((t) => t.href !== '/' && path.startsWith(t.href))?.href ?? null);
+const seccion = (path) => (path === '/' ? '/' : path.startsWith('/presupuestos') ? '/facturas' : TABS.find((t) => t.href !== '/' && path.startsWith(t.href))?.href ?? null);
 
 export default function TabBar({ permisos = [] }) {
   const tabs = TABS.filter((t) => !t.permiso || permisos.includes(t.permiso));
@@ -44,6 +43,8 @@ export default function TabBar({ permisos = [] }) {
   const ir = (h) => { if (h !== path) { setActivo(h); router.push(h); } };
   const tabEn = (x, y) => document.elementFromPoint(x, y)?.closest('[data-href]')?.dataset.href ?? null;
   const marcado = dedo ?? activo;
+  // En presupuestos, el + crea un presupuesto; en el resto, una factura.
+  const nuevo = path.startsWith('/presupuestos') ? '/presupuestos/nuevo' : '/facturas/nueva';
 
   return (
     <div className="tabbar">
@@ -74,7 +75,7 @@ export default function TabBar({ permisos = [] }) {
           </Link>
         ))}
       </nav>
-      {permisos.includes('facturar') && <Link href="/facturas/nueva" className={`mas${path === '/facturas/nueva' ? ' abierta' : ''}`} aria-label="Nueva factura" onClick={() => vibrar()}>
+      {permisos.includes('facturar') && <Link href={nuevo} className={`mas${path === nuevo ? ' abierta' : ''}`} aria-label={path.startsWith('/presupuestos') ? 'Nuevo presupuesto' : 'Nueva factura'} onClick={() => vibrar()}>
         <svg viewBox="0 0 24 24" aria-hidden><path d="M12 5v14M5 12h14" /></svg>
       </Link>}
     </div>

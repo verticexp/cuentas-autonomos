@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
+import Deslizable from './Deslizable';
 import { importes, leerImporte } from '@/lib/calculos';
 import { eur } from '@/lib/formato';
 
@@ -36,11 +37,11 @@ export default function FormPresupuesto({ presupuesto, clientes, actividades, ho
   return (
     <form className="formulario" onSubmit={enviar}>
       {nuevo && <p className="rotulo">Se numerará como {numero}</p>}
-      {actividades.length > 1 && <div className={`tipo ${actividades.length === 2 ? 'dos' : 'varias'}`}>
+      {actividades.length > 1 && <Deslizable className={`tipo ${actividades.length === 2 ? 'dos' : 'varias'}`}>
         {actividades.map(({ id, nombre }) => (
           <button type="button" key={id} className={p.actividad === id ? 'activo' : ''} onClick={() => setP((x) => ({ ...x, actividad: id, ...(nuevo ? defecto(id) : {}) }))}>{nombre}</button>
         ))}
-      </div>}
+      </Deslizable>}
       <label>Fecha<input className="campo" type="date" value={p.fecha} onChange={(e) => poner('fecha', e.target.value)} required /></label>
       <fieldset>
         <legend>Cliente</legend>

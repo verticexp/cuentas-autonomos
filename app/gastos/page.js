@@ -38,7 +38,7 @@ export default async function Gastos() {
       )}
       {puede(u, 'gastar') && <>
         <FormGasto hoy={h} actividades={actividades} />
-        <Cuotas desde={`${h.slice(0, 4)}-01`} />
+        {fiscalDe(u).tipo === 'autonomo' && <Cuotas desde={`${h.slice(0, 4)}-01`} />}
       </>}
 
       <details className="tarjeta bloque" open={pendientes > 0}>

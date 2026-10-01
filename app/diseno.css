@@ -309,3 +309,18 @@ html:active-view-transition .factura-hero { animation: none; }
 @keyframes entrar-vt { from { opacity: 0; } }
 a.fila { transition: background-color 0.15s ease, transform 0.15s ease; }
 a.fila:active { transform: scale(0.985); }
+
+/* Filas que se deslizan cuando no caben (filtros y actividades) */
+.deslizable { overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
+.deslizable::-webkit-scrollbar { display: none; }
+.chips.deslizable { flex-wrap: nowrap; margin: 0 -16px 8px; padding: 0 16px; scroll-padding: 0 16px; }
+.chips.deslizable a { flex: none; white-space: nowrap; padding: 7px 14px; font-size: 15px; }
+.tipo.varias { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(max-content, 1fr); }
+.tipo.varias button { padding: 7px 14px; white-space: nowrap; }
+.txt small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Botones bajo la factura o el presupuesto: el principal a lo ancho y el resto en dos columnas iguales */
+.acciones-factura { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: stretch; }
+.acciones-factura > * { width: 100%; text-align: center; justify-content: center; }
+.acciones-factura > :first-child, .acciones-factura > .borrar { grid-column: 1 / -1; }
+.acciones-factura > :nth-last-child(2):nth-child(even) { grid-column: 1 / -1; }

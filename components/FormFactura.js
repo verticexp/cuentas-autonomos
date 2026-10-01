@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
+import Deslizable from './Deslizable';
 import { importes, leerImporte, numeroFactura } from '@/lib/calculos';
 import { eur } from '@/lib/formato';
 
@@ -48,11 +49,11 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
   return (
     <form className="formulario" onSubmit={enviar}>
       <p className="rotulo">{nueva ? `Se numerará como ${numeros[f.actividad]}` : `Factura ${numeroFactura(f)}`}{orig ? ` · rectifica la ${numeroFactura(orig)} (pon el importe que corrige; en negativo si anula)` : ''}</p>
-      {actividades.length > 1 && <div className={`tipo ${actividades.length === 2 ? 'dos' : 'varias'}`}>
+      {actividades.length > 1 && <Deslizable className={`tipo ${actividades.length === 2 ? 'dos' : 'varias'}`}>
         {actividades.map(({ id, nombre }) => (
           <button type="button" key={id} className={f.actividad === id ? 'activo' : ''} onClick={() => cambiarActividad(id)}>{nombre}</button>
         ))}
-      </div>}
+      </Deslizable>}
 
       <label>Fecha<input className="campo" type="date" value={f.fecha} onChange={(e) => poner('fecha', e.target.value)} required /></label>
 
