@@ -324,3 +324,8 @@ a.fila:active { transform: scale(0.985); }
 .acciones-factura > * { width: 100%; text-align: center; justify-content: center; }
 .acciones-factura > :first-child, .acciones-factura > .borrar { grid-column: 1 / -1; }
 .acciones-factura > :nth-last-child(2):nth-child(even) { grid-column: 1 / -1; }
+.celda .txt small.aviso { color: var(--out); }
+.celda .txt { white-space: normal; }
+/* En las pantallas de Ajustes el título ya dice qué es: fuera el de la primera tarjeta */
+.pagina > .titulo + .tarjeta > h3, .pagina > .titulo + .tarjetas > .tarjeta:first-child > h3 { display: none; }
+.pagina > .titulo + .tarjeta > h3 + .nota { margin-top: 0; }

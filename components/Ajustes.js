@@ -48,12 +48,11 @@ function ProbarDrive({ error }) {
   );
 }
 
-export default function Ajustes({ emisor, drive, driveError, empresa = true }) {
+export default function Ajustes({ seccion, emisor, drive, driveError, sociedad }) {
   const router = useRouter();
   return (
     <div className="tarjetas bloque">
-      {empresa && <>
-      <Formulario
+      {seccion === 'facturacion' && <Formulario
         titulo="Datos de facturación"
         inicial={{ plazo: 30, ...emisor }}
         enviar={async (d) => { await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify(d) }); router.refresh(); }}
@@ -64,11 +63,11 @@ export default function Ajustes({ emisor, drive, driveError, empresa = true }) {
               <label key={k}>{n}<input className="campo" value={d[k] || ''} onChange={(e) => poner(k, e.target.value)} required /></label>
             ))}
             <label>Plazo de pago (días)<input className="campo" type="number" min="0" value={d.plazo} onChange={(e) => poner('plazo', e.target.value)} /></label>
-            <label>Límite de rendimiento neto anual (tarifa plana; SMI 2026: 17094)<input className="campo" type="number" min="0" placeholder="Vacío si no tienes tarifa plana" value={d.limite || ''} onChange={(e) => poner('limite', e.target.value)} /></label>
+            {!sociedad && <label>Límite de rendimiento neto anual (tarifa plana; SMI 2026: 17094)<input className="campo" type="number" min="0" placeholder="Vacío si no tienes tarifa plana" value={d.limite || ''} onChange={(e) => poner('limite', e.target.value)} /></label>}
           </>
         )}
-      </Formulario>
-      <Formulario
+      </Formulario>}
+      {seccion === 'drive' && <Formulario
         titulo="Google Drive"
         inicial={{ url: drive?.url || '', token: drive?.token || '' }}
         enviar={async (d) => { await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify({ drive: d }) }); router.refresh(); }}
@@ -81,9 +80,8 @@ export default function Ajustes({ emisor, drive, driveError, empresa = true }) {
             {drive?.url && <ProbarDrive error={driveError} />}
           </>
         )}
-      </Formulario>
-      </>}
-      <Formulario
+      </Formulario>}
+      {seccion === 'seguridad' && <Formulario
         titulo="Cambiar contraseña"
         inicial={{ actual: '', nueva: '' }}
         enviar={async (d, set) => { await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify(d) }); set({ actual: '', nueva: '' }); }}
@@ -94,7 +92,7 @@ export default function Ajustes({ emisor, drive, driveError, empresa = true }) {
             <input className="campo" type="password" placeholder="Nueva (mínimo 8)" autoComplete="new-password" minLength={8} value={d.nueva} onChange={(e) => poner('nueva', e.target.value)} required />
           </>
         )}
-      </Formulario>
+      </Formulario>}
     </div>
   );
 }

@@ -2,19 +2,28 @@ import Link from 'next/link';
 import { requerir } from '@/lib/auth';
 import { redis } from '@/lib/redis';
 import { perfilDe, puede } from '@/lib/permisos';
-import Ajustes from '@/components/Ajustes';
-import Controlat from '@/components/Controlat';
-import Marca from '@/components/Marca';
 import Avatar from '@/components/Avatar';
-import FaceId from '@/components/FaceId';
+import Ico from '@/components/Ico';
 import { actividadesDe, fiscalDe } from '@/lib/empresa';
+import { modoDe } from '@/lib/verifactu';
 
 export const dynamic = 'force-dynamic';
 
+const Celda = ({ href, ico, titulo, detalle, aviso }) => (
+  <Link href={href} className="celda ir">
+    <Ico n={ico} />
+    <span className="txt">{titulo}{detalle && <small className={aviso ? 'aviso' : ''}>{detalle}</small>}</span>
+  </Link>
+);
+
+// Ajustes como en el iPhone: una lista corta y cada cosa en su pantalla.
 export default async function Page() {
   const u = await requerir();
-  const llaves = Object.entries((await redis.hgetall(`passkeys:${u.id}`)) || {}).map(([id, k]) => ({ id, nombre: k.nombre, creada: k.creada, usada: k.usada || null }));
+  const llaves = Object.keys((await redis.hgetall(`passkeys:${u.id}`)) || {}).length;
   const empresa = puede(u, 'empresa');
+  const e = u.emisor || {};
+  const datosCompletos = e.nombre && e.nif && e.direccion && e.iban;
+  const modo = modoDe(u);
   return (
     <main className="pagina">
       <h1 className="titulo">Ajustes</h1>
@@ -22,16 +31,37 @@ export default async function Page() {
         <Avatar nombre={u.nombre} size={48} />
         <div><strong>{u.nombre}</strong><small>{u.email}</small><small>{perfilDe(u)} en {u.empresaNombre}</small></div>
       </div>
-      {(puede(u, 'usuarios') || u.admin) && (
-        <section className="grupo"><div className="grupo-c"><Link href="/usuarios" className="celda ir"><span className="txt">Usuarios y permisos</span></Link></div></section>
-      )}
+
       {empresa && (
-        <section className="grupo"><div className="grupo-c"><Link href="/bienvenida?editar=1" className="celda ir"><span className="txt">Actividades y modelos<small>{actividadesDe(u).map((x) => x.nombre).join(', ')} · {fiscalDe(u).tipo === 'sociedad' ? 'Sociedad' : 'Autónomo'}</small></span></Link></div></section>
+        <section className="grupo">
+          <h2 className="grupo-t">Empresa</h2>
+          <div className="grupo-c">
+            <Celda href="/ajustes/facturacion" ico="datos" titulo="Datos de facturación" detalle={datosCompletos ? `${e.nombre} · ${e.nif}` : 'Faltan datos: rellénalos antes de facturar'} aviso={!datosCompletos} />
+            <Celda href="/bienvenida?editar=1" ico="actividad" titulo="Actividades y modelos" detalle={`${fiscalDe(u).tipo === 'sociedad' ? 'Sociedad' : 'Autónomo'} · ${actividadesDe(u).map((x) => x.nombre).join(', ')}`} />
+            <Celda href="/ajustes/marca" ico="marca" titulo="Logo y color" detalle={u.marca?.logo ? 'Con logo' : 'Sin logo'} />
+            {(puede(u, 'usuarios') || u.admin) && <Celda href="/usuarios" ico="usuarios" titulo="Usuarios y permisos" detalle="Quién entra y qué puede hacer" />}
+          </div>
+          {modo && <p className="grupo-pie">Verifactu activo{modo === 'pruebas' ? ' en modo pruebas' : ''}: cada factura nueva queda registrada y lleva su QR.</p>}
+        </section>
       )}
-      <FaceId lista={llaves} />
-      {empresa && <Marca marca={u.marca} nombre={u.emisor?.nombre} />}
-      <Ajustes emisor={u.emisor || {}} drive={u.drive} driveError={u.driveError} empresa={empresa} />
-      {empresa && <Controlat activo={Boolean(u.controlat)} />}
+
+      <section className="grupo">
+        <h2 className="grupo-t">Seguridad</h2>
+        <div className="grupo-c">
+          <Celda href="/ajustes/seguridad" ico="seguridad" titulo="Face ID y contraseña" detalle={llaves ? `Face ID en ${llaves} ${llaves === 1 ? 'dispositivo' : 'dispositivos'}` : 'Face ID desactivado'} />
+        </div>
+      </section>
+
+      {empresa && (
+        <section className="grupo">
+          <h2 className="grupo-t">Conexiones</h2>
+          <div className="grupo-c">
+            <Celda href="/ajustes/drive" ico="drive" titulo="Google Drive" detalle={u.drive?.url ? (u.driveError ? 'Con errores: revisa la conexión' : 'Conectado') : 'Sin conectar'} aviso={Boolean(u.drive?.url && u.driveError)} />
+            {(u.admin || u.controlat) && <Celda href="/ajustes/controlat" ico="conexion" titulo="Controla'T" detalle={u.controlat ? 'Enviando tu neto mensual' : 'Sin conectar'} />}
+          </div>
+        </section>
+      )}
+
       <form method="post" action="/api/logout"><button className="borrar ancho">Cerrar sesión</button></form>
     </main>
   );
