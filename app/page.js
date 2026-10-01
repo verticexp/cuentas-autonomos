@@ -49,21 +49,6 @@ export default async function Resumen({ searchParams }) {
   const porCliente = {};
   for (const f of facturas.filter((x) => x.fecha.startsWith(`${anio}-`))) porCliente[f.cliente.nombre] = (porCliente[f.cliente.nombre] || 0) + f.base;
   const top = Object.entries(porCliente).sort((a, b) => b[1] - a[1]).slice(0, 5);
-  // Reparto de lo facturado en el año: lo tuyo, gastos, IVA neto y la estimación de IRPF que falta por pagar.
-  const suma = (l, k) => l.filter((x) => x.fecha.startsWith(`${anio}-`)).map(importes).reduce((a, x) => a + x[k], 0);
-  const entra = suma(facturas, 'total');
-  const gastado = suma(gastos, 'total');
-  const qFin = r.trimestres[esteAnio ? tHoy - 1 : 3];
-  const ivaNeto = Math.max(0, r.trimestres.reduce((a, q) => a + q.m303, 0));
-  const irpfFalta = Math.max(0, r2(0.2 * qFin.rendAcum - qFin.retAcum));
-  const tuyo = entra - gastado - ivaNeto - irpfFalta;
-  const trozos = [
-    { k: 'tuyo', n: 'Para ti', v: tuyo },
-    { k: 'gastos', n: 'Gastos', v: gastado },
-    { k: 'iva', n: 'IVA', v: ivaNeto },
-    { k: 'irpf', n: 'IRPF', v: irpfFalta },
-  ];
-  const de100 = (v) => (entra > 0 ? Math.round((Math.max(0, v) / entra) * 100) : 0);
   const exportar = (tipo, t) => `/api/exportar?tipo=${tipo}&anio=${anio}${t ? `&t=${t}` : ''}`;
 
   return (
@@ -96,21 +81,15 @@ export default async function Resumen({ searchParams }) {
         </section>
       )}
 
-      {entra > 0 && (
-        <section className="grupo" aria-label="Reparto de lo facturado">
-          <h2 className="grupo-t">De cada 100 € que facturas{esteAnio ? '' : ` en ${anio}`}</h2>
-          <div className="grupo-c reparto">
-            <p className="reparto-cifra">{de100(tuyo)} € son para ti</p>
-            <div className="reparto-barra" role="img" aria-label={trozos.map((t) => `${t.n}: ${de100(t.v)} €`).join(', ')}>
-              {trozos.filter((t) => de100(t.v) > 0).map((t) => <span key={t.k} className={t.k} style={{ flexGrow: Math.max(0, t.v) }} />)}
-            </div>
-            <ul className="reparto-leyenda">
-              {trozos.map((t) => (
-                <li key={t.k}><i className={t.k} />{t.n}<span className="pct">{de100(t.v)} €</span><span className="v">{eur(t.v)}</span></li>
-              ))}
-            </ul>
+      {facturado > 0 && (
+        <section className="grupo">
+          <h2 className="grupo-t">{esteAnio ? 'Este año' : anio}</h2>
+          <div className="grupo-c">
+            <div className="celda"><span className="txt">Facturado<small>Sin IVA</small></span><span className="v">{eur(facturado)}</span></div>
+            <div className="celda"><span className="txt">Gastos<small>Sin IVA</small></span><span className="v">{eur(facturado - rendimiento)}</span></div>
+            <div className="celda"><span className="txt"><strong className="peso">Beneficio</strong><small>Antes de impuestos</small></span><span className="v fuerte">{eur(rendimiento)}</span></div>
           </div>
-          <p className="grupo-pie">{tuyo < 0 ? 'Este año los gastos e impuestos superan lo facturado. ' : ''}Sobre {eur(entra)} facturados, con IVA y sin las retenciones. IVA e IRPF son lo que te toca pagar en los modelos 303 y 130 del año (orientativo).</p>
+          {cambio !== null && <p className="grupo-pie">Has facturado un {Math.abs(cambio).toFixed(0)} % {cambio >= 0 ? 'más' : 'menos'} que en el mismo periodo de {anio - 1}.</p>}
         </section>
       )}
 
@@ -177,7 +156,6 @@ export default async function Resumen({ searchParams }) {
         <div className="grupo-c relleno">
           <Grafica meses={meses} anio={anio} actual={esteAnio ? Number(h.slice(5, 7)) - 1 : undefined} />
         </div>
-        <p className="grupo-pie">{cambio === null ? `Sin datos de ${anio - 1} para comparar.` : `${cambio >= 0 ? 'Has facturado un' : 'Has facturado un'} ${Math.abs(cambio).toFixed(0)} % ${cambio >= 0 ? 'más' : 'menos'} que en el mismo periodo de ${anio - 1}.`}</p>
       </section>
 
       {top.length > 0 && (
