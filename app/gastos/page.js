@@ -1,6 +1,6 @@
 import { requerir } from '@/lib/auth';
 import { leer } from '@/lib/redis';
-import { ACTIVIDADES, importes } from '@/lib/calculos';
+import { ACTIVIDADES, importes, r2 } from '@/lib/calculos';
 import { DEDUCCIONES, cubierta } from '@/lib/deducciones';
 import { eur, fechaCorta, hoy } from '@/lib/formato';
 import SinBD from '@/components/SinBD';
@@ -26,8 +26,8 @@ export default async function Gastos() {
       </header>
       {delAnio.length > 0 && (
         <p className="resumen-linea">
-          <span>Este año <strong>{eur(delAnio.reduce((s, g) => s + importes(g).total, 0))}</strong></span>
-          <span>IVA que recuperas <strong>{eur(delAnio.reduce((s, g) => s + importes(g).iva, 0))}</strong></span>
+          <span>Este año, sin IVA <strong>{eur(r2(delAnio.reduce((s, g) => s + g.base, 0)))}</strong></span>
+          <span>IVA que recuperas <strong>{eur(r2(delAnio.reduce((s, g) => s + importes(g).iva, 0)))}</strong></span>
         </p>
       )}
       {puede(u, 'gastar') && <>

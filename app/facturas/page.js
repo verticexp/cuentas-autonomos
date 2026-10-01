@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { requerir } from '@/lib/auth';
 import { leer } from '@/lib/redis';
-import { ACTIVIDADES, importes, numeroFactura, vencida } from '@/lib/calculos';
+import { ACTIVIDADES, importes, numeroFactura, r2, vencida } from '@/lib/calculos';
 import { eur, hoy } from '@/lib/formato';
 import SinBD from '@/components/SinBD';
 import { puede } from '@/lib/permisos';
@@ -22,7 +22,7 @@ export default async function Facturas({ searchParams }) {
     .filter((f) => !ACTIVIDADES[a] || f.actividad === a)
     .filter((f) => estado !== 'pendientes' || !f.cobrada)
     .sort((x, y) => y.fecha.localeCompare(x.fecha) || y.numero - x.numero);
-  const porCobrar = todas.filter((f) => !f.cobrada).reduce((s, f) => s + importes(f).total, 0);
+  const porCobrar = r2(todas.filter((f) => !f.cobrada).reduce((s, f) => s + importes(f).total, 0));
   const vencidas = todas.filter((f) => estadoDe(f) === 'vencida');
 
   // Agrupadas por mes, con lo facturado de cada uno.
