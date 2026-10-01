@@ -223,3 +223,25 @@ fieldset.solo-ver:disabled .campo { opacity: 1; color: var(--ink); -webkit-text-
 
 .celda .v.fuerte { color: var(--ink); font-weight: 600; }
 .celda .peso { font-weight: 600; }
+
+/* Tarjetas del resumen, al estilo de la app Salud: título de color, cifra grande en letra redondeada */
+.hcards { display: flex; flex-direction: column; gap: 12px; margin-bottom: 30px; }
+.hcard { display: block; background: var(--surface); border-radius: 12px; padding: 12px 16px 14px; color: var(--ink); text-decoration: none; position: relative; overflow: hidden; }
+.hcard.ir:active { background: var(--relleno); }
+.hcard-t { display: flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 600; color: var(--c); margin-bottom: 6px; }
+.hcard-t > span:last-child { margin-left: auto; color: var(--muted); font-weight: 400; font-size: 13px; }
+.hcard.ir .hcard-t > span:last-child::after { content: ''; display: inline-block; width: 6px; height: 6px; border-right: 2px solid var(--muted); border-top: 2px solid var(--muted); transform: rotate(45deg); opacity: 0.55; margin-left: 8px; vertical-align: 1px; }
+.hcard-v { font-family: ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; font-size: 34px; font-weight: 600; line-height: 1.1; letter-spacing: 0; font-variant-numeric: tabular-nums; }
+.hcard-v small { font-size: 17px; font-weight: 500; color: var(--muted); margin-left: 4px; }
+.hcard-s { color: var(--muted); font-size: 15px; margin-top: 4px; max-width: 30ch; }
+.hcard-cambio { font-size: 13px; font-weight: 600; margin-top: 8px; }
+.hcard-cambio.sube { color: var(--in); } .hcard-cambio.baja { color: var(--out); }
+.mini-barras { position: absolute; right: 16px; bottom: 14px; display: flex; align-items: flex-end; gap: 3px; height: 44px; }
+.mini-barras span { width: 5px; border-radius: 2px; background: var(--c); opacity: 0.85; }
+@media (max-width: 380px) { .mini-barras { display: none; } }
+.ico-solo svg { width: 18px; height: 18px; display: block; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Icono de color en las filas, como en Ajustes */
+.ico-cuadro { flex: none; width: 29px; height: 29px; border-radius: 7px; display: grid; place-items: center; color: #fff; }
+.ico-cuadro svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.celda:has(.ico-cuadro) + .celda::before { left: 57px; }

@@ -2,10 +2,11 @@ import Link from 'next/link';
 import { requerir } from '@/lib/auth';
 import { leer } from '@/lib/redis';
 import { ACTIVIDADES, casillas303, importes, proximoPlazo, r2, resumenAnual, trimestre, vencida } from '@/lib/calculos';
-import { eur, fechaCorta, hoy } from '@/lib/formato';
+import { eur, eurSin, fechaCorta, fechaTexto, hoy } from '@/lib/formato';
 import SinBD from '@/components/SinBD';
 import { Presentado } from '@/components/Acciones';
 import Grafica from '@/components/Grafica';
+import Ico from '@/components/Ico';
 import { puede } from '@/lib/permisos';
 
 export const dynamic = 'force-dynamic';
@@ -34,7 +35,14 @@ export default async function Resumen({ searchParams }) {
   const esteAnio = anio === anioActual;
   const tHoy = trimestre(h);
   const qHoy = resumenAnual(facturas, gastos, anioActual, pagos(anioActual)).trimestres[tHoy - 1];
-  const apartado = Math.max(0, qHoy.m303) + qHoy.m130;
+  // Si el trimestre anterior aún no está marcado como presentado, lo primero es pagar ese.
+  const debe = qPlazo && !qPlazo.presentado ? qPlazo : null;
+  const qAhora = debe && plazo.anio === anioActual
+    ? resumenAnual(facturas, gastos, anioActual, { ...pagos(anioActual), [plazo.t]: debe.m130 }).trimestres[tHoy - 1]
+    : qHoy;
+  const apartado = Math.max(0, qAhora.m303) + qAhora.m130;
+  const aPagar = debe ? Math.max(0, debe.m303) + debe.m130 : 0;
+  const mesPago = ['abril', 'julio', 'octubre', 'enero'][tHoy - 1];
   // Previsión: al ritmo actual, cómo cierras el año.
   const dia = (Date.parse(h) - Date.parse(`${anioActual}-01-01`)) / 864e5 + 1;
   const ritmo = 365 / Math.max(dia, 30);
@@ -49,6 +57,9 @@ export default async function Resumen({ searchParams }) {
   const porCliente = {};
   for (const f of facturas.filter((x) => x.fecha.startsWith(`${anio}-`))) porCliente[f.cliente.nombre] = (porCliente[f.cliente.nombre] || 0) + f.base;
   const top = Object.entries(porCliente).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  // En la gráfica, el último mes con algo facturado o gastado (hasta hoy).
+  const tope = esteAnio ? Number(h.slice(5, 7)) - 1 : 11;
+  const ultimoMes = Math.max(0, ...meses.map((m, i) => (i <= tope && (m.ing || m.gas) ? i : 0)));
   const exportar = (tipo, t) => `/api/exportar?tipo=${tipo}&anio=${anio}${t ? `&t=${t}` : ''}`;
 
   return (
@@ -70,49 +81,42 @@ export default async function Resumen({ searchParams }) {
         </div>
       )}
 
-      {vencidas.length > 0 && (
-        <section className="grupo">
-          <div className="grupo-c">
-            <Link href="/facturas?estado=pendientes" className="celda ir">
-              <span className="txt"><strong className="rojo">{vencidas.length === 1 ? '1 factura vencida' : `${vencidas.length} facturas vencidas`}</strong><small>{vencidas.map((f) => f.cliente.nombre).slice(0, 3).join(', ')}</small></span>
-              <span className="v">{eur(vencidas.reduce((s, f) => s + importes(f).total, 0))}</span>
-            </Link>
-          </div>
-        </section>
-      )}
-
       {facturado > 0 && (
-        <section className="grupo">
-          <h2 className="grupo-t">{esteAnio ? 'Este año' : anio}</h2>
-          <div className="grupo-c">
-            <div className="celda"><span className="txt">Facturado<small>Sin IVA</small></span><span className="v">{eur(facturado)}</span></div>
-            <div className="celda"><span className="txt">Gastos<small>Sin IVA</small></span><span className="v">{eur(facturado - rendimiento)}</span></div>
-            <div className="celda"><span className="txt"><strong className="peso">Beneficio</strong><small>Antes de impuestos</small></span><span className="v fuerte">{eur(rendimiento)}</span></div>
-          </div>
-          {cambio !== null && <p className="grupo-pie">Has facturado un {Math.abs(cambio).toFixed(0)} % {cambio >= 0 ? 'más' : 'menos'} que en el mismo periodo de {anio - 1}.</p>}
-        </section>
-      )}
+        <div className="hcards">
+          <section className="hcard" style={{ '--c': '#007AFF' }}>
+            <h2 className="hcard-t"><Ico n="beneficio" solo />Beneficio<span>{esteAnio ? 'este año' : anio}</span></h2>
+            <p className="hcard-v">{eurSin(rendimiento)}<small>€</small></p>
+            <p className="hcard-s">Facturado {eur(facturado)} · Gastos {eur(facturado - rendimiento)}</p>
+            {cambio !== null && <p className={`hcard-cambio ${cambio >= 0 ? 'sube' : 'baja'}`}>{cambio >= 0 ? '▲' : '▼'} {Math.abs(cambio).toFixed(0)} % respecto a {anio - 1}</p>}
+            <div className="mini-barras" aria-hidden>{meses.map((m, i) => <span key={i} style={{ height: `${Math.max(4, (Math.max(0, m.ing - m.gas) / Math.max(1, ...meses.map((x) => x.ing - x.gas))) * 100)}%` }} />)}</div>
+          </section>
 
-      {esteAnio && facturas.length > 0 && (
-        <section className="grupo">
-          <h2 className="grupo-t">Este trimestre</h2>
-          <div className="grupo-c">
-            <div className="celda">
-              <span className="txt">Aparta para Hacienda<small>IVA {eur(Math.max(0, qHoy.m303))} + IRPF {eur(qHoy.m130)}</small></span>
-              <span className="v naranja">{eur(apartado)}</span>
-            </div>
-            <div className="celda">
-              <span className="txt">Plazo del {plazo.t}T<small>Hasta el {fechaCorta(plazo.fecha)}{qPlazo && !qPlazo.presentado ? ` · 303 ${qPlazo.m303 < 0 ? `${eur(-qPlazo.m303)} a compensar` : eur(qPlazo.m303)}, 130 ${eur(qPlazo.m130)}` : ''}</small></span>
-              <span className="v">{plazo.dias === 0 ? 'Hoy' : plazo.dias === 1 ? 'Mañana' : `${plazo.dias} días`}</span>
-            </div>
-            {r.pendiente > 0 && (
-              <Link href="/facturas?estado=pendientes" className="celda ir">
-                <span className="txt">Por cobrar<small>{facturas.filter((f) => !f.cobrada && f.fecha.startsWith(`${anio}-`)).length} facturas</small></span>
-                <span className="v">{eur(r.pendiente)}</span>
-              </Link>
-            )}
-          </div>
-        </section>
+          {esteAnio && (
+            <section className="hcard" style={{ '--c': '#FF9500' }}>
+              <h2 className="hcard-t"><Ico n="hacienda" solo />Hacienda<span>{debe ? `${plazo.t}T ${plazo.anio}` : `${tHoy}T ${anioActual}`}</span></h2>
+              {debe ? (
+                <>
+                  <p className="hcard-v">{eurSin(aPagar)}<small>€ a pagar</small></p>
+                  <p className="hcard-s">Hasta el {fechaTexto(plazo.fecha)}, {plazo.dias === 0 ? 'hoy es el último día' : plazo.dias === 1 ? 'queda 1 día' : `quedan ${plazo.dias} días`} · 303 {debe.m303 < 0 ? `${eur(-debe.m303)} a compensar` : eur(debe.m303)}, 130 {eur(debe.m130)}</p>
+                  <p className="hcard-s">Del {tHoy}T llevas {eur(apartado)} para apartar.</p>
+                </>
+              ) : (
+                <>
+                  <p className="hcard-v">{eurSin(apartado)}<small>€ para apartar</small></p>
+                  <p className="hcard-s">IVA {eur(Math.max(0, qAhora.m303))} + IRPF {eur(qAhora.m130)} · se paga del 1 al 20 de {mesPago}</p>
+                </>
+              )}
+            </section>
+          )}
+
+          {r.pendiente > 0 && (
+            <Link href="/facturas?estado=pendientes" className="hcard ir" style={{ '--c': '#C69500' }}>
+              <h2 className="hcard-t"><Ico n="cobrar" solo />Por cobrar<span>{facturas.filter((f) => !f.cobrada && f.fecha.startsWith(`${anio}-`)).length} facturas</span></h2>
+              <p className="hcard-v">{eurSin(r.pendiente)}<small>€</small></p>
+              {vencidas.length > 0 && <p className="hcard-s rojo">{vencidas.length === 1 ? '1 vencida' : `${vencidas.length} vencidas`}: {vencidas.map((f) => f.cliente.nombre).slice(0, 3).join(', ')}</p>}
+            </Link>
+          )}
+        </div>
       )}
 
       {limite > 0 && (
@@ -132,8 +136,8 @@ export default async function Resumen({ searchParams }) {
         <section className="grupo">
           <h2 className="grupo-t">Si sigues a este ritmo</h2>
           <div className="grupo-c">
-            <div className="celda"><span className="txt">Facturarás en {anio}</span><span className="v">{eur(prevFact)}</span></div>
-            <div className="celda"><span className="txt">Ganarás tras gastos</span><span className="v">{eur(prevRend)}</span></div>
+            <div className="celda"><Ico n="factura" /><span className="txt">Facturarás en {anio}</span><span className="v">{eur(prevFact)}</span></div>
+            <div className="celda"><Ico n="beneficio" /><span className="txt">Ganarás tras gastos</span><span className="v">{eur(prevRend)}</span></div>
           </div>
           <p className="grupo-pie">Lo facturado hasta hoy ({eur(facturado)}) llevado a 12 meses.{limite > 0 ? (prevRend > limite ? ` Te pasarías del límite de la tarifa plana en ${eur(prevRend - limite)}.` : ` Quedarías ${eur(limite - prevRend)} por debajo del límite de la tarifa plana.`) : ''}</p>
         </section>
@@ -144,6 +148,7 @@ export default async function Resumen({ searchParams }) {
         <div className="grupo-c">
           {r.porActividad.map((a) => (
             <div key={a.actividad} className="celda">
+              <Ico n="actividad" />
               <span className="txt">{ACTIVIDADES[a.actividad]}<small>Facturado {eur(a.ingresos)}, gastos {eur(a.gastos)}</small></span>
               <span className="v">{eur(a.rendimiento)}</span>
             </div>
@@ -154,7 +159,7 @@ export default async function Resumen({ searchParams }) {
       <section className="grupo">
         <h2 className="grupo-t">Mes a mes</h2>
         <div className="grupo-c relleno">
-          <Grafica meses={meses} anio={anio} actual={esteAnio ? Number(h.slice(5, 7)) - 1 : undefined} />
+          <Grafica meses={meses} anio={anio} actual={ultimoMes} />
         </div>
       </section>
 
@@ -173,9 +178,9 @@ export default async function Resumen({ searchParams }) {
       <section className="grupo">
         <h2 className="grupo-t">Descargas</h2>
         <div className="grupo-c">
-          <a href={exportar('facturas')} className="celda ir"><span className="txt">Facturas de {anio} en Excel</span></a>
-          <a href={exportar('gastos')} className="celda ir"><span className="txt">Gastos de {anio} en Excel</span></a>
-          <a href="/api/avisos" className="celda ir"><span className="txt">Plazos de Hacienda en tu calendario<small>Aviso 7 días y 1 día antes</small></span></a>
+          <a href={exportar('facturas')} className="celda ir"><Ico n="factura" /><span className="txt">Facturas de {anio} en Excel</span></a>
+          <a href={exportar('gastos')} className="celda ir"><Ico n="gasto" /><span className="txt">Gastos de {anio} en Excel</span></a>
+          <a href="/api/avisos" className="celda ir"><Ico n="plazo" /><span className="txt">Plazos de Hacienda en tu calendario<small>Aviso 7 días y 1 día antes</small></span></a>
         </div>
       </section>
 
