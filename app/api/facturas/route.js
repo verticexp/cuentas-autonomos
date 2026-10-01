@@ -1,5 +1,5 @@
 import { leer, guardar, borrar, leerUno, redis, clave } from '@/lib/redis';
-import { MODO, registroAlta } from '@/lib/verifactu';
+import { modoDe, registroAlta } from '@/lib/verifactu';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { subirFactura } from '@/lib/drive';
 import { enviarNomina } from '@/lib/controlat';
@@ -45,11 +45,12 @@ export async function POST(req) {
   const f = { id: `${serie}${anio}-${numero}`, numero, anio, ...datos };
   if (serie) f.serie = serie;
   if (original) f.rectifica = { id: original.id, numero: numeroFactura(original), fecha: original.fecha };
-  if (MODO) {
+  const modo = modoDe(u);
+  if (modo) {
     const nif = u.emisor?.nif;
     if (!nif) return error('Rellena tu NIF en Ajustes');
     const r = registroAlta(f, nif, (await redis.get(clave(u, 'verifactu'))) || '');
-    f.verifactu = { huella: r.Huella, fechaHora: r.FechaHoraHusoGenRegistro, modo: MODO };
+    f.verifactu = { huella: r.Huella, fechaHora: r.FechaHoraHusoGenRegistro, modo };
     await guardar(u, 'registros', { id: r.Huella, factura: f.id, ...r });
     await redis.set(clave(u, 'verifactu'), r.Huella);
   }
