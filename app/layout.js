@@ -9,6 +9,10 @@ import { COLOR_BASE } from '@/lib/marca';
 import { permisosDe } from '@/lib/permisos';
 import Bloqueo from '@/components/Bloqueo';
 import Llegada from '@/components/Llegada';
+import Arranque from '@/components/Arranque';
+
+// Si ya se vio en esta sesión (o es una página pública/PDF), la pantalla de inicio no llega a pintarse.
+const YA_VISTO = "try{var p=location.pathname;if(sessionStorage.getItem('netto-arranque')||p.startsWith('/p/')||p.endsWith('/pdf')||p.startsWith('/invitacion'))document.documentElement.dataset.arranque='visto'}catch(e){}";
 
 export const metadata = {
   title: 'Netto',
@@ -29,10 +33,13 @@ export default async function RootLayout({ children }) {
   const propio = u?.marca?.color;
   const color = propio || COLOR_BASE;
   return (
-    <html lang="es">
+    <html lang="es" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: YA_VISTO }} />
       </head>
       <body style={{ '--acento': color }} data-marca={propio ? 'propia' : 'base'}>
+        <Arranque />
+        <script dangerouslySetInnerHTML={{ __html: 'window.__arranque=performance.now()' }} />
         {children}
         <Suspense><TabBar permisos={permisosDe(u)} /><Llegada /></Suspense>
         {u && <Bloqueo usuario={u.id} />}
