@@ -10,5 +10,6 @@ export async function POST(req) {
   if (r.error) return NextResponse.redirect(new URL(`/login?error=${encodeURIComponent(r.error)}`, req.url), 303);
   const res = NextResponse.redirect(new URL('/ajustes', req.url), 303);
   res.cookies.set('t', await crearSesion(r.usuario.id), opcionesCookie);
+  res.cookies.set('recien', '1', { path: '/', maxAge: 60, sameSite: 'lax' }); // acaba de entrar: sin pantalla de bloqueo
   return res;
 }
