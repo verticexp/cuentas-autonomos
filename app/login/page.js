@@ -2,6 +2,7 @@ import { hayUsuarios } from '@/lib/auth';
 import { redis } from '@/lib/redis';
 import SinBD from '@/components/SinBD';
 import EntrarFaceId from '@/components/EntrarFaceId';
+import Logo from '@/components/Logo';
 
 export const dynamic = 'force-dynamic';
 const ERRORES = { 1: 'Email o contraseña incorrectos.', bloqueado: 'Demasiados intentos. Espera 15 minutos.' };
@@ -13,7 +14,7 @@ export default async function Login({ searchParams }) {
   return (
     <main className="login">
       <form method="post" action={primera ? '/api/registro' : '/api/login'}>
-        <h1>Netto</h1>
+        <h1><Logo className="logo-login" /></h1>
         {primera && <p className="nota">Crea la cuenta de administrador.</p>}
         {error && <p className="error">{ERRORES[error] || error}</p>}
         {!primera && <EntrarFaceId />}
