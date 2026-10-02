@@ -1,4 +1,4 @@
-// Iconos de las filas, en un cuadrado de color como en Ajustes del iPhone.
+// Iconos de las filas, en un cuadrado menta con el trazo en verde (marca Netto).
 const P = {
   factura: <path d="M7 3h7l4 4v14H7zM14 3v4h4M10 12h5M10 16h5" />,
   gasto: <><rect x="3.5" y="6" width="17" height="12" rx="2" /><path d="M3.5 10h17" /></>,
@@ -17,6 +17,8 @@ const P = {
   seguridad: <><rect x="5" y="10.5" width="14" height="10" rx="2" /><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3" /></>,
   drive: <path d="M7 18h10.5a4 4 0 0 0 .6-7.95A6 6 0 0 0 6.6 9.1 4.5 4.5 0 0 0 7 18z" />,
   conexion: <path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" />,
+  presupuesto: <path d="M7 3h7l4 4v14H7zM14 3v4h4M10 13l1.5 1.5L15 11" />,
+  mas: <g fill="currentColor" stroke="none"><circle cx="6" cy="12" r="1.6" /><circle cx="12" cy="12" r="1.6" /><circle cx="18" cy="12" r="1.6" /></g>,
   usuarios: <><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20c1-3.5 3.5-5 6.5-5s5.5 1.5 6.5 5M16 4.5a3.5 3.5 0 0 1 0 7M18 15c2 .7 3.2 2.3 3.7 5" /></>,
 };
 export const COLOR = {
@@ -28,5 +30,5 @@ export const COLOR = {
 export default function Ico({ n, solo }) {
   const svg = <svg viewBox="0 0 24 24" aria-hidden>{P[n]}</svg>;
   if (solo) return <span className="ico-solo" style={{ color: COLOR[n] }}>{svg}</span>;
-  return <span className="ico-cuadro" style={{ background: COLOR[n] }}>{svg}</span>;
+  return <span className="ico-cuadro">{svg}</span>;
 }
