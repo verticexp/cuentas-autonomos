@@ -28,7 +28,7 @@ export default function FaceId({ lista }) {
   return (
     <section className="tarjeta formulario faceid">
       <h3>Face ID</h3>
-      <p className="nota">Entra sin contraseña y la app se bloquea sola si la dejas un rato. Tu cara nunca sale del móvil.</p>
+      <p className="nota">Netto siempre se bloquea al cerrarla. Con Face ID (o la huella) la desbloqueas sin escribir la contraseña. Tu cara nunca sale del dispositivo.</p>
       {lista.length > 0 && (
         <ul className="dispositivos">
           {lista.map((k) => (

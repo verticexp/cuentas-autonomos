@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { alPulsar, navegar } from '@/lib/transicion';
+import Logo from '@/components/Logo';
 
 const TABS = [
   { href: '/', permiso: 'resumen', nombre: 'Resumen', icono: <path d="M5 20V11M10 20V5M15 20v-7M20 20V9" /> },
@@ -50,6 +51,7 @@ export default function TabBar({ permisos = [] }) {
 
   return (
     <div className="tabbar">
+      <Link href="/" className="tabbar-logo" aria-label="Netto, resumen" onClick={(e) => { e.preventDefault(); ir('/'); }}><Logo /></Link>
       <nav
         ref={nav}
         className="tabs"
@@ -79,6 +81,7 @@ export default function TabBar({ permisos = [] }) {
       </nav>
       {permisos.includes('facturar') && <Link href={nuevo} prefetch className={`mas${path === nuevo ? ' abierta' : ''}`} aria-label={path.startsWith('/presupuestos') ? 'Nuevo presupuesto' : 'Nueva factura'} onClick={(e) => { vibrar(); if (path !== nuevo) alPulsar(router, nuevo, 'subir')(e); }}>
         <svg viewBox="0 0 24 24" aria-hidden><path d="M12 5v14M5 12h14" /></svg>
+        <span className="mas-txt">{path.startsWith('/presupuestos') ? 'Nuevo presupuesto' : 'Nueva factura'}</span>
       </Link>}
     </div>
   );
