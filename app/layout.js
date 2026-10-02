@@ -42,7 +42,7 @@ export default async function RootLayout({ children }) {
         <script dangerouslySetInnerHTML={{ __html: 'window.__arranque=performance.now()' }} />
         {children}
         <Suspense><TabBar permisos={permisosDe(u)} /><Llegada /></Suspense>
-        {u && <Bloqueo usuario={u.id} />}
+        {u && <Bloqueo usuario={u.id} email={u.email} />}
       </body>
     </html>
   );

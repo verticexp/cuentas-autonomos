@@ -150,11 +150,8 @@ button:focus-visible, input:focus-visible, a:focus-visible, select:focus-visible
 .separador::before, .separador::after { content: ''; flex: 1; height: 0.5px; background: var(--line); }
 .login h1 { font-size: 34px; font-weight: 700; letter-spacing: 0.01em; }
 .login button { border-radius: 999px; background: var(--marca); color: var(--sobre); font-weight: 600; }
-.pantalla-bloqueo { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; background: var(--paper); padding: 24px; text-align: center; }
-.pantalla-bloqueo > div { display: flex; flex-direction: column; align-items: center; gap: 14px; width: 100%; max-width: 320px; }
-.pantalla-bloqueo .icono-faceid { width: 56px; height: 56px; color: var(--marca); stroke-width: 1.3; }
-.pantalla-bloqueo h1 { font-size: 28px; font-weight: 700; }
-.pantalla-bloqueo .boton { width: 100%; }
+.pantalla-bloqueo { position: fixed; inset: 0; z-index: 50; background: var(--paper); overflow-y: auto; }
+.logo-login { display: block; height: 46px; width: auto; color: var(--ink); margin-bottom: 8px; }
 .enlace-claro { color: var(--marca); font-weight: 400; padding: 8px; }
 
 /* Usuarios y permisos */
@@ -380,8 +377,17 @@ html[data-vt=cifras]::view-transition-group(root) { animation-duration: 0.24s; }
 html[data-arranque=visto] #arranque { display: none; }
 .arr-centro { transition: transform 0.35s cubic-bezier(0.55, 0, 1, 0.45), opacity 0.35s cubic-bezier(0.55, 0, 1, 0.45); }
 #arranque.fuera .arr-centro { transform: scale(0.97); opacity: 0; }
-.arr-logo { display: block; width: min(56vw, 220px); height: auto; animation: arr-aparece 0.55s var(--salida) both; }
-@keyframes arr-aparece { from { opacity: 0; transform: scale(0.96); } }
+/* Sale la N sola en el centro, se coloca como mayúscula y de detrás van saliendo «etto» */
+.arr-logo { display: block; width: min(62vw, 250px); height: auto; overflow: visible; }
+.arr-logo .logo-n { transform-box: fill-box; transform-origin: center; animation: arr-n 1.15s both; }
+.arr-logo .logo-l { animation: arr-letra 0.5s var(--salida) calc(0.78s + var(--i) * 0.07s) both; }
+@keyframes arr-n {
+  0% { opacity: 0; transform: translateX(898px) scale(0.75); animation-timing-function: var(--salida); }
+  38% { opacity: 1; transform: translateX(898px) scale(1.25); }
+  52% { opacity: 1; transform: translateX(898px) scale(1.25); animation-timing-function: var(--vt-curva); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes arr-letra { from { opacity: 0; transform: translateX(-160px); } }
 @keyframes arr-seguro { to { opacity: 0; visibility: hidden; } }
 @media (prefers-reduced-motion: reduce) { #arranque { display: none; } }
 
