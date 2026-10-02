@@ -10,6 +10,7 @@ import SinBD from '@/components/SinBD';
 import { Presentado } from '@/components/Acciones';
 import Grafica from '@/components/Grafica';
 import Ico from '@/components/Ico';
+import Logo from '@/components/Logo';
 import { puede } from '@/lib/permisos';
 
 export const dynamic = 'force-dynamic';
@@ -27,17 +28,55 @@ export default async function Resumen({ searchParams }) {
     sinCobrar, porCobrar, vencidas, prevFact, prevBeneficio, meses, cambio, ultimoMes, top, limite } = P;
   const pagos = (y) => u.pagos130?.[y] || {};
   const exportar = (tipo, t) => `/api/exportar?tipo=${tipo}&anio=${anio}${t ? `&t=${t}` : ''}`;
+  // Curva del beneficio acumulado mes a mes, hasta el último mes con movimiento.
+  const acum = meses.slice(0, (esteAnio ? ultimoMes : 11) + 1).reduce((a, m) => [...a, (a.at(-1) ?? 0) + m.ing - m.gas], []);
+  const [bajo, alto] = [Math.min(0, ...acum), Math.max(1, ...acum)];
+  const puntos = acum.map((v, i) => [acum.length > 1 ? (i / (acum.length - 1)) * 120 : 120, 40 - ((v - bajo) / (alto - bajo)) * 36]);
+  const linea = puntos.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join('');
+  const accesos = [
+    puede(u, 'facturas') && { href: '/facturas', n: 'factura', t: 'Facturas' },
+    puede(u, 'gastos') && { href: '/gastos', n: 'gasto', t: 'Gastos' },
+    puede(u, 'facturas') && { href: '/presupuestos', n: 'presupuesto', t: 'Presupuestos' },
+    { href: '/ajustes', n: 'mas', t: 'Más' },
+  ].filter(Boolean);
 
   return (
     <main className="pagina">
-      <header className="cabecera">
-        <h1 className="titulo">Resumen</h1>
-        <nav className="anios">
-          <Ir href={`/?anio=${anio - 1}`} tipo="cifras" aria-label="Año anterior">‹</Ir>
-          <strong>{anio}</strong>
-          {anio < anioActual ? <Ir href={`/?anio=${anio + 1}`} tipo="cifras" aria-label="Año siguiente">›</Ir> : <span className="off">›</span>}
-        </nav>
+      <header className="inicio">
+        <div className="inicio-barra">
+          <Logo />
+          <nav className="anios">
+            <Ir href={`/?anio=${anio - 1}`} tipo="cifras" aria-label="Año anterior">‹</Ir>
+            <strong>{anio}</strong>
+            {anio < anioActual ? <Ir href={`/?anio=${anio + 1}`} tipo="cifras" aria-label="Año siguiente">›</Ir> : <span className="off">›</span>}
+          </nav>
+        </div>
+        <h1 className="inicio-hola">Hola, {String(u.nombre || '').split(' ')[0] || 'equipo'}</h1>
+        <p className="inicio-sub">{esteAnio ? 'Así va tu año.' : `Así cerraste ${anio}.`}</p>
       </header>
+
+      {facturado > 0 && (
+        <section className="saldo">
+          <h2 className="saldo-t">Beneficio {esteAnio ? 'este año' : `de ${anio}`}</h2>
+          <div className="saldo-fila">
+            <p className="saldo-v">{eurSin(beneficio)}<small> €</small></p>
+            {acum.length > 1 && (
+              <svg className="saldo-curva" viewBox="-2 0 124 44" preserveAspectRatio="none" aria-hidden>
+                <path className="area" d={`${linea}L120 44L0 44Z`} />
+                <path className="trazo" d={linea} vectorEffect="non-scaling-stroke" />
+              </svg>
+            )}
+          </div>
+          {cambio !== null && <p className={`saldo-cambio ${cambio >= 0 ? 'sube' : 'baja'}`}>{cambio >= 0 ? '↑' : '↓'} {Math.abs(cambio).toFixed(0)} % frente a {anio - 1}</p>}
+          <p className="saldo-s">Facturado {eur(facturado)} · Gastos {eur(gastado)}</p>
+        </section>
+      )}
+
+      <nav className="accesos" aria-label="Accesos">
+        {accesos.map((a) => (
+          <Ir key={a.href} href={a.href} tipo={a.href === '/presupuestos' ? 'adelante' : 'tab-der'} className="acceso"><Ico n={a.n} /><span>{a.t}</span></Ir>
+        ))}
+      </nav>
 
       {!facturas.length && (
         <div className="vacio">
@@ -49,14 +88,6 @@ export default async function Resumen({ searchParams }) {
 
       {facturado > 0 && (
         <div className="hcards">
-          <section className="hcard" style={{ '--c': '#007AFF' }}>
-            <h2 className="hcard-t"><Ico n="beneficio" solo />Beneficio<span>{esteAnio ? 'este año' : anio}</span></h2>
-            <p className="hcard-v">{eurSin(beneficio)}<small>€</small></p>
-            <p className="hcard-s">Facturado {eur(facturado)} · Gastos {eur(gastado)}</p>
-            {cambio !== null && <p className={`hcard-cambio ${cambio >= 0 ? 'sube' : 'baja'}`}>{cambio >= 0 ? '▲' : '▼'} {Math.abs(cambio).toFixed(0)} % respecto a {anio - 1}</p>}
-            <div className="mini-barras" aria-hidden>{meses.map((m, i) => <span key={i} style={{ height: `${Math.max(4, (Math.max(0, m.ing - m.gas) / Math.max(1, ...meses.map((x) => x.ing - x.gas))) * 100)}%` }} />)}</div>
-          </section>
-
           {esteAnio && (c303 || c130) && (
             <section className="hcard" style={{ '--c': '#FF9500' }}>
               <h2 className="hcard-t"><Ico n="hacienda" solo />Hacienda<span>{debe ? `${plazo.t}T ${plazo.anio}` : `${tHoy}T ${anioActual}`}</span></h2>

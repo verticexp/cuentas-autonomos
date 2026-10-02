@@ -1,4 +1,5 @@
 import { Suspense } from 'react';
+import '@fontsource-variable/plus-jakarta-sans';
 import './globals.css';
 import './cuentas.css';
 import './movil.css';
@@ -22,8 +23,8 @@ export const metadata = {
 export const viewport = {
   width: 'device-width', initialScale: 1, viewportFit: 'cover',
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#F2F2F7' },
-    { media: '(prefers-color-scheme: dark)', color: '#000000' },
+    { media: '(prefers-color-scheme: light)', color: '#F3F4F1' },
+    { media: '(prefers-color-scheme: dark)', color: '#08110F' },
   ],
 };
 
