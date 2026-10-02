@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Ir from '@/components/Ir';
 import { notFound } from 'next/navigation';
 import { requerir } from '@/lib/auth';
 import { leer, leerUno } from '@/lib/redis';
@@ -25,10 +25,10 @@ export default async function Factura({ params }) {
   return (
     <main className="pagina">
       <Volver href="/facturas">Facturas</Volver>
-      <section className="factura-hero" style={{ viewTransitionName: 'factura-tarjeta' }}>
+      <section className="factura-hero">
         <p className="fh-num">Factura {numeroFactura(f)}{actividades.length > 1 ? ` · ${nombresActividad(actividades)[f.actividad] || ''}` : ''}</p>
-        <h1 className="fh-cliente" style={{ viewTransitionName: 'factura-cliente' }}>{f.cliente.nombre}</h1>
-        <p className="fh-total" style={{ viewTransitionName: 'factura-total' }}>{eur(i.total)}</p>
+        <h1 className="fh-cliente">{f.cliente.nombre}</h1>
+        <p className="fh-total">{eur(i.total)}</p>
         <dl className="fh-desglose">
           <div><dt>Base</dt><dd>{eur(i.base)}</dd></div>
           <div><dt>IVA {f.ivaPct} %</dt><dd>{eur(i.iva)}</dd></div>
@@ -41,10 +41,10 @@ export default async function Factura({ params }) {
         {editar && <div className="fh-cobrada"><Cobrada id={f.id} cobrada={f.cobrada} /></div>}
       </section>
       <div className="acciones-factura">
-        <Link href={`/facturas/${f.id}/pdf`} className="boton">Ver / descargar PDF</Link>
+        <Ir href={`/facturas/${f.id}/pdf`} className="boton">Ver / descargar PDF</Ir>
         {editar && <>
-        <Link href={`/facturas/nueva?duplica=${f.id}`} className="boton sec">Duplicar</Link>
-        {!f.serie && <Link href={`/facturas/nueva?rectifica=${f.id}`} className="boton sec">Rectificar</Link>}
+        <Ir href={`/facturas/nueva?duplica=${f.id}`} tipo="subir" className="boton sec">Duplicar</Ir>
+        {!f.serie && <Ir href={`/facturas/nueva?rectifica=${f.id}`} tipo="subir" className="boton sec">Rectificar</Ir>}
         <Borrar url={`/api/facturas?id=${f.id}`} pregunta={`¿Borrar la factura ${numeroFactura(f)}? Hacienda exige numeración correlativa: si ya la has enviado, mejor haz una rectificativa.`} volver="/facturas" />
         </>}
       </div>
