@@ -302,11 +302,6 @@ html:active-view-transition .factura-hero { animation: none; }
 .fh-estado.e-vencida { color: var(--out); } .fh-estado.e-pendiente { color: var(--hacienda); } .fh-estado.e-cobrada { color: var(--in); }
 .fh-cobrada { margin-top: 12px; }
 .fh-cobrada > * { width: 100%; }
-::view-transition-group(factura-tarjeta), ::view-transition-group(factura-cliente), ::view-transition-group(factura-total) { animation-duration: 0.3s; animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1); }
-::view-transition-old(root) { animation: 0.18s ease both salir-vt; }
-::view-transition-new(root) { animation: 0.24s ease both entrar-vt; }
-@keyframes salir-vt { to { opacity: 0; transform: scale(0.98); } }
-@keyframes entrar-vt { from { opacity: 0; } }
 a.fila { transition: background-color 0.15s ease, transform 0.15s ease; }
 a.fila:active { transform: scale(0.985); }
 
@@ -330,25 +325,50 @@ a.fila:active { transform: scale(0.985); }
 .pagina > .titulo + .tarjeta > h3, .pagina > .titulo + .tarjetas > .tarjeta:first-child > h3 { display: none; }
 .pagina > .titulo + .tarjeta > h3 + .nota { margin-top: 0; }
 
-/* Transiciones entre pantallas (lib/transicion.js). La barra de pestañas se queda quieta. */
-.tabbar { view-transition-name: tabbar; }
-::view-transition-group(tabbar) { animation: none; z-index: 10; }
+/* Transiciones entre pantallas (lib/transicion.js). Curva tipo iOS: arranca rápida y frena suave. */
+:root { --vt-curva: cubic-bezier(0.32, 0.72, 0, 1); }
+/* La barra y el + van aparte para que no se muevan; durante la transición conservan su desenfoque (si no, cambian de tono al acabar). */
+.tabs { view-transition-name: tabs; }
+.tabbar .mas { view-transition-name: mas; }
+::view-transition-group(tabs), ::view-transition-group(mas) { animation: none; z-index: 10; -webkit-backdrop-filter: blur(20px) saturate(1.8); backdrop-filter: blur(20px) saturate(1.8); }
+::view-transition-group(tabs) { border-radius: 999px; }
+::view-transition-group(mas) { border-radius: 50%; }
+::view-transition-old(tabs), ::view-transition-new(tabs), ::view-transition-old(mas), ::view-transition-new(mas) { animation-duration: 0.2s; }
 .segmentado.vt a.activo { view-transition-name: segmento; }
-::view-transition-group(segmento) { animation-duration: 0.28s; animation-timing-function: cubic-bezier(0.3, 0.9, 0.3, 1); }
-html[data-vt]::view-transition-group(root) { animation-duration: 0.34s; }
-html[data-vt=adelante]::view-transition-old(root) { animation: 0.34s cubic-bezier(0.3, 0.9, 0.3, 1) both vt-a-izq; }
-html[data-vt=adelante]::view-transition-new(root) { animation: 0.34s cubic-bezier(0.3, 0.9, 0.3, 1) both vt-desde-der; }
-html[data-vt=atras]::view-transition-old(root) { animation: 0.3s cubic-bezier(0.3, 0.9, 0.3, 1) both vt-a-der; z-index: 1; }
-html[data-vt=atras]::view-transition-new(root) { animation: 0.3s cubic-bezier(0.3, 0.9, 0.3, 1) both vt-desde-izq; }
-html[data-vt=subir]::view-transition-old(root) { animation: 0.36s ease both vt-al-fondo; }
-html[data-vt=subir]::view-transition-new(root) { animation: 0.36s cubic-bezier(0.3, 0.9, 0.3, 1) both vt-desde-abajo; }
-html[data-vt=fundido]::view-transition-old(root) { animation: 0.14s ease both vt-fuera; }
-html[data-vt=fundido]::view-transition-new(root) { animation: 0.2s ease both vt-dentro; }
-@keyframes vt-a-izq { to { transform: translateX(-28%); opacity: 0.5; } }
-@keyframes vt-desde-der { from { transform: translateX(100%); box-shadow: -8px 0 24px rgba(0, 0, 0, 0.08); } }
-@keyframes vt-a-der { to { transform: translateX(100%); box-shadow: -8px 0 24px rgba(0, 0, 0, 0.08); } }
-@keyframes vt-desde-izq { from { transform: translateX(-28%); opacity: 0.5; } }
-@keyframes vt-al-fondo { to { transform: scale(0.94); opacity: 0.4; } }
-@keyframes vt-desde-abajo { from { transform: translateY(100%); } }
+::view-transition-group(segmento) { animation-duration: 0.32s; animation-timing-function: var(--vt-curva); }
+/* Textos que viajan de la fila a la cabecera: la caja mide lo que el texto, así no se deforma al crecer */
+[data-vt] { width: fit-content; max-width: 100%; }
+::view-transition-group(factura-tarjeta), ::view-transition-group(factura-cliente), ::view-transition-group(factura-total) { animation-duration: 0.38s; animation-timing-function: var(--vt-curva); }
+::view-transition-image-pair(factura-cliente), ::view-transition-image-pair(factura-total) { isolation: auto; }
+::view-transition-old(factura-cliente), ::view-transition-new(factura-cliente), ::view-transition-old(factura-total), ::view-transition-new(factura-total) { height: 100%; object-fit: contain; animation-duration: 0.38s; }
+html[data-vt=abrir]::view-transition-old(root) { animation: 0.22s ease both vt-fuera; }
+html[data-vt=abrir]::view-transition-new(root) { animation: 0.3s ease 0.06s both vt-dentro; }
+/* Entrar en una pantalla: la nueva llega por la derecha con sombra; la anterior se aparta un poco y se oscurece */
+html[data-vt=adelante]::view-transition-old(root) { animation: 0.42s var(--vt-curva) both vt-apartar; }
+html[data-vt=adelante]::view-transition-new(root) { animation: 0.42s var(--vt-curva) both vt-llegar; }
+html[data-vt=atras]::view-transition-old(root) { animation: 0.36s var(--vt-curva) both vt-irse; z-index: 1; }
+html[data-vt=atras]::view-transition-new(root) { animation: 0.36s var(--vt-curva) both vt-volver; }
+/* Nueva factura o presupuesto: sube como una hoja */
+html[data-vt=subir]::view-transition-old(root) { animation: 0.46s var(--vt-curva) both vt-al-fondo; }
+html[data-vt=subir]::view-transition-new(root) { animation: 0.46s var(--vt-curva) both vt-hoja; }
+/* Pestañas: un desliz corto hacia el lado de la pestaña tocada */
+html[data-vt=tab-der]::view-transition-old(root) { animation: 0.24s var(--vt-curva) both vt-tab-a-izq; }
+html[data-vt=tab-der]::view-transition-new(root) { animation: 0.3s var(--vt-curva) both vt-tab-desde-der; }
+html[data-vt=tab-izq]::view-transition-old(root) { animation: 0.24s var(--vt-curva) both vt-tab-a-der; }
+html[data-vt=tab-izq]::view-transition-new(root) { animation: 0.3s var(--vt-curva) both vt-tab-desde-izq; }
+html[data-vt=fundido]::view-transition-old(root) { animation: 0.16s ease both vt-fuera; }
+html[data-vt=fundido]::view-transition-new(root) { animation: 0.22s ease both vt-dentro; }
+/* Cambiar de año: no se mueve nada, solo cambian las cifras */
+html[data-vt=cifras]::view-transition-group(root) { animation-duration: 0.24s; }
+@keyframes vt-apartar { to { transform: translateX(-30%); filter: brightness(0.9); } }
+@keyframes vt-llegar { from { transform: translateX(100%); box-shadow: -10px 0 30px rgba(0, 0, 0, 0.12); } }
+@keyframes vt-irse { to { transform: translateX(100%); box-shadow: -10px 0 30px rgba(0, 0, 0, 0.12); } }
+@keyframes vt-volver { from { transform: translateX(-30%); filter: brightness(0.9); } }
+@keyframes vt-al-fondo { to { transform: scale(0.93); filter: brightness(0.75); border-radius: 18px; } }
+@keyframes vt-hoja { from { transform: translateY(100%); } }
+@keyframes vt-tab-a-izq { to { transform: translateX(-24px); opacity: 0; } }
+@keyframes vt-tab-desde-der { from { transform: translateX(24px); opacity: 0; } }
+@keyframes vt-tab-a-der { to { transform: translateX(24px); opacity: 0; } }
+@keyframes vt-tab-desde-izq { from { transform: translateX(-24px); opacity: 0; } }
 @keyframes vt-fuera { to { opacity: 0; } }
-@keyframes vt-dentro { from { opacity: 0; transform: translateY(6px); } }
+@keyframes vt-dentro { from { opacity: 0; } }

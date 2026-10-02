@@ -18,7 +18,7 @@ export default async function Gasto({ params }) {
   return (
     <main className="pagina">
       <Volver href="/gastos">Gastos</Volver>
-      <fieldset className="solo-ver" style={{ viewTransitionName: 'factura-tarjeta' }} disabled={!puede(u, 'gastar')}><FormGasto hoy={hoy()} gasto={g} actividades={actividadesDe(u)} /></fieldset>
+      <fieldset className="solo-ver" disabled={!puede(u, 'gastar')}><FormGasto hoy={hoy()} gasto={g} actividades={actividadesDe(u)} /></fieldset>
       {puede(u, 'gastar') && <div style={{ marginTop: 16 }}><Borrar url={`/api/gastos?id=${encodeURIComponent(g.id)}`} pregunta={`¿Borrar «${g.concepto}»?`} volver="/gastos" /></div>}
     </main>
   );

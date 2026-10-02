@@ -33,9 +33,9 @@ export default async function Resumen({ searchParams }) {
       <header className="cabecera">
         <h1 className="titulo">Resumen</h1>
         <nav className="anios">
-          <Ir href={`/?anio=${anio - 1}`} tipo="atras" aria-label="Año anterior">‹</Ir>
+          <Ir href={`/?anio=${anio - 1}`} tipo="cifras" aria-label="Año anterior">‹</Ir>
           <strong>{anio}</strong>
-          {anio < anioActual ? <Ir href={`/?anio=${anio + 1}`} tipo="adelante" aria-label="Año siguiente">›</Ir> : <span className="off">›</span>}
+          {anio < anioActual ? <Ir href={`/?anio=${anio + 1}`} tipo="cifras" aria-label="Año siguiente">›</Ir> : <span className="off">›</span>}
         </nav>
       </header>
 

@@ -41,7 +41,8 @@ export default function TabBar({ permisos = [] }) {
 
   if (path === '/login' || path.startsWith('/invitacion') || path.startsWith('/p/') || path.endsWith('/pdf')) return null;
 
-  const ir = (h) => { if (h !== path) { setActivo(h); navegar(router, h, 'fundido'); } };
+  const orden = (h) => tabs.findIndex((t) => t.href === h);
+  const ir = (h) => { if (h !== path) { navegar(router, h, orden(h) > orden(activo) ? 'tab-der' : 'tab-izq'); setActivo(h); } };
   const tabEn = (x, y) => document.elementFromPoint(x, y)?.closest('[data-href]')?.dataset.href ?? null;
   const marcado = dedo ?? activo;
   // En presupuestos, el + crea un presupuesto; en el resto, una factura.

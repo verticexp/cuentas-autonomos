@@ -8,7 +8,7 @@ import { eur, fechaCorta, hoy } from '@/lib/formato';
 import SinBD from '@/components/SinBD';
 import FormGasto from '@/components/FormGasto';
 import Cuotas from '@/components/Cuotas';
-import FilaFactura from '@/components/FilaFactura';
+import Ir from '@/components/Ir';
 import { puede } from '@/lib/permisos';
 
 export const dynamic = 'force-dynamic';
@@ -61,13 +61,13 @@ export default async function Gastos() {
         <ul className="grupo-lista">
           {lista.map((g) => (
             <li key={g.id}>
-              <FilaFactura href={`/gastos/${encodeURIComponent(g.id)}`}>
+              <Ir href={`/gastos/${encodeURIComponent(g.id)}`} className="fila">
                 <span className="txt">
                   <strong>{g.concepto}</strong>
                   <small>{fechaCorta(g.fecha)}{actividades.length > 1 ? ` · ${NOMBRES[g.actividad] || g.actividad}` : ''}{importes(g).iva ? ` · IVA ${eur(importes(g).iva)}` : ''}</small>
                 </span>
                 <span className="imp">{eur(g.base)}</span>
-              </FilaFactura>
+              </Ir>
             </li>
           ))}
         </ul>
