@@ -1,7 +1,7 @@
-/* Marca Netto: verde principal, menta, crema y gris; letra Plus Jakarta Sans.
+/* Marca Netto: verde principal, menta, crema y gris; letra del sistema.
    Listas agrupadas como en el iPhone, sin sombras: el contenido va en grupos. */
 :root {
-  --font: 'Plus Jakarta Sans Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --verde: #0F1F1B; --menta: #E6F2EC; --crema: #FAFAF8; --gris: #8A8F8C;
   --paper: #F3F4F1; --surface: #FFFFFF; --ink: #0F1F1B; --muted: #646B67; --line: rgba(15, 31, 27, 0.12);
   --in: #1F8A55; --out: #D64035; --hacienda: #C2551C; --irpf: #E8833A;
@@ -17,7 +17,7 @@ body { --marca: var(--acento, #0F1F1B); --sobre: #fff; font-size: 17px; letter-s
   body[data-marca="base"] { --marca: #9FD8BD; --sobre: #0F1F1B; }
 }
 .pagina { padding-left: 16px; padding-right: 16px; animation: none; }
-.titulo { font-size: 32px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.2; margin: 6px 0 14px; }
+.titulo { font-size: 34px; font-weight: 700; letter-spacing: 0.01em; line-height: 1.2; margin: 6px 0 14px; }
 .cabecera { margin-bottom: 10px; }
 .nota, .rotulo { font-size: 15px; }
 
@@ -40,7 +40,7 @@ button:focus-visible, input:focus-visible, a:focus-visible, select:focus-visible
 
 /* Grupos */
 .grupo { margin-bottom: 28px; }
-.grupo-t { font-size: 19px; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 8px; }
+.grupo-t { font-size: 20px; font-weight: 700; letter-spacing: 0.01em; margin: 0 0 8px; }
 .grupo-c { background: var(--surface); border-radius: 12px; overflow: hidden; }
 .grupo-c.relleno { padding: 14px 16px 10px; }
 .grupo-pie { color: var(--muted); font-size: 13px; line-height: 1.35; margin: 7px 16px 0; }
@@ -148,7 +148,7 @@ button:focus-visible, input:focus-visible, a:focus-visible, select:focus-visible
 .boton-faceid svg, .icono-faceid { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .separador { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; margin: 6px 0 2px; }
 .separador::before, .separador::after { content: ''; flex: 1; height: 0.5px; background: var(--line); }
-.login h1 { font-size: 34px; font-weight: 700; letter-spacing: -0.03em; }
+.login h1 { font-size: 34px; font-weight: 700; letter-spacing: 0.01em; }
 .login button { border-radius: 999px; background: var(--marca); color: var(--sobre); font-weight: 600; }
 .pantalla-bloqueo { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; background: var(--paper); padding: 24px; text-align: center; }
 .pantalla-bloqueo > div { display: flex; flex-direction: column; align-items: center; gap: 14px; width: 100%; max-width: 320px; }
@@ -232,7 +232,7 @@ fieldset.solo-ver:disabled .campo { opacity: 1; color: var(--ink); -webkit-text-
 .hcard-t { display: flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 600; color: var(--c); margin-bottom: 6px; }
 .hcard-t > span:last-child { margin-left: auto; color: var(--muted); font-weight: 400; font-size: 13px; }
 .hcard.ir .hcard-t > span:last-child::after { content: ''; display: inline-block; width: 6px; height: 6px; border-right: 2px solid var(--muted); border-top: 2px solid var(--muted); transform: rotate(45deg); opacity: 0.55; margin-left: 8px; vertical-align: 1px; }
-.hcard-v { font-size: 32px; font-weight: 600; line-height: 1.1; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.hcard-v { font-family: ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; font-size: 34px; font-weight: 600; line-height: 1.1; letter-spacing: 0; font-variant-numeric: tabular-nums; }
 .hcard-v small { font-size: 17px; font-weight: 500; color: var(--muted); margin-left: 4px; letter-spacing: 0; }
 .hcard-s { color: var(--muted); font-size: 15px; margin-top: 4px; max-width: 30ch; }
 .hcard-cambio { font-size: 13px; font-weight: 600; margin-top: 8px; }
@@ -294,7 +294,7 @@ fieldset.solo-ver:disabled .campo { opacity: 1; color: var(--ink); -webkit-text-
 html:active-view-transition .factura-hero { animation: none; }
 .fh-num { color: var(--muted); font-size: 13px; font-weight: 500; }
 .fh-cliente { font-size: 22px; font-weight: 600; line-height: 1.2; margin-top: 2px; width: fit-content; }
-.fh-total { font-size: 38px; font-weight: 600; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; margin: 6px 0 10px; width: fit-content; }
+.fh-total { font-family: ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; font-size: 40px; font-weight: 600; font-variant-numeric: tabular-nums; margin: 6px 0 10px; width: fit-content; }
 .fh-desglose { display: flex; gap: 18px; flex-wrap: wrap; padding: 10px 0; border-top: 0.5px solid var(--line); border-bottom: 0.5px solid var(--line); }
 .fh-desglose div { display: flex; flex-direction: column; }
 .fh-desglose dt { color: var(--muted); font-size: 12px; }
@@ -378,23 +378,15 @@ html[data-vt=cifras]::view-transition-group(root) { animation-duration: 0.24s; }
 #arranque { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; background: var(--verde); color: var(--crema); transition: opacity 0.35s cubic-bezier(0.55, 0, 1, 0.45); animation: arr-seguro 0.3s 5s forwards; }
 #arranque.fuera { opacity: 0; pointer-events: none; }
 html[data-arranque=visto] #arranque { display: none; }
-.arr-centro { display: flex; align-items: center; gap: 12px; transition: transform 0.35s cubic-bezier(0.55, 0, 1, 0.45), filter 0.35s cubic-bezier(0.55, 0, 1, 0.45); }
-#arranque.fuera .arr-centro { transform: scale(1.06); filter: blur(6px); }
-.arr-logo { width: 64px; height: 64px; overflow: visible; animation: arr-aparece 0.5s var(--vt-curva) both; }
-.arr-n { stroke-dasharray: 1; animation: arr-trazo 0.7s var(--vt-curva) 0.08s both; }
-.arr-corte { animation: arr-corte 0.3s var(--salida) 0.55s both; }
-.arr-nombre { font-size: 44px; font-weight: 600; letter-spacing: -0.03em; line-height: 1; padding-bottom: 6px; }
-.arr-nombre span { display: inline-block; animation: arr-letra 0.45s var(--salida) calc(0.4s + var(--i) * 0.04s) both; }
-@keyframes arr-aparece { from { opacity: 0; transform: scale(0.9); filter: blur(8px); } }
-@keyframes arr-trazo { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
-@keyframes arr-corte { from { opacity: 0; } }
-@keyframes arr-letra { from { opacity: 0; transform: translateY(8px); filter: blur(4px); } }
+.arr-centro { transition: transform 0.35s cubic-bezier(0.55, 0, 1, 0.45), opacity 0.35s cubic-bezier(0.55, 0, 1, 0.45); }
+#arranque.fuera .arr-centro { transform: scale(0.97); opacity: 0; }
+.arr-logo { display: block; width: min(56vw, 220px); height: auto; animation: arr-aparece 0.55s var(--salida) both; }
+@keyframes arr-aparece { from { opacity: 0; transform: scale(0.96); } }
 @keyframes arr-seguro { to { opacity: 0; visibility: hidden; } }
 @media (prefers-reduced-motion: reduce) { #arranque { display: none; } }
 
 /* Resumen: cabecera verde de marca con el saludo, beneficio que monta sobre ella y accesos directos */
-.logo-netto { display: inline-flex; align-items: center; gap: 7px; font-size: 22px; font-weight: 600; letter-spacing: -0.03em; line-height: 1; }
-.logo-netto svg { width: 24px; height: 24px; }
+.logo-netto { display: block; height: 24px; width: auto; }
 .inicio { --cima: calc(env(safe-area-inset-top, 0px) + 20px); margin: calc(-1 * var(--cima)) -16px 0; padding: var(--cima) 20px 76px; --fondo-logo: var(--verde); background: var(--fondo-logo); color: var(--crema); border-radius: 0 0 28px 28px; }
 @media (min-width: 640px) { .inicio { margin-left: 0; margin-right: 0; } }
 @media (min-width: 900px) { .inicio { --cima: 40px; margin-top: 0; padding-top: 24px; border-radius: 28px; } }
@@ -403,13 +395,13 @@ html[data-arranque=visto] #arranque { display: none; }
 .inicio .anios { gap: 10px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .inicio .anios a, .inicio .anios .off { width: 32px; height: 32px; background: rgba(250, 250, 248, 0.1); color: var(--crema); font-size: 1.15rem; }
 .inicio .anios .off { opacity: 0.35; }
-.inicio-hola { font-size: 26px; font-weight: 600; letter-spacing: -0.03em; line-height: 1.15; margin-top: 26px; }
+.inicio-hola { font-size: 28px; font-weight: 700; letter-spacing: 0.01em; line-height: 1.15; margin-top: 26px; }
 .inicio-sub { color: rgba(250, 250, 248, 0.68); font-size: 15px; margin-top: 4px; }
 .saldo { position: relative; background: var(--surface); border-radius: 22px; padding: 16px 18px 16px; margin: -52px 4px 18px; box-shadow: 0 1px 2px rgba(15, 31, 27, 0.06), 0 12px 32px rgba(15, 31, 27, 0.1); }
 @media (prefers-color-scheme: dark) { .saldo { box-shadow: 0 0 0 0.5px var(--line); } }
 .saldo-t { font-size: 15px; font-weight: 500; color: var(--muted); }
 .saldo-fila { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-top: 4px; }
-.saldo-v { font-size: clamp(30px, 9vw, 38px); font-weight: 700; letter-spacing: -0.035em; line-height: 1.1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.saldo-v { font-family: ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; font-size: clamp(30px, 9vw, 38px); font-weight: 600; letter-spacing: 0; line-height: 1.1; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .saldo-v small { font-size: 0.6em; font-weight: 600; }
 .saldo-curva { flex: 0 1 120px; min-width: 64px; height: 44px; overflow: visible; }
 .saldo-curva .area { fill: var(--menta); opacity: 0.9; }

@@ -1,5 +1,4 @@
 import { Suspense } from 'react';
-import '@fontsource-variable/plus-jakarta-sans';
 import './globals.css';
 import './cuentas.css';
 import './movil.css';
