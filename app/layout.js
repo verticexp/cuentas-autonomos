@@ -3,6 +3,7 @@ import './globals.css';
 import './cuentas.css';
 import './movil.css';
 import './diseno.css';
+import './pulido.css';
 import TabBar from '@/components/TabBar';
 import { usuarioActual } from '@/lib/auth';
 import { COLOR_BASE } from '@/lib/marca';
@@ -12,7 +13,8 @@ import Llegada from '@/components/Llegada';
 import Arranque from '@/components/Arranque';
 
 // Si ya se vio en esta sesión (o es una página pública/PDF), la pantalla de inicio no llega a pintarse.
-const YA_VISTO = "try{var p=location.pathname;if(sessionStorage.getItem('netto-arranque')||p.startsWith('/p/')||p.endsWith('/pdf')||p.startsWith('/invitacion'))document.documentElement.dataset.arranque='visto'}catch(e){}";
+// Si la app ya se desbloqueó en esta sesión, el bloqueo tampoco (components/Bloqueo.js).
+const YA_VISTO = "try{if(sessionStorage.getItem('netto-abierta')||document.cookie.indexOf('recien=1')>-1)document.documentElement.dataset.abierta='1';var p=location.pathname;if(sessionStorage.getItem('netto-arranque')||p.startsWith('/p/')||p.endsWith('/pdf')||p.startsWith('/invitacion'))document.documentElement.dataset.arranque='visto'}catch(e){}";
 
 export const metadata = {
   title: 'Netto',
@@ -42,7 +44,7 @@ export default async function RootLayout({ children }) {
         <script dangerouslySetInnerHTML={{ __html: 'window.__arranque=performance.now()' }} />
         {children}
         <Suspense><TabBar permisos={permisosDe(u)} /><Llegada /></Suspense>
-        {u && <Bloqueo usuario={u.id} email={u.email} />}
+        {u && <Bloqueo email={u.email} />}
       </body>
     </html>
   );

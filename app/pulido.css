@@ -1,0 +1,72 @@
+/* Ajustes finos sobre diseno.css: bloqueo, transición de la factura, versión de ordenador y ratón. */
+
+/* Bloqueo obligatorio (components/Bloqueo.js) */
+.pantalla-bloqueo { align-content: center; gap: 4px; }
+html[data-abierta] .pantalla-bloqueo { display: none; }
+html:not([data-abierta]) body:has(.pantalla-bloqueo) { overflow: hidden; }
+.pantalla-bloqueo form + form { width: 100%; max-width: 340px; }
+.bloqueo-quien { font-weight: 600; margin: 2px 0 4px; overflow: hidden; text-overflow: ellipsis; }
+.login .enlace-claro { background: none; color: var(--marca); font-weight: 400; margin: 0; width: 100%; }
+
+/* Transición fila → factura. La cabecera no se anima por su cuenta (se animaba dos veces al acabar la transición). */
+.factura-hero { animation: none; }
+/* [data-vt] también es el atributo del <html> durante las transiciones: no debe estrecharlo */
+html[data-vt] { width: auto; max-width: none; }
+/* La cabecera solo se «une» a la fila cuando se abre desde la lista (al volver, se va con su pantalla) */
+html[data-vt=abrir] .factura-hero { view-transition-name: factura-tarjeta; }
+html[data-vt=abrir] .fh-cliente { view-transition-name: factura-cliente; }
+html[data-vt=abrir] .fh-total { view-transition-name: factura-total; }
+::view-transition-group(factura-tarjeta) { border-radius: 16px; overflow: hidden; }
+::view-transition-old(factura-cliente), ::view-transition-new(factura-cliente), ::view-transition-old(factura-total), ::view-transition-new(factura-total) { width: auto; object-position: left center; }
+/* El texto pequeño se va rápido y el grande llega: sin el «doble texto» a mitad de camino */
+::view-transition-old(factura-cliente), ::view-transition-old(factura-total) { animation: 0.14s var(--salida) both vt-fuera; }
+::view-transition-new(factura-cliente), ::view-transition-new(factura-total) { animation: 0.3s var(--salida) 0.05s both vt-dentro; }
+
+/* Ordenador: la barra de pestañas pasa a ser una columna fija a la izquierda y el contenido se ensancha */
+.tabbar-logo, .mas-txt { display: none; }
+@media (min-width: 1024px) {
+  body:has(.tabbar) { padding-left: 248px; }
+  .tabbar {
+    left: 0; top: 0; bottom: 0; transform: none; width: 248px;
+    flex-direction: column; align-items: stretch; gap: 14px; padding: 28px 16px;
+    background: var(--surface); border-right: 0.5px solid var(--line);
+  }
+  .tabbar-logo { display: block; padding: 4px 10px 18px; color: var(--ink); }
+  .tabbar-logo svg { height: 26px; width: auto; }
+  .tabbar .mas { order: 1; width: auto; height: 44px; border-radius: 999px; display: flex; justify-content: center; gap: 8px; box-shadow: none; font-weight: 600; font-size: 15px; }
+  .tabbar .mas svg { width: 20px; height: 20px; }
+  .tabbar .mas.abierta svg { transform: none; }
+  .mas-txt { display: inline; }
+  .tabs { order: 2; flex: none; flex-direction: column; gap: 2px; padding: 0; background: none; border: 0; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; touch-action: auto; }
+  .tabs a { flex: none; flex-direction: row; justify-content: flex-start; gap: 12px; height: 42px; padding: 0 12px; border-radius: 10px; font-size: 15px; }
+  .tabs a svg { width: 21px; height: 21px; }
+  ::view-transition-group(tabs), ::view-transition-group(mas) { border-radius: 0; -webkit-backdrop-filter: none; backdrop-filter: none; }
+  ::view-transition-group(mas) { border-radius: 999px; }
+  .pagina { max-width: 880px; padding: 36px 40px 64px; }
+  .inicio { margin: 0; --cima: 24px; border-radius: 28px; }
+  .hcards { display: grid; grid-template-columns: 1fr 1fr; }
+  .accesos { display: none; }
+  .inicio + .saldo, .saldo { margin-left: 24px; margin-right: 24px; }
+  .cuestionario-botones { left: 0; }
+  /* En pantalla grande, deslizar media pantalla marea: las pantallas solo se desplazan un poco y se funden */
+  html[data-vt=adelante]::view-transition-old(root), html[data-vt=atras]::view-transition-old(root) { animation: 0.16s var(--salida) both vt-fuera; }
+  html[data-vt=adelante]::view-transition-new(root) { animation: 0.32s var(--vt-curva) both vt-escritorio-der; }
+  html[data-vt=atras]::view-transition-new(root) { animation: 0.32s var(--vt-curva) both vt-escritorio-izq; }
+  html[data-vt=subir]::view-transition-old(root) { animation: 0.16s var(--salida) both vt-fuera; }
+  html[data-vt=subir]::view-transition-new(root) { animation: 0.34s var(--vt-curva) both vt-escritorio-arriba; }
+}
+@keyframes vt-escritorio-der { from { opacity: 0; transform: translateX(32px); } }
+@keyframes vt-escritorio-izq { from { opacity: 0; transform: translateX(-32px); } }
+@keyframes vt-escritorio-arriba { from { opacity: 0; transform: translateY(28px); } }
+
+/* Ratón: lo que se puede pulsar se ilumina al pasar por encima */
+@media (hover: hover) and (pointer: fine) {
+  a.fila:hover, .celda.ir:hover, .hcard.ir:hover, .opcion:hover { background: var(--relleno); }
+  .tabs a:not(.activo):hover { background: var(--relleno); }
+  .boton:hover, .tabbar .mas:hover, .login button:hover { filter: brightness(1.12); }
+  .boton.sec:hover { filter: none; background: color-mix(in srgb, var(--marca) 12%, transparent); }
+  .acceso:hover .ico-cuadro { filter: brightness(0.96); }
+  .chips a:not(.activo):hover, .segmentado a:not(.activo):hover { background: var(--relleno); }
+  .borrar:hover { opacity: 0.75; }
+  a.fila, .celda.ir, .hcard.ir, .tabs a, .chips a, .segmentado a { cursor: pointer; transition: background-color 0.15s var(--salida); }
+}
