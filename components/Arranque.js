@@ -10,7 +10,7 @@ export default function Arranque() {
   useEffect(() => {
     if (document.documentElement.dataset.arranque === 'visto') { setFase('fin'); return; }
     try { sessionStorage.setItem('netto-arranque', '1'); } catch {}
-    const espera = Math.max(0, (window.__arranque ?? 0) + 800 - performance.now());
+    const espera = Math.max(0, (window.__arranque ?? 0) + 2000 - performance.now());
     const a = setTimeout(() => setFase('fuera'), espera);
     const b = setTimeout(() => setFase('fin'), espera + 400);
     return () => { clearTimeout(a); clearTimeout(b); };
