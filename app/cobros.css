@@ -1,0 +1,5 @@
+/* Página pública de pago de una factura */
+.pago-publico .pago-logo { max-width: 140px; max-height: 56px; }
+.pago-publico form { margin: 0 0 12px; }
+.pago-ok { background: color-mix(in srgb, var(--in) 14%, var(--surface)); color: var(--ink); border-radius: 12px; padding: 14px 16px; font-weight: 600; }
+.pago-iban strong { overflow-wrap: anywhere; }
