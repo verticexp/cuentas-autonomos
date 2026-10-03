@@ -58,6 +58,7 @@ export default async function Factura({ params }) {
         const irpf = usa130(fiscal) ? a.irpf : 0;
         return <p className="aviso-plazo"><strong>De esta factura, aparta {eur(iva + irpf)} para Hacienda</strong><span>{[usa303(fiscal) && `IVA ${eur(iva)}`, usa130(fiscal) && `IRPF que te faltará en el 130 ≈ ${eur(irpf)}`].filter(Boolean).join(' + ')}</span></p>;
       })()}
+      {f.cobro?.metodo === 'stripe' && <p className="nota">Pagada con tarjeta o Bizum el {fechaTexto(f.cobro.fecha.slice(0, 10))} ({eur(f.cobro.importe)}).</p>}
       {f.rectifica && <p className="nota">Rectifica la factura {f.rectifica.numero}.</p>}
       <fieldset className="solo-ver" disabled={!editar}><FormFactura key={JSON.stringify(f)} factura={f} clientes={clientes} actividades={actividades} /></fieldset>
     </main>
