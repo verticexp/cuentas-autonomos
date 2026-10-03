@@ -9,6 +9,7 @@ import { eur, hoy } from '@/lib/formato';
 import SinBD from '@/components/SinBD';
 import { puede } from '@/lib/permisos';
 import Deslizable from '@/components/Deslizable';
+import '@/app/recurrentes.css';
 
 export const dynamic = 'force-dynamic';
 const diaMes = (f) => new Date(`${f}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
@@ -16,7 +17,7 @@ const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', '
 
 export default async function Facturas({ searchParams }) {
   const u = await requerir('facturas');
-  const todas = await leer(u, 'facturas');
+  const [todas, recurrentes] = await Promise.all([leer(u, 'facturas'), leer(u, 'recurrentes')]);
   if (!todas) return <SinBD />;
   const ACTIVIDADES = nombresActividad(actividadesDe(u));
   const { a, estado } = await searchParams;
@@ -58,6 +59,7 @@ export default async function Facturas({ searchParams }) {
         <p className="resumen-linea">
           <span>Por cobrar <strong>{eur(porCobrar)}</strong></span>
           {vencidas.length > 0 && <span className="rojo">{vencidas.length === 1 ? '1 vencida' : `${vencidas.length} vencidas`}</span>}
+          {recurrentes?.length > 0 && <Link href="/facturas/recurrentes" className="rec-enlace">{recurrentes.length === 1 ? '1 recurrente' : `${recurrentes.length} recurrentes`} ›</Link>}
         </p>
       )}
 
