@@ -1,0 +1,4 @@
+/* Entrar con llave de acceso, debajo del botón Entrar */
+.entrar-llave { display: flex; flex-direction: column; gap: 10px; }
+.login .boton-llave { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 0; background: var(--relleno); color: var(--ink); font-weight: 600; }
+.boton-llave svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
