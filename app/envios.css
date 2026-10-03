@@ -1,0 +1,12 @@
+/* Envío de facturas por email */
+.envios { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; }
+.envios .formulario textarea.campo { resize: vertical; font: inherit; min-height: 110px; }
+.envios-nota { margin: 0; color: var(--muted); font-size: 13px; }
+.envios-lista { list-style: none; margin: 0; padding: 0; background: var(--surface); border-radius: 12px; overflow: hidden; }
+.envios-lista li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 11px 16px; font-size: 15px; }
+.envios-lista li + li { border-top: 0.5px solid var(--line); }
+.envios-lista li > span:first-child { display: flex; flex-direction: column; min-width: 0; overflow-wrap: anywhere; }
+.envios-lista small { color: var(--muted); font-size: 13px; }
+.envio-estado { flex: none; font-size: 13px; color: var(--muted); background: var(--relleno); border-radius: 999px; padding: 4px 10px; }
+.envio-estado.ok { color: var(--in); background: color-mix(in srgb, var(--in) 14%, transparent); }
+.envios > .boton.ancho { margin-top: 0; }
