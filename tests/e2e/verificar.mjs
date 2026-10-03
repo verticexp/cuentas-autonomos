@@ -137,6 +137,57 @@ if (process.env.RESEND_URL) {
   ok('un email no válido no se envía', () => assert.equal(mal.status, 400));
 } else console.log('  (sin RESEND_URL: se salta)');
 
+console.log('Cobro con tarjeta o Bizum y recordatorios');
+if (process.env.RESEND_URL && process.env.STRIPE_URL) {
+  const { readFileSync, rmSync } = await import('node:fs');
+  const { createHmac } = await import('node:crypto');
+  const ultimoEmail = () => JSON.parse(readFileSync('/tmp/resend.json', 'utf8').trim().split('\n').pop());
+  // Una factura vencida hace 60 días, con email del cliente.
+  const hace = (d) => new Date(Date.now() - d * 864e5).toISOString().slice(0, 10);
+  const venc = (await (await pedir('/api/facturas', { metodo: 'POST', cookie: yo, cuerpo: { fecha: hace(60), actividad: ACTS[0].id, cliente: { nombre: 'Moroso', email: 'moroso@ejemplo.es' }, irpfPct: 15, lineas: [{ concepto: 'Bolo', cantidad: 1, precio: '1000', ivaPct: 21 }] } })).json()).factura;
+  ok('el email del cliente se guarda en la factura', () => assert.equal(venc.cliente.email, 'moroso@ejemplo.es'));
+  const sinCron = await pedir('/api/recordatorios');
+  ok('los recordatorios solo los lanza Vercel (con CRON_SECRET)', () => assert.equal(sinCron.status, 401));
+  const cron = () => fetch(`${BASE}/api/recordatorios`, { headers: { Authorization: `Bearer ${process.env.CRON_SECRET}` } }).then((r) => r.json());
+  rmSync('/tmp/resend.json', { force: true });
+  const r0 = await cron();
+  ok('sin activarlos en Ajustes no se envía ninguno', () => assert.equal(r0.enviados, 0));
+  await pedir('/api/cuenta', { metodo: 'PATCH', cookie: yo, cuerpo: { nombre: 'Prueba Pérez', nif: '12345678Z', direccion: 'C/ Uno 1', ciudad: '08001 Barcelona', iban: 'ES00', plazo: 30, limite: 17094, recordatorios: 7 } });
+  const r1 = await cron();
+  const rec = ultimoEmail();
+  ok('activados, sale el recordatorio de la vencida con el PDF', () => assert.ok(r1.enviados === 1 && rec.to[0] === 'moroso@ejemplo.es' && rec.subject.includes('Recordatorio') && rec.attachments[0].filename.endsWith('.pdf'), JSON.stringify(r1)));
+  const r2 = await cron();
+  ok('al día siguiente no se repite', () => assert.equal(r2.enviados, 0));
+  const enlace = /href="([^"]+\/pagar\/[a-f0-9]+)"/.exec(rec.html)?.[1];
+  ok('lleva el enlace de pago', () => assert.ok(enlace));
+  const pub = n(await (await fetch(enlace)).text().then((h) => h.replace(/<[^>]+>/g, ' ')));
+  ok('la página de pago se abre sin cuenta y enseña el total', () => assert.ok(pub.includes('con tarjeta o Bizum') && pub.includes(n(eur(importes(venc).total)))));
+  const token = enlace.split('/').pop();
+  const fd3 = new FormData(); fd3.set('token', token);
+  const ir = await fetch(`${BASE}/api/pagar`, { method: 'POST', body: fd3, redirect: 'manual', headers: { Origin: BASE } });
+  const ses = await (await fetch(ir.headers.get('location').replace('/pagina/', '/v1/checkout/sessions/'))).json();
+  ok('lleva a Stripe con el importe exacto de la factura', () => assert.ok(ir.status === 303 && ses.amount_total === Math.round(importes(venc).total * 100), `${ir.status} ${ses.amount_total}`));
+  const vuelta = n(await (await fetch(`${enlace}?sesion=${ses.id}`)).text());
+  ok('al volver pagada, lo dice', () => assert.ok(vuelta.includes('ya está pagada')));
+  const det2 = n(await texto(`/facturas/${venc.id}`, yo));
+  ok('y la factura queda cobrada', () => assert.ok(det2.includes('Pagada con tarjeta o Bizum') && det2.includes('Cobrada')));
+  const r3 = await cron();
+  ok('una cobrada ya no recibe recordatorios', () => assert.equal(r3.enviados, 0));
+  // Aviso de Stripe (webhook) firmado, para otra factura: la marca cobrada aunque el cliente no vuelva.
+  const otra = (await (await pedir('/api/facturas', { metodo: 'POST', cookie: yo, cuerpo: { fecha: hace(5), actividad: ACTS[0].id, cliente: { nombre: 'Webhook' }, irpfPct: 0, lineas: [{ concepto: 'X', cantidad: 1, precio: '10', ivaPct: 21 }] } })).json()).factura;
+  await pedir('/api/facturas/enviar', { metodo: 'POST', cookie: yo, cuerpo: { id: otra.id, para: 'w@ejemplo.es', mensaje: 'Hola' } });
+  const tok2 = /\/pagar\/([a-f0-9]+)/.exec(ultimoEmail().html)?.[1];
+  ok('el email normal también lleva el enlace de pago', () => assert.ok(tok2));
+  const evento = JSON.stringify({ type: 'checkout.session.completed', data: { object: { id: 'cs_w', payment_status: 'paid', amount_total: 1210, metadata: { token: tok2 } } } });
+  const t = Math.floor(Date.now() / 1000);
+  const firma = `t=${t},v1=${createHmac('sha256', process.env.STRIPE_WEBHOOK_SECRET).update(`${t}.${evento}`).digest('hex')}`;
+  const falso = await fetch(`${BASE}/api/stripe`, { method: 'POST', body: evento, headers: { 'stripe-signature': 't=1,v1=00' } });
+  ok('un aviso sin firma buena se rechaza', () => assert.equal(falso.status, 400));
+  const wh = await fetch(`${BASE}/api/stripe`, { method: 'POST', body: evento, headers: { 'stripe-signature': firma } });
+  const det3 = n(await texto(`/facturas/${otra.id}`, yo));
+  ok('el aviso firmado de Stripe la marca cobrada', () => assert.ok(wh.status === 200 && det3.includes('Pagada con tarjeta o Bizum')));
+} else console.log('  (sin RESEND_URL y STRIPE_URL: se salta)');
+
 console.log('Permisos');
 const inv = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { nombre: 'Solo gastos', email: `g${Date.now()}@test.es`, rol: 'miembro', permisos: ['gastos', 'gastar'] } })).json();
 const fd2 = new FormData(); fd2.set('codigo', inv.enlace.split('/').pop()); fd2.set('password', 'gastosgastos1');
