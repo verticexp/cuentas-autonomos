@@ -48,16 +48,26 @@ html[data-vt=abrir] .fh-total { view-transition-name: factura-total; }
   .accesos { display: none; }
   .inicio + .saldo, .saldo { margin-left: 24px; margin-right: 24px; }
   .cuestionario-botones { left: 0; }
-  /* En pantalla grande, deslizar media pantalla marea: las pantallas solo se desplazan un poco y se funden */
-  html[data-vt=adelante]::view-transition-old(root), html[data-vt=atras]::view-transition-old(root) { animation: 0.16s var(--salida) both vt-fuera; }
-  html[data-vt=adelante]::view-transition-new(root) { animation: 0.32s var(--vt-curva) both vt-escritorio-der; }
-  html[data-vt=atras]::view-transition-new(root) { animation: 0.32s var(--vt-curva) both vt-escritorio-izq; }
-  html[data-vt=subir]::view-transition-old(root) { animation: 0.16s var(--salida) both vt-fuera; }
-  html[data-vt=subir]::view-transition-new(root) { animation: 0.34s var(--vt-curva) both vt-escritorio-arriba; }
+  /* El logo ya está en la barra lateral: en la cabecera verde sobra */
+  .inicio .inicio-barra > svg.logo-netto { display: none; }
+  .inicio-barra { justify-content: flex-end; }
 }
-@keyframes vt-escritorio-der { from { opacity: 0; transform: translateX(32px); } }
-@keyframes vt-escritorio-izq { from { opacity: 0; transform: translateX(-32px); } }
-@keyframes vt-escritorio-arriba { from { opacity: 0; transform: translateY(28px); } }
+
+/* Ordenador: todas las pantallas cambian igual, con un fundido corto. Nada se desliza ni se transforma entre
+   pantallas (en una pantalla ancha mareaba y se veía a trozos), y la barra lateral no se mueve. Solo ≥1024 px:
+   en el móvil todo sigue como estaba. */
+@media (min-width: 1024px) {
+  html[data-vt]::view-transition-old(root) { animation: 0.12s var(--salida) both vt-fuera; }
+  html[data-vt]::view-transition-new(root) { animation: 0.24s var(--salida) both vt-escritorio; }
+  html[data-vt]::view-transition-group(root) { animation: none; }
+  /* La barra lateral se cambia de golpe, sin el doble texto del fundido */
+  ::view-transition-old(tabs), ::view-transition-old(mas) { display: none; }
+  ::view-transition-new(tabs), ::view-transition-new(mas) { animation: none; }
+  /* Sin la fila que se convierte en la cabecera de la factura: en pantalla ancha cruzaba media pantalla */
+  html[data-vt=abrir] .factura-hero, html[data-vt=abrir] .fh-cliente, html[data-vt=abrir] .fh-total { view-transition-name: none; }
+  html[data-vt] .pagina [style*="view-transition-name"] { view-transition-name: none !important; }
+}
+@keyframes vt-escritorio { from { opacity: 0; transform: translateY(6px); } }
 
 /* Ratón: lo que se puede pulsar se ilumina al pasar por encima */
 @media (hover: hover) and (pointer: fine) {
