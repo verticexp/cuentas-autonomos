@@ -83,3 +83,16 @@ test('firma de los avisos de Stripe', async () => {
   assert.ok(!firmaValida(cuerpo, `t=${t},v1=${v1}`, 'whsec_x', (t + 600) * 1000));
   assert.ok(!firmaValida(cuerpo, `t=${t},v1=${v1}`, '', t * 1000));
 });
+
+test('facturas recurrentes: una al mes, el día elegido', async () => {
+  const { tocaRecurrente, diaValido, plantillaDe } = await import('../lib/recurrentes.js');
+  const r = { activa: true, dia: 5, ultima: '2026-09' };
+  assert.equal(tocaRecurrente(r, '2026-09-30'), false); // septiembre ya está
+  assert.equal(tocaRecurrente(r, '2026-10-04'), false); // aún no es el día
+  assert.equal(tocaRecurrente(r, '2026-10-05'), true);
+  assert.equal(tocaRecurrente(r, '2026-10-20'), true); // si un día falló, sale después
+  assert.equal(tocaRecurrente({ ...r, ultima: '2026-10' }, '2026-10-20'), false);
+  assert.equal(tocaRecurrente({ ...r, activa: false }, '2026-10-20'), false);
+  assert.equal(diaValido(31), 28); assert.equal(diaValido(0), 1);
+  assert.deepEqual(Object.keys(plantillaDe({ id: 'x', numero: 3, fecha: '2026-01-01', cliente: {}, base: 1, ivaPct: 21, irpfPct: 0, cobrada: true, envios: [] })), ['cliente', 'base', 'ivaPct', 'irpfPct']);
+});
