@@ -14,5 +14,5 @@ export function proxy(req) {
 }
 
 export const config = {
-  matcher: ['/((?!login|invitacion|p/|api/presupuestos/aceptar|api/login|api/registro|api/invitacion|api/passkey|_next|favicon.ico|icon.svg|apple-icon|manifest.webmanifest).*)'],
+  matcher: ['/((?!login|invitacion|p/|api/presupuestos/aceptar|api/abierta/|api/login|api/registro|api/invitacion|api/passkey|_next|favicon.ico|icon.svg|apple-icon|manifest.webmanifest).*)'],
 };
