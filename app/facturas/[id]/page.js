@@ -8,6 +8,8 @@ import FormFactura from '@/components/FormFactura';
 import Volver from '@/components/Volver';
 import { Borrar, Cobrada } from '@/components/Acciones';
 import EnviarFactura from '@/components/EnviarFactura';
+import { RepetirFactura } from '@/components/Recurrente';
+import { asuntoFactura, mensajeFactura } from '@/lib/envio';
 import { puede } from '@/lib/permisos';
 import { actividadesDe, fiscalDe, nombresActividad, usa130, usa303 } from '@/lib/empresa';
 
@@ -16,7 +18,7 @@ export const dynamic = 'force-dynamic';
 export default async function Factura({ params }) {
   const u = await requerir('facturas');
   const { id } = await params;
-  const [f, clientes] = await Promise.all([leerUno(u, 'facturas', id), leer(u, 'clientes')]);
+  const [f, clientes, recurrentes] = await Promise.all([leerUno(u, 'facturas', id), leer(u, 'clientes'), leer(u, 'recurrentes')]);
   if (!f) notFound();
   const editar = puede(u, 'facturar');
   const fiscal = fiscalDe(u);
@@ -50,8 +52,8 @@ export default async function Factura({ params }) {
         </>}
       </div>
       {(editar || f.envios?.length > 0) && <EnviarFactura id={f.id} email={f.cliente.email} envios={f.envios} editar={editar}
-        asunto={`Factura ${numeroFactura(f)} de ${u.emisor?.nombre || ''}`.trim()}
-        mensaje={`Hola,\n\nTe adjunto la factura ${numeroFactura(f)} por ${eur(i.total)}, con vencimiento el ${fechaTexto(vencimiento(f, u.emisor?.plazo))}.\n\nGracias,\n${u.emisor?.nombre || ''}`} />}
+        asunto={asuntoFactura(f, u.emisor || {})} mensaje={mensajeFactura(f, u.emisor || {})} />}
+      {editar && f.serie !== 'R' && <RepetirFactura factura={f.id} dia={Math.min(28, Number(f.fecha.slice(8, 10)))} existente={recurrentes.find((r) => r.origen === f.id)} />}
       {f.base > 0 && (usa303(fiscal) || usa130(fiscal)) && (() => {
         const a = apartar(f);
         const iva = usa303(fiscal) ? a.iva : 0;
