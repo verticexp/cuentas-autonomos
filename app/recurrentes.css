@@ -1,0 +1,15 @@
+/* Facturas recurrentes */
+.recurrente-boton { margin: 0 0 18px; }
+.recurrente-form { margin-bottom: 18px; }
+.recurrente-aviso { margin: 0 0 18px; color: var(--muted); font-size: 14px; }
+.recurrente-aviso a { color: var(--marca, var(--ink)); }
+.recurrentes { list-style: none; margin: 0; padding: 0; background: var(--surface); border-radius: 12px; overflow: hidden; }
+.recurrentes li { display: grid; grid-template-columns: 1fr auto; gap: 8px 12px; align-items: center; padding: 12px 16px; }
+.recurrentes li + li { border-top: 0.5px solid var(--line); }
+.recurrentes li.pausa { opacity: 0.6; }
+.rec-info { display: flex; flex-direction: column; min-width: 0; }
+.rec-info small { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+.rec-total { font-weight: 600; font-variant-numeric: tabular-nums; }
+.recurrente-acciones { grid-column: 1 / -1; display: flex; gap: 12px; align-items: center; }
+.recurrente-acciones .borrar { margin: 0; }
+.resumen-linea a.rec-enlace { color: var(--muted); text-decoration: none; }
