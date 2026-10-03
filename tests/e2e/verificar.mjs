@@ -226,6 +226,24 @@ console.log('Facturas recurrentes');
   ok('al quitarla, desaparece de la lista', () => assert.ok(!vacia.includes('Cuota mensual')));
 }
 
+console.log('Catálogo');
+{
+  const pr = await (await pedir('/api/productos', { metodo: 'POST', cookie: yo, cuerpo: { nombre: 'Sesión DJ 4 horas', precio: '450,00', ivaPct: 21 } })).json();
+  ok('se añade con su precio', () => assert.ok(pr.ok && pr.producto.precio === 450));
+  const sin = await pedir('/api/productos', { metodo: 'POST', cookie: yo, cuerpo: { nombre: 'X', precio: '' } });
+  ok('sin precio no se acepta', () => assert.equal(sin.status, 400));
+  const cat = n(await texto('/facturas/catalogo', yo));
+  ok('sale en el catálogo', () => assert.ok(cat.includes('Sesión DJ 4 horas') && cat.includes(n(eur(450)))));
+  const form = n(await texto('/facturas/nueva', yo));
+  ok('y en la factura nueva, para añadirlo en un toque', () => assert.ok(form.includes('+ Sesión DJ 4 horas')));
+  await pedir('/api/productos', { metodo: 'POST', cookie: yo, cuerpo: { ...pr.producto, precio: '500' } });
+  const cat2 = n(await texto('/facturas/catalogo', yo));
+  ok('al editarlo se actualiza', () => assert.ok(cat2.includes(n(eur(500))) && !cat2.includes(n(eur(450)))));
+  await pedir(`/api/productos?id=${pr.producto.id}`, { metodo: 'DELETE', cookie: yo });
+  const cat3 = n(await texto('/facturas/catalogo', yo));
+  ok('al quitarlo desaparece', () => assert.ok(!cat3.includes('Sesión DJ 4 horas')));
+}
+
 console.log('Permisos');
 const inv = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { nombre: 'Solo gastos', email: `g${Date.now()}@test.es`, rol: 'miembro', permisos: ['gastos', 'gastar'] } })).json();
 const fd2 = new FormData(); fd2.set('codigo', inv.enlace.split('/').pop()); fd2.set('password', 'gastosgastos1');
