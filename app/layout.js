@@ -18,7 +18,7 @@ const YA_VISTO = "try{if(sessionStorage.getItem('netto-abierta')||document.cooki
 
 export const metadata = {
   title: 'Netto',
-  appleWebApp: { capable: true, title: 'Netto', statusBarStyle: 'default' },
+  appleWebApp: { capable: true, title: 'Netto', statusBarStyle: 'black-translucent' },
 };
 
 export const viewport = {

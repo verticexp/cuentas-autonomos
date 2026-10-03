@@ -1,0 +1,11 @@
+/* Equipo y nóminas (app/nominas). */
+.tres-col { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.tres-col > * { min-width: 0; }
+.nomina-mes .boton { margin-top: 14px; }
+.rotulo-claro { font-size: 13px; color: var(--gris); margin: 0 0 6px; }
+.nomina-calculo strong { color: var(--ink); }
+.nomina-desglose { display: grid; grid-template-columns: 1fr auto; gap: 8px 16px; margin: 0 0 14px; }
+.nomina-desglose dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+.nomina-desglose dt:nth-of-type(4), .nomina-desglose dd:nth-of-type(4), .nomina-desglose dt:nth-of-type(6), .nomina-desglose dd:nth-of-type(6) { padding-top: 8px; border-top: 0.5px solid var(--line); }
+.fila .imp small { display: block; font-size: 12px; font-weight: 400; color: var(--gris); text-align: right; }
+.pagina > .boton.ancho, .pagina > .formulario { margin-bottom: 8px; }

@@ -70,3 +70,30 @@ html[data-vt=abrir] .fh-total { view-transition-name: factura-total; }
   .borrar:hover { opacity: 0.75; }
   a.fila, .celda.ir, .hcard.ir, .tabs a, .chips a, .segmentado a { cursor: pointer; transition: background-color 0.15s var(--salida); }
 }
+
+/* Entrada de la app (tras la pantalla de inicio o al desbloquear): lo de la pantalla sube en cascada, una sola vez */
+html[data-entrada] .pagina > *, html[data-entrada] .inicio > * { animation: entrada 0.55s var(--vt-curva) both; }
+html[data-entrada] .pagina > :nth-child(2), html[data-entrada] .inicio > :nth-child(2) { animation-delay: 0.05s; }
+html[data-entrada] .pagina > :nth-child(3), html[data-entrada] .inicio > :nth-child(3) { animation-delay: 0.1s; }
+html[data-entrada] .pagina > :nth-child(4) { animation-delay: 0.15s; }
+html[data-entrada] .pagina > :nth-child(5) { animation-delay: 0.2s; }
+html[data-entrada] .pagina > :nth-child(n+6) { animation-delay: 0.25s; }
+html[data-entrada] .pagina > .inicio { animation-name: entrada-cabecera; }
+html[data-entrada] .tabbar { animation: entrada-barra 0.5s var(--vt-curva) 0.15s both; }
+@keyframes entrada { from { opacity: 0; transform: translateY(16px); } }
+@keyframes entrada-cabecera { from { opacity: 0.6; } }
+@keyframes entrada-barra { from { opacity: 0; transform: translateX(-50%) translateY(24px); } }
+@media (min-width: 1024px) { @keyframes entrada-barra { from { opacity: 0; transform: translateX(-16px); } } }
+
+/* Muestra de la marca en Ajustes: como la factura nueva, con la columna de color a la izquierda */
+.muestra-factura { border-top: 0.5px solid var(--line); border-left: 10px solid var(--c); }
+
+/* Confirmación al guardar: aparece con un pequeño salto, sin tapar nada */
+.guardado { color: var(--in) !important; font-weight: 600; animation: guardado 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes guardado { from { opacity: 0; transform: translateY(4px) scale(0.96); } }
+@media (prefers-reduced-motion: reduce) { .guardado { animation: none; } }
+
+/* iPhone: la app se dibuja por debajo de la barra de estado (hora, batería). En el resumen la cabecera verde llega
+   hasta arriba; en el resto de pantallas, una franja verde detrás de la hora para que se lea en blanco. */
+body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; height: env(safe-area-inset-top, 0px); background: var(--verde); z-index: 60; pointer-events: none; }
+@media (prefers-color-scheme: dark) { body::before { background: #102521; } }
