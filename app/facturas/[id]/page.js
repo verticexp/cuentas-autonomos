@@ -2,7 +2,7 @@ import Ir from '@/components/Ir';
 import { notFound } from 'next/navigation';
 import { requerir } from '@/lib/auth';
 import { leer, leerUno } from '@/lib/redis';
-import { apartar, importes, numeroFactura, vencida, vencimiento } from '@/lib/calculos';
+import { apartar, desglose, importes, numeroFactura, vencida, vencimiento } from '@/lib/calculos';
 import { eur, fechaCorta, fechaTexto, hoy } from '@/lib/formato';
 import FormFactura from '@/components/FormFactura';
 import Volver from '@/components/Volver';
@@ -31,7 +31,7 @@ export default async function Factura({ params }) {
         <p className="fh-total">{eur(i.total)}</p>
         <dl className="fh-desglose">
           <div><dt>Base</dt><dd>{eur(i.base)}</dd></div>
-          <div><dt>IVA {f.ivaPct} %</dt><dd>{eur(i.iva)}</dd></div>
+          {desglose(f).map((d) => <div key={d.pct}><dt>IVA {d.pct} %</dt><dd>{eur(d.iva)}</dd></div>)}
           {f.irpfPct > 0 && <div><dt>IRPF {f.irpfPct} %</dt><dd>−{eur(i.irpf)}</dd></div>}
         </dl>
         <div className="fh-pie">
