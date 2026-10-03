@@ -63,11 +63,8 @@ export async function POST(req) {
 
   // Entrar (o desbloquear la app) con Face ID.
   if (b.accion === 'entrar-opciones') {
-    const mias = u ? Object.entries((await redis.hgetall(`passkeys:${u.id}`)) || {}) : [];
-    const opciones = await generateAuthenticationOptions({
-      rpID, userVerification: 'required',
-      allowCredentials: mias.map(([id, k]) => ({ id, transports: k.transports })),
-    });
+    // Sin lista de llaves: el navegador ofrece las que tenga para esta web, de la cuenta que sea (como en cualquier login).
+    const opciones = await generateAuthenticationOptions({ rpID, userVerification: 'required' });
     await guardarReto(opciones.challenge);
     return Response.json(opciones);
   }
@@ -78,7 +75,6 @@ export async function POST(req) {
     const dueno = id && (await redis.hget('passkey-usuario', id));
     const k = dueno && (await redis.hget(`passkeys:${dueno}`, id));
     if (!k) return error('Este Face ID ya no está activado. Entra con tu contraseña y vuelve a activarlo en Ajustes.');
-    if (u && u.id !== dueno) return error('Este Face ID es de otra persona');
     try {
       const v = await verifyAuthenticationResponse({
         response: b.respuesta, expectedChallenge: reto, expectedOrigin: origin, expectedRPID: rpID, requireUserVerification: true,
@@ -88,8 +84,10 @@ export async function POST(req) {
       await redis.hset(`passkeys:${dueno}`, { [id]: { ...k, counter: v.authenticationInfo.newCounter, usada: new Date().toISOString() } });
     } catch (e) { return error(`Face ID no válido: ${e.message}`); }
     if (!(await redis.hget('usuarios', dueno))) return error('Esta cuenta ya no existe');
-    if (!u) (await cookies()).set('t', await crearSesion(dueno), opcionesCookie);
-    return Response.json({ ok: true });
+    // Si no había sesión, o era de otra cuenta, se entra con la de esta llave.
+    const cambio = Boolean(u && u.id !== dueno);
+    if (!u || cambio) (await cookies()).set('t', await crearSesion(dueno), opcionesCookie);
+    return Response.json({ ok: true, cambio });
   }
   return error('Acción no válida');
 }
