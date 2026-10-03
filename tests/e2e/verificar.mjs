@@ -119,6 +119,24 @@ ok('su PDF se genera', () => assert.ok(pdf2.status === 200 && pdf2.headers.get('
 const sinConcepto = await pedir('/api/facturas', { metodo: 'POST', cookie: yo, cuerpo: { fecha: `${Y}-11-02`, cliente: { nombre: 'X' }, lineas: [{ concepto: '', precio: '10', ivaPct: 21 }] } });
 ok('una línea sin concepto no se acepta', () => assert.equal(sinConcepto.status, 400));
 
+console.log('Enviar factura por email');
+if (process.env.RESEND_URL) {
+  const { readFileSync, rmSync } = await import('node:fs');
+  rmSync('/tmp/resend.json', { force: true });
+  const env = await (await pedir('/api/facturas/enviar', { metodo: 'POST', cookie: yo, cuerpo: { id: lin.factura.id, para: 'cliente@ejemplo.es', asunto: 'Tu factura', mensaje: 'Hola,\n\nAdjunta.' } })).json();
+  const mail = JSON.parse(readFileSync('/tmp/resend.json', 'utf8').trim().split('\n').pop());
+  ok('sale con el PDF adjunto y al cliente', () => assert.ok(env.ok && mail.to[0] === 'cliente@ejemplo.es' && mail.attachments[0].filename.endsWith('.pdf') && Buffer.from(mail.attachments[0].content, 'base64').subarray(0, 4).toString() === '%PDF'));
+  const sinAbrir = n(await texto(`/facturas/${lin.factura.id}`, yo));
+  ok('el detalle dice que está sin abrir', () => assert.ok(sinAbrir.includes('Enviada a cliente@ejemplo.es') && sinAbrir.includes('Sin abrir')));
+  const pixel = /src="([^"]+\/api\/abierta\/[a-f0-9]+)"/.exec(mail.html)[1];
+  const img = await fetch(pixel);
+  ok('la imagen del email se sirve sin sesión', () => assert.ok(img.status === 200 && img.headers.get('content-type') === 'image/gif'));
+  const abierta = n(await texto(`/facturas/${lin.factura.id}`, yo));
+  ok('al abrir el email, la factura sale como abierta', () => assert.ok(abierta.includes('Abierta ·')));
+  const mal = await pedir('/api/facturas/enviar', { metodo: 'POST', cookie: yo, cuerpo: { id: lin.factura.id, para: 'no-es-email' } });
+  ok('un email no válido no se envía', () => assert.equal(mal.status, 400));
+} else console.log('  (sin RESEND_URL: se salta)');
+
 console.log('Permisos');
 const inv = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { nombre: 'Solo gastos', email: `g${Date.now()}@test.es`, rol: 'miembro', permisos: ['gastos', 'gastar'] } })).json();
 const fd2 = new FormData(); fd2.set('codigo', inv.enlace.split('/').pop()); fd2.set('password', 'gastosgastos1');
