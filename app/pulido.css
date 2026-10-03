@@ -103,3 +103,9 @@ html[data-entrada] .tabbar { animation: entrada-barra 0.5s var(--vt-curva) 0.15s
 @keyframes guardado { from { opacity: 0; transform: translateY(4px) scale(0.96); } }
 @media (prefers-reduced-motion: reduce) { .guardado { animation: none; } }
 
+
+/* Móvil: la cabecera verde del resumen es una tarjeta redondeada bajo la barra de la hora (el iPhone no deja
+   pintar la barra de verde solo en esta pantalla, así que no se intenta y no parece cortada). */
+@media (max-width: 899px) {
+  .inicio { margin: -6px 0 0; padding-top: 18px; border-radius: 28px; }
+}
