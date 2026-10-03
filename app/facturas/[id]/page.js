@@ -18,7 +18,7 @@ export const dynamic = 'force-dynamic';
 export default async function Factura({ params }) {
   const u = await requerir('facturas');
   const { id } = await params;
-  const [f, clientes, recurrentes] = await Promise.all([leerUno(u, 'facturas', id), leer(u, 'clientes'), leer(u, 'recurrentes')]);
+  const [f, clientes, recurrentes, productos] = await Promise.all([leerUno(u, 'facturas', id), leer(u, 'clientes'), leer(u, 'recurrentes'), leer(u, 'productos')]);
   if (!f) notFound();
   const editar = puede(u, 'facturar');
   const fiscal = fiscalDe(u);
@@ -62,7 +62,7 @@ export default async function Factura({ params }) {
       })()}
       {f.cobro?.metodo === 'stripe' && <p className="nota">Pagada con tarjeta o Bizum el {fechaTexto(f.cobro.fecha.slice(0, 10))} ({eur(f.cobro.importe)}).</p>}
       {f.rectifica && <p className="nota">Rectifica la factura {f.rectifica.numero}.</p>}
-      <fieldset className="solo-ver" disabled={!editar}><FormFactura key={JSON.stringify(f)} factura={f} clientes={clientes} actividades={actividades} /></fieldset>
+      <fieldset className="solo-ver" disabled={!editar}><FormFactura key={JSON.stringify(f)} factura={f} clientes={clientes} actividades={actividades} productos={(productos || []).sort((a, b) => a.nombre.localeCompare(b.nombre))} /></fieldset>
     </main>
   );
 }
