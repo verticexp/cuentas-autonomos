@@ -188,6 +188,44 @@ if (process.env.RESEND_URL && process.env.STRIPE_URL) {
   ok('el aviso firmado de Stripe la marca cobrada', () => assert.ok(wh.status === 200 && det3.includes('Pagada con tarjeta o Bizum')));
 } else console.log('  (sin RESEND_URL y STRIPE_URL: se salta)');
 
+console.log('Facturas recurrentes');
+{
+  const orig = (await (await pedir('/api/facturas', { metodo: 'POST', cookie: yo, cuerpo: { fecha: hoy, actividad: ACTS[0].id, cliente: { nombre: 'Cuota mensual', email: 'cuota@ejemplo.es' }, irpfPct: 15, lineas: [{ concepto: 'Mantenimiento web', cantidad: 1, precio: '150', ivaPct: 21 }] } })).json()).factura;
+  const rec = await (await pedir('/api/recurrentes', { metodo: 'POST', cookie: yo, cuerpo: { factura: orig.id, dia: 31, enviar: true } })).json();
+  ok('se crea con el día ajustado a 28 como máximo', () => assert.ok(rec.ok && rec.recurrente.dia === 28 && rec.recurrente.plantilla.lineas.length === 1));
+  const det = n(await texto(`/facturas/${orig.id}`, yo));
+  ok('el detalle dice que se repite', () => assert.ok(det.includes('Se repite el día 28 de cada mes')));
+  const lista = n(await texto('/facturas/recurrentes', yo));
+  ok('sale en la lista de recurrentes', () => assert.ok(lista.includes('Cuota mensual') && lista.includes(n(eur(importes(orig).total)))));
+  if (process.env.CRON_SECRET) {
+    const cron = () => fetch(`${BASE}/api/recurrentes/cron`, { headers: { Authorization: `Bearer ${process.env.CRON_SECRET}` } }).then((r) => r.json());
+    const c0 = await cron();
+    ok('este mes no se repite (ya está la original)', () => assert.equal(c0.creadas.length, 0));
+    // Simula que la última fue el mes pasado y que hoy ya es su día (solo en la copia local de pruebas).
+    const kv = (cmd) => fetch(process.env.KV_REST_API_URL, { method: 'POST', headers: { Authorization: 'Bearer local' }, body: JSON.stringify(cmd) }).then((r) => r.json());
+    const clave = (await kv(['KEYS', 'cuentas:recurrentes:*'])).result[0];
+    const r0 = JSON.parse((await kv(['HGET', clave, rec.recurrente.id])).result);
+    await kv(['HSET', clave, r0.id, JSON.stringify({ ...r0, ultima: '2000-01', dia: 1 })]);
+    if (process.env.RESEND_URL) (await import('node:fs')).rmSync('/tmp/resend.json', { force: true });
+    const c1 = await cron();
+    const nueva = c1.creadas[0] && await (await pedir(`/facturas/${c1.creadas[0]}`, { cookie: yo })).text();
+    ok('al llegar el día, se crea la factura nueva con el número siguiente', () => assert.ok(c1.creadas.length === 1 && c1.creadas[0] !== orig.id && n(nueva.replace(/<[^>]+>/g, ' ')).includes(n(eur(importes(orig).total))), JSON.stringify(c1)));
+    const c2 = await cron();
+    ok('y no se repite el mismo mes', () => assert.equal(c2.creadas.length, 0));
+    if (process.env.RESEND_URL) {
+      const m = JSON.parse((await import('node:fs')).readFileSync('/tmp/resend.json', 'utf8').trim().split('\n').pop());
+      ok('se envía sola al cliente', () => assert.ok(m.to[0] === 'cuota@ejemplo.es' && m.attachments.length === 1));
+    }
+    await pedir('/api/recurrentes', { metodo: 'PATCH', cookie: yo, cuerpo: { id: r0.id, activa: false } });
+    await kv(['HSET', clave, r0.id, JSON.stringify({ ...JSON.parse((await kv(['HGET', clave, r0.id])).result), ultima: '2000-01' })]);
+    const c3 = await cron();
+    ok('en pausa no se crea', () => assert.equal(c3.creadas.length, 0));
+  }
+  await pedir(`/api/recurrentes?id=${rec.recurrente.id}`, { metodo: 'DELETE', cookie: yo });
+  const vacia = n(await texto('/facturas/recurrentes', yo));
+  ok('al quitarla, desaparece de la lista', () => assert.ok(!vacia.includes('Cuota mensual')));
+}
+
 console.log('Permisos');
 const inv = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { nombre: 'Solo gastos', email: `g${Date.now()}@test.es`, rol: 'miembro', permisos: ['gastos', 'gastar'] } })).json();
 const fd2 = new FormData(); fd2.set('codigo', inv.enlace.split('/').pop()); fd2.set('password', 'gastosgastos1');
