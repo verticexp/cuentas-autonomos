@@ -42,7 +42,7 @@ export default function EnviarFactura({ id, email, asunto, mensaje, envios = [],
         <ul className="envios-lista">
           {[...envios].reverse().map((x) => (
             <li key={x.token}>
-              <span>Enviada a {x.para}<small>{cuando(x.fecha)}</small></span>
+              <span>{x.tipo === 'recordatorio' ? 'Recordatorio a' : 'Enviada a'} {x.para}<small>{cuando(x.fecha)}</small></span>
               <span className={`envio-estado ${x.abierta ? 'ok' : ''}`}>{x.abierta ? `Abierta · ${cuando(x.abierta)}` : 'Sin abrir'}</span>
             </li>
           ))}

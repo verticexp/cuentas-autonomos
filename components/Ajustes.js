@@ -63,6 +63,7 @@ export default function Ajustes({ seccion, emisor, drive, driveError, sociedad }
               <label key={k}>{n}<input className="campo" value={d[k] || ''} onChange={(e) => poner(k, e.target.value)} required /></label>
             ))}
             <label>Plazo de pago (días)<input className="campo" type="number" min="0" value={d.plazo} onChange={(e) => poner('plazo', e.target.value)} /></label>
+            <label>Recordar por email las facturas vencidas cada (días)<input className="campo" type="number" min="0" max="60" placeholder="0 o vacío: no enviar recordatorios" value={d.recordatorios || ''} onChange={(e) => poner('recordatorios', e.target.value)} /></label>
             {!sociedad && <label>Límite de rendimiento neto anual (tarifa plana; SMI 2026: 17094)<input className="campo" type="number" min="0" placeholder="Vacío si no tienes tarifa plana" value={d.limite || ''} onChange={(e) => poner('limite', e.target.value)} /></label>}
           </>
         )}
