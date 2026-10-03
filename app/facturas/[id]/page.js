@@ -7,6 +7,7 @@ import { eur, fechaCorta, fechaTexto, hoy } from '@/lib/formato';
 import FormFactura from '@/components/FormFactura';
 import Volver from '@/components/Volver';
 import { Borrar, Cobrada } from '@/components/Acciones';
+import EnviarFactura from '@/components/EnviarFactura';
 import { puede } from '@/lib/permisos';
 import { actividadesDe, fiscalDe, nombresActividad, usa130, usa303 } from '@/lib/empresa';
 
@@ -48,6 +49,9 @@ export default async function Factura({ params }) {
         <Borrar url={`/api/facturas?id=${f.id}`} pregunta={`¿Borrar la factura ${numeroFactura(f)}? Hacienda exige numeración correlativa: si ya la has enviado, mejor haz una rectificativa.`} volver="/facturas" />
         </>}
       </div>
+      {(editar || f.envios?.length > 0) && <EnviarFactura id={f.id} email={f.cliente.email} envios={f.envios} editar={editar}
+        asunto={`Factura ${numeroFactura(f)} de ${u.emisor?.nombre || ''}`.trim()}
+        mensaje={`Hola,\n\nTe adjunto la factura ${numeroFactura(f)} por ${eur(i.total)}, con vencimiento el ${fechaTexto(vencimiento(f, u.emisor?.plazo))}.\n\nGracias,\n${u.emisor?.nombre || ''}`} />}
       {f.base > 0 && (usa303(fiscal) || usa130(fiscal)) && (() => {
         const a = apartar(f);
         const iva = usa303(fiscal) ? a.iva : 0;
