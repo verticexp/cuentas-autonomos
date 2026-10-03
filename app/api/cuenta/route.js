@@ -68,6 +68,7 @@ export async function PATCH(req) {
   const emisor = Object.fromEntries(CAMPOS.map((k) => [k, String(b[k] || '').trim().slice(0, 120)]));
   emisor.plazo = Math.max(0, Math.min(365, Number(b.plazo) || 30));
   emisor.limite = Math.max(0, Number(b.limite) || 0);
+  emisor.recordatorios = Math.max(0, Math.min(60, Math.round(Number(b.recordatorios) || 0)));
   await actualizarUsuario(u, { emisor });
   return Response.json({ ok: true });
 }
