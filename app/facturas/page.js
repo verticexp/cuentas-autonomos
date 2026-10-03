@@ -60,6 +60,7 @@ export default async function Facturas({ searchParams }) {
           <span>Por cobrar <strong>{eur(porCobrar)}</strong></span>
           {vencidas.length > 0 && <span className="rojo">{vencidas.length === 1 ? '1 vencida' : `${vencidas.length} vencidas`}</span>}
           {recurrentes?.length > 0 && <Link href="/facturas/recurrentes" className="rec-enlace">{recurrentes.length === 1 ? '1 recurrente' : `${recurrentes.length} recurrentes`} ›</Link>}
+          {puede(u, 'facturar') && <Link href="/facturas/catalogo" className="rec-enlace">Catálogo ›</Link>}
         </p>
       )}
 
