@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function Nueva({ searchParams }) {
   const u = await requerir('facturar');
-  const [facturas, todos] = await Promise.all([leer(u, 'facturas'), leer(u, 'clientes')]);
+  const [facturas, todos, productos] = await Promise.all([leer(u, 'facturas'), leer(u, 'clientes'), leer(u, 'productos')]);
   if (!facturas) return <SinBD />;
   const clientes = todos.sort((a, b) => a.nombre.localeCompare(b.nombre));
   const h = hoy();
@@ -26,7 +26,7 @@ export default async function Nueva({ searchParams }) {
     <main className="pagina">
       <Volver href={original || plantilla ? `/facturas/${(original || plantilla).id}` : '/facturas'} />
       <h1 className="titulo">{original ? 'Factura rectificativa' : plantilla ? 'Duplicar factura' : 'Nueva factura'}</h1>
-      <FormFactura clientes={clientes} hoy={h} rectifica={original} plantilla={plantilla || null} numeros={numeros} actividades={actividades} />
+      <FormFactura clientes={clientes} hoy={h} rectifica={original} plantilla={plantilla || null} numeros={numeros} actividades={actividades} productos={(productos || []).sort((a, b) => a.nombre.localeCompare(b.nombre))} />
     </main>
   );
 }
