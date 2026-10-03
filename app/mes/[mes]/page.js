@@ -1,5 +1,5 @@
 import { Fragment } from 'react';
-import Link from 'next/link';
+import Ir from '@/components/Ir';
 import { notFound } from 'next/navigation';
 import { requerir } from '@/lib/auth';
 import { leer } from '@/lib/redis';
@@ -38,8 +38,8 @@ export default async function Mes({ params }) {
       <header className="cabecera">
         <h1 className="titulo">{MESES[m - 1]} {y}</h1>
         <nav className="anios">
-          <Link href={`/mes/${otro(-1)}`} aria-label="Mes anterior">‹</Link>
-          <Link href={`/mes/${otro(1)}`} aria-label="Mes siguiente">›</Link>
+          <Ir tipo="cifras" href={`/mes/${otro(-1)}`} aria-label="Mes anterior">‹</Ir>
+          <Ir tipo="cifras" href={`/mes/${otro(1)}`} aria-label="Mes siguiente">›</Ir>
         </nav>
       </header>
 
@@ -75,14 +75,14 @@ export default async function Mes({ params }) {
         <ul className="grupo-lista bloque">
           {F.map((f) => (
             <li key={f.id}>
-              <Link href={`/facturas/${f.id}`} className="fila">
+              <Ir href={`/facturas/${f.id}`} className="fila">
                 <span className="num">{numeroFactura(f)}</span>
                 <span className="txt">
                   <strong>{f.cliente.nombre}</strong>
                   <small>{fechaCorta(f.fecha)} · {ACTIVIDADES[f.actividad]}{f.cobrada ? '' : ' · Pendiente'}</small>
                 </span>
                 <span className={`imp ${f.cobrada ? '' : 'pend'}`}>{eur(importes(f).total)}</span>
-              </Link>
+              </Ir>
             </li>
           ))}
         </ul>
