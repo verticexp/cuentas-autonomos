@@ -7,6 +7,7 @@ import { navegar } from '@/lib/transicion';
 import Deslizable from './Deslizable';
 import { baseLinea, desglose, importes, leerImporte, numeroFactura, r2 } from '@/lib/calculos';
 import '@/app/lineas.css';
+import '@/app/catalogo.css';
 import { eur } from '@/lib/formato';
 
 const aTexto = (n) => String(n ?? '').replace('.', ',');
@@ -17,7 +18,7 @@ const lineasDe = (x) => (x.lineas?.length
   : [{ concepto: x.concepto || '', cantidad: '1', precio: aTexto(x.base), dto: '', ivaPct: x.ivaPct }]);
 const numero = (v) => leerImporte(v) || 0;
 
-export default function FormFactura({ factura, clientes, numeros, hoy, rectifica: orig, plantilla, actividades }) {
+export default function FormFactura({ factura, clientes, numeros, hoy, rectifica: orig, plantilla, actividades, productos = [] }) {
   // IVA y retención de cada actividad, para rellenar la factura nueva.
   const defecto = (id) => { const a = actividades.find((x) => x.id === id) || actividades[0]; return { ivaPct: a.ivaPct, irpfPct: a.irpfPct }; };
   const router = useRouter();
@@ -48,6 +49,12 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
     : { ...x, actividad: a }));
   const ponerLinea = (i, k, v) => setF((x) => ({ ...x, lineas: x.lineas.map((l, j) => (j === i ? { ...l, [k]: v } : l)) }));
   const quitarLinea = (i) => setF((x) => ({ ...x, lineas: x.lineas.filter((_, j) => j !== i) }));
+  // Del catálogo: rellena la última línea si está vacía; si no, añade una.
+  const delCatalogo = (p) => setF((x) => {
+    const l = { concepto: p.nombre, cantidad: '1', precio: aTexto(p.precio), dto: '', ivaPct: p.ivaPct };
+    const ult = x.lineas.at(-1);
+    return { ...x, lineas: ult && !ult.concepto && !ult.precio ? [...x.lineas.slice(0, -1), l] : [...x.lineas, l] };
+  });
   const anadirLinea = () => setF((x) => ({ ...x, lineas: [...x.lineas, lineaVacia(x.lineas.at(-1)?.ivaPct ?? defecto(x.actividad).ivaPct)] }));
 
   const nums = f.lineas.map((l) => ({ cantidad: numero(l.cantidad), precio: numero(l.precio), dto: Number(String(l.dto).replace(',', '.')) || 0, ivaPct: Number(l.ivaPct) }));
@@ -114,6 +121,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
             <p className="linea-total">{eur(baseLinea(nums[i]))}</p>
           </div>
         ))}
+        {productos.length > 0 && <div className="catalogo-chips" aria-label="Añadir del catálogo">{productos.map((p) => <button type="button" key={p.id} onClick={() => delCatalogo(p)}>+ {p.nombre}</button>)}</div>}
         <button type="button" className="boton sec" onClick={anadirLinea}>+ Añadir línea</button>
       </fieldset>
 
