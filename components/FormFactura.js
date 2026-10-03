@@ -5,9 +5,17 @@ import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
 import { navegar } from '@/lib/transicion';
 import Deslizable from './Deslizable';
-import { importes, leerImporte, numeroFactura } from '@/lib/calculos';
+import { baseLinea, desglose, importes, leerImporte, numeroFactura, r2 } from '@/lib/calculos';
+import '@/app/lineas.css';
 import { eur } from '@/lib/formato';
 
+const aTexto = (n) => String(n ?? '').replace('.', ',');
+const lineaVacia = (ivaPct) => ({ concepto: '', cantidad: '1', precio: '', dto: '', ivaPct });
+// Las facturas antiguas (una base, un IVA) se abren como una sola línea.
+const lineasDe = (x) => (x.lineas?.length
+  ? x.lineas.map((l) => ({ concepto: l.concepto, cantidad: aTexto(l.cantidad), precio: aTexto(l.precio), dto: l.dto ? aTexto(l.dto) : '', ivaPct: l.ivaPct }))
+  : [{ concepto: x.concepto || '', cantidad: '1', precio: aTexto(x.base), dto: '', ivaPct: x.ivaPct }]);
+const numero = (v) => leerImporte(v) || 0;
 
 export default function FormFactura({ factura, clientes, numeros, hoy, rectifica: orig, plantilla, actividades }) {
   // IVA y retención de cada actividad, para rellenar la factura nueva.
@@ -15,12 +23,15 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
   const router = useRouter();
   const nueva = !factura;
   const [f, setF] = useState(() => factura
-    ? { ...factura, base: String(factura.base).replace('.', ',') }
+    ? { ...factura, lineas: lineasDe(factura) }
     : orig
-      ? { actividad: orig.actividad, fecha: hoy, cliente: orig.cliente, concepto: `Anulación de la factura ${numeroFactura(orig)}`, base: String(-orig.base).replace('.', ','), ivaPct: orig.ivaPct, irpfPct: orig.irpfPct, nota: '', cobrada: false, rectifica: orig.id }
+      ? { actividad: orig.actividad, fecha: hoy, cliente: orig.cliente, irpfPct: orig.irpfPct, nota: '', cobrada: false, rectifica: orig.id,
+        lineas: orig.lineas?.length
+          ? lineasDe(orig).map((l) => ({ ...l, precio: aTexto(-numero(l.precio)) }))
+          : [{ concepto: `Anulación de la factura ${numeroFactura(orig)}`, cantidad: '1', precio: aTexto(-orig.base), dto: '', ivaPct: orig.ivaPct }] }
       : plantilla
-        ? { actividad: plantilla.actividad, fecha: hoy, cliente: plantilla.cliente, concepto: plantilla.concepto, base: String(plantilla.base).replace('.', ','), ivaPct: plantilla.ivaPct, irpfPct: plantilla.irpfPct, nota: plantilla.nota || '', cobrada: false }
-      : { actividad: actividades[0].id, fecha: hoy, cliente: { nombre: '', nif: '', direccion: '', ciudad: '' }, concepto: '', base: '', nota: '', cobrada: false, ...defecto(actividades[0].id) });
+        ? { actividad: plantilla.actividad, fecha: hoy, cliente: plantilla.cliente, lineas: lineasDe(plantilla), irpfPct: plantilla.irpfPct, nota: plantilla.nota || '', cobrada: false }
+      : { actividad: actividades[0].id, fecha: hoy, cliente: { nombre: '', nif: '', direccion: '', ciudad: '' }, lineas: [lineaVacia(defecto(actividades[0].id).ivaPct)], nota: '', cobrada: false, irpfPct: defecto(actividades[0].id).irpfPct });
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
 
@@ -32,10 +43,17 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
     const c = clientes.find((x) => x.id === id);
     poner('cliente', c ? { nombre: c.nombre, nif: c.nif, direccion: c.direccion, ciudad: c.ciudad } : { nombre: '', nif: '', direccion: '', ciudad: '' });
   };
-  const cambiarActividad = (a) => setF((x) => ({ ...x, actividad: a, ...(nueva && !orig ? defecto(a) : {}) }));
+  const cambiarActividad = (a) => setF((x) => (nueva && !orig
+    ? { ...x, actividad: a, irpfPct: defecto(a).irpfPct, lineas: x.lineas.map((l) => ({ ...l, ivaPct: defecto(a).ivaPct })) }
+    : { ...x, actividad: a }));
+  const ponerLinea = (i, k, v) => setF((x) => ({ ...x, lineas: x.lineas.map((l, j) => (j === i ? { ...l, [k]: v } : l)) }));
+  const quitarLinea = (i) => setF((x) => ({ ...x, lineas: x.lineas.filter((_, j) => j !== i) }));
+  const anadirLinea = () => setF((x) => ({ ...x, lineas: [...x.lineas, lineaVacia(x.lineas.at(-1)?.ivaPct ?? defecto(x.actividad).ivaPct)] }));
 
-  const base = leerImporte(f.base) || 0;
-  const t = importes({ base, ivaPct: Number(f.ivaPct), irpfPct: Number(f.irpfPct) });
+  const nums = f.lineas.map((l) => ({ cantidad: numero(l.cantidad), precio: numero(l.precio), dto: Number(String(l.dto).replace(',', '.')) || 0, ivaPct: Number(l.ivaPct) }));
+  const base = r2(nums.reduce((s, l) => s + baseLinea(l), 0));
+  const t = importes({ base, lineas: nums, irpfPct: Number(f.irpfPct) });
+  const tipos = desglose({ lineas: nums });
 
   const enviar = async (e) => {
     e.preventDefault();
@@ -49,7 +67,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
 
   return (
     <form className="formulario" onSubmit={enviar}>
-      <p className="rotulo">{nueva ? `Se numerará como ${numeros[f.actividad]}` : `Factura ${numeroFactura(f)}`}{orig ? ` · rectifica la ${numeroFactura(orig)} (pon el importe que corrige; en negativo si anula)` : ''}</p>
+      <p className="rotulo">{nueva ? `Se numerará como ${numeros[f.actividad]}` : `Factura ${numeroFactura(f)}`}{orig ? ` · rectifica la ${numeroFactura(orig)} (pon el importe que corrige: en negativo si anula)` : ''}</p>
       {actividades.length > 1 && <Deslizable className={`tipo ${actividades.length === 2 ? 'dos' : 'varias'}`}>
         {actividades.map(({ id, nombre }) => (
           <button type="button" key={id} className={f.actividad === id ? 'activo' : ''} onClick={() => cambiarActividad(id)}>{nombre}</button>
@@ -70,25 +88,39 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
         <input className="campo" placeholder="Ciudad y CP" value={f.cliente.ciudad} onChange={(e) => ponerCliente('ciudad', e.target.value)} />
       </fieldset>
 
-      <label>Concepto<input className="campo" placeholder="Bolos DJ mayo" value={f.concepto} onChange={(e) => poner('concepto', e.target.value)} /></label>
       <div className="dos-col">
         <label>Fecha del evento (opcional)<input className="campo" type="date" value={f.evento?.fecha || ''} onChange={(e) => poner('evento', { ...f.evento, fecha: e.target.value })} /></label>
         <label>Lugar (opcional)<input className="campo" placeholder="Hotel Arts" value={f.evento?.lugar || ''} onChange={(e) => poner('evento', { ...f.evento, lugar: e.target.value })} /></label>
       </div>
-      <label>Base (sin IVA)<input className="campo" inputMode="decimal" placeholder="0,00" value={f.base} onChange={(e) => poner('base', e.target.value)} required /></label>
+      <fieldset className="lineas">
+        <legend>Conceptos</legend>
+        {f.lineas.map((l, i) => (
+          <div className="linea" key={i}>
+            <div className="linea-cab">
+              <input className="campo" placeholder={i ? 'Concepto' : 'Bolo DJ boda'} aria-label="Concepto" value={l.concepto} onChange={(e) => ponerLinea(i, 'concepto', e.target.value)} required />
+              {f.lineas.length > 1 && <button type="button" className="linea-quitar" aria-label="Quitar línea" onClick={() => quitarLinea(i)}>×</button>}
+            </div>
+            <div className="linea-nums">
+              <label>Cantidad<input className="campo" inputMode="decimal" value={l.cantidad} onChange={(e) => ponerLinea(i, 'cantidad', e.target.value)} /></label>
+              <label>Precio<input className="campo" inputMode="decimal" placeholder="0,00" value={l.precio} onChange={(e) => ponerLinea(i, 'precio', e.target.value)} /></label>
+              <label>Dto. %<input className="campo" inputMode="decimal" placeholder="0" value={l.dto} onChange={(e) => ponerLinea(i, 'dto', e.target.value)} /></label>
+              <label>IVA
+                <select className="campo" value={l.ivaPct} onChange={(e) => ponerLinea(i, 'ivaPct', Number(e.target.value))}>
+                  {[...new Set([21, 10, 4, 0, Number(l.ivaPct)])].map((n) => <option key={n} value={n}>{n}%</option>)}
+                </select>
+              </label>
+            </div>
+            <p className="linea-total">{eur(baseLinea(nums[i]))}</p>
+          </div>
+        ))}
+        <button type="button" className="boton sec" onClick={anadirLinea}>+ Añadir línea</button>
+      </fieldset>
 
-      <div className="dos-col">
-        <label>IVA
-          <select className="campo" value={f.ivaPct} onChange={(e) => poner('ivaPct', Number(e.target.value))}>
-            {[21, 10, 0].map((n) => <option key={n} value={n}>{n}%</option>)}
-          </select>
-        </label>
-        <label>IRPF
-          <select className="campo" value={f.irpfPct} onChange={(e) => poner('irpfPct', Number(e.target.value))}>
-            {[15, 7, 0].map((n) => <option key={n} value={n}>{n}%</option>)}
-          </select>
-        </label>
-      </div>
+      <label>IRPF
+        <select className="campo" value={f.irpfPct} onChange={(e) => poner('irpfPct', Number(e.target.value))}>
+          {[...new Set([15, 7, 0, Number(f.irpfPct) || 0])].map((n) => <option key={n} value={n}>{n}%</option>)}
+        </select>
+      </label>
 
       <label>Nota en la factura (opcional)
         <input className="campo" placeholder="Ej.: operación exenta de IVA, inversión del sujeto pasivo" value={f.nota || ''} onChange={(e) => poner('nota', e.target.value)} />
@@ -97,7 +129,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
       <label className="check"><input type="checkbox" checked={f.cobrada} onChange={(e) => poner('cobrada', e.target.checked)} /> Ya está cobrada</label>
 
       <div className="totales">
-        <span>IVA {eur(t.iva)}</span><span>IRPF −{eur(t.irpf)}</span><strong>Total {eur(t.total)}</strong>
+        <span>Base {eur(t.base)}</span>{tipos.length > 1 ? tipos.map((x) => <span key={x.pct}>IVA {x.pct}% {eur(x.iva)}</span>) : <span>IVA {eur(t.iva)}</span>}<span>IRPF −{eur(t.irpf)}</span><strong>Total {eur(t.total)}</strong>
       </div>
 
       {error && <p className="error">{error}</p>}
