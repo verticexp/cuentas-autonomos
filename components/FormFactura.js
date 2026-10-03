@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
+import { navegar } from '@/lib/transicion';
 import Deslizable from './Deslizable';
 import { importes, leerImporte, numeroFactura } from '@/lib/calculos';
 import { eur } from '@/lib/formato';
@@ -41,7 +42,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
     setEnviando(true); setError('');
     try {
       const d = await llamar('/api/facturas', { method: nueva ? 'POST' : 'PATCH', body: JSON.stringify(f) });
-      router.push(`/facturas/${nueva ? d.factura.id : f.id}`);
+      if (nueva) navegar(router, `/facturas/${d.factura.id}`, 'fundido');
       router.refresh();
     } catch (err) { setError(err.message); setEnviando(false); }
   };

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
+import { navegar } from '@/lib/transicion';
 import Deslizable from './Deslizable';
 
 export default function FormGasto({ hoy, gasto, actividades }) {
@@ -18,7 +19,7 @@ export default function FormGasto({ hoy, gasto, actividades }) {
     setEnviando(true); setError('');
     try {
       await llamar('/api/gastos', { method: gasto ? 'PATCH' : 'POST', body: JSON.stringify(g) });
-      if (gasto) { router.push('/gastos'); router.refresh(); return; }
+      if (gasto) { navegar(router, '/gastos', 'atras'); router.refresh(); return; }
       setG(vacio);
       router.refresh();
     } catch (err) { setError(err.message); }
