@@ -11,6 +11,7 @@ import { permisosDe } from '@/lib/permisos';
 import Bloqueo from '@/components/Bloqueo';
 import Llegada from '@/components/Llegada';
 import Arranque from '@/components/Arranque';
+import BarraEstado from '@/components/BarraEstado';
 
 // Si ya se vio en esta sesión (o es una página pública/PDF), la pantalla de inicio no llega a pintarse.
 // Si la app ya se desbloqueó en esta sesión, el bloqueo tampoco (components/Bloqueo.js).
@@ -18,15 +19,14 @@ const YA_VISTO = "try{if(sessionStorage.getItem('netto-abierta')||document.cooki
 
 export const metadata = {
   title: 'Netto',
-  appleWebApp: { capable: true, title: 'Netto', statusBarStyle: 'black-translucent' },
+  // App a pantalla completa sin estilo de barra de estado: así iOS pinta la barra con theme-color
+  // (components/BarraEstado.js) y pone la hora en blanco o negro según toque.
+  other: { 'apple-mobile-web-app-capable': 'yes', 'mobile-web-app-capable': 'yes', 'apple-mobile-web-app-title': 'Netto' },
 };
 
 export const viewport = {
   width: 'device-width', initialScale: 1, viewportFit: 'cover',
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#F3F4F1' },
-    { media: '(prefers-color-scheme: dark)', color: '#08110F' },
-  ],
+  themeColor: '#0F1F1B', // verde de la pantalla de inicio; luego lo cambia components/BarraEstado.js
 };
 
 export default async function RootLayout({ children }) {
@@ -43,7 +43,7 @@ export default async function RootLayout({ children }) {
         <Arranque />
         <script dangerouslySetInnerHTML={{ __html: 'window.__arranque=performance.now()' }} />
         {children}
-        <Suspense><TabBar permisos={permisosDe(u)} /><Llegada /></Suspense>
+        <Suspense><TabBar permisos={permisosDe(u)} /><Llegada /><BarraEstado /></Suspense>
         {u && <Bloqueo email={u.email} />}
       </body>
     </html>

@@ -93,7 +93,3 @@ html[data-entrada] .tabbar { animation: entrada-barra 0.5s var(--vt-curva) 0.15s
 @keyframes guardado { from { opacity: 0; transform: translateY(4px) scale(0.96); } }
 @media (prefers-reduced-motion: reduce) { .guardado { animation: none; } }
 
-/* iPhone: la app se dibuja por debajo de la barra de estado (hora, batería). En el resumen la cabecera verde llega
-   hasta arriba; en el resto de pantallas, una franja verde detrás de la hora para que se lea en blanco. */
-body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; height: env(safe-area-inset-top, 0px); background: var(--verde); z-index: 60; pointer-events: none; }
-@media (prefers-color-scheme: dark) { body::before { background: #102521; } }
