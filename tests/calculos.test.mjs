@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { apartar, importes, siguienteNumero, resumenAnual, leerImporte, numeroFactura, proximoPlazo, vencimiento, vencida } from '../lib/calculos.js';
+import { apartar, casillas303, desglose, importes, siguienteNumero, resumenAnual, leerImporte, numeroFactura, proximoPlazo, vencimiento, vencida } from '../lib/calculos.js';
 
 const { facturas, gastos } = JSON.parse(readFileSync(new URL('../data/inicial.json', import.meta.url)));
 
@@ -43,4 +43,16 @@ test('series, plazos y vencimientos', () => {
   assert.equal(vencimiento(f, 60), '2026-08-30');
   assert.ok(vencida(f, 60, '2026-09-26'));
   assert.ok(!vencida({ ...f, cobrada: true }, 60, '2026-09-26'));
+});
+
+test('facturas con varias líneas: descuento e IVA por línea, compatibles con las antiguas', () => {
+  const lineas = [
+    { concepto: 'Sesión DJ', cantidad: 2, precio: 300, dto: 10, ivaPct: 21 },
+    { concepto: 'Libro', cantidad: 1, precio: 50, dto: 0, ivaPct: 4 },
+  ];
+  const f = { base: 590, ivaPct: 21, irpfPct: 15, lineas, fecha: '2026-02-10' };
+  assert.deepEqual(desglose(f), [{ pct: 21, base: 540, iva: 113.4 }, { pct: 4, base: 50, iva: 2 }]);
+  assert.deepEqual(importes(f), { base: 590, iva: 115.4, irpf: 88.5, total: 616.9 });
+  const c = casillas303([f, { base: 100, ivaPct: 21, fecha: '2026-03-01' }], [], 2026, 1);
+  assert.equal(c['07'], 640); assert.equal(c['09'], 134.4); assert.equal(c['01'], 50); assert.equal(c['03'], 2);
 });
