@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
+import { navegar } from '@/lib/transicion';
 
 // Copia el enlace para el cliente (o abre el menú de compartir del móvil).
 export function Compartir({ ruta, texto }) {
@@ -24,7 +25,7 @@ export function Facturar({ id, tipo, children }) {
     setEnviando(true);
     try {
       const d = await llamar('/api/presupuestos/facturar', { method: 'POST', body: JSON.stringify({ id, tipo }) });
-      router.push(`/facturas/${d.factura.id}`);
+      navegar(router, `/facturas/${d.factura.id}`, 'adelante');
     } catch (e) { alert(e.message); setEnviando(false); }
   };
   return <button className="boton sec" disabled={enviando} onClick={facturar}>{enviando ? 'Facturando…' : children}</button>;

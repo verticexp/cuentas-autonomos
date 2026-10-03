@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { MARCA, entrarConFaceId, faceIdDisponible } from '@/lib/faceid';
 import Logo from '@/components/Logo';
+import { entrada } from '@/lib/transicion';
 
 // Bloqueo obligatorio: al abrir la app y al volver a ella, pide Face ID (o huella / Windows Hello) o la contraseña.
 // Sale ya pintado desde el servidor, así nunca se ve nada de la app antes de desbloquear.
@@ -19,7 +20,8 @@ export default function Bloqueo({ email }) {
   const [enviando, setEnviando] = useState(false);
   const pass = useRef(null);
 
-  const abrir = useCallback(() => {
+  const abrir = useCallback((animar = true) => {
+    if (animar && document.documentElement.dataset.arranque === 'visto') entrada();
     marcarAbierta();
     document.documentElement.dataset.abierta = '1';
     setBloqueada(false);
@@ -43,7 +45,7 @@ export default function Bloqueo({ email }) {
     faceIdDisponible().then((ok) => setConFaceId(ok && Boolean(localStorage.getItem(MARCA))));
     const recien = document.cookie.includes('recien=1');
     if (recien) document.cookie = 'recien=; path=/; max-age=0';
-    if (recien || sessionStorage.getItem(ABIERTA)) abrir();
+    if (recien || sessionStorage.getItem(ABIERTA)) abrir(recien);
     else bloquear();
     const cambio = () => {
       if (document.visibilityState === 'hidden') { sessionStorage.setItem(OCULTA, String(Date.now())); return; }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { navegar } from '@/lib/transicion';
 
 async function llamar(url, opciones) {
   const r = await fetch(url, { headers: { 'Content-Type': 'application/json' }, ...opciones });
@@ -15,7 +16,7 @@ export function Borrar({ url, pregunta, volver }) {
     if (!confirm(pregunta)) return;
     try {
       await llamar(url, { method: 'DELETE' });
-      if (volver) router.push(volver);
+      if (volver) navegar(router, volver, 'atras');
       router.refresh();
     } catch (e) { alert(e.message); }
   };

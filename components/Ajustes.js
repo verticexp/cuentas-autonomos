@@ -24,7 +24,7 @@ function Formulario({ titulo, inicial, enviar, children }) {
     <form className="formulario tarjeta" onSubmit={guardar}>
       <h3>{titulo}</h3>
       {children(datos, (k, v) => setDatos((x) => ({ ...x, [k]: v })))}
-      {msg && <p className={msg === 'Guardado' ? 'nota' : 'error'}>{msg}</p>}
+      {msg && <p role="status" className={msg === 'Guardado' ? 'nota guardado' : msg === 'Guardando…' ? 'nota' : 'error'}>{msg === 'Guardado' ? '✓ Guardado' : msg}</p>}
       <button className="boton">Guardar</button>
     </form>
   );
