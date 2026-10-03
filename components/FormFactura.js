@@ -41,7 +41,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
   const elegido = clientes.find((x) => x.nombre.toUpperCase() === f.cliente.nombre.trim().toUpperCase())?.id || '';
   const elegirCliente = (id) => {
     const c = clientes.find((x) => x.id === id);
-    poner('cliente', c ? { nombre: c.nombre, nif: c.nif, direccion: c.direccion, ciudad: c.ciudad } : { nombre: '', nif: '', direccion: '', ciudad: '' });
+    poner('cliente', c ? { nombre: c.nombre, nif: c.nif, direccion: c.direccion, ciudad: c.ciudad, email: c.email || '' } : { nombre: '', nif: '', direccion: '', ciudad: '' });
   };
   const cambiarActividad = (a) => setF((x) => (nueva && !orig
     ? { ...x, actividad: a, irpfPct: defecto(a).irpfPct, lineas: x.lineas.map((l) => ({ ...l, ivaPct: defecto(a).ivaPct })) }
@@ -86,6 +86,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
         <input className="campo" placeholder="NIF / CIF" value={f.cliente.nif} onChange={(e) => ponerCliente('nif', e.target.value)} />
         <input className="campo" placeholder="Dirección" value={f.cliente.direccion} onChange={(e) => ponerCliente('direccion', e.target.value)} />
         <input className="campo" placeholder="Ciudad y CP" value={f.cliente.ciudad} onChange={(e) => ponerCliente('ciudad', e.target.value)} />
+        <input className="campo" type="email" placeholder="Email (para enviarle la factura)" value={f.cliente.email || ''} onChange={(e) => ponerCliente('email', e.target.value)} />
       </fieldset>
 
       <div className="dos-col">
