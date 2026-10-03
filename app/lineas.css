@@ -1,0 +1,15 @@
+/* Líneas de factura: concepto, cantidad, precio, descuento e IVA por línea */
+.lineas .linea { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 12px; background: var(--relleno); }
+.linea-cab { display: flex; gap: 8px; align-items: center; }
+.linea-cab .campo { flex: 1; min-width: 0; }
+.linea-quitar { flex: none; width: 36px; height: 36px; border: 0; border-radius: 50%; background: var(--surface); color: var(--muted); font-size: 22px; line-height: 1; cursor: pointer; }
+.linea-nums { display: grid; grid-template-columns: 0.8fr 1.3fr 0.8fr 1fr; gap: 6px; }
+.formulario .linea-nums label { font-size: 12px; gap: 4px; min-width: 0; }
+.linea-nums .campo { min-width: 0; width: 100%; padding-left: 10px; padding-right: 10px; }
+.linea-total { margin: 0; text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+.lineas > .boton.sec { align-self: flex-start; }
+.solo-ver:disabled .linea-quitar, .solo-ver:disabled .lineas > .boton.sec { display: none; }
+
+/* Factura A4 con varias líneas */
+.fa-tabla.fa-lineas th.n, .fa-tabla.fa-lineas td.n { text-align: right; white-space: nowrap; padding-left: 14px; }
+.fa-tabla.fa-lineas td { font-size: 13px; }
