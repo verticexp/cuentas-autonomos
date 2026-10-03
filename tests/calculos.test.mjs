@@ -56,3 +56,30 @@ test('facturas con varias líneas: descuento e IVA por línea, compatibles con l
   const c = casillas303([f, { base: 100, ivaPct: 21, fecha: '2026-03-01' }], [], 2026, 1);
   assert.equal(c['07'], 640); assert.equal(c['09'], 134.4); assert.equal(c['01'], 50); assert.equal(c['03'], 2);
 });
+
+test('recordatorios de cobro: vencidas, con email, cada N días y como mucho 5', async () => {
+  const { tocaRecordatorio } = await import('../lib/recordatorios.js');
+  const f = { fecha: '2026-09-01', base: 100, ivaPct: 21, cobrada: false, cliente: { email: 'a@b.es' } };
+  const o = { plazo: 30, cada: 7 };
+  assert.equal(tocaRecordatorio(f, o, '2026-10-01'), false); // vence hoy
+  assert.equal(tocaRecordatorio(f, o, '2026-10-02'), true); // vencida desde ayer
+  assert.equal(tocaRecordatorio({ ...f, cobrada: true }, o, '2026-10-20'), false);
+  assert.equal(tocaRecordatorio({ ...f, cliente: {} }, o, '2026-10-20'), false);
+  assert.equal(tocaRecordatorio(f, { plazo: 30, cada: 0 }, '2026-10-20'), false);
+  const uno = { ...f, envios: [{ tipo: 'recordatorio', fecha: '2026-10-02T08:00:00Z' }] };
+  assert.equal(tocaRecordatorio(uno, o, '2026-10-08'), false);
+  assert.equal(tocaRecordatorio(uno, o, '2026-10-09'), true);
+  const cinco = { ...f, envios: Array.from({ length: 5 }, () => ({ tipo: 'recordatorio', fecha: '2026-10-02T08:00:00Z' })) };
+  assert.equal(tocaRecordatorio(cinco, o, '2026-12-31'), false);
+});
+
+test('firma de los avisos de Stripe', async () => {
+  const { createHmac } = await import('node:crypto');
+  const { firmaValida } = await import('../lib/stripe.js');
+  const t = 1790000000, cuerpo = '{"a":1}';
+  const v1 = createHmac('sha256', 'whsec_x').update(`${t}.${cuerpo}`).digest('hex');
+  assert.ok(firmaValida(cuerpo, `t=${t},v1=${v1}`, 'whsec_x', t * 1000));
+  assert.ok(!firmaValida(cuerpo + ' ', `t=${t},v1=${v1}`, 'whsec_x', t * 1000));
+  assert.ok(!firmaValida(cuerpo, `t=${t},v1=${v1}`, 'whsec_x', (t + 600) * 1000));
+  assert.ok(!firmaValida(cuerpo, `t=${t},v1=${v1}`, '', t * 1000));
+});
