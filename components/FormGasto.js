@@ -61,6 +61,7 @@ export default function FormGasto({ hoy, gasto, actividades }) {
       {!gasto && <label className="boton sec ancho ticket-foto">📷 Foto del ticket<input type="file" accept="image/*" capture="environment" onChange={foto} hidden /></label>}
       {leyendo && <p className="nota ticket-nota" role="status">{leyendo}</p>}
       <input className="campo" placeholder="Proveedor (opcional)" value={g.proveedor || ''} onChange={(e) => poner('proveedor', e.target.value)} />
+      {g.proveedor && <input className="campo" placeholder="NIF del proveedor (opcional)" value={g.proveedorNif || ''} onChange={(e) => poner('proveedorNif', e.target.value)} />}
       <input className="campo" placeholder="Concepto" value={g.concepto} onChange={(e) => poner('concepto', e.target.value)} required />
       <div className="dos-col">
         <input className="campo" inputMode="decimal" placeholder="Base sin IVA" value={g.base} onChange={(e) => poner('base', e.target.value)} required />
@@ -69,6 +70,7 @@ export default function FormGasto({ hoy, gasto, actividades }) {
         </select>
       </div>
       <input className="campo" type="date" value={g.fecha} onChange={(e) => poner('fecha', e.target.value)} required />
+      <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.pendiente)} onChange={(e) => poner('pendiente', e.target.checked)} />Aún no lo he pagado</label>
       {error && <p className="error">{error}</p>}
       <button className="boton" disabled={enviando}>{enviando ? 'Guardando…' : gasto ? 'Guardar cambios' : 'Añadir'}</button>
     </form>
