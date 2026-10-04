@@ -1,0 +1,8 @@
+/* Proveedores (salen de los gastos) */
+.resumen-linea a.prov-enlace { color: var(--muted); text-decoration: none; }
+.formulario label.gasto-pendiente { flex-direction: row; align-items: center; gap: 10px; font-size: 15px; color: var(--ink); padding: 2px; cursor: pointer; }
+.gasto-pendiente input { width: 20px; height: 20px; accent-color: var(--acento); margin: 0; }
+.prov-cifras { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 4px 0 16px; color: var(--muted); font-size: 14px; }
+.prov-cifras strong { color: var(--ink); font-variant-numeric: tabular-nums; }
+.prov-debe { color: #C0392B; }
+.prov-pagar { margin: 0 0 16px; }
