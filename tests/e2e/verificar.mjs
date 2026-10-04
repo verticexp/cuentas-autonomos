@@ -260,6 +260,27 @@ console.log('Catálogo');
   ok('al quitarlo desaparece', () => assert.ok(!cat3.includes('Sesión DJ 4 horas')));
 }
 
+console.log('Paquete para la gestoría');
+{
+  const { leerZip } = await import('../../lib/zip.js');
+  const r = await pedir(`/api/paquete?anio=${Y}&t=3`, { cookie: yo });
+  const z = leerZip(Buffer.from(await r.arrayBuffer()));
+  ok('un clic: un .zip con el Excel y el PDF del trimestre', () => assert.deepEqual(Object.keys(z), [`gestoria-3T-${Y}.xlsx`, `gestoria-3T-${Y}.pdf`]));
+  ok('el PDF es un PDF', () => assert.equal(z[`gestoria-3T-${Y}.pdf`].subarray(0, 4).toString(), '%PDF'));
+  const x = leerZip(z[`gestoria-3T-${Y}.xlsx`]);
+  ok('el Excel tiene resumen, facturas, gastos y modelos', () => assert.ok(['Resumen', 'Facturas', 'Gastos', 'Modelos'].every((h) => x['xl/workbook.xml'].toString().includes(`name="${h}"`))));
+  // Las mismas facturas y gastos que la exportación de siempre (CSV) de ese trimestre.
+  const filas = async (tipo) => (await (await pedir(`/api/exportar?tipo=${tipo}&anio=${Y}&t=3`, { cookie: yo })).text()).trim().split('\r\n').length - 1;
+  const filasX = (i) => (x[`xl/worksheets/sheet${i}.xml`].toString().match(/<row /g) || []).length - 2;
+  const [nf, ng] = [await filas('facturas'), await filas('gastos')];
+  ok(`facturas (${nf}) y gastos (${ng}) del trimestre`, () => assert.deepEqual([filasX(2), filasX(3)], [nf, ng]));
+  ok('lleva el modelo 303 y el 130', () => assert.ok(['>303<', '>130<'].every((m) => x['xl/worksheets/sheet4.xml'].toString().includes(m))));
+  const solo = await pedir(`/api/paquete?anio=${Y}&t=3&formato=pdf`, { cookie: yo });
+  ok('también por separado (PDF)', () => assert.equal(solo.headers.get('content-type'), 'application/pdf'));
+  const res = n(await texto('/', yo));
+  ok('el enlace está en el resumen', () => assert.ok(res.includes('paquete para la gestoría')));
+}
+
 console.log('Permisos');
 const inv = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { nombre: 'Solo gastos', email: `g${Date.now()}@test.es`, rol: 'miembro', permisos: ['gastos', 'gastar'] } })).json();
 const fd2 = new FormData(); fd2.set('codigo', inv.enlace.split('/').pop()); fd2.set('password', 'gastosgastos1');
@@ -270,6 +291,8 @@ ok('el de gastos no puede crear facturas (403)', () => assert.equal(intento.stat
 const vista = await pedir('/', { cookie: otro });
 const html = await vista.text();
 ok('el de gastos va a Gastos al abrir', () => assert.ok(([307, 303].includes(vista.status) && vista.headers.get('location').includes('/gastos')) || html.includes('url=/gastos'), `status ${vista.status}`));
+const paq = await pedir(`/api/paquete?anio=${Y}&t=3`, { cookie: otro });
+ok('el de gastos no puede bajar el paquete de la gestoría', () => assert.equal(paq.status, 403));
 ok('el de gastos no ve cifras del resumen', () => assert.ok(!html.includes(eurSin(P.beneficio)), 'se ve el beneficio'));
 
 console.log('Sociedad');
