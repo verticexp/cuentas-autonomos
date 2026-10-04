@@ -10,6 +10,9 @@ import FormGasto from '@/components/FormGasto';
 import Cuotas from '@/components/Cuotas';
 import Ir from '@/components/Ir';
 import { puede } from '@/lib/permisos';
+import Link from 'next/link';
+import { proveedores } from '@/lib/proveedores';
+import '@/app/proveedores.css';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,15 +28,20 @@ export default async function Gastos() {
   const LISTA = !actividades.some((a) => a.id === 'dj') ? DEDUCCIONES_GENERALES.filter((d) => !d.soloAutonomo || fiscalDe(u).tipo === 'autonomo') : DEDUCCIONES;
   const delAnio = lista.filter((g) => g.fecha.startsWith(h.slice(0, 4)));
   const pendientes = LISTA.filter((d) => !cubierta(d, delAnio)).length;
+  const provs = proveedores(lista);
+  const debes = provs.reduce((s, p) => s + p.debe, 0);
   return (
     <main className="pagina">
       <header className="cabecera">
         <h1 className="titulo">Gastos</h1>
       </header>
-      {delAnio.length > 0 && (
+      {(delAnio.length > 0 || provs.length > 0) && (
         <p className="resumen-linea">
+          {delAnio.length > 0 && <>
           <span>Este año, sin IVA <strong>{eur(r2(delAnio.reduce((s, g) => s + g.base, 0)))}</strong></span>
           <span>IVA que recuperas <strong>{eur(r2(delAnio.reduce((s, g) => s + importes(g).iva, 0)))}</strong></span>
+          </>}
+          {provs.length > 0 && <Link href="/gastos/proveedores" className="prov-enlace">Proveedores{debes > 0 ? ` · debes ${eur(r2(debes))}` : ''} ›</Link>}
         </p>
       )}
       {puede(u, 'gastar') && <>
@@ -64,7 +72,7 @@ export default async function Gastos() {
               <Ir href={`/gastos/${encodeURIComponent(g.id)}`} className="fila">
                 <span className="txt">
                   <strong>{g.concepto}</strong>
-                  <small>{fechaCorta(g.fecha)}{actividades.length > 1 ? ` · ${NOMBRES[g.actividad] || g.actividad}` : ''}{importes(g).iva ? ` · IVA ${eur(importes(g).iva)}` : ''}</small>
+                  <small>{fechaCorta(g.fecha)}{actividades.length > 1 ? ` · ${NOMBRES[g.actividad] || g.actividad}` : ''}{importes(g).iva ? ` · IVA ${eur(importes(g).iva)}` : ''}{g.pendiente ? <span className="rojo"> · Sin pagar</span> : ''}</small>
                 </span>
                 <span className="imp">{eur(g.base)}</span>
               </Ir>
