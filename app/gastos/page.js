@@ -45,7 +45,7 @@ export default async function Gastos() {
         </p>
       )}
       {puede(u, 'gastar') && <>
-        <FormGasto hoy={h} actividades={actividades} />
+        <FormGasto hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} />
         {fiscalDe(u).tipo === 'autonomo' && <Cuotas desde={`${h.slice(0, 4)}-01`} />}
       </>}
 
