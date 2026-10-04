@@ -1,0 +1,51 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { borradorRenta, cuotaEscala, modelo115, modelo180, modelo190, modelo349, modelo390, nifUE } from '../lib/modelos.js';
+
+const F = [
+  { fecha: '2026-02-01', base: 1000, ivaPct: 21, irpfPct: 15, cliente: { nombre: 'Ana', nif: '12345678Z' } },
+  { fecha: '2026-05-01', base: 2000, ivaPct: 0, irpfPct: 0, cliente: { nombre: 'Berlin GmbH', nif: 'DE 123456789' } },
+  { fecha: '2026-06-01', base: 500, ivaPct: 0, irpfPct: 0, cliente: { nombre: 'Berlin GmbH', nif: 'DE123456789' } },
+  { fecha: '2026-08-01', base: 400, ivaPct: 10, irpfPct: 0, cliente: { nombre: 'Paris', nif: 'FR12345678901' } },
+];
+const G = [
+  { fecha: '2026-01-31', base: 600, ivaPct: 21, alquiler: true, proveedor: 'Casero SL', proveedorNif: 'B1' },
+  { fecha: '2026-02-28', base: 600, ivaPct: 21, alquiler: true, proveedor: 'Casero SL', proveedorNif: 'B1' },
+  { fecha: '2026-04-30', base: 600, ivaPct: 21, alquiler: true, proveedor: 'Casero SL', proveedorNif: 'B1' },
+  { fecha: '2026-03-10', base: 100, ivaPct: 21 },
+];
+
+test('115 y 180: 19 % de las rentas del alquiler', () => {
+  assert.deepEqual(modelo115(G, 2026, 1), { perceptores: 1, base: 1200, retenciones: 228 });
+  const a = modelo180(G, 2026);
+  assert.deepEqual([a.base, a.retenciones, a.arrendadores.length, a.arrendadores[0].nif], [1800, 342, 1, 'B1']);
+});
+
+test('349: clientes de la UE por NIF-IVA, sumados por trimestre', () => {
+  assert.equal(nifUE('12345678Z'), ''); assert.equal(nifUE('ES12345678Z'), ''); assert.equal(nifUE('fr 12345678901'), 'FR12345678901');
+  assert.deepEqual(modelo349(F, 2026, 2), { operadores: [{ nif: 'DE123456789', nombre: 'Berlin GmbH', clave: 'S', base: 2500 }], total: 2500 });
+  assert.equal(modelo349(F, 2026, 1).total, 0);
+});
+
+test('390: suma de los cuatro 303', () => {
+  const c = modelo390(F, G, 2026);
+  assert.deepEqual([c.base21, c.cuota21, c.base10, c.cuota10, c.sinIva, c.deducible, c.resultado, c.volumen], [1000, 210, 400, 40, 2500, 399, -149, 3900]);
+  assert.deepEqual(c.trimestres, [-63, -126, 40, 0]);
+});
+
+test('190: por trabajador', () => {
+  const N = [{ empleado: 'e', empleadoNombre: 'Eva', mes: '2026-01', bruto: 2000, irpfPct: 10 }, { empleado: 'e', mes: '2026-02', bruto: 2000, irpfPct: 10 }, { empleado: 'e', mes: '2025-12', bruto: 9, irpfPct: 10 }];
+  assert.deepEqual(modelo190(N, [{ id: 'e', nombre: 'Eva Gil', nif: '1X' }], 2026), { perceptores: [{ nombre: 'Eva Gil', nif: '1X', percepciones: 4000, retenciones: 400 }], percepciones: 4000, retenciones: 400 });
+});
+
+test('renta: escala, mínimo personal, retenciones y pagos del 130', () => {
+  assert.equal(cuotaEscala(12450), 2365.5);
+  assert.equal(cuotaEscala(20000), 2365.5 + 1812);
+  const r = borradorRenta([{ fecha: '2026-03-01', base: 30000, ivaPct: 21, irpfPct: 15 }], [{ fecha: '2026-03-02', base: 5000, ivaPct: 21 }], 2026, { 1: 200, 2: 100 });
+  // 30.000 − 5.000 = 25.000; 5 % = 1.250 → 23.750
+  assert.equal(r.rendimiento, 23750);
+  assert.equal(r.cuota, r2(cuotaEscala(23750) - cuotaEscala(5550)));
+  assert.equal(r.retenciones, 4500); assert.equal(r.pagos130, 300);
+  assert.equal(r.resultado, r2(r.cuota - 4800));
+});
+const r2 = (n) => Math.round(n * 100) / 100;
