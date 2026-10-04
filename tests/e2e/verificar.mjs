@@ -281,6 +281,24 @@ console.log('Paquete para la gestoría');
   ok('el enlace está en el resumen', () => assert.ok(res.includes('paquete para la gestoría')));
 }
 
+console.log('Proveedores');
+{
+  const nuevo = (x) => pedir('/api/gastos', { metodo: 'POST', cookie: yo, cuerpo: { fecha: `${Y}-05-0${x.d}`, actividad: ACTS[0].id, concepto: x.c, base: x.b, ivaPct: 21, proveedor: x.p, proveedorNif: x.nif, pendiente: x.pend } }).then((r) => r.json());
+  await nuevo({ d: 1, c: 'Altavoces', b: '1000', p: 'Audio Pro', nif: 'B22222222', pend: true });
+  await nuevo({ d: 2, c: 'Cables', b: '100', p: 'AUDIO PRO S.L.', nif: 'b22222222' });
+  const lista = n(await texto('/gastos/proveedores', yo));
+  ok('sale el proveedor una vez, con lo que se le debe', () => assert.ok(lista.includes('AUDIO PRO S.L.') && !lista.includes('Audio Pro ') && lista.includes(`debes ${n(eur(1210))}`), lista.slice(0, 300)));
+  const ficha = n(await texto('/gastos/proveedores/B22222222', yo));
+  ok('su ficha tiene el historial y el total pagado', () => assert.ok(ficha.includes('Altavoces') && ficha.includes('Cables') && ficha.includes(n(eur(1331))) && ficha.includes('Sin pagar')));
+  const pg = n(await texto('/gastos', yo));
+  ok('el enlace está en Gastos con la deuda', () => assert.ok(pg.includes(`Proveedores · debes ${n(eur(1210))}`) && pg.includes('Sin pagar')));
+  const pago = await (await pedir('/api/proveedores', { metodo: 'POST', cookie: yo, cuerpo: { clave: 'B22222222' } })).json();
+  const ficha2 = n(await texto('/gastos/proveedores/B22222222', yo));
+  ok('al marcarlo pagado ya no se le debe nada', () => assert.ok(pago.pagados === 1 && !ficha2.includes('Sin pagar') && !ficha2.includes('Le debes')));
+  const otra = await pedir('/api/proveedores', { metodo: 'POST', cookie: yo, cuerpo: { clave: 'B22222222' } });
+  ok('si no hay nada pendiente, lo dice', () => assert.equal(otra.status, 404));
+}
+
 console.log('Permisos');
 const inv = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { nombre: 'Solo gastos', email: `g${Date.now()}@test.es`, rol: 'miembro', permisos: ['gastos', 'gastar'] } })).json();
 const fd2 = new FormData(); fd2.set('codigo', inv.enlace.split('/').pop()); fd2.set('password', 'gastosgastos1');
@@ -291,6 +309,8 @@ ok('el de gastos no puede crear facturas (403)', () => assert.equal(intento.stat
 const vista = await pedir('/', { cookie: otro });
 const html = await vista.text();
 ok('el de gastos va a Gastos al abrir', () => assert.ok(([307, 303].includes(vista.status) && vista.headers.get('location').includes('/gastos')) || html.includes('url=/gastos'), `status ${vista.status}`));
+const provs = await pedir('/api/proveedores', { metodo: 'POST', cookie: otro, cuerpo: { clave: 'x' } });
+ok('el de gastos sí puede gestionar proveedores', () => assert.equal(provs.status, 404));
 const paq = await pedir(`/api/paquete?anio=${Y}&t=3`, { cookie: otro });
 ok('el de gastos no puede bajar el paquete de la gestoría', () => assert.equal(paq.status, 403));
 ok('el de gastos no ve cifras del resumen', () => assert.ok(!html.includes(eurSin(P.beneficio)), 'se ve el beneficio'));
