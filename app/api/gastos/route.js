@@ -30,6 +30,7 @@ export async function POST(req) {
     base,
     ivaPct: Math.min(100, Math.max(0, Number(b.ivaPct) || 0)),
     ...proveedorDe(b),
+    ...(b.pendiente ? { pendiente: true } : {}),
   };
   await guardar(u, 'gastos', g);
   await Promise.all([subirGasto(u, g), enviarNomina(u, [g.fecha])]);
@@ -46,7 +47,7 @@ export async function PATCH(req) {
   if (!base) return error('Importe no válido');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(b.fecha || '')) return error('Fecha no válida');
   if (!String(b.concepto || '').trim()) return error('Falta el concepto');
-  const g = { ...antes, fecha: b.fecha, actividad: actividadValida(actividadesDe(u), b.actividad), concepto: String(b.concepto).trim().slice(0, 140), base, ivaPct: Math.min(100, Math.max(0, Number(b.ivaPct) || 0)), proveedor: undefined, proveedorNif: undefined, ...proveedorDe(b) };
+  const g = { ...antes, fecha: b.fecha, actividad: actividadValida(actividadesDe(u), b.actividad), concepto: String(b.concepto).trim().slice(0, 140), base, ivaPct: Math.min(100, Math.max(0, Number(b.ivaPct) || 0)), proveedor: undefined, proveedorNif: undefined, ...proveedorDe(b), pendiente: b.pendiente ? true : undefined };
   await guardar(u, 'gastos', g);
   await enviarNomina(u, [antes.fecha, g.fecha]);
   return Response.json({ ok: true });
