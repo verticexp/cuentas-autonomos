@@ -176,10 +176,12 @@ export default async function Resumen({ searchParams }) {
         <h2 className="grupo-t">Tus modelos</h2>
         <div className="grupo-c">
           {modelosDe(fiscal).map((m) => (
-            <div key={m.id} className="celda"><span className="modelo-num">{m.id}</span><span className="txt">{m.nombre}<small>{m.cuando}</small></span>{m.calcula && <span className="v">Calculado</span>}</div>
+            m.calcula && !['303', '130'].includes(m.id)
+              ? <Ir key={m.id} href={`/modelos?anio=${anio}#m${m.id}`} tipo="adelante" className="celda ir"><span className="modelo-num">{m.id}</span><span className="txt">{m.nombre}<small>{m.cuando}</small></span><span className="v">{m.id === '100' ? 'Borrador' : 'Calculado'}</span></Ir>
+              : <div key={m.id} className="celda"><span className="modelo-num">{m.id}</span><span className="txt">{m.nombre}<small>{m.cuando}</small></span>{m.calcula && <span className="v">Calculado</span>}</div>
           ))}
         </div>
-        <p className="grupo-pie">Según lo que respondiste al empezar ({fiscal.tipo === 'sociedad' ? 'sociedad' : 'autónomo'}). La app calcula los que pone «Calculado»; el resto, tu gestor. Puedes cambiarlo en Ajustes.</p>
+        <p className="grupo-pie">Según lo que respondiste al empezar ({fiscal.tipo === 'sociedad' ? 'sociedad' : 'autónomo'}). La app calcula los que pone «Calculado» (toca los anuales para verlos); el resto, tu gestor. Puedes cambiarlo en Ajustes.</p>
       </section>
 
       <section className="grupo">

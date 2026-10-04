@@ -1,0 +1,10 @@
+/* Página de modelos (115, 349, 390, 180, 190 y renta) */
+.modelos-cab { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.modelos .tarjeta h3 { margin: 0 0 8px; }
+.modelos dl { margin: 0; }
+.modelos dl > div { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; font-size: 15px; }
+.modelos dl > div + div { border-top: 0.5px solid var(--line); }
+.modelos dt { color: var(--muted); min-width: 0; overflow-wrap: anywhere; }
+.modelos dd { margin: 0; font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
+.modelos dl > .fuerte dt, .modelos dl > .fuerte dd { color: var(--ink); font-weight: 600; }
+.modelos .bloque { scroll-margin-top: 24px; }
