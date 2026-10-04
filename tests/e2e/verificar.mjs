@@ -299,6 +299,28 @@ console.log('Proveedores');
   ok('si no hay nada pendiente, lo dice', () => assert.equal(otra.status, 404));
 }
 
+console.log('Más modelos: 115, 349, 390 y renta');
+{
+  const { leerZip } = await import('../../lib/zip.js');
+  await pedir('/api/gastos', { metodo: 'POST', cookie: yo, cuerpo: { fecha: `${Y}-04-30`, actividad: ACTS[0].id, concepto: 'Alquiler local abril', base: '1000', ivaPct: 21, proveedor: 'Locales Pérez', proveedorNif: 'B33333333', alquiler: true } });
+  await pedir('/api/facturas', { metodo: 'POST', cookie: yo, cuerpo: { fecha: `${Y}-05-05`, actividad: ACTS[0].id, cliente: { nombre: 'Studio Paris', nif: 'FR 12 345678901' }, concepto: 'Diseño', base: '700', ivaPct: 0, irpfPct: 0, cobrada: true } });
+  const m = n(await texto(`/modelos?anio=${Y}`, yo));
+  ok('115: el 19 % del alquiler en su trimestre', () => assert.ok(m.includes(`03 · Retenciones a ingresar ${n(eur(190))}`), m.slice(0, 200)));
+  ok('349: el cliente francés con su NIF-IVA', () => assert.ok(m.includes(`FR12345678901 · Studio Paris (S) ${n(eur(700))}`)));
+  // El 390 es la suma de los cuatro 303 (los mismos que van en el paquete de cada trimestre).
+  let suma303 = 0;
+  for (const t of [1, 2, 3, 4]) {
+    const x = leerZip(leerZip(Buffer.from(await (await pedir(`/api/paquete?anio=${Y}&t=${t}`, { cookie: yo })).arrayBuffer()))[`gestoria-${t}T-${Y}.xlsx`]);
+    const h = x['xl/worksheets/sheet4.xml'].toString();
+    suma303 += Number(/>303<.{0,200}?>46<.*?<v>(-?[\d.]+)<\/v>/.exec(h)?.[1] ?? NaN);
+    if (t === 2) ok('el paquete del 2T lleva el 115 y el 349', () => assert.ok(h.includes('>115<') && h.includes('>349<')));
+  }
+  ok('390: resultado del año = suma de los cuatro 303', () => assert.ok(m.includes(`Resultado del año ${n(eur(r2(suma303)))}`), `${suma303}`));
+  ok('borrador de la renta con rendimiento y resultado', () => assert.ok(m.includes('Borrador de la renta') && m.includes('Rendimiento neto') && /Saldría a (pagar|devolver)/.test(m)));
+  const res = n(await texto(`/?anio=${Y}`, yo));
+  ok('desde el resumen se llega a los anuales', () => assert.ok(res.includes('Resumen anual del IVA') && res.includes('Borrador')));
+}
+
 console.log('Permisos');
 const inv = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { nombre: 'Solo gastos', email: `g${Date.now()}@test.es`, rol: 'miembro', permisos: ['gastos', 'gastar'] } })).json();
 const fd2 = new FormData(); fd2.set('codigo', inv.enlace.split('/').pop()); fd2.set('password', 'gastosgastos1');
@@ -313,6 +335,9 @@ const provs = await pedir('/api/proveedores', { metodo: 'POST', cookie: otro, cu
 ok('el de gastos sí puede gestionar proveedores', () => assert.equal(provs.status, 404));
 const paq = await pedir(`/api/paquete?anio=${Y}&t=3`, { cookie: otro });
 ok('el de gastos no puede bajar el paquete de la gestoría', () => assert.equal(paq.status, 403));
+const mod = await pedir('/modelos', { cookie: otro });
+const modHtml = await mod.text();
+ok('el de gastos no ve los modelos', () => assert.ok(mod.headers.get('location')?.includes('/gastos') || modHtml.includes('url=/gastos'), `status ${mod.status}`));
 ok('el de gastos no ve cifras del resumen', () => assert.ok(!html.includes(eurSin(P.beneficio)), 'se ve el beneficio'));
 
 console.log('Sociedad');
