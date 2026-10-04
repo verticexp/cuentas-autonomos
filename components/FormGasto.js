@@ -17,7 +17,7 @@ async function reducir(archivo) {
   return c.toDataURL('image/jpeg', 0.82);
 }
 
-export default function FormGasto({ hoy, gasto, actividades }) {
+export default function FormGasto({ hoy, gasto, actividades, alquiler = false }) {
   const router = useRouter();
   const vacio = { fecha: hoy, actividad: actividades[0].id, concepto: '', proveedor: '', base: '', ivaPct: 21 };
   const [g, setG] = useState(gasto ? { ...gasto, base: String(gasto.base).replace('.', ',') } : vacio);
@@ -71,6 +71,7 @@ export default function FormGasto({ hoy, gasto, actividades }) {
       </div>
       <input className="campo" type="date" value={g.fecha} onChange={(e) => poner('fecha', e.target.value)} required />
       <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.pendiente)} onChange={(e) => poner('pendiente', e.target.checked)} />Aún no lo he pagado</label>
+      {(alquiler || g.alquiler) && <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.alquiler)} onChange={(e) => poner('alquiler', e.target.checked)} />Es el alquiler del local (retención del 19 %)</label>}
       {error && <p className="error">{error}</p>}
       <button className="boton" disabled={enviando}>{enviando ? 'Guardando…' : gasto ? 'Guardar cambios' : 'Añadir'}</button>
     </form>
