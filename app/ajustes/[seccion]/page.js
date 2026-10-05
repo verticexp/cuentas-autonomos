@@ -6,12 +6,14 @@ import Ajustes from '@/components/Ajustes';
 import Controlat from '@/components/Controlat';
 import Marca from '@/components/Marca';
 import FaceId from '@/components/FaceId';
+import AvisosPush from '@/components/AvisosPush';
+import { pushListo } from '@/lib/push';
 import Volver from '@/components/Volver';
 import { fiscalDe } from '@/lib/empresa';
 
 export const dynamic = 'force-dynamic';
 
-const TITULOS = { facturacion: 'Datos de facturación', marca: 'Logo y color', seguridad: 'Face ID y contraseña', drive: 'Google Drive', controlat: "Controla'T" };
+const TITULOS = { facturacion: 'Datos de facturación', marca: 'Logo y color', seguridad: 'Face ID y contraseña', drive: 'Google Drive', controlat: "Controla'T", avisos: 'Avisos en el móvil' };
 const DE_EMPRESA = ['facturacion', 'marca', 'drive', 'controlat'];
 
 export default async function Seccion({ params }) {
@@ -29,6 +31,7 @@ export default async function Seccion({ params }) {
       {seccion === 'marca' && <Marca marca={u.marca} nombre={u.emisor?.nombre} />}
       {seccion === 'seguridad' && <FaceId lista={llaves} />}
       {seccion === 'controlat' && <Controlat activo={Boolean(u.controlat)} />}
+      {seccion === 'avisos' && <AvisosPush listo={pushListo()} />}
       {['facturacion', 'drive', 'seguridad'].includes(seccion) && <Ajustes seccion={seccion} emisor={u.emisor || {}} drive={u.drive} driveError={u.driveError} sociedad={fiscalDe(u).tipo === 'sociedad'} />}
     </main>
   );
