@@ -7,6 +7,9 @@ export async function POST(req) {
   const { u, res } = await usuarioApi({ permiso: 'empresa' });
   if (res) return res;
   const { activar } = await cuerpo(req);
+  // Escribe en la cuenta de Controla'T con el mismo email, y en Netto los emails no se verifican (los pone quien invita):
+  // solo para el administrador de la app, que es el dueño de Controla'T.
+  if (activar && !u.admin) return error("El conector con Controla'T solo está disponible para el administrador de Netto.", 403);
   if (!activar) {
     await actualizarUsuario(u, { controlat: false });
     return Response.json({ ok: true, activo: false });
