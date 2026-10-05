@@ -558,5 +558,130 @@ console.log('Barra lateral del ordenador');
   ok('marca la pantalla en la que estás', () => assert.ok(/class="activo"[^>]*href="\/tesoreria"|href="\/tesoreria"[^>]*class="activo"/.test(marca)));
 }
 
+console.log('Banco: extractos, conexión y emparejar');
+{
+  const kv = (cmd) => fetch(process.env.KV_REST_API_URL, { method: 'POST', headers: { Authorization: 'Bearer local' }, body: JSON.stringify(cmd) }).then((r) => r.json()).then((d) => d.result);
+  const hget = async (h, k) => JSON.parse((await kv(['HGET', `cuentas:${h}`, k])) || 'null');
+  const masD = (d) => new Date(Date.parse(`${hoy}T12:00:00Z`) + d * 864e5).toISOString().slice(0, 10);
+  const es = (f) => f.split('-').reverse().join('/');
+  const entrar = async (alta, pass) => { const f = new FormData(); f.set('codigo', alta.enlace.split('/').pop()); f.set('password', pass); return /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: f })).headers.get('set-cookie') || '')?.[1]; };
+  const emailB = `banco${Date.now()}@test.es`;
+  const bq = await entrar(await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva: 'Banco Prueba', nombre: 'Berta', email: emailB } })).json(), 'bertaberta1');
+  const empresa = await kv(['HGET', 'cuentas:emails', emailB]);
+  const cfg = await (await pedir('/api/cuenta', { metodo: 'PATCH', cookie: bq, cuerpo: { configuracion: { fiscal: { tipo: 'autonomo', iva: 'general' }, emisor: { nombre: 'Berta', nif: '22222222J', plazo: 30 }, actividades: [{ nombre: 'Eventos', ivaPct: 21, irpfPct: 0 }] } } })).json();
+  const act = cfg.actividades[0].id;
+  const fac = async (fecha, cliente, base) => (await (await pedir('/api/facturas', { metodo: 'POST', cookie: bq, cuerpo: { fecha, actividad: act, cliente: { nombre: cliente }, concepto: 'Evento', base: String(base), ivaPct: 21, irpfPct: 0, cobrada: false } })).json()).factura;
+  const gas = async (fecha, concepto, base, proveedor, pendiente) => (await (await pedir('/api/gastos', { metodo: 'POST', cookie: bq, cuerpo: { fecha, actividad: act, concepto, base: String(base), ivaPct: 21, proveedor, pendiente } })).json()).gasto;
+  const f1 = await fac(masD(-20), 'Hotel Mirador del Port S.A.', 1000);
+  const f2 = await fac(masD(-15), 'Celebra Bodas S.L.', 500);
+  const f3 = await fac(masD(-10), 'Fundació Música Viva', 800);
+  const g1 = await gas(masD(-12), 'Cables', 50, 'Ferretería Sol', true);
+  const g2 = await gas(masD(-8), 'Gestoría', 100, '', false);
+  const subir = async (contenido, nombre, cookie = bq) => { const f = new FormData(); f.set('archivo', new Blob([contenido]), nombre); const r = await pedir('/api/banco/importar', { metodo: 'POST', cookie, form: f }); return { status: r.status, ...(await r.json()) }; };
+
+  const csv = `Movimientos de la cuenta\nF. Operación;Concepto;Importe;Saldo\n${es(masD(-5))};TRANSF HOTEL MIRADOR DEL PORT FRA ${numeroFactura(f1)};1.210,00;5.000,00\n${es(masD(-6))};COMPRA TARJETA FERRETERIA SOL;-60,50;3.790,00\n${es(masD(-7))};BIZUM RECIBIDO;25,00;3.850,50\n`;
+  const c1 = await subir(csv, 'extracto.csv');
+  ok('CSV: se leen los 3 movimientos', () => assert.deepEqual([c1.status, c1.nuevos, c1.repetidos], [200, 3, 0]));
+  ok('CSV: el saldo es el del último día', () => assert.deepEqual([c1.saldo.importe, c1.saldo.fecha], [5000, masD(-5)]));
+  const c2 = await subir(csv, 'extracto.csv');
+  ok('subirlo otra vez no duplica nada', () => assert.deepEqual([c2.nuevos, c2.repetidos], [0, 3]));
+  const { norma43 } = await import('./n43.mjs');
+  const n43 = norma43({ inicial: 1000, movimientos: [
+    { fecha: masD(-3), importe: 605, ref1: 'TRANSFEREN', ref2: 'CIA RECIBIDA' },
+    { fecha: masD(-2), importe: 968, ref1: 'TRANSF', texto: 'FUNDACIO MUSICA VIVA' },
+    { fecha: masD(-7), importe: -121, ref1: 'RECIBO', ref2: 'GESTORIA' },
+  ] });
+  const c3 = await subir(n43, 'extracto.n43');
+  ok('Norma 43: 3 movimientos y su saldo final', () => assert.deepEqual([c3.status, c3.nuevos, c3.saldo.importe, c3.saldo.cuentas], [200, 3, 7452, 2]));
+  const malo = await subir('hola;adios\n1;2\n', 'x.csv');
+  ok('un archivo que no es un extracto da error (400)', () => assert.ok(malo.status === 400 && malo.error.includes('columnas')));
+
+  const movs = (await kv(['HVALS', `cuentas:banco:${empresa}`])).map((x) => JSON.parse(x));
+  const mov = (importe) => movs.find((m) => m.importe === importe);
+  ok('6 movimientos guardados en su empresa', () => assert.equal(movs.length, 6));
+  const pb = n(await texto('/banco', bq));
+  ok('pantalla: saldo de las dos cuentas', () => assert.ok(pb.includes(n(eur(7452))) && pb.includes('Extracto subido') && pb.includes('SONORA EVENTOS'), pb.slice(0, 400)));
+  ok('pantalla: sugerencias seguras y dudosas', () => assert.ok(pb.includes('Por confirmar 5') && pb.includes('Es esta') && pb.includes('Puede ser') && pb.includes(`Factura ${numeroFactura(f1)}`) && pb.includes('Ferretería Sol · Cables')));
+  ok('pantalla: el Bizum sin pareja', () => assert.ok(pb.includes('Sin pareja 1') && pb.includes('BIZUM RECIBIDO')));
+  ok('pantalla: confirmar las 4 seguras', () => assert.ok(pb.includes('Confirmar las 4 seguras')));
+  const pt = n(await texto('/tesoreria', bq));
+  ok('tesorería parte del saldo real y enlaza al banco con lo pendiente', () => assert.ok(pt.includes('De tus cuentas') && pt.includes('7.452,00') && pt.includes('6 movimientos por revisar') === false && /Banco Saldo real[^€]*? 6 /.test(pt), pt.slice(0, 600)));
+
+  const gestoria = await entrar(await (await pedir('/api/usuarios', { metodo: 'POST', cookie: bq, cuerpo: { nombre: 'Gestoría', email: `ge${Date.now()}@test.es`, rol: 'miembro', permisos: ['resumen', 'facturas', 'gastos', 'nominas'] } })).json(), 'gestoria123');
+  const g403 = await pedir('/api/banco', { metodo: 'POST', cookie: gestoria, cuerpo: { accion: 'emparejar', id: mov(1210).id, tipo: 'factura', destino: f1.id } });
+  ok('la gestoría ve el banco pero no puede marcar cobros (403)', () => assert.equal(g403.status, 403));
+  const gs = await (await pedir('/api/banco', { metodo: 'POST', cookie: gestoria, cuerpo: { accion: 'seguras' } })).json();
+  ok('ni confirmar las seguras', () => assert.equal(gs.hechos, 0));
+  const gc = await pedir('/api/banco/conectar', { cookie: gestoria });
+  ok('ni conectar bancos (403)', () => assert.equal(gc.status, 403));
+  const ajeno = await pedir('/api/banco', { metodo: 'POST', cookie: yo, cuerpo: { accion: 'ignorar', id: mov(25).id } });
+  ok('otra empresa no ve estos movimientos (404)', () => assert.equal(ajeno.status, 404));
+  const signo = await pedir('/api/banco', { metodo: 'POST', cookie: bq, cuerpo: { accion: 'emparejar', id: mov(25).id, tipo: 'gasto', destino: g2.id } });
+  ok('un ingreso no puede pagar un gasto (400)', () => assert.equal(signo.status, 400));
+
+  const seg = await (await pedir('/api/banco', { metodo: 'POST', cookie: bq, cuerpo: { accion: 'seguras' } })).json();
+  ok('se confirman las 4 seguras', () => assert.equal(seg.hechos, 4));
+  const [F1, F3, G1, G2] = await Promise.all([hget(`facturas:${empresa}`, f1.id), hget(`facturas:${empresa}`, f3.id), hget(`gastos:${empresa}`, g1.id), hget(`gastos:${empresa}`, g2.id)]);
+  ok('las facturas quedan cobradas con la fecha del banco', () => assert.ok(F1.cobrada && F1.cobro.fecha === masD(-5) && F3.cobrada && F3.cobro.fecha === masD(-2)));
+  ok('el gasto pendiente queda pagado', () => assert.ok(!G1.pendiente && G1.banco === mov(-60.5).id && G1.pagado === masD(-6) && G2.banco === mov(-121).id));
+  const man = await pedir('/api/banco', { metodo: 'POST', cookie: bq, cuerpo: { accion: 'emparejar', id: mov(605).id, tipo: 'factura', destino: f2.id } });
+  ok('emparejar a mano la dudosa', () => assert.ok(man.status === 200));
+  const yaCob = await pedir('/api/banco', { metodo: 'POST', cookie: bq, cuerpo: { accion: 'deshacer', id: mov(1210).id } });
+  const F1b = await hget(`facturas:${empresa}`, f1.id);
+  ok('deshacer: la factura vuelve a estar sin cobrar', () => assert.ok(yaCob.status === 200 && !F1b.cobrada && !F1b.cobro));
+  const dos = await pedir('/api/banco', { metodo: 'POST', cookie: bq, cuerpo: { accion: 'emparejar', id: mov(1210).id, tipo: 'factura', destino: f2.id } });
+  ok('una factura ya cobrada no se empareja otra vez (400)', () => assert.equal(dos.status, 400));
+  await pedir('/api/banco', { metodo: 'POST', cookie: bq, cuerpo: { accion: 'ignorar', id: mov(25).id } });
+  const pb2 = n(await texto('/banco', bq));
+  ok('pantalla: emparejados con su factura o gasto, e ignorados aparte', () => assert.ok(pb2.includes('Emparejados') && pb2.includes(`Factura ${numeroFactura(f2)}`) && pb2.includes('Ignorados 1') && pb2.includes('Por confirmar 1') && !pb2.includes('Sin pareja')));
+  const lateral = /<nav class="tabs-extra"[\s\S]*?<\/nav>/.exec(await (await pedir('/banco', { cookie: bq })).text())?.[0] || '';
+  ok('el banco está en la barra lateral, marcado', () => assert.ok(/class="activo"[^>]*href="\/banco"|href="\/banco"[^>]*class="activo"/.test(lateral)));
+
+  if (process.env.ENABLE_BANKING_URL) {
+    const sim = (ruta, cuerpo) => fetch(`${process.env.ENABLE_BANKING_URL}${ruta}`, cuerpo ? { method: 'POST', body: JSON.stringify(cuerpo) } : {}).then((r) => r.json());
+    const f4 = await fac(masD(-4), 'Agencia Brisa Incentivos S.L.', 2000);
+    const tx = (d, imp, info, nombre, ref) => ({ entry_reference: ref, transaction_amount: { amount: String(Math.abs(imp)), currency: 'EUR' }, credit_debit_indicator: imp < 0 ? 'DBIT' : 'CRDT', status: 'BOOK', booking_date: masD(d), remittance_information: [info], ...(imp < 0 ? { creditor: { name: nombre } } : { debtor: { name: nombre } }) });
+    await sim('/_prueba', { cuentas: [{ uid: 'acc-1', iban: 'ES9121000418450200051332', nombre: 'Cuenta Negocios', saldo: 3210.55, movimientos: [
+      tx(-1, 2420, `FRA ${numeroFactura(f4)}`, 'AGENCIA BRISA INCENTIVOS SL', 'R1'), tx(-2, -15, 'COMISION', 'BANCO', 'R2'), tx(-3, -9.99, 'SPOTIFY', 'Spotify', 'R3'),
+      tx(-4, 50, 'BIZUM', 'Ana', 'R4'), tx(-5, -30, 'PARKING', 'Saba', 'R5'), { ...tx(-1, 99, 'PENDIENTE', 'X', 'R6'), status: 'PDNG' },
+    ] }] });
+    const lista = await (await pedir('/api/banco/conectar', { cookie: bq })).json();
+    ok('lista de bancos de España', () => assert.deepEqual(lista.bancos.map((b) => [b.nombre, b.dias]), [['Banco Simulado', 90], ['Caja Simulada', 180]]));
+    const ini = await (await pedir('/api/banco/conectar', { metodo: 'POST', cookie: bq, cuerpo: { banco: 'Banco Simulado', tipo: 'business' } })).json();
+    const auth = Object.values((await sim('/_prueba')).auth).at(-1);
+    ok('pide permiso al banco con firma, 90 días y vuelta a la app', () => assert.ok(ini.url && auth.psu_type === 'business' && auth.redirect_url === `${BASE}/api/banco/vuelta` && Math.abs(Date.parse(auth.access.valid_until) - Date.now() - 90 * 864e5) < 120000));
+    const banco = await fetch(ini.url, { redirect: 'manual' });
+    const vuelta = new URL(banco.headers.get('location'));
+    const robo = await pedir(vuelta.pathname + vuelta.search, { cookie: yo });
+    ok('otra persona no puede usar esa vuelta del banco', () => assert.ok(robo.headers.get('location')?.endsWith('/banco?error=caducado')));
+    const bien = await pedir(vuelta.pathname + vuelta.search, { cookie: bq });
+    ok('al volver del banco queda conectada', () => assert.ok(bien.headers.get('location')?.endsWith('/banco?conectado=1'), bien.headers.get('location')));
+    const cuentasB = (await kv(['HVALS', `cuentas:bancos:${empresa}`])).map((x) => JSON.parse(x));
+    const eb = cuentasB.find((c) => c.origen === 'enable');
+    ok('cuenta conectada con su saldo disponible', () => assert.ok(eb && eb.saldo === 3210.55 && eb.iban.endsWith('1332') && eb.sesion === 'sesion-1'));
+    const movs2 = (await kv(['HVALS', `cuentas:banco:${empresa}`])).map((x) => JSON.parse(x)).filter((m) => m.cuenta === eb.id);
+    ok('trae los 5 movimientos (en varias páginas, sin los pendientes)', () => assert.equal(movs2.length, 5));
+    const saldo = JSON.parse(await kv(['GET', `cuentas:saldo:${empresa}`]));
+    ok('saldo real: la suma de las tres cuentas', () => assert.deepEqual([saldo.importe, saldo.cuentas], [10662.55, 3]));
+    const pb3 = n(await texto('/banco', bq));
+    ok('pantalla: la cuenta y la factura cobrada por el banco', () => assert.ok(pb3.includes('Cuenta Negocios') && pb3.includes('•••• 1332') && pb3.includes(`Factura ${numeroFactura(f4)}`) && pb3.includes(n(eur(10662.55)))));
+    const antes = (await sim('/_prueba')).llamadas;
+    const s1 = await (await pedir('/api/banco/sincronizar', { metodo: 'POST', cookie: bq, cuerpo: {} })).json();
+    const medio = (await sim('/_prueba')).llamadas;
+    const s2 = await (await pedir('/api/banco/sincronizar', { metodo: 'POST', cookie: bq, cuerpo: { forzar: true } })).json();
+    const despues = (await sim('/_prueba')).llamadas;
+    ok('al abrir no vuelve a llamar al banco antes de 6 horas; «Actualizar» sí', () => assert.ok(s1.nuevos === 0 && medio === antes && s2.nuevos === 0 && despues > medio));
+    const no = await (await pedir('/api/banco/conectar', { metodo: 'POST', cookie: bq, cuerpo: { banco: 'Caja Simulada', tipo: 'personal' } })).json();
+    const v2 = new URL((await fetch(no.url, { redirect: 'manual' })).headers.get('location'));
+    const can = await pedir(v2.pathname + v2.search, { cookie: bq });
+    ok('si no da permiso en el banco, lo dice', () => assert.ok(can.headers.get('location')?.endsWith('/banco?error=cancelado')));
+    const des = await pedir(`/api/banco/conectar?id=${eb.id}`, { metodo: 'DELETE', cookie: bq });
+    const saldo2 = JSON.parse(await kv(['GET', `cuentas:saldo:${empresa}`]));
+    ok('desconectar retira el permiso del banco y su saldo', () => assert.ok(des.status === 200 && saldo2.importe === 7452));
+    const cerr = (await sim('/_prueba')).cerradas;
+    ok('sesión cerrada en el banco', () => assert.ok(cerr.includes('sesion-1')));
+  } else console.log('  (sin ENABLE_BANKING_URL: se salta la conexión)');
+}
+
 console.log(fallos ? `\n${fallos} comprobaciones fallidas: NO publicar.` : '\nTodo cuadra.');
 process.exit(fallos ? 1 : 0);
