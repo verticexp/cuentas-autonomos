@@ -9,6 +9,8 @@ import { puede } from '@/lib/permisos';
 import { ESTADOS, baseResto, baseSenal, caduca, estadoDe, numeroPresupuesto } from '@/lib/presupuestos';
 import { Borrar } from '@/components/Acciones';
 import { Compartir, Facturar, MarcarAceptado } from '@/components/AccionesPresupuesto';
+import { enlacePortal } from '@/lib/portal';
+import '@/app/portal.css';
 import FormPresupuesto from '@/components/FormPresupuesto';
 import Volver from '@/components/Volver';
 
@@ -20,6 +22,7 @@ export default async function Presupuesto({ params }) {
   const [p, clientes] = await Promise.all([leerUno(u, 'presupuestos', id), leer(u, 'clientes')]);
   if (!p) notFound();
   const editar = puede(u, 'facturar');
+  const portal = editar ? await enlacePortal(u, p.cliente.nombre) : null;
   const estado = estadoDe(p, hoy());
   const i = importes(p);
   const senal = p.facturas.find((f) => f.tipo === 'senal');
@@ -50,6 +53,10 @@ export default async function Presupuesto({ params }) {
         {['pendiente', 'aceptado'].includes(estado) && <Facturar id={p.id} tipo="resto">{senal ? `Facturar el resto (${eur(baseResto(p))})` : 'Facturar todo'}</Facturar>}
         {!p.facturas.length && <Borrar url={`/api/presupuestos?id=${p.id}`} pregunta={`¿Borrar el presupuesto ${numeroPresupuesto(p)}? El enlace del cliente dejará de funcionar.`} volver="/presupuestos" />}
       </div>}
+      {portal && <section className="portal-enlace">
+        <p className="nota">Portal de {p.cliente.nombre}: ve todas sus facturas y presupuestos, los descarga en PDF y paga.</p>
+        <div className="portal-botones"><Compartir ruta={portal} texto={`Tus documentos de ${u.emisor?.nombre || ''}`.trim()} etiqueta="Enviar su portal" className="boton sec" /><Link href={portal} className="boton sec">Ver su portal</Link></div>
+      </section>}
       {editar && p.estado === 'pendiente' && <FormPresupuesto key={JSON.stringify(p)} presupuesto={p} clientes={clientes} actividades={actividadesDe(u)} />}
     </main>
   );
