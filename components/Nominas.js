@@ -11,7 +11,7 @@ import { eur } from '@/lib/formato';
 export function FormEmpleado({ empleado, hoy }) {
   const router = useRouter();
   const nuevo = !empleado;
-  const [e, setE] = useState(empleado || { nombre: '', nif: '', puesto: '', alta: hoy, baja: '', bruto: '', irpfPct: 12, ssTrabajadorPct: SS_TRABAJADOR, ssEmpresaPct: SS_EMPRESA });
+  const [e, setE] = useState(empleado || { nombre: '', nif: '', puesto: '', alta: hoy, baja: '', bruto: '', irpfPct: 12, ssTrabajadorPct: SS_TRABAJADOR, ssEmpresaPct: SS_EMPRESA, email: '', horasSemana: 40, precioHoraExtra: '' });
   const [abierto, setAbierto] = useState(!nuevo);
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
@@ -23,7 +23,7 @@ export function FormEmpleado({ empleado, hoy }) {
     setEnviando(true); setError('');
     try {
       await llamar('/api/empleados', { method: nuevo ? 'POST' : 'PATCH', body: JSON.stringify(e) });
-      if (nuevo) { setAbierto(false); setE({ ...e, nombre: '', nif: '', puesto: '', bruto: '' }); router.refresh(); }
+      if (nuevo) { setAbierto(false); setE({ ...e, nombre: '', nif: '', puesto: '', bruto: '', email: '' }); router.refresh(); }
       else { navegar(router, '/nominas', 'atras'); router.refresh(); }
     } catch (err) { setError(err.message); }
     setEnviando(false);
@@ -50,6 +50,12 @@ export function FormEmpleado({ empleado, hoy }) {
       </div>
       {c.bruto > 0 && <p className="nota nomina-calculo">Cobra <strong>{eur(c.neto)}</strong> netos · a la empresa le cuesta <strong>{eur(c.coste)}</strong> al mes</p>}
       <p className="nota">Los % de Seguridad Social son los generales; tu gestoría te dice el exacto (sobre todo el de la empresa, que depende de la actividad).</p>
+      <p className="rotulo" style={{ margin: '6px 0 0' }}>Registro de jornada</p>
+      <label>Email con el que ficha (su cuenta de Netto)<input className="campo" type="email" placeholder="Opcional" value={e.email || ''} onChange={(x) => poner('email', x.target.value)} /></label>
+      <div className="dos-col">
+        <label>Horas a la semana<input className="campo" inputMode="decimal" value={e.horasSemana ?? 40} onChange={(x) => poner('horasSemana', x.target.value)} /></label>
+        <label>Precio hora extra (€)<input className="campo" inputMode="decimal" placeholder="Si se pagan" value={e.precioHoraExtra || ''} onChange={(x) => poner('precioHoraExtra', x.target.value)} /></label>
+      </div>
       {error && <p className="error">{error}</p>}
       <div className="dos-col">
         {nuevo && <button type="button" className="boton sec" onClick={() => setAbierto(false)}>Cancelar</button>}
