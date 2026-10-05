@@ -778,5 +778,82 @@ console.log('Varias empresas en la misma cuenta');
   ok('volver a la primera empresa', () => assert.equal(eDe(vuelta), A));
 }
 
+console.log('Registro de jornada');
+{
+  const kv = (cmd) => fetch(process.env.KV_REST_API_URL, { method: 'POST', headers: { Authorization: 'Bearer local' }, body: JSON.stringify(cmd) }).then((r) => r.json()).then((d) => d.result);
+  const { laborables, minutos } = await import('../../lib/jornada.js');
+  const { leerZip } = await import('../../lib/zip.js');
+  const A = await kv(['HGET', 'cuentas:emails', fd.get('email')]);
+  const mesPrev = new Date(Date.UTC(Number(hoy.slice(0, 4)), Number(hoy.slice(5, 7)) - 2, 1)).toISOString().slice(0, 7);
+  const evaEmail = `eva${Date.now()}@test.es`;
+  const altaEva = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { nombre: 'Eva Fichadora', email: evaEmail, rol: 'miembro', permisos: [] } })).json();
+  const fe = new FormData(); fe.set('codigo', altaEva.enlace.split('/').pop()); fe.set('password', 'evaevaeva123');
+  const eva = /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: fe })).headers.get('set-cookie') || '')?.[1];
+  const emp = async (cuerpo) => pedir('/api/empleados', { metodo: 'POST', cookie: yo, cuerpo: { nif: '', puesto: '', baja: '', irpfPct: 12, ssTrabajadorPct: 6.5, ssEmpresaPct: 31.65, ...cuerpo } });
+  const E = (await (await emp({ nombre: 'Eva Fichadora', nif: '87654321X', alta: `${mesPrev}-01`, bruto: '1500', email: evaEmail.toUpperCase(), horasSemana: 5, precioHoraExtra: '20' })).json()).empleado;
+  const L = (await (await emp({ nombre: 'Leo Sinapp', alta: `${mesPrev}-01`, bruto: '1200' })).json()).empleado;
+  ok('ficha del empleado con su email para fichar y su jornada', () => assert.deepEqual([E.email, E.horasSemana, E.precioHoraExtra], [evaEmail, 5, 20]));
+  const rep = await emp({ nombre: 'Otra', alta: hoy, bruto: '1000', email: evaEmail });
+  ok('dos empleados no pueden tener el mismo email (400)', () => assert.equal(rep.status, 400));
+
+  const fichar = (cookie, accion, empleado) => pedir('/api/jornada', { metodo: 'POST', cookie, cuerpo: { accion, empleado } });
+  const pantalla = n(await texto('/jornada', eva));
+  ok('el empleado entra y ve el botón de fichar', () => assert.ok(pantalla.includes('Registro de jornada') && pantalla.includes('Fichar entrada'), pantalla.slice(0, 300)));
+  const ent = await (await fichar(eva, 'entrar')).json();
+  ok('ficha la entrada con la hora del servidor (España)', () => assert.ok(ent.fichaje?.entrada.startsWith(hoy) && ent.fichaje.empleado === E.id, JSON.stringify(ent)));
+  const doble = await fichar(eva, 'entrar');
+  ok('no puede fichar la entrada dos veces (400)', () => assert.equal(doble.status, 400));
+  const pd = n(await texto('/jornada', eva));
+  ok('la pantalla dice que está trabajando', () => assert.ok(pd.includes('Trabajando desde las') && pd.includes('Pausa') && pd.includes('Fichar salida')));
+  const pausa = await fichar(eva, 'pausa'), vuelve = await fichar(eva, 'volver'), sale = await (await fichar(eva, 'salir')).json();
+  ok('pausa, vuelta y salida', () => assert.ok(pausa.status === 200 && vuelve.status === 200 && sale.fichaje.salida && sale.fichaje.pausas.length === 1 && sale.fichaje.pausas[0].fin));
+  const ajeno = await fichar(eva, 'entrar', L.id);
+  const corrige = await pedir('/api/jornada', { metodo: 'PATCH', cookie: eva, cuerpo: { id: sale.fichaje.id, entrada: `${hoy}T08:00`, salida: `${hoy}T09:00`, motivo: 'yo mismo' } });
+  ok('solo ficha por sí mismo y no puede corregir su registro (403)', () => assert.deepEqual([ajeno.status, corrige.status], [403, 403]));
+  const sinFicha = await fichar(otro, 'entrar');
+  ok('quien no es empleado no puede fichar (403)', () => assert.ok(sinFicha.status === 403));
+
+  const manual = (cuerpo) => pedir('/api/jornada', { metodo: 'POST', cookie: yo, cuerpo: { accion: 'manual', empleado: E.id, ...cuerpo } });
+  const sinMotivo = await manual({ entrada: `${mesPrev}-10T08:00`, salida: `${mesPrev}-10T20:00`, motivo: '' });
+  const d1 = await (await manual({ entrada: `${mesPrev}-10T08:00`, salida: `${mesPrev}-10T20:30`, pausas: [{ inicio: `${mesPrev}-10T14:00`, fin: `${mesPrev}-10T14:30` }], motivo: 'Fichaje en papel' })).json();
+  const d2 = await (await manual({ entrada: `${mesPrev}-11T08:00`, salida: `${mesPrev}-11T20:00`, motivo: 'Fichaje en papel' })).json();
+  const solapa = await manual({ entrada: `${mesPrev}-11T19:00`, salida: `${mesPrev}-11T21:00`, motivo: 'Fichaje en papel' });
+  const futuro = await manual({ entrada: '2099-01-01T08:00', salida: '2099-01-01T09:00', motivo: 'Fichaje en papel' });
+  ok('apuntar días a mano: con motivo, sin solaparse y nunca en el futuro', () => assert.ok(sinMotivo.status === 400 && d1.ok && d2.ok && solapa.status === 400 && futuro.status === 400));
+  const mal = await pedir('/api/jornada', { metodo: 'PATCH', cookie: yo, cuerpo: { id: d2.fichaje.id, entrada: `${mesPrev}-11T08:00`, salida: `${mesPrev}-11T20:00` } });
+  const bien = await pedir('/api/jornada', { metodo: 'PATCH', cookie: yo, cuerpo: { id: d2.fichaje.id, entrada: `${mesPrev}-11T08:00`, salida: `${mesPrev}-11T20:30`, pausas: [{ inicio: `${mesPrev}-11T14:00`, fin: `${mesPrev}-11T14:30` }], motivo: 'Faltaba la pausa de la comida' } });
+  const D2 = JSON.parse(await kv(['HGET', `cuentas:jornada:${A}`, d2.fichaje.id]));
+  ok('corregir guarda cómo estaba, quién, cuándo y por qué', () => assert.ok(mal.status === 400 && bien.status === 200 && D2.cambios.length === 1 && D2.cambios[0].antes.salida === `${mesPrev}-11T20:00` && D2.cambios[0].motivo === 'Faltaba la pausa de la comida' && minutos(D2) === 720));
+
+  const gen = await (await pedir('/api/nominas', { metodo: 'POST', cookie: yo, cuerpo: { mes: mesPrev } })).json();
+  const noms = (await kv(['HVALS', `cuentas:nominas:${A}`])).map((x) => JSON.parse(x)).filter((x) => x.mes === mesPrev);
+  const nE = noms.find((x) => x.empleado === E.id), nL = noms.find((x) => x.empleado === L.id);
+  const teor = laborables(`${mesPrev}-01`, new Date(Date.UTC(Number(mesPrev.slice(0, 4)), Number(mesPrev.slice(5, 7)), 0)).toISOString().slice(0, 10)) * 60;
+  const extra = 1440 - teor;
+  ok('la nómina del mes lleva sus horas registradas', () => assert.ok(gen.ok && nE.horas.trabajadas === 1440 && nE.horas.teoricas === teor && nE.horas.extra === extra, JSON.stringify(nE)));
+  ok('y le paga las horas extra a su precio, dentro del bruto', () => assert.ok(nE.extras.importe === r2((extra / 60) * 20) && nE.bruto === r2(1500 + (extra / 60) * 20)));
+  ok('quien no ficha, nómina como siempre', () => assert.ok(nL && !nL.horas && nL.bruto === 1200));
+  const pn = n(await texto(`/nominas/${nE.id}`, yo));
+  ok('la nómina enseña las horas del registro', () => assert.ok(pn.includes('Registro de jornada') && pn.includes('24:00 h trabajadas') && pn.includes('h extra pagadas'), pn.slice(0, 400)));
+
+  const ex = await pedir(`/api/jornada/exportar?mes=${mesPrev}`, { cookie: yo });
+  const z = leerZip(Buffer.from(await ex.arrayBuffer()));
+  const hojaJ = z['xl/worksheets/sheet2.xml'].toString(), hojaE = z['xl/worksheets/sheet1.xml'].toString(), hojaR = z['xl/worksheets/sheet3.xml'].toString();
+  ok('Excel para la Inspección: empresa, jornadas con pausas y correcciones, y resumen', () => assert.ok(ex.headers.get('content-type').includes('spreadsheetml') && hojaE.includes('12345678Z') && hojaE.includes('Estatuto') && hojaJ.includes('Eva Fichadora') && hojaJ.includes('87654321X') && hojaJ.includes('14:00-14:30') && hojaJ.includes('Faltaba la pausa de la comida') && hojaJ.includes('Fichaje en papel') && hojaR.includes('24:00') && hojaR.includes('Leo Sinapp')));
+  const suyo = await pedir(`/api/jornada/exportar?mes=${mesPrev}`, { cookie: eva });
+  const zs = leerZip(Buffer.from(await suyo.arrayBuffer()));
+  ok('el empleado solo descarga lo suyo', () => assert.ok(suyo.status === 200 && !zs['xl/worksheets/sheet3.xml'].toString().includes('Leo Sinapp') && zs['xl/worksheets/sheet3.xml'].toString().includes('Eva Fichadora')));
+  const ningun = await pedir(`/api/jornada/exportar?mes=${mesPrev}`, { cookie: otro });
+  ok('quien no es empleado ni lleva nóminas no descarga nada (403)', () => assert.equal(ningun.status, 403));
+
+  const pg = n(await texto(`/jornada?mes=${mesPrev}`, yo));
+  ok('pantalla de la empresa: horas de cada uno, días y correcciones', () => assert.ok(pg.includes('Eva Fichadora') && pg.includes('Leo Sinapp') && pg.includes('24:00 h') && pg.includes('Corregida: Faltaba la pausa') && pg.includes('Apuntar un día a mano') && pg.includes("Descargar el registro (Excel)"), pg.slice(0, 500)));
+  const pe = n(await texto(`/jornada?mes=${mesPrev}`, eva));
+  ok('el empleado ve solo sus horas', () => assert.ok(pe.includes('Eva Fichadora') && !pe.includes('Leo Sinapp') && !pe.includes('Apuntar un día a mano')));
+  const ajEva = n(await texto('/ajustes', eva));
+  const lat = await (await pedir('/nominas', { cookie: yo })).text();
+  ok('se llega desde Ajustes (empleado), desde Nóminas y desde la barra lateral', () => assert.ok(ajEva.includes('Fichar y registro de jornada') && lat.includes('href="/jornada"') && /<nav class="tabs-extra"[\s\S]*?href="\/jornada"/.test(lat)));
+}
+
 console.log(fallos ? `\n${fallos} comprobaciones fallidas: NO publicar.` : '\nTodo cuadra.');
 process.exit(fallos ? 1 : 0);
