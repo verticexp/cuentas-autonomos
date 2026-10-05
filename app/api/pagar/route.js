@@ -23,6 +23,6 @@ export async function POST(req) {
     volver,
     datos: { token, factura: d.f.id, empresa: d.e.empresa },
   });
-  if (s.error) return atras(`No se pudo abrir el pago: ${s.error}`);
+  if (s.error) { console.error('Stripe:', s.error); return atras('No se pudo abrir el pago. Inténtalo de nuevo o paga por transferencia.'); }
   return NextResponse.redirect(s.url, 303);
 }
