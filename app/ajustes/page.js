@@ -6,6 +6,8 @@ import Avatar from '@/components/Avatar';
 import Ico from '@/components/Ico';
 import { actividadesDe, fiscalDe } from '@/lib/empresa';
 import { modoDe } from '@/lib/verifactu';
+import CambiarEmpresa from '@/components/CambiarEmpresa';
+import '@/app/empresas.css';
 
 export const dynamic = 'force-dynamic';
 
@@ -47,6 +49,12 @@ export default async function Page() {
           {modo && <p className="grupo-pie">Verifactu activo{modo === 'pruebas' ? ' en modo pruebas' : ''}: cada factura nueva queda registrada y lleva su QR.</p>}
         </section>
       )}
+
+      <section className="grupo" id="empresas">
+        <h2 className="grupo-t">{u.misEmpresas?.length > 1 ? 'Tus empresas' : 'Más empresas'}</h2>
+        <CambiarEmpresa empresas={u.misEmpresas} actual={u.empresa} />
+        <p className="grupo-pie">Cada empresa con sus datos, su numeración de facturas, sus modelos y sus permisos.</p>
+      </section>
 
       <section className="grupo">
         <div className="grupo-c">
