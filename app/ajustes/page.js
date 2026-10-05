@@ -20,6 +20,7 @@ const Celda = ({ href, ico, titulo, detalle, aviso }) => (
 export default async function Page() {
   const u = await requerir();
   const llaves = Object.keys((await redis.hgetall(`passkeys:${u.id}`)) || {}).length;
+  const avisos = await redis.hlen(`push:${u.id}`);
   const empresa = puede(u, 'empresa');
   const e = u.emisor || {};
   const datosCompletos = e.nombre && e.nif && e.direccion && e.iban;
@@ -47,9 +48,10 @@ export default async function Page() {
       )}
 
       <section className="grupo">
-        <h2 className="grupo-t">Seguridad</h2>
+        <h2 className="grupo-t">Seguridad y avisos</h2>
         <div className="grupo-c">
           <Celda href="/ajustes/seguridad" ico="seguridad" titulo="Face ID y contraseña" detalle={llaves ? `Face ID en ${llaves} ${llaves === 1 ? 'dispositivo' : 'dispositivos'}` : 'Face ID desactivado'} />
+          <Celda href="/ajustes/avisos" ico="plazo" titulo="Avisos en el móvil" detalle={avisos ? `Activados en ${avisos} ${avisos === 1 ? 'dispositivo' : 'dispositivos'}` : 'Plazos de Hacienda y facturas vencidas'} />
         </div>
       </section>
 
