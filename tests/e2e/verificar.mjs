@@ -399,6 +399,25 @@ ok('a la sociedad le salen el 111 y el 200', () => assert.ok(resSoc.includes('11
 ok('la sociedad no ve las facturas de la otra empresa', () => assert.ok(!resSoc.includes('Carla'), 'se ve un cliente ajeno'));
 ok('a una sociedad no se le aplica retención aunque se envíe', () => assert.equal(sf.factura.irpfPct, 0));
 
+console.log('Kilometraje y dietas');
+{
+  const km = await (await pedir('/api/gastos/dieta', { metodo: 'POST', cookie: yo, cuerpo: { tipo: 'km', quien: 'empleado', km: '150', fecha: `${Y}-06-10`, persona: 'Ana', motivo: 'Bolo en Girona' } })).json();
+  ok('kilometraje: 150 km × 0,26 = 39 € exentos, sin IVA', () => assert.deepEqual([km.gasto.base, km.gasto.ivaPct, km.gasto.dieta.exento, km.gasto.concepto], [39, 0, 39, 'Kilometraje: 150 km · Ana · Bolo en Girona']));
+  const mas = await (await pedir('/api/gastos/dieta', { metodo: 'POST', cookie: yo, cuerpo: { tipo: 'manutencion', quien: 'empleado', dias: 2, pernocta: true, pagado: '120', fecha: `${Y}-06-11` } })).json();
+  ok('dietas con noche: 106,68 € exentos y 13,32 € de más', () => assert.deepEqual([mas.gasto.base, mas.gasto.dieta.exento, mas.gasto.dieta.exceso], [120, 106.68, 13.32]));
+  const com = await (await pedir('/api/gastos/dieta', { metodo: 'POST', cookie: yo, cuerpo: { tipo: 'manutencion', quien: 'titular', dias: 1, pagado: '40', ivaPct: 10, electronico: true, fecha: `${Y}-06-12` } })).json();
+  ok('comida del autónomo: deducible hasta 26,67 € con su IVA', () => assert.deepEqual([com.gasto.base, com.gasto.ivaPct, com.gasto.dieta.deducible], [24.25, 10, 26.67]));
+  const efectivo = await pedir('/api/gastos/dieta', { metodo: 'POST', cookie: yo, cuerpo: { tipo: 'manutencion', quien: 'titular', dias: 1, pagado: '20', electronico: false, fecha: `${Y}-06-12` } });
+  ok('en efectivo no se deduce (400)', () => assert.equal(efectivo.status, 400));
+  const propio = await pedir('/api/gastos/dieta', { metodo: 'POST', cookie: yo, cuerpo: { tipo: 'km', quien: 'titular', km: '10', fecha: `${Y}-06-12` } });
+  ok('el coche propio del autónomo no va a 0,26 €/km (400)', () => assert.equal(propio.status, 400));
+  const gp = n(await texto('/gastos', yo));
+  ok('salen en la lista de gastos', () => assert.ok(gp.includes('Kilometraje: 150 km') && gp.includes('Dietas: 2 días con noche') && gp.includes('Comidas: 1 día')));
+  const det = n(await texto(`/gastos/${encodeURIComponent(mas.gasto.id)}`, yo));
+  ok('el detalle explica lo exento y lo que va a nómina', () => assert.ok(det.includes(n(`Exento para el trabajador: ${eur(106.68)}`)) && det.includes(n(eur(13.32)))));
+  for (const x of [km, mas, com]) await pedir(`/api/gastos?id=${encodeURIComponent(x.gasto.id)}`, { metodo: 'DELETE', cookie: yo });
+}
+
 console.log('Previsión de tesorería');
 {
   const alta3 = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva: 'Tesorería Prueba', nombre: 'Tere', email: `t${Date.now()}@test.es` } })).json();
