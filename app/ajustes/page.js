@@ -49,6 +49,12 @@ export default async function Page() {
       )}
 
       <section className="grupo">
+        <div className="grupo-c">
+          <Celda href="/asistente" ico="asistente" titulo="Pregunta a Netto" detalle="Respuestas con las cifras de la app" />
+        </div>
+      </section>
+
+      <section className="grupo">
         <h2 className="grupo-t">Seguridad y avisos</h2>
         <div className="grupo-c">
           <Celda href="/ajustes/seguridad" ico="seguridad" titulo="Face ID y contraseña" detalle={llaves ? `Face ID en ${llaves} ${llaves === 1 ? 'dispositivo' : 'dispositivos'}` : 'Face ID desactivado'} />
