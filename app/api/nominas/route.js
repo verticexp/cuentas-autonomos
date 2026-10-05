@@ -3,6 +3,7 @@ import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { leerImporte, r2 } from '@/lib/calculos';
 import { actividadesDe, actividadValida } from '@/lib/empresa';
 import { gastoDeNomina } from '@/lib/nominas';
+import { extrasNomina, resumenMes } from '@/lib/jornada';
 import { enviarNomina } from '@/lib/controlat';
 
 export const dynamic = 'force-dynamic';
@@ -21,14 +22,19 @@ export async function POST(req) {
   if (res) return res;
   const { mes } = await cuerpo(req);
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(mes || '')) return error('Mes no válido');
-  const [empleados, nominas] = await Promise.all([leer(u, 'empleados'), leer(u, 'nominas')]);
+  const [empleados, nominas, jornada] = await Promise.all([leer(u, 'empleados'), leer(u, 'nominas'), leer(u, 'jornada')]);
   const activos = (empleados || []).filter((e) => e.alta.slice(0, 7) <= mes && (!e.baja || e.baja.slice(0, 7) >= mes));
   if (!activos.length) return error('No hay empleados de alta ese mes');
   const hechas = new Set((nominas || []).filter((n) => n.mes === mes).map((n) => n.empleado));
-  const nuevas = activos.filter((e) => !hechas.has(e.id)).map((e) => ({
-    id: crypto.randomUUID(), mes, empleado: e.id, empleadoNombre: e.nombre,
-    bruto: e.bruto, irpfPct: e.irpfPct, ssTrabajadorPct: e.ssTrabajadorPct, ssEmpresaPct: e.ssEmpresaPct, pagada: false,
-  }));
+  // Con el registro de jornada: las horas del mes quedan en la nómina y, si tiene precio de hora extra, se pagan.
+  const nuevas = activos.filter((e) => !hechas.has(e.id)).map((e) => {
+    const x = extrasNomina(resumenMes(jornada || [], e, mes), e);
+    return {
+      id: crypto.randomUUID(), mes, empleado: e.id, empleadoNombre: e.nombre,
+      bruto: r2(e.bruto + (x?.importe || 0)), irpfPct: e.irpfPct, ssTrabajadorPct: e.ssTrabajadorPct, ssEmpresaPct: e.ssEmpresaPct, pagada: false,
+      ...(x ? { horas: x.horas } : {}), ...(x?.importe ? { extras: { importe: x.importe, precio: e.precioHoraExtra } } : {}),
+    };
+  });
   for (const n of nuevas) await guardarConGasto(u, n);
   return Response.json({ ok: true, creadas: nuevas.length });
 }
