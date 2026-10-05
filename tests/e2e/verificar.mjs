@@ -866,6 +866,15 @@ console.log('\nPrivacidad y condiciones');
   ok('sin barra de la app en las páginas legales', () => assert.ok(!prT.includes('class="tabs') && !coT.includes('class="tabs')));
   const lg = n(await (await pedir('/login')).text());
   ok('el login enlaza a privacidad y condiciones', () => assert.ok(lg.includes('href="/privacidad"') && lg.includes('href="/condiciones"')));
+  ok('el formulario de entrar no llega pintado (no sale bajo la animación de inicio) y sí el panel de marca', () => assert.ok(!lg.includes('type="password"') && lg.includes('login-marca')));
+  const mal = await pedir('/api/login', { metodo: 'POST', form: (() => { const f = new FormData(); f.set('email', 'nadie@test.es'); f.set('password', 'x'); return f; })() });
+  const malJ = await fetch(BASE + '/api/login', { method: 'POST', headers: { Origin: BASE, Accept: 'application/json' }, body: (() => { const f = new FormData(); f.set('email', 'nadie@test.es'); f.set('password', 'x'); return f; })() });
+  const malD = await malJ.json();
+  ok('login fallido: 401 con «Email o contraseña incorrectos.»', () => assert.ok(malJ.status === 401 && malD.error === 'Email o contraseña incorrectos.' && mal.status === 303));
+  const fav = await pedir('/favicon.ico');
+  const favB = Buffer.from(await fav.arrayBuffer());
+  ok('favicon.ico con la N (16, 32 y 48 px)', () => assert.ok(fav.status === 200 && favB.readUInt16LE(2) === 1 && favB.readUInt16LE(4) === 3, `${fav.status}`));
+  ok('el login enlaza al favicon.ico y al icon.svg', () => assert.ok(lg.includes('href="/favicon.ico') && lg.includes('href="/icon.svg')));
   const priv = await pedir('/facturas');
   ok('/facturas sin sesión redirige al login', () => assert.ok(priv.status >= 300 && priv.status < 400 && (priv.headers.get('location') || '').includes('/login')));
 }
