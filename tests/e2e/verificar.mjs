@@ -547,5 +547,16 @@ console.log('Importar desde Holded o Excel');
   ok('la pantalla de Ajustes → Importar datos', () => assert.ok(aj.includes('Importar datos') && aj.includes('Holded')));
 }
 
+console.log('Barra lateral del ordenador');
+{
+  const lateral = async (cookie) => /<nav class="tabs-extra"[\s\S]*?<\/nav>/.exec(await (await pedir('/gastos', { cookie })).text())?.[0] || '';
+  const mia = await lateral(yo);
+  ok('el administrador ve todas las secciones', () => assert.ok(['/presupuestos', '/facturas/recurrentes', '/facturas/catalogo', '/tesoreria', '/modelos', '/gastos/proveedores', '/nominas', '/ajustes/importar', '/usuarios', '/ajustes'].every((h) => mia.includes(`href="${h}"`))));
+  const suya = await lateral(otro);
+  ok('el de gastos solo ve lo suyo', () => assert.ok(suya.includes('href="/gastos/proveedores"') && !suya.includes('href="/tesoreria"') && !suya.includes('href="/presupuestos"') && !suya.includes('href="/ajustes/importar"')));
+  const marca = await (await pedir('/tesoreria', { cookie: yo })).text();
+  ok('marca la pantalla en la que estás', () => assert.ok(/class="activo"[^>]*href="\/tesoreria"|href="\/tesoreria"[^>]*class="activo"/.test(marca)));
+}
+
 console.log(fallos ? `\n${fallos} comprobaciones fallidas: NO publicar.` : '\nTodo cuadra.');
 process.exit(fallos ? 1 : 0);
