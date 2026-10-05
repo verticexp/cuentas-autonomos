@@ -724,5 +724,59 @@ if (process.env.ANTHROPIC_URL) {
   ok('se llega desde el resumen, desde Ajustes y desde la barra lateral', () => assert.ok(res.includes('Pregunta por tus cuentas') && aj.includes('href="/asistente"') && /<nav class="tabs-extra"[\s\S]*?href="\/asistente"/.test(aj)));
 } else console.log('  (sin ANTHROPIC_URL: se salta)');
 
+console.log('Varias empresas en la misma cuenta');
+{
+  const kv = (cmd) => fetch(process.env.KV_REST_API_URL, { method: 'POST', headers: { Authorization: 'Bearer local' }, body: JSON.stringify(cmd) }).then((r) => r.json()).then((d) => d.result);
+  const eDe = (r) => /(?:^|,\s*)e=([^;]+)/.exec(r.headers.get('set-cookie') || '')?.[1];
+  const A = await kv(['HGET', 'cuentas:emails', fd.get('email')]);
+  const nA = (await (await pedir('/api/facturas', { metodo: 'POST', cookie: yo, cuerpo: { fecha: hoy, cliente: { nombre: 'Cliente de A' }, concepto: 'x', base: '10', ivaPct: 21, irpfPct: 0 } })).json()).factura.numero;
+  const alta = await pedir('/api/empresas', { metodo: 'POST', cookie: yo, cuerpo: { nueva: 'Segunda Empresa S.L.' } });
+  const B = eDe(alta);
+  ok('se crea otra empresa en la misma cuenta y se pasa a ella', () => assert.ok(alta.status === 200 && B && B !== A));
+  const enB = `${yo}; e=${B}`;
+  const nueva = await pedir('/', { cookie: enB });
+  const nuevaHtml = await nueva.text();
+  ok('la empresa nueva empieza por su cuestionario', () => assert.ok(nueva.headers.get('location')?.includes('/bienvenida') || nuevaHtml.includes('url=/bienvenida'), `status ${nueva.status}`));
+  const cfgB = await (await pedir('/api/cuenta', { metodo: 'PATCH', cookie: enB, cuerpo: { configuracion: { fiscal: { tipo: 'sociedad', iva: 'general' }, emisor: { nombre: 'Segunda Empresa S.L.', nif: 'B87654321', plazo: 15 }, actividades: [{ nombre: 'Consultoría', ivaPct: 21, irpfPct: 0 }] } } })).json();
+  const fB = (await (await pedir('/api/facturas', { metodo: 'POST', cookie: enB, cuerpo: { fecha: hoy, actividad: cfgB.actividades[0].id, cliente: { nombre: 'Cliente de B' }, concepto: 'Consultoría', base: '500', ivaPct: 21, irpfPct: 0 } })).json()).factura;
+  ok('cada empresa con su numeración (B empieza en 1)', () => assert.ok(fB.numero === 1 && nA > 1, `${fB.numero} ${nA}`));
+  const listaB = n(await texto('/facturas', enB)), listaA = n(await texto('/facturas', yo));
+  ok('cada empresa ve solo sus facturas', () => assert.ok(listaB.includes('Cliente de B') && !listaB.includes('Cliente de A') && listaA.includes('Cliente de A') && !listaA.includes('Cliente de B')));
+  const resB = n(await texto('/', enB)), resA = n(await texto('/', yo));
+  ok('y sus modelos (B es sociedad, A autónomo)', () => assert.ok(resB.includes('Impuesto sobre Sociedades') && !resA.includes('Impuesto sobre Sociedades') && resA.includes('Pago a cuenta del IRPF')));
+  const ajA = n(await texto('/ajustes', yo));
+  const chipA = await (await pedir('/', { cookie: yo })).text();
+  ok('cambio rápido: en el resumen (con su nombre) y en Ajustes las dos', () => assert.ok(/class="emp emp-chip/.test(chipA) && resB.includes('Segunda Empresa S.L.') && ajA.includes('Tus empresas') && ajA.includes('Segunda Empresa S.L.') && ajA.includes('Añadir empresa')));
+  const htmlA = await (await pedir('/gastos', { cookie: yo })).text();
+  ok('selector en la barra lateral del ordenador', () => assert.ok(/class="emp emp-lateral[^"]*"/.test(htmlA)));
+  const ajeno = await pedir('/api/empresas', { metodo: 'POST', cookie: otro, cuerpo: { id: B } });
+  ok('nadie puede pasar a una empresa que no es suya (403)', () => assert.equal(ajeno.status, 403));
+  const truco = await (await pedir('/facturas', { cookie: `${otro}; e=${B}` })).text();
+  ok('ni forzando la cookie: sigue en la suya', () => assert.ok(!truco.includes('Cliente de B')));
+
+  // Invitar a alguien que ya tiene cuenta (el de solo gastos de A) a la empresa B, con otros permisos.
+  const otroId = await kv(['GET', `cuentas:sesion:${otro}`]);
+  const otroEmail = JSON.parse(await kv(['HGET', 'cuentas:usuarios', otroId])).email;
+  const inv = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: enB, cuerpo: { nombre: 'Solo gastos', email: otroEmail, rol: 'miembro', permisos: ['facturas', 'facturar'] } })).json();
+  ok('invitar a quien ya tiene cuenta le añade la empresa (sin enlace nuevo)', () => assert.ok(inv.existente && !inv.enlace, JSON.stringify(inv)));
+  const dos = await pedir('/api/usuarios', { metodo: 'POST', cookie: enB, cuerpo: { nombre: 'x', email: otroEmail, rol: 'miembro', permisos: [] } });
+  ok('no se le puede invitar dos veces (400)', () => assert.equal(dos.status, 400));
+  const cambio = await pedir('/api/empresas', { metodo: 'POST', cookie: otro, cuerpo: { id: B } });
+  ok('ya puede pasar a B', () => assert.ok(cambio.status === 200 && eDe(cambio) === B));
+  const otroB = `${otro}; e=${B}`;
+  const facB = await pedir('/api/facturas', { metodo: 'POST', cookie: otroB, cuerpo: { fecha: hoy, actividad: cfgB.actividades[0].id, cliente: { nombre: 'Otro cliente B' }, base: '100', ivaPct: 21, irpfPct: 0 } });
+  const gasB = await pedir('/api/gastos', { metodo: 'POST', cookie: otroB, cuerpo: { fecha: hoy, concepto: 'x', base: '10', ivaPct: 21 } });
+  const facA = await pedir('/api/facturas', { metodo: 'POST', cookie: otro, cuerpo: { fecha: hoy, cliente: { nombre: 'X' }, base: '10', ivaPct: 21 } });
+  ok('en B factura y no apunta gastos; en A sigue al revés: permisos separados', () => assert.deepEqual([facB.status, gasB.status, facA.status], [200, 403, 403]));
+  const usB = n(await texto('/usuarios', enB)), usA = n(await texto('/usuarios', yo));
+  ok('aparece en los usuarios de las dos empresas, con su perfil en cada una', () => assert.ok(/Solo gastos.{0,80}Facturación/.test(usB) && /Solo gastos.{0,80}Gastos/.test(usA), usB.slice(0, 300)));
+  const quitar = await pedir(`/api/usuarios?id=${otroId}`, { metodo: 'DELETE', cookie: enB });
+  const yaNo = await pedir('/api/empresas', { metodo: 'POST', cookie: otro, cuerpo: { id: B } });
+  const sigueA = await pedir('/gastos', { cookie: otro });
+  ok('quitarle de B no borra su cuenta: sigue en A', () => assert.ok(quitar.status === 200 && yaNo.status === 403 && sigueA.status === 200));
+  const vuelta = await pedir('/api/empresas', { metodo: 'POST', cookie: enB, cuerpo: { id: A } });
+  ok('volver a la primera empresa', () => assert.equal(eDe(vuelta), A));
+}
+
 console.log(fallos ? `\n${fallos} comprobaciones fallidas: NO publicar.` : '\nTodo cuadra.');
 process.exit(fallos ? 1 : 0);
