@@ -23,6 +23,7 @@ const EXTRA = [
   ] },
   { titulo: 'Finanzas', enlaces: [
     { href: '/tesoreria', permiso: 'resumen', nombre: 'Tesorería', icono: <path d="M3 17l5-5 4 4 8-8M15 8h5v5" /> },
+    { href: '/banco', permiso: 'resumen', nombre: 'Banco', icono: <path d="M3 10l9-6 9 6M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18" /> },
     { href: '/modelos', permiso: 'resumen', nombre: 'Impuestos', icono: <path d="M4 21V9l8-6 8 6v12M9 21v-7h6v7" /> },
     { href: '/gastos/proveedores', permiso: 'gastos', nombre: 'Proveedores', icono: <path d="M3 7h11v9H3zM14 10h4l3 3v3h-7M7 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM17 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" /> },
     { href: '/nominas', permiso: 'nominas', nombre: 'Equipo y nóminas', icono: <path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21c1-4 4-6 7-6s6 2 7 6M17 3a4 4 0 0 1 0 8M22 21c-.5-2.5-2-4.5-4-5.5" /> },

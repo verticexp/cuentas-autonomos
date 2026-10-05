@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 // Saldo en el banco hoy: de ahí parte la previsión.
-export default function SaldoBanco({ saldo, fecha }) {
+export default function SaldoBanco({ saldo, fecha, banco = false }) {
   const router = useRouter();
   const [v, setV] = useState(saldo === null ? '' : new Intl.NumberFormat('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: 'always' }).format(saldo));
   const [msg, setMsg] = useState('');
@@ -16,6 +16,15 @@ export default function SaldoBanco({ saldo, fecha }) {
     if (!r.ok) { setMsg(d.error || 'Algo ha fallado'); return; }
     router.refresh();
   };
+  // Con el banco conectado o un extracto subido, el saldo es el real: no se escribe a mano.
+  if (banco) {
+    return (
+      <div className="teso-saldo">
+        <label>Saldo en el banco hoy<small>De tus cuentas · {fecha ? `a ${fecha.split('-').reverse().join('-')}` : 'sin fecha'}</small></label>
+        <strong className="teso-saldo-real">{new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', useGrouping: 'always' }).format(saldo)}</strong>
+      </div>
+    );
+  }
   return (
     <form className="teso-saldo" onSubmit={guardar}>
       <label htmlFor="saldo">Saldo en el banco hoy<small>{fecha ? `Apuntado el ${fecha.split('-').reverse().join('-')}` : 'Escríbelo para ver cuánto tendrás'}</small></label>
