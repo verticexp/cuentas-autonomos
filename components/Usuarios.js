@@ -98,16 +98,19 @@ export default function Usuarios({ lista, yo, empresa, empresas, miEmpresa }) {
   const router = useRouter();
   const [d, setD] = useState({ nombre: '', email: '', rol: 'miembro', permisos: PERFILES[1].permisos });
   const [enlace, setEnlace] = useState('');
+  const [yaTiene, setYaTiene] = useState('');
   const [error, setError] = useState('');
   const [nueva, setNueva] = useState({ empresaNueva: '', nombre: '', email: '' });
   const [enlaceEmpresa, setEnlaceEmpresa] = useState('');
 
   const invitar = async (e) => {
     e.preventDefault();
-    setError(''); setEnlace('');
+    setError(''); setEnlace(''); setYaTiene('');
     try {
       const r = await llamar('/api/usuarios', { method: 'POST', body: JSON.stringify(d) });
-      setEnlace(r.enlace); setD({ ...d, nombre: '', email: '' });
+      if (r.existente) setYaTiene(`${r.existente} ya tenía cuenta en Netto: verá ${empresa} al cambiar de empresa.`);
+      else setEnlace(r.enlace);
+      setD({ ...d, nombre: '', email: '' });
       router.refresh();
     } catch (err) { setError(err.message); }
   };
@@ -139,6 +142,7 @@ export default function Usuarios({ lista, yo, empresa, empresas, miEmpresa }) {
             {error && <p className="error">{error}</p>}
             <button className="boton">Crear invitación</button>
             {enlace && <Enlace url={enlace} />}
+            {yaTiene && <p className="nota">{yaTiene}</p>}
           </form>
         </>
       )}

@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { alPulsar, navegar } from '@/lib/transicion';
 import Logo from '@/components/Logo';
+import CambiarEmpresa from '@/components/CambiarEmpresa';
+import '@/app/empresas.css';
 import '@/app/lateral.css';
 
 const TABS = [
@@ -55,7 +57,7 @@ function vibrar() {
 
 const seccion = (path) => (path === '/' ? '/' : path.startsWith('/presupuestos') ? '/facturas' : TABS.find((t) => t.href !== '/' && path.startsWith(t.href))?.href ?? null);
 
-export default function TabBar({ permisos = [] }) {
+export default function TabBar({ permisos = [], empresas = [], empresa }) {
   const tabs = TABS.filter((t) => !t.permiso || permisos.includes(t.permiso));
   const path = usePathname();
   const router = useRouter();
@@ -77,6 +79,7 @@ export default function TabBar({ permisos = [] }) {
   return (
     <div className="tabbar">
       <Link href="/" className="tabbar-logo" aria-label="Netto, resumen" onClick={(e) => { e.preventDefault(); ir('/'); }}><Logo /></Link>
+      {empresa && <CambiarEmpresa empresas={empresas} actual={empresa} variante="lateral" />}
       <nav
         ref={nav}
         className="tabs"
