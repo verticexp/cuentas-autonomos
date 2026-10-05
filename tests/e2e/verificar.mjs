@@ -321,6 +321,51 @@ console.log('Más modelos: 115, 349, 390 y renta');
   ok('desde el resumen se llega a los anuales', () => assert.ok(res.includes('Resumen anual del IVA') && res.includes('Borrador')));
 }
 
+console.log('Avisos en el móvil');
+if (process.env.PUSH_PRUEBAS && process.env.CRON_SECRET) {
+  const { createECDH, createDecipheriv, hkdfSync, randomBytes } = await import('node:crypto');
+  const fs = await import('node:fs');
+  const ecdh = createECDH('prime256v1'); ecdh.generateKeys();
+  const auth = randomBytes(16);
+  const sub = { endpoint: `https://127.0.0.1:8075/movil-${Date.now()}`, keys: { p256dh: ecdh.getPublicKey().toString('base64url'), auth: auth.toString('base64url') } };
+  // Descifra el aviso como lo haría el móvil (RFC 8291, aes128gcm).
+  const descifrar = (b) => {
+    const salt = b.subarray(0, 16), idlen = b[20], servidor = b.subarray(21, 21 + idlen), c = b.subarray(21 + idlen);
+    const info = Buffer.concat([Buffer.from('WebPush: info\0'), ecdh.getPublicKey(), servidor]);
+    const ikm = Buffer.from(hkdfSync('sha256', ecdh.computeSecret(servidor), auth, info, 32));
+    const clave = Buffer.from(hkdfSync('sha256', ikm, salt, Buffer.from('Content-Encoding: aes128gcm\0'), 16));
+    const nonce = Buffer.from(hkdfSync('sha256', ikm, salt, Buffer.from('Content-Encoding: nonce\0'), 12));
+    const d = createDecipheriv('aes-128-gcm', clave, nonce); d.setAuthTag(c.subarray(-16));
+    const p = Buffer.concat([d.update(c.subarray(0, -16)), d.final()]);
+    return JSON.parse(p.subarray(0, p.lastIndexOf(2)).toString());
+  };
+  const recibidos = () => (fs.existsSync('/tmp/push.json') ? fs.readFileSync('/tmp/push.json', 'utf8').trim().split('\n').map((l) => JSON.parse(l)).filter((x) => x.ruta === new URL(sub.endpoint).pathname) : []);
+  const { clave } = await (await pedir('/api/push', { cookie: yo })).json();
+  ok('da la clave pública VAPID', () => assert.equal(clave, process.env.VAPID_PUBLIC_KEY));
+  const mala = await pedir('/api/push', { metodo: 'POST', cookie: yo, cuerpo: { sub: { ...sub, endpoint: 'https://10.0.0.1/x' } } });
+  ok('no acepta direcciones que no sean de un servicio push', () => assert.equal(mala.status, 400));
+  await pedir('/api/push', { metodo: 'POST', cookie: yo, cuerpo: { sub } });
+  await pedir('/api/push', { metodo: 'POST', cookie: yo, cuerpo: { prueba: true } });
+  const prueba = recibidos();
+  ok('llega el aviso de prueba, firmado y cifrado', () => assert.ok(prueba.length === 1 && prueba[0].auth.startsWith('vapid t=') && descifrar(Buffer.from(prueba[0].cuerpo, 'base64')).titulo === 'Avisos activados'));
+  // Una factura que venció ayer (plazo de 30 días).
+  const ayer = new Date(Date.parse(`${hoy}T12:00:00Z`) - 31 * 864e5).toISOString().slice(0, 10);
+  await pedir('/api/facturas', { metodo: 'POST', cookie: yo, cuerpo: { fecha: ayer, actividad: ACTS[0].id, cliente: { nombre: 'Moroso Push' }, concepto: 'Sesión', base: '100', ivaPct: 21, irpfPct: 0 } });
+  const cron = () => fetch(`${BASE}/api/recordatorios`, { headers: { Authorization: `Bearer ${process.env.CRON_SECRET}` } }).then((r) => r.json());
+  const c1 = await cron();
+  const avisos = recibidos().slice(1).map((x) => descifrar(Buffer.from(x.cuerpo, 'base64')));
+  ok('el cron de la mañana avisa de la factura que venció ayer', () => assert.ok(c1.avisos >= 1 && avisos.some((a) => a.titulo === 'Factura vencida: Moroso Push' && a.url.startsWith('/facturas/')), JSON.stringify(avisos)));
+  const c2 = await cron();
+  ok('y no repite el aviso el mismo día', () => assert.equal(recibidos().length, 1 + avisos.length, JSON.stringify(c2)));
+  const aj = n(await texto('/ajustes', yo));
+  ok('Ajustes dice en cuántos dispositivos están activados', () => assert.ok(aj.includes('Activados en 1 dispositivo')));
+  await pedir('/api/push', { metodo: 'DELETE', cookie: yo, cuerpo: { endpoint: sub.endpoint } });
+  const aj2 = n(await texto('/ajustes', yo));
+  ok('al desactivarlos se quita el dispositivo', () => assert.ok(!aj2.includes('Activados en')));
+  const sw = await fetch(`${BASE}/sw`);
+  ok('el service worker se sirve sin sesión', () => assert.ok(sw.status === 200 && sw.headers.get('content-type').includes('javascript')));
+} else console.log('  (sin PUSH_PRUEBAS y CRON_SECRET: se salta)');
+
 console.log('Permisos');
 const inv = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { nombre: 'Solo gastos', email: `g${Date.now()}@test.es`, rol: 'miembro', permisos: ['gastos', 'gastar'] } })).json();
 const fd2 = new FormData(); fd2.set('codigo', inv.enlace.split('/').pop()); fd2.set('password', 'gastosgastos1');
