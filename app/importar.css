@@ -1,0 +1,13 @@
+/* Importar desde Holded o Excel (Ajustes → Importar datos) */
+.importar-tipos { display: grid; grid-template-columns: repeat(4, 1fr); }
+.importar-archivo input { width: 100%; font-size: 15px; }
+.importar-previa { margin-top: 16px; display: flex; flex-direction: column; gap: 10px; }
+.importar-previa .importar-cuenta { flex-wrap: wrap; margin: 0; }
+.importar-filas { margin-top: 0; }
+.importar-fila .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.importar-fila .txt strong, .importar-fila .txt small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.importar-fila .txt small { color: var(--muted); }
+.importar-estado { flex: none; font-size: 13px; color: var(--muted); }
+.importar-estado.i-nuevo { color: var(--in); font-weight: 600; }
+.importar-estado.i-error { color: var(--out); }
+.importar-fila.i-duplicado .txt { opacity: 0.6; }
