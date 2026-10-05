@@ -452,5 +452,49 @@ console.log('Previsión de tesorería');
   ok('quien no ve el resumen no puede tocar el saldo (403)', () => assert.equal(ajena.status, 403));
 }
 
+console.log('Portal del cliente');
+{
+  const alta4 = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva: 'Portal Prueba', nombre: 'Pau', email: `pp${Date.now()}@test.es` } })).json();
+  const fd5 = new FormData(); fd5.set('codigo', alta4.enlace.split('/').pop()); fd5.set('password', 'paupaupau123');
+  const pp = /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: fd5 })).headers.get('set-cookie') || '')?.[1];
+  const cfg = await (await pedir('/api/cuenta', { metodo: 'PATCH', cookie: pp, cuerpo: { configuracion: { fiscal: { tipo: 'autonomo', iva: 'general' }, emisor: { nombre: 'Pau Portal', nif: '22222222J', iban: 'ES11 2222', plazo: 30 }, actividades: [{ nombre: 'Música', ivaPct: 21, irpfPct: 15 }] } } })).json();
+  const act = cfg.actividades[0].id;
+  const fac = async (cliente, base, cobrada) => (await (await pedir('/api/facturas', { metodo: 'POST', cookie: pp, cuerpo: { fecha: `${Y}-03-0${base % 9 + 1}`, actividad: act, cliente, concepto: 'Bolo', base: String(base), ivaPct: 21, irpfPct: 15, cobrada } })).json()).factura;
+  const f1 = await fac({ nombre: 'Sala Apolo', nif: 'B12345678' }, 1000, false);
+  const f2 = await fac({ nombre: 'Sala Apolo', nif: 'B12345678' }, 400, true);
+  const f3 = await fac({ nombre: 'Otro Club' }, 700, false);
+  const pre = (await (await pedir('/api/presupuestos', { metodo: 'POST', cookie: pp, cuerpo: { fecha: hoy, actividad: act, cliente: { nombre: 'Sala Apolo', nif: 'B12345678' }, concepto: 'Fiesta', base: '2000', ivaPct: 21, irpfPct: 15 } })).json()).presupuesto;
+  const det = await (await pedir(`/facturas/${f1.id}`, { cookie: pp })).text();
+  const ruta = /\/portal\/[\w-]+/.exec(det)?.[0];
+  ok('la factura da el enlace del portal de su cliente', () => assert.ok(ruta && det.includes('Enviar su portal')));
+  const det2 = await (await pedir(`/presupuestos/${pre.id}`, { cookie: pp })).text();
+  ok('el presupuesto del mismo cliente da el mismo enlace', () => assert.equal(/\/portal\/[\w-]+/.exec(det2)?.[0], ruta));
+  const tok = ruta.split('/').pop();
+  const pt = n(await texto(ruta));
+  ok('se abre sin sesión con sus facturas y presupuestos', () => assert.ok(pt.includes('Sala Apolo') && pt.includes(`Factura ${numeroFactura(f1)}`) && pt.includes(`Factura ${numeroFactura(f2)}`) && pt.includes('Presupuesto P')));
+  ok('no enseña las de otros clientes', () => assert.ok(!pt.includes('Otro Club') && !pt.includes(`Factura ${numeroFactura(f3)} `)));
+  ok('lo pendiente: solo la no pagada', () => assert.ok(pt.includes(n(eur(importes(f1).total))) && pt.includes('Pendiente de pago · 1 factura') && pt.includes('Pagada')));
+  const pdf = await pedir(`/api/portal/pdf?t=${tok}&id=${encodeURIComponent(f1.id)}`);
+  ok('descarga el PDF de su factura', () => assert.ok(pdf.status === 200 && pdf.headers.get('content-type') === 'application/pdf'));
+  const pdfP = await pedir(`/api/portal/pdf?t=${tok}&tipo=presupuesto&id=${encodeURIComponent(pre.id)}`);
+  ok('y el de su presupuesto', () => assert.ok(pdfP.status === 200 && decodeURIComponent(pdfP.headers.get('content-disposition')).includes('Presupuesto')));
+  const ajeno = await pedir(`/api/portal/pdf?t=${tok}&id=${encodeURIComponent(f3.id)}`);
+  ok('el PDF de una factura de otro cliente no se da (404)', () => assert.equal(ajeno.status, 404));
+  const malo = await (await pedir('/portal/inventado123')).text();
+  ok('un enlace inventado no enseña nada (página 404)', () => assert.ok(malo.includes('could not be found') && !malo.includes('Pendiente de pago')));
+  const fdp = new FormData(); fdp.set('t', tok); fdp.set('id', f1.id);
+  const pg = await pedir('/api/portal/pagar', { metodo: 'POST', form: fdp });
+  const destino = pg.headers.get('location') || '';
+  ok('«Pagar» lleva a la página de pago de esa factura', () => assert.ok(pg.status === 303 && /\/pagar\/[0-9a-f]{32}$/.test(destino), destino));
+  const pagina = n(await (await fetch(destino)).text());
+  ok('que enseña la factura y su importe', () => assert.ok(pagina.includes(numeroFactura(f1)) && pagina.includes(n(eur(importes(f1).total)))));
+  const fdq = new FormData(); fdq.set('t', tok); fdq.set('id', f2.id);
+  const pg2 = await pedir('/api/portal/pagar', { metodo: 'POST', form: fdq });
+  ok('una pagada vuelve al portal', () => assert.ok(pg2.status === 303 && pg2.headers.get('location').endsWith(ruta)));
+  const fdr = new FormData(); fdr.set('t', tok); fdr.set('id', f3.id);
+  const pg3 = await pedir('/api/portal/pagar', { metodo: 'POST', form: fdr });
+  ok('pagar la de otro cliente da 404', () => assert.equal(pg3.status, 404));
+}
+
 console.log(fallos ? `\n${fallos} comprobaciones fallidas: NO publicar.` : '\nTodo cuadra.');
 process.exit(fallos ? 1 : 0);
