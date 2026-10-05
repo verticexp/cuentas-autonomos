@@ -1,4 +1,5 @@
 import Ir from '@/components/Ir';
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requerir } from '@/lib/auth';
 import { leer, leerUno } from '@/lib/redis';
@@ -12,6 +13,9 @@ import { RepetirFactura } from '@/components/Recurrente';
 import { asuntoFactura, mensajeFactura } from '@/lib/envio';
 import { puede } from '@/lib/permisos';
 import { actividadesDe, fiscalDe, nombresActividad, usa130, usa303 } from '@/lib/empresa';
+import { enlacePortal } from '@/lib/portal';
+import { Compartir } from '@/components/AccionesPresupuesto';
+import '@/app/portal.css';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,6 +25,7 @@ export default async function Factura({ params }) {
   const [f, clientes, recurrentes, productos] = await Promise.all([leerUno(u, 'facturas', id), leer(u, 'clientes'), leer(u, 'recurrentes'), leer(u, 'productos')]);
   if (!f) notFound();
   const editar = puede(u, 'facturar');
+  const portal = editar ? await enlacePortal(u, f.cliente.nombre) : null;
   const fiscal = fiscalDe(u);
   const actividades = actividadesDe(u);
   const i = importes(f);
@@ -53,6 +58,10 @@ export default async function Factura({ params }) {
       </div>
       {(editar || f.envios?.length > 0) && <EnviarFactura id={f.id} email={f.cliente.email} envios={f.envios} editar={editar}
         asunto={asuntoFactura(f, u.emisor || {})} mensaje={mensajeFactura(f, u.emisor || {})} />}
+      {portal && <section className="portal-enlace">
+        <p className="nota">Portal de {f.cliente.nombre}: ve todas sus facturas y presupuestos, los descarga en PDF y paga.</p>
+        <div className="portal-botones"><Compartir ruta={portal} texto={`Tus documentos de ${u.emisor?.nombre || ''}`.trim()} etiqueta="Enviar su portal" className="boton sec" /><Link href={portal} className="boton sec">Ver su portal</Link></div>
+      </section>}
       {editar && f.serie !== 'R' && <RepetirFactura factura={f.id} dia={Math.min(28, Number(f.fecha.slice(8, 10)))} existente={recurrentes.find((r) => r.origen === f.id)} />}
       {f.base > 0 && (usa303(fiscal) || usa130(fiscal)) && (() => {
         const a = apartar(f);
