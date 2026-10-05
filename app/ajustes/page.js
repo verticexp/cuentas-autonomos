@@ -6,6 +6,8 @@ import Avatar from '@/components/Avatar';
 import Ico from '@/components/Ico';
 import { actividadesDe, fiscalDe } from '@/lib/empresa';
 import { modoDe } from '@/lib/verifactu';
+import { miEmpleado } from '@/lib/jornadaServidor';
+import { ahoraMadrid } from '@/lib/jornada';
 import CambiarEmpresa from '@/components/CambiarEmpresa';
 import '@/app/empresas.css';
 
@@ -27,6 +29,7 @@ export default async function Page() {
   const e = u.emisor || {};
   const datosCompletos = e.nombre && e.nif && e.direccion && e.iban;
   const modo = modoDe(u);
+  const { yo } = await miEmpleado(u, ahoraMadrid().slice(0, 10));
   return (
     <main className="pagina">
       <h1 className="titulo">Ajustes</h1>
@@ -59,6 +62,7 @@ export default async function Page() {
       <section className="grupo">
         <div className="grupo-c">
           <Celda href="/asistente" ico="asistente" titulo="Pregunta a Netto" detalle="Respuestas con las cifras de la app" />
+          {(yo || puede(u, 'nominas')) && <Celda href="/jornada" ico="plazo" titulo={yo ? 'Fichar y registro de jornada' : 'Registro de jornada'} detalle={yo ? 'Entrada, salida y pausas; tus horas del mes' : 'Horas de tu equipo y Excel para la Inspección'} />}
         </div>
       </section>
 
