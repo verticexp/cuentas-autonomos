@@ -6,6 +6,7 @@ import { panelResumen } from '../../lib/panel.js';
 import { importes, numeroFactura, r2 } from '../../lib/calculos.js';
 import { eur, eurSin } from '../../lib/formato.js';
 import { limpiarFiscal } from '../../lib/empresa.js';
+import { prevision } from '../../lib/tesoreria.js';
 
 const BASE = process.env.BASE || 'http://localhost:3001';
 if (!/localhost|127\.0\.0\.1/.test(BASE)) throw new Error('Solo contra una copia local con la base de datos vacía');
@@ -397,6 +398,40 @@ ok('a la sociedad no le sale el 130', () => assert.ok(!resSoc.includes('Modelo 1
 ok('a la sociedad le salen el 111 y el 200', () => assert.ok(resSoc.includes('111') && resSoc.includes('Impuesto sobre Sociedades'), 'faltan modelos'));
 ok('la sociedad no ve las facturas de la otra empresa', () => assert.ok(!resSoc.includes('Carla'), 'se ve un cliente ajeno'));
 ok('a una sociedad no se le aplica retención aunque se envíe', () => assert.equal(sf.factura.irpfPct, 0));
+
+console.log('Previsión de tesorería');
+{
+  const alta3 = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva: 'Tesorería Prueba', nombre: 'Tere', email: `t${Date.now()}@test.es` } })).json();
+  const fd4 = new FormData(); fd4.set('codigo', alta3.enlace.split('/').pop()); fd4.set('password', 'teretere123');
+  const te = /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: fd4 })).headers.get('set-cookie') || '')?.[1];
+  const cfg = await (await pedir('/api/cuenta', { metodo: 'PATCH', cookie: te, cuerpo: { configuracion: { fiscal: { tipo: 'autonomo', iva: 'general' }, emisor: { nombre: 'Tere', nif: '11111111H', plazo: 30 }, actividades: [{ nombre: 'Música', ivaPct: 21, irpfPct: 15 }] } } })).json();
+  const masD = (d) => new Date(Date.parse(`${hoy}T12:00:00Z`) + d * 864e5).toISOString().slice(0, 10);
+  const F2 = [];
+  for (const [fecha, base, cobrada] of [[masD(-5), 1000, false], [masD(-60), 400, false], [masD(-10), 300, true]]) {
+    F2.push((await (await pedir('/api/facturas', { metodo: 'POST', cookie: te, cuerpo: { fecha, actividad: cfg.actividades[0].id, cliente: { nombre: `Cliente ${base}` }, concepto: 'Bolo', base: String(base), ivaPct: 21, irpfPct: 15, cobrada } })).json()).factura);
+  }
+  const G2 = [(await (await pedir('/api/gastos', { metodo: 'POST', cookie: te, cuerpo: { fecha: masD(3), actividad: cfg.actividades[0].id, concepto: 'Altavoces', proveedor: 'Sonido SL', base: '200', ivaPct: 21, pendiente: true } })).json()).gasto];
+  const mala = await pedir('/api/tesoreria', { metodo: 'POST', cookie: te, cuerpo: { saldo: 'mucho' } });
+  ok('un saldo que no es un importe da error', () => assert.equal(mala.status, 400));
+  const sv = await (await pedir('/api/tesoreria', { metodo: 'POST', cookie: te, cuerpo: { saldo: '2.500,50' } })).json();
+  ok('se guarda el saldo de hoy', () => assert.deepEqual(sv.saldo, { importe: 2500.5, fecha: hoy }));
+  const esp = prevision({ facturas: F2, gastos: G2, fiscal: { tipo: 'autonomo', iva: 'general' }, plazo: 30, saldo: sv.saldo, actividades: cfg.actividades.map((a) => a.id), hoy, meses: 3 });
+  const pt = n(await texto('/tesoreria', te));
+  ok('cifras de la pantalla: cobrar, pagar, Hacienda y saldo final', () => assert.ok([esp.entra, esp.sale, esp.hacienda, esp.final].every((v) => pt.includes(n(eur(v)))), JSON.stringify([esp.entra, esp.sale, esp.hacienda, esp.final])));
+  ok('la factura vencida se cuenta hoy y la otra a su vencimiento', () => assert.ok(pt.includes('Cliente 400') && pt.includes('vencida') && pt.includes('Cliente 1000') && !pt.includes('Cliente 300')));
+  ok('el gasto pendiente sale como pago', () => assert.ok(pt.includes('Sonido SL') && pt.includes(n(eur(242)))));
+  ok('cada mes con su saldo', () => assert.ok(esp.meses.every((m) => pt.includes(n(eur(m.saldo)))) && esp.meses.length === 4));
+  const p6 = n(await texto('/tesoreria?meses=6', te));
+  const esp6 = prevision({ facturas: F2, gastos: G2, fiscal: { tipo: 'autonomo', iva: 'general' }, plazo: 30, saldo: sv.saldo, actividades: cfg.actividades.map((a) => a.id), hoy, meses: 6 });
+  ok('a 6 meses', () => assert.ok(p6.includes(n(eur(esp6.final)))));
+  const res3 = n(await texto('/', te));
+  ok('el resumen enseña el saldo previsto', () => assert.ok(res3.includes('Tesorería') && res3.includes(n(eurSin(esp.final)))));
+  await pedir('/api/tesoreria', { metodo: 'POST', cookie: te, cuerpo: { saldo: null } });
+  const sin = n(await texto('/tesoreria', te));
+  ok('sin saldo, parte de 0', () => assert.ok(sin.includes(n(eur(r2(esp.final - 2500.5))))));
+  const ajena = await pedir('/api/tesoreria', { metodo: 'POST', cookie: otro, cuerpo: { saldo: '1' } });
+  ok('quien no ve el resumen no puede tocar el saldo (403)', () => assert.equal(ajena.status, 403));
+}
 
 console.log(fallos ? `\n${fallos} comprobaciones fallidas: NO publicar.` : '\nTodo cuadra.');
 process.exit(fallos ? 1 : 0);
