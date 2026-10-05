@@ -8,6 +8,7 @@ import { eur, fechaCorta, hoy } from '@/lib/formato';
 import SinBD from '@/components/SinBD';
 import FormGasto from '@/components/FormGasto';
 import Cuotas from '@/components/Cuotas';
+import Dietas from '@/components/Dietas';
 import Ir from '@/components/Ir';
 import { puede } from '@/lib/permisos';
 import Link from 'next/link';
@@ -47,6 +48,7 @@ export default async function Gastos() {
       {puede(u, 'gastar') && <>
         <FormGasto hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} />
         {fiscalDe(u).tipo === 'autonomo' && <Cuotas desde={`${h.slice(0, 4)}-01`} />}
+        <Dietas hoy={h} actividades={actividades} autonomo={fiscalDe(u).tipo === 'autonomo'} />
       </>}
 
       <details className="tarjeta bloque" open={pendientes > 0}>
