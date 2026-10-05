@@ -3,6 +3,7 @@ import { redis } from '@/lib/redis';
 import SinBD from '@/components/SinBD';
 import EntrarLlave from '@/components/EntrarLlave';
 import Logo from '@/components/Logo';
+import '@/app/legal.css';
 
 export const dynamic = 'force-dynamic';
 const ERRORES = { 1: 'Email o contraseña incorrectos.', bloqueado: 'Demasiados intentos. Espera 15 minutos.' };
@@ -25,6 +26,7 @@ export default async function Login({ searchParams }) {
         <button type="submit">{primera ? 'Crear cuenta' : 'Entrar'}</button>
         {!primera && <EntrarLlave auto />}
         {!primera && <p className="nota">¿No tienes cuenta? Pide una invitación al administrador.</p>}
+        <p className="nota login-legal"><a href="/privacidad">Privacidad</a> · <a href="/condiciones">Condiciones</a></p>
       </form>
     </main>
   );
