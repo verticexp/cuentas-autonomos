@@ -1,4 +1,5 @@
 import { redis } from '@/lib/redis';
+import { mensajeSeguro } from '@/lib/mensajes';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,7 +14,7 @@ export default async function Invitacion({ params, searchParams }) {
       <form method="post" action="/api/invitacion">
         <h1>Hola, {u.nombre}</h1>
         <p className="nota">Elige una contraseña para entrar con {u.email}.</p>
-        {error && <p className="error">{error}</p>}
+        {error && <p className="error">{mensajeSeguro(error)}</p>}
         <input type="hidden" name="codigo" value={codigo} />
         <label htmlFor="password">Contraseña</label>
         <input id="password" name="password" type="password" autoComplete="new-password" minLength={8} required />
