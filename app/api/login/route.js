@@ -7,7 +7,7 @@ export async function POST(req) {
   const r = await entrar(form.get('email'), form.get('password'), ip);
   // Desde la pantalla de bloqueo: responde en JSON y no cambia de página.
   if (req.headers.get('accept') === 'application/json') {
-    if (!r?.token) return NextResponse.json({ error: r?.bloqueado ? 'Demasiados intentos. Espera 15 minutos.' : 'Contraseña incorrecta.' }, { status: 401 });
+    if (!r?.token) return NextResponse.json({ error: r?.bloqueado ? 'Demasiados intentos. Espera 15 minutos.' : 'Email o contraseña incorrectos.' }, { status: 401 });
     const res = NextResponse.json({ ok: true });
     res.cookies.set('t', r.token, opcionesCookie);
     return res;
