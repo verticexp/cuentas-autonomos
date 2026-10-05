@@ -1,0 +1,42 @@
+/* Registro de jornada */
+.jor-fichar { background: var(--surface); border-radius: 16px; padding: 18px; margin: 8px 0 20px; }
+.jor-estado { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 15px; font-weight: 600; color: var(--muted); }
+.jor-punto { width: 10px; height: 10px; border-radius: 50%; background: var(--line); }
+.jor-fichar.dentro .jor-punto { background: var(--in); box-shadow: 0 0 0 4px color-mix(in srgb, var(--in) 20%, transparent); }
+.jor-fichar.pausa .jor-punto { background: var(--hacienda); }
+.jor-fichar.dentro .jor-estado { color: var(--in); }
+.jor-fichar.pausa .jor-estado { color: var(--hacienda); }
+.jor-hoy { margin: 6px 0 0; font-size: 15px; color: var(--muted); }
+.jor-hoy strong { color: var(--ink); font-size: 28px; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; margin-left: 2px; }
+.jor-botones { display: flex; gap: 10px; margin-top: 14px; }
+.jor-botones .boton { flex: 1; }
+.jor-msg { margin: 10px 0 0; font-size: 14px; }
+.jor-meses { display: flex; align-items: center; justify-content: center; gap: 16px; margin: 0 0 12px; }
+.jor-meses strong { min-width: 150px; text-align: center; font-size: 17px; }
+.jor-meses strong::first-letter { text-transform: uppercase; }
+.jor-meses a, .jor-meses .off { width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--surface); color: var(--ink); text-decoration: none; font-size: 20px; }
+.jor-meses .off { opacity: 0.35; }
+.jor-resumen .imp small, .jor-dia .imp small { display: block; font-size: 12px; font-weight: 400; color: var(--muted); text-align: right; }
+.jor-resumen .imp small.jor-extra { color: var(--in); }
+.jor-exportar { margin-top: 12px; }
+.jor-dia .txt { display: flex; flex-direction: column; min-width: 0; }
+.jor-horas { font-variant-numeric: tabular-nums; }
+.jor-dia strong + .jor-horas { color: var(--muted); font-size: 14px; }
+.jor-dia small { color: var(--muted); font-size: 13px; display: flex; flex-direction: column; }
+.jor-corregida { color: var(--hacienda); }
+.jor-dia .imp { font-variant-numeric: tabular-nums; }
+.jor-editar { display: block; margin: -6px 0 8px 16px; border: 0; background: none; color: var(--acento); font: inherit; font-size: 13px; cursor: pointer; padding: 4px 0; }
+.jor-editando { padding: 0 8px 8px; }
+.jor-form { margin: 8px 0; }
+.jor-pausa { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end; }
+.jor-quitar { width: 36px; height: 42px; border: 0; border-radius: 10px; background: var(--relleno); color: var(--ink); font-size: 20px; cursor: pointer; }
+.jor-anadir { align-self: flex-start; border: 0; background: none; color: var(--acento); font: inherit; font-size: 15px; padding: 4px 0; cursor: pointer; }
+.nomina-jornada { margin-bottom: 16px; }
+.nomina-horas a { color: inherit; }
+
+@media (min-width: 1024px) {
+  .jor-fichar { display: grid; grid-template-columns: 1fr auto; align-items: center; column-gap: 24px; }
+  .jor-fichar .jor-botones { grid-column: 2; grid-row: 1 / 3; margin: 0; min-width: 320px; }
+  .jor-meses { justify-content: flex-start; }
+}
+.jornada > .boton.ancho { margin-bottom: 20px; }
