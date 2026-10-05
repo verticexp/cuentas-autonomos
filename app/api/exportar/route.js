@@ -7,7 +7,9 @@ import { fechaCorta } from '@/lib/formato';
 export const dynamic = 'force-dynamic';
 
 const num = (n) => n.toFixed(2).replace('.', ',');
-const celda = (v) => (/[;"\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v));
+// Un texto que empieza por = + - @ Excel lo ejecuta como fórmula: se le antepone un apóstrofo (los importes no pasan por aquí).
+const texto = (v) => (/^[=+\-@\t\r]/.test(String(v)) ? `'${v}` : String(v));
+const celda = (v) => { const s = typeof v === 'string' && !/^-?\d+(,\d+)?$/.test(v) ? texto(v) : String(v); return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
 const csv = (filas) => '\uFEFF' + filas.map((f) => f.map(celda).join(';')).join('\r\n');
 
 // CSV para Excel (separador «;», coma decimal). ?tipo=facturas|gastos&anio=2026&t=3 (sin t: todo el año)
