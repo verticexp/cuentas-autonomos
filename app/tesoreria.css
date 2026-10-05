@@ -1,0 +1,38 @@
+/* Previsión de tesorería */
+.teso-saldo { background: var(--surface); border-radius: 12px; padding: 12px 16px; margin: 8px 0 16px; }
+.teso-saldo label { display: flex; flex-direction: column; font-weight: 600; font-size: 15px; margin-bottom: 8px; }
+.teso-saldo label small { color: var(--muted); font-weight: 400; font-size: 13px; margin-top: 2px; }
+.teso-saldo-fila { display: flex; gap: 10px; align-items: center; }
+.teso-saldo-fila .campo { flex: 1; min-width: 0; background: var(--relleno); padding: 10px 12px; font-variant-numeric: tabular-nums; }
+.teso-msg { margin: 8px 0 0; font-size: 14px; }
+.teso-cifras { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.teso-cifra { background: var(--surface); border-radius: 12px; padding: 10px 14px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.teso-cifra span { color: var(--muted); font-size: 13px; }
+.teso-cifra strong { font-size: 19px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.teso-in { color: var(--in); } .teso-out { color: var(--out); } .teso-hac { color: var(--hacienda); }
+.teso-alerta { background: color-mix(in srgb, var(--out) 12%, var(--surface)); color: var(--out); border-radius: 12px; padding: 10px 14px; font-size: 15px; margin: 0 0 20px; }
+.teso-mes .txt small { white-space: normal; }
+.teso-barra { flex: none; width: 64px; height: 6px; border-radius: 3px; background: var(--relleno); overflow: hidden; }
+.teso-barra span { display: block; height: 100%; background: var(--in); border-radius: 3px; }
+.teso-barra span.neg { background: var(--out); }
+.teso-mes .v { color: var(--ink); font-weight: 600; }
+.teso-lista { margin-top: 0; border-radius: 12px; }
+.teso-lista .fila { position: relative; color: var(--ink); text-decoration: none; }
+.teso-lista .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.teso-lista .txt strong { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.teso-lista .txt small { color: var(--muted); font-size: 13px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.teso-tipo { flex: none; width: 46px; font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--muted); padding-left: 8px; border-left: 3px solid var(--line); }
+.teso-tipo.cobro { border-color: var(--in); } .teso-tipo.pago { border-color: var(--out); } .teso-tipo.hacienda { border-color: var(--hacienda); }
+.teso-imp { flex: none; display: flex; flex-direction: column; align-items: flex-end; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.teso-imp small { color: var(--muted); font-size: 12px; margin-top: 2px; }
+.tesoreria > .grupo-pie.arriba { margin: 8px 0 0; }
+@media (min-width: 1024px) {
+  .teso-cifras { grid-template-columns: repeat(4, 1fr); }
+  .hcards:has(> :nth-child(3)) { grid-template-columns: repeat(3, 1fr); }
+  .hcards:has(> :nth-child(3)) .hcard-v { font-size: 28px; white-space: nowrap; }
+  .hcards:has(> :nth-child(3)) .hcard-v small { font-size: 15px; }
+  .teso-barra { width: 160px; }
+  .teso-saldo { display: flex; align-items: center; gap: 24px; }
+  .teso-saldo label { margin: 0; flex: 1; }
+  .teso-saldo-fila { flex: none; width: 340px; }
+}

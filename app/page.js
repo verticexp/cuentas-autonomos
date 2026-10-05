@@ -1,7 +1,9 @@
 import Link from 'next/link';
 import Ir from '@/components/Ir';
 import { requerir } from '@/lib/auth';
-import { leer } from '@/lib/redis';
+import { clave, leer, redis } from '@/lib/redis';
+import { prevision } from '@/lib/tesoreria';
+import '@/app/tesoreria.css';
 import { casillas303, importes, r2 } from '@/lib/calculos';
 import { actividadesDe, fiscalDe, modelosDe, nombresActividad } from '@/lib/empresa';
 import { panelResumen } from '@/lib/panel';
@@ -17,7 +19,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function Resumen({ searchParams }) {
   const u = await requerir('resumen');
-  const [facturas, gastos] = await Promise.all([leer(u, 'facturas'), leer(u, 'gastos')]);
+  const [facturas, gastos, recurrentes, nominas, saldo] = await Promise.all([leer(u, 'facturas'), leer(u, 'gastos'), leer(u, 'recurrentes'), leer(u, 'nominas'), redis?.get(clave(u, 'saldo'))]);
   if (!facturas) return <SinBD />;
   const h = hoy();
   const actividades = actividadesDe(u);
@@ -27,6 +29,7 @@ export default async function Resumen({ searchParams }) {
   const { anio, anioActual, esteAnio, r, c303, c130, facturado, gastado, beneficio, plazo, debe, tHoy, qAhora, apartado, aPagar, mesPago,
     sinCobrar, porCobrar, vencidas, prevFact, prevBeneficio, meses, cambio, ultimoMes, top, limite } = P;
   const pagos = (y) => u.pagos130?.[y] || {};
+  const teso = esteAnio && prevision({ facturas, gastos, recurrentes: recurrentes || [], nominas: nominas || [], fiscal, pagos130: u.pagos130 || {}, plazo: u.emisor?.plazo, saldo, actividades: actividades.map((a) => a.id), hoy: h, meses: 3 });
   const exportar = (tipo, t) => `/api/exportar?tipo=${tipo}&anio=${anio}${t ? `&t=${t}` : ''}`;
   // Curva del beneficio acumulado mes a mes, hasta el último mes con movimiento.
   const acum = meses.slice(0, (esteAnio ? ultimoMes : 11) + 1).reduce((a, m) => [...a, (a.at(-1) ?? 0) + m.ing - m.gas], []);
@@ -111,6 +114,14 @@ export default async function Resumen({ searchParams }) {
               <h2 className="hcard-t"><Ico n="cobrar" solo />Por cobrar<span>{sinCobrar.length === 1 ? '1 factura' : `${sinCobrar.length} facturas`}</span></h2>
               <p className="hcard-v">{eurSin(porCobrar)}<small>€</small></p>
               {vencidas.length > 0 && <p className="hcard-s rojo">{vencidas.length === 1 ? '1 vencida' : `${vencidas.length} vencidas`}: {vencidas.map((f) => f.cliente.nombre).slice(0, 3).join(', ')}</p>}
+            </Ir>
+          )}
+
+          {teso && (
+            <Ir href="/tesoreria" className="hcard ir" style={{ '--c': '#007AFF' }}>
+              <h2 className="hcard-t"><Ico n="beneficio" solo />Tesorería<span>3 meses</span></h2>
+              <p className="hcard-v">{eurSin(teso.final)}<small>€</small></p>
+              <p className={`hcard-s${teso.minimo.saldo < 0 ? ' rojo' : ''}`}>{teso.minimo.saldo < 0 ? `El ${fechaTexto(teso.minimo.fecha)} te quedarías en ${eur(teso.minimo.saldo)}` : `${teso.conSaldo ? 'Saldo previsto' : 'Sin saldo del banco'} · cobras ${eur(teso.entra)} y pagas ${eur(r2(teso.sale + teso.hacienda))}`}</p>
             </Ir>
           )}
         </div>
