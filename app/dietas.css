@@ -1,0 +1,5 @@
+/* Kilometraje y dietas */
+.dietas .tipo.dos { display: grid; grid-template-columns: 1fr 1fr; }
+.dieta-calculo { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--relleno); font-size: 14px; line-height: 1.4; font-variant-numeric: tabular-nums; }
+.dieta-norma { margin: 0; font-size: 12px; }
+.dietas .dos-col { align-items: end; }
