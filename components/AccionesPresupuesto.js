@@ -6,7 +6,7 @@ import { llamar } from './Acciones';
 import { navegar } from '@/lib/transicion';
 
 // Copia el enlace para el cliente (o abre el menú de compartir del móvil).
-export function Compartir({ ruta, texto }) {
+export function Compartir({ ruta, texto, etiqueta = 'Enviar al cliente', className = 'boton' }) {
   const [hecho, setHecho] = useState(false);
   const compartir = async () => {
     const url = location.origin + ruta;
@@ -15,7 +15,7 @@ export function Compartir({ ruta, texto }) {
       else { await navigator.clipboard.writeText(url); setHecho(true); }
     } catch { /* cancelado */ }
   };
-  return <button className="boton" onClick={compartir}>{hecho ? 'Enlace copiado' : 'Enviar al cliente'}</button>;
+  return <button className={className} onClick={compartir}>{hecho ? 'Enlace copiado' : etiqueta}</button>;
 }
 
 export function Facturar({ id, tipo, children }) {

@@ -40,7 +40,7 @@ export default function TabBar({ permisos = [] }) {
 
   useEffect(() => { setActivo(seccion(path)); }, [path]);
 
-  if (path === '/login' || path.startsWith('/invitacion') || path.startsWith('/p/') || path.startsWith('/pagar/') || path.endsWith('/pdf')) return null;
+  if (path === '/login' || path.startsWith('/invitacion') || path.startsWith('/p/') || path.startsWith('/portal/') || path.startsWith('/pagar/') || path.endsWith('/pdf')) return null;
 
   const orden = (h) => tabs.findIndex((t) => t.href === h);
   const ir = (h) => { if (h !== path) { navegar(router, h, orden(h) > orden(activo) ? 'tab-der' : 'tab-izq'); setActivo(h); } };
