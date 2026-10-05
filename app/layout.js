@@ -15,7 +15,7 @@ import BarraEstado from '@/components/BarraEstado';
 
 // Si ya se vio en esta sesión (o es una página pública/PDF), la pantalla de inicio no llega a pintarse.
 // Si la app ya se desbloqueó en esta sesión, el bloqueo tampoco (components/Bloqueo.js).
-const YA_VISTO = "try{if(sessionStorage.getItem('netto-abierta')||document.cookie.indexOf('recien=1')>-1)document.documentElement.dataset.abierta='1';var p=location.pathname;if(sessionStorage.getItem('netto-arranque')||p.startsWith('/p/')||p.startsWith('/portal/')||p.startsWith('/pagar/')||p.endsWith('/pdf')||p.startsWith('/invitacion'))document.documentElement.dataset.arranque='visto'}catch(e){}";
+const YA_VISTO = "try{if(sessionStorage.getItem('netto-abierta')||document.cookie.indexOf('recien=1')>-1)document.documentElement.dataset.abierta='1';var p=location.pathname;if(sessionStorage.getItem('netto-arranque')||p.startsWith('/p/')||p.startsWith('/portal/')||p.startsWith('/pagar/')||p.endsWith('/pdf')||p.startsWith('/invitacion')||p==='/privacidad'||p==='/condiciones')document.documentElement.dataset.arranque='visto'}catch(e){}";
 
 export const metadata = {
   title: 'Netto',
