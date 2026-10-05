@@ -7,6 +7,7 @@ import { importes, numeroFactura, r2 } from '../../lib/calculos.js';
 import { eur, eurSin } from '../../lib/formato.js';
 import { limpiarFiscal } from '../../lib/empresa.js';
 import { prevision } from '../../lib/tesoreria.js';
+import { xlsx } from '../../lib/xlsx.js';
 
 const BASE = process.env.BASE || 'http://localhost:3001';
 if (!/localhost|127\.0\.0\.1/.test(BASE)) throw new Error('Solo contra una copia local con la base de datos vacía');
@@ -494,6 +495,56 @@ console.log('Portal del cliente');
   const fdr = new FormData(); fdr.set('t', tok); fdr.set('id', f3.id);
   const pg3 = await pedir('/api/portal/pagar', { metodo: 'POST', form: fdr });
   ok('pagar la de otro cliente da 404', () => assert.equal(pg3.status, 404));
+}
+
+console.log('Importar desde Holded o Excel');
+{
+  const alta5 = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva: 'Importar Prueba', nombre: 'Imma', email: `im${Date.now()}@test.es` } })).json();
+  const fd6 = new FormData(); fd6.set('codigo', alta5.enlace.split('/').pop()); fd6.set('password', 'immaimma123');
+  const im = /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: fd6 })).headers.get('set-cookie') || '')?.[1];
+  await pedir('/api/cuenta', { metodo: 'PATCH', cookie: im, cuerpo: { configuracion: { fiscal: { tipo: 'autonomo', iva: 'general' }, emisor: { nombre: 'Imma', nif: '33333333P', iban: 'ES22', plazo: 30 }, actividades: [{ nombre: 'Música', ivaPct: 21, irpfPct: 15 }] } } });
+  const subir = async (tipo, nombre, datos, guardar, cookie = im) => {
+    const f = new FormData(); f.set('tipo', tipo); f.set('archivo', new Blob([datos]), nombre); if (guardar) f.set('guardar', '1');
+    const r = await pedir('/api/importar', { metodo: 'POST', cookie, form: f });
+    return { status: r.status, ...(await r.json()) };
+  };
+  const libro = xlsx([{ nombre: 'Facturas', filas: [['Facturas emitidas'], ['Num', 'Fecha', 'Contacto', 'NIF', 'Descripción', 'Subtotal', 'IVA', 'Retención', 'Total', 'Estado'],
+    ['F260001', `10/01/${Y}`, 'Sala Apolo', 'B12345678', 'Bolo', 1000, 210, 150, 1060, 'Cobrada'], ['F260002', `12/02/${Y}`, 'Ana Pérez', '', 'Boda', 500, 105, 0, 605, 'Pendiente'], ['F260003', 'sin fecha', 'Ana Pérez', '', 'x', 1, 0, 0, 1, '']] }]);
+  const v1 = await subir('facturas', 'facturas.xlsx', libro);
+  ok('vista previa de facturas de Holded: 2 nuevas y 1 con error', () => assert.deepEqual([v1.status, v1.nuevos, v1.duplicados, v1.errores], [200, 2, 0, 1]));
+  const fvacia = n(await texto('/facturas', im));
+  ok('la vista previa no guarda nada', () => assert.ok(!fvacia.includes('F260001')));
+  const g1 = await subir('facturas', 'facturas.xlsx', libro, true);
+  ok('se importan las 2 nuevas', () => assert.equal(g1.guardados, 2));
+  const fl = n(await texto('/facturas', im));
+  ok('salen en Facturas con su número original', () => assert.ok(fl.includes('F260001') && fl.includes('F260002') && fl.includes('Sala Apolo')));
+  ok('con su estado', () => assert.ok(fl.includes('Cobrada') && /Pendiente|Vencida/.test(fl)));
+  const det = n(await texto(`/facturas/${encodeURIComponent(`F${Y}-260001`)}`, im));
+  ok('la factura importada da sus importes', () => assert.ok(det.includes(n(eur(1060))) && det.includes('F260001')));
+  const v2 = await subir('facturas', 'facturas.xlsx', libro);
+  ok('al repetir, ya existen y no se duplican', () => assert.deepEqual([v2.nuevos, v2.duplicados], [0, 2]));
+  const csv = 'Nombre;CIF;Email;Código postal;Población\r\nSala Apolo SL;B-12345678;;08004;Barcelona\r\nBar Nuevo;B87654321;bar@nuevo.es;08001;Barcelona\r\n';
+  const c1 = await subir('clientes', 'clientes.csv', Buffer.from(csv, 'latin1'), true);
+  ok('clientes: el del mismo NIF ya existe (vino con las facturas) y se añade el nuevo', () => assert.deepEqual([c1.guardados, c1.duplicados], [1, 1]));
+  const nueva = await (await pedir('/facturas/nueva', { cookie: im })).text();
+  ok('el cliente importado se puede elegir al facturar', () => assert.ok(nueva.includes('Bar Nuevo') && nueva.includes('B87654321')));
+  const gx = xlsx([{ nombre: 'Gastos', filas: [['Fecha', 'Proveedor', 'Concepto', 'Base imponible', '% IVA', 'Estado'], [`${Y}-02-01`, 'Sonido SL', 'Altavoces', 200, 21, 'Pagado'], [`${Y}-02-03`, 'Gasolinera', '', 50, 21, 'Pendiente']] }]);
+  const gg = await subir('gastos', 'gastos.xlsx', gx, true);
+  ok('gastos importados', () => assert.equal(gg.guardados, 2));
+  const gl = n(await texto('/gastos', im));
+  ok('salen en Gastos', () => assert.ok(gl.includes('Altavoces') && gl.includes('Gasolinera')));
+  const gg2 = await subir('gastos', 'gastos.xlsx', gx);
+  ok('repetir gastos: ya existen', () => assert.deepEqual([gg2.nuevos, gg2.duplicados], [0, 2]));
+  const pr = await subir('productos', 'productos.csv', Buffer.from('Producto,Precio,IVA\n"Hora de DJ","120,50",21\nAlquiler altavoz,80,21\n'), true);
+  ok('productos importados', () => assert.equal(pr.guardados, 2));
+  const cat = n(await texto('/facturas/catalogo', im));
+  ok('salen en el catálogo', () => assert.ok(cat.includes('Hora de DJ') && cat.includes(n(eur(120.5)))));
+  const malo = await subir('facturas', 'x.csv', Buffer.from('Fecha;Total\n01/01/2026;5\n'));
+  ok('si faltan columnas lo dice (400)', () => assert.ok(malo.status === 400 && /numero/.test(malo.error)));
+  const sinPermiso = await subir('gastos', 'gastos.xlsx', gx, false, otro);
+  ok('quien no gestiona la empresa no puede importar (403)', () => assert.equal(sinPermiso.status, 403));
+  const aj = n(await texto('/ajustes/importar', im));
+  ok('la pantalla de Ajustes → Importar datos', () => assert.ok(aj.includes('Importar datos') && aj.includes('Holded')));
 }
 
 console.log(fallos ? `\n${fallos} comprobaciones fallidas: NO publicar.` : '\nTodo cuadra.');
