@@ -14,6 +14,7 @@ import Grafica from '@/components/Grafica';
 import Ico from '@/components/Ico';
 import Logo from '@/components/Logo';
 import { puede } from '@/lib/permisos';
+import '@/app/asistente.css';
 
 export const dynamic = 'force-dynamic';
 
@@ -74,6 +75,8 @@ export default async function Resumen({ searchParams }) {
           <p className="saldo-s">Facturado {eur(facturado)} · Gastos {eur(gastado)}</p>
         </section>
       )}
+
+      <Ir href="/asistente" className="asi-entrada"><svg viewBox="0 0 24 24" aria-hidden><path d="M4 5h16v11H9l-5 4zM8 10h8M8 13h5" /></svg>Pregunta por tus cuentas</Ir>
 
       <nav className="accesos" aria-label="Accesos">
         {accesos.map((a) => (
