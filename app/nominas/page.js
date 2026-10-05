@@ -8,12 +8,13 @@ import Ir from '@/components/Ir';
 import Volver from '@/components/Volver';
 import SinBD from '@/components/SinBD';
 import '../nominas.css';
+import { hhmm, resumenMes } from '@/lib/jornada';
 
 export const dynamic = 'force-dynamic';
 
 export default async function Nominas() {
   const u = await requerir('nominas');
-  const [empleados, nominas] = await Promise.all([leer(u, 'empleados'), leer(u, 'nominas')]);
+  const [empleados, nominas, jornada] = await Promise.all([leer(u, 'empleados'), leer(u, 'nominas'), leer(u, 'jornada')]);
   if (!empleados) return <SinBD />;
   const h = hoy();
   const mes = h.slice(0, 7);
@@ -59,13 +60,19 @@ export default async function Nominas() {
         </section>
       )}
 
+      <div className="grupo-c nomina-jornada">
+        <Ir href="/jornada" className="celda ir">
+          <span className="txt">Registro de jornada<small>Fichajes, horas del mes y Excel para la Inspección</small></span>
+        </Ir>
+      </div>
+
       <p className="rotulo">Empleados</p>
       {activos.length > 0 && (
         <ul className="grupo-lista bloque">
           {activos.map((e) => (
             <li key={e.id}>
               <Ir href={`/nominas/empleado/${e.id}`} className="fila">
-                <span className="txt"><strong>{e.nombre}</strong><small>{[e.puesto, `desde ${fechaCorta(e.alta)}`].filter(Boolean).join(' · ')}</small></span>
+                <span className="txt"><strong>{e.nombre}</strong><small>{[(jornada || []).some((f) => f.empleado === e.id && f.fecha.startsWith(mes)) && `${hhmm(resumenMes(jornada, e, mes, h).trabajados)} h este mes`, e.puesto, `desde ${fechaCorta(e.alta)}`].filter(Boolean).join(' · ')}</small></span>
                 <span className="imp">{eur(e.bruto)}<small>bruto/mes</small></span>
               </Ir>
             </li>
