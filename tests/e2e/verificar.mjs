@@ -855,5 +855,20 @@ console.log('Registro de jornada');
   ok('se llega desde Ajustes (empleado), desde Nóminas y desde la barra lateral', () => assert.ok(ajEva.includes('Fichar y registro de jornada') && lat.includes('href="/jornada"') && /<nav class="tabs-extra"[\s\S]*?href="\/jornada"/.test(lat)));
 }
 
+console.log('\nPrivacidad y condiciones');
+{
+  const pr = await pedir('/privacidad');
+  const prT = n(await pr.text());
+  ok('privacidad se ve sin sesión, con responsable, encargados y derechos', () => assert.ok(pr.status === 200 && prT.includes('Política de privacidad') && prT.includes('Enable Banking') && prT.includes('aepd.es') && prT.includes('mailto:'), `${pr.status}`));
+  const co = await pedir('/condiciones');
+  const coT = n(await co.text());
+  ok('condiciones se ven sin sesión y explican que el banco es solo lectura', () => assert.ok(co.status === 200 && coT.includes('Condiciones de uso') && coT.includes('no puede hacer pagos ni transferencias'), `${co.status}`));
+  ok('sin barra de la app en las páginas legales', () => assert.ok(!prT.includes('class="tabs') && !coT.includes('class="tabs')));
+  const lg = n(await (await pedir('/login')).text());
+  ok('el login enlaza a privacidad y condiciones', () => assert.ok(lg.includes('href="/privacidad"') && lg.includes('href="/condiciones"')));
+  const priv = await pedir('/facturas');
+  ok('/facturas sin sesión redirige al login', () => assert.ok(priv.status >= 300 && priv.status < 400 && (priv.headers.get('location') || '').includes('/login')));
+}
+
 console.log(fallos ? `\n${fallos} comprobaciones fallidas: NO publicar.` : '\nTodo cuadra.');
 process.exit(fallos ? 1 : 0);
