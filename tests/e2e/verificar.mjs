@@ -855,6 +855,49 @@ console.log('Registro de jornada');
   ok('se llega desde Ajustes (empleado), desde Nóminas y desde la barra lateral', () => assert.ok(ajEva.includes('Fichar y registro de jornada') && lat.includes('href="/jornada"') && /<nav class="tabs-extra"[\s\S]*?href="\/jornada"/.test(lat)));
 }
 
+console.log('\nSeguridad');
+{
+  const kv = (cmd) => fetch(process.env.KV_REST_API_URL, { method: 'POST', headers: { Authorization: 'Bearer local' }, body: JSON.stringify(cmd) }).then((r) => r.json()).then((d) => d.result);
+  const form = (o) => { const f = new FormData(); for (const [k, v] of Object.entries(o)) f.set(k, v); return f; };
+  const ajeno = (ruta, init = {}) => fetch(BASE + ruta, { redirect: 'manual', ...init, headers: { Origin: 'https://malo.example', ...(init.headers || {}) } });
+  const csrfLogin = await ajeno('/api/login', { method: 'POST', body: form({ email: 'x@test.es', password: 'x' }) });
+  const csrfReg = await ajeno('/api/invitacion', { method: 'POST', body: form({ codigo: 'x', password: 'xxxxxxxxx' }) });
+  const csrfApi = await ajeno('/api/facturas', { method: 'POST', headers: { Cookie: `t=${yo}`, 'Content-Type': 'application/json' }, body: '{}' });
+  ok('otra web no puede enviar formularios a Netto (login, invitación ni API)', () => assert.deepEqual([csrfLogin.status, csrfReg.status, csrfApi.status], [403, 403, 403]));
+  const stripeSinOrigen = await fetch(`${BASE}/api/stripe`, { method: 'POST', body: '{}' });
+  ok('los avisos de Stripe (sin Origin) siguen llegando y se rechazan solo por firma', () => assert.equal(stripeSinOrigen.status, 400));
+  const lgFalso = await texto('/login?error=Llama%20al%20600%20000%20000');
+  const invFalso = await texto('/invitacion/x?error=Llama%20al%20600%20000%20000');
+  ok('un texto inventado en ?error= no sale en el login ni en la invitación', () => assert.ok(!lgFalso.includes('Llama al 600') && !invFalso.includes('Llama al 600')));
+  const cab = await pedir('/login');
+  ok('cabeceras: COOP, sin iframes y sin Referer', () => assert.ok(cab.headers.get('cross-origin-opener-policy') === 'same-origin' && cab.headers.get('x-frame-options') === 'DENY' && cab.headers.get('referrer-policy') === 'no-referrer'));
+
+  // Alguien que gestiona usuarios sin ser administrador no puede crear administradores ni tocar a uno.
+  const alta = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { nombre: 'Gestor', email: `gu${Date.now()}@test.es`, rol: 'miembro', permisos: ['usuarios', 'facturas'] } })).json();
+  const gestor = /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: form({ codigo: alta.enlace.split('/').pop(), password: 'gestorgestor1' }) })).headers.get('set-cookie') || '')?.[1];
+  const nuevoAdmin = await pedir('/api/usuarios', { metodo: 'POST', cookie: gestor, cuerpo: { nombre: 'Colado', email: `co${Date.now()}@test.es`, rol: 'admin' } });
+  const yoId = await kv(['GET', `cuentas:sesion:${yo}`]);
+  const tocarAdmin = await pedir('/api/usuarios', { metodo: 'PATCH', cookie: gestor, cuerpo: { id: yoId, rol: 'miembro', permisos: [] } });
+  const quitarAdmin = await pedir(`/api/usuarios?id=${yoId}`, { metodo: 'DELETE', cookie: gestor });
+  ok('quien gestiona usuarios sin ser administrador no crea administradores ni toca a uno (403)', () => assert.deepEqual([nuevoAdmin.status, tocarAdmin.status, quitarAdmin.status], [403, 403, 403]));
+  const mas = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: gestor, cuerpo: { nombre: 'Ayudante', email: `ay${Date.now()}@test.es`, rol: 'miembro', permisos: ['facturas', 'nominas', 'empresa'] } })).json();
+  const ayId = (await kv(['HGET', 'cuentas:invitaciones', mas.enlace.split('/').pop()]));
+  const ay = JSON.parse(await kv(['HGET', 'cuentas:usuarios', ayId]));
+  ok('y solo da los permisos que él tiene', () => assert.deepEqual(ay.permisos, ['facturas']));
+
+  // Exportar a Excel: un cliente que empieza por «=» no se convierte en fórmula.
+  await pedir('/api/facturas', { metodo: 'POST', cookie: yo, cuerpo: { fecha: `${Y}-04-04`, actividad: ACTS[0].id, cliente: { nombre: '=HYPERLINK("http://malo.example","pulsa")' }, concepto: '+SUM(1)', base: '10', ivaPct: 21, irpfPct: 0, cobrada: false } });
+  const csvT = await (await pedir(`/api/exportar?tipo=facturas&anio=${Y}`, { cookie: yo })).text();
+  ok('exportar: textos que empiezan por = o + van con apóstrofo; los importes negativos no', () => assert.ok(csvT.includes(`"'=HYPERLINK(""http://malo.example"",""pulsa"")"`) && csvT.includes(";'+SUM(1);") && !csvT.includes(';=HYPERLINK')));
+
+  const pushMalo = await pedir('/api/push', { metodo: 'POST', cookie: yo, cuerpo: { sub: { endpoint: 'https://malo.example/x', keys: { p256dh: 'a', auth: 'b' } } } });
+  ok('avisos: solo servicios push de los navegadores (nada de direcciones cualquiera)', () => assert.ok([400, 503].includes(pushMalo.status)));
+  const otra = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva: 'Otra Seguridad SL', nombre: 'Olga', email: `os${Date.now()}@test.es` } })).json();
+  const olga = /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: form({ codigo: otra.enlace.split('/').pop(), password: 'olgaolga123' }) })).headers.get('set-cookie') || '')?.[1];
+  const ct = await pedir('/api/controlat', { metodo: 'POST', cookie: olga, cuerpo: { activar: true } });
+  ok("Controla'T: el administrador de otra empresa no lo activa (escribiría en la cuenta de Controla'T de ese email)", () => assert.equal(ct.status, 403));
+}
+
 console.log('\nPrivacidad y condiciones');
 {
   const pr = await pedir('/privacidad');
