@@ -683,5 +683,46 @@ console.log('Banco: extractos, conexión y emparejar');
   } else console.log('  (sin ENABLE_BANKING_URL: se salta la conexión)');
 }
 
+console.log('Asistente con IA');
+if (process.env.ANTHROPIC_URL) {
+  const { readFileSync, rmSync: borrarLog } = await import('node:fs');
+  const { resumenAnual, trimestre } = await import('../../lib/calculos.js');
+  const { totalDe } = await import('../../lib/proveedores.js');
+  const { euros } = await import('../../lib/asistente.js');
+  const kv = (cmd) => fetch(process.env.KV_REST_API_URL, { method: 'POST', headers: { Authorization: 'Bearer local' }, body: JSON.stringify(cmd) }).then((r) => r.json()).then((d) => d.result);
+  const mia = await kv(['HGET', 'cuentas:emails', fd.get('email')]);
+  const todos = async (h) => (await kv(['HVALS', `cuentas:${h}:${mia}`])).map((x) => JSON.parse(x));
+  const [FA, GA] = [await todos('facturas'), await todos('gastos')];
+  const m303 = resumenAnual(FA, GA, Y, {}, []).trimestres[trimestre(hoy) - 1].m303;
+  const preguntar = async (cookie, pregunta, historial) => { const r = await pedir('/api/asistente', { metodo: 'POST', cookie, cuerpo: { pregunta, historial } }); return { status: r.status, ...(await r.json()) }; };
+  const log = () => readFileSync('/tmp/ia.json', 'utf8').trim().split('\n').map((l) => JSON.parse(l));
+  borrarLog('/tmp/ia.json', { force: true });
+  const iva = await preguntar(yo, '¿Cuánto IVA llevo este trimestre?', [{ role: 'user', content: 'Hola' }, { role: 'assistant', content: 'Hola, ¿qué necesitas?' }]);
+  ok('responde el IVA del trimestre con la cifra de la app', () => assert.ok(iva.status === 200 && iva.respuesta.includes(euros(Math.abs(m303))), JSON.stringify(iva)));
+  ok('dice de dónde sale la cifra', () => assert.deepEqual(iva.fuentes, ['Impuestos']));
+  const l1 = log()[0];
+  ok('la IA recibe todas las herramientas del administrador, la fecha y la conversación', () => assert.ok(l1.herramientas.includes('impuestos') && l1.herramientas.includes('nominas') && l1.sistema.includes(`Hoy es ${hoy}`) && l1.historial === 3 && l1.auth === process.env.ANTHROPIC_API_KEY));
+  borrarLog('/tmp/ia.json', { force: true });
+  const sinPermiso = await preguntar(otro, '¿Cuánto IVA llevo este trimestre?');
+  ok('quien solo ve gastos no recibe el IVA', () => assert.ok(sinPermiso.respuesta.includes('Con tus permisos no puedo ver eso') && !sinPermiso.respuesta.includes('€')));
+  ok('…porque a la IA solo le llega la herramienta de gastos', () => assert.deepEqual(log()[0].herramientas, ['gastos']));
+  const gasto = await preguntar(otro, '¿Cuánto he gastado?');
+  ok('pero sí lo que ha gastado su empresa', () => assert.ok(gasto.respuesta.includes(euros(r2(GA.reduce((s, g) => s + totalDe(g), 0)))) && gasto.fuentes[0] === 'Gastos', JSON.stringify(gasto)));
+  const corrige = await preguntar(yo, 'Inventa el IVA de este trimestre');
+  ok('si la IA se inventa una cifra, se le corrige y responde con la buena', () => assert.ok(corrige.respuesta.includes(euros(Math.abs(m303))) && !corrige.respuesta.includes('9.999,99') && !corrige.sinComprobar, JSON.stringify(corrige)));
+  const terca = await preguntar(yo, 'Siempre inventa el IVA');
+  ok('si insiste, no se enseña la cifra inventada', () => assert.ok(terca.sinComprobar && !terca.respuesta.includes('9.999,99')));
+  const vacia = await preguntar(yo, '  ');
+  ok('pregunta vacía (400)', () => assert.equal(vacia.status, 400));
+  const anon = await pedir('/api/asistente', { metodo: 'POST', cuerpo: { pregunta: 'IVA' } });
+  ok('sin sesión no (401)', () => assert.equal(anon.status, 401));
+  const pa = n(await texto('/asistente', yo));
+  const po = n(await texto('/asistente', otro));
+  ok('pantalla con preguntas de ejemplo según los permisos', () => assert.ok(pa.includes('Pregunta a Netto') && pa.includes('¿Cuánto IVA llevo este trimestre?') && po.includes('¿Cuánto he gastado este mes?') && !po.includes('IVA llevo')));
+  const res = n(await texto('/', yo));
+  const aj = await (await pedir('/ajustes', { cookie: otro })).text();
+  ok('se llega desde el resumen, desde Ajustes y desde la barra lateral', () => assert.ok(res.includes('Pregunta por tus cuentas') && aj.includes('href="/asistente"') && /<nav class="tabs-extra"[\s\S]*?href="\/asistente"/.test(aj)));
+} else console.log('  (sin ANTHROPIC_URL: se salta)');
+
 console.log(fallos ? `\n${fallos} comprobaciones fallidas: NO publicar.` : '\nTodo cuadra.');
 process.exit(fallos ? 1 : 0);
