@@ -5,6 +5,7 @@ import Logo from '@/components/Logo';
 import FormEntrar from '@/components/FormEntrar';
 import PanelMarca from '@/components/PanelMarca';
 import { TrasArranque } from '@/lib/arranque';
+import { mensajeSeguro } from '@/lib/mensajes';
 import '@/app/legal.css';
 
 export const dynamic = 'force-dynamic';
@@ -24,7 +25,7 @@ export default async function Login({ searchParams }) {
           <form method="post" action="/api/registro">
             <h1><Logo className="logo-login" /></h1>
             <p className="nota">Crea la cuenta de administrador.</p>
-            {error && <p className="error">{ERRORES[error] || error}</p>}
+            {error && <p className="error">{ERRORES[error] || mensajeSeguro(error)}</p>}
             <label htmlFor="nombre">Nombre</label><input id="nombre" name="nombre" required />
             <label htmlFor="email">Email</label>
             <input id="email" name="email" type="email" autoComplete="username" required />
@@ -33,7 +34,7 @@ export default async function Login({ searchParams }) {
             <button type="submit">Crear cuenta</button>
           </form>
         </TrasArranque>
-        ) : <FormEntrar errorInicial={error ? ERRORES[error] || error : ''} />}
+        ) : <FormEntrar errorInicial={error ? ERRORES[error] || mensajeSeguro(error) : ''} />}
         {/* Fuera del formulario: los enlaces legales salen siempre, también sin JavaScript. */}
         <p className="nota login-legal"><a href="/privacidad">Privacidad</a> · <a href="/condiciones">Condiciones</a></p>
       </div>
