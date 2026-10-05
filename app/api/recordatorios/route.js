@@ -7,16 +7,20 @@ import { emailListo, emailValido, enviarEmail, htmlMensaje } from '@/lib/email';
 import { enlacePago } from '@/lib/cobros';
 import { stripeListo } from '@/lib/stripe';
 import { tocaRecordatorio } from '@/lib/recordatorios';
+import { avisosPush } from '@/lib/push';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
-// Lo llama Vercel cada mañana (vercel.json → crons, con CRON_SECRET): envía los recordatorios de cobro que toquen.
+// Lo llama Vercel cada mañana (vercel.json → crons, con CRON_SECRET): envía los recordatorios de cobro que toquen
+// y los avisos en el móvil.
 export async function GET(req) {
   const secreto = process.env.CRON_SECRET;
   if (!secreto || req.headers.get('authorization') !== `Bearer ${secreto}`) return Response.json({ error: 'No autorizado' }, { status: 401 });
-  if (!redis || !emailListo()) return Response.json({ ok: true, enviados: 0, motivo: 'sin base de datos o sin email' });
   const dia = hoy();
+  // Avisos en el móvil (plazos de Hacienda y facturas vencidas), aunque no haya email configurado.
+  const avisos = redis ? await avisosPush(dia) : 0;
+  if (!redis || !emailListo()) return Response.json({ ok: true, enviados: 0, avisos, motivo: 'sin base de datos o sin email' });
   let enviados = 0;
   const fallos = [];
   for (const emp of Object.values((await redis.hgetall('empresas')) || {})) {
@@ -49,5 +53,5 @@ export async function GET(req) {
       enviados += 1;
     }
   }
-  return Response.json({ ok: true, enviados, fallos });
+  return Response.json({ ok: true, enviados, fallos, avisos });
 }
