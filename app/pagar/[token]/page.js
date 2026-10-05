@@ -3,6 +3,7 @@ import { importes, numeroFactura, vencimiento } from '@/lib/calculos';
 import { eur, fechaTexto } from '@/lib/formato';
 import { facturaDePago, marcarPagada } from '@/lib/cobros';
 import { leerPago, stripeListo } from '@/lib/stripe';
+import { mensajeSeguro } from '@/lib/mensajes';
 import '@/app/cobros.css';
 
 export const dynamic = 'force-dynamic';
@@ -34,7 +35,7 @@ export default async function Pagar({ params, searchParams }) {
       </section>
       {f.cobrada ? <p className="pago-ok">✓ Esta factura ya está pagada. ¡Gracias!</p> : (
         <>
-          {error && <p className="error">{error}</p>}
+          {error && <p className="error">{mensajeSeguro(error)}</p>}
           {stripeListo() && t.total > 0 && (
             <form action="/api/pagar" method="post">
               <input type="hidden" name="token" value={token} />
