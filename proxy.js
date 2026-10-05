@@ -14,5 +14,5 @@ export function proxy(req) {
 }
 
 export const config = {
-  matcher: ['/((?!login|invitacion|p/|portal/|api/portal/|api/presupuestos/aceptar|api/abierta/|api/pagar|pagar/|api/stripe|api/recordatorios|api/recurrentes/cron|api/login|api/registro|api/invitacion|api/passkey|_next|favicon.ico|icon.svg|apple-icon|manifest.webmanifest|sw).*)'],
+  matcher: ['/((?!login|privacidad|condiciones|invitacion|p/|portal/|api/portal/|api/presupuestos/aceptar|api/abierta/|api/pagar|pagar/|api/stripe|api/recordatorios|api/recurrentes/cron|api/login|api/registro|api/invitacion|api/passkey|_next|favicon.ico|icon.svg|apple-icon|manifest.webmanifest|sw).*)'],
 };
