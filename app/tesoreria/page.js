@@ -8,6 +8,7 @@ import Ir from '@/components/Ir';
 import SinBD from '@/components/SinBD';
 import SaldoBanco from '@/components/SaldoBanco';
 import '@/app/tesoreria.css';
+import '@/app/banco.css';
 
 export const dynamic = 'force-dynamic';
 const HORIZONTES = [3, 6, 12];
@@ -15,7 +16,8 @@ const TIPO = { cobro: 'Cobro', pago: 'Pago', hacienda: 'Hacienda' };
 
 export default async function Tesoreria({ searchParams }) {
   const u = await requerir('resumen');
-  const [facturas, gastos, recurrentes, nominas, saldo] = await Promise.all([leer(u, 'facturas'), leer(u, 'gastos'), leer(u, 'recurrentes'), leer(u, 'nominas'), redis?.get(clave(u, 'saldo'))]);
+  const [facturas, gastos, recurrentes, nominas, saldo, movs] = await Promise.all([leer(u, 'facturas'), leer(u, 'gastos'), leer(u, 'recurrentes'), leer(u, 'nominas'), redis?.get(clave(u, 'saldo')), leer(u, 'banco')]);
+  const sinRevisar = (movs || []).filter((m) => m.estado === 'pendiente').length;
   if (!facturas) return <SinBD />;
   const n = HORIZONTES.includes(Number((await searchParams).meses)) ? Number((await searchParams).meses) : 3;
   const p = prevision({ facturas, gastos, recurrentes: recurrentes || [], nominas: nominas || [], fiscal: fiscalDe(u), pagos130: u.pagos130 || {}, plazo: u.emisor?.plazo, saldo,
@@ -30,7 +32,11 @@ export default async function Tesoreria({ searchParams }) {
         {HORIZONTES.map((h) => <Ir key={h} href={`/tesoreria?meses=${h}`} tipo="fundido" className={h === n ? 'activo' : ''}>{h} meses</Ir>)}
       </nav>
 
-      <SaldoBanco saldo={saldo ? saldo.importe : null} fecha={saldo?.fecha} />
+      <SaldoBanco saldo={saldo ? saldo.importe : null} fecha={saldo?.fecha} banco={Boolean(saldo?.banco)} />
+      <Ir href="/banco" className="teso-banco">
+        <span className="bco-txt"><strong>Banco</strong><small>{saldo?.banco ? 'Saldo real y movimientos emparejados con facturas y gastos' : 'Conecta tu banco o sube el extracto'}</small></span>
+        {sinRevisar > 0 && <span className="num" aria-label={`${sinRevisar} movimientos por revisar`}>{sinRevisar}</span>}
+      </Ir>
 
       <div className="teso-cifras">
         <div className="teso-cifra"><span>Vas a cobrar</span><strong className="teso-in">{eur(p.entra)}</strong></div>
