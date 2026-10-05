@@ -41,6 +41,7 @@ export default async function Page() {
             <Celda href="/bienvenida?editar=1" ico="actividad" titulo="Actividades y modelos" detalle={`${fiscalDe(u).tipo === 'sociedad' ? 'Sociedad' : 'Autónomo'} · ${actividadesDe(u).map((x) => x.nombre).join(', ')}`} />
             <Celda href="/ajustes/marca" ico="marca" titulo="Logo y color" detalle={u.marca?.logo ? 'Con logo' : 'Sin logo'} />
             {puede(u, 'nominas') && <Celda href="/nominas" ico="usuarios" titulo="Equipo y nóminas" detalle="Empleados, nóminas y modelo 111" />}
+            <Celda href="/ajustes/importar" ico="excel" titulo="Importar datos" detalle="Clientes, facturas, gastos y productos desde Holded o Excel" />
             {(puede(u, 'usuarios') || u.admin) && <Celda href="/usuarios" ico="usuarios" titulo="Usuarios y permisos" detalle="Quién entra y qué puede hacer" />}
           </div>
           {modo && <p className="grupo-pie">Verifactu activo{modo === 'pruebas' ? ' en modo pruebas' : ''}: cada factura nueva queda registrada y lleva su QR.</p>}
