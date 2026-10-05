@@ -3,11 +3,13 @@ import { borrarEmpresa, borrarUsuario, crearUsuario } from '@/lib/auth';
 import { redis } from '@/lib/redis';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { limpiarPermisos } from '@/lib/permisos';
+import { conMembresia, enEmpresa, membresias } from '@/lib/membresias';
+import { limpiarEmail } from '@/lib/auth';
 
 const enlace = (req, codigo) => new URL(`/invitacion/${codigo}`, req.url).toString();
 const deMiEmpresa = async (u, id) => {
   const o = id && (await redis.hget('usuarios', id));
-  return o && (o.empresa || o.id) === u.empresa ? o : null;
+  return o && enEmpresa(o, u.empresa) ? o : null;
 };
 
 // Invitar a alguien a tu empresa (o, si eres el administrador de la app, crear una empresa nueva con su administrador).
@@ -34,6 +36,14 @@ export async function POST(req) {
     await redis.hset('usuarios', { [o.id]: { ...o, creado: new Date().toISOString() } });
     return Response.json({ ok: true, enlace: enlace(req, codigo) });
   }
+  // Si ya tiene cuenta en Netto (de otra empresa), se le añade esta empresa: la verá al cambiar de empresa.
+  const yaId = await redis.hget('emails', limpiarEmail(b.email));
+  const ya = yaId && (await redis.hget('usuarios', yaId));
+  if (ya) {
+    if (enEmpresa(ya, u.empresa)) return error('Esa persona ya está en tu empresa');
+    await redis.hset('usuarios', { [ya.id]: conMembresia(ya, u.empresa, { rol: b.rol === 'admin' ? 'admin' : 'miembro', permisos: limpiarPermisos(b.permisos) }) });
+    return Response.json({ ok: true, existente: ya.nombre });
+  }
   const r = await crearUsuario({ nombre: b.nombre, email: b.email, empresa: u.empresa, rol: b.rol === 'admin' ? 'admin' : 'miembro', permisos: b.permisos });
   if (r.error) return error(r.error);
   return Response.json({ ok: true, enlace: enlace(req, r.codigo) });
@@ -47,9 +57,7 @@ export async function PATCH(req) {
   const o = await deMiEmpresa(u, b.id);
   if (!o) return error('Esa persona no está en tu empresa', 404);
   if (o.id === u.id) return error('No puedes cambiar tus propios permisos: pídeselo a otro administrador');
-  const nuevo = { ...o, rol: b.rol === 'admin' ? 'admin' : 'miembro' };
-  if (nuevo.rol === 'admin') delete nuevo.permisos; else nuevo.permisos = limpiarPermisos(b.permisos);
-  await redis.hset('usuarios', { [o.id]: nuevo });
+  await redis.hset('usuarios', { [o.id]: conMembresia(o, u.empresa, { rol: b.rol === 'admin' ? 'admin' : 'miembro', permisos: limpiarPermisos(b.permisos) }) });
   return Response.json({ ok: true });
 }
 
@@ -67,6 +75,8 @@ export async function DELETE(req) {
   if (res) return res;
   const o = await deMiEmpresa(u, q.get('id'));
   if (!o || o.id === u.id) return error('No se puede quitar');
-  await borrarUsuario(o.id);
+  // Si tiene otras empresas, solo pierde el acceso a esta; si no, se borra su cuenta.
+  if (Object.keys(membresias(o)).length > 1) await redis.hset('usuarios', { [o.id]: conMembresia(o, u.empresa, null) });
+  else await borrarUsuario(o.id);
   return Response.json({ ok: true });
 }
