@@ -19,12 +19,13 @@ const P = {
   conexion: <path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" />,
   presupuesto: <path d="M7 3h7l4 4v14H7zM14 3v4h4M10 13l1.5 1.5L15 11" />,
   mas: <g fill="currentColor" stroke="none"><circle cx="6" cy="12" r="1.6" /><circle cx="12" cy="12" r="1.6" /><circle cx="18" cy="12" r="1.6" /></g>,
+  asistente: <path d="M4 5h16v11H9l-5 4zM8 10h8M8 13h5" />,
   usuarios: <><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20c1-3.5 3.5-5 6.5-5s5.5 1.5 6.5 5M16 4.5a3.5 3.5 0 0 1 0 7M18 15c2 .7 3.2 2.3 3.7 5" /></>,
 };
 export const COLOR = {
   factura: '#34C759', gasto: '#FF3B30', beneficio: '#007AFF', hacienda: '#FF9500', plazo: '#FF2D55', cobrar: '#FFCC00',
   limite: '#AF52DE', ritmo: '#5AC8FA', actividad: '#5856D6', cliente: '#30B0C7', excel: '#248A3D', aviso: '#FF3B30', usuarios: '#8E8E93',
-  datos: '#007AFF', marca: '#FF2D55', seguridad: '#34C759', drive: '#FF9500', conexion: '#5856D6',
+  datos: '#007AFF', marca: '#FF2D55', seguridad: '#34C759', drive: '#FF9500', conexion: '#5856D6', asistente: '#0E7C86',
 };
 
 export default function Ico({ n, solo }) {

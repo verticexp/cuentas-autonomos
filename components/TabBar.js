@@ -22,6 +22,7 @@ const EXTRA = [
     { href: '/facturas/catalogo', permiso: 'facturas', nombre: 'Catálogo', icono: <path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" /> },
   ] },
   { titulo: 'Finanzas', enlaces: [
+    { href: '/asistente', nombre: 'Pregunta a Netto', icono: <path d="M4 5h16v11H9l-5 4zM8 10h8M8 13h5" /> },
     { href: '/tesoreria', permiso: 'resumen', nombre: 'Tesorería', icono: <path d="M3 17l5-5 4 4 8-8M15 8h5v5" /> },
     { href: '/banco', permiso: 'resumen', nombre: 'Banco', icono: <path d="M3 10l9-6 9 6M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18" /> },
     { href: '/modelos', permiso: 'resumen', nombre: 'Impuestos', icono: <path d="M4 21V9l8-6 8 6v12M9 21v-7h6v7" /> },
