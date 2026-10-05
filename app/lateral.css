@@ -1,0 +1,16 @@
+/* Barra lateral del ordenador: más secciones por grupos. En el móvil no se ve (solo las 4 pestañas). */
+.tabs-extra { display: none; }
+@media (min-width: 1024px) {
+  .tabbar { overflow-y: auto; }
+  .tabs-extra { order: 3; display: flex; flex-direction: column; gap: 14px; }
+  .tabs-grupo { display: flex; flex-direction: column; gap: 2px; }
+  .tabs-grupo-t { margin: 0; padding: 0 12px 4px; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+  .tabs-extra a { display: flex; align-items: center; gap: 12px; height: 38px; padding: 0 12px; border-radius: 10px; font-size: 15px; color: var(--ink); text-decoration: none; cursor: pointer; transition: background-color 0.15s var(--salida); }
+  .tabs-extra a svg { flex: none; width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .tabs-extra a.activo { color: var(--marca); background: var(--relleno); }
+  .tabs-extra a:not(.activo):hover { background: var(--relleno); }
+  /* Ajustes pasa al final, en «Empresa» */
+  .tabs a[data-href="/ajustes"] { display: none; }
+  /* Si se está en una de estas pantallas, se marca ella y no la pestaña de arriba */
+  .tabbar:has(.tabs-extra a.activo) .tabs a.activo { color: inherit; background: none; }
+}
