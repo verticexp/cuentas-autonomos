@@ -1,0 +1,31 @@
+/* Varias empresas en la misma cuenta: cambio rápido */
+.emp-lista { display: flex; flex-direction: column; background: var(--surface); border-radius: 12px; overflow: hidden; }
+.emp-lista.ocupado { opacity: 0.6; pointer-events: none; }
+.emp-opcion { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 48px; padding: 8px 16px; border: 0; border-bottom: 1px solid var(--line); background: none; color: var(--ink); font: inherit; font-size: 16px; text-align: left; cursor: pointer; }
+.emp-opcion:last-child { border-bottom: 0; }
+.emp-opcion svg { flex: none; width: 20px; height: 20px; fill: none; stroke: var(--acento); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.emp-inicial { flex: none; width: 30px; height: 30px; border-radius: 8px; background: var(--menta); color: var(--ico); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; }
+.emp-nombre { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.emp-opcion.activa .emp-nombre { font-weight: 600; }
+.emp-anadir { color: var(--acento); }
+.emp-nueva { display: flex; gap: 8px; align-items: center; padding: 8px 12px; }
+.emp-nueva .campo { flex: 1; min-width: 0; background: var(--relleno); padding: 10px 12px; }
+.emp-msg { margin: 0; padding: 8px 16px 12px; font-size: 14px; }
+
+/* Chip del resumen y selector de la barra lateral: se abre una lista flotante */
+.emp { position: relative; }
+.emp-actual { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; border: 0; border-radius: 999px; font: inherit; cursor: pointer; }
+.emp-actual svg { flex: none; width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform 0.2s; }
+.emp.abierto .emp-actual svg { transform: rotate(180deg); }
+.emp > .emp-lista { position: absolute; z-index: 30; left: 0; top: calc(100% + 6px); min-width: 260px; max-width: calc(100vw - 32px); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18); }
+.emp-chip { margin-top: 10px; }
+.emp-chip .emp-actual { padding: 6px 12px; background: rgba(255, 255, 255, 0.14); color: inherit; font-size: 14px; font-weight: 600; }
+
+/* En el móvil la barra no lleva selector (está en Ajustes y en el resumen) */
+.emp-lateral { display: none; }
+@media (min-width: 1024px) {
+  .emp-chip { display: none; }
+  .emp-lateral { display: block; order: 0; margin-top: -12px; }
+  .emp-lateral .emp-actual { width: 100%; justify-content: space-between; padding: 8px 12px; border-radius: 10px; background: var(--relleno); color: var(--ink); font-size: 14px; font-weight: 600; }
+  .emp-lateral > .emp-lista { width: 100%; min-width: 0; }
+}
