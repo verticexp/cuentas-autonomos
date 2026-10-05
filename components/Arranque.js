@@ -10,7 +10,7 @@ export default function Arranque() {
   const [fase, setFase] = useState('dentro');
 
   useEffect(() => {
-    if (document.documentElement.dataset.arranque === 'visto') { setFase('fin'); return; }
+    if (document.documentElement.dataset.arranque === 'visto') { setFase('fin'); avisarFin(); return; }
     try { sessionStorage.setItem('netto-arranque', '1'); } catch {}
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) { setFase('fin'); avisarFin(); return; }
     // En el ordenador, si debajo está la pantalla de entrar, el verde se recoge en su panel izquierdo con el logo.
