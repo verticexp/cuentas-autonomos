@@ -2,7 +2,7 @@ import { randomBytes } from 'crypto';
 import { cookies } from 'next/headers';
 import { generateAuthenticationOptions, generateRegistrationOptions, verifyAuthenticationResponse, verifyRegistrationResponse } from '@simplewebauthn/server';
 import { redis } from '@/lib/redis';
-import { crearSesion, opcionesCookie, usuarioActual } from '@/lib/auth';
+import { crearSesion, desbloqueo, opcionesCookie, opcionesDesbloqueo, usuarioActual } from '@/lib/auth';
 import { cuerpo, error } from '@/lib/api';
 
 // Face ID / Touch ID con llaves de acceso (passkeys). La cara nunca sale del móvil:
@@ -86,7 +86,10 @@ export async function POST(req) {
     if (!(await redis.hget('usuarios', dueno))) return error('Esta cuenta ya no existe');
     // Si no había sesión, o era de otra cuenta, se entra con la de esta llave.
     const cambio = Boolean(u && u.id !== dueno);
-    if (!u || cambio) (await cookies()).set('t', await crearSesion(dueno), opcionesCookie);
+    const c = await cookies();
+    const token = !u || cambio ? await crearSesion(dueno) : c.get('t')?.value;
+    if (!u || cambio) c.set('t', token, opcionesCookie);
+    c.set('d', await desbloqueo(token), opcionesDesbloqueo);
     return Response.json({ ok: true, cambio });
   }
   return error('Acción no válida');
