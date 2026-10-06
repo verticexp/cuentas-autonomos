@@ -21,6 +21,7 @@ export default function Bloqueo({ email }) {
   const [bloqueada, setBloqueada] = useState(true);
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
+  const [saliendo, setSaliendo] = useState(false);
   const pass = useRef(null);
   const listo = useTrasArranque();
 
@@ -54,8 +55,17 @@ export default function Bloqueo({ email }) {
 
   useEffect(() => { if (bloqueada && listo) enfocar(pass.current); }, [bloqueada, listo]);
 
+  // Al desbloquear, la pantalla se agranda y se desvanece mientras el resumen de detrás sube en cascada (app/entrar.css).
+  const salir = () => {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) { abrir(); return; }
+    marcarAbierta();
+    setSaliendo(true);
+    entrada();
+    setTimeout(() => { setSaliendo(false); abrir(false); }, 560);
+  };
+
   // Con otra cuenta (otro email u otra llave), la página se recarga con sus datos.
-  const entro = (otra) => { if (otra) { marcarAbierta(); location.reload(); } else abrir(); };
+  const entro = (otra) => { if (otra) { marcarAbierta(); location.reload(); } else salir(); };
 
   async function entrar(e) {
     e.preventDefault();
@@ -69,7 +79,7 @@ export default function Bloqueo({ email }) {
 
   if (!bloqueada) return null;
   return (
-    <main className="login pantalla-bloqueo" role="dialog" aria-modal="true" aria-label="Iniciar sesión en Netto">
+    <main className={`login pantalla-bloqueo${saliendo ? ' saliendo' : ''}`} role="dialog" aria-modal="true" aria-label="Iniciar sesión en Netto">
       <PanelMarca />
       {listo && <form onSubmit={entrar} className="form-entrar">
         <h1><Logo className="logo-login" /></h1>
@@ -79,7 +89,7 @@ export default function Bloqueo({ email }) {
         <label htmlFor="bloqueo-password">Contraseña</label>
         <input ref={pass} id="bloqueo-password" name="password" type="password" autoComplete="current-password" required />
         {error && <p className="error">{error}</p>}
-        <button type="submit" disabled={enviando}>{enviando ? 'Comprobando…' : 'Entrar'}</button>
+        <button type="submit" disabled={enviando || saliendo}>{saliendo ? 'Dentro' : enviando ? 'Comprobando…' : 'Entrar'}</button>
         <EntrarLlave auto alEntrar={(r) => entro(r?.cambio)} />
       </form>}
     </main>
