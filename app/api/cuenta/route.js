@@ -1,5 +1,5 @@
 import { cookies } from 'next/headers';
-import { actualizarUsuario, cambiarPassword, opcionesCookie } from '@/lib/auth';
+import { actualizarUsuario, cambiarPassword, desbloqueo, opcionesCookie, opcionesDesbloqueo } from '@/lib/auth';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { puede } from '@/lib/permisos';
 import { colorValido, logoValido } from '@/lib/marca';
@@ -62,6 +62,7 @@ export async function PATCH(req) {
     const r = await cambiarPassword(u, b.actual, b.nueva);
     if (r.error) return error(r.error);
     (await cookies()).set('t', r.token, opcionesCookie);
+    (await cookies()).set('d', await desbloqueo(r.token), opcionesDesbloqueo);
     return Response.json({ ok: true });
   }
   if (sin('empresa')) return sin('empresa');
