@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { crearSesion, crearUsuario, desbloqueo, hayUsuarios, opcionesCookie, opcionesDesbloqueo } from '@/lib/auth';
+import { crearSesion, crearUsuario, desbloqueo, hayUsuarios, opcionesCookie, opcionesDesbloqueo, tokenEmail } from '@/lib/auth';
+import { enviarConfirmacion } from '@/lib/invitacion';
 import { redis } from '@/lib/redis';
 
 // Solo funciona la primera vez: crea la cuenta de administrador.
@@ -8,6 +9,7 @@ export async function POST(req) {
   const form = await req.formData();
   const r = await crearUsuario({ nombre: form.get('nombre'), email: form.get('email'), password: String(form.get('password') || ''), admin: true });
   if (r.error) return NextResponse.redirect(new URL(`/login?error=${encodeURIComponent(r.error)}`, req.url), 303);
+  await enviarConfirmacion({ para: r.usuario.email, nombre: r.usuario.nombre, url: new URL(`/api/confirmar?t=${await tokenEmail(r.usuario.id)}`, req.url).toString() });
   const res = NextResponse.redirect(new URL('/ajustes', req.url), 303);
   const token = await crearSesion(r.usuario.id);
   res.cookies.set('t', token, opcionesCookie);
