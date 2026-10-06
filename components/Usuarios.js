@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
 import Avatar from './Avatar';
 import { PERFILES, PERMISOS, limpiarPermisos } from '@/lib/permisos';
+import '@/app/invitaciones.css';
 
 // Perfil de serie o permisos a medida.
 function ElegirPermisos({ rol, permisos, cambiar }) {
@@ -36,11 +37,15 @@ function ElegirPermisos({ rol, permisos, cambiar }) {
   );
 }
 
-function Enlace({ url }) {
+// r: lo que devuelve la API al invitar (enlace, y si el email salió o el aviso de por qué no).
+function Enlace({ r }) {
   const [copiado, setCopiado] = useState(false);
+  const url = r.enlace;
   return (
     <div className="enlace">
-      <p className="nota">Envíale este enlace para que elija su contraseña (vale 7 días y una sola vez):</p>
+      {r.enviado && <p className="invit-enviada" role="status">Invitación enviada a {r.email}.</p>}
+      {r.aviso && <p className="invit-aviso" role="alert"><strong>La invitación está lista, pero el email no ha salido.</strong> {r.aviso}. Cópiale el enlace y envíaselo tú.</p>}
+      <p className="nota">{r.enviado ? 'También puedes copiarle el enlace' : 'Envíale este enlace para que elija su contraseña'} (vale 7 días y una sola vez):</p>
       <input className="campo" readOnly value={url} onFocus={(e) => e.target.select()} />
       <button type="button" className="boton sec" onClick={() => { navigator.clipboard.writeText(url); setCopiado(true); }}>{copiado ? 'Copiado' : 'Copiar enlace'}</button>
     </div>
@@ -52,7 +57,8 @@ function Persona({ o, yo, onCambio }) {
   const [rol, setRol] = useState(o.rol);
   const [permisos, setPermisos] = useState(o.permisos);
   const [msg, setMsg] = useState('');
-  const [enlace, setEnlace] = useState('');
+  const [enlace, setEnlace] = useState(null);
+  const [enviando, setEnviando] = useState(false);
   const soyYo = o.id === yo;
 
   const guardar = async () => {
@@ -65,7 +71,9 @@ function Persona({ o, yo, onCambio }) {
     try { await llamar(`/api/usuarios?id=${o.id}`, { method: 'DELETE' }); onCambio(); } catch (e) { setMsg(e.message); }
   };
   const reenviar = async () => {
-    try { setEnlace((await llamar('/api/usuarios', { method: 'POST', body: JSON.stringify({ reenviar: o.id }) })).enlace); } catch (e) { setMsg(e.message); }
+    setEnviando(true); setMsg('');
+    try { setEnlace(await llamar('/api/usuarios', { method: 'POST', body: JSON.stringify({ reenviar: o.id }) })); } catch (e) { setMsg(e.message); }
+    setEnviando(false);
   };
 
   return (
@@ -78,16 +86,27 @@ function Persona({ o, yo, onCambio }) {
           {!o.activo && <span className="pastilla p-pendiente">Invitado</span>}
         </span>
       </button>
+      {!o.activo && !soyYo && (
+        <div className="invit-pendiente">
+          <span>Invitación pendiente</span>
+          <button type="button" className="boton sec" onClick={reenviar} disabled={enviando}>{enviando ? 'Enviando…' : 'Reenviar invitación'}</button>
+        </div>
+      )}
+      {!o.activo && !abierta && (msg || enlace) && (
+        <div className="invit-resultado">
+          {msg && <p className="error">{msg}</p>}
+          {enlace && <Enlace r={enlace} />}
+        </div>
+      )}
       {abierta && (
         <div className="persona-editar">
           <ElegirPermisos rol={rol} permisos={permisos} cambiar={(r, p) => { setRol(r); setPermisos(r === 'admin' ? [] : limpiarPermisos(p)); }} />
           {msg && <p className={msg === 'Guardando…' ? 'nota' : 'error'}>{msg}</p>}
           <div className="botones-fila">
             <button type="button" className="boton" onClick={guardar}>Guardar permisos</button>
-            {!o.activo && <button type="button" className="boton sec" onClick={reenviar}>Nuevo enlace</button>}
             <button type="button" className="borrar" onClick={quitar}>Quitar acceso</button>
           </div>
-          {enlace && <Enlace url={enlace} />}
+          {enlace && <Enlace r={enlace} />}
         </div>
       )}
     </li>
@@ -97,29 +116,29 @@ function Persona({ o, yo, onCambio }) {
 export default function Usuarios({ lista, yo, empresa, empresas, miEmpresa }) {
   const router = useRouter();
   const [d, setD] = useState({ nombre: '', email: '', rol: 'miembro', permisos: PERFILES[1].permisos });
-  const [enlace, setEnlace] = useState('');
+  const [enlace, setEnlace] = useState(null);
   const [yaTiene, setYaTiene] = useState('');
   const [error, setError] = useState('');
   const [nueva, setNueva] = useState({ empresaNueva: '', nombre: '', email: '' });
-  const [enlaceEmpresa, setEnlaceEmpresa] = useState('');
+  const [enlaceEmpresa, setEnlaceEmpresa] = useState(null);
 
   const invitar = async (e) => {
     e.preventDefault();
-    setError(''); setEnlace(''); setYaTiene('');
+    setError(''); setEnlace(null); setYaTiene('');
     try {
       const r = await llamar('/api/usuarios', { method: 'POST', body: JSON.stringify(d) });
       if (r.existente) setYaTiene(`${r.existente} ya tenía cuenta en Netto: verá ${empresa} al cambiar de empresa.`);
-      else setEnlace(r.enlace);
+      else setEnlace(r);
       setD({ ...d, nombre: '', email: '' });
       router.refresh();
     } catch (err) { setError(err.message); }
   };
   const crearEmpresa = async (e) => {
     e.preventDefault();
-    setError(''); setEnlaceEmpresa('');
+    setError(''); setEnlaceEmpresa(null);
     try {
       const r = await llamar('/api/usuarios', { method: 'POST', body: JSON.stringify(nueva) });
-      setEnlaceEmpresa(r.enlace); setNueva({ empresaNueva: '', nombre: '', email: '' });
+      setEnlaceEmpresa(r); setNueva({ empresaNueva: '', nombre: '', email: '' });
       router.refresh();
     } catch (err) { setError(err.message); }
   };
@@ -140,8 +159,8 @@ export default function Usuarios({ lista, yo, empresa, empresas, miEmpresa }) {
             <p className="rotulo" style={{ margin: '4px 0 0' }}>Qué podrá hacer</p>
             <ElegirPermisos rol={d.rol} permisos={d.permisos} cambiar={(rol, permisos) => setD({ ...d, rol, permisos: rol === 'admin' ? [] : limpiarPermisos(permisos) })} />
             {error && <p className="error">{error}</p>}
-            <button className="boton">Crear invitación</button>
-            {enlace && <Enlace url={enlace} />}
+            <button className="boton">Crear y enviar invitación</button>
+            {enlace && <Enlace r={enlace} />}
             {yaTiene && <p className="nota">{yaTiene}</p>}
           </form>
         </>
@@ -171,7 +190,7 @@ export default function Usuarios({ lista, yo, empresa, empresas, miEmpresa }) {
             <input className="campo" placeholder="Nombre de su administrador" value={nueva.nombre} onChange={(e) => setNueva({ ...nueva, nombre: e.target.value })} required />
             <input className="campo" type="email" placeholder="Email del administrador" value={nueva.email} onChange={(e) => setNueva({ ...nueva, email: e.target.value })} required />
             <button className="boton">Crear empresa e invitación</button>
-            {enlaceEmpresa && <Enlace url={enlaceEmpresa} />}
+            {enlaceEmpresa && <Enlace r={enlaceEmpresa} />}
           </form>
         </section>
       )}
