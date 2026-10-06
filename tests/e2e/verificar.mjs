@@ -882,10 +882,10 @@ console.log('\nSeguridad');
   const tocarAdmin = await pedir('/api/usuarios', { metodo: 'PATCH', cookie: gestor, cuerpo: { id: yoId, rol: 'miembro', permisos: [] } });
   const quitarAdmin = await pedir(`/api/usuarios?id=${yoId}`, { metodo: 'DELETE', cookie: gestor });
   ok('quien gestiona usuarios sin ser administrador no crea administradores ni toca a uno (403)', () => assert.deepEqual([nuevoAdmin.status, tocarAdmin.status, quitarAdmin.status], [403, 403, 403]));
-  const mas = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: gestor, cuerpo: { nombre: 'Ayudante', email: `ay${Date.now()}@test.es`, rol: 'miembro', permisos: ['facturas', 'nominas', 'empresa'] } })).json();
-  const ayId = (await kv(['HGET', 'cuentas:invitaciones', mas.enlace.split('/').pop()]));
-  const ay = JSON.parse(await kv(['HGET', 'cuentas:usuarios', ayId]));
-  ok('y solo da los permisos que él tiene', () => assert.deepEqual(ay.permisos, ['facturas']));
+  const mas = await pedir('/api/usuarios', { metodo: 'POST', cookie: gestor, cuerpo: { nombre: 'Ayudante', email: `ay${Date.now()}@test.es`, rol: 'miembro', permisos: ['facturas'] } });
+  ok('y tampoco invita a nadie: solo el administrador de la empresa (403)', () => assert.equal(mas.status, 403));
+  const usG = await (await pedir('/usuarios', { cookie: gestor })).text();
+  ok('a quien gestiona usuarios sin ser administrador no le sale «Invitar a alguien»', () => assert.ok(usG.includes('Gestor') && !usG.includes('Invitar a alguien') && !usG.includes('Reenviar invitación')));
 
   // Exportar a Excel: un cliente que empieza por «=» no se convierte en fórmula.
   await pedir('/api/facturas', { metodo: 'POST', cookie: yo, cuerpo: { fecha: `${Y}-04-04`, actividad: ACTS[0].id, cliente: { nombre: '=HYPERLINK("http://malo.example","pulsa")' }, concepto: '+SUM(1)', base: '10', ivaPct: 21, irpfPct: 0, cobrada: false } });
@@ -1023,6 +1023,27 @@ if (process.env.RESEND_URL) {
   const entra = await pedir('/api/invitacion', { metodo: 'POST', form: fC2 });
   ok('al reenviarla vuelve a valer 7 días y se puede entrar', () => assert.ok(re2.enviado && /t=/.test(entra.headers.get('set-cookie') || ''), `${entra.status}`));
 } else console.log('  (sin RESEND_URL: se salta)');
+
+console.log('\nSolo el administrador de Netto da de alta empresas');
+{
+  const entrar = async (alta, pass) => { const f = new FormData(); f.set('codigo', alta.enlace.split('/').pop()); f.set('password', pass); return /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: f })).headers.get('set-cookie') || '')?.[1]; };
+  const jefa = await entrar(await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva: 'Cliente Pagando SL', nombre: 'Julia', email: `ju${Date.now()}@test.es` } })).json(), 'juliajulia1');
+  await pedir('/api/cuenta', { metodo: 'PATCH', cookie: jefa, cuerpo: { configuracion: { fiscal: { tipo: 'sociedad', iva: 'general' }, emisor: { nombre: 'Cliente Pagando SL', nif: 'B11111111', plazo: 30 }, actividades: [{ nombre: 'Eventos', ivaPct: 21, irpfPct: 0 }] } } });
+  const crea = await pedir('/api/empresas', { metodo: 'POST', cookie: jefa, cuerpo: { nueva: 'Empresa Gratis' } });
+  ok('el administrador de una empresa cliente no puede crear otra empresa (403)', () => assert.equal(crea.status, 403));
+  const crea2 = await pedir('/api/usuarios', { metodo: 'POST', cookie: jefa, cuerpo: { empresaNueva: 'Otra Gratis', nombre: 'X', email: `xg${Date.now()}@test.es` } });
+  ok('ni dar de alta empresas desde Usuarios (401)', () => assert.equal(crea2.status, 401));
+  const ajJ = await (await pedir('/ajustes', { cookie: jefa })).text();
+  const iniJ = await (await pedir('/gastos', { cookie: jefa })).text();
+  ok('no le sale «Añadir empresa» (ni en Ajustes ni en la barra lateral)', () => assert.ok(!ajJ.includes('Añadir empresa') && !iniJ.includes('Añadir empresa')));
+  const usJ = await (await pedir('/usuarios', { cookie: jefa })).text();
+  ok('ni la sección de empresas en Usuarios', () => assert.ok(!usJ.includes('Dar de alta una empresa')));
+  const invJ = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: jefa, cuerpo: { nombre: 'Gestoría de Julia', email: `gj${Date.now()}@test.es`, rol: 'miembro', permisos: ['facturas', 'gastos'] } })).json();
+  ok('pero sí invita a su gente (es la administradora de su empresa)', () => assert.ok(invJ.ok && invJ.enlace, JSON.stringify(invJ)));
+  ok('y le sale el formulario de invitar', () => assert.ok(usJ.includes('Invitar a alguien')));
+  const ajYo = await (await pedir('/ajustes', { cookie: yo })).text();
+  ok('al administrador de Netto sí le sale «Añadir empresa»', () => assert.ok(ajYo.includes('Añadir empresa')));
+}
 
 console.log(fallos ? `\n${fallos} comprobaciones fallidas: NO publicar.` : '\nTodo cuadra.');
 process.exit(fallos ? 1 : 0);
