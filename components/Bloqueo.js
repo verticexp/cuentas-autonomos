@@ -16,8 +16,12 @@ const OCULTA = 'netto-oculta';
 const GRACIA = 10000; // menos de 10 s fuera (compartir un PDF, elegir una foto) no cuenta como cerrar la app
 
 const marcarAbierta = () => { try { sessionStorage.setItem(ABIERTA, '1'); } catch {} };
+// Al servidor: bloqueada (deja de dar datos) o sigue en uso (alarga el desbloqueo). app/api/bloqueo.
+const avisar = (accion) => fetch('/api/bloqueo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accion }) }).catch(() => {});
+const SEGUIR = 5 * 60 * 1000;
 
-export default function Bloqueo({ email }) {
+// servidor: false si el servidor no la da por desbloqueada (entonces sale el bloqueo aunque el navegador diga que no).
+export default function Bloqueo({ email, servidor = true }) {
   const [bloqueada, setBloqueada] = useState(true);
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
@@ -37,12 +41,13 @@ export default function Bloqueo({ email }) {
     try { sessionStorage.removeItem(ABIERTA); } catch {}
     delete document.documentElement.dataset.abierta;
     setBloqueada(true);
+    avisar('bloquear');
   }, []);
 
   useEffect(() => {
     const recien = document.cookie.includes('recien=1');
     if (recien) document.cookie = 'recien=; path=/; max-age=0';
-    if (recien || sessionStorage.getItem(ABIERTA)) abrir(recien);
+    if (servidor && (recien || sessionStorage.getItem(ABIERTA))) abrir(recien);
     else bloquear();
     const cambio = () => {
       if (document.visibilityState === 'hidden') { sessionStorage.setItem(OCULTA, String(Date.now())); return; }
@@ -50,8 +55,9 @@ export default function Bloqueo({ email }) {
       if (fuera > GRACIA) bloquear();
     };
     document.addEventListener('visibilitychange', cambio);
-    return () => document.removeEventListener('visibilitychange', cambio);
-  }, [abrir, bloquear]);
+    const seguir = setInterval(() => { if (document.visibilityState === 'visible' && sessionStorage.getItem(ABIERTA)) avisar('seguir'); }, SEGUIR);
+    return () => { document.removeEventListener('visibilitychange', cambio); clearInterval(seguir); };
+  }, [abrir, bloquear, servidor]);
 
   useEffect(() => { if (bloqueada && listo) enfocar(pass.current); }, [bloqueada, listo]);
 
@@ -65,7 +71,8 @@ export default function Bloqueo({ email }) {
   };
 
   // Con otra cuenta (otro email u otra llave), la página se recarga con sus datos.
-  const entro = (otra) => { if (otra) { marcarAbierta(); location.reload(); } else salir(); };
+  // En /bloqueo (el servidor no dio datos), se recarga y el servidor la devuelve a la página de antes.
+  const entro = (otra) => { if (otra || location.pathname === '/bloqueo') { marcarAbierta(); location.reload(); } else salir(); };
 
   async function entrar(e) {
     e.preventDefault();
