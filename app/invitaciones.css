@@ -1,0 +1,12 @@
+/* Invitaciones por email (pantalla de Usuarios). Aparte de diseno.css. */
+.invit-pendiente { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 16px 12px 68px; color: var(--muted); font-size: 14px; }
+.invit-pendiente .boton { padding: 8px 14px; font-size: 15px; white-space: nowrap; flex-shrink: 0; }
+.invit-pendiente .boton:disabled { opacity: 0.6; }
+.invit-resultado { padding: 0 16px 16px; }
+.invit-enviada, .invit-aviso { margin: 0; padding: 12px 14px; border-radius: 12px; font-size: 15px; line-height: 1.4; }
+.invit-enviada { background: color-mix(in srgb, var(--in) 14%, var(--surface)); color: var(--ink); }
+.invit-aviso { background: color-mix(in srgb, #E9A23B 20%, var(--surface)); color: var(--ink); }
+.invit-aviso strong { display: block; font-weight: 600; }
+@media (max-width: 420px) {
+  .invit-pendiente { padding-left: 16px; }
+}
