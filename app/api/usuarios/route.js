@@ -43,7 +43,8 @@ export async function POST(req) {
   }
   const { u, res } = await usuarioApi({ permiso: 'usuarios' });
   if (res) return res;
-  if (b.rol === 'admin' && u.rol !== 'admin') return error('Solo un administrador de la empresa puede dar o quitar el acceso de administrador', 403);
+  // Invitar o reenviar invitaciones: solo el administrador de la empresa (no quien solo tiene el permiso de usuarios).
+  if (u.rol !== 'admin') return error('Solo el administrador de la empresa puede invitar a personas', 403);
   if (b.reenviar) {
     const o = await deMiEmpresa(u, b.reenviar);
     if (!o || o.pass) return error('Esa persona ya tiene acceso');
