@@ -18,6 +18,12 @@ test('html: botón y enlace en texto, sin imagen de seguimiento', () => {
   assert.ok(h.includes('7 días'));
 });
 
+test('sin nombre de empresa: «te ha invitado a unirte a su empresa»', () => {
+  assert.equal(asuntoInvitacion({ quien: 'Marc', empresa: '' }), 'Marc te ha invitado a unirte a su empresa en Netto');
+  assert.equal(asuntoInvitacion({ quien: 'Marc', empresa: '  ' }), 'Marc te ha invitado a unirte a su empresa en Netto');
+  assert.ok(htmlInvitacion({ ...datos, empresa: '' }).includes('<strong>Marc</strong> te ha invitado a unirte a su empresa en Netto.'));
+});
+
 test('html: escapa nombres y empresa', () => {
   const h = htmlInvitacion({ ...datos, quien: '<script>x</script>', empresa: 'A & "B"', nombre: "O'Brien" });
   assert.ok(!h.includes('<script>') && h.includes('&lt;script&gt;') && h.includes('A &amp; &quot;B&quot;') && h.includes('O&#39;Brien'));
