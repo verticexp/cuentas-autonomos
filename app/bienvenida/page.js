@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { exigirDesbloqueo, usuarioActual } from '@/lib/auth';
+import { bloquearPorEmail, exigirDesbloqueo, usuarioActual } from '@/lib/auth';
 import { puede } from '@/lib/permisos';
 import { leer } from '@/lib/redis';
 import { actividadesDe, fiscalDe } from '@/lib/empresa';
@@ -12,6 +12,7 @@ export default async function Bienvenida({ searchParams }) {
   const u = await usuarioActual();
   if (!u) redirect('/login');
   await exigirDesbloqueo(u);
+  if (bloquearPorEmail(u)) redirect('/confirmar-email');
   if (!puede(u, 'empresa')) redirect('/');
   const editar = Boolean((await searchParams).editar);
   if (!u.pendiente && !editar) redirect('/');
