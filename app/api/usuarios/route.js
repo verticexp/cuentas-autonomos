@@ -4,9 +4,17 @@ import { redis } from '@/lib/redis';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { limpiarPermisos, puede } from '@/lib/permisos';
 import { conMembresia, enEmpresa, membresias } from '@/lib/membresias';
-import { limpiarEmail } from '@/lib/auth';
+import { INVITACION_DIAS, limpiarEmail } from '@/lib/auth';
+import { enviarInvitacion } from '@/lib/invitacion';
 
 const enlace = (req, codigo) => new URL(`/invitacion/${codigo}`, req.url).toString();
+// Crea la respuesta con el enlace (que el administrador ve siempre) y le manda la invitación por email.
+// Si el email no sale, la persona queda creada igual y se avisa para copiar el enlace a mano.
+const invitar = async (req, quien, o, empresa, codigo) => {
+  const url = enlace(req, codigo);
+  const e = await enviarInvitacion({ para: o.email, nombre: o.nombre, quien: quien.nombre, empresa, url, responderA: quien.email, dias: INVITACION_DIAS });
+  return Response.json({ ok: true, enlace: url, email: o.email, ...e });
+};
 const deMiEmpresa = async (u, id) => {
   const o = id && (await redis.hget('usuarios', id));
   return o && enEmpresa(o, u.empresa) ? o : null;
@@ -21,12 +29,12 @@ const papel = (u, b) => (u.rol === 'admin'
 export async function POST(req) {
   const b = await cuerpo(req);
   if (b.empresaNueva) {
-    const { res } = await usuarioApi({ admin: true });
+    const { u, res } = await usuarioApi({ admin: true });
     if (res) return res;
     if (!String(b.empresaNueva).trim()) return error('Falta el nombre de la empresa');
     const r = await crearUsuario({ nombre: b.nombre, email: b.email, empresaNombre: b.empresaNueva, rol: 'admin' });
     if (r.error) return error(r.error);
-    return Response.json({ ok: true, enlace: enlace(req, r.codigo) });
+    return invitar(req, u, r.usuario, String(b.empresaNueva).trim(), r.codigo);
   }
   const { u, res } = await usuarioApi({ permiso: 'usuarios' });
   if (res) return res;
@@ -41,7 +49,7 @@ export async function POST(req) {
     const codigo = randomBytes(18).toString('base64url');
     await redis.hset('invitaciones', { [codigo]: o.id });
     await redis.hset('usuarios', { [o.id]: { ...o, creado: new Date().toISOString() } });
-    return Response.json({ ok: true, enlace: enlace(req, codigo) });
+    return invitar(req, u, o, u.empresaNombre, codigo);
   }
   // Si ya tiene cuenta en Netto (de otra empresa), se le añade esta empresa: la verá al cambiar de empresa.
   const yaId = await redis.hget('emails', limpiarEmail(b.email));
@@ -53,7 +61,7 @@ export async function POST(req) {
   }
   const r = await crearUsuario({ nombre: b.nombre, email: b.email, empresa: u.empresa, ...papel(u, b) });
   if (r.error) return error(r.error);
-  return Response.json({ ok: true, enlace: enlace(req, r.codigo) });
+  return invitar(req, u, r.usuario, u.empresaNombre, r.codigo);
 }
 
 // Cambiar el perfil y los permisos de alguien de tu empresa.
