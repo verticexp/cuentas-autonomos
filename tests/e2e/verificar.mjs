@@ -919,7 +919,9 @@ console.log('\nPrivacidad y condiciones');
   const fav = await pedir('/favicon.ico');
   const favB = Buffer.from(await fav.arrayBuffer());
   ok('favicon.ico con la N (16, 32 y 48 px)', () => assert.ok(fav.status === 200 && favB.readUInt16LE(2) === 1 && favB.readUInt16LE(4) === 3, `${fav.status}`));
-  ok('el login enlaza al favicon.ico y al icon.svg', () => assert.ok(lg.includes('href="/favicon.ico') && lg.includes('href="/icon.svg')));
+  ok('el login enlaza al favicon.ico y al icon1.svg (dirección nueva: sin el icono antiguo en caché)', () => assert.ok(lg.includes('href="/favicon.ico') && lg.includes('href="/icon1.svg') && !lg.includes('href="/icon.svg')));
+  const ico = await pedir('/icon1.svg');
+  ok('el icono de la pestaña se sirve sin sesión', () => assert.ok(ico.status === 200 && ico.headers.get('content-type').includes('svg'), `${ico.status}`));
   const priv = await pedir('/facturas');
   ok('/facturas sin sesión redirige al login', () => assert.ok(priv.status >= 300 && priv.status < 400 && (priv.headers.get('location') || '').includes('/login')));
 }
