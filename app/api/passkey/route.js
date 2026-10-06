@@ -4,6 +4,7 @@ import { generateAuthenticationOptions, generateRegistrationOptions, verifyAuthe
 import { redis } from '@/lib/redis';
 import { crearSesion, desbloqueo, opcionesCookie, opcionesDesbloqueo, usuarioActual } from '@/lib/auth';
 import { cuerpo, error } from '@/lib/api';
+import { MUCHOS, ipDe, pasado } from '@/lib/limite';
 
 // Face ID / Touch ID con llaves de acceso (passkeys). La cara nunca sale del móvil:
 // el iPhone firma un reto y aquí se comprueba la firma con la clave pública guardada al activarlo.
@@ -61,7 +62,8 @@ export async function POST(req) {
     } catch (e) { return error(`No se pudo activar Face ID: ${e.message}`); }
   }
 
-  // Entrar (o desbloquear la app) con Face ID.
+  // Entrar (o desbloquear la app) con Face ID. Como mucho 60 llamadas (30 intentos) por IP cada 15 min.
+  if ((b.accion === 'entrar-opciones' || b.accion === 'entrar') && (await pasado('passkey', ipDe(req), 60, 900))) return error(MUCHOS, 429);
   if (b.accion === 'entrar-opciones') {
     // Sin lista de llaves: el navegador ofrece las que tenga para esta web, de la cuenta que sea (como en cualquier login).
     const opciones = await generateAuthenticationOptions({ rpID, userVerification: 'required' });
