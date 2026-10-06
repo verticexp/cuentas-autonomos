@@ -13,7 +13,12 @@ export function proxy(req) {
   if (!['GET', 'HEAD'].includes(req.method) && origen && !mismoSitio && URL.parse(origen)?.host !== req.nextUrl.host) {
     return NextResponse.json({ error: 'Origen no permitido' }, { status: 403 });
   }
-  if (PUBLICO.test(req.nextUrl.pathname) || req.cookies.get('t')?.value) return NextResponse.next();
+  if (PUBLICO.test(req.nextUrl.pathname) || req.cookies.get('t')?.value) {
+    // x-ruta: adónde volver tras desbloquear (lib/auth.js exigirDesbloqueo). Siempre la pone el servidor.
+    const h = new Headers(req.headers);
+    h.set('x-ruta', req.nextUrl.pathname + req.nextUrl.search);
+    return NextResponse.next({ request: { headers: h } });
+  }
   if (req.nextUrl.pathname.startsWith('/api/')) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
   return NextResponse.redirect(new URL('/login', req.url));
 }
