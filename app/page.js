@@ -59,7 +59,7 @@ export default async function Resumen({ searchParams }) {
         </div>
         <h1 className="inicio-hola">Hola, {String(u.nombre || '').split(' ')[0] || 'equipo'}</h1>
         <p className="inicio-sub">{esteAnio ? 'Así va tu año.' : `Así cerraste ${anio}.`}</p>
-        {u.misEmpresas?.length > 1 && <CambiarEmpresa empresas={u.misEmpresas} actual={u.empresa} variante="chip" />}
+        {u.misEmpresas?.length > 1 && <CambiarEmpresa empresas={u.misEmpresas} actual={u.empresa} variante="chip" puedeCrear={u.admin} />}
       </header>
 
       {facturado > 0 && (
