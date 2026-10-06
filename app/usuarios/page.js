@@ -25,7 +25,7 @@ export default async function Page() {
     <main className="pagina">
       <Volver href="/ajustes">Ajustes</Volver>
       <h1 className="titulo">Usuarios</h1>
-      <Usuarios lista={puede(yo, 'usuarios') ? lista : null} yo={yo.id} empresa={yo.empresaNombre} empresas={listaEmpresas} miEmpresa={yo.empresa} />
+      <Usuarios lista={puede(yo, 'usuarios') ? lista : null} yo={yo.id} empresa={yo.empresaNombre} empresas={listaEmpresas} miEmpresa={yo.empresa} soyAdmin={yo.rol === 'admin'} />
     </main>
   );
 }
