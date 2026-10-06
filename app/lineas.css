@@ -13,3 +13,13 @@
 /* Factura A4 con varias líneas */
 .fa-tabla.fa-lineas th.n, .fa-tabla.fa-lineas td.n { text-align: right; white-space: nowrap; padding-left: 14px; }
 .fa-tabla.fa-lineas td { font-size: 13px; }
+
+/* Presupuesto: cada concepto con cantidad y precio (el IVA es el del presupuesto) */
+.linea-nums.dos { grid-template-columns: 0.8fr 1.6fr; }
+/* Lista de conceptos en la ficha y en la página del cliente */
+.conceptos { list-style: none; margin: 0 0 16px; padding: 0; background: var(--surface); border-radius: 12px; }
+.conceptos li { display: flex; justify-content: space-between; gap: 12px; padding: 11px 16px; position: relative; }
+.conceptos li + li { border-top: 0.5px solid var(--line); }
+.conceptos li span { min-width: 0; }
+.conceptos li small { display: block; color: var(--muted); font-size: 13px; margin-top: 2px; }
+.conceptos li strong { flex: none; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }

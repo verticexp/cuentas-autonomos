@@ -1,3 +1,9 @@
 /* Foto del ticket en el formulario de gasto */
 .formulario .ticket-foto { flex-direction: row; justify-content: center; align-items: center; margin-top: 0; color: var(--marca, var(--ink)); font-size: 16px; font-weight: 600; cursor: pointer; }
 .ticket-nota { margin: 0; }
+/* Bloque «Rellénalo con IA»: dice qué se puede leer (foto del ticket o factura en imagen/PDF) */
+.ticket-ia { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 12px; background: var(--relleno); }
+.ticket-ia-t { margin: 0; font-weight: 600; font-size: 16px; }
+.ticket-ia-txt { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.35; }
+.ticket-ia-botones { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.ticket-ia-botones .ticket-foto { padding: 11px 10px; font-size: 15px; background: var(--surface); }
