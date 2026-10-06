@@ -951,7 +951,8 @@ if (process.env.RESEND_URL) {
   const iv = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { nombre: 'Laura Gestora', email: emailL, rol: 'miembro', permisos: ['facturas', 'gastos'] } })).json();
   const [m1] = correos();
   ok('al crear el usuario se le envía la invitación', () => assert.ok(iv.ok && iv.enviado && !iv.aviso && m1?.to?.[0] === emailL, JSON.stringify(iv)));
-  const empA = JSON.parse(await kv(['HGET', 'cuentas:empresas', await kv(['HGET', 'cuentas:emails', fd.get('email')])])).nombre;
+  const eA = JSON.parse(await kv(['HGET', 'cuentas:empresas', await kv(['HGET', 'cuentas:emails', fd.get('email')])]));
+  const empA = eA.emisor?.nombre || eA.nombre;
   ok('el asunto dice quién invita y a qué empresa', () => assert.equal(m1?.subject, `Prueba te ha invitado a ${empA} en Netto`));
   ok('botón y enlace en texto con el mismo enlace que ve el administrador', () => assert.ok(m1.html.split(`href="${iv.enlace}"`).length === 3 && m1.html.includes(`>${iv.enlace}</a>`) && m1.html.includes('Aceptar la invitación')));
   ok('sin imagen de seguimiento', () => assert.ok(!/<img/i.test(m1.html) && !m1.html.includes('/api/abierta')));
@@ -986,6 +987,16 @@ if (process.env.RESEND_URL) {
   const ajeno = await pedir('/api/usuarios', { metodo: 'POST', cookie: aj, cuerpo: { reenviar: lid } });
   ok('el administrador de otra empresa no puede reenviar invitaciones ajenas', () => assert.ok(aj && ajeno.status >= 400 && correos().length === 0, `${ajeno.status}`));
   const sigue = await valida(re.enlace);
+  rmSync('/tmp/resend.json', { force: true });
+  await pedir('/api/usuarios', { metodo: 'POST', cookie: aj, cuerpo: { nombre: 'Técnico', email: `tec${Date.now()}@test.es`, rol: 'miembro', permisos: ['gastos'] } });
+  ok('cada empresa con su nombre y quien la envía', () => assert.equal(correos()[0]?.subject, 'Álex te ha invitado a Ajena Eventos SL en Netto'));
+  const altaX = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva: 'Xavi Soler', nombre: 'Xavi Soler', email: `xs${Date.now()}@test.es` } })).json();
+  const fX = new FormData(); fX.set('codigo', codigoDe(altaX.enlace)); fX.set('password', 'xavixavi12');
+  const xs = /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: fX })).headers.get('set-cookie') || '')?.[1];
+  rmSync('/tmp/resend.json', { force: true });
+  await pedir('/api/usuarios', { metodo: 'POST', cookie: xs, cuerpo: { nombre: 'Ayuda', email: `ayx${Date.now()}@test.es`, rol: 'miembro', permisos: ['gastos'] } });
+  const mX = correos()[0];
+  ok('si la empresa solo tiene el nombre de quien invita: «te ha invitado a unirte a su empresa»', () => assert.ok(mX?.subject === 'Xavi Soler te ha invitado a unirte a su empresa en Netto' && mX.html.includes('te ha invitado a unirte a su empresa en Netto.'), mX?.subject));
   ok('el intento ajeno no cambia el enlace', () => assert.ok(sigue));
 
   // Quien ya aceptó no tiene invitación que reenviar.
