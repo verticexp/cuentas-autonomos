@@ -237,7 +237,9 @@ console.log('Foto del ticket');
   else {
     ok('rellena proveedor, fecha y base (sacada del total)', () => assert.deepEqual([tj.gasto?.proveedor, tj.gasto?.fecha, tj.gasto?.base, tj.gasto?.ivaPct], ['Ferretería Sol', '2026-09-12', 50, 21]));
     const malo = await pedir('/api/gastos/ticket', { metodo: 'POST', cookie: yo, cuerpo: { imagen: 'data:text/plain;base64,aG9sYQ==' } });
-    ok('solo acepta imágenes', () => assert.equal(malo.status, 400));
+    ok('solo acepta imágenes y PDF', () => assert.equal(malo.status, 400));
+    const pdf = await (await pedir('/api/gastos/ticket', { metodo: 'POST', cookie: yo, cuerpo: { imagen: 'data:application/pdf;base64,JVBERi0xLjQK' } })).json();
+    ok('también lee facturas en PDF', () => assert.equal(pdf.gasto?.proveedor, 'Ferretería Sol'));
   }
   const gp = await (await pedir('/api/gastos', { metodo: 'POST', cookie: yo, cuerpo: { fecha: `${Y}-09-12`, concepto: 'Cables XLR', base: '50', ivaPct: 21, proveedor: 'Ferretería Sol', proveedorNif: 'b11111111' } })).json();
   ok('el gasto guarda su proveedor', () => assert.ok(gp.gasto.proveedor === 'Ferretería Sol' && gp.gasto.proveedorNif === 'B11111111'));
@@ -920,6 +922,19 @@ console.log('\nPrivacidad y condiciones');
   ok('el login enlaza al favicon.ico y al icon.svg', () => assert.ok(lg.includes('href="/favicon.ico') && lg.includes('href="/icon.svg')));
   const priv = await pedir('/facturas');
   ok('/facturas sin sesión redirige al login', () => assert.ok(priv.status >= 300 && priv.status < 400 && (priv.headers.get('location') || '').includes('/login')));
+}
+
+console.log('\nPresupuestos con varios conceptos');
+{
+  const pv = (await (await pedir('/api/presupuestos', { metodo: 'POST', cookie: yo, cuerpo: { fecha: hoy, actividad: ACTS[0].id, cliente: { nombre: 'Boda Varios' }, ivaPct: 21, irpfPct: 0, senalPct: 30, validez: 15,
+    lineas: [{ concepto: 'Sesión DJ', cantidad: '2', precio: '300', ivaPct: 21 }, { concepto: 'Iluminación', cantidad: '1', precio: '400,00', ivaPct: 21 }] } })).json()).presupuesto;
+  ok('se guarda con la base sumada y el concepto resumido', () => assert.deepEqual([pv?.base, pv?.concepto, pv?.lineas?.length], [1000, 'Sesión DJ y 1 más', 2]));
+  const pub = n(await texto(`/p/${pv.token}`));
+  ok('el cliente ve cada concepto', () => assert.ok(pub.includes('Sesión DJ') && pub.includes('Iluminación') && pub.includes(n(eur(600))) && pub.includes(n(eur(1210))), 'no aparece'));
+  const fs = await (await pedir('/api/presupuestos/facturar', { metodo: 'POST', cookie: yo, cuerpo: { id: pv.id, tipo: 'senal' } })).json();
+  ok('la señal se factura de una vez (30 %)', () => assert.ok(fs.factura?.base === 300 && !fs.factura.lineas));
+  const fr = await (await pedir('/api/presupuestos/facturar', { metodo: 'POST', cookie: yo, cuerpo: { id: pv.id, tipo: 'resto' } })).json();
+  ok('el resto lleva todos los conceptos y resta la señal', () => assert.deepEqual([fr.factura?.base, fr.factura?.lineas?.map((l) => l.precio)], [700, [300, 400, -300]]));
 }
 
 console.log(fallos ? `\n${fallos} comprobaciones fallidas: NO publicar.` : '\nTodo cuadra.');

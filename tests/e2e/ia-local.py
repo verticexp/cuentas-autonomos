@@ -15,7 +15,7 @@ class H(BaseHTTPRequestHandler):
     def do_POST(self):
         body = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
         if 'tools' not in body:
-            tiene_foto = body['messages'][0]['content'][0]['type'] == 'image'
+            tiene_foto = body['messages'][0]['content'][0]['type'] in ('image', 'document')
             texto = 'Aquí está: {"proveedor": "Ferretería Sol", "nif": "B11111111", "fecha": "2026-09-12", "concepto": "Cables XLR", "base": null, "ivaPct": 21, "total": "60,50"}' if tiene_foto else 'nada'
             return self.responder([{'type': 'text', 'text': texto}])
         msgs = body['messages']
