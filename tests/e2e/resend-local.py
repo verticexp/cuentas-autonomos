@@ -6,6 +6,9 @@ class H(BaseHTTPRequestHandler):
     def do_POST(self):
         body = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
         body['auth'] = self.headers.get('Authorization')
+        if any('rebota' in t for t in body.get('to', [])):  # imita un error de Resend
+            out = json.dumps({'statusCode': 422, 'message': 'The to address is invalid'}).encode()
+            self.send_response(422); self.send_header('Content-Type', 'application/json'); self.end_headers(); self.wfile.write(out); return
         with open('/tmp/resend.json', 'a') as f: f.write(json.dumps(body) + '\n')
         out = json.dumps({'id': 'local-1'}).encode()
         self.send_response(200); self.send_header('Content-Type', 'application/json'); self.end_headers(); self.wfile.write(out)

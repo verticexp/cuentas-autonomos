@@ -939,5 +939,79 @@ console.log('\nPresupuestos con varios conceptos');
   ok('el resto lleva todos los conceptos y resta la señal', () => assert.deepEqual([fr.factura?.base, fr.factura?.lineas?.map((l) => l.precio)], [700, [300, 400, -300]]));
 }
 
+console.log('\nInvitaciones por email');
+if (process.env.RESEND_URL) {
+  const { readFileSync, rmSync } = await import('node:fs');
+  const kv = (cmd) => fetch(process.env.KV_REST_API_URL, { method: 'POST', headers: { Authorization: 'Bearer local' }, body: JSON.stringify(cmd) }).then((r) => r.json()).then((d) => d.result);
+  const correos = () => { try { return readFileSync('/tmp/resend.json', 'utf8').trim().split('\n').filter(Boolean).map((l) => JSON.parse(l)); } catch { return []; } };
+  const codigoDe = (url) => url.split('/').pop();
+  const valida = async (url) => !n(await texto(new URL(url).pathname)).includes('Invitación no válida');
+  rmSync('/tmp/resend.json', { force: true });
+  const emailL = `laura${Date.now()}@test.es`;
+  const iv = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { nombre: 'Laura Gestora', email: emailL, rol: 'miembro', permisos: ['facturas', 'gastos'] } })).json();
+  const [m1] = correos();
+  ok('al crear el usuario se le envía la invitación', () => assert.ok(iv.ok && iv.enviado && !iv.aviso && m1?.to?.[0] === emailL, JSON.stringify(iv)));
+  const empA = JSON.parse(await kv(['HGET', 'cuentas:empresas', await kv(['HGET', 'cuentas:emails', fd.get('email')])])).nombre;
+  ok('el asunto dice quién invita y a qué empresa', () => assert.equal(m1?.subject, `Prueba te ha invitado a ${empA} en Netto`));
+  ok('botón y enlace en texto con el mismo enlace que ve el administrador', () => assert.ok(m1.html.split(`href="${iv.enlace}"`).length === 3 && m1.html.includes(`>${iv.enlace}</a>`) && m1.html.includes('Aceptar la invitación')));
+  ok('sin imagen de seguimiento', () => assert.ok(!/<img/i.test(m1.html) && !m1.html.includes('/api/abierta')));
+  ok('responder va al email de quien invita', () => assert.equal(m1.reply_to, fd.get('email')));
+  const abre = n(await texto(new URL(iv.enlace).pathname));
+  ok('la página de la invitación saluda por su nombre', () => assert.ok(abre.includes('Hola, Laura Gestora'), abre.slice(0, 200)));
+  const lid = await kv(['HGET', 'cuentas:emails', emailL]);
+
+  const us = await (await pedir('/usuarios', { cookie: yo })).text();
+  ok('la lista de usuarios ofrece «Reenviar invitación» a quien no ha aceptado', () => assert.ok(/Laura Gestora[\s\S]{0,1200}Invitación pendiente[\s\S]{0,300}Reenviar invitación/.test(us)));
+  ok('el formulario dice que la invitación se envía', () => assert.ok(us.includes('Crear y enviar invitación')));
+
+  rmSync('/tmp/resend.json', { force: true });
+  const re = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { reenviar: lid } })).json();
+  const [m2] = correos();
+  ok('reenviar manda otro email con un enlace nuevo', () => assert.ok(re.enviado && re.enlace !== iv.enlace && m2?.to?.[0] === emailL && m2.html.includes(re.enlace)));
+  const [viejaOk, nuevaOk] = [await valida(iv.enlace), await valida(re.enlace)];
+  ok('el enlace anterior deja de valer y el nuevo vale', () => assert.deepEqual([viejaOk, nuevaOk], [false, true]));
+
+  // Sin permiso de usuarios (el de solo gastos): 403 y no sale ningún email.
+  rmSync('/tmp/resend.json', { force: true });
+  const sinPermiso = await pedir('/api/usuarios', { metodo: 'POST', cookie: otro, cuerpo: { reenviar: lid } });
+  ok('sin permiso de usuarios no se puede reenviar (403)', () => assert.ok(sinPermiso.status === 403 && correos().length === 0));
+
+  // Administrador de otra empresa: no puede reenviar invitaciones de esta.
+  const altaAj = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva: 'Ajena Eventos SL', nombre: 'Álex', email: `aj${Date.now()}@test.es` } })).json();
+  const mAj = correos().pop();
+  ok('dar de alta una empresa también envía la invitación a su administrador', () => assert.ok(altaAj.enviado && mAj?.subject === 'Prueba te ha invitado a Ajena Eventos SL en Netto'));
+  const fA = new FormData(); fA.set('codigo', codigoDe(altaAj.enlace)); fA.set('password', 'ajenaajena1');
+  const aj = /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: fA })).headers.get('set-cookie') || '')?.[1];
+  rmSync('/tmp/resend.json', { force: true });
+  const ajeno = await pedir('/api/usuarios', { metodo: 'POST', cookie: aj, cuerpo: { reenviar: lid } });
+  ok('el administrador de otra empresa no puede reenviar invitaciones ajenas', () => assert.ok(aj && ajeno.status >= 400 && correos().length === 0, `${ajeno.status}`));
+  const sigue = await valida(re.enlace);
+  ok('el intento ajeno no cambia el enlace', () => assert.ok(sigue));
+
+  // Quien ya aceptó no tiene invitación que reenviar.
+  const yaDentro = await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { reenviar: await kv(['GET', `cuentas:sesion:${otro}`]) } });
+  ok('a quien ya entró no se le reenvía (400)', () => assert.equal(yaDentro.status, 400));
+
+  // Si Resend falla, el usuario se crea igual y se enseña el enlace con un aviso.
+  const emailR = `rebota${Date.now()}@test.es`;
+  const rb = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { nombre: 'Rebote', email: emailR, rol: 'miembro', permisos: ['gastos'] } })).json();
+  ok('si el email no sale: se crea igual, con el enlace y el motivo', () => assert.ok(rb.ok && rb.enlace && !rb.enviado && /No se pudo enviar el email: The to address is invalid/.test(rb.aviso), JSON.stringify(rb)));
+  const us2 = n(await texto('/usuarios', yo));
+  ok('el usuario con el email fallido aparece en la lista', () => assert.ok(us2.includes('Rebote') && us2.includes(emailR)));
+  const rbOk = await valida(rb.enlace);
+  ok('el enlace del email fallido funciona', () => assert.ok(rbOk));
+
+  // El enlace sigue caducando a los 7 días (también el reenviado).
+  const lu = JSON.parse(await kv(['HGET', 'cuentas:usuarios', lid]));
+  await kv(['HSET', 'cuentas:usuarios', lid, JSON.stringify({ ...lu, creado: new Date(Date.now() - 8 * 864e5).toISOString() })]);
+  const fC = new FormData(); fC.set('codigo', codigoDe(re.enlace)); fC.set('password', 'lauralaura1');
+  const cad = await pedir('/api/invitacion', { metodo: 'POST', form: fC });
+  ok('a los 8 días el enlace ha caducado', () => assert.ok(decodeURIComponent(cad.headers.get('location') || '').includes('ha caducado')));
+  const re2 = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { reenviar: lid } })).json();
+  const fC2 = new FormData(); fC2.set('codigo', codigoDe(re2.enlace)); fC2.set('password', 'lauralaura1');
+  const entra = await pedir('/api/invitacion', { metodo: 'POST', form: fC2 });
+  ok('al reenviarla vuelve a valer 7 días y se puede entrar', () => assert.ok(re2.enviado && /t=/.test(entra.headers.get('set-cookie') || ''), `${entra.status}`));
+} else console.log('  (sin RESEND_URL: se salta)');
+
 console.log(fallos ? `\n${fallos} comprobaciones fallidas: NO publicar.` : '\nTodo cuadra.');
 process.exit(fallos ? 1 : 0);
