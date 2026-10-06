@@ -52,7 +52,7 @@ function Enlace({ r }) {
   );
 }
 
-function Persona({ o, yo, onCambio }) {
+function Persona({ o, yo, soyAdmin, onCambio }) {
   const [abierta, setAbierta] = useState(false);
   const [rol, setRol] = useState(o.rol);
   const [permisos, setPermisos] = useState(o.permisos);
@@ -86,7 +86,7 @@ function Persona({ o, yo, onCambio }) {
           {!o.activo && <span className="pastilla p-pendiente">Invitado</span>}
         </span>
       </button>
-      {!o.activo && !soyYo && (
+      {!o.activo && !soyYo && soyAdmin && (
         <div className="invit-pendiente">
           <span>Invitación pendiente</span>
           <button type="button" className="boton sec" onClick={reenviar} disabled={enviando}>{enviando ? 'Enviando…' : 'Reenviar invitación'}</button>
@@ -113,7 +113,7 @@ function Persona({ o, yo, onCambio }) {
   );
 }
 
-export default function Usuarios({ lista, yo, empresa, empresas, miEmpresa }) {
+export default function Usuarios({ lista, yo, empresa, empresas, miEmpresa, soyAdmin }) {
   const router = useRouter();
   const [d, setD] = useState({ nombre: '', email: '', rol: 'miembro', permisos: PERFILES[1].permisos });
   const [enlace, setEnlace] = useState(null);
@@ -149,10 +149,10 @@ export default function Usuarios({ lista, yo, empresa, empresas, miEmpresa }) {
         <>
           <p className="rotulo">Personas de {empresa}. Toca a alguien para cambiar lo que puede hacer.</p>
           <ul className="grupo-lista personas">
-            {lista.map((o) => <Persona key={o.id} o={o} yo={yo} onCambio={() => router.refresh()} />)}
+            {lista.map((o) => <Persona key={o.id} o={o} yo={yo} soyAdmin={soyAdmin} onCambio={() => router.refresh()} />)}
           </ul>
 
-          <form className="formulario tarjeta bloque" onSubmit={invitar} style={{ marginTop: 16 }}>
+          {soyAdmin && <form className="formulario tarjeta bloque" onSubmit={invitar} style={{ marginTop: 16 }}>
             <h3>Invitar a alguien</h3>
             <input className="campo" placeholder="Nombre" value={d.nombre} onChange={(e) => setD({ ...d, nombre: e.target.value })} required />
             <input className="campo" type="email" placeholder="Email" value={d.email} onChange={(e) => setD({ ...d, email: e.target.value })} required />
@@ -162,7 +162,7 @@ export default function Usuarios({ lista, yo, empresa, empresas, miEmpresa }) {
             <button className="boton">Crear y enviar invitación</button>
             {enlace && <Enlace r={enlace} />}
             {yaTiene && <p className="nota">{yaTiene}</p>}
-          </form>
+          </form>}
         </>
       )}
 

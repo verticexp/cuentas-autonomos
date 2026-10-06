@@ -4,7 +4,8 @@ import { useState } from 'react';
 
 // Cambio rápido de empresa (y alta de otra en la misma cuenta). Al cambiar se vuelve a cargar todo con la nueva empresa.
 // variante: «lista» (Ajustes), «lateral» (barra del ordenador) o «chip» (resumen, solo si hay varias).
-export default function CambiarEmpresa({ empresas = [], actual, variante = 'lista' }) {
+// puedeCrear: solo el administrador de la app da de alta empresas.
+export default function CambiarEmpresa({ empresas = [], actual, variante = 'lista', puedeCrear = false }) {
   const [abierto, setAbierto] = useState(variante === 'lista');
   const [creando, setCreando] = useState(false);
   const [nombre, setNombre] = useState('');
@@ -33,7 +34,7 @@ export default function CambiarEmpresa({ empresas = [], actual, variante = 'list
           {x.id === actual && <svg viewBox="0 0 24 24" aria-hidden><path d="M5 12l5 5 9-10" /></svg>}
         </button>
       ))}
-      {creando ? (
+      {!puedeCrear ? null : creando ? (
         <form className="emp-nueva" onSubmit={crear}>
           <input className="campo" autoFocus placeholder="Nombre de la empresa" value={nombre} maxLength={80} onChange={(e) => setNombre(e.target.value)} aria-label="Nombre de la nueva empresa" />
           <button className="boton pequeno" disabled={!nombre.trim() || ocupado}>Crear</button>

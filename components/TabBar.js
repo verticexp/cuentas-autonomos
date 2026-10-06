@@ -58,7 +58,7 @@ function vibrar() {
 
 const seccion = (path) => (path === '/' ? '/' : path.startsWith('/presupuestos') ? '/facturas' : TABS.find((t) => t.href !== '/' && path.startsWith(t.href))?.href ?? null);
 
-export default function TabBar({ permisos = [], empresas = [], empresa }) {
+export default function TabBar({ permisos = [], empresas = [], empresa, admin = false }) {
   const tabs = TABS.filter((t) => !t.permiso || permisos.includes(t.permiso));
   const path = usePathname();
   const router = useRouter();
@@ -80,7 +80,7 @@ export default function TabBar({ permisos = [], empresas = [], empresa }) {
   return (
     <div className="tabbar">
       <Link href="/" className="tabbar-logo" aria-label="Netto, resumen" onClick={(e) => { e.preventDefault(); ir('/'); }}><Logo /></Link>
-      {empresa && <CambiarEmpresa empresas={empresas} actual={empresa} variante="lateral" />}
+      {empresa && <CambiarEmpresa empresas={empresas} actual={empresa} variante="lateral" puedeCrear={admin} />}
       <nav
         ref={nav}
         className="tabs"
