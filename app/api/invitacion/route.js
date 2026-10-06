@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
 import { aceptarInvitacion, desbloqueo, opcionesCookie, opcionesDesbloqueo, tokenEmail } from '@/lib/auth';
 import { enviarConfirmacion } from '@/lib/invitacion';
+import { MUCHOS, ipDe, pasado } from '@/lib/limite';
 
 export async function POST(req) {
   const form = await req.formData();
   const codigo = String(form.get('codigo') || '');
+  if (await pasado('invitacion', ipDe(req), 30, 900)) return NextResponse.redirect(new URL(`/invitacion/${encodeURIComponent(codigo)}?error=${encodeURIComponent(MUCHOS)}`, req.url), 303);
   const r = await aceptarInvitacion(codigo, form.get('password'), form.get('v'));
   if (r.error) return NextResponse.redirect(new URL(`/invitacion/${codigo}?error=${encodeURIComponent(r.error)}`, req.url), 303);
   // Sin el enlace del email: se le manda uno para confirmarlo.
