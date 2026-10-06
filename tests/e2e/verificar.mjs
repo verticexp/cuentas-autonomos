@@ -14,6 +14,19 @@ if (!/localhost|127\.0\.0\.1/.test(BASE)) throw new Error('Solo contra una copia
 const Y = new Date().getFullYear();
 const hoy = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' });
 let fallos = 0;
+// Bloqueo del servidor: como el navegador, cada sesión manda su cookie «d» de desbloqueo (la que recibió al entrar).
+const DESBLOQUEOS = {};
+const fetchReal = globalThis.fetch;
+globalThis.fetch = async (url, op = {}) => {
+  const ck = op.headers?.Cookie;
+  const t = /(?:^|; )t=([^;]+)/.exec(ck || '')?.[1];
+  if (t && DESBLOQUEOS[t] && !/(?:^|; )d=/.test(ck)) op = { ...op, headers: { ...op.headers, Cookie: `${ck}; d=${DESBLOQUEOS[t]}` } };
+  const r = await fetchReal(url, op);
+  const sc = r.headers.getSetCookie?.() || [];
+  const nt = sc.map((c) => /^t=([^;]+)/.exec(c)?.[1]).find(Boolean), nd = sc.map((c) => /^d=([^;]+)/.exec(c)?.[1]).find(Boolean);
+  if (nd && (nt || t)) DESBLOQUEOS[nt || t] = nd;
+  return r;
+};
 const ok = (nombre, fn) => { try { fn(); console.log(`  ✓ ${nombre}`); } catch (e) { fallos += 1; console.log(`  ✗ ${nombre}\n    ${e.message.split('\n')[0]}`); } };
 
 async function pedir(ruta, { metodo = 'GET', cuerpo, cookie, form } = {}) {
@@ -1043,6 +1056,58 @@ console.log('\nSolo el administrador de Netto da de alta empresas');
   ok('y le sale el formulario de invitar', () => assert.ok(usJ.includes('Invitar a alguien')));
   const ajYo = await (await pedir('/ajustes', { cookie: yo })).text();
   ok('al administrador de Netto sí le sale «Añadir empresa»', () => assert.ok(ajYo.includes('Añadir empresa')));
+}
+
+console.log('\nBloqueo en el servidor');
+{
+  const modo = { activo: 'activo', off: 'off' }[process.env.BLOQUEO_SERVIDOR] || 'registrar';
+  const dDe = (r) => r.headers.getSetCookie().find((c) => /^d=[^;]+/.test(c));
+  ok('al registrarse se recibe la cookie de desbloqueo', () => assert.ok(dDe(alta)));
+  const f = new FormData(); f.set('email', fd.get('email')); f.set('password', 'pruebaprueba1');
+  const lr = await fetchReal(BASE + '/api/login', { method: 'POST', headers: { Origin: BASE, Accept: 'application/json' }, body: f });
+  const t2 = /^t=([^;]+)/.exec(lr.headers.getSetCookie().find((c) => c.startsWith('t=')) || '')?.[1];
+  const cd = dDe(lr) || '';
+  const d2 = /^d=([^;]+)/.exec(cd)?.[1];
+  ok('al entrar con contraseña también, HttpOnly, Secure y de sesión (se va al cerrar la app)', () => assert.ok(t2 && d2 && /HttpOnly/i.test(cd) && /Secure/i.test(cd) && !/Max-Age|Expires/i.test(cd), cd));
+  const con = (ruta, d) => fetchReal(BASE + ruta, { redirect: 'manual', headers: { Origin: BASE, Cookie: `t=${t2}; d=${d}` } });
+  // Adónde manda: cabecera Location o, si la página ya empezó a enviarse (app/loading.js), la redirección en el HTML.
+  const destino = async (r) => r.headers.get('location') || decodeURIComponent(/NEXT_REDIRECT;\w+;([^;]+);/.exec(await r.text())?.[1] || '');
+  const kv = (cmd) => fetch(process.env.KV_REST_API_URL, { method: 'POST', headers: { Authorization: 'Bearer local' }, body: JSON.stringify(cmd) }).then((r) => r.json()).then((x) => x.result);
+  const ttl = Number(await kv(['TTL', `cuentas:desbloqueo:${d2}`]));
+  ok('el desbloqueo caduca (15 min, se alarga con el uso)', () => assert.ok(ttl > 800 && ttl <= 900, String(ttl)));
+  const bien = await con('/facturas', d2);
+  ok('desbloqueada: la página da sus datos', () => assert.equal(bien.status, 200));
+  const sinD = await con('/facturas', 'falsa');
+  const sinDT = await sinD.clone().text();
+  const aSinD = await destino(sinD);
+  if (modo === 'activo') {
+    ok('sin desbloquear: la página no da datos y manda a /bloqueo con la ruta de vuelta', () => assert.ok(aSinD.startsWith('/bloqueo?a=/facturas') && !sinDT.includes('Ana') && !sinDT.includes('Gestoría'), `${sinD.status} ${aSinD}`));
+    const pb = await con('/bloqueo?a=%2Ffacturas', 'falsa');
+    const pbT = await pb.text();
+    ok('/bloqueo solo pinta la pantalla de bloqueo, sin datos', () => assert.ok(pb.status === 200 && pbT.includes('pantalla-bloqueo') && !pbT.includes('Ana') && !pbT.includes('Gestoría')));
+    const sinU = await fetchReal(BASE + '/bloqueo', { redirect: 'manual', headers: { Origin: BASE } });
+    ok('/bloqueo sin sesión manda al login', () => assert.ok(sinU.headers.get('location')?.includes('/login')));
+  } else ok(`modo ${modo}: sin desbloquear la página sigue dando datos (solo se registra)`, () => assert.ok(sinD.status === 200 && !aSinD && sinDT.includes('Ana')));
+  const vuelve = await destino(await con('/bloqueo?a=%2Ffacturas', d2));
+  ok('ya desbloqueada, /bloqueo devuelve a la página de antes', () => assert.equal(vuelve, '/facturas'));
+  const fuera = await destino(await con('/bloqueo?a=' + encodeURIComponent('//malo.com/x'), d2));
+  const fuera2 = await destino(await con('/bloqueo?a=' + encodeURIComponent('https://malo.com'), d2));
+  ok('y nunca a otra web', () => assert.deepEqual([fuera, fuera2], ['/', '/']));
+  const seguir = await (await fetchReal(BASE + '/api/bloqueo', { method: 'POST', headers: { Origin: BASE, Cookie: `t=${t2}; d=${d2}`, 'Content-Type': 'application/json' }, body: '{"accion":"seguir"}' })).json();
+  ok('«seguir» con la app abierta mantiene el desbloqueo', () => assert.equal(seguir.ok, true));
+  const otraSesion = await (await fetchReal(BASE + '/api/bloqueo', { method: 'POST', headers: { Origin: BASE, Cookie: `t=${yo}; d=${d2}`, 'Content-Type': 'application/json' }, body: '{"accion":"seguir"}' })).json();
+  ok('el desbloqueo de una sesión no vale para otra', () => assert.equal(otraSesion.ok, false));
+  const bl = await fetchReal(BASE + '/api/bloqueo', { method: 'POST', headers: { Origin: BASE, Cookie: `t=${t2}; d=${d2}`, 'Content-Type': 'application/json' }, body: '{}' });
+  const queda = await kv(['GET', `cuentas:desbloqueo:${d2}`]);
+  ok('al bloquearse la app, el servidor borra el desbloqueo', () => assert.ok(bl.ok && !queda));
+  const tras = await destino(await con('/facturas', d2));
+  ok(modo === 'activo' ? 'y la página vuelve a mandar a /bloqueo' : `y (modo ${modo}) la página sigue respondiendo`, () => assert.equal(tras.startsWith('/bloqueo'), modo === 'activo'));
+  const ajena = await fetchReal(BASE + '/api/bloqueo', { method: 'POST', headers: { Origin: 'https://malo.com', Cookie: `t=${t2}`, 'Content-Type': 'application/json' }, body: '{}' });
+  ok('bloquear desde otra web: no (CSRF)', () => assert.equal(ajena.status, 403));
+  const inv = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { nombre: 'Bloqueo', email: `bq${Date.now()}@test.es`, rol: 'miembro', permisos: ['facturas'] } })).json();
+  const fi = new FormData(); fi.set('codigo', inv.enlace.split('/').pop()); fi.set('password', 'bloqueo123');
+  const acepta = await fetchReal(BASE + '/api/invitacion', { method: 'POST', redirect: 'manual', headers: { Origin: BASE }, body: fi });
+  ok('al aceptar una invitación también se recibe', () => assert.ok(dDe(acepta)));
 }
 
 console.log(fallos ? `\n${fallos} comprobaciones fallidas: NO publicar.` : '\nTodo cuadra.');
