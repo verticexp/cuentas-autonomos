@@ -5,7 +5,7 @@ import './movil.css';
 import './diseno.css';
 import './pulido.css';
 import TabBar from '@/components/TabBar';
-import { usuarioActual } from '@/lib/auth';
+import { desbloqueada, modoBloqueo, usuarioActual } from '@/lib/auth';
 import { COLOR_BASE } from '@/lib/marca';
 import { permisosDe } from '@/lib/permisos';
 import Bloqueo from '@/components/Bloqueo';
@@ -34,6 +34,8 @@ export default async function RootLayout({ children }) {
   const u = await usuarioActual().catch(() => null);
   const propio = u?.marca?.color;
   const color = propio || COLOR_BASE;
+  // Con el bloqueo del servidor activo y sin desbloquear, la pantalla de bloqueo sale aunque el navegador la diera por abierta.
+  const abierta = !u || modoBloqueo() !== 'activo' || (await desbloqueada().catch(() => false));
   return (
     <html lang="es" suppressHydrationWarning>
       <head>
@@ -44,7 +46,7 @@ export default async function RootLayout({ children }) {
         <script dangerouslySetInnerHTML={{ __html: 'window.__arranque=performance.now()' }} />
         {children}
         <Suspense><TabBar permisos={permisosDe(u)} empresas={u?.misEmpresas} empresa={u?.empresa} admin={Boolean(u?.admin)} /><Llegada /><BarraEstado /></Suspense>
-        {u && <Bloqueo email={u.email} />}
+        {u && <Bloqueo email={u.email} servidor={abierta} />}
       </body>
     </html>
   );
