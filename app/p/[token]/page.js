@@ -4,6 +4,7 @@ import { importes } from '@/lib/calculos';
 import { eur, fechaTexto, hoy, textoEvento } from '@/lib/formato';
 import { baseSenal, caduca, estadoDe, numeroPresupuesto } from '@/lib/presupuestos';
 import { Responder } from '@/components/AccionesPresupuesto';
+import Conceptos from '@/components/Conceptos';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Presupuesto', robots: { index: false } };
@@ -33,6 +34,7 @@ export default async function PresupuestoCliente({ params }) {
         </dl>
         {textoEvento(p) && <div className="fh-pie"><span>{textoEvento(p)}</span></div>}
       </section>
+      <Conceptos lineas={p.lineas} />
       <p className="nota">Para: {p.cliente.nombre}{p.cliente.nif ? ` (${p.cliente.nif})` : ''}</p>
       {p.senalPct > 0 && <p className="nota">Al aceptar se factura una señal del {p.senalPct} % ({eur(baseSenal(p))} + IVA); el resto, después del evento.</p>}
       {p.nota && <p className="nota">{p.nota}</p>}
