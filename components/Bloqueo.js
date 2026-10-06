@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import EntrarLlave from '@/components/EntrarLlave';
 import Logo from '@/components/Logo';
 import PanelMarca from '@/components/PanelMarca';
@@ -28,6 +29,7 @@ export default function Bloqueo({ email, servidor = true }) {
   const [saliendo, setSaliendo] = useState(false);
   const pass = useRef(null);
   const listo = useTrasArranque();
+  const router = useRouter();
 
   const abrir = useCallback((animar = true) => {
     if (animar && document.documentElement.dataset.arranque === 'visto') entrada();
@@ -72,7 +74,8 @@ export default function Bloqueo({ email, servidor = true }) {
 
   // Con otra cuenta (otro email u otra llave), la página se recarga con sus datos.
   // En /bloqueo (el servidor no dio datos), se recarga y el servidor la devuelve a la página de antes.
-  const entro = (otra) => { if (otra || location.pathname === '/bloqueo') { marcarAbierta(); location.reload(); } else salir(); };
+  // Si no, refresh: olvida lo que el navegador guardó mientras estaba bloqueada (redirecciones a /bloqueo), o se queda cargando.
+  const entro = (otra) => { if (otra || location.pathname === '/bloqueo') { marcarAbierta(); location.reload(); } else { router.refresh(); salir(); } };
 
   async function entrar(e) {
     e.preventDefault();
