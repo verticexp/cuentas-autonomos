@@ -4,6 +4,7 @@ import { leerHoja } from '@/lib/hoja';
 import { esNorma43, leerNorma43, leerTablaBanco } from '@/lib/banco';
 import { actualizarSaldo, guardarMovimientos } from '@/lib/bancoServidor';
 import { hoy } from '@/lib/formato';
+import { MUCHOS, pasado } from '@/lib/limite';
 
 export const dynamic = 'force-dynamic';
 const MAX_MB = 5, MAX_MOV = 5000;
@@ -12,6 +13,7 @@ const MAX_MB = 5, MAX_MOV = 5000;
 export async function POST(req) {
   const { u, res } = await usuarioApi({ permiso: 'resumen' });
   if (res) return res;
+  if (await pasado('importar', u.id, 30, 3600)) return error(MUCHOS, 429);
   const form = await req.formData().catch(() => null);
   const archivo = form?.get('archivo');
   if (!archivo || typeof archivo === 'string' || !archivo.size) return error('Elige el extracto (Norma 43, .csv o .xlsx)');
