@@ -21,6 +21,8 @@ globalThis.fetch = async (url, op = {}) => {
   const ck = op.headers?.Cookie;
   const t = /(?:^|; )t=([^;]+)/.exec(ck || '')?.[1];
   if (t && DESBLOQUEOS[t] && !/(?:^|; )d=/.test(ck)) op = { ...op, headers: { ...op.headers, Cookie: `${ck}; d=${DESBLOQUEOS[t]}` } };
+  // Límite de intentos por IP: cada petición como si viniera de una IP distinta (la sección «Límite de intentos» fija la suya).
+  if (!op.headers?.['X-Real-IP'] && !(op.headers instanceof Headers)) op = { ...op, headers: { ...op.headers, 'X-Real-IP': `10.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}` } };
   const r = await fetchReal(url, op);
   const sc = r.headers.getSetCookie?.() || [];
   const nt = sc.map((c) => /^t=([^;]+)/.exec(c)?.[1]).find(Boolean), nd = sc.map((c) => /^d=([^;]+)/.exec(c)?.[1]).find(Boolean);
@@ -1194,6 +1196,35 @@ if (process.env.RESEND_URL) {
   const falso = await fetchReal(BASE + '/api/confirmar?t=falso', { redirect: 'manual' });
   ok('un token falso no confirma nada', () => assert.ok(falso.headers.get('location')?.includes('caducado')));
 } else console.log('  (sin RESEND_URL: se salta)');
+
+console.log('\nLímite de intentos');
+{
+  const modo = { activo: 'activo', off: 'off' }[process.env.LIMITES] || 'registrar';
+  const activo = modo === 'activo';
+  const ip = `203.0.113.${Date.now() % 200}`;
+  const conIp = (ruta, op = {}, desde = ip) => fetchReal(BASE + ruta, { redirect: 'manual', ...op, headers: { Origin: BASE, 'X-Real-IP': desde, ...op.headers } });
+  const invitacion = (desde) => { const f = new FormData(); f.set('codigo', 'falso'); f.set('password', 'xxxxxxxxx'); return conIp('/api/invitacion', { method: 'POST', body: f }, desde); };
+  let r;
+  for (let i = 0; i < 31; i++) r = await invitacion();
+  const loc = r.headers.get('location') || '';
+  ok(activo ? 'invitación: a los 31 intentos en 15 min desde la misma IP, «Demasiados intentos»' : `invitación (modo ${modo}): el intento 31 sigue respondiendo igual`, () => assert.ok(activo ? loc.includes('error=Demasiados') : loc.includes('error=Esta'), loc));
+  const otra = (await invitacion('198.51.100.7')).headers.get('location') || '';
+  ok('desde otra IP sigue respondiendo con normalidad', () => assert.ok(otra.includes('error=Esta'), otra));
+  const kv = (cmd) => fetch(process.env.KV_REST_API_URL, { method: 'POST', headers: { Authorization: 'Bearer local' }, body: JSON.stringify(cmd) }).then((x) => x.json()).then((x) => x.result);
+  const ttl = Number(await kv(['TTL', `cuentas:limite:invitacion:${ip}`]));
+  ok(modo === 'off' ? 'modo off: no cuenta nada' : 'el contador caduca solo (15 min)', () => assert.ok(modo === 'off' ? ttl === -2 : ttl > 0 && ttl <= 900, String(ttl)));
+  for (let i = 0; i < 61; i++) r = await conIp('/api/passkey', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"accion":"entrar-opciones"}' });
+  ok(`llave de acceso: a las 61 llamadas en 15 min ${activo ? '429' : 'sigue respondiendo'}`, () => assert.equal(r.status, activo ? 429 : 200));
+  for (let i = 0; i < 31; i++) r = await pedir('/api/banco/importar', { metodo: 'POST', cookie: yo, form: new FormData() });
+  ok(`importar extractos: a la subida 31 en una hora ${activo ? '429' : 'sigue respondiendo'}`, () => assert.equal(r.status, activo ? 429 : 400));
+  for (let i = 0; i < 11; i++) r = await pedir('/api/banco/sincronizar', { metodo: 'POST', cookie: yo, cuerpo: { forzar: true } });
+  ok(`«Actualizar» el banco: a la vez 11 en una hora ${activo ? '429' : 'sigue respondiendo'}`, () => assert.equal(r.status, activo ? 429 : 200));
+  const sinForzar = await pedir('/api/banco/sincronizar', { metodo: 'POST', cookie: yo, cuerpo: {} });
+  ok('la sincronización normal (cada 6 horas) no cuenta', () => assert.equal(sinForzar.status, 200));
+  const login = async (email) => { const f = new FormData(); f.set('email', email); f.set('password', 'mal-mal-mal'); return (await (await fetchReal(BASE + '/api/login', { method: 'POST', headers: { Origin: BASE, Accept: 'application/json', 'X-Real-IP': '192.0.2.9' }, body: f })).json()).error; };
+  const [existe, noExiste] = [await login(fd.get('email')), await login(`nadie${Date.now()}@test.es`)];
+  ok('el login no revela si un email tiene cuenta (mismo mensaje)', () => assert.ok(existe && existe === noExiste, `${existe} | ${noExiste}`));
+}
 
 console.log(fallos ? `\n${fallos} comprobaciones fallidas: NO publicar.` : '\nTodo cuadra.');
 process.exit(fallos ? 1 : 0);
