@@ -53,11 +53,13 @@ export default async function Page() {
         </section>
       )}
 
-      <section className="grupo" id="empresas">
-        <h2 className="grupo-t">{u.misEmpresas?.length > 1 ? 'Tus empresas' : 'Más empresas'}</h2>
-        <CambiarEmpresa empresas={u.misEmpresas} actual={u.empresa} />
-        <p className="grupo-pie">Cada empresa con sus datos, su numeración de facturas, sus modelos y sus permisos.</p>
-      </section>
+      {(u.misEmpresas?.length > 1 || u.admin) && (
+        <section className="grupo" id="empresas">
+          <h2 className="grupo-t">{u.misEmpresas?.length > 1 ? 'Tus empresas' : 'Más empresas'}</h2>
+          <CambiarEmpresa empresas={u.misEmpresas} actual={u.empresa} puedeCrear={u.admin} />
+          <p className="grupo-pie">Cada empresa con sus datos, su numeración de facturas, sus modelos y sus permisos.</p>
+        </section>
+      )}
 
       <section className="grupo">
         <div className="grupo-c">
