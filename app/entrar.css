@@ -34,3 +34,10 @@ html[data-saliendo] .form-entrar form, html[data-saliendo] form.form-entrar { op
 @keyframes entrar-form { from { opacity: 0; transform: translateX(24px); } }
 @keyframes entrar-aparece { from { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .login .form-entrar form, .login form.form-entrar, .login-lema { animation: none; } }
+
+/* Al entrar o desbloquear: la pantalla se agranda un poco y se desvanece, dejando ver el resumen que sube por detrás. */
+.pantalla-bloqueo.saliendo, html[data-saliendo] main.login { animation: entrar-sale 0.56s var(--vt-curva) forwards; pointer-events: none; transform-origin: 50% 40%; }
+html[data-saliendo] main.login { animation-duration: 0.42s; }
+@keyframes entrar-sale { to { opacity: 0; transform: scale(1.06); } }
+@media (prefers-reduced-motion: reduce) { .pantalla-bloqueo.saliendo, html[data-saliendo] main.login { animation: none; } }
+html[data-saliendo] #arranque { opacity: 0; transition: opacity 0.42s var(--vt-curva); }
