@@ -42,3 +42,5 @@ details.tarjeta summary::-webkit-details-marker { display: none; }
 .top-cliente strong { flex: none; white-space: nowrap; }
 .imp, .trimestre dd { white-space: nowrap; }
 .mes-detalle { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; font-size: 0.9375rem; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); } .mes-detalle dt { color: var(--muted); } .mes-detalle dd { margin: 0; text-align: right; white-space: nowrap; } .grafica a.mes:active { background: var(--line); }
+/* La página no rebota al llegar arriba o abajo: así la barra de pestañas (fija) no se mueve con el rebote en iPhone. */
+html, body { overscroll-behavior-y: none; }
