@@ -13,6 +13,7 @@ import { enlacePortal } from '@/lib/portal';
 import '@/app/portal.css';
 import FormPresupuesto from '@/components/FormPresupuesto';
 import Volver from '@/components/Volver';
+import Conceptos from '@/components/Conceptos';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,6 +44,7 @@ export default async function Presupuesto({ params }) {
           {textoEvento(p) && <span>{textoEvento(p)}</span>}
         </div>
       </section>
+      {p.estado !== 'pendiente' && <Conceptos lineas={p.lineas} />}
       {p.respuesta && <p className="nota">{p.estado === 'rechazado' ? 'Rechazado' : 'Aceptado'} por {p.respuesta.nombre} el {fechaTexto(p.respuesta.fecha.slice(0, 10))}.</p>}
       {p.facturas.length > 0 && <p className="nota">Facturas: {p.facturas.map((f, n) => <span key={f.id}>{n ? ', ' : ''}<Link href={`/facturas/${f.id}`}>{f.numero}</Link> ({f.tipo === 'senal' ? 'señal' : senal ? 'resto' : 'total'})</span>)}</p>}
       {editar && <div className="acciones-factura">
