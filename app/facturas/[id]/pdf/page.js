@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { requerir, usuarioActual } from '@/lib/auth';
+import { requerir } from '@/lib/auth';
 import { leerUno } from '@/lib/redis';
 import { numeroFactura } from '@/lib/calculos';
 import Volver from '@/components/Volver';
@@ -11,7 +11,7 @@ import '../../../factura.css';
 export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }) {
-  const u = await usuarioActual();
+  const u = await requerir('facturas');
   const f = u && (await leerUno(u, 'facturas', (await params).id));
   return { title: f ? `${numeroFactura(f)}-${f.cliente.nombre.toUpperCase().replace(/[^A-Z0-9]+/g, '-')}` : 'Factura' };
 }
