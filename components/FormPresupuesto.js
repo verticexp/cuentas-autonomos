@@ -4,31 +4,43 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
 import Deslizable from './Deslizable';
-import { importes, leerImporte } from '@/lib/calculos';
+import { baseLinea, importes, leerImporte } from '@/lib/calculos';
+import '@/app/lineas.css';
 import { eur } from '@/lib/formato';
 
 const VACIO = { nombre: '', nif: '', direccion: '', ciudad: '' };
+const aTexto = (n) => String(n ?? '').replace('.', ',');
+const lineaVacia = () => ({ concepto: '', cantidad: '1', precio: '' });
+// Los presupuestos antiguos tienen un solo concepto con su base: pasan a ser una línea.
+const lineasDe = (x) => (x.lineas?.length
+  ? x.lineas.map((l) => ({ concepto: l.concepto, cantidad: aTexto(l.cantidad), precio: aTexto(l.precio) }))
+  : [{ concepto: x.concepto || '', cantidad: '1', precio: aTexto(x.base) }]);
 
 export default function FormPresupuesto({ presupuesto, clientes, actividades, hoy, numero }) {
   const router = useRouter();
   const nuevo = !presupuesto;
   const defecto = (id) => { const a = actividades.find((x) => x.id === id) || actividades[0]; return { ivaPct: a.ivaPct, irpfPct: a.irpfPct }; };
   const [p, setP] = useState(() => presupuesto
-    ? { ...presupuesto, base: String(presupuesto.base).replace('.', ',') }
-    : { actividad: actividades[0].id, fecha: hoy, cliente: VACIO, concepto: '', base: '', nota: '', evento: { fecha: '', lugar: '' }, senalPct: 30, validez: 15, ...defecto(actividades[0].id) });
+    ? { ...presupuesto, lineas: lineasDe(presupuesto) }
+    : { actividad: actividades[0].id, fecha: hoy, cliente: VACIO, lineas: [lineaVacia()], nota: '', evento: { fecha: '', lugar: '' }, senalPct: 30, validez: 15, ...defecto(actividades[0].id) });
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
   const poner = (k, v) => setP((x) => ({ ...x, [k]: v }));
   const ponerCliente = (k, v) => poner('cliente', { ...p.cliente, [k]: v });
   const elegido = clientes.find((x) => x.nombre.toUpperCase() === p.cliente.nombre.trim().toUpperCase())?.id || '';
   const elegirCliente = (id) => { const c = clientes.find((x) => x.id === id); poner('cliente', c ? { nombre: c.nombre, nif: c.nif, direccion: c.direccion, ciudad: c.ciudad } : VACIO); };
-  const t = importes({ base: leerImporte(p.base) || 0, ivaPct: Number(p.ivaPct), irpfPct: Number(p.irpfPct) });
+  const ponerLinea = (i, k, v) => setP((x) => ({ ...x, lineas: x.lineas.map((l, j) => (j === i ? { ...l, [k]: v } : l)) }));
+  const quitarLinea = (i) => setP((x) => ({ ...x, lineas: x.lineas.filter((_, j) => j !== i) }));
+  const anadirLinea = () => setP((x) => ({ ...x, lineas: [...x.lineas, lineaVacia()] }));
+  const nums = p.lineas.map((l) => ({ cantidad: leerImporte(l.cantidad) || 0, precio: leerImporte(l.precio) || 0 }));
+  const base = Math.round(nums.reduce((s, l) => s + baseLinea(l), 0) * 100) / 100;
+  const t = importes({ base, ivaPct: Number(p.ivaPct), irpfPct: Number(p.irpfPct) });
 
   const enviar = async (e) => {
     e.preventDefault();
     setEnviando(true); setError('');
     try {
-      const d = await llamar('/api/presupuestos', { method: nuevo ? 'POST' : 'PATCH', body: JSON.stringify(p) });
+      const d = await llamar('/api/presupuestos', { method: nuevo ? 'POST' : 'PATCH', body: JSON.stringify({ ...p, lineas: p.lineas.map((l) => ({ ...l, ivaPct: p.ivaPct })) }) });
       router.push(`/presupuestos/${nuevo ? d.presupuesto.id : p.id}`);
       router.refresh();
     } catch (err) { setError(err.message); setEnviando(false); }
@@ -54,12 +66,27 @@ export default function FormPresupuesto({ presupuesto, clientes, actividades, ho
         <input className="campo" placeholder="Dirección" value={p.cliente.direccion} onChange={(e) => ponerCliente('direccion', e.target.value)} />
         <input className="campo" placeholder="Ciudad y CP" value={p.cliente.ciudad} onChange={(e) => ponerCliente('ciudad', e.target.value)} />
       </fieldset>
-      <label>Concepto<input className="campo" placeholder="Sonido e iluminación para boda" value={p.concepto} onChange={(e) => poner('concepto', e.target.value)} required /></label>
       <div className="dos-col">
         <label>Fecha del evento<input className="campo" type="date" value={p.evento?.fecha || ''} onChange={(e) => poner('evento', { ...p.evento, fecha: e.target.value })} /></label>
         <label>Lugar<input className="campo" placeholder="Hotel Arts" value={p.evento?.lugar || ''} onChange={(e) => poner('evento', { ...p.evento, lugar: e.target.value })} /></label>
       </div>
-      <label>Base (sin IVA)<input className="campo" inputMode="decimal" placeholder="0,00" value={p.base} onChange={(e) => poner('base', e.target.value)} required /></label>
+      <fieldset className="lineas">
+        <legend>Conceptos</legend>
+        {p.lineas.map((l, i) => (
+          <div className="linea" key={i}>
+            <div className="linea-cab">
+              <input className="campo" placeholder={i ? 'Concepto' : 'Sonido e iluminación para boda'} aria-label="Concepto" value={l.concepto} onChange={(e) => ponerLinea(i, 'concepto', e.target.value)} required />
+              {p.lineas.length > 1 && <button type="button" className="linea-quitar" aria-label="Quitar concepto" onClick={() => quitarLinea(i)}>×</button>}
+            </div>
+            <div className="linea-nums dos">
+              <label>Cantidad<input className="campo" inputMode="decimal" value={l.cantidad} onChange={(e) => ponerLinea(i, 'cantidad', e.target.value)} /></label>
+              <label>Precio (sin IVA)<input className="campo" inputMode="decimal" placeholder="0,00" value={l.precio} onChange={(e) => ponerLinea(i, 'precio', e.target.value)} required /></label>
+            </div>
+            {p.lineas.length > 1 && <p className="linea-total">{eur(baseLinea(nums[i]))}</p>}
+          </div>
+        ))}
+        <button type="button" className="boton sec" onClick={anadirLinea}>+ Añadir otro concepto</button>
+      </fieldset>
       <div className="dos-col">
         <label>IVA
           <select className="campo" value={p.ivaPct} onChange={(e) => poner('ivaPct', Number(e.target.value))}>{[21, 10, 0].map((n) => <option key={n} value={n}>{n}%</option>)}</select>
@@ -78,7 +105,7 @@ export default function FormPresupuesto({ presupuesto, clientes, actividades, ho
       </div>
       <label>Condiciones (opcional)<input className="campo" placeholder="Incluye montaje y desmontaje" value={p.nota || ''} onChange={(e) => poner('nota', e.target.value)} /></label>
       <div className="totales">
-        <span>IVA {eur(t.iva)}</span>{t.irpf > 0 && <span>IRPF −{eur(t.irpf)}</span>}<strong>Total {eur(t.total)}</strong>
+        <span>Base {eur(t.base)}</span><span>IVA {eur(t.iva)}</span>{t.irpf > 0 && <span>IRPF −{eur(t.irpf)}</span>}<strong>Total {eur(t.total)}</strong>
       </div>
       {error && <p className="error">{error}</p>}
       <button className="boton" disabled={enviando}>{enviando ? 'Guardando…' : nuevo ? 'Crear presupuesto' : 'Guardar cambios'}</button>

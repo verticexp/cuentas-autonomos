@@ -29,9 +29,12 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false })
     const archivo = e.target.files?.[0];
     e.target.value = '';
     if (!archivo) return;
-    setLeyendo('Leyendo el ticket…'); setError('');
+    const pdf = archivo.type === 'application/pdf';
+    if (pdf && archivo.size > 5e6) { setError('El PDF es demasiado grande (máx. 5 MB)'); return; }
+    setLeyendo(pdf ? 'Leyendo la factura…' : 'Leyendo el ticket…'); setError('');
     try {
-      const d = await llamar('/api/gastos/ticket', { method: 'POST', body: JSON.stringify({ imagen: await reducir(archivo) }) });
+      const imagen = pdf ? await new Promise((ok, mal) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = mal; r.readAsDataURL(archivo); }) : await reducir(archivo);
+      const d = await llamar('/api/gastos/ticket', { method: 'POST', body: JSON.stringify({ imagen }) });
       const t = d.gasto;
       setG((x) => ({ ...x, proveedor: t.proveedor || x.proveedor, proveedorNif: t.nif || x.proveedorNif, concepto: t.concepto || t.proveedor || x.concepto, base: t.base !== '' ? String(t.base).replace('.', ',') : x.base, ivaPct: t.ivaPct, fecha: t.fecha }));
       setLeyendo('Revisa los datos antes de guardar.');
@@ -58,7 +61,14 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false })
           <button type="button" key={id} className={g.actividad === id ? 'activo' : ''} onClick={() => poner('actividad', id)}>{nombre}</button>
         ))}
       </Deslizable>}
-      {!gasto && <label className="boton sec ancho ticket-foto">📷 Foto del ticket<input type="file" accept="image/*" capture="environment" onChange={foto} hidden /></label>}
+      {!gasto && <div className="ticket-ia">
+        <p className="ticket-ia-t">Rellénalo con IA</p>
+        <p className="ticket-ia-txt">Haz una foto del ticket o sube la factura que te han enviado (imagen o PDF). Netto lee el proveedor, el NIF, la base, el IVA y la fecha; tú solo revisas y guardas.</p>
+        <div className="ticket-ia-botones">
+          <label className="boton sec ticket-foto">Hacer foto<input type="file" accept="image/*" capture="environment" onChange={foto} hidden /></label>
+          <label className="boton sec ticket-foto">Subir factura<input type="file" accept="image/*,application/pdf" onChange={foto} hidden /></label>
+        </div>
+      </div>}
       {leyendo && <p className="nota ticket-nota" role="status">{leyendo}</p>}
       <input className="campo" placeholder="Proveedor (opcional)" value={g.proveedor || ''} onChange={(e) => poner('proveedor', e.target.value)} />
       {g.proveedor && <input className="campo" placeholder="NIF del proveedor (opcional)" value={g.proveedorNif || ''} onChange={(e) => poner('proveedorNif', e.target.value)} />}

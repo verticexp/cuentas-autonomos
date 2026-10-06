@@ -122,7 +122,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
           </div>
         ))}
         {productos.length > 0 && <div className="catalogo-chips" aria-label="Añadir del catálogo">{productos.map((p) => <button type="button" key={p.id} onClick={() => delCatalogo(p)}>+ {p.nombre}</button>)}</div>}
-        <button type="button" className="boton sec" onClick={anadirLinea}>+ Añadir línea</button>
+        <button type="button" className="boton sec" onClick={anadirLinea}>+ Añadir otro concepto</button>
       </fieldset>
 
       <label>IRPF
