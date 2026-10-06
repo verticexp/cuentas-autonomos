@@ -5,13 +5,14 @@ import { enEmpresa } from '@/lib/membresias';
 
 export const dynamic = 'force-dynamic';
 
-// Cambiar de empresa (la elegida se recuerda en este dispositivo) o crear otra en la misma cuenta.
+// Cambiar de empresa (la elegida se recuerda en este dispositivo) o crear otra en la misma cuenta (solo el administrador de la app).
 export async function POST(req) {
   const { u, res } = await usuarioApi();
   if (res) return res;
   const b = await cuerpo(req);
   let id = String(b.id || '');
   if (b.nueva !== undefined) {
+    if (!u.admin) return error('Solo el administrador de Netto puede dar de alta empresas', 403);
     const r = await nuevaEmpresa(u.id, b.nueva);
     if (r.error) return error(r.error);
     id = r.id;
