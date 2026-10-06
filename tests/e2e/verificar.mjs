@@ -25,6 +25,13 @@ globalThis.fetch = async (url, op = {}) => {
   const sc = r.headers.getSetCookie?.() || [];
   const nt = sc.map((c) => /^t=([^;]+)/.exec(c)?.[1]).find(Boolean), nd = sc.map((c) => /^d=([^;]+)/.exec(c)?.[1]).find(Boolean);
   if (nd && (nt || t)) DESBLOQUEOS[nt || t] = nd;
+  // Email confirmado: tras registrarse o aceptar una invitación, abre el enlace del email de confirmación (como haría la persona).
+  if (nt && /\/api\/(registro|invitacion)$/.test(String(url)) && process.env.RESEND_URL) {
+    const { readFileSync } = await import('node:fs');
+    let ultimo = ''; try { ultimo = readFileSync('/tmp/resend.json', 'utf8').trim().split('\n').pop(); } catch {}
+    const conf = /\/api\/confirmar\?t=[\w-]+/.exec(ultimo)?.[0];
+    if (conf) await fetchReal(BASE + conf, { redirect: 'manual' });
+  }
   return r;
 };
 const ok = (nombre, fn) => { try { fn(); console.log(`  ✓ ${nombre}`); } catch (e) { fallos += 1; console.log(`  ✗ ${nombre}\n    ${e.message.split('\n')[0]}`); } };
@@ -967,7 +974,8 @@ if (process.env.RESEND_URL) {
   const eA = JSON.parse(await kv(['HGET', 'cuentas:empresas', await kv(['HGET', 'cuentas:emails', fd.get('email')])]));
   const empA = eA.emisor?.nombre || eA.nombre;
   ok('el asunto dice quién invita y a qué empresa', () => assert.equal(m1?.subject, `Prueba te ha invitado a ${empA} en Netto`));
-  ok('botón y enlace en texto con el mismo enlace que ve el administrador', () => assert.ok(m1.html.split(`href="${iv.enlace}"`).length === 3 && m1.html.includes(`>${iv.enlace}</a>`) && m1.html.includes('Aceptar la invitación')));
+  const urlM1 = /href="([^"]+)"/.exec(m1?.html || '')?.[1] || '';
+  ok('botón y enlace en texto con el enlace que ve el administrador más el token de confirmar el email', () => assert.ok(urlM1.startsWith(`${iv.enlace}?v=`) && m1.html.split(`href="${urlM1}"`).length === 3 && m1.html.includes(`>${urlM1}</a>`) && m1.html.includes('Aceptar la invitación'), urlM1));
   ok('sin imagen de seguimiento', () => assert.ok(!/<img/i.test(m1.html) && !m1.html.includes('/api/abierta')));
   ok('responder va al email de quien invita', () => assert.equal(m1.reply_to, fd.get('email')));
   const abre = n(await texto(new URL(iv.enlace).pathname));
@@ -1109,6 +1117,83 @@ console.log('\nBloqueo en el servidor');
   const acepta = await fetchReal(BASE + '/api/invitacion', { method: 'POST', redirect: 'manual', headers: { Origin: BASE }, body: fi });
   ok('al aceptar una invitación también se recibe', () => assert.ok(dDe(acepta)));
 }
+
+console.log('\nEmail confirmado');
+if (process.env.RESEND_URL) {
+  const { readFileSync, rmSync } = await import('node:fs');
+  const modo = { activo: 'activo', off: 'off' }[process.env.VERIFICAR_EMAIL] || 'registrar';
+  const correos = () => { try { return readFileSync('/tmp/resend.json', 'utf8').trim().split('\n').filter(Boolean).map((l) => JSON.parse(l)); } catch { return []; } };
+  const kv = (cmd) => fetch(process.env.KV_REST_API_URL, { method: 'POST', headers: { Authorization: 'Bearer local' }, body: JSON.stringify(cmd) }).then((r) => r.json()).then((x) => x.result);
+  const usuario = async (id) => JSON.parse(await kv(['HGET', 'cuentas:usuarios', id]));
+  const destino = async (r) => r.headers.get('location') || decodeURIComponent(/NEXT_REDIRECT;\w+;([^;]+);/.exec(await r.text())?.[1] || '');
+  const yoId = await kv(['HGET', 'cuentas:emails', fd.get('email').toLowerCase()]);
+  const yoU = await usuario(yoId);
+  ok('la cuenta registrada queda confirmada tras abrir el enlace', () => assert.equal(yoU.emailVerificado, true));
+  const invitar = async (nombre) => {
+    rmSync('/tmp/resend.json', { force: true });
+    const email = `${nombre.toLowerCase()}${Date.now()}@test.es`;
+    const r = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { nombre, email, rol: 'miembro', permisos: ['facturas'] } })).json();
+    const mail = correos().pop();
+    const url = /href="([^"]+)"/.exec(mail?.html || '')?.[1]?.replace(/&amp;/g, '&') || '';
+    return { ...r, email, url, id: await kv(['HGET', 'cuentas:emails', email]) };
+  };
+  const aceptar = (codigo, pass, v) => { const f = new FormData(); f.set('codigo', codigo); f.set('password', pass); if (v) f.set('v', v); return fetchReal(BASE + '/api/invitacion', { method: 'POST', redirect: 'manual', headers: { Origin: BASE }, body: f }); };
+  const cookiesDe = (r) => r.headers.getSetCookie().map((c) => c.split(';')[0]).filter((c) => /^[td]=/.test(c)).join('; ');
+  const con = (ruta, ck, op = {}) => fetchReal(BASE + ruta, { redirect: 'manual', ...op, headers: { Origin: BASE, Cookie: ck, ...op.headers } });
+
+  const ana = await invitar('Ana');
+  const vAna = new URL(ana.url || 'http://x/').searchParams.get('v');
+  ok('el email de invitación lleva el token de confirmar (?v=); el enlace que ve el administrador, no', () => assert.ok(vAna && !ana.enlace.includes('v='), ana.url));
+  const pv = await (await fetchReal(BASE + new URL(ana.url).pathname + new URL(ana.url).search)).text();
+  ok('la página de invitación lo pasa al formulario', () => assert.ok(pv.includes(`name="v" value="${vAna}"`)));
+  rmSync('/tmp/resend.json', { force: true });
+  await aceptar(ana.enlace.split('/').pop(), 'anaana1234', vAna);
+  const anaU = await usuario(ana.id);
+  ok('quien entra con el enlace del email queda confirmada y no recibe otro email', () => assert.ok(anaU.emailVerificado === true && correos().length === 0, JSON.stringify(anaU.emailVerificado)));
+
+  const bea = await invitar('Bea');
+  const otro = await invitar('Otro');
+  rmSync('/tmp/resend.json', { force: true });
+  const ab = await aceptar(bea.enlace.split('/').pop(), 'beabea1234', new URL(otro.url).searchParams.get('v'));
+  const ckB = cookiesDe(ab);
+  const beaU = await usuario(bea.id);
+  const conf = correos().find((m) => m.to?.[0] === bea.email);
+  ok('con el enlace del administrador (o el token de otra persona) queda sin confirmar', () => assert.equal(beaU.emailVerificado, false));
+  ok('y le llega un email para confirmarlo', () => assert.ok(conf?.subject === 'Confirma tu email en Netto' && /\/api\/confirmar\?t=/.test(conf.html)));
+  const pag = await con('/facturas', ckB);
+  const aPag = await destino(pag.clone());
+  const api = await con('/api/exportar?tipo=facturas', ckB);
+  if (modo === 'activo') {
+    ok('sin confirmar: las páginas mandan a /confirmar-email', () => assert.equal(aPag, '/confirmar-email'));
+    ok('y la API no da datos (403)', () => assert.equal(api.status, 403));
+  } else ok(`modo ${modo}: sin confirmar sigue entrando (solo se registra)`, () => assert.ok(!aPag && pag.status === 200 && api.status === 200, `${pag.status} ${aPag} ${api.status}`));
+  const pce = await (await con('/confirmar-email', ckB)).text();
+  ok('/confirmar-email dice a qué email ha ido y deja reenviarlo', () => assert.ok(pce.includes(bea.email) && pce.includes('Reenviar el enlace')));
+  rmSync('/tmp/resend.json', { force: true });
+  await con('/api/confirmar', ckB, { method: 'POST' });
+  await con('/api/confirmar', ckB, { method: 'POST' });
+  ok('reenviar manda otro enlace, como mucho uno por minuto', () => assert.equal(correos().length, 1));
+  const enlaceConf = /\/api\/confirmar\?t=[\w-]+/.exec(correos()[0]?.html || '')?.[0];
+  const abre = await fetchReal(BASE + enlaceConf, { redirect: 'manual' });
+  const beaU2 = await usuario(bea.id);
+  ok('el enlace confirma el email (aunque se abra sin sesión) y lleva a la app', () => assert.ok(beaU2.emailVerificado === true && abre.headers.get('location')?.endsWith('/'), abre.headers.get('location')));
+  const otraVez = await fetchReal(BASE + enlaceConf, { redirect: 'manual' });
+  ok('un enlace ya usado no vale', () => assert.ok(otraVez.headers.get('location')?.includes('caducado')));
+  const pag2 = await con('/facturas', ckB);
+  ok('ya confirmada entra con normalidad', () => assert.ok(pag2.status === 200 && !(pag2.headers.get('location'))));
+  const ya = await con('/confirmar-email', ckB);
+  const aYa = await destino(ya);
+  ok('/confirmar-email ya confirmada la devuelve a la app', () => assert.equal(aYa, '/'));
+  const zoe = await invitar('Zoe');
+  const az = await aceptar(zoe.enlace.split('/').pop(), 'zoezoe1234');
+  const z = await usuario(zoe.id);
+  delete z.emailVerificado;
+  await kv(['HSET', 'cuentas:usuarios', zoe.id, JSON.stringify(z)]);
+  const aZ = await destino(await con('/facturas', cookiesDe(az)));
+  ok('las cuentas de antes (sin la marca) siguen entrando: no hace falta migrar', () => assert.ok(!aZ.startsWith('/confirmar-email'), aZ));
+  const falso = await fetchReal(BASE + '/api/confirmar?t=falso', { redirect: 'manual' });
+  ok('un token falso no confirma nada', () => assert.ok(falso.headers.get('location')?.includes('caducado')));
+} else console.log('  (sin RESEND_URL: se salta)');
 
 console.log(fallos ? `\n${fallos} comprobaciones fallidas: NO publicar.` : '\nTodo cuadra.');
 process.exit(fallos ? 1 : 0);
