@@ -4,7 +4,7 @@ import { redis } from '@/lib/redis';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { limpiarPermisos, puede } from '@/lib/permisos';
 import { conMembresia, enEmpresa, membresias } from '@/lib/membresias';
-import { INVITACION_DIAS, limpiarEmail } from '@/lib/auth';
+import { INVITACION_DIAS, limpiarEmail, tokenEmail } from '@/lib/auth';
 import { enviarInvitacion } from '@/lib/invitacion';
 
 const enlace = (req, codigo) => new URL(`/invitacion/${codigo}`, req.url).toString();
@@ -12,7 +12,8 @@ const enlace = (req, codigo) => new URL(`/invitacion/${codigo}`, req.url).toStri
 // Si el email no sale, la persona queda creada igual y se avisa para copiar el enlace a mano.
 const invitar = async (req, quien, o, empresa, codigo) => {
   const url = enlace(req, codigo);
-  const e = await enviarInvitacion({ para: o.email, nombre: o.nombre, quien: quien.nombre, empresa, url, responderA: quien.email, dias: INVITACION_DIAS });
+  // El del email lleva ?v=: quien entra con él confirma su email (el que ve el administrador, no).
+  const e = await enviarInvitacion({ para: o.email, nombre: o.nombre, quien: quien.nombre, empresa, url: `${url}?v=${await tokenEmail(o.id)}`, responderA: quien.email, dias: INVITACION_DIAS });
   return Response.json({ ok: true, enlace: url, email: o.email, ...e });
 };
 // Nombre de la empresa de quien invita: el de facturación si lo tiene; si solo es su propio nombre, ninguno.
