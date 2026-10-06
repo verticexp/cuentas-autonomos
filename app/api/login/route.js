@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { entrar, opcionesCookie } from '@/lib/auth';
+import { desbloqueo, entrar, opcionesCookie, opcionesDesbloqueo } from '@/lib/auth';
 
 export async function POST(req) {
   const form = await req.formData();
@@ -10,11 +10,13 @@ export async function POST(req) {
     if (!r?.token) return NextResponse.json({ error: r?.bloqueado ? 'Demasiados intentos. Espera 15 minutos.' : 'Email o contraseña incorrectos.' }, { status: 401 });
     const res = NextResponse.json({ ok: true });
     res.cookies.set('t', r.token, opcionesCookie);
+    res.cookies.set('d', await desbloqueo(r.token), opcionesDesbloqueo);
     return res;
   }
   if (!r?.token) return NextResponse.redirect(new URL(`/login?error=${r?.bloqueado ? 'bloqueado' : 1}`, req.url), 303);
   const res = NextResponse.redirect(new URL('/', req.url), 303);
   res.cookies.set('t', r.token, opcionesCookie);
+  res.cookies.set('d', await desbloqueo(r.token), opcionesDesbloqueo);
   res.cookies.set('recien', '1', { path: '/', maxAge: 60, sameSite: 'lax' }); // acaba de entrar: sin pantalla de bloqueo
   return res;
 }
