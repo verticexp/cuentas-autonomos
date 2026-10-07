@@ -1159,6 +1159,54 @@ console.log('\nAislamiento entre empresas (todas las rutas /api)');
   ok('el asistente de C no recibe datos de B', () => assert.ok(!/Secreto|Víctima/.test(ia)));
 }
 
+console.log('\nSesiones y contraseñas');
+{
+  const kv = (cmd) => fetch(process.env.KV_REST_API_URL, { method: 'POST', headers: { Authorization: 'Bearer local' }, body: JSON.stringify(cmd) }).then((r) => r.json()).then((x) => x.result);
+  const email = `sesion${Date.now()}@test.es`, clave = 'sesionclave1';
+  const inv = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { nombre: 'Sesiones', email, rol: 'miembro', permisos: ['facturas'] } })).json();
+  const fi = new FormData(); fi.set('codigo', inv.enlace.split('/').pop()); fi.set('password', clave);
+  await pedir('/api/invitacion', { metodo: 'POST', form: fi });
+  const id = await kv(['HGET', 'cuentas:emails', email]);
+  const entrar = async (pass = clave) => { const f = new FormData(); f.set('email', email); f.set('password', pass); const r = await fetch(BASE + '/api/login', { method: 'POST', headers: { Origin: BASE, Accept: 'application/json' }, body: f }); return { r, t: /^t=([^;]+)/.exec(r.headers.getSetCookie().find((c) => c.startsWith('t=')) || '')?.[1] }; };
+  const vale = async (t) => (await fetch(BASE + '/api/exportar?tipo=facturas', { headers: { Origin: BASE, Cookie: `t=${t}` } })).status === 200;
+  const s1 = await entrar();
+  const ct = s1.r.headers.getSetCookie().find((c) => c.startsWith('t=')) || '';
+  ok('la cookie de sesión es HttpOnly, Secure y SameSite=Lax', () => assert.ok(/HttpOnly/i.test(ct) && /Secure/i.test(ct) && /SameSite=lax/i.test(ct), ct));
+  const pass = JSON.parse(await kv(['HGET', 'cuentas:usuarios', id])).pass;
+  ok('la contraseña se guarda con scrypt y sal (nunca en claro)', () => assert.ok(/^[0-9a-f]{32}:[0-9a-f]{128}$/.test(pass) && !pass.includes(clave), pass?.slice(0, 20)));
+  const s2 = await entrar();
+  const ambas = [await vale(s1.t), await vale(s2.t)];
+  ok('dos dispositivos con sesión a la vez valen', () => assert.deepEqual(ambas, [true, true]));
+  // Cambiar la contraseña cierra las demás sesiones
+  const nueva = 'sesionclave2';
+  const cambio = await fetch(BASE + '/api/cuenta', { method: 'PATCH', headers: { Origin: BASE, Cookie: `t=${s1.t}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ actual: clave, nueva }) });
+  const t1b = /^t=([^;]+)/.exec(cambio.headers.getSetCookie().find((c) => c.startsWith('t=')) || '')?.[1];
+  const trasCambio = [await vale(s2.t), await vale(s1.t), await vale(t1b)];
+  ok('al cambiar la contraseña se cierran las demás sesiones (y quien la cambia sigue dentro)', () => assert.deepEqual(trasCambio, [false, false, true]));
+  const vieja = await entrar(clave);
+  ok('la contraseña antigua ya no entra', () => assert.ok(!vieja.t));
+  // Cerrar sesión en todos los dispositivos
+  const s3 = await entrar(nueva), s4 = await entrar(nueva);
+  const pagina = await (await fetch(BASE + '/ajustes/seguridad', { headers: { Origin: BASE, Cookie: `t=${s3.t}` } })).text();
+  ok('Ajustes › Face ID y contraseña tiene «Cerrar sesión en todos los dispositivos»', () => assert.ok(pagina.includes('Cerrar sesión en todos los dispositivos') && pagina.includes('/api/logout?todas=1')));
+  const todas = await fetch(BASE + '/api/logout?todas=1', { method: 'POST', redirect: 'manual', headers: { Origin: BASE, Cookie: `t=${s3.t}` } });
+  const trasTodas = [await vale(s3.t), await vale(s4.t), await vale(t1b)];
+  ok('«Cerrar sesión en todos los dispositivos» cierra todas sus sesiones y lleva al login', () => assert.ok(trasTodas.every((x) => !x) && todas.headers.get('location')?.includes('/login'), JSON.stringify(trasTodas)));
+  const s5 = await entrar(nueva), s5b = await entrar(nueva);
+  await fetch(BASE + '/api/logout', { method: 'POST', redirect: 'manual', headers: { Origin: BASE, Cookie: `t=${s5.t}` } });
+  const trasSalir = [await vale(s5.t), await vale(s5b.t)];
+  ok('el «Cerrar sesión» normal sigue cerrando solo la de ese dispositivo', () => assert.deepEqual(trasSalir, [false, true]));
+  const sinSesion = await fetch(BASE + '/api/logout?todas=1', { method: 'POST', redirect: 'manual', headers: { Origin: BASE, Cookie: `t=${yo}x` } });
+  const yoSigue = await vale(yo);
+  ok('con una sesión falsa no cierra la de nadie', () => assert.ok(sinSesion.status === 303 && yoSigue));
+  // Quitar el acceso cierra sus sesiones
+  const s6 = await entrar(nueva);
+  const antesQuitar = await vale(s6.t);
+  await pedir(`/api/usuarios?id=${id}`, { metodo: 'DELETE', cookie: yo });
+  const trasQuitar = await vale(s6.t);
+  ok('al quitarle el acceso, su sesión deja de valer al momento', () => assert.deepEqual([antesQuitar, trasQuitar], [true, false]));
+}
+
 console.log('\nBloqueo en el servidor');
 {
   const modo = { activo: 'activo', off: 'off' }[process.env.BLOQUEO_SERVIDOR] || 'registrar';
