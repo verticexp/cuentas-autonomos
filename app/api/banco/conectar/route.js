@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { borrar, leer, leerUno, redis } from '@/lib/redis';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
-import { bancoListo, cerrarSesion, iniciar, listaBancos } from '@/lib/enableBanking';
+import { bancoListo, cerrarSesion, iniciar, listaBancos, urlApp } from '@/lib/enableBanking';
 import { actualizarSaldo } from '@/lib/bancoServidor';
 
 export const dynamic = 'force-dynamic';
@@ -33,7 +33,7 @@ export async function POST(req) {
   const estado = randomBytes(18).toString('base64url');
   await redis.set(`banco-estado:${estado}`, { u: u.id, empresa: u.empresa, banco }, { ex: 1800 });
   try {
-    const url = await iniciar({ banco, tipo: b.tipo, dias, estado, vuelta: `${req.nextUrl.origin}/api/banco/vuelta` });
+    const url = await iniciar({ banco, tipo: b.tipo, dias, estado, vuelta: `${urlApp(req)}/api/banco/vuelta` });
     return Response.json({ url });
   } catch (e) { return error(e.message, 502); }
 }
