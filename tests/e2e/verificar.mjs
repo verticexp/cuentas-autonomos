@@ -1068,6 +1068,97 @@ console.log('\nSolo el administrador de Netto da de alta empresas');
   ok('al administrador de Netto sí le sale «Añadir empresa»', () => assert.ok(ajYo.includes('Añadir empresa')));
 }
 
+console.log('\nAislamiento entre empresas (todas las rutas /api)');
+{
+  const kv = (cmd) => fetch(process.env.KV_REST_API_URL, { method: 'POST', headers: { Authorization: 'Bearer local' }, body: JSON.stringify(cmd) }).then((r) => r.json()).then((x) => x.result);
+  const alta = async (empresaNueva, nombre) => {
+    const email = `${nombre.toLowerCase()}${Date.now()}@test.es`;
+    const inv = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva, nombre, email } })).json();
+    const f = new FormData(); f.set('codigo', inv.enlace.split('/').pop()); f.set('password', `${nombre}clave123`);
+    const t = /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: f })).headers.get('set-cookie') || '')?.[1];
+    const conf = await (await pedir('/api/cuenta', { metodo: 'PATCH', cookie: t, cuerpo: { configuracion: { fiscal: { tipo: 'sociedad', iva: 'general' }, emisor: { nombre: empresaNueva, nif: 'B22222222', plazo: 30 }, actividades: [{ nombre: 'Eventos', ivaPct: 21, irpfPct: 0 }] } } })).json();
+    const id = await kv(['HGET', 'cuentas:emails', email]);
+    return { t, email, id, empresa: JSON.parse(await kv(['HGET', 'cuentas:usuarios', id])).empresa, act: conf.actividades?.[0]?.id };
+  };
+  const B = await alta('Víctima Secreta SL', 'Vicky');
+  const C = await alta('Curiosa SL', 'Carlos');
+  const comoB = (ruta, metodo, cuerpo) => pedir(ruta, { metodo, cookie: B.t, cuerpo });
+  // Datos de la empresa B
+  const fB = (await (await comoB('/api/facturas', 'POST', { fecha: hoy, actividad: B.act, cliente: { nombre: 'Cliente Secreto B' }, concepto: 'Secreto', base: '1000', ivaPct: 21, irpfPct: 0, cobrada: false })).json()).factura;
+  const gB = (await (await comoB('/api/gastos', 'POST', { fecha: hoy, actividad: B.act, concepto: 'Gasto secreto', base: '100', ivaPct: 21, proveedor: 'Proveedor Secreto', proveedorNif: 'b33333333', pendiente: true })).json()).gasto;
+  const eB = (await (await comoB('/api/empleados', 'POST', { nombre: 'Empleada Secreta', email: B.email, nif: '', puesto: 'Jefa', alta: `${Y}-01-01`, baja: '', bruto: '2000', horasSemana: 40, irpfPct: 12, ssTrabajadorPct: 6.5, ssEmpresaPct: 31.65 })).json()).empleado;
+  await comoB('/api/nominas', 'POST', { mes: hoy.slice(0, 7) });
+  const nB = JSON.parse((await kv(['HVALS', `cuentas:nominas:${B.empresa}`]))[0] || 'null');
+  const rB = (await (await comoB('/api/recurrentes', 'POST', { factura: fB.id, dia: 5, enviar: false })).json()).recurrente;
+  const pB = (await (await comoB('/api/productos', 'POST', { nombre: 'Producto secreto', precio: '99', ivaPct: 21 })).json()).producto;
+  const prB = (await (await comoB('/api/presupuestos', 'POST', { fecha: hoy, actividad: B.act, cliente: { nombre: 'Cliente Secreto B' }, concepto: 'Presupuesto secreto', base: '500', ivaPct: 21, irpfPct: 0 })).json()).presupuesto;
+  const jB = (await (await comoB('/api/jornada', 'POST', { accion: 'entrar' })).json()).fichaje;
+  const csv = `F. Operación;Concepto;Importe;Saldo\n${hoy.split('-').reverse().join('/')};TRANSF SECRETA;1.210,00;9.000,00\n`;
+  const fd2 = new FormData(); fd2.set('archivo', new Blob([csv]), 'b.csv');
+  await pedir('/api/banco/importar', { metodo: 'POST', cookie: B.t, form: fd2 });
+  const movB = Object.keys((await kv(['HGETALL', `cuentas:banco:${B.empresa}`])).reduce((o, x, i, a) => (i % 2 ? o : { ...o, [x]: a[i + 1] }), {}))[0];
+  ok('la empresa B tiene de todo para atacar', () => assert.ok(fB?.id && gB?.id && eB?.id && nB?.id && rB?.id && pB?.id && prB?.id && jB?.id && movB, JSON.stringify({ f: fB?.id, g: gB?.id, e: eB?.id, n: nB?.id, r: rB?.id, p: pB?.id, pr: prB?.id, j: jB?.id, movB })));
+  // Foto de todo lo de B antes del ataque
+  const foto = async () => {
+    const claves = (await kv(['KEYS', `cuentas:*:${B.empresa}`])).sort();
+    const datos = {};
+    for (const k of claves) datos[k] = await kv(['TYPE', k]) === 'hash' ? (await kv(['HGETALL', k])) : await kv(['GET', k]);
+    datos.empresa = await kv(['HGET', 'cuentas:empresas', B.empresa]);
+    datos.usuario = await kv(['HGET', 'cuentas:usuarios', B.id]);
+    return JSON.stringify(datos);
+  };
+  const antes = await foto();
+  // C (administradora de otra empresa) prueba con los ids de B en todas las rutas
+  const comoC = (ruta, metodo = 'GET', cuerpo) => pedir(ruta, { metodo, cookie: C.t, cuerpo });
+  const intentos = {
+    'PATCH /api/facturas': await comoC('/api/facturas', 'PATCH', { id: fB.id, cobrada: true }),
+    'DELETE /api/facturas': await comoC(`/api/facturas?id=${fB.id}`, 'DELETE'),
+    'GET /api/facturas/pdf': await comoC(`/api/facturas/pdf?id=${fB.id}`),
+    'POST /api/facturas/enviar': await comoC('/api/facturas/enviar', 'POST', { id: fB.id, para: 'malo@test.es', asunto: 'x', mensaje: 'x' }),
+    'POST /api/facturas (rectificar)': await comoC('/api/facturas', 'POST', { rectifica: fB.id, fecha: hoy, actividad: C.act }),
+    'POST /api/recurrentes (de su factura)': await comoC('/api/recurrentes', 'POST', { factura: fB.id, dia: 5 }),
+    'PATCH /api/recurrentes': await comoC('/api/recurrentes', 'PATCH', { id: rB.id, activa: false }),
+    'DELETE /api/recurrentes': await comoC(`/api/recurrentes?id=${rB.id}`, 'DELETE'),
+    'PATCH /api/gastos': await comoC('/api/gastos', 'PATCH', { id: gB.id, fecha: hoy, concepto: 'x', base: '1', ivaPct: 21 }),
+    'DELETE /api/gastos': await comoC(`/api/gastos?id=${gB.id}`, 'DELETE'),
+    'POST /api/proveedores (pagar)': await comoC('/api/proveedores', 'POST', { clave: 'B33333333' }),
+    'PATCH /api/empleados': await comoC('/api/empleados', 'PATCH', { id: eB.id, nombre: 'Cambiada', alta: `${Y}-01-01`, bruto: '1' }),
+    'DELETE /api/empleados': await comoC(`/api/empleados?id=${eB.id}`, 'DELETE'),
+    'PATCH /api/nominas': await comoC('/api/nominas', 'PATCH', { id: nB.id, pagada: true }),
+    'DELETE /api/nominas': await comoC(`/api/nominas?id=${nB.id}`, 'DELETE'),
+    'DELETE /api/productos': await comoC(`/api/productos?id=${pB.id}`, 'DELETE'),
+    'PATCH /api/presupuestos': await comoC('/api/presupuestos', 'PATCH', { id: prB.id, estado: 'rechazado' }),
+    'DELETE /api/presupuestos': await comoC(`/api/presupuestos?id=${prB.id}`, 'DELETE'),
+    'POST /api/presupuestos/facturar': await comoC('/api/presupuestos/facturar', 'POST', { id: prB.id, tipo: 'resto' }),
+    'PATCH /api/jornada': await comoC('/api/jornada', 'PATCH', { id: jB.id, entrada: `${hoy}T08:00`, salida: `${hoy}T09:00`, motivo: 'ataque' }),
+    'POST /api/jornada (a mano para su empleada)': await comoC('/api/jornada', 'POST', { accion: 'manual', empleado: eB.id, entrada: `${hoy}T08:00`, salida: `${hoy}T09:00`, motivo: 'ataque' }),
+    'POST /api/jornada (fichar por su empleada)': await comoC('/api/jornada', 'POST', { accion: 'entrar', empleado: eB.id }),
+    'POST /api/banco (emparejar)': await comoC('/api/banco', 'POST', { accion: 'emparejar', id: movB, tipo: 'factura', destino: fB.id }),
+    'POST /api/banco (deshacer)': await comoC('/api/banco', 'POST', { accion: 'deshacer', id: movB }),
+    'POST /api/banco (ignorar)': await comoC('/api/banco', 'POST', { accion: 'ignorar', id: movB }),
+    'PATCH /api/usuarios': await comoC('/api/usuarios', 'PATCH', { id: B.id, rol: 'miembro', permisos: [] }),
+    'DELETE /api/usuarios': await comoC(`/api/usuarios?id=${B.id}`, 'DELETE'),
+    'DELETE /api/usuarios (empresa)': await comoC(`/api/usuarios?empresa=${B.empresa}`, 'DELETE'),
+    'POST /api/usuarios (reenviar)': await comoC('/api/usuarios', 'POST', { reenviar: B.id }),
+    'POST /api/empresas (pasarse a B)': await comoC('/api/empresas', 'POST', { id: B.empresa }),
+  };
+  const despues = await foto();
+  ok('ningún intento de C con ids de B cambia nada de B (facturas, gastos, empleados, nóminas, recurrentes, productos, presupuestos, jornada, banco, usuarios)', () => assert.equal(despues, antes));
+  const pasaronTodos = Object.entries(intentos).filter(([k, r]) => r.status < 400 && !/^DELETE \/api\/(facturas|gastos|empleados|productos|recurrentes)$/.test(k)).map(([k, r]) => `${k} ${r.status}`);
+  ok('y todos responden con error (los borrados sin efecto aparte)', () => assert.deepEqual(pasaronTodos, [], pasaronTodos.join(', ')));
+  const pdf = intentos['GET /api/facturas/pdf'];
+  ok('el PDF de una factura ajena no se descarga', () => assert.ok(pdf.status >= 400));
+  // Elegir la empresa B con la cookie «e» no da acceso: sigue en la suya
+  const conE = (ruta) => fetch(BASE + ruta, { headers: { Origin: BASE, Cookie: `t=${C.t}; e=${B.empresa}` } });
+  const exp = await (await conE('/api/exportar?tipo=facturas')).text();
+  const expG = await (await conE('/api/exportar?tipo=gastos')).text();
+  const jor = await (await conE(`/api/jornada/exportar?mes=${hoy.slice(0, 7)}`)).text();
+  const pag = await (await conE('/facturas')).text();
+  ok('con la cookie de empresa apuntando a B: ni exportar, ni jornada, ni pantallas enseñan nada de B', () => assert.ok(![exp, expG, jor, pag].some((x) => /Secreto|Secreta|Víctima/.test(x)), [exp, expG, jor].map((x) => x.slice(0, 80)).join(' | ')));
+  const ia = process.env.ANTHROPIC_URL ? await (await pedir('/api/asistente', { metodo: 'POST', cookie: C.t, cuerpo: { pregunta: '¿Cuánto ha facturado Cliente Secreto B?', historial: [] } })).text() : '';
+  ok('el asistente de C no recibe datos de B', () => assert.ok(!/Secreto|Víctima/.test(ia)));
+}
+
 console.log('\nBloqueo en el servidor');
 {
   const modo = { activo: 'activo', off: 'off' }[process.env.BLOQUEO_SERVIDOR] || 'registrar';
