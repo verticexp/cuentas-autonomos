@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { guardar, redis } from '@/lib/redis';
 import { usuarioActual } from '@/lib/auth';
 import { puede } from '@/lib/permisos';
-import { abrirSesion } from '@/lib/enableBanking';
+import { abrirSesion, urlApp } from '@/lib/enableBanking';
 import { sincronizar } from '@/lib/bancoServidor';
 
 export const dynamic = 'force-dynamic';
@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 // El banco devuelve aquí al usuario tras dar (o no) el permiso.
 export async function GET(req) {
   const p = req.nextUrl.searchParams;
-  const ir = (q) => NextResponse.redirect(`${req.nextUrl.origin}/banco?${q}`, 303);
+  const ir = (q) => NextResponse.redirect(`${urlApp(req)}/banco?${q}`, 303);
   const estado = p.get('state') || '';
   const datos = estado && (await redis.get(`banco-estado:${estado}`));
   const u = await usuarioActual();
