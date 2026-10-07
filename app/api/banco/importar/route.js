@@ -1,5 +1,6 @@
 import { guardar, leer } from '@/lib/redis';
 import { error, usuarioApi } from '@/lib/api';
+import { puede } from '@/lib/permisos';
 import { leerHoja } from '@/lib/hoja';
 import { esNorma43, leerNorma43, leerTablaBanco } from '@/lib/banco';
 import { actualizarSaldo, guardarMovimientos } from '@/lib/bancoServidor';
@@ -13,6 +14,8 @@ const MAX_MB = 5, MAX_MOV = 5000;
 export async function POST(req) {
   const { u, res } = await usuarioApi({ permiso: 'resumen' });
   if (res) return res;
+  // Escribe movimientos y cambia el saldo real (Tesorería): no basta con ver el resumen.
+  if (!puede(u, 'facturar') && !puede(u, 'gastar')) return error('No tienes permiso para esto. Pídeselo al administrador de tu empresa.', 403);
   if (await pasado('importar', u.id, 30, 3600)) return error(MUCHOS, 429);
   const form = await req.formData().catch(() => null);
   const archivo = form?.get('archivo');
