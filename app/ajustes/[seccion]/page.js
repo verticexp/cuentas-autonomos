@@ -35,6 +35,7 @@ export default async function Seccion({ params }) {
       {seccion === 'avisos' && <AvisosPush listo={pushListo()} />}
       {seccion === 'importar' && <Importar />}
       {['facturacion', 'drive', 'seguridad'].includes(seccion) && <Ajustes seccion={seccion} emisor={u.emisor || {}} drive={u.drive} driveError={u.driveError} sociedad={fiscalDe(u).tipo === 'sociedad'} />}
+      {seccion === 'seguridad' && <form method="post" action="/api/logout?todas=1"><button className="borrar ancho">Cerrar sesión en todos los dispositivos</button></form>}
     </main>
   );
 }
