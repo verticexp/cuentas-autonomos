@@ -1081,7 +1081,7 @@ console.log('\nBloqueo en el servidor');
   ok('al entrar con contraseña también, HttpOnly, Secure y de sesión (se va al cerrar la app)', () => assert.ok(t2 && d2 && /HttpOnly/i.test(cd) && /Secure/i.test(cd) && !/Max-Age|Expires/i.test(cd), cd));
   const con = (ruta, d) => fetchReal(BASE + ruta, { redirect: 'manual', headers: { Origin: BASE, Cookie: `t=${t2}; d=${d}` } });
   // Adónde manda: cabecera Location o, si la página ya empezó a enviarse (app/loading.js), la redirección en el HTML.
-  const destino = async (r) => r.headers.get('location') || decodeURIComponent(/NEXT_REDIRECT;\w+;([^;]+);/.exec(await r.text())?.[1] || '');
+  const destino = async (r) => decodeURIComponent(r.headers.get('location') || /NEXT_REDIRECT;\w+;([^;]+);/.exec(await r.text())?.[1] || '');
   const kv = (cmd) => fetch(process.env.KV_REST_API_URL, { method: 'POST', headers: { Authorization: 'Bearer local' }, body: JSON.stringify(cmd) }).then((r) => r.json()).then((x) => x.result);
   const ttl = Number(await kv(['TTL', `cuentas:desbloqueo:${d2}`]));
   ok('el desbloqueo caduca (15 min, se alarga con el uso)', () => assert.ok(ttl > 800 && ttl <= 900, String(ttl)));
