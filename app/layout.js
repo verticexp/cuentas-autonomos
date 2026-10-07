@@ -5,6 +5,8 @@ import './movil.css';
 import './diseno.css';
 import './pulido.css';
 import TabBar from '@/components/TabBar';
+import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
 import { desbloqueada, modoBloqueo, usuarioActual } from '@/lib/auth';
 import { COLOR_BASE } from '@/lib/marca';
 import { permisosDe } from '@/lib/permisos';
@@ -29,6 +31,9 @@ export const viewport = {
   themeColor: '#0F1F1B', // verde de la pantalla de inicio; luego lo cambia components/BarraEstado.js
 };
 
+// Se ven sin desbloquear (las demás piden desbloqueo en lib/auth.js requerir).
+const LIBRE = /^\/(bloqueo|login|confirmar-email|privacidad|condiciones|invitacion|p\/|portal\/|pagar\/|sw|manifest|favicon|icon|apple-icon)/;
+
 export default async function RootLayout({ children }) {
   // El color de la empresa tiñe la app (botones, barra, gráficas).
   const u = await usuarioActual().catch(() => null);
@@ -36,6 +41,10 @@ export default async function RootLayout({ children }) {
   const color = propio || COLOR_BASE;
   // Con el bloqueo del servidor activo y sin desbloquear, la pantalla de bloqueo sale aunque el navegador la diera por abierta.
   const abierta = !u || modoBloqueo() !== 'activo' || (await desbloqueada().catch(() => false));
+  // Al abrir una página de la app sin desbloquear: redirección de verdad (307) antes de pintar nada. Desde la página, la
+  // redirección ya va dentro del HTML (app/loading.js) y el navegador recarga: dos documentos, fundido lento y barra «fantasma».
+  const ruta = (await headers()).get('x-ruta') || '/';
+  if (!abierta && !LIBRE.test(ruta)) redirect(`/bloqueo?a=${encodeURIComponent(ruta)}`);
   return (
     <html lang="es" suppressHydrationWarning>
       <head>
