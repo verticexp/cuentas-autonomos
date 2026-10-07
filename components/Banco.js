@@ -165,10 +165,10 @@ export default function Banco({ cuentas, pendientes, emparejados, ignorados, avi
         <div className="bco-botones">
           {permisos.empresa && listo && <button className="boton pequeno" onClick={() => setConectando(true)}>Conectar banco</button>}
           {conectadas.length > 0 && <button className="boton pequeno sec" onClick={() => actualizar(true)}>Actualizar</button>}
-          <button className="boton pequeno sec" onClick={() => fichero.current?.click()}>Subir extracto</button>
-          <input ref={fichero} type="file" hidden accept=".csv,.xlsx,.txt,.n43,.aeb,.q43,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={subir} aria-label="Extracto del banco" />
+          {(permisos.facturar || permisos.gastar) && <button className="boton pequeno sec" onClick={() => fichero.current?.click()}>Subir extracto</button>}
+          {(permisos.facturar || permisos.gastar) && <input ref={fichero} type="file" hidden accept=".csv,.xlsx,.txt,.n43,.aeb,.q43,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={subir} aria-label="Extracto del banco" />}
         </div>
-        <p className="bco-nota">Extracto: descárgalo de tu banca online en formato Norma 43 (cuaderno 43), CSV o Excel (.xlsx).</p>
+        {(permisos.facturar || permisos.gastar) && <p className="bco-nota">Extracto: descárgalo de tu banca online en formato Norma 43 (cuaderno 43), CSV o Excel (.xlsx).</p>}
       </section>
 
       {conectando && <Conectar cerrar={() => setConectando(false)} />}
