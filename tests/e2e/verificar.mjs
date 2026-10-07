@@ -700,13 +700,26 @@ console.log('Banco: extractos, conexión y emparejar');
     ok('lista de bancos de España', () => assert.deepEqual(lista.bancos.map((b) => [b.nombre, b.dias]), [['Banco Simulado', 90], ['Caja Simulada', 180]]));
     const ini = await (await pedir('/api/banco/conectar', { metodo: 'POST', cookie: bq, cuerpo: { banco: 'Banco Simulado', tipo: 'business' } })).json();
     const auth = Object.values((await sim('/_prueba')).auth).at(-1);
-    ok('pide permiso al banco con firma, 90 días y vuelta a la app', () => assert.ok(ini.url && auth.psu_type === 'business' && auth.redirect_url === `${BASE}/api/banco/vuelta` && Math.abs(Date.parse(auth.access.valid_until) - Date.now() - 90 * 864e5) < 120000));
+    const APP = (process.env.APP_URL || BASE).replace(/\/$/, '');
+    ok('pide permiso al banco con firma, 90 días y vuelta a la app (APP_URL si está)', () => assert.ok(ini.url && auth.psu_type === 'business' && auth.redirect_url === `${APP}/api/banco/vuelta` &&Math.abs(Date.parse(auth.access.valid_until) - Date.now() - 90 * 864e5) < 120000));
     const banco = await fetch(ini.url, { redirect: 'manual' });
     const vuelta = new URL(banco.headers.get('location'));
     const robo = await pedir(vuelta.pathname + vuelta.search, { cookie: yo });
     ok('otra persona no puede usar esa vuelta del banco', () => assert.ok(robo.headers.get('location')?.endsWith('/banco?error=caducado')));
     const bien = await pedir(vuelta.pathname + vuelta.search, { cookie: bq });
     ok('al volver del banco queda conectada', () => assert.ok(bien.headers.get('location')?.endsWith('/banco?conectado=1'), bien.headers.get('location')));
+    ok('la vuelta lleva a la dirección fija de la app', () => assert.ok(bien.headers.get('location')?.startsWith(`${APP}/banco?`) && robo.headers.get('location')?.startsWith(`${APP}/banco?`)));
+    const ebMod = await import('../../lib/enableBanking.js');
+    const ebA = (await sim('/_prueba')).llamadas;
+    await ebMod.listaBancos();
+    const eb0 = (await sim('/_prueba')).llamadas;
+    ok('fuera de producción sí usa el simulador (control)', () => assert.ok(eb0 > ebA));
+    const ebProd = await Promise.resolve(ebMod).then(async (m) => {
+      const v = process.env.VERCEL_ENV; process.env.VERCEL_ENV = 'production';
+      try { await m.listaBancos(); } catch { /* sin clave real: el banco de verdad la rechaza */ } finally { if (v === undefined) delete process.env.VERCEL_ENV; else process.env.VERCEL_ENV = v; }
+      return (await sim('/_prueba')).llamadas;
+    });
+    ok('en producción (VERCEL_ENV) no usa el simulador aunque ENABLE_BANKING_URL esté puesta', () => assert.equal(ebProd, eb0));
     const cuentasB = (await kv(['HVALS', `cuentas:bancos:${empresa}`])).map((x) => JSON.parse(x));
     const eb = cuentasB.find((c) => c.origen === 'enable');
     ok('cuenta conectada con su saldo disponible', () => assert.ok(eb && eb.saldo === 3210.55 && eb.iban.endsWith('1332') && eb.sesion === 'sesion-1'));
