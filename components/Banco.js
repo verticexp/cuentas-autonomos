@@ -119,7 +119,7 @@ export default function Banco({ cuentas, pendientes, emparejados, ignorados, avi
     try { const d = await llamar('/api/banco/sincronizar', { method: 'POST', body: JSON.stringify({ forzar }) }); if (forzar) setMsg({ texto: d.nuevos ? `✓ ${d.nuevos} movimientos nuevos` : '✓ Al día' }); router.refresh(); } catch (e) { setMsg({ error: true, texto: e.message }); } finally { setOcupado(false); }
   };
   // Al abrir, si hay cuentas conectadas, se traen los últimos movimientos (el servidor no repite si hace menos de 6 horas).
-  useEffect(() => { if (conectadas.length) actualizar(false); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (conectadas.length && (permisos.facturar || permisos.gastar)) actualizar(false); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const subir = async (e) => {
     const f = e.target.files?.[0];
     e.target.value = '';
@@ -164,7 +164,7 @@ export default function Banco({ cuentas, pendientes, emparejados, ignorados, avi
         {!cuentas.length && <p className="bco-nota">Conecta tu banco o sube un extracto para ver tu saldo real y emparejar cobros y pagos solos.</p>}
         <div className="bco-botones">
           {permisos.empresa && listo && <button className="boton pequeno" onClick={() => setConectando(true)}>Conectar banco</button>}
-          {conectadas.length > 0 && <button className="boton pequeno sec" onClick={() => actualizar(true)}>Actualizar</button>}
+          {conectadas.length > 0 && (permisos.facturar || permisos.gastar) && <button className="boton pequeno sec" onClick={() => actualizar(true)}>Actualizar</button>}
           {(permisos.facturar || permisos.gastar) && <button className="boton pequeno sec" onClick={() => fichero.current?.click()}>Subir extracto</button>}
           {(permisos.facturar || permisos.gastar) && <input ref={fichero} type="file" hidden accept=".csv,.xlsx,.txt,.n43,.aeb,.q43,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={subir} aria-label="Extracto del banco" />}
         </div>
