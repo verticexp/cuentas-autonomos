@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import EntrarLlave from '@/components/EntrarLlave';
 import Logo from '@/components/Logo';
@@ -30,6 +30,8 @@ export default function Bloqueo({ email, servidor = true }) {
   const pass = useRef(null);
   const listo = useTrasArranque();
   const router = useRouter();
+  const [refrescando, refrescar] = useTransition();
+  const [esperando, setEsperando] = useState(false);
 
   const abrir = useCallback((animar = true) => {
     if (animar && document.documentElement.dataset.arranque === 'visto') entrada();
@@ -57,9 +59,11 @@ export default function Bloqueo({ email, servidor = true }) {
       if (fuera > GRACIA) bloquear();
     };
     document.addEventListener('visibilitychange', cambio);
+    // components/RecargarBloqueo.js: se ha llegado a /bloqueo navegando dentro de la app → bloqueo encima.
+    window.addEventListener('netto-bloquear', bloquear);
     const seguir = setInterval(() => { if (document.visibilityState === 'visible' && sessionStorage.getItem(ABIERTA)) avisar('seguir'); }, SEGUIR);
-    return () => { document.removeEventListener('visibilitychange', cambio); clearInterval(seguir); };
-  }, [abrir, bloquear, servidor]);
+    return () => { document.removeEventListener('visibilitychange', cambio); window.removeEventListener('netto-bloquear', bloquear); clearInterval(seguir); };
+  }, [abrir, bloquear]); // servidor: solo cuenta al abrir (si se vuelve a evaluar tras desbloquear, bloquearía otra vez)
 
   useEffect(() => { if (bloqueada && listo) enfocar(pass.current); }, [bloqueada, listo]);
 
@@ -75,7 +79,27 @@ export default function Bloqueo({ email, servidor = true }) {
   // Con otra cuenta (otro email u otra llave), la página se recarga con sus datos.
   // En /bloqueo (el servidor no dio datos), se recarga y el servidor la devuelve a la página de antes.
   // Si no, refresh: olvida lo que el navegador guardó mientras estaba bloqueada (redirecciones a /bloqueo), o se queda cargando.
-  const entro = (otra) => { if (otra || location.pathname === '/bloqueo') { marcarAbierta(); location.reload(); } else { router.refresh(); salir(); } };
+  // Si no, sin recargar (una recarga es un fundido entre documentos, lento y con la barra «fantasma»): olvida lo guardado
+  // mientras estaba bloqueada, en /bloqueo va a la página de antes, y cuando llega sale el bloqueo con su animación.
+  const entro = (otra) => {
+    if (otra) { marcarAbierta(); location.reload(); return; }
+    const a = new URLSearchParams(location.search).get('a') || '/';
+    const destino = location.pathname !== '/bloqueo' ? null : /^\/(?![/\\])/.test(a) && !a.startsWith('/bloqueo') ? a : '/';
+    setEsperando(true);
+    refrescar(() => { router.refresh(); if (destino) router.replace(destino); });
+  };
+  // Sale cuando ya está la página de verdad (no el esqueleto de app/loading.js), como mucho 2 s después.
+  useEffect(() => {
+    if (!esperando || refrescando) return undefined;
+    const hasta = Date.now() + 2000;
+    let f;
+    const mirar = () => {
+      if (document.querySelector('main.cargando') && Date.now() < hasta) { f = requestAnimationFrame(mirar); return; }
+      setEsperando(false); salir();
+    };
+    mirar();
+    return () => cancelAnimationFrame(f);
+  }, [esperando, refrescando]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function entrar(e) {
     e.preventDefault();
