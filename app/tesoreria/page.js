@@ -1,4 +1,5 @@
 import { requerir } from '@/lib/auth';
+import { puede } from '@/lib/permisos';
 import { clave, leer, redis } from '@/lib/redis';
 import { actividadesDe, fiscalDe } from '@/lib/empresa';
 import { prevision } from '@/lib/tesoreria';
@@ -32,7 +33,7 @@ export default async function Tesoreria({ searchParams }) {
         {HORIZONTES.map((h) => <Ir key={h} href={`/tesoreria?meses=${h}`} tipo="fundido" className={h === n ? 'activo' : ''}>{h} meses</Ir>)}
       </nav>
 
-      <SaldoBanco saldo={saldo ? saldo.importe : null} fecha={saldo?.fecha} banco={Boolean(saldo?.banco)} />
+      <SaldoBanco saldo={saldo ? saldo.importe : null} fecha={saldo?.fecha} banco={Boolean(saldo?.banco)} editable={puede(u, 'facturar') || puede(u, 'gastar')} />
       <Ir href="/banco" className="teso-banco">
         <span className="bco-txt"><strong>Banco</strong><small>{saldo?.banco ? 'Saldo real y movimientos emparejados con facturas y gastos' : 'Conecta tu banco o sube el extracto'}</small></span>
         {sinRevisar > 0 && <span className="num" aria-label={`${sinRevisar} movimientos por revisar`}>{sinRevisar}</span>}
