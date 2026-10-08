@@ -34,7 +34,7 @@ export const viewport = {
 };
 
 // Se ven sin desbloquear (las demás piden desbloqueo en lib/auth.js requerir).
-const LIBRE = /^\/(bloqueo|login|confirmar-email|privacidad|condiciones|invitacion|p\/|portal\/|pagar\/|sw|manifest|favicon|icon|apple-icon)/;
+const LIBRE = /^\/(bloqueo|login|confirmar-email|privacidad|condiciones|declaracion-responsable|invitacion|p\/|portal\/|pagar\/|sw|manifest|favicon|icon|apple-icon)/;
 
 export default async function RootLayout({ children }) {
   // La app va siempre con el color de Netto: el de cada empresa solo sale en sus facturas, presupuestos y páginas

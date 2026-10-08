@@ -4,7 +4,7 @@ import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { puede } from '@/lib/permisos';
 import { colorValido, logoValido } from '@/lib/marca';
 import { actividadesDe, limpiarActividades, limpiarFiscal } from '@/lib/empresa';
-import { leer, redis } from '@/lib/redis';
+import { clave, leer, redis } from '@/lib/redis';
 import { auditar } from '@/lib/auditoria';
 import { leerImporte } from '@/lib/calculos';
 
@@ -27,6 +27,19 @@ export async function PATCH(req) {
     else pagos[anio][t] = Math.max(0, Number(importe) || 0);
     await actualizarUsuario(u, { pagos130: pagos });
     return Response.json({ ok: true });
+  }
+  // Verifactu: 'pruebas', 'real' o null (sin activar). Solo el administrador. En real se mantiene todo el año natural.
+  if ('verifactu' in b) {
+    if (sin('empresa')) return sin('empresa');
+    if (u.rol !== 'admin') return error('Solo el administrador de la empresa puede activar Verifactu', 403);
+    const modo = ['pruebas', 'real'].includes(b.verifactu) ? b.verifactu : null;
+    if (u.verifactu === 'real' && modo !== 'real') return error('Verifactu ya está activo: se mantiene todo el año natural');
+    if (modo && (!u.emisor?.nif || !u.emisor?.nombre)) return error('Rellena el nombre y el NIF de la empresa en Datos de facturación');
+    // Al pasar a real empieza una cadena nueva: lo de pruebas no existe en la AEAT de verdad.
+    if (modo === 'real' && u.verifactu !== 'real') await redis.set(clave(u, 'verifactu'), '');
+    await actualizarUsuario(u, { verifactu: modo });
+    await auditar(u, modo === 'real' ? 'Verifactu activado' : modo === 'pruebas' ? 'Verifactu en pruebas' : 'Verifactu desactivado (pruebas)');
+    return Response.json({ ok: true, verifactu: modo });
   }
   // Pago del 202 de un periodo (1, 2 o 3) presentado y pagado; null lo vuelve a pendiente.
   if (b.presentado202) {

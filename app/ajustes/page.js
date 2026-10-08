@@ -48,6 +48,7 @@ export default async function Page() {
             {puede(u, 'nominas') && <Celda href="/nominas" ico="usuarios" titulo="Equipo y nóminas" detalle="Empleados, nóminas y modelo 111" />}
             <Celda href="/ajustes/importar" ico="excel" titulo="Importar datos" detalle="Clientes, facturas, gastos y productos desde Holded o Excel" />
             {(puede(u, 'usuarios') || u.admin) && <Celda href="/usuarios" ico="usuarios" titulo="Usuarios y permisos" detalle="Quién entra y qué puede hacer" />}
+            <Celda href="/ajustes/verifactu" ico="seguridad" titulo="Verifactu" detalle={modo === 'real' ? 'Activo: cada factura se registra en la AEAT' : modo === 'pruebas' ? 'En pruebas' : 'Sin activar'} />
             {u.rol === 'admin' && <Celda href="/ajustes/actividad" ico="seguridad" titulo="Actividad" detalle="Permisos, datos, borrados y exportaciones" />}
             {u.rol === 'admin' && (
               <a href="/api/exportar/todo" download className="celda ir">
