@@ -450,6 +450,12 @@ ok('a la sociedad no le sale el 130', () => assert.ok(!resSoc.includes('Modelo 1
 ok('a la sociedad le salen el 111 y el 200', () => assert.ok(resSoc.includes('111') && resSoc.includes('Impuesto sobre Sociedades'), 'faltan modelos'));
 ok('la sociedad no ve las facturas de la otra empresa', () => assert.ok(!resSoc.includes('Carla'), 'se ve un cliente ajeno'));
 ok('a una sociedad no se le aplica retención aunque se envíe', () => assert.equal(sf.factura.irpfPct, 0));
+const sinCuota = n(await texto(`/modelos?anio=${Y}`, soc));
+ok('sociedad: el 202 pide la cuota del Impuesto sobre Sociedades y salen las fechas del Registro Mercantil', () => assert.ok(sinCuota.includes('202 · Pagos a cuenta del Impuesto sobre Sociedades') && sinCuota.includes(`Falta la cuota del Impuesto sobre Sociedades de ${Y - 1}`) && sinCuota.includes('Depositar las cuentas anuales') && sinCuota.includes('Legalizar los libros')));
+await pedir('/api/cuenta', { metodo: 'PATCH', cookie: soc, cuerpo: { cuotaIS: { anio: Y - 1, importe: '1.000' } } });
+await pedir('/api/cuenta', { metodo: 'PATCH', cookie: soc, cuerpo: { cuotaIS: { anio: Y - 2, importe: '0' } } });
+const conCuota = n(await texto(`/modelos?anio=${Y}`, soc));
+ok('sociedad: con la cuota, el 18 % en octubre y diciembre; con cuota cero, abril no se presenta', () => assert.ok(conCuota.includes(`18 % · A ingresar ${n(eur(180))}`) && conCuota.includes(`La cuota de ${Y - 2} fue cero: no se presenta`)));
 
 console.log('Kilometraje y dietas');
 {

@@ -28,17 +28,19 @@ export async function PATCH(req) {
     await actualizarUsuario(u, { pagos130: pagos });
     return Response.json({ ok: true });
   }
-  // Rendimiento neto de la actividad de un año: decide la casilla 13 del 130 del año siguiente. null lo quita.
-  if (b.rend130) {
+  // Datos de un año que deciden otros modelos (null los quita): el rendimiento neto de la actividad (casilla 13 del 130
+  // del año siguiente) y la cuota del Impuesto sobre Sociedades (base del 202).
+  const porAnio = ['rend130', 'cuotaIS'].find((k) => b[k]);
+  if (porAnio) {
     if (sin('resumen')) return sin('resumen');
-    const { anio, importe } = b.rend130;
+    const { anio, importe } = b[porAnio];
     if (!Number.isInteger(anio) || anio < 2000 || anio > 2100) return error('Año no válido');
     const valor = importe === null || importe === '' ? null : leerImporte(String(importe));
     if (valor !== null && !Number.isFinite(valor)) return error('Importe no válido');
-    const rend = { ...(u.rend130 || {}) };
-    if (valor === null) delete rend[anio]; else rend[anio] = valor;
-    await actualizarUsuario(u, { rend130: rend });
-    await auditar(u, `Rendimiento de ${anio} para el 130`, valor === null ? 'quitado' : String(valor));
+    const datos = { ...(u[porAnio] || {}) };
+    if (valor === null) delete datos[anio]; else datos[anio] = valor;
+    await actualizarUsuario(u, { [porAnio]: datos });
+    await auditar(u, porAnio === 'rend130' ? `Rendimiento de ${anio} para el 130` : `Cuota del Impuesto sobre Sociedades de ${anio}`, valor === null ? 'quitado' : String(valor));
     return Response.json({ ok: true });
   }
   if (b.marca) {

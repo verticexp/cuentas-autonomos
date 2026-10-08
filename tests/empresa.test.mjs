@@ -34,7 +34,7 @@ test('modelos según cómo trabaja', () => {
   assert.deepEqual(ids({ tipo: 'autonomo' }), ['303', '390', '130', '347', '100']);
   assert.deepEqual(ids({ tipo: 'autonomo', retenidas: true }), ['303', '390', '347', '100']);
   assert.deepEqual(ids({ tipo: 'autonomo', iva: 'exento' }), ['130', '347', '100']);
-  assert.deepEqual(ids({ tipo: 'sociedad', trabajadores: true, alquiler: true, intracom: true }), ['303', '390', '349', '111', '190', '115', '180', '347', '200', '202']);
+  assert.deepEqual(ids({ tipo: 'sociedad', trabajadores: true, alquiler: true, intracom: true }), ['303', '390', '349', '111', '190', '115', '180', '347', '200', '202', 'rm-libros', 'rm-cuentas']);
   assert.equal(limpiarFiscal({ tipo: 'sociedad', iva: 'recargo', retenidas: true }).iva, 'general');
   assert.equal(limpiarFiscal({ tipo: 'sociedad', retenidas: true }).retenidas, false);
 });

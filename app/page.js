@@ -37,7 +37,7 @@ export default async function Resumen({ searchParams }) {
   const { anio, anioActual, esteAnio, r, c303, c130, facturado, gastado, beneficio, plazo, debe, tHoy, qAhora, apartado, aPagar, mesPago,
     sinCobrar, porCobrar, vencidas, prevFact, prevBeneficio, meses, cambio, ultimoMes, top, limite } = P;
   const pagos = (y) => u.pagos130?.[y] || {};
-  const teso = esteAnio && prevision({ facturas, gastos, recurrentes: recurrentes || [], nominas: nominas || [], fiscal, pagos130: u.pagos130 || {}, rend130: u.rend130 || {}, plazo: u.emisor?.plazo, saldo, actividades: actividades.map((a) => a.id), hoy: h, meses: 3 });
+  const teso = esteAnio && prevision({ facturas, gastos, recurrentes: recurrentes || [], nominas: nominas || [], fiscal, pagos130: u.pagos130 || {}, rend130: u.rend130 || {}, cuotaIS: u.cuotaIS || {}, plazo: u.emisor?.plazo, saldo, actividades: actividades.map((a) => a.id), hoy: h, meses: 3 });
   const exportar = (tipo, t) => `/api/exportar?tipo=${tipo}&anio=${anio}${t ? `&t=${t}` : ''}`;
   // Curva del beneficio acumulado mes a mes, hasta el último mes con movimiento.
   const acum = meses.slice(0, (esteAnio ? ultimoMes : 11) + 1).reduce((a, m) => [...a, (a.at(-1) ?? 0) + m.ing - m.gas], []);
@@ -283,8 +283,8 @@ export default async function Resumen({ searchParams }) {
             <div className="grupo-c">
               {modelosDe(fiscal).map((m) => (
                 m.calcula
-                  ? <Ir key={m.id} href={`/modelos?anio=${anio}#m${m.id}`} tipo="adelante" className="celda ir"><span className="modelo-num">{m.id}</span><span className="txt">{m.nombre}<small>{m.cuando}</small></span><span className="v">{m.id === '100' ? 'Borrador' : 'Calculado'}</span></Ir>
-                  : <div key={m.id} className="celda"><span className="modelo-num">{m.id}</span><span className="txt">{m.nombre}<small>{m.cuando}</small></span>{m.calcula && <span className="v">Calculado</span>}</div>
+                  ? <Ir key={m.id} href={`/modelos?anio=${anio}#m${m.id}`} tipo="adelante" className="celda ir"><span className="modelo-num">{m.num || m.id}</span><span className="txt">{m.nombre}<small>{m.cuando}</small></span><span className="v">{m.id === '100' ? 'Borrador' : 'Calculado'}</span></Ir>
+                  : <div key={m.id} className="celda"><span className="modelo-num">{m.num || m.id}</span><span className="txt">{m.nombre}<small>{m.cuando}</small></span>{m.calcula && <span className="v">Calculado</span>}</div>
               ))}
             </div>
             <p className="grupo-pie">Según lo que respondiste al empezar ({fiscal.tipo === 'sociedad' ? 'sociedad' : 'autónomo'}). La app calcula los que pone «Calculado» (tócalos para verlos); el resto, tu gestor. Puedes cambiarlo en Ajustes.</p>
