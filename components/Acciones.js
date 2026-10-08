@@ -58,4 +58,22 @@ export function Presentado({ anio, t, importe, pagado, con130 = true }) {
   );
 }
 
+// Pago del 202 (sociedades): pendiente o presentado y pagado. Lo pagado se resta del Impuesto sobre Sociedades.
+export function Presentado202({ anio, p, importe, pagado }) {
+  const router = useRouter();
+  const cambiar = async (e) => {
+    try {
+      await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify({ presentado202: { anio, p, importe: e.target.value === 'pagado' ? importe : null } }) });
+      router.refresh();
+    } catch (err) { alert(err.message); }
+  };
+  const hecho = pagado !== undefined && pagado !== null;
+  return (
+    <select className={`estado ${hecho ? 'ok' : 'pend'}`} value={hecho ? 'pagado' : 'pendiente'} onChange={cambiar} aria-label={`Pago ${p} del 202`}>
+      <option value="pendiente">Pendiente</option>
+      <option value="pagado">Presentado y pagado</option>
+    </select>
+  );
+}
+
 export { llamar };

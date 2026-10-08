@@ -28,6 +28,17 @@ export async function PATCH(req) {
     await actualizarUsuario(u, { pagos130: pagos });
     return Response.json({ ok: true });
   }
+  // Pago del 202 de un periodo (1, 2 o 3) presentado y pagado; null lo vuelve a pendiente.
+  if (b.presentado202) {
+    if (sin('resumen')) return sin('resumen');
+    const { anio, p, importe } = b.presentado202;
+    if (!Number.isInteger(anio) || anio < 2000 || anio > 2100 || ![1, 2, 3].includes(p)) return error('Periodo no válido');
+    const pagos = { ...(u.pagos202 || {}) };
+    pagos[anio] = { ...(pagos[anio] || {}) };
+    if (importe === null) delete pagos[anio][p]; else pagos[anio][p] = Math.max(0, Number(importe) || 0);
+    await actualizarUsuario(u, { pagos202: pagos });
+    return Response.json({ ok: true });
+  }
   // Datos de un año que deciden otros modelos (null los quita): el rendimiento neto de la actividad (casilla 13 del 130
   // del año siguiente) y la cuota del Impuesto sobre Sociedades (base del 202).
   const porAnio = ['rend130', 'cuotaIS'].find((k) => b[k]);

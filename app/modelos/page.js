@@ -4,8 +4,9 @@ import { actividadesDe, fiscalDe, modelosDe, usa130, usa303 } from '@/lib/empres
 import { casillas303, minoracion130, r2, resumenAnual } from '@/lib/calculos';
 import Rend130 from '@/components/Rend130';
 import { modelo111 } from '@/lib/nominas';
-import { borradorRenta, modelo115, modelo180, modelo190, modelo202, modelo347, modelo349, modelo390, retencionesProfesionales, MINIMO_PERSONAL, RET_ALQUILER } from '@/lib/modelos';
+import { borradorRenta, borradorSociedades, modelo115, modelo180, modelo190, modelo202, modelo347, modelo349, modelo390, retencionesProfesionales, MINIMO_PERSONAL, RET_ALQUILER } from '@/lib/modelos';
 import CuotaIS from '@/components/CuotaIS';
+import { Presentado202 } from '@/components/Acciones';
 import { eur, hoy } from '@/lib/formato';
 import Volver from '@/components/Volver';
 import Ir from '@/components/Ir';
@@ -18,6 +19,8 @@ const MES = ['abril', 'julio', 'octubre'];
 // Hasta cuándo se presenta cada trimestre: el 4T, en enero (303, 130 y 349 hasta el 30; las retenciones, 111 y 115, hasta el 20).
 const plazo = (t, anio, dia = 30) => (t === 4 ? `${dia} de enero de ${anio + 1}` : `20 de ${MES[t - 1]}`);
 
+// Resta en un desglose; sin «−0,00 €» cuando es cero.
+const menos = (v) => (v ? -v : 0);
 const Casillas = ({ filas }) => <dl>{filas.filter(Boolean).map(([t, v, b]) => <div key={t} className={b ? 'fuerte' : ''}><dt>{t}</dt><dd>{typeof v === 'number' ? eur(v) : v}</dd></div>)}</dl>;
 
 export default async function Modelos({ searchParams }) {
@@ -33,6 +36,7 @@ export default async function Modelos({ searchParams }) {
   const m390 = usa303(f) && modelo390(facturas, gastos, anio);
   const conRetencion = gastos.some((g) => Number(g.irpfPct) > 0);
   const m190 = (f.trabajadores || nominas?.length > 0 || conRetencion) && modelo190(nominas || [], empleados || [], anio, gastos);
+  const is = f.tipo === 'sociedad' && borradorSociedades(facturas, gastos, anio, { pagos202: u.pagos202 || {}, ivaCoste: !usa303(f) });
   const renta = f.tipo === 'autonomo' && borradorRenta(facturas, gastos, anio, u.pagos130?.[anio], { ivaCoste: !usa303(f) });
   const m180 = hay115 && modelo180(gastos, anio);
   const m347 = modelo347(facturas, gastos, anio);
@@ -43,6 +47,8 @@ export default async function Modelos({ searchParams }) {
   // Lo que Netto sabe del año anterior, como sugerencia (si ese año no está entero en Netto, no vale: lo confirma la persona).
   const conAnterior = usa130(f) && facturas.some((x) => x.fecha.startsWith(`${anio - 1}-`));
   const sugerido = conAnterior ? resumenAnual(facturas, gastos, anio - 1, {}, ids, { ivaCoste: !c303 }).trimestres[3].rendAcum : null;
+  // Cada trimestre se marca como presentado en el Resumen (vale para todos sus modelos trimestrales).
+  const presentado = (t) => u.pagos130?.[anio]?.[t] !== undefined && u.pagos130?.[anio]?.[t] !== null;
   const hay111 = f.trabajadores || nominas?.length > 0 || conRetencion;
 
   return (
@@ -84,7 +90,7 @@ export default async function Modelos({ searchParams }) {
                   c['59'] && ['59 · Empresas de otros países de la UE', c['59']],
                   [c['46'] < 0 ? '46 · A compensar' : '46 · Resultado', Math.abs(c['46']), true],
                 ]} />
-                <p className="nota">Hasta el {plazo(t, anio)}.</p>
+                <p className="nota">Hasta el {plazo(t, anio)}.{presentado(t) ? ' Marcado como presentado.' : ''}</p>
               </div>
             ); })}
           </div>
@@ -125,7 +131,7 @@ export default async function Modelos({ searchParams }) {
                   p.perceptores && ['07 · Profesionales', String(p.perceptores)], p.perceptores && ['08 · Lo que les pagaste (base)', p.base], p.perceptores && ['09 · Retenciones', p.retenciones],
                   ['28 · A ingresar', r2(m.retenciones + p.retenciones), true],
                 ]} /> : <p className="nota">Sin nóminas ni profesionales con retención este trimestre.</p>}
-                <p className="nota">Hasta el {plazo(t, anio, 20)}.</p>
+                <p className="nota">Hasta el {plazo(t, anio, 20)}.{presentado(t) ? ' Marcado como presentado.' : ''}</p>
               </div>
             ); })}
           </div>
@@ -142,7 +148,7 @@ export default async function Modelos({ searchParams }) {
           </div>
           <div className="tarjetas">
             {modelo202(u.cuotaIS, anio).map((x) => (
-              <div key={x.p} className="tarjeta"><h3>{x.p}P {anio} · {x.mes}</h3>
+              <div key={x.p} className="tarjeta"><div className="trim-cab"><h3>{x.p}P {anio} · {x.mes}</h3>{x.pago > 0 && <Presentado202 anio={anio} p={x.p} importe={x.pago} pagado={u.pagos202?.[anio]?.[x.p]} />}</div>
                 {x.cuota === null ? <p className="nota">Falta la cuota del Impuesto sobre Sociedades de {x.de}.</p>
                   : x.pago ? <Casillas filas={[[`Cuota de ${x.de}`, x.cuota], ['18 % · A ingresar', x.pago, true]]} />
                   : <p className="nota">La cuota de {x.de} fue cero: no se presenta.</p>}
@@ -232,16 +238,32 @@ export default async function Modelos({ searchParams }) {
         </section>
       )}
 
+      {is && (
+        <section className="bloque" id="m200">
+          <h2 className="grupo-t">Borrador del Impuesto sobre Sociedades {anio}</h2>
+          <p className="grupo-pie arriba">Solo con lo que hay en Netto y sin ajustes (amortizaciones, gastos no deducibles, pérdidas de años anteriores, reservas…): tómalo como una idea de cuánto saldrá. Se presenta del 1 al 25 de julio de {anio + 1}.</p>
+          <div className="tarjeta">
+            <Casillas filas={[
+              ['Ingresos', is.ingresos], ['Gastos', menos(is.gastos)], ['Base imponible (beneficio)', is.base, true],
+              ...is.tramos.map((x) => [is.tramos.length > 1 ? `${x.pct} % de ${eur(x.base)}` : `Cuota al ${x.pct} %`, x.cuota]),
+              ['Cuota', is.cuota, true], ['Pagos del 202 marcados', menos(is.pagos)],
+              [is.resultado >= 0 ? 'Saldría a pagar' : 'Saldría a devolver', Math.abs(is.resultado), true],
+            ]} />
+            <p className="nota">Tipo de {is.tamano === 'micro' ? 'microempresa (facturación de menos de 1 millón)' : is.tamano === 'reducida' ? 'empresa de reducida dimensión (menos de 10 millones)' : 'general'}{is.conAnterior ? ` según lo facturado en ${anio - 1}` : ', con lo facturado este año (no hay datos del anterior)'}. Si la sociedad es de nueva creación, los dos primeros años con beneficio tributa al 15 %.</p>
+          </div>
+        </section>
+      )}
+
       {renta && (
         <section className="bloque" id="m100">
           <h2 className="grupo-t">Borrador de la renta {anio}</h2>
           <p className="grupo-pie arriba">Solo tu actividad (estimación directa simplificada). No incluye otros ingresos, deducciones ni tu situación familiar: tómalo como una idea de cuánto te saldrá.</p>
           <div className="tarjeta">
             <Casillas filas={[
-              ['Ingresos de la actividad', renta.ingresos], ['Gastos deducibles', -renta.gastos], ['5 % gastos de difícil justificación', -renta.difJust],
+              ['Ingresos de la actividad', renta.ingresos], ['Gastos deducibles', menos(renta.gastos)], ['5 % gastos de difícil justificación', menos(renta.difJust)],
               ['Rendimiento neto', renta.rendimiento, true],
               [`Cuota (escala general, mínimo personal de ${eur(MINIMO_PERSONAL)})`, renta.cuota],
-              ['Retenciones de tus facturas', -renta.retenciones], ['Pagos del 130 marcados', -renta.pagos130],
+              ['Retenciones de tus facturas', menos(renta.retenciones)], ['Pagos del 130 marcados', menos(renta.pagos130)],
               [renta.resultado >= 0 ? 'Saldría a pagar' : 'Saldría a devolver', Math.abs(renta.resultado), true],
             ]} />
             <p className="nota">Tipo medio: {String(renta.tipoMedio).replace('.', ',')} %.</p>
