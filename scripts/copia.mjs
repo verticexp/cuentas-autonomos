@@ -20,6 +20,11 @@ for (const k of claves) {
   if (tipo === 'hash') datos[k] = { tipo, valor: await r.hgetall(k) };
   else if (tipo === 'set') datos[k] = { tipo, valor: await r.smembers(k) };
   else if (tipo === 'string') datos[k] = { tipo, valor: await r.get(k) };
+  else if (tipo === 'list') datos[k] = { tipo, valor: await r.lrange(k, 0, -1) };
+  else continue;
+  // Las claves temporales (límites, enlaces de confirmar…) guardan lo que les queda, para que al restaurar caduquen igual.
+  const ms = await r.pttl(k);
+  if (ms > 0) datos[k].caduca = Date.now() + ms;
 }
 
 if (!Object.keys(datos).some((k) => k.startsWith('cuentas:facturas:'))) throw new Error('La copia no tiene facturas: algo va mal');
