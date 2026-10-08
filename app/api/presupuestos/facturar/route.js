@@ -6,6 +6,7 @@ import { hoy } from '@/lib/formato';
 import { baseResto, baseSenal, estadoDe, numeroPresupuesto } from '@/lib/presupuestos';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60; // el envío a Verifactu puede esperar al control de flujo de la AEAT
 
 // tipo «senal»: el % de señal · tipo «resto»: lo que falta (todo, si no hubo señal).
 export async function POST(req) {

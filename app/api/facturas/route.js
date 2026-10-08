@@ -8,6 +8,7 @@ import { auditar } from '@/lib/auditoria';
 import { actividadesDe, fiscalDe } from '@/lib/empresa';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60; // el envío a Verifactu puede esperar al control de flujo de la AEAT
 
 export async function POST(req) {
   const { u, res } = await usuarioApi({ permiso: 'facturar' });

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { enviarLuego } from '@/lib/verifactuEnvio';
 import Ir from '@/components/Ir';
 import { requerir } from '@/lib/auth';
 import { leer } from '@/lib/redis';
@@ -18,6 +19,7 @@ const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', '
 
 export default async function Facturas({ searchParams }) {
   const u = await requerir('facturas');
+  enviarLuego(u); // Verifactu: si quedó algo por enviar (control de flujo de la AEAT), ahora
   const [todas, recurrentes] = await Promise.all([leer(u, 'facturas'), leer(u, 'recurrentes')]);
   if (!todas) return <SinBD />;
   const ACTIVIDADES = nombresActividad(actividadesDe(u));
