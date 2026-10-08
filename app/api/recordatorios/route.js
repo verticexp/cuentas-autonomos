@@ -8,6 +8,7 @@ import { enlacePago } from '@/lib/cobros';
 import { stripeListo } from '@/lib/stripe';
 import { tocaRecordatorio } from '@/lib/recordatorios';
 import { avisosPush } from '@/lib/push';
+import { purgarBajas } from '@/lib/baja';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -20,13 +21,15 @@ export async function GET(req) {
   const dia = hoy();
   // Avisos en el móvil (plazos de Hacienda y facturas vencidas), aunque no haya email configurado.
   const avisos = redis ? await avisosPush(dia) : 0;
-  if (!redis || !emailListo()) return Response.json({ ok: true, enviados: 0, avisos, motivo: 'sin base de datos o sin email' });
+  // Empresas dadas de baja cuyo plazo legal de conservación ha acabado: se borran del todo.
+  const bajas = redis ? await purgarBajas(dia) : 0;
+  if (!redis || !emailListo()) return Response.json({ ok: true, enviados: 0, avisos, bajas, motivo: 'sin base de datos o sin email' });
   let enviados = 0;
   const fallos = [];
   for (const emp of Object.values((await redis.hgetall('empresas')) || {})) {
     const e = emp.emisor || {};
     const cada = Number(e.recordatorios) || 0;
-    if (!cada || !e.nif || !e.iban) continue;
+    if (emp.baja || !cada || !e.nif || !e.iban) continue;
     const u = { ...emp, empresa: emp.id };
     for (const f0 of (await leer(u, 'facturas')) || []) {
       if (!tocaRecordatorio(f0, { plazo: e.plazo, cada }, dia) || !emailValido(f0.cliente.email)) continue;
@@ -53,5 +56,5 @@ export async function GET(req) {
       enviados += 1;
     }
   }
-  return Response.json({ ok: true, enviados, fallos, avisos });
+  return Response.json({ ok: true, enviados, fallos, avisos, bajas });
 }
