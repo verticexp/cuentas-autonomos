@@ -33,7 +33,7 @@ export function Faq({ preguntas, titulo = 'Preguntas frecuentes' }) {
   );
 }
 
-export function Cta({ titulo = 'Empieza a ver tu dinero con claridad', sub = '14 días gratis, sin tarjeta y sin permanencia. Te ayudamos a traer tus datos.', otro = ['/precios', 'Ver precios'] }) {
+export function Cta({ titulo = 'Empieza a ver tu dinero con claridad', sub = '1 mes gratis, sin tarjeta y sin permanencia. Te ayudamos a traer tus datos.', otro = ['/precios', 'Ver precios'] }) {
   return (
     <section className="web-cta-final" data-r>
       <div className="web-cta-brillo" aria-hidden />

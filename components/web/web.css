@@ -642,6 +642,12 @@ body:has(.web):has(.tabbar) { padding-left: 0 !important; }
 .web-form-plan .ico { width: 16px; height: 16px; }
 .web-form .web-btn { width: 100%; margin-top: 4px; }
 .web-form-nota { font-size: 13px; color: var(--g); text-align: center; line-height: 1.5; } .web-form-nota a { text-decoration: underline; }
+.web-form-trampa { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.web-form-error { padding: 10px 14px; border-radius: 12px; background: #FBE9E7; color: var(--rojo); font-size: 14px; font-weight: 600; }
+.web-form-hecho { justify-items: center; text-align: center; padding: 56px 32px; animation: web-sube 0.5s var(--e) both; }
+.web-form-hecho h2 { font-size: 2rem; } .web-form-hecho p { color: var(--g); max-width: 26em; line-height: 1.55; }
+.web-form-ok { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; background: var(--acc); color: #fff; animation: web-check 0.5s var(--e) 0.1s both; }
+.web-form-ok .ico { width: 30px; height: 30px; stroke-width: 2.6; }
 @media (max-width: 960px) { .web-contacto { grid-template-columns: 1fr; gap: 40px; padding-top: calc(env(safe-area-inset-top) + 120px); border-radius: 0 0 30px 30px; } }
 @media (max-width: 520px) { .web-form { padding: 22px; border-radius: 22px; } .web-form-dos, .web-form-opciones { grid-template-columns: 1fr; } .web-form-opciones label { flex-direction: row; align-items: center; } }
 

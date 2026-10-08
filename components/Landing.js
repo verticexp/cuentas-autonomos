@@ -12,7 +12,7 @@ const CINTA = ['Facturas ilimitadas', 'Verifactu', 'Presupuestos online', 'Gasto
 
 const CIFRAS = [
   { n: 9, suf: ' €', t: 'al mes, desde', d: 'Sin cuotas de alta ni permanencia' },
-  { n: 14, suf: ' días', t: 'de prueba gratis', d: 'Sin dar ninguna tarjeta' },
+  { n: 1, suf: ' mes', t: 'de prueba gratis', d: 'Sin dar ninguna tarjeta' },
   { n: 100, suf: '', t: 'tickets al día con IA', d: 'Por usuario, incluidos en tu plan' },
   { n: 5, suf: ' modelos', t: 'fiscales calculados', d: '303, 130, 111, 115 y 100' },
 ];
@@ -30,7 +30,7 @@ export default function Landing() {
             <Link className="web-btn web-btn-grande" href="/contacto">Empieza gratis<Flecha /></Link>
             <Link className="web-btn web-btn-claro web-btn-grande" href="/funciones">Ver cómo funciona</Link>
           </div>
-          <ul className="web-micro"><li><Icono n="tic" />14 días sin tarjeta</li><li><Icono n="tic" />Importa desde Holded</li><li><Icono n="tic" />Preparada para Verifactu</li></ul>
+          <ul className="web-micro"><li><Icono n="tic" />1 mes gratis sin tarjeta</li><li><Icono n="tic" />Importa desde Holded</li><li><Icono n="tic" />Preparada para Verifactu</li></ul>
         </div>
         <div className="web-hero-vis">
           <VentanaApp />
@@ -117,7 +117,7 @@ export default function Landing() {
       </section>
 
       <section className="web-sec" id="precios">
-        <Encabezado kicker="Precios" titulo="Un precio claro para cada tamaño" sub="Sin cuotas de alta, sin permanencia y con 14 días para probarlo todo." centro />
+        <Encabezado kicker="Precios" titulo="Un precio claro para cada tamaño" sub="Sin cuotas de alta, sin permanencia y con un mes para probarlo todo." centro />
         <Precios />
         <p className="web-centro"><Link href="/precios" className="web-enlace">Comparar todos los planes en detalle<Flecha /></Link></p>
       </section>
