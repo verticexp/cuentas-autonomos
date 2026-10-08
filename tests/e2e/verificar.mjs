@@ -1560,6 +1560,19 @@ console.log('Baja de una empresa');
   ok('pasado el plazo, el cron lo borra todo', () => assert.ok(fin.bajas === 1 && facF === 0 && audF === 0 && empF === 0, JSON.stringify(fin)));
 }
 
+console.log('Color de la marca');
+{
+  const kv = (cmd) => fetch(process.env.KV_REST_API_URL, { method: 'POST', headers: { Authorization: 'Bearer local' }, body: JSON.stringify(cmd) }).then((r) => r.json()).then((d) => d.result);
+  const color = await pedir('/api/cuenta', { metodo: 'PATCH', cookie: yo, cuerpo: { marca: { color: '#C4452C' } } });
+  const app = await (await pedir('/gastos', { cookie: yo })).text();
+  ok('con un color propio, la app sigue con el de Netto (no se tiñe)', () => assert.ok(color.ok && /<body[^>]*--acento:#0F1F1B/i.test(app) && !/C4452C/i.test(app)));
+  const emp = await kv(['HGET', 'cuentas:emails', fd.get('email')]);
+  const fid = (await kv(['HKEYS', `cuentas:facturas:${emp}`]))[0];
+  const pdf = await (await pedir(`/facturas/${encodeURIComponent(fid)}/pdf`, { cookie: yo })).text();
+  ok('y la factura sí lleva el color de la marca', () => assert.ok(/C4452C/i.test(pdf)));
+  await pedir('/api/cuenta', { metodo: 'PATCH', cookie: yo, cuerpo: { marca: { color: null } } });
+}
+
 console.log('Formulario de contacto de la web');
 {
   const { readFileSync, rmSync } = await import('node:fs');

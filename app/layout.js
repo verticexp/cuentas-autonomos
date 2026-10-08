@@ -37,10 +37,9 @@ export const viewport = {
 const LIBRE = /^\/(bloqueo|login|confirmar-email|privacidad|condiciones|invitacion|p\/|portal\/|pagar\/|sw|manifest|favicon|icon|apple-icon)/;
 
 export default async function RootLayout({ children }) {
-  // El color de la empresa tiñe la app (botones, barra, gráficas).
+  // La app va siempre con el color de Netto: el de cada empresa solo sale en sus facturas, presupuestos y páginas
+  // de cobro (con algunos colores, en modo oscuro los botones parecían desactivados).
   const u = await usuarioActual().catch(() => null);
-  const propio = u?.marca?.color;
-  const color = propio || COLOR_BASE;
   // Con el bloqueo del servidor activo y sin desbloquear, la pantalla de bloqueo sale aunque el navegador la diera por abierta.
   const abierta = !u || modoBloqueo() !== 'activo' || (await desbloqueada().catch(() => false));
   // Al abrir una página de la app sin desbloquear: redirección de verdad (307) antes de pintar nada. Desde la página, la
@@ -54,7 +53,7 @@ export default async function RootLayout({ children }) {
       <head>
         <script nonce={nonce} suppressHydrationWarning dangerouslySetInnerHTML={{ __html: YA_VISTO }} />
       </head>
-      <body className={fuente.variable} style={{ '--acento': color }} data-marca={propio ? 'propia' : 'base'}>
+      <body className={fuente.variable} style={{ '--acento': COLOR_BASE }} data-marca="base">
         <Arranque />
         <script nonce={nonce} suppressHydrationWarning dangerouslySetInnerHTML={{ __html: 'window.__arranque=performance.now()' }} />
         {children}
