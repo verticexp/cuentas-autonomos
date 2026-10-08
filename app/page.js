@@ -37,7 +37,7 @@ export default async function Resumen({ searchParams }) {
   const { anio, anioActual, esteAnio, r, c303, c130, facturado, gastado, beneficio, plazo, debe, tHoy, qAhora, apartado, aPagar, mesPago,
     sinCobrar, porCobrar, vencidas, prevFact, prevBeneficio, meses, cambio, ultimoMes, top, limite } = P;
   const pagos = (y) => u.pagos130?.[y] || {};
-  const teso = esteAnio && prevision({ facturas, gastos, recurrentes: recurrentes || [], nominas: nominas || [], fiscal, pagos130: u.pagos130 || {}, rend130: u.rend130 || {}, cuotaIS: u.cuotaIS || {}, plazo: u.emisor?.plazo, saldo, actividades: actividades.map((a) => a.id), hoy: h, meses: 3 });
+  const teso = esteAnio && prevision({ facturas, gastos, recurrentes: recurrentes || [], nominas: nominas || [], fiscal, pagos130: u.pagos130 || {}, rend130: u.rend130 || {}, cuotaIS: u.cuotaIS || {}, pagos202: u.pagos202 || {}, plazo: u.emisor?.plazo, saldo, actividades: actividades.map((a) => a.id), hoy: h, meses: 3 });
   const exportar = (tipo, t) => `/api/exportar?tipo=${tipo}&anio=${anio}${t ? `&t=${t}` : ''}`;
   // Curva del beneficio acumulado mes a mes, hasta el último mes con movimiento.
   const acum = meses.slice(0, (esteAnio ? ultimoMes : 11) + 1).reduce((a, m) => [...a, (a.at(-1) ?? 0) + m.ing - m.gas], []);

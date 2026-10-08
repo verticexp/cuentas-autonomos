@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { borradorRenta, cuotaEscala, modelo115, modelo180, modelo190, modelo202, modelo347, modelo349, modelo390, nifUE, retencionesProfesionales } from '../lib/modelos.js';
+import { borradorRenta, borradorSociedades, tiposIS, cuotaEscala, modelo115, modelo180, modelo190, modelo202, modelo347, modelo349, modelo390, nifUE, retencionesProfesionales } from '../lib/modelos.js';
 
 const F = [
   { fecha: '2026-02-01', base: 1000, ivaPct: 21, irpfPct: 15, cliente: { nombre: 'Ana', nif: '12345678Z' } },
@@ -98,4 +98,17 @@ test('347: más de 3.005,06 € con IVA por cliente (B) y proveedor (A), por tri
   assert.deepEqual(m.ventas.map((o) => [o.nif, o.total, o.trimestres]), [['B12345678', 3630, [2420, 1210, 0, 0]], ['B87654321', 3509, [3509, 0, 0, 0]]]);
   assert.deepEqual(m.compras.map((o) => [o.nif, o.total]), [['B33333333', 3630]]);
   assert.equal(m.sinNif.length, 0);
+});
+
+test('Impuesto sobre Sociedades: tipos por tamaño y año, y pagos del 202', () => {
+  assert.deepEqual([tiposIS(2024, 'micro'), tiposIS(2025, 'micro'), tiposIS(2026, 'micro'), tiposIS(2030, 'micro')], [[23, 23], [21, 22], [19, 21], [17, 20]]);
+  assert.deepEqual([tiposIS(2024, 'reducida'), tiposIS(2026, 'reducida'), tiposIS(2029, 'reducida'), tiposIS(2026, 'general')], [[25, 25], [23, 23], [20, 20], [25, 25]]);
+  const F = [{ fecha: '2025-06-01', base: 200000, ivaPct: 21 }, { fecha: '2026-03-01', base: 100000, ivaPct: 21 }];
+  const G = [{ fecha: '2026-04-01', base: 40000, ivaPct: 21 }];
+  const b = borradorSociedades(F, G, 2026, { pagos202: { 2026: { 2: 1000 } } });
+  assert.equal(b.tamano, 'micro');
+  assert.deepEqual(b.tramos.map((x) => [x.base, x.pct, x.cuota]), [[50000, 19, 9500], [10000, 21, 2100]]);
+  assert.deepEqual([b.base, b.cuota, b.pagos, b.resultado], [60000, 11600, 1000, 10600]);
+  const r = borradorSociedades([{ fecha: '2025-06-01', base: 2000000, ivaPct: 21 }, { fecha: '2026-03-01', base: 100000, ivaPct: 21 }], [], 2026);
+  assert.deepEqual([r.tamano, r.cuota], ['reducida', 23000]);
 });
