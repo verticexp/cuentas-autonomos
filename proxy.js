@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 
-// Lo que se ve sin sesión: login, páginas legales, enlaces públicos (presupuesto, portal, pago), avisos de Stripe,
+// Lo que se ve sin sesión: la web pública (/), login, páginas legales, enlaces públicos (presupuesto, portal, pago), avisos de Stripe,
 // crons de Vercel (con su secreto) e iconos.
-const PUBLICO = /^\/(login|privacidad|condiciones|invitacion|p\/|portal\/|api\/portal\/|api\/presupuestos\/aceptar|api\/abierta\/|api\/pagar|pagar\/|api\/stripe|api\/recordatorios|api\/recurrentes\/cron|api\/login|api\/registro|api\/invitacion|api\/passkey|api\/confirmar|favicon\.ico|icon1\.svg|apple-icon|manifest\.webmanifest|sw)/;
+const PUBLICO = /^\/($|login|privacidad|condiciones|invitacion|p\/|portal\/|api\/portal\/|api\/presupuestos\/aceptar|api\/abierta\/|api\/pagar|pagar\/|api\/stripe|api\/recordatorios|api\/recurrentes\/cron|api\/login|api\/registro|api\/invitacion|api\/passkey|api\/confirmar|favicon\.ico|icon1\.svg|apple-icon|manifest\.webmanifest|sw)/;
 
 export function proxy(req) {
   // Anti-CSRF en TODAS las rutas (también login, registro, invitación y llaves de acceso): lo que modifica datos solo
