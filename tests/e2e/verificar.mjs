@@ -349,6 +349,11 @@ console.log('Más modelos: 115, 349, 390 y renta');
   const mRet = n(await texto(`/modelos?anio=${Y}`, yo));
   ok('gasto con retención del 15 %: en el 111 (07 a 09) y en el 190 con clave G', () => assert.ok(gRet?.irpfPct === 15 && mRet.includes(`09 · Retenciones ${n(eur(30))}`) && mRet.includes('B11111111 · Gestoría Ruiz (G)')));
   await Promise.all([gUE, gFuera, gRet].map((g) => pedir(`/api/gastos?id=${encodeURIComponent(g.id)}`, { metodo: 'DELETE', cookie: yo })));
+  // 347: un cliente con más de 3.005,06 € con IVA sale con su trimestre; se borra al acabar.
+  const f347 = (await (await pedir('/api/facturas', { metodo: 'POST', cookie: yo, cuerpo: { fecha: `${Y}-03-15`, actividad: ACTS[0].id, cliente: { nombre: 'Cliente Grande SL', nif: 'B55555555' }, concepto: 'Proyecto', base: '3000', ivaPct: 21, irpfPct: 0, cobrada: true } })).json()).factura;
+  const m347 = n(await texto(`/modelos?anio=${Y}`, yo));
+  ok('347: el cliente que pasa de 3.005,06 € con IVA, con clave B y su trimestre', () => assert.ok(m347.includes('347 · Operaciones de más de 3.005,06 €') && m347.includes(`B55555555 · Cliente Grande SL (1T ${n(eur(3630))}) ${n(eur(3630))}`), m347.slice(m347.indexOf('347 ·'), m347.indexOf('347 ·') + 400)));
+  await pedir(`/api/facturas?id=${encodeURIComponent(f347.id)}`, { metodo: 'DELETE', cookie: yo });
   const q130 = (txt, re) => re.exec(txt)?.[1];
   const en130 = q130(m, new RegExp(`130 · Pago a cuenta del IRPF[\\s\\S]*?1 ?T ${Y}[\\s\\S]*?19 · A ingresar ([\\d.,]+ €)`));
   const enRes = q130(res59, new RegExp(`1 ?T ${Y}[\\s\\S]*?Modelo 130 ([\\d.,]+ €)`));
