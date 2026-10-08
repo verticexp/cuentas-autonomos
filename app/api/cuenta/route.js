@@ -6,6 +6,7 @@ import { colorValido, logoValido } from '@/lib/marca';
 import { actividadesDe, limpiarActividades, limpiarFiscal } from '@/lib/empresa';
 import { leer, redis } from '@/lib/redis';
 import { auditar } from '@/lib/auditoria';
+import { leerImporte } from '@/lib/calculos';
 
 const CAMPOS = ['nombre', 'nif', 'direccion', 'ciudad', 'iban'];
 // En el registro de actividad: si cambia el IBAN (donde cobra la empresa), con sus 4 últimas cifras.
@@ -25,6 +26,19 @@ export async function PATCH(req) {
     if (importe === null) delete pagos[anio][t];
     else pagos[anio][t] = Math.max(0, Number(importe) || 0);
     await actualizarUsuario(u, { pagos130: pagos });
+    return Response.json({ ok: true });
+  }
+  // Rendimiento neto de la actividad de un año: decide la casilla 13 del 130 del año siguiente. null lo quita.
+  if (b.rend130) {
+    if (sin('resumen')) return sin('resumen');
+    const { anio, importe } = b.rend130;
+    if (!Number.isInteger(anio) || anio < 2000 || anio > 2100) return error('Año no válido');
+    const valor = importe === null || importe === '' ? null : leerImporte(String(importe));
+    if (valor !== null && !Number.isFinite(valor)) return error('Importe no válido');
+    const rend = { ...(u.rend130 || {}) };
+    if (valor === null) delete rend[anio]; else rend[anio] = valor;
+    await actualizarUsuario(u, { rend130: rend });
+    await auditar(u, `Rendimiento de ${anio} para el 130`, valor === null ? 'quitado' : String(valor));
     return Response.json({ ok: true });
   }
   if (b.marca) {

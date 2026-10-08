@@ -350,9 +350,16 @@ console.log('Más modelos: 115, 349, 390 y renta');
   ok('gasto con retención del 15 %: en el 111 (07 a 09) y en el 190 con clave G', () => assert.ok(gRet?.irpfPct === 15 && mRet.includes(`09 · Retenciones ${n(eur(30))}`) && mRet.includes('B11111111 · Gestoría Ruiz (G)')));
   await Promise.all([gUE, gFuera, gRet].map((g) => pedir(`/api/gastos?id=${encodeURIComponent(g.id)}`, { metodo: 'DELETE', cookie: yo })));
   const q130 = (txt, re) => re.exec(txt)?.[1];
-  const en130 = q130(m, new RegExp(`130 · Pago a cuenta del IRPF[\\s\\S]*?1 ?T ${Y}[\\s\\S]*?07 · A ingresar ([\\d.,]+ €)`));
+  const en130 = q130(m, new RegExp(`130 · Pago a cuenta del IRPF[\\s\\S]*?1 ?T ${Y}[\\s\\S]*?19 · A ingresar ([\\d.,]+ €)`));
   const enRes = q130(res59, new RegExp(`1 ?T ${Y}[\\s\\S]*?Modelo 130 ([\\d.,]+ €)`));
   ok('Impuestos: el 130 del 1T es el mismo que en el Resumen', () => assert.ok(en130 && en130 === enRes, `${en130} | ${enRes}`));
+  // Casilla 13: con un rendimiento del año anterior de 8.500 €, 100 € menos cada trimestre (y el Resumen igual).
+  const guardaRend = await pedir('/api/cuenta', { metodo: 'PATCH', cookie: yo, cuerpo: { rend130: { anio: Y - 1, importe: '8.500,00' } } });
+  const mMin = n(await texto(`/modelos?anio=${Y}`, yo));
+  const resMin = n(await texto(`/?anio=${Y}`, yo));
+  const min130 = q130(mMin, new RegExp(`130 · Pago a cuenta del IRPF[\\s\\S]*?1 ?T ${Y}[\\s\\S]*?19 · A ingresar ([\\d.,]+ €)`));
+  ok('130: con 8.500 € el año anterior, casilla 13 de 100 € y el Resumen lo cuenta igual', () => assert.ok(guardaRend.ok && mMin.includes(`13 · Minoración por el rendimiento de ${Y - 1} ${n(eur(100))}`) && min130 === q130(resMin, new RegExp(`1 ?T ${Y}[\\s\\S]*?Modelo 130 ([\\d.,]+ €)`)), `${min130}`));
+  await pedir('/api/cuenta', { metodo: 'PATCH', cookie: yo, cuerpo: { rend130: { anio: Y - 1, importe: null } } });
   // El 390 es la suma de los cuatro 303 (los mismos que van en el paquete de cada trimestre).
   let suma303 = 0;
   for (const t of [1, 2, 3, 4]) {
