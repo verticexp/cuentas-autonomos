@@ -48,7 +48,7 @@ export default async function Resumen({ searchParams }) {
     puede(u, 'facturas') && { href: '/facturas', n: 'factura', t: 'Facturas' },
     puede(u, 'gastos') && { href: '/gastos', n: 'gasto', t: 'Gastos' },
     puede(u, 'facturas') && { href: '/presupuestos', n: 'presupuesto', t: 'Presupuestos' },
-    { href: '/ajustes', n: 'mas', t: 'Más' },
+    { href: '/modelos', n: 'hacienda', t: 'Impuestos' },
   ].filter(Boolean);
 
   return (
@@ -88,7 +88,7 @@ export default async function Resumen({ searchParams }) {
 
       <nav className="accesos" aria-label="Accesos">
         {accesos.map((a) => (
-          <Ir key={a.href} href={a.href} tipo={a.href === '/presupuestos' ? 'adelante' : 'tab-der'} className="acceso"><Ico n={a.n} /><span>{a.t}</span></Ir>
+          <Ir key={a.href} href={a.href} tipo={['/presupuestos', '/modelos'].includes(a.href) ? 'adelante' : 'tab-der'} className="acceso"><Ico n={a.n} /><span>{a.t}</span></Ir>
         ))}
       </nav>
 
