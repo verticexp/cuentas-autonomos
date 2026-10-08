@@ -1637,6 +1637,27 @@ console.log('Páginas de error');
   ok('el administrador de Netto en «Dar de baja»: le explica por qué no', () => assert.ok(bajaYo.includes('No tienes acceso') && bajaYo.includes('no se puede dar de baja desde aquí')));
 }
 
+console.log('Verifactu: envío a la AEAT (simulador)');
+if (process.env.VERIFACTU_URL) {
+  const { readFileSync } = await import('node:fs');
+  const kv = (cmd) => fetch(process.env.KV_REST_API_URL, { method: 'POST', headers: { Authorization: 'Bearer local' }, body: JSON.stringify(cmd) }).then((r) => r.json()).then((d) => d.result);
+  const E = JSON.parse(await kv(['HGET', 'cuentas:usuarios', await kv(['GET', `cuentas:sesion:${soc}`])])).empresa;
+  await kv(['HSET', 'cuentas:empresas', E, JSON.stringify({ ...JSON.parse(await kv(['HGET', 'cuentas:empresas', E])), verifactu: 'pruebas' })]);
+  const sinNif = await pedir('/api/facturas', { metodo: 'POST', cookie: soc, cuerpo: { fecha: hoy, cliente: { nombre: 'Sin NIF' }, base: '100', ivaPct: 21 } });
+  ok('con Verifactu, una factura sin el NIF del cliente no se crea (400)', () => assert.equal(sinNif.status, 400));
+  const f1 = (await (await pedir('/api/facturas', { metodo: 'POST', cookie: soc, cuerpo: { fecha: hoy, cliente: { nombre: 'Cliente Verifactu SL', nif: 'B76543210' }, concepto: 'Servicio', base: '100', ivaPct: 21 } })).json()).factura;
+  const f2 = (await (await pedir('/api/facturas', { metodo: 'POST', cookie: soc, cuerpo: { fecha: hoy, cliente: { nombre: 'Studio Paris', nif: 'FR12345678901' }, concepto: 'Servicio UE', base: '200', ivaPct: 0 } })).json()).factura;
+  const estado = async (f) => JSON.parse(await kv(['HGET', `cuentas:facturas:${E}`, f.id])).verifactu;
+  let v1, v2;
+  for (let i = 0; i < 40; i++) { [v1, v2] = await Promise.all([estado(f1), estado(f2)]); if (v1?.estado === 'Correcto' && v2?.estado === 'Correcto') break; await new Promise((r) => setTimeout(r, 250)); }
+  ok('la factura se envía sola a la AEAT y queda registrada, con su CSV', () => assert.ok(v1?.estado === 'Correcto' && /^A-/.test(v1.csv || ''), JSON.stringify(v1)));
+  ok('la segunda espera lo que diga la AEAT entre envíos (control de flujo) y también se registra', () => assert.ok(v2?.estado === 'Correcto', JSON.stringify(v2)));
+  const envios = readFileSync('/tmp/aeat.json', 'utf8').trim().split('\n').map((l) => JSON.parse(l));
+  ok('dos envíos, con certificado de cliente, y el segundo encadenado al primero', () => assert.ok(envios.length === 2 && envios.every((x) => x.certificado && x.estado === 200) && envios[1].envio.includes(`<sum1:Huella>${f1.verifactu.huella}</sum1:Huella>`) && envios[0].envio.includes('<sum1:PrimerRegistro>S</sum1:PrimerRegistro>'), JSON.stringify(envios.map((x) => [x.certificado, x.estado]))));
+  const det = n(await texto(`/facturas/${encodeURIComponent(f1.id)}`, soc));
+  ok('la ficha de la factura dice que está registrada en la AEAT', () => assert.ok(det.includes('Verifactu (pruebas): registrada en la AEAT (CSV A-'), det.slice(-400)));
+} else console.log('  (sin VERIFACTU_URL: se salta)');
+
 console.log('Formulario de contacto de la web');
 {
   const { readFileSync, rmSync } = await import('node:fs');

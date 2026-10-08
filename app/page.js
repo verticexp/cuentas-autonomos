@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { enviarLuego } from '@/lib/verifactuEnvio';
 import Ir from '@/components/Ir';
 import { requerir, usuarioActual } from '@/lib/auth';
 import Landing from '@/components/Landing';
@@ -27,6 +28,7 @@ export default async function Resumen({ searchParams }) {
   // Sin sesión: la web pública. Con sesión: el panel.
   if (!(await usuarioActual())) return <Landing />;
   const u = await requerir('resumen');
+  enviarLuego(u); // Verifactu: si quedó algo por enviar (control de flujo de la AEAT), ahora
   const [facturas, gastos, recurrentes, nominas, saldo] = await Promise.all([leer(u, 'facturas'), leer(u, 'gastos'), leer(u, 'recurrentes'), leer(u, 'nominas'), redis?.get(clave(u, 'saldo'))]);
   if (!facturas) return <SinBD />;
   const h = hoy();

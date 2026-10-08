@@ -9,6 +9,7 @@ import { stripeListo } from '@/lib/stripe';
 import { tocaRecordatorio } from '@/lib/recordatorios';
 import { avisosPush } from '@/lib/push';
 import { purgarBajas } from '@/lib/baja';
+import { enviarTodas } from '@/lib/verifactuEnvio';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -23,7 +24,9 @@ export async function GET(req) {
   const avisos = redis ? await avisosPush(dia) : 0;
   // Empresas dadas de baja cuyo plazo legal de conservación ha acabado: se borran del todo.
   const bajas = redis ? await purgarBajas(dia) : 0;
-  if (!redis || !emailListo()) return Response.json({ ok: true, enviados: 0, avisos, bajas, motivo: 'sin base de datos o sin email' });
+  // Registros de Verifactu que quedaran sin enviar.
+  const verifactu = await enviarTodas();
+  if (!redis || !emailListo()) return Response.json({ ok: true, enviados: 0, avisos, bajas, verifactu, motivo: 'sin base de datos o sin email' });
   let enviados = 0;
   const fallos = [];
   for (const emp of Object.values((await redis.hgetall('empresas')) || {})) {
@@ -56,5 +59,5 @@ export async function GET(req) {
       enviados += 1;
     }
   }
-  return Response.json({ ok: true, enviados, fallos, avisos, bajas });
+  return Response.json({ ok: true, enviados, fallos, avisos, bajas, verifactu });
 }

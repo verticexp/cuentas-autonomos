@@ -54,3 +54,14 @@ test('destinatario: NIF español, NIF-IVA de la UE (con el país) y de fuera', (
   assert.ok(destinatario({ nombre: 'US', nif: '12-3456789' }).includes('<sum1:IDType>04</sum1:IDType>'));
   assert.equal(destinatario({ nombre: 'Sin NIF' }), null);
 });
+
+test('respuesta de la AEAT: estado del envío, espera, CSV y cada registro; o el error SOAP', async () => {
+  const { leerRespuesta } = await import('../lib/verifactuEnvio.js');
+  const ok = '<env:Envelope><env:Body><tikR:RespuestaRegFactuSistemaFacturacion><tikR:CSV>A-123</tikR:CSV><tikR:TiempoEsperaEnvio>60</tikR:TiempoEsperaEnvio><tikR:EstadoEnvio>ParcialmenteCorrecto</tikR:EstadoEnvio>'
+    + '<tikR:RespuestaLinea><tikR:IDFactura><tik:IDEmisorFactura>B1</tik:IDEmisorFactura><tik:NumSerieFactura>01-2026</tik:NumSerieFactura></tikR:IDFactura><tikR:EstadoRegistro>Correcto</tikR:EstadoRegistro></tikR:RespuestaLinea>'
+    + '<tikR:RespuestaLinea><tikR:IDFactura><tik:NumSerieFactura>02-2026</tik:NumSerieFactura></tikR:IDFactura><tikR:EstadoRegistro>Incorrecto</tikR:EstadoRegistro><tikR:CodigoErrorRegistro>3000</tikR:CodigoErrorRegistro><tikR:DescripcionErrorRegistro>Duplicado</tikR:DescripcionErrorRegistro></tikR:RespuestaLinea>'
+    + '</tikR:RespuestaRegFactuSistemaFacturacion></env:Body></env:Envelope>';
+  assert.deepEqual(leerRespuesta(ok), { estadoEnvio: 'ParcialmenteCorrecto', espera: 60, csv: 'A-123', lineas: [
+    { numSerie: '01-2026', estado: 'Correcto', codigo: '', descripcion: '' }, { numSerie: '02-2026', estado: 'Incorrecto', codigo: '3000', descripcion: 'Duplicado' }] });
+  assert.deepEqual(leerRespuesta('<env:Envelope><env:Body><env:Fault><faultcode>env:Client</faultcode><faultstring>Codigo[4102].No cumple el esquema</faultstring></env:Fault></env:Body></env:Envelope>'), { fault: 'Codigo[4102].No cumple el esquema' });
+});
