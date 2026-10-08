@@ -40,12 +40,12 @@ export default function Marca({ marca, nombre }) {
     } catch (e) { setMsg(e.message); }
   }
 
-  const elegir = (c) => { setColor(c); document.body.style.setProperty('--acento', c); guardar({ color: c }); };
+  const elegir = (c) => { setColor(c); guardar({ color: c }); };
 
   return (
     <section className="tarjeta formulario marca">
       <h3>Tu marca</h3>
-      <p className="nota">El color tiñe la app y tus facturas; el logo sale arriba en cada PDF.</p>
+      <p className="nota">El color sale en tus facturas, presupuestos y páginas de cobro; el logo, arriba en cada PDF.</p>
 
       <div className="muestra-factura" style={{ '--c': color }}>
         {logo ? <img src={logo} alt="Tu logo" /> : <span className="sin-logo">Tu logo</span>}
