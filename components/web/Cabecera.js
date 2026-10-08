@@ -40,7 +40,7 @@ export default function Cabecera() {
   const enMenu = (k) => MENUS[k].items.some((i) => activo(i.href)) || (k === 'producto' && ruta === '/funciones');
 
   return (
-    <header className={`web-cab${fondo || abierto ? ' con-fondo' : ''}`} onMouseLeave={salir}>
+    <header className={`web-cab${fondo || abierto ? ' con-fondo' : ''}${movil ? ' menu-abierto' : ''}`} onMouseLeave={salir}>
       <div className="web-cab-in">
         <Link href="/" aria-label="Netto, inicio" className="web-marca"><Logo className="web-logo" /></Link>
         <nav className="web-nav" aria-label="Principal">

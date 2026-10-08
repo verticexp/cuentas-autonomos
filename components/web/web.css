@@ -9,7 +9,7 @@
 }
 html:has(.web), body:has(.web) { height: auto; }
 body:has(.web) { background: var(--v, #0F1F1B); }
-html.web-sin-scroll { overflow: hidden; }
+html.web-sin-scroll, html.web-sin-scroll body { overflow: hidden; }
 /* Si alguien con sesión abre una página pública, la barra de la app no se pinta encima */
 body:has(.web) .tabbar { display: none !important; }
 body:has(.web):has(.tabbar) { padding-left: 0 !important; }
@@ -60,8 +60,12 @@ body:has(.web):has(.tabbar) { padding-left: 0 !important; }
 .web a:focus-visible, .web button:focus-visible, .web summary:focus-visible, .web input:focus-visible, .web select:focus-visible, .web textarea:focus-visible { outline: 2px solid var(--acc); outline-offset: 3px; }
 
 /* ───── Cabecera ───── */
-.web-cab { position: fixed; top: 0; left: 0; right: 0; z-index: 50; color: var(--c); transition: background-color 0.35s ease, box-shadow 0.35s ease, backdrop-filter 0.35s ease; }
-.web-cab.con-fondo { background: rgba(15, 31, 27, 0.82); backdrop-filter: blur(16px) saturate(1.5); -webkit-backdrop-filter: blur(16px) saturate(1.5); box-shadow: 0 1px 0 rgba(250, 250, 248, 0.08); }
+/* El desenfoque va en un pseudo-elemento: un backdrop-filter en la propia cabecera haría que el menú móvil (position: fixed)
+   quedara encerrado en ella en Safari de iPhone y no se viera. */
+.web-cab { position: fixed; top: 0; left: 0; right: 0; z-index: 50; color: var(--c); }
+.web-cab::before { content: ''; position: absolute; inset: 0; z-index: -1; opacity: 0; background: rgba(15, 31, 27, 0.82); backdrop-filter: blur(16px) saturate(1.5); -webkit-backdrop-filter: blur(16px) saturate(1.5); box-shadow: 0 1px 0 rgba(250, 250, 248, 0.08); transition: opacity 0.35s ease; pointer-events: none; }
+.web-cab.con-fondo::before { opacity: 1; }
+.web-cab.menu-abierto::before { opacity: 1; background: var(--v); }
 .web-cab-in { display: flex; align-items: center; gap: 28px; height: 68px; padding: env(safe-area-inset-top) var(--pad) 0; }
 .web-marca { display: block; flex: none; }
 .web-logo { height: 25px; width: 99px; color: var(--c); }
