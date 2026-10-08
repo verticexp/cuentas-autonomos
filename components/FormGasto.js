@@ -19,7 +19,7 @@ async function reducir(archivo) {
 }
 
 // plegado: en la lista de gastos empieza como una tarjeta con «Escanear ticket»; el formulario se abre al escanear o al pedirlo.
-export default function FormGasto({ hoy, gasto, actividades, alquiler = false, plegado = false }) {
+export default function FormGasto({ hoy, gasto, actividades, alquiler = false, retenciones = false, plegado = false }) {
   const router = useRouter();
   const vacio = { fecha: hoy, actividad: actividades[0].id, concepto: '', proveedor: '', base: '', ivaPct: 21 };
   const [g, setG] = useState(gasto ? { ...gasto, base: String(gasto.base).replace('.', ',') } : vacio);
@@ -103,6 +103,14 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
           {[21, 10, 4, 0].map((n) => <option key={n} value={n}>IVA {n}%</option>)}
         </select>
       </div>
+      {(retenciones || Number(g.irpfPct) > 0) && (
+        <select className="campo" value={g.irpfPct || 0} onChange={(e) => poner('irpfPct', Number(e.target.value))} aria-label="Retención">
+          <option value={0}>Sin retención</option>
+          <option value={15}>Le retengo el 15 % (profesional)</option>
+          <option value={7}>Le retengo el 7 % (profesional que empieza)</option>
+        </select>
+      )}
+      {Number(g.irpfPct) > 0 && <p className="nota">Le pagas la factura menos la retención, y esa retención la ingresas tú en el 111.</p>}
       {!Number(g.ivaPct) && (
         <select className="campo" value={g.origen || (nifUE(g.proveedorNif) ? 'ue' : 'es')} onChange={(e) => poner('origen', e.target.value)} aria-label="De dónde es el proveedor">
           <option value="es">Proveedor de España</option>

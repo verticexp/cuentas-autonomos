@@ -16,6 +16,9 @@ const origenDe = (b, ivaPct) => {
   return b.proveedor && nifUE(b.proveedorNif) ? 'ue' : undefined;
 };
 
+// Retención que le haces a un profesional (por ejemplo, la gestoría): 15 % o 7 % (los que empiezan). Va en el 111.
+const retencionDe = (b) => ([7, 15].includes(Number(b.irpfPct)) ? Number(b.irpfPct) : undefined);
+
 // Proveedor (opcional): nombre y NIF de quien emite el ticket o la factura.
 const proveedorDe = (b) => {
   const nombre = String(b.proveedor || '').trim().slice(0, 80);
@@ -43,6 +46,7 @@ export async function POST(req) {
     ...(b.alquiler ? { alquiler: true } : {}),
   };
   if (origenDe(b, g.ivaPct)) g.origen = origenDe(b, g.ivaPct);
+  if (retencionDe(b)) g.irpfPct = retencionDe(b);
   await guardar(u, 'gastos', g);
   await Promise.all([subirGasto(u, g), enviarNomina(u, [g.fecha])]);
   return Response.json({ ok: true, gasto: g });
@@ -60,6 +64,7 @@ export async function PATCH(req) {
   if (!String(b.concepto || '').trim()) return error('Falta el concepto');
   const g = { ...antes, fecha: b.fecha, actividad: actividadValida(actividadesDe(u), b.actividad), concepto: String(b.concepto).trim().slice(0, 140), base, ivaPct: Math.min(100, Math.max(0, Number(b.ivaPct) || 0)), proveedor: undefined, proveedorNif: undefined, ...proveedorDe(b), pendiente: b.pendiente ? true : undefined, alquiler: b.alquiler ? true : undefined };
   g.origen = origenDe(b, g.ivaPct);
+  g.irpfPct = retencionDe(b);
   await guardar(u, 'gastos', g);
   await enviarNomina(u, [antes.fecha, g.fecha]);
   return Response.json({ ok: true });
