@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Ir from '@/components/Ir';
-import { requerir } from '@/lib/auth';
+import { requerir, usuarioActual } from '@/lib/auth';
+import Landing from '@/components/Landing';
 import { clave, leer, redis } from '@/lib/redis';
 import { prevision } from '@/lib/tesoreria';
 import '@/app/tesoreria.css';
@@ -19,8 +20,11 @@ import '@/app/empresas.css';
 import CambiarEmpresa from '@/components/CambiarEmpresa';
 
 export const dynamic = 'force-dynamic';
+export const metadata = { title: 'Netto · Facturas, gastos e impuestos en orden', description: 'Software de gestión financiera para autónomos, pymes y empresas: facturas, gastos con IA, conciliación bancaria, impuestos y nóminas.' };
 
 export default async function Resumen({ searchParams }) {
+  // Sin sesión: la web pública. Con sesión: el panel.
+  if (!(await usuarioActual())) return <Landing />;
   const u = await requerir('resumen');
   const [facturas, gastos, recurrentes, nominas, saldo] = await Promise.all([leer(u, 'facturas'), leer(u, 'gastos'), leer(u, 'recurrentes'), leer(u, 'nominas'), redis?.get(clave(u, 'saldo'))]);
   if (!facturas) return <SinBD />;
