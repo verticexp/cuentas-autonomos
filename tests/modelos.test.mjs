@@ -49,3 +49,11 @@ test('renta: escala, mínimo personal, retenciones y pagos del 130', () => {
   assert.equal(r.resultado, r2(r.cuota - 4800));
 });
 const r2 = (n) => Math.round(n * 100) / 100;
+
+test('349: clientes de la UE con clave S y proveedores de la UE con clave I', () => {
+  const F = [{ fecha: '2026-05-05', base: 700, ivaPct: 0, cliente: { nombre: 'Studio Paris', nif: 'FR12345678901' } }];
+  const G = [{ fecha: '2026-05-06', base: 120, ivaPct: 0, proveedor: 'Google Ireland', proveedorNif: 'IE6388047V' }, { fecha: '2026-05-07', base: 80, ivaPct: 21, proveedor: 'Otro', proveedorNif: 'IE6388047V' }];
+  const m = modelo349(F, 2026, 2, G);
+  assert.deepEqual(m.operadores.map((o) => [o.nif, o.clave, o.base]), [['FR12345678901', 'S', 700], ['IE6388047V', 'I', 120]]);
+  assert.equal(m.total, 820);
+});
