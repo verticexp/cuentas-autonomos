@@ -1479,12 +1479,32 @@ console.log('Registro de actividad');
   ok('lo que hace otra persona de la empresa también (gasto borrado por «Solo gastos»)', () => assert.ok(act.includes('Gasto borrado') && act.includes('Gasto para auditar') && act.includes('Solo gastos'), act.slice(0, 300)));
   ok('invitaciones, cambios de permisos (con el perfil) y facturas borradas', () => assert.ok(act.includes('Persona invitada') && act.includes('Permisos cambiados') && act.includes('· Gastos') && act.includes('Factura borrada') && act.includes('Cliente Auditado · 33 € sin IVA'), act.slice(-400)));
   const aj = n(await texto('/ajustes', yo));
-  ok('Ajustes enlaza a Actividad para el administrador', () => assert.ok(aj.includes('Quién ha cambiado qué')));
+  ok('Ajustes enlaza a Actividad para el administrador', () => assert.ok(aj.includes('Permisos, datos, borrados y exportaciones')));
   // Con loading.js la página 404 llega dentro del HTML en streaming: se mira el HTML entero (también lo que va en los scripts).
   const noAdmin = await (await pedir('/ajustes/actividad', { cookie: otro })).text();
   ok('quien no es administrador de la empresa no la ve (página 404, sin nada del registro en el HTML)', () => assert.ok(noAdmin.includes('NEXT_HTTP_ERROR_FALLBACK;404') && !noAdmin.includes('Exportaci') && !noAdmin.includes(`gastos-${Y}.csv`)));
   const sinSesion = await pedir('/ajustes/actividad');
   ok('sin sesión, a entrar', () => assert.ok([302, 303, 307].includes(sinSesion.status), String(sinSesion.status)));
+}
+
+console.log('Descargar todos los datos');
+{
+  const kv = (cmd) => fetch(process.env.KV_REST_API_URL, { method: 'POST', headers: { Authorization: 'Bearer local' }, body: JSON.stringify(cmd) }).then((r) => r.json()).then((d) => d.result);
+  const r = await pedir('/api/exportar/todo', { cookie: yo });
+  const zipT = Buffer.from(await r.arrayBuffer()).toString('utf8'); // ZIP sin comprimir: los JSON se leen tal cual
+  const u0 = JSON.parse(await kv(['HGET', 'cuentas:usuarios', await kv(['HGET', 'cuentas:emails', fd.get('email')])]));
+  ok('el administrador descarga un .zip', () => assert.ok(r.status === 200 && r.headers.get('content-type') === 'application/zip' && /netto-datos-\d{4}-\d{2}-\d{2}\.zip/.test(r.headers.get('content-disposition'))));
+  ok('con un JSON por tipo de dato', () => assert.ok(['empresa', 'personas', 'facturas', 'registros', 'gastos', 'clientes', 'productos', 'presupuestos', 'recurrentes', 'empleados', 'nominas', 'jornada', 'bancos', 'banco', 'actividad'].every((x) => zipT.includes(`${x}.json`))));
+  ok('trae los datos de verdad (su email, sus clientes y su actividad)', () => assert.ok(zipT.includes(fd.get('email')) && zipT.includes('Cliente Auditado') && zipT.includes('Exportación a Excel')));
+  ok('sin contraseñas ni sesiones', () => assert.ok(u0.pass && !zipT.includes(u0.pass) && !zipT.includes('"pass"') && !zipT.includes(yo)));
+  const act = n(await texto('/ajustes/actividad', yo));
+  ok('la descarga queda en la actividad', () => assert.ok(act.includes('Descarga de todos los datos')));
+  const aj = n(await texto('/ajustes', yo));
+  ok('Ajustes tiene el botón para el administrador', () => assert.ok(aj.includes('Descargar todos los datos')));
+  const noAdmin = await pedir('/api/exportar/todo', { cookie: otro });
+  ok('quien no es administrador no puede (403)', () => assert.equal(noAdmin.status, 403));
+  const sinSesion = await pedir('/api/exportar/todo');
+  ok('sin sesión, nada (401)', () => assert.equal(sinSesion.status, 401));
 }
 
 console.log('Formulario de contacto de la web');
