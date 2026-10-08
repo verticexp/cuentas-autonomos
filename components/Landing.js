@@ -1,203 +1,129 @@
-import { Bricolage_Grotesque } from 'next/font/google';
-import Logo from '@/components/Logo';
-import Precios from '@/components/landing/Precios';
-import Interacciones from '@/components/landing/Interacciones';
-import '@/app/landing.css';
+import Link from 'next/link';
+import Marco from '@/components/web/Marco';
+import Icono from '@/components/web/Icono';
+import Precios from '@/components/web/Precios';
+import Tour from '@/components/web/demos/Tour';
+import { Calculadora } from '@/components/web/demos/Demos';
+import { VentanaApp } from '@/components/web/demos/Pantallas';
+import { Cta, Encabezado, Faq, Flecha } from '@/components/web/Bloques';
+import { FAQ_GENERAL, FUNCIONES, SEGMENTOS } from '@/components/web/datos';
 
-const fuente = Bricolage_Grotesque({ subsets: ['latin'], display: 'swap', variable: '--f-web' });
+const CINTA = ['Facturas ilimitadas', 'Verifactu', 'Presupuestos online', 'Gastos con IA', 'Modelo 303', 'Modelo 130', 'Modelos 111 y 115', 'Renta (100)', 'Conciliación de extractos', 'Previsión de caja', 'Nóminas', 'Registro de jornada', 'Permisos por área', 'Varias empresas', 'Portal del cliente', 'Asistente IA', 'Importa desde Holded', 'Face ID'];
 
-const CONTACTO = 'mark.ramirez.2005@gmail.com';
-const acceso = `mailto:${CONTACTO}?subject=${encodeURIComponent('Acceso a Netto')}`;
-
-const PARA_QUIEN = [
-  { t: 'Autónomos', d: 'Factura, declara y olvídate del papeleo. Desde 9 €/mes.', l: ['Verifactu y modelos 303, 130 y 100', 'Gastos con foto del ticket', 'Tu gestoría, con acceso de solo vista'] },
-  { t: 'Pymes', d: 'Equipo, nóminas y banco en un solo sitio. Desde 25 €/mes.', l: ['Varios usuarios con permisos por área', 'Nóminas y registro de jornada', 'Conciliación y previsión de caja'] },
-  { t: 'Grandes empresas', d: 'Muchas empresas, mucha gente, un solo panel. Desde 45 €/mes.', l: ['Hasta 40 empresas y usuarios ilimitados', 'Roles y accesos para gestorías', 'Incorporación guiada y soporte dedicado'] },
+const CIFRAS = [
+  { n: 9, suf: ' €', t: 'al mes, desde', d: 'Sin cuotas de alta ni permanencia' },
+  { n: 14, suf: ' días', t: 'de prueba gratis', d: 'Sin dar ninguna tarjeta' },
+  { n: 100, suf: '', t: 'tickets al día con IA', d: 'Por usuario, incluidos en tu plan' },
+  { n: 5, suf: ' modelos', t: 'fiscales calculados', d: '303, 130, 111, 115 y 100' },
 ];
 
-const PEQUENAS = ['Asistente IA con tus cifras', 'Varias empresas por cuenta', 'Importa desde Holded', 'Face ID y llaves de acceso', 'Avisos push de cobros', 'Se instala como app'];
-
-const PREGUNTAS = [
-  ['¿Puedo traer mis datos de otro programa?', 'Sí. Netto importa tus clientes y facturas desde Holded y desde archivos de otras plataformas, sin que tengas que volver a teclear nada.'],
-  ['¿Puede Netto mover mi dinero?', 'No. La conexión con el banco es de solo lectura (PSD2, a través de Enable Banking): ve saldos y movimientos, nada más. Puedes desconectarla cuando quieras.'],
-  ['¿Qué pasa cuando acaba la prueba?', 'Nada se borra. Eliges plan o te llevas tus datos: puedes exportar tus facturas y registros en cualquier momento.'],
-  ['¿Puede mi gestoría entrar?', 'Sí. La invitas por email con un perfil de solo vista: ve facturas, gastos e impuestos, pero no puede marcar cobros ni tocar nada.'],
-  ['¿Funciona en el móvil?', 'Se instala como app desde el navegador, con barra de pestañas en el móvil y panel lateral en el ordenador. La app para iPhone está en preparación.'],
-  ['¿Puedo cambiar de plan?', 'Cuando quieras. Subes o bajas de plan y se ajusta a partir del siguiente periodo.'],
-];
-
-const Flecha = () => (
-  <svg viewBox="0 0 16 16" className="web-flecha" aria-hidden><path d="M3 8h9m-3.5-4L12.5 8 8.5 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
-);
-const Tic = () => (
-  <svg viewBox="0 0 16 16" aria-hidden><path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-);
-
-// Fija «arranque visto» (la pantalla de inicio es de la app, no de la web) y activa las apariciones al hacer scroll.
-const PRE = "document.documentElement.dataset.arranque='visto';document.documentElement.classList.add('web-js')";
-
-// Qué se ve en la ventana del hero: un cobro entra en el banco y Netto lo empareja con su factura.
-function Ventana() {
-  return (
-    <div className="web-ventana" aria-hidden>
-      <div className="wv-barra"><i /><i /><i /><span>nettohq.com</span></div>
-      <div className="wv-saldo">
-        <small>Saldo real · 3 cuentas</small>
-        <strong>24.318,60 €</strong>
-        <span className="wv-sube">+3.240 € este mes</span>
-      </div>
-      <ul className="wv-mov">
-        <li style={{ '--d': '0.9s' }}><div><b>Sala Apolo</b><small>Transferencia · hoy</small></div><em className="mas">+1.210,00 €</em><span className="wv-ok">Factura F-0142 cobrada</span></li>
-        <li style={{ '--d': '1.5s' }}><div><b>Backline Pro SL</b><small>Pago · ayer</small></div><em>−380,00 €</em><span className="wv-ok">Gasto pagado</span></li>
-        <li style={{ '--d': '2.1s' }}><div><b>Eventos Lume</b><small>Transferencia · lunes</small></div><em className="mas">+640,00 €</em><span className="wv-ok">Factura F-0145 cobrada</span></li>
-      </ul>
-      <div className="wv-fila">
-        <div className="wv-caja">
-          <small>Previsión a 6 meses</small>
-          <svg viewBox="0 0 120 40" preserveAspectRatio="none"><path className="wv-area" d="M0 32 C15 30 22 24 38 22 S62 20 76 13 S104 8 120 4 L120 40 L0 40Z" /><path className="wv-linea" d="M0 32 C15 30 22 24 38 22 S62 20 76 13 S104 8 120 4" /></svg>
-        </div>
-        <div className="wv-caja">
-          <small>Apartar para el 303</small>
-          <strong>2.184 €</strong>
-        </div>
-      </div>
-      <p className="wv-ej">Datos de ejemplo</p>
-    </div>
-  );
-}
-
+// Web pública de nettohq.com: lo que ve en / quien aún no ha entrado.
 export default function Landing() {
   return (
-    <div className={`web ${fuente.variable}`}>
-      <script dangerouslySetInnerHTML={{ __html: PRE }} />
-      <header className="web-cab">
-        <a href="/" aria-label="Netto" className="web-marca"><Logo className="web-logo" /></a>
-        <nav>
-          <a href="#funciones">Funciones</a>
-          <a href="#precios">Precios</a>
-          <a href="#preguntas">Preguntas</a>
-          <a className="web-entrar" href="/login">Entrar</a>
-        </nav>
-      </header>
-
+    <Marco>
       <section className="web-hero">
         <div className="web-hero-txt">
-          <p className="web-sobre"><i />Autónomos, pymes y grandes empresas</p>
-          <h1>Tus facturas, gastos e impuestos, <em>en orden</em>.</h1>
-          <p className="web-sub">Factura, concilia con tu banco y sabe cuánto te queda de verdad. Una alternativa a Holded más sencilla, más barata y que se adapta a tu negocio.</p>
+          <Link href="/funciones/impuestos" className="web-aviso"><span>Nuevo</span>Calcula tus modelos 303 y 130 al momento<Icono n="flecha" className="ico web-flecha" /></Link>
+          <h1>Las cuentas de tu negocio, <em>por fin en orden</em>.</h1>
+          <p className="web-sub">Facturas, gastos con IA, impuestos, caja y equipo en una sola app. La alternativa a Holded más sencilla y más barata, para autónomos, pymes y grandes empresas.</p>
           <div className="web-cta">
-            <a className="web-btn" href={acceso}>Pedir acceso <Flecha /></a>
-            <a className="web-btn web-btn-claro" href="#precios">Ver precios</a>
+            <Link className="web-btn web-btn-grande" href="/contacto">Empieza gratis<Flecha /></Link>
+            <Link className="web-btn web-btn-claro web-btn-grande" href="/funciones">Ver cómo funciona</Link>
           </div>
-          <p className="web-micro">14 días sin tarjeta · Importa tus datos desde Holded</p>
+          <ul className="web-micro"><li><Icono n="tic" />14 días sin tarjeta</li><li><Icono n="tic" />Importa desde Holded</li><li><Icono n="tic" />Preparada para Verifactu</li></ul>
         </div>
-        <Ventana />
-      </section>
-
-      <section className="web-banda-conf" aria-label="Qué incluye">
-        <span>Verifactu</span><span>Conexión bancaria PSD2</span><span>Modelos 303 · 130 · 100</span><span>Nóminas y jornada</span><span>Hecho en España</span>
-      </section>
-
-      <section id="funciones" className="web-seccion">
-        <p className="web-kicker" data-r>Funciones</p>
-        <h2 data-r>Todo lo que mueve tu negocio, en un solo sitio</h2>
-        <div className="web-bento">
-          <article data-foco data-r className="b-grande" style={{ '--d': '0ms' }}>
-            <h3>Facturas y presupuestos que dan gusto enviar</h3>
-            <p>Numeración correlativa, IVA e IRPF, plazo de cobro y recurrentes. Preparada para Verifactu, con huella encadenada y QR.</p>
-            <div className="mini-factura" aria-hidden>
-              <div><b>Factura F-0142</b><small>Sala Apolo · vence en 30 días</small></div>
-              <div className="mf-lineas"><span /><span /><span /></div>
-              <div className="mf-pie"><strong>1.210,00 €</strong><i className="mf-qr" /></div>
-            </div>
-          </article>
-          <article data-foco data-r style={{ '--d': '70ms' }}>
-            <h3>Gastos con IA</h3>
-            <p>Foto al ticket o PDF: Netto rellena proveedor, base e IVA. Tú confirmas.</p>
-            <div className="mini-ticket" aria-hidden><span /><span /><span /><i /></div>
-          </article>
-          <article data-foco data-r style={{ '--d': '140ms' }}>
-            <h3>Banco y conciliación</h3>
-            <p>Conexión PSD2 de solo lectura o extractos N43, CSV y Excel. Cada cobro se empareja con su factura.</p>
-            <div className="mini-par" aria-hidden><b>+1.210 €</b><i /><b>F-0142</b></div>
-          </article>
-          <article data-foco data-r style={{ '--d': '0ms' }}>
-            <h3>Impuestos al día</h3>
-            <p>303, 130, 100 y más, con el pago fraccionado calculado. Sabes cuánto apartar antes del trimestre.</p>
-            <div className="mini-modelos" aria-hidden><span>303</span><span>130</span><span>100</span></div>
-          </article>
-          <article data-foco data-r style={{ '--d': '70ms' }}>
-            <h3>Previsión de caja</h3>
-            <p>A 3, 6 y 12 meses con cobros, pagos, impuestos y nóminas, desde tu saldo real.</p>
-            <svg className="mini-prev" viewBox="0 0 120 40" preserveAspectRatio="none" aria-hidden><path d="M0 30 C18 28 24 22 40 20 S64 22 78 14 S104 10 120 5" /></svg>
-          </article>
-          <article data-foco data-r className="b-ancho" style={{ '--d': '140ms' }}>
-            <h3>Equipo, nóminas y permisos</h3>
-            <p>Empleados, nóminas y registro de jornada. Cada persona ve solo lo que debe: tu gestoría mira todo sin poder tocar cobros.</p>
-            <div className="mini-permisos" aria-hidden>
-              <div><span>Resumen</span><i className="on" /></div>
-              <div><span>Facturar</span><i className="on" /></div>
-              <div><span>Marcar cobros</span><i /></div>
-              <div><span>Nóminas</span><i /></div>
-            </div>
-          </article>
+        <div className="web-hero-vis">
+          <VentanaApp />
+          <div className="web-flota f1" aria-hidden><span className="web-flota-ico ok"><Icono n="tic" /></span><div><b>Factura F-0142 cobrada</b><small>+1.210,00 € · Sala Apolo</small></div></div>
+          <div className="web-flota f2" aria-hidden><span className="web-flota-ico"><Icono n="asistente" /></span><div><b>Ticket leído con IA</b><small>Backline Pro SL · 380,00 €</small></div></div>
+          <div className="web-flota f3" aria-hidden><span className="web-flota-ico imp"><Icono n="impuestos" /></span><div><b>Aparta 3.347 €</b><small>Modelos del 3.er trimestre</small></div></div>
         </div>
-        <ul className="web-pildoras" data-r>{PEQUENAS.map((x) => <li key={x}><Tic />{x}</li>)}</ul>
       </section>
 
-      <section className="web-seccion web-banda">
-        <p className="web-kicker" data-r>Cómo funciona</p>
-        <h2 data-r>Del banco a tus libros, sin teclear</h2>
-        <ol>
-          <li data-r style={{ '--d': '0ms' }}><strong>Conecta</strong> tu banco o sube el extracto.</li>
-          <li data-r style={{ '--d': '80ms' }}><strong>Netto empareja</strong> cada cobro con su factura y cada pago con su gasto.</li>
-          <li data-r style={{ '--d': '160ms' }}><strong>Confirmas</strong> y la factura queda cobrada con la fecha del banco.</li>
-        </ol>
-      </section>
+      <div className="web-cinta" aria-label="Qué incluye Netto">
+        <div className="web-cinta-pista">{[...CINTA, ...CINTA].map((x, i) => <span key={i} aria-hidden={i >= CINTA.length}>{x}</span>)}</div>
+      </div>
 
-      <section className="web-seccion">
-        <p className="web-kicker" data-r>Para quién</p>
-        <h2 data-r>Un plan para cada tamaño de negocio</h2>
-        <div className="web-quien">
-          {PARA_QUIEN.map((q, k) => (
-            <article key={q.t} data-foco data-r style={{ '--d': `${k * 70}ms` }}>
-              <h3>{q.t}</h3>
-              <p>{q.d}</p>
-              <ul>{q.l.map((x) => <li key={x}><Tic />{x}</li>)}</ul>
-              <a className="web-enlace" href="#precios">Ver planes <Flecha /></a>
-            </article>
+      <section className="web-sec">
+        <div className="web-cifras">
+          {CIFRAS.map((c, i) => (
+            <div key={c.t} data-r style={{ '--d': `${i * 70}ms` }}>
+              <b><span data-contar={c.n}>{c.n}</span>{c.suf}</b>
+              <p>{c.t}</p><small>{c.d}</small>
+            </div>
           ))}
         </div>
       </section>
 
-      <section id="precios" className="web-seccion">
-        <p className="web-kicker" data-r>Precios</p>
-        <h2 data-r>Precios claros, sin letra pequeña</h2>
+      <section className="web-sec">
+        <Encabezado kicker="El producto" titulo="Todo tu negocio, en una sola app" sub="Deja de saltar entre Excel, el correo y la web del banco. Netto junta lo que mueve tu dinero y lo pone en orden." centro />
+        <div data-r><Tour /></div>
+      </section>
+
+      <section className="web-sec">
+        <Encabezado kicker="Funciones" titulo="Hecho para lo que de verdad te quita tiempo" />
+        <div className="web-funciones">
+          {FUNCIONES.map((f, i) => (
+            <Link key={f.slug} href={`/funciones/${f.slug}`} data-foco data-r className={`web-fcard${i === 0 || i === 3 ? ' ancha' : ''}`} style={{ '--d': `${(i % 3) * 70}ms` }}>
+              <span className="web-fcard-ico"><Icono n={f.icono} /></span>
+              <h3>{f.nombre}</h3>
+              <p>{f.sub}</p>
+              <span className="web-enlace">Descubrir<Flecha /></span>
+            </Link>
+          ))}
+          <Link href="/funciones" data-foco data-r className="web-fcard web-fcard-todas" style={{ '--d': '140ms' }}>
+            <h3>Y mucho más</h3>
+            <p>Portal del cliente, copia en Google Drive, Face ID, avisos push, varias empresas…</p>
+            <span className="web-enlace">Ver todas las funciones<Flecha /></span>
+          </Link>
+        </div>
+      </section>
+
+      <section className="web-sec web-oscura">
+        <Encabezado kicker="Pruébalo ahora" titulo="¿Cuánto tienes que apartar este trimestre?" sub="Mueve los importes y mira tu IVA y tu IRPF al momento. En Netto se calcula solo con tus facturas y gastos reales." centro claro />
+        <div data-r><Calculadora /></div>
+      </section>
+
+      <section className="web-sec">
+        <Encabezado kicker="Para quién" titulo="Crece sin cambiar de herramienta" sub="Empieza como autónomo y sigue con Netto cuando contrates a tu primer empleado o abras tu segunda empresa." />
+        <div className="web-segs">
+          {SEGMENTOS.map((s, i) => (
+            <Link key={s.id} href={s.ruta} data-foco data-r className="web-segcard" style={{ '--d': `${i * 80}ms` }}>
+              <span className="web-fcard-ico"><Icono n={s.icono} /></span>
+              <small>Desde {s.desde} €/mes</small>
+              <h3>{s.n}</h3>
+              <p>{s.sub}</p>
+              <ul>{s.dolores.slice(0, 3).map(([, sol]) => <li key={sol}><Icono n="tic" />{sol}</li>)}</ul>
+              <span className="web-enlace">Netto para {s.n.toLowerCase()}<Flecha /></span>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="web-sec">
+        <div className="web-mudanza" data-r>
+          <div>
+            <p className="web-kicker">Cambiarte es fácil</p>
+            <h2>¿Vienes de Holded? Trae tus datos en minutos</h2>
+            <p>Importa tus clientes y facturas desde Holded o desde archivos de otras plataformas. Sin volver a teclear nada y sin perder tu historial.</p>
+            <Link href="/contacto" className="web-btn">Quiero cambiarme<Flecha /></Link>
+          </div>
+          <ol>
+            <li><b>Exporta</b><span>Descarga tus datos desde tu programa actual.</span></li>
+            <li><b>Importa</b><span>Súbelos a Netto: reconoce clientes y facturas solo.</span></li>
+            <li><b>Sigue facturando</b><span>Con tu numeración y tu historial, donde lo dejaste.</span></li>
+          </ol>
+        </div>
+      </section>
+
+      <section className="web-sec" id="precios">
+        <Encabezado kicker="Precios" titulo="Un precio claro para cada tamaño" sub="Sin cuotas de alta, sin permanencia y con 14 días para probarlo todo." centro />
         <Precios />
+        <p className="web-centro"><Link href="/precios" className="web-enlace">Comparar todos los planes en detalle<Flecha /></Link></p>
       </section>
 
-      <section id="preguntas" className="web-seccion web-faq">
-        <p className="web-kicker" data-r>Preguntas</p>
-        <h2 data-r>Preguntas frecuentes</h2>
-        <div data-r>
-          {PREGUNTAS.map(([q, a]) => (
-            <details key={q}><summary>{q}<svg viewBox="0 0 16 16" aria-hidden><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></summary><p>{a}</p></details>
-          ))}
-        </div>
-      </section>
-
-      <section className="web-final" data-r>
-        <h2>Empieza a ver tu dinero con claridad</h2>
-        <p>14 días sin tarjeta. Sin permanencia.</p>
-        <a className="web-btn" href={acceso}>Pedir acceso <Flecha /></a>
-      </section>
-
-      <footer className="web-pie">
-        <Logo className="web-logo" />
-        <p><a href="/privacidad">Privacidad</a> · <a href="/condiciones">Condiciones</a> · <a href={`mailto:${CONTACTO}`}>Contacto</a> · <a href="/login">Entrar</a></p>
-        <p>© {new Date().getFullYear()} Netto · nettohq.com</p>
-      </footer>
-      <Interacciones />
-    </div>
+      <Faq preguntas={FAQ_GENERAL} />
+      <Cta />
+    </Marco>
   );
 }
