@@ -27,7 +27,7 @@ export default async function Modelos({ searchParams }) {
   const f = fiscalDe(u);
   // Se enseña cada modelo si le toca por su situación fiscal o si ya hay datos que lo piden.
   const hay115 = f.alquiler || gastos.some((g) => g.alquiler);
-  const hay349 = f.intracom || modelo349(facturas, anio).total > 0;
+  const hay349 = f.intracom || modelo349(facturas, anio, undefined, gastos).total > 0;
   const m390 = usa303(f) && modelo390(facturas, gastos, anio);
   const m190 = (f.trabajadores || nominas?.length > 0) && modelo190(nominas || [], empleados || [], anio);
   const renta = f.tipo === 'autonomo' && borradorRenta(facturas, gastos, anio, u.pagos130?.[anio], { ivaCoste: !usa303(f) });
@@ -67,8 +67,11 @@ export default async function Modelos({ searchParams }) {
                 <Casillas filas={[
                   c['01'] && ['01 · Base al 4 %', c['01']], c['03'] && ['03 · Cuota al 4 %', c['03']],
                   c['04'] && ['04 · Base al 10 %', c['04']], c['06'] && ['06 · Cuota al 10 %', c['06']],
-                  ['07 · Base al 21 %', c['07']], ['09 · Cuota al 21 %', c['09']], ['27 · Total IVA devengado', c['27']],
-                  ['28 · Base del IVA soportado', c['28']], ['29 · IVA soportado', c['29']],
+                  ['07 · Base al 21 %', c['07']], ['09 · Cuota al 21 %', c['09']],
+                  c['10'] && ['10 · Compras a la UE: base', c['10']], c['11'] && ['11 · Compras a la UE: cuota', c['11']],
+                  c['12'] && ['12 · Compras de fuera de la UE: base', c['12']], c['13'] && ['13 · Compras de fuera de la UE: cuota', c['13']],
+                  ['27 · Total IVA devengado', c['27']], ['28 · Base del IVA soportado', c['28']], ['29 · IVA soportado', c['29']],
+                  c['36'] && ['36 · Compras a la UE: base deducible', c['36']], c['37'] && ['37 · Compras a la UE: cuota deducible', c['37']],
                   c['59'] && ['59 · Empresas de otros países de la UE', c['59']],
                   [c['46'] < 0 ? '46 · A compensar' : '46 · Resultado', Math.abs(c['46']), true],
                 ]} />
@@ -127,10 +130,10 @@ export default async function Modelos({ searchParams }) {
 
       {hay349 && (
         <section className="bloque" id="m349">
-          <h2 className="grupo-t">349 · Clientes de la UE</h2>
-          <p className="grupo-pie arriba">Facturas a clientes con NIF-IVA de otro país de la UE (clave S, servicios). Solo se presenta el trimestre en que haya alguna.</p>
+          <h2 className="grupo-t">349 · Empresas de la UE</h2>
+          <p className="grupo-pie arriba">Facturas a clientes con NIF-IVA de otro país de la UE (clave S, servicios prestados) y gastos de proveedores de la UE con su NIF-IVA (clave I, servicios recibidos; si son bienes, la clave es A). Solo se presenta el trimestre en que haya alguna.</p>
           <div className="tarjetas">
-            {T.map((t) => { const m = modelo349(facturas, anio, t); return (
+            {T.map((t) => { const m = modelo349(facturas, anio, t, gastos); return (
               <div key={t} className="tarjeta"><h3>{t}T {anio}</h3>
                 {m.operadores.length ? <><Casillas filas={[...m.operadores.map((c) => [`${c.nif} · ${c.nombre} (${c.clave})`, c.base]), ['Total', m.total, true]]} /><p className="nota">Hasta el {plazo(t, anio)}.</p></> : <p className="nota">Sin operaciones: no se presenta.</p>}
               </div>
@@ -146,7 +149,10 @@ export default async function Modelos({ searchParams }) {
             <Casillas filas={[
               m390.base4 && ['Base al 4 %', m390.base4], m390.cuota4 && ['Cuota al 4 %', m390.cuota4],
               m390.base10 && ['Base al 10 %', m390.base10], m390.cuota10 && ['Cuota al 10 %', m390.cuota10],
-              ['Base al 21 %', m390.base21], ['Cuota al 21 %', m390.cuota21], ['Total IVA devengado', m390.devengado, true],
+              ['Base al 21 %', m390.base21], ['Cuota al 21 %', m390.cuota21],
+              m390.baseUE && ['Compras a la UE (base)', m390.baseUE], m390.cuotaUE && ['Compras a la UE (cuota)', m390.cuotaUE],
+              m390.baseFuera && ['Compras de fuera de la UE (base)', m390.baseFuera], m390.cuotaFuera && ['Compras de fuera de la UE (cuota)', m390.cuotaFuera],
+              ['Total IVA devengado', m390.devengado, true],
               ['Base del IVA soportado', m390.baseDed], ['Total IVA deducible', m390.deducible, true],
               ['Resultado del año', m390.resultado, true],
               ...m390.trimestres.map((v, i) => [`303 del ${i + 1}T`, v]),

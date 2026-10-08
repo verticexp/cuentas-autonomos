@@ -204,9 +204,12 @@ export default async function Resumen({ searchParams }) {
                           {c['04'] > 0 && <>{fila('04', 'Base al 10 %', c['04'])}{fila('06', 'Cuota al 10 %', c['06'])}</>}
                           {fila('07', 'Base al 21 %', c['07'])}
                           {fila('09', 'Cuota al 21 %', c['09'])}
+                          {c['10'] > 0 && <>{fila('10', 'Compras a la UE: base', c['10'])}{fila('11', 'Compras a la UE: cuota', c['11'])}</>}
+                          {c['12'] > 0 && <>{fila('12', 'Compras de fuera de la UE: base', c['12'])}{fila('13', 'Compras de fuera de la UE: cuota', c['13'])}</>}
                           {fila('27', 'Total cuota devengada', c['27'])}
                           {fila('28', 'Base IVA soportado', c['28'])}
                           {fila('29', 'Cuota IVA soportado', c['29'])}
+                          {c['36'] > 0 && <>{fila('36', 'Compras a la UE: base deducible', c['36'])}{fila('37', 'Compras a la UE: cuota deducible', c['37'])}</>}
                           {fila('45', 'Total a deducir', c['45'])}
                           {fila('46', 'Resultado', c['46'])}
                         </dl>

@@ -337,6 +337,14 @@ console.log('Más modelos: 115, 349, 390 y renta');
   ok('303: lo facturado sin IVA al cliente francés, en la casilla 59', () => assert.ok(res59.includes(`59 · Empresas de otros países de la UE ${n(eur(700))}`)));
   ok('Impuestos: qué presentas y cuándo, y el 303 trimestral con la casilla 59', () => assert.ok(m.includes('Impuestos') && m.includes('Qué presentas y cuándo') && m.includes('303 · IVA trimestral') && m.includes(`59 · Empresas de otros países de la UE ${n(eur(700))}`) && m.includes(`Hasta el 30 de enero de ${Y + 1}`)));
   ok('Impuestos: el 115 del 4T, hasta el 20 de enero', () => assert.ok(/115 · Retenciones del alquiler[\s\S]*?Hasta el 20 de enero de \d{4}/.test(m)));
+  // Gastos de proveedores de fuera de España sin IVA: el de la UE (por su NIF-IVA) y uno de fuera, a mano.
+  const gUE = (await (await pedir('/api/gastos', { metodo: 'POST', cookie: yo, cuerpo: { fecha: `${Y}-05-06`, actividad: ACTS[0].id, concepto: 'Publicidad', base: '120', ivaPct: 0, proveedor: 'Google Ireland', proveedorNif: 'IE6388047V' } })).json()).gasto;
+  const gFuera = (await (await pedir('/api/gastos', { metodo: 'POST', cookie: yo, cuerpo: { fecha: `${Y}-05-07`, actividad: ACTS[0].id, concepto: 'Hosting', base: '50', ivaPct: 0, proveedor: 'Hosting Inc', origen: 'fuera' } })).json()).gasto;
+  ok('un gasto sin IVA con NIF-IVA de la UE queda como de la UE; el de fuera, como se eligió', () => assert.deepEqual([gUE?.origen, gFuera?.origen], ['ue', 'fuera']));
+  const mUE = n(await texto(`/modelos?anio=${Y}`, yo));
+  ok('303: autoliquida la compra de la UE (10-11 y 36-37) y la de fuera (12-13)', () => assert.ok(mUE.includes(`10 · Compras a la UE: base ${n(eur(120))}`) && mUE.includes(`37 · Compras a la UE: cuota deducible ${n(eur(25.2))}`) && mUE.includes(`13 · Compras de fuera de la UE: cuota ${n(eur(10.5))}`)));
+  ok('349: el proveedor de la UE, con clave I', () => assert.ok(mUE.includes(`IE6388047V · Google Ireland (I) ${n(eur(120))}`)));
+  await Promise.all([gUE, gFuera].map((g) => pedir(`/api/gastos?id=${encodeURIComponent(g.id)}`, { metodo: 'DELETE', cookie: yo })));
   const q130 = (txt, re) => re.exec(txt)?.[1];
   const en130 = q130(m, new RegExp(`130 · Pago a cuenta del IRPF[\\s\\S]*?1 ?T ${Y}[\\s\\S]*?07 · A ingresar ([\\d.,]+ €)`));
   const enRes = q130(res59, new RegExp(`1 ?T ${Y}[\\s\\S]*?Modelo 130 ([\\d.,]+ €)`));
@@ -1074,7 +1082,7 @@ if (process.env.RESEND_URL) {
   const [m2] = correos();
   ok('reenviar manda otro email con un enlace nuevo', () => assert.ok(re.enviado && re.enlace !== iv.enlace && m2?.to?.[0] === emailL && m2.html.includes(re.enlace)));
   const [viejaOk, nuevaOk] = [await valida(iv.enlace), await valida(re.enlace)];
-  ok('el enlace anterior deja de valer y el nuevo vale', () => assert.deepEqual([viejaOk, nuevaOk], [false, true]));
+  ok('el enlace anterior deja de valer y el nuevo vale', () => assert.deepEqual([viejaOk, nuevaOk], [false, true], `vieja ${viejaOk} · nueva ${nuevaOk}`));
 
   // Sin permiso de usuarios (el de solo gastos): 403 y no sale ningún email.
   rmSync('/tmp/resend.json', { force: true });

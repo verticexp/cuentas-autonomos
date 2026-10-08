@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
 import { navegar } from '@/lib/transicion';
 import Deslizable from './Deslizable';
+import { nifUE } from '@/lib/calculos';
 import '@/app/ticket.css';
 
 // Reduce la foto (máx. 1600 px, JPEG) para que suba rápido y quepa en la petición.
@@ -40,7 +41,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
       const imagen = pdf ? await new Promise((ok, mal) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = mal; r.readAsDataURL(archivo); }) : await reducir(archivo);
       const d = await llamar('/api/gastos/ticket', { method: 'POST', body: JSON.stringify({ imagen }) });
       const t = d.gasto;
-      setG((x) => ({ ...x, proveedor: t.proveedor || x.proveedor, proveedorNif: t.nif || x.proveedorNif, concepto: t.concepto || t.proveedor || x.concepto, base: t.base !== '' ? String(t.base).replace('.', ',') : x.base, ivaPct: t.ivaPct, fecha: t.fecha }));
+      setG((x) => ({ ...x, proveedor: t.proveedor || x.proveedor, proveedorNif: t.nif || x.proveedorNif, concepto: t.concepto || t.proveedor || x.concepto, base: t.base !== '' ? String(t.base).replace('.', ',') : x.base, ivaPct: t.ivaPct, fecha: t.fecha, ...(!Number(t.ivaPct) && nifUE(t.nif) ? { origen: 'ue' } : {}) }));
       setLeyendo('Revisa los datos antes de guardar.');
     } catch (err) { setLeyendo(''); setError(err.message); }
   };
@@ -102,6 +103,14 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
           {[21, 10, 4, 0].map((n) => <option key={n} value={n}>IVA {n}%</option>)}
         </select>
       </div>
+      {!Number(g.ivaPct) && (
+        <select className="campo" value={g.origen || (nifUE(g.proveedorNif) ? 'ue' : 'es')} onChange={(e) => poner('origen', e.target.value)} aria-label="De dónde es el proveedor">
+          <option value="es">Proveedor de España</option>
+          <option value="ue">Proveedor de otro país de la UE</option>
+          <option value="fuera">Proveedor de fuera de la UE</option>
+        </select>
+      )}
+      {!Number(g.ivaPct) && ['ue', 'fuera'].includes(g.origen || (nifUE(g.proveedorNif) ? 'ue' : '')) && <p className="nota">El IVA (21 %) lo declaras tú en el 303 y te lo deduces a la vez: no pagas nada de más.{g.origen !== 'fuera' && !nifUE(g.proveedorNif) ? ' Pon su NIF-IVA (por ejemplo, IE6388047V): también va en el 349.' : ''}</p>}
       <input className="campo" type="date" value={g.fecha} onChange={(e) => poner('fecha', e.target.value)} required />
       <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.pendiente)} onChange={(e) => poner('pendiente', e.target.checked)} />Aún no lo he pagado</label>
       {(alquiler || g.alquiler) && <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.alquiler)} onChange={(e) => poner('alquiler', e.target.checked)} />Es el alquiler del local (retención del 19 %)</label>}

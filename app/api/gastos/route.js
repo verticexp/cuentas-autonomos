@@ -3,10 +3,18 @@ import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { subirGasto } from '@/lib/drive';
 import { enviarNomina } from '@/lib/controlat';
 import { auditar } from '@/lib/auditoria';
-import { leerImporte, r2 } from '@/lib/calculos';
+import { leerImporte, nifUE, r2 } from '@/lib/calculos';
 import { actividadesDe, actividadValida } from '@/lib/empresa';
 
 export const dynamic = 'force-dynamic';
+
+// Sin IVA en la factura, de dónde es el proveedor: 'es', 'ue' (otro país de la UE) o 'fuera'. Si no se dice y el NIF
+// es un NIF-IVA de la UE, 'ue'. Con IVA, nada (lib/calculos.js origenGasto).
+const origenDe = (b, ivaPct) => {
+  if (ivaPct) return undefined;
+  if (['es', 'ue', 'fuera'].includes(b.origen)) return b.origen;
+  return b.proveedor && nifUE(b.proveedorNif) ? 'ue' : undefined;
+};
 
 // Proveedor (opcional): nombre y NIF de quien emite el ticket o la factura.
 const proveedorDe = (b) => {
@@ -34,6 +42,7 @@ export async function POST(req) {
     ...(b.pendiente ? { pendiente: true } : {}),
     ...(b.alquiler ? { alquiler: true } : {}),
   };
+  if (origenDe(b, g.ivaPct)) g.origen = origenDe(b, g.ivaPct);
   await guardar(u, 'gastos', g);
   await Promise.all([subirGasto(u, g), enviarNomina(u, [g.fecha])]);
   return Response.json({ ok: true, gasto: g });
@@ -50,6 +59,7 @@ export async function PATCH(req) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(b.fecha || '')) return error('Fecha no válida');
   if (!String(b.concepto || '').trim()) return error('Falta el concepto');
   const g = { ...antes, fecha: b.fecha, actividad: actividadValida(actividadesDe(u), b.actividad), concepto: String(b.concepto).trim().slice(0, 140), base, ivaPct: Math.min(100, Math.max(0, Number(b.ivaPct) || 0)), proveedor: undefined, proveedorNif: undefined, ...proveedorDe(b), pendiente: b.pendiente ? true : undefined, alquiler: b.alquiler ? true : undefined };
+  g.origen = origenDe(b, g.ivaPct);
   await guardar(u, 'gastos', g);
   await enviarNomina(u, [antes.fecha, g.fecha]);
   return Response.json({ ok: true });

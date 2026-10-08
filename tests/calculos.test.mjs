@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { apartar, casillas303, desglose, importes, siguienteNumero, resumenAnual, leerImporte, numeroFactura, proximoPlazo, vencimiento, vencida } from '../lib/calculos.js';
+import { apartar, casillas303, desglose, importes, origenGasto, siguienteNumero, resumenAnual, leerImporte, numeroFactura, proximoPlazo, vencimiento, vencida } from '../lib/calculos.js';
 
 const { facturas, gastos } = JSON.parse(readFileSync(new URL('../data/inicial.json', import.meta.url)));
 
@@ -130,4 +130,19 @@ test('303: lo facturado sin IVA a empresas de otros países de la UE va en la ca
   ];
   const c = casillas303(F, [], 2026, 2);
   assert.deepEqual([c['59'], c.sinIva, c['07']], [500, 800, 100]);
+});
+
+test('303: gastos de proveedores de la UE (10-11 y 36-37) y de fuera (12-13 y 28-29), sin cambiar el resultado', () => {
+  const F = [{ fecha: '2026-07-02', base: 1000, ivaPct: 21 }];
+  const G = [
+    { fecha: '2026-07-03', base: 100, ivaPct: 0, proveedorNif: 'IE6388047V' }, // NIF-IVA de la UE: cuenta como UE
+    { fecha: '2026-07-04', base: 50, ivaPct: 0, origen: 'fuera' },
+    { fecha: '2026-07-05', base: 200, ivaPct: 21 },
+    { fecha: '2026-07-06', base: 30, ivaPct: 0, proveedorNif: 'IE6388047V', origen: 'es' }, // elegido a mano: España
+  ];
+  const c = casillas303(F, G, 2026, 3);
+  assert.deepEqual([c['10'], c['11'], c['12'], c['13'], c['36'], c['37']], [100, 21, 50, 10.5, 100, 21]);
+  assert.deepEqual([c['27'], c['28'], c['29'], c['45']], [241.5, 250, 52.5, 73.5]);
+  assert.equal(c['46'], 168); // 210 − 42: lo autoliquidado se compensa
+  assert.deepEqual(G.map(origenGasto), ['ue', 'fuera', '', '']);
 });
