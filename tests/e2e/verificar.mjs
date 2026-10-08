@@ -979,6 +979,18 @@ console.log('\nSeguridad');
   const olga = /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: form({ codigo: otra.enlace.split('/').pop(), password: 'olgaolga123' }) })).headers.get('set-cookie') || '')?.[1];
   const ct = await pedir('/api/controlat', { metodo: 'POST', cookie: olga, cuerpo: { activar: true } });
   ok("Controla'T: el administrador de otra empresa no lo activa (escribiría en la cuenta de Controla'T de ese email)", () => assert.equal(ct.status, 403));
+
+  // El del administrador escribe el neto en la base de datos de Controla'T: la misma, o la de CONTROLAT_KV_REST_API_URL si la hay.
+  const URL_C = process.env.CONTROLAT_KV_REST_API_URL;
+  const kvA = (url, cmd) => fetch(url, { method: 'POST', headers: { Authorization: 'Bearer local' }, body: JSON.stringify(cmd) }).then((r) => r.json()).then((d) => d.result);
+  const C = URL_C || process.env.KV_REST_API_URL;
+  await kvA(C, ['SET', 'admin:email', fd.get('email')]);
+  const act = await (await pedir('/api/controlat', { metodo: 'POST', cookie: yo, cuerpo: { activar: true } })).json();
+  const mesC = (await kvA(C, ['KEYS', 'movs:*'])).find((k) => /^movs:\d{4}-\d{2}$/.test(k));
+  const nomina = mesC ? JSON.parse((await kvA(C, ['HGET', mesC, `autonomo-${mesC.slice(5)}`])) || '{}') : {};
+  ok(`Controla'T: el administrador lo activa y el neto llega a ${URL_C ? 'su base de datos aparte' : 'la base de datos compartida'}`, () => assert.ok(act.ok && act.meses > 0 && nomina.comercio === 'Netto', JSON.stringify(act)));
+  if (URL_C) { const fuga = await kvA(process.env.KV_REST_API_URL, ['KEYS', 'movs:*']); ok("Controla'T aparte: nada se escribe en la base de datos de Netto", () => assert.equal(fuga.length, 0)); }
+  await pedir('/api/controlat', { metodo: 'POST', cookie: yo, cuerpo: { activar: false } });
 }
 
 console.log('\nPrivacidad y condiciones');

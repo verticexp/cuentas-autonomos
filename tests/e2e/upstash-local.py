@@ -1,8 +1,10 @@
 # Traduce la API REST de Upstash a un Redis local, solo para las pruebas de punta a punta (nunca en producción).
 # Traductor mínimo del protocolo REST de Upstash a un Redis local, solo para pruebas.
-import json, redis, base64
+import json, redis, base64, sys
+# Opcional: puerto y nº de base de datos de Redis (para simular una segunda base de datos, la de Controla'T).
+PUERTO = int(sys.argv[1]) if len(sys.argv) > 1 else 8079
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-r = redis.Redis(decode_responses=True)
+r = redis.Redis(decode_responses=True, db=int(sys.argv[2]) if len(sys.argv) > 2 else 0)
 r.response_callbacks.clear()
 def run(cmd):
     c=r.connection_pool.get_connection('x')
@@ -30,4 +32,4 @@ class H(BaseHTTPRequestHandler):
         if self.path.startswith('/pipeline') or self.path.startswith('/multi-exec'): out=[run2(c) for c in body]
         else: out=run2(body)
         b=json.dumps(out).encode(); self.send_response(200); self.send_header('Content-Type','application/json'); self.end_headers(); self.wfile.write(b)
-ThreadingHTTPServer(('127.0.0.1',8079),H).serve_forever()
+ThreadingHTTPServer(('127.0.0.1',PUERTO),H).serve_forever()
