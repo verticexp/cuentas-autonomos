@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { borradorRenta, cuotaEscala, modelo115, modelo180, modelo190, modelo202, modelo349, modelo390, nifUE, retencionesProfesionales } from '../lib/modelos.js';
+import { borradorRenta, cuotaEscala, modelo115, modelo180, modelo190, modelo202, modelo347, modelo349, modelo390, nifUE, retencionesProfesionales } from '../lib/modelos.js';
 
 const F = [
   { fecha: '2026-02-01', base: 1000, ivaPct: 21, irpfPct: 15, cliente: { nombre: 'Ana', nif: '12345678Z' } },
@@ -76,4 +76,26 @@ test('202: 18 % de la cuota del último Impuesto sobre Sociedades presentado', (
   const m = modelo202({ 2024: 0, 2025: 1000 }, 2026);
   assert.deepEqual(m.map((x) => [x.mes, x.de, x.cuota, x.pago, x.fecha]), [['abril', 2024, 0, 0, '2026-04-20'], ['octubre', 2025, 1000, 180, '2026-10-20'], ['diciembre', 2025, 1000, 180, '2026-12-20']]);
   assert.equal(modelo202({}, 2026)[1].cuota, null);
+});
+
+test('347: más de 3.005,06 € con IVA por cliente (B) y proveedor (A), por trimestres; sin 349, retenciones ni fuera de la UE', () => {
+  const F = [
+    { fecha: '2026-02-01', base: 2000, ivaPct: 21, irpfPct: 0, cliente: { nombre: 'Grande SL', nif: 'B12345678' } },
+    { fecha: '2026-05-01', base: 1000, ivaPct: 21, irpfPct: 0, cliente: { nombre: 'Grande SL', nif: 'b-12345678' } },
+    { fecha: '2026-03-01', base: 2900, ivaPct: 21, irpfPct: 0, cliente: { nombre: 'Pequeña SL', nif: 'B87654321' } }, // 3.509 € con IVA: entra
+    { fecha: '2026-03-02', base: 2400, ivaPct: 21, irpfPct: 0, cliente: { nombre: 'Justa SL', nif: 'B11111111' } }, // 2.904 €: no
+    { fecha: '2026-03-03', base: 9000, ivaPct: 21, irpfPct: 15, cliente: { nombre: 'Con retención', nif: 'B22222222' } },
+    { fecha: '2026-03-04', base: 9000, ivaPct: 0, irpfPct: 0, cliente: { nombre: 'Berlin', nif: 'DE123456789' } },
+    { fecha: '2026-03-05', base: 9000, ivaPct: 0, irpfPct: 0, cliente: { nombre: 'New York Inc', nif: '12-3456789' } },
+  ];
+  const G = [
+    { fecha: '2026-04-01', base: 3000, ivaPct: 21, proveedor: 'Proveedor SL', proveedorNif: 'B33333333' },
+    { fecha: '2026-04-02', base: 5000, ivaPct: 21, proveedor: 'Locales', proveedorNif: 'B44444444', alquiler: true },
+    { fecha: '2026-04-03', base: 5000, ivaPct: 0, proveedor: 'Google', proveedorNif: 'IE6388047V' },
+    { fecha: '2026-04-04', base: 5000, ivaPct: 21 },
+  ];
+  const m = modelo347(F, G, 2026);
+  assert.deepEqual(m.ventas.map((o) => [o.nif, o.total, o.trimestres]), [['B12345678', 3630, [2420, 1210, 0, 0]], ['B87654321', 3509, [3509, 0, 0, 0]]]);
+  assert.deepEqual(m.compras.map((o) => [o.nif, o.total]), [['B33333333', 3630]]);
+  assert.equal(m.sinNif.length, 0);
 });

@@ -4,7 +4,7 @@ import { actividadesDe, fiscalDe, modelosDe, usa130, usa303 } from '@/lib/empres
 import { casillas303, minoracion130, r2, resumenAnual } from '@/lib/calculos';
 import Rend130 from '@/components/Rend130';
 import { modelo111 } from '@/lib/nominas';
-import { borradorRenta, modelo115, modelo180, modelo190, modelo202, modelo349, modelo390, retencionesProfesionales, MINIMO_PERSONAL, RET_ALQUILER } from '@/lib/modelos';
+import { borradorRenta, modelo115, modelo180, modelo190, modelo202, modelo347, modelo349, modelo390, retencionesProfesionales, MINIMO_PERSONAL, RET_ALQUILER } from '@/lib/modelos';
 import CuotaIS from '@/components/CuotaIS';
 import { eur, hoy } from '@/lib/formato';
 import Volver from '@/components/Volver';
@@ -35,6 +35,7 @@ export default async function Modelos({ searchParams }) {
   const m190 = (f.trabajadores || nominas?.length > 0 || conRetencion) && modelo190(nominas || [], empleados || [], anio, gastos);
   const renta = f.tipo === 'autonomo' && borradorRenta(facturas, gastos, anio, u.pagos130?.[anio], { ivaCoste: !usa303(f) });
   const m180 = hay115 && modelo180(gastos, anio);
+  const m347 = modelo347(facturas, gastos, anio);
   const c303 = usa303(f);
   const ids = actividadesDe(u).map((a) => a.id);
   const rendAnterior = u.rend130?.[anio - 1];
@@ -197,6 +198,21 @@ export default async function Modelos({ searchParams }) {
           </div>
         </section>
       )}
+
+      <section className="bloque" id="m347">
+        <h2 className="grupo-t">347 · Operaciones de más de 3.005,06 €</h2>
+        <p className="grupo-pie arriba">Clientes y proveedores con los que pasas de 3.005,06 € en el año, IVA incluido. No entra lo que ya va en el 349, lo de fuera de la UE, lo que lleva retención (va en el 190 o el 180) ni los tickets sin proveedor. Se presenta en febrero de {anio + 1}.</p>
+        {m347.ventas.length || m347.compras.length ? (
+          <div className="tarjetas">
+            {[['Clientes (clave B)', m347.ventas], ['Proveedores (clave A)', m347.compras]].filter(([, l]) => l.length).map(([t, l]) => (
+              <div key={t} className="tarjeta"><h3>{t}</h3>
+                <Casillas filas={l.map((o) => [`${o.nif ? `${o.nif} · ` : ''}${o.nombre} (${o.trimestres.map((x, i) => `${i + 1}T ${eur(x)}`).filter((_, i) => o.trimestres[i]).join(' · ')})`, o.total])} />
+              </div>
+            ))}
+          </div>
+        ) : <div className="tarjeta"><p className="nota">Nadie pasa de 3.005,06 € este año: no se presenta.</p></div>}
+        {m347.sinNif.length > 0 && <p className="nota">Sin NIF: {m347.sinNif.map((o) => o.nombre).join(', ')}. Añádelo en sus facturas o gastos: sin él no se puede declarar.</p>}
+      </section>
 
       {m180 && (
         <section className="bloque" id="m180">
