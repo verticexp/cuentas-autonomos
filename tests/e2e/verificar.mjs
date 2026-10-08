@@ -344,7 +344,11 @@ console.log('Más modelos: 115, 349, 390 y renta');
   const mUE = n(await texto(`/modelos?anio=${Y}`, yo));
   ok('303: autoliquida la compra de la UE (10-11 y 36-37) y la de fuera (12-13)', () => assert.ok(mUE.includes(`10 · Compras a la UE: base ${n(eur(120))}`) && mUE.includes(`37 · Compras a la UE: cuota deducible ${n(eur(25.2))}`) && mUE.includes(`13 · Compras de fuera de la UE: cuota ${n(eur(10.5))}`)));
   ok('349: el proveedor de la UE, con clave I', () => assert.ok(mUE.includes(`IE6388047V · Google Ireland (I) ${n(eur(120))}`)));
-  await Promise.all([gUE, gFuera].map((g) => pedir(`/api/gastos?id=${encodeURIComponent(g.id)}`, { metodo: 'DELETE', cookie: yo })));
+  // Un profesional con retención (la gestoría): va en el 111 (07 a 09) y en el 190 (clave G).
+  const gRet = (await (await pedir('/api/gastos', { metodo: 'POST', cookie: yo, cuerpo: { fecha: `${Y}-05-08`, actividad: ACTS[0].id, concepto: 'Gestoría', base: '200', ivaPct: 21, irpfPct: 15, proveedor: 'Gestoría Ruiz', proveedorNif: 'B11111111' } })).json()).gasto;
+  const mRet = n(await texto(`/modelos?anio=${Y}`, yo));
+  ok('gasto con retención del 15 %: en el 111 (07 a 09) y en el 190 con clave G', () => assert.ok(gRet?.irpfPct === 15 && mRet.includes(`09 · Retenciones ${n(eur(30))}`) && mRet.includes('B11111111 · Gestoría Ruiz (G)')));
+  await Promise.all([gUE, gFuera, gRet].map((g) => pedir(`/api/gastos?id=${encodeURIComponent(g.id)}`, { metodo: 'DELETE', cookie: yo })));
   const q130 = (txt, re) => re.exec(txt)?.[1];
   const en130 = q130(m, new RegExp(`130 · Pago a cuenta del IRPF[\\s\\S]*?1 ?T ${Y}[\\s\\S]*?07 · A ingresar ([\\d.,]+ €)`));
   const enRes = q130(res59, new RegExp(`1 ?T ${Y}[\\s\\S]*?Modelo 130 ([\\d.,]+ €)`));

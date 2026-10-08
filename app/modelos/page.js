@@ -3,7 +3,7 @@ import { leer } from '@/lib/redis';
 import { actividadesDe, fiscalDe, modelosDe, usa130, usa303 } from '@/lib/empresa';
 import { casillas303, r2, resumenAnual } from '@/lib/calculos';
 import { modelo111 } from '@/lib/nominas';
-import { borradorRenta, modelo115, modelo180, modelo190, modelo349, modelo390, MINIMO_PERSONAL, RET_ALQUILER } from '@/lib/modelos';
+import { borradorRenta, modelo115, modelo180, modelo190, modelo349, modelo390, retencionesProfesionales, MINIMO_PERSONAL, RET_ALQUILER } from '@/lib/modelos';
 import { eur, hoy } from '@/lib/formato';
 import Volver from '@/components/Volver';
 import Ir from '@/components/Ir';
@@ -29,12 +29,13 @@ export default async function Modelos({ searchParams }) {
   const hay115 = f.alquiler || gastos.some((g) => g.alquiler);
   const hay349 = f.intracom || modelo349(facturas, anio, undefined, gastos).total > 0;
   const m390 = usa303(f) && modelo390(facturas, gastos, anio);
-  const m190 = (f.trabajadores || nominas?.length > 0) && modelo190(nominas || [], empleados || [], anio);
+  const conRetencion = gastos.some((g) => Number(g.irpfPct) > 0);
+  const m190 = (f.trabajadores || nominas?.length > 0 || conRetencion) && modelo190(nominas || [], empleados || [], anio, gastos);
   const renta = f.tipo === 'autonomo' && borradorRenta(facturas, gastos, anio, u.pagos130?.[anio], { ivaCoste: !usa303(f) });
   const m180 = hay115 && modelo180(gastos, anio);
   const c303 = usa303(f);
   const r130 = usa130(f) && resumenAnual(facturas, gastos, anio, u.pagos130?.[anio] || {}, actividadesDe(u).map((a) => a.id), { ivaCoste: !c303 });
-  const hay111 = f.trabajadores || nominas?.length > 0;
+  const hay111 = f.trabajadores || nominas?.length > 0 || conRetencion;
 
   return (
     <main className="pagina modelos">
@@ -104,11 +105,15 @@ export default async function Modelos({ searchParams }) {
       {hay111 && (
         <section className="bloque" id="m111">
           <h2 className="grupo-t">111 · Retenciones de trabajadores y profesionales</h2>
-          <p className="grupo-pie arriba">Lo retenido en las nóminas del trimestre. Si pagas a profesionales con retención (por ejemplo, a tu gestoría), van en las casillas 07 a 09: súmalas.</p>
+          <p className="grupo-pie arriba">Lo retenido en las nóminas del trimestre y en las facturas de profesionales (los gastos con retención, por ejemplo tu gestoría).</p>
           <div className="tarjetas">
-            {T.map((t) => { const m = modelo111(nominas || [], anio, t); return (
+            {T.map((t) => { const m = modelo111(nominas || [], anio, t); const p = retencionesProfesionales(gastos, anio, t); return (
               <div key={t} className="tarjeta"><h3>{t}T {anio}</h3>
-                {m.perceptores ? <Casillas filas={[['01 · Trabajadores', String(m.perceptores)], ['02 · Sueldos pagados', m.percepciones], ['03 · Retenciones', m.retenciones, true]]} /> : <p className="nota">Sin nóminas este trimestre.</p>}
+                {m.perceptores || p.perceptores ? <Casillas filas={[
+                  m.perceptores && ['01 · Trabajadores', String(m.perceptores)], m.perceptores && ['02 · Sueldos pagados', m.percepciones], m.perceptores && ['03 · Retenciones', m.retenciones],
+                  p.perceptores && ['07 · Profesionales', String(p.perceptores)], p.perceptores && ['08 · Lo que les pagaste (base)', p.base], p.perceptores && ['09 · Retenciones', p.retenciones],
+                  ['28 · A ingresar', r2(m.retenciones + p.retenciones), true],
+                ]} /> : <p className="nota">Sin nóminas ni profesionales con retención este trimestre.</p>}
                 <p className="nota">Hasta el {plazo(t, anio, 20)}.</p>
               </div>
             ); })}
@@ -175,7 +180,7 @@ export default async function Modelos({ searchParams }) {
         <section className="bloque" id="m190">
           <h2 className="grupo-t">190 · Resumen anual de retenciones</h2>
           <div className="tarjeta">
-            {m190.perceptores.length ? <Casillas filas={[...m190.perceptores.map((p) => [`${p.nif ? `${p.nif} · ` : ''}${p.nombre}`, `${eur(p.percepciones)} · ret. ${eur(p.retenciones)}`]), ['Percepciones del año', m190.percepciones], ['Retenciones del año', m190.retenciones, true]]} /> : <p className="nota">Sin nóminas este año.</p>}
+            {m190.perceptores.length ? <Casillas filas={[...m190.perceptores.map((p) => [`${p.nif ? `${p.nif} · ` : ''}${p.nombre} (${p.clave})`, `${eur(p.percepciones)} · ret. ${eur(p.retenciones)}`]), ['Percepciones del año', m190.percepciones], ['Retenciones del año', m190.retenciones, true]]} /> : <p className="nota">Sin nóminas este año.</p>}
           </div>
         </section>
       )}

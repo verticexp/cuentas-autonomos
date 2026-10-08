@@ -70,7 +70,7 @@ export default async function Gastos({ searchParams }) {
       )}
 
       {/* Primero lo que más se hace: escanear el ticket. El formulario entero se abre al escanear o al pedirlo. */}
-      {puede(u, 'gastar') && <FormGasto hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} plegado={todos.length > 0} />}
+      {puede(u, 'gastar') && <FormGasto hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} plegado={todos.length > 0} />}
 
       {todos.length > 5 && <Buscar action="/gastos" q={q} ocultos={{ estado }} placeholder="Buscar proveedor o concepto" />}
       {sinPagar > 0 && (

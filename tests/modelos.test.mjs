@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { borradorRenta, cuotaEscala, modelo115, modelo180, modelo190, modelo349, modelo390, nifUE } from '../lib/modelos.js';
+import { borradorRenta, cuotaEscala, modelo115, modelo180, modelo190, modelo349, modelo390, nifUE, retencionesProfesionales } from '../lib/modelos.js';
 
 const F = [
   { fecha: '2026-02-01', base: 1000, ivaPct: 21, irpfPct: 15, cliente: { nombre: 'Ana', nif: '12345678Z' } },
@@ -35,7 +35,7 @@ test('390: suma de los cuatro 303', () => {
 
 test('190: por trabajador', () => {
   const N = [{ empleado: 'e', empleadoNombre: 'Eva', mes: '2026-01', bruto: 2000, irpfPct: 10 }, { empleado: 'e', mes: '2026-02', bruto: 2000, irpfPct: 10 }, { empleado: 'e', mes: '2025-12', bruto: 9, irpfPct: 10 }];
-  assert.deepEqual(modelo190(N, [{ id: 'e', nombre: 'Eva Gil', nif: '1X' }], 2026), { perceptores: [{ nombre: 'Eva Gil', nif: '1X', percepciones: 4000, retenciones: 400 }], percepciones: 4000, retenciones: 400 });
+  assert.deepEqual(modelo190(N, [{ id: 'e', nombre: 'Eva Gil', nif: '1X' }], 2026), { perceptores: [{ nombre: 'Eva Gil', nif: '1X', clave: 'A', percepciones: 4000, retenciones: 400 }], percepciones: 4000, retenciones: 400 });
 });
 
 test('renta: escala, mínimo personal, retenciones y pagos del 130', () => {
@@ -56,4 +56,18 @@ test('349: clientes de la UE con clave S y proveedores de la UE con clave I', ()
   const m = modelo349(F, 2026, 2, G);
   assert.deepEqual(m.operadores.map((o) => [o.nif, o.clave, o.base]), [['FR12345678901', 'S', 700], ['IE6388047V', 'I', 120]]);
   assert.equal(m.total, 820);
+});
+
+test('111 y 190: retenciones a profesionales (gastos con retención), aparte de las nóminas', () => {
+  const G = [
+    { fecha: '2026-04-10', base: 200, ivaPct: 21, irpfPct: 15, proveedor: 'Gestoría Ruiz', proveedorNif: 'B11111111' },
+    { fecha: '2026-05-10', base: 200, ivaPct: 21, irpfPct: 15, proveedor: 'Gestoría Ruiz', proveedorNif: 'B11111111' },
+    { fecha: '2026-06-10', base: 100, ivaPct: 21, irpfPct: 7, proveedor: 'Diseñadora', proveedorNif: '12345678Z' },
+    { fecha: '2026-06-11', base: 50, ivaPct: 21, proveedor: 'Papelería' },
+  ];
+  assert.deepEqual(retencionesProfesionales(G, 2026, 2), { perceptores: 2, base: 500, retenciones: 67 });
+  assert.deepEqual(retencionesProfesionales(G, 2026, 1), { perceptores: 0, base: 0, retenciones: 0 });
+  const m = modelo190([], [], 2026, G);
+  assert.deepEqual(m.perceptores.map((p) => [p.nombre, p.clave, p.percepciones, p.retenciones]), [['Gestoría Ruiz', 'G', 400, 60], ['Diseñadora', 'G', 100, 7]]);
+  assert.equal(m.retenciones, 67);
 });
