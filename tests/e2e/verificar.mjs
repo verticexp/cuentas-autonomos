@@ -1656,6 +1656,19 @@ if (process.env.VERIFACTU_URL) {
   ok('dos envíos, con certificado de cliente, y el segundo encadenado al primero', () => assert.ok(envios.length === 2 && envios.every((x) => x.certificado && x.estado === 200) && envios[1].envio.includes(`<sum1:Huella>${f1.verifactu.huella}</sum1:Huella>`) && envios[0].envio.includes('<sum1:PrimerRegistro>S</sum1:PrimerRegistro>'), JSON.stringify(envios.map((x) => [x.certificado, x.estado]))));
   const det = n(await texto(`/facturas/${encodeURIComponent(f1.id)}`, soc));
   ok('la ficha de la factura dice que está registrada en la AEAT', () => assert.ok(det.includes('Verifactu (pruebas): registrada en la AEAT (CSV A-'), det.slice(-400)));
+  const aj = n(await texto('/ajustes/verifactu', soc));
+  ok('Ajustes › Verifactu: en pruebas, con lo registrado y cómo autorizar a Netto en la AEAT', () => assert.ok(aj.includes('Verifactu en pruebas') && aj.includes('Registradas: 2') && aj.includes('Apodera a Empresa de Netto SL (NIF B12345674)'), aj.slice(-600)));
+  const noAdmin = await pedir('/api/cuenta', { metodo: 'PATCH', cookie: otro, cuerpo: { verifactu: 'real' } });
+  const real = await pedir('/api/cuenta', { metodo: 'PATCH', cookie: soc, cuerpo: { verifactu: 'real' } });
+  const quitar = await pedir('/api/cuenta', { metodo: 'PATCH', cookie: soc, cuerpo: { verifactu: null } });
+  ok('activarlo de verdad: solo el administrador, y luego no se puede quitar en el año', () => assert.deepEqual([noAdmin.status, real.status, quitar.status], [403, 200, 400]));
+  const f3 = (await (await pedir('/api/facturas', { metodo: 'POST', cookie: soc, cuerpo: { fecha: hoy, cliente: { nombre: 'Cliente Verifactu SL', nif: 'B76543210' }, concepto: 'Ya en real', base: '50', ivaPct: 21 } })).json()).factura;
+  let v3;
+  for (let i = 0; i < 40; i++) { v3 = await estado(f3); if (v3?.estado === 'Correcto') break; await new Promise((r) => setTimeout(r, 250)); }
+  const ultimo = readFileSync('/tmp/aeat.json', 'utf8').trim().split('\n').map((l) => JSON.parse(l)).at(-1);
+  ok('en real empieza una cadena nueva (primer registro) y el QR ya es el de la AEAT de verdad', () => assert.ok(v3?.estado === 'Correcto' && v3.modo === 'real' && ultimo.envio.includes('Ya en real') && ultimo.envio.includes('<sum1:PrimerRegistro>S</sum1:PrimerRegistro>'), JSON.stringify(v3)));
+  const decl = n(await texto('/declaracion-responsable'));
+  ok('declaración responsable pública, con los datos de la entidad productora', () => assert.ok(decl.includes('Declaración responsable del sistema informático de facturación') && decl.includes('Empresa de Netto SL') && decl.includes('B12345674') && decl.includes('S - Sí') && decl.includes('Real Decreto 1007/2023')));
 } else console.log('  (sin VERIFACTU_URL: se salta)');
 
 console.log('Formulario de contacto de la web');
