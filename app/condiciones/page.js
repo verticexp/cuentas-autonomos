@@ -1,7 +1,7 @@
 import '@/app/legal.css';
 
 export const metadata = { title: 'Condiciones de uso · Netto' };
-const EMAIL = 'mark.ramirez.2005@gmail.com';
+const EMAIL = 'corporate@nettohq.com';
 
 export default function Condiciones() {
   return (
