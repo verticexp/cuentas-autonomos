@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { apartar, casillas303, desglose, importes, origenGasto, siguienteNumero, resumenAnual, leerImporte, numeroFactura, proximoPlazo, vencimiento, vencida } from '../lib/calculos.js';
+import { apartar, casillas303, desglose, importes, minoracion130, origenGasto, siguienteNumero, resumenAnual, leerImporte, numeroFactura, proximoPlazo, vencimiento, vencida } from '../lib/calculos.js';
 
 const { facturas, gastos } = JSON.parse(readFileSync(new URL('../data/inicial.json', import.meta.url)));
 
@@ -145,4 +145,19 @@ test('303: gastos de proveedores de la UE (10-11 y 36-37) y de fuera (12-13 y 28
   assert.deepEqual([c['27'], c['28'], c['29'], c['45']], [241.5, 250, 52.5, 73.5]);
   assert.equal(c['46'], 168); // 210 − 42: lo autoliquidado se compensa
   assert.deepEqual(G.map(origenGasto), ['ue', 'fuera', '', '']);
+});
+
+test('130, casilla 13: minoración según el rendimiento del año anterior', () => {
+  assert.deepEqual([null, 5000, 9000, 9500, 10500, 11500, 12000, 12001].map(minoracion130), [0, 100, 100, 75, 50, 25, 25, 0]);
+  // 1T: 07 = 20 % de 950 = 190 → con 100 de minoración, 90. Si se presenta y paga 90, en el 2T la casilla 05 es 190 (el 07).
+  const F = [{ fecha: '2026-02-01', base: 1000, ivaPct: 21, irpfPct: 0 }, { fecha: '2026-05-01', base: 1000, ivaPct: 21, irpfPct: 0 }];
+  const r = resumenAnual(F, [], 2026, { 1: 90 }, [], { minoracion: 100 }).trimestres;
+  assert.deepEqual([r[0].c07, r[0].m130], [190, 90]);
+  assert.deepEqual([r[1].pagosPrev, r[1].c07, r[1].m130], [190, 190, 90]);
+  // Lo que no cabe en un trimestre se resta en el siguiente (casilla 15).
+  const poco = resumenAnual([{ fecha: '2026-02-01', base: 300, ivaPct: 21, irpfPct: 0 }, { fecha: '2026-05-01', base: 2000, ivaPct: 21, irpfPct: 0 }], [], 2026, { 1: 0 }, [], { minoracion: 100 }).trimestres;
+  assert.deepEqual([poco[0].c07, poco[0].m130], [57, 0]);
+  assert.deepEqual([poco[1].c07, poco[1].negPrev, poco[1].m130], [380, 43, 237]);
+  // Sin minoración, todo igual que antes.
+  assert.deepEqual(resumenAnual(F, [], 2026, { 1: 190, 2: 190 }).trimestres.map((q) => q.m130), [190, 190, 0, 0]);
 });

@@ -33,11 +33,11 @@ export default async function Resumen({ searchParams }) {
   const actividades = actividadesDe(u);
   const fiscal = fiscalDe(u);
   const ACTIVIDADES = nombresActividad(actividades);
-  const P = panelResumen({ facturas, gastos, pagos130: u.pagos130, emisor: u.emisor, anio: Number((await searchParams).anio) || undefined, hoy: h, actividades, fiscal });
+  const P = panelResumen({ facturas, gastos, pagos130: u.pagos130, rend130: u.rend130, emisor: u.emisor, anio: Number((await searchParams).anio) || undefined, hoy: h, actividades, fiscal });
   const { anio, anioActual, esteAnio, r, c303, c130, facturado, gastado, beneficio, plazo, debe, tHoy, qAhora, apartado, aPagar, mesPago,
     sinCobrar, porCobrar, vencidas, prevFact, prevBeneficio, meses, cambio, ultimoMes, top, limite } = P;
   const pagos = (y) => u.pagos130?.[y] || {};
-  const teso = esteAnio && prevision({ facturas, gastos, recurrentes: recurrentes || [], nominas: nominas || [], fiscal, pagos130: u.pagos130 || {}, plazo: u.emisor?.plazo, saldo, actividades: actividades.map((a) => a.id), hoy: h, meses: 3 });
+  const teso = esteAnio && prevision({ facturas, gastos, recurrentes: recurrentes || [], nominas: nominas || [], fiscal, pagos130: u.pagos130 || {}, rend130: u.rend130 || {}, plazo: u.emisor?.plazo, saldo, actividades: actividades.map((a) => a.id), hoy: h, meses: 3 });
   const exportar = (tipo, t) => `/api/exportar?tipo=${tipo}&anio=${anio}${t ? `&t=${t}` : ''}`;
   // Curva del beneficio acumulado mes a mes, hasta el último mes con movimiento.
   const acum = meses.slice(0, (esteAnio ? ultimoMes : 11) + 1).reduce((a, m) => [...a, (a.at(-1) ?? 0) + m.ing - m.gas], []);
@@ -225,7 +225,10 @@ export default async function Resumen({ searchParams }) {
                           {fila('04', '20 % de la 03', r2(0.2 * Math.max(0, q.rendAcum)))}
                           {fila('05', 'Pagos de trimestres anteriores', q.pagosPrev)}
                           {fila('06', 'Retenciones', q.retAcum)}
-                          {fila('07', 'Resultado', q.m130)}
+                          {fila('07', 'Resultado', q.c07)}
+                          {q.minoracion > 0 && fila('13', 'Minoración por el rendimiento del año anterior', q.minoracion)}
+                          {q.negPrev > 0 && fila('15', 'Negativos de trimestres anteriores', q.negPrev)}
+                          {q.minoracion > 0 && fila('19', 'A ingresar', q.m130)}
                         </dl>
                         </>}
                       </details>

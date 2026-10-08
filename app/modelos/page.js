@@ -1,7 +1,8 @@
 import { requerir } from '@/lib/auth';
 import { leer } from '@/lib/redis';
 import { actividadesDe, fiscalDe, modelosDe, usa130, usa303 } from '@/lib/empresa';
-import { casillas303, r2, resumenAnual } from '@/lib/calculos';
+import { casillas303, minoracion130, r2, resumenAnual } from '@/lib/calculos';
+import Rend130 from '@/components/Rend130';
 import { modelo111 } from '@/lib/nominas';
 import { borradorRenta, modelo115, modelo180, modelo190, modelo349, modelo390, retencionesProfesionales, MINIMO_PERSONAL, RET_ALQUILER } from '@/lib/modelos';
 import { eur, hoy } from '@/lib/formato';
@@ -34,7 +35,12 @@ export default async function Modelos({ searchParams }) {
   const renta = f.tipo === 'autonomo' && borradorRenta(facturas, gastos, anio, u.pagos130?.[anio], { ivaCoste: !usa303(f) });
   const m180 = hay115 && modelo180(gastos, anio);
   const c303 = usa303(f);
-  const r130 = usa130(f) && resumenAnual(facturas, gastos, anio, u.pagos130?.[anio] || {}, actividadesDe(u).map((a) => a.id), { ivaCoste: !c303 });
+  const ids = actividadesDe(u).map((a) => a.id);
+  const rendAnterior = u.rend130?.[anio - 1];
+  const r130 = usa130(f) && resumenAnual(facturas, gastos, anio, u.pagos130?.[anio] || {}, ids, { ivaCoste: !c303, minoracion: minoracion130(rendAnterior) });
+  // Lo que Netto sabe del año anterior, como sugerencia (si ese año no está entero en Netto, no vale: lo confirma la persona).
+  const conAnterior = usa130(f) && facturas.some((x) => x.fecha.startsWith(`${anio - 1}-`));
+  const sugerido = conAnterior ? resumenAnual(facturas, gastos, anio - 1, {}, ids, { ivaCoste: !c303 }).trimestres[3].rendAcum : null;
   const hay111 = f.trabajadores || nominas?.length > 0 || conRetencion;
 
   return (
@@ -87,13 +93,16 @@ export default async function Modelos({ searchParams }) {
         <section className="bloque" id="m130">
           <h2 className="grupo-t">130 · Pago a cuenta del IRPF</h2>
           <p className="grupo-pie arriba">Acumulado desde enero: el 20 % de tu rendimiento, menos las retenciones de tus facturas y lo que ya pagaste en trimestres anteriores. Marca cada trimestre como presentado en el Resumen.</p>
+          <Rend130 anio={anio - 1} valor={rendAnterior ?? null} sugerido={sugerido} minoracion={minoracion130(rendAnterior)} />
           <div className="tarjetas">
             {r130.trimestres.map((q) => (
               <div key={q.t} className="tarjeta"><h3>{q.t}T {anio}</h3>
                 <Casillas filas={[
                   ['01 · Ingresos', q.ingAcum], ['02 · Gastos (con el 5 % de difícil justificación)', q.gasAcum], ['03 · Rendimiento neto', q.rendAcum],
                   ['04 · 20 % de la 03', r2(0.2 * Math.max(0, q.rendAcum))], ['05 · Pagado en trimestres anteriores', q.pagosPrev],
-                  ['06 · Retenciones de tus facturas', q.retAcum], ['07 · A ingresar', q.m130, true],
+                  ['06 · Retenciones de tus facturas', q.retAcum], ['07 · Resultado', q.c07],
+                  q.minoracion && ['13 · Minoración por el rendimiento de ' + (anio - 1), q.minoracion], q.negPrev && ['15 · Negativos de trimestres anteriores', q.negPrev],
+                  ['19 · A ingresar', q.m130, true],
                 ]} />
                 <p className="nota">Hasta el {plazo(q.t, anio)}.{q.presentado ? ' Marcado como presentado.' : ''}</p>
               </div>
