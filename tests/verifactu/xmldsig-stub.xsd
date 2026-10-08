@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Solo para las pruebas: el esquema de firma (w3.org) no se descarga; la firma no se usa en VERI*FACTU. -->
+<schema xmlns="http://www.w3.org/2001/XMLSchema" targetNamespace="http://www.w3.org/2000/09/xmldsig#" elementFormDefault="qualified">
+	<element name="Signature" type="anyType"/>
+</schema>
