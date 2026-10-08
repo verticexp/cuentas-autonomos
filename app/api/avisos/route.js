@@ -1,27 +1,25 @@
 import { usuarioApi } from '@/lib/api';
+import { plazosFiscales } from '@/lib/avisos';
+import { fiscalDe } from '@/lib/empresa';
 
-// Calendario .ics con los plazos de 303 y 130 (se repiten cada año) y alarmas a las 9:00, 7 días y 1 día antes.
-const PLAZOS = [
-  ['0420', '1T'], ['0720', '2T'], ['1020', '3T'], ['0130', '4T'],
-];
-
+// Calendario .ics con los plazos de Hacienda (y del Registro Mercantil) que le tocan a la empresa, de este año y el que
+// viene, con alarmas a las 9:00, 7 días y 1 día antes. Los mismos que los avisos del móvil (lib/avisos.js).
 export async function GET() {
-  const { res } = await usuarioApi({ permiso: 'resumen' });
+  const { u, res } = await usuarioApi({ permiso: 'resumen' });
   if (res) return res;
   const y = new Date().getFullYear();
-  const eventos = PLAZOS.map(([md, t]) => {
-    const inicio = `${t === '4T' ? y + 1 : y}${md}`;
-    const extra = t === '4T' ? ' y resumen anual 390' : '';
+  const plazos = [...plazosFiscales(fiscalDe(u), y, { cuotaIS: u.cuotaIS }), ...plazosFiscales(fiscalDe(u), y + 1)];
+  const eventos = plazos.map(({ fecha, texto }) => {
+    const dia = fecha.replace(/-/g, '');
     return [
       'BEGIN:VEVENT',
-      `UID:cuentas-${t}@cuentas`,
+      `UID:netto-${dia}@nettohq.com`,
       `DTSTAMP:${y}0101T000000Z`,
-      `DTSTART;VALUE=DATE:${inicio}`,
-      'RRULE:FREQ=YEARLY',
-      `SUMMARY:Último día modelos 303 y 130 (${t})${extra}`,
-      'DESCRIPTION:Revisa los importes en la app Netto y márcalo como presentado.',
-      'BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:Modelos 303 y 130 en 7 días', 'TRIGGER:-P6DT15H', 'END:VALARM',
-      'BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:Mañana acaba el plazo del 303 y 130', 'TRIGGER:-PT15H', 'END:VALARM',
+      `DTSTART;VALUE=DATE:${dia}`,
+      `SUMMARY:Último día: ${texto}`,
+      'DESCRIPTION:Revisa los importes en Impuestos (Netto) y márcalo como presentado.',
+      'BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:En 7 días: ${texto}`, 'TRIGGER:-P6DT15H', 'END:VALARM',
+      'BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:Mañana acaba el plazo: ${texto}`, 'TRIGGER:-PT15H', 'END:VALARM',
       'END:VEVENT',
     ].join('\r\n');
   });

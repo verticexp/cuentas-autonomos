@@ -461,6 +461,9 @@ await pedir('/api/cuenta', { metodo: 'PATCH', cookie: soc, cuerpo: { cuotaIS: { 
 await pedir('/api/cuenta', { metodo: 'PATCH', cookie: soc, cuerpo: { cuotaIS: { anio: Y - 2, importe: '0' } } });
 const conCuota = n(await texto(`/modelos?anio=${Y}`, soc));
 ok('sociedad: con la cuota, el 18 % en octubre y diciembre; con cuota cero, abril no se presenta', () => assert.ok(conCuota.includes(`18 % · A ingresar ${n(eur(180))}`) && conCuota.includes(`La cuota de ${Y - 2} fue cero: no se presenta`)));
+const icsSoc = await (await pedir('/api/avisos', { cookie: soc })).text();
+const icsYo = await (await pedir('/api/avisos', { cookie: yo })).text();
+ok('calendario: a cada uno sus plazos (autónomo: 303 y 130; sociedad: 202, 200 y Registro Mercantil, sin 130)', () => assert.ok(icsYo.includes('SUMMARY:Último día: 303 y 130 del 1T') && icsYo.includes('la renta') && !/SUMMARY:[^\r\n]*202/.test(icsYo) && icsSoc.includes('200 (Impuesto sobre Sociedades)') && icsSoc.includes('depositar las cuentas anuales') && icsSoc.includes(`DTSTART;VALUE=DATE:${Y}1020`) && !/SUMMARY:[^\r\n]* 130/.test(icsSoc)));
 const marca202 = await pedir('/api/cuenta', { metodo: 'PATCH', cookie: soc, cuerpo: { presentado202: { anio: Y, p: 2, importe: 180 } } });
 const is200 = n(await texto(`/modelos?anio=${Y}`, soc));
 ok('sociedad: borrador del Impuesto sobre Sociedades (microempresa) que resta el 202 marcado como pagado', () => assert.ok(marca202.ok && is200.includes(`Borrador del Impuesto sobre Sociedades ${Y}`) && is200.includes('microempresa') && /Pagos del 202 marcados \S?180,00 €/.test(is200), is200.slice(is200.indexOf('Borrador del Impuesto'), is200.indexOf('Borrador del Impuesto') + 500)));
