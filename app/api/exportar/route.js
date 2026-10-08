@@ -3,6 +3,7 @@ import { usuarioApi } from '@/lib/api';
 import { importes, numeroFactura, trimestre } from '@/lib/calculos';
 import { actividadesDe, nombresActividad } from '@/lib/empresa';
 import { fechaCorta } from '@/lib/formato';
+import { auditar } from '@/lib/auditoria';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,5 +33,6 @@ export async function GET(req) {
       ...lista.map((g) => { const i = importes(g); return [fechaCorta(g.fecha), g.concepto, ACTIVIDADES[g.actividad], num(i.base), g.ivaPct, num(i.iva), num(i.base + i.iva)]; })];
 
   const nombre = `${tipo}-${anio}${t ? `-${t}T` : ''}.csv`;
+  await auditar(u, 'Exportación a Excel', `${nombre} · ${lista.length} ${tipo}`);
   return new Response(csv(filas), { headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="${nombre}"` } });
 }

@@ -5,6 +5,7 @@ import { redis } from '@/lib/redis';
 import { crearSesion, desbloqueo, opcionesCookie, opcionesDesbloqueo, usuarioActual } from '@/lib/auth';
 import { cuerpo, error } from '@/lib/api';
 import { MUCHOS, ipDe, pasado } from '@/lib/limite';
+import { auditar } from '@/lib/auditoria';
 
 // Face ID / Touch ID con llaves de acceso (passkeys). La cara nunca sale del móvil:
 // el iPhone firma un reto y aquí se comprueba la firma con la clave pública guardada al activarlo.
@@ -58,6 +59,7 @@ export async function POST(req) {
       const nombre = String(b.nombre || 'Este dispositivo').slice(0, 60);
       await redis.hset(`passkeys:${u.id}`, { [c.id]: { publicKey: b64(c.publicKey), counter: c.counter, transports: c.transports || [], nombre, creada: new Date().toISOString() } });
       await redis.hset('passkey-usuario', { [c.id]: u.id });
+      await auditar(u, 'Face ID activado', nombre);
       return Response.json({ ok: true, id: c.id });
     } catch (e) { return error(`No se pudo activar Face ID: ${e.message}`); }
   }
@@ -104,5 +106,6 @@ export async function DELETE(req) {
   const id = req.nextUrl.searchParams.get('id') || '';
   await redis.hdel(`passkeys:${u.id}`, id);
   if ((await redis.hget('passkey-usuario', id)) === u.id) await redis.hdel('passkey-usuario', id);
+  await auditar(u, 'Face ID desactivado en un dispositivo');
   return Response.json({ ok: true });
 }

@@ -1461,6 +1461,32 @@ console.log('CSP (scripts con nonce)');
   ok('un aviso mal formado no rompe nada (204)', () => assert.equal(basura.status, 204));
 }
 
+console.log('Registro de actividad');
+{
+  const kv = (cmd) => fetch(process.env.KV_REST_API_URL, { method: 'POST', headers: { Authorization: 'Bearer local' }, body: JSON.stringify(cmd) }).then((r) => r.json()).then((d) => d.result);
+  await pedir(`/api/exportar?tipo=gastos&anio=${Y}`, { cookie: yo });
+  const emisor = JSON.parse(await kv(['HGET', 'cuentas:empresas', await kv(['HGET', 'cuentas:emails', fd.get('email')])])).emisor;
+  const conIban = await pedir('/api/cuenta', { metodo: 'PATCH', cookie: yo, cuerpo: { ...emisor, iban: 'ES91 2100 0418 4502 0005 1332' } });
+  await pedir('/api/cuenta', { metodo: 'PATCH', cookie: yo, cuerpo: emisor });
+  const gO = await (await pedir('/api/gastos', { metodo: 'POST', cookie: otro, cuerpo: { fecha: `${Y}-06-06`, actividad: ACTS[0].id, concepto: 'Gasto para auditar', base: '12', ivaPct: 21 } })).json();
+  await pedir(`/api/gastos?id=${encodeURIComponent(gO.gasto?.id)}`, { metodo: 'DELETE', cookie: otro });
+  await pedir('/api/usuarios', { metodo: 'PATCH', cookie: yo, cuerpo: { id: await kv(['GET', `cuentas:sesion:${otro}`]), rol: 'miembro', permisos: ['gastos', 'gastar'] } });
+  const fB = await (await pedir('/api/facturas', { metodo: 'POST', cookie: yo, cuerpo: { fecha: `${Y}-06-07`, actividad: ACTS[0].id, cliente: { nombre: 'Cliente Auditado' }, concepto: 'Para borrar', base: '33', ivaPct: 21, irpfPct: 0, cobrada: false } })).json();
+  await pedir(`/api/facturas?id=${encodeURIComponent(fB.factura?.id)}`, { metodo: 'DELETE', cookie: yo });
+  const act = n(await texto('/ajustes/actividad', yo));
+  ok('el administrador ve las exportaciones, con quién y qué archivo', () => assert.ok(act.includes('Exportación a Excel') && act.includes(`gastos-${Y}.csv`) && act.includes('Prueba'), act.slice(0, 300)));
+  ok('un cambio de IBAN queda anotado con sus 4 últimas cifras (no entero)', () => assert.ok(conIban.ok && act.includes('IBAN cambiado a …1332') && !act.includes('ES91'), act.slice(0, 300)));
+  ok('lo que hace otra persona de la empresa también (gasto borrado por «Solo gastos»)', () => assert.ok(act.includes('Gasto borrado') && act.includes('Gasto para auditar') && act.includes('Solo gastos'), act.slice(0, 300)));
+  ok('invitaciones, cambios de permisos (con el perfil) y facturas borradas', () => assert.ok(act.includes('Persona invitada') && act.includes('Permisos cambiados') && act.includes('· Gastos') && act.includes('Factura borrada') && act.includes('Cliente Auditado · 33 € sin IVA'), act.slice(-400)));
+  const aj = n(await texto('/ajustes', yo));
+  ok('Ajustes enlaza a Actividad para el administrador', () => assert.ok(aj.includes('Quién ha cambiado qué')));
+  // Con loading.js la página 404 llega dentro del HTML en streaming: se mira el HTML entero (también lo que va en los scripts).
+  const noAdmin = await (await pedir('/ajustes/actividad', { cookie: otro })).text();
+  ok('quien no es administrador de la empresa no la ve (página 404, sin nada del registro en el HTML)', () => assert.ok(noAdmin.includes('NEXT_HTTP_ERROR_FALLBACK;404') && !noAdmin.includes('Exportaci') && !noAdmin.includes(`gastos-${Y}.csv`)));
+  const sinSesion = await pedir('/ajustes/actividad');
+  ok('sin sesión, a entrar', () => assert.ok([302, 303, 307].includes(sinSesion.status), String(sinSesion.status)));
+}
+
 console.log('Formulario de contacto de la web');
 {
   const { readFileSync, rmSync } = await import('node:fs');

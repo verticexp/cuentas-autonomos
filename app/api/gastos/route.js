@@ -2,6 +2,7 @@ import { guardar, borrar, leerUno } from '@/lib/redis';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { subirGasto } from '@/lib/drive';
 import { enviarNomina } from '@/lib/controlat';
+import { auditar } from '@/lib/auditoria';
 import { leerImporte, r2 } from '@/lib/calculos';
 import { actividadesDe, actividadValida } from '@/lib/empresa';
 
@@ -61,6 +62,7 @@ export async function DELETE(req) {
   if (!id) return error('Falta id');
   const antes = await leerUno(u, 'gastos', id);
   await borrar(u, 'gastos', id);
+  if (antes) await auditar(u, 'Gasto borrado', `${antes.concepto} · ${antes.fecha} · ${antes.base} € sin IVA`);
   if (antes) await enviarNomina(u, [antes.fecha]);
   return Response.json({ ok: true });
 }
