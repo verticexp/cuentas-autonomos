@@ -1573,6 +1573,12 @@ console.log('Color de la marca');
   await pedir('/api/cuenta', { metodo: 'PATCH', cookie: yo, cuerpo: { marca: { color: null } } });
 }
 
+console.log('Accesos del resumen');
+{
+  const nav = /<nav class="accesos"[\s\S]*?<\/nav>/.exec(await (await pedir('/', { cookie: yo })).text())?.[0] || '';
+  ok('el cuarto acceso es Impuestos (antes «Más», que llevaba a Ajustes)', () => assert.ok(nav.includes('href="/modelos"') && nav.includes('Impuestos') && !nav.includes('href="/ajustes"') && !nav.includes('>Más<'), nav.slice(0, 300)));
+}
+
 console.log('Formulario de contacto de la web');
 {
   const { readFileSync, rmSync } = await import('node:fs');
