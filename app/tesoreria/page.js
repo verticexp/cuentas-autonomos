@@ -8,6 +8,7 @@ import Volver from '@/components/Volver';
 import Ir from '@/components/Ir';
 import SinBD from '@/components/SinBD';
 import SaldoBanco from '@/components/SaldoBanco';
+import GraficaCaja from '@/components/GraficaCaja';
 import '@/app/tesoreria.css';
 import '@/app/banco.css';
 
@@ -49,10 +50,11 @@ export default async function Tesoreria({ searchParams }) {
 
       <section className="grupo">
         <h2 className="grupo-t">Mes a mes</h2>
+        {p.meses.length > 0 && <div className="grupo-c relleno teso-graf"><GraficaCaja meses={p.meses.map(({ mes, nombre, entra, sale, hacienda, saldo }) => ({ mes, nombre, entra, sale, hacienda, saldo }))} conSaldo={p.conSaldo} /></div>}
         <div className="grupo-c teso-meses">
           {p.meses.map((m) => (
             <div key={m.mes} className="celda teso-mes">
-              <span className="txt">{m.nombre[0].toUpperCase() + m.nombre.slice(1)}<small>+{eur(m.entra)} · −{eur(m.sale)}{m.hacienda ? ` · Hacienda −${eur(m.hacienda)}` : ''}</small></span>
+              <span className="txt">{m.nombre[0].toUpperCase() + m.nombre.slice(1)}<small>+{eur(Math.abs(m.entra))} · −{eur(Math.abs(m.sale))}{m.hacienda ? ` · Hacienda −${eur(Math.abs(m.hacienda))}` : ''}</small></span>
               <span className="teso-barra" aria-hidden><span className={m.saldo < 0 ? 'neg' : ''} style={{ width: `${Math.round((Math.abs(m.saldo) / alto) * 100)}%` }} /></span>
               <span className={`v${m.saldo < 0 ? ' rojo' : ''}`}>{eur(m.saldo)}</span>
             </div>

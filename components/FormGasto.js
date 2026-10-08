@@ -17,7 +17,8 @@ async function reducir(archivo) {
   return c.toDataURL('image/jpeg', 0.82);
 }
 
-export default function FormGasto({ hoy, gasto, actividades, alquiler = false }) {
+// plegado: en la lista de gastos empieza como una tarjeta con «Escanear ticket»; el formulario se abre al escanear o al pedirlo.
+export default function FormGasto({ hoy, gasto, actividades, alquiler = false, plegado = false }) {
   const router = useRouter();
   const vacio = { fecha: hoy, actividad: actividades[0].id, concepto: '', proveedor: '', base: '', ivaPct: 21 };
   const [g, setG] = useState(gasto ? { ...gasto, base: String(gasto.base).replace('.', ',') } : vacio);
@@ -25,10 +26,13 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false })
   const [enviando, setEnviando] = useState(false);
   const poner = (k, v) => setG((x) => ({ ...x, [k]: v }));
   const [leyendo, setLeyendo] = useState('');
+  const [abierto, setAbierto] = useState(Boolean(gasto) || !plegado);
+  const [hecho, setHecho] = useState(false);
   const foto = async (e) => {
     const archivo = e.target.files?.[0];
     e.target.value = '';
     if (!archivo) return;
+    setAbierto(true); setHecho(false);
     const pdf = archivo.type === 'application/pdf';
     if (pdf && archivo.size > 5e6) { setError('El PDF es demasiado grande (máx. 5 MB)'); return; }
     setLeyendo(pdf ? 'Leyendo la factura…' : 'Leyendo el ticket…'); setError('');
@@ -48,10 +52,29 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false })
       await llamar('/api/gastos', { method: gasto ? 'PATCH' : 'POST', body: JSON.stringify(g) });
       if (gasto) { navegar(router, '/gastos', 'atras'); router.refresh(); return; }
       setG(vacio);
+      setLeyendo('');
+      if (plegado) { setAbierto(false); setHecho(true); }
       router.refresh();
     } catch (err) { setError(err.message); }
     setEnviando(false);
   };
+
+  if (!abierto) {
+    return (
+      <div className="gasto-rapido">
+        <div className="gasto-rapido-txt">
+          <strong>{hecho ? '✓ Gasto añadido' : 'Añadir un gasto'}</strong>
+          <small>Haz una foto al ticket o sube la factura: Netto lee proveedor, base, IVA y fecha.</small>
+        </div>
+        {error && <p className="error">{error}</p>}
+        <div className="gasto-rapido-botones">
+          <label className="boton gasto-escanear"><svg viewBox="0 0 24 24" aria-hidden><path d="M4 8V6a2 2 0 012-2h2M16 4h2a2 2 0 012 2v2M20 16v2a2 2 0 01-2 2h-2M8 20H6a2 2 0 01-2-2v-2M4 12h16" /></svg>Escanear ticket<input type="file" accept="image/*" capture="environment" onChange={foto} hidden /></label>
+          <label className="boton sec">Subir factura<input type="file" accept="image/*,application/pdf" onChange={foto} hidden /></label>
+          <button type="button" className="boton sec" onClick={() => { setAbierto(true); setHecho(false); }}>A mano</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <form className="formulario tarjeta" onSubmit={enviar}>
@@ -83,7 +106,10 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false })
       <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.pendiente)} onChange={(e) => poner('pendiente', e.target.checked)} />Aún no lo he pagado</label>
       {(alquiler || g.alquiler) && <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.alquiler)} onChange={(e) => poner('alquiler', e.target.checked)} />Es el alquiler del local (retención del 19 %)</label>}
       {error && <p className="error">{error}</p>}
-      <button className="boton" disabled={enviando}>{enviando ? 'Guardando…' : gasto ? 'Guardar cambios' : 'Añadir'}</button>
+      <div className="gasto-guardar">
+        <button className="boton" disabled={enviando}>{enviando ? 'Guardando…' : gasto ? 'Guardar cambios' : 'Añadir'}</button>
+        {plegado && !gasto && <button type="button" className="boton sec" onClick={() => { setAbierto(false); setG(vacio); setLeyendo(''); setError(''); }}>Cancelar</button>}
+      </div>
     </form>
   );
 }

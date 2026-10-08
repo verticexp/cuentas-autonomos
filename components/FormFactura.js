@@ -73,7 +73,8 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
   };
 
   return (
-    <form className="formulario" onSubmit={enviar}>
+    <form className="formulario ff" onSubmit={enviar}>
+      <div className="ff-campos">
       <p className="rotulo">{nueva ? `Se numerará como ${numeros[f.actividad]}` : `Factura ${numeroFactura(f)}`}{orig ? ` · rectifica la ${numeroFactura(orig)} (pon el importe que corrige: en negativo si anula)` : ''}</p>
       {actividades.length > 1 && <Deslizable className={`tipo ${actividades.length === 2 ? 'dos' : 'varias'}`}>
         {actividades.map(({ id, nombre }) => (
@@ -143,6 +144,27 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
 
       {error && <p className="error">{error}</p>}
       <button className="boton" disabled={enviando}>{enviando ? 'Guardando…' : nueva ? 'Crear factura' : 'Guardar cambios'}</button>
+      </div>
+
+      {/* En el ordenador, la factura se va dibujando al lado mientras se rellena */}
+      <aside className="ff-vista" aria-label="Vista previa">
+        <div className="ff-papel">
+          <div className="ff-papel-cab"><b>Factura {nueva ? numeros[f.actividad] : numeroFactura(f)}</b><small>{f.fecha ? new Date(`${f.fecha}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }) : ''}</small></div>
+          <div className="ff-para"><small>Para</small><b>{f.cliente.nombre || 'Tu cliente'}</b>{f.cliente.nif && <small>{f.cliente.nif}</small>}</div>
+          <ul className="ff-lineas">
+            {f.lineas.map((l, i) => (
+              <li key={i}><span>{l.concepto || 'Concepto'}<small>{aTexto(nums[i].cantidad)} × {eur(nums[i].precio)}{nums[i].dto ? ` · −${aTexto(nums[i].dto)} %` : ''}</small></span><b>{eur(baseLinea(nums[i]))}</b></li>
+            ))}
+          </ul>
+          <dl className="ff-tot">
+            <div><dt>Base</dt><dd>{eur(t.base)}</dd></div>
+            {tipos.length > 1 ? tipos.map((x) => <div key={x.pct}><dt>IVA {x.pct} %</dt><dd>{eur(x.iva)}</dd></div>) : <div><dt>IVA</dt><dd>{eur(t.iva)}</dd></div>}
+            {Number(f.irpfPct) > 0 && <div><dt>IRPF {f.irpfPct} %</dt><dd>−{eur(t.irpf)}</dd></div>}
+          </dl>
+          <p className="ff-total"><span>Total</span><b key={t.total}>{eur(t.total)}</b></p>
+          {f.cobrada && <span className="estado-txt e-cobrada">Cobrada</span>}
+        </div>
+      </aside>
     </form>
   );
 }

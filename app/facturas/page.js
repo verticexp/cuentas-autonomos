@@ -9,6 +9,7 @@ import { eur, hoy } from '@/lib/formato';
 import SinBD from '@/components/SinBD';
 import { puede } from '@/lib/permisos';
 import Deslizable from '@/components/Deslizable';
+import Buscar from '@/components/Buscar';
 import '@/app/recurrentes.css';
 
 export const dynamic = 'force-dynamic';
@@ -20,13 +21,16 @@ export default async function Facturas({ searchParams }) {
   const [todas, recurrentes] = await Promise.all([leer(u, 'facturas'), leer(u, 'recurrentes')]);
   if (!todas) return <SinBD />;
   const ACTIVIDADES = nombresActividad(actividadesDe(u));
-  const { a, estado } = await searchParams;
+  const { a, estado, q } = await searchParams;
+  const buscado = String(q || '').trim().toLowerCase();
   const h = hoy();
   const plazo = u.emisor?.plazo;
   const estadoDe = (f) => (f.cobrada ? 'cobrada' : vencida(f, plazo, h) ? 'vencida' : 'pendiente');
   const lista = todas
     .filter((f) => !ACTIVIDADES[a] || f.actividad === a)
     .filter((f) => estado !== 'pendientes' || !f.cobrada)
+    .filter((f) => estado !== 'vencidas' || estadoDe(f) === 'vencida')
+    .filter((f) => !buscado || [f.cliente?.nombre, numeroFactura(f), f.concepto, ...(f.lineas || []).map((l) => l.concepto)].some((t) => String(t || '').toLowerCase().includes(buscado)))
     .sort((x, y) => y.fecha.localeCompare(x.fecha) || y.numero - x.numero);
   const porCobrar = r2(todas.filter((f) => !f.cobrada).reduce((s, f) => s + importes(f).total, 0));
   const vencidas = todas.filter((f) => estadoDe(f) === 'vencida');
@@ -39,8 +43,8 @@ export default async function Facturas({ searchParams }) {
     grupos.at(-1).facturas.push(f);
   }
   const url = (cambios) => {
-    const q = new URLSearchParams(Object.entries({ a, estado, ...cambios }).filter(([, v]) => v));
-    return `/facturas${q.size ? `?${q}` : ''}`;
+    const p = new URLSearchParams(Object.entries({ a, estado, q, ...cambios }).filter(([, v]) => v));
+    return `/facturas${p.size ? `?${p}` : ''}`;
   };
 
   return (
@@ -64,10 +68,13 @@ export default async function Facturas({ searchParams }) {
         </p>
       )}
 
+      {todas.length > 5 && <Buscar action="/facturas" q={q} ocultos={{ a, estado }} placeholder="Buscar cliente, número o concepto" />}
+
       <Deslizable className="chips">
         <Link href={url({ a: null })} className={!ACTIVIDADES[a] ? 'activo' : ''}>Todas</Link>
         {Object.entries(ACTIVIDADES).map(([id, n]) => <Link key={id} href={url({ a: id })} className={a === id ? 'activo' : ''}>{n}</Link>)}
         <Link href={url({ estado: estado === 'pendientes' ? null : 'pendientes' })} className={estado === 'pendientes' ? 'activo' : ''}>Sin cobrar</Link>
+        {vencidas.length > 0 && <Link href={url({ estado: estado === 'vencidas' ? null : 'vencidas' })} className={estado === 'vencidas' ? 'activo' : ''}>Vencidas</Link>}
       </Deslizable>
 
       {grupos.map((g) => {
@@ -101,7 +108,7 @@ export default async function Facturas({ searchParams }) {
 
       {!lista.length && (
         <div className="vacio">
-          {todas.length ? <><p>Nada con este filtro</p><p>Prueba con otra actividad o quita «Sin cobrar».</p></> : <>
+          {todas.length ? <><p>{buscado ? `Nada con «${q}»` : 'Nada con este filtro'}</p><p>{buscado ? 'Prueba con otra palabra o quita la búsqueda.' : 'Prueba con otra actividad o quita el filtro.'}</p></> : <>
             <p>Aún no has hecho ninguna factura</p>
             <p>Se numeran solas y puedes descargarlas en PDF con tu logo.</p>
             {puede(u, 'facturar') && <Ir href="/facturas/nueva" tipo="subir" className="boton">Crear la primera</Ir>}
