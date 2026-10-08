@@ -1,8 +1,10 @@
 import { guardar, borrar, leerUno } from '@/lib/redis';
 import { crearFactura, guardarCliente, limpiar } from '@/lib/facturas';
+import { numeroFactura } from '@/lib/calculos';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { subirFactura } from '@/lib/drive';
 import { enviarNomina } from '@/lib/controlat';
+import { auditar } from '@/lib/auditoria';
 import { actividadesDe, fiscalDe } from '@/lib/empresa';
 
 export const dynamic = 'force-dynamic';
@@ -51,6 +53,7 @@ export async function DELETE(req) {
   const antes = await leerUno(u, 'facturas', id);
   if (antes?.verifactu) return error('Esta factura ya está registrada en Verifactu: no se puede borrar, haz una rectificativa');
   await borrar(u, 'facturas', id);
+  if (antes) await auditar(u, 'Factura borrada', `${numeroFactura(antes)} · ${antes.cliente?.nombre || ''} · ${antes.base} € sin IVA`);
   if (antes) await enviarNomina(u, [antes.fecha]);
   return Response.json({ ok: true });
 }

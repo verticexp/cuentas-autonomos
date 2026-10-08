@@ -5,8 +5,11 @@ import { puede } from '@/lib/permisos';
 import { colorValido, logoValido } from '@/lib/marca';
 import { actividadesDe, limpiarActividades, limpiarFiscal } from '@/lib/empresa';
 import { leer, redis } from '@/lib/redis';
+import { auditar } from '@/lib/auditoria';
 
 const CAMPOS = ['nombre', 'nif', 'direccion', 'ciudad', 'iban'];
+// En el registro de actividad: si cambia el IBAN (donde cobra la empresa), con sus 4 últimas cifras.
+const cambioIban = (antes, ahora) => (String(antes || '') !== String(ahora || '') ? ` · IBAN cambiado a ${ahora ? `…${String(ahora).replace(/\s/g, '').slice(-4)}` : 'ninguno'}` : '');
 
 export async function PATCH(req) {
   const { u, res } = await usuarioApi();
@@ -47,6 +50,7 @@ export async function PATCH(req) {
     const emisor = { ...(u.emisor || {}), ...Object.fromEntries(CAMPOS.map((k) => [k, String(e[k] || '').trim().slice(0, 120)])) };
     emisor.plazo = Math.max(0, Math.min(365, Number(e.plazo ?? emisor.plazo) || 30));
     await actualizarUsuario(u, { fiscal: limpiarFiscal(c.fiscal), actividades: a.actividades, emisor, pendiente: false });
+    await auditar(u, 'Datos de la empresa cambiados', `Situación fiscal, actividades y facturación${cambioIban(u.emisor?.iban, emisor.iban)}`);
     const emp = await redis.hget('empresas', u.empresa);
     if (emp && emisor.nombre) await redis.hset('empresas', { [u.empresa]: { ...emp, nombre: emisor.nombre } });
     return Response.json({ ok: true, actividades: a.actividades });
@@ -56,11 +60,13 @@ export async function PATCH(req) {
     const url = String(b.drive.url || '').trim();
     if (url && !/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(url)) return error('La URL debe ser la de la aplicación web de Apps Script (acaba en /exec)');
     await actualizarUsuario(u, { drive: url ? { url, token: String(b.drive.token || '').trim().slice(0, 100) } : null });
+    await auditar(u, url ? 'Google Drive conectado' : 'Google Drive desconectado');
     return Response.json({ ok: true });
   }
   if (b.nueva !== undefined) {
     const r = await cambiarPassword(u, b.actual, b.nueva);
     if (r.error) return error(r.error);
+    await auditar(u, 'Contraseña cambiada');
     (await cookies()).set('t', r.token, opcionesCookie);
     (await cookies()).set('d', await desbloqueo(r.token), opcionesDesbloqueo);
     return Response.json({ ok: true });
@@ -71,5 +77,6 @@ export async function PATCH(req) {
   emisor.limite = Math.max(0, Number(b.limite) || 0);
   emisor.recordatorios = Math.max(0, Math.min(60, Math.round(Number(b.recordatorios) || 0)));
   await actualizarUsuario(u, { emisor });
+  await auditar(u, 'Datos de facturación cambiados', `${emisor.nombre}${cambioIban(u.emisor?.iban, emisor.iban)}`);
   return Response.json({ ok: true });
 }

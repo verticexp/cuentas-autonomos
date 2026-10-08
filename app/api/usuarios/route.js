@@ -2,10 +2,11 @@ import { randomBytes } from 'crypto';
 import { borrarEmpresa, borrarUsuario, crearUsuario } from '@/lib/auth';
 import { redis } from '@/lib/redis';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
-import { limpiarPermisos, puede } from '@/lib/permisos';
+import { limpiarPermisos, perfilDe, puede } from '@/lib/permisos';
 import { conMembresia, enEmpresa, membresias } from '@/lib/membresias';
 import { INVITACION_DIAS, limpiarEmail, tokenEmail } from '@/lib/auth';
 import { enviarInvitacion } from '@/lib/invitacion';
+import { auditar } from '@/lib/auditoria';
 
 const enlace = (req, codigo) => new URL(`/invitacion/${codigo}`, req.url).toString();
 // Crea la respuesta con el enlace (que el administrador ve siempre) y le manda la invitación por email.
@@ -27,6 +28,7 @@ const deMiEmpresa = async (u, id) => {
 };
 // Quien gestiona usuarios sin ser administrador no puede crear administradores, tocar a uno, ni dar permisos que no tiene.
 const esAdminDe = (o, empresa) => membresias(o)[empresa]?.rol === 'admin';
+const quePapel = (p) => (p.rol === 'admin' ? 'Administrador' : perfilDe(p));
 const papel = (u, b) => (u.rol === 'admin'
   ? { rol: b.rol === 'admin' ? 'admin' : 'miembro', permisos: limpiarPermisos(b.permisos) }
   : { rol: 'miembro', permisos: limpiarPermisos(b.permisos).filter((p) => puede(u, p)) });
@@ -56,6 +58,7 @@ export async function POST(req) {
     const codigo = randomBytes(18).toString('base64url');
     await redis.hset('invitaciones', { [codigo]: o.id });
     await redis.hset('usuarios', { [o.id]: { ...o, creado: new Date().toISOString() } });
+    await auditar(u, 'Invitación reenviada', o.email);
     return invitar(req, u, o, nombreEmpresa(u), codigo);
   }
   // Si ya tiene cuenta en Netto (de otra empresa), se le añade esta empresa: la verá al cambiar de empresa.
@@ -64,10 +67,12 @@ export async function POST(req) {
   if (ya) {
     if (enEmpresa(ya, u.empresa)) return error('Esa persona ya está en tu empresa');
     await redis.hset('usuarios', { [ya.id]: conMembresia(ya, u.empresa, papel(u, b)) });
+    await auditar(u, 'Persona añadida', `${ya.email} · ${quePapel(papel(u, b))}`);
     return Response.json({ ok: true, existente: ya.nombre });
   }
   const r = await crearUsuario({ nombre: b.nombre, email: b.email, empresa: u.empresa, ...papel(u, b) });
   if (r.error) return error(r.error);
+  await auditar(u, 'Persona invitada', `${r.usuario.email} · ${quePapel(papel(u, b))}`);
   return invitar(req, u, r.usuario, nombreEmpresa(u), r.codigo);
 }
 
@@ -81,6 +86,7 @@ export async function PATCH(req) {
   if (o.id === u.id) return error('No puedes cambiar tus propios permisos: pídeselo a otro administrador');
   if ((esAdminDe(o, u.empresa) || b.rol === 'admin') && u.rol !== 'admin') return error('Solo un administrador de la empresa puede dar o quitar el acceso de administrador', 403);
   await redis.hset('usuarios', { [o.id]: conMembresia(o, u.empresa, papel(u, b)) });
+  await auditar(u, 'Permisos cambiados', `${o.email} · ${quePapel(papel(u, b))}`);
   return Response.json({ ok: true });
 }
 
@@ -102,5 +108,6 @@ export async function DELETE(req) {
   // Si tiene otras empresas, solo pierde el acceso a esta; si no, se borra su cuenta.
   if (Object.keys(membresias(o)).length > 1) await redis.hset('usuarios', { [o.id]: conMembresia(o, u.empresa, null) });
   else await borrarUsuario(o.id);
+  await auditar(u, 'Acceso quitado', o.email);
   return Response.json({ ok: true });
 }
