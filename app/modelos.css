@@ -1,4 +1,4 @@
-/* Página de modelos (115, 349, 390, 180, 190 y renta) */
+/* Página de impuestos (modelos trimestrales y anuales, y el calendario) */
 .modelos-cab { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .modelos .tarjeta h3 { margin: 0 0 8px; }
 .modelos dl { margin: 0; }
@@ -8,3 +8,4 @@
 .modelos dd { margin: 0; font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
 .modelos dl > .fuerte dt, .modelos dl > .fuerte dd { color: var(--ink); font-weight: 600; }
 .modelos .bloque { scroll-margin-top: 24px; }
+.modelos #calendario .txt small { white-space: normal; overflow: visible; text-overflow: clip; }

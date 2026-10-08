@@ -210,7 +210,8 @@ export default async function Resumen({ searchParams }) {
                           {fila('45', 'Total a deducir', c['45'])}
                           {fila('46', 'Resultado', c['46'])}
                         </dl>
-                        {c.sinIva !== 0 && <p className="nota">Facturas sin IVA por {eur(c.sinIva)}: van en otra casilla según el tipo de operación (por ejemplo, servicios a empresas de la UE). Pregúntale a tu gestor cuál.</p>}
+                        {c['59'] !== 0 && <dl>{fila('59', 'Empresas de otros países de la UE', c['59'])}</dl>}
+                        {r2(c.sinIva - c['59']) !== 0 && <p className="nota">Otras facturas sin IVA por {eur(r2(c.sinIva - c['59']))}: van en otra casilla según el tipo de operación (exportación, exenta o no sujeta). Pregúntale a tu gestor cuál.</p>}
                         </>}
                         {c130 && <>
                         <p className="nota" style={{ margin: '12px 0 6px' }}><strong>Modelo 130</strong> (acumulado desde enero)</p>
@@ -275,12 +276,12 @@ export default async function Resumen({ searchParams }) {
             <h2 className="grupo-t">Tus modelos</h2>
             <div className="grupo-c">
               {modelosDe(fiscal).map((m) => (
-                m.calcula && !['303', '130'].includes(m.id)
+                m.calcula
                   ? <Ir key={m.id} href={`/modelos?anio=${anio}#m${m.id}`} tipo="adelante" className="celda ir"><span className="modelo-num">{m.id}</span><span className="txt">{m.nombre}<small>{m.cuando}</small></span><span className="v">{m.id === '100' ? 'Borrador' : 'Calculado'}</span></Ir>
                   : <div key={m.id} className="celda"><span className="modelo-num">{m.id}</span><span className="txt">{m.nombre}<small>{m.cuando}</small></span>{m.calcula && <span className="v">Calculado</span>}</div>
               ))}
             </div>
-            <p className="grupo-pie">Según lo que respondiste al empezar ({fiscal.tipo === 'sociedad' ? 'sociedad' : 'autónomo'}). La app calcula los que pone «Calculado» (toca los anuales para verlos); el resto, tu gestor. Puedes cambiarlo en Ajustes.</p>
+            <p className="grupo-pie">Según lo que respondiste al empezar ({fiscal.tipo === 'sociedad' ? 'sociedad' : 'autónomo'}). La app calcula los que pone «Calculado» (tócalos para verlos); el resto, tu gestor. Puedes cambiarlo en Ajustes.</p>
           </section>
 
           <section className="grupo">

@@ -333,6 +333,14 @@ console.log('Más modelos: 115, 349, 390 y renta');
   const m = n(await texto(`/modelos?anio=${Y}`, yo));
   ok('115: el 19 % del alquiler en su trimestre', () => assert.ok(m.includes(`03 · Retenciones a ingresar ${n(eur(190))}`), m.slice(0, 200)));
   ok('349: el cliente francés con su NIF-IVA', () => assert.ok(m.includes(`FR12345678901 · Studio Paris (S) ${n(eur(700))}`)));
+  const res59 = n(await texto(`/?anio=${Y}`, yo));
+  ok('303: lo facturado sin IVA al cliente francés, en la casilla 59', () => assert.ok(res59.includes(`59 · Empresas de otros países de la UE ${n(eur(700))}`)));
+  ok('Impuestos: qué presentas y cuándo, y el 303 trimestral con la casilla 59', () => assert.ok(m.includes('Impuestos') && m.includes('Qué presentas y cuándo') && m.includes('303 · IVA trimestral') && m.includes(`59 · Empresas de otros países de la UE ${n(eur(700))}`) && m.includes(`Hasta el 30 de enero de ${Y + 1}`)));
+  ok('Impuestos: el 115 del 4T, hasta el 20 de enero', () => assert.ok(/115 · Retenciones del alquiler[\s\S]*?Hasta el 20 de enero de \d{4}/.test(m)));
+  const q130 = (txt, re) => re.exec(txt)?.[1];
+  const en130 = q130(m, new RegExp(`130 · Pago a cuenta del IRPF[\\s\\S]*?1 ?T ${Y}[\\s\\S]*?07 · A ingresar ([\\d.,]+ €)`));
+  const enRes = q130(res59, new RegExp(`1 ?T ${Y}[\\s\\S]*?Modelo 130 ([\\d.,]+ €)`));
+  ok('Impuestos: el 130 del 1T es el mismo que en el Resumen', () => assert.ok(en130 && en130 === enRes, `${en130} | ${enRes}`));
   // El 390 es la suma de los cuatro 303 (los mismos que van en el paquete de cada trimestre).
   let suma303 = 0;
   for (const t of [1, 2, 3, 4]) {
@@ -916,6 +924,8 @@ console.log('Registro de jornada');
   ok('la nómina del mes lleva sus horas registradas', () => assert.ok(gen.ok && nE.horas.trabajadas === 1440 && nE.horas.teoricas === teor && nE.horas.extra === extra, JSON.stringify(nE)));
   ok('y le paga las horas extra a su precio, dentro del bruto', () => assert.ok(nE.extras.importe === r2((extra / 60) * 20) && nE.bruto === r2(1500 + (extra / 60) * 20)));
   ok('quien no ficha, nómina como siempre', () => assert.ok(nL && !nL.horas && nL.bruto === 1200));
+  const m111 = n(await texto(`/modelos?anio=${mesPrev.slice(0, 4)}`, yo));
+  ok('Impuestos: el 111 del trimestre con los trabajadores y sus retenciones', () => assert.ok(/111 · Retenciones de trabajadores y profesionales[\s\S]*?01 · Trabajadores \d[\s\S]*?03 · Retenciones [\d.,]+ €/.test(m111)));
   const pn = n(await texto(`/nominas/${nE.id}`, yo));
   ok('la nómina enseña las horas del registro', () => assert.ok(pn.includes('Registro de jornada') && pn.includes('24:00 h trabajadas') && pn.includes('h extra pagadas'), pn.slice(0, 400)));
 
