@@ -9,6 +9,7 @@ import Ir from '@/components/Ir';
 import SinBD from '@/components/SinBD';
 import SaldoBanco from '@/components/SaldoBanco';
 import GraficaCaja from '@/components/GraficaCaja';
+import { conectarVisible } from '@/lib/enableBanking';
 import '@/app/tesoreria.css';
 import '@/app/banco.css';
 
@@ -36,7 +37,7 @@ export default async function Tesoreria({ searchParams }) {
 
       <SaldoBanco saldo={saldo ? saldo.importe : null} fecha={saldo?.fecha} banco={Boolean(saldo?.banco)} editable={puede(u, 'facturar') || puede(u, 'gastar')} />
       <Ir href="/banco" className="teso-banco">
-        <span className="bco-txt"><strong>Banco</strong><small>{saldo?.banco ? 'Saldo real y movimientos emparejados con facturas y gastos' : 'Conecta tu banco o sube el extracto'}</small></span>
+        <span className="bco-txt"><strong>Banco</strong><small>{saldo?.banco ? 'Saldo real y movimientos emparejados con facturas y gastos' : (conectarVisible(u) ? 'Conecta tu banco o sube el extracto' : 'Sube el extracto de tu banco y concilia cobros y pagos')}</small></span>
         {sinRevisar > 0 && <span className="num" aria-label={`${sinRevisar} movimientos por revisar`}>{sinRevisar}</span>}
       </Ir>
 

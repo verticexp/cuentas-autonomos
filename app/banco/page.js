@@ -1,7 +1,7 @@
 import { requerir } from '@/lib/auth';
 import { leer } from '@/lib/redis';
 import { opciones, sugerencias } from '@/lib/banco';
-import { bancoListo } from '@/lib/enableBanking';
+import { conectarVisible } from '@/lib/enableBanking';
 import { importes, numeroFactura } from '@/lib/calculos';
 import { totalDe } from '@/lib/proveedores';
 import { puede } from '@/lib/permisos';
@@ -50,7 +50,7 @@ export default async function PaginaBanco({ searchParams }) {
       <Banco
         cuentas={(cuentas || []).sort((a, b) => (a.conectada || a.subido || '').localeCompare(b.conectada || b.subido || ''))}
         pendientes={pendientes} emparejados={emparejados} ignorados={ignorados} aviso={aviso}
-        listo={bancoListo()} permisos={{ facturar: puede(u, 'facturar'), gastar: puede(u, 'gastar'), empresa: puede(u, 'empresa') }}
+        listo={conectarVisible(u)} permisos={{ facturar: puede(u, 'facturar'), gastar: puede(u, 'gastar'), empresa: puede(u, 'empresa') }}
       />
     </main>
   );
