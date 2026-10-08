@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { borradorRenta, cuotaEscala, modelo115, modelo180, modelo190, modelo349, modelo390, nifUE, retencionesProfesionales } from '../lib/modelos.js';
+import { borradorRenta, cuotaEscala, modelo115, modelo180, modelo190, modelo202, modelo349, modelo390, nifUE, retencionesProfesionales } from '../lib/modelos.js';
 
 const F = [
   { fecha: '2026-02-01', base: 1000, ivaPct: 21, irpfPct: 15, cliente: { nombre: 'Ana', nif: '12345678Z' } },
@@ -70,4 +70,10 @@ test('111 y 190: retenciones a profesionales (gastos con retención), aparte de 
   const m = modelo190([], [], 2026, G);
   assert.deepEqual(m.perceptores.map((p) => [p.nombre, p.clave, p.percepciones, p.retenciones]), [['Gestoría Ruiz', 'G', 400, 60], ['Diseñadora', 'G', 100, 7]]);
   assert.equal(m.retenciones, 67);
+});
+
+test('202: 18 % de la cuota del último Impuesto sobre Sociedades presentado', () => {
+  const m = modelo202({ 2024: 0, 2025: 1000 }, 2026);
+  assert.deepEqual(m.map((x) => [x.mes, x.de, x.cuota, x.pago, x.fecha]), [['abril', 2024, 0, 0, '2026-04-20'], ['octubre', 2025, 1000, 180, '2026-10-20'], ['diciembre', 2025, 1000, 180, '2026-12-20']]);
+  assert.equal(modelo202({}, 2026)[1].cuota, null);
 });

@@ -70,3 +70,9 @@ test('Hacienda: el 115 del 4T se paga el 20 de enero; el 303 y el 130, el 30', (
   assert.equal(h.Alquiler, '2027-01-20');
   assert.equal(h.IVA, '2027-01-30');
 });
+
+test('Hacienda: el 202 de una sociedad, el 20 de octubre y de diciembre', () => {
+  const p = prevision({ facturas: [], gastos: [], fiscal: { tipo: 'sociedad', iva: 'general' }, cuotaIS: { 2025: 1000 }, hoy: '2026-10-08', meses: 3, actividades: [] });
+  const h = p.movimientos.filter((m) => m.concepto.includes('202'));
+  assert.deepEqual(h.map((m) => [m.fecha, m.importe]), [['2026-10-20', -180], ['2026-12-20', -180]]);
+});

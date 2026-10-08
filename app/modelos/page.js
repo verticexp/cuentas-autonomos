@@ -4,7 +4,8 @@ import { actividadesDe, fiscalDe, modelosDe, usa130, usa303 } from '@/lib/empres
 import { casillas303, minoracion130, r2, resumenAnual } from '@/lib/calculos';
 import Rend130 from '@/components/Rend130';
 import { modelo111 } from '@/lib/nominas';
-import { borradorRenta, modelo115, modelo180, modelo190, modelo349, modelo390, retencionesProfesionales, MINIMO_PERSONAL, RET_ALQUILER } from '@/lib/modelos';
+import { borradorRenta, modelo115, modelo180, modelo190, modelo202, modelo349, modelo390, retencionesProfesionales, MINIMO_PERSONAL, RET_ALQUILER } from '@/lib/modelos';
+import CuotaIS from '@/components/CuotaIS';
 import { eur, hoy } from '@/lib/formato';
 import Volver from '@/components/Volver';
 import Ir from '@/components/Ir';
@@ -59,7 +60,7 @@ export default async function Modelos({ searchParams }) {
       <section className="bloque" id="calendario">
         <h2 className="grupo-t">Qué presentas y cuándo</h2>
         <div className="grupo-c">
-          {modelosDe(f).map((m) => <div key={m.id} className="celda"><span className="modelo-num">{m.id}</span><span className="txt">{m.nombre}<small>{m.cuando}</small></span></div>)}
+          {modelosDe(f).map((m) => <div key={m.id} className="celda"><span className="modelo-num">{m.num || m.id}</span><span className="txt">{m.nombre}<small>{m.cuando}</small></span></div>)}
         </div>
         <p className="grupo-pie">Según cómo trabajas ({f.tipo === 'sociedad' ? 'sociedad' : 'autónomo'}). Si algo no encaja, cámbialo en Ajustes › Actividades y modelos.</p>
       </section>
@@ -126,6 +127,27 @@ export default async function Modelos({ searchParams }) {
                 <p className="nota">Hasta el {plazo(t, anio, 20)}.</p>
               </div>
             ); })}
+          </div>
+        </section>
+      )}
+
+      {f.tipo === 'sociedad' && (
+        <section className="bloque" id="m202">
+          <h2 className="grupo-t">202 · Pagos a cuenta del Impuesto sobre Sociedades</h2>
+          <p className="grupo-pie arriba">El 18 % de la cuota del último Impuesto sobre Sociedades presentado (menos deducciones, bonificaciones y retenciones; sin restar los pagos a cuenta). Si salió a cero o es el primer año, no se presenta. Si facturas más de 6 millones, se calcula de otra forma: lo hace tu gestor.</p>
+          <div className="tarjetas">
+            <CuotaIS anio={anio - 2} valor={u.cuotaIS?.[anio - 2] ?? null} uso="el pago de abril" />
+            <CuotaIS anio={anio - 1} valor={u.cuotaIS?.[anio - 1] ?? null} uso="los pagos de octubre y diciembre" />
+          </div>
+          <div className="tarjetas">
+            {modelo202(u.cuotaIS, anio).map((x) => (
+              <div key={x.p} className="tarjeta"><h3>{x.p}P {anio} · {x.mes}</h3>
+                {x.cuota === null ? <p className="nota">Falta la cuota del Impuesto sobre Sociedades de {x.de}.</p>
+                  : x.pago ? <Casillas filas={[[`Cuota de ${x.de}`, x.cuota], ['18 % · A ingresar', x.pago, true]]} />
+                  : <p className="nota">La cuota de {x.de} fue cero: no se presenta.</p>}
+                <p className="nota">Hasta el 20 de {x.mes}.</p>
+              </div>
+            ))}
           </div>
         </section>
       )}
