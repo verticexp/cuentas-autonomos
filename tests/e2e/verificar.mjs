@@ -1449,5 +1449,19 @@ console.log('CSP (scripts con nonce)');
   ok('un aviso mal formado no rompe nada (204)', () => assert.equal(basura.status, 204));
 }
 
+console.log('Formulario de contacto de la web');
+{
+  const { readFileSync, rmSync } = await import('node:fs');
+  const kv = (cmd) => fetch(process.env.KV_REST_API_URL, { method: 'POST', headers: { Authorization: 'Bearer local' }, body: JSON.stringify(cmd) }).then((r) => r.json()).then((d) => d.result);
+  rmSync('/tmp/resend.json', { force: true });
+  const emailC = `contacto${Date.now()}@test.es`;
+  const env = await pedir('/api/contacto', { metodo: 'POST', cuerpo: { nombre: 'Ana Contacto', email: emailC, empresa: 'Ana SL', mensaje: 'Hola' } });
+  ok('se envía sin sesión (200)', () => assert.equal(env.status, 200));
+  const guardada = JSON.parse((await kv(['LRANGE', 'cuentas:solicitudes', 0, 0]))?.[0] || '{}');
+  ok('queda guardada en la base de datos', () => assert.equal(guardada.email, emailC));
+  let aviso = {}; try { aviso = JSON.parse(readFileSync('/tmp/resend.json', 'utf8').trim().split('\n').pop()); } catch {}
+  ok('llega el aviso por email, con «responder a» la persona', () => assert.ok(aviso.subject?.includes('Ana Contacto') && JSON.stringify(aviso.reply_to || '').includes(emailC), JSON.stringify(aviso).slice(0, 200)));
+}
+
 console.log(fallos ? `\n${fallos} comprobaciones fallidas: NO publicar.` : '\nTodo cuadra.');
 process.exit(fallos ? 1 : 0);
