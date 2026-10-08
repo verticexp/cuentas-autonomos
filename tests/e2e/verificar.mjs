@@ -688,6 +688,25 @@ console.log('Banco: extractos, conexión y emparejar');
   const lateral = /<nav class="tabs-extra"[\s\S]*?<\/nav>/.exec(await (await pedir('/banco', { cookie: bq })).text())?.[0] || '';
   ok('el banco está en la barra lateral, marcado', () => assert.ok(/class="activo"[^>]*href="\/banco"|href="\/banco"[^>]*class="activo"/.test(lateral)));
 
+  // Emparejado atómico: dos clics a la vez no emparejan dos veces el mismo movimiento ni cobran dos veces la misma factura.
+  const fxA = await fac(masD(-9), 'Carrera A S.L.', 1000);
+  const fxB = await fac(masD(-9), 'Carrera B S.L.', 1000);
+  const par = (id, destino) => pedir('/api/banco', { metodo: 'POST', cookie: bq, cuerpo: { accion: 'emparejar', id, tipo: 'factura', destino } });
+  const carrera1 = await Promise.all([par(mov(1210).id, fxA.id), par(mov(1210).id, fxB.id)]);
+  const [cA, cB, m1210] = await Promise.all([hget(`facturas:${empresa}`, fxA.id), hget(`facturas:${empresa}`, fxB.id), hget(`banco:${empresa}`, mov(1210).id)]);
+  ok('mismo movimiento con dos facturas a la vez: solo una queda cobrada', () => assert.ok(carrera1.filter((r) => r.status === 200).length === 1 && [cA.cobrada, cB.cobrada].filter(Boolean).length === 1 && [fxA.id, fxB.id].includes(m1210.enlace.id), JSON.stringify([carrera1.map((r) => r.status), cA.cobrada, cB.cobrada])));
+  await pedir('/api/banco', { metodo: 'POST', cookie: bq, cuerpo: { accion: 'deshacer', id: mov(1210).id } });
+  await pedir('/api/banco', { metodo: 'POST', cookie: bq, cuerpo: { accion: 'deshacer', id: mov(605).id } });
+  const fxC = await fac(masD(-9), 'Carrera C S.L.', 500);
+  const carrera2 = await Promise.all([par(mov(1210).id, fxC.id), par(mov(605).id, fxC.id)]);
+  const [cC, mA, mB] = await Promise.all([hget(`facturas:${empresa}`, fxC.id), hget(`banco:${empresa}`, mov(1210).id), hget(`banco:${empresa}`, mov(605).id)]);
+  ok('misma factura con dos movimientos a la vez: se cobra una sola vez', () => assert.ok(carrera2.filter((r) => r.status === 200).length === 1 && cC.cobrada && [mA.estado, mB.estado].filter((e) => e === 'emparejado').length === 1, JSON.stringify([carrera2.map((r) => r.status), mA.estado, mB.estado])));
+  const cerrojos = await kv(['KEYS', 'cuentas:cerrojo:*']);
+  ok('no quedan cerrojos puestos después', () => assert.deepEqual(cerrojos, []));
+  // Se deja como estaba para lo que viene después.
+  for (const mv of [mA, mB]) if (mv.estado === 'emparejado') await pedir('/api/banco', { metodo: 'POST', cookie: bq, cuerpo: { accion: 'deshacer', id: mv.id } });
+  await par(mov(605).id, f2.id);
+
   if (process.env.ENABLE_BANKING_URL) {
     const sim = (ruta, cuerpo) => fetch(`${process.env.ENABLE_BANKING_URL}${ruta}`, cuerpo ? { method: 'POST', body: JSON.stringify(cuerpo) } : {}).then((r) => r.json());
     const f4 = await fac(masD(-4), 'Agencia Brisa Incentivos S.L.', 2000);
