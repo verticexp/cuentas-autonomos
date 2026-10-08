@@ -1,15 +1,16 @@
-import { notFound } from 'next/navigation';
 import { requerir } from '@/lib/auth';
 import { CONSERVAR } from '@/lib/baja';
 import Volver from '@/components/Volver';
 import Baja from '@/components/Baja';
+import SinAcceso from '@/components/SinAcceso';
 
 export const dynamic = 'force-dynamic';
 
 // Dar de baja la empresa (lib/baja.js): solo su administrador.
 export default async function Page() {
   const u = await requerir();
-  if (u.rol !== 'admin' || u.admin) notFound();
+  if (u.rol !== 'admin') return <SinAcceso />;
+  if (u.admin) return <SinAcceso texto="La empresa del administrador de Netto no se puede dar de baja desde aquí." />;
   return (
     <main className="pagina">
       <Volver href="/ajustes">Ajustes</Volver>

@@ -1,7 +1,7 @@
-import { notFound } from 'next/navigation';
 import { requerir } from '@/lib/auth';
 import { leerAuditoria } from '@/lib/auditoria';
 import Volver from '@/components/Volver';
+import SinAcceso from '@/components/SinAcceso';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,7 +10,7 @@ const cuando = (f) => new Date(f).toLocaleString('es-ES', { timeZone: 'Europe/Ma
 // Registro de actividad de la empresa (lib/auditoria.js): solo para su administrador.
 export default async function Actividad() {
   const u = await requerir();
-  if (u.rol !== 'admin') notFound();
+  if (u.rol !== 'admin') return <SinAcceso />;
   const lista = await leerAuditoria(u.empresa);
   return (
     <main className="pagina">

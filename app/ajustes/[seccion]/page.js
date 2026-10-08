@@ -9,6 +9,7 @@ import FaceId from '@/components/FaceId';
 import AvisosPush from '@/components/AvisosPush';
 import { pushListo } from '@/lib/push';
 import Volver from '@/components/Volver';
+import SinAcceso from '@/components/SinAcceso';
 import Importar from '@/components/Importar';
 import { fiscalDe } from '@/lib/empresa';
 
@@ -21,7 +22,7 @@ export default async function Seccion({ params }) {
   const { seccion } = await params;
   if (!TITULOS[seccion]) notFound();
   const u = await requerir();
-  if (DE_EMPRESA.includes(seccion) && !puede(u, 'empresa')) notFound();
+  if (DE_EMPRESA.includes(seccion) && !puede(u, 'empresa')) return <SinAcceso texto="Para cambiar esto necesitas el permiso «Datos de la empresa». Pídeselo al administrador." />;
   const llaves = seccion === 'seguridad'
     ? Object.entries((await redis.hgetall(`passkeys:${u.id}`)) || {}).map(([id, k]) => ({ id, nombre: k.nombre, creada: k.creada, usada: k.usada || null }))
     : [];

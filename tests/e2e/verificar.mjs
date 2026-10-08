@@ -514,7 +514,7 @@ console.log('Portal del cliente');
   const ajeno = await pedir(`/api/portal/pdf?t=${tok}&id=${encodeURIComponent(f3.id)}`);
   ok('el PDF de una factura de otro cliente no se da (404)', () => assert.equal(ajeno.status, 404));
   const malo = await (await pedir('/portal/inventado123')).text();
-  ok('un enlace inventado no enseña nada (página 404)', () => assert.ok(malo.includes('could not be found') && !malo.includes('Pendiente de pago')));
+  ok('un enlace inventado no enseña nada (página 404)', () => assert.ok(malo.includes('Vaya, esto no existe') && !malo.includes('could not be found') && !malo.includes('Pendiente de pago')));
   const fdp = new FormData(); fdp.set('t', tok); fdp.set('id', f1.id);
   const pg = await pedir('/api/portal/pagar', { metodo: 'POST', form: fdp });
   const destino = pg.headers.get('location') || '';
@@ -1480,9 +1480,9 @@ console.log('Registro de actividad');
   ok('invitaciones, cambios de permisos (con el perfil) y facturas borradas', () => assert.ok(act.includes('Persona invitada') && act.includes('Permisos cambiados') && act.includes('· Gastos') && act.includes('Factura borrada') && act.includes('Cliente Auditado · 33 € sin IVA'), act.slice(-400)));
   const aj = n(await texto('/ajustes', yo));
   ok('Ajustes enlaza a Actividad para el administrador', () => assert.ok(aj.includes('Permisos, datos, borrados y exportaciones')));
-  // Con loading.js la página 404 llega dentro del HTML en streaming: se mira el HTML entero (también lo que va en los scripts).
+  // Se mira el HTML entero (también lo que va en los scripts): nada del registro.
   const noAdmin = await (await pedir('/ajustes/actividad', { cookie: otro })).text();
-  ok('quien no es administrador de la empresa no la ve (página 404, sin nada del registro en el HTML)', () => assert.ok(noAdmin.includes('NEXT_HTTP_ERROR_FALLBACK;404') && !noAdmin.includes('Exportaci') && !noAdmin.includes(`gastos-${Y}.csv`)));
+  ok('quien no es administrador de la empresa ve «No tienes acceso», sin nada del registro en el HTML', () => assert.ok(noAdmin.includes('No tienes acceso') && !noAdmin.includes('Exportaci') && !noAdmin.includes(`gastos-${Y}.csv`)));
   const sinSesion = await pedir('/ajustes/actividad');
   ok('sin sesión, a entrar', () => assert.ok([302, 303, 307].includes(sinSesion.status), String(sinSesion.status)));
 }
@@ -1577,6 +1577,18 @@ console.log('Accesos del resumen');
 {
   const nav = /<nav class="accesos"[\s\S]*?<\/nav>/.exec(await (await pedir('/', { cookie: yo })).text())?.[0] || '';
   ok('el cuarto acceso es Impuestos (antes «Más», que llevaba a Ajustes)', () => assert.ok(nav.includes('href="/modelos"') && nav.includes('Impuestos') && !nav.includes('href="/ajustes"') && !nav.includes('>Más<'), nav.slice(0, 300)));
+}
+
+console.log('Páginas de error');
+{
+  const noHay = await (await pedir('/facturas/no-existe-esta', { cookie: yo })).text();
+  ok('una factura que no existe: «Vaya, esto no existe», con botón al inicio (no el 404 en inglés)', () => assert.ok(noHay.includes('Vaya, esto no existe') && noHay.includes('Ir al inicio') && !noHay.includes('could not be found')));
+  const web = await (await pedir('/funciones/inventada')).text(); // con loading.js llega dentro del HTML en streaming
+  ok('también en la web pública, con su cabecera', () => assert.ok(web.includes('Puede que la página se haya movido') && !web.includes('could not be found')));
+  const sinPermiso = await (await pedir('/ajustes/facturacion', { cookie: otro })).text();
+  ok('sin el permiso de datos de la empresa: «No tienes acceso» y cómo pedirlo', () => assert.ok(sinPermiso.includes('No tienes acceso') && sinPermiso.includes('Datos de la empresa') && !sinPermiso.includes('could not be found')));
+  const bajaYo = await (await pedir('/ajustes/baja', { cookie: yo })).text();
+  ok('el administrador de Netto en «Dar de baja»: le explica por qué no', () => assert.ok(bajaYo.includes('No tienes acceso') && bajaYo.includes('no se puede dar de baja desde aquí')));
 }
 
 console.log('Formulario de contacto de la web');
