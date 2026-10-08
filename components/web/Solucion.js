@@ -18,7 +18,7 @@ export default function Solucion({ id }) {
           <h1 className="web-entra" style={{ '--d': '60ms' }}>{s.titulo}</h1>
           <p className="web-sub web-entra" style={{ '--d': '120ms' }}>{s.sub}</p>
           <div className="web-cta web-entra" style={{ '--d': '180ms' }}>
-            <Link className="web-btn web-btn-grande" href={`/contacto?plan=${encodeURIComponent(s.n)}`}>Pruébalo 14 días gratis<Flecha /></Link>
+            <Link className="web-btn web-btn-grande" href={`/contacto?plan=${encodeURIComponent(s.n)}`}>Pruébalo 1 mes gratis<Flecha /></Link>
             <a className="web-btn web-btn-claro web-btn-grande" href="#planes">Ver planes</a>
           </div>
         </div>
@@ -57,7 +57,7 @@ export default function Solucion({ id }) {
       </section>
 
       <section className="web-sec" id="planes">
-        <Encabezado kicker="Planes" titulo={`Planes para ${s.n.toLowerCase()}`} sub="Todos con 14 días gratis y sin permanencia." centro />
+        <Encabezado kicker="Planes" titulo={`Planes para ${s.n.toLowerCase()}`} sub="Todos con 1 mes gratis y sin permanencia." centro />
         <Precios inicial={id} solo />
         <p className="web-centro"><Link href="/precios" className="web-enlace">Ver la comparativa completa<Flecha /></Link></p>
       </section>

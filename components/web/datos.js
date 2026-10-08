@@ -249,7 +249,7 @@ export const FAQ_GENERAL = [
 
 export const FAQ_PRECIOS = [
   ['¿Los precios llevan IVA?', 'No. Todos los precios se muestran sin IVA.'],
-  ['¿Necesito tarjeta para la prueba?', 'No. Pruebas Netto 14 días sin dar ninguna tarjeta.'],
+  ['¿Necesito tarjeta para la prueba?', 'No. Pruebas Netto un mes entero sin dar ninguna tarjeta.'],
   ['¿Puedo cambiar de plan?', 'Cuando quieras. Subes o bajas de plan y se ajusta a partir del siguiente periodo.'],
   ['¿Qué es el precio de fundador?', 'Un precio especial para los primeros negocios que confían en Netto. Pregúntanos al pedir acceso.'],
   ['¿Y si necesito algo que no está en ningún plan?', 'Para eso está el plan personalizado: cuéntanos qué necesitas y te damos un precio cerrado.'],
