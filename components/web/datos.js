@@ -1,5 +1,5 @@
 // Contenido de la web pública. Solo lo que Netto hace hoy; lo que viene va en PROXIMAMENTE.
-export const CONTACTO = 'mark.ramirez.2005@gmail.com';
+export const CONTACTO = 'corporate@nettohq.com';
 export const DESCUENTO = 30;
 
 export const FUNCIONES = [

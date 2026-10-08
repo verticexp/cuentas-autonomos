@@ -1,7 +1,7 @@
 import '@/app/legal.css';
 
 export const metadata = { title: 'Privacidad · Netto' };
-const RESPONSABLE = { nombre: 'Marc Ramírez Delgado', email: 'mark.ramirez.2005@gmail.com' };
+const RESPONSABLE = { nombre: 'Marc Ramírez Delgado', email: 'corporate@nettohq.com' };
 
 export default function Privacidad() {
   return (
