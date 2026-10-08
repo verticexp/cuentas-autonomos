@@ -1,3 +1,4 @@
+import { headers } from 'next/headers';
 import Cabecera from '@/components/web/Cabecera';
 import Pie from '@/components/web/Pie';
 import Interacciones from '@/components/web/Interacciones';
@@ -7,10 +8,11 @@ import '@/components/web/web.css';
 const PRE = "document.documentElement.dataset.arranque='visto';document.documentElement.classList.add('web-js')";
 
 // Envoltorio de todas las páginas públicas: cabecera, pie y detalles de movimiento.
-export default function Marco({ children }) {
+export default async function Marco({ children }) {
+  const nonce = (await headers()).get('x-nonce') || undefined;
   return (
     <div className="web">
-      <script dangerouslySetInnerHTML={{ __html: PRE }} />
+      <script nonce={nonce} suppressHydrationWarning dangerouslySetInnerHTML={{ __html: PRE }} />
       <Cabecera />
       <main className="web-main">{children}</main>
       <Pie />

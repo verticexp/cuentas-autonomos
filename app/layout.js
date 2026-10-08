@@ -45,16 +45,18 @@ export default async function RootLayout({ children }) {
   const abierta = !u || modoBloqueo() !== 'activo' || (await desbloqueada().catch(() => false));
   // Al abrir una página de la app sin desbloquear: redirección de verdad (307) antes de pintar nada. Desde la página, la
   // redirección ya va dentro del HTML (app/loading.js) y el navegador recarga: dos documentos, fundido lento y barra «fantasma».
-  const ruta = (await headers()).get('x-ruta') || '/';
+  const cab = await headers();
+  const ruta = cab.get('x-ruta') || '/';
+  const nonce = cab.get('x-nonce') || undefined;
   if (!abierta && !LIBRE.test(ruta)) redirect(`/bloqueo?a=${encodeURIComponent(ruta)}`);
   return (
     <html lang="es" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: YA_VISTO }} />
+        <script nonce={nonce} suppressHydrationWarning dangerouslySetInnerHTML={{ __html: YA_VISTO }} />
       </head>
       <body className={fuente.variable} style={{ '--acento': color }} data-marca={propio ? 'propia' : 'base'}>
         <Arranque />
-        <script dangerouslySetInnerHTML={{ __html: 'window.__arranque=performance.now()' }} />
+        <script nonce={nonce} suppressHydrationWarning dangerouslySetInnerHTML={{ __html: 'window.__arranque=performance.now()' }} />
         {children}
         <Suspense>{u && <TabBar permisos={permisosDe(u)} empresas={u.misEmpresas} empresa={u.empresa} admin={Boolean(u.admin)} />}<Llegada /><BarraEstado /></Suspense>
         {u && <Bloqueo email={u.email} servidor={abierta} />}

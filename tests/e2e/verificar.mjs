@@ -1405,5 +1405,30 @@ console.log('\nLímite de intentos');
   ok('el login no revela si un email tiene cuenta (mismo mensaje)', () => assert.ok(existe && existe === noExiste, `${existe} | ${noExiste}`));
 }
 
+console.log('CSP (scripts con nonce)');
+{
+  const modo = { activo: 'activo', off: 'off' }[process.env.CSP] || 'registrar';
+  const nombre = modo === 'activo' ? 'content-security-policy' : 'content-security-policy-report-only';
+  const scriptsSinNonce = (html, nonce) => [...html.matchAll(/<script\b[^>]*>/g)].map((m) => m[0]).filter((x) => !x.includes(`nonce="${nonce}"`));
+  if (modo === 'off') { const sin = !(await fetchReal(BASE + '/login')).headers.get('content-security-policy-report-only'); ok('modo off: sin la política nueva', () => assert.ok(sin)); }
+  else {
+    for (const [ruta, cookie] of [['/login'], ['/precios'], ['/', yo], ['/facturas', yo]]) {
+      const r = await pedir(ruta, { cookie });
+      const cab = r.headers.get(nombre) || '';
+      const nonce = /'nonce-([^']+)'/.exec(cab)?.[1];
+      const html = await r.text();
+      const malos = scriptsSinNonce(html, nonce);
+      ok(`${ruta}${cookie ? ' (con sesión)' : ''}: cabecera ${modo === 'activo' ? 'aplicada' : 'en «solo registrar»'} con nonce, y todos sus scripts lo llevan`, () => assert.ok(nonce && cab.includes("'strict-dynamic'") && cab.includes('report-uri /api/csp') && html.includes('<script') && !malos.length, malos[0] || cab));
+    }
+    const [a, b] = await Promise.all([fetchReal(BASE + '/login'), fetchReal(BASE + '/login')]);
+    ok('un nonce distinto en cada petición', () => assert.notEqual(a.headers.get(nombre), b.headers.get(nombre)));
+    ok('la política de antes sigue (frame-ancestors none)', () => assert.ok((a.headers.get('content-security-policy') || '').includes("frame-ancestors 'none'")));
+  }
+  const aviso = await fetchReal(BASE + '/api/csp', { method: 'POST', headers: { 'Content-Type': 'application/csp-report' }, body: JSON.stringify({ 'csp-report': { 'document-uri': `${BASE}/facturas?q=x`, 'violated-directive': 'script-src', 'blocked-uri': 'https://malo.example/x.js' } }) });
+  ok('recibe los avisos de la CSP sin sesión (204)', () => assert.equal(aviso.status, 204));
+  const basura = await fetchReal(BASE + '/api/csp', { method: 'POST', body: 'esto no es json' });
+  ok('un aviso mal formado no rompe nada (204)', () => assert.equal(basura.status, 204));
+}
+
 console.log(fallos ? `\n${fallos} comprobaciones fallidas: NO publicar.` : '\nTodo cuadra.');
 process.exit(fallos ? 1 : 0);
