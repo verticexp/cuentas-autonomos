@@ -1507,6 +1507,59 @@ console.log('Descargar todos los datos');
   ok('sin sesión, nada (401)', () => assert.equal(sinSesion.status, 401));
 }
 
+console.log('Baja de una empresa');
+{
+  const kv = (cmd) => fetch(process.env.KV_REST_API_URL, { method: 'POST', headers: { Authorization: 'Bearer local' }, body: JSON.stringify(cmd) }).then((r) => r.json()).then((d) => d.result);
+  const form = (o) => { const f = new FormData(); for (const [k, v] of Object.entries(o)) f.set(k, v); return f; };
+  const entra = async (enlace, password) => /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: form({ codigo: enlace.split('/').pop(), password }) })).headers.get('set-cookie') || '')?.[1];
+  // Empresa nueva con su administrador (Bruno), una persona solo de ella (Berta) y otra que también está en la de A («Solo gastos»).
+  const eBruno = `bruno${Date.now()}@test.es`, eBerta = `berta${Date.now()}@test.es`;
+  const bruno = await entra((await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva: 'Baja Prueba SL', nombre: 'Bruno', email: eBruno } })).json()).enlace, 'brunobruno1');
+  const E = JSON.parse(await kv(['HGET', 'cuentas:usuarios', await kv(['GET', `cuentas:sesion:${bruno}`])])).empresa;
+  const berta = await entra((await (await pedir('/api/usuarios', { metodo: 'POST', cookie: bruno, cuerpo: { nombre: 'Berta', email: eBerta, rol: 'miembro', permisos: ['facturas'] } })).json()).enlace, 'bertaberta1');
+  const otroId = await kv(['GET', `cuentas:sesion:${otro}`]);
+  await pedir('/api/usuarios', { metodo: 'POST', cookie: bruno, cuerpo: { nombre: 'Solo gastos', email: JSON.parse(await kv(['HGET', 'cuentas:usuarios', otroId])).email, rol: 'miembro', permisos: ['gastos'] } });
+  const emp = JSON.parse(await kv(['HGET', 'cuentas:empresas', E]));
+  await kv(['HSET', 'cuentas:empresas', E, JSON.stringify({ ...emp, pendiente: false, emisor: { nombre: 'Baja Prueba SL' }, drive: { url: 'https://script.google.com/macros/s/x/exec', token: 'secreto' }, marca: { color: '#123456' } })]);
+  await kv(['HSET', `cuentas:facturas:${E}`, 'f1', JSON.stringify({ id: 'f1', fecha: `${Y}-01-15`, base: 100 })]);
+  await kv(['HSET', `cuentas:presupuestos:${E}`, 'p1', JSON.stringify({ id: 'p1' })]);
+  await kv(['HSET', `cuentas:portales:${E}`, 'c1', JSON.stringify({ token: 'x' })]);
+  await kv(['SET', `cuentas:saldo:${E}`, '100']);
+
+  const pag = n(await texto('/ajustes/baja', bruno));
+  ok('el administrador ve qué se borra y qué se guarda, y el enlace para descargar antes', () => assert.ok(pag.includes('Baja Prueba SL') && pag.includes('se guardan bloqueados 6 años') && pag.includes('descarga todos tus datos'), pag.slice(-300)));
+  const noBerta = await pedir('/api/baja', { metodo: 'POST', cookie: berta, cuerpo: { password: 'bertaberta1' } });
+  const noYo = await pedir('/api/baja', { metodo: 'POST', cookie: yo, cuerpo: { password: 'pruebaprueba1' } });
+  const malPass = await pedir('/api/baja', { metodo: 'POST', cookie: bruno, cuerpo: { password: 'otra-cosa' } });
+  ok('quien no es administrador no puede (403), ni la empresa del administrador de Netto (403), ni con otra contraseña (400)', () => assert.deepEqual([noBerta.status, noYo.status, malPass.status], [403, 403, 400]));
+  const sigue = JSON.parse(await kv(['HGET', 'cuentas:empresas', E]));
+  ok('con la contraseña mal no cambia nada', () => assert.ok(!sigue.baja && sigue.drive));
+
+  const baja = await (await pedir('/api/baja', { metodo: 'POST', cookie: bruno, cuerpo: { password: 'brunobruno1' } })).json();
+  const tras = JSON.parse(await kv(['HGET', 'cuentas:empresas', E]));
+  const hoyU = new Date().toISOString().slice(0, 10);
+  ok('la baja se hace y el borrado final queda a 6 años', () => assert.ok(baja.ok && baja.borrarEl === `${Number(hoyU.slice(0, 4)) + 6}${hoyU.slice(4)}` && tras.baja?.borrarEl === baja.borrarEl, JSON.stringify(baja)));
+  const [sesBruno, sesBerta] = await Promise.all([pedir('/api/exportar/todo', { cookie: bruno }), pedir('/api/exportar/todo', { cookie: berta })]);
+  ok('nadie de la empresa puede entrar (401)', () => assert.deepEqual([sesBruno.status, sesBerta.status], [401, 401]));
+  const [idB, idBe] = await Promise.all([kv(['HGET', 'cuentas:emails', eBruno]), kv(['HGET', 'cuentas:emails', eBerta])]);
+  ok('las cuentas de quienes solo estaban en ella se borran, con su email', () => assert.ok(!idB && !idBe));
+  const otroU = JSON.parse(await kv(['HGET', 'cuentas:usuarios', otroId]));
+  const otroSigue = await pedir('/gastos', { cookie: otro });
+  ok('quien también está en otra empresa sigue entrando, sin esta', () => assert.ok(otroSigue.status === 200 && !otroU.empresas?.[E] && Object.keys(otroU.empresas || {}).length > 0));
+  const [fac, pre, por, sal, aud] = await Promise.all([kv(['EXISTS', `cuentas:facturas:${E}`]), kv(['EXISTS', `cuentas:presupuestos:${E}`]), kv(['EXISTS', `cuentas:portales:${E}`]), kv(['EXISTS', `cuentas:saldo:${E}`]), kv(['LRANGE', `cuentas:auditoria:${E}`, 0, 0])]);
+  ok('las facturas se guardan; presupuestos, portal y banco se borran ya', () => assert.deepEqual([fac, pre, por, sal], [1, 0, 0, 0]));
+  ok('sin Google Drive ni marca en la empresa', () => assert.ok(!tras.drive && !tras.marca && tras.emisor?.nombre === 'Baja Prueba SL'));
+  ok('la baja queda en la actividad', () => assert.ok(String(aud?.[0] || '').includes('Baja de la empresa')));
+
+  const cron = () => fetch(`${BASE}/api/recordatorios`, { headers: { Authorization: `Bearer ${process.env.CRON_SECRET}` } }).then((r) => r.json());
+  const antes = await cron();
+  ok('antes de los 6 años el cron no borra nada', () => assert.equal(antes.bajas, 0));
+  await kv(['HSET', 'cuentas:empresas', E, JSON.stringify({ ...tras, baja: { ...tras.baja, borrarEl: '2000-01-01' } })]);
+  const fin = await cron();
+  const [facF, audF, empF] = await Promise.all([kv(['EXISTS', `cuentas:facturas:${E}`]), kv(['EXISTS', `cuentas:auditoria:${E}`]), kv(['HEXISTS', 'cuentas:empresas', E])]);
+  ok('pasado el plazo, el cron lo borra todo', () => assert.ok(fin.bajas === 1 && facF === 0 && audF === 0 && empF === 0, JSON.stringify(fin)));
+}
+
 console.log('Formulario de contacto de la web');
 {
   const { readFileSync, rmSync } = await import('node:fs');

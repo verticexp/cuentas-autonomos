@@ -55,6 +55,7 @@ export default async function Page() {
                 <span className="txt">Descargar todos los datos<small>Un .zip con todo lo de la empresa</small></span>
               </a>
             )}
+            {u.rol === 'admin' && !u.admin && <Celda href="/ajustes/baja" ico="aviso" titulo="Dar de baja la empresa" detalle="Cerrar la cuenta y borrar los datos" />}
           </div>
           {modo && <p className="grupo-pie">Verifactu activo{modo === 'pruebas' ? ' en modo pruebas' : ''}: cada factura nueva queda registrada y lleva su QR.</p>}
         </section>
