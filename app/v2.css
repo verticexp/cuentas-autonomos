@@ -1,0 +1,175 @@
+/* Rediseño de 2026 (va después de pulido.css): letra de la marca, gráficas, resumen en cuadrícula en el ordenador,
+   estados en etiqueta, crear factura con vista previa, gastos con el escaneo primero y movimiento con medida.
+   Todo pensado primero para el móvil (también para las apps de iOS y Android) y después para el ordenador. */
+
+/* ───── Letra de la marca en títulos y cifras ───── */
+.titulo, .grupo-t, .inicio-hola, .grupo-mes h2, .subtitulo, .fh-cliente, .trim-cab h3, .vacio p:first-child { font-family: var(--f-marca), var(--font); letter-spacing: -0.025em; }
+.titulo { font-weight: 800; letter-spacing: -0.035em; }
+.grupo-t, .grupo-mes h2 { font-weight: 700; }
+.hcard-v, .saldo-v, .fh-total, .teso-cifra strong, .bco-total strong, .grande, .trim-cifras strong, .ff-total b { font-family: var(--f-marca), var(--font); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.hcard-v, .saldo-v, .fh-total { font-weight: 700; }
+/* Nada por debajo de 13 px salvo las etiquetas cortas */
+.fh-desglose dt, .teso-imp small, .grafica small, .grupo-pie { font-size: 13px; }
+
+/* ───── Estados en etiqueta de color ───── */
+.estado-txt { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; line-height: 1; padding: 4px 9px; border-radius: 999px; color: var(--in); background: color-mix(in srgb, var(--in) 13%, transparent); white-space: nowrap; }
+.estado-txt::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.estado-txt.e-pendiente { color: var(--hacienda); background: color-mix(in srgb, var(--hacienda) 13%, transparent); }
+.estado-txt.e-vencida { color: var(--out); background: color-mix(in srgb, var(--out) 13%, transparent); }
+.imp-col { gap: 5px; }
+
+/* ───── Buscador de las listas ───── */
+.buscar { position: relative; margin: 2px 0 10px; }
+.buscar input { width: 100%; font: inherit; font-size: 16px; color: var(--ink); background: var(--surface); border: 0; border-radius: 12px; padding: 11px 40px 11px 40px; }
+.buscar input:focus { outline: 2px solid var(--marca); outline-offset: 0; }
+.buscar svg { position: absolute; left: 13px; top: 50%; translate: 0 -50%; width: 18px; height: 18px; fill: none; stroke: var(--muted); stroke-width: 2; stroke-linecap: round; pointer-events: none; }
+.buscar a { position: absolute; right: 8px; top: 50%; translate: 0 -50%; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; color: var(--muted); text-decoration: none; background: var(--relleno); font-size: 15px; }
+
+/* ───── Gráfica del año (components/Grafica.js) ───── */
+.graf-cab { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 16px; }
+.graf-dato { display: flex; flex-direction: column; gap: 3px; min-width: 0; font-size: 14px; color: var(--muted); animation: graf-dato 0.3s var(--salida); }
+.graf-dato strong { font-family: var(--f-marca), var(--font); font-size: 20px; color: var(--ink); letter-spacing: -0.02em; margin-bottom: 2px; }
+.graf-dato b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.graf-dato .rojo b { color: var(--out); }
+@keyframes graf-dato { from { opacity: 0.35; transform: translateY(3px); } }
+.graf-punto { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 6px; vertical-align: 0; }
+.graf-punto.in, .graf-b.in { background: var(--in); }
+.graf-punto.out, .graf-b.out { background: color-mix(in srgb, var(--muted) 50%, transparent); }
+.graf-zona { display: flex; gap: 6px; }
+.graf-eje { flex: none; display: flex; flex-direction: column; justify-content: space-between; height: 170px; margin-top: -7px; padding-bottom: 0; font-size: 11px; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+.graf-eje span:last-child { margin-bottom: -7px; }
+.graf-barras { position: relative; flex: 1; min-width: 0; display: flex; height: 194px;
+  background: linear-gradient(var(--line), var(--line)) 0 0 / 100% 1px no-repeat, linear-gradient(var(--line), var(--line)) 0 85px / 100% 1px no-repeat, linear-gradient(var(--line), var(--line)) 0 170px / 100% 1px no-repeat; }
+.graf-barras button { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; padding: 0; border-radius: 10px; transition: background-color 0.2s var(--salida); }
+.graf-barras button:active { transform: none; }
+.graf-barras button.activo { background: var(--relleno); }
+.graf-pila { height: 170px; width: 100%; display: flex; align-items: flex-end; justify-content: center; gap: 2px; }
+.graf-b { width: 32%; max-width: 15px; min-height: 2px; border-radius: 5px 5px 2px 2px; transform-origin: bottom; animation: graf-crece 0.7s var(--vt-curva) calc(var(--i) * 28ms) both; transition: opacity 0.2s var(--salida); }
+.graf-barras button:not(.activo) .graf-b { opacity: 0.5; }
+.graf-barras small { height: 24px; display: flex; align-items: center; font-size: 12px; color: var(--muted); }
+.graf-barras button.activo small { color: var(--ink); font-weight: 700; }
+.graf-barras .largo { display: none; }
+@media (min-width: 700px) { .graf-barras .corto { display: none; } .graf-barras .largo { display: inline; } }
+.graf-capa { position: absolute; left: 0; right: 0; top: 0; height: 170px; pointer-events: none; animation: graf-dato 0.6s var(--salida) 0.35s both; }
+.graf-linea { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.graf-linea path { fill: none; stroke: var(--ink); stroke-opacity: 0.8; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.graf-marca { position: absolute; width: 11px; height: 11px; border-radius: 50%; background: var(--surface); border: 2.5px solid var(--ink); transform: translate(-50%, -50%); transition: left 0.35s var(--vt-curva), top 0.35s var(--vt-curva); }
+.graf-leyenda { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--muted); margin-top: 8px; }
+.graf-raya { display: inline-block; width: 14px; height: 2.5px; border-radius: 2px; background: var(--ink); margin-right: 6px; vertical-align: 3px; }
+@keyframes graf-crece { from { transform: scaleY(0.02); } }
+
+/* ───── Resumen ───── */
+.trims { display: grid; gap: 10px; }
+@media (min-width: 560px) { .trims { grid-template-columns: 1fr 1fr; } }
+.trim { background: var(--surface); border-radius: 16px; padding: 14px 16px 12px; min-width: 0; }
+.trim-cab { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.trim-cab h3 { font-size: 17px; font-weight: 700; margin: 0; }
+.trim .estado { max-width: 64%; min-width: 0; text-overflow: ellipsis; }
+.trim-cifras { display: flex; flex-wrap: wrap; gap: 6px 22px; margin: 12px 0 2px; }
+.trim-cifras p { display: flex; flex-direction: column; margin: 0; }
+.trim-cifras span { color: var(--muted); font-size: 13px; }
+.trim-cifras strong { font-size: 20px; font-weight: 700; }
+.trim-mas { margin-top: 6px; }
+.trim-mas > summary { display: inline-flex; align-items: center; gap: 6px; padding: 6px 0; color: var(--marca); font-size: 14px; font-weight: 600; cursor: pointer; list-style: none; }
+.trim-mas > summary::-webkit-details-marker { display: none; }
+.trim-mas > summary::after { content: ''; width: 6px; height: 6px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg) translateY(-2px); transition: transform 0.25s var(--salida); }
+.trim-mas[open] > summary::after { transform: rotate(225deg) translate(-1px, -1px); }
+.trim-mas[open] > dl { animation: graf-dato 0.3s var(--salida); }
+.trim .descargas { margin-top: 12px; }
+/* Tarjetas del resumen: se elevan al pasar el ratón (en el móvil, la respuesta al tocar de siempre) */
+@media (hover: hover) and (pointer: fine) {
+  .hcard.ir { transition: transform 0.3s var(--salida), box-shadow 0.3s var(--salida); }
+  .hcard.ir:hover { background: var(--surface); transform: translateY(-3px); box-shadow: 0 16px 32px -20px rgba(15, 31, 27, 0.4); }
+}
+
+/* ───── Ordenador: el resumen aprovecha el ancho ───── */
+@media (min-width: 1024px) {
+  .pagina:has(> .inicio) { max-width: 1200px; }
+  .hcards { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+  .res-rejilla { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 28px; align-items: start; }
+  .res-col > .grupo:last-child { margin-bottom: 0; }
+  .graf-pila { height: 210px; } .graf-capa { height: 210px; } .graf-eje { height: 210px; }
+  .graf-barras { height: 234px; background: linear-gradient(var(--line), var(--line)) 0 0 / 100% 1px no-repeat, linear-gradient(var(--line), var(--line)) 0 105px / 100% 1px no-repeat, linear-gradient(var(--line), var(--line)) 0 210px / 100% 1px no-repeat; }
+}
+
+/* ───── Tesorería: gráfica de la previsión (components/GraficaCaja.js) ───── */
+.teso-graf { margin-bottom: 10px; }
+.caja-dato { display: flex; flex-direction: column; gap: 2px; animation: graf-dato 0.3s var(--salida); }
+.caja-dato > span { color: var(--muted); font-size: 14px; }
+.caja-dato > strong { font-family: var(--f-marca), var(--font); font-size: clamp(30px, 8vw, 38px); font-weight: 700; letter-spacing: -0.035em; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.caja-desglose { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 14px; margin: 6px 0 0; color: var(--muted); font-variant-numeric: tabular-nums; }
+.caja-desglose .in { color: var(--in); } .caja-desglose .out { color: var(--out); } .caja-desglose .hac { color: var(--hacienda); }
+.caja-graf { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: clamp(4px, 1.4vw, 12px); margin-top: 18px; }
+.caja-graf button { display: flex; flex-direction: column; align-items: stretch; gap: 6px; padding: 0; border-radius: 10px; }
+.caja-graf button:active { transform: none; }
+.caja-col { position: relative; height: 170px; border-radius: 10px; background: linear-gradient(var(--line), var(--line)) 0 var(--cero) / 100% 1px no-repeat; transition: background-color 0.2s var(--salida); }
+.caja-graf button.activo .caja-col { background-color: var(--relleno); }
+.caja-col i { position: absolute; left: 18%; right: 18%; min-height: 3px; border-radius: 8px; background: color-mix(in srgb, var(--in) 45%, transparent); transform-origin: bottom; animation: graf-crece 0.6s var(--vt-curva) calc(var(--i) * 40ms) both; transition: background-color 0.2s var(--salida); }
+.caja-graf button.neg .caja-col i { background: color-mix(in srgb, var(--out) 45%, transparent); transform-origin: top; }
+.caja-graf button.hac .caja-col i { background-image: repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, var(--hacienda) 35%, transparent) 6px 11px); }
+.caja-graf button.activo .caja-col i { background-color: var(--in); }
+.caja-graf button.activo.neg .caja-col i { background-color: var(--out); }
+.caja-graf small { text-align: center; font-size: 12px; color: var(--muted); text-transform: capitalize; }
+.caja-graf button.activo small { color: var(--ink); font-weight: 700; }
+.graf-punto.neg { background: var(--out); } .graf-punto.hac { background: var(--hacienda); }
+@media (min-width: 1024px) { .caja-col { height: 210px; } }
+
+/* ───── Gastos: escanear primero (components/FormGasto.js) ───── */
+.gasto-rapido { display: grid; gap: 14px; background: var(--surface); border-radius: 20px; padding: 16px; margin: 4px 0 18px; }
+.gasto-rapido-txt { display: flex; flex-direction: column; gap: 3px; }
+.gasto-rapido-txt strong { font-family: var(--f-marca), var(--font); font-size: 19px; letter-spacing: -0.02em; }
+.gasto-rapido-txt small { color: var(--muted); font-size: 14px; line-height: 1.4; }
+.gasto-rapido-botones { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.gasto-rapido-botones .boton { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 14px; font-size: 16px; cursor: pointer; }
+.gasto-escanear { grid-column: 1 / -1; padding: 15px 18px !important; font-size: 17px !important; }
+.gasto-escanear svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.gasto-guardar { display: grid; grid-template-columns: 1fr; gap: 8px; }
+.gasto-guardar:has(> :nth-child(2)) { grid-template-columns: 2fr 1fr; }
+.gastos-mas { margin-top: 34px; }
+.gastos-mas > .grupo-t { margin-bottom: 12px; }
+@media (min-width: 640px) {
+  .gasto-rapido { grid-template-columns: minmax(0, 1fr) auto; align-items: center; padding: 18px 20px; }
+  .gasto-rapido-botones { display: flex; }
+  .gasto-escanear { grid-column: auto; }
+}
+
+/* ───── Crear factura: vista previa al lado (components/FormFactura.js) ───── */
+.ff-campos { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.ff-vista { display: none; }
+.totales { align-items: baseline; }
+.totales strong { font-family: var(--f-marca), var(--font); font-size: 20px; letter-spacing: -0.02em; }
+@media (min-width: 1024px) {
+  .pagina:has(.ff) { max-width: 1120px; }
+  .ff { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 32px; align-items: start; }
+  .ff-vista { display: block; position: sticky; top: 28px; }
+  .ff-papel { background: #fff; color: #17201D; border-radius: 18px; padding: 24px; box-shadow: 0 1px 2px rgba(15, 31, 27, 0.06), 0 24px 48px -28px rgba(15, 31, 27, 0.35); display: grid; gap: 16px; border-top: 6px solid var(--marca); }
+  .ff-papel-cab { display: flex; flex-direction: column; gap: 2px; }
+  .ff-papel-cab b { font-family: var(--f-marca), var(--font); font-size: 19px; letter-spacing: -0.02em; }
+  .ff-papel small { color: #6B736F; font-size: 13px; }
+  .ff-para { display: flex; flex-direction: column; gap: 1px; padding: 12px 0; border-top: 1px solid #E6EAE8; border-bottom: 1px solid #E6EAE8; }
+  .ff-para b { font-size: 16px; word-break: break-word; }
+  .ff-lineas { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .ff-lineas li { display: flex; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: 10px; background: #F4F7F5; font-size: 14px; animation: graf-dato 0.25s var(--salida); }
+  .ff-lineas li span { display: flex; flex-direction: column; min-width: 0; word-break: break-word; }
+  .ff-lineas b { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .ff-tot { display: grid; gap: 5px; margin: 0; font-size: 14px; }
+  .ff-tot div { display: flex; justify-content: space-between; } .ff-tot dt { color: #6B736F; } .ff-tot dd { margin: 0; font-variant-numeric: tabular-nums; }
+  .ff-total { display: flex; justify-content: space-between; align-items: baseline; margin: 0; padding-top: 12px; border-top: 1px dashed #D5DBD8; font-weight: 700; }
+  .ff-total b { font-family: var(--f-marca), var(--font); font-size: 28px; letter-spacing: -0.035em; font-variant-numeric: tabular-nums; animation: graf-dato 0.3s var(--salida); }
+  .ff-papel .estado-txt { justify-self: start; }
+}
+
+/* ───── Banco: primer extracto y emparejados (components/Banco.js) ───── */
+.bco-vacio { grid-column: 1 / -1; display: grid; justify-items: center; text-align: center; gap: 8px; padding: 26px 18px 22px; border-radius: 16px; border: 2px dashed color-mix(in srgb, var(--muted) 35%, transparent); transition: border-color 0.2s var(--salida), background-color 0.2s var(--salida); }
+.bco-vacio.encima { border-color: var(--in); background: color-mix(in srgb, var(--in) 7%, transparent); }
+.bco-vacio-ico { width: 52px; height: 52px; border-radius: 16px; display: grid; place-items: center; background: var(--menta); color: var(--ico); margin-bottom: 4px; transition: transform 0.3s var(--salida); }
+.bco-vacio.encima .bco-vacio-ico { transform: translateY(-4px) scale(1.05); }
+.bco-vacio-ico svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.bco-vacio strong { font-family: var(--f-marca), var(--font); font-size: 20px; letter-spacing: -0.02em; }
+.bco-vacio p { color: var(--muted); font-size: 14px; line-height: 1.45; max-width: 34em; margin: 0; }
+.bco-vacio ol { list-style: none; counter-reset: paso; padding: 0; margin: 10px 0 0; display: grid; gap: 8px; text-align: left; width: 100%; max-width: 440px; }
+.bco-vacio li { counter-increment: paso; display: grid; grid-template-columns: 26px 1fr; gap: 10px; align-items: start; font-size: 14px; line-height: 1.4; color: var(--muted); }
+.bco-vacio li::before { content: counter(paso); width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; background: var(--relleno); color: var(--ink); font-weight: 700; font-size: 13px; }
+.bco-vacio li b { color: var(--ink); }
+.bco-vacio + .bco-botones { justify-content: center; }
+.bco-mov.hecho { animation: graf-dato 0.4s var(--salida) both; }

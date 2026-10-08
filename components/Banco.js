@@ -120,10 +120,10 @@ export default function Banco({ cuentas, pendientes, emparejados, ignorados, avi
   };
   // Al abrir, si hay cuentas conectadas, se traen los últimos movimientos (el servidor no repite si hace menos de 6 horas).
   useEffect(() => { if (conectadas.length && (permisos.facturar || permisos.gastar)) actualizar(false); }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  const subir = async (e) => {
-    const f = e.target.files?.[0];
-    e.target.value = '';
-    if (!f) return;
+  const [encima, setEncima] = useState(false);
+  const subir = (e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) subirArchivo(f); };
+  const soltar = (e) => { e.preventDefault(); setEncima(false); const f = e.dataTransfer.files?.[0]; if (f) subirArchivo(f); };
+  const subirArchivo = async (f) => {
     setOcupado(true); setMsg(null);
     const fd = new FormData();
     fd.set('archivo', f);
@@ -145,7 +145,7 @@ export default function Banco({ cuentas, pendientes, emparejados, ignorados, avi
       {msg && <p className={`bco-aviso${msg.error ? ' error' : ''}`} role="status">{msg.texto}</p>}
 
       <section className="bco-cuentas">
-        <div className="bco-total"><span>Saldo en tus cuentas</span><strong>{conSaldo ? eur(total) : '—'}</strong></div>
+        {cuentas.length > 0 && <div className="bco-total"><span>Saldo en tus cuentas</span><strong>{conSaldo ? eur(total) : '—'}</strong></div>}
         {cuentas.map((c) => (
           <div key={c.id} className="bco-cuenta">
             <span className="bco-txt">
@@ -161,14 +161,27 @@ export default function Banco({ cuentas, pendientes, emparejados, ignorados, avi
             {permisos.empresa && <button className="bco-quitar" onClick={() => quitar(c)} aria-label={`Quitar ${c.nombre}`}>Quitar</button>}
           </div>
         ))}
-        {!cuentas.length && <p className="bco-nota">Conecta tu banco o sube un extracto para ver tu saldo real y emparejar cobros y pagos solos.</p>}
+        {!cuentas.length && ((permisos.facturar || permisos.gastar)
+          ? (
+            <div className={`bco-vacio${encima ? ' encima' : ''}`} onDragOver={(e) => { e.preventDefault(); setEncima(true); }} onDragLeave={() => setEncima(false)} onDrop={soltar}>
+              <span className="bco-vacio-ico" aria-hidden><svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M5 20h14" /></svg></span>
+              <strong>Sube tu primer extracto</strong>
+              <p>Arrástralo aquí o elígelo con «Subir extracto». Netto empareja cada cobro con su factura y cada pago con su gasto.</p>
+              <ol>
+                <li><span><b>Descárgalo</b> de tu banca online en Norma 43, CSV o Excel.</span></li>
+                <li><span><b>Súbelo</b> aquí. Si lo subes dos veces, no se duplica nada.</span></li>
+                <li><span><b>Confirma</b> los emparejamientos: la factura queda cobrada con la fecha del banco.</span></li>
+              </ol>
+            </div>
+          )
+          : <p className="bco-nota">Aún no hay ninguna cuenta. Cuando alguien con permiso suba un extracto, verás aquí el saldo real.</p>)}
         <div className="bco-botones">
           {permisos.empresa && listo && <button className="boton pequeno" onClick={() => setConectando(true)}>Conectar banco</button>}
           {conectadas.length > 0 && (permisos.facturar || permisos.gastar) && <button className="boton pequeno sec" onClick={() => actualizar(true)}>Actualizar</button>}
           {(permisos.facturar || permisos.gastar) && <button className="boton pequeno sec" onClick={() => fichero.current?.click()}>Subir extracto</button>}
           {(permisos.facturar || permisos.gastar) && <input ref={fichero} type="file" hidden accept=".csv,.xlsx,.txt,.n43,.aeb,.q43,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={subir} aria-label="Extracto del banco" />}
         </div>
-        {(permisos.facturar || permisos.gastar) && <p className="bco-nota">Extracto: descárgalo de tu banca online en formato Norma 43 (cuaderno 43), CSV o Excel (.xlsx).</p>}
+        {(permisos.facturar || permisos.gastar) && cuentas.length > 0 && <p className="bco-nota">Extracto: descárgalo de tu banca online en formato Norma 43 (cuaderno 43), CSV o Excel (.xlsx).</p>}
       </section>
 
       {conectando && <Conectar cerrar={() => setConectando(false)} />}

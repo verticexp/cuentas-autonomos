@@ -4,11 +4,13 @@ import './cuentas.css';
 import './movil.css';
 import './diseno.css';
 import './pulido.css';
+import './v2.css';
 import TabBar from '@/components/TabBar';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { desbloqueada, modoBloqueo, usuarioActual } from '@/lib/auth';
 import { COLOR_BASE } from '@/lib/marca';
+import { fuente } from '@/components/fuente';
 import { permisosDe } from '@/lib/permisos';
 import Bloqueo from '@/components/Bloqueo';
 import Llegada from '@/components/Llegada';
@@ -50,7 +52,7 @@ export default async function RootLayout({ children }) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: YA_VISTO }} />
       </head>
-      <body style={{ '--acento': color }} data-marca={propio ? 'propia' : 'base'}>
+      <body className={fuente.variable} style={{ '--acento': color }} data-marca={propio ? 'propia' : 'base'}>
         <Arranque />
         <script dangerouslySetInnerHTML={{ __html: 'window.__arranque=performance.now()' }} />
         {children}
