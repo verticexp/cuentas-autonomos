@@ -61,3 +61,12 @@ test('recurrentes: el mes que aún no se ha creado entra a su vencimiento; el sa
   assert.deepEqual(p.movimientos.map((m) => [m.fecha, m.importe, m.saldo]), [['2026-10-10', -1000, -500], ['2026-11-01', 121, -379], ['2026-12-01', 121, -258]]);
   assert.deepEqual(p.minimo, { saldo: -500, fecha: '2026-10-10' });
 });
+
+test('Hacienda: el 115 del 4T se paga el 20 de enero; el 303 y el 130, el 30', () => {
+  const G = [gas('a', '2026-11-05', 1000, { alquiler: true, concepto: 'Alquiler local' })];
+  const F = [fac('1', '2026-11-10', 3000)];
+  const p = prevision({ facturas: F, gastos: G, fiscal, hoy: '2026-12-15', meses: 2, actividades: [] });
+  const h = Object.fromEntries(p.movimientos.filter((m) => m.tipo === 'hacienda').map((m) => [m.concepto.split(' ')[0], m.fecha]));
+  assert.equal(h.Alquiler, '2027-01-20');
+  assert.equal(h.IVA, '2027-01-30');
+});

@@ -107,3 +107,27 @@ test('lectura de tickets: lo que diga la IA se deja en datos válidos', async ()
   assert.equal(limpiarTicket({ total: '1.234,50', ivaPct: 0 }, '2026-10-03').base, 1234.5);
   assert.equal(limpiarTicket(null, '2026-10-03').base, '');
 });
+
+test('sin 303 (exento o recargo de equivalencia) el IVA es coste e ingreso en el 130; con 303, no', () => {
+  const F = [{ fecha: '2026-02-01', base: 1000, ivaPct: 21, irpfPct: 0, actividad: 'a' }];
+  const G = [{ fecha: '2026-02-02', base: 200, ivaPct: 21, actividad: 'a' }];
+  const con = resumenAnual(F, G, 2026, {}, ['a']).trimestres[0];
+  const sin = resumenAnual(F, G, 2026, {}, ['a'], { ivaCoste: true });
+  assert.deepEqual([con.ingresos, con.gastos], [1000, 200]);
+  assert.deepEqual([sin.trimestres[0].ingresos, sin.trimestres[0].gastos], [1210, 242]);
+  assert.equal(sin.trimestres[0].m130, Math.round(0.2 * (968 - 0.05 * 968) * 100) / 100);
+  assert.deepEqual([sin.porActividad[0].ingresos, sin.porActividad[0].gastos], [1210, 242]);
+  // Exento: la factura va sin IVA y el IVA del gasto suma como gasto.
+  const ex = resumenAnual([{ ...F[0], ivaPct: 0 }], G, 2026, {}, ['a'], { ivaCoste: true }).trimestres[0];
+  assert.deepEqual([ex.ingresos, ex.gastos], [1000, 242]);
+});
+
+test('303: lo facturado sin IVA a empresas de otros países de la UE va en la casilla 59', () => {
+  const F = [
+    { fecha: '2026-04-02', base: 500, ivaPct: 0, cliente: { nif: 'FR12345678901' } },
+    { fecha: '2026-04-03', base: 300, ivaPct: 0, cliente: { nif: 'B12345678' } },
+    { fecha: '2026-04-04', base: 100, ivaPct: 21, cliente: { nif: 'DE123456789' } },
+  ];
+  const c = casillas303(F, [], 2026, 2);
+  assert.deepEqual([c['59'], c.sinIva, c['07']], [500, 800, 100]);
+});

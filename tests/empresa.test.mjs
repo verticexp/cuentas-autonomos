@@ -39,6 +39,13 @@ test('modelos según cómo trabaja', () => {
   assert.equal(limpiarFiscal({ tipo: 'sociedad', retenidas: true }).retenidas, false);
 });
 
+test('plazos: el 111 y el 115 del 4T, hasta el 20 de enero; el 303, el 130 y el 349, hasta el 30', () => {
+  const m = Object.fromEntries(modelosDe(limpiarFiscal({ tipo: 'autonomo', trabajadores: true, alquiler: true, intracom: true })).map((x) => [x.id, x]));
+  for (const id of ['111', '115']) assert.equal(m[id].cuando, '1 al 20 de abril, julio, octubre y enero');
+  for (const id of ['303', '130', '349']) assert.ok(m[id].cuando.endsWith('1 al 30 de enero'));
+  assert.ok(m['111'].calcula);
+});
+
 const F = [{ id: 'a', fecha: '2026-04-10', actividad: 'x', base: 1000, ivaPct: 21, irpfPct: 15, cobrada: true, cliente: { nombre: 'A' } }];
 const G = [{ id: 'g', fecha: '2026-04-11', actividad: 'x', base: 100, ivaPct: 21 }];
 const ACT = [{ id: 'x', nombre: 'X', serie: '', ivaPct: 21, irpfPct: 15 }];
