@@ -132,7 +132,7 @@ export const funcion = (slug) => FUNCIONES.find((f) => f.slug === slug);
 
 export const EXTRAS = [
   { icono: 'importar', t: 'Importa desde Holded', d: 'Trae tus clientes y facturas sin teclear.' },
-  { icono: 'nube', t: 'Copia en Google Drive', d: 'Tus facturas, también en tu Drive.' },
+  { icono: 'nube', t: 'Copia en Google Drive', d: 'Conecta tu Drive y Netto guarda ahí una copia de cada factura.' },
   { icono: 'candado', t: 'Face ID y llaves de acceso', d: 'Abre Netto con tu cara o tu huella.' },
   { icono: 'campana', t: 'Avisos push', d: 'Cobros, vencimientos y plazos fiscales.' },
   { icono: 'movil', t: 'Se instala como app', d: 'En el móvil y en el ordenador.' },
@@ -190,7 +190,7 @@ export const segmento = (id) => SEGMENTOS.find((s) => s.id === id);
 // «Todo lo del plan anterior» va en `herencia`; cada plan lista solo lo que añade.
 export const PLANES = {
   aut: [
-    { n: 'Esencial', p: 9, para: 'Facturar y declarar sin sustos', l: ['Facturas y presupuestos ilimitados', 'Verifactu: huella encadenada y QR', 'Clientes, catálogo y recurrentes', 'Gastos y proveedores', 'Escaneo de tickets y PDF con IA', 'Modelos 303, 130 y 100 calculados', 'Extractos del banco y saldo', 'Importación desde Holded', '1 empresa · 1 usuario'] },
+    { n: 'Esencial', p: 9, para: 'Facturar y declarar sin sustos', l: ['Facturas y presupuestos ilimitados', 'Verifactu: huella encadenada y QR', 'Clientes, catálogo y recurrentes', 'Gastos y proveedores', 'Escaneo de tickets y PDF con IA', 'Modelos 303, 130, 111, 115 y 100 calculados', 'Extractos del banco y saldo', 'Importación desde Holded', '1 empresa · 1 usuario'] },
     { n: 'Pro', p: 12, para: 'Que tus cuentas cuadren solas', fuerte: true, herencia: 'Esencial', l: ['Conciliación automática de extractos', 'Previsión de caja a 3, 6 y 12 meses', 'Asistente IA con tus cifras', 'Varias actividades con su IVA e IRPF', 'Acceso para tu gestoría', 'Portal del cliente', 'Recordatorios y avisos push'] },
     { n: 'Plus', p: 20, para: 'Para quien lo lleva todo', herencia: 'Pro', l: ['Hasta 3 empresas', 'Hasta 3 usuarios con permisos', 'Nóminas y jornada (2 empleados)', 'Escaneos IA ampliados', 'Soporte prioritario'] },
   ],
@@ -213,7 +213,7 @@ export const COMPARATIVA = {
       ['Facturas y presupuestos ilimitados', [true, true, true]], ['Verifactu', [true, true, true]], ['Recurrentes y catálogo', [true, true, true]], ['Portal del cliente', [false, true, true]],
     ]],
     ['Gastos e impuestos', [
-      ['Escaneo con IA', ['Incluido', 'Incluido', 'Ampliado']], ['Modelos 303, 130 y 100', [true, true, true]], ['Varias actividades', [false, true, true]],
+      ['Escaneo con IA', ['Incluido', 'Incluido', 'Ampliado']], ['Modelos 303, 130, 111, 115 y 100', [true, true, true]], ['Varias actividades', [false, true, true]],
     ]],
     ['Banco y caja', [
       ['Extractos N43, CSV y Excel', [true, true, true]], ['Conciliación automática', [false, true, true]], ['Previsión de caja', [false, true, true]],
