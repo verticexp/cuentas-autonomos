@@ -19,9 +19,9 @@ export const FUNCIONES = [
       { t: 'Recurrentes y catálogo', d: 'Las cuotas mensuales se facturan solas en su fecha. Guarda tus productos y servicios con su precio e IVA y factúralos con dos toques.', l: ['Facturas recurrentes automáticas', 'Catálogo de productos y servicios', 'Clientes con sus datos fiscales'], visual: 'recurrentes' },
     ],
     faqs: [
-      ['¿Puedo poner mi logo?', 'Sí. Subes tu logo y eliges tu color: se aplican a la plantilla de factura y a la propia app.'],
+      ['¿Puedo poner mi logo?', 'Sí. Subes tu logo y eliges tu color: se aplican a tus facturas y presupuestos.'],
       ['¿Qué es Verifactu?', 'Es el sistema de la AEAT que obliga a que cada factura lleve una huella encadenada con la anterior y un código QR. Netto los genera en cada factura.'],
-      ['¿Puedo facturar con varias actividades?', 'Sí. Cada actividad (por ejemplo, DJ y organización de eventos) tiene su propio IVA e IRPF por defecto.'],
+      ['¿Puedo facturar con varias actividades?', 'Sí. Cada actividad (por ejemplo, consultoría y formación) tiene su propio IVA e IRPF por defecto.'],
     ],
   },
   {

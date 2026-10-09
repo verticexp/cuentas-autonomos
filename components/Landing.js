@@ -34,8 +34,8 @@ export default function Landing() {
         </div>
         <div className="web-hero-vis">
           <VentanaApp />
-          <div className="web-flota f1" aria-hidden><span className="web-flota-ico ok"><Icono n="tic" /></span><div><b>Factura F-0142 cobrada</b><small>+1.210,00 € · Sala Apolo</small></div></div>
-          <div className="web-flota f2" aria-hidden><span className="web-flota-ico"><Icono n="asistente" /></span><div><b>Ticket leído con IA</b><small>Backline Pro SL · 380,00 €</small></div></div>
+          <div className="web-flota f1" aria-hidden><span className="web-flota-ico ok"><Icono n="tic" /></span><div><b>Factura F-0142 cobrada</b><small>+1.210,00 € · Altamira Consultores</small></div></div>
+          <div className="web-flota f2" aria-hidden><span className="web-flota-ico"><Icono n="asistente" /></span><div><b>Ticket leído con IA</b><small>Suministros Vega SL · 380,00 €</small></div></div>
           <div className="web-flota f3" aria-hidden><span className="web-flota-ico imp"><Icono n="impuestos" /></span><div><b>Aparta 3.347 €</b><small>Modelos del 3.er trimestre</small></div></div>
         </div>
       </section>

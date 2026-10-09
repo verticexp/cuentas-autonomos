@@ -35,9 +35,9 @@ export function VentanaApp() {
             <div className="mk-barras">{barras.map((h, i) => <i key={i} style={{ '--h': `${h}%`, '--i': i }} />)}</div>
           </div>
           <div className="mk-tabla">
-            <Fila a="F-0142 · Sala Apolo" b="Vence en 12 días" c="+1.210,00 €" chip="Pendiente" tipo="pend" />
-            <Fila a="F-0141 · Eventos Lume" b="Cobrada ayer" c="+640,00 €" chip="Cobrada" />
-            <Fila a="F-0140 · Hotel Arts" b="Cobrada el lunes" c="+2.420,00 €" chip="Cobrada" />
+            <Fila a="F-0142 · Altamira Consultores" b="Vence en 12 días" c="+1.210,00 €" chip="Pendiente" tipo="pend" />
+            <Fila a="F-0141 · Estudio Norte" b="Cobrada ayer" c="+640,00 €" chip="Cobrada" />
+            <Fila a="F-0140 · Clínica Delta" b="Cobrada el lunes" c="+2.420,00 €" chip="Cobrada" />
           </div>
         </div>
       </div>
@@ -49,9 +49,9 @@ const PANTALLAS = {
   factura: () => (
     <div className="mk mk-factura">
       <div className="mk-factura-cab"><N className="mk-n" /><div><b>Factura F-0142</b><small>12 de octubre de 2026</small></div><i className="mk-qr" /></div>
-      <div className="mk-factura-partes"><div><small>Para</small><b>Sala Apolo SL</b><small>B12345678</small></div><div><small>Vence</small><b>11 nov 2026</b></div></div>
-      <Fila a="Sesión DJ · viernes" b="1 × 900,00 €" c="900,00 €" />
-      <Fila a="Equipo de sonido" b="1 × 100,00 €" c="100,00 €" />
+      <div className="mk-factura-partes"><div><small>Para</small><b>Altamira Consultores SL</b><small>B12345678</small></div><div><small>Vence</small><b>11 nov 2026</b></div></div>
+      <Fila a="Consultoría · octubre" b="1 × 900,00 €" c="900,00 €" />
+      <Fila a="Material y desplazamiento" b="1 × 100,00 €" c="100,00 €" />
       <div className="mk-totales"><span>Base <b>1.000,00 €</b></span><span>IVA 21 % <b>210,00 €</b></span><span>IRPF −15 % <b>−150,00 €</b></span><span className="mk-total">Total <b>1.060,00 €</b></span></div>
     </div>
   ),
@@ -59,7 +59,7 @@ const PANTALLAS = {
     <div className="mk mk-gasto">
       <div className="mk-ticket-foto"><span /><span /><span /><span /><i /></div>
       <div className="mk-campos">
-        <label>Proveedor<b>Backline Pro SL</b></label>
+        <label>Proveedor<b>Suministros Vega SL</b></label>
         <label>Fecha<b>10/10/2026</b></label>
         <label>Base<b>314,05 €</b></label>
         <label>IVA 21 %<b>65,95 €</b></label>
@@ -81,9 +81,9 @@ const PANTALLAS = {
   conciliacion: () => (
     <div className="mk">
       <div className="mk-cab"><b>Extracto · BBVA</b><span className="mk-chip ok">12 de 14 emparejados</span></div>
-      <Fila a="Transferencia Sala Apolo" b="→ Factura F-0142" c="+1.210,00 €" chip="✓" />
-      <Fila a="Pago Backline Pro SL" b="→ Gasto 10/10" c="−380,00 €" chip="✓" />
-      <Fila a="Bizum Eventos Lume" b="→ Factura F-0145" c="+640,00 €" chip="✓" />
+      <Fila a="Transferencia Altamira" b="→ Factura F-0142" c="+1.210,00 €" chip="✓" />
+      <Fila a="Pago Suministros Vega SL" b="→ Gasto 10/10" c="−380,00 €" chip="✓" />
+      <Fila a="Bizum Estudio Norte" b="→ Factura F-0145" c="+640,00 €" chip="✓" />
       <Fila a="Comisión mantenimiento" b="Sin emparejar" c="−6,00 €" chip="Revisar" tipo="pend" />
     </div>
   ),
@@ -109,15 +109,15 @@ const PANTALLAS = {
   presupuesto: () => (
     <div className="mk">
       <div className="mk-cab"><b>Presupuesto P-0031</b><span className="mk-chip ok">Aceptado</span></div>
-      <Fila a="Boda · DJ y sonido" b="Ceremonia y fiesta" c="1.800,00 €" />
-      <Fila a="Iluminación" b="Pack ambiente" c="350,00 €" />
-      <div className="mk-aviso"><Icono n="tic" />Eventos Lume lo aceptó desde el móvil · hace 5 min</div>
+      <Fila a="Reforma del local" b="Obra y materiales" c="1.800,00 €" />
+      <Fila a="Instalación eléctrica" b="Puntos de luz y cuadro" c="350,00 €" />
+      <div className="mk-aviso"><Icono n="tic" />Estudio Norte lo aceptó desde el móvil · hace 5 min</div>
       <span className="mk-btn">Convertir en factura</span>
     </div>
   ),
   portal: () => (
     <div className="mk">
-      <div className="mk-cab"><b>Tus documentos · Sala Apolo</b><Icono n="documento" /></div>
+      <div className="mk-cab"><b>Tus documentos · Altamira</b><Icono n="documento" /></div>
       <Fila a="Factura F-0142" b="12/10/2026" c="1.060,00 €" chip="PDF" tipo="neutro" />
       <Fila a="Factura F-0128" b="08/09/2026" c="980,00 €" chip="PDF" tipo="neutro" />
       <Fila a="Presupuesto P-0029" b="01/09/2026" c="2.150,00 €" chip="Aceptado" />
@@ -126,7 +126,7 @@ const PANTALLAS = {
   recurrentes: () => (
     <div className="mk">
       <div className="mk-cab"><b>Recurrentes</b><span className="mk-chip ok">Activas</span></div>
-      <Fila a="Residencia mensual · Club Nit" b="Cada mes, día 1" c="1.200,00 €" d="Próxima: 1 nov" />
+      <Fila a="Servicio mensual · Altamira" b="Cada mes, día 1" c="1.200,00 €" d="Próxima: 1 nov" />
       <Fila a="Mantenimiento web" b="Cada trimestre" c="300,00 €" d="Próxima: 1 ene" />
       <Fila a="Alquiler local" b="Gasto · cada mes" c="−650,00 €" d="Próximo: 5 nov" />
     </div>
@@ -141,10 +141,10 @@ const PANTALLAS = {
   ),
   proveedores: () => (
     <div className="mk">
-      <div className="mk-cab"><b>Backline Pro SL</b><span className="mk-chip pend">380 € pendientes</span></div>
-      <Fila a="Alquiler equipo · oct" b="Vence 30/10" c="−380,00 €" chip="Pendiente" tipo="pend" />
-      <Fila a="Alquiler equipo · sep" b="Pagado 28/09" c="−380,00 €" chip="Pagado" />
-      <Fila a="Cables y adaptadores" b="Pagado 12/09" c="−64,90 €" chip="Pagado" />
+      <div className="mk-cab"><b>Suministros Vega SL</b><span className="mk-chip pend">380 € pendientes</span></div>
+      <Fila a="Pedido de material · oct" b="Vence 30/10" c="−380,00 €" chip="Pendiente" tipo="pend" />
+      <Fila a="Pedido de material · sep" b="Pagado 28/09" c="−380,00 €" chip="Pagado" />
+      <Fila a="Consumibles de oficina" b="Pagado 12/09" c="−64,90 €" chip="Pagado" />
     </div>
   ),
   paquete: () => (
@@ -164,7 +164,7 @@ const PANTALLAS = {
   ),
   emparejado: () => (
     <div className="mk mk-par">
-      <div className="mk-par-l"><small>Movimiento</small><b>+1.210,00 €</b><small>Transferencia Sala Apolo · 14/10</small></div>
+      <div className="mk-par-l"><small>Movimiento</small><b>+1.210,00 €</b><small>Transferencia Altamira · 14/10</small></div>
       <div className="mk-par-lazo"><i /><span>✓</span><i /></div>
       <div className="mk-par-l"><small>Factura</small><b>F-0142</b><small>Cobrada el 14/10</small></div>
     </div>
@@ -175,7 +175,7 @@ const PANTALLAS = {
       <div className="mk">
         <div className="mk-cab"><b>2026 frente a 2025</b><span className="mk-chip ok">+27 %</span></div>
         <div className="mk-barras peq">{b.map((h, i) => <i key={i} style={{ '--h': `${h}%`, '--i': i }} />)}</div>
-        <Fila a="Mejor cliente" b="Sala Apolo" c="12.480 €" />
+        <Fila a="Mejor cliente" b="Altamira Consultores" c="12.480 €" />
       </div>
     );
   },
@@ -190,7 +190,7 @@ const PANTALLAS = {
   empresas: () => (
     <div className="mk">
       <div className="mk-cab"><b>Tus empresas</b><Icono n="edificio" /></div>
-      {[['L', 'Lume Eventos SL', 'Actual'], ['N', 'Nit Producciones SL', ''], ['M', 'Marta Ruiz · Autónoma', '']].map(([i, n, a]) => (
+      {[['R', 'Ruiz & Asociados SL', 'Actual'], ['T', 'Taller Ruiz SL', ''], ['M', 'Marta Ruiz · Autónoma', '']].map(([i, n, a]) => (
         <div key={n} className={`mk-fila mk-usuario${a ? ' on' : ''}`}><span className="mk-avatar">{i}</span><div><b>{n}</b></div>{a && <span className="mk-chip ok">{a}</span>}</div>
       ))}
     </div>

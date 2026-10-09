@@ -68,8 +68,8 @@ export function Calculadora() {
 
 /* ───────── Factura en vivo ───────── */
 export function FacturaDemo() {
-  const [cliente, setCliente] = useState('Sala Apolo SL');
-  const [concepto, setConcepto] = useState('Sesión DJ · viernes');
+  const [cliente, setCliente] = useState('Altamira Consultores SL');
+  const [concepto, setConcepto] = useState('Consultoría · octubre');
   const [importe, setImporte] = useState(900);
   const [ivaP, setIvaP] = useState(21);
   const [irpfP, setIrpfP] = useState(15);
@@ -106,7 +106,7 @@ export function FacturaDemo() {
 
 /* ───────── Ticket leído con IA ───────── */
 const TICKETS = [
-  { prov: 'Backline Pro SL', fecha: '10/10/2026', base: '314,05 €', iva: '65,95 €', cat: 'Alquiler de equipo' },
+  { prov: 'Suministros Vega SL', fecha: '10/10/2026', base: '314,05 €', iva: '65,95 €', cat: 'Material de oficina' },
   { prov: 'Gasolinera Repsol', fecha: '08/10/2026', base: '49,59 €', iva: '10,41 €', cat: 'Combustible' },
   { prov: 'MediaMarkt', fecha: '02/10/2026', base: '165,29 €', iva: '34,71 €', cat: 'Material y equipos' },
 ];
@@ -145,9 +145,9 @@ export function TicketDemo() {
 
 /* ───────── Conciliación de un extracto ───────── */
 const MOVS = [
-  { id: 1, t: 'Transferencia Sala Apolo', c: '+1.210,00 €', con: 'Factura F-0142', seguro: true },
-  { id: 2, t: 'Pago Backline Pro SL', c: '−380,00 €', con: 'Gasto 10/10', seguro: true },
-  { id: 3, t: 'Bizum Eventos Lume', c: '+640,00 €', con: 'Factura F-0145', seguro: true },
+  { id: 1, t: 'Transferencia Altamira', c: '+1.210,00 €', con: 'Factura F-0142', seguro: true },
+  { id: 2, t: 'Pago Suministros Vega SL', c: '−380,00 €', con: 'Gasto 10/10', seguro: true },
+  { id: 3, t: 'Bizum Estudio Norte', c: '+640,00 €', con: 'Factura F-0145', seguro: true },
   { id: 4, t: 'Transferencia M. Gómez', c: '+300,00 €', con: '¿Factura F-0139 o F-0144?', seguro: false },
   { id: 5, t: 'Comisión mantenimiento', c: '−6,00 €', con: 'Sin emparejar', seguro: false },
 ];
@@ -256,7 +256,7 @@ export function PermisosDemo() {
 /* ───────── Asistente ───────── */
 const PREGUNTAS = [
   ['¿Cuánto IVA pagaré este trimestre?', 'Con lo facturado y gastado hasta hoy, tu modelo 303 del tercer trimestre sale a 1.842,30 €. Te quedan 6 días para presentarlo.'],
-  ['¿Quién me debe más dinero?', 'Sala Apolo: 2 facturas pendientes por 2.270 €. La F-0137 venció hace 9 días; ¿quieres que te la deje preparada para reenviar?'],
+  ['¿Quién me debe más dinero?', 'Altamira Consultores: 2 facturas pendientes por 2.270 €. La F-0137 venció hace 9 días; ¿quieres que te la deje preparada para reenviar?'],
   ['¿Cómo voy respecto al año pasado?', 'Llevas 48.920 € facturados, un 18 % más que a estas alturas de 2025. Tu beneficio sube un 27 % porque los gastos han bajado.'],
 ];
 
