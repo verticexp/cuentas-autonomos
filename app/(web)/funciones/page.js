@@ -69,7 +69,7 @@ function ChatEstatico() {
   return (
     <div className="mk mk-chat" aria-hidden>
       <p className="yo">¿Quién me debe más dinero?</p>
-      <p>Sala Apolo: 2 facturas pendientes por 2.270 €. La F-0137 venció hace 9 días.</p>
+      <p>Altamira Consultores: 2 facturas pendientes por 2.270 €. La F-0137 venció hace 9 días.</p>
       <p className="yo">¿Y cuánto IVA pagaré este trimestre?</p>
       <p>Tu 303 del tercer trimestre sale a 1.842,30 €.</p>
     </div>
