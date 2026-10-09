@@ -19,6 +19,7 @@ import Logo from '@/components/Logo';
 import { puede } from '@/lib/permisos';
 import '@/app/asistente.css';
 import '@/app/empresas.css';
+import '@/app/resumen-mk.css';
 import CambiarEmpresa from '@/components/CambiarEmpresa';
 
 export const dynamic = 'force-dynamic';
@@ -54,7 +55,7 @@ export default async function Resumen({ searchParams }) {
   ].filter(Boolean);
 
   return (
-    <main className="pagina">
+    <main className="pagina resumen-mk">
       <header className="inicio">
         <div className="inicio-barra">
           <Logo />
