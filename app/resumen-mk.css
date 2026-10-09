@@ -1,0 +1,39 @@
+/* Ensayo: acerca el Resumen a la estética de los simuladores de la web (solo bajo .resumen-mk).
+   Tres señas: barras con degradado verde, tarjetas que "flotan" (borde fino + sombra suave) y el % en pastilla. */
+
+/* Tarjetas flotando, como las maquetas de la web */
+.resumen-mk .grupo-c,
+.resumen-mk .hcard,
+.resumen-mk .trim {
+  border: 1px solid var(--line);
+  box-shadow: 0 1px 2px rgba(15, 31, 27, 0.05), 0 12px 30px -22px rgba(15, 31, 27, 0.35);
+}
+@media (prefers-color-scheme: dark) {
+  .resumen-mk .grupo-c,
+  .resumen-mk .hcard,
+  .resumen-mk .trim { box-shadow: none; }
+}
+
+/* Barras del "mes a mes" con el degradado verde de los simuladores */
+.resumen-mk .graf-b.in {
+  background: linear-gradient(180deg, var(--in), color-mix(in srgb, var(--in) 58%, #ffffff));
+}
+
+/* El cambio frente al año anterior, en pastilla (como el +27 % de la web) */
+.resumen-mk .saldo-cambio,
+.resumen-mk .hcard-cambio {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+.resumen-mk .saldo-cambio.sube,
+.resumen-mk .hcard-cambio.sube {
+  background: color-mix(in srgb, var(--in) 15%, var(--surface));
+  color: var(--in);
+}
+.resumen-mk .saldo-cambio.baja,
+.resumen-mk .hcard-cambio.baja {
+  background: color-mix(in srgb, var(--out) 14%, var(--surface));
+  color: var(--out);
+}
