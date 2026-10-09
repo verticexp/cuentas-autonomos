@@ -54,7 +54,7 @@ export const FUNCIONES = [
       { t: 'Recordatorios', d: 'Te avisamos antes de cada plazo de presentación para que no se te pase.' },
     ],
     secciones: [
-      { t: 'El paquete para tu gestoría, en un clic', d: 'Descarga el trimestre entero (facturas, gastos e impuestos) en Excel o PDF y envíaselo a tu gestoría. O dale acceso directo con un perfil de solo vista.', l: ['Paquete trimestral en Excel y PDF', 'Acceso de gestoría con permisos', 'Exportación a CSV'], visual: 'paquete' },
+      { t: 'El paquete para tu gestoría, en un clic', d: 'Descarga el trimestre entero (facturas, gastos e impuestos) en Excel o PDF y envíaselo a tu gestoría. O dale acceso directo con el perfil de gestoría.', l: ['Paquete trimestral en Excel y PDF', 'Acceso de gestoría con permisos', 'Exportación a CSV'], visual: 'paquete' },
       { t: 'Pago fraccionado sin errores', d: 'Netto lleva la cuenta de lo que ya has pagado en cada 130 y lo descuenta del siguiente.', l: ['Histórico de pagos fraccionados', 'Retenciones descontadas', 'Resumen anual para la renta'], visual: 'fraccionado' },
     ],
     faqs: [
@@ -108,7 +108,7 @@ export const FUNCIONES = [
       { t: 'Permisos por área', d: 'Resumen, facturar, gastos, nóminas, usuarios… Activa solo lo que cada uno necesita.' },
     ],
     secciones: [
-      { t: 'Invita a tu equipo y a tu gestoría', d: 'Envía invitaciones por email desde Netto. Caducan a los 7 días y se pueden reenviar. Tu gestoría entra con un perfil de solo vista.', l: ['Roles de administrador y miembro', 'Perfil de gestoría sin poder marcar cobros', 'Invitaciones que caducan'], visual: 'invitaciones' },
+      { t: 'Invita a tu equipo y a tu gestoría', d: 'Envía invitaciones por email desde Netto. Caducan a los 7 días y se pueden reenviar. Tu gestoría entra con su propio perfil: ve tus facturas y gastos sin tocarlos.', l: ['Roles de administrador y miembro', 'Perfil de gestoría sin poder marcar cobros', 'Invitaciones que caducan'], visual: 'invitaciones' },
       { t: 'Varias empresas, una sola cuenta', d: '¿Llevas más de una sociedad? Cambia de empresa con un toque, cada una con sus datos, su marca y su equipo.', l: ['Cambio de empresa al instante', 'Datos separados por empresa', 'Marca propia en cada una'], visual: 'empresas' },
     ],
     faqs: [['¿Cuántos usuarios puedo tener?', 'Depende del plan: desde 1 en Autónomos Esencial hasta ilimitados en Grandes empresas Plus.']],
@@ -155,7 +155,7 @@ export const SEGMENTOS = [
       ['Facturas en Word o Excel', 'Plantilla profesional, numeración correlativa y Verifactu en cada factura.'],
       ['Tickets perdidos en la cartera', 'Foto al ticket y la IA lo apunta por ti.'],
       ['Sustos con el IVA y el 130', 'Tus modelos calculados y lo que debes apartar, siempre a la vista.'],
-      ['Mil correos con tu gestoría', 'Acceso de solo vista o el paquete trimestral en un clic.'],
+      ['Mil correos con tu gestoría', 'Acceso para tu gestoría o el paquete trimestral en un clic.'],
     ],
     funciones: ['facturacion', 'gastos', 'impuestos', 'asistente'],
   },
@@ -178,7 +178,7 @@ export const SEGMENTOS = [
     dolores: [
       ['Varias sociedades, varias herramientas', 'Todas tus empresas en una cuenta, cambiando con un toque.'],
       ['Accesos que nadie controla', 'Roles y permisos por área, e invitaciones que caducan.'],
-      ['Auditorías y gestorías', 'Perfiles de solo vista y exportaciones completas.'],
+      ['Auditorías y gestorías', 'Perfiles para gestorías y exportaciones completas.'],
       ['Implantaciones eternas', 'Incorporación guiada y migración de tus datos.'],
     ],
     funciones: ['equipo', 'tesoreria', 'impuestos', 'banco'],
@@ -242,7 +242,7 @@ export const PERSONALIZADO = ['Más empresas, usuarios o empleados', 'Plantillas
 export const FAQ_GENERAL = [
   ['¿Puedo traer mis datos de otro programa?', 'Sí. Netto importa tus clientes y facturas desde Holded y desde archivos de otras plataformas, sin que tengas que volver a teclear nada.'],
   ['¿Qué pasa cuando acaba la prueba?', 'Nada se borra. Eliges plan o te llevas tus datos: puedes exportar tus facturas y registros en cualquier momento.'],
-  ['¿Puede mi gestoría entrar?', 'Sí. La invitas por email con un perfil de solo vista: ve facturas, gastos e impuestos, pero no puede marcar cobros ni tocar nada.'],
+  ['¿Puede mi gestoría entrar?', 'Sí. La invitas por email con el perfil de gestoría: ve tus facturas, gastos e impuestos sin poder marcar cobros ni crear facturas, y lleva las nóminas de tu equipo si se las dejas.'],
   ['¿Funciona en el móvil?', 'Se instala como app desde el navegador, con barra de pestañas en el móvil y panel lateral en el ordenador. La app para iPhone está en preparación.'],
   ['¿Se conecta con mi banco?', 'De momento trabajas con extractos (Norma 43, CSV o Excel), que Netto concilia solo. La conexión directa con el banco está en camino.'],
 ];

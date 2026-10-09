@@ -6,7 +6,7 @@ export const metadata = { title: 'Seguridad · Netto', description: 'Cómo prote
 
 const MEDIDAS = [
   { i: 'candado', t: 'Face ID, huella o llave de acceso', d: 'Bloquea Netto en tu móvil y ábrelo con tu cara, tu huella o una llave de acceso (passkey), además de tu contraseña.' },
-  { i: 'equipo', t: 'Permisos por área', d: 'Cada usuario ve solo lo que necesita: resumen, facturar, gastos, nóminas o usuarios. Tu gestoría, en modo solo vista.' },
+  { i: 'equipo', t: 'Permisos por área', d: 'Cada usuario ve solo lo que necesita: resumen, facturar, gastos, nóminas o usuarios. Tu gestoría ve tus facturas y gastos sin tocarlos.' },
   { i: 'escudo', t: 'Protección contra suplantación', d: 'Todas las acciones que cambian datos se comprueban para que solo puedan venir de la propia app (protección anti-CSRF).' },
   { i: 'llave', t: 'Conexión siempre cifrada', d: 'Netto solo funciona por HTTPS, con HSTS para que tu navegador nunca se conecte sin cifrar.' },
   { i: 'documento', t: 'Archivos revisados', d: 'Los Excel que subes se revisan antes de abrirlos para frenar archivos manipulados, y los CSV que descargas no pueden ejecutar fórmulas maliciosas.' },
