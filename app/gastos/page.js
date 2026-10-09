@@ -17,6 +17,8 @@ import Link from 'next/link';
 import { proveedores } from '@/lib/proveedores';
 import '@/app/proveedores.css';
 
+import '@/app/mk.css';
+
 export const dynamic = 'force-dynamic';
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 const diaMes = (f) => new Date(`${f}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
@@ -55,7 +57,7 @@ export default async function Gastos({ searchParams }) {
   }
 
   return (
-    <main className="pagina gastos">
+    <main className="pagina mk-look gastos">
       <header className="cabecera">
         <h1 className="titulo">Gastos</h1>
       </header>

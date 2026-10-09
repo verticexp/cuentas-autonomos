@@ -8,6 +8,8 @@ import { puede } from '@/lib/permisos';
 import SinBD from '@/components/SinBD';
 import FilaFactura from '@/components/FilaFactura';
 
+import '@/app/mk.css';
+
 export const dynamic = 'force-dynamic';
 
 export default async function Presupuestos() {
@@ -18,7 +20,7 @@ export default async function Presupuestos() {
   const lista = todos.sort((a, b) => b.fecha.localeCompare(a.fecha) || b.numero - a.numero);
   const abiertos = lista.filter((p) => ['pendiente', 'aceptado'].includes(estadoDe(p, h)));
   return (
-    <main className="pagina">
+    <main className="pagina mk-look">
       <header className="cabecera">
         <h1 className="titulo">Presupuestos</h1>
         {puede(u, 'facturar') && <Ir href="/presupuestos/nuevo" tipo="subir" className="boton pequeno">Nuevo</Ir>}

@@ -13,6 +13,8 @@ import { conectarVisible } from '@/lib/enableBanking';
 import '@/app/tesoreria.css';
 import '@/app/banco.css';
 
+import '@/app/mk.css';
+
 export const dynamic = 'force-dynamic';
 const HORIZONTES = [3, 6, 12];
 const TIPO = { cobro: 'Cobro', pago: 'Pago', hacienda: 'Hacienda' };
@@ -28,7 +30,7 @@ export default async function Tesoreria({ searchParams }) {
   const alto = Math.max(1, ...p.meses.map((m) => Math.abs(m.saldo)), Math.abs(p.inicial));
 
   return (
-    <main className="pagina tesoreria">
+    <main className="pagina mk-look tesoreria">
       <Volver href="/">Resumen</Volver>
       <h1 className="titulo">Tesorería</h1>
       <nav className="segmentado">
