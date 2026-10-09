@@ -10,6 +10,8 @@ import SinBD from '@/components/SinBD';
 import Banco from '@/components/Banco';
 import '@/app/banco.css';
 
+import '@/app/mk.css';
+
 export const dynamic = 'force-dynamic';
 
 const ERRORES = {
@@ -44,7 +46,7 @@ export default async function PaginaBanco({ searchParams }) {
   const aviso = q.error ? { error: true, texto: ERRORES[q.error] || 'No se pudo conectar el banco.' } : n ? { texto: n === 1 ? '✓ Cuenta conectada' : `✓ ${n} cuentas conectadas` } : null;
 
   return (
-    <main className="pagina banco">
+    <main className="pagina mk-look banco">
       <Volver href="/tesoreria">Tesorería</Volver>
       <h1 className="titulo">Banco</h1>
       <Banco

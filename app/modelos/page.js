@@ -13,6 +13,8 @@ import Ir from '@/components/Ir';
 import SinBD from '@/components/SinBD';
 import '@/app/modelos.css';
 
+import '@/app/mk.css';
+
 export const dynamic = 'force-dynamic';
 const T = [1, 2, 3, 4];
 const MES = ['abril', 'julio', 'octubre'];
@@ -52,7 +54,7 @@ export default async function Modelos({ searchParams }) {
   const hay111 = f.trabajadores || nominas?.length > 0 || conRetencion;
 
   return (
-    <main className="pagina modelos">
+    <main className="pagina mk-look modelos">
       <Volver href="/">Resumen</Volver>
       <header className="cabecera modelos-cab">
         <h1 className="titulo">Impuestos</h1>

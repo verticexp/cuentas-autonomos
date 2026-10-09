@@ -11,6 +11,8 @@ import { ahoraMadrid } from '@/lib/jornada';
 import CambiarEmpresa from '@/components/CambiarEmpresa';
 import '@/app/empresas.css';
 
+import '@/app/mk.css';
+
 export const dynamic = 'force-dynamic';
 
 const Celda = ({ href, ico, titulo, detalle, aviso }) => (
@@ -31,7 +33,7 @@ export default async function Page() {
   const modo = modoDe(u);
   const { yo } = await miEmpleado(u, ahoraMadrid().slice(0, 10));
   return (
-    <main className="pagina">
+    <main className="pagina mk-look">
       <h1 className="titulo">Ajustes</h1>
       <div className="perfil">
         <Avatar nombre={u.nombre} size={48} />
