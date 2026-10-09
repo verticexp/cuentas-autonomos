@@ -12,6 +12,7 @@ import { puede } from '@/lib/permisos';
 import Deslizable from '@/components/Deslizable';
 import Buscar from '@/components/Buscar';
 import '@/app/recurrentes.css';
+import '@/app/mk.css';
 
 export const dynamic = 'force-dynamic';
 const diaMes = (f) => new Date(`${f}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
@@ -50,7 +51,7 @@ export default async function Facturas({ searchParams }) {
   };
 
   return (
-    <main className="pagina">
+    <main className="pagina mk-look">
       <header className="cabecera">
         <h1 className="titulo">Facturas</h1>
         {puede(u, 'facturar') && <Ir href="/facturas/nueva" tipo="subir" className="boton pequeno">Nueva factura</Ir>}
