@@ -1,9 +1,11 @@
 import { requerir } from '@/lib/auth';
 import { puede } from '@/lib/permisos';
-import { clave, leer, redis } from '@/lib/redis';
+import { clave, leer, leerUno, redis } from '@/lib/redis';
 import { fiscalDe } from '@/lib/empresa';
 import { informe } from '@/lib/contabilidad';
 import { CUENTAS } from '@/lib/asientos';
+import { cuentasAnuales, ESTRUCTURA_BALANCE, LINEAS_PYG, SECCIONES } from '@/lib/cuentasAnuales';
+import FormCuentasAnuales from '@/components/CuentasAnuales';
 import { eur, fechaCorta, hoy } from '@/lib/formato';
 import Volver from '@/components/Volver';
 import Ir from '@/components/Ir';
@@ -17,7 +19,7 @@ import '@/app/contabilidad.css';
 import '@/app/mk.css';
 
 export const dynamic = 'force-dynamic';
-const VISTAS = [['pyg', 'Resultados'], ['balance', 'Balance'], ['diario', 'Diario'], ['sumas', 'Sumas y saldos'], ['mayor', 'Mayor'], ['bienes', 'Amortizaciones']];
+const VISTAS = [['pyg', 'Resultados'], ['balance', 'Balance'], ['diario', 'Diario'], ['sumas', 'Sumas y saldos'], ['mayor', 'Mayor'], ['bienes', 'Amortizaciones'], ['anuales', 'Cuentas anuales']];
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 const ORIGEN = { factura: (id) => `/facturas/${encodeURIComponent(id)}`, gasto: (id) => `/gastos/${encodeURIComponent(id)}`, nomina: (id) => `/nominas/${encodeURIComponent(id)}` };
 const TIPO = { apertura: 'Apertura', manual: 'Manual', amortizacion: 'Amortización', impuesto: 'Impuestos', cierre: 'Cierre', regularizacion: 'Cierre', factura: 'Factura', gasto: 'Gasto', nomina: 'Nómina' };
@@ -59,6 +61,11 @@ export default async function Contabilidad({ searchParams }) {
   const visibles = (ids) => A.partidas.filter((x) => ids.includes(x.id) && (x.importe || ant(x.id) || x.id === 'cifra'));
   const totalLibro = (k) => d.libro.reduce((s, b) => s + b[k], 0);
   const escribe = puede(u, 'resumen');
+  const ca = ver === 'anuales' && sociedad && cuentasAnuales({ asientos: d.asientos, gastos, nominas: nominas || [], empresa: u, anio, guardado: (await leerUno(u, 'cuentasAnuales', String(anio))) || {} });
+  const cerrado = anio < actual;
+  // Filas del balance oficial con importe en alguno de los dos años (las masas, siempre).
+  const filasBalance = (nodos, nivel = 0) => nodos.flatMap((n) => ((ca.bal[0].v[n.id] || ca.bal[1].v[n.id] || nivel === 0) ? [{ ...n, nivel }, ...(n.hijos ? filasBalance(n.hijos, nivel + 1) : [])] : []));
+  const FilaOf = ({ t, a, b, nivel = 0, fuerte }) => <div className={`cont-fila${fuerte ? ' cont-total' : ''}`} style={{ paddingLeft: nivel * 10 }}><span className="cont-n">{t}</span><span className="cont-cifras"><span>{eur(a)}</span><small>{eur(b)}</small></span></div>;
 
   return (
     <main className="pagina mk-look modelos contabilidad">
@@ -83,14 +90,14 @@ export default async function Contabilidad({ searchParams }) {
           <div className="tarjeta cont-tabla">
             <div className="cont-fila cont-cab"><span className="cont-n">Cuenta de pérdidas y ganancias</span><span className="cont-cifras"><span>{d.nombre.actual}</span>{B && <small>{d.nombre.anterior}</small>}</span></div>
             {visibles(['cifra', 'otrosIngresos', 'aprovisionamientos', 'personal', 'explotacion', 'amortizacion', 'excepcionales']).map((x) => <Partida key={x.id} p={x} ant={ant(x.id)} />)}
-            <Total n="A.1) Resultado de explotación" v={A.explotacion} ant={antDe((b) => b.explotacion)} />
+            <Total n="A) Resultado de explotación" v={A.explotacion} ant={antDe((b) => b.explotacion)} />
             {visibles(['ingresosFin', 'financieros']).map((x) => <Partida key={x.id} p={x} ant={ant(x.id)} />)}
-            <Total n="A.2) Resultado financiero" v={A.financiero} ant={antDe((b) => b.financiero)} />
-            <Total n="A.3) Resultado antes de impuestos" v={A.antes} ant={antDe((b) => b.antes)} />
+            <Total n="B) Resultado financiero" v={A.financiero} ant={antDe((b) => b.financiero)} />
+            <Total n="C) Resultado antes de impuestos" v={A.antes} ant={antDe((b) => b.antes)} />
             {visibles(['impuesto']).map((x) => <Partida key={x.id} p={x} ant={ant(x.id)} />)}
-            <Total n="A.4) Resultado del ejercicio" v={A.resultado} ant={antDe((b) => b.resultado)} />
+            <Total n="D) Resultado del ejercicio" v={A.resultado} ant={antDe((b) => b.resultado)} />
           </div>
-          <p className="grupo-pie">{B && d.parcial ? `${d.nombre.anterior}: hasta el ${fechaCorta(`${anio - 1}-${h.slice(5)}`)}, para comparar lo mismo. ` : ''}{A.partidas[0].importe ? `Margen antes de impuestos: ${A.margen.toLocaleString('es-ES')} %. ` : ''}Modelo abreviado del plan general contable de pymes, sacado del libro diario. Toca cada partida para ver sus cuentas.{sociedad ? ' El Impuesto sobre Sociedades se contabiliza al cerrar el año.' : ' Como autónomo, el IRPF no es gasto de la actividad: no aparece aquí.'}</p>
+          <p className="grupo-pie">{B && d.parcial ? `${d.nombre.anterior}: hasta el ${fechaCorta(`${anio - 1}-${h.slice(5)}`)}, para comparar lo mismo. ` : ''}{A.partidas[0].importe ? `Margen antes de impuestos: ${A.margen.toLocaleString('es-ES')} %. ` : ''}Modelo del plan general contable de pymes, sacado del libro diario. Toca cada partida para ver sus cuentas.{sociedad ? ' El Impuesto sobre Sociedades se contabiliza al cerrar el año.' : ' Como autónomo, el IRPF no es gasto de la actividad: no aparece aquí.'}</p>
         </section>
       </>}
 
@@ -212,6 +219,62 @@ export default async function Contabilidad({ searchParams }) {
           <p className="grupo-pie">Libro registro de bienes de inversión. Cada bien se amortiza por días desde la compra con el coeficiente máximo de la tabla oficial ({sociedad ? 'Ley del Impuesto sobre Sociedades' : 'estimación directa simplificada'}); lo que vale 300 € o menos, entero el año de compra. Cada trimestre va un asiento de amortización al diario; el IVA de la compra se deduce entero en el 303 (casillas 30 y 31).</p>
         </section>
       )}
+
+      {ver === 'anuales' && !sociedad && (
+        <section className="bloque">
+          <div className="vacio"><p>Los autónomos no depositan cuentas anuales</p><p>El depósito en el Registro Mercantil es para las sociedades. Como autónomo, con el libro diario, los libros registro y el de bienes de inversión que ya lleva Netto cumples; descárgalos en Excel abajo.</p></div>
+        </section>
+      )}
+
+      {ca && <>
+        <section className="bloque">
+          {!cerrado && <p className="cont-alerta">El ejercicio {anio} aún no ha terminado: esto es un borrador con lo apuntado hasta hoy. Las cuentas de {anio - 1} están en el año anterior (‹).</p>}
+          <div className="cont-resumen">
+            <div><span>Modelo</span><strong>{ca.modelo.nombre}</strong></div>
+            <div><span>Total activo</span><strong>{eur(ca.tamano.activo)}</strong></div>
+            <div><span>Cifra de negocios</span><strong>{eur(ca.tamano.cifra)}</strong></div>
+          </div>
+          <p className="grupo-pie">{ca.modelo.detalle} {ca.cuadra ? 'El balance cuadra.' : 'Ojo: el balance no cuadra; revisa los asientos manuales.'}</p>
+          <div className="grupo-c">
+            {[['Formular las cuentas (administradores)', ca.plazos.formular], ['Aprobarlas en junta de socios', ca.plazos.aprobar], ['Depositarlas en el Registro Mercantil', ca.plazos.depositar]].map(([t, f]) => (
+              <div key={t} className="celda"><span className="txt">{t}<small>Hasta el {fechaCorta(f)}{h > f ? ' · plazo pasado' : ''}</small></span></div>
+            ))}
+          </div>
+          <p className="grupo-pie">El depósito es de un mes desde la aprobación: la fecha es la máxima si la junta se celebra el último día.</p>
+        </section>
+
+        <section className="bloque">
+          <h2 className="grupo-t">Balance de pymes a 31-12-{anio}</h2>
+          <div className="tarjeta cont-tabla">
+            <div className="cont-fila cont-cab"><span className="cont-n">Activo</span><span className="cont-cifras"><span>{anio}</span><small>{anio - 1}</small></span></div>
+            {filasBalance(ESTRUCTURA_BALANCE.activo).map((n) => <FilaOf key={n.id} t={n.t} a={ca.bal[0].v[n.id]} b={ca.bal[1].v[n.id]} nivel={n.nivel} fuerte={n.nivel === 0} />)}
+            <FilaOf t="TOTAL ACTIVO" a={ca.bal[0].activo} b={ca.bal[1].activo} fuerte />
+          </div>
+          <div className="tarjeta cont-tabla">
+            <div className="cont-fila cont-cab"><span className="cont-n">Patrimonio neto y pasivo</span><span className="cont-cifras"><span>{anio}</span><small>{anio - 1}</small></span></div>
+            {filasBalance(ESTRUCTURA_BALANCE.pasivo).map((n) => <FilaOf key={n.id} t={n.t} a={ca.bal[0].v[n.id]} b={ca.bal[1].v[n.id]} nivel={n.nivel} fuerte={n.nivel === 0} />)}
+            <FilaOf t="TOTAL PATRIMONIO NETO Y PASIVO" a={ca.bal[0].pasivo} b={ca.bal[1].pasivo} fuerte />
+          </div>
+        </section>
+
+        <section className="bloque">
+          <h2 className="grupo-t">Pérdidas y ganancias de pymes de {anio}</h2>
+          <div className="tarjeta cont-tabla">
+            {LINEAS_PYG.flatMap((l) => [
+              ...(l.id === 13 ? [<FilaOf key="A" t="A) Resultado de explotación" a={ca.pyg[0].A} b={ca.pyg[1].A} fuerte />] : []),
+              ...(l.id === 18 ? [<FilaOf key="B" t="B) Resultado financiero" a={ca.pyg[0].B} b={ca.pyg[1].B} fuerte />, <FilaOf key="C" t="C) Resultado antes de impuestos" a={ca.pyg[0].C} b={ca.pyg[1].C} fuerte />] : []),
+              ...(ca.pyg[0].v[l.id] || ca.pyg[1].v[l.id] ? [<FilaOf key={l.id} t={l.t} a={ca.pyg[0].v[l.id]} b={ca.pyg[1].v[l.id]} nivel={1} />] : []),
+            ])}
+            <FilaOf t="D) Resultado del ejercicio" a={ca.pyg[0].D} b={ca.pyg[1].D} fuerte />
+          </div>
+        </section>
+
+        <section className="bloque">
+          {escribe && <FormCuentasAnuales anio={anio} datos={ca.datos} memoria={ca.memoria} borrador={ca.borrador} secciones={SECCIONES} />}
+          <a className="boton cont-excel" href={`/api/cuentas-anuales?anio=${anio}`} download>Descargar las cuentas anuales (PDF)</a>
+          <p className="grupo-pie">El PDF lleva la portada, el balance y la cuenta de pérdidas y ganancias de pymes con {anio - 1} al lado, el estado de cambios en el patrimonio neto, la memoria, la hoja de formulación para que la firmen los administradores y el certificado de aprobación de la junta. Para depositarlas, el Registro pide sus modelos oficiales (los del Colegio de Registradores o la aplicación D2): copia estas cifras, que siguen los mismos epígrafes, o pásale el PDF a tu gestor.</p>
+        </section>
+      </>}
 
       <a className="boton sec cont-excel" href={`/api/contabilidad?anio=${anio}${p ? `&p=${p}` : ''}`} download>Descargar en Excel</a>
       <p className="grupo-pie arriba">Libro diario, mayor, sumas y saldos, pérdidas y ganancias, balance y bienes de inversión de {anio}, en una sola hoja de cálculo para tu gestor.</p>

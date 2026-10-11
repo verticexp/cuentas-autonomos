@@ -126,3 +126,28 @@ test('asiento manual: tiene que cuadrar y las cuentas ser del plan', () => {
   assert.match(limpiarAsiento({ fecha: '2026-01-10', concepto: 'X', lineas: [{ cuenta: '572', debe: 10 }, { cuenta: '170', haber: 9 }] }).error, /No cuadra/);
   assert.match(limpiarAsiento({ fecha: '2026-01-10', concepto: 'X', lineas: [{ cuenta: '9', debe: 10 }, { cuenta: '170', haber: 10 }] }).error, /no es válida/);
 });
+
+test('cuentas anuales de pymes: epígrafes, cuadre, aplicación del resultado y modelo', async () => {
+  const { cuentasAnuales, epigrafe } = await import('../lib/cuentasAnuales.js');
+  assert.equal(epigrafe('572', 100), 'B.VI');
+  assert.equal(epigrafe('572', -100), 'PC.II.1'); // descubierto: deuda con el banco
+  assert.equal(epigrafe('4750', -50), 'PC.IV.2');
+  assert.equal(epigrafe('4700', 50), 'B.II.3');
+  assert.equal(epigrafe('281', -10), 'A.II');
+  const facturas = [{ id: 'f', numero: 1, anio: 2025, fecha: '2025-03-01', actividad: 'a', base: 10000, ivaPct: 21, irpfPct: 0, cobrada: true, cliente: { nombre: 'X' } }];
+  const gastos = [{ ...portatil, fecha: '2025-01-01', inversion: { tipo: 'informatica' } }, { id: 'g', fecha: '2025-02-01', concepto: 'Gestoría', base: 1000, ivaPct: 21 }];
+  const manuales = [asientoApertura({ fecha: '2025-01-01', banco: 3000, capital: 3000 }, true)];
+  const fiscal = { tipo: 'sociedad', iva: 'general' };
+  const A = generarAsientos({ facturas, gastos, manuales, fiscal, pagos130: { 2025: { 1: 0, 2: 0, 3: 0, 4: 0 } }, cuotaIS: {} }, '2026-05-01');
+  const c = cuentasAnuales({ asientos: A, gastos, empresa: { emisor: { nombre: 'X S.L.', nif: 'B1' } }, anio: 2025 });
+  assert.ok(c.cuadra);
+  assert.equal(c.bal[0].v['PA1.I.1'], 3000);
+  assert.equal(c.pyg[0].v[1], 10000);
+  assert.equal(c.pyg[0].v[8], -250); // portátil: 25 % de 1.000 € (tabla de sociedades)
+  assert.equal(c.modelo.id, 'micro');
+  // Reserva legal: el 10 % del resultado, hasta el 20 % del capital (600 €); igual en la memoria y en el cierre.
+  assert.match(c.memoria[3], /a reserva legal, 600,00 €/);
+  const aplicacion = A.find((a) => a.concepto === 'Aplicación del resultado de 2025');
+  assert.equal(aplicacion.lineas.find((l) => l.cuenta === '112').haber, 600);
+  assert.equal(c.ecpn.final.total, c.bal[0].v.PA);
+});
