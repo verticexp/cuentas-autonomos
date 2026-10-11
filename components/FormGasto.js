@@ -22,10 +22,12 @@ async function reducir(archivo) {
 }
 
 // plegado: en la lista de gastos empieza como una tarjeta con «Escanear ticket»; el formulario se abre al escanear o al pedirlo.
-export default function FormGasto({ hoy, gasto, actividades, alquiler = false, retenciones = false, plegado = false, regimen = 'autonomo' }) {
+export default function FormGasto({ hoy, gasto, actividades, alquiler = false, retenciones = false, plegado = false, regimen = 'autonomo', movimiento = null }) {
   const router = useRouter();
   const vacio = { fecha: hoy, actividad: actividades[0].id, concepto: '', proveedor: '', base: '', ivaPct: 21 };
-  const [g, setG] = useState(gasto ? { ...gasto, base: String(gasto.base).replace('.', ',') } : vacio);
+  // Desde un cargo del banco sin gasto: fecha, proveedor e importe del banco (base estimada al 21 %, hasta leer la factura).
+  const delBanco = movimiento && { ...vacio, fecha: movimiento.fecha, concepto: movimiento.contraparte || movimiento.concepto, proveedor: movimiento.contraparte || '', base: String(Math.round((Math.abs(movimiento.importe) / 1.21) * 100) / 100).replace('.', ','), banco: movimiento.id };
+  const [g, setG] = useState(gasto ? { ...gasto, base: String(gasto.base).replace('.', ',') } : delBanco || vacio);
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
   const poner = (k, v) => setG((x) => ({ ...x, [k]: v }));
@@ -54,7 +56,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, r
     setEnviando(true); setError('');
     try {
       await llamar('/api/gastos', { method: gasto ? 'PATCH' : 'POST', body: JSON.stringify(g) });
-      if (gasto) { navegar(router, '/gastos', 'atras'); router.refresh(); return; }
+      if (gasto || movimiento) { navegar(router, '/gastos', 'atras'); router.refresh(); return; }
       setG(vacio);
       setLeyendo('');
       if (plegado) { setAbierto(false); setHecho(true); }
@@ -82,7 +84,8 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, r
 
   return (
     <form className="formulario tarjeta" onSubmit={enviar}>
-      <h3>{gasto ? 'Editar gasto' : 'Añadir gasto deducible'}</h3>
+      <h3>{gasto ? 'Editar gasto' : movimiento ? 'Gasto del banco' : 'Añadir gasto deducible'}</h3>
+      {movimiento && <p className="nota">Cargo del {movimiento.fecha.split('-').reverse().join('-')} por {Math.abs(movimiento.importe).toLocaleString('es-ES', { minimumFractionDigits: 2 })} € ({movimiento.concepto}). Sube la factura para que Netto lea la base y el IVA; al guardar queda emparejado con el banco.</p>}
       {actividades.length > 1 && <Deslizable className={`tipo ${actividades.length === 2 ? 'dos' : 'varias'}`}>
         {actividades.map(({ id, nombre }) => (
           <button type="button" key={id} className={g.actividad === id ? 'activo' : ''} onClick={() => poner('actividad', id)}>{nombre}</button>
@@ -144,6 +147,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, r
       <div className="gasto-guardar">
         <button className="boton" disabled={enviando}>{enviando ? 'Guardando…' : gasto ? 'Guardar cambios' : 'Añadir'}</button>
         {plegado && !gasto && <button type="button" className="boton sec" onClick={() => { setAbierto(false); setG(vacio); setLeyendo(''); setError(''); }}>Cancelar</button>}
+        {movimiento && <button type="button" className="boton sec" onClick={() => navegar(router, '/gastos', 'atras')}>Cancelar</button>}
       </div>
     </form>
   );

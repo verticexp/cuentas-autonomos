@@ -20,6 +20,39 @@ function Importe({ v }) {
   return <span className={`bco-imp ${v > 0 ? 'teso-in' : 'teso-out'}`}>{v > 0 ? '+' : '−'}{eur(Math.abs(v))}</span>;
 }
 
+const AYUDA = {
+  gasto: 'Apúntalo con su factura: Netto lee la base y el IVA y lo deja emparejado.',
+  comision: 'Se apunta como gasto bancario, sin IVA (no hace falta factura).',
+  cuota: 'Se apunta como gasto de Seguridad Social del titular, sin IVA.',
+  hacienda: 'Ya lo contabiliza Netto con cada liquidación: marca el trimestre como presentado en el Resumen.',
+  seguridad: 'Ya lo contabiliza Netto con las nóminas.',
+  nomina: 'Ya lo contabiliza Netto con las nóminas.',
+  prestamo: 'Se apunta contra el préstamo: la devolución, a la deuda; los intereses, a gastos financieros.',
+  socio: 'Se apunta en la cuenta corriente con los socios.',
+  traspaso: 'No cambia nada en tus cuentas: se aparta.',
+  ingreso: 'Si es el cobro de una factura que no está en Netto, mejor créala; si no, se apunta como otro ingreso.',
+};
+
+// Sin factura ni gasto: qué es (Netto propone una opción por el concepto) y apuntarlo con un toque.
+function QueEs({ m, accion }) {
+  const [clase, setClase] = useState(m.clase);
+  const [intereses, setIntereses] = useState('');
+  return (
+    <div className="bco-quees">
+      <label className="bco-quees-t">Netto cree que es
+        <select className="campo" value={clase} onChange={(e) => setClase(e.target.value)}>{m.clases.map(([k, t]) => <option key={k} value={k}>{t}</option>)}</select>
+      </label>
+      {clase === 'prestamo' && m.importe < 0 && <input className="campo" inputMode="decimal" placeholder="De esta cuota, intereses (opcional)" value={intereses} onChange={(e) => setIntereses(e.target.value.replace(',', '.'))} />}
+      <p className="bco-nota">{AYUDA[clase]}</p>
+      <div className="bco-botones">
+        {clase === 'gasto'
+          ? <Link href={`/gastos?banco=${encodeURIComponent(m.id)}`} className="boton pequeno">Añadir con su factura</Link>
+          : <button className="boton pequeno" onClick={() => accion({ accion: 'contabilizar', id: m.id, clase, intereses })}>{['hacienda', 'seguridad', 'nomina'].includes(clase) ? 'Entendido' : clase === 'traspaso' ? 'Apartar' : 'Apuntar'}</button>}
+      </div>
+    </div>
+  );
+}
+
 // Un movimiento por confirmar o sin pareja: confirmar la sugerencia, elegir otra o ignorarlo.
 function Pendiente({ m, permisos, accion }) {
   const [eligiendo, setEligiendo] = useState(false);
@@ -40,6 +73,7 @@ function Pendiente({ m, permisos, accion }) {
           <Link href={s.url} prefetch={false} className="bco-sug-d">{s.texto}<small>{fechaCorta(s.fecha)} · {eur(s.importe)}{s.pendiente ? ' · sin pagar' : ''}</small></Link>
         </div>
       )}
+      {puedeAqui && !s && !eligiendo && <QueEs m={m} accion={accion} />}
       {puedeAqui && (eligiendo ? (
         <div className="bco-elegir">
           <select className="campo" value={elegida} onChange={(e) => setElegida(e.target.value)} aria-label={m.importe > 0 ? 'Factura' : 'Gasto'}>
@@ -168,7 +202,7 @@ export default function Banco({ cuentas, pendientes, emparejados, ignorados, avi
               <strong>Sube tu primer extracto</strong>
               <p>Arrástralo aquí o elígelo con «Subir extracto». Netto empareja cada cobro con su factura y cada pago con su gasto.</p>
               <ol>
-                <li><span><b>Descárgalo</b> de tu banca online en Norma 43, CSV o Excel.</span></li>
+                <li><span><b>Descárgalo</b> de tu banca online en Norma 43, CSV, Excel o PDF.</span></li>
                 <li><span><b>Súbelo</b> aquí. Si lo subes dos veces, no se duplica nada.</span></li>
                 <li><span><b>Confirma</b> los emparejamientos: la factura queda cobrada con la fecha del banco.</span></li>
               </ol>
@@ -179,9 +213,9 @@ export default function Banco({ cuentas, pendientes, emparejados, ignorados, avi
           {permisos.empresa && listo && <button className="boton pequeno" onClick={() => setConectando(true)}>Conectar banco</button>}
           {conectadas.length > 0 && (permisos.facturar || permisos.gastar) && <button className="boton pequeno sec" onClick={() => actualizar(true)}>Actualizar</button>}
           {(permisos.facturar || permisos.gastar) && <button className="boton pequeno sec" onClick={() => fichero.current?.click()}>Subir extracto</button>}
-          {(permisos.facturar || permisos.gastar) && <input ref={fichero} type="file" hidden accept=".csv,.xlsx,.txt,.n43,.aeb,.q43,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={subir} aria-label="Extracto del banco" />}
+          {(permisos.facturar || permisos.gastar) && <input ref={fichero} type="file" hidden accept=".csv,.xlsx,.txt,.n43,.aeb,.q43,.pdf,text/csv,text/plain,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={subir} aria-label="Extracto del banco" />}
         </div>
-        {(permisos.facturar || permisos.gastar) && cuentas.length > 0 && <p className="bco-nota">Extracto: descárgalo de tu banca online en formato Norma 43 (cuaderno 43), CSV o Excel (.xlsx).</p>}
+        {(permisos.facturar || permisos.gastar) && cuentas.length > 0 && <p className="bco-nota">Extracto: descárgalo de tu banca online en Norma 43 (cuaderno 43), CSV, Excel (.xlsx) o PDF. Súbelo cada mes: lo que no case con tus facturas y gastos te sale para revisar.</p>}
       </section>
 
       {conectando && <Conectar cerrar={() => setConectando(false)} />}

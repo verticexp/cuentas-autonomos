@@ -83,3 +83,7 @@
   .bco-conectar .bco-bancos { columns: 2; column-gap: 24px; max-height: none; }
   .bco-conectar .bco-bancos li { break-inside: avoid; }
 }
+.bco-quees { margin-top: 8px; padding: 10px 12px; border-radius: 12px; background: var(--relleno); }
+.bco-quees-t { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+.bco-quees .campo { margin: 4px 0 0; }
+.bco-quees .bco-nota { margin: 6px 0; }

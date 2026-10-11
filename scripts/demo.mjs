@@ -8,6 +8,8 @@ import { Redis } from '@upstash/redis';
 import { numeroFactura, siguienteNumero } from '../lib/calculos.js';
 import { borradorSociedades, modelo202 } from '../lib/modelos.js';
 import { asientoApertura, generarAsientos, mayor } from '../lib/asientos.js';
+import { idMovimiento } from '../lib/banco.js';
+import { importes } from '../lib/calculos.js';
 
 const { KV_REST_API_URL: url, KV_REST_API_TOKEN: token, DEMO_PASSWORD: password } = process.env;
 if (!url || !token) throw new Error('Faltan KV_REST_API_URL y KV_REST_API_TOKEN');
@@ -23,7 +25,7 @@ if (password ? password.length < 8 : !passPrevia) throw new Error('DEMO_PASSWORD
 const sal = randomBytes(16).toString('hex');
 const pass = password ? `${sal}:${scryptSync(password, sal, 64).toString('hex')}` : passPrevia;
 const id = previo || randomBytes(4).toString('hex');
-await r.del(...['facturas', 'gastos', 'clientes', 'registros', 'verifactu', 'saldo', 'asientos'].map((n) => `${P}${n}:${id}`));
+await r.del(...['facturas', 'gastos', 'clientes', 'registros', 'verifactu', 'saldo', 'asientos', 'banco', 'bancos', 'cuentasAnuales'].map((n) => `${P}${n}:${id}`));
 
 const ACTIVIDADES = [
   { id: 'sonido-e-iluminacion', nombre: 'Sonido e iluminación', serie: '', ivaPct: 21, irpfPct: 0 },
@@ -163,4 +165,22 @@ await r.hset(`${P}asientos:${id}`, porId(asientos));
 const banco = mayor(generarAsientos({ facturas, gastos, manuales: asientos, fiscal: empresa.fiscal, pagos130, pagos202, cuotaIS }, hoy), '57', Y).final;
 await r.set(`${P}saldo:${id}`, { importe: banco, fecha: hoy });
 await r.hset(`${P}clientes:${id}`, porId(CLIENTES.map((c) => ({ id: c.nombre.toUpperCase(), ...c }))));
+// Extracto del último mes y medio, sin emparejar: los cobros de facturas pendientes y los pagos de gastos (Netto los
+// sugiere), y algunos cargos que no están en Netto (salen en Gastos › En revisión o para decir qué son en Banco).
+const desde = new Date(Date.parse(`${hoy}T12:00:00Z`) - 45 * 864e5).toISOString().slice(0, 10);
+const mas = (f, d) => new Date(Date.parse(`${f}T12:00:00Z`) + d * 864e5).toISOString().slice(0, 10);
+const movs = [];
+const mov = (fecha, importe, concepto, contraparte = '') => { if (fecha <= hoy && fecha >= desde) movs.push({ fecha, importe: Math.round(importe * 100) / 100, concepto, contraparte }); };
+for (const f of facturas.filter((x) => !x.cobrada && x.fecha >= mas(desde, -30)).slice(0, 4)) mov(mas(f.fecha, 12), importes(f).total, `TRANSFERENCIA FACTURA ${numeroFactura(f)}`, f.cliente.nombre);
+for (const g of gastos.filter((x) => x.fecha >= desde && !x.inversion && !/Nóminas/.test(x.concepto))) mov(g.fecha, -(g.base * (1 + g.ivaPct / 100)), `RECIBO ${g.concepto.toUpperCase()}`, g.proveedor || '');
+const m1 = hoy.slice(0, 8);
+mov(`${m1}02`, -86.9, 'COMPRA TARJETA AMAZON MARKETPLACE', 'AMAZON EU SARL');
+mov(`${m1}04`, -142.35, 'PAGO TPV LEROY MERLIN', 'LEROY MERLIN');
+mov(mas(desde, 10), -64.2, 'COMPRA TARJETA REPSOL', 'ESTACION REPSOL');
+mov(mas(desde, 5), -15, 'COMISION MANTENIMIENTO CUENTA');
+mov(mas(desde, 12), -1000, 'TRASPASO A CUENTA PROPIA');
+const conIds = movs.map((m, i) => ({ id: idMovimiento('extracto', m, i), cuenta: 'extracto', estado: 'pendiente', ...m }));
+await r.hset(`${P}banco:${id}`, porId(conIds));
+await r.hset(`${P}bancos:${id}`, { extracto: { id: 'extracto', nombre: 'CaixaBank', origen: 'extracto', subido: hoy, saldo: banco, fechaSaldo: hoy } });
+
 console.log(`Demo lista: ${EMAIL} · ${facturas.length} facturas · ${gastos.length} gastos · desde ${inicio.toISOString().slice(0, 10)}`);

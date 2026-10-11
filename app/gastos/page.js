@@ -4,7 +4,7 @@ import { importes, r2 } from '@/lib/calculos';
 import { actividadesDe, fiscalDe, nombresActividad } from '@/lib/empresa';
 import { DEDUCCIONES_GENERALES } from '@/lib/empresa';
 import { DEDUCCIONES, cubierta } from '@/lib/deducciones';
-import { eur, hoy } from '@/lib/formato';
+import { eur, fechaCorta, hoy } from '@/lib/formato';
 import SinBD from '@/components/SinBD';
 import FormGasto from '@/components/FormGasto';
 import Cuotas from '@/components/Cuotas';
@@ -15,6 +15,7 @@ import Deslizable from '@/components/Deslizable';
 import { puede } from '@/lib/permisos';
 import Link from 'next/link';
 import { proveedores } from '@/lib/proveedores';
+import { clasificar, sugerencias } from '@/lib/banco';
 import '@/app/proveedores.css';
 
 import '@/app/mk.css';
@@ -25,12 +26,18 @@ const diaMes = (f) => new Date(`${f}T12:00:00`).toLocaleDateString('es-ES', { da
 
 export default async function Gastos({ searchParams }) {
   const u = await requerir('gastos');
-  const gastos = await leer(u, 'gastos');
+  const [gastos, movs, facturas] = await Promise.all([leer(u, 'gastos'), leer(u, 'banco'), leer(u, 'facturas')]);
   if (!gastos) return <SinBD />;
-  const { q, estado } = await searchParams;
+  const { q, estado, banco } = await searchParams;
+  // En revisión: cargos del banco que no casan con ningún gasto y parecen un gasto (no impuestos, nóminas, préstamos…).
+  const sinPareja = (movs || []).filter((m) => (m.estado === 'pendiente' || !m.estado) && m.importe < 0);
+  const sug = sugerencias(movs || [], facturas || [], gastos);
+  const revision = sinPareja.filter((m) => !sug[m.id] && clasificar(m, { autonomo: fiscalDe(u).tipo === 'autonomo' }) === 'gasto').sort((a, b) => b.fecha.localeCompare(a.fecha));
+  const movimiento = banco && sinPareja.find((m) => m.id === banco);
   const buscado = String(q || '').trim().toLowerCase();
   const h = hoy();
-  const todos = gastos.sort((a, b) => b.fecha.localeCompare(a.fecha));
+  // Los bienes traídos de otro programa no son gastos de aquí: se ven en Contabilidad › Amortizaciones.
+  const todos = gastos.filter((g) => !g.migrado).sort((a, b) => b.fecha.localeCompare(a.fecha));
   const lista = todos
     .filter((g) => estado !== 'sinpagar' || g.pendiente)
     .filter((g) => !buscado || [g.concepto, g.proveedor, g.proveedorNif].some((t) => String(t || '').toLowerCase().includes(buscado)));
@@ -67,13 +74,33 @@ export default async function Gastos({ searchParams }) {
           <span>Este año, sin IVA <strong>{eur(r2(delAnio.reduce((s, g) => s + g.base, 0)))}</strong></span>
           <span>IVA que recuperas <strong>{eur(r2(delAnio.reduce((s, g) => s + importes(g).iva, 0)))}</strong></span>
           </>}
-          {puede(u, 'resumen') && todos.some((g) => g.inversion) && <Link href="/contabilidad?ver=bienes" className="prov-enlace">Bienes de inversión ›</Link>}
+          {puede(u, 'resumen') && gastos.some((g) => g.inversion) && <Link href="/contabilidad?ver=bienes" className="prov-enlace">Bienes de inversión ›</Link>}
           {provs.length > 0 && <Link href="/gastos/proveedores" className="prov-enlace">Proveedores{debes > 0 ? ` · debes ${eur(r2(debes))}` : ''} ›</Link>}
         </p>
       )}
 
+      {puede(u, 'gastar') && movimiento && <FormGasto key={movimiento.id} hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} movimiento={movimiento} />}
+
+      {puede(u, 'gastar') && !movimiento && revision.length > 0 && (
+        <section className="grupo gastos-revision">
+          <h2 className="grupo-t">En revisión · {revision.length}</h2>
+          <p className="grupo-pie arriba">Cargos de tu banco que no están en Netto. Añade cada uno con su factura para deducir el IVA; si no es un gasto (un traspaso, un préstamo…), dilo en Banco.</p>
+          <ul className="grupo-lista">
+            {revision.slice(0, 30).map((m) => (
+              <li key={m.id}>
+                <Ir href={`/gastos?banco=${encodeURIComponent(m.id)}`} className="fila">
+                  <span className="txt"><strong>{m.contraparte || m.concepto}</strong><small>{fechaCorta(m.fecha)} · {m.contraparte ? m.concepto : 'Banco'} · falta la factura</small></span>
+                  <span className="imp-col"><span className="imp">{eur(Math.abs(m.importe))}</span><span className="estado-txt e-pendiente">Añadir</span></span>
+                </Ir>
+              </li>
+            ))}
+          </ul>
+          {revision.length > 30 && <p className="grupo-pie"><Link href="/banco">Y {revision.length - 30} más en Banco ›</Link></p>}
+        </section>
+      )}
+
       {/* Primero lo que más se hace: escanear el ticket. El formulario entero se abre al escanear o al pedirlo. */}
-      {puede(u, 'gastar') && <FormGasto hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} plegado={todos.length > 0} />}
+      {puede(u, 'gastar') && !movimiento && <FormGasto hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} plegado={todos.length > 0} />}
 
       {todos.length > 5 && <Buscar action="/gastos" q={q} ocultos={{ estado }} placeholder="Buscar proveedor o concepto" />}
       {sinPagar > 0 && (

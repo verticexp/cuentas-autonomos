@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { acumulada, amortizacionesAnio, coeficiente, cuotaEntre, libroBienes } from '../lib/amortizaciones.js';
 import { categoriaDe, pareceBien, periodo } from '../lib/contabilidad.js';
 import { asientoApertura, balanceContable, diario, generarAsientos, limpiarAsiento, mayor, pygContable, sumasYSaldos } from '../lib/asientos.js';
-import { casillas303, resumenAnual } from '../lib/calculos.js';
+import { casillas303, r2, resumenAnual } from '../lib/calculos.js';
 import { borradorSociedades } from '../lib/modelos.js';
 
 const portatil = { id: 'b1', fecha: '2026-07-01', actividad: 'dj', concepto: 'Portátil', base: 1000, ivaPct: 21, inversion: { tipo: 'informatica' } };
@@ -150,4 +150,51 @@ test('cuentas anuales de pymes: epígrafes, cuadre, aplicación del resultado y 
   const aplicacion = A.find((a) => a.concepto === 'Aplicación del resultado de 2025');
   assert.equal(aplicacion.lineas.find((l) => l.cuenta === '112').haber, 600);
   assert.equal(c.ecpn.final.total, c.bal[0].v.PA);
+});
+
+test('migración: saldos de otro programa como apertura, fecha de corte y bienes con lo ya amortizado', async () => {
+  const { previa } = await import('../lib/importar.js');
+  const p = previa('saldos', [
+    ['Balance de sumas y saldos'], ['Cuenta', 'Descripción', 'Saldo deudor', 'Saldo acreedor'], ['1', 'FINANCIACIÓN BÁSICA', '', ''],
+    ['100', 'Capital social', 0, 3000], ['430', 'Clientes', 2000, 0], ['43000001', 'Cliente A', 2000, 0], ['4750', 'HP acreedora IVA', 0, 500],
+    ['572', 'Bancos', 4000, 0], ['Total', '', 6000, 3500],
+  ]);
+  assert.deepEqual(p.items.map((x) => x.estado), ['omitida', 'nuevo', 'agrupada', 'nuevo', 'nuevo', 'nuevo', 'omitida']);
+  assert.equal(p.descuadre, 2500); // sin cuentas de resultados: la diferencia irá a la 129
+  const b = previa('bienes', [['Fecha alta', 'Descripción', 'Cuenta', 'Valor de adquisición', 'Amortización acumulada'], ['01/01/2024', 'Furgoneta', '2180000', 20000, 6400]]);
+  const bien = { id: 'f1', actividad: 'a', ...b.items[0].datos, inversion: { ...b.items[0].datos.inversion, desde: '2026-01-01' } };
+  assert.equal(bien.inversion.tipo, 'transporte');
+
+  const apertura = { id: 'apertura', apertura: true, fecha: '2026-01-01', concepto: 'Apertura', lineas: [
+    { cuenta: '100', debe: 0, haber: 3000 }, { cuenta: '43000001', debe: 2000, haber: 0 }, { cuenta: '4750', debe: 0, haber: 500 }, { cuenta: '572', debe: 4000, haber: 0 },
+    { cuenta: '218', debe: 20000, haber: 0 }, { cuenta: '281', debe: 0, haber: 6400 }, { cuenta: '129', debe: 0, haber: 16100 }] };
+  // Una factura de antes del corte (ya está en clientes) que se cobra después: solo se apunta el cobro.
+  const facturas = [{ id: 'v', numero: 9, anio: 2025, fecha: '2025-12-10', actividad: 'a', base: 2000 / 1.21, ivaPct: 21, irpfPct: 0, cobrada: true, cobro: { fecha: '2026-01-15' }, cliente: { nombre: 'Cliente A' } }];
+  const A = generarAsientos({ facturas, gastos: [bien], manuales: [apertura], fiscal: { tipo: 'sociedad', iva: 'general' }, pagos130: { 2026: { 1: 0 } } }, '2026-04-30');
+  assert.ok(!A.some((a) => a.fecha < '2026-01-01'));
+  assert.ok(!A.some((a) => a.concepto.startsWith('Factura')));
+  assert.ok(A.some((a) => a.concepto.startsWith('Cobro de la factura') && a.fecha === '2026-01-15'));
+  // La furgoneta sigue desde lo amortizado (6.400 €) al 16 %: 90 días del 1T.
+  const am = A.find((a) => a.concepto === 'Amortización del 1T 2026');
+  assert.equal(am.lineas.find((l) => l.cuenta === '681').debe, r2(20000 * 0.16 * 90 / 365));
+  // El IVA de la apertura (4750) no se toca; la liquidación del 1T sale a cero porque no hay IVA nuevo.
+  const bal = balanceContable(A, '2026-04-30', { sociedad: true });
+  assert.equal(bal.total, bal.totalPasivo);
+  assert.equal(bal.activo.find((x) => x.id === 'ac').detalle.find((x) => x.id === '572').importe, 6000);
+});
+
+test('banco: qué es un movimiento sin factura ni gasto y aviso del extracto', async () => {
+  const { clasificar, clasesPara } = await import('../lib/banco.js');
+  const { avisosDelDia } = await import('../lib/avisos.js');
+  assert.equal(clasificar({ concepto: 'PAGO IMPUESTOS AEAT MOD 303', importe: -800 }), 'hacienda');
+  assert.equal(clasificar({ concepto: 'RECIBO TGSS REGIMEN AUTONOMOS', importe: -300 }, { autonomo: true }), 'cuota');
+  assert.equal(clasificar({ concepto: 'RECIBO TGSS', importe: -1200 }), 'seguridad');
+  assert.equal(clasificar({ concepto: 'CUOTA PRESTAMO 0123', importe: -400 }), 'prestamo');
+  assert.equal(clasificar({ concepto: 'COMISION MANTENIMIENTO', importe: -12 }), 'comision');
+  assert.equal(clasificar({ concepto: 'TRASPASO A CUENTA PROPIA', importe: -1000 }), 'traspaso');
+  assert.equal(clasificar({ concepto: 'COMPRA TARJETA AMAZON', importe: -59.9 }), 'gasto');
+  assert.equal(clasificar({ concepto: 'TRANSFERENCIA DE CLIENTE', importe: 300 }), 'ingreso');
+  assert.ok(!clasesPara({ importe: 100 }).some(([k]) => k === 'comision'));
+  assert.equal(avisosDelDia({ banco: { conectado: false, ultimo: '2026-08-30' } }, '2026-10-03')[0].tipo, 'extracto-2026-09');
+  assert.equal(avisosDelDia({ banco: { conectado: true, ultimo: '' } }, '2026-10-03').length, 0);
 });
