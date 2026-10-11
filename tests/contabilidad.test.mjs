@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { acumulada, amortizacionesAnio, coeficiente, cuotaEntre, libroBienes } from '../lib/amortizaciones.js';
-import { balance, categoriaDe, pareceBien, periodo, pyg } from '../lib/contabilidad.js';
+import { categoriaDe, pareceBien, periodo } from '../lib/contabilidad.js';
+import { asientoApertura, balanceContable, diario, generarAsientos, limpiarAsiento, mayor, pygContable, sumasYSaldos } from '../lib/asientos.js';
 import { casillas303, resumenAnual } from '../lib/calculos.js';
 import { borradorSociedades } from '../lib/modelos.js';
 
@@ -53,32 +54,75 @@ test('categorías: a mano, nóminas y por el concepto', () => {
   assert.ok(!pareceBien({ concepto: 'Cables', base: 3000 }));
 });
 
-test('cuenta de pérdidas y ganancias y balance', () => {
+test('partida doble: asientos que cuadran, pérdidas y ganancias, balance y cierre', () => {
   const facturas = [
-    { fecha: '2026-02-01', actividad: 'dj', base: 5000, ivaPct: 21, irpfPct: 0, cobrada: true, cliente: { nombre: 'X' } },
-    { fecha: '2026-11-01', actividad: 'dj', base: 1000, ivaPct: 21, irpfPct: 0, cobrada: false, cliente: { nombre: 'Y' } },
+    { id: 'f1', numero: 1, anio: 2025, fecha: '2025-02-01', actividad: 'dj', base: 5000, ivaPct: 21, irpfPct: 15, cobrada: true, cobro: { fecha: '2025-03-01' }, cliente: { nombre: 'X' } },
+    { id: 'f2', numero: 2, anio: 2025, fecha: '2025-11-01', actividad: 'dj', base: 1000, ivaPct: 21, irpfPct: 0, cobrada: false, cliente: { nombre: 'Y' } },
+    { id: 'r1', numero: 1, anio: 2025, serie: 'R', fecha: '2025-11-05', actividad: 'dj', base: -100, ivaPct: 21, irpfPct: 0, cobrada: true, cliente: { nombre: 'Y' } },
   ];
   const gastos = [
-    portatil,
-    { id: 'a', fecha: '2026-03-01', concepto: 'Alquiler del local', base: 600, ivaPct: 21 },
-    { id: 'b', fecha: '2026-03-01', concepto: 'Material', base: 400, ivaPct: 21, pendiente: true },
-    { id: 'c', fecha: '2026-04-01', concepto: 'Intereses del préstamo', base: 50, ivaPct: 0 },
+    { ...portatil, fecha: '2025-07-01' },
+    { id: 'a', fecha: '2025-03-01', concepto: 'Alquiler del local', base: 600, ivaPct: 21, alquiler: true },
+    { id: 'b', fecha: '2025-03-01', concepto: 'Material', base: 400, ivaPct: 21, pendiente: true },
+    { id: 'c', fecha: '2025-04-01', concepto: 'Intereses del préstamo', base: 50, ivaPct: 0 },
+    { id: 'n', fecha: '2025-01-31', concepto: 'Nómina', base: 1316.5, ivaPct: 0, nomina: 'n1' },
   ];
-  const p = pyg(facturas, gastos, periodo(2026), { nombres: { dj: 'DJ' } });
+  const nominas = [{ id: 'n1', mes: '2025-01', empleadoNombre: 'Ana', bruto: 1000, irpfPct: 10, ssTrabajadorPct: 6.5, ssEmpresaPct: 31.65 }];
+  const manuales = [asientoApertura({ fecha: '2025-01-01', banco: 3000, capital: 3000 }, false)];
+  const datos = { facturas, gastos, nominas, manuales, fiscal: { tipo: 'autonomo', iva: 'general' }, pagos130: { 2025: { 1: 500 } } };
+  const A = generarAsientos(datos, '2026-03-15');
+  for (const a of A) assert.equal(Math.round(a.lineas.reduce((s, l) => s + l.debe - l.haber, 0) * 100), 0, a.concepto);
+
+  // La factura con retención: clientes por el total, retención a cuenta y el IVA repercutido.
+  const f1 = A.find((a) => a.origen?.id === 'f1' && a.concepto.startsWith('Factura'));
+  assert.deepEqual(f1.lineas, [{ cuenta: '430', debe: 5300, haber: 0 }, { cuenta: '473', debe: 750, haber: 0 }, { cuenta: '705', debe: 0, haber: 5000 }, { cuenta: '477', debe: 0, haber: 1050 }]);
+  // La rectificativa, al revés.
+  assert.equal(A.find((a) => a.origen?.id === 'r1').lineas.find((l) => l.cuenta === '705').debe, 100);
+  // El alquiler retiene el 19 % (115) y el bien va al inmovilizado.
+  const alq = A.find((a) => a.origen?.id === 'a' && !a.concepto.startsWith('Pago'));
+  assert.equal(alq.lineas.find((l) => l.cuenta === '4751').haber, 114);
+  assert.equal(alq.lineas.find((l) => l.cuenta === '410').haber, 612);
+  assert.ok(A.find((a) => a.origen?.id === 'b1').lineas.some((l) => l.cuenta === '217' && l.debe === 1000));
+  // Nómina desglosada (y el gasto de la nómina no se cuenta dos veces).
+  const nom = A.find((a) => a.concepto.startsWith('Nómina Ana'));
+  assert.deepEqual(nom.lineas.map((l) => [l.cuenta, l.debe || -l.haber]), [['640', 1000], ['642', 316.5], ['4751', -100], ['476', -381.5], ['465', -835]]);
+  assert.ok(!A.some((a) => a.origen?.id === 'n'));
+
+  const p = pygContable(A, periodo(2025));
   const v = (id) => p.partidas.find((x) => x.id === id).importe;
-  assert.equal(v('cifra'), 6000);
+  assert.equal(v('cifra'), 5900);
   assert.equal(v('aprovisionamientos'), -400);
+  assert.equal(v('personal'), -1316.5);
   assert.equal(v('explotacion'), -600);
   assert.equal(v('amortizacion'), -131.07);
-  assert.equal(p.explotacion, 4868.93);
-  assert.equal(p.financiero, -50);
-  assert.equal(p.resultado, 4818.93);
-  assert.equal(pyg(facturas, gastos, periodo(2026, 1)).antes, 4000);
+  assert.equal(v('financieros'), -50);
+  assert.equal(p.resultado, 3402.43);
 
-  const b = balance({ facturas, gastos, resultado: p.resultado, saldo: { importe: 2000, fecha: '2026-12-01' } }, '2026-12-31');
-  assert.equal(b.activo[0].importe, 868.93);
-  assert.equal(b.activo[1].importe, 3210); // 1210 de clientes + 2000 en el banco
-  assert.equal(b.pasivo[1].detalle[0].importe, 484); // proveedor sin pagar, con IVA
-  assert.equal(b.total, r(b.pasivo[0].importe + b.pasivo[1].importe));
+  // Balance a fin de año y ya cerrado: cuadra y el resultado está en la 129.
+  const b = balanceContable(A, '2025-12-31');
+  assert.equal(b.total, b.totalPasivo);
+  const pn = b.pasivo.find((x) => x.id === 'pn');
+  assert.equal(pn.detalle.find((x) => x.id === '129').importe, 3402.43);
+  assert.equal(pn.detalle.find((x) => x.id === '102').importe, 3000);
+  assert.equal(b.activo.find((x) => x.id === 'anc').importe, 868.93);
+  // Al año siguiente, el resultado pasa a remanente; y en el año en curso no hay cierre.
+  const b26 = balanceContable(A, '2026-03-15');
+  assert.equal(b26.total, b26.totalPasivo);
+  assert.equal(b26.pasivo.find((x) => x.id === 'pn').detalle.find((x) => x.id === '120').importe, 3402.43);
+  assert.ok(!A.some((a) => a.concepto === 'Regularización de 2026'));
+
+  // IVA del 1T: liquidado y, como se marcó presentado, pagado el 20 de abril.
+  assert.ok(A.some((a) => a.concepto === 'Pago del IVA (303) del 1T 2025' && a.fecha === '2025-04-20'));
+  assert.ok(A.some((a) => a.concepto === 'Pago fraccionado del IRPF (130) del 1T 2025'));
+  const s = sumasYSaldos(A, 2025);
+  assert.equal(s.debe, s.haber);
+  const m = mayor(A, '430', 2025);
+  assert.equal(m.final, 1210); // solo queda la de 1.000 € sin cobrar, con IVA (la rectificativa se devolvió)
+  assert.equal(diario(A, 2025)[0].concepto, 'Asiento de apertura');
 });
-const r = (n) => Math.round(n * 100) / 100;
+
+test('asiento manual: tiene que cuadrar y las cuentas ser del plan', () => {
+  assert.ok(limpiarAsiento({ fecha: '2026-01-10', concepto: 'Préstamo', lineas: [{ cuenta: '572', debe: 10000 }, { cuenta: '170', haber: 10000 }] }).lineas);
+  assert.match(limpiarAsiento({ fecha: '2026-01-10', concepto: 'X', lineas: [{ cuenta: '572', debe: 10 }, { cuenta: '170', haber: 9 }] }).error, /No cuadra/);
+  assert.match(limpiarAsiento({ fecha: '2026-01-10', concepto: 'X', lineas: [{ cuenta: '9', debe: 10 }, { cuenta: '170', haber: 10 }] }).error, /no es válida/);
+});

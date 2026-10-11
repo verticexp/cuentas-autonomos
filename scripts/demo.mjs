@@ -6,6 +6,8 @@
 import { randomBytes, scryptSync } from 'node:crypto';
 import { Redis } from '@upstash/redis';
 import { numeroFactura, siguienteNumero } from '../lib/calculos.js';
+import { borradorSociedades, modelo202 } from '../lib/modelos.js';
+import { asientoApertura, generarAsientos, mayor } from '../lib/asientos.js';
 
 const { KV_REST_API_URL: url, KV_REST_API_TOKEN: token, DEMO_PASSWORD: password } = process.env;
 if (!url || !token) throw new Error('Faltan KV_REST_API_URL y KV_REST_API_TOKEN');
@@ -21,7 +23,7 @@ if (password ? password.length < 8 : !passPrevia) throw new Error('DEMO_PASSWORD
 const sal = randomBytes(16).toString('hex');
 const pass = password ? `${sal}:${scryptSync(password, sal, 64).toString('hex')}` : passPrevia;
 const id = previo || randomBytes(4).toString('hex');
-await r.del(...['facturas', 'gastos', 'clientes', 'registros', 'verifactu', 'saldo'].map((n) => `${P}${n}:${id}`));
+await r.del(...['facturas', 'gastos', 'clientes', 'registros', 'verifactu', 'saldo', 'asientos'].map((n) => `${P}${n}:${id}`));
 
 const ACTIVIDADES = [
   { id: 'sonido-e-iluminacion', nombre: 'Sonido e iluminación', serie: '', ivaPct: 21, irpfPct: 0 },
@@ -29,12 +31,13 @@ const ACTIVIDADES = [
   { id: 'dj-y-musica', nombre: 'DJ y música en vivo', serie: 'M', ivaPct: 21, irpfPct: 0 },
 ];
 const ahora = new Date().toISOString();
-await r.hset(`${P}empresas`, { [id]: {
+const empresa = {
   id, nombre: 'Sonora Eventos S.L.', creada: ahora, pendiente: false, verifactu: 'pruebas',
   emisor: { nombre: 'SONORA EVENTOS S.L.', nif: 'B00000000', direccion: 'C/ de la Marina, 19', ciudad: '08005 Barcelona', iban: 'ES91 2100 0418 4502 0005 1332', plazo: 30 },
   actividades: ACTIVIDADES,
   fiscal: { tipo: 'sociedad', iva: 'general', retenidas: false, trabajadores: true, alquiler: true, intracom: false },
-} });
+};
+await r.hset(`${P}empresas`, { [id]: empresa });
 await r.hset(`${P}usuarios`, { [id]: { id, nombre: 'Demo', email: EMAIL, admin: false, creado: ahora, empresa: id, rol: 'admin', pass } });
 await r.hset(`${P}emails`, { [EMAIL]: id });
 
@@ -131,6 +134,33 @@ if (orig) {
 const porId = (xs) => Object.fromEntries(xs.map((x) => [x.id, x]));
 await r.hset(`${P}facturas:${id}`, porId(facturas));
 await r.hset(`${P}gastos:${id}`, porId(gastos));
-await r.set(`${P}saldo:${id}`, { importe: 18450.32, fecha: hoy });
+// Trimestres ya presentados (los que tienen el plazo pasado), el Impuesto sobre Sociedades de los años cerrados y sus 202.
+const Y = Number(hoy.slice(0, 4));
+const pagos130 = {}, pagos202 = {}, cuotaIS = {};
+for (let y = Y - 2; y <= Y; y++) for (let t = 1; t <= 4; t++) {
+  const plazo = t === 4 ? `${y + 1}-01-30` : `${y}-${['04', '07', '10'][t - 1]}-20`;
+  if (plazo < hoy) (pagos130[y] ||= {})[t] = 0;
+}
+for (let y = Y - 2; y < Y; y++) if (`${y + 1}-07-25` < hoy) cuotaIS[y] = borradorSociedades(facturas, gastos, y).cuota;
+for (let y = Y - 1; y <= Y; y++) for (const x of modelo202(cuotaIS, y)) if (x.pago > 0 && x.fecha < hoy) (pagos202[y] ||= {})[x.p] = x.pago;
+await r.hset(`${P}empresas`, { [id]: { ...empresa, pagos130, pagos202, cuotaIS } });
+
+// Contabilidad: apertura (capital y lo que había en el banco), el préstamo de la furgoneta y sus cuotas de principal.
+const primera = [...facturas, ...gastos].map((x) => x.fecha).sort()[0];
+const furgo = gastos.find((g) => g.inversion?.tipo === 'transporte');
+const asientos = [{ id: 'demo-apertura', ...asientoApertura({ fecha: primera, banco: 15000, capital: 3000 }, true) }];
+asientos.push({ id: 'demo-prestamo', fecha: furgo.fecha, concepto: 'Préstamo para la furgoneta (CaixaBank)', lineas: [{ cuenta: '572', debe: 24000, haber: 0 }, { cuenta: '170', debe: 0, haber: 19200 }, { cuenta: '520', debe: 0, haber: 4800 }] });
+for (let d = new Date(`${furgo.fecha.slice(0, 7)}-12T00:00:00Z`); d.toISOString().slice(0, 10) <= hoy; d.setUTCMonth(d.getUTCMonth() + 1)) {
+  const f = d.toISOString().slice(0, 10);
+  if (f <= furgo.fecha) continue;
+  asientos.push({ id: `demo-cuota-${f}`, fecha: f, concepto: 'Cuota del préstamo de la furgoneta (principal)', lineas: [{ cuenta: '520', debe: 400, haber: 0 }, { cuenta: '572', debe: 0, haber: 400 }] });
+  // Cada año, lo que toca devolver en los 12 meses siguientes pasa del largo al corto plazo.
+  if (f.slice(5, 7) === furgo.fecha.slice(5, 7) && f.slice(0, 4) > furgo.fecha.slice(0, 4)) asientos.push({ id: `demo-reclasif-${f}`, fecha: f, concepto: 'Préstamo: traspaso a corto plazo', lineas: [{ cuenta: '170', debe: 4800, haber: 0 }, { cuenta: '520', debe: 0, haber: 4800 }] });
+}
+await r.hset(`${P}asientos:${id}`, porId(asientos));
+
+// El saldo del banco, el mismo que da la contabilidad (así cuadra la cuenta 572 con el banco).
+const banco = mayor(generarAsientos({ facturas, gastos, manuales: asientos, fiscal: empresa.fiscal, pagos130, pagos202, cuotaIS }, hoy), '57', Y).final;
+await r.set(`${P}saldo:${id}`, { importe: banco, fecha: hoy });
 await r.hset(`${P}clientes:${id}`, porId(CLIENTES.map((c) => ({ id: c.nombre.toUpperCase(), ...c }))));
 console.log(`Demo lista: ${EMAIL} · ${facturas.length} facturas · ${gastos.length} gastos · desde ${inicio.toISOString().slice(0, 10)}`);
