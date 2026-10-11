@@ -17,6 +17,8 @@ import { enlacePortal } from '@/lib/portal';
 import { Compartir } from '@/components/AccionesPresupuesto';
 import '@/app/portal.css';
 
+import '@/app/mk.css';
+
 export const dynamic = 'force-dynamic';
 
 export default async function Factura({ params }) {
@@ -31,7 +33,7 @@ export default async function Factura({ params }) {
   const i = importes(f);
   const estado = f.cobrada ? 'Cobrada' : vencida(f, u.emisor?.plazo, hoy()) ? 'Vencida' : 'Pendiente';
   return (
-    <main className="pagina">
+    <main className="pagina mk-look">
       <Volver href="/facturas">Facturas</Volver>
       <section className="factura-hero">
         <p className="fh-num">Factura {numeroFactura(f)}{actividades.length > 1 ? ` · ${nombresActividad(actividades)[f.actividad] || ''}` : ''}</p>

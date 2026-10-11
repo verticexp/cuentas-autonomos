@@ -10,6 +10,8 @@ import { Borrar } from '@/components/Acciones';
 import Volver from '@/components/Volver';
 import '../../nominas.css';
 
+import '@/app/mk.css';
+
 export const dynamic = 'force-dynamic';
 
 export default async function Nomina({ params }) {
@@ -17,7 +19,7 @@ export default async function Nomina({ params }) {
   const n = await leerUno(u, 'nominas', (await params).id);
   if (!n) notFound();
   return (
-    <main className="pagina">
+    <main className="pagina mk-look">
       <Volver href="/nominas">Nóminas</Volver>
       <header className="cabecera"><h1 className="titulo">{n.empleadoNombre}</h1></header>
       <p className="nota">Nómina de {nombreMes(n.mes)}</p>

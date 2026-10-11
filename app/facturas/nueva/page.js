@@ -7,6 +7,8 @@ import FormFactura from '@/components/FormFactura';
 import Volver from '@/components/Volver';
 import { actividadesDe } from '@/lib/empresa';
 
+import '@/app/mk.css';
+
 export const dynamic = 'force-dynamic';
 
 export default async function Nueva({ searchParams }) {
@@ -23,7 +25,7 @@ export default async function Nueva({ searchParams }) {
   const actividades = actividadesDe(u);
   const numeros = Object.fromEntries(actividades.map((a) => [a.id, num(original ? 'R' : a.serie)]));
   return (
-    <main className="pagina">
+    <main className="pagina mk-look">
       <Volver href={original || plantilla ? `/facturas/${(original || plantilla).id}` : '/facturas'} />
       <h1 className="titulo">{original ? 'Factura rectificativa' : plantilla ? 'Duplicar factura' : 'Nueva factura'}</h1>
       <FormFactura clientes={clientes} hoy={h} rectifica={original} plantilla={plantilla || null} numeros={numeros} actividades={actividades} productos={(productos || []).sort((a, b) => a.nombre.localeCompare(b.nombre))} />

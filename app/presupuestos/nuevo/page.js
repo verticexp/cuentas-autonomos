@@ -8,6 +8,8 @@ import SinBD from '@/components/SinBD';
 import Volver from '@/components/Volver';
 import FormPresupuesto from '@/components/FormPresupuesto';
 
+import '@/app/mk.css';
+
 export const dynamic = 'force-dynamic';
 
 export default async function Nuevo() {
@@ -17,7 +19,7 @@ export default async function Nuevo() {
   const h = hoy();
   const anio = Number(h.slice(0, 4));
   return (
-    <main className="pagina">
+    <main className="pagina mk-look">
       <Volver href="/presupuestos">Presupuestos</Volver>
       <h1 className="titulo">Nuevo presupuesto</h1>
       <FormPresupuesto clientes={clientes} actividades={actividadesDe(u)} hoy={h} numero={numeroPresupuesto({ numero: siguienteNumero(presupuestos, anio, 'P'), anio })} />

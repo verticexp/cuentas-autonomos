@@ -6,6 +6,8 @@ import Volver from '@/components/Volver';
 import Ir from '@/components/Ir';
 import '@/app/proveedores.css';
 
+import '@/app/mk.css';
+
 export const dynamic = 'force-dynamic';
 
 export default async function Proveedores() {
@@ -13,7 +15,7 @@ export default async function Proveedores() {
   const lista = proveedores((await leer(u, 'gastos')) || []);
   const debes = lista.reduce((s, p) => s + p.debe, 0);
   return (
-    <main className="pagina">
+    <main className="pagina mk-look">
       <Volver href="/gastos">Gastos</Volver>
       <h1 className="titulo">Proveedores</h1>
       {lista.length > 0 && <p className="resumen-linea"><span>{lista.length === 1 ? '1 proveedor' : `${lista.length} proveedores`}</span>{debes > 0 && <span className="prov-debe">Les debes <strong>{eur(debes)}</strong></span>}</p>}

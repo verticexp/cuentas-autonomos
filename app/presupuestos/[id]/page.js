@@ -15,6 +15,8 @@ import FormPresupuesto from '@/components/FormPresupuesto';
 import Volver from '@/components/Volver';
 import Conceptos from '@/components/Conceptos';
 
+import '@/app/mk.css';
+
 export const dynamic = 'force-dynamic';
 
 export default async function Presupuesto({ params }) {
@@ -28,7 +30,7 @@ export default async function Presupuesto({ params }) {
   const i = importes(p);
   const senal = p.facturas.find((f) => f.tipo === 'senal');
   return (
-    <main className="pagina">
+    <main className="pagina mk-look">
       <Volver href="/presupuestos">Presupuestos</Volver>
       <section className="factura-hero">
         <p className="fh-num">Presupuesto {numeroPresupuesto(p)}</p>

@@ -16,6 +16,8 @@ import { leer } from '@/lib/redis';
 import Importar from '@/components/Importar';
 import { fiscalDe } from '@/lib/empresa';
 
+import '@/app/mk.css';
+
 export const dynamic = 'force-dynamic';
 
 const TITULOS = { facturacion: 'Datos de facturación', marca: 'Logo y color', seguridad: 'Face ID y contraseña', drive: 'Google Drive', controlat: "Controla'T", avisos: 'Avisos en el móvil', importar: 'Importar datos', verifactu: 'Verifactu' };
@@ -30,7 +32,7 @@ export default async function Seccion({ params }) {
     ? Object.entries((await redis.hgetall(`passkeys:${u.id}`)) || {}).map(([id, k]) => ({ id, nombre: k.nombre, creada: k.creada, usada: k.usada || null }))
     : [];
   return (
-    <main className="pagina">
+    <main className="pagina mk-look">
       <Volver href="/ajustes">Ajustes</Volver>
       <h1 className="titulo">{TITULOS[seccion]}</h1>
       {seccion === 'marca' && <Marca marca={u.marca} nombre={u.emisor?.nombre} />}

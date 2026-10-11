@@ -7,6 +7,8 @@ import { Borrar } from '@/components/Acciones';
 import Volver from '@/components/Volver';
 import '../../../nominas.css';
 
+import '@/app/mk.css';
+
 export const dynamic = 'force-dynamic';
 
 export default async function Empleado({ params }) {
@@ -14,7 +16,7 @@ export default async function Empleado({ params }) {
   const e = await leerUno(u, 'empleados', (await params).id);
   if (!e) notFound();
   return (
-    <main className="pagina">
+    <main className="pagina mk-look">
       <Volver href="/nominas">Nóminas</Volver>
       <header className="cabecera"><h1 className="titulo">{e.nombre}</h1></header>
       <FormEmpleado empleado={e} hoy={hoy()} />

@@ -12,6 +12,8 @@ import Ir from '@/components/Ir';
 import '@/app/nominas.css';
 import '@/app/jornada.css';
 
+import '@/app/mk.css';
+
 export const dynamic = 'force-dynamic';
 const masMes = (mes, n) => new Date(Date.UTC(Number(mes.slice(0, 4)), Number(mes.slice(5, 7)) - 1 + n, 1)).toISOString().slice(0, 7);
 
@@ -40,7 +42,7 @@ export default async function RegistroJornada({ searchParams }) {
   const dias = [...new Set(delMes.map((f) => f.fecha))];
 
   return (
-    <main className="pagina jornada">
+    <main className="pagina mk-look jornada">
       <Volver href={gestor ? '/nominas' : '/ajustes'}>{gestor ? 'Nóminas' : 'Ajustes'}</Volver>
       <h1 className="titulo">Registro de jornada</h1>
 

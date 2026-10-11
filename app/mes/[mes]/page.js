@@ -8,6 +8,8 @@ import { actividadesDe, nombresActividad } from '@/lib/empresa';
 import { eur, fechaCorta } from '@/lib/formato';
 import Volver from '@/components/Volver';
 
+import '@/app/mk.css';
+
 export const dynamic = 'force-dynamic';
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
@@ -33,7 +35,7 @@ export default async function Mes({ params }) {
   const nomina = r2(facturado - puntuales - irpf);
 
   return (
-    <main className="pagina">
+    <main className="pagina mk-look">
       <Volver href={`/?anio=${y}`}>Resumen</Volver>
       <header className="cabecera">
         <h1 className="titulo">{MESES[m - 1]} {y}</h1>
