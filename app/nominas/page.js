@@ -10,6 +10,8 @@ import SinBD from '@/components/SinBD';
 import '../nominas.css';
 import { hhmm, resumenMes } from '@/lib/jornada';
 
+import '@/app/mk.css';
+
 export const dynamic = 'force-dynamic';
 
 export default async function Nominas() {
@@ -31,7 +33,7 @@ export default async function Nominas() {
   const meses = [...new Set(N.map((n) => n.mes))].slice(0, 12);
 
   return (
-    <main className="pagina">
+    <main className="pagina mk-look">
       <Volver href="/ajustes">Ajustes</Volver>
       <header className="cabecera"><h1 className="titulo">Equipo y nóminas</h1></header>
 

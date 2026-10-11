@@ -5,6 +5,8 @@ import Volver from '@/components/Volver';
 import Asistente from '@/components/Asistente';
 import '@/app/asistente.css';
 
+import '@/app/mk.css';
+
 export const dynamic = 'force-dynamic';
 
 // Preguntas de ejemplo según lo que puede ver cada persona.
@@ -21,7 +23,7 @@ export default async function PaginaAsistente() {
   const u = await requerir();
   const h = herramientasPara(u).map((x) => x.name);
   return (
-    <main className="pagina asistente">
+    <main className="pagina mk-look asistente">
       <Volver href="/">Resumen</Volver>
       <h1 className="titulo">Pregunta a Netto</h1>
       <p className="asi-sub">Responde con las cifras que calcula la app, solo de {u.empresaNombre || 'tu empresa'} y de lo que tú puedes ver.</p>

@@ -4,6 +4,8 @@ import Volver from '@/components/Volver';
 import Baja from '@/components/Baja';
 import SinAcceso from '@/components/SinAcceso';
 
+import '@/app/mk.css';
+
 export const dynamic = 'force-dynamic';
 
 // Dar de baja la empresa (lib/baja.js): solo su administrador.
@@ -12,7 +14,7 @@ export default async function Page() {
   if (u.rol !== 'admin') return <SinAcceso />;
   if (u.admin) return <SinAcceso texto="La empresa del administrador de Netto no se puede dar de baja desde aquí." />;
   return (
-    <main className="pagina">
+    <main className="pagina mk-look">
       <Volver href="/ajustes">Ajustes</Volver>
       <h1 className="titulo">Dar de baja la empresa</h1>
       <div className="tarjeta bloque">

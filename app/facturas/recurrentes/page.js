@@ -7,6 +7,8 @@ import Volver from '@/components/Volver';
 import { AccionesRecurrente } from '@/components/Recurrente';
 import '@/app/recurrentes.css';
 
+import '@/app/mk.css';
+
 export const dynamic = 'force-dynamic';
 
 export default async function Recurrentes() {
@@ -14,7 +16,7 @@ export default async function Recurrentes() {
   const lista = ((await leer(u, 'recurrentes')) || []).sort((a, b) => a.dia - b.dia);
   const editar = puede(u, 'facturar');
   return (
-    <main className="pagina">
+    <main className="pagina mk-look">
       <Volver href="/facturas">Facturas</Volver>
       <h1 className="titulo">Facturas recurrentes</h1>
       {!lista.length && <p className="nota">Ninguna todavía. Para repetir una factura cada mes, ábrela y pulsa «Repetir cada mes».</p>}

@@ -9,6 +9,8 @@ import Ir from '@/components/Ir';
 import PagarProveedor from '@/components/PagarProveedor';
 import '@/app/proveedores.css';
 
+import '@/app/mk.css';
+
 export const dynamic = 'force-dynamic';
 
 export default async function Proveedor({ params }) {
@@ -17,7 +19,7 @@ export default async function Proveedor({ params }) {
   const p = proveedores((await leer(u, 'gastos')) || []).find((x) => x.clave === clave);
   if (!p) notFound();
   return (
-    <main className="pagina">
+    <main className="pagina mk-look">
       <Volver href="/gastos/proveedores">Proveedores</Volver>
       <h1 className="titulo">{p.nombre}</h1>
       <p className="prov-cifras">

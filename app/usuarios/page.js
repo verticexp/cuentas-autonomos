@@ -6,6 +6,8 @@ import Usuarios from '@/components/Usuarios';
 import Volver from '@/components/Volver';
 import { membresias } from '@/lib/membresias';
 
+import '@/app/mk.css';
+
 export const dynamic = 'force-dynamic';
 
 export default async function Page() {
@@ -22,7 +24,7 @@ export default async function Page() {
     id: e.id, nombre: e.nombre, personas: usuarios.filter((o) => membresias(o)[e.id]).length,
   })).sort((a, b) => a.nombre.localeCompare(b.nombre));
   return (
-    <main className="pagina">
+    <main className="pagina mk-look">
       <Volver href="/ajustes">Ajustes</Volver>
       <h1 className="titulo">Usuarios</h1>
       <Usuarios lista={puede(yo, 'usuarios') ? lista : null} yo={yo.id} empresa={yo.empresaNombre} empresas={listaEmpresas} miEmpresa={yo.empresa} soyAdmin={yo.rol === 'admin'} />

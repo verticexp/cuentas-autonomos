@@ -5,6 +5,8 @@ import { leer } from '@/lib/redis';
 import { actividadesDe, fiscalDe } from '@/lib/empresa';
 import Cuestionario from '@/components/Cuestionario';
 
+import '@/app/mk.css';
+
 export const dynamic = 'force-dynamic';
 
 // Primer paso de una empresa nueva (o desde Ajustes para cambiarlo): cómo trabaja, sus datos y sus actividades.
@@ -19,7 +21,7 @@ export default async function Bienvenida({ searchParams }) {
   const facturas = (await leer(u, 'facturas')) || [];
   const conFacturas = [...new Set(facturas.map((f) => f.actividad))];
   return (
-    <main className="pagina bienvenida">
+    <main className="pagina mk-look bienvenida">
       <Cuestionario
         editar={editar}
         inicial={{

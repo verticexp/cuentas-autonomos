@@ -3,6 +3,8 @@ import { leerAuditoria } from '@/lib/auditoria';
 import Volver from '@/components/Volver';
 import SinAcceso from '@/components/SinAcceso';
 
+import '@/app/mk.css';
+
 export const dynamic = 'force-dynamic';
 
 const cuando = (f) => new Date(f).toLocaleString('es-ES', { timeZone: 'Europe/Madrid', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -13,7 +15,7 @@ export default async function Actividad() {
   if (u.rol !== 'admin') return <SinAcceso />;
   const lista = await leerAuditoria(u.empresa);
   return (
-    <main className="pagina">
+    <main className="pagina mk-look">
       <Volver href="/ajustes">Ajustes</Volver>
       <h1 className="titulo">Actividad</h1>
       <p className="resumen-linea">Quién ha cambiado permisos, datos de la empresa o la contraseña, y quién ha borrado o exportado facturas y gastos.</p>
