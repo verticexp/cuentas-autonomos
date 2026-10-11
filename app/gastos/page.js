@@ -67,12 +67,13 @@ export default async function Gastos({ searchParams }) {
           <span>Este año, sin IVA <strong>{eur(r2(delAnio.reduce((s, g) => s + g.base, 0)))}</strong></span>
           <span>IVA que recuperas <strong>{eur(r2(delAnio.reduce((s, g) => s + importes(g).iva, 0)))}</strong></span>
           </>}
+          {puede(u, 'resumen') && todos.some((g) => g.inversion) && <Link href="/contabilidad?ver=bienes" className="prov-enlace">Bienes de inversión ›</Link>}
           {provs.length > 0 && <Link href="/gastos/proveedores" className="prov-enlace">Proveedores{debes > 0 ? ` · debes ${eur(r2(debes))}` : ''} ›</Link>}
         </p>
       )}
 
       {/* Primero lo que más se hace: escanear el ticket. El formulario entero se abre al escanear o al pedirlo. */}
-      {puede(u, 'gastar') && <FormGasto hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} plegado={todos.length > 0} />}
+      {puede(u, 'gastar') && <FormGasto hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} plegado={todos.length > 0} />}
 
       {todos.length > 5 && <Buscar action="/gastos" q={q} ocultos={{ estado }} placeholder="Buscar proveedor o concepto" />}
       {sinPagar > 0 && (
@@ -98,6 +99,7 @@ export default async function Gastos({ searchParams }) {
                     <span className="imp-col">
                       <span className="imp">{eur(g.base)}</span>
                       {g.pendiente && <span className="estado-txt e-pendiente">Sin pagar</span>}
+                      {g.inversion && <span className="estado-txt">Bien de inversión</span>}
                     </span>
                   </Ir>
                 </li>

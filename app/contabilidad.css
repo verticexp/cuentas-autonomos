@@ -1,0 +1,62 @@
+/* Contabilidad: cuenta de pérdidas y ganancias, bienes de inversión y balance (app/contabilidad/page.js) */
+.cont-periodo { margin: 4px 0 12px; }
+.cont-tabla { padding-top: 6px; padding-bottom: 6px; }
+.cont-fila { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 9px 0; font-size: 15px; }
+.cont-fila + .cont-fila { border-top: 0.5px solid var(--line); }
+.cont-n { min-width: 0; overflow-wrap: anywhere; }
+.cont-cifras { display: flex; gap: 14px; font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
+.cont-cifras > span { min-width: 92px; }
+.cont-cifras small { min-width: 92px; color: var(--muted); font-size: 13px; align-self: center; }
+.cont-cab { font-size: 13px; color: var(--muted); font-weight: 600; }
+.cont-cab .cont-cifras > span { color: var(--ink); }
+.cont-total { font-weight: 600; }
+.cont-total .cont-n { color: var(--ink); }
+.cont-det { display: block; }
+.cont-det summary { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; cursor: pointer; list-style: none; }
+.cont-det summary::-webkit-details-marker { display: none; }
+.cont-det summary .cont-n::after { content: ' ›'; color: var(--muted); }
+.cont-det[open] summary .cont-n::after { content: ' ⌄'; }
+.cont-det dl { margin: 6px 0 0 12px; }
+.cont-det dl > div { font-size: 14px; padding: 4px 0; }
+.cont-resumen { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
+.cont-resumen > div { background: var(--surface); border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cont-resumen span { color: var(--muted); font-size: 12px; }
+.cont-resumen strong { font-size: 16px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cont-barra { display: block; height: 5px; border-radius: 3px; background: var(--relleno); overflow: hidden; margin-top: 6px; max-width: 220px; }
+.cont-barra span { display: block; height: 100%; background: var(--in); border-radius: 3px; }
+.cont-balance .tarjeta { min-width: 0; }
+.cont-excel { display: inline-block; margin-top: 16px; }
+@media (max-width: 420px) {
+  .cont-cifras { gap: 8px; }
+  .cont-cifras > span, .cont-cifras small { min-width: 0; }
+  .cont-resumen strong { font-size: 14px; }
+}
+.contabilidad .grupo-lista .txt small { white-space: normal; }
+.cont-vistas { margin: 4px -16px 10px; padding: 0 16px; }
+.cont-meses { margin: 0 -16px 12px; padding: 0 16px; }
+.cont-acciones { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.cont-acciones > form { flex: 1 1 100%; }
+.cont-asiento { padding: 12px 14px; margin-bottom: 10px; }
+.cont-asiento header { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 6px; }
+.cont-asiento header .cont-n { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.cont-asiento header small { color: var(--muted); font-size: 13px; }
+.cont-asiento .borrar { font-size: 13px; }
+.cont-num { flex: none; min-width: 28px; height: 22px; padding: 0 6px; border-radius: 6px; background: var(--relleno); font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; font-variant-numeric: tabular-nums; }
+.cont-ver { font-size: 13px; color: var(--marca); text-decoration: none; }
+.cont-lineas { width: 100%; border-collapse: collapse; font-size: 13px; }
+.cont-lineas td { padding: 4px 0; border-top: 0.5px solid var(--line); vertical-align: top; }
+.cont-lineas td:first-child { color: var(--muted); overflow-wrap: anywhere; }
+.cont-lineas td.haber { padding-left: 18px; }
+.cont-lineas td a { color: var(--ink); font-weight: 600; text-decoration: none; font-variant-numeric: tabular-nums; }
+.cont-lineas td + td { width: 86px; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.cont-buscar { display: flex; gap: 8px; margin-bottom: 12px; }
+.cont-buscar .campo { flex: 1; margin: 0; }
+.cont-haber { color: var(--muted); }
+.asiento-linea { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 6px; }
+.asiento-linea .campo { margin: 0; min-width: 0; }
+.asiento-form .asiento-linea + .asiento-linea { margin-top: 6px; }
+.asiento-campo { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+.nota.rojo { color: var(--out); }
+.cont-alerta { background: color-mix(in srgb, var(--out) 12%, var(--surface)); color: var(--out); border-radius: 12px; padding: 10px 14px; font-size: 14px; margin: 12px 0; }
+.cont-lineas th { font-size: 11px; font-weight: 600; color: var(--muted); text-align: right; padding: 2px 0; }
+.cont-lineas th:first-child { text-align: left; }

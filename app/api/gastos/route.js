@@ -5,6 +5,8 @@ import { enviarNomina } from '@/lib/controlat';
 import { auditar } from '@/lib/auditoria';
 import { leerImporte, nifUE, r2 } from '@/lib/calculos';
 import { actividadesDe, actividadValida } from '@/lib/empresa';
+import { CATEGORIAS } from '@/lib/categorias';
+import { TIPOS_BIEN } from '@/lib/amortizaciones';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +20,10 @@ const origenDe = (b, ivaPct) => {
 
 // Retención que le haces a un profesional (por ejemplo, la gestoría): 15 % o 7 % (los que empiezan). Va en el 111.
 const retencionDe = (b) => ([7, 15].includes(Number(b.irpfPct)) ? Number(b.irpfPct) : undefined);
+
+// Categoría del plan contable (si no se elige, Netto la deduce del concepto) y bien de inversión (se amortiza en años).
+const categoriaDe = (b) => (CATEGORIAS.some((c) => c.id === b.categoria) ? b.categoria : undefined);
+const inversionDe = (b) => (b.inversion && TIPOS_BIEN.some((t) => t.id === b.inversion.tipo) ? { tipo: b.inversion.tipo } : undefined);
 
 // Proveedor (opcional): nombre y NIF de quien emite el ticket o la factura.
 const proveedorDe = (b) => {
@@ -44,6 +50,8 @@ export async function POST(req) {
     ...proveedorDe(b),
     ...(b.pendiente ? { pendiente: true } : {}),
     ...(b.alquiler ? { alquiler: true } : {}),
+    ...(categoriaDe(b) ? { categoria: categoriaDe(b) } : {}),
+    ...(inversionDe(b) ? { inversion: inversionDe(b) } : {}),
   };
   if (origenDe(b, g.ivaPct)) g.origen = origenDe(b, g.ivaPct);
   if (retencionDe(b)) g.irpfPct = retencionDe(b);
@@ -62,7 +70,7 @@ export async function PATCH(req) {
   if (!base) return error('Importe no válido');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(b.fecha || '')) return error('Fecha no válida');
   if (!String(b.concepto || '').trim()) return error('Falta el concepto');
-  const g = { ...antes, fecha: b.fecha, actividad: actividadValida(actividadesDe(u), b.actividad), concepto: String(b.concepto).trim().slice(0, 140), base, ivaPct: Math.min(100, Math.max(0, Number(b.ivaPct) || 0)), proveedor: undefined, proveedorNif: undefined, ...proveedorDe(b), pendiente: b.pendiente ? true : undefined, alquiler: b.alquiler ? true : undefined };
+  const g = { ...antes, fecha: b.fecha, actividad: actividadValida(actividadesDe(u), b.actividad), concepto: String(b.concepto).trim().slice(0, 140), base, ivaPct: Math.min(100, Math.max(0, Number(b.ivaPct) || 0)), proveedor: undefined, proveedorNif: undefined, ...proveedorDe(b), pendiente: b.pendiente ? true : undefined, alquiler: b.alquiler ? true : undefined, categoria: categoriaDe(b), inversion: inversionDe(b) };
   g.origen = origenDe(b, g.ivaPct);
   g.irpfPct = retencionDe(b);
   await guardar(u, 'gastos', g);
