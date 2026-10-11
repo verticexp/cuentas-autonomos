@@ -1449,6 +1449,12 @@ if (process.env.RESEND_URL) {
   await kv(['HSET', 'cuentas:usuarios', zoe.id, JSON.stringify(z)]);
   const aZ = await destino(await con('/facturas', cookiesDe(az)));
   ok('las cuentas de antes (sin la marca) siguen entrando: no hace falta migrar', () => assert.ok(!aZ.startsWith('/confirmar-email'), aZ));
+  const leo = await invitar('Leo');
+  const al = await aceptar(leo.enlace.split('/').pop(), 'leoleo1234');
+  const l = await usuario(leo.id);
+  await kv(['HSET', 'cuentas:usuarios', leo.id, JSON.stringify({ ...l, emailVerificado: false, creado: '2026-01-01T00:00:00.000Z' })]);
+  const aL = await destino(await con('/facturas', cookiesDe(al)));
+  ok('sin confirmar pero creada antes de activar la comprobación: entra igual', () => assert.ok(!aL.startsWith('/confirmar-email'), aL));
   const falso = await fetchReal(BASE + '/api/confirmar?t=falso', { redirect: 'manual' });
   ok('un token falso no confirma nada', () => assert.ok(falso.headers.get('location')?.includes('caducado')));
 } else console.log('  (sin RESEND_URL: se salta)');
