@@ -2,6 +2,7 @@ import { guardar, borrar, leerUno } from '@/lib/redis';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { subirGasto } from '@/lib/drive';
 import { enviarNomina } from '@/lib/controlat';
+import { emparejar } from '@/lib/bancoServidor';
 import { auditar } from '@/lib/auditoria';
 import { leerImporte, nifUE, r2 } from '@/lib/calculos';
 import { actividadesDe, actividadValida } from '@/lib/empresa';
@@ -56,6 +57,8 @@ export async function POST(req) {
   if (origenDe(b, g.ivaPct)) g.origen = origenDe(b, g.ivaPct);
   if (retencionDe(b)) g.irpfPct = retencionDe(b);
   await guardar(u, 'gastos', g);
+  // Apuntado desde un movimiento del banco que no tenía gasto: queda emparejado (y pagado con la fecha del banco).
+  if (b.banco) await emparejar(u, String(b.banco), 'gasto', g.id);
   await Promise.all([subirGasto(u, g), enviarNomina(u, [g.fecha])]);
   return Response.json({ ok: true, gasto: g });
 }

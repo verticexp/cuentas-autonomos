@@ -6,11 +6,12 @@ import { esNorma43, leerNorma43, leerTablaBanco } from '@/lib/banco';
 import { actualizarSaldo, guardarMovimientos } from '@/lib/bancoServidor';
 import { hoy } from '@/lib/formato';
 import { MUCHOS, pasado } from '@/lib/limite';
+import { iaLista, leerExtracto } from '@/lib/ticket';
 
 export const dynamic = 'force-dynamic';
 const MAX_MB = 5, MAX_MOV = 5000;
 
-// Extracto del banco (Norma 43, CSV o Excel) → movimientos. Los ya subidos no se repiten.
+// Extracto del banco (Norma 43, CSV, Excel o PDF, este leído con IA) → movimientos. Los ya subidos no se repiten.
 export async function POST(req) {
   const { u, res } = await usuarioApi({ permiso: 'resumen' });
   if (res) return res;
@@ -19,12 +20,19 @@ export async function POST(req) {
   if (await pasado('importar', u.id, 30, 3600)) return error(MUCHOS, 429);
   const form = await req.formData().catch(() => null);
   const archivo = form?.get('archivo');
-  if (!archivo || typeof archivo === 'string' || !archivo.size) return error('Elige el extracto (Norma 43, .csv o .xlsx)');
+  if (!archivo || typeof archivo === 'string' || !archivo.size) return error('Elige el extracto (Norma 43, .csv, .xlsx o PDF)');
   if (archivo.size > MAX_MB * 1024 * 1024) return error(`El archivo pasa de ${MAX_MB} MB`);
   const buf = Buffer.from(await archivo.arrayBuffer());
   const texto = buf.toString('latin1');
   let r;
-  try { r = esNorma43(texto) ? leerNorma43(texto) : leerTablaBanco(leerHoja(buf)); } catch { return error('No se puede leer el archivo: descárgalo del banco en Norma 43, .csv o .xlsx'); }
+  if (texto.startsWith('%PDF')) {
+    if (!iaLista()) return error('Para leer extractos en PDF hace falta la IA: descárgalo en Excel o Norma 43.');
+    const x = await leerExtracto(buf.toString('base64'));
+    if (x.error) return error(x.error);
+    r = leerTablaBanco(x.filas);
+  } else {
+    try { r = esNorma43(texto) ? leerNorma43(texto) : leerTablaBanco(leerHoja(buf)); } catch { return error('No se puede leer el archivo: descárgalo del banco en Norma 43, .csv, .xlsx o PDF'); }
+  }
   if (r.error) return error(r.error);
   if (r.movimientos.length > MAX_MOV) return error(`Demasiados movimientos: como máximo ${MAX_MOV} por archivo`);
   const g = await guardarMovimientos(u, r.movimientos);

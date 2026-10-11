@@ -1,12 +1,13 @@
 import { leer } from '@/lib/redis';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { sugerencias } from '@/lib/banco';
-import { deshacer, emparejar, ignorar } from '@/lib/bancoServidor';
+import { contabilizar, deshacer, emparejar, ignorar } from '@/lib/bancoServidor';
 import { puede } from '@/lib/permisos';
 
 export const dynamic = 'force-dynamic';
 
-// Confirmar, deshacer o ignorar un emparejamiento; o confirmar de una vez todos los seguros.
+// Confirmar, deshacer o ignorar un emparejamiento, contabilizar lo que no es factura ni gasto (lib/banco.js CLASES), o
+// confirmar de una vez todos los seguros.
 export async function POST(req) {
   const { u, res } = await usuarioApi({ permiso: 'resumen' });
   if (res) return res;
@@ -25,7 +26,8 @@ export async function POST(req) {
   if (!id) return error('Falta el movimiento');
   const r = b.accion === 'emparejar' ? await emparejar(u, id, b.tipo, String(b.destino || ''))
     : b.accion === 'deshacer' ? await deshacer(u, id)
-      : b.accion === 'ignorar' ? await ignorar(u, id) : { error: 'Acción no válida' };
+      : b.accion === 'ignorar' ? await ignorar(u, id)
+        : b.accion === 'contabilizar' ? await contabilizar(u, id, String(b.clase || ''), { intereses: b.intereses }) : { error: 'Acción no válida' };
   if (r.error) return error(r.error, r.status || 400);
   return Response.json({ ok: true });
 }

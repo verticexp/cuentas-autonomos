@@ -1,6 +1,7 @@
 import { requerir } from '@/lib/auth';
 import { leer } from '@/lib/redis';
-import { opciones, sugerencias } from '@/lib/banco';
+import { CLASES, clasesPara, clasificar, opciones, sugerencias } from '@/lib/banco';
+import { fiscalDe } from '@/lib/empresa';
 import { conectarVisible } from '@/lib/enableBanking';
 import { importes, numeroFactura } from '@/lib/calculos';
 import { totalDe } from '@/lib/proveedores';
@@ -32,6 +33,8 @@ export default async function PaginaBanco({ searchParams }) {
   const gPorId = Object.fromEntries((gastos || []).map((g) => [g.id, g]));
   // Lo que se enseña de cada factura o gasto enlazado o sugerido.
   const destino = (tipo, id) => {
+    if (tipo === 'auto') return { tipo, id, texto: `${CLASES[id]?.t || 'Impuestos o nóminas'} · lo contabiliza Netto`, url: '/contabilidad?ver=diario' };
+    if (tipo === 'asiento') return { tipo, id, texto: 'Apuntado en la contabilidad', url: '/contabilidad?ver=diario' };
     if (tipo === 'factura') { const f = fPorId[id]; return f && { tipo, id, texto: `Factura ${numeroFactura(f)} · ${f.cliente?.nombre || ''}`, importe: importes(f).total, fecha: f.fecha, url: `/facturas/${encodeURIComponent(id)}` }; }
     const g = gPorId[id];
     return g && { tipo, id, texto: `${g.proveedor ? `${g.proveedor} · ` : ''}${g.concepto}`, importe: totalDe(g), fecha: g.fecha, url: `/gastos/${encodeURIComponent(id)}`, pendiente: Boolean(g.pendiente) };
@@ -39,6 +42,7 @@ export default async function PaginaBanco({ searchParams }) {
   const pendientes = lista.filter((m) => m.estado === 'pendiente' || !m.estado).slice(0, 150).map((m) => ({
     ...m, sugerencia: sug[m.id] ? { ...destino(sug[m.id].tipo, sug[m.id].id), segura: sug[m.id].segura } : null,
     opciones: opciones(m, facturas, gastos || [], lista),
+    clase: clasificar(m, { autonomo: fiscalDe(u).tipo === 'autonomo' }), clases: clasesPara(m),
   }));
   const emparejados = lista.filter((m) => m.estado === 'emparejado').slice(0, 40).map((m) => ({ ...m, destino: destino(m.enlace.tipo, m.enlace.id) }));
   const ignorados = lista.filter((m) => m.estado === 'ignorado').slice(0, 40);
