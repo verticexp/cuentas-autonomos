@@ -52,6 +52,7 @@ export default async function Resumen({ searchParams }) {
     puede(u, 'gastos') && { href: '/gastos', n: 'gasto', t: 'Gastos' },
     puede(u, 'facturas') && { href: '/presupuestos', n: 'presupuesto', t: 'Presupuestos' },
     { href: '/modelos', n: 'hacienda', t: 'Impuestos' },
+    { href: `/contabilidad?anio=${anio}`, n: 'contabilidad', t: 'Contabilidad' },
   ].filter(Boolean);
 
   return (
@@ -91,7 +92,7 @@ export default async function Resumen({ searchParams }) {
 
       <nav className="accesos" aria-label="Accesos">
         {accesos.map((a) => (
-          <Ir key={a.href} href={a.href} tipo={['/presupuestos', '/modelos'].includes(a.href) ? 'adelante' : 'tab-der'} className="acceso"><Ico n={a.n} /><span>{a.t}</span></Ir>
+          <Ir key={a.href} href={a.href} tipo={['/presupuestos', '/modelos'].includes(a.href) || a.href.startsWith('/contabilidad') ? 'adelante' : 'tab-der'} className="acceso"><Ico n={a.n} /><span>{a.t}</span></Ir>
         ))}
       </nav>
 
@@ -212,6 +213,7 @@ export default async function Resumen({ searchParams }) {
                           {fila('27', 'Total cuota devengada', c['27'])}
                           {fila('28', 'Base IVA soportado', c['28'])}
                           {fila('29', 'Cuota IVA soportado', c['29'])}
+                          {c['30'] > 0 && <>{fila('30', 'Bienes de inversión: base', c['30'])}{fila('31', 'Bienes de inversión: cuota', c['31'])}</>}
                           {c['36'] > 0 && <>{fila('36', 'Compras a la UE: base deducible', c['36'])}{fila('37', 'Compras a la UE: cuota deducible', c['37'])}</>}
                           {fila('45', 'Total a deducir', c['45'])}
                           {fila('46', 'Resultado', c['46'])}

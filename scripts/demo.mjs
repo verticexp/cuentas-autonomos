@@ -1,25 +1,27 @@
 // Crea (o rehace desde cero) la empresa de demo: una S.L. de sonido e iluminación para eventos,
-// con dos años de facturas, gastos y clientes ficticios, y Verifactu en modo pruebas.
+// con dos años de facturas, gastos (con categorías del plan contable y bienes de inversión que se amortizan), clientes
+// ficticios, el saldo del banco y Verifactu en modo pruebas.
 // Uso: KV_REST_API_URL=… KV_REST_API_TOKEN=… DEMO_PASSWORD=… node scripts/demo.mjs
+// Si la demo ya existe, DEMO_PASSWORD es opcional: sin ella se conserva la contraseña que tiene.
 import { randomBytes, scryptSync } from 'node:crypto';
 import { Redis } from '@upstash/redis';
 import { numeroFactura, siguienteNumero } from '../lib/calculos.js';
 
 const { KV_REST_API_URL: url, KV_REST_API_TOKEN: token, DEMO_PASSWORD: password } = process.env;
 if (!url || !token) throw new Error('Faltan KV_REST_API_URL y KV_REST_API_TOKEN');
-if (!password || password.length < 8) throw new Error('DEMO_PASSWORD de al menos 8 caracteres');
 const EMAIL = process.env.DEMO_EMAIL || 'demo@verticexp.com';
 const r = new Redis({ url, token });
 const P = 'cuentas:';
 
+// Si ya existe, se reutilizan sus ids (y su contraseña, si no se da otra) y se borran sus datos.
+const previo = await r.hget(`${P}emails`, EMAIL);
+const passPrevia = previo && (await r.hget(`${P}usuarios`, previo))?.pass;
+if (password ? password.length < 8 : !passPrevia) throw new Error('DEMO_PASSWORD de al menos 8 caracteres');
 // Mismo formato de contraseña que lib/auth.js.
 const sal = randomBytes(16).toString('hex');
-const pass = `${sal}:${scryptSync(password, sal, 64).toString('hex')}`;
-
-// Si ya existe, se reutilizan sus ids y se borran sus datos.
-const previo = await r.hget(`${P}emails`, EMAIL);
+const pass = password ? `${sal}:${scryptSync(password, sal, 64).toString('hex')}` : passPrevia;
 const id = previo || randomBytes(4).toString('hex');
-await r.del(...['facturas', 'gastos', 'clientes', 'registros', 'verifactu'].map((n) => `${P}${n}:${id}`));
+await r.del(...['facturas', 'gastos', 'clientes', 'registros', 'verifactu', 'saldo'].map((n) => `${P}${n}:${id}`));
 
 const ACTIVIDADES = [
   { id: 'sonido-e-iluminacion', nombre: 'Sonido e iluminación', serie: '', ivaPct: 21, irpfPct: 0 },
@@ -83,9 +85,9 @@ for (let d = inicio; d.toISOString().slice(0, 10) <= hoy; d = new Date(Date.UTC(
       cobrada: antig > 75 ? azar() > 0.03 : antig > 30 ? azar() > 0.5 : false,
     });
   }
-  const g = (dd, concepto, base, ivaPct = 21, actividad = 'sonido-e-iluminacion') => {
+  const g = (dd, concepto, base, ivaPct = 21, actividad = 'sonido-e-iluminacion', extra = {}) => {
     const fecha = dia(y, m, dd);
-    if (fecha <= hoy) gastos.push({ id: `demo-${gastos.length + 1}`, fecha, actividad, concepto, base, ivaPct });
+    if (fecha <= hoy) gastos.push({ id: `demo-${gastos.length + 1}`, fecha, actividad, concepto, base, ivaPct, ...extra });
   };
   g(1, 'Alquiler del almacén', 950);
   g(5, 'Gestoría', 180);
@@ -96,8 +98,26 @@ for (let d = inicio; d.toISOString().slice(0, 10) <= hoy; d = new Date(Date.UTC(
   g(15, 'Combustible furgoneta', entre(120, 380));
   if (azar() > 0.6) g(18, 'Publicidad en Instagram y Google', entre(80, 300));
   if (azar() > 0.7) g(20, 'Material y equipos (cables, lámparas, consumibles)', entre(150, 900), 21, 'alquiler-de-equipos');
-  if (m === 3 || m === 10) g(22, 'Equipo de sonido nuevo (altavoces)', entre(2500, 6000), 21, 'alquiler-de-equipos');
+  if (m === 3 || m === 10) g(22, 'Equipo de sonido nuevo (altavoces)', entre(2500, 6000), 21, 'alquiler-de-equipos', { proveedor: 'Audio Pro Barcelona S.L.', inversion: { tipo: 'electronicos' } });
+  // Gastos de otras partidas, para que la cuenta de pérdidas y ganancias tenga de todo.
+  g(3, 'Comisiones bancarias', 18, 0);
+  g(12, 'Intereses del préstamo de la furgoneta', 95, 0, 'sonido-e-iluminacion', { proveedor: 'CaixaBank' });
+  if (m % 2 === 0) g(14, 'Transporte de equipos a eventos', entre(150, 450), 21, 'sonido-e-iluminacion', { proveedor: 'Transportes Ràpid S.L.' });
+  if (m === 2 || m === 8) g(16, 'Mantenimiento y revisión de la furgoneta', entre(220, 520));
+  if (m === 6) g(10, 'IBI y tasa de basuras del almacén', 640, 0);
+  if (EVENTOS_MES[m - 1] >= 8) g(24, 'Técnicos de montaje subcontratados', entre(900, 2200), 21, 'sonido-e-iluminacion', { proveedor: 'Montajes Escénicos BCN S.L.', categoria: '607' });
 }
+
+// Bienes de inversión: no se restan enteros, se amortizan (lib/amortizaciones.js).
+const hace = (meses, d = 10) => { const x = new Date(Date.UTC(Number(hoy.slice(0, 4)), Number(hoy.slice(5, 7)) - 1 - meses, d)); return x.toISOString().slice(0, 10); };
+const bien = (fecha, concepto, proveedor, base, tipo, actividad = 'sonido-e-iluminacion') =>
+  gastos.push({ id: `demo-bien-${gastos.length + 1}`, fecha, actividad, concepto, proveedor, base, ivaPct: 21, inversion: { tipo } });
+bien(hace(22, 4), 'Furgoneta Renault Master para el transporte de equipos', 'Garatge Martí S.A.', 28500, 'transporte');
+bien(hace(20, 15), 'Mesa de luces y 24 focos LED robotizados', 'Stage Light Iberia S.L.', 9800, 'electronicos');
+bien(hace(14, 7), 'Dos portátiles para el control de sonido', 'Apple Distribution International', 4200, 'informatica');
+bien(hace(9, 20), 'Estanterías y mobiliario del almacén', 'Ikea Ibérica S.A.', 1850, 'mobiliario');
+bien(hace(5, 3), 'Herramientas de montaje (taladros, escaleras)', 'Leroy Merlin España S.L.', 680, 'utiles');
+bien(hace(2, 18), 'Disco duro para las sesiones', 'PcComponentes S.L.', 240, 'informatica');
 
 // Una rectificativa de ejemplo: devolución parcial de una factura del año pasado.
 const orig = facturas.find((f) => f.anio === new Date().getUTCFullYear() - 1 && f.base > 1500);
@@ -111,5 +131,6 @@ if (orig) {
 const porId = (xs) => Object.fromEntries(xs.map((x) => [x.id, x]));
 await r.hset(`${P}facturas:${id}`, porId(facturas));
 await r.hset(`${P}gastos:${id}`, porId(gastos));
+await r.set(`${P}saldo:${id}`, { importe: 18450.32, fecha: hoy });
 await r.hset(`${P}clientes:${id}`, porId(CLIENTES.map((c) => ({ id: c.nombre.toUpperCase(), ...c }))));
 console.log(`Demo lista: ${EMAIL} · ${facturas.length} facturas · ${gastos.length} gastos · desde ${inicio.toISOString().slice(0, 10)}`);

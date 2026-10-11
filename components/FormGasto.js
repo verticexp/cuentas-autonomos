@@ -6,6 +6,9 @@ import { llamar } from './Acciones';
 import { navegar } from '@/lib/transicion';
 import Deslizable from './Deslizable';
 import { nifUE } from '@/lib/calculos';
+import { parseImporte } from '@/lib/importe';
+import { CATEGORIAS, categoria, categoriaDe, pareceBien } from '@/lib/categorias';
+import { LIMITE_LIBERTAD, TIPOS_BIEN, coeficiente } from '@/lib/amortizaciones';
 import '@/app/ticket.css';
 
 // Reduce la foto (máx. 1600 px, JPEG) para que suba rápido y quepa en la petición.
@@ -19,7 +22,7 @@ async function reducir(archivo) {
 }
 
 // plegado: en la lista de gastos empieza como una tarjeta con «Escanear ticket»; el formulario se abre al escanear o al pedirlo.
-export default function FormGasto({ hoy, gasto, actividades, alquiler = false, retenciones = false, plegado = false }) {
+export default function FormGasto({ hoy, gasto, actividades, alquiler = false, retenciones = false, plegado = false, regimen = 'autonomo' }) {
   const router = useRouter();
   const vacio = { fecha: hoy, actividad: actividades[0].id, concepto: '', proveedor: '', base: '', ivaPct: 21 };
   const [g, setG] = useState(gasto ? { ...gasto, base: String(gasto.base).replace('.', ',') } : vacio);
@@ -122,6 +125,21 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, r
       <input className="campo" type="date" value={g.fecha} onChange={(e) => poner('fecha', e.target.value)} required />
       <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.pendiente)} onChange={(e) => poner('pendiente', e.target.checked)} />Aún no lo he pagado</label>
       {(alquiler || g.alquiler) && <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.alquiler)} onChange={(e) => poner('alquiler', e.target.checked)} />Es el alquiler del local (retención del 19 %)</label>}
+      <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.inversion)} onChange={(e) => poner('inversion', e.target.checked ? { tipo: 'otros' } : undefined)} />Es un bien de inversión (lo usarás varios años)</label>
+      {g.inversion ? <>
+        <select className="campo" value={g.inversion.tipo} onChange={(e) => poner('inversion', { tipo: e.target.value })} aria-label="Tipo de bien">
+          {TIPOS_BIEN.map((t) => <option key={t.id} value={t.id}>{t.nombre} · {t[regimen === 'sociedad' ? 'sociedad' : 'autonomo']} % al año</option>)}
+        </select>
+        <p className="nota">{parseImporte(g.base) > 0 && parseImporte(g.base) <= LIMITE_LIBERTAD
+          ? 'Como no pasa de 300 €, se resta entero este año.'
+          : `No se resta entero: se amortiza un ${coeficiente(g, regimen)} % al año desde la fecha de compra.`} El IVA sí lo deduces entero en el 303 de este trimestre.</p>
+      </> : (
+        <select className="campo" value={g.categoria || ''} onChange={(e) => poner('categoria', e.target.value || undefined)} aria-label="Categoría">
+          <option value="">{categoria(categoriaDe({ ...g, categoria: undefined })).nombre} (automática)</option>
+          {CATEGORIAS.map((c) => <option key={c.id} value={c.id}>{c.id} · {c.nombre}</option>)}
+        </select>
+      )}
+      {pareceBien({ ...g, base: parseImporte(g.base) }) && <p className="nota">¿Es un equipo que vas a usar varios años? Márcalo como bien de inversión: se resta repartido en varios años, como pide Hacienda.</p>}
       {error && <p className="error">{error}</p>}
       <div className="gasto-guardar">
         <button className="boton" disabled={enviando}>{enviando ? 'Guardando…' : gasto ? 'Guardar cambios' : 'Añadir'}</button>
