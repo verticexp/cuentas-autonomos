@@ -8,7 +8,7 @@ import { VentanaApp } from '@/components/web/demos/Pantallas';
 import { Cta, Encabezado, Faq, Flecha } from '@/components/web/Bloques';
 import { FAQ_GENERAL, FUNCIONES, SEGMENTOS } from '@/components/web/datos';
 
-const CINTA = ['Facturas ilimitadas', 'Verifactu', 'Presupuestos online', 'Gastos con IA', 'Modelo 303', 'Modelo 130', 'Modelos 111 y 115', 'Renta (100)', 'Conciliación de extractos', 'Previsión de caja', 'Nóminas', 'Registro de jornada', 'Permisos por área', 'Varias empresas', 'Portal del cliente', 'Asistente IA', 'Importa desde Holded', 'Face ID'];
+const CINTA = ['Facturas ilimitadas', 'Verifactu', 'Presupuestos online', 'Gastos con IA', 'Modelo 303', 'Modelo 130', 'Modelos 111 y 115', 'Renta (100)', 'Conciliación de extractos', 'Contabilidad por partida doble', 'Balance y resultados', 'Amortizaciones', 'Cuentas anuales', 'Previsión de caja', 'Nóminas', 'Registro de jornada', 'Permisos por área', 'Varias empresas', 'Portal del cliente', 'Asistente IA', 'Cámbiate desde Holded, A3 o Sage', 'Face ID'];
 
 const CIFRAS = [
   { n: 9, suf: ' €', t: 'al mes, desde', d: 'Sin cuotas de alta ni permanencia' },
@@ -25,7 +25,7 @@ export default function Landing() {
         <div className="web-hero-txt">
           <Link href="/funciones/impuestos" className="web-aviso"><span>Nuevo</span>Calcula tus modelos 303 y 130 al momento<Icono n="flecha" className="ico web-flecha" /></Link>
           <h1>Las cuentas de tu negocio, <em>por fin en orden</em>.</h1>
-          <p className="web-sub">Facturas, gastos con IA, impuestos, caja y equipo en una sola app. La alternativa a Holded más sencilla y más barata, para autónomos, pymes y grandes empresas.</p>
+          <p className="web-sub">Facturas, gastos con IA, impuestos, contabilidad, caja y equipo en una sola app. La alternativa a Holded más sencilla y más barata, para autónomos, pymes y grandes empresas.</p>
           <div className="web-cta">
             <Link className="web-btn web-btn-grande" href="/contacto">Empieza gratis<Flecha /></Link>
             <Link className="web-btn web-btn-claro web-btn-grande" href="/funciones">Ver cómo funciona</Link>
@@ -64,7 +64,7 @@ export default function Landing() {
         <Encabezado kicker="Funciones" titulo="Hecho para lo que de verdad te quita tiempo" />
         <div className="web-funciones">
           {FUNCIONES.map((f, i) => (
-            <Link key={f.slug} href={`/funciones/${f.slug}`} data-foco data-r className={`web-fcard${i === 0 || i === 3 ? ' ancha' : ''}`} style={{ '--d': `${(i % 3) * 70}ms` }}>
+            <Link key={f.slug} href={`/funciones/${f.slug}`} data-foco data-r className={`web-fcard${i === 0 ? ' ancha' : ''}`} style={{ '--d': `${(i % 3) * 70}ms` }}>
               <span className="web-fcard-ico"><Icono n={f.icono} /></span>
               <h3>{f.nombre}</h3>
               <p>{f.sub}</p>
@@ -73,7 +73,7 @@ export default function Landing() {
           ))}
           <Link href="/funciones" data-foco data-r className="web-fcard web-fcard-todas" style={{ '--d': '140ms' }}>
             <h3>Y mucho más</h3>
-            <p>Portal del cliente, copia en Google Drive, Face ID, avisos push, varias empresas…</p>
+            <p>Cuentas anuales, portal del cliente, copia en Google Drive, Face ID, avisos push, varias empresas…</p>
             <span className="web-enlace">Ver todas las funciones<Flecha /></span>
           </Link>
         </div>
@@ -104,14 +104,14 @@ export default function Landing() {
         <div className="web-mudanza" data-r>
           <div>
             <p className="web-kicker">Cambiarte es fácil</p>
-            <h2>¿Vienes de Holded? Trae tus datos en minutos</h2>
-            <p>Importa tus clientes y facturas desde Holded o desde archivos de otras plataformas. Sin volver a teclear nada y sin perder tu historial.</p>
+            <h2>¿Vienes de Holded, A3 o Sage? Trae tus datos en minutos</h2>
+            <p>Importa clientes, facturas y gastos, y también tu contabilidad: el balance de sumas y saldos y los bienes de inversión con lo ya amortizado. Sin volver a teclear nada y sin perder tu historial.</p>
             <Link href="/contacto" className="web-btn">Quiero cambiarme<Flecha /></Link>
           </div>
           <ol>
             <li><b>Exporta</b><span>Descarga tus datos desde tu programa actual.</span></li>
-            <li><b>Importa</b><span>Súbelos a Netto: reconoce clientes y facturas solo.</span></li>
-            <li><b>Sigue facturando</b><span>Con tu numeración y tu historial, donde lo dejaste.</span></li>
+            <li><b>Importa</b><span>Súbelos a Netto: reconoce clientes, facturas, saldos y bienes solo.</span></li>
+            <li><b>Sigue donde lo dejaste</b><span>Con tu numeración, tu historial y la contabilidad abierta.</span></li>
           </ol>
         </div>
       </section>

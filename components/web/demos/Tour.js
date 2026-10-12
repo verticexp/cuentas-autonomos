@@ -9,7 +9,8 @@ const PASOS = [
   { p: 'factura', icono: 'factura', t: 'Factura en segundos', d: 'Cliente, conceptos y listo. IVA, IRPF y Verifactu, calculados.', href: '/funciones/facturacion' },
   { p: 'gasto', icono: 'gasto', t: 'Gastos con una foto', d: 'La IA lee el ticket y rellena proveedor, base e IVA.', href: '/funciones/gastos' },
   { p: 'impuestos', icono: 'impuestos', t: 'Impuestos sin sustos', d: 'Tus modelos calculados y lo que debes apartar.', href: '/funciones/impuestos' },
-  { p: 'conciliacion', icono: 'banco', t: 'Extractos que se cuadran solos', d: 'Sube el extracto y Netto empareja cobros y pagos.', href: '/funciones/banco' },
+  { p: 'contabilidad', icono: 'contabilidad', t: 'Contabilidad que se hace sola', d: 'Diario, resultados, balance y cuentas anuales.', href: '/funciones/contabilidad' },
+  { p: 'conciliacion', icono: 'banco', t: 'Extractos que se cuadran solos', d: 'Netto empareja cobros y pagos; lo que falta, a revisar.', href: '/funciones/banco' },
   { p: 'prevision', icono: 'tesoreria', t: 'Caja a 12 meses vista', d: 'Cobros, pagos, impuestos y nóminas, mes a mes.', href: '/funciones/tesoreria' },
   { p: 'equipo', icono: 'equipo', t: 'Tu equipo, con permisos', d: 'Nóminas, jornada y cada uno viendo lo suyo.', href: '/funciones/equipo' },
 ];

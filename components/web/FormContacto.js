@@ -59,7 +59,7 @@ export default function FormContacto({ plan }) {
       <label><span>¿Qué usas ahora? <small>(opcional)</small></span>
         <select name="vengo" defaultValue="">
           <option value="">Elige una opción</option>
-          {['Holded', 'Quipu', 'Contasimple', 'Billin', 'Excel o Word', 'Mi gestoría lo lleva todo', 'Otro'].map((x) => <option key={x}>{x}</option>)}
+          {['Holded', 'A3', 'Sage', 'Contasol', 'Quipu', 'Contasimple', 'Billin', 'Excel o Word', 'Mi gestoría lo lleva todo', 'Otro'].map((x) => <option key={x}>{x}</option>)}
         </select>
       </label>
       <label><span>Cuéntanos algo más <small>(opcional)</small></span><textarea name="mensaje" rows={4} maxLength={1500} placeholder="A qué te dedicas, cuántos sois, qué te gustaría resolver…" /></label>

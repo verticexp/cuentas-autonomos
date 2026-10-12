@@ -7,7 +7,7 @@ export const metadata = { title: 'Pide acceso · Netto', description: 'Prueba Ne
 const PASOS = [
   ['Nos escribes', 'Con lo básico de tu negocio: a qué te dedicas y cuántos sois.'],
   ['Te damos acceso', 'Te creamos la cuenta y empieza tu mes gratis, sin tarjeta.'],
-  ['Traes tus datos', 'Te ayudamos a importar tus clientes y facturas desde Holded u otro programa.'],
+  ['Traes tus datos', 'Te ayudamos a importar tus clientes, facturas y contabilidad desde Holded, A3, Sage u otro programa.'],
 ];
 
 export default async function Contacto({ searchParams }) {
