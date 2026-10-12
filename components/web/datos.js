@@ -63,21 +63,44 @@ export const FUNCIONES = [
     ],
   },
   {
-    slug: 'banco', icono: 'banco', nombre: 'Banco y conciliación', corto: 'Sube el extracto, Netto concilia',
-    titulo: 'Sube tu extracto. Netto lo cuadra todo',
-    sub: 'Importa los movimientos de tu banco en Norma 43, CSV o Excel. Netto empareja cada cobro con su factura y cada pago con su gasto.',
-    demo: 'conciliacion',
+    slug: 'contabilidad', icono: 'contabilidad', nombre: 'Contabilidad', corto: 'Diario, balance y cuentas anuales',
+    titulo: 'La contabilidad se hace sola mientras facturas',
+    sub: 'Cada factura, gasto, cobro, nómina e impuesto genera su asiento con el plan contable de pymes. Pérdidas y ganancias, balance y cuentas anuales, siempre al día.',
+    demo: 'contabilidad',
     puntos: [
-      { t: 'Cualquier banco', d: 'Norma 43, CSV o Excel. Netto reconoce las columnas solo y nunca duplica movimientos.' },
-      { t: 'Emparejado automático', d: 'Por importe, número de factura o nombre del cliente o proveedor. Confirmas uno a uno o todos los seguros de golpe.' },
-      { t: 'Saldo real', d: 'El saldo de todas tus cuentas en un solo número, punto de partida de tu previsión de caja.' },
+      { t: 'Partida doble de verdad', d: 'Libro diario, mayor y sumas y saldos a partir de lo que ya apuntas. Sin teclear asientos.' },
+      { t: 'Resultados y balance', d: 'Pérdidas y ganancias por año o trimestre, comparadas con el año anterior, y un balance que siempre cuadra.' },
+      { t: 'Amortizaciones solas', d: 'Marca un gasto como bien de inversión y Netto lo amortiza con la tabla oficial, también en tus impuestos.' },
     ],
     secciones: [
-      { t: 'Cada cobro, en su factura', d: 'Al confirmar un emparejamiento, la factura queda cobrada y el gasto pagado, con la fecha del banco. ¿Te equivocaste? Se deshace con un toque.', l: ['Factura cobrada con fecha del banco', 'Deshacer en cualquier momento', 'Ignorar movimientos que no cuentan'], visual: 'emparejado' },
+      { t: 'Cuentas anuales listas para el Registro', d: 'Balance, pérdidas y ganancias, cambios en el patrimonio neto y memoria con los modelos oficiales de pymes. Netto te dice qué modelo te toca y te recuerda los plazos.', l: ['Memoria rellenada con tus cifras', 'Certificado de aprobación de la junta', 'PDF para firmar y depositar'], visual: 'anuales' },
+      { t: 'Bienes de inversión sin hojas de cálculo', d: 'El ordenador, la furgoneta o la maquinaria se amortizan por días con el coeficiente oficial. El IVA se deduce entero y en el 130 o en Sociedades solo cuenta la amortización.', l: ['Libro registro de bienes de inversión', 'Tablas de autónomos y de sociedades', 'Hasta 300 €, gasto del año'], visual: 'amortizaciones' },
+      { t: 'Cámbiate desde cualquier programa', d: 'Sube el balance de sumas y saldos y el inventario de bienes de Holded, A3, Sage o Contasol. Netto crea la apertura y sigue donde lo dejaste, sin contar nada dos veces.', l: ['Saldos de apertura desde Excel', 'Amortizaciones que continúan', 'Facturas y gastos pendientes incluidos'], visual: 'migracion' },
+    ],
+    faqs: [
+      ['¿Necesito saber contabilidad?', 'No. Netto genera los asientos con lo que ya haces: facturar, apuntar gastos y conciliar el banco. Tu gestor puede añadir asientos de ajuste si los necesita.'],
+      ['¿Puedo depositar las cuentas anuales con Netto?', 'Netto prepara las cuentas con los epígrafes oficiales, la memoria y el certificado. El depósito se hace en el Registro Mercantil con sus modelos (o tu gestor): solo tienes que copiar las cifras.'],
+      ['¿Qué se descarga para mi gestor?', 'Un Excel con libro diario, mayor, sumas y saldos, pérdidas y ganancias, balance y bienes de inversión.'],
+      ['Soy autónomo, ¿me sirve?', 'Sí. Llevas tus libros y amortizaciones al día y ves tu resultado real. Las cuentas anuales solo las depositan las sociedades.'],
+    ],
+  },
+  {
+    slug: 'banco', icono: 'banco', nombre: 'Banco y conciliación', corto: 'Sube el extracto, Netto concilia',
+    titulo: 'Sube tu extracto. Netto lo cuadra todo',
+    sub: 'Sube el extracto de tu banco en Norma 43, CSV, Excel o PDF. Netto empareja cada cobro con su factura y cada pago con su gasto, y lo que falta te sale para revisar.',
+    demo: 'conciliacion',
+    puntos: [
+      { t: 'Cualquier banco', d: 'Norma 43, CSV, Excel o el PDF del banco, que lee la IA. Netto nunca duplica movimientos.' },
+      { t: 'Emparejado automático', d: 'Por importe, número de factura o nombre del cliente o proveedor. Confirmas uno a uno o todos los seguros de golpe.' },
+      { t: 'Nada se queda fuera', d: 'Los cargos sin gasto salen en revisión para añadirlos con su factura; comisiones, préstamos o pagos a Hacienda se apuntan con un toque.' },
+    ],
+    secciones: [
+      { t: 'Cada cobro, en su factura', d: 'Al confirmar un emparejamiento, la factura queda cobrada y el gasto pagado, con la fecha del banco. ¿Te equivocaste? Se deshace con un toque.', l: ['Factura cobrada con fecha del banco', 'Deshacer en cualquier momento', 'Saldo real de todas tus cuentas'], visual: 'emparejado' },
+      { t: 'Lo que está en el banco y no en Netto, en revisión', d: 'Ese cargo de Amazon que nadie apuntó aparece en Gastos para añadirlo con su factura. Y Netto reconoce comisiones, cuotas de autónomos, préstamos, nóminas o pagos a Hacienda y te propone qué hacer con cada uno.', l: ['Gastos sin factura, en revisión', 'Comisiones y cuotas apuntadas solas', 'Aviso cada mes para subir el extracto'], visual: 'revision' },
     ],
     proximamente: 'Conexión directa con tu banco: estamos trabajando en ello. Mientras tanto, subir el extracto lleva menos de un minuto.',
     faqs: [
-      ['¿Qué formatos acepta?', 'Norma 43 (el formato estándar de la banca española), CSV y Excel. Todos los bancos permiten descargar al menos uno.'],
+      ['¿Qué formatos acepta?', 'Norma 43 (el formato estándar de la banca española), CSV, Excel y PDF. Todos los bancos permiten descargar al menos uno.'],
       ['¿Y si subo el mismo extracto dos veces?', 'No pasa nada: Netto detecta los movimientos repetidos y no los duplica.'],
       ['¿Se puede conectar el banco directamente?', 'Todavía no. Es una de las próximas funciones de Netto.'],
     ],
@@ -131,7 +154,7 @@ export const FUNCIONES = [
 export const funcion = (slug) => FUNCIONES.find((f) => f.slug === slug);
 
 export const EXTRAS = [
-  { icono: 'importar', t: 'Importa desde Holded', d: 'Trae tus clientes y facturas sin teclear.' },
+  { icono: 'importar', t: 'Cámbiate desde otro programa', d: 'Clientes, facturas, saldos contables y bienes de inversión desde Holded, A3, Sage o Contasol.' },
   { icono: 'nube', t: 'Copia en Google Drive', d: 'Conecta tu Drive y Netto guarda ahí una copia de cada factura.' },
   { icono: 'candado', t: 'Face ID y llaves de acceso', d: 'Abre Netto con tu cara o tu huella.' },
   { icono: 'campana', t: 'Avisos push', d: 'Cobros, vencimientos y plazos fiscales.' },
@@ -156,20 +179,22 @@ export const SEGMENTOS = [
       ['Tickets perdidos en la cartera', 'Foto al ticket y la IA lo apunta por ti.'],
       ['Sustos con el IVA y el 130', 'Tus modelos calculados y lo que debes apartar, siempre a la vista.'],
       ['Mil correos con tu gestoría', 'Acceso para tu gestoría o el paquete trimestral en un clic.'],
+      ['Amortizaciones en un Excel', 'Tus equipos se amortizan solos y bajan tu 130.'],
     ],
-    funciones: ['facturacion', 'gastos', 'impuestos', 'asistente'],
+    funciones: ['facturacion', 'gastos', 'impuestos', 'contabilidad'],
   },
   {
     id: 'pym', ruta: '/pymes', icono: 'tienda', n: 'Pymes', desde: 25,
-    titulo: 'Facturas, equipo y caja de tu pyme en un solo sitio',
-    sub: 'Usuarios con permisos, nóminas y registro de jornada, conciliación y previsión de caja. Todo conectado. Desde 25 € al mes.',
+    titulo: 'Facturas, contabilidad, equipo y caja de tu pyme en un solo sitio',
+    sub: 'Contabilidad y cuentas anuales, usuarios con permisos, nóminas y jornada, conciliación y previsión de caja. Todo conectado. Desde 25 € al mes.',
     dolores: [
       ['Cada uno con su Excel', 'Un solo Netto con permisos por área para cada persona.'],
       ['No sabes cuánta caja tendrás', 'Previsión a 3, 6 y 12 meses desde tu saldo real.'],
       ['Conciliar a mano cada mes', 'Sube el extracto y Netto empareja cobros y pagos.'],
       ['Nóminas y fichajes aparte', 'Nóminas y registro de jornada dentro de Netto.'],
+      ['La contabilidad, en otro programa', 'Diario, balance y cuentas anuales salen solos de tus facturas.'],
     ],
-    funciones: ['equipo', 'banco', 'tesoreria', 'facturacion'],
+    funciones: ['contabilidad', 'banco', 'tesoreria', 'equipo'],
   },
   {
     id: 'gra', ruta: '/grandes-empresas', icono: 'edificio', n: 'Grandes empresas', desde: 45,
@@ -179,9 +204,9 @@ export const SEGMENTOS = [
       ['Varias sociedades, varias herramientas', 'Todas tus empresas en una cuenta, cambiando con un toque.'],
       ['Accesos que nadie controla', 'Roles y permisos por área, e invitaciones que caducan.'],
       ['Auditorías y gestorías', 'Perfiles para gestorías y exportaciones completas.'],
-      ['Implantaciones eternas', 'Incorporación guiada y migración de tus datos.'],
+      ['Implantaciones eternas', 'Sube los saldos de tu programa actual y sigue donde lo dejaste.'],
     ],
-    funciones: ['equipo', 'tesoreria', 'impuestos', 'banco'],
+    funciones: ['contabilidad', 'equipo', 'tesoreria', 'banco'],
   },
 ];
 
@@ -190,12 +215,12 @@ export const segmento = (id) => SEGMENTOS.find((s) => s.id === id);
 // «Todo lo del plan anterior» va en `herencia`; cada plan lista solo lo que añade.
 export const PLANES = {
   aut: [
-    { n: 'Esencial', p: 9, para: 'Facturar y declarar sin sustos', l: ['Facturas y presupuestos ilimitados', 'Verifactu: huella encadenada y QR', 'Clientes, catálogo y recurrentes', 'Gastos y proveedores', 'Escaneo de tickets y PDF con IA', 'Modelos 303, 130, 111, 115 y 100 calculados', 'Extractos del banco y saldo', 'Importación desde Holded', '1 empresa · 1 usuario'] },
-    { n: 'Pro', p: 12, para: 'Que tus cuentas cuadren solas', fuerte: true, herencia: 'Esencial', l: ['Conciliación automática de extractos', 'Previsión de caja a 3, 6 y 12 meses', 'Asistente IA con tus cifras', 'Varias actividades con su IVA e IRPF', 'Acceso para tu gestoría', 'Portal del cliente', 'Recordatorios y avisos push'] },
+    { n: 'Esencial', p: 9, para: 'Facturar y declarar sin sustos', l: ['Facturas y presupuestos ilimitados', 'Verifactu: huella encadenada y QR', 'Clientes, catálogo y recurrentes', 'Gastos y proveedores', 'Escaneo de tickets y PDF con IA', 'Modelos 303, 130, 111, 115 y 100 calculados', 'Bienes de inversión y amortizaciones', 'Extractos del banco y saldo', 'Importación desde Holded y otros programas', '1 empresa · 1 usuario'] },
+    { n: 'Pro', p: 12, para: 'Que tus cuentas cuadren solas', fuerte: true, herencia: 'Esencial', l: ['Conciliación automática de extractos', 'Gastos del banco sin factura, en revisión', 'Contabilidad: diario, mayor, resultados y balance', 'Previsión de caja a 3, 6 y 12 meses', 'Asistente IA con tus cifras', 'Varias actividades con su IVA e IRPF', 'Acceso para tu gestoría', 'Portal del cliente', 'Recordatorios y avisos push'] },
     { n: 'Plus', p: 20, para: 'Para quien lo lleva todo', herencia: 'Pro', l: ['Hasta 3 empresas', 'Hasta 3 usuarios con permisos', 'Nóminas y jornada (2 empleados)', 'Escaneos IA ampliados', 'Soporte prioritario'] },
   ],
   pym: [
-    { n: 'Esencial', p: 25, para: 'Equipo pequeño, finanzas claras', l: ['Todo lo de Autónomos Pro', '1 empresa · 3 usuarios con permisos', 'Nóminas y jornada (hasta 5 empleados)', 'Conciliación y previsión de caja', 'Modelos 303, 130, 111, 115', 'Acceso para tu gestoría', 'Escaneo IA para todo el equipo', 'Soporte por email'] },
+    { n: 'Esencial', p: 25, para: 'Equipo pequeño, finanzas claras', l: ['Todo lo de Autónomos Pro', 'Cuentas anuales de pymes para el Registro', 'Migración de saldos y bienes de otro programa', '1 empresa · 3 usuarios con permisos', 'Nóminas y jornada (hasta 5 empleados)', 'Conciliación y previsión de caja', 'Modelos 303, 130, 111, 115', 'Acceso para tu gestoría', 'Escaneo IA para todo el equipo', 'Soporte por email'] },
     { n: 'Pro', p: 35, para: 'Varias empresas, un solo panel', fuerte: true, herencia: 'Esencial', l: ['3 empresas · 8 usuarios', 'Nóminas y jornada (hasta 15 empleados)', 'Roles y permisos por área', 'Varias actividades por empresa', 'Escaneos IA ampliados', 'Soporte prioritario'] },
     { n: 'Plus', p: 55, para: 'Cuando el equipo ya es grande', herencia: 'Pro', l: ['5 empresas · 15 usuarios', 'Nóminas y jornada (hasta 30 empleados)', 'Incorporación guiada y migración'] },
   ],
@@ -216,7 +241,10 @@ export const COMPARATIVA = {
       ['Escaneo con IA', ['Incluido', 'Incluido', 'Ampliado']], ['Modelos 303, 130, 111, 115 y 100', [true, true, true]], ['Varias actividades', [false, true, true]],
     ]],
     ['Banco y caja', [
-      ['Extractos N43, CSV y Excel', [true, true, true]], ['Conciliación automática', [false, true, true]], ['Previsión de caja', [false, true, true]],
+      ['Extractos N43, CSV, Excel y PDF', [true, true, true]], ['Conciliación automática', [false, true, true]], ['Gastos del banco en revisión', [false, true, true]], ['Previsión de caja', [false, true, true]],
+    ]],
+    ['Contabilidad', [
+      ['Bienes de inversión y amortizaciones', [true, true, true]], ['Diario, mayor y sumas y saldos', [false, true, true]], ['Pérdidas y ganancias y balance', [false, true, true]],
     ]],
     ['Equipo', [
       ['Empresas', ['1', '1', '3']], ['Usuarios', ['1', '1 + gestoría', '3']], ['Nóminas y jornada', [false, false, '2 empleados']],
@@ -226,7 +254,7 @@ export const COMPARATIVA = {
   pym: [
     ['Cuenta', [['Empresas', ['1', '3', '5']], ['Usuarios', ['3', '8', '15']], ['Empleados en nómina', ['5', '15', '30']]]],
     ['Funciones', [
-      ['Facturación, gastos e impuestos', [true, true, true]], ['Conciliación y previsión de caja', [true, true, true]], ['Roles y permisos por área', ['Básicos', true, true]], ['Varias actividades por empresa', [false, true, true]], ['Escaneo con IA', ['Incluido', 'Ampliado', 'Ampliado']],
+      ['Facturación, gastos e impuestos', [true, true, true]], ['Conciliación y previsión de caja', [true, true, true]], ['Contabilidad y cuentas anuales', [true, true, true]], ['Migración desde otro programa', [true, true, true]], ['Roles y permisos por área', ['Básicos', true, true]], ['Varias actividades por empresa', [false, true, true]], ['Escaneo con IA', ['Incluido', 'Ampliado', 'Ampliado']],
     ]],
     ['Servicio', [['Soporte', ['Email', 'Prioritario', 'Prioritario']], ['Incorporación guiada', [false, false, true]]]],
   ],
@@ -240,11 +268,12 @@ export const COMPARATIVA = {
 export const PERSONALIZADO = ['Más empresas, usuarios o empleados', 'Plantillas de factura a tu medida', 'Migración completa de tus datos', 'Funciones e integraciones a medida'];
 
 export const FAQ_GENERAL = [
-  ['¿Puedo traer mis datos de otro programa?', 'Sí. Netto importa tus clientes y facturas desde Holded y desde archivos de otras plataformas, sin que tengas que volver a teclear nada.'],
+  ['¿Puedo traer mis datos de otro programa?', 'Sí. Netto importa clientes, facturas y gastos desde Holded o cualquier Excel, y para la contabilidad, el balance de sumas y saldos y los bienes de inversión de Holded, A3, Sage o Contasol. Sigues donde lo dejaste.'],
+  ['¿Netto lleva la contabilidad?', 'Sí, por partida doble y con el plan contable de pymes: libro diario, mayor, pérdidas y ganancias, balance, amortizaciones y cuentas anuales, generados con lo que ya apuntas.'],
   ['¿Qué pasa cuando acaba la prueba?', 'Nada se borra. Eliges plan o te llevas tus datos: puedes exportar tus facturas y registros en cualquier momento.'],
   ['¿Puede mi gestoría entrar?', 'Sí. La invitas por email con el perfil de gestoría: ve tus facturas, gastos e impuestos sin poder marcar cobros ni crear facturas, y lleva las nóminas de tu equipo si se las dejas.'],
   ['¿Funciona en el móvil?', 'Se instala como app desde el navegador, con barra de pestañas en el móvil y panel lateral en el ordenador. La app para iPhone está en preparación.'],
-  ['¿Se conecta con mi banco?', 'De momento trabajas con extractos (Norma 43, CSV o Excel), que Netto concilia solo. La conexión directa con el banco está en camino.'],
+  ['¿Se conecta con mi banco?', 'Subes el extracto cada mes (Norma 43, CSV, Excel o PDF) y Netto lo concilia solo: lo que no casa te sale para revisar. La conexión directa con el banco está en camino.'],
 ];
 
 export const FAQ_PRECIOS = [

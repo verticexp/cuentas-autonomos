@@ -290,7 +290,45 @@ export function AsistenteDemo() {
   );
 }
 
-const DEMOS = { calculadora: Calculadora, factura: FacturaDemo, ticket: TicketDemo, conciliacion: ConciliacionDemo, prevision: PrevisionDemo, permisos: PermisosDemo, asistente: AsistenteDemo };
+/* ───────── Contabilidad ───────── */
+const VISTAS_CONT = {
+  Resultados: { pie: 'Sale solo del libro diario. Toca otra pestaña.', filas: [
+    ['1. Cifra de negocios', 148300], ['4. Aprovisionamientos', -9120], ['6. Gastos de personal', -61800], ['7. Otros gastos de explotación', -22950], ['8. Amortización del inmovilizado', -8800],
+    ['A) Resultado de explotación', 45630, 1], ['14. Gastos financieros', -1140], ['C) Resultado antes de impuestos', 44490, 1], ['18. Impuesto sobre beneficios', -9340], ['D) Resultado del ejercicio', 35150, 1]] },
+  Balance: { pie: 'Activo = patrimonio neto + pasivo: siempre cuadra.', filas: [
+    ['A) Activo no corriente', 48540], ['B) Activo corriente', 36590], ['Total activo', 85130, 1], ['A) Patrimonio neto', 51560], ['B) Pasivo no corriente', 14400], ['C) Pasivo corriente', 19170], ['Total patrimonio neto y pasivo', 85130, 1]] },
+  Diario: { pie: 'Cada factura, gasto, cobro, nómina e impuesto, con su asiento.', asientos: [
+    ['Factura F-0142 · Altamira', [['430 Clientes', 1210, 0], ['705 Prestaciones de servicios', 0, 1000], ['477 IVA repercutido', 0, 210]]],
+    ['Cobro de la factura F-0142', [['572 Bancos', 1210, 0], ['430 Clientes', 0, 1210]]],
+    ['Amortización del 3T', [['681 Amortización', 1960, 0], ['281 Amortización acumulada', 0, 1960]]]] },
+};
+
+export function ContabilidadDemo() {
+  const [vista, setVista] = useState('Resultados');
+  const nombres = Object.keys(VISTAS_CONT);
+  const v = VISTAS_CONT[vista];
+  return (
+    <div className="dm dm-perm dm-cont">
+      <p className="dm-titulo"><Icono n="contabilidad" />Sonora Eventos S.L. · 2025</p>
+      <div className="dm-seg dm-seg-ancho" role="tablist" style={{ '--i': nombres.indexOf(vista), '--n': nombres.length }}>
+        <span className="dm-seg-ind" aria-hidden />
+        {nombres.map((r) => <button key={r} role="tab" aria-selected={vista === r} className={vista === r ? 'on' : undefined} onClick={() => setVista(r)}>{r}</button>)}
+      </div>
+      <div key={vista} className="dm-cont-cuerpo">
+        {v.filas && <ul>{v.filas.map(([t, n, fuerte], i) => <li key={t} className={fuerte ? 'fuerte' : undefined} style={{ '--i': i }}><span>{t}</span><b className={n < 0 ? 'menos' : undefined}>{eur(n, 0)}</b></li>)}</ul>}
+        {v.asientos && v.asientos.map(([t, ls], i) => (
+          <div key={t} className="dm-cont-asiento" style={{ '--i': i }}>
+            <p><span>{i + 1}</span>{t}</p>
+            {ls.map(([c, d, h]) => <div key={c} className={h ? 'haber' : undefined}><span>{c}</span><b>{d ? eur(d, 0) : ''}</b><b>{h ? eur(h, 0) : ''}</b></div>)}
+          </div>
+        ))}
+      </div>
+      <p className="dm-nota">{v.pie} Datos de ejemplo.</p>
+    </div>
+  );
+}
+
+const DEMOS = { contabilidad: ContabilidadDemo, calculadora: Calculadora, factura: FacturaDemo, ticket: TicketDemo, conciliacion: ConciliacionDemo, prevision: PrevisionDemo, permisos: PermisosDemo, asistente: AsistenteDemo };
 
 export default function Demo({ tipo }) {
   const D = DEMOS[tipo];

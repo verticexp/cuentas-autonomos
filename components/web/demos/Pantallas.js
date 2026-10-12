@@ -84,7 +84,7 @@ const PANTALLAS = {
       <Fila a="Transferencia Altamira" b="→ Factura F-0142" c="+1.210,00 €" chip="✓" />
       <Fila a="Pago Suministros Vega SL" b="→ Gasto 10/10" c="−380,00 €" chip="✓" />
       <Fila a="Bizum Estudio Norte" b="→ Factura F-0145" c="+640,00 €" chip="✓" />
-      <Fila a="Comisión mantenimiento" b="Sin emparejar" c="−6,00 €" chip="Revisar" tipo="pend" />
+      <Fila a="Compra tarjeta Amazon" b="En revisión: falta la factura" c="−86,90 €" chip="Revisar" tipo="pend" />
     </div>
   ),
   prevision: () => {
@@ -185,6 +185,47 @@ const PANTALLAS = {
       <div className="mk-input">gestoria@pons.es<span className="mk-chip pend">Solo vista</span></div>
       <Fila a="jordi@tuempresa.es" b="Caduca en 6 días" chip="Enviada" tipo="neutro" />
       <Fila a="ana@tuempresa.es" b="Se unió ayer" chip="Activa" />
+    </div>
+  ),
+  contabilidad: () => (
+    <div className="mk">
+      <div className="mk-cab"><b>Pérdidas y ganancias · 2025</b><span className="mk-chip ok">Del diario</span></div>
+      <Fila a="Cifra de negocios" b="Facturas del año" c="+148.300 €" />
+      <Fila a="Gastos de explotación" b="Personal, compras y servicios" c="−93.870 €" />
+      <Fila a="Amortización" b="9 bienes de inversión" c="−8.800 €" />
+      <Fila a="Resultado del ejercicio" b="Tras el Impuesto sobre Sociedades" c="+35.150 €" chip="✓" />
+    </div>
+  ),
+  anuales: () => (
+    <div className="mk">
+      <div className="mk-cab"><b>Cuentas anuales 2025</b><span className="mk-chip ok">Modelo de pymes</span></div>
+      {[['Balance de pymes', 'Con 2024 al lado'], ['Pérdidas y ganancias', 'Epígrafes oficiales'], ['Cambios en el patrimonio neto', 'Calculado'], ['Memoria', '14 secciones con tus cifras']].map(([a, b]) => <Fila key={a} a={a} b={b} chip="✓" />)}
+      <Fila a="Depositar en el Registro" b="Hasta el 30/07/2026" chip="Plazo" tipo="pend" />
+    </div>
+  ),
+  amortizaciones: () => (
+    <div className="mk">
+      <div className="mk-cab"><b>Bienes de inversión</b><small>2026</small></div>
+      {[['Furgoneta Renault Master', '16 % al año', 4560, 67], ['Mesa de luces y focos LED', '20 % al año', 1960, 52], ['Dos portátiles', '25 % al año', 1050, 46]].map(([a, b, c, w]) => (
+        <div key={a} className="mk-fila"><div><b>{a}</b><small>{b}</small><span className="mk-barra"><i style={{ '--w': `${w}%` }} /></span></div><div className="mk-der"><em>{new Intl.NumberFormat('es-ES', { useGrouping: 'always' }).format(c)} €</em></div></div>
+      ))}
+    </div>
+  ),
+  migracion: () => (
+    <div className="mk">
+      <div className="mk-cab"><b>Saldos a 31/12/2025</b><span className="mk-chip ok">Cuadra</span></div>
+      <Fila a="100 · Capital social" b="Desde A3" c="3.000,00 €" />
+      <Fila a="430 · 3 clientes" b="Subcuentas sumadas una vez" c="2.420,00 €" />
+      <Fila a="572 · Bancos" b="Saldo de apertura" c="12.500,00 €" />
+      <Fila a="Asiento de apertura" b="Sigues donde lo dejaste" chip="Creado" />
+    </div>
+  ),
+  revision: () => (
+    <div className="mk">
+      <div className="mk-cab"><b>Gastos · En revisión</b><span className="mk-chip pend">3</span></div>
+      <Fila a="Amazon EU" b="02/10 · falta la factura" c="−86,90 €" chip="Añadir" tipo="pend" />
+      <Fila a="Leroy Merlin" b="04/10 · falta la factura" c="−142,35 €" chip="Añadir" tipo="pend" />
+      <Fila a="Comisión mantenimiento" b="Apuntada como gasto bancario" c="−15,00 €" chip="✓" />
     </div>
   ),
   empresas: () => (

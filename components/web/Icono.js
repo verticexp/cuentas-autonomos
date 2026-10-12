@@ -30,6 +30,7 @@ const P = {
   ojo: 'M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12zM12 15a3 3 0 100-6 3 3 0 000 6z',
   mas: 'M12 5v14M5 12h14',
   subir: 'M12 16V4M7 9l5-5 5 5M5 20h14',
+  contabilidad: 'M4 4h16v16H4zM4 9h16M4 14h16M10 9v11',
 };
 
 export default function Icono({ n, className = 'ico' }) {
