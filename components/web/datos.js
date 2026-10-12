@@ -63,16 +63,17 @@ export const FUNCIONES = [
     ],
   },
   {
-    slug: 'contabilidad', icono: 'contabilidad', nombre: 'Contabilidad', corto: 'Diario, balance y cuentas anuales',
+    slug: 'contabilidad', icono: 'contabilidad', nombre: 'Contabilidad', corto: 'Libros registro, balance y cuentas anuales',
     titulo: 'La contabilidad se hace sola mientras facturas',
-    sub: 'Cada factura, gasto, cobro, nómina e impuesto genera su asiento con el plan contable de pymes. Pérdidas y ganancias, balance y cuentas anuales, siempre al día.',
+    sub: 'Si eres autónomo, tus libros registro del IVA y del IRPF salen solos con el formato de Hacienda. Si eres sociedad, cada factura, gasto, cobro e impuesto genera su asiento: balance y cuentas anuales siempre al día.',
     demo: 'contabilidad',
     puntos: [
-      { t: 'Partida doble de verdad', d: 'Libro diario, mayor y sumas y saldos a partir de lo que ya apuntas. Sin teclear asientos.' },
-      { t: 'Resultados y balance', d: 'Pérdidas y ganancias por año o trimestre, comparadas con el año anterior, y un balance que siempre cuadra.' },
+      { t: 'Libros registro para autónomos', d: 'Ingresos, gastos y bienes de inversión con el formato electrónico de la AEAT: lo que te piden en estimación directa.' },
+      { t: 'Partida doble para sociedades', d: 'Libro diario, mayor y sumas y saldos a partir de lo que ya apuntas. Sin teclear asientos.' },
       { t: 'Amortizaciones solas', d: 'Marca un gasto como bien de inversión y Netto lo amortiza con la tabla oficial, también en tus impuestos.' },
     ],
     secciones: [
+      { t: 'Autónomo: tus libros registro, listos para Hacienda', d: 'En estimación directa la ley te pide los libros de ingresos, gastos y bienes de inversión, y los del IVA. Netto los saca unificados con el formato electrónico de la AEAT, con tus amortizaciones y retenciones, para un requerimiento o para el Pre303.', l: ['Formato electrónico común de la AEAT', 'Un Excel por libro, con el nombre oficial', 'Resultados y balance de regalo, para ti o tu banco'], visual: 'libros' },
       { t: 'Cuentas anuales listas para el Registro', d: 'Balance, pérdidas y ganancias, cambios en el patrimonio neto y memoria con los modelos oficiales de pymes. Netto te dice qué modelo te toca y te recuerda los plazos.', l: ['Memoria rellenada con tus cifras', 'Certificado de aprobación de la junta', 'PDF para firmar y depositar'], visual: 'anuales' },
       { t: 'Bienes de inversión sin hojas de cálculo', d: 'El ordenador, la furgoneta o la maquinaria se amortizan por días con el coeficiente oficial. El IVA se deduce entero y en el 130 o en Sociedades solo cuenta la amortización.', l: ['Libro registro de bienes de inversión', 'Tablas de autónomos y de sociedades', 'Hasta 300 €, gasto del año'], visual: 'amortizaciones' },
       { t: 'Cámbiate desde cualquier programa', d: 'Sube el balance de sumas y saldos y el inventario de bienes de Holded, A3, Sage o Contasol. Netto crea la apertura y sigue donde lo dejaste, sin contar nada dos veces.', l: ['Saldos de apertura desde Excel', 'Amortizaciones que continúan', 'Facturas y gastos pendientes incluidos'], visual: 'migracion' },
@@ -81,7 +82,7 @@ export const FUNCIONES = [
       ['¿Necesito saber contabilidad?', 'No. Netto genera los asientos con lo que ya haces: facturar, apuntar gastos y conciliar el banco. Tu gestor puede añadir asientos de ajuste si los necesita.'],
       ['¿Puedo depositar las cuentas anuales con Netto?', 'Netto prepara las cuentas con los epígrafes oficiales, la memoria y el certificado. El depósito se hace en el Registro Mercantil con sus modelos (o tu gestor): solo tienes que copiar las cifras.'],
       ['¿Qué se descarga para mi gestor?', 'Un Excel con libro diario, mayor, sumas y saldos, pérdidas y ganancias, balance y bienes de inversión.'],
-      ['Soy autónomo, ¿me sirve?', 'Sí. Llevas tus libros y amortizaciones al día y ves tu resultado real. Las cuentas anuales solo las depositan las sociedades.'],
+      ['Soy autónomo, ¿necesito balance?', 'No, salvo que tengas una actividad mercantil en estimación directa normal. En estimación directa simplificada solo te piden los libros registro del IVA y del IRPF y el de bienes de inversión, y Netto te los da con el formato de Hacienda. Resultados y balance te enseñan tu beneficio real y te los puede pedir el banco. Las cuentas anuales solo las depositan las sociedades.'],
     ],
   },
   {
@@ -179,7 +180,7 @@ export const SEGMENTOS = [
       ['Tickets perdidos en la cartera', 'Foto al ticket y la IA lo apunta por ti.'],
       ['Sustos con el IVA y el 130', 'Tus modelos calculados y lo que debes apartar, siempre a la vista.'],
       ['Mil correos con tu gestoría', 'Acceso para tu gestoría o el paquete trimestral en un clic.'],
-      ['Amortizaciones en un Excel', 'Tus equipos se amortizan solos y bajan tu 130.'],
+      ['Libros registro a mano', 'Tus libros de IVA e IRPF, con el formato de Hacienda y tus amortizaciones.'],
     ],
     funciones: ['facturacion', 'gastos', 'impuestos', 'contabilidad'],
   },
@@ -215,8 +216,8 @@ export const segmento = (id) => SEGMENTOS.find((s) => s.id === id);
 // «Todo lo del plan anterior» va en `herencia`; cada plan lista solo lo que añade.
 export const PLANES = {
   aut: [
-    { n: 'Esencial', p: 9, para: 'Facturar y declarar sin sustos', l: ['Facturas y presupuestos ilimitados', 'Verifactu: huella encadenada y QR', 'Clientes, catálogo y recurrentes', 'Gastos y proveedores', 'Escaneo de tickets y PDF con IA', 'Modelos 303, 130, 111, 115 y 100 calculados', 'Bienes de inversión y amortizaciones', 'Extractos del banco y saldo', 'Importación desde Holded y otros programas', '1 empresa · 1 usuario'] },
-    { n: 'Pro', p: 12, para: 'Que tus cuentas cuadren solas', fuerte: true, herencia: 'Esencial', l: ['Conciliación automática de extractos', 'Gastos del banco sin factura, en revisión', 'Contabilidad: diario, mayor, resultados y balance', 'Previsión de caja a 3, 6 y 12 meses', 'Asistente IA con tus cifras', 'Varias actividades con su IVA e IRPF', 'Acceso para tu gestoría', 'Portal del cliente', 'Recordatorios y avisos push'] },
+    { n: 'Esencial', p: 9, para: 'Facturar y declarar sin sustos', l: ['Facturas y presupuestos ilimitados', 'Verifactu: huella encadenada y QR', 'Clientes, catálogo y recurrentes', 'Gastos y proveedores', 'Escaneo de tickets y PDF con IA', 'Modelos 303, 130, 111, 115 y 100 calculados', 'Libros registro del IVA y del IRPF (formato AEAT)', 'Bienes de inversión y amortizaciones', 'Extractos del banco y saldo', 'Importación desde Holded y otros programas', '1 empresa · 1 usuario'] },
+    { n: 'Pro', p: 12, para: 'Que tus cuentas cuadren solas', fuerte: true, herencia: 'Esencial', l: ['Conciliación automática de extractos', 'Gastos del banco sin factura, en revisión', 'Resultados, balance y diario (para ti o tu banco)', 'Previsión de caja a 3, 6 y 12 meses', 'Asistente IA con tus cifras', 'Varias actividades con su IVA e IRPF', 'Acceso para tu gestoría', 'Portal del cliente', 'Recordatorios y avisos push'] },
     { n: 'Plus', p: 20, para: 'Para quien lo lleva todo', herencia: 'Pro', l: ['Hasta 3 empresas', 'Hasta 3 usuarios con permisos', 'Nóminas y jornada (2 empleados)', 'Escaneos IA ampliados', 'Soporte prioritario'] },
   ],
   pym: [
@@ -243,8 +244,8 @@ export const COMPARATIVA = {
     ['Banco y caja', [
       ['Extractos N43, CSV, Excel y PDF', [true, true, true]], ['Conciliación automática', [false, true, true]], ['Gastos del banco en revisión', [false, true, true]], ['Previsión de caja', [false, true, true]],
     ]],
-    ['Contabilidad', [
-      ['Bienes de inversión y amortizaciones', [true, true, true]], ['Diario, mayor y sumas y saldos', [false, true, true]], ['Pérdidas y ganancias y balance', [false, true, true]],
+    ['Libros y contabilidad', [
+      ['Libros registro del IVA y del IRPF', [true, true, true]], ['Bienes de inversión y amortizaciones', [true, true, true]], ['Resultados, balance y diario', [false, true, true]],
     ]],
     ['Equipo', [
       ['Empresas', ['1', '1', '3']], ['Usuarios', ['1', '1 + gestoría', '3']], ['Nóminas y jornada', [false, false, '2 empleados']],

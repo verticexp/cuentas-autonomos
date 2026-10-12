@@ -198,3 +198,30 @@ test('banco: qué es un movimiento sin factura ni gasto y aviso del extracto', a
   assert.equal(avisosDelDia({ banco: { conectado: false, ultimo: '2026-08-30' } }, '2026-10-03')[0].tipo, 'extracto-2026-09');
   assert.equal(avisosDelDia({ banco: { conectado: true, ultimo: '' } }, '2026-10-03').length, 0);
 });
+
+test('libros registro con el formato de la AEAT', async () => {
+  const { librosRegistro } = await import('../lib/librosRegistro.js');
+  const facturas = [
+    { id: 'f1', numero: 1, anio: 2026, fecha: '2026-02-03', actividad: 'a', base: 1000, ivaPct: 21, irpfPct: 15, cliente: { nombre: 'Hotel Mar S.A.', nif: 'A12345678' } },
+    { id: 'f2', numero: 2, anio: 2026, fecha: '2026-03-10', actividad: 'a', base: 500, ivaPct: 0, irpfPct: 0, cliente: { nombre: 'Club Berlin GmbH', nif: 'DE123456789' } },
+  ];
+  const gastos = [
+    { id: 'g1', fecha: '2026-02-05', concepto: 'Teléfono', proveedor: 'Movistar', proveedorNif: 'A28015865', base: 40, ivaPct: 21 },
+    { id: 'g2', fecha: '2026-01-31', concepto: 'Cuota de autónomos', base: 300, ivaPct: 0 },
+    { id: 'b1', fecha: '2026-01-01', concepto: 'Portátil', proveedor: 'Tienda', proveedorNif: 'B11111111', base: 1000, ivaPct: 21, inversion: { tipo: 'informatica' } },
+  ];
+  const l = librosRegistro({ facturas, gastos, fiscal: { tipo: 'autonomo', iva: 'general' }, actividades: [{ id: 'a', irpfPct: 15, iae: '844' }], empresa: { nombre: 'Ana', nif: '12345678Z' } }, 2026, '2026-12-31');
+  assert.deepEqual(l.archivos.map((a) => a.nombre), ['202612345678ZUAna.xlsx', '202612345678ZVAna.xlsx', '202612345678ZWAna.xlsx']);
+  const [ing, gas, bie] = l.archivos.map((a) => a.filas);
+  // Columnas de la plantilla: A ejercicio, B periodo, C-E actividad, F tipo de factura, G concepto, H importe…
+  assert.deepEqual(ing[0].slice(0, 9), [2026, '1T', 'A', '05', '844', 'F1', 'I01', '1000,00', '03/02/2026']);
+  assert.equal(ing[0][31], '150,00'); // AF: retención
+  assert.deepEqual([ing[1][13], ing[1][14], ing[1][15], ing[1][18]], ['02', 'DE', '123456789', 'N2']); // cliente de la UE, no sujeta
+  assert.equal(gas.find((f) => f[41] === 'g1')[6], 'G17'); // teléfono
+  assert.deepEqual(gas.find((f) => f[41] === 'g2').slice(5, 8), ['SF', 'G45', '300,00']); // cuota de autónomos, sin factura
+  assert.equal(gas.find((f) => f[41] === 'b1')[20], 'S'); // bien de inversión: en el libro de gastos, sin gasto deducible
+  assert.equal(gas.find((f) => f[6] === 'G31')[7], '260,00'); // y su amortización del año (26 %)
+  assert.deepEqual(bie[0].slice(5, 17), ['23', 'b1', 'Portátil', '01/01/2026', '1000,00', '1000,00', '01', '26,00', '0,00', '260,00', '260,00', '740,00']);
+  assert.equal(l.totales.ingresos, 1500);
+  assert.equal(l.totales.gastos, 600); // 40 + 300 + 260
+});

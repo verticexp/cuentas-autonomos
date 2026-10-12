@@ -83,6 +83,8 @@ export default function Cuestionario({ inicial, editar, conFacturas }) {
                 {!sociedad && <>
                   <p className="mini-t">Retención de IRPF <small>(si facturas a empresas o autónomos como profesional)</small></p>
                   <div className="segmentado">{RETENCIONES.map(([v, n]) => <a key={v} href="#" role="button" className={Number(x.irpfPct) === v ? 'activo' : ''} onClick={(ev) => { ev.preventDefault(); a(i, 'irpfPct', v); }}>{n}</a>)}</div>
+                  <p className="mini-t">Epígrafe del IAE <small>(opcional: está en tu alta de autónomo; va en los libros registro)</small></p>
+                  <input className="campo" inputMode="numeric" placeholder="Por ejemplo: 844" value={x.iae || ''} onChange={(v) => a(i, 'iae', v.target.value)} />
                 </>}
                 {fija && <p className="mini-t">Ya tiene facturas: su numeración no cambia.</p>}
               </div>
