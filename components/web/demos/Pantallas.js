@@ -196,6 +196,15 @@ const PANTALLAS = {
       <Fila a="Resultado del ejercicio" b="Tras el Impuesto sobre Sociedades" c="+35.150 €" chip="✓" />
     </div>
   ),
+  libros: () => (
+    <div className="mk">
+      <div className="mk-cab"><b>Libros registro · 2026</b><span className="mk-chip ok">Formato AEAT</span></div>
+      <Fila a="Facturas expedidas e ingresos" b="48 anotaciones · IVA 7.812,00 €" chip="✓" />
+      <Fila a="Facturas recibidas y gastos" b="112 anotaciones · con amortizaciones" chip="✓" />
+      <Fila a="Bienes de inversión" b="4 bienes · amortizado y pendiente" chip="✓" />
+      <div className="mk-dos"><span className="mk-btn">Descargar los 3 libros</span></div>
+    </div>
+  ),
   anuales: () => (
     <div className="mk">
       <div className="mk-cab"><b>Cuentas anuales 2025</b><span className="mk-chip ok">Modelo de pymes</span></div>

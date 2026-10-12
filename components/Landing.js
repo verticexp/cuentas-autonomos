@@ -8,7 +8,7 @@ import { VentanaApp } from '@/components/web/demos/Pantallas';
 import { Cta, Encabezado, Faq, Flecha } from '@/components/web/Bloques';
 import { FAQ_GENERAL, FUNCIONES, SEGMENTOS } from '@/components/web/datos';
 
-const CINTA = ['Facturas ilimitadas', 'Verifactu', 'Presupuestos online', 'Gastos con IA', 'Modelo 303', 'Modelo 130', 'Modelos 111 y 115', 'Renta (100)', 'Conciliación de extractos', 'Contabilidad por partida doble', 'Balance y resultados', 'Amortizaciones', 'Cuentas anuales', 'Previsión de caja', 'Nóminas', 'Registro de jornada', 'Permisos por área', 'Varias empresas', 'Portal del cliente', 'Asistente IA', 'Cámbiate desde Holded, A3 o Sage', 'Face ID'];
+const CINTA = ['Facturas ilimitadas', 'Verifactu', 'Presupuestos online', 'Gastos con IA', 'Modelo 303', 'Modelo 130', 'Modelos 111 y 115', 'Renta (100)', 'Conciliación de extractos', 'Libros registro (formato AEAT)', 'Contabilidad por partida doble', 'Balance y resultados', 'Amortizaciones', 'Cuentas anuales', 'Previsión de caja', 'Nóminas', 'Registro de jornada', 'Permisos por área', 'Varias empresas', 'Portal del cliente', 'Asistente IA', 'Cámbiate desde Holded, A3 o Sage', 'Face ID'];
 
 const CIFRAS = [
   { n: 9, suf: ' €', t: 'al mes, desde', d: 'Sin cuotas de alta ni permanencia' },

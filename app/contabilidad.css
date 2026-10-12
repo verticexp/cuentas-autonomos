@@ -67,3 +67,5 @@
 .ca-seccion summary { cursor: pointer; font-size: 15px; }
 .ca-seccion textarea { margin-top: 8px; width: 100%; font: inherit; font-size: 14px; line-height: 1.4; }
 .ca-falta { color: var(--out); font-size: 13px; }
+.contabilidad .grupo-c .txt small { white-space: normal; overflow: visible; text-overflow: clip; }
+.cont-resumen strong { overflow: visible; text-overflow: clip; font-size: clamp(12.5px, 3.5vw, 16px); }

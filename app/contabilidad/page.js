@@ -1,10 +1,11 @@
 import { requerir } from '@/lib/auth';
 import { puede } from '@/lib/permisos';
 import { clave, leer, leerUno, redis } from '@/lib/redis';
-import { fiscalDe } from '@/lib/empresa';
+import { actividadesDe, fiscalDe } from '@/lib/empresa';
 import { informe } from '@/lib/contabilidad';
 import { CUENTAS } from '@/lib/asientos';
 import { cuentasAnuales, ESTRUCTURA_BALANCE, LINEAS_PYG, SECCIONES } from '@/lib/cuentasAnuales';
+import { librosRegistro } from '@/lib/librosRegistro';
 import FormCuentasAnuales from '@/components/CuentasAnuales';
 import { eur, fechaCorta, hoy } from '@/lib/formato';
 import Volver from '@/components/Volver';
@@ -19,7 +20,9 @@ import '@/app/contabilidad.css';
 import '@/app/mk.css';
 
 export const dynamic = 'force-dynamic';
-const VISTAS = [['pyg', 'Resultados'], ['balance', 'Balance'], ['diario', 'Diario'], ['sumas', 'Sumas y saldos'], ['mayor', 'Mayor'], ['bienes', 'Amortizaciones'], ['anuales', 'Cuentas anuales']];
+const VISTAS = [['pyg', 'Resultados'], ['balance', 'Balance'], ['diario', 'Diario'], ['sumas', 'Sumas y saldos'], ['mayor', 'Mayor'], ['bienes', 'Amortizaciones'], ['anuales', 'Cuentas anuales'], ['libros', 'Libros registro']];
+// Autónomos: primero lo que les pide la ley (libros registro y amortizaciones); el resto, como extra. Sin cuentas anuales.
+const VISTAS_AUTONOMO = ['libros', 'bienes', 'pyg', 'balance', 'diario', 'sumas', 'mayor'];
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 const ORIGEN = { factura: (id) => `/facturas/${encodeURIComponent(id)}`, gasto: (id) => `/gastos/${encodeURIComponent(id)}`, nomina: (id) => `/nominas/${encodeURIComponent(id)}` };
 const TIPO = { apertura: 'Apertura', manual: 'Manual', amortizacion: 'Amortización', impuesto: 'Impuestos', cierre: 'Cierre', regularizacion: 'Cierre', factura: 'Factura', gasto: 'Gasto', nomina: 'Nómina' };
@@ -46,11 +49,13 @@ export default async function Contabilidad({ searchParams }) {
   const h = hoy();
   const actual = Number(h.slice(0, 4));
   const anio = Number(sp.anio) || actual;
-  const ver = VISTAS.some(([v]) => v === sp.ver) ? sp.ver : 'pyg';
-  const p = /^[1-4]$/.test(sp.p || '') ? sp.p : '';
-  const cuenta = /^\d{1,9}$/.test(sp.cuenta || '') ? sp.cuenta : '572';
   const fiscal = fiscalDe(u);
   const sociedad = fiscal.tipo === 'sociedad';
+  const vistas = sociedad ? VISTAS : VISTAS_AUTONOMO.map((v) => VISTAS.find((x) => x[0] === v));
+  const ver = vistas.some(([v]) => v === sp.ver) ? sp.ver : vistas[0][0];
+  const p = /^[1-4]$/.test(sp.p || '') ? sp.p : '';
+  const cuenta = /^\d{1,9}$/.test(sp.cuenta || '') ? sp.cuenta : '572';
+  const libros = ver === 'libros' && librosRegistro({ facturas, gastos, nominas: nominas || [], fiscal, actividades: actividadesDe(u), empresa: { nombre: u.emisor?.nombre || '', nif: u.emisor?.nif || '' } }, anio, h);
   const d = informe({ facturas, gastos, nominas: nominas || [], manuales: manuales || [], saldo, fiscal, pagos130: u.pagos130 || {}, pagos202: u.pagos202 || {}, cuotaIS: u.cuotaIS || {} }, anio, p, h, { cuenta: ver === 'mayor' ? cuenta : '' });
   const mesPorDefecto = String(Number(d.fecha.slice(5, 7))).padStart(2, '0');
   const mes = /^(0[1-9]|1[0-2])$/.test(sp.mes || '') ? sp.mes : mesPorDefecto;
@@ -79,7 +84,7 @@ export default async function Contabilidad({ searchParams }) {
         </nav>
       </header>
       <Deslizable className="chips cont-vistas">
-        {VISTAS.map(([v, n]) => <Ir key={v} href={url({ ver: v, p: '' })} tipo="fundido" className={v === ver ? 'activo' : ''}>{n}</Ir>)}
+        {vistas.map(([v, n]) => <Ir key={v} href={url({ ver: v, p: '' })} tipo="fundido" className={v === ver ? 'activo' : ''}>{n}</Ir>)}
       </Deslizable>
 
       {ver === 'pyg' && <>
@@ -217,6 +222,28 @@ export default async function Contabilidad({ searchParams }) {
             </ul>
           </> : <div className="vacio"><p>Sin bienes de inversión</p><p>Cuando compres algo que vas a usar varios años (un ordenador, un equipo, un vehículo…), márcalo al apuntar el gasto como «bien de inversión».</p></div>}
           <p className="grupo-pie">Libro registro de bienes de inversión. Cada bien se amortiza por días desde la compra con el coeficiente máximo de la tabla oficial ({sociedad ? 'Ley del Impuesto sobre Sociedades' : 'estimación directa simplificada'}); lo que vale 300 € o menos, entero el año de compra. Cada trimestre va un asiento de amortización al diario; el IVA de la compra se deduce entero en el 303 (casillas 30 y 31).</p>
+        </section>
+      )}
+
+      {libros && (
+        <section className="bloque">
+          <div className="cont-resumen">
+            <div><span>Ingresos</span><strong>{eur(libros.totales.ingresos)}</strong></div>
+            <div><span>Gastos deducibles</span><strong>{eur(libros.totales.gastos)}</strong></div>
+            <div><span>Rendimiento</span><strong>{eur(libros.totales.ingresos - libros.totales.gastos)}</strong></div>
+          </div>
+          <div className="grupo-c">
+            {[[sociedad ? 'Facturas expedidas' : 'Facturas expedidas y ventas e ingresos', libros.resumen.ingresos, `IVA repercutido ${eur(libros.totales.ivaRepercutido)}${libros.totales.retenciones ? ` · retenciones ${eur(libros.totales.retenciones)}` : ''}`],
+              [sociedad ? 'Facturas recibidas' : 'Facturas recibidas y compras y gastos', libros.resumen.gastos, `IVA soportado ${eur(libros.totales.ivaSoportado)}${libros.totales.amortizacion ? ` · amortizaciones ${eur(libros.totales.amortizacion)}` : ''}`],
+              ['Bienes de inversión', libros.resumen.bienes, 'Con lo amortizado al inicio, en el año y lo pendiente']].map(([t, n, s]) => (
+              <div key={t} className="celda"><span className="txt">{t}<small>{n} {n === 1 ? 'anotación' : 'anotaciones'} · {s}</small></span></div>
+            ))}
+          </div>
+          {libros.sinIae && <p className="cont-alerta">Falta el epígrafe del IAE de alguna actividad: ponlo en Ajustes › Actividades y modelos para que salga en los libros.</p>}
+          <a className="boton cont-excel" href={`/api/libros?anio=${anio}`} download>Descargar los libros registro de {anio}</a>
+          <p className="grupo-pie">{sociedad
+            ? 'Libros registro del IVA con el formato electrónico de la AEAT (un Excel por libro, con el nombre que pide Hacienda). Como sociedad, además llevas la contabilidad completa: la tienes en las demás pestañas.'
+            : 'Es lo que te pide la ley si estás en estimación directa: los libros registro del IVA y del IRPF, unificados y con el formato electrónico de la AEAT (un Excel por libro, con el nombre que pide Hacienda). Sirven para un requerimiento y se pueden importar en el Pre303. Resultados, balance y diario no te los pide nadie (salvo una actividad mercantil en directa normal), pero te enseñan tu beneficio real y te los puede pedir el banco.'}</p>
         </section>
       )}
 
