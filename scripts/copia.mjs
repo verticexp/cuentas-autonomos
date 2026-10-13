@@ -1,32 +1,24 @@
-// Copia de seguridad de todas las claves «cuentas:» de Redis en copia.json (la ejecuta GitHub Actions cada noche).
-// Se excluyen sesiones e intentos de login: son temporales y no hace falta restaurarlos.
+// node scripts/copia.mjs [--sin-cifrar]
 import { writeFile } from 'node:fs/promises';
 import { Redis } from '@upstash/redis';
+import { hacerCopia, cifrar, verificarCopia } from '../lib/copias.js';
 
-const r = new Redis({ url: process.env.KV_REST_API_URL, token: process.env.KV_REST_API_TOKEN, automaticDeserialization: false });
-const FUERA = /^cuentas:(sesion|intentos)/;
-
-const claves = [];
-let cursor = '0';
-do {
-  const [c, ks] = await r.scan(cursor, { match: 'cuentas:*', count: 500 });
-  cursor = String(c);
-  claves.push(...ks.filter((k) => !FUERA.test(k)));
-} while (cursor !== '0');
-
-const datos = {};
-for (const k of claves) {
-  const tipo = await r.type(k);
-  if (tipo === 'hash') datos[k] = { tipo, valor: await r.hgetall(k) };
-  else if (tipo === 'set') datos[k] = { tipo, valor: await r.smembers(k) };
-  else if (tipo === 'string') datos[k] = { tipo, valor: await r.get(k) };
-  else if (tipo === 'list') datos[k] = { tipo, valor: await r.lrange(k, 0, -1) };
-  else continue;
-  // Las claves temporales (límites, enlaces de confirmar…) guardan lo que les queda, para que al restaurar caduquen igual.
-  const ms = await r.pttl(k);
-  if (ms > 0) datos[k].caduca = Date.now() + ms;
+try {
+  const opciones = process.argv.slice(2);
+  if (opciones.some((x) => x !== '--sin-cifrar')) throw new Error('Uso: node scripts/copia.mjs [--sin-cifrar]');
+  const clave = process.env.COPIA_CLAVE;
+  if (!clave && !opciones.includes('--sin-cifrar')) throw new Error('Falta COPIA_CLAVE (32 bytes en base64). Solo para una copia explícita en claro, usa --sin-cifrar.');
+  const r = new Redis({ url: process.env.KV_REST_API_URL, token: process.env.KV_REST_API_TOKEN, automaticDeserialization: false });
+  const copia = await hacerCopia(r);
+  const verificacion = verificarCopia(copia);
+  if (!verificacion.ok) throw new Error(`La copia no verifica:\n${verificacion.errores.join('\n')}`);
+  const archivo = clave ? 'copia.json.enc' : 'copia.json';
+  await writeFile(archivo, clave ? cifrar(copia, clave) : JSON.stringify(copia, null, 2), { mode: 0o600 });
+  const { version, fecha, huella, resumen } = copia;
+  await writeFile('copia-resumen.json', JSON.stringify({ version, fecha, huella, resumen }, null, 2), { mode: 0o600 });
+  console.log(`Copia hecha: ${resumen.claves} claves en ${archivo}. Resumen en copia-resumen.json.`);
+  for (const aviso of verificacion.avisos) console.warn(`Aviso: ${aviso}`);
+} catch (e) {
+  console.error(e.message);
+  process.exitCode = 1;
 }
-
-if (!Object.keys(datos).some((k) => k.startsWith('cuentas:facturas:'))) throw new Error('La copia no tiene facturas: algo va mal');
-await writeFile('copia.json', JSON.stringify({ fecha: new Date().toISOString(), datos }, null, 1));
-console.log(`Copia hecha: ${Object.keys(datos).length} claves`);
