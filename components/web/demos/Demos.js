@@ -328,7 +328,36 @@ export function ContabilidadDemo() {
   );
 }
 
-const DEMOS = { contabilidad: ContabilidadDemo, calculadora: Calculadora, factura: FacturaDemo, ticket: TicketDemo, conciliacion: ConciliacionDemo, prevision: PrevisionDemo, permisos: PermisosDemo, asistente: AsistenteDemo };
+/* ───────── Inventario ───────── */
+const STOCK = [
+  { id: 1, n: 'Cable XLR 10 m', s: 24, min: 20, p: 24 },
+  { id: 2, n: 'Lámpara LED PAR 64', s: 9, min: 6, p: 89 },
+  { id: 3, n: 'Micrófono inalámbrico', s: 3, min: 2, p: 210 },
+];
+
+export function InventarioDemo() {
+  const [stock, setStock] = useState(STOCK);
+  const vender = (id) => setStock((l) => l.map((x) => (x.id === id && x.s > 0 ? { ...x, s: x.s - (x.min > 10 ? 4 : 1) < 0 ? 0 : x.s - (x.min > 10 ? 4 : 1) } : x)));
+  const bajos = stock.filter((x) => x.s <= x.min);
+  return (
+    <div className="dm dm-perm dm-inv">
+      <p className="dm-titulo"><Icono n="inventario" />Inventario</p>
+      <ul>
+        {stock.map((x) => (
+          <li key={x.id}>
+            <div><b>{x.n}</b><small>{x.s} ud. · mínimo {x.min}</small><span className="dm-inv-barra"><i className={x.s <= x.min ? 'bajo' : ''} style={{ width: `${Math.min(100, (x.s / (x.min * 2)) * 100)}%` }} /></span></div>
+            <button className="dm-conc-uno" onClick={() => vender(x.id)} disabled={!x.s}>Facturar {x.min > 10 ? 4 : 1}</button>
+          </li>
+        ))}
+      </ul>
+      <p className="dm-perm-d" key={bajos.length}>{bajos.length ? `Qué pedir: ${bajos.map((x) => `${x.min * 2 - x.s} × ${x.n}`).join(', ')}.` : 'Todo por encima del mínimo. Factura algo para ver cómo baja.'}</p>
+      <button className="web-btn web-btn-peq web-btn-claro-oscuro" onClick={() => setStock(STOCK)}>Volver a empezar</button>
+      <p className="dm-nota">Cada factura resta del stock; cada compra lo suma. Datos de ejemplo.</p>
+    </div>
+  );
+}
+
+const DEMOS = { inventario: InventarioDemo, contabilidad: ContabilidadDemo, calculadora: Calculadora, factura: FacturaDemo, ticket: TicketDemo, conciliacion: ConciliacionDemo, prevision: PrevisionDemo, permisos: PermisosDemo, asistente: AsistenteDemo };
 
 export default function Demo({ tipo }) {
   const D = DEMOS[tipo];

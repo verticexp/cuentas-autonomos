@@ -21,6 +21,7 @@ const EXTRA = [
   { titulo: 'Ventas', enlaces: [
     { href: '/presupuestos', permiso: 'facturas', nombre: 'Presupuestos', icono: <path d="M6 3h12v18H6zM9 8h6M9 12h6M9 16h3" /> },
     { href: '/facturas/recurrentes', permiso: 'facturas', nombre: 'Recurrentes', icono: <path d="M4 12a8 8 0 0 1 14-5.3M20 4v4h-4M20 12a8 8 0 0 1-14 5.3M4 20v-4h4" /> },
+    { href: '/inventario', permiso: 'facturas', inventario: true, nombre: 'Inventario', icono: <path d="M3 8l9-5 9 5v9l-9 5-9-5zM3 8l9 5 9-5M12 13v9" /> },
     { href: '/facturas/catalogo', permiso: 'facturas', nombre: 'Catálogo', icono: <path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" /> },
   ] },
   { titulo: 'Finanzas', enlaces: [
@@ -59,7 +60,7 @@ function vibrar() {
 
 const seccion = (path) => (path === '/' ? '/' : path.startsWith('/presupuestos') ? '/facturas' : TABS.find((t) => t.href !== '/' && path.startsWith(t.href))?.href ?? null);
 
-export default function TabBar({ permisos = [], empresas = [], empresa, admin = false }) {
+export default function TabBar({ permisos = [], empresas = [], empresa, admin = false, inventario = false }) {
   const tabs = TABS.filter((t) => !t.permiso || permisos.includes(t.permiso));
   const path = usePathname();
   const router = useRouter();
@@ -111,7 +112,7 @@ export default function TabBar({ permisos = [], empresas = [], empresa, admin = 
       </nav>
       <nav className="tabs-extra" aria-label="Más secciones">
         {EXTRA.map((g) => {
-          const enlaces = g.enlaces.filter((e) => !e.permiso || permisos.includes(e.permiso));
+          const enlaces = g.enlaces.filter((e) => (!e.permiso || permisos.includes(e.permiso)) && (!e.inventario || inventario));
           return enlaces.length > 0 && (
             <div key={g.titulo} className="tabs-grupo">
               <p className="tabs-grupo-t">{g.titulo}</p>

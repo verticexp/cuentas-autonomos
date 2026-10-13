@@ -13,8 +13,8 @@ export async function GET(req) {
   if (res) return res;
   const h = hoy();
   const anio = Number(req.nextUrl.searchParams.get('anio')) || Number(h.slice(0, 4));
-  const [facturas, gastos, nominas] = await Promise.all([leer(u, 'facturas'), leer(u, 'gastos'), leer(u, 'nominas')]);
-  const l = librosRegistro({ facturas: facturas || [], gastos: gastos || [], nominas: nominas || [], fiscal: fiscalDe(u), actividades: actividadesDe(u),
+  const [facturas, gastos, nominas, productos, ajustes] = await Promise.all([leer(u, 'facturas'), leer(u, 'gastos'), leer(u, 'nominas'), leer(u, 'productos'), leer(u, 'stock')]);
+  const l = librosRegistro({ facturas: facturas || [], gastos: gastos || [], nominas: nominas || [], productos: productos || [], ajustes: ajustes || [], fiscal: fiscalDe(u), actividades: actividadesDe(u),
     empresa: { nombre: u.emisor?.nombre || u.empresaNombre || '', nif: u.emisor?.nif || '' } }, anio, h);
   await auditar(u, 'Libros registro', `Descarga de ${anio}`);
   return new Response(librosZip(l), { headers: { 'Content-Type': 'application/zip', 'Content-Disposition': `attachment; filename="libros-registro-${anio}.zip"` } });

@@ -15,8 +15,8 @@ export async function GET(req) {
   const h = hoy();
   const anio = Number(q.get('anio')) || Number(h.slice(0, 4));
   const p = /^[1-4]$/.test(q.get('p') || '') ? q.get('p') : '';
-  const [facturas, gastos, nominas, manuales, saldo] = await Promise.all([leer(u, 'facturas'), leer(u, 'gastos'), leer(u, 'nominas'), leer(u, 'asientos'), redis?.get(clave(u, 'saldo'))]);
-  const d = informe({ facturas, gastos, nominas: nominas || [], manuales: manuales || [], saldo, fiscal: fiscalDe(u), pagos130: u.pagos130 || {}, pagos202: u.pagos202 || {}, cuotaIS: u.cuotaIS || {} }, anio, p, h);
+  const [facturas, gastos, nominas, manuales, saldo, productos, ajustes] = await Promise.all([leer(u, 'facturas'), leer(u, 'gastos'), leer(u, 'nominas'), leer(u, 'asientos'), redis?.get(clave(u, 'saldo')), leer(u, 'productos'), leer(u, 'stock')]);
+  const d = informe({ facturas, gastos, nominas: nominas || [], manuales: manuales || [], saldo, fiscal: fiscalDe(u), pagos130: u.pagos130 || {}, pagos202: u.pagos202 || {}, cuotaIS: u.cuotaIS || {}, productos: productos || [], ajustes: ajustes || [] }, anio, p, h);
   const nombre = `contabilidad-${anio}${p ? `-${p}T` : ''}.xlsx`;
   await auditar(u, 'Exportación a Excel', nombre);
   const cuerpo = contabilidadXlsx({ empresa: u.emisor?.nombre || u.empresaNombre || '', d });

@@ -26,6 +26,13 @@ const retencionDe = (b) => ([7, 15].includes(Number(b.irpfPct)) ? Number(b.irpfP
 const categoriaDe = (b) => (CATEGORIAS.some((c) => c.id === b.categoria) ? b.categoria : undefined);
 const inversionDe = (b) => (b.inversion && TIPOS_BIEN.some((t) => t.id === b.inversion.tipo) ? { tipo: b.inversion.tipo } : undefined);
 
+// Productos que entran al almacén con este gasto (inventario): [{ producto, cantidad, coste unitario sin IVA }].
+const stockDe = (b) => {
+  const l = (Array.isArray(b.stock) ? b.stock : []).slice(0, 50).map((x) => ({ producto: String(x.producto || ''), cantidad: Math.round((Number(String(x.cantidad).replace(',', '.')) || 0) * 1000) / 1000, coste: r2(leerImporte(x.coste) || 0) }))
+    .filter((x) => /^[a-f0-9]{12}$/.test(x.producto) && x.cantidad > 0);
+  return l.length ? l : undefined;
+};
+
 // Proveedor (opcional): nombre y NIF de quien emite el ticket o la factura.
 const proveedorDe = (b) => {
   const nombre = String(b.proveedor || '').trim().slice(0, 80);
@@ -53,6 +60,7 @@ export async function POST(req) {
     ...(b.alquiler ? { alquiler: true } : {}),
     ...(categoriaDe(b) ? { categoria: categoriaDe(b) } : {}),
     ...(inversionDe(b) ? { inversion: inversionDe(b) } : {}),
+    ...(stockDe(b) ? { stock: stockDe(b), categoria: categoriaDe(b) || '600' } : {}),
   };
   if (origenDe(b, g.ivaPct)) g.origen = origenDe(b, g.ivaPct);
   if (retencionDe(b)) g.irpfPct = retencionDe(b);
@@ -73,7 +81,7 @@ export async function PATCH(req) {
   if (!base) return error('Importe no válido');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(b.fecha || '')) return error('Fecha no válida');
   if (!String(b.concepto || '').trim()) return error('Falta el concepto');
-  const g = { ...antes, fecha: b.fecha, actividad: actividadValida(actividadesDe(u), b.actividad), concepto: String(b.concepto).trim().slice(0, 140), base, ivaPct: Math.min(100, Math.max(0, Number(b.ivaPct) || 0)), proveedor: undefined, proveedorNif: undefined, ...proveedorDe(b), pendiente: b.pendiente ? true : undefined, alquiler: b.alquiler ? true : undefined, categoria: categoriaDe(b), inversion: inversionDe(b) };
+  const g = { ...antes, fecha: b.fecha, actividad: actividadValida(actividadesDe(u), b.actividad), concepto: String(b.concepto).trim().slice(0, 140), base, ivaPct: Math.min(100, Math.max(0, Number(b.ivaPct) || 0)), proveedor: undefined, proveedorNif: undefined, ...proveedorDe(b), pendiente: b.pendiente ? true : undefined, alquiler: b.alquiler ? true : undefined, categoria: stockDe(b) ? categoriaDe(b) || '600' : categoriaDe(b), inversion: inversionDe(b), stock: stockDe(b) };
   g.origen = origenDe(b, g.ivaPct);
   g.irpfPct = retencionDe(b);
   await guardar(u, 'gastos', g);

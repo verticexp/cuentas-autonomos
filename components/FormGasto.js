@@ -9,6 +9,7 @@ import { nifUE } from '@/lib/calculos';
 import { parseImporte } from '@/lib/importe';
 import { CATEGORIAS, categoria, categoriaDe, pareceBien } from '@/lib/categorias';
 import { LIMITE_LIBERTAD, TIPOS_BIEN, coeficiente } from '@/lib/amortizaciones';
+import { emparejarLineas } from '@/lib/inventario';
 import '@/app/ticket.css';
 
 // Reduce la foto (máx. 1600 px, JPEG) para que suba rápido y quepa en la petición.
@@ -22,7 +23,7 @@ async function reducir(archivo) {
 }
 
 // plegado: en la lista de gastos empieza como una tarjeta con «Escanear ticket»; el formulario se abre al escanear o al pedirlo.
-export default function FormGasto({ hoy, gasto, actividades, alquiler = false, retenciones = false, plegado = false, regimen = 'autonomo', movimiento = null }) {
+export default function FormGasto({ hoy, gasto, actividades, alquiler = false, retenciones = false, plegado = false, regimen = 'autonomo', movimiento = null, productos = [] }) {
   const router = useRouter();
   const vacio = { fecha: hoy, actividad: actividades[0].id, concepto: '', proveedor: '', base: '', ivaPct: 21 };
   // Desde un cargo del banco sin gasto: fecha, proveedor e importe del banco (base estimada al 21 %, hasta leer la factura).
@@ -46,7 +47,9 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, r
       const imagen = pdf ? await new Promise((ok, mal) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = mal; r.readAsDataURL(archivo); }) : await reducir(archivo);
       const d = await llamar('/api/gastos/ticket', { method: 'POST', body: JSON.stringify({ imagen }) });
       const t = d.gasto;
-      setG((x) => ({ ...x, proveedor: t.proveedor || x.proveedor, proveedorNif: t.nif || x.proveedorNif, concepto: t.concepto || t.proveedor || x.concepto, base: t.base !== '' ? String(t.base).replace('.', ',') : x.base, ivaPct: t.ivaPct, fecha: t.fecha, ...(!Number(t.ivaPct) && nifUE(t.nif) ? { origen: 'ue' } : {}) }));
+      // Con inventario: las líneas de la factura que son productos del catálogo entran al almacén.
+      const stock = productos.length ? emparejarLineas(t.lineas, productos).map((l) => ({ ...l, cantidad: String(l.cantidad).replace('.', ','), coste: String(l.coste).replace('.', ',') })) : [];
+      setG((x) => ({ ...x, ...(stock.length ? { stock } : {}), proveedor: t.proveedor || x.proveedor, proveedorNif: t.nif || x.proveedorNif, concepto: t.concepto || t.proveedor || x.concepto, base: t.base !== '' ? String(t.base).replace('.', ',') : x.base, ivaPct: t.ivaPct, fecha: t.fecha, ...(!Number(t.ivaPct) && nifUE(t.nif) ? { origen: 'ue' } : {}) }));
       setLeyendo('Revisa los datos antes de guardar.');
     } catch (err) { setLeyendo(''); setError(err.message); }
   };
@@ -141,6 +144,22 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, r
           <option value="">{categoria(categoriaDe({ ...g, categoria: undefined })).nombre} (automática)</option>
           {CATEGORIAS.map((c) => <option key={c.id} value={c.id}>{c.id} · {c.nombre}</option>)}
         </select>
+      )}
+      {productos.length > 0 && !g.inversion && (
+        <div className="gasto-stock">
+          <p className="mini-t">Productos que entran al almacén <small>(opcional)</small></p>
+          {(g.stock || []).map((l, i) => (
+            <div key={i} className="gasto-stock-linea">
+              <select className="campo" value={l.producto} onChange={(e) => poner('stock', g.stock.map((x, j) => (j === i ? { ...x, producto: e.target.value, coste: x.coste || String(productos.find((p) => p.id === e.target.value)?.coste || '').replace('.', ',') } : x)))} aria-label="Producto">
+                {productos.map((p) => <option key={p.id} value={p.id}>{p.nombre}{p.sku ? ` · ${p.sku}` : ''}</option>)}
+              </select>
+              <input className="campo" inputMode="decimal" placeholder="Unidades" value={l.cantidad} onChange={(e) => poner('stock', g.stock.map((x, j) => (j === i ? { ...x, cantidad: e.target.value } : x)))} aria-label="Unidades" />
+              <input className="campo" inputMode="decimal" placeholder="Coste/ud" value={l.coste} onChange={(e) => poner('stock', g.stock.map((x, j) => (j === i ? { ...x, coste: e.target.value } : x)))} aria-label="Coste por unidad sin IVA" />
+              <button type="button" className="linea-quitar" aria-label="Quitar" onClick={() => poner('stock', g.stock.filter((_, j) => j !== i))}>×</button>
+            </div>
+          ))}
+          <button type="button" className="boton sec pequeno" onClick={() => poner('stock', [...(g.stock || []), { producto: productos[0].id, cantidad: '1', coste: String(productos[0].coste || '').replace('.', ',') }])}>+ Producto</button>
+        </div>
       )}
       {pareceBien({ ...g, base: parseImporte(g.base) }) && <p className="nota">¿Es un equipo que vas a usar varios años? Márcalo como bien de inversión: se resta repartido en varios años, como pide Hacienda.</p>}
       {error && <p className="error">{error}</p>}
