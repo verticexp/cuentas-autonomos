@@ -34,8 +34,8 @@ jobs:
             copia-resumen.json
           retention-days: 90
       - name: Simular
-        run: node scripts/migrar-integridad.mjs
+        run: node --import ./tests/apoyo/cargador.mjs scripts/migrar-integridad.mjs
       - name: Aplicar
         if: ${{ inputs.aplicar }}
         # La copia en claro que hace el script se queda en el runner (se borra al acabar): la de restaurar es la cifrada.
-        run: node scripts/migrar-integridad.mjs --aplicar --copia=/tmp/copia-integridad.json
+        run: node --import ./tests/apoyo/cargador.mjs scripts/migrar-integridad.mjs --aplicar --copia=/tmp/copia-integridad.json
