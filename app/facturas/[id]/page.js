@@ -9,6 +9,7 @@ import FormFactura from '@/components/FormFactura';
 import Volver from '@/components/Volver';
 import { Borrar, Cobrada } from '@/components/Acciones';
 import EnviarFactura from '@/components/EnviarFactura';
+import VerifactuFactura from '@/components/VerifactuFactura';
 import { RepetirFactura } from '@/components/Recurrente';
 import { asuntoFactura, mensajeFactura } from '@/lib/envio';
 import { puede } from '@/lib/permisos';
@@ -113,6 +114,7 @@ export default async function Factura({ params }) {
       {f.verifactu && <p className={f.verifactu.estado === 'Incorrecto' ? 'error' : 'nota'}>{`Verifactu${f.verifactu.modo === 'pruebas' ? ' (pruebas)' : ''}: ${
         { Correcto: `registrada en la AEAT${f.verifactu.csv ? ` (CSV ${f.verifactu.csv})` : ''}.`, AceptadoConErrores: `registrada en la AEAT con avisos: ${f.verifactu.error}`, Incorrecto: `la AEAT la ha rechazado: ${f.verifactu.error}` }[f.verifactu.estado]
         || `pendiente de enviar a la AEAT${f.verifactu.error ? ` (último intento: ${f.verifactu.error})` : ''}. Se envía sola.`}`}</p>}
+      {f.verifactu && editar && <VerifactuFactura factura={f} admin={u.rol === 'admin'} />}
       <fieldset className="solo-ver" disabled={!editar}><FormFactura key={JSON.stringify(f)} factura={f} clientes={clientes} actividades={actividades} productos={(productos || []).sort((a, b) => a.nombre.localeCompare(b.nombre))} proyectos={editar ? await proyectosDe(u) : []} /></fieldset>
     </main>
   );

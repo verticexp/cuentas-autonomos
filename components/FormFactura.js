@@ -133,6 +133,15 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
       </label>
       <datalist id="proyectos-factura">{proyectos.map((p) => <option key={p} value={p} />)}</datalist>
 
+      {orig && <label>Motivo de la rectificación
+        <select className="campo" value={f.motivoRectificacion || ''} onChange={(e) => poner('motivoRectificacion', e.target.value)}>
+          <option value="">Otras causas (R4)</option>
+          <option value="error">Error, devolución, descuento o resolución (R1, art. 80 Uno, Dos y Seis)</option>
+          <option value="concurso">Concurso del cliente (R2, art. 80 Tres)</option>
+          <option value="incobrable">Crédito incobrable (R3, art. 80 Cuatro)</option>
+        </select>
+      </label>}
+
       <label>IRPF
         <select className="campo" value={f.irpfPct} onChange={(e) => poner('irpfPct', Number(e.target.value))}>
           {[...new Set([15, 7, 0, Number(f.irpfPct) || 0])].map((n) => <option key={n} value={n}>{n}%</option>)}

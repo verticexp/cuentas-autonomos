@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { estadoVerifactu } from '@/lib/verifactuEstado';
 import { requerir } from '@/lib/auth';
 import { redis } from '@/lib/redis';
 import { puede } from '@/lib/permisos';
@@ -41,9 +42,8 @@ export default async function Seccion({ params }) {
       {seccion === 'avisos' && <AvisosPush listo={pushListo()} />}
       {seccion === 'importar' && <Importar />}
       {seccion === 'verifactu' && await (async () => {
-        const regs = (await leer(u, 'registros')) || [];
-        const cuentas = { hechas: regs.filter((r) => ['Correcto', 'AceptadoConErrores'].includes(r.envio?.estado)).length, rechazadas: regs.filter((r) => r.envio?.estado === 'Incorrecto').length };
-        cuentas.pendientes = regs.length - cuentas.hechas - cuentas.rechazadas;
+        const [regs, facturas] = await Promise.all([leer(u, 'registros'), leer(u, 'facturas')]);
+        const cuentas = estadoVerifactu(regs || [], { modo: u.verifactu || undefined, facturas: Object.fromEntries((facturas || []).map((f) => [f.id, f])) });
         return <Verifactu modo={u.verifactu || null} admin={u.rol === 'admin'} listo={certificadoListo()} faltaEmisor={!u.emisor?.nif || !u.emisor?.nombre} netto={{ razon: process.env.NETTO_RAZON || '', nif: process.env.NETTO_NIF || '' }} cuentas={cuentas} />;
       })()}
       {['facturacion', 'drive', 'seguridad'].includes(seccion) && <Ajustes seccion={seccion} emisor={u.emisor || {}} drive={u.drive} driveError={u.driveError} sociedad={fiscalDe(u).tipo === 'sociedad'} />}

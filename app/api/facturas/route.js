@@ -21,7 +21,7 @@ export async function POST(req) {
   const original = b.rectifica && (await leerUno(u, 'facturas', b.rectifica));
   if (b.rectifica && !original) return error('La factura a rectificar no existe');
   // idem: clave de idempotencia del formulario (doble clic o reintento tras una respuesta perdida).
-  const { factura: f, error: e } = await crearFactura(u, datos, { original, idem: typeof b.idem === 'string' ? `form:${b.idem}` : undefined });
+  const { factura: f, error: e } = await crearFactura(u, datos, { original, motivo: b.motivoRectificacion, idem: typeof b.idem === 'string' ? `form:${b.idem}` : undefined });
   if (e) return error(e);
   return Response.json({ ok: true, factura: f });
 }
