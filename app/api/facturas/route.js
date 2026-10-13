@@ -5,6 +5,7 @@ import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { subirFactura } from '@/lib/drive';
 import { enviarNomina } from '@/lib/controlat';
 import { auditar } from '@/lib/auditoria';
+import { hoy } from '@/lib/formato';
 import { actividadesDe, fiscalDe } from '@/lib/empresa';
 import { soltarAlbaranes } from '@/lib/albaranesServidor';
 
@@ -33,7 +34,8 @@ export async function PATCH(req) {
   if (!antes) return error('Esa factura ya no existe', 404);
   if (antes.caja) return error('Es un cierre de caja: corrígelo desde Caja');
   if (Object.keys(b).length === 2 && 'cobrada' in b) {
-    const f = { ...antes, cobrada: Boolean(b.cobrada) };
+    // La fecha del cobro: para el estado de pago (Ley Crea y Crece) y el asiento del cobro.
+    const f = { ...antes, cobrada: Boolean(b.cobrada), cobro: b.cobrada ? antes.cobro || { fecha: hoy(), metodo: 'manual' } : undefined };
     await guardar(u, 'facturas', f);
     await subirFactura(u, f);
     return Response.json({ ok: true });

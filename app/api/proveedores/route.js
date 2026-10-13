@@ -1,6 +1,7 @@
 import { leer, guardar } from '@/lib/redis';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { claveProveedor } from '@/lib/proveedores';
+import { hoy } from '@/lib/formato';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,6 +12,6 @@ export async function POST(req) {
   const { clave } = await cuerpo(req);
   const suyos = (await leer(u, 'gastos')).filter((g) => g.proveedor && g.pendiente && claveProveedor(g) === clave);
   if (!suyos.length) return error('No hay nada pendiente con ese proveedor', 404);
-  for (const g of suyos) await guardar(u, 'gastos', { ...g, pendiente: undefined });
+  for (const g of suyos) await guardar(u, 'gastos', { ...g, pendiente: undefined, pagado: hoy() });
   return Response.json({ ok: true, pagados: suyos.length });
 }

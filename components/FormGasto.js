@@ -10,6 +10,7 @@ import { parseImporte } from '@/lib/importe';
 import { CATEGORIAS, categoria, categoriaDe, pareceBien } from '@/lib/categorias';
 import { LIMITE_LIBERTAD, TIPOS_BIEN, coeficiente } from '@/lib/amortizaciones';
 import { emparejarLineas } from '@/lib/inventario';
+import { leerFacturaElectronica } from '@/lib/facturae';
 import '@/app/ticket.css';
 
 // Reduce la foto (máx. 1600 px, JPEG) para que suba rápido y quepa en la petición.
@@ -40,6 +41,19 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, r
     e.target.value = '';
     if (!archivo) return;
     setAbierto(true); setHecho(false);
+    // Factura electrónica (Facturae, UBL o CII): se lee aquí mismo, sin IA, con todos sus datos exactos.
+    if (/xml/.test(archivo.type) || /\.(xml|xsig)$/i.test(archivo.name)) {
+      setError('');
+      const t = archivo.size > 5e6 ? { error: 'El archivo es demasiado grande (máx. 5 MB)' } : leerFacturaElectronica(await archivo.text());
+      if (t.error) { setLeyendo(''); setError(t.error); return; }
+      const stock = productos.length ? emparejarLineas(t.lineas || [], productos).map((l) => ({ ...l, cantidad: String(l.cantidad).replace('.', ','), coste: String(l.coste).replace('.', ',') })) : [];
+      const varios = (t.desglose || []).filter((d) => d.base).length > 1;
+      setG((x) => ({ ...x, ...(stock.length ? { stock } : {}), proveedor: t.proveedor?.nombre || x.proveedor, proveedorNif: t.proveedor?.nif || x.proveedorNif, concepto: t.concepto || t.proveedor?.nombre || x.concepto,
+        base: String(t.base).replace('.', ','), ivaPct: t.ivaPct, fecha: t.fecha || x.fecha, numero: t.numero || '', ...([7, 15].includes(Number(t.irpfPct)) ? { irpfPct: Number(t.irpfPct) } : {}),
+        ...(t.vencimiento && t.vencimiento > (t.fecha || '') ? { pendiente: true } : {}), efactura: t.formato, ...(!Number(t.ivaPct) && nifUE(t.proveedor?.nif) ? { origen: 'ue' } : {}) }));
+      setLeyendo(`Factura electrónica ${t.numero || ''} leída${varios ? ': tiene varios tipos de IVA, revisa la base' : ''}. Revisa los datos antes de guardar.`);
+      return;
+    }
     const pdf = archivo.type === 'application/pdf';
     if (pdf && archivo.size > 5e6) { setError('El PDF es demasiado grande (máx. 5 MB)'); return; }
     setLeyendo(pdf ? 'Leyendo la factura…' : 'Leyendo el ticket…'); setError('');
@@ -78,7 +92,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, r
         {error && <p className="error">{error}</p>}
         <div className="gasto-rapido-botones">
           <label className="boton gasto-escanear"><svg viewBox="0 0 24 24" aria-hidden><path d="M4 8V6a2 2 0 012-2h2M16 4h2a2 2 0 012 2v2M20 16v2a2 2 0 01-2 2h-2M8 20H6a2 2 0 01-2-2v-2M4 12h16" /></svg>Escanear ticket<input type="file" accept="image/*" capture="environment" onChange={foto} hidden /></label>
-          <label className="boton sec">Subir factura<input type="file" accept="image/*,application/pdf" onChange={foto} hidden /></label>
+          <label className="boton sec">Subir factura<input type="file" accept="image/*,application/pdf,.xml,.xsig,text/xml,application/xml" onChange={foto} hidden /></label>
           <button type="button" className="boton sec" onClick={() => { setAbierto(true); setHecho(false); }}>A mano</button>
         </div>
       </div>
@@ -99,7 +113,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, r
         <p className="ticket-ia-txt">Haz una foto del ticket o sube la factura que te han enviado (imagen o PDF). Netto lee el proveedor, el NIF, la base, el IVA y la fecha; tú solo revisas y guardas.</p>
         <div className="ticket-ia-botones">
           <label className="boton sec ticket-foto">Hacer foto<input type="file" accept="image/*" capture="environment" onChange={foto} hidden /></label>
-          <label className="boton sec ticket-foto">Subir factura<input type="file" accept="image/*,application/pdf" onChange={foto} hidden /></label>
+          <label className="boton sec ticket-foto">Subir factura<input type="file" accept="image/*,application/pdf,.xml,.xsig,text/xml,application/xml" onChange={foto} hidden /></label>
         </div>
       </div>}
       {leyendo && <p className="nota ticket-nota" role="status">{leyendo}</p>}

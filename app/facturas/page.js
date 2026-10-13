@@ -71,6 +71,7 @@ export default async function Facturas({ searchParams }) {
           {u.fiscal?.inventario && <Link href="/inventario" className="rec-enlace">Inventario ›</Link>}
           {u.fiscal?.inventario && puede(u, 'facturar') && <Link href="/albaranes" className="rec-enlace">Pedidos y albaranes ›</Link>}
           {puede(u, 'facturar') && <Link href="/facturas/caja" className="rec-enlace">Caja ›</Link>}
+          {puede(u, 'resumen') && <a href={`/api/efactura?anio=${h.slice(0, 4)}`} className="rec-enlace" download>Estado de pagos ›</a>}
         </p>
       )}
 
