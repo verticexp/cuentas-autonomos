@@ -74,7 +74,7 @@ export default async function FacturaA4({ f, e, marca, presupuesto = f.serie ===
           </div>
         )}
         <div className="fa-pago">
-          <div><p className="fa-et">Forma de pago</p><p>Transferencia bancaria<br /><strong>{e.iban}</strong></p><p className="fa-vencimiento">{presupuesto ? `Válido hasta: ${fechaFin}` : `Vencimiento: ${fechaFin} (${e.plazo} días)`}</p></div>
+          <div><p className="fa-et">Forma de pago</p><p>Transferencia bancaria<br /><strong>{e.iban}</strong></p><p className="fa-vencimiento">{presupuesto ? `Válido hasta: ${fechaFin}` : `Vencimiento: ${fechaFin}`}</p></div>
           {qr && <div className="fa-qr"><span dangerouslySetInnerHTML={{ __html: qr }} /><small>VERI*FACTU</small></div>}
         </div>
         <footer className="fa-pie"><span>{e.nombre} · NIF {e.nif}</span>{qr && <span>Factura verificable en la sede electrónica de la AEAT</span>}</footer>
