@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto';
+import { identidadDoc } from '@/lib/documento';
 import { redis, leer, guardar } from '@/lib/redis';
 import { importes, numeroFactura, vencimiento } from '@/lib/calculos';
 import { eur, fechaTexto, hoy } from '@/lib/formato';
@@ -51,7 +52,7 @@ export async function GET(req) {
         para: f.cliente.email,
         asunto: `Recordatorio: factura ${num} pendiente de pago`,
         html: htmlMensaje(mensaje, `${req.nextUrl.origin}/api/abierta/${token}`),
-        adjuntos: [{ nombre: `${num}.pdf`, datos: await facturaPdf(f, e, emp.marca) }],
+        adjuntos: [{ nombre: `${num}.pdf`, datos: await facturaPdf(f, ...Object.values(await identidadDoc(u, f))) }],
       });
       if (r.error) { fallos.push(`${emp.id}/${f.id}: ${r.error}`); continue; }
       await redis.hset('factura-envios', { [token]: { empresa: emp.id, id: f.id } });

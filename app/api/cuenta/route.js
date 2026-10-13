@@ -1,4 +1,5 @@
 import { cookies } from 'next/headers';
+import { congelarInstantaneas } from '@/lib/facturas';
 import { actualizarUsuario, cambiarPassword, desbloqueo, opcionesCookie, opcionesDesbloqueo } from '@/lib/auth';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { puede } from '@/lib/permisos';
@@ -73,6 +74,7 @@ export async function PATCH(req) {
     const logo = b.marca.logo ? logoValido(b.marca.logo) : null;
     if (b.marca.color && !color) return error('Color no válido');
     if (b.marca.logo && !logo) return error('El logo debe ser una imagen PNG o JPG de menos de 300 KB');
+    await congelarInstantaneas(u); // las facturas ya emitidas conservan la marca de antes
     await actualizarUsuario(u, { marca: { color, logo } });
     return Response.json({ ok: true });
   }
@@ -89,6 +91,7 @@ export async function PATCH(req) {
     if (!String(e.nombre || '').trim()) return error('Falta el nombre o la razón social');
     const emisor = { ...(u.emisor || {}), ...Object.fromEntries(CAMPOS.map((k) => [k, String(e[k] || '').trim().slice(0, 120)])) };
     emisor.plazo = Math.max(0, Math.min(365, Number(e.plazo ?? emisor.plazo) || 30));
+    await congelarInstantaneas(u); // las facturas ya emitidas conservan el emisor de antes
     await actualizarUsuario(u, { fiscal: limpiarFiscal(c.fiscal), actividades: a.actividades, emisor, pendiente: false });
     await auditar(u, 'Datos de la empresa cambiados', `Situación fiscal, actividades y facturación${cambioIban(u.emisor?.iban, emisor.iban)}`);
     const emp = await redis.hget('empresas', u.empresa);
@@ -116,6 +119,7 @@ export async function PATCH(req) {
   emisor.plazo = Math.max(0, Math.min(365, Number(b.plazo) || 30));
   emisor.limite = Math.max(0, Number(b.limite) || 0);
   emisor.recordatorios = Math.max(0, Math.min(60, Math.round(Number(b.recordatorios) || 0)));
+  await congelarInstantaneas(u); // las facturas ya emitidas conservan el emisor de antes
   await actualizarUsuario(u, { emisor });
   await auditar(u, 'Datos de facturación cambiados', `${emisor.nombre}${cambioIban(u.emisor?.iban, emisor.iban)}`);
   return Response.json({ ok: true });

@@ -29,8 +29,10 @@ export async function POST(req) {
   if (tipo !== 'senal' && p.lineas?.length) {
     datos.lineas = [...p.lineas, ...(senal ? [{ concepto: `Señal ya facturada (factura ${senal.numero})`, cantidad: 1, precio: -senal.base, dto: 0, ivaPct: p.ivaPct }] : [])];
   }
-  const { factura: f, error: e } = await crearFactura(u, datos, { extra: { presupuesto: { id: p.id, numero: n } } });
+  // Idempotente: un doble clic o un reintento tras un corte devuelve la misma factura, no otra.
+  const { factura: f, error: e } = await crearFactura(u, datos, { extra: { presupuesto: { id: p.id, numero: n } }, idem: `pres:${p.id}:${tipo === 'senal' ? 'senal' : 'resto'}` });
   if (e) return error(e);
+  if (p.facturas.some((x) => x.id === f.id)) return Response.json({ ok: true, factura: f });
   await guardar(u, 'presupuestos', {
     ...p, estado: p.estado === 'pendiente' ? 'aceptado' : p.estado,
     facturas: [...p.facturas, { id: f.id, numero: numeroFactura(f), tipo: tipo === 'senal' ? 'senal' : 'resto', base }],

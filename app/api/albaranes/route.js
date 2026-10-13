@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { guardar, borrar, leer, leerUno } from '@/lib/redis';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { crearFactura, limpiar } from '@/lib/facturas';
@@ -28,7 +29,9 @@ export async function POST(req) {
     const a = actividadesDe(u).find((x) => x.id === b.actividad) || actividadesDe(u)[0];
     const datos = limpiar({ ...fd, fecha: b.fecha, actividad: a.id, irpfPct: b.irpfPct ?? a.irpfPct, cobrada: b.cobrada }, actividadesDe(u), fiscalDe(u).tipo === 'sociedad');
     if (datos.error) return error(datos.error);
-    const { factura: f, error: e } = await crearFactura(u, datos);
+    // Idempotente por los albaranes elegidos: dos clics a la vez no hacen dos facturas.
+    const idem = `alb:${createHash('sha256').update([...ids].sort().join(',')).digest('hex').slice(0, 32)}`;
+    const { factura: f, error: e } = await crearFactura(u, datos, { idem });
     if (e) return error(e);
     for (const x of lista) await guardar(u, 'albaranes', { ...x, factura: f.id });
     await auditar(u, 'Albaranes facturados', `${lista.map(numeroDoc).join(', ')} → ${numeroFactura(f)}`);

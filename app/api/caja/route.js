@@ -20,7 +20,7 @@ export async function POST(req) {
   const datos = limpiarCierre(b, (await leer(u, 'productos')) || []);
   if (datos.error) return error(datos.error);
   datos.actividad = actividadValida(actividadesDe(u), b.actividad || antes?.actividad);
-  const { factura: f, error: e } = await guardarCierre(u, datos, antes);
+  const { factura: f, error: e } = await guardarCierre(u, datos, antes, { idem: typeof b.idem === 'string' ? `caja:${b.idem}` : undefined });
   if (e) return error(e);
   await auditar(u, antes ? 'Cierre de caja corregido' : 'Cierre de caja', `${numeroFactura(f)} · ${f.fecha} · ${eur(f.caja.efectivo + f.caja.tarjeta + f.caja.otros)}`);
   return Response.json({ ok: true, factura: f });

@@ -6,6 +6,8 @@ import { navegar } from '@/lib/transicion';
 async function llamar(url, opciones) {
   const r = await fetch(url, { headers: { 'Content-Type': 'application/json' }, ...opciones });
   const d = await r.json().catch(() => ({}));
+  // App bloqueada (el servidor ya no da datos): a la pantalla de desbloqueo, para volver aquí después.
+  if (r.status === 423 && d.bloqueada) window.location.assign(`/bloqueo?a=${encodeURIComponent(window.location.pathname + window.location.search)}`);
   if (!r.ok) throw new Error(d.error || 'Algo ha fallado');
   return d;
 }

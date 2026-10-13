@@ -1,7 +1,8 @@
-import { redis, leer, guardar } from '@/lib/redis';
+import { redis, leer } from '@/lib/redis';
 import { error } from '@/lib/api';
 import { hoy } from '@/lib/formato';
-import { crearFactura } from '@/lib/facturas';
+import { procesarRecurrente } from '@/lib/recurrentesServidor';
+import { emisorDe } from '@/lib/calculos';
 import { emailListo, emailValido } from '@/lib/email';
 import { asuntoFactura, enviarFactura, mensajeFactura } from '@/lib/envio';
 import { tocaRecurrente } from '@/lib/recurrentes';
@@ -18,18 +19,18 @@ export async function GET(req) {
   const creadas = [];
   const fallos = [];
   for (const emp of Object.values((await redis.hgetall('empresas')) || {})) {
+    if (emp.baja) continue;
     const u = { ...emp, empresa: emp.id };
+    // El email, si toca y se puede: si falla, la plantilla lo recuerda y se reintenta mañana sin emitir otra factura.
+    const enviar = (u2, f) => (emailListo() && emailValido(f.cliente.email)
+      ? enviarFactura(u2, f, { para: f.cliente.email, asunto: asuntoFactura(f, emisorDe(f, u2)), mensaje: mensajeFactura(f, emisorDe(f, u2)), origen: req.nextUrl.origin })
+      : Promise.resolve({}));
     for (const r of (await leer(u, 'recurrentes')) || []) {
-      if (!tocaRecurrente(r, dia)) continue;
-      // Se apunta antes de crearla: si algo falla a medias, nunca sale dos veces en el mismo mes.
-      await guardar(u, 'recurrentes', { ...r, ultima: dia.slice(0, 7) });
-      const { factura: f, error: e } = await crearFactura(u, { ...r.plantilla, fecha: dia, cobrada: false });
-      if (e) { fallos.push(`${emp.id}/${r.id}: ${e}`); continue; }
-      creadas.push(f.id);
-      if (r.enviar && emailListo() && emailValido(f.cliente.email)) {
-        const s = await enviarFactura(u, f, { para: f.cliente.email, asunto: asuntoFactura(f, u.emisor || {}), mensaje: mensajeFactura(f, u.emisor || {}), origen: req.nextUrl.origin });
-        if (s.error) fallos.push(`${emp.id}/${f.id}: ${s.error}`);
-      }
+      if (!tocaRecurrente(r, dia) && !r.envio) continue;
+      const x = await procesarRecurrente(u, r.id, dia, { enviar }).catch((e) => ({ fallo: e.message }));
+      if (x.creada) creadas.push(x.creada);
+      if (x.fallo) fallos.push(`${emp.id}/${r.id}: ${x.fallo}`);
+      if (x.falloEnvio) fallos.push(`${emp.id}/${r.id}: envío: ${x.falloEnvio}`);
     }
   }
   return Response.json({ ok: true, creadas, fallos });

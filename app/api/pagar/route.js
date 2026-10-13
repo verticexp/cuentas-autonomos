@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { importes, numeroFactura } from '@/lib/calculos';
+import { numeroFactura, saldoDe } from '@/lib/calculos';
 import { facturaDePago } from '@/lib/cobros';
 import { crearPago, stripeListo } from '@/lib/stripe';
 
@@ -14,14 +14,15 @@ export async function POST(req) {
   if (!d) return NextResponse.json({ error: 'Este enlace ya no es válido' }, { status: 404 });
   if (d.f.cobrada) return NextResponse.redirect(volver, 303);
   if (!stripeListo()) return atras('El pago con tarjeta no está disponible: paga por transferencia.');
-  const total = importes(d.f).total;
+  // Lo que queda por pagar (si ya hubo un pago parcial, solo el resto).
+  const total = saldoDe(d.f);
   if (total <= 0) return atras('Esta factura no tiene nada que pagar.');
   const s = await crearPago({
     importe: total,
     concepto: `Factura ${numeroFactura(d.f)} · ${d.empresa.emisor?.nombre || d.empresa.nombre || ''}`.trim(),
     email: d.f.cliente.email,
     volver,
-    datos: { token, factura: d.f.id, empresa: d.e.empresa },
+    datos: { token, factura: d.f.id, empresa: d.e.empresa, importe: String(Math.round(total * 100)) },
   });
   if (s.error) { console.error('Stripe:', s.error); return atras('No se pudo abrir el pago. Inténtalo de nuevo o paga por transferencia.'); }
   return NextResponse.redirect(s.url, 303);

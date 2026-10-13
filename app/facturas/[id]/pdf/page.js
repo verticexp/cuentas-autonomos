@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { identidadDoc } from '@/lib/documento';
 import { requerir } from '@/lib/auth';
 import { leerUno } from '@/lib/redis';
 import { numeroFactura } from '@/lib/calculos';
@@ -21,7 +22,7 @@ export default async function PDF({ params }) {
   const f = await leerUno(u, 'facturas', (await params).id);
   if (!f) notFound();
   const c = f.cliente;
-  const EMISOR = u.emisor || {};
+  const { emisor: EMISOR, marca } = await identidadDoc(u, f);
   if (!EMISOR.nif || !EMISOR.iban) {
     return <main className="aviso"><h1>Faltan tus datos de facturación</h1><p>Rellena tu nombre, NIF, dirección e IBAN en <a href="/ajustes">Ajustes</a> para generar el PDF.</p></main>;
   }
@@ -33,7 +34,7 @@ export default async function PDF({ params }) {
         <div style={{ marginBottom: -8 }}><Volver href={`/facturas/${f.id}`}>Factura {numeroFactura(f)}</Volver></div>
         <DescargarPdf id={f.id} nombre={nombre} />
       </div>
-      <VistaA4><FacturaA4 f={f} e={EMISOR} marca={u.marca} /></VistaA4>
+      <VistaA4><FacturaA4 f={f} e={EMISOR} marca={marca} /></VistaA4>
     </div>
   );
 }

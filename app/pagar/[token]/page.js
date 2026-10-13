@@ -18,7 +18,7 @@ export default async function Pagar({ params, searchParams }) {
   // Vuelta desde Stripe: se comprueba el pago con Stripe (no basta con la dirección).
   if (sesion && !d.f.cobrada && stripeListo()) {
     const s = await leerPago(sesion);
-    if (s.metadata?.token === token && (await marcarPagada(s))) d = await facturaDePago(token);
+    if (s.metadata?.token === token && (await marcarPagada(s)).aplicado) d = await facturaDePago(token);
   }
   const { f, empresa } = d;
   const e = empresa.emisor || {};
