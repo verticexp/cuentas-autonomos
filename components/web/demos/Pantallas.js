@@ -196,6 +196,30 @@ const PANTALLAS = {
       <Fila a="Resultado del ejercicio" b="Tras el Impuesto sobre Sociedades" c="+35.150 €" chip="✓" />
     </div>
   ),
+  inventario: () => (
+    <div className="mk">
+      <div className="mk-cab"><b>Inventario</b><span className="mk-chip ok">1.515 € en almacén</span></div>
+      <Fila a="Cable XLR 10 m" b="XLR-10 · mínimo 20" c="16 ud." chip="Bajo mínimo" tipo="pend" />
+      <Fila a="Lámpara LED PAR 64" b="PAR64-LED · mínimo 6" c="18 ud." />
+      <Fila a="Cinta gaffer 50 m" b="GAF-50 · mínimo 12" c="23 ud." />
+    </div>
+  ),
+  pedido: () => (
+    <div className="mk">
+      <div className="mk-cab"><b>Qué pedir · Audio Pro</b><small>1.140,84 €</small></div>
+      <Fila a="Cable XLR 10 m" b="Quedan 16 · mínimo 20" c="44 ud." />
+      <Fila a="Micrófono inalámbrico" b="Queda 1 · mínimo 2" c="5 ud." />
+      <div className="mk-dos"><span className="mk-btn">Copiar el pedido</span></div>
+    </div>
+  ),
+  margen: () => (
+    <div className="mk">
+      <div className="mk-cab"><b>Cable XLR 10 m</b><span className="mk-chip ok">Margen 58 %</span></div>
+      <Fila a="Recuento" b="13/10 · había 18, hay 16" c="−2" />
+      <Fila a="Venta · Factura A2026-031" b="10/10 · queda 18" c="−28" />
+      <Fila a="Compra · Audio Pro" b="25/03 · 10,36 €/ud." c="+36" />
+    </div>
+  ),
   libros: () => (
     <div className="mk">
       <div className="mk-cab"><b>Libros registro · 2026</b><span className="mk-chip ok">Formato AEAT</span></div>

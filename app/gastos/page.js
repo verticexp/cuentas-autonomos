@@ -26,7 +26,9 @@ const diaMes = (f) => new Date(`${f}T12:00:00`).toLocaleDateString('es-ES', { da
 
 export default async function Gastos({ searchParams }) {
   const u = await requerir('gastos');
-  const [gastos, movs, facturas] = await Promise.all([leer(u, 'gastos'), leer(u, 'banco'), leer(u, 'facturas')]);
+  const [gastos, movs, facturas, productos] = await Promise.all([leer(u, 'gastos'), leer(u, 'banco'), leer(u, 'facturas'), leer(u, 'productos')]);
+  // Con inventario: los productos que llevan stock, para apuntar lo que entra con cada compra.
+  const stockProductos = fiscalDe(u).inventario ? (productos || []).filter((p) => !p.servicio).sort((a, b) => a.nombre.localeCompare(b.nombre)) : [];
   if (!gastos) return <SinBD />;
   const { q, estado, banco } = await searchParams;
   // En revisión: cargos del banco que no casan con ningún gasto y parecen un gasto (no impuestos, nóminas, préstamos…).
@@ -79,7 +81,7 @@ export default async function Gastos({ searchParams }) {
         </p>
       )}
 
-      {puede(u, 'gastar') && movimiento && <FormGasto key={movimiento.id} hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} movimiento={movimiento} />}
+      {puede(u, 'gastar') && movimiento && <FormGasto key={movimiento.id} hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} productos={stockProductos} movimiento={movimiento} />}
 
       {puede(u, 'gastar') && !movimiento && revision.length > 0 && (
         <section className="grupo gastos-revision">
@@ -100,7 +102,7 @@ export default async function Gastos({ searchParams }) {
       )}
 
       {/* Primero lo que más se hace: escanear el ticket. El formulario entero se abre al escanear o al pedirlo. */}
-      {puede(u, 'gastar') && !movimiento && <FormGasto hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} plegado={todos.length > 0} />}
+      {puede(u, 'gastar') && !movimiento && <FormGasto hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} productos={stockProductos} plegado={todos.length > 0} />}
 
       {todos.length > 5 && <Buscar action="/gastos" q={q} ocultos={{ estado }} placeholder="Buscar proveedor o concepto" />}
       {sinPagar > 0 && (

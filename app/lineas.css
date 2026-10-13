@@ -23,3 +23,5 @@
 .conceptos li span { min-width: 0; }
 .conceptos li small { display: block; color: var(--muted); font-size: 13px; margin-top: 2px; }
 .conceptos li strong { flex: none; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.linea-stock { float: left; font-weight: 500; font-size: 13px; color: var(--muted); }
+.linea-stock.falta { color: var(--out); }

@@ -7,3 +7,7 @@
 .ticket-ia-txt { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.35; }
 .ticket-ia-botones { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .ticket-ia-botones .ticket-foto { padding: 11px 10px; font-size: 15px; background: var(--surface); }
+.gasto-stock { border-top: 0.5px solid var(--line); padding-top: 10px; display: grid; gap: 6px; }
+.gasto-stock .mini-t { margin: 0; font-size: 13px; color: var(--muted); }
+.gasto-stock-linea { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) 28px; gap: 6px; align-items: center; }
+.gasto-stock-linea .campo { margin: 0; min-width: 0; }

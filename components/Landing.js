@@ -8,7 +8,7 @@ import { VentanaApp } from '@/components/web/demos/Pantallas';
 import { Cta, Encabezado, Faq, Flecha } from '@/components/web/Bloques';
 import { FAQ_GENERAL, FUNCIONES, SEGMENTOS } from '@/components/web/datos';
 
-const CINTA = ['Facturas ilimitadas', 'Verifactu', 'Presupuestos online', 'Gastos con IA', 'Modelo 303', 'Modelo 130', 'Modelos 111 y 115', 'Renta (100)', 'Conciliación de extractos', 'Libros registro (formato AEAT)', 'Contabilidad por partida doble', 'Balance y resultados', 'Amortizaciones', 'Cuentas anuales', 'Previsión de caja', 'Nóminas', 'Registro de jornada', 'Permisos por área', 'Varias empresas', 'Portal del cliente', 'Asistente IA', 'Cámbiate desde Holded, A3 o Sage', 'Face ID'];
+const CINTA = ['Facturas ilimitadas', 'Verifactu', 'Presupuestos online', 'Gastos con IA', 'Modelo 303', 'Modelo 130', 'Modelos 111 y 115', 'Renta (100)', 'Conciliación de extractos', 'Libros registro (formato AEAT)', 'Contabilidad por partida doble', 'Balance y resultados', 'Amortizaciones', 'Cuentas anuales', 'Inventario y stock', 'Previsión de caja', 'Nóminas', 'Registro de jornada', 'Permisos por área', 'Varias empresas', 'Portal del cliente', 'Asistente IA', 'Cámbiate desde Holded, A3 o Sage', 'Face ID'];
 
 const CIFRAS = [
   { n: 9, suf: ' €', t: 'al mes, desde', d: 'Sin cuotas de alta ni permanencia' },
@@ -25,7 +25,7 @@ export default function Landing() {
         <div className="web-hero-txt">
           <Link href="/funciones/impuestos" className="web-aviso"><span>Nuevo</span>Calcula tus modelos 303 y 130 al momento<Icono n="flecha" className="ico web-flecha" /></Link>
           <h1>Las cuentas de tu negocio, <em>por fin en orden</em>.</h1>
-          <p className="web-sub">Facturas, gastos con IA, impuestos, contabilidad, caja y equipo en una sola app. La alternativa a Holded más sencilla y más barata, para autónomos, pymes y grandes empresas.</p>
+          <p className="web-sub">Facturas, gastos con IA, impuestos, contabilidad, stock, caja y equipo en una sola app. La alternativa a Holded más sencilla y más barata, para autónomos, pymes y grandes empresas.</p>
           <div className="web-cta">
             <Link className="web-btn web-btn-grande" href="/contacto">Empieza gratis<Flecha /></Link>
             <Link className="web-btn web-btn-claro web-btn-grande" href="/funciones">Ver cómo funciona</Link>
@@ -64,7 +64,7 @@ export default function Landing() {
         <Encabezado kicker="Funciones" titulo="Hecho para lo que de verdad te quita tiempo" />
         <div className="web-funciones">
           {FUNCIONES.map((f, i) => (
-            <Link key={f.slug} href={`/funciones/${f.slug}`} data-foco data-r className={`web-fcard${i === 0 ? ' ancha' : ''}`} style={{ '--d': `${(i % 3) * 70}ms` }}>
+            <Link key={f.slug} href={`/funciones/${f.slug}`} data-foco data-r className="web-fcard" style={{ '--d': `${(i % 3) * 70}ms` }}>
               <span className="web-fcard-ico"><Icono n={f.icono} /></span>
               <h3>{f.nombre}</h3>
               <p>{f.sub}</p>

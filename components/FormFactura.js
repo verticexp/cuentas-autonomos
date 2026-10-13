@@ -14,11 +14,11 @@ const aTexto = (n) => String(n ?? '').replace('.', ',');
 const lineaVacia = (ivaPct) => ({ concepto: '', cantidad: '1', precio: '', dto: '', ivaPct });
 // Las facturas antiguas (una base, un IVA) se abren como una sola línea.
 const lineasDe = (x) => (x.lineas?.length
-  ? x.lineas.map((l) => ({ concepto: l.concepto, cantidad: aTexto(l.cantidad), precio: aTexto(l.precio), dto: l.dto ? aTexto(l.dto) : '', ivaPct: l.ivaPct }))
+  ? x.lineas.map((l) => ({ concepto: l.concepto, cantidad: aTexto(l.cantidad), precio: aTexto(l.precio), dto: l.dto ? aTexto(l.dto) : '', ivaPct: l.ivaPct, ...(l.producto ? { producto: l.producto } : {}) }))
   : [{ concepto: x.concepto || '', cantidad: '1', precio: aTexto(x.base), dto: '', ivaPct: x.ivaPct }]);
 const numero = (v) => leerImporte(v) || 0;
 
-export default function FormFactura({ factura, clientes, numeros, hoy, rectifica: orig, plantilla, actividades, productos = [] }) {
+export default function FormFactura({ factura, clientes, numeros, hoy, rectifica: orig, plantilla, actividades, productos = [], stock = null }) {
   // IVA y retención de cada actividad, para rellenar la factura nueva.
   const defecto = (id) => { const a = actividades.find((x) => x.id === id) || actividades[0]; return { ivaPct: a.ivaPct, irpfPct: a.irpfPct }; };
   const router = useRouter();
@@ -51,7 +51,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
   const quitarLinea = (i) => setF((x) => ({ ...x, lineas: x.lineas.filter((_, j) => j !== i) }));
   // Del catálogo: rellena la última línea si está vacía; si no, añade una.
   const delCatalogo = (p) => setF((x) => {
-    const l = { concepto: p.nombre, cantidad: '1', precio: aTexto(p.precio), dto: '', ivaPct: p.ivaPct };
+    const l = { concepto: p.nombre, cantidad: '1', precio: aTexto(p.precio), dto: '', ivaPct: p.ivaPct, producto: p.id };
     const ult = x.lineas.at(-1);
     return { ...x, lineas: ult && !ult.concepto && !ult.precio ? [...x.lineas.slice(0, -1), l] : [...x.lineas, l] };
   });
@@ -119,7 +119,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
                 </select>
               </label>
             </div>
-            <p className="linea-total">{eur(baseLinea(nums[i]))}</p>
+            <p className="linea-total">{stock && nueva && !orig && l.producto && stock[l.producto] !== undefined && <span className={`linea-stock${stock[l.producto] < nums[i].cantidad ? ' falta' : ''}`}>{stock[l.producto] < nums[i].cantidad ? `Solo quedan ${stock[l.producto]}` : `Quedan ${stock[l.producto]}`}</span>}{eur(baseLinea(nums[i]))}</p>
           </div>
         ))}
         {productos.length > 0 && <div className="catalogo-chips" aria-label="Añadir del catálogo">{productos.map((p) => <button type="button" key={p.id} onClick={() => delCatalogo(p)}>+ {p.nombre}</button>)}</div>}

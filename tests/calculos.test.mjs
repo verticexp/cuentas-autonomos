@@ -100,7 +100,7 @@ test('facturas recurrentes: una al mes, el día elegido', async () => {
 test('lectura de tickets: lo que diga la IA se deja en datos válidos', async () => {
   const { limpiarTicket } = await import('../lib/ticket.js');
   assert.deepEqual(limpiarTicket({ proveedor: 'Bauhaus', fecha: '2026-09-12', concepto: 'Cables', base: 82.64, ivaPct: 21, total: 100 }, '2026-10-03'),
-    { proveedor: 'Bauhaus', nif: '', fecha: '2026-09-12', concepto: 'Cables', base: 82.64, ivaPct: 21 });
+    { proveedor: 'Bauhaus', nif: '', fecha: '2026-09-12', concepto: 'Cables', base: 82.64, ivaPct: 21, lineas: [] });
   assert.equal(limpiarTicket({ total: '12,10', ivaPct: 10 }, '2026-10-03').base, 11); // solo el total: se saca la base
   assert.equal(limpiarTicket({ base: 10, ivaPct: 18 }, '2026-10-03').ivaPct, 21); // tipo raro → 21
   assert.equal(limpiarTicket({ fecha: '2030-01-01' }, '2026-10-03').fecha, '2026-10-03'); // fecha futura → hoy

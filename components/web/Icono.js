@@ -31,6 +31,7 @@ const P = {
   mas: 'M12 5v14M5 12h14',
   subir: 'M12 16V4M7 9l5-5 5 5M5 20h14',
   contabilidad: 'M4 4h16v16H4zM4 9h16M4 14h16M10 9v11',
+  inventario: 'M3 8l9-5 9 5v9l-9 5-9-5zM3 8l9 5 9-5M12 13v9',
 };
 
 export default function Icono({ n, className = 'ico' }) {

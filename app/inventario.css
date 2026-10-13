@@ -1,0 +1,12 @@
+/* Inventario (app/inventario) */
+.inv-rojo { color: var(--out); }
+.inv-sale { color: var(--muted); }
+.inv-anios { justify-content: flex-start; margin-bottom: 8px; }
+.inv-pedido { padding: 14px 16px; margin-bottom: 12px; }
+.inv-pedido-cab { display: flex; justify-content: space-between; font-size: 16px; margin-bottom: 8px; }
+.inv-pedido ul { list-style: none; padding: 0; margin: 0 0 12px; }
+.inv-pedido li { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-top: 0.5px solid var(--line); font-size: 14px; }
+.inv-pedido li small { display: block; color: var(--muted); font-size: 12.5px; }
+.inv-pedido li b { white-space: nowrap; }
+.inv-ajuste { margin: 12px 0; }
+.inv-borrar { padding: 0 16px 10px; text-align: right; }

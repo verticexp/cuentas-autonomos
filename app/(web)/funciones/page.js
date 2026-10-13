@@ -4,9 +4,9 @@ import Pantalla from '@/components/web/demos/Pantallas';
 import { Cta, Encabezado, Flecha } from '@/components/web/Bloques';
 import { EXTRAS, FUNCIONES, PROXIMAMENTE } from '@/components/web/datos';
 
-export const metadata = { title: 'Funciones · Netto', description: 'Facturación con Verifactu, gastos con IA, impuestos, contabilidad y cuentas anuales, conciliación de extractos, previsión de caja, nóminas y asistente IA.' };
+export const metadata = { title: 'Funciones · Netto', description: 'Facturación con Verifactu, gastos con IA, impuestos, contabilidad y cuentas anuales, inventario, conciliación de extractos, previsión de caja, nóminas y asistente IA.' };
 
-const VISUAL = { facturacion: 'factura', gastos: 'gasto', impuestos: 'impuestos', contabilidad: 'contabilidad', banco: 'conciliacion', tesoreria: 'prevision', equipo: 'equipo', asistente: null };
+const VISUAL = { facturacion: 'factura', gastos: 'gasto', impuestos: 'impuestos', contabilidad: 'contabilidad', inventario: 'inventario', banco: 'conciliacion', tesoreria: 'prevision', equipo: 'equipo', asistente: null };
 
 export default function Funciones() {
   return (
@@ -14,7 +14,7 @@ export default function Funciones() {
       <section className="web-hero-pag">
         <p className="web-kicker web-entra">Funciones</p>
         <h1 className="web-entra" style={{ '--d': '60ms' }}>Todo lo que necesitas para llevar tus cuentas. <em>Nada que te sobre.</em></h1>
-        <p className="web-sub web-entra" style={{ '--d': '120ms' }}>Ocho áreas que trabajan juntas: lo que facturas, gastas y cobras alimenta tus impuestos, tu contabilidad y tu previsión de caja sin que tengas que pasar nada a mano.</p>
+        <p className="web-sub web-entra" style={{ '--d': '120ms' }}>Nueve áreas que trabajan juntas: lo que facturas, gastas y cobras alimenta tus impuestos, tu contabilidad, tu stock y tu previsión de caja sin que tengas que pasar nada a mano.</p>
         <nav className="web-indice web-entra" style={{ '--d': '180ms' }} aria-label="Funciones">
           {FUNCIONES.map((f) => <Link key={f.slug} href={`/funciones/${f.slug}`}><Icono n={f.icono} />{f.nombre}</Link>)}
         </nav>

@@ -689,3 +689,11 @@ body:has(.web):has(.tabbar) { padding-left: 0 !important; }
 .dm-cont-asiento div { display: grid; grid-template-columns: minmax(0, 1fr) 76px 76px; gap: 8px; padding: 4px 0; border-top: 1px solid var(--linea); color: var(--g); }
 .dm-cont-asiento div.haber span { padding-left: 16px; }
 .dm-cont-asiento div b { text-align: right; color: var(--v); font-variant-numeric: tabular-nums; }
+
+/* Demo de inventario */
+.dm-inv li { gap: 12px; }
+.dm-inv li > div { flex: 1; min-width: 0; }
+.dm-inv li small { display: block; color: var(--g); font-weight: 500; font-size: 13px; margin-top: 2px; }
+.dm-inv-barra { display: block; height: 6px; border-radius: 3px; background: #EEF1EF; margin-top: 6px; overflow: hidden; max-width: 260px; }
+.dm-inv-barra i { display: block; height: 100%; background: var(--acc); border-radius: 3px; transition: width 0.4s var(--e); }
+.dm-inv-barra i.bajo { background: var(--ambar); }

@@ -86,6 +86,26 @@ export const FUNCIONES = [
     ],
   },
   {
+    slug: 'inventario', icono: 'inventario', nombre: 'Inventario', corto: 'Stock, mínimos y qué pedir',
+    titulo: 'Tu almacén, al día sin contar a mano',
+    sub: 'Cada factura resta del stock y cada compra lo suma. Netto te avisa cuando algo llega al mínimo, te prepara el pedido y valora tu almacén a coste medio.',
+    demo: 'inventario',
+    puntos: [
+      { t: 'Stock que se mueve solo', d: 'Al facturar un producto del catálogo baja su stock; una rectificativa lo devuelve; una compra con sus líneas lo sube. La IA lee las líneas de la factura del proveedor.' },
+      { t: 'Avisos y qué pedir', d: 'Stock mínimo por producto, aviso al facturar más de lo que hay y la lista de qué pedir a cada proveedor, lista para copiar.' },
+      { t: 'Valor y margen reales', d: 'Coste medio ponderado, margen por producto y lo que lleva meses parado. A fin de año, la variación de existencias entra sola en la contabilidad.' },
+    ],
+    secciones: [
+      { t: 'Qué pedir, por proveedor', d: 'Lo que está en su mínimo, agrupado por proveedor y con la cantidad para llegar a tu stock ideal. Lo copias y lo mandas por correo o WhatsApp.', l: ['Stock mínimo y «pedir hasta»', 'Agrupado por proveedor', 'Aviso los lunes en el móvil'], visual: 'pedido' },
+      { t: 'Recuentos, roturas y stock inicial', d: 'Cuenta lo que hay y Netto apunta la diferencia. Las roturas y pérdidas salen a su coste. Cada movimiento enlaza con su factura o su compra.', l: ['Recuento en un paso', 'Historial de cada producto', 'Excel del inventario a cualquier fecha'], visual: 'margen' },
+    ],
+    faqs: [
+      ['¿Lo necesito si vendo servicios?', 'No. El inventario se activa en Ajustes solo si vendes productos; los servicios del catálogo no llevan stock.'],
+      ['¿Cómo valora el almacén?', 'A coste medio ponderado: cada compra recalcula el coste de lo que tienes. Es el método que admite Hacienda y el que va a tu balance.'],
+      ['¿Lleva varios almacenes o lotes?', 'De momento, un solo almacén y sin lotes ni caducidades. Si los necesitas, cuéntanoslo.'],
+    ],
+  },
+  {
     slug: 'banco', icono: 'banco', nombre: 'Banco y conciliación', corto: 'Sube el extracto, Netto concilia',
     titulo: 'Sube tu extracto. Netto lo cuadra todo',
     sub: 'Sube el extracto de tu banco en Norma 43, CSV, Excel o PDF. Netto empareja cada cobro con su factura y cada pago con su gasto, y lo que falta te sale para revisar.',
@@ -194,6 +214,7 @@ export const SEGMENTOS = [
       ['Conciliar a mano cada mes', 'Sube el extracto y Netto empareja cobros y pagos.'],
       ['Nóminas y fichajes aparte', 'Nóminas y registro de jornada dentro de Netto.'],
       ['La contabilidad, en otro programa', 'Diario, balance y cuentas anuales salen solos de tus facturas.'],
+      ['El stock en una hoja de cálculo', 'Cada venta y cada compra mueven el stock; Netto te dice qué pedir.'],
     ],
     funciones: ['contabilidad', 'banco', 'tesoreria', 'equipo'],
   },
@@ -217,11 +238,11 @@ export const segmento = (id) => SEGMENTOS.find((s) => s.id === id);
 export const PLANES = {
   aut: [
     { n: 'Esencial', p: 9, para: 'Facturar y declarar sin sustos', l: ['Facturas y presupuestos ilimitados', 'Verifactu: huella encadenada y QR', 'Clientes, catálogo y recurrentes', 'Gastos y proveedores', 'Escaneo de tickets y PDF con IA', 'Modelos 303, 130, 111, 115 y 100 calculados', 'Libros registro del IVA y del IRPF (formato AEAT)', 'Bienes de inversión y amortizaciones', 'Extractos del banco y saldo', 'Importación desde Holded y otros programas', '1 empresa · 1 usuario'] },
-    { n: 'Pro', p: 12, para: 'Que tus cuentas cuadren solas', fuerte: true, herencia: 'Esencial', l: ['Conciliación automática de extractos', 'Gastos del banco sin factura, en revisión', 'Resultados, balance y diario (para ti o tu banco)', 'Previsión de caja a 3, 6 y 12 meses', 'Asistente IA con tus cifras', 'Varias actividades con su IVA e IRPF', 'Acceso para tu gestoría', 'Portal del cliente', 'Recordatorios y avisos push'] },
+    { n: 'Pro', p: 12, para: 'Que tus cuentas cuadren solas', fuerte: true, herencia: 'Esencial', l: ['Conciliación automática de extractos', 'Gastos del banco sin factura, en revisión', 'Inventario: stock, mínimos y qué pedir', 'Resultados, balance y diario (para ti o tu banco)', 'Previsión de caja a 3, 6 y 12 meses', 'Asistente IA con tus cifras', 'Varias actividades con su IVA e IRPF', 'Acceso para tu gestoría', 'Portal del cliente', 'Recordatorios y avisos push'] },
     { n: 'Plus', p: 20, para: 'Para quien lo lleva todo', herencia: 'Pro', l: ['Hasta 3 empresas', 'Hasta 3 usuarios con permisos', 'Nóminas y jornada (2 empleados)', 'Escaneos IA ampliados', 'Soporte prioritario'] },
   ],
   pym: [
-    { n: 'Esencial', p: 25, para: 'Equipo pequeño, finanzas claras', l: ['Todo lo de Autónomos Pro', 'Cuentas anuales de pymes para el Registro', 'Migración de saldos y bienes de otro programa', '1 empresa · 3 usuarios con permisos', 'Nóminas y jornada (hasta 5 empleados)', 'Conciliación y previsión de caja', 'Modelos 303, 130, 111, 115', 'Acceso para tu gestoría', 'Escaneo IA para todo el equipo', 'Soporte por email'] },
+    { n: 'Esencial', p: 25, para: 'Equipo pequeño, finanzas claras', l: ['Todo lo de Autónomos Pro', 'Cuentas anuales de pymes para el Registro', 'Inventario y valor del almacén', 'Migración de saldos y bienes de otro programa', '1 empresa · 3 usuarios con permisos', 'Nóminas y jornada (hasta 5 empleados)', 'Conciliación y previsión de caja', 'Modelos 303, 130, 111, 115', 'Acceso para tu gestoría', 'Escaneo IA para todo el equipo', 'Soporte por email'] },
     { n: 'Pro', p: 35, para: 'Varias empresas, un solo panel', fuerte: true, herencia: 'Esencial', l: ['3 empresas · 8 usuarios', 'Nóminas y jornada (hasta 15 empleados)', 'Roles y permisos por área', 'Varias actividades por empresa', 'Escaneos IA ampliados', 'Soporte prioritario'] },
     { n: 'Plus', p: 55, para: 'Cuando el equipo ya es grande', herencia: 'Pro', l: ['5 empresas · 15 usuarios', 'Nóminas y jornada (hasta 30 empleados)', 'Incorporación guiada y migración'] },
   ],
@@ -245,7 +266,7 @@ export const COMPARATIVA = {
       ['Extractos N43, CSV, Excel y PDF', [true, true, true]], ['Conciliación automática', [false, true, true]], ['Gastos del banco en revisión', [false, true, true]], ['Previsión de caja', [false, true, true]],
     ]],
     ['Libros y contabilidad', [
-      ['Libros registro del IVA y del IRPF', [true, true, true]], ['Bienes de inversión y amortizaciones', [true, true, true]], ['Resultados, balance y diario', [false, true, true]],
+      ['Libros registro del IVA y del IRPF', [true, true, true]], ['Bienes de inversión y amortizaciones', [true, true, true]], ['Inventario y stock', [false, true, true]], ['Resultados, balance y diario', [false, true, true]],
     ]],
     ['Equipo', [
       ['Empresas', ['1', '1', '3']], ['Usuarios', ['1', '1 + gestoría', '3']], ['Nóminas y jornada', [false, false, '2 empleados']],
@@ -255,7 +276,7 @@ export const COMPARATIVA = {
   pym: [
     ['Cuenta', [['Empresas', ['1', '3', '5']], ['Usuarios', ['3', '8', '15']], ['Empleados en nómina', ['5', '15', '30']]]],
     ['Funciones', [
-      ['Facturación, gastos e impuestos', [true, true, true]], ['Conciliación y previsión de caja', [true, true, true]], ['Contabilidad y cuentas anuales', [true, true, true]], ['Migración desde otro programa', [true, true, true]], ['Roles y permisos por área', ['Básicos', true, true]], ['Varias actividades por empresa', [false, true, true]], ['Escaneo con IA', ['Incluido', 'Ampliado', 'Ampliado']],
+      ['Facturación, gastos e impuestos', [true, true, true]], ['Conciliación y previsión de caja', [true, true, true]], ['Contabilidad y cuentas anuales', [true, true, true]], ['Inventario y stock', [true, true, true]], ['Migración desde otro programa', [true, true, true]], ['Roles y permisos por área', ['Básicos', true, true]], ['Varias actividades por empresa', [false, true, true]], ['Escaneo con IA', ['Incluido', 'Ampliado', 'Ampliado']],
     ]],
     ['Servicio', [['Soporte', ['Email', 'Prioritario', 'Prioritario']], ['Incorporación guiada', [false, false, true]]]],
   ],
@@ -270,6 +291,7 @@ export const PERSONALIZADO = ['Más empresas, usuarios o empleados', 'Plantillas
 
 export const FAQ_GENERAL = [
   ['¿Puedo traer mis datos de otro programa?', 'Sí. Netto importa clientes, facturas y gastos desde Holded o cualquier Excel, y para la contabilidad, el balance de sumas y saldos y los bienes de inversión de Holded, A3, Sage o Contasol. Sigues donde lo dejaste.'],
+  ['¿Controla el stock?', 'Sí, si vendes productos: cada factura resta y cada compra suma, con stock mínimo, qué pedir a cada proveedor, margen por producto y el valor del almacén a coste medio.'],
   ['¿Netto lleva la contabilidad?', 'Sí, por partida doble y con el plan contable de pymes: libro diario, mayor, pérdidas y ganancias, balance, amortizaciones y cuentas anuales, generados con lo que ya apuntas.'],
   ['¿Qué pasa cuando acaba la prueba?', 'Nada se borra. Eliges plan o te llevas tus datos: puedes exportar tus facturas y registros en cualquier momento.'],
   ['¿Puede mi gestoría entrar?', 'Sí. La invitas por email con el perfil de gestoría: ve tus facturas, gastos e impuestos sin poder marcar cobros ni crear facturas, y lleva las nóminas de tu equipo si se las dejas.'],
