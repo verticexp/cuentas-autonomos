@@ -3,14 +3,19 @@
 // ficticios, el saldo del banco y Verifactu en modo pruebas.
 // Uso: KV_REST_API_URL=… KV_REST_API_TOKEN=… DEMO_PASSWORD=… node scripts/demo.mjs
 // Si la demo ya existe, DEMO_PASSWORD es opcional: sin ella se conserva la contraseña que tiene.
+import assert from 'node:assert/strict';
 import { randomBytes, scryptSync } from 'node:crypto';
 import { Redis } from '@upstash/redis';
-import { numeroFactura, siguienteNumero } from '../lib/calculos.js';
+import { numeroFactura, siguienteNumero, limpiarLineas, baseLinea, importes, r2 } from '../lib/calculos.js';
 import { borradorSociedades, modelo202 } from '../lib/modelos.js';
 import { asientoApertura, generarAsientos, mayor } from '../lib/asientos.js';
 import { idMovimiento } from '../lib/banco.js';
 import { inventario } from '../lib/inventario.js';
-import { importes } from '../lib/calculos.js';
+import { limpiarCierre } from '../lib/caja.js';
+import { limpiarDoc, siguiente, albaranDePedido, facturaDeAlbaranes, limpiarPedidoProv, gastoDeRecepcion, estadoPedido, enCamino } from '../lib/albaranes.js';
+import { ibanValido, identificadorAcreedor } from '../lib/sepa.js';
+import { claveProveedor } from '../lib/proveedores.js';
+import { limpiarProyecto } from '../lib/proyectos.js';
 
 const { KV_REST_API_URL: url, KV_REST_API_TOKEN: token, DEMO_PASSWORD: password } = process.env;
 if (!url || !token) throw new Error('Faltan KV_REST_API_URL y KV_REST_API_TOKEN');
@@ -26,17 +31,19 @@ if (password ? password.length < 8 : !passPrevia) throw new Error('DEMO_PASSWORD
 const sal = randomBytes(16).toString('hex');
 const pass = password ? `${sal}:${scryptSync(password, sal, 64).toString('hex')}` : passPrevia;
 const id = previo || randomBytes(4).toString('hex');
-await r.del(...['facturas', 'gastos', 'clientes', 'registros', 'verifactu', 'saldo', 'asientos', 'banco', 'bancos', 'cuentasAnuales', 'productos', 'stock'].map((n) => `${P}${n}:${id}`));
+// Los datos de antes se borran justo antes de escribir los nuevos (tras las comprobaciones de integridad).
 
 const ACTIVIDADES = [
   { id: 'sonido-e-iluminacion', nombre: 'Sonido e iluminación', serie: '', ivaPct: 21, irpfPct: 0 },
   { id: 'alquiler-de-equipos', nombre: 'Alquiler de equipos', serie: 'A', ivaPct: 21, irpfPct: 0 },
   { id: 'dj-y-musica', nombre: 'DJ y música en vivo', serie: 'M', ivaPct: 21, irpfPct: 0 },
 ];
+ACTIVIDADES.push({ id: 'tienda-de-material', nombre: 'Tienda de material', serie: 'T', ivaPct: 21, irpfPct: 0 });
+const actividadesEventos = ACTIVIDADES.filter((a) => a.id !== 'tienda-de-material');
 const ahora = new Date().toISOString();
 const empresa = {
   id, nombre: 'Sonora Eventos S.L.', creada: ahora, pendiente: false, verifactu: 'pruebas',
-  emisor: { nombre: 'SONORA EVENTOS S.L.', nif: 'B00000000', direccion: 'C/ de la Marina, 19', ciudad: '08005 Barcelona', iban: 'ES91 2100 0418 4502 0005 1332', plazo: 30 },
+  emisor: { nombre: 'SONORA EVENTOS S.L.', nif: 'B00000000', direccion: 'C/ de la Marina, 19', ciudad: '08005 Barcelona', iban: 'ES91 2100 0418 4502 0005 1332', plazo: 30, bic: 'CAIXESBBXXX', acreedorSepa: identificadorAcreedor('B00000000') },
   actividades: ACTIVIDADES,
   fiscal: { tipo: 'sociedad', iva: 'general', retenidas: false, trabajadores: true, alquiler: true, intracom: false, inventario: true },
 };
@@ -66,13 +73,17 @@ const CONCEPTOS = {
   'alquiler-de-equipos': ['Alquiler de equipo de sonido (fin de semana)', 'Alquiler de focos LED y mesa de luces', 'Alquiler de pantalla LED 3x2 m'],
   'dj-y-musica': ['Sesión de DJ (4 horas) con equipo', 'Música en vivo para cóctel', 'DJ para fiesta de empresa'],
 };
-const IMPORTES = { 'sonido-e-iluminacion': [900, 4800], 'alquiler-de-equipos': [180, 1200], 'dj-y-musica': [350, 1100] };
+const IMPORTES = { 'sonido-e-iluminacion': [1600, 6400], 'alquiler-de-equipos': [260, 1400], 'dj-y-musica': [450, 1300] };
 // Más trabajo de mayo a septiembre y en diciembre.
 const EVENTOS_MES = [3, 3, 4, 5, 8, 10, 11, 7, 9, 6, 5, 8];
 
 const facturas = [];
 const gastos = [];
+const albaranes = [], pedidosProv = [], domiciliaciones = [], cuentasProv = [], remesas = [];
 const hoy = new Date().toISOString().slice(0, 10);
+const mas = (f, d) => new Date(Date.parse(`${f}T12:00:00Z`) + d * 864e5).toISOString().slice(0, 10);
+const antes = (d) => mas(hoy, -d);
+const creado = (fecha) => `${fecha}T10:00:00.000Z`;
 const inicio = new Date(Date.UTC(new Date().getUTCFullYear() - 2, new Date().getUTCMonth(), 1));
 for (let d = inicio; d.toISOString().slice(0, 10) <= hoy; d = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1))) {
   const y = d.getUTCFullYear(), m = d.getUTCMonth() + 1;
@@ -81,7 +92,7 @@ for (let d = inicio; d.toISOString().slice(0, 10) <= hoy; d = new Date(Date.UTC(
   for (const n of dias.sort((a, b) => a - b)) {
     const fecha = dia(y, m, n);
     if (fecha > hoy) continue;
-    const a = elegir(ACTIVIDADES);
+    const a = elegir(actividadesEventos);
     const [min, max] = IMPORTES[a.id];
     const numero = siguienteNumero(facturas, y, a.serie);
     const antig = (Date.parse(hoy) - Date.parse(fecha)) / 864e5;
@@ -154,7 +165,7 @@ for (let k = 0; k < 26; k++) {
 // Compras de reposición cada dos meses: lo que esté cerca del mínimo, hasta el máximo (como haría la tienda).
 for (let k = 1; k * 60 < (Date.parse(hoy) - Date.parse(inicioInv)) / 864e5; k++) {
   const fecha = new Date(Date.parse(`${inicioInv}T12:00:00Z`) + k * 60 * 864e5).toISOString().slice(0, 10);
-  const inv = inventario({ productos: PRODUCTOS, facturas, gastos, ajustes: ajustesStock }, { hoy: fecha });
+  const inv = inventario({ productos: PRODUCTOS, facturas, gastos, ajustes: ajustesStock, albaranes }, { hoy: fecha });
   const pedir = inv.productos.filter((p) => p.stock <= p.minimo * 1.5);
   for (const prov of [...new Set(pedir.map((p) => p.proveedor))]) {
     const items = pedir.filter((p) => p.proveedor === prov);
@@ -164,15 +175,116 @@ for (let k = 1; k * 60 < (Date.parse(hoy) - Date.parse(inicioInv)) / 864e5; k++)
   }
 }
 
+// Pedidos a proveedor: una recepción parcial y material en camino.
+for (const [i, indices, fecha] of [[0, [2, 3], antes(23)], [1, [1], antes(2)]]) {
+  const proveedor = PRODUCTOS[indices[0]].proveedor;
+  const datos = limpiarPedidoProv({ fecha, proveedor, lineas: indices.map((j) => ({ producto: PRODUCTOS[j].id, cantidad: j === 1 ? 8 : 18, coste: PRODUCTOS[j].coste })) }, PRODUCTOS);
+  assert.ok(!datos.error, datos.error);
+  const p = { id: `demo-pp-${i + 1}`, numero: i + 1, anio: Number(fecha.slice(0, 4)), ...datos, creado: creado(fecha), por: id };
+  pedidosProv.push(p);
+  if (i === 0) {
+    const fecha = antes(20);
+    const recibido = p.lineas.map((l, j) => ({ ...l, cantidad: l.cantidad - (j === 0 ? 1 : 0) }));
+    const datos = gastoDeRecepcion(p, { fecha, recibido, ivaPct: 21, actividad: 'alquiler-de-equipos' });
+    assert.ok(!datos.error, datos.error);
+    const g = { id: 'demo-pedido-gasto-1', ...datos };
+    gastos.push(g);
+    Object.assign(p, { recibido: fecha, gasto: g.id });
+  }
+}
+
+// Stock disponible en la fecha, reservando también las ventas posteriores ya generadas.
+const disponible = (fecha) => {
+  const datos = { productos: PRODUCTOS, facturas, gastos, ajustes: ajustesStock, albaranes };
+  const inv = inventario(datos, { hoy: fecha });
+  const futuros = inventario(datos, { hoy }).movimientos.filter((m) => m.fecha > fecha);
+  return inv.productos.map((p) => ({ ...p, disponible: Math.floor(Math.min(p.stock, ...futuros.filter((m) => m.producto === p.id).map((m) => m.stock))) }));
+};
+const linea = (p, cantidad) => ({ concepto: p.nombre, producto: p.id, cantidad, precio: p.precio, dto: 0, ivaPct: 21 });
+const servicio = (cantidad = 2) => ({ concepto: 'Montaje y desmontaje (hora)', cantidad, precio: 45, dto: 0, ivaPct: 21 });
+const material = (fecha, cantidad = 2) => disponible(fecha).filter((p) => p.disponible >= cantidad).sort((a, b) => b.disponible - a.disponible).slice(0, 2).map((p) => linea(p, cantidad));
+const doc = (b, tipo) => {
+  const datos = limpiarDoc(b, tipo);
+  assert.ok(!datos.error, datos.error);
+  if (tipo === 'albaran') {
+    const stock = disponible(b.fecha);
+    for (const producto of new Set(datos.lineas.map((l) => l.producto).filter(Boolean))) {
+      const cantidad = datos.lineas.filter((l) => l.producto === producto).reduce((s, l) => s + l.cantidad, 0);
+      assert.ok(cantidad <= stock.find((p) => p.id === producto).disponible, `Stock para ${producto} en ${b.fecha}`);
+    }
+  }
+  const anio = Number(b.fecha.slice(0, 4));
+  const numero = siguiente(albaranes, tipo, anio);
+  const n = albaranes.filter((d) => d.tipo === tipo).length + 1;
+  const d = { id: `demo-${tipo === 'pedido' ? 'ped' : 'alb'}-${n}`, numero, anio, ...datos, creado: creado(b.fecha), por: id };
+  albaranes.push(d);
+  return d;
+};
+// Hotel: dos entregas y una factura agrupada, sin volver a sacar stock.
+{
+  const fecha = antes(40);
+  const lineas = [...material(fecha), servicio(4)];
+  assert.equal(lineas.length, 3);
+  const p = doc({ fecha, cliente: CLIENTES[0], lineas }, 'pedido');
+  const primera = albaranDePedido(p, albaranes, antes(38));
+  primera.lineas = primera.lineas.map((l) => ({ ...l, cantidad: l.cantidad / 2 }));
+  const a1 = doc(primera, 'albaran');
+  const a2 = doc(albaranDePedido(p, albaranes, antes(35)), 'albaran');
+  const datos = facturaDeAlbaranes([a1, a2]);
+  assert.ok(!datos.error, datos.error);
+  const fechaFactura = antes(34), y = Number(fechaFactura.slice(0, 4));
+  const numero = siguienteNumero(facturas, y, 'A');
+  const lineasFactura = limpiarLineas(datos.lineas);
+  const f = { id: `A${y}-${numero}`, numero, anio: y, serie: 'A', fecha: fechaFactura, actividad: 'alquiler-de-equipos', cliente: datos.cliente, lineas: lineasFactura, base: r2(lineasFactura.reduce((s, l) => s + baseLinea(l), 0)), ivaPct: 21, irpfPct: 0, concepto: `${lineasFactura[0].concepto} y ${lineasFactura.length - 1} más`, nota: datos.nota, cobrada: true, cobro: { fecha: antes(30), metodo: 'manual' } };
+  facturas.push(f);
+  a1.factura = a2.factura = f.id;
+  assert.equal(estadoPedido(p, albaranes).estado, 'servido');
+}
+// Congreso parcialmente servido y boda pendiente con entrega prevista.
+{
+  const fecha = antes(12);
+  const p = doc({ fecha, cliente: CLIENTES[5], lineas: [...material(fecha), servicio()] }, 'pedido');
+  assert.equal(p.lineas.length, 3);
+  const a = albaranDePedido(p, albaranes, antes(10));
+  a.lineas = a.lineas.slice(0, 2).map((l, i) => ({ ...l, cantidad: i === 0 ? 1 : l.cantidad }));
+  doc(a, 'albaran');
+  assert.equal(estadoPedido(p, albaranes).estado, 'parcial');
+  doc({ fecha: antes(5), entrega: mas(hoy, 6), cliente: CLIENTES[2], lineas: [...material(antes(5)), servicio()] }, 'pedido');
+}
+// Dos entregas del Beach Club pendientes de agrupar en factura.
+for (const fecha of [mas(hoy, -Math.min(8, Number(hoy.slice(8)) - 1)), hoy]) {
+  doc({ fecha, cliente: CLIENTES[4], lineas: [...material(fecha, 1), servicio(1)] }, 'albaran');
+}
+
+// Dieciséis sábados de tienda, con tiques correlativos y dos importaciones de SumUp.
+const ultimoSabado = antes((new Date(`${hoy}T12:00:00Z`).getUTCDay() + 1) % 7);
+let tique = 1001;
+for (let k = 0; k < 16; k++) {
+  const fecha = mas(ultimoSabado, (k - 15) * 7);
+  const candidatos = disponible(fecha).filter((p) => p.disponible > 0);
+  const cantidadProductos = 2 + Math.floor(azar() * 3);
+  const unidades = candidatos.sort((a, b) => b.disponible - a.disponible).slice(0, cantidadProductos).map((p) => ({ producto: p.id, cantidad: Math.min(p.disponible, 1 + Math.floor(azar() * 2)) }));
+  assert.ok(unidades.length >= 2, `Material del cierre ${fecha}`);
+  const venta = r2(unidades.reduce((s, u) => s + u.cantidad * PRODUCTOS.find((p) => p.id === u.producto).precio * 1.21, 0));
+  const total = r2(venta + entre(420, 900));
+  const efectivo = r2(total * (0.3 + azar() * 0.1)), otros = k % 4 === 0 ? 15 : 0;
+  const hasta = tique + 12 + Math.floor(azar() * 15);
+  const datos = limpiarCierre({ fecha, porIva: [{ pct: 21, total }], efectivo, otros, unidades, desde: String(tique), hasta: String(hasta), proyecto: 'Tienda Poblenou', ...(k >= 14 ? { importado: 'sumup' } : {}) }, PRODUCTOS);
+  assert.ok(!datos.error, datos.error);
+  const y = Number(fecha.slice(0, 4)), n = siguienteNumero(facturas, y, 'Z');
+  facturas.push({ id: `Z${y}-${n}`, numero: n, anio: y, serie: 'Z', ...datos, actividad: 'tienda-de-material' });
+  tique = hasta + 1;
+}
+
 // Una venta grande hace unos días deja dos productos bajo mínimo (para ver «Qué pedir»).
 {
   const fecha = new Date(Date.parse(`${hoy}T12:00:00Z`) - 3 * 864e5).toISOString().slice(0, 10);
-  const inv = inventario({ productos: PRODUCTOS, facturas, gastos, ajustes: ajustesStock }, { hoy: fecha });
-  const st = (i) => inv.productos.find((p) => p.id === PRODUCTOS[i].id).stock;
-  const lineas = [[0, Math.max(1, st(0) - PRODUCTOS[0].minimo + 4)], [4, Math.max(1, st(4) - 1)]].map(([i, cantidad]) => ({ concepto: PRODUCTOS[i].nombre, cantidad, precio: PRODUCTOS[i].precio, dto: 0, ivaPct: 21, producto: PRODUCTOS[i].id }));
+  const stock = disponible(fecha);
+  const st = (i) => stock.find((p) => p.id === PRODUCTOS[i].id).disponible;
+  const lineas = [[0, Math.max(0, st(0) - PRODUCTOS[0].minimo + 4)], [4, Math.max(0, st(4) - 1)]].filter(([, cantidad]) => cantidad > 0).map(([i, cantidad]) => ({ concepto: PRODUCTOS[i].nombre, cantidad, precio: PRODUCTOS[i].precio, dto: 0, ivaPct: 21, producto: PRODUCTOS[i].id }));
   const y = Number(fecha.slice(0, 4));
   const numero = siguienteNumero(facturas, y, 'A');
-  facturas.push({ id: `A${y}-${numero}`, numero, anio: y, serie: 'A', fecha, actividad: 'alquiler-de-equipos', cliente: CLIENTES[5], concepto: `${lineas[0].concepto} y 1 más`, base: Math.round(lineas.reduce((x, l) => x + l.cantidad * l.precio, 0) * 100) / 100, ivaPct: 21, irpfPct: 0, nota: '', lineas, cobrada: false });
+  facturas.push({ id: `A${y}-${numero}`, numero, anio: y, serie: 'A', fecha, actividad: 'alquiler-de-equipos', cliente: CLIENTES[5], concepto: `${lineas[0].concepto}${lineas.length > 1 ? ` y ${lineas.length - 1} más` : ''}`, base: Math.round(lineas.reduce((x, l) => x + l.cantidad * l.precio, 0) * 100) / 100, ivaPct: 21, irpfPct: 0, nota: '', lineas, cobrada: false });
 }
 
 // Una rectificativa de ejemplo: devolución parcial de una factura del año pasado.
@@ -184,9 +296,106 @@ if (orig) {
     rectifica: { id: orig.id, numero: numeroFactura(orig), fecha: orig.fecha } });
 }
 
+// IBAN ficticios con entidades reales y control calculado mediante módulo 97.
+const ibanDemo = (entidad, n) => {
+  const oficina = '0418', numero = String(n).padStart(10, '0');
+  const control = (texto) => {
+    const pesos = [1, 2, 4, 8, 5, 10, 9, 7, 3, 6];
+    const d = 11 - [...texto].reduce((s, c, i) => s + Number(c) * pesos[i], 0) % 11;
+    return d === 11 ? 0 : d === 10 ? 1 : d;
+  };
+  const cuenta = `${entidad}${oficina}${control(`00${entidad}${oficina}`)}${control(numero)}${numero}`;
+  let resto = 0;
+  for (const c of `${cuenta}142800`) resto = (resto * 10 + Number(c)) % 97;
+  const iban = `ES${String(98 - resto).padStart(2, '0')}${cuenta}`;
+  assert.ok(ibanValido(iban));
+  return iban;
+};
+const clientesSepa = [CLIENTES[0], CLIENTES[1], CLIENTES[5]];
+for (const [i, c] of clientesSepa.entries()) {
+  domiciliaciones.push({ id: c.nombre.toUpperCase(), nombre: c.nombre, iban: ibanDemo(['2100', '0182', '0049'][i], 100001 + i), mandato: { referencia: `SONORA-${c.nif}-01`, fecha: antes(365) }, usado: i !== 2 });
+}
+// Los contratos anteriores están liquidados; quedan tres recibos nuevos por cobrar.
+for (const f of facturas.filter((f) => !f.cobrada && clientesSepa.some((c) => c.nif === f.cliente.nif))) {
+  f.cobrada = true;
+  f.cobro = { fecha: f.fecha, metodo: 'manual' };
+}
+for (let k = 0; k < 3; k++) {
+  const fecha = antes([65, 35, 7][k]), y = Number(fecha.slice(0, 4));
+  const docs = [];
+  for (const cliente of clientesSepa.slice(0, k === 2 ? 3 : 2)) {
+    const numero = siguienteNumero(facturas, y, 'A');
+    const f = { id: `A${y}-${numero}`, numero, anio: y, serie: 'A', fecha, actividad: 'alquiler-de-equipos', cliente, concepto: 'Cuota mensual de mantenimiento y alquiler técnico', base: entre(280, 650), ivaPct: 21, irpfPct: 0, nota: '', cobrada: k < 2 };
+    if (k < 2) f.cobro = { fecha: mas(fecha, 5), metodo: 'sepa', importe: importes(f).total };
+    facturas.push(f);
+    docs.push(f);
+  }
+  if (k < 2) {
+    const remesaId = `demo-remesa-${k + 1}`, cobro = mas(fecha, 5);
+    remesas.push({ id: remesaId, tipo: 'cobros', fecha: cobro, creada: creado(mas(cobro, -2)), total: r2(docs.reduce((s, f) => s + importes(f).total, 0)), numero: docs.length, docs: docs.map((f) => f.id), msgId: remesaId, por: id });
+  }
+}
+// Tres proveedores tienen cuenta y gastos pendientes recientes para una nueva remesa.
+const proveedoresSepa = [PRODUCTOS[0].proveedor, PRODUCTOS[1].proveedor, PRODUCTOS[2].proveedor];
+const pagados = [];
+for (const [i, proveedor] of proveedoresSepa.entries()) {
+  const base = entre(90, 240);
+  const g = { id: `demo-sepa-pago-${i + 1}`, fecha: antes(44), proveedor, concepto: 'Revisión y mantenimiento de material', base, ivaPct: 21, actividad: 'alquiler-de-equipos', pagado: antes(32) };
+  gastos.push(g);
+  pagados.push(g);
+  gastos.push({ ...g, id: `demo-sepa-pendiente-${i + 1}`, fecha: antes(9 + i), pagado: undefined, pendiente: true, concepto: 'Consumibles y mantenimiento del equipo', base: entre(120, 360) });
+}
+// Mismo NIF para cada proveedor en todos sus gastos y pedidos.
+const nifsProv = new Map();
+for (const g of gastos.filter((g) => g.proveedor)) {
+  if (!nifsProv.has(g.proveedor)) nifsProv.set(g.proveedor, g.proveedorNif || `B${String(nifsProv.size + 1).padStart(7, '0')}X`);
+  g.proveedorNif ||= nifsProv.get(g.proveedor);
+}
+for (const p of pedidosProv) p.proveedorNif = nifsProv.get(p.proveedor);
+for (const [i, proveedor] of proveedoresSepa.entries()) {
+  const g = gastos.find((g) => g.proveedor === proveedor);
+  cuentasProv.push({ id: claveProveedor(g), nombre: proveedor, iban: ibanDemo(['2100', '0182', '0049'][i], 200001 + i) });
+}
+remesas.push({ id: 'demo-remesa-3', tipo: 'pagos', fecha: antes(32), creada: creado(antes(34)), total: r2(pagados.reduce((s, g) => s + importes(g).base + importes(g).iva, 0)), numero: pagados.length, docs: pagados.map((g) => g.id), msgId: 'demo-remesa-3', por: id });
+const recientes = gastos.filter((g) => g.proveedorNif && g.fecha >= antes(30)).sort((a, b) => b.fecha.localeCompare(a.fecha)).slice(0, 4);
+assert.equal(recientes.length, 4);
+for (const [i, g] of recientes.entries()) {
+  g.numero = `AP-${g.fecha.slice(0, 4)}-${String(412 + i).padStart(4, '0')}`;
+  g.efactura = i % 2 ? 'ubl' : 'facturae';
+}
+
+// Centros de coste del festival, el contrato anual y la tienda.
+const festival = facturas.filter((f) => f.fecha.startsWith(hoy.slice(0, 4)) && f.cliente.nif === CLIENTES[3].nif);
+for (const f of festival) f.proyecto = limpiarProyecto('Festival de Vilamar');
+for (const f of facturas.filter((f) => f.fecha.startsWith(hoy.slice(0, 4)) && f.cliente.nif === CLIENTES[0].nif)) f.proyecto = limpiarProyecto('Hotel Mirador · contrato anual');
+const relacionados = gastos.filter((g) => g.fecha.startsWith(hoy.slice(0, 4)) && /Técnicos de montaje|Transporte de equipos/.test(g.concepto));
+const distanciaFestival = (g) => Math.min(...festival.map((f) => Math.abs(Date.parse(f.fecha) - Date.parse(g.fecha))));
+for (const g of relacionados.sort((a, b) => distanciaFestival(a) - distanciaFestival(b)).slice(0, 4)) g.proyecto = limpiarProyecto('Festival de Vilamar');
+const mesesTienda = new Set(facturas.filter((f) => f.caja).map((f) => f.fecha.slice(0, 7)));
+for (const g of gastos.filter((g) => g.concepto === 'Alquiler del almacén' && mesesTienda.has(g.fecha.slice(0, 7)))) g.proyecto = limpiarProyecto('Tienda Poblenou');
+
+// Integridad de los datos generados, antes de escribir nada en la base de datos.
+const stockFinal = inventario({ productos: PRODUCTOS, facturas, gastos, ajustes: ajustesStock, albaranes }, { hoy });
+for (const p of stockFinal.productos) assert.ok(p.stock >= 0, `Stock negativo: ${p.nombre}`);
+for (const c of [empresa.emisor, ...domiciliaciones, ...cuentasProv]) assert.ok(ibanValido(c.iban), `IBAN inválido: ${c.nombre}`);
+const idsFacturas = new Set(facturas.map((f) => f.id));
+assert.equal(idsFacturas.size, facturas.length, 'Ids de factura repetidos');
+for (const a of albaranes.filter((a) => a.factura)) assert.ok(idsFacturas.has(a.factura), `Factura inexistente: ${a.factura}`);
+for (const remesa of remesas.filter((r) => r.tipo === 'cobros')) for (const docId of remesa.docs) {
+  const f = facturas.find((f) => f.id === docId);
+  assert.ok(f?.cobrada && f.cobro?.metodo === 'sepa', `Recibo sin cobrar: ${docId}`);
+}
+assert.ok(stockFinal.bajos.some((p) => p.proveedor === PRODUCTOS[0].proveedor && !enCamino(pedidosProv)[p.id]), 'Falta material de Audio Pro por pedir');
+
 const porId = (xs) => Object.fromEntries(xs.map((x) => [x.id, x]));
+await r.del(...['facturas', 'gastos', 'clientes', 'registros', 'verifactu', 'saldo', 'asientos', 'banco', 'bancos', 'cuentasAnuales', 'productos', 'stock', 'albaranes', 'pedidosProv', 'domiciliaciones', 'cuentasProv', 'remesas'].map((n) => `${P}${n}:${id}`));
 await r.hset(`${P}facturas:${id}`, porId(facturas));
 await r.hset(`${P}gastos:${id}`, porId(gastos));
+await r.hset(`${P}albaranes:${id}`, porId(albaranes));
+await r.hset(`${P}pedidosProv:${id}`, porId(pedidosProv));
+await r.hset(`${P}domiciliaciones:${id}`, porId(domiciliaciones));
+await r.hset(`${P}cuentasProv:${id}`, porId(cuentasProv));
+await r.hset(`${P}remesas:${id}`, porId(remesas));
 // Trimestres ya presentados (los que tienen el plazo pasado), el Impuesto sobre Sociedades de los años cerrados y sus 202.
 const Y = Number(hoy.slice(0, 4));
 const pagos130 = {}, pagos202 = {}, cuotaIS = {};
@@ -213,7 +422,7 @@ for (let d = new Date(`${furgo.fecha.slice(0, 7)}-12T00:00:00Z`); d.toISOString(
 await r.hset(`${P}asientos:${id}`, porId(asientos));
 
 // El saldo del banco, el mismo que da la contabilidad (así cuadra la cuenta 572 con el banco).
-const banco = mayor(generarAsientos({ facturas, gastos, manuales: asientos, fiscal: empresa.fiscal, pagos130, pagos202, cuotaIS, productos: PRODUCTOS, ajustes: ajustesStock }, hoy), '57', Y).final;
+const banco = mayor(generarAsientos({ facturas, gastos, manuales: asientos, fiscal: empresa.fiscal, pagos130, pagos202, cuotaIS, productos: PRODUCTOS, ajustes: ajustesStock, albaranes }, hoy), '572', Y).final;
 await r.set(`${P}saldo:${id}`, { importe: banco, fecha: hoy });
 await r.hset(`${P}productos:${id}`, porId(PRODUCTOS));
 await r.hset(`${P}stock:${id}`, porId(ajustesStock));
@@ -221,11 +430,12 @@ await r.hset(`${P}clientes:${id}`, porId(CLIENTES.map((c) => ({ id: c.nombre.toU
 // Extracto del último mes y medio, sin emparejar: los cobros de facturas pendientes y los pagos de gastos (Netto los
 // sugiere), y algunos cargos que no están en Netto (salen en Gastos › En revisión o para decir qué son en Banco).
 const desde = new Date(Date.parse(`${hoy}T12:00:00Z`) - 45 * 864e5).toISOString().slice(0, 10);
-const mas = (f, d) => new Date(Date.parse(`${f}T12:00:00Z`) + d * 864e5).toISOString().slice(0, 10);
 const movs = [];
 const mov = (fecha, importe, concepto, contraparte = '') => { if (fecha <= hoy && fecha >= desde) movs.push({ fecha, importe: Math.round(importe * 100) / 100, concepto, contraparte }); };
-for (const f of facturas.filter((x) => !x.cobrada && x.fecha >= mas(desde, -30)).slice(0, 4)) mov(mas(f.fecha, 12), importes(f).total, `TRANSFERENCIA FACTURA ${numeroFactura(f)}`, f.cliente.nombre);
-for (const g of gastos.filter((x) => x.fecha >= desde && !x.inversion && !/Nóminas/.test(x.concepto))) mov(g.fecha, -(g.base * (1 + g.ivaPct / 100)), `RECIBO ${g.concepto.toUpperCase()}`, g.proveedor || '');
+for (const f of facturas.filter((x) => !x.cobrada && !domiciliaciones.some((d) => d.id === x.cliente.nombre.toUpperCase()) && x.fecha >= mas(desde, -30)).slice(0, 4)) mov(mas(f.fecha, 12), importes(f).total, `TRANSFERENCIA FACTURA ${numeroFactura(f)}`, f.cliente.nombre);
+for (const g of gastos.filter((x) => (x.pagado || x.fecha) >= desde && !x.pendiente && !x.inversion && !/Nóminas/.test(x.concepto))) mov(g.pagado || g.fecha, -(importes(g).base + importes(g).iva), `RECIBO ${g.concepto.toUpperCase()}`, g.proveedor || '');
+for (const f of facturas.filter((f) => f.cobro?.metodo === 'sepa')) mov(f.cobro.fecha, f.cobro.importe, `COBRO REMESA ${numeroFactura(f)}`, f.cliente.nombre);
+for (const f of facturas.filter((f) => f.caja).sort((a, b) => a.fecha.localeCompare(b.fecha)).slice(-2)) mov(f.fecha, f.caja.tarjeta, 'LIQUIDACION TPV SUMUP', 'SUMUP');
 const m1 = hoy.slice(0, 8);
 mov(`${m1}02`, -86.9, 'COMPRA TARJETA AMAZON MARKETPLACE', 'AMAZON EU SARL');
 mov(`${m1}04`, -142.35, 'PAGO TPV LEROY MERLIN', 'LEROY MERLIN');
