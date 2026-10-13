@@ -33,6 +33,7 @@ export default async function Tesoreria({ searchParams }) {
     <main className="pagina mk-look tesoreria">
       <Volver href="/">Resumen</Volver>
       <h1 className="titulo">Tesorería</h1>
+      {(puede(u, 'facturar') || puede(u, 'gastar')) && <Ir href="/tesoreria/remesas" className="grupo-pie">Remesas SEPA ›</Ir>}
       <nav className="segmentado">
         {HORIZONTES.map((h) => <Ir key={h} href={`/tesoreria?meses=${h}`} tipo="fundido" className={h === n ? 'activo' : ''}>{h} meses</Ir>)}
       </nav>
