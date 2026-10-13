@@ -32,7 +32,8 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, r
   const [g, setG] = useState(gasto ? { ...gasto, base: String(gasto.base).replace('.', ',') } : delBanco || vacio);
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
-  const poner = (k, v) => setG((x) => ({ ...x, [k]: v }));
+  const [avisoDuplicados, setAvisoDuplicados] = useState(null);
+  const poner = (k, v) => { setAvisoDuplicados(null); setG((x) => ({ ...x, [k]: v })); };
   const [leyendo, setLeyendo] = useState('');
   const [abierto, setAbierto] = useState(Boolean(gasto) || !plegado);
   const [hecho, setHecho] = useState(false);
@@ -40,6 +41,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, r
     const archivo = e.target.files?.[0];
     e.target.value = '';
     if (!archivo) return;
+    setAvisoDuplicados(null);
     setAbierto(true); setHecho(false);
     // Factura electrónica (Facturae, UBL o CII): se lee aquí mismo, sin IA, con todos sus datos exactos.
     if (/xml/.test(archivo.type) || /\.(xml|xsig)$/i.test(archivo.name)) {
@@ -70,18 +72,32 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, r
     } catch (err) { setLeyendo(''); setError(err.message); }
   };
 
-  const enviar = async (e) => {
-    e.preventDefault();
+  const enviar = async (e, confirmacion = null) => {
+    e?.preventDefault();
+    if (enviando || (avisoDuplicados && !confirmacion)) return;
     setEnviando(true); setError('');
     try {
-      await llamar('/api/gastos', { method: gasto ? 'PATCH' : 'POST', body: JSON.stringify(g) });
+      if (gasto) {
+        await llamar('/api/gastos', { method: 'PATCH', body: JSON.stringify(g) });
+      } else {
+        const datos = confirmacion || g;
+        const r = await fetch('/api/gastos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...datos, ...(confirmacion ? { duplicadoConfirmado: true } : {}) }) });
+        const d = await r.json().catch(() => ({}));
+        if (r.status === 423 && d.bloqueada) window.location.assign(`/bloqueo?a=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+        if (r.status === 409 && Array.isArray(d.duplicados) && d.duplicados.length) {
+          setAvisoDuplicados({ datos, duplicados: d.duplicados });
+          return;
+        }
+        if (!r.ok) throw new Error(d.error || 'Algo ha fallado');
+      }
+      setAvisoDuplicados(null);
       if (gasto || movimiento) { navegar(router, '/gastos', 'atras'); router.refresh(); return; }
       setG(vacio);
       setLeyendo('');
       if (plegado) { setAbierto(false); setHecho(true); }
       router.refresh();
     } catch (err) { setError(err.message); }
-    setEnviando(false);
+    finally { setEnviando(false); }
   };
 
   if (!abierto) {
@@ -181,11 +197,20 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, r
       )}
       {pareceBien({ ...g, base: parseImporte(g.base) }) && <p className="nota">¿Es un equipo que vas a usar varios años? Márcalo como bien de inversión: se resta repartido en varios años, como pide Hacienda.</p>}
       {error && <p className="error">{error}</p>}
-      <div className="gasto-guardar">
+      {avisoDuplicados && <div className="nota" role="alert">
+        <strong>Puede que este gasto ya esté apuntado</strong>
+        <p>Revisa los gastos coincidentes antes de guardarlo de nuevo.</p>
+        <ul>{avisoDuplicados.duplicados.map((d) => <li key={d.id}><a href={`/gastos/${encodeURIComponent(d.id)}`} target="_blank" rel="noopener noreferrer">{d.motivo}</a></li>)}</ul>
+        <div className="gasto-guardar">
+          <button type="button" className="boton" disabled={enviando} onClick={() => enviar(null, avisoDuplicados.datos)}>{enviando ? 'Guardando…' : 'Es otro gasto: guardarlo'}</button>
+          <button type="button" className="boton sec" disabled={enviando} onClick={() => { setAvisoDuplicados(null); setError(''); }}>Cancelar</button>
+        </div>
+      </div>}
+      {!avisoDuplicados && <div className="gasto-guardar">
         <button className="boton" disabled={enviando}>{enviando ? 'Guardando…' : gasto ? 'Guardar cambios' : 'Añadir'}</button>
         {plegado && !gasto && <button type="button" className="boton sec" onClick={() => { setAbierto(false); setG(vacio); setLeyendo(''); setError(''); }}>Cancelar</button>}
         {movimiento && <button type="button" className="boton sec" onClick={() => navegar(router, '/gastos', 'atras')}>Cancelar</button>}
-      </div>
+      </div>}
     </form>
   );
 }
