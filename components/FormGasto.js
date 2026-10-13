@@ -64,7 +64,9 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, r
       // Con inventario: las líneas de la factura que son productos del catálogo entran al almacén.
       const stock = productos.length ? emparejarLineas(t.lineas, productos).map((l) => ({ ...l, cantidad: String(l.cantidad).replace('.', ','), coste: String(l.coste).replace('.', ',') })) : [];
       setG((x) => ({ ...x, ...(stock.length ? { stock } : {}), proveedor: t.proveedor || x.proveedor, proveedorNif: t.nif || x.proveedorNif, concepto: t.concepto || t.proveedor || x.concepto, base: t.base !== '' ? String(t.base).replace('.', ',') : x.base, ivaPct: t.ivaPct, fecha: t.fecha, ...(!Number(t.ivaPct) && nifUE(t.nif) ? { origen: 'ue' } : {}) }));
-      setLeyendo('Revisa los datos antes de guardar.');
+      const avisos = Array.isArray(t.avisos) ? t.avisos : [];
+      const detalle = t.varios ? `Tiene varios tipos de IVA: ver desglose. ${t.desglose.map((l) => `${l.ivaPct} %: base ${Number(l.base).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`).join('; ')}.` : '';
+      setLeyendo(['Revisa los datos antes de guardar.', ...avisos, detalle].filter(Boolean).join(' '));
     } catch (err) { setLeyendo(''); setError(err.message); }
   };
 
