@@ -9,6 +9,7 @@ import { actividadesDe, actividadValida } from '@/lib/empresa';
 import { CATEGORIAS } from '@/lib/categorias';
 import { TIPOS_BIEN } from '@/lib/amortizaciones';
 import { limpiarProyecto } from '@/lib/proyectos';
+import { crearGasto } from '@/lib/gastosServidor';
 
 export const dynamic = 'force-dynamic';
 
@@ -73,7 +74,9 @@ export async function POST(req) {
   };
   if (origenDe(b, g.ivaPct)) g.origen = origenDe(b, g.ivaPct);
   if (retencionDe(b)) g.irpfPct = retencionDe(b);
-  await guardar(u, 'gastos', g);
+  const alta = await crearGasto(u, g, { duplicadoConfirmado: b.duplicadoConfirmado });
+  if (alta.error) return Response.json(alta, { status: 409 });
+  Object.assign(g, alta.gasto);
   // Apuntado desde un movimiento del banco que no tenía gasto: queda emparejado (y pagado con la fecha del banco).
   if (b.banco) await emparejar(u, String(b.banco), 'gasto', g.id);
   await Promise.all([subirGasto(u, g), enviarNomina(u, [g.fecha])]);

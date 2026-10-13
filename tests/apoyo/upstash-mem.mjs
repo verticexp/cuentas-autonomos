@@ -45,6 +45,8 @@ export function crearBase() {
       case 'expire': if (!vivo(a[0])) return 0; exp.set(a[0], Date.now() + Number(a[1]) * 1000); return 1;
       case 'pexpire': if (!vivo(a[0])) return 0; exp.set(a[0], Date.now() + Number(a[1])); return 1;
       case 'ttl': { if (!vivo(a[0])) return -2; const t = exp.get(a[0]); return t ? Math.ceil((t - Date.now()) / 1000) : -1; }
+      case 'pttl': { if (!vivo(a[0])) return -2; const t = exp.get(a[0]); return t ? Math.max(0, t - Date.now()) : -1; }
+      case 'type': return ({ h: 'hash', s: 'set', l: 'list', k: 'string' })[vivo(a[0])?.t] || 'none';
       case 'sadd': { const m = S(a[0]); let n = 0; for (const x of a.slice(1)) if (!m.has(x)) { m.add(x); n++; } return n; }
       case 'srem': { const v = vivo(a[0]); let n = 0; for (const x of a.slice(1)) if (v?.m.delete(x)) n++; return n; }
       case 'smembers': return [...(vivo(a[0])?.m || [])];
