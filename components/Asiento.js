@@ -6,7 +6,7 @@ import { llamar } from './Acciones';
 import { parseImporte } from '@/lib/importe';
 
 const num = (v) => parseImporte(v) || 0;
-const r2 = (n) => Math.round(n * 100) / 100;
+import { r2 } from '@/lib/redondeo';
 
 // Asiento apuntado a mano: fecha, concepto y líneas al debe o al haber. No se guarda si no cuadra.
 // cuentas: [[código, nombre]] para sugerirlas al escribir.
