@@ -9,6 +9,7 @@ import { baseLinea, desglose, importes, leerImporte, numeroFactura, r2 } from '@
 import '@/app/lineas.css';
 import '@/app/catalogo.css';
 import { eur } from '@/lib/formato';
+import { TIPOS_OPERACION } from '@/lib/operaciones';
 
 const aTexto = (n) => String(n ?? '').replace('.', ',');
 const lineaVacia = (ivaPct) => ({ concepto: '', cantidad: '1', precio: '', dto: '', ivaPct });
@@ -132,6 +133,22 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
         <input className="campo" list="proyectos-factura" value={f.proyecto || ''} onChange={(e) => poner('proyecto', e.target.value)} placeholder="Para ver la rentabilidad de cada uno" maxLength={60} />
       </label>
       <datalist id="proyectos-factura">{proyectos.map((p) => <option key={p} value={p} />)}</datalist>
+
+      {nums.some((l) => l.ivaPct === 0) && <label>¿Por qué va sin IVA?
+        <select className="campo" value={f.operacion || ''} onChange={(e) => poner('operacion', e.target.value || undefined)}>
+          <option value="">Según el cliente (UE: servicios intracomunitarios · fuera de la UE: no sujeta · España: exenta)</option>
+          {Object.entries(TIPOS_OPERACION).map(([k, t]) => <option key={k} value={k}>{t.nombre}</option>)}
+        </select>
+      </label>}
+
+      {orig && <label>Motivo de la rectificación
+        <select className="campo" value={f.motivoRectificacion || ''} onChange={(e) => poner('motivoRectificacion', e.target.value)}>
+          <option value="">Otras causas (R4)</option>
+          <option value="error">Error, devolución, descuento o resolución (R1, art. 80 Uno, Dos y Seis)</option>
+          <option value="concurso">Concurso del cliente (R2, art. 80 Tres)</option>
+          <option value="incobrable">Crédito incobrable (R3, art. 80 Cuatro)</option>
+        </select>
+      </label>}
 
       <label>IRPF
         <select className="campo" value={f.irpfPct} onChange={(e) => poner('irpfPct', Number(e.target.value))}>

@@ -37,19 +37,22 @@ de negocio, accesos a producción) · Asesoría fiscal (puntos marcados ⚖).
 - Las empresas dadas de baja ya no emiten recurrentes.
 - No hace falta migración para numerar bien: el contador se pone al día solo con lo ya emitido. La migración solo congela las instantáneas antiguas por adelantado.
 
-## Fase 2 — Validación fiscal y VERI\*FACTU
+## Fase 2 — Validación fiscal y VERI\*FACTU · rama `claude/fase2-redondeo`
 
-| Id | Tarea | Resp. | Estado |
-|---|---|---|---|
-| F09 | Redondeo exacto (`r2(1.005)` = 1): unidades enteras o decimal, simétrico en negativos; política por línea, tipo y documento | Claude (Codex: tests de casos) | ⏳ |
-| F10 | Clasificación de la operación (tipo, país, destinatario empresario, VIES, exenta/no sujeta/ISP), en vez de deducirla del prefijo del NIF; matriz 303/349/390/347 | Claude ⚖ | ⏳ |
-| F11a | Tipos de factura y rectificación completos (F1, F2, F3, R1–R5; por sustitución o diferencias); subsanación, anulación y rechazo | Claude ⚖ | ⏳ |
-| F11b | Historial de respuestas AEAT (CSV, intentos, errores), segregado por modo pruebas/real | Claude | ⏳ |
-| F11c | Envío desde la instantánea fiscal guardada (hoy: factura con instantánea + emisor de ella) | Claude | 🟡 |
-| F11d | Alertas: pendientes viejos, certificado próximo a caducar | Claude | ⏳ |
-| F11e | Alinear la declaración responsable con el comportamiento: emitir sin Verifactu, borrar y editar | Usuario ⚖ | ⏳ |
-| F11f | Prueba del flujo completo en el entorno oficial de pruebas de la AEAT y de la representación de cada emisor | 🔑 Usuario (certificado) | ⏳ |
-| F06b | Reglas de factura completa vs. simplificada (RD 1619/2012 arts. 6–7): cuándo se exige NIF y domicilio del destinatario | ⚖ | ⏳ |
+| Id | Problema | Corrección | Evidencia | Resp. | Estado |
+|---|---|---|---|---|---|
+| F09 | `r2(1.005)` = 1, `r2(-0.004)` = −0; 0,5 × 19,99 daba 9,99 | `lib/redondeo.js`: mitad lejos del cero, simétrico, sin ruido binario (`toPrecision(15)`), una sola implementación para toda la app (incluido el XML de Verifactu). Política: línea al céntimo; IVA por tipo sobre la suma de bases; retención sobre la base; total = base + IVA − retención | `tests/redondeo.test.mjs` (Codex): medias unidades, 30 facturas con su rectificativa espejo exacta, 100 líneas de 0,01 €, y coherencia con Verifactu, Facturae y UBL | Claude · Codex (tests) | ✅ |
+| F11b | El estado de envío se sobrescribía: solo el último | Historial de cada intento (`envios`, hasta 30) con estado, código, descripción y CSV; la factura solo toma el estado de su registro vigente | `tests/verifactu-envio.test.mjs` | Claude | ✅ |
+| F11b′ | **Encontrado al revisar:** los pendientes no se filtraban por modo; al pasar de pruebas a real, los registros de pruebas pendientes se habrían enviado a la AEAT real | Cada registro guarda su modo (los antiguos, el de su factura o, si no se sabe, pruebas) y solo se envía el del modo actual | Prueba con registros de pruebas antiguos sin modo + paso a real: solo sale el real | Claude | ✅ |
+| F11c | El XML usaba el régimen de IVA y el emisor actuales | Instantánea `regimenIva` en la emisión; XML con el emisor y el régimen de cuando se emitió | Prueba: emitida en recargo (ClaveRegimen 18) y enviada después de pasar a general | Claude | ✅ |
+| F11d | Rechazos o atascos sin aviso | `lib/verifactuEstado.js`; incidencias en Ajustes › Verifactu (con enlace a cada factura) y notificación diaria | Pruebas de estado y aviso | Claude | ✅ (caducidad del certificado: ⏳, necesita leer el .p12) |
+| F11a | Solo F1 y R4; sin subsanación ni anulación | R1–R4 según el motivo de la rectificativa (R4 por defecto ⚖); subsanación corrigiendo el cliente (`Subsanacion` S y `RechazoPrevio` X/N); anulación de facturas expedidas por error (`RegistroAnulacion` encadenado; la factura pasa a `facturasBorradas`, su número no se reutiliza) | XML validado contra los XSD oficiales de la AEAT (también lo que va detrás de una anulación); flujo completo con la AEAT simulada; `lib/integridad.js` sin incidencias | Claude ⚖ | ✅ (combinaciones a confirmar en el entorno oficial: F11f) |
+| F10 | El 349 incluía facturas con IVA español por llevar un NIF `DE…` | `lib/operaciones.js`: la factura indica por qué va sin IVA (exenta E1, intracomunitaria E5, servicios UE N2, exportación E2, servicios fuera N2, inversión del sujeto pasivo S2); si no, se deduce del cliente como antes. 303 con las casillas de 2026 (59, 60, 120, 122); 349 solo la parte sin IVA intracomunitaria, clave E o S; libros y Verifactu con la misma clasificación; validación cliente/líneas; selector en la factura | `tests/operaciones.test.mjs` (incluido el caso de la auditoría) + XSD de la AEAT; `verificar` sin regresiones (315 ✓) | Claude ⚖ | ✅ (matriz completa: asesoría) |
+| F11e | Declaración responsable frente al comportamiento (emitir sin Verifactu, borrar y editar) | — | — | 🔑 Usuario ⚖ | ⏳ |
+| F11f | Flujo completo en el entorno oficial de pruebas de la AEAT, con representación | — | — | 🔑 Usuario (certificado) | ⏳ |
+| F06b | Datos obligatorios del destinatario en factura completa y simplificada (RD 1619/2012, arts. 6–7) | — | — | ⚖ | ⏳ |
+
+Casillas del 303 contrastadas con las [instrucciones de 2026 de la AEAT](https://sede.agenciatributaria.gob.es/Sede/todas-gestiones/impuestos-tasas/iva/modelo-303-iva-autoliquidacion_/instrucciones-2026.html): 59 entregas y servicios intracomunitarios, 60 exportaciones, 120 no sujetas por localización (salvo 123), 122 inversión del sujeto pasivo, 123 y 124 ventanilla única (no implementadas).
 
 ## Fase 3 — Copias y recuperación
 
@@ -75,7 +78,7 @@ de negocio, accesos a producción) · Asesoría fiscal (puntos marcados ⚖).
 | C1 | Clientes con id estable (hoy el nombre en mayúsculas), contactos y direcciones | Claude | ⏳ |
 | C2 | Adjunto original de cada gasto con huella y control de acceso | Claude | ⏳ |
 | C3 | OCR: varios tipos de IVA, comprobación base + IVA − retención = total, fecha desconocida visible | Codex | ⏳ |
-| C4 | Duplicados de gastos por proveedor, número, fecha e importe | Codex | ⏳ |
+| C4 | Duplicados de gastos por proveedor, número, fecha e importe | Codex (`lib/duplicados.js`, con pruebas) · Claude (avisar al guardar) | 🟡 librería lista; falta el aviso en el formulario |
 
 ## Fase 6 — Seguridad (F12)
 Recuperación de contraseña · reautenticación para IBAN, llaves, borrados y exportaciones · sesiones por dispositivo ·
@@ -115,3 +118,6 @@ encargado del tratamiento. **Estado:** ⏳.
 4. Tratamiento del cierre de caja como asiento resumen (F4) frente a factura simplificada (F2) registrada.
 5. Matriz de clasificación de operaciones internacionales (F10) para 303/349/390/347 y claves Verifactu.
 6. Retención en UBL (`PayableAmount` neto, incumple BR-CO-16 de Peppol).
+7. Motivo por defecto de las rectificativas (hoy R4; muchas devoluciones y descuentos son R1).
+8. Inversión del sujeto pasivo en Verifactu: S2 con tipo 0 y cuota 0 (válido por esquema; confirmar en el entorno de pruebas).
+9. Subsanación: combinaciones de `Subsanacion`/`RechazoPrevio` (S/X para rechazados, S/N para aceptados con errores).

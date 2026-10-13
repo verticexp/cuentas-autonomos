@@ -62,6 +62,54 @@ test('respuesta de la AEAT: estado del envío, espera, CSV y cada registro; o el
     + '<tikR:RespuestaLinea><tikR:IDFactura><tik:NumSerieFactura>02-2026</tik:NumSerieFactura></tikR:IDFactura><tikR:EstadoRegistro>Incorrecto</tikR:EstadoRegistro><tikR:CodigoErrorRegistro>3000</tikR:CodigoErrorRegistro><tikR:DescripcionErrorRegistro>Duplicado</tikR:DescripcionErrorRegistro></tikR:RespuestaLinea>'
     + '</tikR:RespuestaRegFactuSistemaFacturacion></env:Body></env:Envelope>';
   assert.deepEqual(leerRespuesta(ok), { estadoEnvio: 'ParcialmenteCorrecto', espera: 60, csv: 'A-123', lineas: [
-    { numSerie: '01-2026', estado: 'Correcto', codigo: '', descripcion: '' }, { numSerie: '02-2026', estado: 'Incorrecto', codigo: '3000', descripcion: 'Duplicado' }] });
+    { numSerie: '01-2026', operacion: 'Alta', estado: 'Correcto', codigo: '', descripcion: '' }, { numSerie: '02-2026', operacion: 'Alta', estado: 'Incorrecto', codigo: '3000', descripcion: 'Duplicado' }] });
   assert.deepEqual(leerRespuesta('<env:Envelope><env:Body><env:Fault><faultcode>env:Client</faultcode><faultstring>Codigo[4102].No cumple el esquema</faultstring></env:Fault></env:Body></env:Envelope>'), { fault: 'Codigo[4102].No cumple el esquema' });
+});
+
+test('subsanación, anulación y lo que viene detrás: válidos según los esquemas de la AEAT; R1 por motivo', { skip: !conXmllint && 'sin xmllint' }, async () => {
+  const { registroAnulacion, tipoFactura } = await import('../lib/verifactu.js');
+  const { xmlAnulacion } = await import('../lib/verifactuXml.js');
+  const r1 = registroAlta(f1, 'B11111111', '', '2026-10-02T10:00:00+02:00');
+  // Subsanación de un registro rechazado (RechazoPrevio X) y de uno aceptado con errores (N).
+  const s1 = registroAlta(f1, 'B11111111', r1.Huella, '2026-10-02T11:00:00+02:00', { subsanacion: true, rechazoPrevio: 'X' });
+  const s2 = registroAlta(f3, 'B11111111', s1.Huella, '2026-10-02T12:00:00+02:00', { subsanacion: true });
+  const an = registroAnulacion(f3, 'B11111111', s2.Huella, '2026-10-02T13:00:00+02:00');
+  // Un alta detrás de una anulación encadena con los datos de la factura anulada.
+  const r2 = registroAlta({ ...f2, rectifica: { ...f2.rectifica, motivo: 'error' } }, 'B11111111', an.Huella, '2026-10-03T10:00:00+02:00');
+  const op = { emisorNombre: 'Mi Empresa SL', sistema, fiscal: { iva: 'general' } };
+  const xml = sobre({ nombre: 'Mi Empresa SL', nif: 'B11111111' }, [
+    xmlAlta(r1, { ...op, factura: f1, anterior: null }),
+    xmlAlta(s1, { ...op, factura: f1, anterior: r1 }),
+    xmlAlta(s2, { ...op, factura: f3, anterior: s1 }),
+    xmlAnulacion(an, { anterior: s2, sistema }),
+    xmlAlta(r2, { ...op, factura: { ...f2, rectifica: { ...f2.rectifica, motivo: 'error' } }, anterior: an }),
+  ]);
+  assert.equal(validar(xml), '');
+  assert.ok(xml.includes('<sum1:Subsanacion>S</sum1:Subsanacion><sum1:RechazoPrevio>X</sum1:RechazoPrevio>'));
+  assert.ok(xml.includes('<sum1:Subsanacion>S</sum1:Subsanacion><sum1:RechazoPrevio>N</sum1:RechazoPrevio>'));
+  assert.ok(xml.includes(`<sum1:NumSerieFacturaAnulada>${an.NumSerieFacturaAnulada}</sum1:NumSerieFacturaAnulada>`));
+  assert.ok(xml.includes(`<sum1:RegistroAnterior><sum1:IDEmisorFactura>B11111111</sum1:IDEmisorFactura><sum1:NumSerieFactura>${an.NumSerieFacturaAnulada}</sum1:NumSerieFactura>`));
+  assert.ok(xml.includes('<sum1:TipoFactura>R1</sum1:TipoFactura>'));
+  // La huella de la subsanación no incluye los campos de subsanación; la de la anulación, los de la factura anulada.
+  assert.equal(s1.Huella, registroAlta(f1, 'B11111111', r1.Huella, '2026-10-02T11:00:00+02:00').Huella);
+  assert.equal(tipoFactura({ serie: 'R', rectifica: {} }), 'R4');
+  assert.equal(tipoFactura({ serie: 'R', rectifica: { motivo: 'incobrable' } }), 'R3');
+});
+
+test('operaciones sin IVA (E2, E5, N2, S2): válidas según los esquemas de la AEAT', { skip: !conXmllint && 'sin xmllint' }, () => {
+  const base = { numero: 9, anio: 2026, fecha: '2026-10-05', base: 100, ivaPct: 0, irpfPct: 0, concepto: 'X' };
+  const casos = [
+    { ...base, id: 'a', cliente: { nombre: 'Kunde', nif: 'DE123456789' }, operacion: 'intracomunitaria' },
+    { ...base, id: 'b', numero: 10, cliente: { nombre: 'Client', nif: '12-3456789' }, operacion: 'exportacion' },
+    { ...base, id: 'c', numero: 11, cliente: { nombre: 'Kunde', nif: 'DE123456789' } },
+    { ...base, id: 'd', numero: 12, cliente: { nombre: 'Obras SL', nif: 'B87654323' }, operacion: 'isp' },
+  ];
+  let anterior = null;
+  const xmls = casos.map((f, i) => {
+    const r = registroAlta(f, 'B11111111', anterior?.Huella || '', `2026-10-05T1${i}:00:00+02:00`);
+    const x = xmlAlta(r, { factura: f, emisorNombre: 'Mi Empresa SL', anterior, sistema, fiscal: { iva: 'general' } });
+    anterior = r;
+    return x;
+  });
+  assert.equal(validar(sobre({ nombre: 'Mi Empresa SL', nif: 'B11111111' }, xmls)), '');
 });

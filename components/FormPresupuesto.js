@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
 import Deslizable from './Deslizable';
-import { baseLinea, importes, leerImporte } from '@/lib/calculos';
+import { baseLinea, importes, leerImporte, r2 } from '@/lib/calculos';
 import '@/app/lineas.css';
 import { eur } from '@/lib/formato';
 
@@ -33,7 +33,7 @@ export default function FormPresupuesto({ presupuesto, clientes, actividades, ho
   const quitarLinea = (i) => setP((x) => ({ ...x, lineas: x.lineas.filter((_, j) => j !== i) }));
   const anadirLinea = () => setP((x) => ({ ...x, lineas: [...x.lineas, lineaVacia()] }));
   const nums = p.lineas.map((l) => ({ cantidad: leerImporte(l.cantidad) || 0, precio: leerImporte(l.precio) || 0 }));
-  const base = Math.round(nums.reduce((s, l) => s + baseLinea(l), 0) * 100) / 100;
+  const base = r2(nums.reduce((s, l) => s + baseLinea(l), 0));
   const t = importes({ base, ivaPct: Number(p.ivaPct), irpfPct: Number(p.irpfPct) });
 
   const enviar = async (e) => {
