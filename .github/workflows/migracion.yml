@@ -1,0 +1,41 @@
+name: Migración de integridad
+# Manual. Copia cifrada previa (punto de restauración) → simulación → aplicar (scripts/migrar-integridad.mjs).
+on:
+  workflow_dispatch:
+    inputs:
+      aplicar:
+        description: 'Escribir en la base de datos (si no, solo simula)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  migrar:
+    runs-on: ubuntu-latest
+    env:
+      KV_REST_API_URL: ${{ secrets.KV_REST_API_URL }}
+      KV_REST_API_TOKEN: ${{ secrets.KV_REST_API_TOKEN }}
+      COPIA_CLAVE: ${{ secrets.COPIA_CLAVE }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-save
+      - name: Copia cifrada previa
+        run: node scripts/copia.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: antes-de-migrar-${{ github.run_id }}
+          path: |
+            copia.json.enc
+            copia-resumen.json
+          retention-days: 90
+      - name: Simular
+        run: node scripts/migrar-integridad.mjs
+      - name: Aplicar
+        if: ${{ inputs.aplicar }}
+        # La copia en claro que hace el script se queda en el runner (se borra al acabar): la de restaurar es la cifrada.
+        run: node scripts/migrar-integridad.mjs --aplicar --copia=/tmp/copia-integridad.json
