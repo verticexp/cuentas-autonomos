@@ -33,7 +33,22 @@ Ante una funcionalidad importante, Claude divide el trabajo y delega en Codex la
    codex exec --sandbox workspace-write -C ../cuentas-autonomos-wt/<rama> -o <scratchpad>/codex-<rama>.md "<encargo>"
    ```
    Para análisis sin cambios: `--sandbox read-only`.
-   **Modelo**: no pasar `-m`; `~/.codex/config.toml` ya fija `gpt-6-astra` con razonamiento `high`. Para tareas sencillas y mecánicas, bajar a medium con `-c model_reasoning_effort=medium`. Solo para problemas muy difíciles (depuración profunda, lógica fiscal compleja) usar `-p maximo` (razonamiento `ultra`, mucho más lento). Prioridad: calidad y fiabilidad sobre velocidad. **Nunca** usar `--dangerously-bypass-approvals-and-sandbox`.
+
+### Modelo y consumo de cuota de Codex
+
+Elegir el nivel más económico que garantice calidad. No pasar `-m`: usar la config o un perfil.
+
+| Tarea | Cómo invocar | Modelo / razonamiento |
+|---|---|---|
+| Sencilla (tests de un módulo, refactor mecánico, docs) | `codex exec -p rapido …` | gpt-6-luna · medium |
+| Funcionalidad normal | `codex exec …` (por defecto) | gpt-6.1-sol · medium |
+| Funcionalidad normal con lógica delicada | `codex exec -c model_reasoning_effort=high …` | gpt-6.1-sol · high |
+| Arquitectura, error especialmente difícil, o tarea que ya falló con un modelo más económico | `codex exec -p astra …` | gpt-6-astra · high |
+
+- **Nunca** usar gpt-6-astra por defecto ni niveles `xhigh`/`max`/`ultra`.
+- **Una sola instancia de Codex a la vez.** Varias en paralelo solo con autorización explícita del usuario.
+- **Encargos acotados**: indicar en el prompt los archivos concretos que debe leer y tocar, y pedirle que no explore el resto del repositorio. Nada de análisis completos del repo si basta con unos archivos.
+- **Reintentos**: si una tarea de Codex falla, como máximo **un** reintento (subiendo de nivel si procede, p. ej. a `-p astra`). Si vuelve a fallar, Claude la hace él o informa al usuario; no reintentar en bucle. **Nunca** usar `--dangerously-bypass-approvals-and-sandbox`.
 3. El encargo incluye: objetivo, archivos que puede tocar (y los que no), criterios de aceptación y "ejecuta `npm test` antes de terminar". Sin secretos, claves ni credenciales en el prompt.
 4. Dos agentes nunca trabajan en el mismo directorio ni en los mismos archivos a la vez. Claude trabaja en su propia rama (`claude/<tema>`).
 5. Si Codex falla, Claude explica el fallo al usuario y continúa de forma segura (rehacer el encargo o hacerlo él).
