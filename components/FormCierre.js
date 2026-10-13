@@ -14,15 +14,15 @@ const TIPOS = [21, 10, 4, 0];
 
 // Cierre de caja: lo vendido en el día por tipo de IVA (con IVA, como lo da el TPV), cómo se cobró y, si se quiere,
 // cuántas unidades de cada producto salieron (para el stock y el margen).
-export default function FormCierre({ hoy, actividades, productos = [], cierre = null, ivaDefecto = 21 }) {
+export default function FormCierre({ hoy, actividades, productos = [], cierre = null, ivaDefecto = 21, proyectos = [] }) {
   const router = useRouter();
   const inicial = () => {
-    if (!cierre) return { fecha: hoy, actividad: actividades[0].id, porIva: [{ pct: ivaDefecto, total: '' }], efectivo: '', tarjeta: '', otros: '', desde: '', hasta: '', nota: '', unidades: [] };
+    if (!cierre) return { fecha: hoy, actividad: actividades[0].id, porIva: [{ pct: ivaDefecto, total: '' }], efectivo: '', tarjeta: '', otros: '', desde: '', hasta: '', nota: '', unidades: [], proyecto: '' };
     return {
       fecha: cierre.fecha, actividad: cierre.actividad,
       porIva: cierre.lineas.map((l) => ({ pct: l.ivaPct, total: aTexto(r2(l.precio + r2((l.precio * l.ivaPct) / 100))) })),
       efectivo: aTexto(cierre.caja.efectivo), tarjeta: aTexto(cierre.caja.tarjeta), otros: aTexto(cierre.caja.otros),
-      desde: cierre.resumen?.desde || '', hasta: cierre.resumen?.hasta || '', nota: cierre.nota || '',
+      desde: cierre.resumen?.desde || '', hasta: cierre.resumen?.hasta || '', nota: cierre.nota || '', proyecto: cierre.proyecto || '',
       unidades: (cierre.unidades || []).map((x) => ({ producto: x.producto, cantidad: aTexto(x.cantidad), importe: aTexto(x.importe) })),
     };
   };
@@ -76,7 +76,7 @@ export default function FormCierre({ hoy, actividades, productos = [], cierre = 
         <legend>Cobrado</legend>
         <div className="caja-cobro">
           <label>Efectivo<input className="campo" inputMode="decimal" placeholder="0,00" value={x.efectivo} onChange={(e) => poner('efectivo', e.target.value)} /></label>
-          <label>Tarjeta<input className="campo" inputMode="decimal" placeholder="0,00" value={tarjetaAuto ? aTexto(tarjeta) : x.tarjeta} onChange={(e) => { setTarjetaAuto(false); poner('tarjeta', e.target.value); }} /></label>
+          <label>Tarjeta<input className="campo" inputMode="decimal" placeholder="0,00" value={tarjetaAuto ? (tarjeta ? aTexto(tarjeta) : "") : x.tarjeta} onChange={(e) => { setTarjetaAuto(false); poner('tarjeta', e.target.value); }} /></label>
           <label>Bizum y otros<input className="campo" inputMode="decimal" placeholder="0,00" value={x.otros} onChange={(e) => poner('otros', e.target.value)} /></label>
         </div>
         {!cuadra && <p className="error">El cobro suma {eur(r2(num(x.efectivo) + tarjeta + num(x.otros)))} y lo vendido {eur(total)}.</p>}
@@ -109,6 +109,8 @@ export default function FormCierre({ hoy, actividades, productos = [], cierre = 
         </fieldset>
       )}
 
+      {(proyectos.length > 0 || x.proyecto) && <label>Local o centro (opcional)<input className="campo" list="proyectos-caja" value={x.proyecto} onChange={(e) => poner('proyecto', e.target.value)} maxLength={60} /></label>}
+      <datalist id="proyectos-caja">{proyectos.map((p) => <option key={p} value={p} />)}</datalist>
       <label>Nota (opcional)<input className="campo" value={x.nota} onChange={(e) => poner('nota', e.target.value)} placeholder="Ej.: descuadre de 2 € en caja" /></label>
 
       <div className="totales"><strong>Total del día {eur(total)}</strong></div>

@@ -8,6 +8,7 @@ import Volver from '@/components/Volver';
 import { actividadesDe, fiscalDe } from '@/lib/empresa';
 import { inventario } from '@/lib/inventario';
 import { datosStock } from '@/lib/stockServidor';
+import { nombresProyectos } from '@/lib/proyectos';
 
 import '@/app/mk.css';
 
@@ -32,7 +33,7 @@ export default async function Nueva({ searchParams }) {
     <main className="pagina mk-look">
       <Volver href={original || plantilla ? `/facturas/${(original || plantilla).id}` : '/facturas'} />
       <h1 className="titulo">{original ? 'Factura rectificativa' : plantilla ? 'Duplicar factura' : 'Nueva factura'}</h1>
-      <FormFactura clientes={clientes} hoy={h} rectifica={original} plantilla={plantilla || null} numeros={numeros} actividades={actividades} productos={(productos || []).sort((a, b) => a.nombre.localeCompare(b.nombre))} stock={stock} />
+      <FormFactura clientes={clientes} hoy={h} rectifica={original} plantilla={plantilla || null} numeros={numeros} actividades={actividades} productos={(productos || []).sort((a, b) => a.nombre.localeCompare(b.nombre))} stock={stock} proyectos={nombresProyectos(facturas, gastos || [])} />
     </main>
   );
 }

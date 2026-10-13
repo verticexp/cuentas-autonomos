@@ -8,6 +8,7 @@ import { leerImporte, nifUE, r2 } from '@/lib/calculos';
 import { actividadesDe, actividadValida } from '@/lib/empresa';
 import { CATEGORIAS } from '@/lib/categorias';
 import { TIPOS_BIEN } from '@/lib/amortizaciones';
+import { limpiarProyecto } from '@/lib/proyectos';
 
 export const dynamic = 'force-dynamic';
 
@@ -63,6 +64,7 @@ export async function POST(req) {
     ivaPct: Math.min(100, Math.max(0, Number(b.ivaPct) || 0)),
     ...proveedorDe(b),
     ...facturaDe(b),
+    ...(limpiarProyecto(b.proyecto) ? { proyecto: limpiarProyecto(b.proyecto) } : {}),
     ...(b.pendiente ? { pendiente: true } : {}),
     ...(b.alquiler ? { alquiler: true } : {}),
     ...(categoriaDe(b) ? { categoria: categoriaDe(b) } : {}),
@@ -88,7 +90,7 @@ export async function PATCH(req) {
   if (!base) return error('Importe no válido');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(b.fecha || '')) return error('Fecha no válida');
   if (!String(b.concepto || '').trim()) return error('Falta el concepto');
-  const g = { ...antes, fecha: b.fecha, actividad: actividadValida(actividadesDe(u), b.actividad), concepto: String(b.concepto).trim().slice(0, 140), base, ivaPct: Math.min(100, Math.max(0, Number(b.ivaPct) || 0)), proveedor: undefined, proveedorNif: undefined, ...proveedorDe(b), numero: undefined, efactura: antes.efactura, ...facturaDe(b), pendiente: b.pendiente ? true : undefined, alquiler: b.alquiler ? true : undefined, categoria: stockDe(b) ? categoriaDe(b) || '600' : categoriaDe(b), inversion: inversionDe(b), stock: stockDe(b) };
+  const g = { ...antes, fecha: b.fecha, actividad: actividadValida(actividadesDe(u), b.actividad), concepto: String(b.concepto).trim().slice(0, 140), base, ivaPct: Math.min(100, Math.max(0, Number(b.ivaPct) || 0)), proveedor: undefined, proveedorNif: undefined, ...proveedorDe(b), numero: undefined, efactura: antes.efactura, ...facturaDe(b), proyecto: limpiarProyecto(b.proyecto) || undefined, pendiente: b.pendiente ? true : undefined, alquiler: b.alquiler ? true : undefined, categoria: stockDe(b) ? categoriaDe(b) || '600' : categoriaDe(b), inversion: inversionDe(b), stock: stockDe(b) };
   g.origen = origenDe(b, g.ivaPct);
   g.irpfPct = retencionDe(b);
   await guardar(u, 'gastos', g);

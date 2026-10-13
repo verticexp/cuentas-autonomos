@@ -140,3 +140,29 @@ test('pedido a proveedor: «en camino» descuenta de «Qué pedir» y al recibir
   const stock = inventario({ productos, ajustes, gastos: [{ id: 'g', ...g }] }, { hoy: '2026-02-28' }).productos[0].stock;
   assert.equal(stock, 18);
 });
+
+test('rentabilidad por proyecto o centro de coste', async () => {
+  const { rentabilidad, nombresProyectos, limpiarProyecto } = await import('../lib/proyectos.js');
+  const facturas = [
+    { fecha: '2026-02-01', base: 1000, ivaPct: 21, proyecto: 'Obra Calle Mayor' },
+    { fecha: '2026-03-01', base: 500, ivaPct: 21, proyecto: 'obra calle mayor ' },
+    { fecha: '2026-03-02', base: 300, ivaPct: 21, proyecto: 'Local Centro' },
+    { fecha: '2026-03-03', base: 200, ivaPct: 21 },
+    { fecha: '2025-12-01', base: 999, ivaPct: 21, proyecto: 'Obra Calle Mayor' },
+  ];
+  const gastos = [
+    { fecha: '2026-02-10', base: 400, ivaPct: 21, proyecto: 'Obra Calle Mayor' },
+    { fecha: '2026-02-11', base: 100, ivaPct: 21, proyecto: 'Local Centro' },
+    { fecha: '2026-02-12', base: 50, ivaPct: 21 },
+    { fecha: '2026-02-13', base: 5000, ivaPct: 21, proyecto: 'Local Centro', inversion: { tipo: 'otros' } },
+  ];
+  const r = rentabilidad({ facturas, gastos }, 2026);
+  assert.deepEqual(r.proyectos.map((p) => [p.proyecto, p.ingresos, p.gastos, p.margen, p.facturas]), [['Obra Calle Mayor', 1500, 400, 1100, 2], ['Local Centro', 300, 100, 200, 1]]);
+  assert.equal(r.proyectos[0].margenPct, 73.33);
+  assert.deepEqual([r.general.ingresos, r.general.gastos], [200, 50]);
+  assert.equal(rentabilidad({ facturas, gastos }, 2026, { ivaCoste: true }).proyectos[0].gastos, 484);
+  assert.deepEqual(nombresProyectos(facturas, gastos), ['Local Centro', 'Obra Calle Mayor']);
+  assert.equal(limpiarProyecto('  Obra   1 '), 'Obra 1');
+  // El cierre de caja lleva su local.
+  assert.equal(limpiarCierre({ fecha: '2026-03-02', porIva: [{ pct: 21, total: 121 }], proyecto: ' Local Centro ' }).proyecto, 'Local Centro');
+});

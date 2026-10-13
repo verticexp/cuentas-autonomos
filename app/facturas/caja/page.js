@@ -9,6 +9,7 @@ import SinBD from '@/components/SinBD';
 import Volver from '@/components/Volver';
 import FormCierre from '@/components/FormCierre';
 import ImportarVentas from '@/components/ImportarVentas';
+import { nombresProyectos } from '@/lib/proyectos';
 import '@/app/caja.css';
 import '@/app/mk.css';
 
@@ -32,7 +33,7 @@ export default async function Caja({ searchParams }) {
       {!cierre && <nav className="segmentado"><Link href="/facturas/caja" className={ver === 'cierre' ? 'activo' : ''}>Cierre del día</Link><Link href="/facturas/caja?ver=importar" className={ver === 'importar' ? 'activo' : ''}>Importar del TPV</Link></nav>}
       {ver === 'cierre' || cierre ? (
         <>
-          <FormCierre hoy={hoy()} actividades={actividades} productos={lista} cierre={cierre?.caja ? cierre : null} ivaDefecto={actividades[0].ivaPct ?? 21} />
+          <FormCierre hoy={hoy()} actividades={actividades} productos={lista} cierre={cierre?.caja ? cierre : null} ivaDefecto={actividades[0].ivaPct ?? 21} proyectos={nombresProyectos(facturas)} />
           <p className="grupo-pie">Para tiendas con TPV o caja registradora: cada cierre es una factura simplificada de resumen (serie Z) que cuenta en el IVA, la contabilidad (el efectivo en caja, la tarjeta en el banco) y los libros registro. No va a Verifactu: los tiques ya los registra tu TPV.</p>
         </>
       ) : (

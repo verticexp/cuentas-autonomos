@@ -1,4 +1,5 @@
 import { requerir } from '@/lib/auth';
+import { nombresProyectos } from '@/lib/proyectos';
 import { leer } from '@/lib/redis';
 import { importes, r2 } from '@/lib/calculos';
 import { actividadesDe, fiscalDe, nombresActividad } from '@/lib/empresa';
@@ -81,7 +82,7 @@ export default async function Gastos({ searchParams }) {
         </p>
       )}
 
-      {puede(u, 'gastar') && movimiento && <FormGasto key={movimiento.id} hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} productos={stockProductos} movimiento={movimiento} />}
+      {puede(u, 'gastar') && movimiento && <FormGasto key={movimiento.id} hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} productos={stockProductos} movimiento={movimiento} proyectos={nombresProyectos(todos)} />}
 
       {puede(u, 'gastar') && !movimiento && revision.length > 0 && (
         <section className="grupo gastos-revision">
@@ -102,7 +103,7 @@ export default async function Gastos({ searchParams }) {
       )}
 
       {/* Primero lo que más se hace: escanear el ticket. El formulario entero se abre al escanear o al pedirlo. */}
-      {puede(u, 'gastar') && !movimiento && <FormGasto hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} productos={stockProductos} plegado={todos.length > 0} />}
+      {puede(u, 'gastar') && !movimiento && <FormGasto hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} productos={stockProductos} plegado={todos.length > 0} proyectos={nombresProyectos(todos)} />}
 
       {todos.length > 5 && <Buscar action="/gastos" q={q} ocultos={{ estado }} placeholder="Buscar proveedor o concepto" />}
       {sinPagar > 0 && (

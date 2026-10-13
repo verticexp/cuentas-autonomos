@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { proyectosDe } from '@/lib/stockServidor';
 import { requerir } from '@/lib/auth';
 import { leer, leerUno } from '@/lib/redis';
 import { hoy } from '@/lib/formato';
@@ -22,7 +23,7 @@ export default async function Gasto({ params }) {
   return (
     <main className="pagina mk-look">
       <Volver href="/gastos">Gastos</Volver>
-      <fieldset className="solo-ver" disabled={!puede(u, 'gastar')}><FormGasto hoy={hoy()} gasto={g} actividades={actividadesDe(u)} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} productos={stockProductos} /></fieldset>
+      <fieldset className="solo-ver" disabled={!puede(u, 'gastar')}><FormGasto hoy={hoy()} gasto={g} actividades={actividadesDe(u)} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} productos={stockProductos} proyectos={puede(u, 'gastar') ? await proyectosDe(u) : []} /></fieldset>
       {g.dieta && <p className="nota">{g.dieta.quien === 'titular' ? `Pagaste ${eur(g.dieta.pagado)}; deducible ${eur(g.dieta.deducible)}${g.dieta.exceso ? `, ${eur(g.dieta.exceso)} por encima del límite` : ''}.` : `Exento para el trabajador: ${eur(g.dieta.exento)}${g.dieta.exceso ? `; los ${eur(g.dieta.exceso)} de más van en su nómina con retención` : ''}.`}</p>}
       {puede(u, 'gastar') && <div style={{ marginTop: 16 }}><Borrar url={`/api/gastos?id=${encodeURIComponent(g.id)}`} pregunta={`¿Borrar «${g.concepto}»?`} volver="/gastos" /></div>}
     </main>

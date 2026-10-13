@@ -15,6 +15,7 @@ import { puede } from '@/lib/permisos';
 import { actividadesDe, fiscalDe, nombresActividad, usa130, usa303 } from '@/lib/empresa';
 import { enlacePortal } from '@/lib/portal';
 import { Compartir } from '@/components/AccionesPresupuesto';
+import { proyectosDe } from '@/lib/stockServidor';
 import '@/app/portal.css';
 
 import '@/app/mk.css';
@@ -58,6 +59,7 @@ export default async function Factura({ params }) {
         {f.resumen && <p className="nota">Tiques {f.resumen.desde}{f.resumen.hasta ? ` a ${f.resumen.hasta}` : ''} (asiento resumen en el libro registro).</p>}
         {f.importado && <p className="nota">Importado de {f.importado}.</p>}
         {f.nota && <p className="nota">{f.nota}</p>}
+        {f.proyecto && <p className="nota">Local o centro: <Link href={`/proyectos?p=${encodeURIComponent(f.proyecto)}`}>{f.proyecto}</Link></p>}
         {f.unidades?.length > 0 && <section className="bloque">
           <h2 className="grupo-t">Unidades vendidas</h2>
           <ul className="grupo-lista">{f.unidades.map((x) => <li key={x.producto}><Link href={`/inventario/${x.producto}`} className="fila"><span className="txt"><strong>{nombres[x.producto] || 'Producto borrado'}</strong><small>{eur(x.importe)} sin IVA</small></span><span className="imp">{String(x.cantidad).replace('.', ',')} ud.</span></Link></li>)}</ul>
@@ -111,7 +113,7 @@ export default async function Factura({ params }) {
       {f.verifactu && <p className={f.verifactu.estado === 'Incorrecto' ? 'error' : 'nota'}>{`Verifactu${f.verifactu.modo === 'pruebas' ? ' (pruebas)' : ''}: ${
         { Correcto: `registrada en la AEAT${f.verifactu.csv ? ` (CSV ${f.verifactu.csv})` : ''}.`, AceptadoConErrores: `registrada en la AEAT con avisos: ${f.verifactu.error}`, Incorrecto: `la AEAT la ha rechazado: ${f.verifactu.error}` }[f.verifactu.estado]
         || `pendiente de enviar a la AEAT${f.verifactu.error ? ` (último intento: ${f.verifactu.error})` : ''}. Se envía sola.`}`}</p>}
-      <fieldset className="solo-ver" disabled={!editar}><FormFactura key={JSON.stringify(f)} factura={f} clientes={clientes} actividades={actividades} productos={(productos || []).sort((a, b) => a.nombre.localeCompare(b.nombre))} /></fieldset>
+      <fieldset className="solo-ver" disabled={!editar}><FormFactura key={JSON.stringify(f)} factura={f} clientes={clientes} actividades={actividades} productos={(productos || []).sort((a, b) => a.nombre.localeCompare(b.nombre))} proyectos={editar ? await proyectosDe(u) : []} /></fieldset>
     </main>
   );
 }

@@ -44,9 +44,9 @@ export async function PATCH(req) {
   const datos = limpiar(b, actividadesDe(u), fiscalDe(u).tipo === 'sociedad');
   if (datos.error) return error(datos.error);
   if (Number(datos.fecha.slice(0, 4)) !== antes.anio) return error(`La fecha debe ser de ${antes.anio}`);
-  await guardar(u, 'facturas', { ...antes, evento: undefined, ...datos });
+  await guardar(u, 'facturas', { ...antes, evento: undefined, proyecto: undefined, ...datos });
   await guardarCliente(u, datos.cliente);
-  await Promise.all([subirFactura(u, { ...antes, evento: undefined, ...datos }), enviarNomina(u, [antes.fecha, datos.fecha])]);
+  await Promise.all([subirFactura(u, { ...antes, evento: undefined, proyecto: undefined, ...datos }), enviarNomina(u, [antes.fecha, datos.fecha])]);
   return Response.json({ ok: true });
 }
 
