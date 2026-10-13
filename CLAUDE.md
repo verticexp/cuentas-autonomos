@@ -12,9 +12,13 @@ App de cuentas para autónomos y pymes: Next.js 16 (App Router) + React 19 en Ja
 
 - **Claude Code es el agente principal y director técnico.** El usuario habla solo con Claude.
 - **Codex CLI es el agente auxiliar.** Claude decide el reparto sin preguntar al usuario.
-- Para delegar, sigue el Skill `delegate-codex` (`~/.claude/skills/delegate-codex/SKILL.md`).
+- Para delegar, invoca el Skill `delegate-codex` (`~/.claude/skills/delegate-codex/SKILL.md`).
+- **Esto aplica siempre, aunque el usuario no mencione a Codex.** Ante cada petición de desarrollo, Claude evalúa por su cuenta si conviene repartirla.
 
 ### Cuándo delegar
+
+- **Tareas complejas** (varias piezas, varios módulos, mucho volumen): prioriza repartir el trabajo entre los dos agentes siempre que haya piezas independientes.
+- **Tareas pequeñas** (un arreglo, un cambio en pocos archivos, una pregunta): Claude trabaja solo.
 
 Ante una funcionalidad importante, Claude divide el trabajo y delega en Codex las tareas **independientes y bien acotadas**: tests de un módulo, un endpoint o componente aislado, utilidades en `lib/`, refactors mecánicos, documentación. Claude se queda con el diseño, la lógica fiscal delicada, lo que toque varias capas a la vez y la integración final. Tareas pequeñas o dependientes entre sí: no se delegan, Claude las hace directamente.
 
