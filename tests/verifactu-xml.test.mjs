@@ -95,3 +95,21 @@ test('subsanación, anulación y lo que viene detrás: válidos según los esque
   assert.equal(tipoFactura({ serie: 'R', rectifica: {} }), 'R4');
   assert.equal(tipoFactura({ serie: 'R', rectifica: { motivo: 'incobrable' } }), 'R3');
 });
+
+test('operaciones sin IVA (E2, E5, N2, S2): válidas según los esquemas de la AEAT', { skip: !conXmllint && 'sin xmllint' }, () => {
+  const base = { numero: 9, anio: 2026, fecha: '2026-10-05', base: 100, ivaPct: 0, irpfPct: 0, concepto: 'X' };
+  const casos = [
+    { ...base, id: 'a', cliente: { nombre: 'Kunde', nif: 'DE123456789' }, operacion: 'intracomunitaria' },
+    { ...base, id: 'b', numero: 10, cliente: { nombre: 'Client', nif: '12-3456789' }, operacion: 'exportacion' },
+    { ...base, id: 'c', numero: 11, cliente: { nombre: 'Kunde', nif: 'DE123456789' } },
+    { ...base, id: 'd', numero: 12, cliente: { nombre: 'Obras SL', nif: 'B87654323' }, operacion: 'isp' },
+  ];
+  let anterior = null;
+  const xmls = casos.map((f, i) => {
+    const r = registroAlta(f, 'B11111111', anterior?.Huella || '', `2026-10-05T1${i}:00:00+02:00`);
+    const x = xmlAlta(r, { factura: f, emisorNombre: 'Mi Empresa SL', anterior, sistema, fiscal: { iva: 'general' } });
+    anterior = r;
+    return x;
+  });
+  assert.equal(validar(sobre({ nombre: 'Mi Empresa SL', nif: 'B11111111' }, xmls)), '');
+});
