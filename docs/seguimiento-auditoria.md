@@ -60,11 +60,14 @@ Casillas del 303 contrastadas con las [instrucciones de 2026 de la AEAT](https:/
 
 | Id | Tarea | Resp. | Estado |
 |---|---|---|---|
-| F14a | Copia v2: consistente por empresa (firma antes y después, reintento), cifrada AES-256-GCM (`COPIA_CLAVE`), con huella y resumen sin datos personales; no falla sin facturas | Codex (encargo 1, sol high) · Claude revisa | 🟡 en curso |
-| F14b | Restauración por empresa, con sobrescritura opcional y copia previa de lo sustituido; verificación de integridad tras restaurar; acepta copias v1 | Codex (encargo 1) · Claude revisa | 🟡 en curso |
-| F14c | Workflow nocturno cifrado con aviso (issue) si falla; simulacro semanal de restauración en base simulada, con tiempos | Codex (encargo 3) · Claude revisa | ⏳ tras el encargo 1 |
+| F14a | Copia v2: consistente por empresa (firma antes y después, reintento), cifrada AES-256-GCM (`COPIA_CLAVE`), con huella y resumen sin datos personales; no falla sin facturas | Codex (sol high) · Claude revisó y ensayó con la demo | ✅ `tests/copias.test.mjs`; copia → restauración en otra base → misma huella |
+| F14b | Restauración por empresa, con sobrescritura opcional y copia previa de lo sustituido; verificación de integridad tras restaurar; acepta copias v1 | Codex · Claude revisó | ✅ procedimiento en `docs/copias.md` |
+| F14c | Workflow nocturno cifrado con aviso (issue) si falla; simulacro semanal de restauración en base simulada, con tiempos | Codex · Claude revisó | ✅ `tests/simulacro.test.mjs`; simulacro con la demo: 0,13 s (objetivo 1 h). Primera ejecución real: tras desplegar |
 | F14d | Secreto `COPIA_CLAVE` en GitHub | Usuario | ✅ añadido (comprobado el nombre, no el valor) |
-| C3 | Lectura de tickets: desglose de varios IVA, cuadre base + IVA − retención = total, fecha dudosa visible | Codex (encargo 2, en paralelo) · Claude revisa | 🟡 en curso |
+| C3 | Lectura de tickets: desglose de varios IVA, cuadre base + IVA − retención = total, fecha dudosa visible | Codex · Claude revisó | ✅ `tests/ticket.test.mjs` |
+| C4b | Aviso de gasto duplicado al guardar (409 con motivos; se guarda al confirmar) | Codex · Claude revisó | ✅ `tests/gastos-duplicados.test.mjs` |
+| A1 | Formulario de factura accesible: etiquetas, errores por campo con ARIA, foco en el primer error, sin doble envío | Codex · Claude revisó | ✅ (validación con lector de pantalla real: ⏳) |
+| F12a | Recuperar la contraseña (enlace de un solo uso, 30 min, sin revelar cuentas, cierra sesiones) | Codex (sol high) · Claude revisa | 🟡 en curso |
 
 ## Fase 4 — Borradores y pagos parciales
 
@@ -81,8 +84,8 @@ Casillas del 303 contrastadas con las [instrucciones de 2026 de la AEAT](https:/
 |---|---|---|---|
 | C1 | Clientes con id estable (hoy el nombre en mayúsculas), contactos y direcciones | Claude | ⏳ |
 | C2 | Adjunto original de cada gasto con huella y control de acceso | Claude | ⏳ |
-| C3 | OCR: varios tipos de IVA, comprobación base + IVA − retención = total, fecha desconocida visible | Codex | ⏳ |
-| C4 | Duplicados de gastos por proveedor, número, fecha e importe | Codex (`lib/duplicados.js`, con pruebas) · Claude (avisar al guardar) | 🟡 librería lista; falta el aviso en el formulario |
+| C3 | OCR: varios tipos de IVA, comprobación base + IVA − retención = total, fecha desconocida visible | Codex | ✅ (fase 3) |
+| C4 | Duplicados de gastos por proveedor, número, fecha e importe | Codex · Claude revisó | ✅ librería y aviso al guardar (C4b) |
 
 ## Fase 6 — Seguridad (F12)
 Recuperación de contraseña · reautenticación para IBAN, llaves, borrados y exportaciones · sesiones por dispositivo ·
