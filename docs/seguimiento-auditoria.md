@@ -54,13 +54,17 @@ de negocio, accesos a producción) · Asesoría fiscal (puntos marcados ⚖).
 
 Casillas del 303 contrastadas con las [instrucciones de 2026 de la AEAT](https://sede.agenciatributaria.gob.es/Sede/todas-gestiones/impuestos-tasas/iva/modelo-303-iva-autoliquidacion_/instrucciones-2026.html): 59 entregas y servicios intracomunitarios, 60 exportaciones, 120 no sujetas por localización (salvo 123), 122 inversión del sujeto pasivo, 123 y 124 ventanilla única (no implementadas).
 
-## Fase 3 — Copias y recuperación
+## Fase 3 — Copias y recuperación · rama `claude/fase3-copias`
+
+**Objetivos acordados con el usuario (14-10-2026):** RPO 24 h (copia nocturna) · RTO 1 h (restaurar y comprobar).
 
 | Id | Tarea | Resp. | Estado |
 |---|---|---|---|
-| F14a | Copia consistente (instantánea) y cifrada; alerta si falla; no fallar con empresas sin facturas | Claude | ⏳ |
-| F14b | Restauración por empresa a destino aislado, ensayada periódicamente; verificación con `lib/integridad.js` | Claude · 🔑 | ⏳ |
-| F14c | Objetivos de pérdida y recuperación acordados | 🔑 Usuario | ⏳ |
+| F14a | Copia v2: consistente por empresa (firma antes y después, reintento), cifrada AES-256-GCM (`COPIA_CLAVE`), con huella y resumen sin datos personales; no falla sin facturas | Codex (encargo 1, sol high) · Claude revisa | 🟡 en curso |
+| F14b | Restauración por empresa, con sobrescritura opcional y copia previa de lo sustituido; verificación de integridad tras restaurar; acepta copias v1 | Codex (encargo 1) · Claude revisa | 🟡 en curso |
+| F14c | Workflow nocturno cifrado con aviso (issue) si falla; simulacro semanal de restauración en base simulada, con tiempos | Codex (encargo 3) · Claude revisa | ⏳ tras el encargo 1 |
+| F14d | Secreto `COPIA_CLAVE` en GitHub | Usuario | ✅ añadido (comprobado el nombre, no el valor) |
+| C3 | Lectura de tickets: desglose de varios IVA, cuadre base + IVA − retención = total, fecha dudosa visible | Codex (encargo 2, en paralelo) · Claude revisa | 🟡 en curso |
 
 ## Fase 4 — Borradores y pagos parciales
 
