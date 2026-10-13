@@ -1,7 +1,7 @@
 import { Fragment } from 'react';
 import QRCode from 'qrcode';
 import { baseLinea, columnasLineas, desglose, importes, numeroFactura, vencimiento } from '@/lib/calculos';
-import '@/app/lineas.css';
+import '@/app/factura.css';
 import { eur, eurSin, fechaCorta, pct, pctCorto, textoEvento } from '@/lib/formato';
 import { aclarar, colorValido } from '@/lib/marca';
 import { COLOR_FACTURA } from '@/lib/pdf';
@@ -15,34 +15,22 @@ export default async function FacturaA4({ f, e, marca }) {
   const qr = f.verifactu ? await QRCode.toString(urlQr(f.verifactu.modo, e.nif, f), { type: 'svg', errorCorrectionLevel: 'M', margin: 0 }) : null;
   return (
     <article className="fa" style={{ '--fa-c': base, '--fa-suave': aclarar(base, 0.9), '--fa-claro': aclarar(base, 0.75) }}>
-      <aside className="fa-col">
-        {marca?.logo && <span className="fa-logo"><img src={marca.logo} alt="" /></span>}
-        <h1 className="fa-emisor">{e.nombre}</h1>
-        <p className="fa-claro">NIF {e.nif}{e.direccion && <><br />{e.direccion}</>}{e.ciudad && <><br />{e.ciudad}</>}</p>
-        <div className="fa-pago">
-          <p className="fa-et">Forma de pago</p>
-          <p>Transferencia bancaria<br /><strong>{e.iban}</strong></p>
-          <p className="fa-et">Vencimiento</p>
-          <p>{fechaCorta(vencimiento(f, e.plazo))} ({e.plazo} días)</p>
-        </div>
-      </aside>
       <div className="fa-cuerpo">
         <header className="fa-cab">
-          <div>
-            <h2>{f.serie === 'R' ? 'Factura rectificativa' : 'Factura'}</h2>
-            <p className="fa-num">Nº {numeroFactura(f)}</p>
+          <div className="fa-identidad">
+            {marca?.logo && <span className="fa-logo"><img src={marca.logo} alt="" /></span>}
+            <h1 className="fa-emisor">{e.nombre}</h1>
           </div>
-          {qr && <div className="fa-qr"><span dangerouslySetInnerHTML={{ __html: qr }} /><small>VERI*FACTU</small></div>}
+          <h2>{f.serie === 'R' ? 'Factura rectificativa' : 'Factura'}</h2>
         </header>
+        <div className="fa-datos">
+          <div><p className="fa-et">Número</p><p className="fa-num">Nº {numeroFactura(f)}</p></div>
+          <div><p className="fa-et">Fecha</p><p>{fechaCorta(f.fecha)}</p></div>
+          <div><p className="fa-et">Vencimiento</p><p>{fechaCorta(vencimiento(f, e.plazo))}</p></div>
+        </div>
         <div className="fa-partes">
-          <div>
-            <p className="fa-et">Facturar a</p>
-            <p><strong>{c.nombre}</strong>{c.nif && <><br />NIF {c.nif}</>}{c.direccion && <><br />{c.direccion}</>}{c.ciudad && <><br />{c.ciudad}</>}</p>
-          </div>
-          <div>
-            <p className="fa-et">Fecha</p>
-            <p>{fechaCorta(f.fecha)}</p>
-          </div>
+          <div><p className="fa-et">De</p><p><strong>{e.nombre}</strong><br />NIF {e.nif}{e.direccion && <><br />{e.direccion}</>}{e.ciudad && <><br />{e.ciudad}</>}</p></div>
+          <div><p className="fa-et">Para</p><p><strong>{c.nombre}</strong>{c.nif && <><br />NIF {c.nif}</>}{c.direccion && <><br />{c.direccion}</>}{c.ciudad && <><br />{c.ciudad}</>}</p></div>
         </div>
         {f.lineas?.length ? (() => {
           const k = columnasLineas(f);
@@ -80,6 +68,10 @@ export default async function FacturaA4({ f, e, marca }) {
             {f.nota && <p>{f.nota}</p>}
           </div>
         )}
+        <div className="fa-pago">
+          <div><p className="fa-et">Forma de pago</p><p>Transferencia bancaria<br /><strong>{e.iban}</strong></p><p className="fa-vencimiento">Vencimiento: {fechaCorta(vencimiento(f, e.plazo))} ({e.plazo} días)</p></div>
+          {qr && <div className="fa-qr"><span dangerouslySetInnerHTML={{ __html: qr }} /><small>VERI*FACTU</small></div>}
+        </div>
         <footer className="fa-pie"><span>{e.nombre} · NIF {e.nif}</span>{qr && <span>Factura verificable en la sede electrónica de la AEAT</span>}</footer>
       </div>
     </article>
