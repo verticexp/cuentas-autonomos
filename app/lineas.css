@@ -25,3 +25,8 @@
 .conceptos li strong { flex: none; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .linea-stock { float: left; font-weight: 500; font-size: 13px; color: var(--muted); }
 .linea-stock.falta { color: var(--out); }
+
+/* Etiquetas asociadas sin alterar la distribución del formulario. */
+.ff .ff-etiqueta-oculta { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.ff .campo[aria-invalid="true"] { box-shadow: inset 0 0 0 1px var(--out); }
+.ff .ff-error-campo { display: block; color: var(--out); font-size: 13px; }
