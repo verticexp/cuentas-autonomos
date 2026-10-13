@@ -32,7 +32,8 @@ Ante una funcionalidad importante, Claude divide el trabajo y delega en Codex la
    ```bash
    codex exec --sandbox workspace-write -C ../cuentas-autonomos-wt/<rama> -o <scratchpad>/codex-<rama>.md "<encargo>"
    ```
-   Para análisis sin cambios: `--sandbox read-only`. **Nunca** usar `--dangerously-bypass-approvals-and-sandbox`.
+   Para análisis sin cambios: `--sandbox read-only`.
+   **Modelo**: no pasar `-m`; `~/.codex/config.toml` ya fija `gpt-6-astra` con razonamiento `high`. Para tareas sencillas y mecánicas, bajar a medium con `-c model_reasoning_effort=medium`. Solo para problemas muy difíciles (depuración profunda, lógica fiscal compleja) usar `-p maximo` (razonamiento `ultra`, mucho más lento). Prioridad: calidad y fiabilidad sobre velocidad. **Nunca** usar `--dangerously-bypass-approvals-and-sandbox`.
 3. El encargo incluye: objetivo, archivos que puede tocar (y los que no), criterios de aceptación y "ejecuta `npm test` antes de terminar". Sin secretos, claves ni credenciales en el prompt.
 4. Dos agentes nunca trabajan en el mismo directorio ni en los mismos archivos a la vez. Claude trabaja en su propia rama (`claude/<tema>`).
 5. Si Codex falla, Claude explica el fallo al usuario y continúa de forma segura (rehacer el encargo o hacerlo él).
