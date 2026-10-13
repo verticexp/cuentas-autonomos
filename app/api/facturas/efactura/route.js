@@ -1,7 +1,7 @@
 import { leerUno } from '@/lib/redis';
 import { error, usuarioApi } from '@/lib/api';
 import { facturae, ubl } from '@/lib/facturae';
-import { numeroFactura, vencimiento } from '@/lib/calculos';
+import { emisorDe, numeroFactura, vencimiento } from '@/lib/calculos';
 import { fiscalDe } from '@/lib/empresa';
 
 export const dynamic = 'force-dynamic';
@@ -14,7 +14,7 @@ export async function GET(req) {
   const f = await leerUno(u, 'facturas', sp.get('id') || '');
   if (!f) return error('Esa factura ya no existe', 404);
   if (f.caja) return error('Un cierre de caja no se emite como factura electrónica');
-  const e = u.emisor || {};
+  const e = { ...emisorDe(f, u), plazo: u.emisor?.plazo };
   if (!e.nif || !e.nombre) return error('Rellena tus datos de facturación (nombre y NIF) en Ajustes');
   const formato = sp.get('formato') === 'ubl' ? 'ubl' : 'facturae';
   const opciones = { sociedad: fiscalDe(u).tipo === 'sociedad', vencimiento: vencimiento(f, e.plazo) };

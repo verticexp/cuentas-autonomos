@@ -3,6 +3,7 @@
 // Contra un Upstash simulado en memoria (tests/apoyo/upstash-mem.mjs): nunca una base de datos real.
 import test, { after, before } from 'node:test';
 import assert from 'node:assert/strict';
+import './apoyo/cargador.mjs';
 import { arrancar } from './apoyo/upstash-mem.mjs';
 
 let srv, F, R, C;
@@ -141,4 +142,100 @@ test('F04: un pago que no cuadra no salda la factura; uno repetido no se aplica 
   x = await leerF();
   assert.equal(x.cobrada, true);
   assert.equal(x.pagos.reduce((s, p) => s + p.importe, 0), 121);
+});
+
+test('F08: una recurrente que falla no se da por hecha y se reintenta; dos pasadas a la vez emiten una sola', async () => {
+  const { procesarRecurrente } = await import('../lib/recurrentesServidor.js');
+  const u = empresa({ verifactu: 'pruebas' });
+  const plantilla = { actividad: 'servicios', cliente: { nombre: 'Sin NIF', nif: '' }, concepto: 'Cuota', base: 50, ivaPct: 21, irpfPct: 0 };
+  await R.guardar(u, 'recurrentes', { id: 'r1', activa: true, dia: 1, plantilla, enviar: true });
+  const enviados = [];
+  let falla = true;
+  const enviar = async (_, f) => (falla ? { error: 'buzón caído' } : (enviados.push(f.id), {}));
+  // 1.º: falla (Verifactu sin NIF del cliente) → queda el fallo y no se marca el mes.
+  const a = await procesarRecurrente(u, 'r1', '2026-10-01', { enviar });
+  assert.match(a.fallo, /NIF/);
+  let r = await R.leerUno(u, 'recurrentes', 'r1');
+  assert.equal(r.ultima, undefined);
+  assert.equal(r.fallo.intentos, 1);
+  // 2.º: siguen sin NIF → otro intento apuntado.
+  await procesarRecurrente(u, 'r1', '2026-10-02', { enviar });
+  assert.equal((await R.leerUno(u, 'recurrentes', 'r1')).fallo.intentos, 2);
+  // Se corrige la plantilla y dos pasadas del cron a la vez: una sola factura.
+  await R.guardar(u, 'recurrentes', { ...(await R.leerUno(u, 'recurrentes', 'r1')), plantilla: { ...plantilla, cliente: { nombre: 'Con NIF', nif: '12345678Z' } } });
+  const [x, y] = await Promise.all([procesarRecurrente(u, 'r1', '2026-10-03', { enviar }), procesarRecurrente(u, 'r1', '2026-10-03', { enviar })]);
+  assert.equal([x, y].filter((z) => z.creada).length, 1);
+  assert.equal((await todas(u)).length, 1);
+  r = await R.leerUno(u, 'recurrentes', 'r1');
+  assert.equal(r.ultima, '2026-10');
+  assert.equal(r.fallo, undefined);
+  // El email falló (una o dos veces, si la otra pasada también lo intentó): se reintenta después sin emitir otra factura.
+  assert.ok(r.envio.intentos >= 1);
+  falla = false;
+  const z = await procesarRecurrente(u, 'r1', '2026-10-04', { enviar });
+  assert.equal(z.creada, undefined);
+  assert.deepEqual(enviados, [r.envio.factura]);
+  assert.equal((await R.leerUno(u, 'recurrentes', 'r1')).envio, undefined);
+  assert.equal((await todas(u)).length, 1);
+  // Y el mes que viene, la siguiente.
+  assert.ok((await procesarRecurrente(u, 'r1', '2026-11-01', { enviar })).creada);
+  assert.equal((await todas(u)).length, 2);
+});
+
+test('F08: un corte entre emitir y apuntar el mes no duplica la factura al reintentar', async () => {
+  const { procesarRecurrente } = await import('../lib/recurrentesServidor.js');
+  const u = empresa();
+  await R.guardar(u, 'recurrentes', { id: 'r2', activa: true, dia: 1, plantilla: { actividad: 'servicios', cliente: { nombre: 'Ana', nif: '12345678Z' }, concepto: 'Cuota', base: 50, ivaPct: 21, irpfPct: 0 } });
+  // Simula el corte: la factura del mes ya se emitió con su clave, pero la plantilla no llegó a apuntarlo.
+  await F.crearFactura(u, { actividad: 'servicios', cliente: { nombre: 'Ana', nif: '12345678Z' }, concepto: 'Cuota', base: 50, ivaPct: 21, irpfPct: 0, fecha: '2026-10-01', cobrada: false }, { idem: 'rec:r2:2026-10' });
+  await procesarRecurrente(u, 'r2', '2026-10-02');
+  assert.equal((await todas(u)).length, 1);
+  assert.equal((await R.leerUno(u, 'recurrentes', 'r2')).ultima, '2026-10');
+});
+
+test('F01: 100 emisiones simultáneas en dos series: 100 facturas, sin huecos ni repetidos', async () => {
+  const u = empresa({ actividades: [{ id: 'servicios', nombre: 'Servicios', serie: '', ivaPct: 21, irpfPct: 0 }, { id: 'cursos', nombre: 'Cursos', serie: 'C', ivaPct: 21, irpfPct: 0 }] });
+  const res = await Promise.all(Array.from({ length: 100 }, (_, i) => F.crearFactura(u, { ...datos(i), actividad: i % 2 ? 'cursos' : 'servicios' })));
+  assert.ok(res.every((r) => r.factura), res.find((r) => r.error)?.error);
+  const fs = await todas(u);
+  assert.equal(fs.length, 100);
+  for (const serie of ['', 'C']) assert.deepEqual(fs.filter((f) => (f.serie || '') === serie).map((f) => f.numero).sort((a, b) => a - b), Array.from({ length: 50 }, (_, i) => i + 1));
+});
+
+test('F05: las facturas de antes de la instantánea se congelan antes de cambiar los datos del emisor', async () => {
+  const u = empresa({ marca: { color: '#123456', logo: 'data:image/png;base64,AAAA' } });
+  // Una factura antigua, sin instantánea, y otra ya con la suya.
+  await R.guardar(u, 'facturas', { id: '2025-1', numero: 1, anio: 2025, ...datos(1), fecha: '2025-05-01' });
+  const nueva = (await F.crearFactura(u, datos(2))).factura;
+  assert.equal(await F.congelarInstantaneas(u), 1);
+  assert.equal(await F.congelarInstantaneas(u), 0, 'idempotente');
+  const vieja = await R.leerUno(u, 'facturas', '2025-1');
+  assert.equal(vieja.emisor.nombre, 'Emisora S.L.');
+  assert.equal(vieja.vence, '2025-05-31');
+  const { identidadDoc } = await import('../lib/documento.js');
+  const despues = { ...u, emisor: { nombre: 'Nuevo S.L.' }, marca: { color: '#000000' } };
+  const id = await identidadDoc(despues, vieja);
+  assert.equal(id.emisor.nombre, 'Emisora S.L.');
+  assert.deepEqual(id.marca, { color: '#123456', logo: 'data:image/png;base64,AAAA' });
+  assert.equal((await identidadDoc(despues, nueva)).marca.logo, 'data:image/png;base64,AAAA');
+});
+
+test('comprobación de integridad: detecta lo que dejaba el código anterior y da limpio lo emitido ahora', async () => {
+  const { comprobarIntegridad } = await import('../lib/integridad.js');
+  const u = empresa({ verifactu: 'pruebas' });
+  await Promise.all(Array.from({ length: 6 }, (_, i) => F.crearFactura(u, datos(i))));
+  const leerTodo = async () => ({ facturas: await todas(u), borradas: (await R.leer(u, 'facturasBorradas')) || [], registros: (await R.leer(u, 'registros')) || [], cabeza: await R.redis.get(R.clave(u, 'verifactu')), numeracion: (await R.redis.hgetall(R.clave(u, 'numeracion'))) || {} });
+  assert.deepEqual(comprobarIntegridad(await leerTodo()), []);
+  // Lo que producía el fallo F02: dos registros colgando del mismo anterior, y un número repetido (F01).
+  const d = await leerTodo();
+  const a = d.registros.find((r) => r.HuellaAnterior);
+  const roto = { ...d, registros: [...d.registros, { ...a, Huella: 'X', NumSerieFactura: 'dup' }], facturas: [...d.facturas, { ...d.facturas[0], id: 'otra' }] };
+  const tipos = comprobarIntegridad(roto).map((x) => x.tipo);
+  assert.ok(tipos.includes('cadena-bifurcada'));
+  assert.ok(tipos.includes('numero-repetido'));
+});
+
+test('contadoresDe: el mayor número emitido o borrado de cada serie y año; las importadas no cuentan', async () => {
+  const { contadoresDe } = await import('../lib/integridad.js');
+  assert.deepEqual(contadoresDe([{ anio: 2026, numero: 3 }, { anio: 2026, numero: 9, importada: '2026/9' }, { serie: 'R', anio: 2026, numero: 1 }], [{ anio: 2026, numero: 5 }]), { '-|2026': 5, 'R|2026': 1 });
 });

@@ -35,6 +35,8 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
       : { actividad: actividades[0].id, fecha: hoy, cliente: { nombre: '', nif: '', direccion: '', ciudad: '' }, lineas: [lineaVacia(defecto(actividades[0].id).ivaPct)], nota: '', cobrada: false, irpfPct: defecto(actividades[0].id).irpfPct });
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
+  // Clave de idempotencia de este formulario: si se pulsa dos veces o se reintenta, sale una sola factura.
+  const [idem] = useState(() => crypto.randomUUID());
 
   const poner = (k, v) => setF((x) => ({ ...x, [k]: v }));
   const ponerCliente = (k, v) => poner('cliente', { ...f.cliente, [k]: v });
@@ -66,7 +68,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
     e.preventDefault();
     setEnviando(true); setError('');
     try {
-      const d = await llamar('/api/facturas', { method: nueva ? 'POST' : 'PATCH', body: JSON.stringify(f) });
+      const d = await llamar('/api/facturas', { method: nueva ? 'POST' : 'PATCH', body: JSON.stringify(nueva ? { ...f, idem } : f) });
       if (nueva) navegar(router, `/facturas/${d.factura.id}`, 'fundido');
       router.refresh();
     } catch (err) { setError(err.message); setEnviando(false); }

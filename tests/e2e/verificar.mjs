@@ -263,8 +263,8 @@ console.log('Foto del ticket');
     const pdf = await (await pedir('/api/gastos/ticket', { metodo: 'POST', cookie: yo, cuerpo: { imagen: 'data:application/pdf;base64,JVBERi0xLjQK' } })).json();
     ok('también lee facturas en PDF', () => assert.equal(pdf.gasto?.proveedor, 'Ferretería Sol'));
   }
-  const gp = await (await pedir('/api/gastos', { metodo: 'POST', cookie: yo, cuerpo: { fecha: `${Y}-09-12`, concepto: 'Cables XLR', base: '50', ivaPct: 21, proveedor: 'Ferretería Sol', proveedorNif: 'b11111111' } })).json();
-  ok('el gasto guarda su proveedor', () => assert.ok(gp.gasto.proveedor === 'Ferretería Sol' && gp.gasto.proveedorNif === 'B11111111'));
+  const gp = await (await pedir('/api/gastos', { metodo: 'POST', cookie: yo, cuerpo: { fecha: `${Y}-09-12`, concepto: 'Cables XLR', base: '50', ivaPct: 21, proveedor: 'Ferretería Sol', proveedorNif: 'b11111119' } })).json();
+  ok('el gasto guarda su proveedor', () => assert.ok(gp.gasto.proveedor === 'Ferretería Sol' && gp.gasto.proveedorNif === 'B11111119'));
   await pedir(`/api/gastos?id=${gp.gasto.id}`, { metodo: 'DELETE', cookie: yo });
 }
 
@@ -310,25 +310,25 @@ console.log('Paquete para la gestoría');
 console.log('Proveedores');
 {
   const nuevo = (x) => pedir('/api/gastos', { metodo: 'POST', cookie: yo, cuerpo: { fecha: `${Y}-05-0${x.d}`, actividad: ACTS[0].id, concepto: x.c, base: x.b, ivaPct: 21, proveedor: x.p, proveedorNif: x.nif, pendiente: x.pend } }).then((r) => r.json());
-  await nuevo({ d: 1, c: 'Altavoces', b: '1000', p: 'Audio Pro', nif: 'B22222222', pend: true });
-  await nuevo({ d: 2, c: 'Cables', b: '100', p: 'AUDIO PRO S.L.', nif: 'b22222222' });
+  await nuevo({ d: 1, c: 'Altavoces', b: '1000', p: 'Audio Pro', nif: 'B22222228', pend: true });
+  await nuevo({ d: 2, c: 'Cables', b: '100', p: 'AUDIO PRO S.L.', nif: 'b22222228' });
   const lista = n(await texto('/gastos/proveedores', yo));
   ok('sale el proveedor una vez, con lo que se le debe', () => assert.ok(lista.includes('AUDIO PRO S.L.') && !lista.includes('Audio Pro ') && lista.includes(`debes ${n(eur(1210))}`), lista.slice(0, 300)));
-  const ficha = n(await texto('/gastos/proveedores/B22222222', yo));
+  const ficha = n(await texto('/gastos/proveedores/B22222228', yo));
   ok('su ficha tiene el historial y el total pagado', () => assert.ok(ficha.includes('Altavoces') && ficha.includes('Cables') && ficha.includes(n(eur(1331))) && ficha.includes('Sin pagar')));
   const pg = n(await texto('/gastos', yo));
   ok('el enlace está en Gastos con la deuda', () => assert.ok(pg.includes(`Proveedores · debes ${n(eur(1210))}`) && pg.includes('Sin pagar')));
-  const pago = await (await pedir('/api/proveedores', { metodo: 'POST', cookie: yo, cuerpo: { clave: 'B22222222' } })).json();
-  const ficha2 = n(await texto('/gastos/proveedores/B22222222', yo));
+  const pago = await (await pedir('/api/proveedores', { metodo: 'POST', cookie: yo, cuerpo: { clave: 'B22222228' } })).json();
+  const ficha2 = n(await texto('/gastos/proveedores/B22222228', yo));
   ok('al marcarlo pagado ya no se le debe nada', () => assert.ok(pago.pagados === 1 && !ficha2.includes('Sin pagar') && !ficha2.includes('Le debes')));
-  const otra = await pedir('/api/proveedores', { metodo: 'POST', cookie: yo, cuerpo: { clave: 'B22222222' } });
+  const otra = await pedir('/api/proveedores', { metodo: 'POST', cookie: yo, cuerpo: { clave: 'B22222228' } });
   ok('si no hay nada pendiente, lo dice', () => assert.equal(otra.status, 404));
 }
 
 console.log('Más modelos: 115, 349, 390 y renta');
 {
   const { leerZip } = await import('../../lib/zip.js');
-  await pedir('/api/gastos', { metodo: 'POST', cookie: yo, cuerpo: { fecha: `${Y}-04-30`, actividad: ACTS[0].id, concepto: 'Alquiler local abril', base: '1000', ivaPct: 21, proveedor: 'Locales Pérez', proveedorNif: 'B33333333', alquiler: true } });
+  await pedir('/api/gastos', { metodo: 'POST', cookie: yo, cuerpo: { fecha: `${Y}-04-30`, actividad: ACTS[0].id, concepto: 'Alquiler local abril', base: '1000', ivaPct: 21, proveedor: 'Locales Pérez', proveedorNif: 'B33333337', alquiler: true } });
   await pedir('/api/facturas', { metodo: 'POST', cookie: yo, cuerpo: { fecha: `${Y}-05-05`, actividad: ACTS[0].id, cliente: { nombre: 'Studio Paris', nif: 'FR 12 345678901' }, concepto: 'Diseño', base: '700', ivaPct: 0, irpfPct: 0, cobrada: true } });
   const m = n(await texto(`/modelos?anio=${Y}`, yo));
   ok('115: el 19 % del alquiler en su trimestre', () => assert.ok(m.includes(`03 · Retenciones a ingresar ${n(eur(190))}`), m.slice(0, 200)));
@@ -345,14 +345,14 @@ console.log('Más modelos: 115, 349, 390 y renta');
   ok('303: autoliquida la compra de la UE (10-11 y 36-37) y la de fuera (12-13)', () => assert.ok(mUE.includes(`10 · Compras a la UE: base ${n(eur(120))}`) && mUE.includes(`37 · Compras a la UE: cuota deducible ${n(eur(25.2))}`) && mUE.includes(`13 · Compras de fuera de la UE: cuota ${n(eur(10.5))}`)));
   ok('349: el proveedor de la UE, con clave I', () => assert.ok(mUE.includes(`IE6388047V · Google Ireland (I) ${n(eur(120))}`)));
   // Un profesional con retención (la gestoría): va en el 111 (07 a 09) y en el 190 (clave G).
-  const gRet = (await (await pedir('/api/gastos', { metodo: 'POST', cookie: yo, cuerpo: { fecha: `${Y}-05-08`, actividad: ACTS[0].id, concepto: 'Gestoría', base: '200', ivaPct: 21, irpfPct: 15, proveedor: 'Gestoría Ruiz', proveedorNif: 'B11111111' } })).json()).gasto;
+  const gRet = (await (await pedir('/api/gastos', { metodo: 'POST', cookie: yo, cuerpo: { fecha: `${Y}-05-08`, actividad: ACTS[0].id, concepto: 'Gestoría', base: '200', ivaPct: 21, irpfPct: 15, proveedor: 'Gestoría Ruiz', proveedorNif: 'B11111119' } })).json()).gasto;
   const mRet = n(await texto(`/modelos?anio=${Y}`, yo));
-  ok('gasto con retención del 15 %: en el 111 (07 a 09) y en el 190 con clave G', () => assert.ok(gRet?.irpfPct === 15 && mRet.includes(`09 · Retenciones ${n(eur(30))}`) && mRet.includes('B11111111 · Gestoría Ruiz (G)')));
+  ok('gasto con retención del 15 %: en el 111 (07 a 09) y en el 190 con clave G', () => assert.ok(gRet?.irpfPct === 15 && mRet.includes(`09 · Retenciones ${n(eur(30))}`) && mRet.includes('B11111119 · Gestoría Ruiz (G)')));
   await Promise.all([gUE, gFuera, gRet].map((g) => pedir(`/api/gastos?id=${encodeURIComponent(g.id)}`, { metodo: 'DELETE', cookie: yo })));
   // 347: un cliente con más de 3.005,06 € con IVA sale con su trimestre; se borra al acabar.
-  const f347 = (await (await pedir('/api/facturas', { metodo: 'POST', cookie: yo, cuerpo: { fecha: `${Y}-03-15`, actividad: ACTS[0].id, cliente: { nombre: 'Cliente Grande SL', nif: 'B55555555' }, concepto: 'Proyecto', base: '3000', ivaPct: 21, irpfPct: 0, cobrada: true } })).json()).factura;
+  const f347 = (await (await pedir('/api/facturas', { metodo: 'POST', cookie: yo, cuerpo: { fecha: `${Y}-03-15`, actividad: ACTS[0].id, cliente: { nombre: 'Cliente Grande SL', nif: 'B55555551' }, concepto: 'Proyecto', base: '3000', ivaPct: 21, irpfPct: 0, cobrada: true } })).json()).factura;
   const m347 = n(await texto(`/modelos?anio=${Y}`, yo));
-  ok('347: el cliente que pasa de 3.005,06 € con IVA, con clave B y su trimestre', () => assert.ok(m347.includes('347 · Operaciones de más de 3.005,06 €') && m347.includes(`B55555555 · Cliente Grande SL (1T ${n(eur(3630))}) ${n(eur(3630))}`), m347.slice(m347.indexOf('347 ·'), m347.indexOf('347 ·') + 400)));
+  ok('347: el cliente que pasa de 3.005,06 € con IVA, con clave B y su trimestre', () => assert.ok(m347.includes('347 · Operaciones de más de 3.005,06 €') && m347.includes(`B55555551 · Cliente Grande SL (1T ${n(eur(3630))}) ${n(eur(3630))}`), m347.slice(m347.indexOf('347 ·'), m347.indexOf('347 ·') + 400)));
   await pedir(`/api/facturas?id=${encodeURIComponent(f347.id)}`, { metodo: 'DELETE', cookie: yo });
   const q130 = (txt, re) => re.exec(txt)?.[1];
   const en130 = q130(m, new RegExp(`130 · Pago a cuenta del IRPF[\\s\\S]*?1 ?T ${Y}[\\s\\S]*?19 · A ingresar ([\\d.,]+ €)`));
@@ -447,7 +447,7 @@ console.log('Sociedad');
 const alta2 = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva: 'Náutica Prueba SL', nombre: 'Pere', email: `p${Date.now()}@test.es` } })).json();
 const fd3 = new FormData(); fd3.set('codigo', alta2.enlace.split('/').pop()); fd3.set('password', 'perepere123');
 const soc = /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: fd3 })).headers.get('set-cookie') || '')?.[1];
-await pedir('/api/cuenta', { metodo: 'PATCH', cookie: soc, cuerpo: { configuracion: { fiscal: { tipo: 'sociedad', iva: 'general', trabajadores: true }, emisor: { nombre: 'Náutica Prueba SL', nif: 'B12345678' }, actividades: [{ nombre: 'Chárter', ivaPct: 21, irpfPct: 15 }] } } });
+await pedir('/api/cuenta', { metodo: 'PATCH', cookie: soc, cuerpo: { configuracion: { fiscal: { tipo: 'sociedad', iva: 'general', trabajadores: true }, emisor: { nombre: 'Náutica Prueba SL', nif: 'B12345674' }, actividades: [{ nombre: 'Chárter', ivaPct: 21, irpfPct: 15 }] } } });
 const sf = await (await pedir('/api/facturas', { metodo: 'POST', cookie: soc, cuerpo: { fecha: `${Y}-02-02`, cliente: { nombre: 'Cliente' }, base: '1000', ivaPct: 21, irpfPct: 15 } })).json();
 const resSoc = n(await texto('/', soc));
 ok('la sociedad ve su facturado', () => assert.ok(resSoc.includes(n(eurSin(1000))), 'no aparece su facturado'));
@@ -537,10 +537,10 @@ console.log('Portal del cliente');
   const cfg = await (await pedir('/api/cuenta', { metodo: 'PATCH', cookie: pp, cuerpo: { configuracion: { fiscal: { tipo: 'autonomo', iva: 'general' }, emisor: { nombre: 'Pau Portal', nif: '22222222J', iban: 'ES11 2222', plazo: 30 }, actividades: [{ nombre: 'Música', ivaPct: 21, irpfPct: 15 }] } } })).json();
   const act = cfg.actividades[0].id;
   const fac = async (cliente, base, cobrada) => (await (await pedir('/api/facturas', { metodo: 'POST', cookie: pp, cuerpo: { fecha: `${Y}-03-0${base % 9 + 1}`, actividad: act, cliente, concepto: 'Bolo', base: String(base), ivaPct: 21, irpfPct: 15, cobrada } })).json()).factura;
-  const f1 = await fac({ nombre: 'Sala Apolo', nif: 'B12345678' }, 1000, false);
-  const f2 = await fac({ nombre: 'Sala Apolo', nif: 'B12345678' }, 400, true);
+  const f1 = await fac({ nombre: 'Sala Apolo', nif: 'B12345674' }, 1000, false);
+  const f2 = await fac({ nombre: 'Sala Apolo', nif: 'B12345674' }, 400, true);
   const f3 = await fac({ nombre: 'Otro Club' }, 700, false);
-  const pre = (await (await pedir('/api/presupuestos', { metodo: 'POST', cookie: pp, cuerpo: { fecha: hoy, actividad: act, cliente: { nombre: 'Sala Apolo', nif: 'B12345678' }, concepto: 'Fiesta', base: '2000', ivaPct: 21, irpfPct: 15 } })).json()).presupuesto;
+  const pre = (await (await pedir('/api/presupuestos', { metodo: 'POST', cookie: pp, cuerpo: { fecha: hoy, actividad: act, cliente: { nombre: 'Sala Apolo', nif: 'B12345674' }, concepto: 'Fiesta', base: '2000', ivaPct: 21, irpfPct: 15 } })).json()).presupuesto;
   const det = await (await pedir(`/facturas/${f1.id}`, { cookie: pp })).text();
   const ruta = /\/portal\/[\w-]+/.exec(det)?.[0];
   ok('la factura da el enlace del portal de su cliente', () => assert.ok(ruta && det.includes('Enviar su portal')));
@@ -585,7 +585,7 @@ console.log('Importar desde Holded o Excel');
     return { status: r.status, ...(await r.json()) };
   };
   const libro = xlsx([{ nombre: 'Facturas', filas: [['Facturas emitidas'], ['Num', 'Fecha', 'Contacto', 'NIF', 'Descripción', 'Subtotal', 'IVA', 'Retención', 'Total', 'Estado'],
-    ['F260001', `10/01/${Y}`, 'Sala Apolo', 'B12345678', 'Bolo', 1000, 210, 150, 1060, 'Cobrada'], ['F260002', `12/02/${Y}`, 'Ana Pérez', '', 'Boda', 500, 105, 0, 605, 'Pendiente'], ['F260003', 'sin fecha', 'Ana Pérez', '', 'x', 1, 0, 0, 1, '']] }]);
+    ['F260001', `10/01/${Y}`, 'Sala Apolo', 'B12345674', 'Bolo', 1000, 210, 150, 1060, 'Cobrada'], ['F260002', `12/02/${Y}`, 'Ana Pérez', '', 'Boda', 500, 105, 0, 605, 'Pendiente'], ['F260003', 'sin fecha', 'Ana Pérez', '', 'x', 1, 0, 0, 1, '']] }]);
   const v1 = await subir('facturas', 'facturas.xlsx', libro);
   ok('vista previa de facturas de Holded: 2 nuevas y 1 con error', () => assert.deepEqual([v1.status, v1.nuevos, v1.duplicados, v1.errores], [200, 2, 0, 1]));
   const fvacia = n(await texto('/facturas', im));
@@ -599,11 +599,11 @@ console.log('Importar desde Holded o Excel');
   ok('la factura importada da sus importes', () => assert.ok(det.includes(n(eur(1060))) && det.includes('F260001')));
   const v2 = await subir('facturas', 'facturas.xlsx', libro);
   ok('al repetir, ya existen y no se duplican', () => assert.deepEqual([v2.nuevos, v2.duplicados], [0, 2]));
-  const csv = 'Nombre;CIF;Email;Código postal;Población\r\nSala Apolo SL;B-12345678;;08004;Barcelona\r\nBar Nuevo;B87654321;bar@nuevo.es;08001;Barcelona\r\n';
+  const csv = 'Nombre;CIF;Email;Código postal;Población\r\nSala Apolo SL;B-12345674;;08004;Barcelona\r\nBar Nuevo;B87654323;bar@nuevo.es;08001;Barcelona\r\n';
   const c1 = await subir('clientes', 'clientes.csv', Buffer.from(csv, 'latin1'), true);
   ok('clientes: el del mismo NIF ya existe (vino con las facturas) y se añade el nuevo', () => assert.deepEqual([c1.guardados, c1.duplicados], [1, 1]));
   const nueva = await (await pedir('/facturas/nueva', { cookie: im })).text();
-  ok('el cliente importado se puede elegir al facturar', () => assert.ok(nueva.includes('Bar Nuevo') && nueva.includes('B87654321')));
+  ok('el cliente importado se puede elegir al facturar', () => assert.ok(nueva.includes('Bar Nuevo') && nueva.includes('B87654323')));
   const gx = xlsx([{ nombre: 'Gastos', filas: [['Fecha', 'Proveedor', 'Concepto', 'Base imponible', '% IVA', 'Estado'], [`${Y}-02-01`, 'Sonido SL', 'Altavoces', 200, 21, 'Pagado'], [`${Y}-02-03`, 'Gasolinera', '', 50, 21, 'Pendiente']] }]);
   const gg = await subir('gastos', 'gastos.xlsx', gx, true);
   ok('gastos importados', () => assert.equal(gg.guardados, 2));
@@ -864,7 +864,7 @@ console.log('Varias empresas en la misma cuenta');
   const nueva = await pedir('/', { cookie: enB });
   const nuevaHtml = await nueva.text();
   ok('la empresa nueva empieza por su cuestionario', () => assert.ok(nueva.headers.get('location')?.includes('/bienvenida') || nuevaHtml.includes('url=/bienvenida'), `status ${nueva.status}`));
-  const cfgB = await (await pedir('/api/cuenta', { metodo: 'PATCH', cookie: enB, cuerpo: { configuracion: { fiscal: { tipo: 'sociedad', iva: 'general' }, emisor: { nombre: 'Segunda Empresa S.L.', nif: 'B87654321', plazo: 15 }, actividades: [{ nombre: 'Consultoría', ivaPct: 21, irpfPct: 0 }] } } })).json();
+  const cfgB = await (await pedir('/api/cuenta', { metodo: 'PATCH', cookie: enB, cuerpo: { configuracion: { fiscal: { tipo: 'sociedad', iva: 'general' }, emisor: { nombre: 'Segunda Empresa S.L.', nif: 'B87654323', plazo: 15 }, actividades: [{ nombre: 'Consultoría', ivaPct: 21, irpfPct: 0 }] } } })).json();
   const fB = (await (await pedir('/api/facturas', { metodo: 'POST', cookie: enB, cuerpo: { fecha: hoy, actividad: cfgB.actividades[0].id, cliente: { nombre: 'Cliente de B' }, concepto: 'Consultoría', base: '500', ivaPct: 21, irpfPct: 0 } })).json()).factura;
   ok('cada empresa con su numeración (B empieza en 1)', () => assert.ok(fB.numero === 1 && nA > 1, `${fB.numero} ${nA}`));
   const listaB = n(await texto('/facturas', enB)), listaA = n(await texto('/facturas', yo));
@@ -1168,7 +1168,7 @@ console.log('\nSolo el administrador de Netto da de alta empresas');
 {
   const entrar = async (alta, pass) => { const f = new FormData(); f.set('codigo', alta.enlace.split('/').pop()); f.set('password', pass); return /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: f })).headers.get('set-cookie') || '')?.[1]; };
   const jefa = await entrar(await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva: 'Cliente Pagando SL', nombre: 'Julia', email: `ju${Date.now()}@test.es` } })).json(), 'juliajulia1');
-  await pedir('/api/cuenta', { metodo: 'PATCH', cookie: jefa, cuerpo: { configuracion: { fiscal: { tipo: 'sociedad', iva: 'general' }, emisor: { nombre: 'Cliente Pagando SL', nif: 'B11111111', plazo: 30 }, actividades: [{ nombre: 'Eventos', ivaPct: 21, irpfPct: 0 }] } } });
+  await pedir('/api/cuenta', { metodo: 'PATCH', cookie: jefa, cuerpo: { configuracion: { fiscal: { tipo: 'sociedad', iva: 'general' }, emisor: { nombre: 'Cliente Pagando SL', nif: 'B11111119', plazo: 30 }, actividades: [{ nombre: 'Eventos', ivaPct: 21, irpfPct: 0 }] } } });
   const crea = await pedir('/api/empresas', { metodo: 'POST', cookie: jefa, cuerpo: { nueva: 'Empresa Gratis' } });
   ok('el administrador de una empresa cliente no puede crear otra empresa (403)', () => assert.equal(crea.status, 403));
   const crea2 = await pedir('/api/usuarios', { metodo: 'POST', cookie: jefa, cuerpo: { empresaNueva: 'Otra Gratis', nombre: 'X', email: `xg${Date.now()}@test.es` } });
@@ -1193,7 +1193,7 @@ console.log('\nAislamiento entre empresas (todas las rutas /api)');
     const inv = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva, nombre, email } })).json();
     const f = new FormData(); f.set('codigo', inv.enlace.split('/').pop()); f.set('password', `${nombre}clave123`);
     const t = /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: f })).headers.get('set-cookie') || '')?.[1];
-    const conf = await (await pedir('/api/cuenta', { metodo: 'PATCH', cookie: t, cuerpo: { configuracion: { fiscal: { tipo: 'sociedad', iva: 'general' }, emisor: { nombre: empresaNueva, nif: 'B22222222', plazo: 30 }, actividades: [{ nombre: 'Eventos', ivaPct: 21, irpfPct: 0 }] } } })).json();
+    const conf = await (await pedir('/api/cuenta', { metodo: 'PATCH', cookie: t, cuerpo: { configuracion: { fiscal: { tipo: 'sociedad', iva: 'general' }, emisor: { nombre: empresaNueva, nif: 'B22222228', plazo: 30 }, actividades: [{ nombre: 'Eventos', ivaPct: 21, irpfPct: 0 }] } } })).json();
     const id = await kv(['HGET', 'cuentas:emails', email]);
     return { t, email, id, empresa: JSON.parse(await kv(['HGET', 'cuentas:usuarios', id])).empresa, act: conf.actividades?.[0]?.id };
   };
@@ -1202,7 +1202,7 @@ console.log('\nAislamiento entre empresas (todas las rutas /api)');
   const comoB = (ruta, metodo, cuerpo) => pedir(ruta, { metodo, cookie: B.t, cuerpo });
   // Datos de la empresa B
   const fB = (await (await comoB('/api/facturas', 'POST', { fecha: hoy, actividad: B.act, cliente: { nombre: 'Cliente Secreto B' }, concepto: 'Secreto', base: '1000', ivaPct: 21, irpfPct: 0, cobrada: false })).json()).factura;
-  const gB = (await (await comoB('/api/gastos', 'POST', { fecha: hoy, actividad: B.act, concepto: 'Gasto secreto', base: '100', ivaPct: 21, proveedor: 'Proveedor Secreto', proveedorNif: 'b33333333', pendiente: true })).json()).gasto;
+  const gB = (await (await comoB('/api/gastos', 'POST', { fecha: hoy, actividad: B.act, concepto: 'Gasto secreto', base: '100', ivaPct: 21, proveedor: 'Proveedor Secreto', proveedorNif: 'b33333337', pendiente: true })).json()).gasto;
   const eB = (await (await comoB('/api/empleados', 'POST', { nombre: 'Empleada Secreta', email: B.email, nif: '', puesto: 'Jefa', alta: `${Y}-01-01`, baja: '', bruto: '2000', horasSemana: 40, irpfPct: 12, ssTrabajadorPct: 6.5, ssEmpresaPct: 31.65 })).json()).empleado;
   await comoB('/api/nominas', 'POST', { mes: hoy.slice(0, 7) });
   const nB = JSON.parse((await kv(['HVALS', `cuentas:nominas:${B.empresa}`]))[0] || 'null');
@@ -1238,7 +1238,7 @@ console.log('\nAislamiento entre empresas (todas las rutas /api)');
     'DELETE /api/recurrentes': await comoC(`/api/recurrentes?id=${rB.id}`, 'DELETE'),
     'PATCH /api/gastos': await comoC('/api/gastos', 'PATCH', { id: gB.id, fecha: hoy, concepto: 'x', base: '1', ivaPct: 21 }),
     'DELETE /api/gastos': await comoC(`/api/gastos?id=${gB.id}`, 'DELETE'),
-    'POST /api/proveedores (pagar)': await comoC('/api/proveedores', 'POST', { clave: 'B33333333' }),
+    'POST /api/proveedores (pagar)': await comoC('/api/proveedores', 'POST', { clave: 'B33333337' }),
     'PATCH /api/empleados': await comoC('/api/empleados', 'PATCH', { id: eB.id, nombre: 'Cambiada', alta: `${Y}-01-01`, bruto: '1' }),
     'DELETE /api/empleados': await comoC(`/api/empleados?id=${eB.id}`, 'DELETE'),
     'PATCH /api/nominas': await comoC('/api/nominas', 'PATCH', { id: nB.id, pagada: true }),
@@ -1651,7 +1651,7 @@ if (process.env.VERIFACTU_URL) {
   await kv(['HSET', 'cuentas:empresas', E, JSON.stringify({ ...JSON.parse(await kv(['HGET', 'cuentas:empresas', E])), verifactu: 'pruebas' })]);
   const sinNif = await pedir('/api/facturas', { metodo: 'POST', cookie: soc, cuerpo: { fecha: hoy, cliente: { nombre: 'Sin NIF' }, base: '100', ivaPct: 21 } });
   ok('con Verifactu, una factura sin el NIF del cliente no se crea (400)', () => assert.equal(sinNif.status, 400));
-  const f1 = (await (await pedir('/api/facturas', { metodo: 'POST', cookie: soc, cuerpo: { fecha: hoy, cliente: { nombre: 'Cliente Verifactu SL', nif: 'B76543210' }, concepto: 'Servicio', base: '100', ivaPct: 21 } })).json()).factura;
+  const f1 = (await (await pedir('/api/facturas', { metodo: 'POST', cookie: soc, cuerpo: { fecha: hoy, cliente: { nombre: 'Cliente Verifactu SL', nif: 'B76543214' }, concepto: 'Servicio', base: '100', ivaPct: 21 } })).json()).factura;
   const f2 = (await (await pedir('/api/facturas', { metodo: 'POST', cookie: soc, cuerpo: { fecha: hoy, cliente: { nombre: 'Studio Paris', nif: 'FR12345678901' }, concepto: 'Servicio UE', base: '200', ivaPct: 0 } })).json()).factura;
   const estado = async (f) => JSON.parse(await kv(['HGET', `cuentas:facturas:${E}`, f.id])).verifactu;
   let v1, v2;
@@ -1668,7 +1668,7 @@ if (process.env.VERIFACTU_URL) {
   const real = await pedir('/api/cuenta', { metodo: 'PATCH', cookie: soc, cuerpo: { verifactu: 'real' } });
   const quitar = await pedir('/api/cuenta', { metodo: 'PATCH', cookie: soc, cuerpo: { verifactu: null } });
   ok('activarlo de verdad: solo el administrador, y luego no se puede quitar en el año', () => assert.deepEqual([noAdmin.status, real.status, quitar.status], [403, 200, 400]));
-  const f3 = (await (await pedir('/api/facturas', { metodo: 'POST', cookie: soc, cuerpo: { fecha: hoy, cliente: { nombre: 'Cliente Verifactu SL', nif: 'B76543210' }, concepto: 'Ya en real', base: '50', ivaPct: 21 } })).json()).factura;
+  const f3 = (await (await pedir('/api/facturas', { metodo: 'POST', cookie: soc, cuerpo: { fecha: hoy, cliente: { nombre: 'Cliente Verifactu SL', nif: 'B76543214' }, concepto: 'Ya en real', base: '50', ivaPct: 21 } })).json()).factura;
   let v3;
   for (let i = 0; i < 40; i++) { v3 = await estado(f3); if (v3?.estado === 'Correcto') break; await new Promise((r) => setTimeout(r, 250)); }
   const ultimo = readFileSync('/tmp/aeat.json', 'utf8').trim().split('\n').map((l) => JSON.parse(l)).at(-1);

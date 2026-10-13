@@ -47,7 +47,7 @@ export async function POST(req) {
     if (yaImportado(formato, d.fecha)) { saltados++; continue; }
     const datos = limpiarCierre({ ...d, actividad, importado: formato, nota: d.pedidos ? `${d.pedidos} ${d.pedidos === 1 ? 'venta' : 'ventas'} importadas de ${formato}` : '' }, productos);
     if (datos.error) { errores.push(`${d.fecha}: ${datos.error}`); continue; }
-    const r = await guardarCierre(u, { ...datos, actividad }, null);
+    const r = await guardarCierre(u, { ...datos, actividad }, null, { idem: `imp:${formato}:${d.fecha}` });
     if (r.error) { errores.push(`${d.fecha}: ${r.error}`); continue; }
     facturas.push(r.factura);
     guardados++;

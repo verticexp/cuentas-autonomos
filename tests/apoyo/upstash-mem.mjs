@@ -30,6 +30,7 @@ export function crearBase() {
       case 'hlen': return vivo(a[0])?.m.size || 0;
       case 'hexists': return vivo(a[0])?.m.has(a[1]) ? 1 : 0;
       case 'hkeys': return [...(vivo(a[0])?.m.keys() || [])];
+      case 'hvals': return [...(vivo(a[0])?.m.values() || [])];
       case 'get': { const v = vivo(a[0]); return v ? v.v : null; }
       case 'set': {
         const o = a.slice(2).map((x) => x.toUpperCase());

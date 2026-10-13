@@ -29,6 +29,7 @@ export default function FormCierre({ hoy, actividades, productos = [], cierre = 
   const [x, setX] = useState(inicial);
   const [tarjetaAuto, setTarjetaAuto] = useState(!cierre);
   const [error, setError] = useState('');
+  const [idem] = useState(() => crypto.randomUUID());
   const [enviando, setEnviando] = useState(false);
   const poner = (k, v) => setX((y) => ({ ...y, [k]: v }));
   const ponerIva = (i, k, v) => setX((y) => ({ ...y, porIva: y.porIva.map((t, j) => (j === i ? { ...t, [k]: v } : t)) }));
@@ -44,7 +45,7 @@ export default function FormCierre({ hoy, actividades, productos = [], cierre = 
     e.preventDefault();
     setEnviando(true); setError('');
     try {
-      const d = await llamar('/api/caja', { method: 'POST', body: JSON.stringify({ ...x, tarjeta: tarjetaAuto ? undefined : x.tarjeta, id: cierre?.id }) });
+      const d = await llamar('/api/caja', { method: 'POST', body: JSON.stringify({ ...x, tarjeta: tarjetaAuto ? undefined : x.tarjeta, id: cierre?.id, idem }) });
       navegar(router, `/facturas/${d.factura.id}`, 'fundido');
       router.refresh();
     } catch (err) { setError(err.message); setEnviando(false); }
