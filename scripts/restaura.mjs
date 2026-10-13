@@ -1,28 +1,61 @@
-// Restaura una copia de scripts/copia.mjs (copia.json) en la base de datos de KV_REST_API_URL / KV_REST_API_TOKEN.
-// También sirve para pasar los datos a otra base de datos. Nunca sobrescribe: las claves que ya existen se saltan.
-// Sin --escribir solo cuenta lo que haría.   Uso: node scripts/restaura.mjs copia.json [--escribir]
-import { readFile } from 'node:fs/promises';
+// Por defecto verifica y simula. Solo --escribir permite modificar Redis.
+import { readFile, writeFile } from 'node:fs/promises';
 import { Redis } from '@upstash/redis';
+import { hacerCopia, copiaDeDatos, seleccionarDatos, cifrar, descifrar, verificarCopia, restaurar, datosIntegridad } from '../lib/copias.js';
+import { comprobarIntegridad } from '../lib/integridad.js';
 
-const [archivo, modo] = process.argv.slice(2);
-if (!archivo) throw new Error('Uso: node scripts/restaura.mjs copia.json [--escribir]');
-const escribir = modo === '--escribir';
-const r = new Redis({ url: process.env.KV_REST_API_URL, token: process.env.KV_REST_API_TOKEN, automaticDeserialization: false });
-const { fecha, datos } = JSON.parse(await readFile(archivo, 'utf8'));
-
-const n = { nuevas: 0, existen: 0, caducadas: 0 };
-for (const [k, { tipo, valor, caduca }] of Object.entries(datos)) {
-  if (!k.startsWith('cuentas:')) throw new Error(`Clave fuera de «cuentas:» en la copia: ${k}`);
-  const ms = caduca ? caduca - Date.now() : 0;
-  if (caduca && ms <= 0) { n.caducadas += 1; continue; }
-  if (await r.exists(k)) { n.existen += 1; continue; }
-  n.nuevas += 1;
-  if (!escribir) continue;
-  // copia.mjs guarda los hash como lista plana [campo, valor, campo, valor…].
-  if (tipo === 'hash') await r.hset(k, Array.isArray(valor) ? Object.fromEntries(valor.flatMap((v, i) => (i % 2 ? [] : [[v, valor[i + 1]]]))) : valor);
-  else if (tipo === 'set') await r.sadd(k, ...valor);
-  else if (tipo === 'list') await r.rpush(k, ...valor);
-  else if (tipo === 'string') await r.set(k, valor);
-  if (ms > 0) await r.pexpire(k, ms);
+try {
+  const [archivo, ...opciones] = process.argv.slice(2);
+  if (!archivo || archivo.startsWith('--') || opciones.some((x) => !['--escribir', '--sobrescribir', '--forzar'].includes(x) && !x.startsWith('--empresa='))) {
+    throw new Error('Uso: node scripts/restaura.mjs copia.json[.enc] [--empresa=<id>] [--sobrescribir] [--escribir] [--forzar]');
+  }
+  if (opciones.filter((x) => x.startsWith('--empresa=')).length > 1) throw new Error('Solo se admite una opción --empresa');
+  const empresa = opciones.find((x) => x.startsWith('--empresa='))?.slice('--empresa='.length);
+  const escribir = opciones.includes('--escribir'), sobrescribir = opciones.includes('--sobrescribir');
+  const contenido = await readFile(archivo);
+  const copia = archivo.endsWith('.enc') ? descifrar(contenido, process.env.COPIA_CLAVE) : JSON.parse(contenido.toString('utf8'));
+  const v = verificarCopia(copia);
+  for (const aviso of v.avisos) console.warn(`Aviso: ${aviso}`);
+  if (!v.ok) {
+    console.error(`La copia no verifica:\n${v.errores.join('\n')}`);
+    if (!opciones.includes('--forzar')) throw new Error('Restauración cancelada. Revisa la copia; --forzar permite omitir la verificación.');
+    console.warn('Se continúa por petición explícita (--forzar).');
+  }
+  const seleccion = seleccionarDatos(copia, empresa);
+  const r = new Redis({ url: process.env.KV_REST_API_URL, token: process.env.KV_REST_API_TOKEN, automaticDeserialization: false });
+  const plan = await restaurar(r, copia, { empresa, sobrescribir });
+  if (escribir && sobrescribir) {
+    if (!process.env.COPIA_CLAVE) throw new Error('Para sobrescribir se necesita COPIA_CLAVE: la copia previa debe estar cifrada.');
+    // Guarda el ámbito completo, incluidos los datos necesarios para comprobar su cadena.
+    const anterior = await hacerCopia(r);
+    const previa = copiaDeDatos(seleccionarDatos(anterior, empresa), { ahora: anterior.fecha,
+      inconsistentes: (anterior.resumen.inconsistentes || []).filter((id) => empresa === undefined || id === empresa) });
+    if (previa.resumen.inconsistentes?.length) throw new Error('El destino cambia durante la copia previa. Detén las escrituras y repite la restauración.');
+    const nombre = `antes-de-restaurar-${new Date().toISOString().replace(/[:.]/g, '-')}.json.enc`;
+    await writeFile(nombre, cifrar(previa, process.env.COPIA_CLAVE), { mode: 0o600, flag: 'wx' });
+    console.log(`Copia previa cifrada guardada en ${nombre} (${previa.resumen.claves} claves del ámbito afectado).`);
+  }
+  const informe = escribir ? await restaurar(r, copia, { empresa, sobrescribir, escribir }) : plan;
+  console.log(JSON.stringify({ fecha: copia.fecha, modo: escribir ? 'escritura' : 'simulación', ...informe }, null, 2));
+  if (escribir) {
+    const ids = new Set();
+    for (const c of informe.claves.filter((c) => ['nueva', 'sobrescribir'].includes(c.accion))) {
+      const id = /^cuentas:[^:]+:([^:]+)$/.exec(c.clave)?.[1];
+      if (id) ids.add(id);
+      if (c.clave === 'cuentas:empresas') for (const f of c.camposEscritos || Object.keys(seleccion[c.clave].valor)) ids.add(f);
+    }
+    for (const id of [...ids].sort()) {
+      const datos = {};
+      for (const n of ['facturas', 'facturasBorradas', 'registros', 'numeracion']) {
+        datos[`cuentas:${n}:${id}`] = { tipo: 'hash', valor: (await r.hgetall(`cuentas:${n}:${id}`)) || {} };
+      }
+      datos[`cuentas:verifactu:${id}`] = { tipo: 'string', valor: (await r.get(`cuentas:verifactu:${id}`)) || '' };
+      const incidencias = comprobarIntegridad(datosIntegridad(datos, id));
+      console.log(`Integridad ${id}: ${incidencias.length ? JSON.stringify(incidencias) : 'sin incidencias'}`);
+      if (incidencias.some((x) => !['sin-instantanea', 'contador-atrasado'].includes(x.tipo))) process.exitCode = 1;
+    }
+  }
+} catch (e) {
+  console.error(e.message);
+  process.exitCode = 1;
 }
-console.log(`Copia del ${fecha}: ${n.nuevas} claves ${escribir ? 'restauradas' : 'por restaurar (añade --escribir)'}, ${n.existen} ya existían (sin tocar), ${n.caducadas} caducadas.`);
