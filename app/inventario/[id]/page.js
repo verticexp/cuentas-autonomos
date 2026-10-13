@@ -2,9 +2,10 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requerir } from '@/lib/auth';
 import { puede } from '@/lib/permisos';
-import { leer } from '@/lib/redis';
+import { datosStock } from '@/lib/stockServidor';
 import { MOTIVOS, inventario } from '@/lib/inventario';
 import { numeroFactura } from '@/lib/calculos';
+import { numeroDoc } from '@/lib/albaranes';
 import { eur, fechaCorta, hoy } from '@/lib/formato';
 import Volver from '@/components/Volver';
 import { Ajuste } from '@/components/Inventario';
@@ -21,16 +22,19 @@ const TIPO = { venta: 'Venta', devolucion: 'Devolución', compra: 'Compra', ajus
 export default async function Producto({ params }) {
   const u = await requerir('facturas');
   const id = (await params).id;
-  const [productos, facturas, gastos, ajustes] = await Promise.all([leer(u, 'productos'), leer(u, 'facturas'), leer(u, 'gastos'), leer(u, 'stock')]);
+  const datos = await datosStock(u);
+  const { facturas, gastos, albaranes } = datos;
   const h = hoy();
-  const inv = inventario({ productos: productos || [], facturas: facturas || [], gastos: gastos || [], ajustes: ajustes || [] }, { hoy: h });
+  const inv = inventario(datos, { hoy: h });
   const p = inv.productos.find((x) => x.id === id);
   if (!p) notFound();
-  const fPorId = Object.fromEntries((facturas || []).map((f) => [f.id, f]));
-  const gPorId = Object.fromEntries((gastos || []).map((g) => [g.id, g]));
+  const fPorId = Object.fromEntries(facturas.map((f) => [f.id, f]));
+  const gPorId = Object.fromEntries(gastos.map((g) => [g.id, g]));
+  const aPorId = Object.fromEntries(albaranes.map((a) => [a.id, a]));
   const movs = inv.movimientos.filter((m) => m.producto === id).reverse().slice(0, 200);
   const detalle = (m) => {
-    if (m.doc.tipo === 'factura') { const f = fPorId[m.doc.id]; return { texto: f ? `Factura ${numeroFactura(f)} · ${f.cliente?.nombre || ''}` : 'Factura', url: `/facturas/${encodeURIComponent(m.doc.id)}` }; }
+    if (m.doc.tipo === 'factura') { const f = fPorId[m.doc.id]; return { texto: f ? (f.caja ? `Cierre de caja ${numeroFactura(f)}` : `Factura ${numeroFactura(f)} · ${f.cliente?.nombre || ''}`) : 'Factura', url: `/facturas/${encodeURIComponent(m.doc.id)}` }; }
+    if (m.doc.tipo === 'albaran') { const a = aPorId[m.doc.id]; return { texto: a ? `Albarán ${numeroDoc(a)} · ${a.cliente?.nombre || ''}` : 'Albarán', url: `/albaranes/${encodeURIComponent(m.doc.id)}` }; }
     if (m.doc.tipo === 'gasto') { const g = gPorId[m.doc.id]; return { texto: g ? `${g.proveedor || g.concepto}` : 'Compra', url: `/gastos/${encodeURIComponent(m.doc.id)}` }; }
     return { texto: MOTIVOS[m.motivo] || 'Ajuste' };
   };
@@ -46,9 +50,9 @@ export default async function Producto({ params }) {
         <div><span>Valor</span><strong>{eur(p.valor)}</strong></div>
       </div>
       {p.bajo && <p className="cont-alerta">{p.agotado ? 'Agotado' : `Bajo mínimo (${ud(p.minimo)})`}: está en <Link href="/inventario?ver=pedir">Qué pedir</Link>.</p>}
-      <p className="grupo-pie">Este año: {ud(p.ventas)} vendidas por {eur(p.ingresos)}, margen {eur(p.margen)}{p.ingresos ? ` (${p.margenPct.toLocaleString('es-ES')} %)` : ''}. Precio de venta {eur(p.precio)}.</p>
+      <p className="grupo-pie">Este año: {ud(p.ventas)} vendidas por {eur(p.ingresos)}, margen {eur(p.margen)}{p.ingresos ? ` (${p.margenPct.toLocaleString('es-ES')} %)` : ''}.{p.consumo > 0 ? ` Consumidas en servicios: ${ud(p.consumo)} (${eur(p.costeConsumo)} a coste).` : ''} Precio de venta {eur(p.precio)}.</p>
 
-      {puede(u, 'gastar') && <Ajuste producto={p.id} hoy={h} coste={p.costeMedio} />}
+      {puede(u, 'gastar') && <Ajuste producto={p.id} hoy={h} coste={p.costeMedio} consumo={p.consumo > 0} />}
 
       <section className="bloque">
         <h2 className="grupo-t">Movimientos</h2>
@@ -69,7 +73,7 @@ export default async function Producto({ params }) {
             );
           })}
         </ul>
-        {!movs.length && <div className="vacio"><p>Sin movimientos</p><p>Apunta su stock inicial arriba. Luego las facturas lo restan y las compras lo suman.</p></div>}
+        {!movs.length && <div className="vacio"><p>Sin movimientos</p><p>Apunta su stock inicial arriba. Luego las facturas, los albaranes y los cierres de caja lo restan y las compras lo suman.</p></div>}
       </section>
     </main>
   );

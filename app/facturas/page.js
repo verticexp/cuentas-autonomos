@@ -69,6 +69,8 @@ export default async function Facturas({ searchParams }) {
           {recurrentes?.length > 0 && <Link href="/facturas/recurrentes" className="rec-enlace">{recurrentes.length === 1 ? '1 recurrente' : `${recurrentes.length} recurrentes`} ›</Link>}
           {puede(u, 'facturar') && <Link href="/facturas/catalogo" className="rec-enlace">Catálogo ›</Link>}
           {u.fiscal?.inventario && <Link href="/inventario" className="rec-enlace">Inventario ›</Link>}
+          {u.fiscal?.inventario && puede(u, 'facturar') && <Link href="/albaranes" className="rec-enlace">Pedidos y albaranes ›</Link>}
+          {puede(u, 'facturar') && <Link href="/facturas/caja" className="rec-enlace">Caja ›</Link>}
         </p>
       )}
 
@@ -95,7 +97,7 @@ export default async function Facturas({ searchParams }) {
                     <FilaFactura href={`/facturas/${f.id}`}>
                       <span className="txt">
                         <strong data-vt="cliente">{f.cliente.nombre}</strong>
-                        <small>{numeroFactura(f)} · {diaMes(f.fecha)}{!a && Object.keys(ACTIVIDADES).length > 1 ? ` · ${ACTIVIDADES[f.actividad]}` : ''}</small>
+                        <small>{f.caja ? 'Cierre de caja · ' : ''}{numeroFactura(f)} · {diaMes(f.fecha)}{!a && Object.keys(ACTIVIDADES).length > 1 ? ` · ${ACTIVIDADES[f.actividad]}` : ''}</small>
                       </span>
                       <span className="imp-col">
                         <span className="imp" data-vt="total">{eur(importes(f).total)}</span>
@@ -116,6 +118,7 @@ export default async function Facturas({ searchParams }) {
             <p>Aún no has hecho ninguna factura</p>
             <p>Se numeran solas y puedes descargarlas en PDF con tu logo.</p>
             {puede(u, 'facturar') && <Ir href="/facturas/nueva" tipo="subir" className="boton">Crear la primera</Ir>}
+            {puede(u, 'facturar') && <p><Link href="/facturas/caja">¿Vendes en tienda con TPV o caja registradora? Apunta el cierre del día</Link></p>}
           </>}
         </div>
       )}

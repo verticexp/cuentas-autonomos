@@ -1,30 +1,33 @@
-import { borrar, guardar, leer, leerUno } from '@/lib/redis';
+import { borrar, guardar, leerUno } from '@/lib/redis';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { leerImporte, r2 } from '@/lib/calculos';
-import { MOTIVOS, inventario } from '@/lib/inventario';
+import { MOTIVOS, SALEN, inventario } from '@/lib/inventario';
+import { datosStock } from '@/lib/stockServidor';
 import { xlsx } from '@/lib/xlsx';
 import { hoy } from '@/lib/formato';
 import { auditar } from '@/lib/auditoria';
 
 export const dynamic = 'force-dynamic';
 
-// Ajuste de stock a mano: stock inicial, recuento, rotura… { producto, fecha, cantidad (+ entra, − sale) o recuento, motivo, coste }.
-// Con «recuento», se apunta la diferencia entre lo contado y lo que dice Netto.
+// Ajuste de stock a mano: stock inicial, recuento, rotura, consumo… { producto, fecha, cantidad (+ entra, − sale) o recuento, motivo, coste }.
+// Con «recuento», se apunta la diferencia entre lo contado y lo que dice Netto (con como: 'consumo', si falta, como consumo).
 export async function POST(req) {
   const { u, res } = await usuarioApi({ permiso: 'gastar' });
   if (res) return res;
   const b = await cuerpo(req);
-  const [productos, facturas, gastos, ajustes] = await Promise.all([leer(u, 'productos'), leer(u, 'facturas'), leer(u, 'gastos'), leer(u, 'stock')]);
-  const p = (productos || []).find((x) => x.id === b.producto);
+  const datos = await datosStock(u);
+  const p = datos.productos.find((x) => x.id === b.producto);
   if (!p) return error('Ese producto ya no existe', 404);
   const fecha = /^\d{4}-\d{2}-\d{2}$/.test(b.fecha || '') ? b.fecha : hoy();
-  const motivo = MOTIVOS[b.motivo] ? b.motivo : 'otro';
+  let motivo = MOTIVOS[b.motivo] ? b.motivo : 'otro';
   let cantidad = Math.round((leerImporte(b.cantidad) || 0) * 1000) / 1000;
   if (motivo === 'recuento') {
-    const actual = inventario({ productos, facturas: facturas || [], gastos: gastos || [], ajustes: ajustes || [] }, { hoy: fecha }).productos.find((x) => x.id === p.id)?.stock || 0;
+    const actual = inventario(datos, { hoy: fecha }).productos.find((x) => x.id === p.id)?.stock || 0;
     cantidad = Math.round((Math.abs(cantidad) - actual) * 1000) / 1000;
     if (!cantidad) return Response.json({ ok: true, sinCambios: true });
-  } else if (['rotura', 'perdida', 'regalo'].includes(motivo)) cantidad = -Math.abs(cantidad);
+    // En talleres, peluquerías o restaurantes lo que falta suele ser material gastado en los servicios: consumo, no pérdida.
+    if (b.como === 'consumo' && cantidad < 0) motivo = 'consumo';
+  } else if (SALEN.includes(motivo)) cantidad = -Math.abs(cantidad);
   else if (motivo === 'inicial') cantidad = Math.abs(cantidad);
   if (!cantidad) return error('Pon una cantidad');
   const a = { id: crypto.randomUUID(), producto: p.id, fecha, cantidad, motivo, ...(cantidad > 0 && r2(leerImporte(b.coste) || 0) ? { coste: r2(leerImporte(b.coste)) } : {}), nota: String(b.nota || '').trim().slice(0, 120), por: u.id };
@@ -49,8 +52,7 @@ export async function GET(req) {
   const { u, res } = await usuarioApi({ permiso: 'resumen' });
   if (res) return res;
   const fecha = /^\d{4}-\d{2}-\d{2}$/.test(req.nextUrl.searchParams.get('fecha') || '') ? req.nextUrl.searchParams.get('fecha') : hoy();
-  const [productos, facturas, gastos, ajustes] = await Promise.all([leer(u, 'productos'), leer(u, 'facturas'), leer(u, 'gastos'), leer(u, 'stock')]);
-  const inv = inventario({ productos: productos || [], facturas: facturas || [], gastos: gastos || [], ajustes: ajustes || [] }, { hoy: fecha });
+  const inv = inventario(await datosStock(u), { hoy: fecha });
   const L = inv.productos.sort((a, b) => a.nombre.localeCompare(b.nombre));
   const cuerpoXlsx = xlsx([{ nombre: 'Inventario', anchos: [12, 34, 22, 10, 10, 12, 12, 10, 12, 12, 9], filas: [
     ['Referencia', 'Producto', 'Proveedor', 'Stock', 'Mínimo', 'Coste medio', 'Valor', 'Vendidas', 'Ventas', 'Margen', 'Margen %'],

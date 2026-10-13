@@ -7,6 +7,7 @@ import FormFactura from '@/components/FormFactura';
 import Volver from '@/components/Volver';
 import { actividadesDe, fiscalDe } from '@/lib/empresa';
 import { inventario } from '@/lib/inventario';
+import { datosStock } from '@/lib/stockServidor';
 
 import '@/app/mk.css';
 
@@ -25,7 +26,7 @@ export default async function Nueva({ searchParams }) {
   const num = (serie) => numeroFactura({ numero: siguienteNumero(facturas, anio, serie), anio, serie });
   const actividades = actividadesDe(u);
   // Con inventario, cuánto queda de cada producto (para avisar al facturar más de lo que hay).
-  const stock = fiscalDe(u).inventario ? Object.fromEntries(inventario({ productos: productos || [], facturas, gastos: gastos || [], ajustes: ajustes || [] }, { hoy: h }).productos.map((p) => [p.id, p.stock])) : null;
+  const stock = fiscalDe(u).inventario ? Object.fromEntries(inventario(await datosStock(u), { hoy: h }).productos.map((p) => [p.id, p.stock])) : null;
   const numeros = Object.fromEntries(actividades.map((a) => [a.id, num(original ? 'R' : a.serie)]));
   return (
     <main className="pagina mk-look">

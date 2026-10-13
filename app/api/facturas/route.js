@@ -6,6 +6,7 @@ import { subirFactura } from '@/lib/drive';
 import { enviarNomina } from '@/lib/controlat';
 import { auditar } from '@/lib/auditoria';
 import { actividadesDe, fiscalDe } from '@/lib/empresa';
+import { soltarAlbaranes } from '@/lib/albaranesServidor';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60; // el envío a Verifactu puede esperar al control de flujo de la AEAT
@@ -30,6 +31,7 @@ export async function PATCH(req) {
   const b = await cuerpo(req);
   const antes = b.id && (await leerUno(u, 'facturas', b.id));
   if (!antes) return error('Esa factura ya no existe', 404);
+  if (antes.caja) return error('Es un cierre de caja: corrígelo desde Caja');
   if (Object.keys(b).length === 2 && 'cobrada' in b) {
     const f = { ...antes, cobrada: Boolean(b.cobrada) };
     await guardar(u, 'facturas', f);
@@ -54,6 +56,8 @@ export async function DELETE(req) {
   const antes = await leerUno(u, 'facturas', id);
   if (antes?.verifactu) return error('Esta factura ya está registrada en Verifactu: no se puede borrar, haz una rectificativa');
   await borrar(u, 'facturas', id);
+  // Sus albaranes vuelven a estar por facturar.
+  await soltarAlbaranes(u, antes);
   if (antes) await auditar(u, 'Factura borrada', `${numeroFactura(antes)} · ${antes.cliente?.nombre || ''} · ${antes.base} € sin IVA`);
   if (antes) await enviarNomina(u, [antes.fecha]);
   return Response.json({ ok: true });

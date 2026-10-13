@@ -32,6 +32,40 @@ export default async function Factura({ params }) {
   const actividades = actividadesDe(u);
   const i = importes(f);
   const estado = f.cobrada ? 'Cobrada' : vencida(f, u.emisor?.plazo, hoy()) ? 'Vencida' : 'Pendiente';
+  if (f.caja) {
+    const nombres = Object.fromEntries((productos || []).map((p) => [p.id, p.nombre]));
+    return (
+      <main className="pagina mk-look">
+        <Volver href="/facturas">Facturas</Volver>
+        <section className="factura-hero">
+          <p className="fh-num">Cierre de caja {numeroFactura(f)}{actividades.length > 1 ? ` · ${nombresActividad(actividades)[f.actividad] || ''}` : ''}</p>
+          <h1 className="fh-cliente">Ventas del {fechaTexto(f.fecha)}</h1>
+          <p className="fh-total">{eur(i.total)}</p>
+          <dl className="fh-desglose">
+            <div><dt>Base</dt><dd>{eur(i.base)}</dd></div>
+            {desglose(f).map((d) => <div key={d.pct}><dt>IVA {d.pct} %</dt><dd>{eur(d.iva)}</dd></div>)}
+          </dl>
+          <dl className="fh-desglose">
+            <div><dt>Efectivo</dt><dd>{eur(f.caja.efectivo)}</dd></div>
+            <div><dt>Tarjeta</dt><dd>{eur(f.caja.tarjeta)}</dd></div>
+            {f.caja.otros > 0 && <div><dt>Otros</dt><dd>{eur(f.caja.otros)}</dd></div>}
+          </dl>
+        </section>
+        {editar && <div className="acciones-factura">
+          <Ir href={`/facturas/caja?id=${encodeURIComponent(f.id)}`} className="boton sec">Corregir</Ir>
+          <Borrar url={`/api/facturas?id=${encodeURIComponent(f.id)}`} pregunta={`¿Borrar el cierre de caja ${numeroFactura(f)}?`} volver="/facturas" />
+        </div>}
+        {f.resumen && <p className="nota">Tiques {f.resumen.desde}{f.resumen.hasta ? ` a ${f.resumen.hasta}` : ''} (asiento resumen en el libro registro).</p>}
+        {f.importado && <p className="nota">Importado de {f.importado}.</p>}
+        {f.nota && <p className="nota">{f.nota}</p>}
+        {f.unidades?.length > 0 && <section className="bloque">
+          <h2 className="grupo-t">Unidades vendidas</h2>
+          <ul className="grupo-lista">{f.unidades.map((x) => <li key={x.producto}><Link href={`/inventario/${x.producto}`} className="fila"><span className="txt"><strong>{nombres[x.producto] || 'Producto borrado'}</strong><small>{eur(x.importe)} sin IVA</small></span><span className="imp">{String(x.cantidad).replace('.', ',')} ud.</span></Link></li>)}</ul>
+        </section>}
+        <p className="grupo-pie">Factura simplificada de resumen: cuenta en el IVA, la contabilidad y los libros registro. No se envía a Verifactu (los tiques ya los registra el TPV).</p>
+      </main>
+    );
+  }
   return (
     <main className="pagina mk-look">
       <Volver href="/facturas">Facturas</Volver>

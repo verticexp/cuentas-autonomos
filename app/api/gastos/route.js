@@ -96,6 +96,9 @@ export async function DELETE(req) {
   if (!id) return error('Falta id');
   const antes = await leerUno(u, 'gastos', id);
   await borrar(u, 'gastos', id);
+  // Si venía de un pedido a proveedor, el pedido vuelve a estar pendiente de recibir.
+  const pedido = antes?.pedidoProv && (await leerUno(u, 'pedidosProv', antes.pedidoProv));
+  if (pedido?.gasto === id) await guardar(u, 'pedidosProv', { ...pedido, recibido: undefined, gasto: undefined });
   if (antes) await auditar(u, 'Gasto borrado', `${antes.concepto} · ${antes.fecha} · ${antes.base} € sin IVA`);
   if (antes) await enviarNomina(u, [antes.fecha]);
   return Response.json({ ok: true });
