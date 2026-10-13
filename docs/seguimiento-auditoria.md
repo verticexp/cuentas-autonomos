@@ -67,7 +67,7 @@ Casillas del 303 contrastadas con las [instrucciones de 2026 de la AEAT](https:/
 | C3 | Lectura de tickets: desglose de varios IVA, cuadre base + IVA − retención = total, fecha dudosa visible | Codex · Claude revisó | ✅ `tests/ticket.test.mjs` |
 | C4b | Aviso de gasto duplicado al guardar (409 con motivos; se guarda al confirmar) | Codex · Claude revisó | ✅ `tests/gastos-duplicados.test.mjs` |
 | A1 | Formulario de factura accesible: etiquetas, errores por campo con ARIA, foco en el primer error, sin doble envío | Codex · Claude revisó | ✅ (validación con lector de pantalla real: ⏳) |
-| F12a | Recuperar la contraseña (enlace de un solo uso, 30 min, sin revelar cuentas, cierra sesiones) | Codex (sol high) · Claude revisa | 🟡 en curso |
+| F12a | Recuperar la contraseña (enlace de un solo uso, 30 min, sin revelar cuentas, cierra sesiones; enlace fijado a `APP_URL`) | Codex (sol high) · Claude revisó | ✅ `tests/recuperar.test.mjs` (14) |
 
 ## Fase 4 — Borradores y pagos parciales
 
