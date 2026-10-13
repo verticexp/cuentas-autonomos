@@ -24,8 +24,11 @@ test('actividades nuevas: la primera sin letra, las demás con letras distintas 
 
 test('una actividad con facturas no cambia de serie ni se puede quitar', () => {
   const con = new Set(['vertice']);
-  const r = limpiarActividades([{ id: 'dj', nombre: 'DJ', serie: 'Z' }, { id: 'vertice', nombre: 'Vértice Experiences', serie: 'Q' }], ACTIVIDADES_ANTIGUAS, con);
-  assert.deepEqual(r.actividades.map((a) => [a.id, a.nombre, a.serie]), [['dj', 'DJ', 'Z'], ['vertice', 'Vértice Experiences', 'V']]);
+  const r = limpiarActividades([{ id: 'dj', nombre: 'DJ', serie: 'K' }, { id: 'vertice', nombre: 'Vértice Experiences', serie: 'Q' }], ACTIVIDADES_ANTIGUAS, con);
+  assert.deepEqual(r.actividades.map((a) => [a.id, a.nombre, a.serie]), [['dj', 'DJ', 'K'], ['vertice', 'Vértice Experiences', 'V']]);
+  // La Z es de los cierres de caja; quien ya la tenía con facturas, la conserva.
+  assert.match(limpiarActividades([{ id: 'dj', nombre: 'DJ', serie: 'Z' }], ACTIVIDADES_ANTIGUAS, new Set()).error, /cierres de caja/);
+  assert.equal(limpiarActividades([{ id: 'dj', nombre: 'DJ', serie: 'Z' }], [{ id: 'dj', nombre: 'DJ', serie: 'Z' }], new Set(['dj'])).actividades[0].serie, 'Z');
   assert.ok(limpiarActividades([{ id: 'dj', nombre: 'DJ' }], ACTIVIDADES_ANTIGUAS, con).error);
 });
 

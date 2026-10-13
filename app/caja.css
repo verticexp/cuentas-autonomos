@@ -1,0 +1,11 @@
+/* Caja: cierre del día e importación de ventas del TPV */
+.caja-iva, .caja-ud { display: grid; grid-template-columns: 9rem 1fr auto; gap: .5rem; align-items: center; margin-bottom: .5rem; }
+.caja-ud { grid-template-columns: 1fr 5.5rem auto; }
+.caja-cobro { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; }
+.caja-cobro label { font-size: .85rem; }
+.caja-dias { display: grid; gap: .5rem; margin: 1rem 0; }
+.caja-dia { display: flex; justify-content: space-between; gap: .75rem; align-items: flex-start; padding: .75rem 1rem; }
+.caja-dia small { display: block; color: var(--gris, #6b7280); }
+.caja-dia.repetido { opacity: .55; }
+.caja-aviso { font-size: .85rem; color: var(--gris, #6b7280); }
+@media (max-width: 520px) { .caja-cobro { grid-template-columns: 1fr 1fr; } .caja-iva { grid-template-columns: 7.5rem 1fr auto; } }

@@ -1,0 +1,8 @@
+/* Pedidos de clientes y albaranes */
+.alb-fila { display: flex; align-items: center; gap: .5rem; }
+.alb-fila > input { margin-left: .75rem; width: 1.1rem; height: 1.1rem; flex: none; }
+.alb-fila > .fila { flex: 1; min-width: 0; }
+.alb-facturar { position: sticky; bottom: 1rem; padding: 1rem; display: grid; gap: .5rem; box-shadow: 0 8px 24px rgb(0 0 0 / .12); }
+.alb-lineas li { display: flex; justify-content: space-between; gap: .75rem; padding: .6rem 0; border-bottom: 1px solid var(--line); }
+.alb-lineas small { display: block; color: var(--muted); }
+.alb-lineas .falta { color: #b45309; }

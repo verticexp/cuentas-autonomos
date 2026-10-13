@@ -10,3 +10,6 @@
 .inv-pedido li b { white-space: nowrap; }
 .inv-ajuste { margin: 12px 0; }
 .inv-borrar { padding: 0 16px 10px; text-align: right; }
+.inv-acciones { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.inv-recibir { display: grid; gap: 8px; margin-bottom: 10px; }
+.inv-recibir-linea { display: grid; grid-template-columns: 1fr 5rem 6rem; gap: 6px; align-items: center; font-size: 14px; }

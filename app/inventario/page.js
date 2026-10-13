@@ -2,13 +2,15 @@ import Link from 'next/link';
 import { requerir } from '@/lib/auth';
 import { puede } from '@/lib/permisos';
 import { leer } from '@/lib/redis';
+import { datosStock } from '@/lib/stockServidor';
+import { enCamino, numeroDoc, totalPedidoProv } from '@/lib/albaranes';
 import { fiscalDe } from '@/lib/empresa';
 import { inventario, quePedir } from '@/lib/inventario';
 import { eur, fechaCorta, hoy } from '@/lib/formato';
 import Volver from '@/components/Volver';
 import Ir from '@/components/Ir';
 import SinBD from '@/components/SinBD';
-import { CopiarPedido } from '@/components/Inventario';
+import { CopiarPedido, HacerPedido, RecibirPedido } from '@/components/Inventario';
 import '@/app/modelos.css';
 import '@/app/contabilidad.css';
 import '@/app/inventario.css';
@@ -16,23 +18,25 @@ import '@/app/inventario.css';
 import '@/app/mk.css';
 
 export const dynamic = 'force-dynamic';
-const VISTAS = [['stock', 'Stock'], ['pedir', 'Qué pedir'], ['informes', 'Informes']];
+const VISTAS = [['stock', 'Stock'], ['pedir', 'Qué pedir'], ['pedidos', 'Pedidos'], ['informes', 'Informes']];
 const ud = (n) => new Intl.NumberFormat('es-ES', { maximumFractionDigits: 3 }).format(n);
 
 export default async function Inventario({ searchParams }) {
   const u = await requerir('facturas');
-  const [productos, facturas, gastos, ajustes] = await Promise.all([leer(u, 'productos'), leer(u, 'facturas'), leer(u, 'gastos'), leer(u, 'stock')]);
-  if (!facturas) return <SinBD />;
+  const [datos, pedidosProv] = await Promise.all([datosStock(u), leer(u, 'pedidosProv')]);
+  if (datos.sinBD) return <SinBD />;
   const sp = await searchParams;
   const h = hoy();
   const ver = VISTAS.some(([v]) => v === sp.ver) ? sp.ver : 'stock';
   const anio = Number(sp.anio) || Number(h.slice(0, 4));
   const q = String(sp.q || '').trim().toLowerCase();
   const activo = Boolean(fiscalDe(u).inventario);
-  const inv = inventario({ productos: productos || [], facturas, gastos: gastos || [], ajustes: ajustes || [] }, { hoy: anio < Number(h.slice(0, 4)) ? `${anio}-12-31` : h, desde: `${anio}-01-01` });
+  const inv = inventario(datos, { hoy: anio < Number(h.slice(0, 4)) ? `${anio}-12-31` : h, desde: `${anio}-01-01` });
   const lista = inv.productos.filter((p) => !q || [p.nombre, p.sku, p.codigo, p.proveedor].some((t) => String(t || '').toLowerCase().includes(q)))
     .sort((a, b) => Number(b.bajo) - Number(a.bajo) || a.nombre.localeCompare(b.nombre));
-  const pedidos = quePedir(inv.productos);
+  const pedidosP = (pedidosProv || []).sort((a, b) => b.fecha.localeCompare(a.fecha) || b.numero - a.numero);
+  const pedidos = quePedir(inv.productos, enCamino(pedidosP));
+  const abiertos = pedidosP.filter((p) => !p.recibido && !p.cancelado);
   const url = (c) => { const p = new URLSearchParams(Object.entries({ ver, ...c }).filter(([, v]) => v)); return `/inventario?${p}`; };
   const top = (k, n = 10) => [...inv.productos].filter((p) => p[k] > 0).sort((a, b) => b[k] - a[k]).slice(0, n);
 
@@ -67,7 +71,7 @@ export default async function Inventario({ searchParams }) {
               ))}
             </ul>
           ) : <div className="vacio"><p>Aún no hay productos con stock</p><p>Añádelos en <Link href="/facturas/catalogo">Facturas › Catálogo</Link> con su coste y su stock mínimo. Después, cada factura los resta y cada compra los suma.</p></div>}
-          <p className="grupo-pie">Las facturas restan del stock y las rectificativas lo devuelven; las compras (gastos con productos) lo suman; los recuentos y roturas se apuntan en cada producto. Valorado a coste medio ponderado.</p>
+          <p className="grupo-pie">Restan del stock las facturas, los albaranes y las unidades de los cierres de caja (las rectificativas lo devuelven); las compras (gastos con productos) lo suman; los recuentos, roturas y consumos se apuntan en cada producto. Valorado a coste medio ponderado.</p>
         </section>
       )}
 
@@ -77,10 +81,25 @@ export default async function Inventario({ searchParams }) {
             <div key={g.proveedor} className="tarjeta inv-pedido">
               <div className="inv-pedido-cab"><strong>{g.proveedor}</strong><span>{eur(g.total)}</span></div>
               <ul>{g.items.map((x) => <li key={x.id}><span>{x.nombre}{x.sku ? ` (${x.sku})` : ''}<small>quedan {ud(x.stock)} · mínimo {ud(x.minimo)}</small></span><b>{ud(x.cantidad)} ud.</b></li>)}</ul>
-              <CopiarPedido texto={`Hola, os quería pedir:\n${g.items.map((x) => `- ${ud(x.cantidad)} × ${x.nombre}${x.sku ? ` (${x.sku})` : ''}`).join('\n')}\nGracias.`} />
+              <div className="inv-acciones">{puede(u, 'gastar') && <HacerPedido proveedor={g.proveedor} items={g.items} hoy={h} />}<CopiarPedido texto={`Hola, os quería pedir:\n${g.items.map((x) => `- ${ud(x.cantidad)} × ${x.nombre}${x.sku ? ` (${x.sku})` : ''}`).join('\n')}\nGracias.`} /></div>
             </div>
           )) : <div className="vacio"><p>No hace falta pedir nada</p><p>Aquí salen los productos que llegan a su stock mínimo, agrupados por proveedor.</p></div>}
-          <p className="grupo-pie">Se propone pedir hasta el «pedir hasta» de cada producto (o el doble del mínimo), al coste medio actual.</p>
+          <p className="grupo-pie">Se propone pedir hasta el «pedir hasta» de cada producto (o el doble del mínimo), al coste medio actual. Lo que ya está pedido y sin recibir cuenta como si estuviera.</p>
+        </section>
+      )}
+
+      {ver === 'pedidos' && (
+        <section className="bloque">
+          {pedidosP.length ? pedidosP.slice(0, 60).map((p) => (
+            <div key={p.id} className="tarjeta inv-pedido">
+              <div className="inv-pedido-cab"><strong>{p.proveedor}</strong><span>{eur(totalPedidoProv(p))}</span></div>
+              <p className="nota">{numeroDoc({ ...p, tipo: 'proveedor' })} · {fechaCorta(p.fecha)} · {p.recibido ? <>recibido el {fechaCorta(p.recibido)}{p.gasto && <> · <Link href={`/gastos/${p.gasto}`}>ver la compra</Link></>}</> : p.cancelado ? 'cancelado' : 'en camino'}</p>
+              <ul>{p.lineas.map((x, i) => <li key={i}><span>{x.concepto}{x.sku ? ` (${x.sku})` : ''}<small>{eur(x.coste)}/ud.</small></span><b>{ud(x.cantidad)} ud.</b></li>)}</ul>
+              {!p.recibido && !p.cancelado && puede(u, 'gastar') && <RecibirPedido pedido={p} hoy={h} />}
+              {!p.recibido && <CopiarPedido texto={`Hola, os quería pedir:\n${p.lineas.map((x) => `- ${ud(x.cantidad)} × ${x.concepto}${x.sku ? ` (${x.sku})` : ''}`).join('\n')}\nGracias.`} />}
+            </div>
+          )) : <div className="vacio"><p>Sin pedidos a proveedores</p><p>Hazlos desde «Qué pedir». Al recibirlos, se apunta la compra con su stock.</p></div>}
+          {abiertos.length > 0 && <p className="grupo-pie">{abiertos.length === 1 ? '1 pedido en camino' : `${abiertos.length} pedidos en camino`}: no vuelven a salir en «Qué pedir».</p>}
         </section>
       )}
 
@@ -95,6 +114,10 @@ export default async function Inventario({ searchParams }) {
           {!top('ventas').length && <p className="nota">Sin ventas de productos en {anio}.</p>}
           <h2 className="grupo-t">Margen por producto</h2>
           <ul className="grupo-lista">{top('margen').map((p) => <li key={p.id}><Ir href={`/inventario/${p.id}`} className="fila"><span className="txt"><strong>{p.nombre}</strong><small>Ventas {eur(p.ingresos)} · coste {eur(p.costeVentas)}</small></span><span className="imp-col"><span className="imp">{eur(p.margen)}</span><small className="nota">{p.margenPct.toLocaleString('es-ES')} %</small></span></Ir></li>)}</ul>
+          {inv.productos.some((p) => p.consumo > 0) && <>
+            <h2 className="grupo-t">Consumo en servicios</h2>
+            <ul className="grupo-lista">{top('costeConsumo').map((p) => <li key={p.id}><Ir href={`/inventario/${p.id}`} className="fila"><span className="txt"><strong>{p.nombre}</strong><small>{ud(p.consumo)} ud. gastadas en servicios</small></span><span className="imp">{eur(p.costeConsumo)}</span></Ir></li>)}</ul>
+          </>}
           <h2 className="grupo-t">Parados (sin ventas en 90 días)</h2>
           <ul className="grupo-lista">{inv.productos.filter((p) => p.parado).map((p) => <li key={p.id}><Ir href={`/inventario/${p.id}`} className="fila"><span className="txt"><strong>{p.nombre}</strong><small>{p.ultimaVenta ? `Última venta el ${fechaCorta(p.ultimaVenta)}` : 'Nunca vendido'}</small></span><span className="imp-col"><span className="imp">{ud(p.stock)} ud.</span><small className="nota">{eur(p.valor)} parados</small></span></Ir></li>)}</ul>
           {!inv.productos.some((p) => p.parado) && <p className="nota">Nada parado: todo se mueve.</p>}
