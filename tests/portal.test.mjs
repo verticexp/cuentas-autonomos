@@ -38,7 +38,7 @@ test('el PDF de un presupuesto dice «Presupuesto» y hasta cuándo vale', async
   const p = { id: 'P2026-1', serie: 'P', numero: 1, anio: 2026, fecha: '2026-05-01', validez: 15, cliente: { nombre: 'Sala Apolo' }, concepto: 'Bolo', base: 1000, ivaPct: 21, irpfPct: 0 };
   const txt = texto(await facturaPdf(p, e, {}, { presupuesto: true }));
   assert.ok(txt.includes(hex('Presupuesto')) && txt.includes(hex('VÁLIDO HASTA')) && txt.includes(hex('16-05-2026')));
-  assert.ok(!txt.includes(hex('FACTURAR A')));
+  assert.ok(!txt.includes(hex('VENCIMIENTO')));
   const f = texto(await facturaPdf({ ...p, serie: '', id: '1' }, e, {}));
-  assert.ok(f.includes(hex('FACTURAR A')) && f.includes(hex('VENCIMIENTO')));
+  assert.ok(f.includes(hex('PARA')) && f.includes(hex('VENCIMIENTO')) && !f.includes(hex('VÁLIDO HASTA')));
 });
