@@ -81,18 +81,37 @@ Para una recuperación completa, omite `--empresa`. La reversión también gener
 
 Esto recupera los valores anteriores de las claves presentes en esa copia; no elimina claves totalmente nuevas creadas por la restauración ni recupera datos cuya caducidad ya haya pasado. Si necesitas una vuelta exacta de toda la base, restaura la copia previa en una base nueva vacía y cambia la conexión tras verificarla.
 
-## Simulacro periódico
+## Simulacro
 
-1. Recupera una copia archivada y su clave desde custodias separadas.
-2. Usa una base de pruebas vacía, nunca las credenciales de producción.
-3. Ejecuta verificación/simulación y después restauración completa.
-4. Comprueba tipos, cantidades, integridad, caducidades y apertura de facturas de muestra.
-5. Ensaya restauración por empresa y reversión con la copia previa, verificando que otra empresa permanece intacta.
-6. Registra fecha, duración, fecha de la copia, resultados y responsables; elimina los datos personales del entorno de pruebas al cerrar el simulacro.
+El workflow `simulacro.yml` se ejecuta los lunes a las 04:00 UTC y manualmente desde Actions. Busca la última ejecución correcta de `copia.yml` y descarga su artefacto `copia-<run_id>`; si ya caducó o no existe, falla. Las copias nocturnas se ejecutan a las 03:00 UTC, exigen el secreto `COPIA_CLAVE` y archivan únicamente `copia.json.enc` y `copia-resumen.json` durante 90 días.
 
-Pruebas automatizadas, contra dos simuladores HTTP locales y clientes Upstash crudos:
+Para ejecutarlo localmente, recupera la copia y la clave desde sus custodias separadas:
 
 ```sh
-node --test tests/copias.test.mjs
+COPIA_CLAVE="<clave custodiada>" node scripts/simulacro.mjs copia.json.enc
+node scripts/simulacro.mjs copia.json
+```
+
+El script arranca dos Upstash simulados en memoria por HTTP y los cierra al terminar. No utiliza credenciales KV del entorno y aborta si `KV_REST_API_URL` contiene un host distinto de `127.0.0.1` o `localhost`. El workflow no recibe credenciales de la base real. La copia descifrada permanece en memoria.
+
+Comprueba autenticación del cifrado, huella y verificación de la copia; rechaza empresas marcadas como inconsistentes. Restaura toda la copia en el primer simulador vacío, vuelve a copiarla y compara claves y huella de los datos. Omite en ambos lados las claves originales que hayan caducado durante el proceso. Comprueba también las caducidades conservadas, con tolerancia de un segundo para las mediciones HTTP/PTTL; una vez validada esa tolerancia, normaliza la caducidad a la original para comparar la huella. Ejecuta `comprobarIntegridad` en cada empresa: cualquier error hace fallar el simulacro; los avisos históricos `sin-instantanea` y `contador-atrasado` se muestran en el informe.
+
+Después restaura la primera empresa con facturas en el segundo simulador vacío y compara todo su ámbito: facturas, registros encadenados, cabeza Verifactu, numeración, datos de empresa y usuarios/emails seleccionados. Detecta claves ajenas o datos alterados y vuelve a comprobar la integridad. Si ninguna empresa tiene facturas, informa que la prueba parcial no es aplicable. Los hashes globales sin campos seleccionados no generan una clave Redis.
+
+Imprime un informe JSON con fecha de la copia, resultados, avisos y duración en milisegundos de cada paso y del total. Cualquier discrepancia produce código de salida 1. Las duraciones miden la restauración en memoria; no incluyen descarga, puesta en marcha de una base real ni validación funcional de la app.
+
+Si falla la copia nocturna o el simulacro, el workflow abre una issue con fecha y enlace a la ejecución, o comenta en una ya abierta con la etiqueta `copia-fallida` o `simulacro-fallido`. Revisa el informe y los registros de esa ejecución, comprueba disponibilidad de la clave y del artefacto, y distingue un fallo de infraestructura de una copia inválida. Conserva la copia afectada para investigar; selecciona otra copia válida si hay corrupción y repite el simulacro tras corregir la causa. Cierra la issue cuando una nueva ejecución correcta y la revisión del informe confirmen la recuperación.
+
+Pruebas automatizadas, contra simuladores HTTP locales y clientes Upstash crudos:
+
+```sh
+node --test tests/simulacro.test.mjs
 npm test
 ```
+
+### Objetivos
+
+Pendientes de decisión por el usuario:
+
+- **RPO: [POR DECIDIR]**. Propuesta: **24 h**, acorde con la frecuencia diaria; comprobar la antigüedad de la última copia válida, porque los fallos nocturnos pueden ampliar la pérdida potencial.
+- **RTO: [POR DECIDIR]**. Propuesta: **1 h**, incluyendo descarga, infraestructura, restauración, comprobaciones y vuelta al servicio. Usar las duraciones del simulacro como referencia parcial y medir un ensayo operativo completo antes de aceptar el objetivo.

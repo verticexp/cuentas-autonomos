@@ -1,0 +1,62 @@
+name: Simulacro de restauración
+on:
+  schedule:
+    - cron: '0 4 * * 1' # lunes a las 04:00 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  actions: read
+  issues: write
+
+jobs:
+  simulacro:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Exigir clave de cifrado
+        run: test -n "$COPIA_CLAVE" || { echo 'Falta COPIA_CLAVE'; exit 1; }
+        env:
+          COPIA_CLAVE: ${{ secrets.COPIA_CLAVE }}
+      - run: npm install --no-save @upstash/redis@1.39.0
+      - name: Buscar última copia correcta
+        id: copia
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          run_id=$(gh run list --workflow copia.yml --status success --limit 1 --json databaseId --jq '.[0].databaseId // empty')
+          test -n "$run_id" || { echo 'No hay una ejecución correcta de copia.yml'; exit 1; }
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+      - uses: actions/download-artifact@v4
+        with:
+          name: copia-${{ steps.copia.outputs.run_id }}
+          run-id: ${{ steps.copia.outputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: copia-descargada
+      - name: Restaurar y comprobar en memoria
+        run: node scripts/simulacro.mjs copia-descargada/copia.json.enc
+        env:
+          COPIA_CLAVE: ${{ secrets.COPIA_CLAVE }}
+      - name: Avisar de simulacro fallido
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          etiqueta=simulacro-fallido
+          fecha=$(date -u +'%Y-%m-%d %H:%M:%S UTC')
+          cuerpo="Simulacro fallido el $fecha. Ejecución: $RUN_URL"
+          if ! gh label list --limit 1000 --json name --jq '.[].name' | grep -Fxq "$etiqueta"; then
+            gh label create "$etiqueta" --color B60205 --description 'Fallo del simulacro de restauración'
+          fi
+          issue=$(gh issue list --state open --label "$etiqueta" --json number --jq '.[0].number // empty')
+          if [ -n "$issue" ]; then
+            gh issue comment "$issue" --body "$cuerpo"
+          else
+            gh issue create --title "Simulacro fallido: $fecha" --label "$etiqueta" --body "$cuerpo"
+          fi
