@@ -12,7 +12,9 @@ import SinBD from '@/components/SinBD';
 import { puede } from '@/lib/permisos';
 import Deslizable from '@/components/Deslizable';
 import Buscar from '@/components/Buscar';
+import HojaFiltro from '@/components/HojaFiltro';
 import '@/app/recurrentes.css';
+import '@/app/filtros.css';
 import '@/app/mk.css';
 
 export const dynamic = 'force-dynamic';
@@ -73,7 +75,7 @@ export default async function Facturas({ searchParams }) {
       </nav>
 
       {total > 0 && (
-        <p className="resumen-linea">
+        <p className="resumen-linea solo-pc">
           <span>Por cobrar <strong>{eur(porCobrar)}</strong></span>
           {vencidas.length > 0 && <span className="rojo">{vencidas.length === 1 ? '1 vencida' : `${vencidas.length} vencidas`}</span>}
           {recurrentes?.length > 0 && <Link href="/facturas/recurrentes" className="rec-enlace">{recurrentes.length === 1 ? '1 recurrente' : `${recurrentes.length} recurrentes`} ›</Link>}
@@ -85,9 +87,56 @@ export default async function Facturas({ searchParams }) {
         </p>
       )}
 
+      {total > 0 && (
+        <>
+          {/* Móvil: resumen fijo arriba y un botón «Filtrar» (en el ordenador siguen la línea de arriba y las fichas de abajo) */}
+          <div className="resumen-fijo solo-movil">
+            <p className="resumen-fijo-t">
+              <span>Por cobrar <strong>{eur(porCobrar)}</strong></span>
+              {vencidas.length > 0 && <Link href={url({ estado: estado === 'vencidas' ? null : 'vencidas' })} className="rojo">{vencidas.length === 1 ? '1 vencida' : `${vencidas.length} vencidas`}</Link>}
+            </p>
+            <HojaFiltro titulo="Filtrar facturas" activos={(ACTIVIDADES[a] ? 1 : 0) + (['pendientes', 'vencidas'].includes(estado) ? 1 : 0)}>
+              {Object.keys(ACTIVIDADES).length > 1 && (
+                <section className="filtro-grupo">
+                  <h3>Actividad</h3>
+                  <ul className="filtro-ops">
+                    <li><Link href={url({ a: null })} className="filtro-op" aria-current={!ACTIVIDADES[a] ? 'true' : undefined}>Todas</Link></li>
+                    {Object.entries(ACTIVIDADES).map(([id, n]) => <li key={id}><Link href={url({ a: id })} className="filtro-op" aria-current={a === id ? 'true' : undefined}>{n}</Link></li>)}
+                  </ul>
+                </section>
+              )}
+              <section className="filtro-grupo">
+                <h3>Estado</h3>
+                <ul className="filtro-ops">
+                  <li><Link href={url({ estado: null })} className="filtro-op" aria-current={!['pendientes', 'vencidas'].includes(estado) ? 'true' : undefined}>Todas</Link></li>
+                  <li><Link href={url({ estado: 'pendientes' })} className="filtro-op" aria-current={estado === 'pendientes' ? 'true' : undefined}>Sin cobrar<small>{eur(porCobrar)}</small></Link></li>
+                  {vencidas.length > 0 && <li><Link href={url({ estado: 'vencidas' })} className="filtro-op" aria-current={estado === 'vencidas' ? 'true' : undefined}>Vencidas<small>{vencidas.length}</small></Link></li>}
+                </ul>
+              </section>
+              {(recurrentes?.length > 0 || puede(u, 'resumen')) && (
+                <section className="filtro-grupo">
+                  <h3>Más</h3>
+                  <ul className="filtro-ops">
+                    {recurrentes?.length > 0 && <li><Link href="/facturas/recurrentes" className="filtro-op">Facturas recurrentes<small>{recurrentes.length}</small></Link></li>}
+                    {puede(u, 'resumen') && <li><a href={`/api/efactura?anio=${h.slice(0, 4)}`} className="filtro-op" download>Estado de pagos (descargar)</a></li>}
+                  </ul>
+                </section>
+              )}
+            </HojaFiltro>
+          </div>
+          {(ACTIVIDADES[a] || ['pendientes', 'vencidas'].includes(estado)) && (
+            <div className="filtros-activos solo-movil" aria-label="Filtros activos">
+              {ACTIVIDADES[a] && <Link href={url({ a: null })} aria-label={`Quitar el filtro ${ACTIVIDADES[a]}`}>{ACTIVIDADES[a]}</Link>}
+              {estado === 'pendientes' && <Link href={url({ estado: null })} aria-label="Quitar el filtro Sin cobrar">Sin cobrar</Link>}
+              {estado === 'vencidas' && <Link href={url({ estado: null })} aria-label="Quitar el filtro Vencidas">Vencidas</Link>}
+            </div>
+          )}
+        </>
+      )}
+
       {total > 5 && <Buscar action="/facturas" q={q} ocultos={{ a, estado }} placeholder="Buscar cliente, número o concepto" />}
 
-      <Deslizable className="chips">
+      <Deslizable className="chips solo-pc">
         <Link href={url({ a: null })} className={!ACTIVIDADES[a] ? 'activo' : ''}>Todas</Link>
         {Object.entries(ACTIVIDADES).map(([id, n]) => <Link key={id} href={url({ a: id })} className={a === id ? 'activo' : ''}>{n}</Link>)}
         <Link href={url({ estado: estado === 'pendientes' ? null : 'pendientes' })} className={estado === 'pendientes' ? 'activo' : ''}>Sin cobrar</Link>

@@ -1,0 +1,32 @@
+/* Filtros compactos de las listas en el móvil: resumen fijo arriba + botón «Filtrar» con su hoja. En el ordenador siguen los de siempre. */
+.solo-movil { display: none; }
+@media (max-width: 1023.98px) {
+  .pagina .solo-pc { display: none; }
+  .pagina .solo-movil { display: flex; }
+}
+.resumen-fijo {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; align-items: center; justify-content: space-between; gap: 12px;
+  margin: 0 -16px 10px; padding: 8px 16px;
+  background: color-mix(in srgb, var(--paper) 86%, transparent); -webkit-backdrop-filter: blur(14px) saturate(1.6); backdrop-filter: blur(14px) saturate(1.6);
+}
+.resumen-fijo-t { display: flex; flex-wrap: wrap; gap: 2px 10px; margin: 0; min-width: 0; font-size: 15px; color: var(--muted); }
+.resumen-fijo-t strong { color: var(--ink); font-weight: 650; font-variant-numeric: tabular-nums; }
+.resumen-fijo-t a { text-decoration: none; font-weight: 600; }
+.filtro-boton { flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; border: 0; border-radius: 999px; background: var(--relleno); color: var(--ink); font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.filtro-boton svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.filtro-boton:active { opacity: 0.8; transform: scale(0.97); }
+.filtro-boton:focus-visible, .filtro-op:focus-visible { outline: 2px solid var(--marca); outline-offset: 2px; }
+.filtro-n { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 999px; background: var(--marca); color: var(--sobre); font-size: 12px; font-weight: 700; }
+/* Lo que está filtrado, a la vista y con una × para quitarlo */
+.filtros-activos { flex-wrap: wrap; gap: 8px; margin: 0 0 10px; }
+.filtros-activos a { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 12px; border-radius: 999px; background: var(--marca); color: var(--sobre); text-decoration: none; font-size: 14px; font-weight: 600; }
+.filtros-activos a::after { content: '×'; font-size: 16px; line-height: 1; opacity: 0.8; }
+/* Opciones dentro de la hoja */
+.filtro-grupo { margin: 0 0 14px; }
+.filtro-grupo h3 { margin: 0 4px 8px; font-size: 13px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+.filtro-ops { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.filtro-op { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 48px; padding: 0 14px; border-radius: 14px; background: var(--relleno); color: var(--ink); text-decoration: none; font-size: 16px; -webkit-tap-highlight-color: transparent; }
+.filtro-op:active { opacity: 0.8; }
+.filtro-op[aria-current="true"] { background: var(--marca); color: var(--sobre); font-weight: 600; }
+.filtro-op[aria-current="true"]::after { content: '✓'; }
+.filtro-op small { color: var(--muted); font-size: 13px; }
