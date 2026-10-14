@@ -1,0 +1,22 @@
+/* «Qué hacer hoy» en la portada del móvil. En el ordenador no sale: ahí están las tarjetas de Hacienda, Por cobrar y Tesorería. */
+.hoy { margin: 0 0 22px; }
+.hoy-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.hoy-card { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 18px; background: var(--surface); color: var(--ink); text-decoration: none; border: 1px solid var(--line); border-left: 4px solid var(--c, var(--line)); -webkit-tap-highlight-color: transparent; transition: transform 0.12s cubic-bezier(0.23, 1, 0.32, 1), background-color 0.12s; }
+.hoy-card.rojo { --c: var(--out); }
+.hoy-card.naranja { --c: #FF9500; }
+.hoy-card:active { transform: scale(0.985); background: var(--relleno); }
+.hoy-card:focus-visible { outline: 2px solid var(--marca); outline-offset: 2px; }
+.hoy-card .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.hoy-card .txt strong { font-size: 16px; font-weight: 650; line-height: 1.25; }
+.hoy-card .txt small { color: var(--muted); font-size: 13px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hoy-cta { flex: none; font-size: 14px; font-weight: 600; color: var(--marca); }
+.hoy-cta::after { content: ' ›'; color: var(--muted); }
+.hoy-ok { margin: 0; padding: 12px 14px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); color: var(--muted); font-size: 15px; }
+/* Lo que ya está en la barra de pestañas (Facturas y Gastos) no se repite en los accesos del móvil */
+@media (max-width: 1023.98px) {
+  .pagina .accesos .acceso-tab { display: none; }
+  .pagina .accesos:has(> .acceso-tab) { grid-template-columns: repeat(3, 1fr); gap: 4px; }
+  .pagina .accesos:has(> .acceso-tab) .acceso { font-size: 12px; letter-spacing: 0; }
+}
+@media (min-width: 1024px) { .hoy { display: none; } }
+@media (prefers-reduced-motion: reduce) { .hoy-card { transition: none; } }
