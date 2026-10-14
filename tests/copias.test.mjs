@@ -8,12 +8,32 @@ import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
 import './apoyo/cargador.mjs';
 import { Redis } from '@upstash/redis';
-import { arrancar } from './apoyo/upstash-mem.mjs';
-import { hacerCopia, cifrar, descifrar, verificarCopia, restaurar, copiaDeDatos } from '../lib/copias.js';
+import { arrancar, crearBase } from './apoyo/upstash-mem.mjs';
+import { hacerCopia, cifrar, descifrar, verificarCopia, restaurar, copiaDeDatos, seleccionarDatos } from '../lib/copias.js';
+import { conMembresia, membresias } from '../lib/membresias.js';
 
 const clave = randomBytes(32).toString('base64');
 const hash = (v) => Array.isArray(v) ? Object.fromEntries(Array.from({ length: v.length / 2 }, (_, i) => [v[2 * i], v[2 * i + 1]])) : v;
 const f = (id, numero) => JSON.stringify({ id, numero, anio: 2026, emisor: { nombre: 'Prueba' }, verifactu: { huella: `h${numero}` } });
+// El mismo simulador, sin transporte HTTP: reproduce las lecturas y MULTI/EXEC atómico.
+function memoria() {
+  const base = crearBase();
+  const comando = (m, args) => [m, ...args.flatMap((a) => a && typeof a === 'object' ? Object.entries(a).flat() : [a])];
+  return new Proxy({}, { get(_, m) {
+    if (m === 'multi') return () => {
+      const comandos = [];
+      const transaccion = new Proxy({}, { get(_, n) {
+        if (n === 'exec') return async () => comandos.map((c) => base.run(c));
+        return (...args) => { comandos.push(comando(n, args)); return transaccion; };
+      } });
+      return transaccion;
+    };
+    return async (...args) => {
+      const resultado = base.run(comando(m, args));
+      return m === 'hgetall' ? hash(resultado) : resultado;
+    };
+  } });
+}
 async function bases(t) {
   const origen = await arrancar(), destino = await arrancar();
   t.after(async () => { await origen.cerrar(); await destino.cerrar(); });
@@ -112,7 +132,7 @@ test('F14: una emisión entre lecturas obliga a repetir la empresa, incluyendo c
     return typeof r[m] === 'function' ? r[m].bind(r) : r[m];
   } });
   const copia = await hacerCopia(envuelto);
-  assert.equal(lecturas, 2);
+  assert.equal(lecturas, 6);
   assert.equal(copia.resumen.facturas.e1, 2);
   assert.equal(copia.datos['cuentas:nueva:e1'].valor, 'creada durante copia');
   assert.equal(copia.datos['cuentas:numeracion:e1'].valor['-|2026'], '2');
@@ -120,7 +140,7 @@ test('F14: una emisión entre lecturas obliga a repetir la empresa, incluyendo c
   assert.equal(copia.resumen.inconsistentes, undefined);
 });
 
-test('F14: tras tres lecturas inestables se informa la empresa, sin abortar ni adelantar facturas al contador', async (t) => {
+test('F14: tras tres intentos inestables la copia falla explícitamente', async (t) => {
   const { a } = await bases(t);
   await sembrar(a);
   let lecturas = 0;
@@ -132,11 +152,194 @@ test('F14: tras tres lecturas inestables se informa la empresa, sin abortar ni a
     };
     return typeof r[m] === 'function' ? r[m].bind(r) : r[m];
   } });
+  await assert.rejects(hacerCopia(envuelto), /copia estable.*e1.*3 intentos/);
+  assert.equal(lecturas, 9);
+});
+
+test('N03: la copia de B selecciona un administrador con principal A creado con conMembresia y su correo', async () => {
+  const a = memoria(), b = memoria();
+  await sembrar(a, 'A');
+  await sembrar(a, 'B');
+  const usuario = conMembresia(conMembresia({ id: 'compartido', empresa: 'A' }, 'A', { rol: 'admin' }), 'B', { rol: 'admin' });
+  await a.hset('cuentas:usuarios', { compartido: JSON.stringify(usuario) });
+  await a.hset('cuentas:emails', { 'compartido@ejemplo.test': 'compartido', 'alias@ejemplo.test': 'compartido' });
+  const copia = await hacerCopia(a);
+  const seleccion = seleccionarDatos(copia, 'B');
+  assert.deepEqual(JSON.parse(seleccion['cuentas:usuarios'].valor.compartido), usuario);
+  assert.equal(seleccion['cuentas:emails'].valor['compartido@ejemplo.test'], 'compartido');
+  assert.equal(seleccion['cuentas:emails'].valor['alias@ejemplo.test'], 'compartido');
+  await restaurar(b, copia, { empresa: 'B', escribir: true });
+  assert.deepEqual(JSON.parse(await b.hget('cuentas:usuarios', 'compartido')), usuario);
+  assert.equal(await b.hget('cuentas:emails', 'compartido@ejemplo.test'), 'compartido');
+});
+
+test('N03: sobrescribir B preserva principal, roles, permisos y correos de las otras empresas del destino', async () => {
+  const a = memoria(), b = memoria();
+  await sembrar(a, 'B');
+  const origen = conMembresia({ id: 'compartido', empresa: 'A', rol: 'admin' }, 'B', { rol: 'admin' });
+  await a.hset('cuentas:usuarios', { compartido: JSON.stringify(origen) });
+  await a.hset('cuentas:emails', { 'compartido@ejemplo.test': 'compartido' });
+  const destino = conMembresia(conMembresia({ id: 'compartido', empresa: 'A', rol: 'miembro', permisos: ['clientes'] }, 'B', { rol: 'miembro', permisos: ['gastos'] }), 'C', { rol: 'admin' });
+  const sobrante = conMembresia({ id: 'sobrante', empresa: 'B', rol: 'admin' }, 'C', { rol: 'miembro', permisos: ['facturas'] });
+  await b.hset('cuentas:usuarios', { compartido: JSON.stringify(destino), sobrante: JSON.stringify(sobrante) });
+  await b.hset('cuentas:emails', { 'alias-destino@ejemplo.test': 'compartido', 'sobrante@ejemplo.test': 'sobrante' });
+  const copia = await hacerCopia(a);
+  await restaurar(b, copia, { empresa: 'B', sobrescribir: true, escribir: true });
+  const restaurado = JSON.parse(await b.hget('cuentas:usuarios', 'compartido'));
+  assert.deepEqual(restaurado.empresas, { A: destino.empresas.A, B: origen.empresas.B, C: destino.empresas.C });
+  assert.equal(restaurado.empresa, 'A');
+  assert.equal(restaurado.rol, 'miembro');
+  assert.deepEqual(restaurado.permisos, ['clientes']);
+  assert.equal(await b.hget('cuentas:emails', 'alias-destino@ejemplo.test'), 'compartido');
+  assert.equal(await b.hget('cuentas:emails', 'compartido@ejemplo.test'), 'compartido');
+  const restante = JSON.parse(await b.hget('cuentas:usuarios', 'sobrante'));
+  assert.deepEqual(membresias(restante), { C: sobrante.empresas.C });
+  assert.equal(restante.empresa, 'C');
+  assert.equal(await b.hget('cuentas:emails', 'sobrante@ejemplo.test'), 'sobrante');
+});
+
+test('N03: membresías antiguas en objeto y lista siguen seleccionándose y se conservan al fusionar', async () => {
+  const b = memoria();
+  const copia = copiaDeDatos({
+    'cuentas:empresas': { tipo: 'hash', valor: { B: '{}' } },
+    'cuentas:usuarios': { tipo: 'hash', valor: {
+      objeto: JSON.stringify({ id: 'objeto', empresa: 'A', membresias: { B: { rol: 'admin' } } }),
+      lista: JSON.stringify({ id: 'lista', empresa: 'A', membresias: [{ empresaId: 'B', rol: 'miembro', permisos: ['gastos'] }] }),
+      cadena: JSON.stringify({ id: 'cadena', empresa: 'A', membresias: ['B'] }),
+    } },
+    'cuentas:emails': { tipo: 'hash', valor: { 'objeto@test': 'objeto', 'lista@test': 'lista', 'cadena@test': 'cadena' } },
+  });
+  assert.equal(Object.keys(seleccionarDatos(copia, 'B')['cuentas:usuarios'].valor).length, 3);
+  await b.hset('cuentas:usuarios', { objeto: JSON.stringify({ id: 'objeto', empresa: 'C', membresias: { C: 'admin', D: { rol: 'miembro', permisos: ['clientes'] } } }) });
+  await restaurar(b, copia, { empresa: 'B', sobrescribir: true, escribir: true });
+  assert.deepEqual(JSON.parse(await b.hget('cuentas:usuarios', 'objeto')).empresas, {
+    B: { rol: 'admin' }, C: { rol: 'admin' }, D: { rol: 'miembro', permisos: ['clientes'] },
+  });
+});
+
+test('N04: conciliar atómicamente documentos existentes durante la lectura obliga a reintentar', async () => {
+  const a = memoria();
+  await sembrar(a);
+  const pendiente = JSON.parse(f('f1', 1));
+  const cobrada = { ...pendiente, cobrada: true, cobro: { fecha: '2026-03-01', banco: 'm1' } };
+  await a.hset('cuentas:banco:e1', { m1: JSON.stringify({ id: 'm1', estado: 'pendiente', importe: 100 }) });
+  let lecturasBanco = 0;
+  const envuelto = new Proxy(a, { get(r, m) {
+    if (m === 'hgetall') return async (k) => {
+      const v = await r.hgetall(k);
+      // La segunda lectura es la candidata: ya tiene m1 pendiente, después leerá f1 cobrada.
+      if (k === 'cuentas:banco:e1' && ++lecturasBanco === 2) {
+        await r.multi().hset('cuentas:banco:e1', { m1: JSON.stringify({ id: 'm1', estado: 'emparejado', enlace: { tipo: 'factura', id: 'f1' }, importe: 100 }) })
+          .hset('cuentas:facturas:e1', { f1: JSON.stringify(cobrada) }).exec();
+      }
+      return v;
+    };
+    return typeof r[m] === 'function' ? r[m].bind(r) : r[m];
+  } });
   const copia = await hacerCopia(envuelto);
-  assert.equal(lecturas, 3);
-  assert.deepEqual(copia.resumen.inconsistentes, ['e1']);
-  const contador = Number(copia.datos['cuentas:numeracion:e1'].valor['-|2026']);
-  assert.ok(Object.values(copia.datos['cuentas:facturas:e1'].valor).every((v) => JSON.parse(v).numero <= contador));
+  assert.equal(lecturasBanco, 6);
+  assert.deepEqual(JSON.parse(copia.datos['cuentas:facturas:e1'].valor.f1), cobrada);
+  assert.deepEqual(JSON.parse(copia.datos['cuentas:banco:e1'].valor.m1), { id: 'm1', estado: 'emparejado', enlace: { tipo: 'factura', id: 'f1' }, importe: 100 });
+  assert.deepEqual(verificarCopia(copia), { ok: true, errores: [], avisos: [] });
+});
+
+test('N04: ediciones continuas sin cambiar tamaños, numeración ni cabeza fallan tras tres intentos', async () => {
+  const a = memoria();
+  await sembrar(a);
+  let lecturas = 0;
+  const envuelto = new Proxy(a, { get(r, m) {
+    if (m === 'hgetall') return async (k) => {
+      const v = await r.hgetall(k);
+      if (k === 'cuentas:facturas:e1') await r.hset(k, { f1: JSON.stringify({ ...JSON.parse(f('f1', 1)), nota: String(++lecturas) }) });
+      return v;
+    };
+    return typeof r[m] === 'function' ? r[m].bind(r) : r[m];
+  } });
+  await assert.rejects(hacerCopia(envuelto), /copia estable.*e1.*3 intentos/);
+  assert.equal(lecturas, 9);
+});
+
+test('N04: también se compara la lectura guardada cuando el contenido vuelve al estado inicial', async () => {
+  const a = memoria();
+  await sembrar(a);
+  const pendiente = JSON.stringify({ id: 'm1', estado: 'pendiente', importe: 100 });
+  const conciliado = JSON.stringify({ id: 'm1', estado: 'emparejado', enlace: { tipo: 'factura', id: 'f1' }, importe: 100 });
+  const cobrada = JSON.stringify({ ...JSON.parse(f('f1', 1)), cobrada: true, cobro: { fecha: '2026-03-01', banco: 'm1' } });
+  await a.hset('cuentas:banco:e1', { m1: pendiente });
+  let bancos = 0, facturas = 0;
+  const envuelto = new Proxy(a, { get(r, m) {
+    if (m === 'hgetall') return async (k) => {
+      const v = await r.hgetall(k);
+      if (k === 'cuentas:banco:e1' && ++bancos === 2) {
+        await r.multi().hset(k, { m1: conciliado }).hset('cuentas:facturas:e1', { f1: cobrada }).exec();
+      }
+      if (k === 'cuentas:facturas:e1' && ++facturas === 2) {
+        await r.multi().hset('cuentas:banco:e1', { m1: pendiente }).hset(k, { f1: f('f1', 1) }).exec();
+      }
+      return v;
+    };
+    return typeof r[m] === 'function' ? r[m].bind(r) : r[m];
+  } });
+  const copia = await hacerCopia(envuelto);
+  assert.equal(bancos, 6);
+  assert.equal(copia.datos['cuentas:banco:e1'].valor.m1, pendiente);
+  assert.equal(copia.datos['cuentas:facturas:e1'].valor.f1, f('f1', 1));
+  assert.equal(verificarCopia(copia).ok, true);
+});
+
+test('N04: verificarCopia rechaza factura cobrada con movimiento pendiente aun con huella válida', async () => {
+  const a = memoria();
+  await sembrar(a);
+  const datos = (await hacerCopia(a)).datos;
+  datos['cuentas:facturas:e1'].valor.f1 = JSON.stringify({ ...JSON.parse(f('f1', 1)), cobrada: true, cobro: { fecha: '2026-03-01', banco: 'm1' } });
+  datos['cuentas:banco:e1'] = { tipo: 'hash', valor: { m1: JSON.stringify({ id: 'm1', estado: 'pendiente', importe: 100 }) } };
+  const copia = copiaDeDatos(datos);
+  const v = verificarCopia(copia);
+  assert.equal(v.ok, false);
+  assert.ok(v.errores.some((x) => /f1.*m1.*no conciliado/.test(x)));
+  assert.ok(v.avisos.some((x) => /conciliacion-bancaria/.test(x)));
+  assert.ok(!v.errores.some((x) => /Huella/.test(x)));
+  assert.equal(verificarCopia({ fecha: copia.fecha, datos }).ok, false);
+});
+
+test('N04: verifica referencias bancarias inexistentes, ajenas, inversas y pagos de gastos', () => {
+  const datos = {
+    'cuentas:empresas': { tipo: 'hash', valor: { e1: '{}' } },
+    'cuentas:facturas:e1': { tipo: 'hash', valor: { f1: JSON.stringify({ id: 'f1', cobrada: true, cobro: { fecha: '2026-03-01', banco: 'm1' } }) } },
+    'cuentas:gastos:e1': { tipo: 'hash', valor: { g1: JSON.stringify({ id: 'g1', pagado: '2026-03-02', banco: 'm2' }) } },
+    'cuentas:banco:e1': { tipo: 'hash', valor: {
+      m1: JSON.stringify({ id: 'm1', estado: 'emparejado', enlace: { tipo: 'factura', id: 'f1' } }),
+      m2: JSON.stringify({ id: 'm2', estado: 'emparejado', enlace: { tipo: 'gasto', id: 'g1' } }),
+    } },
+  };
+  assert.equal(verificarCopia(copiaDeDatos(datos)).ok, true);
+  const variantes = [
+    (d) => { delete d['cuentas:banco:e1'].valor.m1; },
+    (d) => { d['cuentas:banco:e1'].valor.m1 = JSON.stringify({ estado: 'emparejado', enlace: { tipo: 'factura', id: 'otra' } }); },
+    (d) => { d['cuentas:facturas:e1'].valor.f1 = JSON.stringify({ id: 'f1', cobrada: true }); },
+    (d) => { d['cuentas:facturas:e1'].valor.f1 = JSON.stringify({ id: 'f1', cobrada: false, cobro: { banco: 'm1' } }); },
+    (d) => { d['cuentas:gastos:e1'].valor.g1 = JSON.stringify({ id: 'g1', pendiente: true, banco: 'm2' }); },
+    (d) => { delete d['cuentas:gastos:e1'].valor.g1; },
+  ];
+  for (const cambiar of variantes) {
+    const alterados = structuredClone(datos);
+    cambiar(alterados);
+    const v = verificarCopia(copiaDeDatos(alterados));
+    assert.equal(v.ok, false);
+    assert.ok(v.errores.some((x) => /conciliacion-bancaria/.test(x)));
+  }
+  const manual = structuredClone(datos);
+  delete manual['cuentas:banco:e1'];
+  manual['cuentas:facturas:e1'].valor.f1 = JSON.stringify({ id: 'f1', cobrada: true });
+  manual['cuentas:gastos:e1'].valor.g1 = JSON.stringify({ id: 'g1', pagado: '2026-03-02' });
+  assert.equal(verificarCopia(copiaDeDatos(manual)).ok, true);
+});
+
+test('N04: las copias antiguas marcadas como inestables mantienen el formato pero no verifican ok', () => {
+  const copia = copiaDeDatos({ 'cuentas:empresas': { tipo: 'hash', valor: { e1: '{}' } } }, { inconsistentes: ['e1'] });
+  const v = verificarCopia(copia);
+  assert.equal(v.ok, false);
+  assert.ok(v.avisos.some((x) => /cambios durante la copia/.test(x)));
 });
 
 test('F14: recuperar una empresa sustituye claves enteras y conserva la otra empresa y sus usuarios', async (t) => {
