@@ -1,3 +1,4 @@
+import { respuesta429 } from '@/lib/limite';
 import { NextResponse } from 'next/server';
 import { desbloqueo, entrar, opcionesCookie, opcionesDesbloqueo } from '@/lib/auth';
 
@@ -5,6 +6,7 @@ export async function POST(req) {
   const form = await req.formData();
   const ip = req.headers.get('x-real-ip') || req.headers.get('x-forwarded-for')?.split(',')[0].trim();
   const r = await entrar(form.get('email'), form.get('password'), ip);
+  if (r?.bloqueado) return respuesta429(15 * 60, 'Demasiados intentos de acceso. Espera 15 minutos antes de volver a intentarlo.');
   // Desde la pantalla de bloqueo: responde en JSON y no cambia de página.
   if (req.headers.get('accept') === 'application/json') {
     if (!r?.token) return NextResponse.json({ error: r?.bloqueado ? 'Demasiados intentos. Espera 15 minutos.' : 'Email o contraseña incorrectos.' }, { status: 401 });
