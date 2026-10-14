@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { performance } from 'node:perf_hooks';
-import { sugerencias, opciones } from '../lib/banco.js';
+import { sugerencias, opciones, cobradoSinBanco } from '../lib/banco.js';
 import { importes, numeroFactura, saldoDe } from '../lib/calculos.js';
 import { totalDe } from '../lib/proveedores.js';
 
@@ -27,7 +27,7 @@ const fuerte = (nombre, texto) => {
 
 function candidatasFactura(m, facturas) {
   const texto = `${m.concepto} ${m.contraparte || ''}`;
-  return facturas.filter((f) => !f.cobrada && cts(saldoDe(f)) > 0).flatMap((f) => {
+  return facturas.filter((f) => !f.cobrada && !(f.cobro && cobradoSinBanco(f) > 0) && cts(saldoDe(f)) > 0).flatMap((f) => {
     const importe = saldoDe(f), porNumero = porReferencia(m, numeroFactura(f));
     const exacta = Math.abs(cts(importe) - cts(m.importe)) <= 1 && cts(m.importe) <= cts(importe);
     if ((!exacta && !porNumero) || dias(f.fecha, m.fecha) < (porNumero ? -15 : -3)) return [];
@@ -45,6 +45,20 @@ const sinProveedorPorConcepto = (g, texto) => {
   const ws = palabrasNombre(g.proveedor), cs = palabras(g.concepto), t = ` ${norm(texto)} `;
   return !ws.length && cs.length > 1 && cs.every((w) => t.includes(` ${w} `));
 };
+
+// Facturas ya cobradas por otra vía (remesa, Stripe, caja o a mano) que el banco ingresa después: solo se enlazan.
+function candidatasCobradas(m, facturas, enlazadas) {
+  const texto = `${m.concepto} ${m.contraparte || ''}`;
+  return facturas.filter((f) => !enlazadas.has(f.id) && cts(cobradoSinBanco(f)) > 0).flatMap((f) => {
+    const importe = cobradoSinBanco(f), porNumero = porReferencia(m, numeroFactura(f));
+    if (Math.abs(cts(importe) - cts(m.importe)) > 1 || Math.abs(dias(f.fecha, m.fecha)) > 45) return [];
+    let puntos = 50;
+    if (porNumero) puntos += 35;
+    if (nombreEn(f.cliente?.nombre, texto)) puntos += 25;
+    if (dias(f.fecha, m.fecha) <= 120) puntos += 5;
+    return [{ tipo: 'factura', id: f.id, puntos, importe, porNumero, porNombre: fuerte(f.cliente?.nombre, texto), yaCobrada: true }];
+  });
+}
 
 function candidatosGasto(m, gastos, enlazados) {
   const texto = `${m.concepto} ${m.contraparte || ''}`;
@@ -69,9 +83,13 @@ function candidatosGasto(m, gastos, enlazados) {
 // Segura: el importe cuadra y además el número de factura, el cliente o el proveedor aparecen en el concepto.
 function sugerenciasRef(movimientos, facturas, gastos) {
   const enlazados = new Set(movimientos.filter((m) => m.estado === 'emparejado' && m.enlace?.tipo === 'gasto').map((m) => m.enlace.id));
+  const facturasEnlazadas = new Set(movimientos.filter((m) => m.estado === 'emparejado' && m.enlace?.tipo === 'factura').map((m) => m.enlace.id));
   const pendientes = movimientos.filter((m) => (!m.estado || m.estado === 'pendiente') && cts(Math.abs(m.importe)) > 0);
   const todas = new Map(pendientes.map((m) => [m.id,
-    (m.importe > 0 ? candidatasFactura(m, facturas) : candidatosGasto(m, gastos, enlazados)).sort((a, b) => b.puntos - a.puntos)]));
+    (m.importe > 0 ? (() => {
+      const cobradas = candidatasCobradas(m, facturas, facturasEnlazadas), ids = new Set(cobradas.map((x) => x.id));
+      return [...candidatasFactura(m, facturas).filter((x) => !ids.has(x.id)), ...cobradas];
+    })() : candidatosGasto(m, gastos, enlazados)).sort((a, b) => b.puntos - a.puntos)]));
   // Referencia exhaustiva para las disputas: compara cada par de movimientos.
   const conflictos = new Set();
   const clave = (p) => `${p.tipo}:${p.id}`;
@@ -90,7 +108,7 @@ function sugerenciasRef(movimientos, facturas, gastos) {
     const empate = xs.filter((x) => x.puntos === xs[0].puntos).length > 1;
     return { tipo: p.tipo, id: p.id, puntos: p.puntos,
       segura: p.puntos >= 75 && (p.porNumero || p.porNombre) && !motivo && !empate,
-      ...(motivo ? { motivo } : {}), importe: p.importe, porNumero: p.porNumero, porNombre: p.porNombre };
+      ...(motivo ? { motivo } : {}), ...(p.yaCobrada ? { yaCobrada: true } : {}), importe: p.importe, porNumero: p.porNumero, porNombre: p.porNombre };
   };
   const pares = [...todas].flatMap(([m, xs]) => xs.map((x) => ({ m, ...x }))).sort((a, b) => b.puntos - a.puntos);
   const usados = new Set(), out = {};
