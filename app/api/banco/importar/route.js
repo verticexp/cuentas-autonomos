@@ -3,7 +3,7 @@ import { error, usuarioApi } from '@/lib/api';
 import { puede } from '@/lib/permisos';
 import { leerHoja } from '@/lib/hoja';
 import { esNorma43, leerNorma43, leerTablaBanco } from '@/lib/banco';
-import { actualizarSaldo, guardarMovimientos } from '@/lib/bancoServidor';
+import { actualizarSaldo, autoconciliar, guardarMovimientos } from '@/lib/bancoServidor';
 import { hoy } from '@/lib/formato';
 import { MUCHOS, pasado } from '@/lib/limite';
 import { iaLista, leerExtracto } from '@/lib/ticket';
@@ -47,5 +47,7 @@ export async function POST(req) {
       ...(nuevo ? { saldo: c.saldo, fechaSaldo: c.fechaSaldo } : {}) });
   }
   const saldo = conSaldo ? await actualizarSaldo(u) : null;
-  return Response.json({ ok: true, ...g, errores: r.errores || 0, saldo });
+  let auto = 0;
+  if (g.nuevos) { try { auto = (await autoconciliar(u)).hechos; } catch { /* El extracto ya se ha guardado. */ } }
+  return Response.json({ ok: true, ...g, errores: r.errores || 0, saldo, auto });
 }

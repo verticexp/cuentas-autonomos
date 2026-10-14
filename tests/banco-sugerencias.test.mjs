@@ -210,3 +210,65 @@ test('un recibo domiciliado sin proveedor se reconoce por su concepto entero, no
   assert.equal(sugerencias([exacto], [], [g]).m1.segura, true);
   assert.equal(sugerencias([suelta], [], [g]).m2?.segura ?? false, false);
 });
+
+// Conciliación de liquidaciones que ya se cobraron por Stripe, remesa o tarjeta.
+test('ya cobrada: sugiere por el importe del cobro externo, con identidad e importe exactos', () => {
+  for (const metodo of ['stripe', 'remesa', 'tarjeta']) {
+    const f = { cobrada: true, cobro: { metodo, importe: 90 } };
+    const s = ingreso({ importe: 90, concepto: 'A2026-01' }, f);
+    assert.deepEqual([s.yaCobrada, s.importe, s.segura], [true, 90, true]);
+    assert.equal(ingreso({ importe: 90, concepto: 'Hotel Mirador' }, f).segura, true);
+    assert.equal(ingreso({ importe: 90 }, f).segura, false);
+    for (const importe of [89.99, 90.01]) assert.equal(ingreso({ importe, concepto: 'A2026-01' }, f).segura, true);
+    for (const importe of [89.98, 90.02, 100]) assert.equal(ingreso({ importe, concepto: 'A2026-01' }, f), undefined);
+  }
+  assert.equal(ingreso({ concepto: 'A2026-01' }, { cobrada: true }).yaCobrada, true);
+  // Sin flag cobrada pero con todos los pagos registrados por otra vía.
+  const pagos = [{ metodo: 'stripe', importe: 30 }, { metodo: 'tarjeta', importe: 70 }];
+  assert.equal(ingreso({ concepto: 'A2026-01' }, { pagos }).yaCobrada, true);
+  assert.equal(ingreso({ importe: 95, concepto: 'A2026-01' }, { cobro: { metodo: 'remesa', importe: 95 } }).yaCobrada, true);
+});
+
+test('ya cobrada: excluye cualquier vínculo bancario y respeta la ventana de ±45 días', () => {
+  const f = { cobrada: true, cobro: { metodo: 'stripe', importe: 100 } };
+  for (const extra of [{ banco: 'b' }, { cobro: { ...f.cobro, banco: 'b' } },
+    { pagos: [{ importe: 100, metodo: 'banco', banco: 'b' }] }, { pagos: [{ importe: 100, metodo: 'banco' }] }]) {
+    assert.equal(ingreso({ concepto: 'A2026-01' }, { ...f, ...extra }), undefined);
+  }
+  for (const n of [-45, 45]) assert.equal(ingreso({ fecha: fechaMas(n), concepto: 'A2026-01' }, f).segura, true);
+  for (const n of [-46, 46]) assert.equal(ingreso({ fecha: fechaMas(n), concepto: 'A2026-01' }, f), undefined);
+  const ms = [movimiento(), movimiento({ id: 'enlazado', estado: 'emparejado', enlace: { tipo: 'factura', id: 'f', yaCobrada: true } })];
+  assert.equal(sugerencias(ms, [factura(f)], []).m, undefined);
+  const conflicto = sugerencias(['a', 'b'].map((id) => movimiento({ id, concepto: 'A2026-01' })), [factura(f)], []);
+  for (const id of ['a', 'b']) assert.deepEqual([conflicto[id].yaCobrada, conflicto[id].segura, conflicto[id].motivo], [true, false, 'conflicto']);
+});
+
+test('esAutomatica exige seguridad, importe exacto e identidad adecuada; respeta descartes', async () => {
+  const { esAutomatica, importeExacto } = await import('../lib/banco.js');
+  const m = movimiento({ concepto: 'A2026-01' });
+  const s = ingreso({ concepto: 'A2026-01' });
+  assert.equal(esAutomatica(s, m), true);
+  assert.equal(esAutomatica(ingreso({ concepto: 'Hotel Mirador' }), m), false);
+  for (const campo of [{ segura: false }, { motivo: 'conflicto' }, { motivo: 'parcial' }, { importe: 99.98 }, { tipo: 'otro' }]) {
+    assert.equal(esAutomatica({ ...s, ...campo }, m), false);
+  }
+  for (const extra of [{ autoDescartada: true }, { estado: 'ignorado' }, { estado: 'emparejado' }, { importe: -100 }]) {
+    assert.equal(esAutomatica(s, { ...m, ...extra }), false);
+  }
+  assert.equal(esAutomatica(undefined, m), false);
+  for (const concepto of ['Hotel Mirador', 'P2026-01']) assert.equal(esAutomatica(cargo({ concepto }), movimiento({ importe: -100 })), true);
+  assert.equal(esAutomatica(cargo(), movimiento({ importe: -100 })), false);
+  for (const importe of [99.99, 100, 100.01]) assert.equal(importeExacto(100, importe), true);
+  assert.equal(importeExacto(100, 100.02), false);
+  assert.equal(importeExacto(undefined, 100), false);
+  assert.equal(esAutomatica(ingreso({ concepto: 'A2026-01' }, { cobrada: true }), m), true);
+});
+
+test('liquidación de pagos externos parciales: solo enlace por lo cobrado y cobro nuevo por el saldo restante', () => {
+  const f = { base: 100, ivaPct: 21, pagos: [{ metodo: 'stripe', importe: 50 }] };
+  assert.deepEqual([ingreso({ importe: 50, concepto: 'A2026-01' }, f).yaCobrada,
+    ingreso({ importe: 50, concepto: 'A2026-01' }, f).importe], [true, 50]);
+  const restante = ingreso({ importe: 71, concepto: 'A2026-01' }, f);
+  assert.deepEqual([restante.importe, restante.segura, restante.yaCobrada], [71, true, undefined]);
+  assert.equal(ingreso({ importe: 40, concepto: 'A2026-01' }, f).motivo, 'parcial');
+});
