@@ -7,6 +7,10 @@ import { INDICE_SI_IGUAL, CERRAR_TRABAJO } from '../../lib/scripts.js';
 
 // Scripts Lua que usa la app (lib/cerrojo.js): se reconocen por su texto y se ejecutan en JavaScript.
 export const SCRIPTS = {
+  CONTAR_VENTANA: "local n = redis.call('INCR', KEYS[1])\nif n == 1 then redis.call('PEXPIRE', KEYS[1], ARGV[1]) end\nreturn n",
+  TOMAR_PLAZA: "if redis.call('EXISTS', KEYS[1]) == 0 then\n  redis.call('SET', KEYS[2], ARGV[3], 'PX', ARGV[2])\nend\nlocal n = redis.call('INCR', KEYS[1])\nif n > tonumber(ARGV[1]) and ARGV[4] == 'activo' then\n  redis.call('DECR', KEYS[1])\n  return {n, ''}\nend\nredis.call('PEXPIRE', KEYS[1], ARGV[2])\nredis.call('PEXPIRE', KEYS[2], ARGV[2])\nreturn {n, redis.call('GET', KEYS[2])}",
+  DEJAR_PLAZA: "if redis.call('GET', KEYS[2]) ~= ARGV[1] or redis.call('EXISTS', KEYS[1]) == 0 then return 0 end\nlocal n = redis.call('DECR', KEYS[1])\nif n <= 0 then redis.call('DEL', KEYS[1], KEYS[2]) end\nreturn n",
+
   soltar: "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end",
 };
 
@@ -92,6 +96,26 @@ export function crearBase() {
       case 'eval': {
         const [script, n, ...resto] = a;
         const keys = resto.slice(0, Number(n)), args = resto.slice(Number(n));
+        if (script === SCRIPTS.CONTAR_VENTANA) {
+          const n = run(['incr', keys[0]]);
+          if (n === 1) run(['pexpire', keys[0], args[0]]);
+          return n;
+        }
+        if (script === SCRIPTS.TOMAR_PLAZA) {
+          if (!run(['exists', keys[0]])) run(['set', keys[1], args[2], 'PX', args[1]]);
+          const n = run(['incr', keys[0]]);
+          if (n > Number(args[0]) && args[3] === 'activo') { db.get(keys[0]).v = String(n - 1); return [n, '']; }
+          run(['pexpire', keys[0], args[1]]);
+          run(['pexpire', keys[1], args[1]]);
+          return [n, run(['get', keys[1]])];
+        }
+        if (script === SCRIPTS.DEJAR_PLAZA) {
+          if (run(['get', keys[1]]) !== args[0] || !run(['exists', keys[0]])) return 0;
+          const n = Number(run(['get', keys[0]])) - 1;
+          db.get(keys[0]).v = String(n);
+          if (n <= 0) run(['del', ...keys]);
+          return n;
+        }
         if (script === SCRIPTS.soltar) return vivo(keys[0])?.v === args[0] ? run(['del', keys[0]]) : 0;
         if (script === INDICE_SI_IGUAL) {
           let n = 0;

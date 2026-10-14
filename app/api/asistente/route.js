@@ -1,4 +1,4 @@
-import { redis } from '@/lib/redis';
+import { contarVentana, rafaga, concurrencia, respuesta429 } from '@/lib/limite';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { hoy } from '@/lib/formato';
 import { iaLista } from '@/lib/ticket';
@@ -17,11 +17,14 @@ export async function POST(req) {
   const b = await cuerpo(req);
   const pregunta = String(b.pregunta || '').trim().slice(0, 500);
   if (!pregunta) return error('Escribe tu pregunta');
+  if (await rafaga('asistente', u.id, 6, 60)) return respuesta429(60, 'Has enviado demasiadas preguntas seguidas. Espera un minuto y prueba de nuevo.');
   const k = `asistente:${u.id}:${hoy()}`;
-  const n = await redis.incr(k);
-  if (n === 1) await redis.expire(k, 2 * 86400);
-  if (n > POR_DIA) return error(`Has llegado a las ${POR_DIA} preguntas de hoy. Mañana más.`, 429);
+  const n = await contarVentana(k, 2 * 86400);
+  if (n > POR_DIA) return respuesta429(86400, `Has llegado a las ${POR_DIA} preguntas de hoy. Mañana más.`);
   try {
-    return Response.json({ ok: true, ...(await preguntar(u, pregunta, limpiarHistorial(b.historial), hoy())) });
+    const r = await concurrencia('asistente', u.empresa, 2, 60000, () =>
+      concurrencia('ia', 'global', 20, 60000, () => preguntar(u, pregunta, limpiarHistorial(b.historial), hoy())));
+    if (r?.ocupado) return respuesta429(5, 'El asistente está ocupado. Espera unos segundos y prueba de nuevo.');
+    return Response.json({ ok: true, ...r });
   } catch (e) { return error(e.message, 502); }
 }
