@@ -45,8 +45,9 @@ export default async function Gastos({ searchParams }) {
   const movimiento = banco && sinPareja.find((m) => m.id === banco);
   const buscado = String(q || '').trim().toLowerCase();
   // Los bienes traídos de otro programa no son gastos de aquí: se ven en Contabilidad › Amortizaciones.
-  const filtro = (f) => !f.mi && (!buscado || f.x.includes(buscado));
-  const pag = await pagina(u, 'gastos', { cursor: desde, marca: estado === 'sinpagar' ? 'p' : undefined, filtro });
+  // La búsqueda va por el índice de texto (revisión S06); el resto, por la ficha.
+  const filtro = (f) => !f.mi;
+  const pag = await pagina(u, 'gastos', { cursor: desde, marca: estado === 'sinpagar' ? 'p' : undefined, filtro, buscar: buscado });
   const lista = await documentos(u, 'gastos', pag.ids);
   const hay = total > 0 && (lista.length > 0 || Boolean(desde) || Boolean(buscado) || estado === 'sinpagar' || (await pagina(u, 'gastos', { limite: 1, filtro: (f) => !f.mi })).ids.length > 0);
   const actividades = actividadesDe(u);
@@ -73,8 +74,8 @@ export default async function Gastos({ searchParams }) {
     grupos.at(-1).gastos.push(g);
   }
   const totalMes = Object.fromEntries(await Promise.all(grupos.map(async (g) => {
-    const fichas = await fichasRango(u, 'gastos', `${g.m}-01`, `${g.m}-31`);
-    return [g.m, fichas.filter((f) => filtro(f) && (estado !== 'sinpagar' || f.pe)).reduce((s, f) => s + f.b, 0)];
+    const fichas = await fichasRango(u, 'gastos', `${g.m}-01`, `${g.m}-31`, { textos: Boolean(buscado) });
+    return [g.m, fichas.filter((f) => filtro(f) && (!buscado || f.x.includes(buscado)) && (estado !== 'sinpagar' || f.pe)).reduce((s, f) => s + f.b, 0)];
   })));
 
   return (
