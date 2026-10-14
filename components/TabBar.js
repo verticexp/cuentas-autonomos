@@ -47,6 +47,7 @@ function vibrar() {
 
 // Las pantallas de Facturas y Gastos (caja, catálogo, proveedores…) siguen contando como esas pestañas; el resto de las de «Más» y Ajustes, como «Más».
 const deMas = (path) => path === '/mas' || path.startsWith('/ajustes') || extraDe(path) !== null;
+const RAICES = ['/', '/facturas', '/gastos', '/mas', '/ajustes'];
 const seccion = (path) => (path === '/' ? '/' : path.startsWith('/presupuestos') ? '/facturas'
   : ['/facturas', '/gastos'].some((h) => path.startsWith(h)) ? TABS.find((t) => t.href !== '/' && path.startsWith(t.href))?.href ?? null
   : deMas(path) ? '/mas' : null);
@@ -64,7 +65,8 @@ export default function TabBar({ permisos = [], empresas = [], empresa, admin = 
   const botonMas = useRef(null);
   const panel = useRef(null);
 
-  useEffect(() => { setActivo(seccion(path)); }, [path]);
+  // Una pantalla de dentro (Presupuestos, Recurrentes, Caja…) a la que se entró desde «Más» sigue marcando «Más», no la pestaña a la que pertenece.
+  useEffect(() => { setActivo((previo) => (previo === '/mas' && !RAICES.includes(path) ? '/mas' : seccion(path))); }, [path]);
   useEffect(() => { instalarHistorial(); }, []);
   useEffect(() => {
     const m = matchMedia('(max-width: 1023.98px)');
