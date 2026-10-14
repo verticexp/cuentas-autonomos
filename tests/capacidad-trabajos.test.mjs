@@ -90,3 +90,15 @@ test('E04: un trabajo reencolado mientras se procesa no se pierde', async () => 
   assert.equal(veces, 2);
   assert.equal(await R.redis.hget(`trabajos:${u.empresa}`, 'j'), null);
 });
+
+test('E06: el cron de la mañana deja los índices de cada empresa listos y comprueba sus totales', async () => {
+  await vaciarCola();
+  const id = `idx${Date.now()}`;
+  await R.redis.hset('empresas', { [id]: { id, emisor: {} } });
+  srv.base.run(['hset', `cuentas:facturas:${id}`, 'F1', JSON.stringify({ id: 'F1', numero: 1, anio: 2026, fecha: '2026-02-01', base: 100, ivaPct: 21, cliente: { nombre: 'C' } })]);
+  await TT.planificarDia('2026-10-16', 'http://local', ['indices']);
+  const r = await T.procesar({ hasta: Date.now() + 8000, concurrencia: 8 });
+  assert.ok(r.resultados.some((x) => x.tipo === 'dia-indices'));
+  assert.equal(await R.redis.get(`ixv:facturas:${id}`), Number((await import('../lib/fichas.js')).VERSION_INDICE));
+  assert.equal(TT.resumenTanda(r).descuadres, 0);
+});
