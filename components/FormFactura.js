@@ -4,12 +4,15 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { navegar } from '@/lib/transicion';
 import Deslizable from './Deslizable';
-import { baseLinea, desglose, importes, leerImporte, numeroFactura, r2 } from '@/lib/calculos';
+import { baseLinea, desglose, importes, leerImporte, numeroFactura, pagadoDe, pendienteDe, r2 } from '@/lib/calculos';
 import '@/app/lineas.css';
 import '@/app/catalogo.css';
 import '@/app/factura-movil.css';
 import { eur } from '@/lib/formato';
 import { TIPOS_OPERACION } from '@/lib/operaciones';
+import { evaluarRiesgo, tieneLimite } from '@/lib/riesgo';
+import { mismoCliente, nombreForma } from '@/lib/terceros';
+import '@/app/riesgo.css';
 
 const aTexto = (n) => String(n ?? '').replace('.', ',');
 const lineaVacia = (ivaPct) => ({ concepto: '', cantidad: '1', precio: '', dto: '', ivaPct });
@@ -19,7 +22,8 @@ const lineasDe = (x) => (x.lineas?.length
   : [{ concepto: x.concepto || '', cantidad: '1', precio: aTexto(x.base), dto: '', ivaPct: x.ivaPct }]);
 const numero = (v) => leerImporte(v) || 0;
 
-export default function FormFactura({ factura, clientes, numeros, hoy, rectifica: orig, plantilla, actividades, productos = [], stock = null, proyectos = [] }) {
+// riesgos: lo que debe ahora cada cliente con riesgo máximo ({ id: euros }); el límite lo comprueba el servidor.
+export default function FormFactura({ factura, clientes, numeros, hoy, rectifica: orig, plantilla, actividades, productos = [], stock = null, proyectos = [], riesgos = {} }) {
   // IVA y retención de cada actividad, para rellenar la factura nueva.
   const defecto = (id) => { const a = actividades.find((x) => x.id === id) || actividades[0]; return { ivaPct: a.ivaPct, irpfPct: a.irpfPct }; };
   const router = useRouter();
@@ -136,6 +140,14 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
   const base = r2(nums.reduce((s, l) => s + baseLinea(l), 0));
   const t = importes({ base, lineas: nums, irpfPct: Number(f.irpfPct) });
   const tipos = desglose({ lineas: nums });
+  // Ficha del cliente elegido: cómo y cuándo cobra, y su riesgo máximo con esta factura. Lo que ya debe incluye esta misma
+  // factura si se está editando (propio), y lo cobrado no cuenta; si no suma riesgo, nunca se avisa.
+  const ficha = clientes.find((x) => x.id === elegido);
+  const resumen = ficha && [ficha.formaCobro && nombreForma(ficha.formaCobro), Number.isInteger(ficha.plazo) && (ficha.plazo ? `${ficha.plazo} días` : 'al contado'),
+    ficha.comercial && `Comercial: ${ficha.comercial}`, ficha.zona && `Zona: ${ficha.zona}`].filter(Boolean).join(' · ');
+  const pendiente = f.cobrada ? 0 : r2(t.total - (factura ? pagadoDe(factura) : 0));
+  const propio = factura && mismoCliente(factura.cliente, f.cliente) ? pendienteDe(factura) : 0;
+  const riesgo = tieneLimite(ficha) ? evaluarRiesgo({ limite: ficha.riesgoMax, riesgo: Number(riesgos[ficha.id]) || 0, incremento: r2(pendiente - propio), cliente: ficha.nombre }) : null;
 
   const enviar = async (e) => {
     e.preventDefault();
@@ -221,6 +233,20 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
           <label className="ff-etiqueta-oculta" htmlFor={idCampo('cliente.email')}>Email (para enviarle la factura)</label>
           <input {...atributos('cliente.email')} className="campo" type="email" placeholder="Ej.: cliente@empresa.es" value={f.cliente.email || ''} onChange={(e) => ponerCliente('email', e.target.value)} />{mensaje('cliente.email')}
         </div>
+        {(resumen || riesgo) && (
+          <div className={`ff-ficha${riesgo && !riesgo.ok ? ' excede' : ''}`}>
+            {resumen && <p className="ff-ficha-resumen">{resumen}</p>}
+            {riesgo && (
+              <>
+                <p className="ff-riesgo-cifras"><span>Riesgo <b>{eur(riesgo.riesgo)}</b> de {eur(riesgo.limite)}</span><span>Disponible <b>{eur(riesgo.disponible)}</b></span></p>
+                <div className="ff-riesgo-barra" aria-hidden="true"><i style={{ width: `${riesgo.limite > 0 ? Math.min(100, Math.round((riesgo.nuevo / riesgo.limite) * 100)) : 100}%` }} /></div>
+                {riesgo.ok
+                  ? riesgo.nuevo !== riesgo.riesgo && <p className="ff-riesgo-nota">Con esta factura: {eur(riesgo.nuevo)}</p>
+                  : <p className="error" role="alert">{riesgo.error}</p>}
+              </>
+            )}
+          </div>
+        )}
       </fieldset>
 
       <div className={`dos-col ff-det ff-evento${verEvento || f.evento?.fecha || f.evento?.lugar ? ' abierto' : ''}`}>
