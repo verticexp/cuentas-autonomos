@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { eur, fechaCorta } from '@/lib/formato';
+import { saldoDe as saldo } from '@/lib/calculos';
 import '@/app/importar.css';
 
 const TIPOS = [['clientes', 'Clientes'], ['facturas', 'Facturas'], ['gastos', 'Gastos'], ['productos', 'Productos'], ['saldos', 'Saldos'], ['bienes', 'Bienes']];
@@ -18,7 +19,7 @@ function resumen(tipo, d) {
   if (tipo === 'saldos') return [`${d.cuenta} · ${d.nombre || ''}`, `${d.saldo >= 0 ? 'Deudor' : 'Acreedor'} ${eur(Math.abs(d.saldo))}`];
   if (tipo === 'bienes') return [d.concepto, `${fechaCorta(d.fecha)} · ${eur(d.base)} · amortizado ${eur(d.inversion.acumulada)}`];
   if (tipo === 'gastos') return [d.concepto, `${fechaCorta(d.fecha)} · ${eur(d.base)} + IVA ${d.ivaPct} %${d.pendiente ? ' · sin pagar' : ''}`];
-  return [`${d.importada} · ${d.cliente.nombre}`, `${fechaCorta(d.fecha)} · ${eur(d.base)} + IVA ${d.ivaPct} %${d.irpfPct ? ` − IRPF ${d.irpfPct} %` : ''} · ${d.cobrada ? 'cobrada' : 'pendiente'}`];
+  return [`${d.importada} · ${d.cliente.nombre}`, `${fechaCorta(d.fecha)} · ${eur(d.base)} + IVA ${d.ivaPct} %${d.irpfPct ? ` − IRPF ${d.irpfPct} %` : ''} · ${d.cobrada ? 'cobrada' : d.pagos?.length ? `cobrada en parte (pendiente ${eur(saldo(d))})` : 'pendiente'}`];
 }
 
 // Importar desde Holded o Excel: se elige qué, se sube el archivo, se revisa la vista previa y se guarda.
@@ -72,6 +73,7 @@ export default function Importar() {
             {vista.errores > 0 && <span className="rojo">Con errores <strong>{vista.errores}</strong></span>}
           </p>
           {tipo === 'saldos' && <p className={`nota${vista.descuadre ? ' rojo' : ''}`}>Saldos deudores {eur(vista.debe)} · acreedores {eur(vista.haber)}{vista.descuadre ? ` · la diferencia (${eur(Math.abs(vista.descuadre))}) irá a la cuenta 129, resultado del ejercicio${vista.conResultados ? ': revisa el archivo, porque ya trae cuentas de gastos e ingresos' : ''}` : ' · cuadra'}.</p>}
+          {tipo === 'facturas' && vista.pendienteTotal !== undefined && <p className="nota">Pendiente de cobro de las facturas nuevas: <strong>{eur(vista.pendienteTotal)}</strong>{vista.parciales ? ` · ${vista.parciales} cobradas en parte (sin fecha ni método del cobro: no constan en el archivo)` : ''}. Compáralo con tu programa de origen antes de importar.</p>}
           <p className="nota">Columnas: {Object.entries(vista.columnas).map(([k, c]) => `${CAMPO[k] || k} ← «${c}»`).join(' · ')}</p>
           <ul className="grupo-lista importar-filas">
             {vista.items.slice(0, 100).map((x) => {
