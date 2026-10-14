@@ -4,7 +4,7 @@ import { leerImporte, r2 } from '@/lib/calculos';
 import { actividadesDe, actividadValida } from '@/lib/empresa';
 import { gastoDeNomina } from '@/lib/nominas';
 import { extrasNomina, resumenMes } from '@/lib/jornada';
-import { enviarNomina } from '@/lib/controlat';
+import { secundarios } from '@/lib/trabajos';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,7 +13,7 @@ async function guardarConGasto(u, n) {
   await guardar(u, 'nominas', n);
   const g = gastoDeNomina(n, actividadValida(actividadesDe(u)));
   await guardar(u, 'gastos', g);
-  await enviarNomina(u, [g.fecha]);
+  await secundarios(u, { meses: [g.fecha] });
 }
 
 // Genera las nóminas de un mes para los empleados de alta ese mes (las que ya existan no se tocan).
@@ -64,6 +64,6 @@ export async function DELETE(req) {
   const antes = id && (await leerUno(u, 'nominas', id));
   if (!antes) return error('Esa nómina ya no existe', 404);
   await Promise.all([borrar(u, 'nominas', id), borrar(u, 'gastos', `nomina-${id}`)]);
-  await enviarNomina(u, [gastoDeNomina(antes, '').fecha]);
+  await secundarios(u, { meses: [gastoDeNomina(antes, '').fecha] });
   return Response.json({ ok: true });
 }

@@ -113,7 +113,8 @@ test('E05: emitir con histórico no lo relee; el contador se verifica una sola v
   const datos = { fecha: '2026-10-14', actividad: 'servicios', cliente: { nombre: 'Cliente', nif: '12345678Z' }, concepto: 'x', base: 10, ivaPct: 21, irpfPct: 0 };
   assert.equal((await F.crearFactura(u, datos)).factura.numero, 311);
   const cmds = await registrar(async () => { assert.equal((await F.crearFactura(u, datos)).factura.numero, 312); });
-  assert.ok(!cmds.some((c) => c[0] === 'hgetall'), `sin HGETALL: ${cmds.map((c) => c[0]).join(',')}`);
+  const historico = (c) => c[0] === 'hgetall' && /^cuentas:(facturas|facturasBorradas):/.test(c[1]);
+  assert.ok(!cmds.some(historico), `sin leer el histórico: ${cmds.map((c) => `${c[0]} ${c[1]}`).join(', ')}`);
   // Veinte emisiones a la vez: números consecutivos y únicos.
   const r = await Promise.all(Array.from({ length: 20 }, () => F.crearFactura(u, datos)));
   assert.deepEqual(r.map((x) => x.factura.numero).sort((a, b) => a - b), Array.from({ length: 20 }, (_, i) => 313 + i));

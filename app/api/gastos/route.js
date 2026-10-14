@@ -1,6 +1,4 @@
 import { cuerpo, error, usuarioApi } from '@/lib/api';
-import { subirGasto } from '@/lib/drive';
-import { enviarNomina } from '@/lib/controlat';
 import { emparejar } from '@/lib/bancoServidor';
 import { auditar } from '@/lib/auditoria';
 import { leerImporte, nifUE, r2 } from '@/lib/calculos';
@@ -10,6 +8,7 @@ import { CATEGORIAS } from '@/lib/categorias';
 import { TIPOS_BIEN, inversionEditada } from '@/lib/amortizaciones';
 import { limpiarProyecto } from '@/lib/proyectos';
 import { borrarGasto, crearGasto, editarGasto } from '@/lib/gastosServidor';
+import { secundarios } from '@/lib/trabajos';
 
 export const dynamic = 'force-dynamic';
 
@@ -78,7 +77,7 @@ export async function POST(req) {
   // Apuntado desde un movimiento del banco que no tenía gasto: queda emparejado (y pagado con la fecha del banco).
   // Si el cargo no casa con el gasto (informe R01), el gasto queda apuntado sin emparejar y se avisa.
   const emp = b.banco ? await emparejar(u, String(b.banco), 'gasto', g.id) : null;
-  await Promise.all([subirGasto(u, g), enviarNomina(u, [g.fecha])]);
+  await secundarios(u, { gastos: [g.id], meses: [g.fecha] });
   return Response.json({ ok: true, gasto: g, ...(emp?.error ? { aviso: `Gasto guardado, pero sin emparejar con el banco: ${emp.error}` } : {}) });
 }
 
@@ -102,7 +101,7 @@ export async function PATCH(req) {
   if (r.error) return error(r.error, r.status || 400);
   const { antes, gasto: g } = r;
   if (antes.inversion && antes.inversion.tipo !== g.inversion?.tipo) await auditar(u, 'Criterio de amortización cambiado', `${antes.concepto} · ${antes.inversion.tipo} → ${g.inversion?.tipo || 'sin inversión'}`);
-  await enviarNomina(u, [antes.fecha, g.fecha]);
+  await secundarios(u, { meses: [antes.fecha, g.fecha] });
   return Response.json({ ok: true });
 }
 
@@ -116,6 +115,6 @@ export async function DELETE(req) {
   if (r.error) return error(r.error, r.status || 400);
   const { antes } = r;
   if (antes) await auditar(u, 'Gasto borrado', `${antes.concepto} · ${antes.fecha} · ${antes.base} € sin IVA`);
-  if (antes) await enviarNomina(u, [antes.fecha]);
+  if (antes) await secundarios(u, { meses: [antes.fecha] });
   return Response.json({ ok: true });
 }

@@ -3,12 +3,11 @@ import { actualizarFactura } from '@/lib/actualizarFactura';
 import { borrarFactura, crearFactura, guardarCliente, limpiar } from '@/lib/facturas';
 import { numeroFactura } from '@/lib/calculos';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
-import { subirFactura } from '@/lib/drive';
-import { enviarNomina } from '@/lib/controlat';
 import { auditar } from '@/lib/auditoria';
 import { hoy } from '@/lib/formato';
 import { actividadesDe, fiscalDe } from '@/lib/empresa';
 import { soltarAlbaranes } from '@/lib/albaranesServidor';
+import { secundarios } from '@/lib/trabajos';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60; // el envío a Verifactu puede esperar al control de flujo de la AEAT
@@ -39,7 +38,7 @@ export async function PATCH(req) {
     // La fecha del cobro: para el estado de pago (Ley Crea y Crece) y el asiento del cobro.
     const r = await actualizarFactura(u, antes.id, (actual) => ({ nueva: { ...actual, cobrada: Boolean(b.cobrada), cobro: b.cobrada ? actual.cobro || { fecha: hoy(), metodo: 'manual' } : undefined } }));
     if (r.error) return error(r.error, r.status || 400);
-    await subirFactura(u, r.factura);
+    await secundarios(u, { facturas: [r.factura.id] });
     return Response.json({ ok: true });
   }
   if (antes.verifactu) return error('Esta factura ya está registrada en Verifactu: para corregirla, haz una rectificativa');
@@ -51,7 +50,7 @@ export async function PATCH(req) {
     : { nueva: { ...actual, evento: undefined, proyecto: undefined, operacion: undefined, ...datos } }));
   if (r.error) return error(r.error, r.status || 400);
   await guardarCliente(u, datos.cliente);
-  await Promise.all([subirFactura(u, { ...r.factura, evento: undefined, proyecto: undefined }), enviarNomina(u, [antes.fecha, datos.fecha])]);
+  await secundarios(u, { facturas: [r.factura.id], meses: [antes.fecha, datos.fecha] });
   return Response.json({ ok: true });
 }
 
@@ -67,6 +66,6 @@ export async function DELETE(req) {
   // Sus albaranes vuelven a estar por facturar.
   await soltarAlbaranes(u, antes);
   await auditar(u, 'Factura borrada', `${numeroFactura(antes)} · ${antes.cliente?.nombre || ''} · ${antes.base} € sin IVA`);
-  await enviarNomina(u, [antes.fecha]);
+  await secundarios(u, { meses: [antes.fecha] });
   return Response.json({ ok: true });
 }

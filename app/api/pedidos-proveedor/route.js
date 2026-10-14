@@ -2,9 +2,8 @@ import { leer } from '@/lib/redis';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { limpiarPedidoProv, numeroDoc } from '@/lib/albaranes';
 import { borrarPedidoProv, cancelarPedidoProv, crearPedidoProv, recibirPedidoProv } from '@/lib/albaranesServidor';
-import { subirGasto } from '@/lib/drive';
-import { enviarNomina } from '@/lib/controlat';
 import { auditar } from '@/lib/auditoria';
+import { secundarios } from '@/lib/trabajos';
 
 export const dynamic = 'force-dynamic';
 const num = (p) => numeroDoc({ ...p, tipo: 'proveedor' });
@@ -27,7 +26,7 @@ export async function POST(req) {
     if (r.error) return error(r.error, r.status || 400);
     const g = r.gasto;
     if (!r.repetida) {
-      await Promise.all([subirGasto(u, g), enviarNomina(u, [g.fecha])]);
+      await secundarios(u, { gastos: [g.id], meses: [g.fecha] });
       await auditar(u, 'Pedido recibido', `${num(r.pedido)} · ${r.pedido.proveedor} · ${g.base} € sin IVA`);
     }
     return Response.json({ ok: true, gasto: g, recepcion: r.recepcion, pedido: r.pedido });
