@@ -18,7 +18,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function Proveedor({ params }) {
   const u = await requerir('gastos');
-  const clave = (await params).clave;
+  const clave = decodeURIComponent((await params).clave);
   const p = await detalleProveedor(u, clave);
   if (!p) notFound();
   const fichas = (await listarProveedores(u)).map((p) => p.ficha);

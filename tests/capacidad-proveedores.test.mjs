@@ -70,7 +70,8 @@ function sinHistorico(cmds, u, col) {
   assert.ok(!cmds.some((c) => c[0] === 'hgetall' && c[1] === `cuentas:${col}:${u.empresa}`), `sin HGETALL de ${col}`);
 }
 const solicitud = (b) => new Request('http://localhost/api', { method: 'POST', body: JSON.stringify(b), headers: { 'Content-Type': 'application/json' } });
-const resumen = (p) => { const { gastos, ...resto } = p; return resto; };
+const resumen = (p) => { const { gastos, ficha, ...resto } = p; return resto; };
+const sinFicha = (p) => { const { ficha, ...resto } = p; return resto; };
 const variados = () => [
   gasto('primero', { proveedor: 'Álvaro  Sonido', proveedorNif: 'b12345674', fecha: '2025-01-01', pendiente: true, irpfPct: 15 }),
   gasto('ultimo', { proveedor: 'SONIDO nuevo', proveedorNif: 'B12345674', pendiente: true, base: 33.33, ivaPct: 10 }),
@@ -95,7 +96,7 @@ test('E01: lista de proveedores idéntica en importes, normalización, nombres y
   const u = empresa(); contexto.u = u;
   await sembrar(u, 'gastos', variados());
   const antes = P.proveedores(await R.leer(u, 'gastos')).map(resumen);
-  const { resultado, cmds } = await registrar(() => lista());
+  const { resultado, cmds } = await registrar(() => lista({}));
   assert.deepEqual(resultado.map(resumen), antes);
   sinHistorico(cmds, u, 'gastos');
   assert.deepEqual(leidos(cmds, u, 'gastos'), []);
@@ -104,7 +105,7 @@ test('E01: lista de proveedores idéntica en importes, normalización, nombres y
 test('E01: listas vacías y detalle inexistente', async () => {
   const u = empresa(); contexto.u = u;
   await sembrar(u, 'gastos', []);
-  assert.deepEqual(await lista(), []);
+  assert.deepEqual(await lista({}), []);
   await assert.rejects(detalle({ params: Promise.resolve({ clave: 'inexistente' }) }), /NOT_FOUND/);
 });
 
@@ -114,7 +115,7 @@ test('E01: detalle lee exactamente los gastos del proveedor y conserva empates d
   const antes = P.proveedores(await R.leer(u, 'gastos'));
   for (const esperado of antes) {
     const { resultado, cmds } = await registrar(() => detalle({ params: Promise.resolve({ clave: encodeURIComponent(esperado.clave) }) }));
-    assert.deepEqual(resultado, esperado);
+    assert.deepEqual(sinFicha(resultado), esperado);
     sinHistorico(cmds, u, 'gastos');
     assert.deepEqual(leidos(cmds, u, 'gastos').sort(), esperado.gastos.map((g) => g.id).sort());
   }

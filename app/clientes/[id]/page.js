@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function Cliente({ params }) {
   const u = await requerir('facturas');
-  const { id } = await params;
+  const id = decodeURIComponent((await params).id);
   const detalle = await detalleCliente(u, id);
   if (!detalle) notFound();
   const lista = await listarClientes(u);
