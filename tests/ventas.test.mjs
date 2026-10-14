@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { baseDeTotal, limpiarCierre, totalCierre } from '../lib/caja.js';
 import { inventario, quePedir } from '../lib/inventario.js';
-import { albaranDePedido, enCamino, estadoPedido, facturaDeAlbaranes, gastoDeRecepcion, limpiarDoc, limpiarPedidoProv, numeroDoc } from '../lib/albaranes.js';
+import { albaranDePedido, enCamino, estadoPedido, estadoPedidoProv, facturaDeAlbaranes, gastoDeRecepcion, lineasDeRecepcion, limpiarDoc, limpiarPedidoProv, numeroDoc } from '../lib/albaranes.js';
 import { importes, limpiarLineas } from '../lib/calculos.js';
 import { generarAsientos } from '../lib/asientos.js';
 import { librosRegistro } from '../lib/librosRegistro.js';
@@ -116,6 +116,56 @@ test('pedido → albaranes parciales → factura agrupada sin restar el stock do
   assert.equal(inventario({ productos, ajustes: inicial, albaranes, facturas: [f] }, { hoy: '2026-04-30' }).productos[0].ventas, 10);
   assert.match(facturaDeAlbaranes([a1, { ...a2, cliente: { nombre: 'Otro' } }]).error, /mismo cliente/);
   assert.match(facturaDeAlbaranes([{ ...a1, factura: 'f1' }]).error, /facturado/);
+  assert.match(facturaDeAlbaranes([a1, { ...a1 }]).error, /duplicados/);
+});
+
+test('N09: recibir 2 de 10 conserva 8 en camino y el gasto por defecto recibe el resto', () => {
+  const p = { id: 'pp1', numero: 1, anio: 2026, fecha: '2026-02-01', proveedor: 'Cosmética SL', lineas: [{ producto: 'aaaaaaaaaaaa', concepto: 'Champú', cantidad: 10, coste: 4 }] };
+  assert.equal(estadoPedidoProv(p).estado, 'pendiente');
+  const parcial = { ...p, recepciones: [{ id: 'r1', fecha: '2026-02-02', gasto: 'g1', lineas: [{ linea: 0, producto: 'aaaaaaaaaaaa', concepto: 'Champú', cantidad: 2, coste: 4 }] }] };
+  const e = estadoPedidoProv(parcial);
+  assert.equal(e.estado, 'parcial');
+  assert.deepEqual(e.lineas.map((l) => [l.pedida, l.recibida, l.pendiente]), [[10, 2, 8]]);
+  assert.deepEqual(enCamino([parcial]), { aaaaaaaaaaaa: 8 });
+  assert.equal(gastoDeRecepcion(parcial).stock[0].cantidad, 8);
+  assert.match(gastoDeRecepcion(parcial, { recibido: [{ linea: 0, cantidad: 9 }] }).error, /Superas lo pendiente/);
+  assert.deepEqual(enCamino([{ ...parcial, cancelado: '2026-02-03' }]), {});
+  const antiguo = { ...p, recibido: '2026-02-02', gasto: 'g0' };
+  assert.equal(estadoPedidoProv(antiguo).estado, 'recibido');
+  assert.equal(estadoPedidoProv(antiguo).lineas[0].recibida, 10);
+  assert.deepEqual(enCamino([antiguo]), {});
+});
+
+test('recepciones: posición de línea distingue productos repetidos y conceptos sin producto', () => {
+  const p = { lineas: [
+    { producto: 'aaaaaaaaaaaa', concepto: 'Champú', cantidad: 10, coste: 4 },
+    { producto: 'aaaaaaaaaaaa', concepto: 'Champú', cantidad: 5, coste: 5 },
+    { concepto: 'Portes', cantidad: 2, coste: 8 },
+    { concepto: 'Portes', cantidad: 1, coste: 9 },
+  ] };
+  const r = lineasDeRecepcion(p, [{ linea: 1, cantidad: 3 }, { linea: 3, cantidad: 1 }]);
+  assert.deepEqual(r.lineas.map((l) => [l.linea, l.cantidad, l.coste]), [[1, 3, 5], [3, 1, 9]]);
+  const parcial = { ...p, recepciones: [{ lineas: r.lineas }] };
+  assert.deepEqual(estadoPedidoProv(parcial).lineas.map((l) => l.pendiente), [10, 2, 2, 0]);
+  assert.deepEqual(enCamino([parcial]), { aaaaaaaaaaaa: 12 });
+  assert.match(lineasDeRecepcion(p, [{ producto: 'aaaaaaaaaaaa', cantidad: 1 }]).error, /posición/);
+  assert.match(lineasDeRecepcion(p, [{ concepto: 'Portes', cantidad: 1 }]).error, /posición/);
+  assert.match(lineasDeRecepcion(p, [{ linea: 0, cantidad: 1 }, { linea: 0, cantidad: 1 }]).error, /duplicadas/);
+  assert.match(lineasDeRecepcion(parcial, [{ linea: 3, cantidad: 1 }]).error, /Ya recibiste todo/);
+  assert.match(lineasDeRecepcion(p, [{ linea: 9, cantidad: 1 }]).error, /no pertenece/);
+  assert.match(lineasDeRecepcion(p, [{ linea: 0, cantidad: -1 }]).error, /positivas/);
+});
+
+test('fechas de pedidos, albaranes y recepciones deben existir en el calendario', () => {
+  const pedido = { fecha: '2026-02-28', proveedor: 'Cosmética SL', lineas: [{ concepto: 'Champú', cantidad: 10, coste: 4 }] };
+  for (const fecha of ['2026-02-31', '2026-02-29', '2026-04-31', 'no-fecha', '']) {
+    assert.match(limpiarPedidoProv({ ...pedido, fecha }).error, /Fecha/);
+    for (const tipo of ['pedido', 'albaran']) assert.match(limpiarDoc({ fecha }, tipo).error, /Fecha/);
+    assert.match(gastoDeRecepcion(pedido, { fecha }).error, /Fecha de recepción/);
+  }
+  assert.match(limpiarDoc({ fecha: pedido.fecha, entrega: '2026-02-31' }, 'pedido').error, /entrega/);
+  assert.equal(gastoDeRecepcion(pedido).fecha, '2026-02-28');
+  assert.equal(gastoDeRecepcion(pedido, { fecha: '2024-02-29' }).fecha, '2024-02-29');
 });
 
 test('pedido a proveedor: «en camino» descuenta de «Qué pedir» y al recibirlo es un gasto con stock', () => {

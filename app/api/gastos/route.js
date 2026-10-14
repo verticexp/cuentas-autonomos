@@ -11,6 +11,7 @@ import { CATEGORIAS } from '@/lib/categorias';
 import { TIPOS_BIEN, inversionEditada } from '@/lib/amortizaciones';
 import { limpiarProyecto } from '@/lib/proyectos';
 import { crearGasto } from '@/lib/gastosServidor';
+import { sinRecepcionDeGasto } from '@/lib/albaranes';
 
 export const dynamic = 'force-dynamic';
 
@@ -110,7 +111,10 @@ export async function DELETE(req) {
   await borrar(u, 'gastos', id);
   // Si venía de un pedido a proveedor, el pedido vuelve a estar pendiente de recibir.
   const pedido = antes?.pedidoProv && (await leerUno(u, 'pedidosProv', antes.pedidoProv));
-  if (pedido?.gasto === id) await guardar(u, 'pedidosProv', { ...pedido, recibido: undefined, gasto: undefined });
+  // Una recepción parcial o completa de un pedido: se quita esa recepción (el pedido recupera sus unidades pendientes).
+  const sinRecepcion = sinRecepcionDeGasto(pedido, id);
+  if (sinRecepcion) await guardar(u, 'pedidosProv', sinRecepcion);
+  else if (pedido?.gasto === id) await guardar(u, 'pedidosProv', { ...pedido, recibido: undefined, gasto: undefined });
   if (antes) await auditar(u, 'Gasto borrado', `${antes.concepto} · ${antes.fecha} · ${antes.base} € sin IVA`);
   if (antes) await enviarNomina(u, [antes.fecha]);
   return Response.json({ ok: true });
