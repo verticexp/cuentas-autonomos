@@ -91,7 +91,7 @@ Los objetivos propuestos (p95 ≤ 1 s, p99 ≤ 2 s) **no se alcanzan en este ent
 ## Pendiente
 
 - **E01 resto**: hecho en la segunda tanda (Impuestos, mes, Tesorería, libros, paquete, estado de pagos, caja e importación de ventas, nueva factura, proyectos por año, exportar CSV, ajustes de Verifactu, cuestionario, proveedores, remesas y duplicados). Siguen leyendo todo, a propósito: **Contabilidad y cuentas anuales** (el balance acumula desde el principio: necesitan agregados, E06), el **inventario** (valora con todo el histórico de movimientos), la **exportación completa**, la **baja**, **Proyectos «desde el principio»** y el **asistente** (carga colecciones según la pregunta). Los movimientos del banco (`banco:<emp>`) aún no tienen índice. La búsqueda recorre fichas compactas (no documentos); para texto libre a escala, un índice de búsqueda o PostgreSQL.
-- **Entorno de pruebas representativo**: una base Upstash propia para las vistas previas (hoy comparten la de producción) y repetir ahí la prueba de carga. Es una decisión de infraestructura.
+- **Entorno de pruebas representativo**: desde el 14/10 las vistas previas ya no usan la base de producción (las variables `KV_*` solo en *production*; muestran «SinBD»). Para repetir la prueba de carga en Vercel haría falta una base Upstash de pruebas (pago por uso: el plan gratuito es una base por cuenta). Controla'T se queda en la misma base, separada por prefijo.
 - Confirmar `LIMITES=activo` en producción y configurar alertas (Vercel Observability o un drain) sobre las métricas JSON.
 - Exportaciones en almacenamiento de objetos (Vercel Blob) con enlace caducable. Base de datos propia, separada de Controla'T.
 - Contabilidad y cuentas anuales siguen leyendo todo el histórico (el balance es acumulado).
