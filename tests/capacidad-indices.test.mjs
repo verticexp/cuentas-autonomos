@@ -127,3 +127,21 @@ test('E05: importar facturas sube el contador para que la siguiente emisión no 
   assert.equal((await F.crearFactura(u, datos)).factura.numero, 42);
   assert.ok(Fi.ordenDe(factura(41)) > 0);
 });
+
+test('E01: delosAnios trae esos años, los bienes de inversión de antes y, si se pide, lo pendiente', async () => {
+  const u = empresa();
+  const g = (id, fecha, extra = {}) => ({ id, fecha, concepto: id, base: 100, ivaPct: 21, actividad: 'servicios', ...extra });
+  await R.redis.hset(R.clave(u, 'gastos'), Object.fromEntries([g('viejo', '2020-03-01'), g('bien', '2021-05-01', { inversion: { anios: 5 } }), g('debe', '2019-01-01', { pendiente: true }), g('este', '2026-02-01')].map((x) => [x.id, x])));
+  const ids = async (op) => (await I.delosAnios(u, [2026], op)).gastos.map((x) => x.id).sort();
+  assert.deepEqual(await ids(), ['bien', 'este']);
+  assert.deepEqual(await ids({ pendientes: true }), ['bien', 'debe', 'este']);
+});
+
+test('E05: el número previsto en «Nueva factura» es el que sale al emitir', async () => {
+  const u = empresa();
+  for (const f of Array.from({ length: 12 }, (_, i) => factura(i + 1, { actividad: 'servicios' }))) srv.base.run(['hset', `cuentas:facturas:${u.empresa}`, f.id, JSON.stringify(f)]);
+  assert.equal(await F.numeroPrevisto(u, '', 2026), 13);
+  const datos = { fecha: '2026-10-14', actividad: 'servicios', cliente: { nombre: 'Cliente', nif: '12345678Z' }, concepto: 'x', base: 10, ivaPct: 21, irpfPct: 0 };
+  assert.equal((await F.crearFactura(u, datos)).factura.numero, 13);
+  assert.equal(await F.numeroPrevisto(u, '', 2026), 14);
+});
