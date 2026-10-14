@@ -1,0 +1,48 @@
+/* Gastos: «Varios tickets» (modo ráfaga) y el aviso de cuando se llega desde el «+» con «Escanear ticket». Solo móvil. */
+.gasto-rapido.destacado { border: 2px solid var(--marca); }
+.gasto-rapido-botones .rafaga-abrir { grid-column: 1 / -1; }
+@media (min-width: 1024px) { .gasto-rapido-botones .rafaga-abrir { display: none; } }
+
+.rafaga { position: fixed; inset: 0; z-index: 40; display: flex; flex-direction: column; background: #000; color: #fff; }
+.rafaga-visor { position: relative; flex: 1; min-height: 0; background: #000; overflow: hidden; }
+.rafaga-visor video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.rafaga-aviso { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; margin: 0; padding: 32px; text-align: center; color: #fff; font-size: 16px; line-height: 1.4; }
+.rafaga-aviso p { margin: 0; }
+.rafaga-x { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 12px); right: 12px; width: 44px; height: 44px; border: 0; border-radius: 50%; background: rgba(0, 0, 0, 0.55); color: #fff; font-size: 26px; line-height: 1; cursor: pointer; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.rafaga-x.oscuro { position: static; background: var(--relleno); color: var(--ink); flex: none; }
+.rafaga-cuenta { position: absolute; left: 12px; top: calc(env(safe-area-inset-top, 0px) + 20px); margin: 0; padding: 6px 12px; border-radius: 999px; background: rgba(0, 0, 0, 0.55); font-size: 14px; font-weight: 600; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.rafaga-barra { flex: none; padding: 10px 16px calc(env(safe-area-inset-bottom, 0px) + 14px); background: #0b0b0b; }
+.rafaga-tiras { list-style: none; margin: 0 0 8px; padding: 8px 8px 0 0; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; min-height: 0; }
+.rafaga-tiras::-webkit-scrollbar { display: none; }
+.rafaga-tiras li { position: relative; flex: none; }
+.rafaga-tiras img { display: block; width: 52px; height: 68px; object-fit: cover; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.25); }
+.rafaga-tiras button { position: absolute; top: -6px; right: -6px; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 50%; background: #fff; color: #000; font-size: 15px; line-height: 1; cursor: pointer; }
+.rafaga-mandos { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.rafaga-mandos .boton { flex: 1; min-height: 52px; background: #fff; color: #000; }
+.rafaga-mandos .boton:disabled { background: rgba(255, 255, 255, 0.18); color: rgba(255, 255, 255, 0.5); }
+.rafaga-disparo, .rafaga-disparo-hueco { flex: none; width: 72px; height: 72px; }
+.rafaga-disparo { display: grid; place-items: center; border: 4px solid #fff; border-radius: 50%; background: transparent; padding: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.rafaga-disparo span { display: block; width: 54px; height: 54px; border-radius: 50%; background: #fff; transition: transform 0.1s; }
+.rafaga-disparo:active span { transform: scale(0.88); }
+.rafaga-disparo:disabled { opacity: 0.35; }
+.rafaga-disparo:focus-visible, .rafaga-x:focus-visible { outline: 3px solid #7fd8b5; outline-offset: 3px; }
+
+/* Revisión: una tarjeta por ticket */
+.rafaga-rev { flex: 1; min-height: 0; display: flex; flex-direction: column; background: var(--paper); color: var(--ink); padding: calc(env(safe-area-inset-top, 0px) + 12px) 16px 0; }
+.rafaga-cab { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.rafaga-cab h2 { margin: 0; font-size: 24px; font-weight: 700; }
+.rafaga-act { display: grid; gap: 4px; margin-bottom: 10px; color: var(--muted); font-size: 14px; }
+.rafaga-lista { list-style: none; margin: 0; padding: 0 0 12px; flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 12px; }
+.rafaga-it { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 12px; padding: 12px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); }
+.rafaga-it img { width: 64px; height: 84px; object-fit: cover; border-radius: 10px; }
+.rafaga-it.e-guardado, .rafaga-it.e-descartado { opacity: 0.6; }
+.rafaga-datos { display: grid; gap: 8px; min-width: 0; align-content: start; }
+.rafaga-datos .campo { padding: 10px 12px; font-size: 16px; margin: 0; background: var(--relleno); border-color: transparent; }
+.rafaga-datos .nota { margin: 0; font-size: 13px; }
+.rafaga-fila { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+.rafaga-fila input[type="date"] { grid-column: 1 / -1; min-height: 44px; }
+.rafaga-estado { margin: 0; color: var(--muted); font-size: 15px; }
+.rafaga-estado.ok { color: var(--in); font-weight: 600; }
+.rafaga-acc { display: flex; gap: 8px; flex-wrap: wrap; }
+.rafaga-pie { flex: none; display: grid; gap: 8px; padding: 10px 0 calc(env(safe-area-inset-bottom, 0px) + 14px); background: var(--paper); }
+@media (prefers-reduced-motion: reduce) { .rafaga-disparo span { transition: none; } }

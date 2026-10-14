@@ -11,20 +11,12 @@ import { CATEGORIAS, categoria, categoriaDe, pareceBien } from '@/lib/categorias
 import { LIMITE_LIBERTAD, TIPOS_BIEN, coeficiente } from '@/lib/amortizaciones';
 import { emparejarLineas } from '@/lib/inventario';
 import { leerFacturaElectronica } from '@/lib/facturae';
+import { reducir } from '@/lib/reducirImagen';
+import RafagaTickets from './RafagaTickets';
 import '@/app/ticket.css';
 
-// Reduce la foto (máx. 1600 px, JPEG) para que suba rápido y quepa en la petición.
-async function reducir(archivo) {
-  const img = await createImageBitmap(archivo);
-  const k = Math.min(1, 1600 / Math.max(img.width, img.height));
-  const c = document.createElement('canvas');
-  c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
-  c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-  return c.toDataURL('image/jpeg', 0.82);
-}
-
 // plegado: en la lista de gastos empieza como una tarjeta con «Escanear ticket»; el formulario se abre al escanear o al pedirlo.
-export default function FormGasto({ hoy, gasto, actividades, alquiler = false, retenciones = false, plegado = false, regimen = 'autonomo', movimiento = null, productos = [], proyectos = [] }) {
+export default function FormGasto({ hoy, gasto, actividades, alquiler = false, retenciones = false, plegado = false, destacar = false, regimen = 'autonomo', movimiento = null, productos = [], proyectos = [] }) {
   const router = useRouter();
   const vacio = { fecha: hoy, actividad: actividades[0].id, concepto: '', proveedor: '', base: '', ivaPct: 21 };
   // Desde un cargo del banco sin gasto: fecha, proveedor e importe del banco (base estimada al 21 %, hasta leer la factura).
@@ -102,7 +94,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, r
 
   if (!abierto) {
     return (
-      <div className="gasto-rapido">
+      <div className={`gasto-rapido${destacar ? ' destacado' : ''}`}>
         <div className="gasto-rapido-txt">
           <strong>{hecho ? '✓ Gasto añadido' : 'Añadir un gasto'}</strong>
           <small>Haz una foto al ticket o sube la factura: Netto lee proveedor, base, IVA y fecha.</small>
@@ -110,6 +102,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, r
         {error && <p className="error">{error}</p>}
         <div className="gasto-rapido-botones">
           <label className="boton gasto-escanear"><svg viewBox="0 0 24 24" aria-hidden><path d="M4 8V6a2 2 0 012-2h2M16 4h2a2 2 0 012 2v2M20 16v2a2 2 0 01-2 2h-2M8 20H6a2 2 0 01-2-2v-2M4 12h16" /></svg>Escanear ticket<input type="file" accept="image/*" capture="environment" onChange={foto} hidden /></label>
+          {!gasto && !movimiento && <RafagaTickets hoy={hoy} actividades={actividades} />}
           <label className="boton sec">Subir factura<input type="file" accept="image/*,application/pdf,.xml,.xsig,text/xml,application/xml" onChange={foto} hidden /></label>
           <button type="button" className="boton sec" onClick={() => { setAbierto(true); setHecho(false); }}>A mano</button>
         </div>
