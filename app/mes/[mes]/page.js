@@ -3,7 +3,7 @@ import Ir from '@/components/Ir';
 import { notFound } from 'next/navigation';
 import { requerir } from '@/lib/auth';
 import { leer } from '@/lib/redis';
-import { importes, numeroFactura, r2 } from '@/lib/calculos';
+import { importes, numeroFactura, pendienteDe, r2 } from '@/lib/calculos';
 import { actividadesDe, nombresActividad } from '@/lib/empresa';
 import { eur, fechaCorta } from '@/lib/formato';
 import Volver from '@/components/Volver';
@@ -26,7 +26,7 @@ export default async function Mes({ params }) {
   const otro = (d) => new Date(Date.UTC(y, m - 1 + d, 1)).toISOString().slice(0, 7);
   const facturado = suma(F, 'base');
   const gastado = suma(G, 'base');
-  const pendiente = r2(F.filter((f) => !f.cobrada).reduce((s, f) => s + importes(f).total, 0));
+  const pendiente = r2(F.reduce((s, f) => s + pendienteDe(f), 0));
   // Misma cuenta que la nómina que va a Controla'T (lib/controlat.js).
   const cuotas = r2(G.filter((g) => String(g.id).startsWith('cuota-')).reduce((s, g) => s + g.base, 0));
   const puntuales = r2(gastado - cuotas);

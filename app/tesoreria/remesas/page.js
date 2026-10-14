@@ -1,7 +1,7 @@
 import { requerir } from '@/lib/auth';
 import { puede } from '@/lib/permisos';
 import { leer } from '@/lib/redis';
-import { importes, numeroFactura } from '@/lib/calculos';
+import { importes, numeroFactura, saldoDe } from '@/lib/calculos';
 import { claveProveedor } from '@/lib/proveedores';
 import { clienteId } from '@/lib/remesas';
 import { hoy } from '@/lib/formato';
@@ -35,7 +35,7 @@ export default async function PaginaRemesas() {
       {faltaEmisor && <p className="nota">Completa tus datos de facturación (nombre, IBAN y NIF) en <Ir href="/ajustes">Ajustes</Ir> para preparar remesas.</p>}
       <Remesas puedeCobrar={cobros} puedePagar={pagos} hoy={fechaHoy} fechaCobro={fechaCobro}
         emisorCobros={Boolean(u.emisor?.iban && u.emisor?.nombre && u.emisor?.nif)} emisorPagos={Boolean(u.emisor?.iban && u.emisor?.nombre)}
-        facturas={facturas.filter((f) => !f.cobrada && !f.caja).map((f) => ({ id: f.id, grupo: clienteId(f.cliente?.nombre), nombre: f.cliente?.nombre || 'Sin cliente', concepto: `Factura ${numeroFactura(f)}`, fecha: f.fecha, importe: importes(f).total }))}
+        facturas={facturas.filter((f) => !f.cobrada && !f.caja && saldoDe(f) > 0).map((f) => ({ id: f.id, grupo: clienteId(f.cliente?.nombre), nombre: f.cliente?.nombre || 'Sin cliente', concepto: `Factura ${numeroFactura(f)}`, fecha: f.fecha, importe: saldoDe(f) }))}
         gastos={gastos.filter((g) => g.pendiente === true).map((g) => ({ id: g.id, grupo: g.proveedor ? claveProveedor(g) : '', nombre: g.proveedor || 'Sin proveedor', concepto: g.concepto || 'Gasto', fecha: g.fecha, importe: importes(g).total }))}
         domiciliaciones={domiciliaciones || []} cuentasProv={cuentasProv || []}
         historial={historial.filter((r) => (r.tipo === 'cobros' && cobros) || (r.tipo === 'pagos' && pagos)).sort((a, b) => b.creada.localeCompare(a.creada)).slice(0, 50)} />

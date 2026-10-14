@@ -1,10 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { leer, leerUno, guardar, borrar } from '@/lib/redis';
+import { actualizarFactura } from '@/lib/actualizarFactura';
 import { auditar } from '@/lib/auditoria';
 import { hoy, eur } from '@/lib/formato';
 import { claveProveedor } from '@/lib/proveedores';
-import { clienteId, fechaValida, prepararCuenta, prepararDomiciliacion, prepararCobros, prepararPagos } from '@/lib/remesas';
+import { aplicarCobroRemesa, clienteId, fechaValida, prepararCuenta, prepararDomiciliacion, prepararCobros, prepararPagos } from '@/lib/remesas';
 
 export const dynamic = 'force-dynamic';
 const PERMISO = { domiciliacion: 'facturar', borrarDomiciliacion: 'facturar', cuentaProveedor: 'gastar', cobros: 'facturar', pagos: 'gastar' };
@@ -46,15 +47,19 @@ export async function POST(req) {
     const [documentos, cuentas] = await Promise.all([leer(u, cobros ? 'facturas' : 'gastos'), leer(u, cobros ? 'domiciliaciones' : 'cuentasProv')]);
     const id = randomUUID().replaceAll('-', '');
     const creada = new Date().toISOString();
+    const noMarcadas = [];
     const datos = { ids: cobros ? b.facturas : b.gastos, emisor: u.emisor, fecha: b.fecha, id, ahora: creada };
     const r = cobros ? prepararCobros({ ...datos, facturas: documentos, domiciliaciones: cuentas }) : prepararPagos({ ...datos, gastos: documentos, cuentasProv: cuentas });
     if (r.error) return error(r.error);
     if (b.marcar) {
       const importes = new Map(r.operaciones.map((o) => [o.id, o.importe]));
       for (const d of r.documentos) {
-        await guardar(u, cobros ? 'facturas' : 'gastos', cobros
-          ? { ...d, cobrada: true, cobro: { fecha: b.fecha, metodo: 'sepa', importe: importes.get(d.id) } }
-          : { ...d, pendiente: undefined, pagado: b.fecha });
+        if (!cobros) { await guardar(u, 'gastos', { ...d, pendiente: undefined, pagado: b.fecha }); continue; }
+        // El cobro se apunta como un pago de la factura (sin perder los anteriores) y solo si el saldo sigue siendo el
+        // del recibo: si cambió mientras tanto, no se marca y se avisa.
+        const recibo = importes.get(d.id);
+        const m = await actualizarFactura(u, d.id, (f) => aplicarCobroRemesa(f, { fecha: b.fecha, importe: recibo, remesa: id }));
+        if (m.error) noMarcadas.push({ id: d.id, error: m.error });
       }
     }
     // Tras el primer adeudo (FRST) de un mandato, los siguientes van como recurrentes (RCUR), se marquen o no las facturas.
@@ -67,7 +72,7 @@ export async function POST(req) {
     return new Response(r.xml, { headers: {
       'Content-Type': 'application/xml; charset=utf-8',
       'Content-Disposition': `attachment; filename="remesa-${accion}-${b.fecha}.xml"`,
-      'X-Remesa': encodeURIComponent(JSON.stringify({ numero: r.numero, total: r.total, errores: r.errores })),
+      'X-Remesa': encodeURIComponent(JSON.stringify({ numero: r.numero, total: r.total, errores: r.errores, noMarcadas })),
       'Cache-Control': 'no-store',
     } });
   } catch {

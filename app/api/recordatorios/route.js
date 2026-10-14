@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { identidadDoc } from '@/lib/documento';
-import { redis, leer, guardar } from '@/lib/redis';
+import { redis, leer } from '@/lib/redis';
+import { actualizarFactura } from '@/lib/actualizarFactura';
 import { importes, numeroFactura, vencimiento } from '@/lib/calculos';
 import { eur, fechaTexto, hoy } from '@/lib/formato';
 import { facturaPdf } from '@/lib/pdf';
@@ -56,7 +57,7 @@ export async function GET(req) {
       });
       if (r.error) { fallos.push(`${emp.id}/${f.id}: ${r.error}`); continue; }
       await redis.hset('factura-envios', { [token]: { empresa: emp.id, id: f.id } });
-      await guardar(u, 'facturas', { ...f, envios: [...(f.envios || []), { tipo: 'recordatorio', fecha: new Date().toISOString(), para: f.cliente.email, token }] });
+      await actualizarFactura(u, f.id, (actual) => ({ nueva: { ...actual, envios: [...(actual.envios || []), { tipo: 'recordatorio', fecha: new Date().toISOString(), para: f.cliente.email, token }] } }));
       enviados += 1;
     }
   }
