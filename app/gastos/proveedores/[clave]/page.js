@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { requerir } from '@/lib/auth';
-import { leer } from '@/lib/redis';
-import { proveedores, totalDe } from '@/lib/proveedores';
+import { todasFichas, documentos } from '@/lib/indices';
+import { claveProveedor, proveedores, totalDe } from '@/lib/proveedores';
 import { eur, fechaCorta } from '@/lib/formato';
 import { puede } from '@/lib/permisos';
 import Volver from '@/components/Volver';
@@ -16,7 +16,9 @@ export const dynamic = 'force-dynamic';
 export default async function Proveedor({ params }) {
   const u = await requerir('gastos');
   const clave = decodeURIComponent((await params).clave);
-  const p = proveedores((await leer(u, 'gastos')) || []).find((x) => x.clave === clave);
+  const fichas = await todasFichas(u, 'gastos');
+  const ids = fichas.filter((f) => f.c && claveProveedor({ proveedor: f.c, proveedorNif: f.n }) === clave).map((f) => f.id);
+  const p = proveedores(await documentos(u, 'gastos', ids)).find((x) => x.clave === clave);
   if (!p) notFound();
   return (
     <main className="pagina mk-look">

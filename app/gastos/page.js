@@ -56,7 +56,7 @@ export default async function Gastos({ searchParams }) {
   const delAnio = delAnioTodos.filter((g) => !g.migrado);
   const pendientes = LISTA.filter((d) => !cubierta(d, delAnio)).length;
   // Lo que debes a proveedores: los gastos sin pagar (con proveedor), sean del año que sean.
-  const debes = sinPagarF.filter((f) => f.c && !f.mi).reduce((s, f) => s + f.t, 0);
+  const debes = sinPagarF.filter((f) => f.c && !f.mi).reduce((s, f) => s + f.tp, 0);
   const hayProveedores = debes > 0 || delAnio.some((g) => g.proveedor) || lista.some((g) => g.proveedor);
   const sinPagar = sinPagarF.filter((f) => !f.mi).length;
   const proyectos = nombresProyectos([...delAnio, ...lista]);

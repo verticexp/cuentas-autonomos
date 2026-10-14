@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { leer, leerUno, guardar, borrar } from '@/lib/redis';
+import { leerCliente, todasFichas, documentos } from '@/lib/indices';
 import { actualizarFactura } from '@/lib/actualizarFactura';
 import { auditar } from '@/lib/auditoria';
 import { hoy, eur } from '@/lib/formato';
@@ -24,7 +25,7 @@ export async function POST(req) {
         await borrar(u, 'domiciliaciones', id);
         return Response.json({ ok: true });
       }
-      const cliente = await leerUno(u, 'clientes', id) || (await leer(u, 'facturas')).find((f) => clienteId(f.cliente?.nombre) === id)?.cliente;
+      const cliente = await leerUno(u, 'clientes', id) || (await leerCliente(u, 'facturas', { nombre: id })).find((f) => clienteId(f.cliente?.nombre) === id)?.cliente;
       if (!cliente) return error('Ese cliente ya no existe', 404);
       const anterior = await leerUno(u, 'domiciliaciones', id);
       const d = prepararDomiciliacion({ ...b, cliente, anterior, hoy: hoy() });
@@ -34,7 +35,9 @@ export async function POST(req) {
     }
     if (accion === 'cuentaProveedor') {
       if (typeof b.clave !== 'string' || !b.clave.trim()) return error('Falta el proveedor');
-      const gasto = (await leer(u, 'gastos')).find((g) => g.proveedor && claveProveedor(g) === b.clave);
+      const fichas = await todasFichas(u, 'gastos');
+      const ids = fichas.filter((f) => f.c && claveProveedor({ proveedor: f.c, proveedorNif: f.n }) === b.clave).map((f) => f.id);
+      const gasto = (await documentos(u, 'gastos', ids)).find((g) => g.proveedor && claveProveedor(g) === b.clave);
       if (!gasto) return error('Ese proveedor ya no existe', 404);
       const c = prepararCuenta({ id: b.clave, nombre: typeof b.nombre === 'string' && b.nombre.trim() ? b.nombre : gasto.proveedor, iban: b.iban, bic: b.bic });
       if (c.error) return error(c.error);
@@ -44,12 +47,15 @@ export async function POST(req) {
     if (!fechaValida(b.fecha) || b.fecha < hoy()) return error('Elige una fecha de cobro o ejecución válida, desde hoy');
     if (b.marcar !== undefined && typeof b.marcar !== 'boolean') return error('La opción de marcar debe ser verdadera o falsa');
     const cobros = accion === 'cobros';
-    const [documentos, cuentas] = await Promise.all([leer(u, cobros ? 'facturas' : 'gastos'), leer(u, cobros ? 'domiciliaciones' : 'cuentasProv')]);
+    // Los preparadores distinguen «ya pagado/cobrado» de «ya no existe»: leer también los seleccionados pagados.
+    const seleccion = cobros ? b.facturas : b.gastos;
+    const ids = Array.isArray(seleccion) ? [...new Set(seleccion.filter((id) => typeof id === 'string' && id.trim()))] : [];
+    const [docs, cuentas] = await Promise.all([documentos(u, cobros ? 'facturas' : 'gastos', ids), leer(u, cobros ? 'domiciliaciones' : 'cuentasProv')]);
     const id = randomUUID().replaceAll('-', '');
     const creada = new Date().toISOString();
     const noMarcadas = [];
     const datos = { ids: cobros ? b.facturas : b.gastos, emisor: u.emisor, fecha: b.fecha, id, ahora: creada };
-    const r = cobros ? prepararCobros({ ...datos, facturas: documentos, domiciliaciones: cuentas }) : prepararPagos({ ...datos, gastos: documentos, cuentasProv: cuentas });
+    const r = cobros ? prepararCobros({ ...datos, facturas: docs, domiciliaciones: cuentas }) : prepararPagos({ ...datos, gastos: docs, cuentasProv: cuentas });
     if (r.error) return error(r.error);
     if (b.marcar) {
       const importes = new Map(r.operaciones.map((o) => [o.id, o.importe]));

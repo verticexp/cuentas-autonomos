@@ -1,6 +1,6 @@
 import { requerir } from '@/lib/auth';
-import { leer } from '@/lib/redis';
-import { proveedores } from '@/lib/proveedores';
+import { todasFichas } from '@/lib/indices';
+import { proveedoresDeFichas } from '@/lib/proveedores';
 import { eur, fechaCorta } from '@/lib/formato';
 import Volver from '@/components/Volver';
 import Ir from '@/components/Ir';
@@ -12,7 +12,8 @@ export const dynamic = 'force-dynamic';
 
 export default async function Proveedores() {
   const u = await requerir('gastos');
-  const lista = proveedores((await leer(u, 'gastos')) || []);
+  // Informe de capacidad E01: desde las fichas del índice, sin leer los gastos.
+  const lista = proveedoresDeFichas(await todasFichas(u, 'gastos'));
   const debes = lista.reduce((s, p) => s + p.debe, 0);
   return (
     <main className="pagina mk-look">
