@@ -118,6 +118,7 @@ test('F05: la factura guarda el emisor y el vencimiento del momento de emitirla'
 
 test('F04: un pago que no cuadra no salda la factura; uno repetido no se aplica dos veces', async () => {
   const u = empresa();
+  await R.redis.hset('empresas', { [u.empresa]: { id: u.empresa } });
   const f = (await F.crearFactura(u, datos())).factura; // 100 + 21 % = 121 €
   const { f: conEnlace } = await C.enlacePago(u, f);
   const sesion = (extra) => ({ id: `cs_${Math.random()}`, payment_status: 'paid', currency: 'eur', amount_total: 12100, metadata: { token: conEnlace.pago, factura: f.id, empresa: u.empresa, importe: '12100' }, ...extra });
