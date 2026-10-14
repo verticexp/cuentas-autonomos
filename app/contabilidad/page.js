@@ -13,7 +13,7 @@ import Ir from '@/components/Ir';
 import SinBD from '@/components/SinBD';
 import Deslizable from '@/components/Deslizable';
 import { Borrar } from '@/components/Acciones';
-import { Apertura, NuevoAsiento } from '@/components/Asiento';
+import { Apertura, AsientoPersonal, NuevoAsiento } from '@/components/Asiento';
 import '@/app/modelos.css';
 import '@/app/contabilidad.css';
 
@@ -127,6 +127,7 @@ export default async function Contabilidad({ searchParams }) {
             {MESES.map((n, i) => { const m = String(i + 1).padStart(2, '0'); return <Ir key={m} href={url({ mes: m })} tipo="fundido" className={m === mes ? 'activo' : ''}>{n}</Ir>; })}
           </Deslizable>
           {escribe && <div className="cont-acciones">
+            <AsientoPersonal hoy={anio === actual ? h : `${anio}-12-31`} />
             <NuevoAsiento hoy={anio === actual ? h : `${anio}-12-31`} cuentas={Object.entries(CUENTAS)} />
             <Apertura fecha={[...facturas, ...gastos].map((x) => x.fecha).sort()[0] || h} sociedad={sociedad} previa={d.apertura} />
           </div>}

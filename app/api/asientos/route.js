@@ -2,17 +2,32 @@ import { borrar, guardar, leer, leerUno } from '@/lib/redis';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { asientoApertura, limpiarAsiento } from '@/lib/asientos';
 import { fiscalDe } from '@/lib/empresa';
+import { asientosPersonal } from '@/lib/personal';
 import { auditar } from '@/lib/auditoria';
 
 export const dynamic = 'force-dynamic';
 
 // Asientos apuntados a mano (ajustes, regularizaciones de la gestoría…) y el de apertura (solo uno por empresa).
-// { apertura: { fecha, banco, capital, largo, corto } } o { fecha, concepto, lineas: [{ cuenta, debe, haber }] }
+// { apertura: { fecha, banco, capital, largo, corto } }, { personal: { fecha, sueldos, ssEmpresa, irpf, ssTrabajador, otros, pagoLiquido… } }
+// (nóminas de la gestoría: devengo y pagos) o { fecha, concepto, lineas: [{ cuenta, debe, haber }] }
 export async function POST(req) {
   const { u, res } = await usuarioApi({ permiso: 'resumen' });
   if (res) return res;
   const b = await cuerpo(req);
   let a;
+  if (b.personal) {
+    const p = asientosPersonal(b.personal);
+    if (p.error) return error(p.error);
+    const hechos = [];
+    for (const x of p.asientos) {
+      const l = limpiarAsiento(x);
+      if (l.error) return error(l.error);
+      hechos.push({ id: crypto.randomUUID(), ...l, personal: true });
+    }
+    for (const h of hechos) await guardar(u, 'asientos', { ...h, por: u.id, creado: new Date().toISOString() });
+    await auditar(u, 'Asiento de personal', `${hechos[0].fecha} · ${hechos[0].concepto}${hechos.length > 1 ? ` (+${hechos.length - 1} de pago)` : ''}`);
+    return Response.json({ ok: true, asientos: hechos });
+  }
   if (b.apertura) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(b.apertura.fecha || '')) return error('Fecha no válida');
     const previa = (await leer(u, 'asientos')).find((x) => x.apertura);
