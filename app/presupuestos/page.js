@@ -7,6 +7,7 @@ import { ESTADOS, estadoDe, numeroPresupuesto } from '@/lib/presupuestos';
 import { puede } from '@/lib/permisos';
 import SinBD from '@/components/SinBD';
 import FilaFactura from '@/components/FilaFactura';
+import Volver from '@/components/Volver';
 
 import '@/app/mk.css';
 
@@ -21,6 +22,7 @@ export default async function Presupuestos() {
   const abiertos = lista.filter((p) => ['pendiente', 'aceptado'].includes(estadoDe(p, h)));
   return (
     <main className="pagina mk-look">
+      <Volver href="/facturas">Facturas</Volver>
       <header className="cabecera">
         <h1 className="titulo">Presupuestos</h1>
         {puede(u, 'facturar') && <Ir href="/presupuestos/nuevo" tipo="subir" className="boton pequeno">Nuevo</Ir>}
