@@ -31,7 +31,7 @@ export default async function Gastos({ searchParams }) {
   // Informe de capacidad E01: la lista va por páginas sobre el índice; el año, lo pendiente y los bienes de inversión se
   // leen aparte (lib/indices.js), y la conciliación solo con lo que puede casar (candidatosConciliacion).
   if (!redis) return <SinBD />;
-  const { q, estado, banco, desde } = await searchParams;
+  const { q, estado, banco, desde, escanear } = await searchParams;
   const h = hoy();
   const anio = h.slice(0, 4);
   // E06: lo que se debe y lo que queda sin pagar salen de los totales precalculados.
@@ -87,6 +87,9 @@ export default async function Gastos({ searchParams }) {
       <header className="cabecera">
         <h1 className="titulo">Gastos</h1>
       </header>
+      {/* Primero lo que más se hace: escanear el ticket. El formulario entero se abre al escanear o al pedirlo. */}
+      {puede(u, 'gastar') && !movimiento && <FormGasto hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} productos={stockProductos} plegado={hay} destacar={Boolean(escanear)} proyectos={proyectos} />}
+
       {(delAnio.length > 0 || hayProveedores) && (
         <p className="resumen-linea">
           {delAnio.length > 0 && <>
@@ -117,9 +120,6 @@ export default async function Gastos({ searchParams }) {
           {revision.length > 30 && <p className="grupo-pie"><Link href="/banco">Y {revision.length - 30} más en Banco ›</Link></p>}
         </section>
       )}
-
-      {/* Primero lo que más se hace: escanear el ticket. El formulario entero se abre al escanear o al pedirlo. */}
-      {puede(u, 'gastar') && !movimiento && <FormGasto hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} productos={stockProductos} plegado={hay} proyectos={proyectos} />}
 
       {total > 5 && <Buscar action="/gastos" q={q} ocultos={{ estado }} placeholder="Buscar proveedor o concepto" />}
       {sinPagar > 0 && (
