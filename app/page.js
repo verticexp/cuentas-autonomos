@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import Link from 'next/link';
 import { enviarLuego } from '@/lib/verifactuEnvio';
 import Ir from '@/components/Ir';
@@ -198,7 +199,7 @@ export default async function Resumen({ searchParams }) {
                   </dl>
                   {(c303 || c130) && (() => {
                     const c = casillas303(facturas, gastos, anio, q.t);
-                    const fila = (n, t, v) => <><dt>{n} · {t}</dt><dd>{eur(v)}</dd></>;
+                    const fila = (n, t, v) => <Fragment key={`${n}${t}`}><dt>{n} · {t}</dt><dd>{eur(v)}</dd></Fragment>;
                     return (
                       <details style={{ marginTop: 12 }}>
                         <summary style={{ cursor: 'pointer', fontWeight: 600, fontSize: '0.9375rem' }}>Casillas para Hacienda</summary>
@@ -208,6 +209,7 @@ export default async function Resumen({ searchParams }) {
                           {c['04'] > 0 && <>{fila('04', 'Base al 10 %', c['04'])}{fila('06', 'Cuota al 10 %', c['06'])}</>}
                           {fila('07', 'Base al 21 %', c['07'])}
                           {fila('09', 'Cuota al 21 %', c['09'])}
+                          {c.otros.flatMap((o) => [fila('—', `Base al ${o.pct} % (revisar casilla)`, o.base), fila('—', `Cuota al ${o.pct} % (revisar casilla)`, o.iva)])}
                           {c['10'] > 0 && <>{fila('10', 'Compras a la UE: base', c['10'])}{fila('11', 'Compras a la UE: cuota', c['11'])}</>}
                           {c['12'] > 0 && <>{fila('12', 'Compras de fuera de la UE: base', c['12'])}{fila('13', 'Compras de fuera de la UE: cuota', c['13'])}</>}
                           {fila('27', 'Total cuota devengada', c['27'])}
