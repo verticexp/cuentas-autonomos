@@ -20,6 +20,14 @@ function Importe({ v }) {
   return <span className={`bco-imp ${v > 0 ? 'teso-in' : 'teso-out'}`}>{v > 0 ? '+' : '−'}{eur(Math.abs(v))}</span>;
 }
 
+// Por qué una sugerencia no es segura (lib/banco.js sugerencias: motivo).
+const MOTIVO = {
+  parcial: 'El importe es menor que lo que falta: sería un cobro parcial.',
+  'importe-distinto': 'Coincide el número de factura, pero no el importe.',
+  conflicto: 'Otro movimiento apunta a lo mismo: elige cuál es.',
+  alternativa: 'Otra opción encajaba mejor y ya está reservada para otro movimiento.',
+};
+
 const AYUDA = {
   gasto: 'Apúntalo con su factura: Netto lee la base y el IVA y lo deja emparejado.',
   comision: 'Se apunta como gasto bancario, sin IVA (no hace falta factura).',
@@ -70,7 +78,8 @@ function Pendiente({ m, permisos, accion }) {
       {s && (
         <div className={`bco-sug${s.segura ? ' segura' : ''}`}>
           <span className="bco-sug-t">{s.segura ? 'Es esta' : 'Puede ser'}</span>
-          <Link href={s.url} prefetch={false} className="bco-sug-d">{s.texto}<small>{fechaCorta(s.fecha)} · {eur(s.importe)}{s.pendiente ? ' · sin pagar' : ''}</small></Link>
+          <Link href={s.url} prefetch={false} className="bco-sug-d">{s.texto}<small>{fechaCorta(s.fecha)} · {eur(s.importe)}{s.pendiente ? ' · sin pagar' : ''}{s.yaCobrada ? ' · ya cobrada por otra vía' : ''}</small></Link>
+          {(s.motivo && MOTIVO[s.motivo]) && <small className="bco-sug-m">{MOTIVO[s.motivo]}</small>}
         </div>
       )}
       {puedeAqui && !s && !eligiendo && <QueEs m={m} accion={accion} />}
@@ -78,7 +87,7 @@ function Pendiente({ m, permisos, accion }) {
         <div className="bco-elegir">
           <select className="campo" value={elegida} onChange={(e) => setElegida(e.target.value)} aria-label={m.importe > 0 ? 'Factura' : 'Gasto'}>
             <option value="">{m.importe > 0 ? 'Elige la factura…' : 'Elige el gasto…'}</option>
-            {m.opciones.map((o) => <option key={o.id} value={o.id}>{o.texto} · {fechaCorta(o.fecha)} · {eur(o.importe)}</option>)}
+            {m.opciones.map((o) => <option key={o.id} value={o.id}>{o.texto} · {fechaCorta(o.fecha)} · {o.total !== undefined && o.saldo !== undefined && Math.abs(o.total - o.saldo) > 0.005 ? `${eur(o.total)}, faltan ${eur(o.saldo)}` : eur(o.importe)}</option>)}
           </select>
           <div className="bco-botones">
             <button className="boton pequeno" disabled={!elegida} onClick={() => confirmar(m.importe > 0 ? 'factura' : 'gasto', elegida)}>Emparejar</button>
@@ -88,7 +97,7 @@ function Pendiente({ m, permisos, accion }) {
         </div>
       ) : (
         <div className="bco-botones">
-          {s && <button className="boton pequeno" onClick={() => confirmar(s.tipo, s.id)}>Confirmar</button>}
+          {s && <button className="boton pequeno" onClick={() => confirmar(s.tipo, s.id)}>{s.yaCobrada ? 'Vincular' : s.motivo === 'parcial' ? 'Cobro parcial' : 'Confirmar'}</button>}
           <button className="boton pequeno sec" onClick={() => setEligiendo(true)}>{s ? 'Otra' : m.importe > 0 ? 'Elegir factura' : 'Elegir gasto'}</button>
           <button className="boton pequeno sec" onClick={() => accion({ accion: 'ignorar', id: m.id })}>Ignorar</button>
         </div>
@@ -131,7 +140,7 @@ function Conectar({ cerrar }) {
   );
 }
 
-export default function Banco({ cuentas, pendientes, emparejados, ignorados, aviso, listo, permisos }) {
+export default function Banco({ cuentas, pendientes, emparejados, ignorados, automaticos = 0, aviso, listo, permisos }) {
   const router = useRouter();
   const [msg, setMsg] = useState(aviso);
   const [ocupado, setOcupado] = useState(false);
@@ -142,11 +151,16 @@ export default function Banco({ cuentas, pendientes, emparejados, ignorados, avi
   const conSaldo = cuentas.some((c) => typeof c.saldo === 'number');
   const porConfirmar = pendientes.filter((m) => m.sugerencia);
   const sinPareja = pendientes.filter((m) => !m.sugerencia);
-  const seguras = porConfirmar.filter((m) => m.sugerencia.segura && (m.importe > 0 ? permisos.facturar : permisos.gastar)).length;
+  const segurasIds = porConfirmar.filter((m) => m.sugerencia.segura && (m.importe > 0 ? permisos.facturar : permisos.gastar)).map((m) => m.id);
+  const seguras = segurasIds.length;
 
   const accion = async (cuerpo) => {
     setOcupado(true);
-    try { await llamar('/api/banco', { method: 'POST', body: JSON.stringify(cuerpo) }); router.refresh(); } catch (e) { setMsg({ error: true, texto: e.message }); } finally { setOcupado(false); }
+    try {
+      const d = await llamar('/api/banco', { method: 'POST', body: JSON.stringify(cuerpo) });
+      if (cuerpo.accion === 'seguras') setMsg(d.rechazados?.length ? { error: true, texto: `✓ ${d.hechos} confirmados · ${d.rechazados.length} no se han podido confirmar: ${d.rechazados[0].error}` } : { texto: `✓ ${d.hechos} confirmados` });
+      router.refresh();
+    } catch (e) { setMsg({ error: true, texto: e.message }); } finally { setOcupado(false); }
   };
   const actualizar = async (forzar) => {
     setOcupado(true);
@@ -224,7 +238,7 @@ export default function Banco({ cuentas, pendientes, emparejados, ignorados, avi
         <section className="grupo">
           <div className="bco-cab">
             <h2 className="grupo-t">Por confirmar <span>{porConfirmar.length}</span></h2>
-            {seguras > 1 && <button className="boton pequeno" onClick={() => accion({ accion: 'seguras' })}>Confirmar las {seguras} seguras</button>}
+            {seguras > 1 && <button className="boton pequeno" onClick={() => accion({ accion: 'seguras', ids: segurasIds.slice(0, 200) })}>Confirmar las {seguras} seguras</button>}
           </div>
           <ul className="bco-lista">{porConfirmar.map((m) => <Pendiente key={m.id} m={m} permisos={permisos} accion={accion} />)}</ul>
         </section>
@@ -239,13 +253,13 @@ export default function Banco({ cuentas, pendientes, emparejados, ignorados, avi
 
       {emparejados.length > 0 && (
         <section className="grupo">
-          <h2 className="grupo-t">Emparejados</h2>
+          <h2 className="grupo-t">Emparejados{automaticos > 0 && <span> · {automaticos} automáticos</span>}</h2>
           <ul className="bco-lista">
             {emparejados.map((m) => (
               <li key={m.id} className="bco-mov hecho">
                 <div className="bco-mov-fila">
                   <span className="bco-fecha">{fechaCorta(m.fecha).slice(0, 5)}</span>
-                  <span className="bco-txt"><strong>{m.contraparte || m.concepto}</strong><small>{m.destino ? <Link href={m.destino.url} prefetch={false}>{m.destino.texto}</Link> : 'Ya no existe'}</small></span>
+                  <span className="bco-txt"><strong>{m.contraparte || m.concepto}{m.auto && <em className="bco-auto"> · automático</em>}</strong><small>{m.destino ? <Link href={m.destino.url} prefetch={false}>{m.destino.texto}</Link> : 'Ya no existe'}</small></span>
                   <Importe v={m.importe} />
                 </div>
                 {(m.importe > 0 ? permisos.facturar : permisos.gastar) && <button className="bco-deshacer" onClick={() => accion({ accion: 'deshacer', id: m.id })}>Deshacer</button>}

@@ -43,7 +43,8 @@ export default async function Gastos({ searchParams }) {
   const sinPareja = (movs || []).filter((m) => (m.estado === 'pendiente' || !m.estado) && m.importe < 0);
   const cand = await candidatosConciliacion(u, movs || []);
   const sug = sugerencias(movs || [], cand.facturas, cand.gastos);
-  const revision = sinPareja.filter((m) => !sug[m.id] && clasificar(m, { autonomo: fiscalDe(u).tipo === 'autonomo' }) === 'gasto').sort((a, b) => b.fecha.localeCompare(a.fecha));
+  // Con una sugerencia floja (parcial, conflicto…) también está en revisión: solo la segura lo saca de aquí.
+  const revision = sinPareja.filter((m) => !sug[m.id]?.segura && clasificar(m, { autonomo: fiscalDe(u).tipo === 'autonomo' }) === 'gasto').sort((a, b) => b.fecha.localeCompare(a.fecha));
   const movimiento = banco && sinPareja.find((m) => m.id === banco);
   const buscado = String(q || '').trim().toLowerCase();
   // Los bienes traídos de otro programa no son gastos de aquí: se ven en Contabilidad › Amortizaciones.
@@ -111,9 +112,9 @@ export default async function Gastos({ searchParams }) {
           <ul className="grupo-lista">
             {revision.slice(0, 30).map((m) => (
               <li key={m.id}>
-                <Ir href={`/gastos?banco=${encodeURIComponent(m.id)}`} className="fila">
-                  <span className="txt"><strong>{m.contraparte || m.concepto}</strong><small>{fechaCorta(m.fecha)} · {m.contraparte ? m.concepto : 'Banco'} · falta la factura</small></span>
-                  <span className="imp-col"><span className="imp">{eur(Math.abs(m.importe))}</span><span className="estado-txt e-pendiente">Añadir</span></span>
+                <Ir href={sug[m.id] ? '/banco' : `/gastos?banco=${encodeURIComponent(m.id)}`} className="fila">
+                  <span className="txt"><strong>{m.contraparte || m.concepto}</strong><small>{fechaCorta(m.fecha)} · {m.contraparte ? m.concepto : 'Banco'} · {sug[m.id] ? 'puede ser un gasto ya apuntado: revísalo en Banco' : 'cargo sin conciliar: falta su factura'}</small></span>
+                  <span className="imp-col"><span className="imp">{eur(Math.abs(m.importe))}</span><span className="estado-txt e-pendiente">{sug[m.id] ? 'Revisar' : 'Añadir'}</span></span>
                 </Ir>
               </li>
             ))}
