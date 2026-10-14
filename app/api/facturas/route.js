@@ -1,7 +1,9 @@
 import { leerUno } from '@/lib/redis';
 import { actualizarFactura } from '@/lib/actualizarFactura';
 import { borrarFactura, crearFactura, guardarCliente, limpiar } from '@/lib/facturas';
-import { numeroFactura } from '@/lib/calculos';
+import { numeroFactura, pendienteDe } from '@/lib/calculos';
+import { conLimiteDe, revisarRiesgo } from '@/lib/tercerosServidor';
+import { mismoCliente } from '@/lib/terceros';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { auditar } from '@/lib/auditoria';
 import { hoy } from '@/lib/formato';
@@ -21,8 +23,8 @@ export async function POST(req) {
   const original = b.rectifica && (await leerUno(u, 'facturas', b.rectifica));
   if (b.rectifica && !original) return error('La factura a rectificar no existe');
   // idem: clave de idempotencia del formulario (doble clic o reintento tras una respuesta perdida).
-  const { factura: f, error: e } = await crearFactura(u, datos, { original, motivo: b.motivoRectificacion, idem: typeof b.idem === 'string' ? `form:${b.idem}` : undefined });
-  if (e) return error(e);
+  const { factura: f, error: e, riesgo } = await crearFactura(u, datos, { original, motivo: b.motivoRectificacion, idem: typeof b.idem === 'string' ? `form:${b.idem}` : undefined });
+  if (e) return riesgo ? Response.json({ error: e, riesgo }, { status: 409 }) : error(e);
   return Response.json({ ok: true, factura: f });
 }
 
@@ -36,7 +38,12 @@ export async function PATCH(req) {
   if (antes.caja) return error('Es un cierre de caja: corrígelo desde Caja');
   if (Object.keys(b).length === 2 && 'cobrada' in b) {
     // La fecha del cobro: para el estado de pago (Ley Crea y Crece) y el asiento del cobro.
-    const r = await actualizarFactura(u, antes.id, (actual) => ({ nueva: { ...actual, cobrada: Boolean(b.cobrada), cobro: b.cobrada ? actual.cobro || { fecha: hoy(), metodo: 'manual' } : undefined } }));
+    // Volver a dejarla sin cobrar suma riesgo al cliente: no puede pasar de su riesgo máximo.
+    const r = await conLimiteDe(u, antes.cliente, () => actualizarFactura(u, antes.id, async (actual) => {
+      const nueva = { ...actual, cobrada: Boolean(b.cobrada), cobro: b.cobrada ? actual.cobro || { fecha: hoy(), metodo: 'manual' } : undefined };
+      const { bloqueo } = await revisarRiesgo(u, actual.cliente, pendienteDe(nueva) - pendienteDe(actual));
+      return bloqueo ? { error: bloqueo.error, status: 409 } : { nueva };
+    }));
     if (r.error) return error(r.error, r.status || 400);
     await secundarios(u, { facturas: [r.factura.id] });
     return Response.json({ ok: true });
@@ -46,8 +53,14 @@ export async function PATCH(req) {
   if (datos.error) return Response.json({ error: datos.error, errores: datos.errores }, { status: 400 });
   if (Number(datos.fecha.slice(0, 4)) !== antes.anio) return error(`La fecha debe ser de ${antes.anio}`);
   // Sobre la factura de ahora: lo cobrado o enviado mientras se editaba se conserva.
-  const r = await actualizarFactura(u, antes.id, (actual) => (actual.verifactu ? { error: 'Esta factura ya está registrada en Verifactu: para corregirla, haz una rectificativa' }
-    : { nueva: { ...actual, evento: undefined, proyecto: undefined, operacion: undefined, ...datos } }));
+  // Si sube lo que queda por cobrar (o pasa a otro cliente), el cliente no puede quedar por encima de su riesgo máximo.
+  const r = await conLimiteDe(u, datos.cliente, () => actualizarFactura(u, antes.id, async (actual) => {
+    if (actual.verifactu) return { error: 'Esta factura ya está registrada en Verifactu: para corregirla, haz una rectificativa' };
+    const nueva = { ...actual, evento: undefined, proyecto: undefined, operacion: undefined, ...datos };
+    const mas = pendienteDe(nueva) - (mismoCliente(actual.cliente, nueva.cliente) ? pendienteDe(actual) : 0);
+    const { bloqueo } = await revisarRiesgo(u, nueva.cliente, mas);
+    return bloqueo ? { error: bloqueo.error, status: 409 } : { nueva };
+  }));
   if (r.error) return error(r.error, r.status || 400);
   await guardarCliente(u, datos.cliente);
   await secundarios(u, { facturas: [r.factura.id], meses: [antes.fecha, datos.fecha] });
