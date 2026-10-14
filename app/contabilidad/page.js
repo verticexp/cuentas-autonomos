@@ -43,7 +43,7 @@ const imp = (v) => (v ? eur(v) : '');
 
 export default async function Contabilidad({ searchParams }) {
   const u = await requerir('resumen');
-  const [facturas, gastos, nominas, manuales, saldo, productos, ajustes] = await Promise.all([leer(u, 'facturas'), leer(u, 'gastos'), leer(u, 'nominas'), leer(u, 'asientos'), redis?.get(clave(u, 'saldo')), leer(u, 'productos'), leer(u, 'stock')]);
+  const [facturas, gastos, nominas, manuales, saldo, productos, ajustes, albaranes] = await Promise.all([leer(u, 'facturas'), leer(u, 'gastos'), leer(u, 'nominas'), leer(u, 'asientos'), redis?.get(clave(u, 'saldo')), leer(u, 'productos'), leer(u, 'stock'), leer(u, 'albaranes')]);
   if (!facturas) return <SinBD />;
   const sp = await searchParams;
   const h = hoy();
@@ -55,8 +55,8 @@ export default async function Contabilidad({ searchParams }) {
   const ver = vistas.some(([v]) => v === sp.ver) ? sp.ver : vistas[0][0];
   const p = /^[1-4]$/.test(sp.p || '') ? sp.p : '';
   const cuenta = /^\d{1,9}$/.test(sp.cuenta || '') ? sp.cuenta : '572';
-  const libros = ver === 'libros' && librosRegistro({ facturas, gastos, nominas: nominas || [], productos: productos || [], ajustes: ajustes || [], fiscal, actividades: actividadesDe(u), empresa: { nombre: u.emisor?.nombre || '', nif: u.emisor?.nif || '' } }, anio, h);
-  const d = informe({ facturas, gastos, nominas: nominas || [], manuales: manuales || [], saldo, fiscal, pagos130: u.pagos130 || {}, pagos202: u.pagos202 || {}, cuotaIS: u.cuotaIS || {}, productos: productos || [], ajustes: ajustes || [] }, anio, p, h, { cuenta: ver === 'mayor' ? cuenta : '' });
+  const libros = ver === 'libros' && librosRegistro({ facturas, gastos, nominas: nominas || [], productos: productos || [], ajustes: ajustes || [], albaranes: albaranes || [], fiscal, actividades: actividadesDe(u), empresa: { nombre: u.emisor?.nombre || '', nif: u.emisor?.nif || '' } }, anio, h);
+  const d = informe({ facturas, gastos, nominas: nominas || [], manuales: manuales || [], saldo, fiscal, pagos130: u.pagos130 || {}, pagos202: u.pagos202 || {}, cuotaIS: u.cuotaIS || {}, productos: productos || [], ajustes: ajustes || [], albaranes: albaranes || [] }, anio, p, h, { cuenta: ver === 'mayor' ? cuenta : '' });
   const mesPorDefecto = String(Number(d.fecha.slice(5, 7))).padStart(2, '0');
   const mes = /^(0[1-9]|1[0-2])$/.test(sp.mes || '') ? sp.mes : mesPorDefecto;
   const url = (c) => { const q = new URLSearchParams(Object.entries({ anio, ver, p, ...c }).filter(([, v]) => v)); return `/contabilidad?${q}`; };

@@ -17,7 +17,7 @@ export async function GET(req) {
     const anio = Number(q.get('anio')) || new Date().getFullYear();
     const t = Math.min(4, Math.max(1, Number(q.get('t')) || 1));
     // Solo el año del trimestre y los bienes de inversión (informe de capacidad E01).
-    const [{ facturas, gastos }, nominas] = await Promise.all([delosAnios(u, [anio]), leer(u, 'nominas')]);
+    const [{ facturas }, gastos, nominas] = await Promise.all([delosAnios(u, Array.from({ length: 5 }, (_, i) => anio - i)), leer(u, 'gastos'), leer(u, 'nominas')]);
     const d = datosPaquete(u, { facturas, gastos, nominas }, anio, t);
     const n = nombrePaquete(d);
     const formato = q.get('formato');

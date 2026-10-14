@@ -1,7 +1,7 @@
 import { requerir } from '@/lib/auth';
 import { leer, redis } from '@/lib/redis';
 import { actividadesDe, fiscalDe, modelosDe, usa130, usa303 } from '@/lib/empresa';
-import { casillas303, minoracion130, r2, resumenAnual } from '@/lib/calculos';
+import { casillas303, liquidaciones303, minoracion130, r2, resumenAnual } from '@/lib/calculos';
 import Rend130 from '@/components/Rend130';
 import { modelo111 } from '@/lib/nominas';
 import { borradorRenta, borradorSociedades, modelo115, modelo180, modelo190, modelo202, modelo347, modelo349, modelo390, retencionesProfesionales, MINIMO_PERSONAL, RET_ALQUILER } from '@/lib/modelos';
@@ -32,22 +32,29 @@ export default async function Modelos({ searchParams }) {
   const actual = Number(hoy().slice(0, 4));
   const anio = Number((await searchParams).anio) || actual;
   // Informe de capacidad E01: el año, el anterior (tipo del IS, rendimiento previo del 130) y los bienes de inversión.
-  const [{ facturas, gastos }, nominas, empleados] = await Promise.all([delosAnios(u, [anio - 1, anio]), leer(u, 'nominas'), leer(u, 'empleados')]);
   const f = fiscalDe(u);
+  // La valoración del almacén requiere el histórico completo; las retenciones se imputan al pago,
+  // que puede pertenecer a otro año que la factura de proveedor.
+  const [{ facturas }, gastos, nominas, empleados, productos, ajustes, albaranes, manuales] = await Promise.all([
+    f.inventario ? Promise.all([leer(u, 'facturas'), leer(u, 'gastos')]).then(([facturas, gastos]) => ({ facturas, gastos })) : delosAnios(u, Array.from({ length: 5 }, (_, i) => anio - i)),
+    leer(u, 'gastos'), leer(u, 'nominas'), leer(u, 'empleados'), leer(u, 'productos'), leer(u, 'stock'), leer(u, 'albaranes'), leer(u, 'asientos'),
+  ]);
+  const h = hoy();
+  const liquidaciones = liquidaciones303(facturas, gastos, anio);
   // Se enseña cada modelo si le toca por su situación fiscal o si ya hay datos que lo piden.
   const hay115 = f.alquiler || gastos.some((g) => g.alquiler);
   const hay349 = f.intracom || modelo349(facturas, anio, undefined, gastos).total > 0;
   const m390 = usa303(f) && modelo390(facturas, gastos, anio);
   const conRetencion = gastos.some((g) => Number(g.irpfPct) > 0);
   const m190 = (f.trabajadores || nominas?.length > 0 || conRetencion) && modelo190(nominas || [], empleados || [], anio, gastos);
-  const is = f.tipo === 'sociedad' && borradorSociedades(facturas, gastos, anio, { pagos202: u.pagos202 || {}, ivaCoste: !usa303(f) });
+  const is = f.tipo === 'sociedad' && borradorSociedades(facturas, gastos, anio, { pagos202: u.pagos202 || {}, ivaCoste: !usa303(f), productos: productos || [], ajustes: ajustes || [], albaranes: albaranes || [], manuales: manuales || [], hasta: h < `${anio}-12-31` ? h : `${anio}-12-31` });
   const renta = f.tipo === 'autonomo' && borradorRenta(facturas, gastos, anio, u.pagos130?.[anio], { ivaCoste: !usa303(f) });
   const m180 = hay115 && modelo180(gastos, anio);
   const m347 = modelo347(facturas, gastos, anio);
   const c303 = usa303(f);
   const ids = actividadesDe(u).map((a) => a.id);
   const rendAnterior = u.rend130?.[anio - 1];
-  const r130 = usa130(f) && resumenAnual(facturas, gastos, anio, u.pagos130?.[anio] || {}, ids, { ivaCoste: !c303, minoracion: minoracion130(rendAnterior) });
+  const r130 = usa130(f) && resumenAnual(facturas, gastos, anio, u.pagos130?.[anio] || {}, ids, { ivaCoste: !c303, hasta: h < `${anio}-12-31` ? h : `${anio}-12-31`, minoracion: minoracion130(rendAnterior) });
   // Lo que Netto sabe del año anterior, como sugerencia (si ese año no está entero en Netto, no vale: lo confirma la persona).
   const conAnterior = usa130(f) && facturas.some((x) => x.fecha.startsWith(`${anio - 1}-`));
   const sugerido = conAnterior ? resumenAnual(facturas, gastos, anio - 1, {}, ids, { ivaCoste: !c303 }).trimestres[3].rendAcum : null;
@@ -95,6 +102,8 @@ export default async function Modelos({ searchParams }) {
                   c['36'] && ['36 · Compras a la UE: base deducible', c['36']], c['37'] && ['37 · Compras a la UE: cuota deducible', c['37']],
                   c['59'] && ['59 · Empresas de otros países de la UE', c['59']],
                   [c['46'] < 0 ? '46 · A compensar' : '46 · Resultado', Math.abs(c['46']), true],
+                  liquidaciones[t - 1].compensado > 0 && ['Cuotas anteriores compensadas', menos(liquidaciones[t - 1].compensado)],
+                  c['46'] >= 0 && ['A ingresar tras compensación', liquidaciones[t - 1].ingresar, true],
                 ]} />
                 <p className="nota">Hasta el {plazo(t, anio)}.{presentado(t) ? ' Marcado como presentado.' : ''}</p>
               </div>
@@ -251,9 +260,9 @@ export default async function Modelos({ searchParams }) {
           <p className="grupo-pie arriba">Solo con lo que hay en Netto, con la amortización de tus bienes de inversión y sin otros ajustes (gastos no deducibles, pérdidas de años anteriores, reservas…): tómalo como una idea de cuánto saldrá. Se presenta del 1 al 25 de julio de {anio + 1}.</p>
           <div className="tarjeta">
             <Casillas filas={[
-              ['Ingresos', is.ingresos], ['Gastos', menos(is.gastos)], is.amortizacion && ['de ellos, amortizaciones', menos(is.amortizacion)], ['Base imponible (beneficio)', is.base, true],
+              ['Ingresos', is.ingresos], ['Gastos', menos(is.gastos)], is.amortizacion && ['de ellos, amortizaciones', menos(is.amortizacion)], is.ajustesContables && ['Ingresos y gastos de asientos manuales', is.ajustesContables], ['Base imponible (beneficio)', is.base, true],
               ...is.tramos.map((x) => [is.tramos.length > 1 ? `${x.pct} % de ${eur(x.base)}` : `Cuota al ${x.pct} %`, x.cuota]),
-              ['Cuota', is.cuota, true], ['Pagos del 202 marcados', menos(is.pagos)],
+              ['Cuota', is.cuota, true], is.retenciones && ['Retenciones soportadas', menos(is.retenciones)], ['Pagos del 202 marcados', menos(is.pagos)],
               [is.resultado >= 0 ? 'Saldría a pagar' : 'Saldría a devolver', Math.abs(is.resultado), true],
             ]} />
             <p className="nota">Tipo de {is.tamano === 'micro' ? 'microempresa (facturación de menos de 1 millón)' : is.tamano === 'reducida' ? 'empresa de reducida dimensión (menos de 10 millones)' : 'general'}{is.conAnterior ? ` según lo facturado en ${anio - 1}` : ', con lo facturado este año (no hay datos del anterior)'}. Si la sociedad es de nueva creación, los dos primeros años con beneficio tributa al 15 %.</p>

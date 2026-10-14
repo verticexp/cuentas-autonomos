@@ -132,11 +132,10 @@ test('5: céntimos enteros, ±1 céntimo uniforme, sin ingreso exacto por encima
   assert.equal(ingreso({ importe: 0, concepto: 'A2026-01' }), undefined);
 });
 
-test('6: gasto con retención casa con bruto o neto y devuelve el importe elegido', () => {
-  for (const importe of [106, 121]) {
-    const s = cargo({ importe: -importe, concepto: 'Hotel Mirador' }, { ivaPct: 21, irpfPct: 15 });
-    assert.deepEqual([s.importe, s.segura], [importe, true]);
-  }
+test('6: gasto con retención casa con el neto; pagar también la retención exige revisión', () => {
+  const s = cargo({ importe: -106, concepto: 'Hotel Mirador' }, { ivaPct: 21, irpfPct: 15 });
+  assert.deepEqual([s.importe, s.segura], [106, true]);
+  assert.ok(!cargo({ importe: -121, concepto: 'Hotel Mirador' }, { ivaPct: 21, irpfPct: 15 })?.segura);
   assert.equal(cargo({ importe: -50, concepto: 'P2026-01' }, { ivaPct: 21, irpfPct: 15 }).importe, 106);
   assert.equal(cargo({ importe: -121, concepto: 'Hotel Mirador' }, { ivaPct: 21 }).segura, true);
   // Dos variantes dentro de la tolerancia no generan un empate con el mismo gasto.
@@ -186,7 +185,7 @@ test('9: opciones exponen total y saldo de la factura, e importe del gasto', () 
   const o = opciones(movimiento(), [f], [])[0];
   assert.deepEqual([o.importe, o.total, o.saldo, o.total - o.saldo], [71, 121, 71, 50]);
   const g = opciones(movimiento({ importe: -106 }), [], [gasto({ ivaPct: 21, irpfPct: 15 })])[0];
-  assert.deepEqual([g.importe, g.total, g.saldo], [121, 121, 121]);
+  assert.deepEqual([g.importe, g.total, g.saldo], [106, 106, 106]);
   assert.deepEqual(opciones(movimiento(), [factura() ], []).map((x) => [x.total, x.saldo]), [[100, 100]]);
 });
 

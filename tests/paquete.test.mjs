@@ -23,7 +23,7 @@ test('paquete: solo el trimestre, con totales y modelos', () => {
   const d = datosPaquete(u, { facturas, gastos, nominas }, 2026, 3);
   assert.deepEqual(d.facturas.map((f) => f.numero), ['01-2026', '02-2026']);
   assert.deepEqual(d.totales.facturas, { n: 2, base: 1500, iva: 315, irpf: 150, total: 1665 });
-  assert.deepEqual(d.totales.gastos, { n: 1, base: 200, iva: 42, total: 242 });
+  assert.deepEqual(d.totales.gastos, { n: 1, base: 200, iva: 42, irpf: 0, total: 242 });
   assert.equal(d.gastos[0].proveedor, 'Ferretería Sol');
   assert.deepEqual(d.modelos.map((m) => [m.id, m.resultado]), [['303', 273], ['130', 97], ['111', 200]]);
 });

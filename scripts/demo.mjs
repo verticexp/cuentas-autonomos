@@ -19,7 +19,7 @@ import { limpiarProyecto } from '../lib/proyectos.js';
 
 const { KV_REST_API_URL: url, KV_REST_API_TOKEN: token, DEMO_PASSWORD: password } = process.env;
 if (!url || !token) throw new Error('Faltan KV_REST_API_URL y KV_REST_API_TOKEN');
-const EMAIL = process.env.DEMO_EMAIL || 'demo@verticexp.com';
+const EMAIL = (process.env.DEMO_EMAIL || 'demo@verticexp.com').trim().toLowerCase();
 const r = new Redis({ url, token });
 const P = 'cuentas:';
 
@@ -42,14 +42,11 @@ ACTIVIDADES.push({ id: 'tienda-de-material', nombre: 'Tienda de material', serie
 const actividadesEventos = ACTIVIDADES.filter((a) => a.id !== 'tienda-de-material');
 const ahora = new Date().toISOString();
 const empresa = {
-  id, nombre: 'Sonora Eventos S.L.', creada: ahora, pendiente: false, verifactu: 'pruebas',
-  emisor: { nombre: 'SONORA EVENTOS S.L.', nif: 'B00000000', direccion: 'C/ de la Marina, 19', ciudad: '08005 Barcelona', iban: 'ES91 2100 0418 4502 0005 1332', plazo: 30, bic: 'CAIXESBBXXX', acreedorSepa: identificadorAcreedor('B00000000') },
+  id, nombre: process.env.DEMO_EMPRESA || 'Sonora Eventos S.L.', creada: ahora, pendiente: false, verifactu: 'pruebas',
+  emisor: { nombre: (process.env.DEMO_EMPRESA || 'SONORA EVENTOS S.L.').toUpperCase(), nif: 'B00000000', direccion: 'C/ de la Marina, 19', ciudad: '08005 Barcelona', iban: 'ES91 2100 0418 4502 0005 1332', plazo: 30, bic: 'CAIXESBBXXX', acreedorSepa: identificadorAcreedor('B00000000') },
   actividades: ACTIVIDADES,
   fiscal: { tipo: 'sociedad', iva: 'general', retenidas: false, trabajadores: true, alquiler: true, intracom: false, inventario: true },
 };
-await r.hset(`${P}empresas`, { [id]: empresa });
-await r.hset(`${P}usuarios`, { [id]: { id, nombre: 'Demo', email: EMAIL, admin: false, creado: ahora, empresa: id, rol: 'admin', pass } });
-await r.hset(`${P}emails`, { [EMAIL]: id });
 
 // Generador con semilla: la demo sale siempre igual.
 let semilla = 7;
@@ -388,6 +385,9 @@ for (const remesa of remesas.filter((r) => r.tipo === 'cobros')) for (const docI
 assert.ok(stockFinal.bajos.some((p) => p.proveedor === PRODUCTOS[0].proveedor && !enCamino(pedidosProv)[p.id]), 'Falta material de Audio Pro por pedir');
 
 const porId = (xs) => Object.fromEntries(xs.map((x) => [x.id, x]));
+await r.hset(`${P}empresas`, { [id]: empresa });
+await r.hset(`${P}usuarios`, { [id]: { id, nombre: 'Demo', email: EMAIL, admin: false, creado: ahora, empresa: id, rol: 'admin', pass } });
+await r.hset(`${P}emails`, { [EMAIL]: id });
 await r.del(...['facturas', 'gastos', 'clientes', 'registros', 'verifactu', 'saldo', 'asientos', 'banco', 'bancos', 'cuentasAnuales', 'productos', 'stock', 'albaranes', 'pedidosProv', 'domiciliaciones', 'cuentasProv', 'remesas'].map((n) => `${P}${n}:${id}`));
 await r.hset(`${P}facturas:${id}`, porId(facturas));
 await r.hset(`${P}gastos:${id}`, porId(gastos));
