@@ -1,0 +1,33 @@
+// Circuitos HTTP con una empresa de prueba separada, exclusivamente en el simulador local.
+import assert from 'node:assert/strict';
+import { randomBytes, scryptSync } from 'node:crypto';
+import { leerZip } from '../../lib/zip.js';
+import { hoy } from '../../lib/formato.js';
+const BASE = process.env.BASE || 'http://localhost:3002', UPSTASH = process.env.UPSTASH || 'http://127.0.0.1:8089';
+for (const url of [BASE, UPSTASH]) if (!['localhost', '127.0.0.1', '[::1]'].includes(new URL(url).hostname)) throw new Error('Solo localhost');
+process.env.KV_REST_API_URL = UPSTASH; process.env.KV_REST_API_TOKEN = 'local';
+const { redis } = await import('../../lib/redis.js');
+const id = randomBytes(4).toString('hex'), email = `auditoria-${id}@netto.example`, password = 'Auditoria-Simulada-2026!';
+const sal = randomBytes(16).toString('hex');
+const actividad = { id: 'x', nombre: 'Servicios', serie: '', ivaPct: 21, irpfPct: 0 };
+const fiscal = { tipo: 'sociedad', iva: 'general', trabajadores: true, inventario: true };
+const empresa = { id, nombre: 'Circuitos numéricos (SIMULADA)', creada: `${hoy()}T00:00:00Z`, pendiente: false, fiscal, actividades: [actividad], emisor: { nombre: 'Circuitos numéricos S.L. (ficticia)', nif: 'B12345674', direccion: 'C/ Ficticia, 1', ciudad: '08001 Barcelona', plazo: 30 }, pagos130: {}, pagos202: {} };
+const cliente = { nombre: 'Cliente ficticio', nif: 'B12345674' };
+const usuario = { id, nombre: 'Auditoría ficticia', email, admin: false, emailVerificado: true, empresa: id, rol: 'admin', pass: `${sal}:${scryptSync(password, sal, 64).toString('hex')}` };
+await redis.multi().hset('empresas', { [id]: empresa }).hset('usuarios', { [id]: usuario }).hset('emails', { [email]: id }).exec();
+const guardar = (col, d) => redis.hset(`${col}:${id}`, { [d.id]: d });
+const form = new FormData(); form.set('email', email); form.set('password', password);
+const login = await fetch(`${BASE}/api/login`, { method: 'POST', body: form, headers: { Origin: BASE }, redirect: 'manual' });
+const cookie = login.headers.getSetCookie().map((s) => s.split(';')[0]).join('; ');
+assert.match(cookie, /(?:^|; )t=/);
+let fallos = 0, correctas = 0;
+const resultados = [];
+async function comprobar(nombre, fn) { try { await fn(); correctas++; resultados.push({ nombre, ok: true }); console.log('✓', nombre); } catch (e) { fallos++; resultados.push({ nombre, ok: false, error: e.message }); console.log('✗', nombre, e.message); } }
+const pedir = (ruta, opciones = {}) => fetch(BASE + ruta, { redirect: 'manual', ...opciones, headers: { Cookie: cookie, Origin: BASE, ...opciones.headers } });
+await comprobar('Aurora: sin sesión no se crea', async () => { assert.equal((await fetch(BASE+'/api/aurora',{method:'POST',headers:{Origin:BASE},redirect:'manual'})).status,401); });
+await comprobar('Aurora: un administrador de empresa no puede crear cuentas globales', async () => { assert.equal((await pedir('/api/aurora',{method:'POST'})).status,401); });
+await comprobar('Aurora: el origen externo se rechaza', async () => { assert.equal((await pedir('/api/aurora',{method:'POST',headers:{Origin:'https://otro.example'}})).status,403); });
+await redis.hset('usuarios',{[id]:{...usuario,admin:true}});
+await comprobar('Aurora: el administrador global no sobrescribe la cuenta existente', async () => { assert.equal((await pedir('/api/aurora',{method:'POST'})).status,409); });
+console.log(JSON.stringify({correctas,fallos}));
+if(fallos) process.exitCode=1;

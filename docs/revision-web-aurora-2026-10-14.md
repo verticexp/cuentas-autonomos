@@ -15,7 +15,7 @@ Verificación:
 - Suite inicial actual: 565/565 correctas.
 - Cinco regresiones unitarias nuevas: 0/5 antes; todas correctas después.
 - Dos circuitos HTTP (WEB02 y WEB03): 0/2 antes, 2/2 después, también sobre la compilación de producción.
-- Suite final: 570/570 y `npm run build` correctos.
+- Suite de las correcciones: 570/570 y `npm run build` correctos.
 - Aurora: 2.052/2.052 comprobaciones independientes sobre la compilación final.
 - Cinco circuitos originales de cuentas, Excel, PDF y pago de nómina: 5/5 sobre la compilación final.
 
@@ -24,3 +24,9 @@ El primer intento de pruebas dentro del sandbox no podía abrir los puertos de R
 La revisión numérica se realizó con datos ficticios y Redis aislado. La creación de Aurora en producción requiere un acceso autorizado al servidor o una sesión de administrador en la web. No debe ejecutarse `scripts/demo.mjs` contra producción: ese script puede rehacer una cuenta existente. La contraseña de la simulación local es pública y no debe reutilizarse para el acceso web.
 
 Se mantienen los límites fiscales documentados en `auditoria-numerica-2026-10-14.md`: las pruebas no sustituyen datos fiscales personales, ajustes extracontables ni la configuración laboral de cada empresa.
+
+## Alta de Aurora en la web
+
+Se añade un formulario exclusivo del administrador global en `/ajustes/aurora` y `POST /api/aurora`. Carga el fixture ficticio auditado, crea una identidad independiente y genera una contraseña nueva que se muestra una sola vez. No utiliza credenciales del simulador. No admite archivos ni empresas de destino; una cuenta Aurora existente produce 409 sin cambios. El cerrojo serializa las altas simultáneas y la transacción guarda datos e índices. Presupuestos reciben tokens aleatorios nuevos. Se desactivan recordatorios, recurrencias, Drive, ControlaT y VeriFactu.
+
+Verificación adicional: 571/571 pruebas y compilación correctas. La regresión del alta comprueba concurrencia, contraseña, datos de otras empresas, índices y enlaces. Cuatro circuitos HTTP correctos: sin sesión, administrador de empresa, origen externo y duplicado. La fixture contiene 214 facturas, 370 gastos, 96 nóminas, nueve clientes y 16 presupuestos, sin usuarios ni contraseñas.
