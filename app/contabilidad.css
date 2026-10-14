@@ -69,3 +69,5 @@
 .ca-falta { color: var(--out); font-size: 13px; }
 .contabilidad .grupo-c .txt small { white-space: normal; overflow: visible; text-overflow: clip; }
 .cont-resumen strong { overflow: visible; text-overflow: clip; font-size: clamp(12.5px, 3.5vw, 16px); }
+.personal-otro { grid-template-columns: 1.6fr 1fr auto; align-items: center; }
+.personal-resumen { margin: 4px 0; }
