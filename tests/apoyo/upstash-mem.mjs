@@ -75,11 +75,15 @@ export function crearBase() {
 }
 
 // fallos: { exec: n } hace fallar las n próximas transacciones (para simular cortes a mitad).
+// ganchos.antes(cuerpo, ruta): si está puesto, se espera antes de atender cada petición (para pausar una escritura concreta
+// y meter otra operación en medio, de forma determinista).
 export function arrancar({ puerto = 0, base = crearBase() } = {}) {
   const fallos = { exec: 0 };
+  const ganchos = { antes: null };
   const b64 = (v) => (typeof v === 'string' ? Buffer.from(v).toString('base64') : Array.isArray(v) ? v.map(b64) : v);
   const server = http.createServer((req, res) => {
-    let body = ''; req.on('data', (d) => { body += d; }); req.on('end', () => {
+    let body = ''; req.on('data', (d) => { body += d; }); req.on('end', async () => {
+      if (ganchos.antes) await ganchos.antes(body, req.url);
       const enc = req.headers['upstash-encoding'] === 'base64';
       const uno = (cmd) => { try { const r = base.run(cmd); return { result: enc ? b64(r) : r }; } catch (e) { return { error: e.message }; } };
       const j = JSON.parse(body || 'null');
@@ -90,7 +94,7 @@ export function arrancar({ puerto = 0, base = crearBase() } = {}) {
     });
   });
   return new Promise((ok) => server.listen(puerto, '127.0.0.1', () => ok({
-    url: `http://127.0.0.1:${server.address().port}`, base, fallos,
+    url: `http://127.0.0.1:${server.address().port}`, base, fallos, ganchos,
     cerrar: () => new Promise((c) => { server.closeAllConnections?.(); server.close(() => c()); }),
   })));
 }

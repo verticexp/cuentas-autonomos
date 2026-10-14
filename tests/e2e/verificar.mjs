@@ -750,7 +750,10 @@ console.log('Banco: extractos, conexión y emparejar');
   const fxC = await fac(masD(-9), 'Carrera C S.L.', 500);
   const carrera2 = await Promise.all([par(mov(1210).id, fxC.id), par(mov(605).id, fxC.id)]);
   const [cC, mA, mB] = await Promise.all([hget(`facturas:${empresa}`, fxC.id), hget(`banco:${empresa}`, mov(1210).id), hget(`banco:${empresa}`, mov(605).id)]);
-  ok('misma factura con dos movimientos a la vez: se cobra una sola vez', () => assert.ok(carrera2.filter((r) => r.status === 200).length === 1 && cC.cobrada && [mA.estado, mB.estado].filter((e) => e === 'emparejado').length === 1, JSON.stringify([carrera2.map((r) => r.status), mA.estado, mB.estado])));
+  // Informe R01: el de 1210 € supera lo pendiente (605 €) y se rechaza; el de 605 € la cobra si no choca con el otro.
+  const emparejados = [mA, mB].filter((m) => m.estado === 'emparejado');
+  ok('misma factura con dos movimientos a la vez: se cobra una sola vez', () => assert.ok(carrera2.filter((r) => r.status === 200).length === emparejados.length && emparejados.length <= 1 && mA.estado !== 'emparejado'
+    && (cC.pagos || []).reduce((s, x) => s + x.importe, 0) === emparejados.reduce((s, m) => s + m.importe, 0) && Boolean(cC.cobrada) === (emparejados.length === 1), JSON.stringify([carrera2.map((r) => r.status), mA.estado, mB.estado, cC.pagos])));
   const cerrojos = await kv(['KEYS', 'cuentas:cerrojo:*']);
   ok('no quedan cerrojos puestos después', () => assert.deepEqual(cerrojos, []));
   // Se deja como estaba para lo que viene después.

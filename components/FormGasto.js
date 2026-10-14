@@ -179,7 +179,10 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, r
           {CATEGORIAS.map((c) => <option key={c.id} value={c.id}>{c.id} · {c.nombre}</option>)}
         </select>
       )}
-      {productos.length > 0 && !g.inversion && (
+      {gasto?.pedidoProv && g.stock?.length > 0 && (
+        <p className="nota">Viene de recibir un pedido: sus unidades y costes se corrigen en el pedido (borra este gasto y vuelve a recibirlo).</p>
+      )}
+      {productos.length > 0 && !g.inversion && !gasto?.pedidoProv && (
         <div className="gasto-stock">
           <p className="mini-t">Productos que entran al almacén <small>(opcional)</small></p>
           {(g.stock || []).map((l, i) => (
