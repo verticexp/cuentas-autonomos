@@ -14,3 +14,6 @@
   /* Si se está en una de estas pantallas, se marca ella y no la pestaña de arriba */
   .tabbar:has(.tabs-extra a.activo) .tabs a.activo { color: inherit; background: none; }
 }
+/* Móvil: «Más» sustituye a «Ajustes» en la barra (Ajustes va dentro de «Más»). En el ordenador, al revés: sin «Más». */
+@media (max-width: 1023.98px) { .tabs a[data-href="/ajustes"] { display: none; } }
+@media (min-width: 1024px) { .tabs a[data-href="/mas"], .mas-solo-movil { display: none; } }

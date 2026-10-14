@@ -1,0 +1,30 @@
+/* Hoja del «+» en el móvil: lo que se puede crear, con lo más habitual arriba. En el ordenador no existe (components/TabBar.js). */
+.hoja { position: fixed; inset: 0; z-index: 30; display: flex; align-items: flex-end; justify-content: center; }
+.hoja-fondo { position: absolute; inset: 0; width: 100%; border: 0; padding: 0; background: rgba(8, 17, 15, 0.4); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); cursor: default; animation: hoja-fondo 0.22s ease both; }
+.hoja-panel {
+  position: relative; width: min(100%, 520px); max-height: 92dvh; overflow-y: auto; overscroll-behavior: contain;
+  background: var(--surface); color: var(--ink); border-radius: 28px 28px 0 0; border: 0.5px solid var(--line); border-bottom: 0;
+  padding: 8px 16px calc(env(safe-area-inset-bottom, 0px) + 16px);
+  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.22);
+  animation: hoja-sube 0.32s cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+.hoja-asa { display: block; width: 36px; height: 5px; border-radius: 999px; background: var(--line); margin: 4px auto 10px; }
+.hoja-t { margin: 0 4px 10px; font-size: 20px; font-weight: 700; letter-spacing: 0.01em; }
+.hoja-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.hoja-fila { display: flex; align-items: center; gap: 14px; min-height: 64px; padding: 10px 14px; border-radius: 18px; background: var(--relleno); color: var(--ink); text-decoration: none; -webkit-tap-highlight-color: transparent; transition: transform 0.12s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.12s; }
+.hoja-fila:active { transform: scale(0.98); opacity: 0.85; }
+.hoja-fila:focus-visible, .hoja-cerrar:focus-visible { outline: 2px solid var(--marca); outline-offset: 2px; }
+.hoja-fila .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.hoja-fila .txt strong { font-size: 17px; font-weight: 650; }
+.hoja-fila .txt small { color: var(--muted); font-size: 13px; margin-top: 1px; }
+.hoja-ico { flex: none; width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; background: var(--surface); color: var(--ico, var(--marca)); }
+.hoja-ico svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+/* La primera (lo que más usa esta empresa) destaca */
+.hoja-fila.principal { background: var(--marca); color: var(--sobre); }
+.hoja-fila.principal .txt small { color: color-mix(in srgb, var(--sobre) 75%, transparent); }
+.hoja-fila.principal .hoja-ico { background: color-mix(in srgb, var(--sobre) 16%, transparent); color: var(--sobre); }
+.hoja-cerrar { display: block; width: 100%; margin-top: 12px; min-height: 48px; border: 0; border-radius: 14px; background: none; color: var(--muted); font: inherit; font-weight: 600; cursor: pointer; }
+@keyframes hoja-fondo { from { opacity: 0; } }
+@keyframes hoja-sube { from { transform: translateY(100%); } }
+@media (prefers-reduced-motion: reduce) { .hoja-fondo, .hoja-panel { animation: none; } .hoja-fila { transition: none; } }
+@media (min-width: 1024px) { .hoja { display: none; } }
