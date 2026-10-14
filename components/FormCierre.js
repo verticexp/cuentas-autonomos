@@ -7,6 +7,7 @@ import { navegar } from '@/lib/transicion';
 import { leerImporte, r2 } from '@/lib/calculos';
 import { eur } from '@/lib/formato';
 import '@/app/lineas.css';
+import '@/app/filtros.css';
 
 const aTexto = (n) => (n || n === 0 ? String(n).replace('.', ',') : '');
 const num = (v) => leerImporte(v || 0) || 0;
@@ -53,6 +54,14 @@ export default function FormCierre({ hoy, actividades, productos = [], cierre = 
 
   return (
     <form className="formulario caja-form" onSubmit={enviar}>
+      {/* Móvil, en el mostrador: el total del día siempre a la vista, con lo cobrado y si cuadra */}
+      <div className="caja-total solo-movil">
+        <div className="caja-total-v"><small>Total del día</small><strong>{eur(total)}</strong></div>
+        <div className="caja-total-d">
+          <span className={total ? (cuadra ? 'ok' : 'falta') : ''}>{!total ? 'Apunta lo vendido' : cuadra ? 'Cuadra ✓' : `Descuadra ${eur(Math.abs(r2(total - r2(num(x.efectivo) + tarjeta + num(x.otros)))))}`}</span>
+          <small>Efectivo {eur(num(x.efectivo))} · Tarjeta {eur(tarjeta)}{num(x.otros) ? ` · Otros ${eur(num(x.otros))}` : ''}</small>
+        </div>
+      </div>
       <div className="dos-col">
         <label>Día<input className="campo" type="date" value={x.fecha} onChange={(e) => poner('fecha', e.target.value)} required /></label>
         {actividades.length > 1 && <label>Actividad<select className="campo" value={x.actividad} onChange={(e) => poner('actividad', e.target.value)}>{actividades.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}</select></label>}
@@ -77,7 +86,7 @@ export default function FormCierre({ hoy, actividades, productos = [], cierre = 
         <legend>Cobrado</legend>
         <div className="caja-cobro">
           <label>Efectivo<input className="campo" inputMode="decimal" placeholder="0,00" value={x.efectivo} onChange={(e) => poner('efectivo', e.target.value)} /></label>
-          <label>Tarjeta<input className="campo" inputMode="decimal" placeholder="0,00" value={tarjetaAuto ? (tarjeta ? aTexto(tarjeta) : "") : x.tarjeta} onChange={(e) => { setTarjetaAuto(false); poner('tarjeta', e.target.value); }} /></label>
+          <label>Tarjeta{tarjetaAuto && <small className="caja-auto"> · lo que falta</small>}<input className="campo" inputMode="decimal" placeholder="0,00" value={tarjetaAuto ? (tarjeta ? aTexto(tarjeta) : "") : x.tarjeta} onChange={(e) => { setTarjetaAuto(false); poner('tarjeta', e.target.value); }} /></label>
           <label>Bizum y otros<input className="campo" inputMode="decimal" placeholder="0,00" value={x.otros} onChange={(e) => poner('otros', e.target.value)} /></label>
         </div>
         {!cuadra && <p className="error">El cobro suma {eur(r2(num(x.efectivo) + tarjeta + num(x.otros)))} y lo vendido {eur(total)}.</p>}
@@ -114,7 +123,7 @@ export default function FormCierre({ hoy, actividades, productos = [], cierre = 
       <datalist id="proyectos-caja">{proyectos.map((p) => <option key={p} value={p} />)}</datalist>
       <label>Nota (opcional)<input className="campo" value={x.nota} onChange={(e) => poner('nota', e.target.value)} placeholder="Ej.: descuadre de 2 € en caja" /></label>
 
-      <div className="totales"><strong>Total del día {eur(total)}</strong></div>
+      <div className="totales solo-pc"><strong>Total del día {eur(total)}</strong></div>
       {error && <p className="error">{error}</p>}
       <button className="boton" disabled={enviando || !cuadra || !total}>{enviando ? 'Guardando…' : cierre ? 'Guardar cambios' : 'Apuntar el cierre'}</button>
     </form>

@@ -9,3 +9,24 @@
 .caja-dia.repetido { opacity: .55; }
 .caja-aviso { font-size: .85rem; color: var(--gris, #6b7280); }
 @media (max-width: 520px) { .caja-cobro { grid-template-columns: 1fr 1fr; } .caja-iva { grid-template-columns: 7.5rem 1fr auto; } }
+.caja-auto { color: var(--muted, #6b7280); font-weight: 400; }
+/* Móvil, en el mostrador: total del día fijo arriba y campos y botones grandes para teclear con una mano */
+.caja-total { display: none; }
+@media (max-width: 1023.98px) {
+  .pagina .caja-total { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; align-items: center; justify-content: space-between; gap: 12px; margin: 0 -16px 12px; padding: 10px 16px;
+    background: color-mix(in srgb, var(--paper) 86%, transparent); -webkit-backdrop-filter: blur(14px) saturate(1.6); backdrop-filter: blur(14px) saturate(1.6); }
+  .caja-total-v { display: flex; flex-direction: column; min-width: 0; }
+  .caja-total-v small, .caja-total-d small { color: var(--muted); font-size: 13px; }
+  .caja-total-v strong { font-size: 32px; line-height: 1.1; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .caja-total-d { display: flex; flex-direction: column; align-items: flex-end; text-align: right; gap: 2px; min-width: 0; }
+  .caja-total-d span { font-size: 15px; font-weight: 700; color: var(--muted); }
+  .caja-total-d span.ok { color: var(--in); }
+  .caja-total-d span.falta { color: var(--out); }
+  .caja-form .campo { min-height: 56px; font-size: 20px; }
+  .caja-form select.campo { font-size: 17px; }
+  .caja-form label, .caja-form legend { font-size: 15px; }
+  .caja-form .boton { min-height: 56px; font-size: 18px; }
+  .caja-form .boton.sec.pequeno { min-height: 48px; font-size: 16px; }
+  .caja-form .linea-quitar { width: 44px; height: 44px; }
+  .caja-cobro { align-items: end; }
+}
