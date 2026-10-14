@@ -69,7 +69,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
   const elegido = clientes.find((x) => x.nombre.toUpperCase() === f.cliente.nombre.trim().toUpperCase())?.id || '';
   const elegirCliente = (id) => {
     const c = clientes.find((x) => x.id === id);
-    poner('cliente', c ? { nombre: c.nombre, nif: c.nif, direccion: c.direccion, ciudad: c.ciudad, email: c.email || '' } : { nombre: '', nif: '', direccion: '', ciudad: '' });
+    poner('cliente', c ? { nombre: c.nombre, nif: c.nif, direccion: c.direccion, ciudad: c.ciudad, email: c.email || '', pais: c.pais || '' } : { nombre: '', nif: '', direccion: '', ciudad: '', pais: '' });
   };
   const cambiarActividad = (a) => {
     if (nueva && !orig) limpiarErrores('irpfPct', 'ivaPct', ...f.lineas.map((_, i) => `lineas.${i}.ivaPct`));
@@ -152,6 +152,8 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
         <input {...atributos('cliente.nombre')} className="campo" placeholder="Ej.: Eventos SL" value={f.cliente.nombre} onChange={(e) => ponerCliente('nombre', e.target.value)} required />{mensaje('cliente.nombre')}
         <label className="ff-etiqueta-oculta" htmlFor={idCampo('cliente.nif')}>NIF / CIF</label>
         <input {...atributos('cliente.nif')} className="campo" placeholder="Ej.: B12345678" value={f.cliente.nif} onChange={(e) => ponerCliente('nif', e.target.value)} />{mensaje('cliente.nif')}
+        <label className="ff-etiqueta-oculta" htmlFor={idCampo('cliente.pais')}>País del identificador (si no es España)</label>
+        <input {...atributos('cliente.pais')} className="campo" placeholder="País del NIF si no es ES (US, PT, FR…)" maxLength={2} value={f.cliente.pais || ''} onChange={(e) => ponerCliente('pais', e.target.value.toUpperCase())} />{mensaje('cliente.pais')}
         <label className="ff-etiqueta-oculta" htmlFor={idCampo('cliente.direccion')}>Dirección</label>
         <input {...atributos('cliente.direccion')} className="campo" placeholder="Ej.: Calle Mayor, 1" value={f.cliente.direccion} onChange={(e) => ponerCliente('direccion', e.target.value)} />{mensaje('cliente.direccion')}
         <label className="ff-etiqueta-oculta" htmlFor={idCampo('cliente.ciudad')}>Ciudad y CP</label>

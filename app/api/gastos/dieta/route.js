@@ -4,6 +4,7 @@ import { subirGasto } from '@/lib/drive';
 import { enviarNomina } from '@/lib/controlat';
 import { actividadesDe, actividadValida, fiscalDe } from '@/lib/empresa';
 import { calcularDieta, conceptoDieta } from '@/lib/dietas';
+import { fechaReal } from '@/lib/validacion';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,7 +13,7 @@ export async function POST(req) {
   const { u, res } = await usuarioApi({ permiso: 'gastar' });
   if (res) return res;
   const b = await cuerpo(req);
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(b.fecha || '')) return error('Fecha no válida');
+  if (!fechaReal(b.fecha)) return error('Fecha no válida');
   // Una sociedad no tiene «titular» en el IRPF: sus socios y empleados cobran dietas.
   const c = calcularDieta({ ...b, quien: fiscalDe(u).tipo === 'sociedad' ? 'empleado' : b.quien });
   if (c.error) return error(c.error);
