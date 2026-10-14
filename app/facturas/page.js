@@ -3,7 +3,7 @@ import { enviarLuego } from '@/lib/verifactuEnvio';
 import Ir from '@/components/Ir';
 import { requerir } from '@/lib/auth';
 import { leer, redis } from '@/lib/redis';
-import { contar, documentos, fichasMarcadas, fichasRango, pagina, vencidaFicha } from '@/lib/indices';
+import { contar, documentos, fichasRango, pagina, totales, vencidaFicha, vencidas as vencidasHoy } from '@/lib/indices';
 import { importes, numeroFactura, r2, vencida } from '@/lib/calculos';
 import { actividadesDe, nombresActividad } from '@/lib/empresa';
 import FilaFactura from '@/components/FilaFactura';
@@ -30,10 +30,10 @@ export default async function Facturas({ searchParams }) {
   const buscado = String(q || '').trim().toLowerCase();
   const h = hoy();
   const plazo = u.emisor?.plazo;
-  const [total, sinCobrar, recurrentes] = await Promise.all([contar(u, 'facturas'), fichasMarcadas(u, 'facturas', 'p'), leer(u, 'recurrentes')]);
+  // E06: «Por cobrar» sale del total precalculado y las vencidas, del índice por vencimiento (no de todas las pendientes).
+  const [total, { pc }, vencidas, recurrentes] = await Promise.all([contar(u, 'facturas'), totales(u, 'facturas', ['pc']), vencidasHoy(u, plazo, h), leer(u, 'recurrentes')]);
   const estadoDe = (f) => (f.cobrada ? 'cobrada' : vencida(f, plazo, h) ? 'vencida' : 'pendiente');
-  const porCobrar = r2(sinCobrar.reduce((s, f) => s + f.p, 0));
-  const vencidas = sinCobrar.filter((f) => vencidaFicha(f, plazo, h));
+  const porCobrar = r2(pc);
   // La búsqueda va por el índice de texto (todos los conceptos, revisión S06); el resto, por la ficha.
   const filtro = (f) => (!ACTIVIDADES[a] || f.a === a) && (estado !== 'vencidas' || vencidaFicha(f, plazo, h));
   const conFiltro = Boolean(ACTIVIDADES[a] || estado === 'vencidas');
@@ -47,7 +47,11 @@ export default async function Facturas({ searchParams }) {
     if (grupos.at(-1)?.m !== m) grupos.push({ m, facturas: [] });
     grupos.at(-1).facturas.push(f);
   }
-  const totalMes = Object.fromEntries(await Promise.all(grupos.map(async (g) => {
+  // E06: sin búsqueda ni «vencidas», el total del mes es un total precalculado (todas o sin cobrar, por actividad).
+  const precalculado = !buscado && estado !== 'vencidas';
+  const campoMes = (m) => `${estado === 'pendientes' ? 'mp' : 'm'}:${m}${ACTIVIDADES[a] ? `:${a}` : ''}`;
+  const delMes = precalculado ? await totales(u, 'facturas', grupos.map((g) => campoMes(g.m))) : {};
+  const totalMes = precalculado ? Object.fromEntries(grupos.map((g) => [g.m, delMes[campoMes(g.m)]])) : Object.fromEntries(await Promise.all(grupos.map(async (g) => {
     const fichas = await fichasRango(u, 'facturas', `${g.m}-01`, `${g.m}-31`, { textos: Boolean(buscado) });
     return [g.m, fichas.filter((f) => filtro(f) && (!buscado || f.x.includes(buscado)) && (!['pendientes', 'vencidas'].includes(estado) || !f.co)).reduce((s, f) => s + f.b, 0)];
   })));
