@@ -28,7 +28,7 @@ test('stock, coste medio ponderado, ventas y margen', () => {
   assert.equal(p.costeMedio, 12.5);
   assert.equal(p.valor, 62.5);
   assert.equal(p.ventas, 15);
-  assert.equal(p.ingresos, 400);
+  assert.equal(p.ingresos, 375);
   assert.equal(p.costeVentas, 40 + 150 - 12.5);
   assert.ok(p.bajo);
   assert.equal(valorInventario(datos, '2025-02-28'), 60);
@@ -53,4 +53,56 @@ test('el valor del almacén entra en la contabilidad y en los libros registro', 
 test('aviso de stock bajo los lunes', () => {
   assert.equal(avisosDelDia({ stockBajo: ['Cable XLR 10 m'] }, '2026-10-12')[0].titulo, 'Cable XLR 10 m: bajo mínimo');
   assert.equal(avisosDelDia({ stockBajo: ['Cable XLR 10 m'] }, '2026-10-13').length, 0);
+});
+
+test('N10: venta y devolución total anulan unidades, ingresos, coste y margen', () => {
+  const producto = productos[0].id;
+  for (const linea of [{ cantidad: 1, precio: -30 }, { cantidad: -1, precio: 30 }]) {
+    const facturas = [
+      { id: 'v', fecha: '2026-02-01', lineas: [{ producto, cantidad: 1, precio: 30 }] },
+      { id: 'r', fecha: '2026-02-02', rectifica: { id: 'v' }, lineas: [{ producto, ...linea }] },
+    ];
+    const inv = inventario({ productos, facturas, ajustes }, { hoy: '2026-02-28' });
+    const p = inv.productos[0];
+    assert.deepEqual([p.ventas, p.ingresos, p.costeVentas, p.margen], [0, 0, 0, 0]);
+    assert.equal(p.stock, 10);
+    assert.equal(inv.movimientos.find((m) => m.tipo === 'devolucion').ingreso, -30);
+  }
+});
+
+test('N10: devolución parcial resta el importe de la línea con descuento', () => {
+  const producto = productos[0].id;
+  const facturas = [
+    { id: 'v', fecha: '2026-02-01', lineas: [{ producto, cantidad: 4, precio: 30, dto: 10 }] },
+    { id: 'r', fecha: '2026-02-02', lineas: [{ producto, cantidad: 1, precio: -30, dto: 10 }] },
+  ];
+  const p = inventario({ productos, facturas, ajustes }, { hoy: '2026-02-28' }).productos[0];
+  assert.deepEqual([p.ventas, p.ingresos, p.costeVentas, p.margen], [3, 81, 30, 51]);
+});
+
+test('N10: devolver en otro periodo resta ingresos y margen solo en ese periodo', () => {
+  const producto = productos[0].id;
+  const facturas = [
+    { id: 'v', fecha: '2026-01-10', lineas: [{ producto, cantidad: 2, precio: 30 }] },
+    { id: 'r', fecha: '2026-02-10', lineas: [{ producto, cantidad: 1, precio: -30 }] },
+  ];
+  const d = { productos, facturas, ajustes };
+  const enero = inventario(d, { hoy: '2026-01-31' }).productos[0];
+  const febrero = inventario(d, { hoy: '2026-02-28', desde: '2026-02-01' }).productos[0];
+  const acumulado = inventario(d, { hoy: '2026-02-28' }).productos[0];
+  assert.deepEqual([enero.ventas, enero.ingresos, enero.costeVentas, enero.margen], [2, 60, 20, 40]);
+  assert.deepEqual([febrero.ventas, febrero.ingresos, febrero.costeVentas, febrero.margen], [-1, -30, -10, -20]);
+  assert.deepEqual([acumulado.ventas, acumulado.ingresos, acumulado.costeVentas, acumulado.margen], [1, 30, 10, 20]);
+});
+
+test('N10: cierres de caja devuelven el importe proporcional indicado en sus unidades', () => {
+  const producto = productos[0].id;
+  for (const devueltas of [1, 4]) {
+    const facturas = [
+      { id: 'v', fecha: '2026-02-01', unidades: [{ producto, cantidad: 4, importe: 120 }] },
+      { id: 'r', fecha: '2026-02-02', unidades: [{ producto, cantidad: -devueltas, importe: 30 * devueltas }] },
+    ];
+    const p = inventario({ productos, facturas, ajustes }, { hoy: '2026-02-28' }).productos[0];
+    assert.deepEqual([p.ventas, p.ingresos, p.costeVentas, p.margen], [4 - devueltas, 30 * (4 - devueltas), 10 * (4 - devueltas), 20 * (4 - devueltas)]);
+  }
 });

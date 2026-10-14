@@ -93,7 +93,7 @@ export default async function Inventario({ searchParams }) {
           {pedidosP.length ? pedidosP.slice(0, 60).map((p) => (
             <div key={p.id} className="tarjeta inv-pedido">
               <div className="inv-pedido-cab"><strong>{p.proveedor}</strong><span>{eur(totalPedidoProv(p))}</span></div>
-              <p className="nota">{numeroDoc({ ...p, tipo: 'proveedor' })} · {fechaCorta(p.fecha)} · {p.recibido ? <>recibido el {fechaCorta(p.recibido)}{p.gasto && <> · <Link href={`/gastos/${p.gasto}`}>ver la compra</Link></>}</> : p.cancelado ? 'cancelado' : 'en camino'}</p>
+              <p className="nota">{numeroDoc({ ...p, tipo: 'proveedor' })} · {fechaCorta(p.fecha)} · {p.recibido ? <>recibido el {fechaCorta(p.recibido)}{p.gasto && <> · <Link href={`/gastos/${p.gasto}`}>ver la compra</Link></>}</> : p.cancelado ? (p.recepciones?.length ? 'resto cancelado' : 'cancelado') : p.recepciones?.length ? <>recibido en parte · {p.recepciones.map((r) => <Link key={r.id} href={`/gastos/${r.gasto}`}>ver la compra del {fechaCorta(r.fecha)}</Link>).reduce((a, x) => (a.length ? [...a, ' · ', x] : [x]), [])}</> : 'en camino'}</p>
               <ul>{p.lineas.map((x, i) => <li key={i}><span>{x.concepto}{x.sku ? ` (${x.sku})` : ''}<small>{eur(x.coste)}/ud.</small></span><b>{ud(x.cantidad)} ud.</b></li>)}</ul>
               {!p.recibido && !p.cancelado && puede(u, 'gastar') && <RecibirPedido pedido={p} hoy={h} />}
               {!p.recibido && <CopiarPedido texto={`Hola, os quería pedir:\n${p.lineas.map((x) => `- ${ud(x.cantidad)} × ${x.concepto}${x.sku ? ` (${x.sku})` : ''}`).join('\n')}\nGracias.`} />}

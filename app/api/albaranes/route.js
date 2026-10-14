@@ -1,10 +1,7 @@
-import { createHash } from 'node:crypto';
 import { guardar, borrar, leer, leerUno } from '@/lib/redis';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
-import { crearFactura, limpiar } from '@/lib/facturas';
-import { actividadesDe, fiscalDe } from '@/lib/empresa';
-import { facturaDeAlbaranes, limpiarDoc, numeroDoc, NOMBRE } from '@/lib/albaranes';
-import { guardarDoc } from '@/lib/albaranesServidor';
+import { limpiarDoc, numeroDoc, NOMBRE } from '@/lib/albaranes';
+import { facturarAlbaranes, guardarDoc, normalizarIdsAlbaranes } from '@/lib/albaranesServidor';
 import { numeroFactura } from '@/lib/calculos';
 import { auditar } from '@/lib/auditoria';
 
@@ -20,20 +17,9 @@ export async function POST(req) {
   const b = await cuerpo(req);
 
   if (b.accion === 'facturar') {
-    const ids = Array.isArray(b.ids) ? b.ids.map(String).slice(0, 100) : [];
-    const todos = (await leer(u, 'albaranes')) || [];
-    const lista = ids.map((id) => todos.find((a) => a.id === id)).filter(Boolean);
-    if (lista.length !== ids.length) return error('Alguno de esos albaranes ya no existe');
-    const fd = facturaDeAlbaranes(lista);
-    if (fd.error) return error(fd.error);
-    const a = actividadesDe(u).find((x) => x.id === b.actividad) || actividadesDe(u)[0];
-    const datos = limpiar({ ...fd, fecha: b.fecha, actividad: a.id, irpfPct: b.irpfPct ?? a.irpfPct, cobrada: b.cobrada }, actividadesDe(u), fiscalDe(u).tipo === 'sociedad');
-    if (datos.error) return error(datos.error);
-    // Idempotente por los albaranes elegidos: dos clics a la vez no hacen dos facturas.
-    const idem = `alb:${createHash('sha256').update([...ids].sort().join(',')).digest('hex').slice(0, 32)}`;
-    const { factura: f, error: e } = await crearFactura(u, datos, { idem });
+    const ids = normalizarIdsAlbaranes(b.ids);
+    const { factura: f, albaranes: lista, error: e } = await facturarAlbaranes(u, { ...b, ids });
     if (e) return error(e);
-    for (const x of lista) await guardar(u, 'albaranes', { ...x, factura: f.id });
     await auditar(u, 'Albaranes facturados', `${lista.map(numeroDoc).join(', ')} → ${numeroFactura(f)}`);
     return Response.json({ ok: true, factura: f });
   }

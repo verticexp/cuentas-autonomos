@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
+import { estadoPedidoProv } from '../lib/albaranes.js';
 
 const MOTIVOS = [['recuento', 'Recuento: he contado y hay…'], ['inicial', 'Stock inicial'], ['rotura', 'Rotura o merma'], ['perdida', 'Pérdida o robo'], ['regalo', 'Muestra o regalo'], ['consumo', 'Consumo: gastado en un servicio'], ['otro', 'Otro (con signo: −2 sale, 5 entra)']];
 
@@ -66,8 +67,10 @@ export function HacerPedido({ proveedor, items, hoy }) {
 // Recibir un pedido a proveedor: lo que ha llegado y a qué coste. Se apunta el gasto (pendiente de pago) con su stock.
 export function RecibirPedido({ pedido, hoy }) {
   const router = useRouter();
+  const estado = estadoPedidoProv(pedido);
+  const idem = useRef(null);
   const [abierto, setAbierto] = useState(false);
-  const [x, setX] = useState({ fecha: hoy, ivaPct: 21, lineas: pedido.lineas.map((l) => ({ producto: l.producto, concepto: l.concepto, cantidad: String(l.cantidad).replace('.', ','), coste: String(l.coste).replace('.', ',') })) });
+  const [x, setX] = useState({ fecha: hoy, ivaPct: 21, lineas: estado.lineas.filter((l) => l.pendiente > 0).map((l) => ({ linea: l.linea, producto: l.producto, concepto: l.concepto, cantidad: String(l.pendiente).replace('.', ','), coste: String(l.coste).replace('.', ',') })) });
   const [msg, setMsg] = useState('');
   const [ocupado, setOcupado] = useState(false);
   const ponerLinea = (i, k, v) => setX((y) => ({ ...y, lineas: y.lineas.map((l, j) => (j === i ? { ...l, [k]: v } : l)) }));
@@ -75,18 +78,22 @@ export function RecibirPedido({ pedido, hoy }) {
     e.preventDefault();
     setOcupado(true); setMsg('');
     try {
-      const d = await llamar('/api/pedidos-proveedor', { method: 'POST', body: JSON.stringify({ accion: 'recibir', id: pedido.id, fecha: x.fecha, ivaPct: x.ivaPct, recibido: x.lineas }) });
+      idem.current ||= crypto.randomUUID();
+      const d = await llamar('/api/pedidos-proveedor', { method: 'POST', body: JSON.stringify({ accion: 'recibir', id: pedido.id, idem: idem.current, fecha: x.fecha, ivaPct: x.ivaPct, recibido: x.lineas }) });
       router.push(`/gastos/${d.gasto.id}`);
       router.refresh();
     } catch (err) { setMsg(err.message); setOcupado(false); }
   };
   const cancelar = async () => {
-    if (!confirm('¿Cancelar este pedido? Sus productos vuelven a salir en «Qué pedir».')) return;
+    if (!confirm('¿Cancelar lo pendiente de este pedido? Las compras recibidas se conservan.')) return;
     try { await llamar('/api/pedidos-proveedor', { method: 'POST', body: JSON.stringify({ accion: 'cancelar', id: pedido.id }) }); router.refresh(); } catch (e) { alert(e.message); }
   };
-  if (!abierto) return <div className="inv-acciones"><button type="button" className="boton pequeno" onClick={() => setAbierto(true)}>Recibir</button><button type="button" className="boton sec pequeno" onClick={cancelar}>Cancelar</button></div>;
+  if (estado.estado === 'recibido' || estado.estado === 'cancelado') return null;
+  const resumen = <p className="nota">{estado.estado === 'parcial' ? 'Recibido parcialmente' : 'Pendiente de recibir'} · {estado.lineas.filter((l) => l.pendiente > 0).map((l) => `${l.concepto}: ${l.pendiente} pendientes`).join(' · ')}</p>;
+  if (!abierto) return <>{resumen}<div className="inv-acciones"><button type="button" className="boton pequeno" onClick={() => setAbierto(true)}>{estado.estado === 'parcial' ? 'Recibir el resto' : 'Recibir'}</button><button type="button" className="boton sec pequeno" onClick={cancelar}>Cancelar</button></div></>;
   return (
     <form className="formulario inv-recibir" onSubmit={recibir}>
+      {resumen}
       {x.lineas.map((l, i) => (
         <div key={i} className="inv-recibir-linea">
           <span>{l.concepto}</span>
