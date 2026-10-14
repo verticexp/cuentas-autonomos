@@ -41,7 +41,7 @@ export default function FormPresupuesto({ presupuesto, clientes, actividades, ho
     setEnviando(true); setError('');
     try {
       const d = await llamar('/api/presupuestos', { method: nuevo ? 'POST' : 'PATCH', body: JSON.stringify({ ...p, lineas: p.lineas.map((l) => ({ ...l, ivaPct: p.ivaPct })) }) });
-      router.push(`/presupuestos/${nuevo ? d.presupuesto.id : p.id}`);
+      router.replace(`/presupuestos/${nuevo ? d.presupuesto.id : p.id}`);
       router.refresh();
     } catch (err) { setError(err.message); setEnviando(false); }
   };

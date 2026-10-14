@@ -18,7 +18,7 @@ export default function CambiarEmpresa({ empresas = [], actual, variante = 'list
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.error || 'No se pudo cambiar de empresa');
       try { sessionStorage.removeItem('netto-arranque'); } catch {}
-      window.location.assign(destino);
+      window.location.replace(destino);
     } catch (e) { setMsg(e.message); setOcupado(false); }
   };
   const cambiar = (id) => (id === actual ? setAbierto(variante === 'lista') : pedir({ id }, '/'));

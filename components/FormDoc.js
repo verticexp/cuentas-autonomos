@@ -47,7 +47,7 @@ export default function FormDoc({ tipo, doc = null, plantilla = null, clientes =
     setEnviando(true); setError('');
     try {
       const d = await llamar('/api/albaranes', { method: 'POST', body: JSON.stringify({ ...x, tipo, id: doc?.id }) });
-      navegar(router, `/albaranes/${d.doc.id}`, 'fundido');
+      navegar(router, `/albaranes/${d.doc.id}`, 'fundido', undefined, true);
       router.refresh();
     } catch (err) { setError(err.message); setEnviando(false); }
   };

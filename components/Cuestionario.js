@@ -136,7 +136,7 @@ export default function Cuestionario({ inicial, editar, conFacturas }) {
     setGuardando(true); setError('');
     try {
       await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify({ configuracion: { fiscal: limpiarFiscal(fiscal), emisor, actividades: acts } }) });
-      location.href = '/';
+      location.replace('/');
     } catch (err) { setError(err.message); setGuardando(false); }
   }
 

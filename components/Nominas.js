@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
-import { navegar } from '@/lib/transicion';
+import { volverA } from '@/lib/transicion';
 import { SS_EMPRESA, SS_TRABAJADOR, calculoNomina } from '@/lib/nominas';
 import { eur } from '@/lib/formato';
 
@@ -24,7 +24,7 @@ export function FormEmpleado({ empleado, hoy }) {
     try {
       await llamar('/api/empleados', { method: nuevo ? 'POST' : 'PATCH', body: JSON.stringify(e) });
       if (nuevo) { setAbierto(false); setE({ ...e, nombre: '', nif: '', puesto: '', bruto: '', email: '' }); router.refresh(); }
-      else { navegar(router, '/nominas', 'atras'); router.refresh(); }
+      else { volverA(router, '/nominas'); router.refresh(); }
     } catch (err) { setError(err.message); }
     setEnviando(false);
   }
