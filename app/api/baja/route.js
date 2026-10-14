@@ -12,7 +12,7 @@ export async function POST(req) {
   if (u.admin) return error('La empresa del administrador de Netto no se puede dar de baja desde aquí', 403);
   if (await pasado('baja', u.id, 5, 3600)) return error(MUCHOS, 429);
   const { password } = await cuerpo(req);
-  if (!comprobar(String(password || ''), u.pass)) return error('La contraseña no es correcta');
+  if (!(await comprobar(String(password || ''), u.pass))) return error('La contraseña no es correcta');
   await auditar(u, 'Baja de la empresa', u.empresaNombre);
   const borrarEl = await darDeBaja(u.empresa);
   return Response.json({ ok: true, borrarEl });

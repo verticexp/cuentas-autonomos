@@ -55,7 +55,7 @@ after(async () => {
 });
 
 async function usuario(id = 'u1') {
-  const u = { id, empresa: `empresa-${id}`, nombre: 'Ana', email: `${id}@ejemplo.es`, pass: A.cifrar(anterior) };
+  const u = { id, empresa: `empresa-${id}`, nombre: 'Ana', email: `${id}@ejemplo.es`, pass: await A.cifrar(anterior) };
   await R.redis.hset('usuarios', { [id]: u });
   await R.redis.hset('emails', { [u.email]: id });
   return u;
@@ -100,8 +100,8 @@ test('F12: el token funciona una vez, cambia la contraseña, revoca todas las se
   assert.deepEqual(await F.recuperarPassword(t, nueva, '192.0.2.1'), { ok: true });
   assert.deepEqual(await F.recuperarPassword(t, 'otra contraseña segura', '192.0.2.1'), caducado);
   const guardado = await R.redis.hget('usuarios', u.id);
-  assert.ok(A.comprobar(nueva, guardado.pass));
-  assert.ok(!A.comprobar(anterior, guardado.pass));
+  assert.ok(await A.comprobar(nueva, guardado.pass));
+  assert.ok(!(await A.comprobar(anterior, guardado.pass)));
   for (const s of sesiones) assert.equal(await R.redis.get(`sesion:${s}`), null);
   assert.deepEqual(await R.redis.smembers(`sesiones:${u.id}`), []);
   assert.equal(await R.redis.get(`recuperar-usuario:${u.id}`), null);
@@ -121,7 +121,7 @@ test('F12: un token caducado o desconocido no cambia la contraseña', async () =
   assert.deepEqual(await F.recuperarPassword(t, nueva), caducado);
   assert.deepEqual(await F.recuperarPassword('a'.repeat(64), nueva), caducado);
   assert.deepEqual(await F.recuperarPassword('malformado', nueva), caducado);
-  assert.ok(A.comprobar(anterior, (await R.redis.hget('usuarios', u.id)).pass));
+  assert.ok(await A.comprobar(anterior, (await R.redis.hget('usuarios', u.id)).pass));
 });
 
 test('F12: un segundo enlace invalida el primero', async () => {
@@ -145,7 +145,7 @@ test('F12: contraseña corta o igual a la anterior se rechaza sin consumir el to
     assert.ok((await F.recuperarPassword(t, password)).error);
     assert.equal(await R.redis.get(`recuperar:${sha(t)}`), u.id);
     assert.equal(await R.redis.get(`sesion:${s}`), u.id);
-    assert.ok(A.comprobar(anterior, (await R.redis.hget('usuarios', u.id)).pass));
+    assert.ok(await A.comprobar(anterior, (await R.redis.hget('usuarios', u.id)).pass));
   }
   assert.deepEqual(await F.recuperarPassword(t, '1234567890'), { ok: true });
 });
