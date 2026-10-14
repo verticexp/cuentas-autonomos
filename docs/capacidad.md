@@ -39,6 +39,22 @@ Reproducciones en `tests/revision-s01-s06.test.mjs` (fallaban las seis antes del
 
 Medición con la distribución de la revisión (5.000 facturas en un mes, dos tercios sin cobrar): página de 50, 18 KB; búsqueda, 38 KB; pero **«Por cobrar» lee 578 KB (fichas de 3.333 pendientes) y el total del mes 878 KB (fichas de 5.000)**. Lo resuelve E06 (totales precalculados), pendiente.
 
+## E06, E10, E11 (14/10, tercera tanda)
+
+- **E06 totales precalculados**: cada escritura de facturas, gastos o presupuestos va en una única ejecución atómica (`lib/scripts.js` TX_INDICES) que lee la ficha anterior dentro de Redis y aplica la diferencia: por cobrar, lo que se debe, gastos sin pagar y totales por mes (todo y pendiente, por actividad), en céntimos enteros. Vencidas por un índice de vencimientos. `comprobarTotales` los recalcula desde las fichas y lista descuadres. El Resumen se guarda calculado por versión de los datos (`lib/panelCache.js`): mientras no cambie nada, no lee documentos.
+  Con 5.000 facturas en un mes y dos tercios sin cobrar, abrir Facturas lee **19 KB** (antes 2,25 MB); el Resumen sin cambios, solo los totales y la caché.
+- **E10**: la copia hace un SCAN al principio y otro al final (con 1.000 empresas, 2 recorridos en vez de ~3.001) con las mismas garantías; la exportación completa lee las colecciones de una en una. Pendiente de decisión: guardar las exportaciones en un almacenamiento de objetos (Vercel Blob) y dar un enlace caducable, en vez de construir el ZIP en memoria (es infraestructura nueva).
+- **E11**: líneas JSON `{"metrica": …}` en los registros: errores de petición (`instrumentation.js`), esperas de cerrojo de más de 0,5 s, reconstrucciones de índice, cada tanda de trabajos con el estado de la cola (total, vencidos y espera máxima) y trabajos fallidos. Sin datos fiscales, nombres ni emails. La latencia por ruta (p50/p95/p99) y la memoria las da Vercel (Observability). Las alertas (tasa de errores, cola atrasada) se configuran en Vercel o con un drain: es configuración de la cuenta.
+
+## E12: lo verificado y lo que hay que confirmar en los paneles
+
+Verificado: proyecto `cuentas` del equipo `verticexpcom`, región de funciones `fra1` (`vercel.json`), Node 24, crons diarios a las 06:00 y 07:00 UTC, funciones de cron y trabajos con `maxDuration` 60 s, protección SSO en `*.vercel.app` (por eso las tandas se encadenan al dominio propio). El cliente de Upstash agrupa peticiones automáticamente (auto-pipelining).
+
+No se puede ver desde la API ni el código (hay que mirarlo en los paneles):
+- **Vercel**: plan (Hobby/Pro), límite de duración y memoria de funciones, ejecuciones concurrentes, frecuencia mínima de crons, presupuesto de uso.
+- **Upstash**: plan, región (debería ser Fráncfort, junto a `fra1`), límite de comandos por segundo y de ancho de banda, tamaño máximo de petición/respuesta, persistencia y copias. **La base se comparte con Controla'T**: recomendable una base propia para que una app no consuma el margen de la otra.
+- **Correo, IA y Stripe**: cuotas y límites de envío de cada proveedor.
+
 ## Pendiente
 
 - **E01 resto**: hecho en la segunda tanda (Impuestos, mes, Tesorería, libros, paquete, estado de pagos, caja e importación de ventas, nueva factura, proyectos por año, exportar CSV, ajustes de Verifactu, cuestionario, proveedores, remesas y duplicados). Siguen leyendo todo, a propósito: **Contabilidad y cuentas anuales** (el balance acumula desde el principio: necesitan agregados, E06), el **inventario** (valora con todo el histórico de movimientos), la **exportación completa**, la **baja**, **Proyectos «desde el principio»** y el **asistente** (carga colecciones según la pregunta). Los movimientos del banco (`banco:<emp>`) aún no tienen índice. La búsqueda recorre fichas compactas (no documentos); para texto libre a escala, un índice de búsqueda o PostgreSQL.
