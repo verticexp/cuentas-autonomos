@@ -7,7 +7,8 @@ import { actividadesDe, actividadValida } from '@/lib/empresa';
 import { CATEGORIAS } from '@/lib/categorias';
 import { TIPOS_BIEN, inversionEditada } from '@/lib/amortizaciones';
 import { limpiarProyecto } from '@/lib/proyectos';
-import { borrarGasto, crearGasto, editarGasto } from '@/lib/gastosServidor';
+import { borrarGasto, crearGasto, editarGasto, pagarGasto } from '@/lib/gastosServidor';
+import { hoy } from '@/lib/formato';
 import { secundarios } from '@/lib/trabajos';
 
 export const dynamic = 'force-dynamic';
@@ -86,6 +87,13 @@ export async function PATCH(req) {
   if (res) return res;
   const b = await cuerpo(req);
   if (!b.id) return error('Ese gasto ya no existe', 404);
+  // Solo {id, pagado: true}: marcar como pagado un gasto sin pagar (deslizar en la lista), sin tocar nada más.
+  if (Object.keys(b).length === 2 && b.pagado === true) {
+    const p = await pagarGasto(u, String(b.id), hoy());
+    if (p.error) return error(p.error, p.status || 400);
+    await secundarios(u, { meses: [p.antes.fecha] });
+    return Response.json({ ok: true });
+  }
   // Se valida y se construye sobre el gasto releído dentro del cerrojo de su pedido (informe R04), si es de una recepción.
   const r = await editarGasto(u, String(b.id), (antes) => {
     const v = validarGasto(b, { antes });

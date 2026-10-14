@@ -1,0 +1,11 @@
+/* Filas que se deslizan en el móvil para enseñar sus acciones (components/Deslizar.js). Solo responden al dedo. */
+.desliz { position: relative; overflow: hidden; touch-action: pan-y; }
+.desliz-fila { position: relative; z-index: 1; background: var(--surface); transition: transform 0.28s cubic-bezier(0.23, 1, 0.32, 1); will-change: transform; }
+.desliz-acciones { position: absolute; top: 0; right: 0; bottom: 0; display: flex; visibility: hidden; }
+.desliz.mov .desliz-acciones { visibility: visible; }
+.desliz-boton { border: 0; padding: 0 6px; color: #fff; font: inherit; font-size: 15px; font-weight: 650; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.desliz-boton.ok { background: var(--in); }
+.desliz-boton.azul { background: #2F6FED; }
+.desliz-boton:disabled { opacity: 0.7; }
+.desliz-boton:focus-visible { outline: 2px solid #fff; outline-offset: -4px; }
+@media (prefers-reduced-motion: reduce) { .desliz-fila { transition: none; } }
