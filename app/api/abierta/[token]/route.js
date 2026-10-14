@@ -10,7 +10,8 @@ export async function GET(_req, { params }) {
   try {
     const enlace = redis && (await redis.hget('factura-envios', token));
     const e = enlace && { empresa: enlace.empresa };
-    const f = e && (await leerUno(e, 'facturas', enlace.id));
+    const emp = e && (await redis.hget('empresas', enlace.empresa));
+    const f = emp && !emp.baja && (await leerUno(e, 'facturas', enlace.id));
     const envio = f?.envios?.find((x) => x.token === token);
     if (envio && !envio.abierta) {
       await actualizarFactura(e, enlace.id, (actual) => (actual.envios?.some((x) => x.token === token && !x.abierta)

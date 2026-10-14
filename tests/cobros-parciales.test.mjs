@@ -23,10 +23,12 @@ const empresa = () => {
 };
 const datos = { fecha: '2026-03-10', actividad: 'servicios', cliente: { nombre: 'Cliente', nif: '12345678Z', direccion: 'C/ Sol 2', ciudad: 'Madrid' }, concepto: 'Servicio', base: 100, ivaPct: 21, irpfPct: 0, nota: '', cobrada: false };
 const sesion = (u, f, token, extra = {}) => ({ id: `cs_${Math.random()}`, payment_status: 'paid', currency: 'eur', amount_total: 5000, metadata: { token, factura: f.id, empresa: u.empresa, importe: '5000' }, ...extra });
+// El enlace público solo resuelve para una empresa que existe y no está de baja (N02).
+const registrar = async (u) => { await R.redis.hset('empresas', { [u.empresa]: { id: u.empresa } }); return u; };
 const leerF = (u, id) => R.leerUno(u, 'facturas', id);
 
 test('P01: generar el enlace con una copia antigua no borra el cobro de 50 €', async () => {
-  const u = empresa();
+  const u = await registrar(empresa());
   const vieja = (await F.crearFactura(u, datos)).factura;
   const { f: conEnlace } = await C.enlacePago(u, vieja);
   assert.equal((await C.marcarPagada(sesion(u, vieja, conEnlace.pago))).aplicado, true);
@@ -40,7 +42,7 @@ test('P01: generar el enlace con una copia antigua no borra el cobro de 50 €',
 });
 
 test('P01: cobro, enlace, envío y apertura a la vez conservan todo', async () => {
-  const u = empresa();
+  const u = await registrar(empresa());
   const vieja = (await F.crearFactura(u, datos)).factura;
   const envio = { fecha: '2026-03-11T10:00:00Z', para: 'a@b.es', token: 'tk' };
   const token = 'abcd'.repeat(8);
