@@ -57,7 +57,7 @@ export default async function RootLayout({ children }) {
         <Arranque />
         <script nonce={nonce} suppressHydrationWarning dangerouslySetInnerHTML={{ __html: 'window.__arranque=performance.now()' }} />
         {children}
-        <Suspense>{u && <TabBar permisos={permisosDe(u)} empresas={u.misEmpresas} empresa={u.empresa} admin={Boolean(u.admin)} inventario={Boolean(u.fiscal?.inventario)} />}<Llegada /><BarraEstado /></Suspense>
+        <Suspense>{u && <TabBar permisos={permisosDe(u)} empresas={u.misEmpresas} empresa={u.empresa} admin={Boolean(u.admin)} inventario={Boolean(u.fiscal?.inventario)} fiscal={{ tipo: u.fiscal?.tipo, iva: u.fiscal?.iva }} />}<Llegada /><BarraEstado /></Suspense>
         {u && <Bloqueo email={u.email} servidor={abierta} />}
       </body>
     </html>
