@@ -13,6 +13,7 @@ import { puede } from '@/lib/permisos';
 import Deslizable from '@/components/Deslizable';
 import Buscar from '@/components/Buscar';
 import HojaFiltro from '@/components/HojaFiltro';
+import Deslizar from '@/components/Deslizar';
 import '@/app/recurrentes.css';
 import '@/app/filtros.css';
 import '@/app/mk.css';
@@ -153,16 +154,24 @@ export default async function Facturas({ searchParams }) {
                 const e = estadoDe(f);
                 return (
                   <li key={f.id}>
-                    <FilaFactura href={`/facturas/${f.id}`}>
-                      <span className="txt">
-                        <strong data-vt="cliente">{f.cliente.nombre}</strong>
-                        <small>{f.caja ? 'Cierre de caja · ' : ''}{numeroFactura(f)} · {diaMes(f.fecha)}{!a && Object.keys(ACTIVIDADES).length > 1 ? ` · ${ACTIVIDADES[f.actividad]}` : ''}</small>
-                      </span>
-                      <span className="imp-col">
-                        <span className="imp" data-vt="total">{eur(importes(f).total)}</span>
-                        <span className={`estado-txt e-${e}`}>{e === 'cobrada' ? 'Cobrada' : e === 'vencida' ? 'Vencida' : 'Pendiente'}</span>
-                      </span>
-                    </FilaFactura>
+                    {(() => {
+                      const fila = (
+                        <FilaFactura href={`/facturas/${f.id}`}>
+                          <span className="txt">
+                            <strong data-vt="cliente">{f.cliente.nombre}</strong>
+                            <small>{f.caja ? 'Cierre de caja · ' : ''}{numeroFactura(f)} · {diaMes(f.fecha)}{!a && Object.keys(ACTIVIDADES).length > 1 ? ` · ${ACTIVIDADES[f.actividad]}` : ''}</small>
+                          </span>
+                          <span className="imp-col">
+                            <span className="imp" data-vt="total">{eur(importes(f).total)}</span>
+                            <span className={`estado-txt e-${e}`}>{e === 'cobrada' ? 'Cobrada' : e === 'vencida' ? 'Vencida' : 'Pendiente'}</span>
+                          </span>
+                        </FilaFactura>
+                      );
+                      // Móvil: deslizar la fila deja marcarla cobrada o ir a enviarla (los cierres de caja no se cobran ni se envían)
+                      return puede(u, 'facturar') && !f.caja
+                        ? <Deslizar id={f.id} href={`/facturas/${f.id}`} acciones={e === 'cobrada' ? ['enviar'] : ['cobrada', 'enviar']}>{fila}</Deslizar>
+                        : fila;
+                    })()}
                   </li>
                 );
               })}

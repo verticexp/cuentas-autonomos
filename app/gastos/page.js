@@ -15,6 +15,7 @@ import Dietas from '@/components/Dietas';
 import Ir from '@/components/Ir';
 import Buscar from '@/components/Buscar';
 import Deslizable from '@/components/Deslizable';
+import Deslizar from '@/components/Deslizar';
 import { puede } from '@/lib/permisos';
 import Link from 'next/link';
 import { clasificar, sugerencias } from '@/lib/banco';
@@ -137,17 +138,23 @@ export default async function Gastos({ searchParams }) {
             <ul className="grupo-lista">
               {gr.gastos.map((g) => (
                 <li key={g.id}>
-                  <Ir href={`/gastos/${encodeURIComponent(g.id)}`} className="fila">
-                    <span className="txt">
-                      <strong>{g.concepto}</strong>
-                      <small>{g.proveedor && g.proveedor !== g.concepto ? `${g.proveedor} · ` : ''}{diaMes(g.fecha)}{actividades.length > 1 ? ` · ${NOMBRES[g.actividad] || g.actividad}` : ''}{importes(g).iva ? ` · IVA ${eur(importes(g).iva)}` : ''}</small>
-                    </span>
-                    <span className="imp-col">
-                      <span className="imp">{eur(g.base)}</span>
-                      {g.pendiente && <span className="estado-txt e-pendiente">Sin pagar</span>}
-                      {g.inversion && <span className="estado-txt">Bien de inversión</span>}
-                    </span>
-                  </Ir>
+                  {(() => {
+                    const fila = (
+                      <Ir href={`/gastos/${encodeURIComponent(g.id)}`} className="fila">
+                        <span className="txt">
+                          <strong>{g.concepto}</strong>
+                          <small>{g.proveedor && g.proveedor !== g.concepto ? `${g.proveedor} · ` : ''}{diaMes(g.fecha)}{actividades.length > 1 ? ` · ${NOMBRES[g.actividad] || g.actividad}` : ''}{importes(g).iva ? ` · IVA ${eur(importes(g).iva)}` : ''}</small>
+                        </span>
+                        <span className="imp-col">
+                          <span className="imp">{eur(g.base)}</span>
+                          {g.pendiente && <span className="estado-txt e-pendiente">Sin pagar</span>}
+                          {g.inversion && <span className="estado-txt">Bien de inversión</span>}
+                        </span>
+                      </Ir>
+                    );
+                    // Móvil: deslizar un gasto sin pagar deja marcarlo como pagado
+                    return g.pendiente && puede(u, 'gastar') ? <Deslizar id={g.id} acciones={['pagada']}>{fila}</Deslizar> : fila;
+                  })()}
                 </li>
               ))}
             </ul>

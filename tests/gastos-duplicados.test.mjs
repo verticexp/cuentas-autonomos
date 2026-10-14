@@ -86,3 +86,22 @@ test('C4: solo compara los gastos de la empresa actual', async () => {
   assert.equal((await todas(otra)).length, 1);
   assert.deepEqual(await todas(u), [nuevo]);
 });
+
+test('pagarGasto: un gasto sin pagar pasa a pagado con la fecha, sin tocar nada más', async () => {
+  const u = empresa();
+  await R.guardar(u, 'gastos', datos('debe', { pendiente: true }));
+  const r = await G.pagarGasto(u, 'debe', '2026-10-14');
+  assert.equal(r.error, undefined);
+  const despues = await R.leerUno(u, 'gastos', 'debe');
+  assert.equal(despues.pendiente, undefined);
+  assert.equal(despues.pagado, '2026-10-14');
+  assert.deepEqual({ ...despues, pagado: undefined }, { ...datos('debe'), pagado: undefined });
+});
+
+test('pagarGasto: uno ya pagado o que no existe no se toca', async () => {
+  const u = empresa();
+  await R.guardar(u, 'gastos', datos('pagado'));
+  assert.deepEqual(await G.pagarGasto(u, 'pagado', '2026-10-14'), { error: 'Este gasto ya está pagado', status: 409 });
+  assert.deepEqual(await R.leerUno(u, 'gastos', 'pagado'), datos('pagado'));
+  assert.equal((await G.pagarGasto(u, 'no-existe', '2026-10-14')).status, 404);
+});
