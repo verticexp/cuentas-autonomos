@@ -30,3 +30,9 @@ Se mantienen los límites fiscales documentados en `auditoria-numerica-2026-10-1
 Se añade un formulario exclusivo del administrador global en `/ajustes/aurora` y `POST /api/aurora`. Carga el fixture ficticio auditado, crea una identidad independiente y genera una contraseña nueva que se muestra una sola vez. No utiliza credenciales del simulador. No admite archivos ni empresas de destino; una cuenta Aurora existente produce 409 sin cambios. El cerrojo serializa las altas simultáneas y la transacción guarda datos e índices. Presupuestos reciben tokens aleatorios nuevos. Se desactivan recordatorios, recurrencias, Drive, ControlaT y VeriFactu.
 
 Verificación adicional: 571/571 pruebas y compilación correctas. La regresión del alta comprueba concurrencia, contraseña, datos de otras empresas, índices y enlaces. Cuatro circuitos HTTP correctos: sin sesión, administrador de empresa, origen externo y duplicado. La fixture contiene 214 facturas, 370 gastos, 96 nóminas, nueve clientes y 16 presupuestos, sin usuarios ni contraseñas.
+
+## Comprobación con Redis de producción
+
+El primer alta web devolvió 500 en `TX_INDICES`: `op[7]` era nulo al procesar un índice. El simulador no detectaba la diferencia de transporte. Se eliminan los argumentos `null` de las operaciones de presupuestos y se valida la estructura de toda la transacción antes de escribir. Redis ejecuta Lua sin intercalación, pero no revierte lo ya escrito ante un error a mitad; no debe confundirse con una transacción con rollback.
+
+El alta puede retomar una carga interrumpida solamente si no existen usuario ni empresa y coinciden exactamente las 214 facturas de la fixture. Reutiliza los enlaces de esa carga y no borra datos. La prueba añade una empresa publicada con la misma fixture para comprobar que se excluye de la recuperación. También verifica que un lote estructuralmente inválido no aplica su primera escritura.

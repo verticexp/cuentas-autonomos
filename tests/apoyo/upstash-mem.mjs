@@ -137,7 +137,12 @@ export function crearBase() {
             run(['hset', K.ixf, id, fj]);
             if (typeof texto === 'string') run(['hset', K.ixt, id, texto]);
           };
-          return JSON.parse(args[0]).map((op) => {
+          const ops = JSON.parse(args[0]);
+          for (const op of ops) {
+            const K = ['_g','_i'].includes(op[0]) ? op[6] : ['_b','_d'].includes(op[0]) ? op[3] : null;
+            if (['_g','_i','_b','_d'].includes(op[0]) && (!K || typeof K.ixa !== 'string' || typeof K.ixf !== 'string' || !K.z)) throw new Error('Estructura de indice no valida; no se ha escrito nada');
+          }
+          return ops.map((op) => {
             const [c] = op;
             const rev = (K) => run(['hincrby', K.ixa, 'rev', '1']);
             if (c === '_g') { rev(op[6]); quitar(op[6], op[2]); const x = run(['hset', op[1], op[2], op[3]]); poner(op[6], op[2], op[4], op[5]); return x; }
