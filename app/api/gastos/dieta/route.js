@@ -1,10 +1,9 @@
 import { guardar } from '@/lib/redis';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
-import { subirGasto } from '@/lib/drive';
-import { enviarNomina } from '@/lib/controlat';
 import { actividadesDe, actividadValida, fiscalDe } from '@/lib/empresa';
 import { calcularDieta, conceptoDieta } from '@/lib/dietas';
 import { fechaReal } from '@/lib/validacion';
+import { secundarios } from '@/lib/trabajos';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,6 +25,6 @@ export async function POST(req) {
     dieta: { ...dieta, ...(persona ? { persona } : {}), ...(motivo ? { motivo } : {}) },
   };
   await guardar(u, 'gastos', g);
-  await Promise.all([subirGasto(u, g), enviarNomina(u, [g.fecha])]);
+  await secundarios(u, { gastos: [g.id], meses: [g.fecha] });
   return Response.json({ ok: true, gasto: g });
 }

@@ -1,6 +1,8 @@
 import { requerir } from '@/lib/auth';
 import { nombresProyectos } from '@/lib/proyectos';
-import { leer } from '@/lib/redis';
+import { leer, redis } from '@/lib/redis';
+import { contar, documentos, fichasMarcadas, fichasRango, leerRango, pagina } from '@/lib/indices';
+import { candidatosConciliacion } from '@/lib/bancoServidor';
 import { importes, r2 } from '@/lib/calculos';
 import { actividadesDe, fiscalDe, nombresActividad } from '@/lib/empresa';
 import { DEDUCCIONES_GENERALES } from '@/lib/empresa';
@@ -15,7 +17,6 @@ import Buscar from '@/components/Buscar';
 import Deslizable from '@/components/Deslizable';
 import { puede } from '@/lib/permisos';
 import Link from 'next/link';
-import { proveedores } from '@/lib/proveedores';
 import { clasificar, sugerencias } from '@/lib/banco';
 import '@/app/proveedores.css';
 
@@ -27,62 +28,72 @@ const diaMes = (f) => new Date(`${f}T12:00:00`).toLocaleDateString('es-ES', { da
 
 export default async function Gastos({ searchParams }) {
   const u = await requerir('gastos');
-  const [gastos, movs, facturas, productos] = await Promise.all([leer(u, 'gastos'), leer(u, 'banco'), leer(u, 'facturas'), leer(u, 'productos')]);
+  // Informe de capacidad E01: la lista va por páginas sobre el índice; el año, lo pendiente y los bienes de inversión se
+  // leen aparte (lib/indices.js), y la conciliación solo con lo que puede casar (candidatosConciliacion).
+  if (!redis) return <SinBD />;
+  const { q, estado, banco, desde } = await searchParams;
+  const h = hoy();
+  const anio = h.slice(0, 4);
+  const [movs, productos, total, delAnioTodos, sinPagarF, bienes] = await Promise.all([leer(u, 'banco'), leer(u, 'productos'), contar(u, 'gastos'), leerRango(u, 'gastos', `${anio}-01-01`, `${anio}-12-31`), fichasMarcadas(u, 'gastos', 'p'), fichasMarcadas(u, 'gastos', 'i')]);
   // Con inventario: los productos que llevan stock, para apuntar lo que entra con cada compra.
   const stockProductos = fiscalDe(u).inventario ? (productos || []).filter((p) => !p.servicio).sort((a, b) => a.nombre.localeCompare(b.nombre)) : [];
-  if (!gastos) return <SinBD />;
-  const { q, estado, banco } = await searchParams;
   // En revisión: cargos del banco que no casan con ningún gasto y parecen un gasto (no impuestos, nóminas, préstamos…).
   const sinPareja = (movs || []).filter((m) => (m.estado === 'pendiente' || !m.estado) && m.importe < 0);
-  const sug = sugerencias(movs || [], facturas || [], gastos);
+  const cand = await candidatosConciliacion(u, movs || []);
+  const sug = sugerencias(movs || [], cand.facturas, cand.gastos);
   const revision = sinPareja.filter((m) => !sug[m.id] && clasificar(m, { autonomo: fiscalDe(u).tipo === 'autonomo' }) === 'gasto').sort((a, b) => b.fecha.localeCompare(a.fecha));
   const movimiento = banco && sinPareja.find((m) => m.id === banco);
   const buscado = String(q || '').trim().toLowerCase();
-  const h = hoy();
   // Los bienes traídos de otro programa no son gastos de aquí: se ven en Contabilidad › Amortizaciones.
-  const todos = gastos.filter((g) => !g.migrado).sort((a, b) => b.fecha.localeCompare(a.fecha));
-  const lista = todos
-    .filter((g) => estado !== 'sinpagar' || g.pendiente)
-    .filter((g) => !buscado || [g.concepto, g.proveedor, g.proveedorNif].some((t) => String(t || '').toLowerCase().includes(buscado)));
+  const filtro = (f) => !f.mi && (!buscado || f.x.includes(buscado));
+  const pag = await pagina(u, 'gastos', { cursor: desde, marca: estado === 'sinpagar' ? 'p' : undefined, filtro });
+  const lista = await documentos(u, 'gastos', pag.ids);
+  const hay = total > 0 && (lista.length > 0 || Boolean(desde) || Boolean(buscado) || estado === 'sinpagar' || (await pagina(u, 'gastos', { limite: 1, filtro: (f) => !f.mi })).ids.length > 0);
   const actividades = actividadesDe(u);
   const NOMBRES = nombresActividad(actividades);
   // Lista de deducciones: la de DJ para las cuentas de antes; la general para el resto (sin la cuota si es sociedad).
   const LISTA = !actividades.some((a) => a.id === 'dj') ? DEDUCCIONES_GENERALES.filter((d) => !d.soloAutonomo || fiscalDe(u).tipo === 'autonomo') : DEDUCCIONES;
-  const delAnio = todos.filter((g) => g.fecha.startsWith(h.slice(0, 4)));
+  const delAnio = delAnioTodos.filter((g) => !g.migrado);
   const pendientes = LISTA.filter((d) => !cubierta(d, delAnio)).length;
-  const provs = proveedores(todos);
-  const debes = provs.reduce((s, p) => s + p.debe, 0);
-  const sinPagar = todos.filter((g) => g.pendiente).length;
+  // Lo que debes a proveedores: los gastos sin pagar (con proveedor), sean del año que sean.
+  const debes = sinPagarF.filter((f) => f.c && !f.mi).reduce((s, f) => s + f.t, 0);
+  const hayProveedores = debes > 0 || delAnio.some((g) => g.proveedor) || lista.some((g) => g.proveedor);
+  const sinPagar = sinPagarF.filter((f) => !f.mi).length;
+  const proyectos = nombresProyectos([...delAnio, ...lista]);
   const url = (cambios) => {
     const p = new URLSearchParams(Object.entries({ q, estado, ...cambios }).filter(([, v]) => v));
     return `/gastos${p.size ? `?${p}` : ''}`;
   };
 
-  // Agrupados por mes, como las facturas.
+  // Agrupados por mes, como las facturas (el total, del mes entero con el mismo filtro).
   const grupos = [];
   for (const g of lista) {
     const m = g.fecha.slice(0, 7);
     if (grupos.at(-1)?.m !== m) grupos.push({ m, gastos: [] });
     grupos.at(-1).gastos.push(g);
   }
+  const totalMes = Object.fromEntries(await Promise.all(grupos.map(async (g) => {
+    const fichas = await fichasRango(u, 'gastos', `${g.m}-01`, `${g.m}-31`);
+    return [g.m, fichas.filter((f) => filtro(f) && (estado !== 'sinpagar' || f.pe)).reduce((s, f) => s + f.b, 0)];
+  })));
 
   return (
     <main className="pagina mk-look gastos">
       <header className="cabecera">
         <h1 className="titulo">Gastos</h1>
       </header>
-      {(delAnio.length > 0 || provs.length > 0) && (
+      {(delAnio.length > 0 || hayProveedores) && (
         <p className="resumen-linea">
           {delAnio.length > 0 && <>
           <span>Este año, sin IVA <strong>{eur(r2(delAnio.reduce((s, g) => s + g.base, 0)))}</strong></span>
           <span>IVA que recuperas <strong>{eur(r2(delAnio.reduce((s, g) => s + importes(g).iva, 0)))}</strong></span>
           </>}
-          {puede(u, 'resumen') && gastos.some((g) => g.inversion) && <Link href="/contabilidad?ver=bienes" className="prov-enlace">Bienes de inversión ›</Link>}
-          {provs.length > 0 && <Link href="/gastos/proveedores" className="prov-enlace">Proveedores{debes > 0 ? ` · debes ${eur(r2(debes))}` : ''} ›</Link>}
+          {puede(u, 'resumen') && bienes.length > 0 && <Link href="/contabilidad?ver=bienes" className="prov-enlace">Bienes de inversión ›</Link>}
+          {hayProveedores && <Link href="/gastos/proveedores" className="prov-enlace">Proveedores{debes > 0 ? ` · debes ${eur(r2(debes))}` : ''} ›</Link>}
         </p>
       )}
 
-      {puede(u, 'gastar') && movimiento && <FormGasto key={movimiento.id} hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} productos={stockProductos} movimiento={movimiento} proyectos={nombresProyectos(todos)} />}
+      {puede(u, 'gastar') && movimiento && <FormGasto key={movimiento.id} hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} productos={stockProductos} movimiento={movimiento} proyectos={proyectos} />}
 
       {puede(u, 'gastar') && !movimiento && revision.length > 0 && (
         <section className="grupo gastos-revision">
@@ -103,9 +114,9 @@ export default async function Gastos({ searchParams }) {
       )}
 
       {/* Primero lo que más se hace: escanear el ticket. El formulario entero se abre al escanear o al pedirlo. */}
-      {puede(u, 'gastar') && !movimiento && <FormGasto hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} productos={stockProductos} plegado={todos.length > 0} proyectos={nombresProyectos(todos)} />}
+      {puede(u, 'gastar') && !movimiento && <FormGasto hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} productos={stockProductos} plegado={hay} proyectos={proyectos} />}
 
-      {todos.length > 5 && <Buscar action="/gastos" q={q} ocultos={{ estado }} placeholder="Buscar proveedor o concepto" />}
+      {total > 5 && <Buscar action="/gastos" q={q} ocultos={{ estado }} placeholder="Buscar proveedor o concepto" />}
       {sinPagar > 0 && (
         <Deslizable className="chips">
           <Link href={url({ estado: null })} className={estado !== 'sinpagar' ? 'activo' : ''}>Todos</Link>
@@ -117,7 +128,7 @@ export default async function Gastos({ searchParams }) {
         const [y, m] = gr.m.split('-');
         return (
           <section key={gr.m} className="grupo-mes">
-            <h2><span>{MESES[m - 1]} {y !== h.slice(0, 4) ? y : ''}</span><small>{eur(r2(gr.gastos.reduce((s, g) => s + g.base, 0)))} sin IVA</small></h2>
+            <h2><span>{MESES[m - 1]} {y !== h.slice(0, 4) ? y : ''}</span><small>{eur(r2(totalMes[gr.m] || 0))} sin IVA</small></h2>
             <ul className="grupo-lista">
               {gr.gastos.map((g) => (
                 <li key={g.id}>
@@ -139,13 +150,15 @@ export default async function Gastos({ searchParams }) {
         );
       })}
 
-      {!lista.length && (todos.length
+      {pag.siguiente && <p className="grupo-pie"><Link href={url({ desde: pag.siguiente })} className="boton sec">Ver más</Link></p>}
+
+      {!lista.length && (hay
         ? <div className="vacio"><p>{buscado ? `Nada con «${q}»` : 'Nada con este filtro'}</p><p>Prueba con otra palabra o quita el filtro.</p></div>
         : <div className="vacio"><p>Aún no hay gastos</p><p>Haz una foto al ticket o apúntalo arriba: el IVA se resta del 303 y el gasto baja tu IRPF.</p></div>)}
 
       <section className="gastos-mas">
         <h2 className="grupo-t">Más herramientas</h2>
-        <details className="tarjeta bloque" open={pendientes > 0 && !todos.length}>
+        <details className="tarjeta bloque" open={pendientes > 0 && !hay}>
           <summary><strong>Deducciones que no deberías olvidar</strong> <span className="nota">· {pendientes ? `${pendientes} sin ningún gasto este año` : 'todas cubiertas'}</span></summary>
           <div style={{ marginTop: 12 }}>
             {LISTA.map((d) => {

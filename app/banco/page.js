@@ -1,5 +1,7 @@
 import { requerir } from '@/lib/auth';
 import { leer } from '@/lib/redis';
+import { candidatosConciliacion } from '@/lib/bancoServidor';
+import { documentos, unir } from '@/lib/indices';
 import { CLASES, clasesPara, clasificar, opciones, sugerencias } from '@/lib/banco';
 import { fiscalDe } from '@/lib/empresa';
 import { conectarVisible } from '@/lib/enableBanking';
@@ -24,13 +26,18 @@ const ERRORES = {
 
 export default async function PaginaBanco({ searchParams }) {
   const u = await requerir('resumen');
-  const [movs, cuentas, facturas, gastos] = await Promise.all([leer(u, 'banco'), leer(u, 'bancos'), leer(u, 'facturas'), leer(u, 'gastos')]);
-  if (!facturas) return <SinBD />;
+  const [movs, cuentas] = await Promise.all([leer(u, 'banco'), leer(u, 'bancos')]);
+  if (!movs) return <SinBD />;
   const q = await searchParams;
-  const lista = (movs || []).sort((a, b) => b.fecha.localeCompare(a.fecha) || a.id.localeCompare(b.id));
-  const sug = sugerencias(lista, facturas, gastos || []);
-  const fPorId = Object.fromEntries(facturas.map((f) => [f.id, f]));
-  const gPorId = Object.fromEntries((gastos || []).map((g) => [g.id, g]));
+  const lista = movs.sort((a, b) => b.fecha.localeCompare(a.fecha) || a.id.localeCompare(b.id));
+  // Solo las facturas y gastos que pueden casar, más los ya enlazados que se enseñan (informe de capacidad E01).
+  const { facturas, gastos } = await candidatosConciliacion(u, lista);
+  const emparejadosVisibles = lista.filter((m) => m.estado === 'emparejado').slice(0, 40);
+  const enlazados = (tipo) => emparejadosVisibles.filter((m) => m.enlace?.tipo === tipo).map((m) => m.enlace.id);
+  const [fEnl, gEnl] = await Promise.all([documentos(u, 'facturas', enlazados('factura')), documentos(u, 'gastos', enlazados('gasto'))]);
+  const sug = sugerencias(lista, facturas, gastos);
+  const fPorId = Object.fromEntries(unir(facturas, fEnl).map((f) => [f.id, f]));
+  const gPorId = Object.fromEntries(unir(gastos, gEnl).map((g) => [g.id, g]));
   // Lo que se enseña de cada factura o gasto enlazado o sugerido.
   const destino = (tipo, id) => {
     if (tipo === 'auto') return { tipo, id, texto: `${CLASES[id]?.t || 'Impuestos o nóminas'} · lo contabiliza Netto`, url: '/contabilidad?ver=diario' };
@@ -41,10 +48,10 @@ export default async function PaginaBanco({ searchParams }) {
   };
   const pendientes = lista.filter((m) => m.estado === 'pendiente' || !m.estado).slice(0, 150).map((m) => ({
     ...m, sugerencia: sug[m.id] ? { ...destino(sug[m.id].tipo, sug[m.id].id), segura: sug[m.id].segura } : null,
-    opciones: opciones(m, facturas, gastos || [], lista),
+    opciones: opciones(m, facturas, gastos, lista),
     clase: clasificar(m, { autonomo: fiscalDe(u).tipo === 'autonomo' }), clases: clasesPara(m),
   }));
-  const emparejados = lista.filter((m) => m.estado === 'emparejado').slice(0, 40).map((m) => ({ ...m, destino: destino(m.enlace.tipo, m.enlace.id) }));
+  const emparejados = emparejadosVisibles.map((m) => ({ ...m, destino: destino(m.enlace.tipo, m.enlace.id) }));
   const ignorados = lista.filter((m) => m.estado === 'ignorado').slice(0, 40);
   const n = Number(q.conectado) || 0;
   const aviso = q.error ? { error: true, texto: ERRORES[q.error] || 'No se pudo conectar el banco.' } : n ? { texto: n === 1 ? '✓ Cuenta conectada' : `✓ ${n} cuentas conectadas` } : null;

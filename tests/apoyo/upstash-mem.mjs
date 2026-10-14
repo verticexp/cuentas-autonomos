@@ -15,6 +15,14 @@ export function crearBase() {
   const H = (k) => { let v = vivo(k); if (!v) db.set(k, v = { t: 'h', m: new Map() }); return v.m; };
   const S = (k) => { let v = vivo(k); if (!v) db.set(k, v = { t: 's', m: new Set() }); return v.m; };
   const L = (k) => { let v = vivo(k); if (!v) db.set(k, v = { t: 'l', m: [] }); return v; };
+  const Z = (k) => { let v = vivo(k); if (!v) db.set(k, v = { t: 'z', m: new Map() }); return v.m; };
+  // Conjunto ordenado: por puntuación y, a igual puntuación, por el miembro (orden binario, como Redis).
+  const ordenZ = (m) => [...m].sort(([a, x], [b, y]) => x - y || (a < b ? -1 : a > b ? 1 : 0));
+  const limScore = (s) => { const t = String(s); if (t === '-inf') return [-Infinity, false]; if (t === '+inf' || t === 'inf') return [Infinity, false]; return t[0] === '(' ? [Number(t.slice(1)), true] : [Number(t), false]; };
+  const enRango = (v, [lo, exLo], [hi, exHi]) => (exLo ? v > lo : v >= lo) && (exHi ? v < hi : v <= hi);
+  const limLex = (s) => (s === '-' ? { min: true } : s === '+' ? { max: true } : { v: s.slice(1), ex: s[0] === '(' });
+  const lexMin = (x, l) => l.min || (!l.max && (l.ex ? x > l.v : x >= l.v));
+  const lexMax = (x, l) => l.max || (!l.min && (l.ex ? x < l.v : x <= l.v));
   const idx = (i, n) => (i < 0 ? n + i : i);
   const patron = (p) => new RegExp(`^${p.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*')}$`);
   function run([c, ...a]) {
@@ -46,7 +54,7 @@ export function crearBase() {
       case 'pexpire': if (!vivo(a[0])) return 0; exp.set(a[0], Date.now() + Number(a[1])); return 1;
       case 'ttl': { if (!vivo(a[0])) return -2; const t = exp.get(a[0]); return t ? Math.ceil((t - Date.now()) / 1000) : -1; }
       case 'pttl': { if (!vivo(a[0])) return -2; const t = exp.get(a[0]); return t ? Math.max(0, t - Date.now()) : -1; }
-      case 'type': return ({ h: 'hash', s: 'set', l: 'list', k: 'string' })[vivo(a[0])?.t] || 'none';
+      case 'type': return ({ h: 'hash', s: 'set', l: 'list', k: 'string', z: 'zset' })[vivo(a[0])?.t] || 'none';
       case 'sadd': { const m = S(a[0]); let n = 0; for (const x of a.slice(1)) if (!m.has(x)) { m.add(x); n++; } return n; }
       case 'srem': { const v = vivo(a[0]); let n = 0; for (const x of a.slice(1)) if (v?.m.delete(x)) n++; return n; }
       case 'smembers': return [...(vivo(a[0])?.m || [])];
@@ -56,6 +64,26 @@ export function crearBase() {
       case 'lrange': { const m = vivo(a[0])?.m || []; return m.slice(idx(Number(a[1]), m.length), idx(Number(a[2]), m.length) + 1); }
       case 'ltrim': { const l = vivo(a[0]); if (l) l.m = l.m.slice(idx(Number(a[1]), l.m.length), idx(Number(a[2]), l.m.length) + 1); return 'OK'; }
       case 'llen': return vivo(a[0])?.m.length || 0;
+      case 'zadd': { const m = Z(a[0]); let n = 0; for (let i = 1; i < a.length; i += 2) { if (!m.has(a[i + 1])) n++; m.set(a[i + 1], Number(a[i])); } return n; }
+      case 'zrem': { const v = vivo(a[0]); let n = 0; for (const x of a.slice(1)) if (v?.m.delete(x)) n++; if (v && !v.m.size) db.delete(a[0]); return n; }
+      case 'zcard': return vivo(a[0])?.m.size || 0;
+      case 'zscore': { const s = vivo(a[0])?.m.get(a[1]); return s === undefined ? null : String(s); }
+      case 'zrange': {
+        const v = vivo(a[0]); if (!v) return [];
+        const op = a.slice(3).map((x) => x.toLowerCase());
+        const rev = op.includes('rev'), byscore = op.includes('byscore'), bylex = op.includes('bylex'), conScores = op.includes('withscores');
+        const li = op.indexOf('limit');
+        let lista = ordenZ(v.m);
+        if (rev) lista.reverse();
+        let [ini, fin] = [a[1], a[2]];
+        if (byscore || bylex) {
+          if (rev) [ini, fin] = [fin, ini];
+          if (byscore) { const lo = limScore(ini), hi = limScore(fin); lista = lista.filter(([, s]) => enRango(s, lo, hi)); }
+          else { const lo = limLex(ini), hi = limLex(fin); lista = lista.filter(([x]) => lexMin(x, lo) && lexMax(x, hi)); }
+          if (li >= 0) { const off = Number(a[3 + li + 1]), cnt = Number(a[3 + li + 2]); lista = lista.slice(off, cnt < 0 ? undefined : off + cnt); }
+        } else lista = lista.slice(idx(Number(ini), lista.length), idx(Number(fin), lista.length) + 1);
+        return conScores ? lista.flatMap(([x, s]) => [x, String(s)]) : lista.map(([x]) => x);
+      }
       case 'del': { let n = 0; for (const k of a) if (db.delete(k)) n++; return n; }
       case 'exists': return a.filter((k) => vivo(k)).length;
       case 'keys': return [...db.keys()].filter((k) => patron(a[0]).test(k));

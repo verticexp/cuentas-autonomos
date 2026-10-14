@@ -1,65 +1,25 @@
-import { randomBytes } from 'node:crypto';
-import { identidadDoc } from '@/lib/documento';
-import { redis, leer } from '@/lib/redis';
-import { actualizarFactura } from '@/lib/actualizarFactura';
-import { importes, numeroFactura, vencimiento } from '@/lib/calculos';
-import { eur, fechaTexto, hoy } from '@/lib/formato';
-import { facturaPdf } from '@/lib/pdf';
-import { emailListo, emailValido, enviarEmail, htmlMensaje } from '@/lib/email';
-import { enlacePago } from '@/lib/cobros';
-import { stripeListo } from '@/lib/stripe';
-import { tocaRecordatorio } from '@/lib/recordatorios';
-import { avisosPush } from '@/lib/push';
+import { redis } from '@/lib/redis';
+import { hoy } from '@/lib/formato';
 import { purgarBajas } from '@/lib/baja';
-import { enviarTodas } from '@/lib/verifactuEnvio';
+import { planificarDia, resumenTanda } from '@/lib/trabajosTareas';
+import { tanda } from '@/lib/trabajos';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
-// Lo llama Vercel cada mañana (vercel.json → crons, con CRON_SECRET): envía los recordatorios de cobro que toquen
-// y los avisos en el móvil.
+// Lo llama Vercel cada mañana (vercel.json → crons, con CRON_SECRET). Informe de capacidad E04: no hace el trabajo de
+// todas las empresas en una sola función; lo planifica (un trabajo por empresa y tarea: recordatorios de cobro, avisos
+// en el móvil y envíos de Verifactu pendientes) y lo procesa en tandas encadenadas (la primera aquí, las siguientes en app/api/trabajos).
 export async function GET(req) {
   const secreto = process.env.CRON_SECRET;
   if (!secreto || req.headers.get('authorization') !== `Bearer ${secreto}`) return Response.json({ error: 'No autorizado' }, { status: 401 });
+  if (!redis) return Response.json({ ok: true, planificados: 0, motivo: 'sin base de datos' });
+  const inicio = Date.now();
   const dia = hoy();
-  // Avisos en el móvil (plazos de Hacienda y facturas vencidas), aunque no haya email configurado.
-  const avisos = redis ? await avisosPush(dia) : 0;
   // Empresas dadas de baja cuyo plazo legal de conservación ha acabado: se borran del todo.
-  const bajas = redis ? await purgarBajas(dia) : 0;
-  // Registros de Verifactu que quedaran sin enviar.
-  const verifactu = await enviarTodas();
-  if (!redis || !emailListo()) return Response.json({ ok: true, enviados: 0, avisos, bajas, verifactu, motivo: 'sin base de datos o sin email' });
-  let enviados = 0;
-  const fallos = [];
-  for (const emp of Object.values((await redis.hgetall('empresas')) || {})) {
-    const e = emp.emisor || {};
-    const cada = Number(e.recordatorios) || 0;
-    if (emp.baja || !cada || !e.nif || !e.iban) continue;
-    const u = { ...emp, empresa: emp.id };
-    for (const f0 of (await leer(u, 'facturas')) || []) {
-      if (!tocaRecordatorio(f0, { plazo: e.plazo, cada }, dia) || !emailValido(f0.cliente.email)) continue;
-      const { f, ruta } = stripeListo() ? await enlacePago(u, f0) : { f: f0 };
-      const num = numeroFactura(f);
-      const token = randomBytes(16).toString('hex');
-      const mensaje = [
-        'Hola,',
-        `Te recordamos que la factura ${num} por ${eur(importes(f).total)} venció el ${fechaTexto(vencimiento(f, e.plazo))} y aún no nos consta el pago.`,
-        ruta && `Puedes pagarla con tarjeta o Bizum aquí: ${req.nextUrl.origin}${ruta}`,
-        `${ruta ? 'O' : 'Puedes pagarla'} por transferencia a ${e.iban}, indicando la factura ${num}.`,
-        'Si ya la has pagado, ignora este mensaje.',
-        `Gracias,\n${e.nombre || emp.nombre}`,
-      ].filter(Boolean).join('\n\n');
-      const r = await enviarEmail({
-        para: f.cliente.email,
-        asunto: `Recordatorio: factura ${num} pendiente de pago`,
-        html: htmlMensaje(mensaje, `${req.nextUrl.origin}/api/abierta/${token}`),
-        adjuntos: [{ nombre: `${num}.pdf`, datos: await facturaPdf(f, ...Object.values(await identidadDoc(u, f))) }],
-      });
-      if (r.error) { fallos.push(`${emp.id}/${f.id}: ${r.error}`); continue; }
-      await redis.hset('factura-envios', { [token]: { empresa: emp.id, id: f.id } });
-      await actualizarFactura(u, f.id, (actual) => ({ nueva: { ...actual, envios: [...(actual.envios || []), { tipo: 'recordatorio', fecha: new Date().toISOString(), para: f.cliente.email, token }] } }));
-      enviados += 1;
-    }
-  }
-  return Response.json({ ok: true, enviados, fallos, avisos, bajas, verifactu });
+  const bajas = await purgarBajas(dia);
+  const planificados = await planificarDia(dia, req.nextUrl.origin, ['recordatorios', 'push', 'verifactu']);
+  // La primera tanda, aquí mismo (su resumen va en la respuesta); si queda trabajo, encadena las siguientes.
+  const r = await tanda(req.nextUrl.origin, 0, { hasta: inicio + 50000 });
+  return Response.json({ ok: true, planificados, bajas, ...resumenTanda(r) });
 }
