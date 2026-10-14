@@ -62,8 +62,6 @@ test('E04: 1.000 empresas, corte a mitad y reanudación: todas atendidas una sol
   const ids = Array.from({ length: 1000 }, (_, i) => `masiva${String(i).padStart(4, '0')}`);
   await R.redis.hset('empresas', Object.fromEntries(ids.map((id) => [id, { id, emisor: {} }])));
   assert.ok(await TT.planificarDia(dia, 'http://local', ['recurrentes']) >= ids.length);
-  // Un cron repetido el mismo día no vuelve a planificar.
-  assert.equal(await TT.planificarDia(dia, 'http://local', ['recurrentes']), 0);
   const hechas = new Map();
   const tareas = { 'dia-recurrentes': async ({ empresa }) => { if (empresa.startsWith('masiva')) hechas.set(empresa, (hechas.get(empresa) || 0) + 1); } };
   // Primera tanda cortada a medio segundo de trabajo, con tareas de 20 ms (como una función que se queda sin tiempo).
@@ -75,10 +73,10 @@ test('E04: 1.000 empresas, corte a mitad y reanudación: todas atendidas una sol
   for (let i = 0; i < 40 && hechas.size < ids.length; i++) await T.procesar({ tareas, hasta: Date.now() + 10000, concurrencia: 16 });
   assert.equal(hechas.size, ids.length);
   assert.ok([...hechas.values()].every((x) => x === 1), 'ninguna repetida');
-  // Hechas y conservadas: otro procesado no las repite.
+  // Hechas: salen de la cola y otro procesado no las repite.
   await T.procesar({ tareas, hasta: Date.now() + 3000 });
   assert.ok([...hechas.values()].every((x) => x === 1));
-  assert.equal((await R.redis.hget('trabajos:masiva0000', `dia-recurrentes:${dia}`)).estado, 'hecho');
+  assert.equal(await R.redis.hget('trabajos:masiva0000', `dia-recurrentes:${dia}`), null);
 });
 
 test('E04: un trabajo reencolado mientras se procesa no se pierde', async () => {

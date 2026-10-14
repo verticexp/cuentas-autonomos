@@ -1,8 +1,7 @@
-import { after } from 'next/server';
 import { redis } from '@/lib/redis';
 import { error } from '@/lib/api';
 import { hoy } from '@/lib/formato';
-import { planificarDia } from '@/lib/trabajosTareas';
+import { planificarDia, resumenTanda } from '@/lib/trabajosTareas';
 import { tanda } from '@/lib/trabajos';
 
 export const dynamic = 'force-dynamic';
@@ -15,7 +14,8 @@ export async function GET(req) {
   const secreto = process.env.CRON_SECRET;
   if (!secreto || req.headers.get('authorization') !== `Bearer ${secreto}`) return error('No autorizado', 401);
   if (!redis) return error('Base de datos no conectada', 503);
+  const inicio = Date.now();
   const planificados = await planificarDia(hoy(), req.nextUrl.origin, ['recurrentes']);
-  after(() => tanda(req.nextUrl.origin).catch((e) => console.error('[trabajos]', e.message)));
-  return Response.json({ ok: true, planificados });
+  const r = await tanda(req.nextUrl.origin, 0, { hasta: inicio + 50000 });
+  return Response.json({ ok: true, planificados, ...resumenTanda(r) });
 }
