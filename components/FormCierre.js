@@ -47,7 +47,7 @@ export default function FormCierre({ hoy, actividades, productos = [], cierre = 
     setEnviando(true); setError('');
     try {
       const d = await llamar('/api/caja', { method: 'POST', body: JSON.stringify({ ...x, tarjeta: tarjetaAuto ? undefined : x.tarjeta, id: cierre?.id, idem }) });
-      navegar(router, `/facturas/${d.factura.id}`, 'fundido');
+      navegar(router, `/facturas/${d.factura.id}`, 'fundido', undefined, true);
       router.refresh();
     } catch (err) { setError(err.message); setEnviando(false); }
   };

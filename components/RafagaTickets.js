@@ -112,7 +112,7 @@ export default function RafagaTickets({ hoy, actividades }) {
     try {
       const r = await fetch('/api/gastos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...it.g, ...(confirmado ? { duplicadoConfirmado: true } : {}) }) });
       const d = await r.json().catch(() => ({}));
-      if (r.status === 423 && d.bloqueada) window.location.assign(`/bloqueo?a=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+      if (r.status === 423 && d.bloqueada) window.location.replace(`/bloqueo?a=${encodeURIComponent(window.location.pathname + window.location.search)}`);
       if (r.status === 409 && Array.isArray(d.duplicados) && d.duplicados.length) { poner(it.id, { estado: 'duplicado', duplicados: d.duplicados }); return false; }
       if (!r.ok) throw new Error(d.error || 'Algo ha fallado');
       poner(it.id, { estado: 'guardado' });

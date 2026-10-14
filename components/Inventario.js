@@ -57,7 +57,7 @@ export function HacerPedido({ proveedor, items, hoy }) {
     setOcupado(true);
     try {
       await llamar('/api/pedidos-proveedor', { method: 'POST', body: JSON.stringify({ proveedor, fecha: hoy, lineas: items.map((x) => ({ producto: x.id, cantidad: x.cantidad, coste: x.unitario })) }) });
-      router.push('/inventario?ver=pedidos');
+      router.replace('/inventario?ver=pedidos');
       router.refresh();
     } catch (e) { alert(e.message); setOcupado(false); }
   };
@@ -80,7 +80,7 @@ export function RecibirPedido({ pedido, hoy }) {
     try {
       idem.current ||= crypto.randomUUID();
       const d = await llamar('/api/pedidos-proveedor', { method: 'POST', body: JSON.stringify({ accion: 'recibir', id: pedido.id, idem: idem.current, fecha: x.fecha, ivaPct: x.ivaPct, recibido: x.lineas }) });
-      router.push(`/gastos/${d.gasto.id}`);
+      router.replace(`/gastos/${d.gasto.id}`);
       router.refresh();
     } catch (err) { setMsg(err.message); setOcupado(false); }
   };

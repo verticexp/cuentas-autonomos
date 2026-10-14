@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
-import { navegar } from '@/lib/transicion';
+import { volverA } from '@/lib/transicion';
 import Deslizable from './Deslizable';
 import { nifUE } from '@/lib/calculos';
 import { parseImporte } from '@/lib/importe';
@@ -75,7 +75,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, r
         const datos = confirmacion || g;
         const r = await fetch('/api/gastos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...datos, ...(confirmacion ? { duplicadoConfirmado: true } : {}) }) });
         const d = await r.json().catch(() => ({}));
-        if (r.status === 423 && d.bloqueada) window.location.assign(`/bloqueo?a=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+        if (r.status === 423 && d.bloqueada) window.location.replace(`/bloqueo?a=${encodeURIComponent(window.location.pathname + window.location.search)}`);
         if (r.status === 409 && Array.isArray(d.duplicados) && d.duplicados.length) {
           setAvisoDuplicados({ datos, duplicados: d.duplicados });
           return;
@@ -83,7 +83,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, r
         if (!r.ok) throw new Error(d.error || 'Algo ha fallado');
       }
       setAvisoDuplicados(null);
-      if (gasto || movimiento) { navegar(router, '/gastos', 'atras'); router.refresh(); return; }
+      if (gasto || movimiento) { volverA(router, '/gastos'); router.refresh(); return; }
       setG(vacio);
       setLeyendo('');
       if (plegado) { setAbierto(false); setHecho(true); }
@@ -205,7 +205,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, r
       {!avisoDuplicados && <div className="gasto-guardar">
         <button className="boton" disabled={enviando}>{enviando ? 'Guardando…' : gasto ? 'Guardar cambios' : 'Añadir'}</button>
         {plegado && !gasto && <button type="button" className="boton sec" onClick={() => { setAbierto(false); setG(vacio); setLeyendo(''); setError(''); }}>Cancelar</button>}
-        {movimiento && <button type="button" className="boton sec" onClick={() => navegar(router, '/gastos', 'atras')}>Cancelar</button>}
+        {movimiento && <button type="button" className="boton sec" onClick={() => volverA(router, '/gastos')}>Cancelar</button>}
       </div>}
     </form>
   );

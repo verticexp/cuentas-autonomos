@@ -145,7 +145,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
     try {
       const r = await fetch('/api/facturas', { headers: { 'Content-Type': 'application/json' }, method: nueva ? 'POST' : 'PATCH', body: JSON.stringify(nueva ? { ...f, idem } : f) });
       const d = await r.json().catch(() => ({}));
-      if (r.status === 423 && d.bloqueada) window.location.assign(`/bloqueo?a=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+      if (r.status === 423 && d.bloqueada) window.location.replace(`/bloqueo?a=${encodeURIComponent(window.location.pathname + window.location.search)}`);
       if (!r.ok) {
         if (r.status === 400 && d.errores) {
           enfocarError.current = true;
@@ -156,7 +156,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
         }
         throw new Error(d.error || 'Algo ha fallado');
       }
-      if (nueva) navegar(router, `/facturas/${d.factura.id}`, 'fundido');
+      if (nueva) navegar(router, `/facturas/${d.factura.id}`, 'fundido', undefined, true);
       router.refresh();
     } catch (err) { setError(err.message); setEnviando(false); enviandoRef.current = false; }
   };

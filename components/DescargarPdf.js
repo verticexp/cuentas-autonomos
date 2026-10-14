@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 
-// En el móvil abre el menú de compartir con el PDF (Guardar en Archivos, Imprimir, WhatsApp, Mail…);
-// en el ordenador lo descarga.
+// En el móvil (pantalla táctil) abre el menú de compartir con el PDF (Guardar en Archivos, Imprimir, WhatsApp, Mail…);
+// en el ordenador lo descarga directamente. Safari y Chrome de escritorio también tienen navigator.share con archivos,
+// y en el Mac abría el menú de compartir en vez de descargar: por eso se mira que el dispositivo sea táctil.
 export default function DescargarPdf({ id, nombre }) {
   const [estado, setEstado] = useState('');
   const bajar = async () => {
@@ -14,7 +15,7 @@ export default function DescargarPdf({ id, nombre }) {
       const blob = await r.blob();
       const archivo = new File([blob], nombre, { type: 'application/pdf' });
       setEstado('');
-      if (navigator.canShare?.({ files: [archivo] })) {
+      if (matchMedia('(pointer: coarse)').matches && navigator.canShare?.({ files: [archivo] })) {
         await navigator.share({ files: [archivo], title: nombre });
       } else {
         const url = URL.createObjectURL(blob);

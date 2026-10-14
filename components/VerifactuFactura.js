@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
-import { navegar } from '@/lib/transicion';
+import { volverA } from '@/lib/transicion';
 
 // En la ficha de una factura con Verifactu: subsanar un registro rechazado o aceptado con errores (corrigiendo el
 // cliente) y anular el registro de una factura expedida por error.
@@ -21,7 +21,7 @@ export default function VerifactuFactura({ factura, admin }) {
   };
   const anular = () => {
     const motivo = window.prompt('Anular el registro solo si la factura se expidió por error (no existió). Si existió y estaba mal, haz una rectificativa.\n\n¿Por qué se anula?');
-    if (motivo) hacer({ accion: 'anular', id: factura.id, motivo }, () => { navegar(router, '/facturas', 'atras'); router.refresh(); });
+    if (motivo) hacer({ accion: 'anular', id: factura.id, motivo }, () => { volverA(router, '/facturas'); router.refresh(); });
   };
   return (
     <section className="bloque">
