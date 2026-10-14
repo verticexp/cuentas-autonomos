@@ -7,6 +7,7 @@ import Deslizable from './Deslizable';
 import { baseLinea, desglose, importes, leerImporte, numeroFactura, r2 } from '@/lib/calculos';
 import '@/app/lineas.css';
 import '@/app/catalogo.css';
+import '@/app/factura-movil.css';
 import { eur } from '@/lib/formato';
 import { TIPOS_OPERACION } from '@/lib/operaciones';
 
@@ -57,6 +58,19 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
     formulario.current?.querySelector('[aria-invalid="true"]')?.focus();
   }, [errores]);
   const [enviando, setEnviando] = useState(false);
+  // Un campo obligatorio que está plegado no se podría rellenar: se despliega y se avisa ahí.
+  useEffect(() => {
+    const form = formulario.current;
+    if (!form) return undefined;
+    const alInvalido = (e) => {
+      const campo = e.target;
+      if (!campo.closest?.('.ff-datos-cliente') || campo.offsetParent !== null) return;
+      setDatosCli(true);
+      setTimeout(() => { campo.focus?.(); campo.reportValidity?.(); }, 60);
+    };
+    form.addEventListener('invalid', alInvalido, true);
+    return () => form.removeEventListener('invalid', alInvalido, true);
+  }, []);
   // Clave de idempotencia de este formulario: si se pulsa dos veces o se reintenta, sale una sola factura.
   const [idem] = useState(() => crypto.randomUUID());
 
@@ -71,6 +85,21 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
     const c = clientes.find((x) => x.id === id);
     poner('cliente', c ? { nombre: c.nombre, nif: c.nif, direccion: c.direccion, ciudad: c.ciudad, email: c.email || '', pais: c.pais || '' } : { nombre: '', nif: '', direccion: '', ciudad: '', pais: '' });
   };
+  // Móvil (solo en la factura nueva, app/factura-movil.css): buscador de clientes y, plegados, los datos del cliente y los
+  // detalles (IRPF, nota, proyecto y evento). En el ordenador se ve todo como siempre.
+  const [buscando, setBuscando] = useState('');
+  const [cambiando, setCambiando] = useState(false);
+  const [nuevoCli, setNuevoCli] = useState(false);
+  const [datosCli, setDatosCli] = useState(false);
+  const [detalles, setDetalles] = useState(() => Boolean(f.nota || f.proyecto || f.evento?.fecha || f.evento?.lugar || (nueva && Number(f.irpfPct) !== Number(defecto(f.actividad).irpfPct))));
+  const [verEvento, setVerEvento] = useState(false);
+  const norm = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const q = norm(buscando).trim();
+  const resultados = ordenados.filter((c) => !q || norm(c.nombre).includes(q) || norm(c.nif).includes(q)).slice(0, q ? 6 : 4);
+  const elegirBuscado = (id) => { elegirCliente(id); setCambiando(false); setNuevoCli(false); setDatosCli(false); setBuscando(''); };
+  const clienteNuevo = () => { elegirCliente(''); if (buscando.trim()) ponerCliente('nombre', buscando.trim()); setNuevoCli(true); setCambiando(false); setBuscando(''); };
+  const eligiendo = !nuevoCli && (cambiando || !f.cliente.nombre.trim());
+  const camposAbiertos = nuevoCli || datosCli;
   const cambiarActividad = (a) => {
     if (nueva && !orig) limpiarErrores('irpfPct', 'ivaPct', ...f.lineas.map((_, i) => `lineas.${i}.ivaPct`));
     setF((x) => (nueva && !orig
@@ -120,6 +149,9 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
       if (!r.ok) {
         if (r.status === 400 && d.errores) {
           enfocarError.current = true;
+          const claves = Object.keys(d.errores);
+          if (claves.some((k) => k.startsWith('cliente.'))) setDatosCli(true);
+          if (claves.some((k) => ['irpfPct', 'nota', 'proyecto'].includes(k) || k.startsWith('evento'))) setDetalles(true);
           setErrores(d.errores);
         }
         throw new Error(d.error || 'Algo ha fallado');
@@ -130,8 +162,8 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
   };
 
   return (
-    <form ref={formulario} className="formulario ff" onSubmit={enviar}>
-      <div className="ff-campos">
+    <form ref={formulario} className={`formulario ff${nueva ? ' ff-nuevo' : ''}`} onSubmit={enviar}>
+      <div className={`ff-campos${detalles ? ' det-abierto' : ''}`}>
       <p className="rotulo">{nueva ? `Se numerará como ${numeros[f.actividad]}` : `Factura ${numeroFactura(f)}`}{orig ? ` · rectifica la ${numeroFactura(orig)} (pon el importe que corrige: en negativo si anula)` : ''}</p>
       {actividades.length > 1 && <Deslizable className={`tipo ${actividades.length === 2 ? 'dos' : 'varias'}`}>
         {actividades.map(({ id, nombre }) => (
@@ -143,26 +175,55 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
 
       <fieldset>
         <legend>Cliente</legend>
-        <label className="ff-etiqueta-oculta" htmlFor={idCampo('cliente-selector')}>Elegir cliente</label>
-        <select id={idCampo('cliente-selector')} className="campo" value={elegido} onChange={(e) => elegirCliente(e.target.value)}>
-          <option value="">+ Cliente nuevo</option>
-          {ordenados.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-        </select>
-        <label className="ff-etiqueta-oculta" htmlFor={idCampo('cliente.nombre')}>Razón social</label>
-        <input {...atributos('cliente.nombre')} className="campo" placeholder="Ej.: Eventos SL" value={f.cliente.nombre} onChange={(e) => ponerCliente('nombre', e.target.value)} required />{mensaje('cliente.nombre')}
-        <label className="ff-etiqueta-oculta" htmlFor={idCampo('cliente.nif')}>NIF / CIF</label>
-        <input {...atributos('cliente.nif')} className="campo" placeholder="Ej.: B12345678" value={f.cliente.nif} onChange={(e) => ponerCliente('nif', e.target.value)} />{mensaje('cliente.nif')}
-        <label className="ff-etiqueta-oculta" htmlFor={idCampo('cliente.pais')}>País del identificador (si no es España)</label>
-        <input {...atributos('cliente.pais')} className="campo" placeholder="País del NIF si no es ES (US, PT, FR…)" maxLength={2} value={f.cliente.pais || ''} onChange={(e) => ponerCliente('pais', e.target.value.toUpperCase())} />{mensaje('cliente.pais')}
-        <label className="ff-etiqueta-oculta" htmlFor={idCampo('cliente.direccion')}>Dirección</label>
-        <input {...atributos('cliente.direccion')} className="campo" placeholder="Ej.: Calle Mayor, 1" value={f.cliente.direccion} onChange={(e) => ponerCliente('direccion', e.target.value)} />{mensaje('cliente.direccion')}
-        <label className="ff-etiqueta-oculta" htmlFor={idCampo('cliente.ciudad')}>Ciudad y CP</label>
-        <input {...atributos('cliente.ciudad')} className="campo" placeholder="Ej.: Barcelona, 08001" value={f.cliente.ciudad} onChange={(e) => ponerCliente('ciudad', e.target.value)} />{mensaje('cliente.ciudad')}
-        <label className="ff-etiqueta-oculta" htmlFor={idCampo('cliente.email')}>Email (para enviarle la factura)</label>
-        <input {...atributos('cliente.email')} className="campo" type="email" placeholder="Ej.: cliente@empresa.es" value={f.cliente.email || ''} onChange={(e) => ponerCliente('email', e.target.value)} />{mensaje('cliente.email')}
+        {nueva && (
+          <div className="ff-m ff-cli">
+            {eligiendo && !nuevoCli ? (
+              <div className="ff-cli-busca">
+                <input type="search" className="campo" placeholder="Buscar cliente por nombre o NIF" value={buscando} onChange={(e) => setBuscando(e.target.value)} aria-label="Buscar cliente" autoComplete="off" enterKeyHint="search" />
+                <ul className="ff-cli-res">
+                  {resultados.map((c) => <li key={c.id}><button type="button" onClick={() => elegirBuscado(c.id)}><strong>{c.nombre}</strong><small>{[c.nif, c.ciudad].filter(Boolean).join(' · ')}</small></button></li>)}
+                  <li><button type="button" className="ff-cli-nuevo" onClick={clienteNuevo}>+ Cliente nuevo{buscando.trim() ? `: «${buscando.trim()}»` : ''}</button></li>
+                </ul>
+                {cambiando && f.cliente.nombre.trim() && <button type="button" className="ff-cli-enlace" onClick={() => { setCambiando(false); setBuscando(''); }}>Dejar a {f.cliente.nombre}</button>}
+              </div>
+            ) : nuevoCli ? (
+              <div className="ff-cli-sel">
+                <span className="txt"><strong>Cliente nuevo</strong><small>Rellena sus datos</small></span>
+                <button type="button" className="ff-cli-enlace" onClick={() => { setNuevoCli(false); setDatosCli(false); elegirCliente(''); }}>Elegir uno guardado</button>
+              </div>
+            ) : (
+              <>
+                <div className="ff-cli-sel">
+                  <span className="txt"><strong>{f.cliente.nombre}</strong><small>{[f.cliente.nif, f.cliente.ciudad].filter(Boolean).join(' · ') || 'Sin NIF'}</small></span>
+                  <button type="button" className="ff-cli-enlace" onClick={() => { setCambiando(true); setBuscando(''); }}>Cambiar</button>
+                </div>
+                <button type="button" className="ff-cli-enlace" aria-expanded={datosCli} onClick={() => setDatosCli((v) => !v)}>{datosCli ? 'Ocultar sus datos' : 'Ver o editar sus datos'}</button>
+              </>
+            )}
+          </div>
+        )}
+        <div className={`ff-datos-cliente${camposAbiertos ? ' abierto' : ''}`}>
+          <label className="ff-etiqueta-oculta" htmlFor={idCampo('cliente-selector')}>Elegir cliente</label>
+          <select id={idCampo('cliente-selector')} className="campo ff-sel-cli" value={elegido} onChange={(e) => elegirCliente(e.target.value)}>
+            <option value="">+ Cliente nuevo</option>
+            {ordenados.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+          </select>
+          <label className="ff-etiqueta-oculta" htmlFor={idCampo('cliente.nombre')}>Razón social</label>
+          <input {...atributos('cliente.nombre')} className="campo" placeholder="Ej.: Eventos SL" value={f.cliente.nombre} onChange={(e) => ponerCliente('nombre', e.target.value)} required />{mensaje('cliente.nombre')}
+          <label className="ff-etiqueta-oculta" htmlFor={idCampo('cliente.nif')}>NIF / CIF</label>
+          <input {...atributos('cliente.nif')} className="campo" placeholder="Ej.: B12345678" value={f.cliente.nif} onChange={(e) => ponerCliente('nif', e.target.value)} />{mensaje('cliente.nif')}
+          <label className="ff-etiqueta-oculta" htmlFor={idCampo('cliente.pais')}>País del identificador (si no es España)</label>
+          <input {...atributos('cliente.pais')} className="campo" placeholder="País del NIF si no es ES (US, PT, FR…)" maxLength={2} value={f.cliente.pais || ''} onChange={(e) => ponerCliente('pais', e.target.value.toUpperCase())} />{mensaje('cliente.pais')}
+          <label className="ff-etiqueta-oculta" htmlFor={idCampo('cliente.direccion')}>Dirección</label>
+          <input {...atributos('cliente.direccion')} className="campo" placeholder="Ej.: Calle Mayor, 1" value={f.cliente.direccion} onChange={(e) => ponerCliente('direccion', e.target.value)} />{mensaje('cliente.direccion')}
+          <label className="ff-etiqueta-oculta" htmlFor={idCampo('cliente.ciudad')}>Ciudad y CP</label>
+          <input {...atributos('cliente.ciudad')} className="campo" placeholder="Ej.: Barcelona, 08001" value={f.cliente.ciudad} onChange={(e) => ponerCliente('ciudad', e.target.value)} />{mensaje('cliente.ciudad')}
+          <label className="ff-etiqueta-oculta" htmlFor={idCampo('cliente.email')}>Email (para enviarle la factura)</label>
+          <input {...atributos('cliente.email')} className="campo" type="email" placeholder="Ej.: cliente@empresa.es" value={f.cliente.email || ''} onChange={(e) => ponerCliente('email', e.target.value)} />{mensaje('cliente.email')}
+        </div>
       </fieldset>
 
-      <div className="dos-col">
+      <div className={`dos-col ff-det ff-evento${verEvento || f.evento?.fecha || f.evento?.lugar ? ' abierto' : ''}`}>
         <label>Fecha del evento (opcional)<input className="campo" type="date" value={f.evento?.fecha || ''} onChange={(e) => poner('evento', { ...f.evento, fecha: e.target.value })} /></label>
         <label>Lugar (opcional)<input className="campo" placeholder="Hotel Arts" value={f.evento?.lugar || ''} onChange={(e) => poner('evento', { ...f.evento, lugar: e.target.value })} /></label>
       </div>
@@ -194,7 +255,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
         <button {...atributos('lineas')} type="button" className="boton sec" onClick={anadirLinea}>+ Añadir otro concepto</button>
       </fieldset>
 
-      <label>Proyecto, obra o local (opcional)
+      <label className="ff-det">Proyecto, obra o local (opcional)
         <input className="campo" list="proyectos-factura" value={f.proyecto || ''} onChange={(e) => poner('proyecto', e.target.value)} placeholder="Para ver la rentabilidad de cada uno" maxLength={60} />
       </label>
       <datalist id="proyectos-factura">{proyectos.map((p) => <option key={p} value={p} />)}</datalist>
@@ -215,24 +276,29 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
         </select>
       </label>}
 
-      <label>IRPF
+      <label className="ff-det">IRPF
         <select {...atributos('irpfPct')} className="campo" value={f.irpfPct} onChange={(e) => poner('irpfPct', Number(e.target.value))}>
           {[...new Set([15, 7, 0, Number(f.irpfPct) || 0])].map((n) => <option key={n} value={n}>{n}%</option>)}
         </select>{mensaje('irpfPct')}
       </label>
 
-      <label>Nota en la factura (opcional)
+      <label className="ff-det">Nota en la factura (opcional)
         <input className="campo" placeholder="Ej.: operación exenta de IVA, inversión del sujeto pasivo" value={f.nota || ''} onChange={(e) => poner('nota', e.target.value)} />
       </label>
 
+      {nueva && <button type="button" className="ff-m ff-det-boton" aria-expanded={detalles} onClick={() => setDetalles((v) => !v)}>{detalles ? 'Ocultar detalles' : 'Detalles: IRPF, nota y proyecto'}</button>}
+      {nueva && detalles && !verEvento && !f.evento?.fecha && !f.evento?.lugar && <button type="button" className="ff-m ff-evento-boton" onClick={() => setVerEvento(true)}>+ Fecha y lugar del evento</button>}
+
       <label className="check"><input type="checkbox" checked={f.cobrada} onChange={(e) => poner('cobrada', e.target.checked)} /> Ya está cobrada</label>
 
-      <div className="totales">
-        <span>Base {eur(t.base)}</span>{tipos.length > 1 ? tipos.map((x) => <span key={x.pct}>IVA {x.pct}% {eur(x.iva)}</span>) : <span>IVA {eur(t.iva)}</span>}<span>IRPF −{eur(t.irpf)}</span><strong>Total {eur(t.total)}</strong>
-      </div>
+      <div className="ff-pie">
+        <div className="totales">
+          <span>Base {eur(t.base)}</span>{tipos.length > 1 ? tipos.map((x) => <span key={x.pct}>IVA {x.pct}% {eur(x.iva)}</span>) : <span>IVA {eur(t.iva)}</span>}<span>IRPF −{eur(t.irpf)}</span><strong>Total {eur(t.total)}</strong>
+        </div>
 
-      {error && <p className="error" role="alert">{error}</p>}
-      <button className="boton" disabled={enviando}>{enviando ? 'Guardando…' : nueva ? 'Crear factura' : 'Guardar cambios'}</button>
+        {error && <p className="error" role="alert">{error}</p>}
+        <button className="boton" disabled={enviando}>{enviando ? 'Guardando…' : nueva ? 'Crear factura' : 'Guardar cambios'}</button>
+      </div>
       </div>
 
       {/* En el ordenador, la factura se va dibujando al lado mientras se rellena */}

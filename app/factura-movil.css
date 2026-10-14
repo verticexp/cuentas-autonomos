@@ -1,0 +1,52 @@
+/* Factura nueva en el móvil, en dos pasos dentro de la misma pantalla (components/FormFactura.js, solo la factura nueva).
+   Paso 1, quién y qué: buscador de clientes y conceptos con el catálogo a mano. Paso 2, plegado: IRPF, nota, proyecto y evento.
+   El total y «Crear» van fijos abajo. En el ordenador no cambia nada: se ve todo y el orden es el del documento. */
+.ff-m { display: none; }
+.ff-pie { display: flex; flex-direction: column; gap: 12px; }
+/* Un fieldset crece por defecto hasta el ancho de su contenido: las fichas del catálogo, que se deslizan, lo ensanchaban más que la pantalla */
+.ff fieldset { min-width: 0; }
+
+@media (max-width: 1023.98px) {
+  /* Sin la barra de pestañas mientras se crea: el total y «Crear» ocupan su sitio */
+  body:has(.ff-nuevo) .tabbar { display: none; }
+
+  /* Cliente */
+  .ff-nuevo .ff-m { display: flex; flex-direction: column; gap: 8px; }
+  .ff-nuevo .ff-sel-cli { display: none; }
+  .ff-nuevo .ff-datos-cliente { display: flex; flex-direction: column; gap: 8px; }
+  .ff-nuevo .ff-datos-cliente:not(.abierto) { display: none; }
+  .ff-cli-busca { display: flex; flex-direction: column; gap: 8px; }
+  .ff-cli-res { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .ff-cli-res button, .ff-cli-sel { width: 100%; display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 8px 14px; border: 0; border-radius: 14px; background: var(--relleno); color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+  .ff-cli-res button { flex-direction: column; align-items: flex-start; justify-content: center; gap: 0; }
+  .ff-cli-res strong, .ff-cli-sel strong { font-size: 16px; font-weight: 650; }
+  .ff-cli-res small, .ff-cli-sel small { color: var(--muted); font-size: 13px; }
+  .ff-cli-res .ff-cli-nuevo { flex-direction: row; align-items: center; color: var(--marca); font-weight: 650; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); }
+  .ff-cli-sel { cursor: default; justify-content: space-between; }
+  .ff-cli-sel .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .ff-cli-sel .txt strong, .ff-cli-sel .txt small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ff-cli-enlace { align-self: flex-start; min-height: 36px; padding: 0 4px; border: 0; background: none; color: var(--marca); font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; }
+  .ff-cli-sel .ff-cli-enlace { align-self: center; flex: none; }
+
+  /* Conceptos: el catálogo, arriba, a mano */
+  .ff-nuevo .lineas .catalogo-chips { order: -1; }
+
+  /* Detalles plegados: van después de lo principal (el orden del documento no cambia) */
+  .ff-nuevo .ff-campos > .ff-det-boton { order: 19; }
+  .ff-nuevo .ff-campos > .ff-evento-boton { order: 21; }
+  .ff-nuevo .ff-campos > .ff-det { order: 20; }
+  .ff-nuevo .ff-campos:not(.det-abierto) > .ff-det { display: none; }
+  .ff-nuevo .ff-campos > .ff-evento:not(.abierto) { display: none; }
+  .ff-nuevo .ff-det-boton, .ff-nuevo .ff-evento-boton { display: inline-flex; flex-direction: row; align-items: center; align-self: flex-start; min-height: 44px; padding: 0 16px; border: 0; border-radius: 999px; background: var(--relleno); color: var(--ink); font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; }
+  .ff-nuevo .ff-evento-boton { background: none; padding: 0 4px; color: var(--marca); }
+
+  /* Total y «Crear» fijos abajo */
+  .ff-nuevo .ff-campos > .ff-pie { order: 30; position: sticky; bottom: 0; z-index: 7; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 6px 12px;
+    margin: 4px -16px 0; padding: 10px 16px calc(env(safe-area-inset-bottom, 0px) + 10px); border-top: 0.5px solid var(--line);
+    background: color-mix(in srgb, var(--paper) 92%, transparent); -webkit-backdrop-filter: blur(14px) saturate(1.6); backdrop-filter: blur(14px) saturate(1.6); }
+  .ff-nuevo .ff-pie .error { grid-column: 1 / -1; order: -1; margin: 0; }
+  .ff-nuevo .ff-pie .totales { background: none; padding: 0; justify-content: flex-start; gap: 0 10px; font-size: 12px; color: var(--muted); }
+  .ff-nuevo .ff-pie .totales strong { flex-basis: 100%; order: -1; font-size: 24px; line-height: 1.15; color: var(--ink); }
+  .ff-nuevo .ff-pie .boton { min-height: 52px; padding-inline: 22px; font-size: 17px; }
+  .ff-nuevo .ff-campos { padding-bottom: 8px; }
+}
