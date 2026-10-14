@@ -156,3 +156,36 @@ test('S04: con altas y bajas entre páginas, el cursor no repite ni salta lo que
   const debian = fs.map((f) => f.id).filter((id) => id !== 'Z000');
   assert.deepEqual(debian.filter((id) => !vistos.includes(id)), [], 'ninguna de las que seguían existiendo se salta');
 });
+
+test('Cola: tres instancias a la vez, con fallos y una instancia caída a mitad, hacen cada trabajo y no pierden ninguno', async () => {
+  await R.redis.del(T.COLA);
+  const u = empresa();
+  const N = 300;
+  for (let i = 0; i < N; i += 50) {
+    const tx = R.redis.multi();
+    for (let j = i; j < i + 50; j++) T.opsEncolar(tx, u.empresa, { id: `c${j}`, tipo: 'c', datos: { j } }, { cuando: Date.now() - 1000 });
+    await tx.exec();
+  }
+  // Una instancia que se cayó con c0 a medias: su arrendamiento caduca enseguida y otra lo retoma.
+  await R.redis.set(`trabajo-uso:${u.empresa}|c0`, 'caida', { px: 300 });
+  const veces = new Map();
+  let fallos = 0;
+  const tareas = { c: async ({ j }) => {
+    veces.set(j, (veces.get(j) || 0) + 1);
+    if (j % 37 === 0 && veces.get(j) === 1) { fallos++; throw new Error('fallo pasajero'); } // primer intento falla
+  } };
+  const instancia = () => T.procesar({ tareas, hasta: Date.now() + 4000, concurrencia: 4 });
+  for (let ronda = 0; ronda < 5; ronda++) {
+    await Promise.all([instancia(), instancia(), instancia()]);
+    // Los que fallaron quedan programados más adelante con su intento apuntado; se adelantan para la prueba.
+    const pendientes = Object.values((await R.redis.hgetall(`trabajos:${u.empresa}`)) || {}).filter((t) => t.estado === 'pendiente');
+    if (!pendientes.length) break;
+    assert.ok(pendientes.every((t) => t.intentos === 1 || (t.id === 'c0' && ronda === 0)), 'cada fallo, con su intento apuntado');
+    for (const t of pendientes) await R.redis.zadd(T.COLA, { score: Date.now() - 1, member: `${u.empresa}|${t.id}` });
+    await new Promise((ok) => setTimeout(ok, 350)); // caduca el arrendamiento de la instancia caída
+  }
+  assert.equal(veces.size, N, 'todos se han hecho');
+  for (const [j, v] of veces) assert.equal(v, j % 37 === 0 ? 2 : 1, `trabajo ${j}: ${v} veces`);
+  assert.ok(fallos > 0);
+  assert.equal(Object.keys((await R.redis.hgetall(`trabajos:${u.empresa}`)) || {}).length, 0, 'no queda nada pendiente');
+});

@@ -25,6 +25,20 @@ Medición local (simulador en memoria, 5.000 facturas; misma metodología que el
 | Emitir una factura (tras la primera) | todo el histórico | contador, sin leer el histórico |
 | Conciliación 2.000 × 2.000 | 15,06 s | 16 ms |
 
+## Revisión del 14/10 tras #73–#74 (S01–S06): corregido
+
+Reproducciones en `tests/revision-s01-s06.test.mjs` (fallaban las seis antes del arreglo).
+
+- **S01** la reconstrucción del índice ya no borra ni escribe a ciegas: cada ficha se aplica con un script atómico solo si el documento sigue igual que cuando se leyó (`lib/scripts.js` INDICE_SI_IGUAL). Nunca se lee un índice a medias.
+- **S02** cerrar un trabajo (con éxito o con error) compara su versión en la misma operación atómica (CERRAR_TRABAJO): una versión nueva encolada a la vez se conserva y se ejecuta.
+- **S05** cada trabajo guarda su fecha (`cuando`); al restaurar una copia los pendientes vuelven a la cola con sus intentos, y los fallidos siguen en su bandeja.
+- **S03** los trabajos ocupados por otra instancia no tapan a los libres ni hacen dar la cola por vacía; si solo quedan ocupados, la siguiente tanda espera 15 s.
+- **S04** el orden es un conjunto lexicográfico por (orden, id): el cursor recorre cualquier número de empates, también con altas y bajas entre páginas.
+- **S06** el texto de búsqueda va en un índice aparte (`ixt`), completo y por campos, igual que la búsqueda de antes.
+- Prueba de la cola con tres instancias a la vez, fallos pasajeros y una instancia caída a mitad.
+
+Medición con la distribución de la revisión (5.000 facturas en un mes, dos tercios sin cobrar): página de 50, 18 KB; búsqueda, 38 KB; pero **«Por cobrar» lee 578 KB (fichas de 3.333 pendientes) y el total del mes 878 KB (fichas de 5.000)**. Lo resuelve E06 (totales precalculados), pendiente.
+
 ## Pendiente
 
 - **E01 resto**: hecho en la segunda tanda (Impuestos, mes, Tesorería, libros, paquete, estado de pagos, caja e importación de ventas, nueva factura, proyectos por año, exportar CSV, ajustes de Verifactu, cuestionario, proveedores, remesas y duplicados). Siguen leyendo todo, a propósito: **Contabilidad y cuentas anuales** (el balance acumula desde el principio: necesitan agregados, E06), el **inventario** (valora con todo el histórico de movimientos), la **exportación completa**, la **baja**, **Proyectos «desde el principio»** y el **asistente** (carga colecciones según la pregunta). Los movimientos del banco (`banco:<emp>`) aún no tienen índice. La búsqueda recorre fichas compactas (no documentos); para texto libre a escala, un índice de búsqueda o PostgreSQL.
