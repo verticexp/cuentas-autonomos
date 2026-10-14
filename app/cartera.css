@@ -1,0 +1,8 @@
+/* Cartera de cobros (app/cartera/page.js); el resto, de tesoreria.css */
+.car-excel { display: inline-block; margin: -4px 0 12px; }
+.car-mes { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.car-mes small { font-size: 14px; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--muted); }
+.car-lista .teso-tipo.vencida { border-color: var(--out); }
+.car-venc { color: var(--out); }
+.car-lista .teso-tipo { width: 76px; white-space: nowrap; }
+.car-lista .txt small { white-space: normal; }

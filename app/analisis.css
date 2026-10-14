@@ -1,0 +1,25 @@
+/* Análisis financiero (app/analisis/page.js); las tablas son las de contabilidad.css y las cifras, las de tesoreria.css */
+.ana-pie { color: var(--muted); font-size: 12px; }
+.ana-sub .cont-n { color: var(--muted); }
+.analisis .teso-cifras { grid-template-columns: 1fr 1fr; }
+.ana-pe .ana-txt { margin: 0 0 10px; font-size: 15px; line-height: 1.45; }
+.ana-barra { display: block; height: 6px; border-radius: 3px; background: var(--relleno); overflow: hidden; margin: 0 0 12px; }
+.ana-barra span { display: block; height: 100%; background: var(--in); border-radius: 3px; }
+.ana-barra span.neg { background: var(--out); }
+.ana-grupo { margin: 0 0 14px; }
+.ana-gt { margin: 0 0 6px; font-size: 15px; display: flex; flex-direction: column; gap: 1px; }
+.ana-gt small { color: var(--muted); font-weight: 400; font-size: 13px; }
+.ana-ratios { border-radius: 12px; margin-top: 0; }
+.ana-ratio summary { display: flex; align-items: center; gap: 12px; padding: 10px 14px; cursor: pointer; list-style: none; }
+.ana-ratio summary::-webkit-details-marker { display: none; }
+.ana-ratio .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.ana-ratio .txt strong { font-weight: 500; }
+.ana-ratio .txt small { color: var(--muted); font-size: 13px; margin-top: 2px; }
+.ana-valor { flex: none; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ana-ratio p { margin: 0; padding: 0 14px 12px 36px; color: var(--muted); font-size: 14px; line-height: 1.4; }
+.ana-punto { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--line); }
+.ana-punto.bien { background: var(--in); } .ana-punto.ojo { background: var(--hacienda); } .ana-punto.mal { background: var(--out); }
+.ana-fm { margin-top: 4px; }
+@media (min-width: 1024px) {
+  .analisis .teso-cifras { grid-template-columns: repeat(4, 1fr); }
+}
