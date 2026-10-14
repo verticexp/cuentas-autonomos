@@ -683,11 +683,13 @@ console.log('Banco: extractos, conexión y emparejar');
   ok('6 movimientos guardados en su empresa', () => assert.equal(movs.length, 6));
   const pb = n(await texto('/banco', bq));
   ok('pantalla: saldo de las dos cuentas', () => assert.ok(pb.includes(n(eur(7452))) && pb.includes('Extracto subido') && pb.includes('SONORA EVENTOS'), pb.slice(0, 400)));
-  ok('pantalla: sugerencias seguras y dudosas', () => assert.ok(pb.includes('Por confirmar 5') && pb.includes('Es esta') && pb.includes('Puede ser') && pb.includes(`Factura ${numeroFactura(f1)}`) && pb.includes('Ferretería Sol · Cables')));
+  // Al subir el extracto se concilia solo lo muy seguro (factura con su número e importe exactos, o gasto con su proveedor e importe
+  // exactos): 2 emparejados «automáticos». Lo que solo coincide por nombre e importe (Fundació, sin número en el concepto) espera confirmación.
+  ok('pantalla: lo seguro ya está conciliado solo y quedan las dudosas', () => assert.ok(pb.includes('Por confirmar 3') && pb.includes('Puede ser') && pb.includes('2 automáticos') && pb.includes(`Factura ${numeroFactura(f1)}`) && pb.includes('Ferretería Sol · Cables'), pb.slice(pb.indexOf('Saldo en tus cuentas'), pb.indexOf('Saldo en tus cuentas') + 600)));
   ok('pantalla: el Bizum sin pareja', () => assert.ok(pb.includes('Sin pareja 1') && pb.includes('BIZUM RECIBIDO')));
-  ok('pantalla: confirmar las 4 seguras', () => assert.ok(pb.includes('Confirmar las 4 seguras')));
+  ok('pantalla: solo queda una segura (sin número de factura no se concilia sola)', () => assert.ok(pb.includes('Es esta') && !pb.includes('Confirmar las')));
   const pt = n(await texto('/tesoreria', bq));
-  ok('tesorería parte del saldo real y enlaza al banco con lo pendiente', () => assert.ok(pt.includes('De tus cuentas') && pt.includes('7.452,00') && pt.includes('6 movimientos por revisar') === false && /Banco Saldo real[^€]*? 6 /.test(pt), pt.slice(0, 600)));
+  ok('tesorería parte del saldo real y enlaza al banco con lo pendiente', () => assert.ok(pt.includes('De tus cuentas') && pt.includes('7.452,00') && pt.includes('6 movimientos por revisar') === false && /Banco Saldo real[^€]*? 4 /.test(pt), pt.slice(0, 600)));
 
   const gestoria = await entrar(await (await pedir('/api/usuarios', { metodo: 'POST', cookie: bq, cuerpo: { nombre: 'Gestoría', email: `ge${Date.now()}@test.es`, rol: 'miembro', permisos: ['resumen', 'facturas', 'gastos', 'nominas'] } })).json(), 'gestoria123');
   const g403 = await pedir('/api/banco', { metodo: 'POST', cookie: gestoria, cuerpo: { accion: 'emparejar', id: mov(1210).id, tipo: 'factura', destino: f1.id } });
@@ -721,7 +723,10 @@ console.log('Banco: extractos, conexión y emparejar');
   ok('un ingreso no puede pagar un gasto (400)', () => assert.equal(signo.status, 400));
 
   const seg = await (await pedir('/api/banco', { metodo: 'POST', cookie: bq, cuerpo: { accion: 'seguras' } })).json();
-  ok('se confirman las 4 seguras', () => assert.equal(seg.hechos, 4));
+  ok('se confirma la única segura que quedaba (el resto ya se concilió solo)', () => assert.equal(seg.hechos, 1));
+  // La gestoría (sin proveedor ni número) es solo «puede ser»: se empareja a mano.
+  const manG2 = await pedir('/api/banco', { metodo: 'POST', cookie: bq, cuerpo: { accion: 'emparejar', id: mov(-121).id, tipo: 'gasto', destino: g2.id } });
+  ok('emparejar a mano el gasto de la gestoría', () => assert.equal(manG2.status, 200));
   const [F1, F3, G1, G2] = await Promise.all([hget(`facturas:${empresa}`, f1.id), hget(`facturas:${empresa}`, f3.id), hget(`gastos:${empresa}`, g1.id), hget(`gastos:${empresa}`, g2.id)]);
   ok('las facturas quedan cobradas con la fecha del banco', () => assert.ok(F1.cobrada && F1.cobro.fecha === masD(-5) && F3.cobrada && F3.cobro.fecha === masD(-2)));
   ok('el gasto pendiente queda pagado', () => assert.ok(!G1.pendiente && G1.banco === mov(-60.5).id && G1.pagado === masD(-6) && G2.banco === mov(-121).id));

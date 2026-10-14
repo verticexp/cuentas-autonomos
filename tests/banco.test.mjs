@@ -62,7 +62,7 @@ const M = [
 
 test('banco: sugerencias seguras por número de factura o nombre, y cada factura para un solo movimiento', () => {
   const s = sugerencias(M, F, G);
-  assert.deepEqual(s.a, { tipo: 'factura', id: '2026-8', puntos: 90, segura: true });
+  assert.deepEqual(s.a, { tipo: 'factura', id: '2026-8', puntos: 90, segura: true, importe: 1210, porNumero: true, porNombre: false });
   // «b» tiene el mismo importe pero sin pistas: se queda con la otra factura y no es segura.
   assert.deepEqual([s.b.id, s.b.segura], ['2026-7', false]);
   assert.deepEqual([s.c.tipo, s.c.id, s.c.segura], ['gasto', 'g1', true]);

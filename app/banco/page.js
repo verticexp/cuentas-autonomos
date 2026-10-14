@@ -47,11 +47,12 @@ export default async function PaginaBanco({ searchParams }) {
     return g && { tipo, id, texto: `${g.proveedor ? `${g.proveedor} · ` : ''}${g.concepto}`, importe: totalDe(g), fecha: g.fecha, url: `/gastos/${encodeURIComponent(id)}`, pendiente: Boolean(g.pendiente) };
   };
   const pendientes = lista.filter((m) => m.estado === 'pendiente' || !m.estado).slice(0, 150).map((m) => ({
-    ...m, sugerencia: sug[m.id] ? { ...destino(sug[m.id].tipo, sug[m.id].id), segura: sug[m.id].segura } : null,
+    ...m, sugerencia: sug[m.id] ? { ...destino(sug[m.id].tipo, sug[m.id].id), segura: sug[m.id].segura, motivo: sug[m.id].motivo, yaCobrada: Boolean(sug[m.id].yaCobrada), importeSug: sug[m.id].importe } : null,
     opciones: opciones(m, facturas, gastos, lista),
     clase: clasificar(m, { autonomo: fiscalDe(u).tipo === 'autonomo' }), clases: clasesPara(m),
   }));
   const emparejados = emparejadosVisibles.map((m) => ({ ...m, destino: destino(m.enlace.tipo, m.enlace.id) }));
+  const automaticos = lista.filter((m) => m.estado === 'emparejado' && m.auto).length;
   const ignorados = lista.filter((m) => m.estado === 'ignorado').slice(0, 40);
   const n = Number(q.conectado) || 0;
   const aviso = q.error ? { error: true, texto: ERRORES[q.error] || 'No se pudo conectar el banco.' } : n ? { texto: n === 1 ? '✓ Cuenta conectada' : `✓ ${n} cuentas conectadas` } : null;
@@ -62,7 +63,7 @@ export default async function PaginaBanco({ searchParams }) {
       <h1 className="titulo">Banco</h1>
       <Banco
         cuentas={(cuentas || []).sort((a, b) => (a.conectada || a.subido || '').localeCompare(b.conectada || b.subido || ''))}
-        pendientes={pendientes} emparejados={emparejados} ignorados={ignorados} aviso={aviso}
+        pendientes={pendientes} emparejados={emparejados} ignorados={ignorados} automaticos={automaticos} aviso={aviso}
         listo={conectarVisible(u)} permisos={{ facturar: puede(u, 'facturar'), gastar: puede(u, 'gastar'), empresa: puede(u, 'empresa') }}
       />
     </main>

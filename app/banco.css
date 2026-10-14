@@ -87,3 +87,5 @@
 .bco-quees-t { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
 .bco-quees .campo { margin: 4px 0 0; }
 .bco-quees .bco-nota { margin: 6px 0; }
+.bco-sug-m { display: block; color: var(--muted); font-size: 13px; margin-top: 4px; }
+.bco-auto { font-style: normal; font-weight: 500; color: var(--in); font-size: 0.85em; }
