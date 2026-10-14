@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { alPulsar, navegar, seguirRuta } from '@/lib/transicion';
+import { alPulsar, instalarHistorial, navegar } from '@/lib/transicion';
 import Logo from '@/components/Logo';
 import CambiarEmpresa from '@/components/CambiarEmpresa';
 import { EXTRA, extraDe } from '@/components/secciones';
@@ -64,7 +64,8 @@ export default function TabBar({ permisos = [], empresas = [], empresa, admin = 
   const botonMas = useRef(null);
   const panel = useRef(null);
 
-  useEffect(() => { setActivo(seccion(path)); seguirRuta(path); }, [path]);
+  useEffect(() => { setActivo(seccion(path)); }, [path]);
+  useEffect(() => { instalarHistorial(); }, []);
   useEffect(() => {
     const m = matchMedia('(max-width: 1023.98px)');
     const poner = () => setMovil(m.matches);

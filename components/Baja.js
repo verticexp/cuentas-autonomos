@@ -15,7 +15,7 @@ export default function Baja({ empresa }) {
     setMsg('');
     try {
       await llamar('/api/baja', { method: 'POST', body: JSON.stringify({ password }) });
-      window.location.href = '/';
+      window.location.replace('/');
     } catch (err) { setMsg(err.message); setEnviando(false); }
   };
   return (

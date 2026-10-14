@@ -1,4 +1,5 @@
-import { hayUsuarios } from '@/lib/auth';
+import { redirect } from 'next/navigation';
+import { hayUsuarios, usuarioActual } from '@/lib/auth';
 import { redis } from '@/lib/redis';
 import SinBD from '@/components/SinBD';
 import Logo from '@/components/Logo';
@@ -14,6 +15,8 @@ const ERRORES = { 1: 'Email o contraseña incorrectos.', bloqueado: 'Demasiados 
 export default async function Login({ searchParams }) {
   if (!redis) return <SinBD />;
   const { error } = await searchParams;
+  // Con sesión, el login no tiene nada que enseñar (al volver atrás hasta aquí, se sigue a la app): «/» resuelve bloqueo, email y estado.
+  if (await usuarioActual()) redirect('/');
   const primera = !(await hayUsuarios());
   // Sin cuentas todavía: alta del administrador (formulario normal). Con cuentas: components/FormEntrar.js.
   return (
