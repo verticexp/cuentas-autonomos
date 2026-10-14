@@ -58,11 +58,13 @@ test('R02: borrar el último albarán no permite reutilizar su número', async (
 
 test('R02: documentos antiguos sin contador se respetan por tipo y año', async () => {
   const u = empresa();
+  // Los documentos de antes del contador ya están guardados cuando llega la primera alta (E05: se verifican una vez).
   for (const tipo of ['albaran', 'pedido']) {
     await R.guardar(u, 'albaranes', { ...datosDoc(tipo), id: tipo, numero: 7, anio: 2026 });
     await R.guardar(u, 'albaranes', { ...datosDoc(tipo, '2025-02-01'), id: `${tipo}-viejo`, numero: 99, anio: 2025 });
-    assert.equal((await S.guardarDoc(u, datosDoc(tipo))).numero, 8);
   }
+  for (const tipo of ['albaran', 'pedido']) assert.equal((await S.guardarDoc(u, datosDoc(tipo))).numero, 8);
+  assert.equal((await S.guardarDoc(u, datosDoc('albaran', '2025-03-01'))).numero, 100);
 });
 
 test('R02: corregir en el mismo año conserva número y contador', async () => {

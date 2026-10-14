@@ -1,7 +1,7 @@
 import { leer } from '@/lib/redis';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { sugerencias } from '@/lib/banco';
-import { contabilizar, deshacer, emparejar, ignorar } from '@/lib/bancoServidor';
+import { candidatosConciliacion, contabilizar, deshacer, emparejar, ignorar } from '@/lib/bancoServidor';
 import { puede } from '@/lib/permisos';
 
 export const dynamic = 'force-dynamic';
@@ -13,8 +13,9 @@ export async function POST(req) {
   if (res) return res;
   const b = await cuerpo(req);
   if (b.accion === 'seguras') {
-    const [movs, facturas, gastos] = await Promise.all([leer(u, 'banco'), leer(u, 'facturas'), leer(u, 'gastos')]);
-    const s = sugerencias(movs || [], facturas || [], gastos || []);
+    const movs = (await leer(u, 'banco')) || [];
+    const { facturas, gastos } = await candidatosConciliacion(u, movs);
+    const s = sugerencias(movs, facturas, gastos);
     let hechos = 0;
     for (const [id, x] of Object.entries(s)) {
       if (!x.segura || !puede(u, x.tipo === 'factura' ? 'facturar' : 'gastar')) continue;

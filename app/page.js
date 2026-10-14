@@ -5,6 +5,7 @@ import Ir from '@/components/Ir';
 import { requerir, usuarioActual } from '@/lib/auth';
 import Landing from '@/components/Landing';
 import { clave, leer, redis } from '@/lib/redis';
+import { contar, leerMarcados, leerRango, unir } from '@/lib/indices';
 import { prevision } from '@/lib/tesoreria';
 import '@/app/tesoreria.css';
 import { casillas303, importes, r2 } from '@/lib/calculos';
@@ -31,13 +32,20 @@ export default async function Resumen({ searchParams }) {
   if (!(await usuarioActual())) return <Landing />;
   const u = await requerir('resumen');
   enviarLuego(u); // Verifactu: si quedó algo por enviar (control de flujo de la AEAT), ahora
-  const [facturas, gastos, recurrentes, nominas, saldo] = await Promise.all([leer(u, 'facturas'), leer(u, 'gastos'), leer(u, 'recurrentes'), leer(u, 'nominas'), redis?.get(clave(u, 'saldo'))]);
-  if (!facturas) return <SinBD />;
+  if (!redis) return <SinBD />;
   const h = hoy();
+  // Informe de capacidad E01: solo los años que enseña el panel (el elegido y el anterior, el actual y el anterior para
+  // el plazo y los habituales), más todo lo pendiente y los bienes de inversión. No el histórico entero.
+  const anioPedido = Number((await searchParams).anio) || Number(h.slice(0, 4));
+  const anios = [...new Set([anioPedido - 1, anioPedido, Number(h.slice(0, 4)) - 1, Number(h.slice(0, 4))])];
+  const rango = (col) => Promise.all(anios.map((y) => leerRango(u, col, `${y}-01-01`, `${y}-12-31`)));
+  const [fAnios, gAnios, fPend, gPend, bienes, nFacturas, recurrentes, nominas, saldo] = await Promise.all([rango('facturas'), rango('gastos'), leerMarcados(u, 'facturas', 'p'), leerMarcados(u, 'gastos', 'p'), leerMarcados(u, 'gastos', 'i'), contar(u, 'facturas'), leer(u, 'recurrentes'), leer(u, 'nominas'), redis.get(clave(u, 'saldo'))]);
+  const facturas = unir(...fAnios, fPend);
+  const gastos = unir(...gAnios, gPend, bienes);
   const actividades = actividadesDe(u);
   const fiscal = fiscalDe(u);
   const ACTIVIDADES = nombresActividad(actividades);
-  const P = panelResumen({ facturas, gastos, pagos130: u.pagos130, rend130: u.rend130, emisor: u.emisor, anio: Number((await searchParams).anio) || undefined, hoy: h, actividades, fiscal });
+  const P = panelResumen({ facturas, gastos, pagos130: u.pagos130, rend130: u.rend130, emisor: u.emisor, anio: anioPedido, hoy: h, actividades, fiscal });
   const { anio, anioActual, esteAnio, r, c303, c130, facturado, gastado, beneficio, plazo, debe, tHoy, qAhora, apartado, aPagar, mesPago,
     sinCobrar, porCobrar, vencidas, prevFact, prevBeneficio, meses, cambio, ultimoMes, top, limite } = P;
   const pagos = (y) => u.pagos130?.[y] || {};
@@ -97,7 +105,7 @@ export default async function Resumen({ searchParams }) {
         ))}
       </nav>
 
-      {!facturas.length && (
+      {!nFacturas && (
         <div className="vacio">
           <p>Crea tu primera factura</p>
           <p>Aquí verás cuánto de lo que facturas es tuyo y cuánto tienes que apartar para Hacienda.</p>
@@ -262,7 +270,7 @@ export default async function Resumen({ searchParams }) {
             </section>
           )}
 
-          {esteAnio && facturas.length > 0 && (
+          {esteAnio && nFacturas > 0 && (
             <section className="grupo">
               <h2 className="grupo-t">Si sigues a este ritmo</h2>
               <div className="grupo-c">
