@@ -118,8 +118,11 @@ test('S05: restaurar una copia vuelve a programar los trabajos pendientes, con s
   const copia = await C.hacerCopia(r);
   srv.base.run(['flushall']);
   await C.restaurar(r, copia, { escribir: true });
+  assert.equal((await R.redis.hget(`trabajos:${u.empresa}`, 'p')).intentos, 2, 'conserva sus reintentos');
+  assert.ok((await R.redis.zscore(T.COLA, `${u.empresa}|p`)) !== null, 'vuelve a estar programado');
+  assert.equal(await R.redis.zscore(T.COLA, `${u.empresa}|e`), null, 'el fallido no se programa');
   const hechos = [];
-  await T.procesar({ tareas: { x: async () => { hechos.push(1); } }, hasta: Date.now() + 3000 });
+  await T.procesar({ tareas: { x: async ({ empresa }) => { if (empresa === u.empresa) hechos.push(1); } }, hasta: Date.now() + 3000 });
   assert.equal(hechos.length, 1, 'el pendiente se ejecuta una vez');
   assert.equal((await R.redis.hget(`trabajos:${u.empresa}`, 'e')).estado, 'error', 'el fallido sigue en su bandeja');
 });
