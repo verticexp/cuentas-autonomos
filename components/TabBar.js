@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { alPulsar, instalarHistorial, navegar } from '@/lib/transicion';
+import { alPulsar, instalarHistorial, navegar, posicion } from '@/lib/transicion';
 import Logo from '@/components/Logo';
 import CambiarEmpresa from '@/components/CambiarEmpresa';
 import { EXTRA, extraDe } from '@/components/secciones';
@@ -57,6 +57,8 @@ export default function TabBar({ permisos = [], empresas = [], empresa, admin = 
   const path = usePathname();
   const router = useRouter();
   const [activo, setActivo] = useState(seccion(path));
+  const activoRef = useRef(activo);
+  const visto = useRef({ idx: null, pestanas: {} });
   const [dedo, setDedo] = useState(null);
   const nav = useRef(null);
   // Móvil: el «+» abre una hoja con lo que se puede crear. En el ordenador sigue siendo el botón «Nueva factura» de siempre.
@@ -65,9 +67,18 @@ export default function TabBar({ permisos = [], empresas = [], empresa, admin = 
   const botonMas = useRef(null);
   const panel = useRef(null);
 
-  // Una pantalla de dentro (Presupuestos, Recurrentes, Caja…) a la que se entró desde «Más» sigue marcando «Más», no la pestaña a la que pertenece.
-  useEffect(() => { setActivo((previo) => (previo === '/mas' && !RAICES.includes(path) ? '/mas' : seccion(path))); }, [path]);
   useEffect(() => { instalarHistorial(); }, []);
+  // La pestaña marcada: las pantallas raíz marcan la suya; una de dentro (Presupuestos, Recurrentes, Caja, Banco…) mantiene la
+  // pestaña con la que se entró (Más, Resumen, Facturas…), y al volver con «atrás» recupera la que tenía.
+  useEffect(() => {
+    const i = posicion(), v = visto.current;
+    let r;
+    if (RAICES.includes(path)) r = seccion(path);
+    else if (v.idx !== null && i < v.idx && v.pestanas[i] !== undefined) r = v.pestanas[i];
+    else r = activoRef.current ?? seccion(path);
+    v.pestanas[i] = r; v.idx = i; activoRef.current = r;
+    setActivo(r);
+  }, [path]);
   useEffect(() => {
     const m = matchMedia('(max-width: 1023.98px)');
     const poner = () => setMovil(m.matches);
@@ -98,7 +109,7 @@ export default function TabBar({ permisos = [], empresas = [], empresa, admin = 
   if (path === '/login' || path === '/privacidad' || path === '/condiciones' || path.startsWith('/invitacion') || path.startsWith('/p/') || path.startsWith('/portal/') || path.startsWith('/pagar/') || path.endsWith('/pdf')) return null;
 
   const orden = (h) => tabs.findIndex((t) => t.href === h);
-  const ir = (h) => { if (h !== path) { navegar(router, h, orden(h) > orden(activo) ? 'tab-der' : 'tab-izq'); setActivo(h); } };
+  const ir = (h) => { if (h !== path) { activoRef.current = h; navegar(router, h, orden(h) > orden(activo) ? 'tab-der' : 'tab-izq'); setActivo(h); } };
   const tabEn = (x, y) => document.elementFromPoint(x, y)?.closest('[data-href]')?.dataset.href ?? null;
   const marcado = dedo ?? activo;
   // En presupuestos, el + crea un presupuesto; en el resto, una factura.
