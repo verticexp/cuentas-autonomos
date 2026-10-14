@@ -55,10 +55,46 @@ No se puede ver desde la API ni el código (hay que mirarlo en los paneles):
 - **Upstash**: plan, región (debería ser Fráncfort, junto a `fra1`), límite de comandos por segundo y de ancho de banda, tamaño máximo de petición/respuesta, persistencia y copias. **La base se comparte con Controla'T**: recomendable una base propia para que una app no consuma el margen de la otra.
 - **Correo, IA y Stripe**: cuotas y límites de envío de cada proveedor.
 
+## E07, E08 (Codex, revisado)
+
+- **E07**: contador de ventana atómico (INCR + caducidad en un script), ráfagas por usuario, semáforos de concurrencia por empresa y globales, 429 con `Retry-After`. Asistente IA 6/min por usuario, 2 a la vez por empresa y 20 en total; tickets IA 10/min y 3 por empresa; exportar todo, paquete y libros, 1 por empresa; importaciones, 1 por empresa. El webhook de Stripe no se limita nunca. Los límites siguen la variable `LIMITES` (`activo` corta; otro valor, solo registra): **en producción la variable existe pero su valor no es visible; hay que confirmar que es `activo`**.
+- **E08** (`lib/llamadas.js`): timeout de 15 s por llamada a Stripe, correo e IA; el asistente tiene un plazo total de 50 s (dentro de los 60 de la función) y no empieza otra vuelta si no le queda tiempo; reintentos (2, con espera creciente y `Retry-After`) solo en lo idempotente (lecturas de Stripe, IA); nunca en envíos de correo ni en creaciones de Stripe; circuito por proveedor tras 5 fallos seguidos (falla rápido 1 min).
+
+## Prueba de carga (local, 14/10)
+
+`tests/carga/sembrar.mjs` + `tests/carga/carga.mjs`. **Entorno**: un portátil con `next start` (un solo proceso) y el simulador de Upstash en memoria (un solo hilo); no es Vercel ni Upstash. Sirve para ver el comportamiento de la app y comparar versiones, **no certifica la capacidad**. No se ha probado en un entorno de Vercel porque **las vistas previas usan la misma base de datos que producción** (las variables `KV_*` están en *preview* y *production*): una prueba ahí escribiría en datos reales.
+
+Datos: 1.000 empresas (988 pequeñas con 40 facturas y 20 gastos; 10 con 5.000 facturas en un mes y dos tercios sin cobrar; 2 con 20.000 en cinco años). Mezcla: Resumen, Facturas, sin cobrar, búsquedas, Gastos, Tesorería, Impuestos, emitir facturas y apuntar gastos, con pausas de 5–10 s; 20 usuarios concentrados en una empresa emitiendo (cerrojo de emisión); los dos crons a mitad.
+
+| | Resultado |
+|---|---|
+| Pico de 200 inicios de sesión a la vez | 0 errores; p50 1,6 s, p95 3,0 s (scrypt a 2 por instancia) |
+| Rampa 20 → 50 → 100 → 200 y **30 min a 200 usuarios** | 46.000 peticiones (24/s a 200), **0 errores**, **0 incidencias de coherencia** (numeración, totales, cadena) |
+| p95 a 200 usuarios | emitir 1,5 s · Facturas 2,3 s · Resumen 3,2 s · buscar 5,5 s |
+| Crons durante la carga | 200; las 1.000 empresas planificadas y procesadas por dos invocaciones a la vez, sin duplicados |
+
+Misma carga (200 usuarios de golpe, 5 min) con `main` antes de E06–E08 y con esta versión:
+
+| p50 / p95 (ms) | antes | ahora |
+|---|---:|---:|
+| Facturas | 2.750 / 8.001 | 570 / 3.371 |
+| Resumen | 3.124 / 7.919 | 775 / 4.644 |
+| Emitir | 1.530 / 5.966 | 342 / 1.911 |
+| Buscar | 2.683 / 13.687 | 708 / 5.860 |
+| Peticiones atendidas | 5.774 | 7.151 (+24 %) |
+| Sin respuesta en 30 s | 20 | 14 |
+
+Las peticiones sin respuesta se dan al entrar los 200 de golpe mientras se construyen los índices de las 1.000 empresas (571 reconstrucciones a la vez); con rampa, 0. Para el despliegue: **`scripts/indices.mjs` construye los índices de todas las empresas de una en una** (y con `--comprobar` verifica los totales), así la primera visita no tiene que hacerlo.
+
+Los objetivos propuestos (p95 ≤ 1 s, p99 ≤ 2 s) **no se alcanzan en este entorno local**, saturado por el simulador de un hilo. Para saber si se alcanzan hace falta repetir la prueba con una base Upstash de pruebas propia y un despliegue de Vercel que la use (ver Pendiente).
+
 ## Pendiente
 
 - **E01 resto**: hecho en la segunda tanda (Impuestos, mes, Tesorería, libros, paquete, estado de pagos, caja e importación de ventas, nueva factura, proyectos por año, exportar CSV, ajustes de Verifactu, cuestionario, proveedores, remesas y duplicados). Siguen leyendo todo, a propósito: **Contabilidad y cuentas anuales** (el balance acumula desde el principio: necesitan agregados, E06), el **inventario** (valora con todo el histórico de movimientos), la **exportación completa**, la **baja**, **Proyectos «desde el principio»** y el **asistente** (carga colecciones según la pregunta). Los movimientos del banco (`banco:<emp>`) aún no tienen índice. La búsqueda recorre fichas compactas (no documentos); para texto libre a escala, un índice de búsqueda o PostgreSQL.
-- **E06** agregados por empresa/mes con invalidación; **E07** límites de ráfaga y concurrencia (y confirmar `LIMITES=activo` en producción); **E08** presupuestos de tiempo por proveedor; **E10** exportación y copias como trabajos por lotes; **E11** métricas y alertas.
+- **Entorno de pruebas representativo**: una base Upstash propia para las vistas previas (hoy comparten la de producción) y repetir ahí la prueba de carga. Es una decisión de infraestructura.
+- Confirmar `LIMITES=activo` en producción y configurar alertas (Vercel Observability o un drain) sobre las métricas JSON.
+- Exportaciones en almacenamiento de objetos (Vercel Blob) con enlace caducable. Base de datos propia, separada de Controla'T.
+- Contabilidad y cuentas anuales siguen leyendo todo el histórico (el balance es acumulado).
 - **E12**: el plan de Vercel no aparece en la API (equipo «verticexpcom», proyecto `cuentas`, región `fra1`). Si es Hobby, los crons son diarios; por eso las tandas se encadenan solas. Falta inventariar región, plan y límites de Upstash (la base se comparte con Controla'T) y valorar una base dedicada o PostgreSQL.
 - Bandeja de trabajos fallidos en la interfaz (las funciones `fallidos` y `reintentar` ya existen).
 
