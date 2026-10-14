@@ -17,6 +17,8 @@ import { actividadesDe, fiscalDe, nombresActividad, usa130, usa303 } from '@/lib
 import { enlacePortal } from '@/lib/portal';
 import { Compartir } from '@/components/AccionesPresupuesto';
 import { proyectosDe } from '@/lib/stockServidor';
+import { riesgosPendientes } from '@/lib/tercerosServidor';
+import { tieneLimite } from '@/lib/riesgo';
 import '@/app/portal.css';
 
 import '@/app/mk.css';
@@ -32,6 +34,10 @@ export default async function Factura({ params }) {
   const portal = editar ? await enlacePortal(u, f.cliente.nombre, f.cliente.nif || '') : null;
   const fiscal = fiscalDe(u);
   const actividades = actividadesDe(u);
+  // Riesgo de los clientes con límite (para avisar al editar si la factura subiría por encima).
+  const conLimite = editar ? clientes.filter(tieneLimite) : [];
+  const debe = conLimite.length ? await riesgosPendientes(u) : new Map();
+  const riesgos = Object.fromEntries(conLimite.map((c) => [c.id, debe.get(c.id) || 0]));
   const i = importes(f);
   const estado = f.cobrada ? 'Cobrada' : vencida(f, u.emisor?.plazo, hoy()) ? 'Vencida' : 'Pendiente';
   if (f.caja) {
@@ -115,7 +121,7 @@ export default async function Factura({ params }) {
         { Correcto: `registrada en la AEAT${f.verifactu.csv ? ` (CSV ${f.verifactu.csv})` : ''}.`, AceptadoConErrores: `registrada en la AEAT con avisos: ${f.verifactu.error}`, Incorrecto: `la AEAT la ha rechazado: ${f.verifactu.error}` }[f.verifactu.estado]
         || `pendiente de enviar a la AEAT${f.verifactu.error ? ` (último intento: ${f.verifactu.error})` : ''}. Se envía sola.`}`}</p>}
       {f.verifactu && editar && <VerifactuFactura factura={f} admin={u.rol === 'admin'} />}
-      <fieldset className="solo-ver" disabled={!editar}><FormFactura key={JSON.stringify(f)} factura={f} clientes={clientes} actividades={actividades} productos={(productos || []).sort((a, b) => a.nombre.localeCompare(b.nombre))} proyectos={editar ? await proyectosDe(u) : []} /></fieldset>
+      <fieldset className="solo-ver" disabled={!editar}><FormFactura key={JSON.stringify(f)} factura={f} clientes={clientes} actividades={actividades} productos={(productos || []).sort((a, b) => a.nombre.localeCompare(b.nombre))} riesgos={riesgos} proyectos={editar ? await proyectosDe(u) : []} /></fieldset>
     </main>
   );
 }

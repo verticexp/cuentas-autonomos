@@ -2,6 +2,7 @@
 // Módulo sin 'use client': lo leen la barra (cliente) y la página /mas (servidor).
 export const EXTRA = [
   { titulo: 'Ventas', enlaces: [
+    { href: '/clientes', permiso: 'facturas', nombre: 'Clientes', icono: <path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21c1-4 4-6 7-6s6 2 7 6M17 3a4 4 0 0 1 0 8M22 21c-.5-2.5-2-4.5-4-5.5" /> },
     { href: '/presupuestos', permiso: 'facturas', nombre: 'Presupuestos', icono: <path d="M6 3h12v18H6zM9 8h6M9 12h6M9 16h3" /> },
     { href: '/facturas/recurrentes', permiso: 'facturas', nombre: 'Recurrentes', icono: <path d="M4 12a8 8 0 0 1 14-5.3M20 4v4h-4M20 12a8 8 0 0 1-14 5.3M4 20v-4h4" /> },
     { href: '/facturas/caja', permiso: 'facturar', nombre: 'Caja', icono: <><rect x="3" y="9" width="18" height="11" rx="2" /><path d="M7 9V5h10v4M7 14h4M15 14h2" /></> },

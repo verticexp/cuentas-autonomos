@@ -11,6 +11,8 @@ import { actividadesDe, fiscalDe } from '@/lib/empresa';
 import { inventario } from '@/lib/inventario';
 import { datosStock } from '@/lib/stockServidor';
 import { nombresProyectos } from '@/lib/proyectos';
+import { riesgosPendientes } from '@/lib/tercerosServidor';
+import { tieneLimite } from '@/lib/riesgo';
 
 import '@/app/mk.css';
 
@@ -23,6 +25,10 @@ export default async function Nueva({ searchParams }) {
   const { rectifica, duplica } = await searchParams;
   const [todos, productos, fFichas, gFichas, original0, plantilla0] = await Promise.all([leer(u, 'clientes'), leer(u, 'productos'), todasFichas(u, 'facturas'), todasFichas(u, 'gastos'), rectifica ? leerUno(u, 'facturas', String(rectifica)) : null, duplica ? leerUno(u, 'facturas', String(duplica)) : null]);
   const clientes = todos.sort((a, b) => a.nombre.localeCompare(b.nombre));
+  // Solo se calcula el riesgo si algún cliente tiene límite.
+  const conLimite = clientes.filter(tieneLimite);
+  const debe = conLimite.length ? await riesgosPendientes(u) : new Map();
+  const riesgos = Object.fromEntries(conLimite.map((c) => [c.id, debe.get(c.id) || 0]));
   const h = hoy();
   const anio = Number(h.slice(0, 4));
   const original = original0 || undefined;
@@ -36,7 +42,7 @@ export default async function Nueva({ searchParams }) {
     <main className="pagina mk-look">
       <Volver href={original || plantilla ? `/facturas/${(original || plantilla).id}` : '/facturas'} />
       <h1 className="titulo">{original ? 'Factura rectificativa' : plantilla ? 'Duplicar factura' : 'Nueva factura'}</h1>
-      <FormFactura clientes={clientes} hoy={h} rectifica={original} plantilla={plantilla || null} numeros={numeros} actividades={actividades} productos={(productos || []).sort((a, b) => a.nombre.localeCompare(b.nombre))} stock={stock} proyectos={nombresProyectos([...fFichas, ...gFichas].map((f) => ({ proyecto: f.pr })))} />
+      <FormFactura clientes={clientes} hoy={h} rectifica={original} plantilla={plantilla || null} numeros={numeros} actividades={actividades} productos={(productos || []).sort((a, b) => a.nombre.localeCompare(b.nombre))} stock={stock} riesgos={riesgos} proyectos={nombresProyectos([...fFichas, ...gFichas].map((f) => ({ proyecto: f.pr })))} />
     </main>
   );
 }

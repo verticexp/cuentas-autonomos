@@ -388,7 +388,7 @@ const porId = (xs) => Object.fromEntries(xs.map((x) => [x.id, x]));
 await r.hset(`${P}empresas`, { [id]: empresa });
 await r.hset(`${P}usuarios`, { [id]: { id, nombre: 'Demo', email: EMAIL, admin: false, creado: ahora, empresa: id, rol: 'admin', pass } });
 await r.hset(`${P}emails`, { [EMAIL]: id });
-await r.del(...['facturas', 'gastos', 'clientes', 'registros', 'verifactu', 'saldo', 'asientos', 'banco', 'bancos', 'cuentasAnuales', 'productos', 'stock', 'albaranes', 'pedidosProv', 'domiciliaciones', 'cuentasProv', 'remesas'].map((n) => `${P}${n}:${id}`));
+await r.del(...['facturas', 'gastos', 'clientes', 'registros', 'verifactu', 'saldo', 'asientos', 'banco', 'bancos', 'cuentasAnuales', 'productos', 'stock', 'albaranes', 'pedidosProv', 'domiciliaciones', 'cuentasProv', 'fichasProv', 'remesas'].map((n) => `${P}${n}:${id}`));
 await r.hset(`${P}facturas:${id}`, porId(facturas));
 await r.hset(`${P}gastos:${id}`, porId(gastos));
 await r.hset(`${P}albaranes:${id}`, porId(albaranes));
@@ -426,7 +426,19 @@ const banco = mayor(generarAsientos({ facturas, gastos, manuales: asientos, fisc
 await r.set(`${P}saldo:${id}`, { importe: banco, fecha: hoy });
 await r.hset(`${P}productos:${id}`, porId(PRODUCTOS));
 await r.hset(`${P}stock:${id}`, porId(ajustesStock));
-await r.hset(`${P}clientes:${id}`, porId(CLIENTES.map((c) => ({ id: c.nombre.toUpperCase(), ...c }))));
+// Fichas: forma de cobro, plazo, comercial, zona y riesgo máximo (lib/terceros.js). Sin límite en el ayuntamiento y la fundación.
+const FICHAS_CLIENTE = {
+  A00000001: { formaCobro: 'transferencia', plazo: 30, comercial: 'Marta Soler', zona: 'Barcelona ciudad', riesgoMax: 20000 },
+  B00000002: { formaCobro: 'domiciliacion', plazo: 30, comercial: 'Marta Soler', zona: 'Barcelona ciudad', riesgoMax: 12000 },
+  B00000003: { formaCobro: 'transferencia', plazo: 15, comercial: 'Jordi Vidal', zona: 'Barcelona ciudad', riesgoMax: 6000 },
+  P0800000A: { formaCobro: 'transferencia', plazo: 60, comercial: 'Jordi Vidal', zona: 'Costa del Maresme' },
+  B00000004: { formaCobro: 'tarjeta', plazo: 0, comercial: 'Jordi Vidal', zona: 'Barcelona ciudad', riesgoMax: 3000 },
+  B00000005: { formaCobro: 'domiciliacion', plazo: 30, comercial: 'Marta Soler', zona: 'Barcelona ciudad', riesgoMax: 15000 },
+  G00000006: { formaCobro: 'transferencia', plazo: 45, comercial: 'Jordi Vidal', zona: 'Costa del Maresme' },
+  '00000007T': { formaCobro: 'bizum', plazo: 0, comercial: 'Marta Soler', zona: 'Barcelona ciudad', riesgoMax: 1500 },
+};
+await r.hset(`${P}clientes:${id}`, porId(CLIENTES.map((c) => ({ id: c.nombre.toUpperCase(), ...c, ...FICHAS_CLIENTE[c.nif] }))));
+await r.hset(`${P}fichasProv:${id}`, porId(cuentasProv.map((c, i) => ({ id: c.id, nombre: c.nombre, formaPago: 'transferencia', plazo: [30, 45, 60][i % 3], comercial: 'Marta Soler', zona: 'Barcelona ciudad' }))));
 // Extracto del último mes y medio, sin emparejar: los cobros de facturas pendientes y los pagos de gastos (Netto los
 // sugiere), y algunos cargos que no están en Netto (salen en Gastos › En revisión o para decir qué son en Banco).
 const desde = new Date(Date.parse(`${hoy}T12:00:00Z`) - 45 * 864e5).toISOString().slice(0, 10);
