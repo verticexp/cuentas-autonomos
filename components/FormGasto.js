@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
-import { volverA } from '@/lib/transicion';
+import { atras, volverA } from '@/lib/transicion';
 import Deslizable from './Deslizable';
 import { nifUE } from '@/lib/calculos';
 import { parseImporte } from '@/lib/importe';
@@ -205,7 +205,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, r
       {!avisoDuplicados && <div className="gasto-guardar">
         <button className="boton" disabled={enviando}>{enviando ? 'Guardando…' : gasto ? 'Guardar cambios' : 'Añadir'}</button>
         {plegado && !gasto && <button type="button" className="boton sec" onClick={() => { setAbierto(false); setG(vacio); setLeyendo(''); setError(''); }}>Cancelar</button>}
-        {movimiento && <button type="button" className="boton sec" onClick={() => volverA(router, '/gastos')}>Cancelar</button>}
+        {movimiento && <button type="button" className="boton sec" onClick={() => atras(router, '/gastos')}>Cancelar</button>}
       </div>}
     </form>
   );

@@ -60,7 +60,7 @@ export default function Recuperar({ token = '' }) {
           <button type="submit" disabled={enviando}>{enviando ? 'Enviando…' : token ? 'Guardar contraseña' : 'Enviar enlace'}</button>
         </>
       )}
-      <p className="nota"><a href="/login">Volver a iniciar sesión</a></p>
+      <p className="nota"><a href="/login" onClick={(e) => { e.preventDefault(); window.location.replace('/login'); }}>Volver a iniciar sesión</a></p>
     </form>
   );
 }
