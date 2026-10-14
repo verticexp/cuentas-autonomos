@@ -29,7 +29,7 @@ export default async function Factura({ params }) {
   const [f, clientes, recurrentes, productos] = await Promise.all([leerUno(u, 'facturas', id), leer(u, 'clientes'), leer(u, 'recurrentes'), leer(u, 'productos')]);
   if (!f) notFound();
   const editar = puede(u, 'facturar');
-  const portal = editar ? await enlacePortal(u, f.cliente.nombre) : null;
+  const portal = editar ? await enlacePortal(u, f.cliente.nombre, f.cliente.nif || '') : null;
   const fiscal = fiscalDe(u);
   const actividades = actividadesDe(u);
   const i = importes(f);

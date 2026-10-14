@@ -25,7 +25,7 @@ export default async function Presupuesto({ params }) {
   const [p, clientes] = await Promise.all([leerUno(u, 'presupuestos', id), leer(u, 'clientes')]);
   if (!p) notFound();
   const editar = puede(u, 'facturar');
-  const portal = editar ? await enlacePortal(u, p.cliente.nombre) : null;
+  const portal = editar ? await enlacePortal(u, p.cliente.nombre, p.cliente.nif || '') : null;
   const estado = estadoDe(p, hoy());
   const i = importes(p);
   const senal = p.facturas.find((f) => f.tipo === 'senal');

@@ -32,12 +32,14 @@ test('N01: el enlace recuerda su NIF; el homónimo posterior no hereda ni pisa e
   await R.redis.hset('empresas', { p1: { id: 'p1', emisor: { nombre: 'Emisora' } } });
   await R.guardar(u, 'clientes', { id: 'HOMONIMO', nombre: 'Homonimo', nif: '12345678Z' });
   await R.guardar(u, 'facturas', doc('A', 'Homonimo', '12345678Z'));
-  const rutaA = await P.enlacePortal(u, 'Homonimo');
+  const rutaA = await P.enlacePortal(u, 'Homonimo', '12345678Z');
   // Entra otro cliente con el mismo nombre y su ficha ocupa la del primero.
   await R.guardar(u, 'facturas', doc('B', 'Homonimo', '87654321X', '2026-04-01'));
   await R.guardar(u, 'clientes', { id: 'HOMONIMO', nombre: 'Homonimo', nif: '87654321X' });
-  const rutaB = await P.enlacePortal(u, 'Homonimo');
+  const rutaB = await P.enlacePortal(u, 'Homonimo', '87654321X');
   assert.notEqual(rutaA, rutaB, 'el nuevo cliente no reutiliza el enlace público del anterior');
+  assert.equal(await P.enlacePortal(u, 'Homonimo', '12345678Z'), rutaA, 'el primero conserva su enlace aunque la ficha ya sea la del segundo');
+  assert.equal(await P.enlacePortal(u, 'Homonimo', '87654321X'), rutaB);
   const a = await P.portalDe(rutaA.split('/').pop());
   const b = await P.portalDe(rutaB.split('/').pop());
   assert.deepEqual(a.facturas.map((f) => f.id), ['A']);
