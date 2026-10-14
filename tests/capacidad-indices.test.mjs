@@ -60,7 +60,7 @@ test('E01: datos de antes del índice se indexan solos y las páginas recorren t
   assert.deepEqual(await todasLasPaginas(u, 'facturas'), orden(fs));
   const deLuis = await todasLasPaginas(u, 'facturas', { filtro: (f) => f.c === 'Luis Gil', limite: 5 });
   assert.deepEqual(deLuis, orden(fs.filter((f) => f.cliente.nombre === 'Luis Gil')));
-  const busca = await todasLasPaginas(u, 'facturas', { filtro: (f) => f.x.includes('trabajo 17') });
+  const busca = await todasLasPaginas(u, 'facturas', { buscar: 'trabajo 17' });
   assert.deepEqual(busca, orden(fs.filter((f) => f.concepto.toLowerCase().includes('trabajo 17'))));
   const pend = await todasLasPaginas(u, 'facturas', { marca: 'p' });
   assert.deepEqual(pend, orden(fs.filter((f) => !f.cobrada)));

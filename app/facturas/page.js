@@ -34,9 +34,10 @@ export default async function Facturas({ searchParams }) {
   const estadoDe = (f) => (f.cobrada ? 'cobrada' : vencida(f, plazo, h) ? 'vencida' : 'pendiente');
   const porCobrar = r2(sinCobrar.reduce((s, f) => s + f.p, 0));
   const vencidas = sinCobrar.filter((f) => vencidaFicha(f, plazo, h));
-  const filtro = (f) => (!ACTIVIDADES[a] || f.a === a) && (estado !== 'vencidas' || vencidaFicha(f, plazo, h)) && (!buscado || f.x.includes(buscado));
-  const conFiltro = Boolean(ACTIVIDADES[a] || estado === 'vencidas' || buscado);
-  const pag = await pagina(u, 'facturas', { cursor: desde, marca: ['pendientes', 'vencidas'].includes(estado) ? 'p' : undefined, filtro: conFiltro ? filtro : undefined });
+  // La búsqueda va por el índice de texto (todos los conceptos, revisión S06); el resto, por la ficha.
+  const filtro = (f) => (!ACTIVIDADES[a] || f.a === a) && (estado !== 'vencidas' || vencidaFicha(f, plazo, h));
+  const conFiltro = Boolean(ACTIVIDADES[a] || estado === 'vencidas');
+  const pag = await pagina(u, 'facturas', { cursor: desde, marca: ['pendientes', 'vencidas'].includes(estado) ? 'p' : undefined, filtro: conFiltro ? filtro : undefined, buscar: buscado });
   const lista = await documentos(u, 'facturas', pag.ids);
 
   // Agrupadas por mes, con lo facturado de cada uno (el mes entero con el mismo filtro, aunque siga en otra página).
@@ -47,8 +48,8 @@ export default async function Facturas({ searchParams }) {
     grupos.at(-1).facturas.push(f);
   }
   const totalMes = Object.fromEntries(await Promise.all(grupos.map(async (g) => {
-    const fichas = await fichasRango(u, 'facturas', `${g.m}-01`, `${g.m}-31`);
-    return [g.m, fichas.filter((f) => filtro(f) && (!['pendientes', 'vencidas'].includes(estado) || !f.co)).reduce((s, f) => s + f.b, 0)];
+    const fichas = await fichasRango(u, 'facturas', `${g.m}-01`, `${g.m}-31`, { textos: Boolean(buscado) });
+    return [g.m, fichas.filter((f) => filtro(f) && (!buscado || f.x.includes(buscado)) && (!['pendientes', 'vencidas'].includes(estado) || !f.co)).reduce((s, f) => s + f.b, 0)];
   })));
   const url = (cambios) => {
     const p = new URLSearchParams(Object.entries({ a, estado, q, ...cambios }).filter(([, v]) => v));

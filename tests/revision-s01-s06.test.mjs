@@ -138,3 +138,21 @@ test('S06: buscar un concepto al principio, en medio o al final de una factura l
   // Aislamiento por empresa.
   assert.deepEqual(await recorrer(empresa(), { buscar: 'referenciaespecialxyz' }), []);
 });
+
+test('S04: con altas y bajas entre páginas, el cursor no repite ni salta lo que ya existía', async () => {
+  const u = empresa();
+  const fs = Array.from({ length: 300 }, (_, i) => factura(`Z${String(i).padStart(3, '0')}`, { serie: `Z${i}` }));
+  await R.redis.hset(R.clave(u, 'facturas'), Object.fromEntries(fs.map((f) => [f.id, f])));
+  const vistos = [];
+  let p = await I.pagina(u, 'facturas');
+  vistos.push(...p.ids);
+  // Entre páginas: una baja de algo ya visto, una de algo por ver y dos altas (una antes y otra después del cursor).
+  await R.borrar(u, 'facturas', vistos[0]);
+  await R.borrar(u, 'facturas', 'Z000');
+  await R.guardar(u, 'facturas', factura('Z999', { serie: 'Z999' }));
+  await R.guardar(u, 'facturas', factura('A000', { serie: 'A0' }));
+  while (p.siguiente) { p = await I.pagina(u, 'facturas', { cursor: p.siguiente }); vistos.push(...p.ids); }
+  assert.equal(new Set(vistos).size, vistos.length, 'sin repetidas');
+  const debian = fs.map((f) => f.id).filter((id) => id !== 'Z000');
+  assert.deepEqual(debian.filter((id) => !vistos.includes(id)), [], 'ninguna de las que seguían existiendo se salta');
+});
