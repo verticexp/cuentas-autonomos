@@ -1,7 +1,7 @@
 import { after } from 'next/server';
 import { redis } from '@/lib/redis';
 import { error } from '@/lib/api';
-import { tanda } from '@/lib/trabajos';
+import { estadoCola, tanda } from '@/lib/trabajos';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -16,5 +16,5 @@ export async function GET(req) {
   if (!redis) return error('Base de datos no conectada', 503);
   const n = Math.max(0, Number(req.headers.get('x-tanda')) || 0);
   after(() => tanda(req.nextUrl.origin, n).catch((e) => console.error('[trabajos]', e.message)));
-  return Response.json({ ok: true, tanda: n });
+  return Response.json({ ok: true, tanda: n, cola: await estadoCola() });
 }
