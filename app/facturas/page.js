@@ -3,7 +3,7 @@ import { enviarLuego } from '@/lib/verifactuEnvio';
 import Ir from '@/components/Ir';
 import { requerir } from '@/lib/auth';
 import { leer } from '@/lib/redis';
-import { importes, numeroFactura, r2, vencida } from '@/lib/calculos';
+import { importes, numeroFactura, pendienteDe, r2, vencida } from '@/lib/calculos';
 import { actividadesDe, nombresActividad } from '@/lib/empresa';
 import FilaFactura from '@/components/FilaFactura';
 import { eur, hoy } from '@/lib/formato';
@@ -35,7 +35,7 @@ export default async function Facturas({ searchParams }) {
     .filter((f) => estado !== 'vencidas' || estadoDe(f) === 'vencida')
     .filter((f) => !buscado || [f.cliente?.nombre, numeroFactura(f), f.concepto, ...(f.lineas || []).map((l) => l.concepto)].some((t) => String(t || '').toLowerCase().includes(buscado)))
     .sort((x, y) => y.fecha.localeCompare(x.fecha) || y.numero - x.numero);
-  const porCobrar = r2(todas.filter((f) => !f.cobrada).reduce((s, f) => s + importes(f).total, 0));
+  const porCobrar = r2(todas.reduce((s, f) => s + pendienteDe(f), 0));
   const vencidas = todas.filter((f) => estadoDe(f) === 'vencida');
 
   // Agrupadas por mes, con lo facturado de cada uno.

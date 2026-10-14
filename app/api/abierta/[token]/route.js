@@ -1,4 +1,5 @@
-import { redis, guardar, leerUno } from '@/lib/redis';
+import { redis, leerUno } from '@/lib/redis';
+import { actualizarFactura } from '@/lib/actualizarFactura';
 
 export const dynamic = 'force-dynamic';
 const GIF = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
@@ -12,7 +13,8 @@ export async function GET(_req, { params }) {
     const f = e && (await leerUno(e, 'facturas', enlace.id));
     const envio = f?.envios?.find((x) => x.token === token);
     if (envio && !envio.abierta) {
-      await guardar(e, 'facturas', { ...f, envios: f.envios.map((x) => (x.token === token ? { ...x, abierta: new Date().toISOString() } : x)) });
+      await actualizarFactura(e, enlace.id, (actual) => (actual.envios?.some((x) => x.token === token && !x.abierta)
+        ? { nueva: { ...actual, envios: actual.envios.map((x) => (x.token === token ? { ...x, abierta: new Date().toISOString() } : x)) } } : null));
     }
   } catch { /* la imagen sale siempre */ }
   return new Response(GIF, { headers: { 'Content-Type': 'image/gif', 'Cache-Control': 'no-store, max-age=0' } });

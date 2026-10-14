@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { importes, numeroFactura, vencida } from '@/lib/calculos';
+import { importes, numeroFactura, saldoDe, vencida } from '@/lib/calculos';
 import { eur, fechaTexto, hoy } from '@/lib/formato';
 import { ESTADOS, estadoDe, numeroPresupuesto } from '@/lib/presupuestos';
 import { portalDe } from '@/lib/portal';
@@ -18,7 +18,7 @@ export default async function Portal({ params }) {
   const h = hoy();
   const pdf = Boolean(e.nif && e.iban);
   const porPagar = facturas.filter((f) => !f.cobrada && importes(f).total > 0);
-  const pendiente = porPagar.reduce((s, f) => s + importes(f).total, 0);
+  const pendiente = porPagar.reduce((s, f) => s + saldoDe(f), 0);
   const t = encodeURIComponent(token);
   return (
     <main className="pagina portal" style={{ '--acento': empresa.marca?.color }}>

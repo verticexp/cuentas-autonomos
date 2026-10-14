@@ -1,4 +1,5 @@
-import { guardar, leerUno } from '@/lib/redis';
+import { leerUno } from '@/lib/redis';
+import { actualizarFactura } from '@/lib/actualizarFactura';
 import { borrarFactura, crearFactura, guardarCliente, limpiar } from '@/lib/facturas';
 import { numeroFactura } from '@/lib/calculos';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
@@ -36,18 +37,21 @@ export async function PATCH(req) {
   if (antes.caja) return error('Es un cierre de caja: corrígelo desde Caja');
   if (Object.keys(b).length === 2 && 'cobrada' in b) {
     // La fecha del cobro: para el estado de pago (Ley Crea y Crece) y el asiento del cobro.
-    const f = { ...antes, cobrada: Boolean(b.cobrada), cobro: b.cobrada ? antes.cobro || { fecha: hoy(), metodo: 'manual' } : undefined };
-    await guardar(u, 'facturas', f);
-    await subirFactura(u, f);
+    const r = await actualizarFactura(u, antes.id, (actual) => ({ nueva: { ...actual, cobrada: Boolean(b.cobrada), cobro: b.cobrada ? actual.cobro || { fecha: hoy(), metodo: 'manual' } : undefined } }));
+    if (r.error) return error(r.error, r.status || 400);
+    await subirFactura(u, r.factura);
     return Response.json({ ok: true });
   }
   if (antes.verifactu) return error('Esta factura ya está registrada en Verifactu: para corregirla, haz una rectificativa');
   const datos = limpiar(b, actividadesDe(u), fiscalDe(u).tipo === 'sociedad', { rectificativa: Boolean(antes.rectifica || antes.serie === 'R') });
   if (datos.error) return Response.json({ error: datos.error, errores: datos.errores }, { status: 400 });
   if (Number(datos.fecha.slice(0, 4)) !== antes.anio) return error(`La fecha debe ser de ${antes.anio}`);
-  await guardar(u, 'facturas', { ...antes, evento: undefined, proyecto: undefined, operacion: undefined, ...datos });
+  // Sobre la factura de ahora: lo cobrado o enviado mientras se editaba se conserva.
+  const r = await actualizarFactura(u, antes.id, (actual) => (actual.verifactu ? { error: 'Esta factura ya está registrada en Verifactu: para corregirla, haz una rectificativa' }
+    : { nueva: { ...actual, evento: undefined, proyecto: undefined, operacion: undefined, ...datos } }));
+  if (r.error) return error(r.error, r.status || 400);
   await guardarCliente(u, datos.cliente);
-  await Promise.all([subirFactura(u, { ...antes, evento: undefined, proyecto: undefined, ...datos }), enviarNomina(u, [antes.fecha, datos.fecha])]);
+  await Promise.all([subirFactura(u, { ...r.factura, evento: undefined, proyecto: undefined }), enviarNomina(u, [antes.fecha, datos.fecha])]);
   return Response.json({ ok: true });
 }
 
