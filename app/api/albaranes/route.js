@@ -1,6 +1,7 @@
 import { leerUno } from '@/lib/redis';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { limpiarDoc, numeroDoc, NOMBRE } from '@/lib/albaranes';
+import { RiesgoSuperado } from '@/lib/facturas';
 import { borrarDoc, cerrarPedido, corregirDoc, facturarAlbaranes, guardarDoc, normalizarIdsAlbaranes } from '@/lib/albaranesServidor';
 import { numeroFactura } from '@/lib/calculos';
 import { auditar } from '@/lib/auditoria';
@@ -39,7 +40,8 @@ export async function POST(req) {
   const datos = limpiarDoc(b, b.tipo);
   if (datos.error) return error(datos.error);
   if (datos.pedido && !(await leerUno(u, 'albaranes', datos.pedido))) delete datos.pedido;
-  const d = await guardarDoc(u, datos);
+  let d;
+  try { d = await guardarDoc(u, datos); } catch (e) { if (e instanceof RiesgoSuperado || e.status === 409) return error(e.message, 409); throw e; }
   await auditar(u, `${NOMBRE[d.tipo]} nuevo`, `${numeroDoc(d)} · ${d.cliente.nombre}`);
   return Response.json({ ok: true, doc: d });
 }

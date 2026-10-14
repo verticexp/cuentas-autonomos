@@ -8,15 +8,17 @@ import { filtrarFichas, limpiarFicha, mismoCliente, valoresDe } from '../lib/ter
 import { evaluarRiesgo, riesgoDe, tieneLimite } from '../lib/riesgo.js';
 import { unirProveedores } from '../lib/proveedores.js';
 import { importes } from '../lib/calculos.js';
+import { limpiarDoc } from '../lib/albaranes.js';
+import { riesgoAlbaran } from '../lib/riesgo.js';
 
 const importesTotal = (f) => importes(f).total;
 
-let srv, F, R, S;
+let srv, F, R, S, A;
 before(async () => {
   srv = await arrancar();
   process.env.KV_REST_API_URL = srv.url;
   process.env.KV_REST_API_TOKEN = 'pruebas';
-  [F, R, S] = await Promise.all([import('../lib/facturas.js'), import('../lib/redis.js'), import('../lib/tercerosServidor.js')]);
+  [F, R, S, A] = await Promise.all([import('../lib/facturas.js'), import('../lib/redis.js'), import('../lib/tercerosServidor.js'), import('../lib/albaranesServidor.js')]);
 });
 after(() => srv.cerrar());
 
@@ -251,4 +253,66 @@ test('proveedores: la ficha se crea con la clave del NIF, se edita sin cambiar e
   assert.equal(await S.detalleProveedor(u, 'no-existe'), null);
   assert.ok((await S.borrarFichaProveedor(u, 'B12345674')).ficha);
   assert.deepEqual((await S.listarProveedores(u)).map((p) => p.nombre), ['Luz SA']);
+});
+
+// base 100 + 21 % de IVA = 121 € por albarán de una línea.
+const albaran = (tipo = 'albaran', precio = 100, cliente = {}) => limpiarDoc({ fecha: '2026-03-10', cliente: { nombre: 'Cliente Uno', nif: '12345678Z', ...cliente },
+  lineas: [{ concepto: 'Servicio', cantidad: 1, precio, ivaPct: 21 }] }, tipo);
+
+test('albaranes: solo cuentan los albaranes entregados sin facturar, con IVA', () => {
+  assert.equal(riesgoAlbaran({ ...albaran(), id: 'a' }), 121);
+  assert.equal(riesgoAlbaran({ ...albaran('pedido'), id: 'p' }), 0, 'un pedido no se ha servido');
+  assert.equal(riesgoAlbaran({ ...albaran(), id: 'a', factura: '2026-1' }), 0, 'facturado: ya está en su factura');
+});
+
+test('albaranes: suman riesgo junto a las facturas y no se puede guardar uno que pase del límite', async () => {
+  const u = empresa();
+  await ficha(u, { riesgoMax: '300' });
+  assert.ok((await F.crearFactura(u, datos())).factura, '121 en factura');
+  await A.guardarDoc(u, albaran());
+  const ya = await S.riesgoCliente(u, { nombre: 'Cliente Uno', nif: '12345678Z' });
+  assert.deepEqual([ya.riesgo, ya.deFacturas, ya.deAlbaranes], [242, 121, 121]);
+  await assert.rejects(A.guardarDoc(u, albaran()), (e) => e instanceof F.RiesgoSuperado && /riesgo máximo/.test(e.message), '363 > 300');
+  assert.equal((await R.leer(u, 'albaranes')).length, 1, 'el rechazado no se guarda');
+  assert.ok(await A.guardarDoc(u, albaran('pedido')), 'un pedido no suma riesgo');
+  assert.ok(await A.guardarDoc(u, albaran('albaran', 100, { nombre: 'Otro', nif: '' })), 'otro cliente sin ficha: sin límite');
+  assert.match((await F.crearFactura(u, datos())).error, /riesgo máximo/, 'las facturas también cuentan los albaranes: 242 + 121');
+});
+
+test('albaranes: corregir uno a más importe se comprueba, a menos no, y el cliente no cuenta dos veces su propio albarán', async () => {
+  const u = empresa();
+  await ficha(u, { riesgoMax: '150' });
+  const a = await A.guardarDoc(u, albaran());
+  const sube = await A.corregirDoc(u, a.id, { ...albaran('albaran', 200), tipo: 'albaran' });
+  assert.equal(sube.status, 409, '242 > 150');
+  assert.match(sube.error, /riesgo máximo/);
+  const igual = await A.corregirDoc(u, a.id, { ...albaran('albaran', 110), tipo: 'albaran' });
+  assert.ok(igual.doc, '133,10 ≤ 150: el albarán de antes se descuenta de lo que ya debe');
+  assert.ok((await A.corregirDoc(u, a.id, { ...albaran('albaran', 50), tipo: 'albaran' })).doc, 'bajar siempre se puede');
+});
+
+test('albaranes: facturarlos no cuenta dos veces (la factura sustituye a sus albaranes)', async () => {
+  const u = empresa();
+  await ficha(u, { riesgoMax: '250' });
+  const a = await A.guardarDoc(u, albaran());
+  const b = await A.guardarDoc(u, albaran());
+  assert.equal((await S.riesgoCliente(u, { nombre: 'Cliente Uno', nif: '12345678Z' })).riesgo, 242);
+  const r = await A.facturarAlbaranes(u, { ids: [a.id, b.id], fecha: '2026-03-12', actividad: 'servicios', irpfPct: 0 });
+  assert.ok(r.factura, `242 en albaranes → 242 en factura, no 484: ${r.error}`);
+  const despues = await S.riesgoCliente(u, { nombre: 'Cliente Uno', nif: '12345678Z' });
+  assert.deepEqual([despues.riesgo, despues.deFacturas, despues.deAlbaranes], [242, 242, 0]);
+  const otro = await A.guardarDoc(u, albaran()).catch((e) => e);
+  assert.ok(otro instanceof F.RiesgoSuperado, '363 > 250');
+});
+
+test('albaranes: el listado y el detalle de clientes incluyen los albaranes sin facturar', async () => {
+  const u = empresa();
+  await ficha(u, { riesgoMax: '500' });
+  await F.crearFactura(u, datos());
+  await A.guardarDoc(u, albaran());
+  const c = (await S.listarClientes(u)).find((x) => x.id === 'CLIENTE UNO');
+  assert.deepEqual([c.riesgo, c.disponible], [242, 258]);
+  const d = await S.detalleCliente(u, 'CLIENTE UNO');
+  assert.deepEqual([d.cliente.riesgo, d.deFacturas, d.deAlbaranes, d.albaranes.length], [242, 121, 121, 1]);
+  assert.equal((await S.riesgosPendientes(u)).get('CLIENTE UNO'), 242);
 });
