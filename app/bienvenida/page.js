@@ -6,6 +6,7 @@ import { actividadesDe, fiscalDe } from '@/lib/empresa';
 import Cuestionario from '@/components/Cuestionario';
 
 import '@/app/mk.css';
+import { todasFichas } from '@/lib/indices';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,8 +19,7 @@ export default async function Bienvenida({ searchParams }) {
   if (!puede(u, 'empresa')) redirect('/');
   const editar = Boolean((await searchParams).editar);
   if (!u.pendiente && !editar) redirect('/');
-  const facturas = (await leer(u, 'facturas')) || [];
-  const conFacturas = [...new Set(facturas.map((f) => f.actividad))];
+  const conFacturas = [...new Set((await todasFichas(u, 'facturas')).map((f) => f.a))];
   return (
     <main className="pagina mk-look bienvenida">
       <Cuestionario

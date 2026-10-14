@@ -1,5 +1,5 @@
 import { requerir } from '@/lib/auth';
-import { leer } from '@/lib/redis';
+import { leer, redis } from '@/lib/redis';
 import { actividadesDe, fiscalDe, modelosDe, usa130, usa303 } from '@/lib/empresa';
 import { casillas303, minoracion130, r2, resumenAnual } from '@/lib/calculos';
 import Rend130 from '@/components/Rend130';
@@ -14,6 +14,7 @@ import SinBD from '@/components/SinBD';
 import '@/app/modelos.css';
 
 import '@/app/mk.css';
+import { delosAnios } from '@/lib/indices';
 
 export const dynamic = 'force-dynamic';
 const T = [1, 2, 3, 4];
@@ -27,10 +28,11 @@ const Casillas = ({ filas }) => <dl>{filas.filter(Boolean).map(([t, v, b]) => <d
 
 export default async function Modelos({ searchParams }) {
   const u = await requerir('resumen');
-  const [facturas, gastos, nominas, empleados] = await Promise.all([leer(u, 'facturas'), leer(u, 'gastos'), leer(u, 'nominas'), leer(u, 'empleados')]);
-  if (!facturas) return <SinBD />;
+  if (!redis) return <SinBD />;
   const actual = Number(hoy().slice(0, 4));
   const anio = Number((await searchParams).anio) || actual;
+  // Informe de capacidad E01: el año, el anterior (tipo del IS, rendimiento previo del 130) y los bienes de inversión.
+  const [{ facturas, gastos }, nominas, empleados] = await Promise.all([delosAnios(u, [anio - 1, anio]), leer(u, 'nominas'), leer(u, 'empleados')]);
   const f = fiscalDe(u);
   // Se enseña cada modelo si le toca por su situación fiscal o si ya hay datos que lo piden.
   const hay115 = f.alquiler || gastos.some((g) => g.alquiler);

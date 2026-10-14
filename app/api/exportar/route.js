@@ -1,9 +1,9 @@
-import { leer } from '@/lib/redis';
 import { usuarioApi } from '@/lib/api';
 import { importes, numeroFactura, trimestre } from '@/lib/calculos';
 import { actividadesDe, nombresActividad } from '@/lib/empresa';
 import { fechaCorta } from '@/lib/formato';
 import { auditar } from '@/lib/auditoria';
+import { leerRango } from '@/lib/indices';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,7 +22,7 @@ export async function GET(req) {
   const ACTIVIDADES = nombresActividad(actividadesDe(u));
   const anio = Number(q.get('anio')) || new Date().getFullYear();
   const t = Number(q.get('t')) || 0;
-  const lista = (await leer(u, tipo))
+  const lista = (await leerRango(u, tipo, `${anio}-01-01`, `${anio}-12-31`))
     .filter((x) => x.fecha.startsWith(`${anio}-`) && (!t || trimestre(x.fecha) === t))
     .sort((a, b) => a.fecha.localeCompare(b.fecha));
 

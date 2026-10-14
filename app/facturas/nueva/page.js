@@ -1,6 +1,8 @@
 import { requerir } from '@/lib/auth';
-import { leer } from '@/lib/redis';
-import { numeroFactura, siguienteNumero } from '@/lib/calculos';
+import { leer, leerUno, redis } from '@/lib/redis';
+import { todasFichas } from '@/lib/indices';
+import { numeroPrevisto } from '@/lib/facturas';
+import { numeroFactura } from '@/lib/calculos';
 import { hoy } from '@/lib/formato';
 import SinBD from '@/components/SinBD';
 import FormFactura from '@/components/FormFactura';
@@ -16,24 +18,25 @@ export const dynamic = 'force-dynamic';
 
 export default async function Nueva({ searchParams }) {
   const u = await requerir('facturar');
-  const [facturas, todos, productos, gastos, ajustes] = await Promise.all([leer(u, 'facturas'), leer(u, 'clientes'), leer(u, 'productos'), leer(u, 'gastos'), leer(u, 'stock')]);
-  if (!facturas) return <SinBD />;
+  if (!redis) return <SinBD />;
+  // Informe de capacidad E01: la factura de origen por id, los números por el contador y los proyectos por las fichas.
+  const { rectifica, duplica } = await searchParams;
+  const [todos, productos, fFichas, gFichas, original0, plantilla0] = await Promise.all([leer(u, 'clientes'), leer(u, 'productos'), todasFichas(u, 'facturas'), todasFichas(u, 'gastos'), rectifica ? leerUno(u, 'facturas', String(rectifica)) : null, duplica ? leerUno(u, 'facturas', String(duplica)) : null]);
   const clientes = todos.sort((a, b) => a.nombre.localeCompare(b.nombre));
   const h = hoy();
   const anio = Number(h.slice(0, 4));
-  const { rectifica, duplica } = await searchParams;
-  const original = facturas.find((f) => f.id === rectifica);
-  const plantilla = !original && facturas.find((f) => f.id === duplica);
-  const num = (serie) => numeroFactura({ numero: siguienteNumero(facturas, anio, serie), anio, serie });
+  const original = original0 || undefined;
+  const plantilla = !original && plantilla0;
+  const num = async (serie) => numeroFactura({ numero: await numeroPrevisto(u, serie, anio), anio, serie });
   const actividades = actividadesDe(u);
   // Con inventario, cuánto queda de cada producto (para avisar al facturar más de lo que hay).
   const stock = fiscalDe(u).inventario ? Object.fromEntries(inventario(await datosStock(u), { hoy: h }).productos.map((p) => [p.id, p.stock])) : null;
-  const numeros = Object.fromEntries(actividades.map((a) => [a.id, num(original ? 'R' : a.serie)]));
+  const numeros = Object.fromEntries(await Promise.all(actividades.map(async (a) => [a.id, await num(original ? 'R' : a.serie)])));
   return (
     <main className="pagina mk-look">
       <Volver href={original || plantilla ? `/facturas/${(original || plantilla).id}` : '/facturas'} />
       <h1 className="titulo">{original ? 'Factura rectificativa' : plantilla ? 'Duplicar factura' : 'Nueva factura'}</h1>
-      <FormFactura clientes={clientes} hoy={h} rectifica={original} plantilla={plantilla || null} numeros={numeros} actividades={actividades} productos={(productos || []).sort((a, b) => a.nombre.localeCompare(b.nombre))} stock={stock} proyectos={nombresProyectos(facturas, gastos || [])} />
+      <FormFactura clientes={clientes} hoy={h} rectifica={original} plantilla={plantilla || null} numeros={numeros} actividades={actividades} productos={(productos || []).sort((a, b) => a.nombre.localeCompare(b.nombre))} stock={stock} proyectos={nombresProyectos([...fFichas, ...gFichas].map((f) => ({ proyecto: f.pr })))} />
     </main>
   );
 }

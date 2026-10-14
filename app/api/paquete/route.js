@@ -3,6 +3,7 @@ import { usuarioApi } from '@/lib/api';
 import { datosPaquete, nombrePaquete, paqueteXlsx } from '@/lib/paquete';
 import { paquetePdf } from '@/lib/paquetePdf';
 import { zip } from '@/lib/zip';
+import { delosAnios } from '@/lib/indices';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,7 +14,8 @@ export async function GET(req) {
   const q = req.nextUrl.searchParams;
   const anio = Number(q.get('anio')) || new Date().getFullYear();
   const t = Math.min(4, Math.max(1, Number(q.get('t')) || 1));
-  const [facturas, gastos, nominas] = await Promise.all([leer(u, 'facturas'), leer(u, 'gastos'), leer(u, 'nominas')]);
+  // Solo el año del trimestre y los bienes de inversión (informe de capacidad E01).
+  const [{ facturas, gastos }, nominas] = await Promise.all([delosAnios(u, [anio]), leer(u, 'nominas')]);
   const d = datosPaquete(u, { facturas, gastos, nominas }, anio, t);
   const n = nombrePaquete(d);
   const formato = q.get('formato');

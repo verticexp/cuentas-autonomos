@@ -18,6 +18,7 @@ import Importar from '@/components/Importar';
 import { fiscalDe } from '@/lib/empresa';
 
 import '@/app/mk.css';
+import { documentos } from '@/lib/indices';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,7 +43,8 @@ export default async function Seccion({ params }) {
       {seccion === 'avisos' && <AvisosPush listo={pushListo()} />}
       {seccion === 'importar' && <Importar />}
       {seccion === 'verifactu' && await (async () => {
-        const [regs, facturas] = await Promise.all([leer(u, 'registros'), leer(u, 'facturas')]);
+        const regs = await leer(u, 'registros');
+        const facturas = await documentos(u, 'facturas', [...new Set((regs || []).map((r) => r.factura))]);
         const cuentas = estadoVerifactu(regs || [], { modo: u.verifactu || undefined, facturas: Object.fromEntries((facturas || []).map((f) => [f.id, f])) });
         return <Verifactu modo={u.verifactu || null} admin={u.rol === 'admin'} listo={certificadoListo()} faltaEmisor={!u.emisor?.nif || !u.emisor?.nombre} netto={{ razon: process.env.NETTO_RAZON || '', nif: process.env.NETTO_NIF || '' }} cuentas={cuentas} />;
       })()}

@@ -8,6 +8,7 @@ import { actividadesDe, limpiarActividades, limpiarFiscal } from '@/lib/empresa'
 import { clave, leer, redis } from '@/lib/redis';
 import { auditar } from '@/lib/auditoria';
 import { leerImporte } from '@/lib/calculos';
+import { todasFichas } from '@/lib/indices';
 
 const CAMPOS = ['nombre', 'nif', 'direccion', 'ciudad', 'iban'];
 // En el registro de actividad: si cambia el IBAN (donde cobra la empresa), con sus 4 últimas cifras.
@@ -82,8 +83,7 @@ export async function PATCH(req) {
   if (b.configuracion) {
     if (sin('empresa')) return sin('empresa');
     const c = b.configuracion;
-    const facturas = (await leer(u, 'facturas')) || [];
-    const conFacturas = new Set(facturas.map((f) => f.actividad));
+    const conFacturas = new Set((await todasFichas(u, 'facturas')).map((f) => f.a));
     const antes = Array.isArray(u.actividades) && u.actividades.length ? u.actividades : (u.pendiente ? [] : actividadesDe(u));
     const a = limpiarActividades(c.actividades, antes, conFacturas);
     if (a.error) return error(a.error);

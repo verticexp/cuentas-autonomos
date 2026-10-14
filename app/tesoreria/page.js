@@ -14,6 +14,7 @@ import '@/app/tesoreria.css';
 import '@/app/banco.css';
 
 import '@/app/mk.css';
+import { delosAnios } from '@/lib/indices';
 
 export const dynamic = 'force-dynamic';
 const HORIZONTES = [3, 6, 12];
@@ -21,9 +22,11 @@ const TIPO = { cobro: 'Cobro', pago: 'Pago', hacienda: 'Hacienda' };
 
 export default async function Tesoreria({ searchParams }) {
   const u = await requerir('resumen');
-  const [facturas, gastos, recurrentes, nominas, saldo, movs] = await Promise.all([leer(u, 'facturas'), leer(u, 'gastos'), leer(u, 'recurrentes'), leer(u, 'nominas'), redis?.get(clave(u, 'saldo')), leer(u, 'banco')]);
+  if (!redis) return <SinBD />;
+  // Informe de capacidad E01: lo pendiente, este año y el anterior (impuestos y gastos habituales) y los bienes; como el Resumen.
+  const y = Number(hoy().slice(0, 4));
+  const [{ facturas, gastos }, recurrentes, nominas, saldo, movs] = await Promise.all([delosAnios(u, [y - 1, y], { pendientes: true }), leer(u, 'recurrentes'), leer(u, 'nominas'), redis.get(clave(u, 'saldo')), leer(u, 'banco')]);
   const sinRevisar = (movs || []).filter((m) => m.estado === 'pendiente').length;
-  if (!facturas) return <SinBD />;
   const n = HORIZONTES.includes(Number((await searchParams).meses)) ? Number((await searchParams).meses) : 3;
   const p = prevision({ facturas, gastos, recurrentes: recurrentes || [], nominas: nominas || [], fiscal: fiscalDe(u), pagos130: u.pagos130 || {}, rend130: u.rend130 || {}, cuotaIS: u.cuotaIS || {}, pagos202: u.pagos202 || {}, plazo: u.emisor?.plazo, saldo,
     actividades: actividadesDe(u).map((a) => a.id), hoy: hoy(), meses: n });

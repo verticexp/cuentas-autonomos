@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { requerir } from '@/lib/auth';
-import { leer, leerUno } from '@/lib/redis';
+import { leer, leerUno, redis } from '@/lib/redis';
 import { numeroFactura } from '@/lib/calculos';
 import { totalCierre } from '@/lib/caja';
 import { actividadesDe } from '@/lib/empresa';
@@ -12,6 +12,7 @@ import ImportarVentas from '@/components/ImportarVentas';
 import { nombresProyectos } from '@/lib/proyectos';
 import '@/app/caja.css';
 import '@/app/mk.css';
+import { documentos, todasFichas } from '@/lib/indices';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,11 +20,13 @@ export const dynamic = 'force-dynamic';
 export default async function Caja({ searchParams }) {
   const u = await requerir('facturar');
   const sp = await searchParams;
-  const [facturas, productos] = await Promise.all([leer(u, 'facturas'), leer(u, 'productos')]);
-  if (!facturas) return <SinBD />;
+  if (!redis) return <SinBD />;
+  // Informe de capacidad E01: los cierres recientes y los proyectos, desde las fichas (no los documentos).
+  const [fichas, productos] = await Promise.all([todasFichas(u, 'facturas'), leer(u, 'productos')]);
+  const facturas = fichas.map((f) => ({ proyecto: f.pr }));
   const cierre = sp.id ? await leerUno(u, 'facturas', String(sp.id)) : null;
   const actividades = actividadesDe(u);
-  const recientes = facturas.filter((f) => f.caja).sort((a, b) => b.fecha.localeCompare(a.fecha) || b.numero - a.numero).slice(0, 7);
+  const recientes = await documentos(u, 'facturas', fichas.filter((f) => f.k).sort((a, b) => b.o - a.o).slice(0, 7).map((f) => f.id));
   const lista = (productos || []).sort((a, b) => a.nombre.localeCompare(b.nombre));
   const ver = sp.ver === 'importar' ? 'importar' : 'cierre';
   return (
