@@ -15,8 +15,11 @@ export async function GET() {
   const { u, res } = await usuarioApi();
   if (res) return res;
   if (u.rol !== 'admin') return error('Solo el administrador de la empresa puede descargar todos sus datos', 403);
-  const [listas, empresa, usuarios, saldo, verifactu, actividad] = await Promise.all([
-    Promise.all(LISTAS.map((n) => leer(u, n))),
+  // Informe de capacidad E10: las colecciones de una en una (no veinte a la vez), para acotar la memoria y la carga
+  // sobre la base; la concurrencia por empresa la limita E07.
+  const listas = [];
+  for (const n of LISTAS) listas.push(await leer(u, n));
+  const [empresa, usuarios, saldo, verifactu, actividad] = await Promise.all([
     redis.hget('empresas', u.empresa),
     redis.hgetall('usuarios'),
     redis.get(clave(u, 'saldo')),
