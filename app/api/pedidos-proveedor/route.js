@@ -1,7 +1,7 @@
-import { guardar, leer } from '@/lib/redis';
+import { leer } from '@/lib/redis';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { limpiarPedidoProv, numeroDoc } from '@/lib/albaranes';
-import { borrarPedidoProv, cancelarPedidoProv, recibirPedidoProv, siguientePedidoProv } from '@/lib/albaranesServidor';
+import { borrarPedidoProv, cancelarPedidoProv, crearPedidoProv, recibirPedidoProv } from '@/lib/albaranesServidor';
 import { subirGasto } from '@/lib/drive';
 import { enviarNomina } from '@/lib/controlat';
 import { auditar } from '@/lib/auditoria';
@@ -34,9 +34,7 @@ export async function POST(req) {
   }
   const datos = limpiarPedidoProv(b, (await leer(u, 'productos')) || []);
   if (datos.error) return error(datos.error);
-  const anio = Number(datos.fecha.slice(0, 4));
-  const p = { id: crypto.randomUUID(), numero: await siguientePedidoProv(u, anio), anio, ...datos, estado: 'pendiente', creado: new Date().toISOString(), por: u.id };
-  await guardar(u, 'pedidosProv', p);
+  const p = await crearPedidoProv(u, datos);
   await auditar(u, 'Pedido a proveedor', `${num(p)} · ${p.proveedor}`);
   return Response.json({ ok: true, pedido: p });
 }
