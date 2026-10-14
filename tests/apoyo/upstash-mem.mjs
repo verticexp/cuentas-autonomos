@@ -3,6 +3,7 @@
 // contra Upstash. MULTI/EXEC se aplica de golpe (Node atiende una petición cada vez): es atómico, como en Redis.
 // Uso: const s = await arrancar(); process.env.KV_REST_API_URL = s.url; … await s.cerrar();
 import http from 'node:http';
+import { INDICE_SI_IGUAL, CERRAR_TRABAJO } from '../../lib/scripts.js';
 
 // Scripts Lua que usa la app (lib/cerrojo.js): se reconocen por su texto y se ejecutan en JavaScript.
 export const SCRIPTS = {
@@ -92,6 +93,21 @@ export function crearBase() {
         const [script, n, ...resto] = a;
         const keys = resto.slice(0, Number(n)), args = resto.slice(Number(n));
         if (script === SCRIPTS.soltar) return vivo(keys[0])?.v === args[0] ? run(['del', keys[0]]) : 0;
+        if (script === INDICE_SI_IGUAL) {
+          let n = 0;
+          for (const [id, esperado, ops] of JSON.parse(args[0])) {
+            const actual = run(['hget', keys[0], id]);
+            if ((actual === null && esperado === '') || actual === esperado) { for (const op of ops) run(op); n++; }
+          }
+          return n;
+        }
+        if (script === CERRAR_TRABAJO) {
+          const t = run(['hget', keys[0], args[0]]);
+          if (t === null || JSON.parse(t).v !== args[1]) return 0;
+          if (args[3] === 'borrar') run(['hdel', keys[0], args[0]]); else run(['hset', keys[0], args[0], args[4]]);
+          if (args[5] === '') run(['zrem', keys[1], args[2]]); else run(['zadd', keys[1], args[5], args[2]]);
+          return 1;
+        }
         throw new Error('script no simulado');
       }
       case 'ping': return 'PONG';
