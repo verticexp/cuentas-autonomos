@@ -100,3 +100,39 @@ test('gastos por fecha, importe y concepto; productos por nombre', () => {
   assert.deepEqual(p.items.map((x) => x.estado), ['nuevo', 'duplicado', 'error']);
   assert.deepEqual(p.items[0].datos, { nombre: 'Hora de DJ', precio: 120.5, ivaPct: 21 });
 });
+
+// Auditoría de octubre de 2026 (N07, N08): la importación no pierde retenciones ni cobros parciales ni cambia importes.
+import { saldoDe, importes as imp } from '../lib/calculos.js';
+test('N07: un gasto importado con retención del 15 % conserva el neto (106 €) y su retención', () => {
+  const filas = [['Fecha', 'Concepto', 'Proveedor', 'Base', '% IVA', '% IRPF', 'Retención', 'Total'], ['10/03/2026', 'Asesoría', 'Gestoría SL', 100, 21, 15, 15, 106]];
+  const p = previa('gastos', filas, []);
+  assert.equal(p.errores, 0, JSON.stringify(p.items));
+  const d = p.items[0].datos;
+  assert.equal(d.irpfPct, 15);
+  assert.equal(imp(d).total, 106);
+  assert.equal(imp(d).irpf, 15);
+});
+test('N07: sin columna de retención pero con cuota, se deduce el porcentaje; un total que no cuadra se rechaza, no se cambia', () => {
+  const p = previa('gastos', [['Fecha', 'Concepto', 'Base', 'IVA', 'Retención', 'Total'], ['10/03/2026', 'Asesoría', 100, 21, 15, 106], ['10/03/2026', 'Otra', 100, 21, 15, 121]], []);
+  assert.equal(p.items[0].datos.irpfPct, 15);
+  assert.equal(p.items[1].estado, 'error');
+  assert.match(p.items[1].error, /no cuadra/);
+});
+test('N08: una factura de 121 € con 71 € pendientes entra con 50 € cobrados y saldo 71 €', () => {
+  const p = previa('facturas', [['Número', 'Fecha', 'Cliente', 'Base', '% IVA', 'Total', 'Pendiente'], ['F1', '10/03/2026', 'Cli', 100, 21, 121, 71], ['F2', '10/03/2026', 'Cli', 100, 21, 121, 0], ['F3', '10/03/2026', 'Cli', 100, 21, 121, 121], ['F4', '10/03/2026', 'Cli', 100, 21, 121, 130]], []);
+  const [a, b, c, d] = p.items;
+  assert.equal(saldoDe(a.datos), 71);
+  assert.deepEqual(a.datos.pagos, [{ importe: 50, apertura: true }], 'sin fecha ni método inventados');
+  assert.equal(a.datos.cobrada, false);
+  assert.equal(b.datos.cobrada, true);
+  assert.equal(saldoDe(c.datos), 121);
+  assert.equal(c.datos.pagos, undefined);
+  assert.equal(d.estado, 'error');
+  assert.equal(p.pendienteTotal, 192);
+  assert.equal(p.pendientePorCliente.Cli, 192);
+  assert.equal(p.parciales, 1);
+});
+test('Importar: fechas imposibles y tipos de IVA no admitidos se rechazan', () => {
+  const p = previa('gastos', [['Fecha', 'Concepto', 'Base', '% IVA'], ['31/02/2026', 'x', 100, 21], ['10/03/2026', 'y', 100, 99]], []);
+  assert.deepEqual(p.items.map((x) => x.estado), ['error', 'error']);
+});

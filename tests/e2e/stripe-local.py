@@ -10,7 +10,7 @@ class H(BaseHTTPRequestHandler):
     def do_POST(self):
         f = dict(urllib.parse.parse_qsl(self.rfile.read(int(self.headers['Content-Length'])).decode()))
         i = f'cs_test_{len(S) + 1}'
-        S[i] = {'id': i, 'object': 'checkout.session', 'payment_status': 'paid', 'amount_total': int(f['line_items[0][price_data][unit_amount]']),
+        S[i] = {'id': i, 'object': 'checkout.session', 'payment_status': 'paid', 'currency': 'eur', 'amount_total': int(f['line_items[0][price_data][unit_amount]']),
                 'metadata': {k[9:-1]: v for k, v in f.items() if k.startswith('metadata[')}, 'url': f'http://127.0.0.1:8077/pagina/{i}', 'form': f}
         self.responder(S[i])
     def do_GET(self):

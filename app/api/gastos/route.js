@@ -5,9 +5,10 @@ import { enviarNomina } from '@/lib/controlat';
 import { emparejar } from '@/lib/bancoServidor';
 import { auditar } from '@/lib/auditoria';
 import { leerImporte, nifUE, r2 } from '@/lib/calculos';
+import { validarGasto } from '@/lib/validacion';
 import { actividadesDe, actividadValida } from '@/lib/empresa';
 import { CATEGORIAS } from '@/lib/categorias';
-import { TIPOS_BIEN } from '@/lib/amortizaciones';
+import { TIPOS_BIEN, inversionEditada } from '@/lib/amortizaciones';
 import { limpiarProyecto } from '@/lib/proyectos';
 import { crearGasto } from '@/lib/gastosServidor';
 import { sinRecepcionDeGasto } from '@/lib/albaranes';
@@ -28,7 +29,6 @@ const retencionDe = (b) => ([7, 15].includes(Number(b.irpfPct)) ? Number(b.irpfP
 // Categoría del plan contable (si no se elige, Netto la deduce del concepto) y bien de inversión (se amortiza en años).
 const categoriaDe = (b) => (CATEGORIAS.some((c) => c.id === b.categoria) ? b.categoria : undefined);
 const inversionDe = (b) => (b.inversion && TIPOS_BIEN.some((t) => t.id === b.inversion.tipo) ? { tipo: b.inversion.tipo } : undefined);
-
 // Productos que entran al almacén con este gasto (inventario): [{ producto, cantidad, coste unitario sin IVA }].
 const stockDe = (b) => {
   const l = (Array.isArray(b.stock) ? b.stock : []).slice(0, 50).map((x) => ({ producto: String(x.producto || ''), cantidad: Math.round((Number(String(x.cantidad).replace(',', '.')) || 0) * 1000) / 1000, coste: r2(leerImporte(x.coste) || 0) }))
@@ -53,10 +53,9 @@ export async function POST(req) {
   const { u, res } = await usuarioApi({ permiso: 'gastar' });
   if (res) return res;
   const b = await cuerpo(req);
+  const v = validarGasto(b);
+  if (!v.ok) return Response.json({ error: v.error, errores: v.errores }, { status: 400 });
   const base = r2(leerImporte(b.base));
-  if (!base) return error('Importe no válido');
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(b.fecha || '')) return error('Fecha no válida');
-  if (!String(b.concepto || '').trim()) return error('Falta el concepto');
   const g = {
     id: crypto.randomUUID(),
     fecha: b.fecha,
@@ -90,14 +89,15 @@ export async function PATCH(req) {
   const b = await cuerpo(req);
   const antes = b.id && (await leerUno(u, 'gastos', b.id));
   if (!antes) return error('Ese gasto ya no existe', 404);
+  const v = validarGasto(b, { antes });
+  if (!v.ok) return Response.json({ error: v.error, errores: v.errores }, { status: 400 });
   const base = r2(leerImporte(b.base));
-  if (!base) return error('Importe no válido');
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(b.fecha || '')) return error('Fecha no válida');
-  if (!String(b.concepto || '').trim()) return error('Falta el concepto');
-  const g = { ...antes, fecha: b.fecha, actividad: actividadValida(actividadesDe(u), b.actividad), concepto: String(b.concepto).trim().slice(0, 140), base, ivaPct: Math.min(100, Math.max(0, Number(b.ivaPct) || 0)), proveedor: undefined, proveedorNif: undefined, ...proveedorDe(b), numero: undefined, efactura: antes.efactura, ...facturaDe(b), proyecto: limpiarProyecto(b.proyecto) || undefined, pendiente: b.pendiente ? true : undefined, alquiler: b.alquiler ? true : undefined, categoria: stockDe(b) ? categoriaDe(b) || '600' : categoriaDe(b), inversion: inversionDe(b), stock: stockDe(b) };
+  const g = { ...antes, fecha: b.fecha, actividad: actividadValida(actividadesDe(u), b.actividad), concepto: String(b.concepto).trim().slice(0, 140), base, ivaPct: Math.min(100, Math.max(0, Number(b.ivaPct) || 0)), proveedor: undefined, proveedorNif: undefined, ...proveedorDe(b), numero: undefined, efactura: antes.efactura, ...facturaDe(b), proyecto: limpiarProyecto(b.proyecto) || undefined, pendiente: b.pendiente ? true : undefined, alquiler: b.alquiler ? true : undefined, categoria: stockDe(b) ? categoriaDe(b) || '600' : categoriaDe(b), inversion: inversionEditada(inversionDe(b), antes.inversion), stock: stockDe(b) };
   g.origen = origenDe(b, g.ivaPct);
   g.irpfPct = retencionDe(b);
+  if (antes.inversion?.acumulada !== undefined && !g.inversion) return error('Este bien trae su amortización de otro programa: no se puede dejar de amortizar desde aquí');
   await guardar(u, 'gastos', g);
+  if (antes.inversion && antes.inversion.tipo !== g.inversion?.tipo) await auditar(u, 'Criterio de amortización cambiado', `${antes.concepto} · ${antes.inversion.tipo} → ${g.inversion?.tipo || 'sin inversión'}`);
   await enviarNomina(u, [antes.fecha, g.fecha]);
   return Response.json({ ok: true });
 }

@@ -202,7 +202,13 @@ if (process.env.RESEND_URL && process.env.STRIPE_URL) {
   await pedir('/api/facturas/enviar', { metodo: 'POST', cookie: yo, cuerpo: { id: otra.id, para: 'w@ejemplo.es', mensaje: 'Hola' } });
   const tok2 = /\/pagar\/([a-f0-9]+)/.exec(ultimoEmail().html)?.[1];
   ok('el email normal también lleva el enlace de pago', () => assert.ok(tok2));
-  const evento = JSON.stringify({ type: 'checkout.session.completed', data: { object: { id: 'cs_w', payment_status: 'paid', amount_total: 1210, metadata: { token: tok2 } } } });
+  // El aviso sale de una sesión real del simulador (creada por /api/pagar, con su moneda y su metadata de factura y empresa),
+  // como lo manda Stripe: un aviso a medias ya no vale (el cobro exige moneda y referencias, auditoría F04).
+  const fdw = new FormData(); fdw.set('token', tok2);
+  const irw = await fetch(`${BASE}/api/pagar`, { method: 'POST', body: fdw, redirect: 'manual', headers: { Origin: BASE } });
+  const sesW = await (await fetch(irw.headers.get('location').replace('/pagina/', '/v1/checkout/sessions/'))).json();
+  ok('la sesión del simulador trae moneda, importe y referencias', () => assert.ok(sesW.currency === 'eur' && sesW.amount_total === 1210 && sesW.metadata.token === tok2 && sesW.metadata.factura === otra.id && sesW.metadata.empresa, JSON.stringify(sesW)));
+  const evento = JSON.stringify({ type: 'checkout.session.completed', data: { object: { id: sesW.id, payment_status: sesW.payment_status, currency: sesW.currency, amount_total: sesW.amount_total, metadata: sesW.metadata } } });
   const t = Math.floor(Date.now() / 1000);
   const firma = `t=${t},v1=${createHmac('sha256', process.env.STRIPE_WEBHOOK_SECRET).update(`${t}.${evento}`).digest('hex')}`;
   const falso = await fetch(`${BASE}/api/stripe`, { method: 'POST', body: evento, headers: { 'stripe-signature': 't=1,v1=00' } });
