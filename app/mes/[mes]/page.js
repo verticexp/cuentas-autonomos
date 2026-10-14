@@ -2,13 +2,13 @@ import { Fragment } from 'react';
 import Ir from '@/components/Ir';
 import { notFound } from 'next/navigation';
 import { requerir } from '@/lib/auth';
-import { leer } from '@/lib/redis';
 import { importes, numeroFactura, pendienteDe, r2 } from '@/lib/calculos';
 import { actividadesDe, nombresActividad } from '@/lib/empresa';
 import { eur, fechaCorta } from '@/lib/formato';
 import Volver from '@/components/Volver';
 
 import '@/app/mk.css';
+import { leerRango } from '@/lib/indices';
 
 export const dynamic = 'force-dynamic';
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -18,7 +18,8 @@ export default async function Mes({ params }) {
   const ACTIVIDADES = nombresActividad(actividadesDe(u));
   const { mes } = await params;
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) notFound();
-  const [facturas, gastos] = await Promise.all([leer(u, 'facturas'), leer(u, 'gastos')]);
+  // Solo ese mes (informe de capacidad E01).
+  const [facturas, gastos] = await Promise.all([leerRango(u, 'facturas', `${mes}-01`, `${mes}-31`), leerRango(u, 'gastos', `${mes}-01`, `${mes}-31`)]);
   const F = (facturas || []).filter((f) => f.fecha.startsWith(mes)).sort((a, b) => a.fecha.localeCompare(b.fecha));
   const G = (gastos || []).filter((g) => g.fecha.startsWith(mes)).sort((a, b) => a.fecha.localeCompare(b.fecha));
   const suma = (l, k) => r2(l.map(importes).reduce((s, x) => s + x[k], 0));

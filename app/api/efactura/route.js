@@ -1,9 +1,9 @@
-import { leer } from '@/lib/redis';
 import { error, usuarioApi } from '@/lib/api';
 import { puede } from '@/lib/permisos';
 import { importes, numeroFactura, r2, vencimiento } from '@/lib/calculos';
 import { xlsx } from '@/lib/xlsx';
 import { hoy } from '@/lib/formato';
+import { delosAnios } from '@/lib/indices';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,7 +18,7 @@ export async function GET(req) {
   const anio = Number(req.nextUrl.searchParams.get('anio')) || Number(hoy().slice(0, 4));
   if (anio < 2000 || anio > 2100) return error('Año no válido');
   const h = hoy();
-  const [facturas, gastos] = await Promise.all([leer(u, 'facturas'), leer(u, 'gastos')]);
+  const { facturas, gastos } = await delosAnios(u, [anio], { bienes: false });
   const delAnio = (x) => x.fecha.startsWith(`${anio}-`);
   const estado = (pagada, vence) => (pagada ? 'Pagada' : vence && h > vence ? 'Vencida' : 'Pendiente');
   // Solo facturas a empresas y profesionales (con NIF): las simplificadas y los cierres de caja no.

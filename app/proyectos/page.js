@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { requerir } from '@/lib/auth';
-import { leer } from '@/lib/redis';
+import { leer, redis } from '@/lib/redis';
 import { importes, numeroFactura } from '@/lib/calculos';
 import { fiscalDe, usa303 } from '@/lib/empresa';
 import { limpiarProyecto, rentabilidad } from '@/lib/proyectos';
@@ -11,6 +11,7 @@ import Ir from '@/components/Ir';
 import '@/app/modelos.css';
 import '@/app/contabilidad.css';
 import '@/app/mk.css';
+import { delosAnios } from '@/lib/indices';
 
 export const dynamic = 'force-dynamic';
 const igual = (a, b) => limpiarProyecto(a).toLowerCase() === limpiarProyecto(b).toLowerCase();
@@ -18,12 +19,13 @@ const igual = (a, b) => limpiarProyecto(a).toLowerCase() === limpiarProyecto(b).
 // Rentabilidad por proyecto, obra o centro de coste (un local, un cliente grande…): lo facturado menos lo gastado en cada uno.
 export default async function Proyectos({ searchParams }) {
   const u = await requerir('resumen');
-  const [facturas, gastos] = await Promise.all([leer(u, 'facturas'), leer(u, 'gastos')]);
-  if (!facturas) return <SinBD />;
+  if (!redis) return <SinBD />;
   const sp = await searchParams;
   const h = hoy();
   const todo = sp.anio === 'todo';
   const anio = todo ? null : Number(sp.anio) || Number(h.slice(0, 4));
+  // Informe de capacidad E01: un año (y los bienes de inversión) salvo que se pida «desde el principio».
+  const { facturas, gastos } = todo ? { facturas: await leer(u, 'facturas'), gastos: await leer(u, 'gastos') } : await delosAnios(u, [anio]);
   const ivaCoste = !usa303(fiscalDe(u));
   const r = rentabilidad({ facturas, gastos: (gastos || []).filter((g) => !g.nomina) }, anio, { ivaCoste });
   const elegido = sp.p ? r.proyectos.find((p) => igual(p.proyecto, sp.p)) : null;

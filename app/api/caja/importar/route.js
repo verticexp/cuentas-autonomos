@@ -6,6 +6,7 @@ import { limpiarCierre } from '@/lib/caja';
 import { guardarCierre } from '@/lib/facturas';
 import { actividadesDe, actividadValida } from '@/lib/empresa';
 import { auditar } from '@/lib/auditoria';
+import { leerRango } from '@/lib/indices';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -18,7 +19,9 @@ const FORMATOS = ['shopify', 'woocommerce', 'sumup', 'square', 'generico'];
 export async function POST(req) {
   const { u, res } = await usuarioApi({ permiso: 'facturar' });
   if (res) return res;
-  const facturas = (await leer(u, 'facturas')) || [];
+  // Informe de capacidad E01: solo las facturas de las fechas que llegan (no el histórico).
+  let facturas = [];
+  const cargar = async (fechas) => { const fs = fechas.sort(); facturas = fs.length ? await leerRango(u, 'facturas', fs[0], fs.at(-1)) : []; };
   const yaImportado = (formato, fecha) => facturas.some((f) => f.caja && f.importado === formato && f.fecha === fecha);
 
   if ((req.headers.get('content-type') || '').includes('multipart/form-data')) {
@@ -32,6 +35,7 @@ export async function POST(req) {
     const p = ventasDesdeFilas(filas, (await leer(u, 'productos')) || [], { ivaPct });
     if (p.error) return error(p.error);
     if (p.dias.length > MAX_DIAS) return error(`Demasiados días: como mucho ${MAX_DIAS} por archivo`);
+    await cargar(p.dias.map((d) => d.fecha));
     return Response.json({ ...p, dias: p.dias.map((d) => ({ ...d, repetido: yaImportado(p.formato, d.fecha) })) });
   }
 
@@ -39,6 +43,7 @@ export async function POST(req) {
   const formato = FORMATOS.includes(b.formato) ? b.formato : 'generico';
   const dias = (Array.isArray(b.dias) ? b.dias.slice(0, MAX_DIAS) : []).map(limpiarDia).filter(Boolean);
   if (!dias.length) return error('No hay días que importar');
+  await cargar(dias.map((d) => d.fecha));
   const productos = (await leer(u, 'productos')) || [];
   const actividad = actividadValida(actividadesDe(u), b.actividad);
   let guardados = 0, saltados = 0;
