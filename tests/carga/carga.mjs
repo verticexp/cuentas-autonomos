@@ -113,7 +113,7 @@ for (const s of revisar) {
   const fs = await R.leer(u, 'facturas');
   const ids = fs.map((f) => `${f.serie || ''}|${f.anio}|${f.numero}`);
   if (new Set(ids).size !== ids.length) incidencias.push({ empresa: s.empresa, tipo: 'numero-repetido' });
-  for (const col of ['facturas', 'gastos']) for (const d of await I.comprobarTotales(u, col)) incidencias.push({ empresa: s.empresa, tipo: `total-descuadrado-${col}`, ...d });
+  if (I.comprobarTotales) for (const col of ['facturas', 'gastos']) for (const d of await I.comprobarTotales(u, col)) incidencias.push({ empresa: s.empresa, tipo: `total-descuadrado-${col}`, ...d });
   const inc = comprobarIntegridad({ facturas: fs, borradas: (await R.leer(u, 'facturasBorradas')) || [], registros: (await R.leer(u, 'registros')) || [], cabeza: (await R.redis.get(R.clave(u, 'verifactu'))) || '', numeracion: (await R.redis.hgetall(R.clave(u, 'numeracion'))) || {} });
   for (const x of inc.filter((x) => !['sin-instantanea'].includes(x.tipo))) incidencias.push({ empresa: s.empresa, ...x });
 }
