@@ -1,7 +1,7 @@
 import { requerir } from '@/lib/auth';
 import { nombresProyectos } from '@/lib/proyectos';
 import { leer, redis } from '@/lib/redis';
-import { contar, documentos, fichasMarcadas, fichasRango, leerRango, pagina } from '@/lib/indices';
+import { contar, contarMarcados, documentos, fichasRango, leerRango, pagina, totales } from '@/lib/indices';
 import { candidatosConciliacion } from '@/lib/bancoServidor';
 import { importes, r2 } from '@/lib/calculos';
 import { actividadesDe, fiscalDe, nombresActividad } from '@/lib/empresa';
@@ -34,7 +34,8 @@ export default async function Gastos({ searchParams }) {
   const { q, estado, banco, desde } = await searchParams;
   const h = hoy();
   const anio = h.slice(0, 4);
-  const [movs, productos, total, delAnioTodos, sinPagarF, bienes] = await Promise.all([leer(u, 'banco'), leer(u, 'productos'), contar(u, 'gastos'), leerRango(u, 'gastos', `${anio}-01-01`, `${anio}-12-31`), fichasMarcadas(u, 'gastos', 'p'), fichasMarcadas(u, 'gastos', 'i')]);
+  // E06: lo que se debe y lo que queda sin pagar salen de los totales precalculados.
+  const [movs, productos, total, delAnioTodos, agr, nBienes] = await Promise.all([leer(u, 'banco'), leer(u, 'productos'), contar(u, 'gastos'), leerRango(u, 'gastos', `${anio}-01-01`, `${anio}-12-31`), totales(u, 'gastos', ['dc', 'sn']), contarMarcados(u, 'gastos', 'i')]);
   // Con inventario: los productos que llevan stock, para apuntar lo que entra con cada compra.
   const stockProductos = fiscalDe(u).inventario ? (productos || []).filter((p) => !p.servicio).sort((a, b) => a.nombre.localeCompare(b.nombre)) : [];
   // En revisión: cargos del banco que no casan con ningún gasto y parecen un gasto (no impuestos, nóminas, préstamos…).
@@ -57,9 +58,9 @@ export default async function Gastos({ searchParams }) {
   const delAnio = delAnioTodos.filter((g) => !g.migrado);
   const pendientes = LISTA.filter((d) => !cubierta(d, delAnio)).length;
   // Lo que debes a proveedores: los gastos sin pagar (con proveedor), sean del año que sean.
-  const debes = sinPagarF.filter((f) => f.c && !f.mi).reduce((s, f) => s + f.tp, 0);
+  const debes = agr.dc;
   const hayProveedores = debes > 0 || delAnio.some((g) => g.proveedor) || lista.some((g) => g.proveedor);
-  const sinPagar = sinPagarF.filter((f) => !f.mi).length;
+  const sinPagar = Math.round(agr.sn * 100); // sn cuenta gastos: totales() lo da entre 100, como los céntimos
   const proyectos = nombresProyectos([...delAnio, ...lista]);
   const url = (cambios) => {
     const p = new URLSearchParams(Object.entries({ q, estado, ...cambios }).filter(([, v]) => v));
@@ -73,7 +74,10 @@ export default async function Gastos({ searchParams }) {
     if (grupos.at(-1)?.m !== m) grupos.push({ m, gastos: [] });
     grupos.at(-1).gastos.push(g);
   }
-  const totalMes = Object.fromEntries(await Promise.all(grupos.map(async (g) => {
+  // E06: sin búsqueda, el total del mes es un total precalculado (todos o sin pagar).
+  const campoMes = (m) => `${estado === 'sinpagar' ? 'mp' : 'm'}:${m}`;
+  const delMes = !buscado ? await totales(u, 'gastos', grupos.map((g) => campoMes(g.m))) : {};
+  const totalMes = !buscado ? Object.fromEntries(grupos.map((g) => [g.m, delMes[campoMes(g.m)]])) : Object.fromEntries(await Promise.all(grupos.map(async (g) => {
     const fichas = await fichasRango(u, 'gastos', `${g.m}-01`, `${g.m}-31`, { textos: Boolean(buscado) });
     return [g.m, fichas.filter((f) => filtro(f) && (!buscado || f.x.includes(buscado)) && (estado !== 'sinpagar' || f.pe)).reduce((s, f) => s + f.b, 0)];
   })));
@@ -89,7 +93,7 @@ export default async function Gastos({ searchParams }) {
           <span>Este año, sin IVA <strong>{eur(r2(delAnio.reduce((s, g) => s + g.base, 0)))}</strong></span>
           <span>IVA que recuperas <strong>{eur(r2(delAnio.reduce((s, g) => s + importes(g).iva, 0)))}</strong></span>
           </>}
-          {puede(u, 'resumen') && bienes.length > 0 && <Link href="/contabilidad?ver=bienes" className="prov-enlace">Bienes de inversión ›</Link>}
+          {puede(u, 'resumen') && nBienes > 0 && <Link href="/contabilidad?ver=bienes" className="prov-enlace">Bienes de inversión ›</Link>}
           {hayProveedores && <Link href="/gastos/proveedores" className="prov-enlace">Proveedores{debes > 0 ? ` · debes ${eur(r2(debes))}` : ''} ›</Link>}
         </p>
       )}

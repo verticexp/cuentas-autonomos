@@ -3,10 +3,14 @@
 // contra Upstash. MULTI/EXEC se aplica de golpe (Node atiende una petición cada vez): es atómico, como en Redis.
 // Uso: const s = await arrancar(); process.env.KV_REST_API_URL = s.url; … await s.cerrar();
 import http from 'node:http';
-import { INDICE_SI_IGUAL, CERRAR_TRABAJO } from '../../lib/scripts.js';
+import { TX_INDICES, CERRAR_TRABAJO } from '../../lib/scripts.js';
 
 // Scripts Lua que usa la app (lib/cerrojo.js): se reconocen por su texto y se ejecutan en JavaScript.
 export const SCRIPTS = {
+  CONTAR_VENTANA: "local n = redis.call('INCR', KEYS[1])\nif n == 1 then redis.call('PEXPIRE', KEYS[1], ARGV[1]) end\nreturn n",
+  TOMAR_PLAZA: "if redis.call('EXISTS', KEYS[1]) == 0 then\n  redis.call('SET', KEYS[2], ARGV[3], 'PX', ARGV[2])\nend\nlocal n = redis.call('INCR', KEYS[1])\nif n > tonumber(ARGV[1]) and ARGV[4] == 'activo' then\n  redis.call('DECR', KEYS[1])\n  return {n, ''}\nend\nredis.call('PEXPIRE', KEYS[1], ARGV[2])\nredis.call('PEXPIRE', KEYS[2], ARGV[2])\nreturn {n, redis.call('GET', KEYS[2])}",
+  DEJAR_PLAZA: "if redis.call('GET', KEYS[2]) ~= ARGV[1] or redis.call('EXISTS', KEYS[1]) == 0 then return 0 end\nlocal n = redis.call('DECR', KEYS[1])\nif n <= 0 then redis.call('DEL', KEYS[1], KEYS[2]) end\nreturn n",
+
   soltar: "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end",
 };
 
@@ -92,14 +96,56 @@ export function crearBase() {
       case 'eval': {
         const [script, n, ...resto] = a;
         const keys = resto.slice(0, Number(n)), args = resto.slice(Number(n));
-        if (script === SCRIPTS.soltar) return vivo(keys[0])?.v === args[0] ? run(['del', keys[0]]) : 0;
-        if (script === INDICE_SI_IGUAL) {
-          let n = 0;
-          for (const [id, esperado, ops] of JSON.parse(args[0])) {
-            const actual = run(['hget', keys[0], id]);
-            if ((actual === null && esperado === '') || actual === esperado) { for (const op of ops) run(op); n++; }
-          }
+        if (script === SCRIPTS.CONTAR_VENTANA) {
+          const n = run(['incr', keys[0]]);
+          if (n === 1) run(['pexpire', keys[0], args[0]]);
           return n;
+        }
+        if (script === SCRIPTS.TOMAR_PLAZA) {
+          if (!run(['exists', keys[0]])) run(['set', keys[1], args[2], 'PX', args[1]]);
+          const n = run(['incr', keys[0]]);
+          if (n > Number(args[0]) && args[3] === 'activo') { db.get(keys[0]).v = String(n - 1); return [n, '']; }
+          run(['pexpire', keys[0], args[1]]);
+          run(['pexpire', keys[1], args[1]]);
+          return [n, run(['get', keys[1]])];
+        }
+        if (script === SCRIPTS.DEJAR_PLAZA) {
+          if (run(['get', keys[1]]) !== args[0] || !run(['exists', keys[0]])) return 0;
+          const n = Number(run(['get', keys[0]])) - 1;
+          db.get(keys[0]).v = String(n);
+          if (n <= 0) run(['del', ...keys]);
+          return n;
+        }
+        if (script === SCRIPTS.soltar) return vivo(keys[0])?.v === args[0] ? run(['del', keys[0]]) : 0;
+        if (script === TX_INDICES) {
+          const quitar = (K, id) => {
+            const v = run(['hget', K.ixf, id]);
+            if (v === null) return;
+            const o = JSON.parse(v);
+            if (o.zs) for (const [z, m] of o.zs) run(['zrem', K.z[z], m]);
+            else if (o.o !== undefined) {
+              const om = `${String(Math.round(o.o)).padStart(16, '0')}\0${id}`;
+              for (const k of Object.values(K.z)) run(['zrem', k, om]);
+              for (const c of o.cl || []) run(['zrem', K.z.n, c]);
+            }
+            for (const [c, n] of Object.entries(o.ag || {})) run(['hincrby', K.ixa, c, String(-n)]);
+          };
+          const poner = (K, id, fj, texto) => {
+            const f = JSON.parse(fj);
+            for (const [z, m] of f.zs) run(['zadd', K.z[z], '0', m]);
+            for (const [c, n] of Object.entries(f.ag)) run(['hincrby', K.ixa, c, String(n)]);
+            run(['hset', K.ixf, id, fj]);
+            if (typeof texto === 'string') run(['hset', K.ixt, id, texto]);
+          };
+          return JSON.parse(args[0]).map((op) => {
+            const [c] = op;
+            const rev = (K) => run(['hincrby', K.ixa, 'rev', '1']);
+            if (c === '_g') { rev(op[6]); quitar(op[6], op[2]); const x = run(['hset', op[1], op[2], op[3]]); poner(op[6], op[2], op[4], op[5]); return x; }
+            if (c === '_b') { rev(op[3]); quitar(op[3], op[2]); run(['hdel', op[3].ixf, op[2]]); run(['hdel', op[3].ixt, op[2]]); return run(['hdel', op[1], op[2]]); }
+            if (c === '_i') { const a = run(['hget', op[1], op[2]]); if ((a === null && op[3] === '') || a === op[3]) { rev(op[6]); quitar(op[6], op[2]); poner(op[6], op[2], op[4], op[5]); return 1; } return 0; }
+            if (c === '_d') { if (!run(['hexists', op[1], op[2]])) { rev(op[3]); quitar(op[3], op[2]); run(['hdel', op[3].ixf, op[2]]); run(['hdel', op[3].ixt, op[2]]); for (const [z, m] of op[4] || []) run(['zrem', op[3].z[z], m]); return 1; } return 0; }
+            return run(op.map(String));
+          });
         }
         if (script === CERRAR_TRABAJO) {
           const t = run(['hget', keys[0], args[0]]);
@@ -132,7 +178,10 @@ export function arrancar({ puerto = 0, base = crearBase() } = {}) {
       const uno = (cmd) => { try { const r = base.run(cmd); return { result: enc ? b64(r) : r }; } catch (e) { return { error: e.message }; } };
       const j = JSON.parse(body || 'null');
       let out;
-      if (/^\/multi-exec/.test(req.url) && fallos.exec > 0) { fallos.exec--; res.writeHead(500); res.end(JSON.stringify({ error: 'corte simulado' })); return; }
+      // Un corte simulado afecta a las transacciones: MULTI/EXEC y la transacción con índices (lib/scripts.js TX_INDICES).
+      const esEvalTx = (c) => Array.isArray(c) && String(c[0]).toLowerCase() === 'eval' && c[1] === TX_INDICES;
+      const esTx = /^\/multi-exec/.test(req.url) || esEvalTx(j) || (/^\/pipeline/.test(req.url) && Array.isArray(j) && j.some(esEvalTx));
+      if (esTx && fallos.exec > 0) { fallos.exec--; res.writeHead(500); res.end(JSON.stringify({ error: 'corte simulado' })); return; }
       if (/^\/(pipeline|multi-exec)/.test(req.url)) out = j.map(uno); else out = uno(j);
       res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(out));
     });
