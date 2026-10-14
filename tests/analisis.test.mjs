@@ -81,9 +81,9 @@ test('ratios del balance y plazos de cobro y pago', () => {
   assert.equal(a.fondoManiobra, r2(ac - pcorto));
   assert.equal(a.activo, bal.total);
   assert.equal(a.activo, r2(a.patrimonioNeto + a.exigible));
-  // Lo que deben los clientes (f2, con IVA) frente a lo facturado con IVA del año (f1 5.300 € con su retención y f2 1.210 €; el abono no resta)
+  // Lo pendiente frente a la facturación neta: 5.300 + 1.210 − 121 de abono = 6.389 €.
   assert.equal(a.clientes, 1210);
-  assert.equal(r('cobro').valor, r2((1210 / 6510) * 365));
+  assert.equal(r('cobro').valor, r2((1210 / 6389) * 365));
   assert.equal(r('margenNeto').valor, r2((3402.43 / 5900) * 100));
   assert.equal(r('margenNeto').estado, 'bien');
   assert.ok(a.ratios.every((x) => x.valor === null || Number.isFinite(x.valor)));
