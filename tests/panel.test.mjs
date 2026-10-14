@@ -41,12 +41,12 @@ test('Resumen el 1 de octubre con el 3T sin presentar', () => {
 });
 
 test('Hacienda: el 130 pendiente no se cuenta dos veces', () => {
-  // 5 de julio, 2T sin presentar: a pagar 303 420 + 130 80 = 500; del 3T llevas 303 126 + 130 0.
+  // 5 de julio, 2T sin presentar: a pagar 303 420 + 130 80 = 500; aún no cuentan los documentos de agosto.
   const P = panelResumen({ facturas: FACTURAS, gastos: GASTOS, pagos130: { 2026: { 1: 116 } }, emisor: EMISOR, hoy: '2026-07-05' });
-  assert.deepEqual([P.debe.t, P.aPagar, P.apartado], [2, 500, 126]);
+  assert.deepEqual([P.debe.t, P.aPagar, P.apartado], [2, 500, 0]);
   // Con el 2T ya presentado y pagado, solo queda lo del 3T.
   const Q = panelResumen({ facturas: FACTURAS, gastos: GASTOS, pagos130: { 2026: { 1: 116, 2: 80 } }, emisor: EMISOR, hoy: '2026-07-05' });
-  assert.deepEqual([Q.debe, Q.aPagar, Q.apartado], [null, 0, 126]);
+  assert.deepEqual([Q.debe, Q.aPagar, Q.apartado], [null, 0, 0]);
 });
 
 test('IVA a compensar (303 negativo) no suma como pago', () => {
@@ -60,7 +60,7 @@ test('cuadre con datos reales', () => {
   const { facturas, gastos } = JSON.parse(readFileSync(new URL('../data/inicial.json', import.meta.url)));
   for (const hoy of ['2026-01-15', '2026-04-10', '2026-07-05', '2026-10-01', '2026-12-31']) {
     const P = panelResumen({ facturas, gastos, emisor: { plazo: 30 }, hoy });
-    const delAnio = (l) => l.filter((x) => x.fecha.startsWith('2026-'));
+    const delAnio = (l) => l.filter((x) => x.fecha.startsWith('2026-') && x.fecha <= hoy);
     const qs = P.r.trimestres;
     const sum = (l, k) => r2(l.reduce((s, x) => s + x[k], 0));
     assert.equal(P.facturado, sum(delAnio(facturas), 'base'), hoy);

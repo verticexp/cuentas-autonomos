@@ -14,9 +14,11 @@ KV_REST_API_URL=http://127.0.0.1:8089 KV_REST_API_TOKEN=simulada-local UPSTASH_R
 
 Acceso: `http://localhost:3002/login`, email `direccion@aurora-eventos.example`, contraseña de pruebas `Aurora-Simulada-2026!`. Estas credenciales son públicas, exclusivas de la simulación local.
 
-La cuenta contiene cuatro actividades, dos años de histórico, cobros vencidos, pagos pendientes, stock y mínimos, pedidos y recepciones, caja, domiciliaciones, remesas, contabilidad, 16 presupuestos de distintos estados, cuatro empleados con nóminas y cuatro recurrencias sin envío automático. El volumen depende de la fecha de ejecución. A 14/10/2026: 210 facturas, 368 gastos, 96 nóminas, 8 clientes, 6 productos, 8 albaranes, 2 pedidos a proveedor, 33 movimientos bancarios y 3 remesas.
+La cuenta contiene cuatro actividades, dos años de histórico, cobros vencidos, pagos pendientes, stock y mínimos, pedidos y recepciones, caja, domiciliaciones, remesas, contabilidad, 16 presupuestos de distintos estados, cuatro empleados con nóminas y cuatro recurrencias sin envío automático. El volumen depende de la fecha de ejecución. A 14/10/2026: 214 facturas, 370 gastos, 96 nóminas, 9 clientes, 6 productos, 8 albaranes, 2 pedidos a proveedor, 33 movimientos bancarios y 3 remesas.
 
 Las nóminas sustituyen los gastos salariales agregados de la demo. Se recalculan el Impuesto sobre Sociedades histórico, sus pagos a cuenta y el saldo bancario; los índices de facturas, gastos y presupuestos se comprueban contra sus colecciones.
+
+Incluye IVA mixto, cobro parcial, reembolso pendiente, operaciones UE y retenciones explícitas de alquiler y profesionales.
 
 El proceso debe permanecer abierto: sus cambios viven en memoria. Al crear la cuenta se guarda una copia inicial en `/private/tmp/netto-cuenta-simulada.json`; esa copia no incorpora las ediciones posteriores. Reiniciar el generador crea una simulación nueva.
 
@@ -27,4 +29,4 @@ El proceso debe permanecer abierto: sus cambios viven en memoria. Al crear la cu
 - El script histórico escribe directamente en Upstash y no construye los índices actuales. La cuenta simulada reconstruye y verifica sus índices antes de entregarse.
 - Revisión del auxiliar: `nuevaEmpresa` lee el usuario y guarda membresías sin cerrojo ni transacción; altas concurrentes pueden superar el límite o sobrescribir membresías. Pendiente de reproducción HTTP y corrección; no se modificó el flujo de altas de producción.
 
-Verificación: 490 tests y compilación de producción correctos. Acceso y panel de la cuenta comprobados en navegador. El auxiliar realizó revisión de solo lectura; la implementación y la verificación final las realizó el agente principal.
+La auditoría posterior contrasta todos los documentos con aritmética independiente; véase `docs/auditoria-numerica-2026-10-14.md`. Acceso y panel de la cuenta comprobados en navegador. El auxiliar realizó revisión de solo lectura; la implementación y la verificación final las realizó el agente principal.

@@ -9,6 +9,8 @@ import { gastoDeNomina, SS_EMPRESA, SS_TRABAJADOR } from '../lib/nominas.js';
 import { plantillaDe } from '../lib/recurrentes.js';
 import { claves } from '../lib/fichas.js';
 import { borradorSociedades, modelo202 } from '../lib/modelos.js';
+import { importes, siguienteNumero } from '../lib/calculos.js';
+import { identificadorAcreedor } from '../lib/sepa.js';
 
 const s = await arrancar({ puerto: Number(process.env.SIMULADA_PUERTO || 8089) });
 process.env.KV_REST_API_URL = s.url;
@@ -29,18 +31,39 @@ try {
   const usuario = await redis.hget('usuarios', id);
   await redis.hset('usuarios', { [id]: { ...usuario, nombre: 'Clara Soler (ficticia)', emailVerificado: true } });
   let emp = await redis.hget('empresas', id);
-  await redis.hset('empresas', { [id]: { ...emp, verifactu: null, marca: { color: '#176B65', logo: null } } });
+  await redis.hset('empresas', { [id]: { ...emp, emisor: { ...emp.emisor, nif: 'B12345674', acreedorSepa: identificadorAcreedor('B12345674') }, fiscal: { ...emp.fiscal, intracom: true }, verifactu: null, marca: { color: '#176B65', logo: null } } });
   // Reconstruye los índices que el script histórico no crea: las pantallas paginadas los necesitan.
   const colecciones = ['facturas', 'gastos'];
   for (const col of colecciones) {
     const docs = await redis.hgetall(`${col}:${id}`);
-    for (const [key, doc] of Object.entries(docs || {})) await redis.hset(`${col}:${id}`, { [key]: doc });
+    for (const [key, doc] of Object.entries(docs || {})) {
+      if (col === 'gastos' && doc.concepto === 'Alquiler del almacén') Object.assign(doc, { alquiler: true, proveedor: 'Inmuebles Aurora (ficticia)', proveedorNif: 'B12345674' });
+      if (col === 'gastos' && doc.concepto === 'Gestoría') Object.assign(doc, { irpfPct: 15, proveedor: 'Asesora Alba Roca (ficticia)', proveedorNif: '12345678Z' });
+      await redis.hset(`${col}:${id}`, { [key]: doc });
+    }
   }
   const facturas = Object.values(await redis.hgetall(`facturas:${id}`));
   const clientes = Object.values(await redis.hgetall(`clientes:${id}`));
   const hoy = new Date().toISOString().slice(0, 10);
   const anio = Number(hoy.slice(0, 4));
   const actividad = emp.actividades[0].id;
+  // Casos explícitos para auditar IVA mixto, cobro parcial, reembolso e intracomunitarias.
+  const europeo = { id: 'AURORA-UE', nombre: 'Nordlicht Kultur GmbH (ficticia)', nif: 'DE123456789', direccion: 'Musterstrasse 10', ciudad: '10115 Berlin', email: 'produccion@nordlicht.example' };
+  clientes.push(europeo);
+  await redis.hset(`clientes:${id}`, { [europeo.id]: europeo });
+  const emitir = async (datos, serie = '') => {
+    const numero = siguienteNumero(facturas, anio, serie);
+    const f = { id: `${serie}${anio}-${numero}`, numero, anio, serie, fecha: hoy, actividad, cliente: clientes[0], ivaPct: 21, irpfPct: 0, cobrada: false, ...datos };
+    facturas.push(f); await redis.hset(`facturas:${id}`, { [f.id]: f }); return f;
+  };
+  const mixta = await emitir({ concepto: 'Producción y catering (IVA mixto)', base: 300, lineas: [{ concepto: 'Producción técnica', cantidad: 1, precio: 100, ivaPct: 21 }, { concepto: 'Catering', cantidad: 1, precio: 200, ivaPct: 10 }] });
+  await emitir({ concepto: 'Evento con anticipo cobrado', base: 1000, pagos: [{ fecha: hoy, importe: 200, metodo: 'transferencia' }] });
+  await emitir({ concepto: 'Reembolso pendiente de producción', base: -100, rectifica: { id: mixta.id, numero: String(mixta.numero), fecha: hoy } }, 'R');
+  await emitir({ concepto: 'Producción para cliente de la UE', base: 700, ivaPct: 0, cliente: europeo, operacion: 'servicios-ue' });
+  for (const g of [
+    { id: 'sim-servicio-ue', proveedor: 'Software Kultur Ireland (ficticia)', proveedorNif: 'IE6388047V', concepto: 'Servicio digital UE', base: 120, origen: 'ue' },
+    { id: 'sim-servicio-fuera', proveedor: 'Stage Software USA (ficticia)', proveedorNif: 'US123456789', concepto: 'Servicio digital fuera de la UE', base: 80, origen: 'fuera' },
+  ]) await redis.hset(`gastos:${id}`, { [g.id]: { fecha: hoy, actividad, ivaPct: 0, ...g } });
   // Sustituye los costes salariales agregados por nóminas individuales: evita duplicar gastos.
   const gastos = Object.values(await redis.hgetall(`gastos:${id}`));
   for (const g of gastos.filter((g) => g.concepto === 'Nóminas y Seguridad Social')) await redis.hdel(`gastos:${id}`, g.id);
@@ -51,7 +74,8 @@ try {
     ['Leo Martí Font', 'Logística y almacén', 1900, 12],
   ];
   for (const [i, [nombre, puesto, bruto, irpfPct]] of empleados.entries()) {
-    const e = { id: `sim-empleado-${i + 1}`, nombre, nif: '', puesto, bruto, irpfPct, ssTrabajadorPct: SS_TRABAJADOR, ssEmpresaPct: SS_EMPRESA, alta: `${anio - 2}-01-01`, baja: '', email: `equipo${i + 1}@aurora-eventos.example`, horasSemana: 40, precioHoraExtra: 22 };
+    const dni = 90000000 + i;
+    const e = { id: `sim-empleado-${i + 1}`, nombre, nif: `${dni}${'TRWAGMYFPDXBNJZSQVHLCKE'[dni % 23]}`, puesto, bruto, irpfPct, ssTrabajadorPct: SS_TRABAJADOR, ssEmpresaPct: SS_EMPRESA, alta: `${anio - 2}-01-01`, baja: '', email: `equipo${i + 1}@aurora-eventos.example`, horasSemana: 40, precioHoraExtra: 22 };
     await redis.hset(`empleados:${id}`, { [e.id]: e });
     for (const g of gastos.filter((g) => g.concepto === 'Nóminas y Seguridad Social')) {
       const mes = g.fecha.slice(0, 7);
@@ -81,20 +105,30 @@ try {
   const { generarAsientos, mayor } = await import('../lib/asientos.js');
   const leer = async (col) => Object.values((await redis.hgetall(`${col}:${id}`)) || {});
   const gastosFinales = await leer('gastos');
+  // El extracto generado antes de enriquecer las retenciones debe usar el neto transferido.
+  for (const m of await leer('banco')) {
+    const g = gastosFinales.find((g) => m.concepto === `RECIBO ${g.concepto.toUpperCase()}` && m.fecha === (g.pagado || g.fecha));
+    if (g) await redis.hset(`banco:${id}`, { [m.id]: { ...m, importe: -importes(g).total } });
+  }
   const cuotaIS = {}, pagos202 = {};
-  for (let y = anio - 2; y < anio; y++) if (`${y + 1}-07-25` < hoy) cuotaIS[y] = borradorSociedades(facturas, gastosFinales, y).cuota;
+  const nominas = await leer('nominas');
+  const productos = await leer('productos'), ajustes = await leer('stock'), albaranes = await leer('albaranes');
+  for (let y = anio - 2; y < anio; y++) if (`${y + 1}-07-25` < hoy) cuotaIS[y] = borradorSociedades(facturas, gastosFinales, y, { productos, ajustes, albaranes }).cuota;
   for (let y = anio - 1; y <= anio; y++) for (const x of modelo202(cuotaIS, y)) if (x.pago > 0 && x.fecha < hoy) (pagos202[y] ||= {})[x.p] = x.pago;
   emp = { ...(await redis.hget('empresas', id)), cuotaIS, pagos202 };
   await redis.hset('empresas', { [id]: emp });
-  const saldo = mayor(generarAsientos({ facturas, gastos: gastosFinales, manuales: await leer('asientos'), fiscal: emp.fiscal, pagos130: emp.pagos130, pagos202, cuotaIS, productos: await leer('productos'), ajustes: await leer('stock'), albaranes: await leer('albaranes') }, hoy), '572', anio).final;
+  const saldo = mayor(generarAsientos({ facturas, gastos: gastosFinales, nominas, manuales: await leer('asientos'), fiscal: emp.fiscal, pagos130: emp.pagos130, pagos202, cuotaIS, productos, ajustes, albaranes }, hoy), '572', anio).final;
   await redis.set(`saldo:${id}`, { importe: saldo, fecha: hoy });
   const bancos = await redis.hgetall(`bancos:${id}`);
   for (const [key, banco] of Object.entries(bancos || {})) await redis.hset(`bancos:${id}`, { [key]: { ...banco, saldo, fechaSaldo: hoy } });
   const resumen = {};
   for (const col of ['facturas', 'gastos', 'clientes', 'productos', 'presupuestos', 'empleados', 'nominas', 'recurrentes', 'albaranes', 'pedidosProv', 'banco', 'remesas']) resumen[col] = await redis.hlen(`${col}:${id}`);
-  await writeFile('/private/tmp/netto-cuenta-simulada.json', JSON.stringify({ empresa, email, resumen, datos: [...s.base.db].map(([k, v]) => [k, { ...v, ...(v.m ? { m: [...v.m] } : {}) }]) }, null, 2));
+  const copia = process.env.SIMULADA_COPIA || '/private/tmp/netto-cuenta-simulada.json';
+  await writeFile(copia, JSON.stringify({ empresa, email, resumen, datos: [...s.base.db].map(([k, v]) => [k, { ...v, ...(v.m ? { m: [...v.m] } : {}) }]) }, null, 2));
   console.log(JSON.stringify({ empresa, email, password, redis: s.url, resumen }, null, 2));
-  console.log('Cuenta en memoria preparada. Mantén este proceso abierto. Copia local: /private/tmp/netto-cuenta-simulada.json');
+  console.log(`Cuenta en memoria preparada. Copia local: ${copia}`);
+  if (process.env.SIMULADA_SALIR === '1') await s.cerrar();
+  else console.log('Mantén este proceso abierto para usar la cuenta.');
 } catch (e) {
   await s.cerrar();
   throw e;

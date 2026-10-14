@@ -142,13 +142,13 @@ export default async function Resumen({ searchParams }) {
               {debe ? (
                 <>
                   <p className="hcard-v"><Cifra v={aPagar} /><small>€ a pagar</small></p>
-                  <p className="hcard-s">Hasta el {fechaTexto(plazo.fecha)}, {plazo.dias === 0 ? 'hoy es el último día' : plazo.dias === 1 ? 'queda 1 día' : `quedan ${plazo.dias} días`}{c303 ? ` · 303 ${debe.m303 < 0 ? `${eur(-debe.m303)} a compensar` : eur(debe.m303)}` : ''}{c130 ? ` · 130 ${eur(debe.m130)}` : ''}</p>
+                  <p className="hcard-s">Hasta el {fechaTexto(plazo.fecha)}, {plazo.dias === 0 ? 'hoy es el último día' : plazo.dias === 1 ? 'queda 1 día' : `quedan ${plazo.dias} días`}{c303 ? ` · 303 ${debe.m303 < 0 ? `${eur(-debe.m303)} a compensar` : eur(debe.ivaIngresar)}` : ''}{c130 ? ` · 130 ${eur(debe.m130)}` : ''}</p>
                   <p className="hcard-s">Del {tHoy}T llevas {eur(apartado)} para apartar.</p>
                 </>
               ) : (
                 <>
                   <p className="hcard-v"><Cifra v={apartado} /><small>€ para apartar</small></p>
-                  <p className="hcard-s">{[c303 && `IVA ${eur(Math.max(0, qAhora.m303))}`, c130 && `IRPF ${eur(qAhora.m130)}`].filter(Boolean).join(' + ')} · se paga del 1 al {tHoy === 4 ? 30 : 20} de {mesPago}</p>
+                  <p className="hcard-s">{[c303 && `IVA ${eur(qAhora.ivaIngresar)}`, c130 && `IRPF ${eur(qAhora.m130)}`].filter(Boolean).join(' + ')} · se paga del 1 al {tHoy === 4 ? 30 : 20} de {mesPago}</p>
                 </>
               )}
             </section>
@@ -203,7 +203,7 @@ export default async function Resumen({ searchParams }) {
                 <div key={q.t} className="trim trimestre">
                   <div className="trim-cab"><h3>{q.t}T {anio}</h3><Presentado anio={anio} t={q.t} importe={c130 ? q.m130 : 0} pagado={pagos(anio)[q.t]} con130={c130} /></div>
                   <div className="trim-cifras">
-                    {c303 && <p><span>Modelo 303</span><strong>{q.m303 < 0 ? `${eur(-q.m303)} a compensar` : eur(q.m303)}</strong></p>}
+                    {c303 && <p><span>Modelo 303</span><strong>{q.m303 < 0 ? `${eur(-q.m303)} a compensar` : eur(q.ivaIngresar)}</strong></p>}
                     {c130 && <p><span>Modelo 130</span><strong>{eur(q.m130)}</strong></p>}
                     {!c303 && !c130 && <p><span>Base facturada</span><strong>{eur(q.ingresos)}</strong></p>}
                   </div>
@@ -215,7 +215,8 @@ export default async function Resumen({ searchParams }) {
                     {c303 && <>
                     <dt>IVA repercutido</dt><dd>{eur(q.ivaRep)}</dd>
                     <dt>IVA deducible</dt><dd>−{eur(q.ivaDed)}</dd>
-                    <dt><strong>Modelo 303</strong></dt><dd><strong>{q.m303 < 0 ? `${eur(-q.m303)} a compensar` : eur(q.m303)}</strong></dd>
+                    {q.ivaCompensado > 0 && <><dt>Cuotas anteriores compensadas</dt><dd>−{eur(q.ivaCompensado)}</dd></>}
+                    <dt><strong>Modelo 303</strong></dt><dd><strong>{q.m303 < 0 ? `${eur(-q.m303)} a compensar` : eur(q.ivaIngresar)}</strong></dd>
                     </>}
                     {c130 && <>
                     <dt>5 % gastos difícil justificación</dt><dd>−{eur(q.difJust)}</dd>

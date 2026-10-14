@@ -5,6 +5,7 @@ import { actividadesDe, actividadValida } from '@/lib/empresa';
 import { gastoDeNomina } from '@/lib/nominas';
 import { extrasNomina, resumenMes } from '@/lib/jornada';
 import { secundarios } from '@/lib/trabajos';
+import { hoy } from '@/lib/formato';
 
 export const dynamic = 'force-dynamic';
 
@@ -47,7 +48,10 @@ export async function PATCH(req) {
   const antes = b.id && (await leerUno(u, 'nominas', b.id));
   if (!antes) return error('Esa nómina ya no existe', 404);
   const n = { ...antes };
-  if ('pagada' in b) n.pagada = Boolean(b.pagada);
+  if ('pagada' in b) {
+    n.pagada = Boolean(b.pagada);
+    n.pagado = n.pagada ? (antes.pagada && antes.pagado ? antes.pagado : hoy()) : undefined;
+  }
   if ('bruto' in b) {
     n.bruto = r2(leerImporte(b.bruto));
     if (!n.bruto) return error('Sueldo bruto no válido');
