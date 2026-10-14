@@ -3,11 +3,12 @@ import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { readFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { generarAsientos, mayor } from '../lib/asientos.js';
 import { hoy } from '../lib/formato.js';
 
 test('Aurora: el generador incluye las 96 nóminas en el saldo guardado y conserva sus índices', async () => {
-  const copia = `/private/tmp/netto-simulada-test-${process.pid}.json`;
+  const copia = `${tmpdir()}/netto-simulada-test-${process.pid}.json`;
   await promisify(execFile)(process.execPath, ['--import', './tests/apoyo/cargador.mjs', 'scripts/cuenta-simulada.mjs'], {
     cwd: new URL('..', import.meta.url),
     env: { ...process.env, SIMULADA_PUERTO: '0', SIMULADA_SALIR: '1', SIMULADA_COPIA: copia },
