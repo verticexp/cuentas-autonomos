@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cabeceraCsp, modoCsp, politicaCsp } from '@/lib/csp';
+import { desvioApp } from '@/lib/app';
 
 // Lo que se ve sin sesión: la web pública (/ y app/(web)), login, páginas legales, enlaces públicos (presupuesto, portal, pago), avisos de Stripe,
 // crons de Vercel (con su secreto) e iconos.
@@ -14,6 +15,9 @@ export function proxy(req) {
   if (!['GET', 'HEAD'].includes(req.method) && origen && !mismoSitio && URL.parse(origen)?.host !== req.nextUrl.host) {
     return NextResponse.json({ error: 'Origen no permitido' }, { status: 403 });
   }
+  // App de iOS: sin web pública ni precios (lib/app.js).
+  const desvio = desvioApp({ ua: req.headers.get('user-agent'), ruta: req.nextUrl.pathname, conSesion: Boolean(req.cookies.get('t')?.value) });
+  if (desvio) return NextResponse.redirect(new URL(desvio, req.url));
   if (PUBLICO.test(req.nextUrl.pathname) || req.cookies.get('t')?.value) {
     // x-ruta: adónde volver tras desbloquear (lib/auth.js exigirDesbloqueo). Siempre la pone el servidor.
     const h = new Headers(req.headers);

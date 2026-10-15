@@ -1,0 +1,26 @@
+{
+  "appId": "com.nettohq.app",
+  "appName": "Netto",
+  "webDir": "www",
+  "server": {
+    "url": "https://www.nettohq.com",
+    "allowNavigation": [
+      "www.nettohq.com",
+      "nettohq.com"
+    ],
+    "errorPath": "sin-conexion.html"
+  },
+  "ios": {
+    "appendUserAgent": "NettoApp/1",
+    "contentInset": "never",
+    "limitsNavigationsToAppBoundDomains": true
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "launchFadeOutDuration": 300,
+      "backgroundColor": "#0F1F1B",
+      "showSpinner": false
+    }
+  }
+}
