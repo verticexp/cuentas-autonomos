@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import EntrarLlave from '@/components/EntrarLlave';
 import Logo from '@/components/Logo';
+import CampoPassword from '@/components/CampoPassword';
 import PanelMarca from '@/components/PanelMarca';
 import { entrada } from '@/lib/transicion';
 import { enfocar, useTrasArranque } from '@/lib/arranque';
@@ -121,10 +122,15 @@ export default function Bloqueo({ email, servidor = true }) {
         <label htmlFor="bloqueo-email">Email</label>
         <input id="bloqueo-email" name="email" type="email" autoComplete="username webauthn" defaultValue={email} required />
         <label htmlFor="bloqueo-password">Contraseña</label>
-        <input ref={pass} id="bloqueo-password" name="password" type="password" autoComplete="current-password" required />
+        <CampoPassword ref={pass} id="bloqueo-password" />
         {error && <p className="error">{error}</p>}
         <button type="submit" disabled={enviando || saliendo}>{saliendo ? 'Dentro' : enviando ? 'Comprobando…' : 'Entrar'}</button>
         <EntrarLlave auto alEntrar={(r) => entro(r?.cambio)} />
+      </form>}
+      {/* Fuera del formulario de desbloqueo: los dos cierran la sesión (sin ella no se puede recuperar ni entrar con otra cuenta). */}
+      {listo && <form method="post" action="/api/logout" className="nota login-ayuda">
+        <button type="submit" name="ir" value="recuperar">¿Has olvidado la contraseña?</button>
+        <button type="submit">Usar otra cuenta</button>
       </form>}
     </main>
   );
