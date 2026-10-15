@@ -1,0 +1,14 @@
+{
+  "appId": "com.nettohq.app",
+  "appName": "Netto",
+  "webDir": "www",
+  "server": {
+    "url": "https://www.nettohq.com",
+    "allowNavigation": ["www.nettohq.com", "nettohq.com"],
+    "errorPath": "sin-conexion.html"
+  },
+  "ios": {
+    "contentInset": "never",
+    "limitsNavigationsToAppBoundDomains": true
+  }
+}
