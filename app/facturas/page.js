@@ -14,6 +14,7 @@ import Deslizable from '@/components/Deslizable';
 import Buscar from '@/components/Buscar';
 import HojaFiltro from '@/components/HojaFiltro';
 import Deslizar from '@/components/Deslizar';
+import AvisoDeshacer from '@/components/AvisoDeshacer';
 import '@/app/recurrentes.css';
 import '@/app/filtros.css';
 import '@/app/mk.css';
@@ -65,6 +66,7 @@ export default async function Facturas({ searchParams }) {
 
   return (
     <main className="pagina mk-look">
+      <AvisoDeshacer />
       <header className="cabecera">
         <h1 className="titulo">Facturas</h1>
         {puede(u, 'facturar') && <Ir href="/facturas/nueva" tipo="subir" className="boton pequeno">Nueva factura</Ir>}

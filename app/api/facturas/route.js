@@ -4,6 +4,7 @@ import { borrarFactura, crearFactura, guardarCliente, limpiar } from '@/lib/fact
 import { numeroFactura, pendienteDe } from '@/lib/calculos';
 import { conLimiteDe, revisarRiesgo } from '@/lib/tercerosServidor';
 import { mismoCliente } from '@/lib/terceros';
+import { cobrarFactura, deshacerCobro, estadoCobro } from '@/lib/cobroManual';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { auditar } from '@/lib/auditoria';
 import { hoy } from '@/lib/formato';
@@ -36,6 +37,13 @@ export async function PATCH(req) {
   const antes = b.id && (await leerUno(u, 'facturas', b.id));
   if (!antes) return error('Esa factura ya no existe', 404);
   if (antes.caja) return error('Es un cierre de caja: corrígelo desde Caja');
+  // Cobrar a mano: { id, accion: 'cobrar', fecha?, importe? } (sin ellos, entera y hoy) o { id, accion: 'deshacer' }.
+  if (b.accion === 'cobrar' || b.accion === 'deshacer') {
+    const r = b.accion === 'cobrar' ? await cobrarFactura(u, antes.id, { fecha: b.fecha, importe: b.importe }, hoy()) : await deshacerCobro(u, antes.id);
+    if (r.error) return error(r.error, r.status || 400);
+    await secundarios(u, { facturas: [r.factura.id] });
+    return Response.json({ ok: true, ...estadoCobro(r.factura), ...(r.extra || {}) });
+  }
   if (Object.keys(b).length === 2 && 'cobrada' in b) {
     // La fecha del cobro: para el estado de pago (Ley Crea y Crece) y el asiento del cobro.
     // Volver a dejarla sin cobrar suma riesgo al cliente: no puede pasar de su riesgo máximo.

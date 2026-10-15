@@ -4,13 +4,14 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
 import { navegar } from '@/lib/transicion';
+import { avisarCobro } from './AvisoDeshacer';
 import '@/app/deslizar.css';
 
 // Fila de lista que se desliza a la izquierda (solo con el dedo) y deja ver sus acciones: nada se hace al soltar, sino al
 // tocar el botón. Las mismas acciones siguen en la ficha de cada cosa. Lo que se pasa son nombres, no funciones (esto llega
 // desde páginas de servidor): cobrada y enviar (facturas), pagada (gastos).
 const ACCIONES = {
-  cobrada: { nombre: 'Cobrada', tono: 'ok' },
+  cobrada: { nombre: '✓ Cobrar', tono: 'ok' },
   enviar: { nombre: 'Enviar', tono: 'azul' },
   pagada: { nombre: 'Pagado', tono: 'ok' },
 };
@@ -74,7 +75,7 @@ export default function Deslizar({ id, acciones = [], href, children }) {
     if (accion === 'enviar') { navigator.vibrate?.(6); navegar(router, href, 'adelante'); return; }
     setTrabajando(true);
     try {
-      if (accion === 'cobrada') await llamar('/api/facturas', { method: 'PATCH', body: JSON.stringify({ id, cobrada: true }) });
+      if (accion === 'cobrada') { await llamar('/api/facturas', { method: 'PATCH', body: JSON.stringify({ id, accion: 'cobrar' }) }); avisarCobro(id); }
       if (accion === 'pagada') await llamar('/api/gastos', { method: 'PATCH', body: JSON.stringify({ id, pagado: true }) });
       navigator.vibrate?.(8);
       setX(0);
