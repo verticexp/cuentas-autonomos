@@ -23,7 +23,7 @@ export default async function Cliente({ params }) {
   if (!detalle) notFound();
   const lista = await listarClientes(u);
   const editar = puede(u, 'facturar');
-  const facturas = (docs) => <ul className="grupo-lista">{docs.map((f) => <li key={f.id}><Ir className="fila ficha-fila" href={`/facturas/${encodeURIComponent(f.id)}`}><span className="txt"><strong>{numeroFactura(f)}</strong><small>{fechaCorta(f.fecha)}</small></span><span className="imp">Pendiente {eur(pendienteDe(f))}</span></Ir></li>)}</ul>;
+  const facturas = (docs) => <ul className="grupo-lista">{docs.map((f) => <li key={f.id}><Ir className="fila ficha-fila ficha-doc" href={`/facturas/${encodeURIComponent(f.id)}`}><span className="txt"><strong>{numeroFactura(f)}</strong><small>{fechaCorta(f.fecha)}</small></span><span className="imp">Pendiente {eur(pendienteDe(f))}</span></Ir></li>)}</ul>;
   return <main className="pagina mk-look fichas-pagina"><Volver href="/clientes">Clientes</Volver><h1 className="titulo">{detalle.cliente.nombre}</h1>
     <UsoRiesgo cliente={detalle.cliente} panel />
     {editar && <Ir className="boton ficha-nueva-factura" href="/facturas/nueva">Nueva factura</Ir>}

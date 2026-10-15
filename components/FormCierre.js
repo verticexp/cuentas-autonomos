@@ -86,7 +86,7 @@ export default function FormCierre({ hoy, actividades, productos = [], cierre = 
         <legend>Cobrado</legend>
         <div className="caja-cobro">
           <label>Efectivo<input className="campo" inputMode="decimal" placeholder="0,00" value={x.efectivo} onChange={(e) => poner('efectivo', e.target.value)} /></label>
-          <label>Tarjeta{tarjetaAuto && <small className="caja-auto"> · lo que falta</small>}<input className="campo" inputMode="decimal" placeholder="0,00" value={tarjetaAuto ? (tarjeta ? aTexto(tarjeta) : "") : x.tarjeta} onChange={(e) => { setTarjetaAuto(false); poner('tarjeta', e.target.value); }} /></label>
+          <label><span>Tarjeta{tarjetaAuto && <small className="caja-auto"> · lo que falta</small>}</span><input className="campo" inputMode="decimal" placeholder="0,00" value={tarjetaAuto ? (tarjeta ? aTexto(tarjeta) : "") : x.tarjeta} onChange={(e) => { setTarjetaAuto(false); poner('tarjeta', e.target.value); }} /></label>
           <label>Bizum y otros<input className="campo" inputMode="decimal" placeholder="0,00" value={x.otros} onChange={(e) => poner('otros', e.target.value)} /></label>
         </div>
         {!cuadra && <p className="error">El cobro suma {eur(r2(num(x.efectivo) + tarjeta + num(x.otros)))} y lo vendido {eur(total)}.</p>}

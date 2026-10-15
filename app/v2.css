@@ -135,6 +135,8 @@
 
 /* ───── Crear factura: vista previa al lado (components/FormFactura.js) ───── */
 .ff-campos { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+/* Datos del cliente: un campo debajo de otro, con aire entre ellos (sin él parecían una sola caja) */
+.ff-datos-cliente { display: flex; flex-direction: column; gap: 8px; }
 .ff-vista { display: none; }
 .totales { align-items: baseline; }
 .totales strong { font-family: var(--f-marca), var(--font); font-size: 20px; letter-spacing: -0.02em; }

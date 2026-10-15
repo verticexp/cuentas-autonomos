@@ -40,6 +40,9 @@
   .ficha-filtros, .ficha-rejilla { grid-template-columns: minmax(0, 1fr); }
   .ficha-fila { flex-wrap: wrap; }
   .ficha-fila .txt { flex-basis: 100%; }
+  /* Una factura (número, fecha e importe) cabe en una línea: el importe a la derecha */
+  .ficha-fila.ficha-doc { flex-wrap: nowrap; }
+  .ficha-fila.ficha-doc .txt { flex-basis: auto; }
   .ficha-riesgo { max-width: 100%; width: 100%; text-align: left; }
   .ficha-cabecera .boton { width: 100%; }
 }

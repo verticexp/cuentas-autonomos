@@ -2,6 +2,8 @@
 .cabecera .titulo { margin-bottom: 0; }
 .anios { display: flex; align-items: center; gap: 12px; }
 .anios a, .anios .off { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--surface); text-decoration: none; font-size: 1.3rem; }
+/* Un enlace de texto junto a las flechas («Todo», «Por años») no va dentro de un círculo */
+.anios a.nota { width: auto; height: 36px; padding: 0 14px; border-radius: 18px; margin: 0; font-size: 15px; white-space: nowrap; }
 .anios .off { opacity: 0.3; }
 .tarjetas.dos { grid-template-columns: 1fr 1fr; }
 .grande { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.03em; }
@@ -29,6 +31,9 @@
 .formulario fieldset { border: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .formulario legend { color: var(--muted); font-size: 0.875rem; margin-bottom: 6px; }
 .formulario .check { flex-direction: row; align-items: center; gap: 10px; color: var(--ink); font-size: 1rem; }
+/* Una casilla va siempre a la izquierda de su texto, aunque la etiqueta no lleve .check */
+.formulario label:not(.sino):has(> input[type="checkbox"]:first-child), .formulario label:not(.sino):has(> input[type="radio"]:first-child) { flex-direction: row; align-items: center; gap: 10px; color: var(--ink); font-size: 15px; cursor: pointer; }
+.formulario label:not(.sino) > input[type="checkbox"]:first-child, .formulario label:not(.sino) > input[type="radio"]:first-child { flex: none; width: 20px; height: 20px; margin: 0; accent-color: var(--marca, var(--ink)); }
 .tipo.dos .activo { background: var(--ink); color: var(--paper); }
 .dos-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .totales { display: flex; flex-wrap: wrap; gap: 6px 16px; justify-content: space-between; background: var(--surface); border-radius: 14px; padding: 14px 16px; }
