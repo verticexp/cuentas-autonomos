@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useHojaDeslizable } from '@/components/useHojaDeslizable';
 import '@/app/hoja.css';
 import '@/app/filtros.css';
 
@@ -12,6 +13,7 @@ export default function HojaFiltro({ titulo = 'Filtrar', etiqueta = 'Filtrar', a
   const [abierta, setAbierta] = useState(false);
   const boton = useRef(null);
   const panel = useRef(null);
+  const cerrar = useHojaDeslizable(panel, abierta, () => setAbierta(false));
 
   // Hoja abierta: el fondo no se mueve, Escape la cierra y el foco entra en ella y vuelve al botón al cerrar.
   useEffect(() => {
@@ -21,7 +23,7 @@ export default function HojaFiltro({ titulo = 'Filtrar', etiqueta = 'Filtrar', a
     const origen = boton.current;
     panel.current?.querySelector('a, button')?.focus();
     const teclas = (e) => {
-      if (e.key === 'Escape') { setAbierta(false); return; }
+      if (e.key === 'Escape') { cerrar(); return; }
       if (e.key !== 'Tab') return;
       const dentro = [...panel.current.querySelectorAll('a, button')];
       const [primero, ultimo] = [dentro[0], dentro.at(-1)];
@@ -30,7 +32,7 @@ export default function HojaFiltro({ titulo = 'Filtrar', etiqueta = 'Filtrar', a
     };
     document.addEventListener('keydown', teclas);
     return () => { document.removeEventListener('keydown', teclas); document.body.style.overflow = anterior; origen?.focus?.({ preventScroll: true }); };
-  }, [abierta]);
+  }, [abierta, cerrar]);
 
   return (
     <>
@@ -42,12 +44,12 @@ export default function HojaFiltro({ titulo = 'Filtrar', etiqueta = 'Filtrar', a
       {/* En el <body>: la barra fija tiene desenfoque, y eso ancla a ella cualquier capa fija que lleve dentro. */}
       {abierta && createPortal(
         <div className="hoja">
-          <button type="button" className="hoja-fondo" aria-label="Cerrar" tabIndex={-1} onClick={() => setAbierta(false)} />
+          <button type="button" className="hoja-fondo" aria-label="Cerrar" tabIndex={-1} onClick={cerrar} />
           <div className="hoja-panel" role="dialog" aria-modal="true" aria-label={titulo} ref={panel} onClick={(e) => { if (e.target.closest('a')) setAbierta(false); }}>
             <span className="hoja-asa" aria-hidden />
             <p className="hoja-t">{titulo}</p>
             {children}
-            <button type="button" className="hoja-cerrar" onClick={() => setAbierta(false)}>Cerrar</button>
+            <button type="button" className="hoja-cerrar" onClick={cerrar}>Cerrar</button>
           </div>
         </div>,
         document.body
