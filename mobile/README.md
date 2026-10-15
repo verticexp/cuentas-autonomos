@@ -22,7 +22,7 @@ npx cap open ios   # compilar y ejecutar desde Xcode
 - `www/sin-conexion.html`: pantalla propia cuando no hay red.
 - Info.plist: textos de permiso para Face ID, cámara y fotos.
 - Plugins instalados: share, filesystem, splash-screen y biometría (`@capgo/capacitor-native-biometric`).
-  Todavía no se llaman desde la web.
+  Todavía no se llaman desde la web. Share y filesystem podrían sobrar: el PDF ya funciona sin ellos.
 
 ## Resultados (simulador iPhone 18 Pro, iOS 27)
 
@@ -34,8 +34,8 @@ npx cap open ios   # compilar y ejecutar desde Xcode
 | Pantalla sin conexión | OK |
 | Iniciar sesión dentro de la app | OK |
 | Sesión conservada al cerrar y reabrir la app | OK: al reabrir aparece el bloqueo obligatorio (`components/Bloqueo.js`), no el login |
-| Foto de ticket (`capture`) | Pendiente: tras iniciar sesión, en iPhone real |
-| Descarga de PDF | Pendiente: previsiblemente necesita Filesystem + Share |
+| Foto de ticket (`capture`) | OK: «Escanear ticket» abre la cámara nativa sin cambios en la web (falta probar en iPhone real) |
+| Descarga de PDF | OK: abre la hoja nativa de compartir (Guardar en Archivos, imprimir, enviar) sin plugins |
 | Face ID | Pendiente: requiere integrar el plugin en la web |
 | Passkeys y push nativas | Bloqueado: requieren cuenta de Apple Developer (empresa) |
 
