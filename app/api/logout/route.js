@@ -7,7 +7,9 @@ export async function POST(req) {
   if (u) await cerrarSesiones(u.id);
   else await cerrarSesion(req.cookies.get('t')?.value);
   // ?salir: al volver al login no se lanza Face ID solo, porque se cerró la sesión a propósito.
-  const res = NextResponse.redirect(new URL('/login?salir=1', req.url), 303);
+  // ir=recuperar (pantalla de bloqueo, «¿Has olvidado la contraseña?»): sale y va a recuperarla.
+  const form = req.headers.get('content-type')?.includes('form') ? await req.formData().catch(() => null) : null;
+  const res = NextResponse.redirect(new URL(form?.get('ir') === 'recuperar' ? '/recuperar' : '/login?salir=1', req.url), 303);
   res.cookies.delete('t');
   return res;
 }

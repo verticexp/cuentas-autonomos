@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import EntrarLlave from '@/components/EntrarLlave';
 import Logo from '@/components/Logo';
+import CampoPassword from '@/components/CampoPassword';
 import { enfocar, irALaApp, useTrasArranque } from '@/lib/arranque';
 
 // Formulario de la pantalla de entrar. No se pinta hasta que se va la animación de inicio (así el navegador no ofrece
@@ -37,7 +38,7 @@ export default function FormEntrar({ errorInicial = '' }) {
       <label htmlFor="email">Email</label>
       <input ref={email} id="email" name="email" type="email" autoComplete="username webauthn" required />
       <label htmlFor="password">Contraseña</label>
-      <input ref={pass} id="password" name="password" type="password" autoComplete="current-password" required />
+      <CampoPassword ref={pass} id="password" />
       <button type="submit" disabled={enviando}>{enviando ? 'Entrando…' : 'Entrar'}</button>
       <p className="nota"><a href="/recuperar">¿Has olvidado la contraseña?</a></p>
       <EntrarLlave auto alEntrar={irALaApp} />
