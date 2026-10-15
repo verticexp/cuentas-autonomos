@@ -54,3 +54,6 @@
   .fa-tabla .fa-ultima { break-after: avoid; }
   .fa-pie { position: fixed; bottom: -32pt; left: 0; right: 0; padding: 0; }
 }
+/* Albarán: espacio para la firma de quien recibe la mercancía. */
+.fa-recibi { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 37px; break-inside: avoid; }
+.fa-recibi > div { height: 83px; border-bottom: .7px solid var(--line); }
