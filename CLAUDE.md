@@ -53,6 +53,21 @@ Elegir el nivel más económico que garantice calidad. No pasar `-m`: usar la co
 4. Dos agentes nunca trabajan en el mismo directorio ni en los mismos archivos a la vez. Claude trabaja en su propia rama (`claude/<tema>`).
 5. Si Codex falla, Claude explica el fallo al usuario y continúa de forma segura (rehacer el encargo o hacerlo él).
 
+### Ayudantes de Claude: Haiku y Sonnet (ahorro de cuota de Claude)
+
+Claude (Opus) se reserva el trabajo difícil y pasa lo fácil a ayudantes más baratos con la herramienta Agent (`model: "haiku"` o `"sonnet"`), sin que el usuario tenga que pedirlo.
+
+| Trabajo | Quién | Ejemplos |
+|---|---|---|
+| Búsqueda y lectura | **Haiku 5.5** | barrer el repo para localizar código, leer logs largos o salidas de tests/build, resumir archivos grandes, inventariar usos de una función |
+| Implementación acotada y repetitiva | **Sonnet 5.5** (en su propio worktree: `isolation: "worktree"`) | tests de un módulo, cambios mecánicos en varios archivos según un patrón ya decidido, textos y estilos de UI, primera revisión de un diff buscando fallos evidentes |
+| Diseño, lógica fiscal/contable, depuración, cambios que cruzan capas, revisión final e integración | **Claude (Opus)** | — |
+
+- **No delegar lo trivial**: leer un archivo concreto o un `grep` puntual lo hace Claude directamente; lanzar un ayudante para eso gasta más.
+- Los encargos a ayudantes siguen las mismas reglas que con Codex: objetivo, archivos concretos, criterios de aceptación, resumen breve como respuesta (no volcar archivos enteros).
+- **Sonnet o Codex** para implementar: por defecto Codex (no consume cuota de Claude). Sonnet cuando la tarea necesita el contexto de esta conversación, cuando Codex no tiene cuota o cuando es tan pequeña que preparar el worktree de Codex no compensa.
+- Todo lo que escriba un ayudante pasa por la revisión obligatoria de abajo, igual que lo de Codex.
+
 ### Revisión obligatoria
 
 Claude revisa siempre el diff de Codex (`git -C <worktree> diff main...`), ejecuta `npm test` (y `npm run build` si toca páginas o rutas) y corrige o rechaza lo que no cumpla antes de integrarlo. Al terminar, informa al usuario de qué hizo cada agente.
