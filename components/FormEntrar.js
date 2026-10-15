@@ -42,7 +42,6 @@ export default function FormEntrar({ errorInicial = '' }) {
       <button type="submit" disabled={enviando}>{enviando ? 'Entrando…' : 'Entrar'}</button>
       <p className="nota"><a href="/recuperar">¿Has olvidado la contraseña?</a></p>
       <EntrarLlave auto alEntrar={irALaApp} />
-      <p className="nota">¿No tienes cuenta? Pide una invitación al administrador.</p>
     </form>
   );
 }
