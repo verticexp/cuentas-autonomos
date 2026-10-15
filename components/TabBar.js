@@ -8,6 +8,7 @@ import Logo from '@/components/Logo';
 import CambiarEmpresa from '@/components/CambiarEmpresa';
 import { EXTRA, extraDe } from '@/components/secciones';
 import { atajosDe } from '@/lib/navegacion';
+import { useHojaDeslizable } from '@/components/useHojaDeslizable';
 import '@/app/empresas.css';
 import '@/app/lateral.css';
 import '@/app/hoja.css';
@@ -66,6 +67,7 @@ export default function TabBar({ permisos = [], empresas = [], empresa, admin = 
   const [hoja, setHoja] = useState(false);
   const botonMas = useRef(null);
   const panel = useRef(null);
+  const cerrarHoja = useHojaDeslizable(panel, hoja && movil, () => setHoja(false));
 
   useEffect(() => { instalarHistorial(); }, []);
   // La pestaña marcada: las pantallas raíz marcan la suya; una de dentro (Presupuestos, Recurrentes, Caja, Banco…) mantiene la
@@ -95,7 +97,7 @@ export default function TabBar({ permisos = [], empresas = [], empresa, admin = 
     const boton = botonMas.current;
     panel.current?.querySelector('a, button')?.focus();
     const teclas = (e) => {
-      if (e.key === 'Escape') { setHoja(false); return; }
+      if (e.key === 'Escape') { cerrarHoja(); return; }
       if (e.key !== 'Tab') return;
       const dentro = [...panel.current.querySelectorAll('a, button')];
       const [primero, ultimo] = [dentro[0], dentro.at(-1)];
@@ -104,7 +106,7 @@ export default function TabBar({ permisos = [], empresas = [], empresa, admin = 
     };
     document.addEventListener('keydown', teclas);
     return () => { document.removeEventListener('keydown', teclas); document.body.style.overflow = anterior; boton?.focus?.({ preventScroll: true }); };
-  }, [hoja, movil]);
+  }, [hoja, movil, cerrarHoja]);
 
   if (path === '/login' || path === '/privacidad' || path === '/condiciones' || path.startsWith('/invitacion') || path.startsWith('/p/') || path.startsWith('/portal/') || path.startsWith('/pagar/') || path.endsWith('/pdf')) return null;
 
@@ -169,17 +171,17 @@ export default function TabBar({ permisos = [], empresas = [], empresa, admin = 
       {permisos.includes('facturar')
         ? <Link ref={botonMas} href={nuevo} prefetch className={`mas${path === nuevo || (hoja && movil) ? ' abierta' : ''}`} aria-label={movil ? 'Crear' : path.startsWith('/presupuestos') ? 'Nuevo presupuesto' : 'Nueva factura'}
           aria-haspopup={movil ? 'dialog' : undefined} aria-expanded={movil ? hoja : undefined}
-          onClick={(e) => { if (movil && atajos.length > 0) { e.preventDefault(); if (hoja) setHoja(false); else abrirHoja(); return; } vibrar(); if (path !== nuevo) alPulsar(router, nuevo, 'subir')(e); }}>
+          onClick={(e) => { if (movil && atajos.length > 0) { e.preventDefault(); if (hoja) cerrarHoja(); else abrirHoja(); return; } vibrar(); if (path !== nuevo) alPulsar(router, nuevo, 'subir')(e); }}>
           <svg viewBox="0 0 24 24" aria-hidden><path d="M12 5v14M5 12h14" /></svg>
           <span className="mas-txt">{path.startsWith('/presupuestos') ? 'Nuevo presupuesto' : 'Nueva factura'}</span>
         </Link>
-        : atajos.length > 0 && <button ref={botonMas} type="button" className={`mas mas-solo-movil${hoja ? ' abierta' : ''}`} aria-label="Crear" aria-haspopup="dialog" aria-expanded={hoja} onClick={() => (hoja ? setHoja(false) : abrirHoja())}>
+        : atajos.length > 0 && <button ref={botonMas} type="button" className={`mas mas-solo-movil${hoja ? ' abierta' : ''}`} aria-label="Crear" aria-haspopup="dialog" aria-expanded={hoja} onClick={() => (hoja ? cerrarHoja() : abrirHoja())}>
           <svg viewBox="0 0 24 24" aria-hidden><path d="M12 5v14M5 12h14" /></svg>
         </button>}
     </div>
     {hoja && movil && atajos.length > 0 && (
       <div className="hoja">
-        <button type="button" className="hoja-fondo" aria-label="Cerrar" tabIndex={-1} onClick={() => setHoja(false)} />
+        <button type="button" className="hoja-fondo" aria-label="Cerrar" tabIndex={-1} onClick={cerrarHoja} />
         <div className="hoja-panel" role="dialog" aria-modal="true" aria-label="Crear" ref={panel}>
           <span className="hoja-asa" aria-hidden />
           <p className="hoja-t">Crear</p>
@@ -193,7 +195,7 @@ export default function TabBar({ permisos = [], empresas = [], empresa, admin = 
               </li>
             ))}
           </ul>
-          <button type="button" className="hoja-cerrar" onClick={() => setHoja(false)}>Cerrar</button>
+          <button type="button" className="hoja-cerrar" onClick={cerrarHoja}>Cerrar</button>
         </div>
       </div>
     )}

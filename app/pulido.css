@@ -109,3 +109,19 @@ html[data-entrada] .tabbar { animation: entrada-barra 0.5s var(--vt-curva) 0.15s
 @media (max-width: 899px) {
   .inicio { margin: -6px 0 0; padding-top: 18px; border-radius: 28px; }
 }
+
+/* Pulsar y soltar: al tocar, lo pulsable se hunde al instante; al soltar, vuelve con suavidad en vez de saltar.
+   :where() no suma especificidad: lo que ya define su propia transición la conserva. */
+:where(button, .boton, a.fila, .hcard.ir, .mas-tile, .filtro-boton, .chips a, .volver, .celda.ir, .opcion) {
+  transition: transform 0.32s var(--vt-curva), opacity 0.2s ease, background-color 0.2s ease;
+}
+:where(button:active, .boton:active, a.fila:active, .hcard.ir:active, .mas-tile:active, .filtro-boton:active, .chips a:active, .volver:active, .celda.ir:active, .opcion:active) {
+  transition-duration: 0.06s;
+}
+
+/* Movimiento reducido: nada se desliza ni se escala entre pantallas, solo un fundido (lib/transicion.js usa «fundido»). */
+@media (prefers-reduced-motion: reduce) {
+  html[data-vt]::view-transition-group(*) { animation-duration: 0s !important; }
+  html[data-vt]::view-transition-old(root) { animation: 0.15s ease both vt-fuera !important; }
+  html[data-vt]::view-transition-new(root) { animation: 0.2s ease both vt-dentro !important; }
+}
