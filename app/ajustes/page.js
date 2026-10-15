@@ -9,6 +9,7 @@ import { modoDe } from '@/lib/verifactu';
 import { miEmpleado } from '@/lib/jornadaServidor';
 import { ahoraMadrid } from '@/lib/jornada';
 import CambiarEmpresa from '@/components/CambiarEmpresa';
+import Volver from '@/components/Volver';
 import '@/app/empresas.css';
 
 import '@/app/mk.css';
@@ -34,6 +35,8 @@ export default async function Page() {
   const { yo } = await miEmpleado(u, ahoraMadrid().slice(0, 10));
   return (
     <main className="pagina mk-look">
+      {/* En el móvil se llega desde «Más»: hay que poder volver. En el ordenador, Ajustes está en la barra lateral. */}
+      <div className="volver-movil"><Volver href="/mas">Más</Volver></div>
       <h1 className="titulo">Ajustes</h1>
       <div className="perfil">
         <Avatar nombre={u.nombre} size={48} />
