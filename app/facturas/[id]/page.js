@@ -3,11 +3,13 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requerir } from '@/lib/auth';
 import { leer, leerUno } from '@/lib/redis';
-import { apartar, desglose, emisorDe, importes, numeroFactura, vencida, vencimiento } from '@/lib/calculos';
+import { apartar, desglose, emisorDe, importes, numeroFactura, pagadoDe, pendienteDe, vencida, vencimiento } from '@/lib/calculos';
 import { eur, fechaCorta, fechaTexto, hoy } from '@/lib/formato';
 import FormFactura from '@/components/FormFactura';
 import Volver from '@/components/Volver';
-import { Borrar, Cobrada } from '@/components/Acciones';
+import { Borrar } from '@/components/Acciones';
+import Cobro from '@/components/Cobro';
+import { deshacerDe } from '@/lib/cobroManual';
 import EnviarFactura from '@/components/EnviarFactura';
 import VerifactuFactura from '@/components/VerifactuFactura';
 import { RepetirFactura } from '@/components/Recurrente';
@@ -91,7 +93,7 @@ export default async function Factura({ params }) {
           <span className={`fh-estado e-${estado.toLowerCase()}`}>{estado}{!f.cobrada && ` · vence el ${fechaTexto(vencimiento(f, u.emisor?.plazo))}`}</span>
           <span>{fechaTexto(f.fecha)}</span>
         </div>
-        {editar && <div className="fh-cobrada"><Cobrada id={f.id} cobrada={f.cobrada} /></div>}
+        {editar && <div className="fh-cobrada"><Cobro id={f.id} cobrada={Boolean(f.cobrada)} total={i.total} pagado={pagadoDe(f)} pendiente={Math.max(0, pendienteDe(f))} cobro={f.cobro ? { fecha: f.cobro.fecha, metodo: f.cobro.metodo } : null} deshacer={deshacerDe(f)} hoy={hoy()} desde={f.fecha} /></div>}
       </section>
       <div className="acciones-factura">
         <Ir href={`/facturas/${f.id}/pdf`} className="boton">Ver / descargar PDF</Ir>

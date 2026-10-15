@@ -25,14 +25,6 @@ export function Borrar({ url, pregunta, volver }) {
   return <button className="borrar" onClick={borrar}>Borrar</button>;
 }
 
-export function Cobrada({ id, cobrada }) {
-  const router = useRouter();
-  const cambiar = async () => {
-    try { await llamar('/api/facturas', { method: 'PATCH', body: JSON.stringify({ id, cobrada: !cobrada }) }); router.refresh(); } catch (e) { alert(e.message); }
-  };
-  return <button className={`estado ${cobrada ? 'ok' : 'pend'}`} onClick={cambiar}>{cobrada ? 'Cobrada' : 'Pendiente'}</button>;
-}
-
 export function Imprimir() {
   return <button className="boton" onClick={() => window.print()}>Descargar PDF</button>;
 }
