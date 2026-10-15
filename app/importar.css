@@ -1,5 +1,5 @@
 /* Importar desde Holded o Excel (Ajustes → Importar datos) */
-.importar-tipos { display: grid; grid-template-columns: repeat(4, 1fr); }
+.importar-tipos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; }
 .importar-archivo input { width: 100%; font-size: 15px; }
 .importar-previa { margin-top: 16px; display: flex; flex-direction: column; gap: 10px; }
 .importar-previa .importar-cuenta { flex-wrap: wrap; margin: 0; }

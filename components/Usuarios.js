@@ -147,7 +147,7 @@ export default function Usuarios({ lista, yo, empresa, empresas, miEmpresa, soyA
     <>
       {lista && (
         <>
-          <p className="rotulo">Personas de {empresa}. Toca a alguien para cambiar lo que puede hacer.</p>
+          <p className="rotulo">Personas de {String(empresa || '').replace(/\.$/, '')}. Toca a alguien para cambiar lo que puede hacer.</p>
           <ul className="grupo-lista personas">
             {lista.map((o) => <Persona key={o.id} o={o} yo={yo} soyAdmin={soyAdmin} onCambio={() => router.refresh()} />)}
           </ul>

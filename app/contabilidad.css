@@ -3,10 +3,15 @@
 .cont-tabla { padding-top: 6px; padding-bottom: 6px; }
 .cont-fila { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 9px 0; font-size: 15px; }
 .cont-fila + .cont-fila { border-top: 0.5px solid var(--line); }
-.cont-n { min-width: 0; overflow-wrap: anywhere; }
+.cont-n { min-width: 0; overflow-wrap: break-word; }
 .cont-cifras { display: flex; gap: 14px; font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
 .cont-cifras > span { min-width: 92px; }
 .cont-cifras small { min-width: 92px; color: var(--muted); font-size: 13px; align-self: center; }
+/* Móvil: el año anterior va debajo del actual; en dos columnas no quedaba sitio para el nombre de la partida y se partía a trozos («aprovisionamiento s») */
+@media (max-width: 599.98px) {
+  .cont-cifras { flex-direction: column; align-items: flex-end; gap: 1px; }
+  .cont-cifras > span, .cont-cifras small { min-width: 0; align-self: flex-end; }
+}
 .cont-cab { font-size: 13px; color: var(--muted); font-weight: 600; }
 .cont-cab .cont-cifras > span { color: var(--ink); }
 .cont-total { font-weight: 600; }

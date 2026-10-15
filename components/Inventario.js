@@ -31,7 +31,7 @@ export function Ajuste({ producto, hoy, coste, consumo = false }) {
       <h3>Ajustar el stock</h3>
       <select className="campo" value={x.motivo} onChange={poner('motivo')} aria-label="Motivo">{MOTIVOS.map(([k, t]) => <option key={k} value={k}>{t}</option>)}</select>
       <div className="dos-col">
-        <input className="campo" inputMode="decimal" required placeholder={x.motivo === 'recuento' ? 'Unidades contadas' : 'Unidades'} value={x.cantidad} onChange={poner('cantidad')} aria-label="Unidades" />
+        <input className="campo" inputMode="decimal" required placeholder={x.motivo === 'recuento' ? 'Contadas' : 'Unidades'} value={x.cantidad} onChange={poner('cantidad')} aria-label="Unidades" />
         <input className="campo" type="date" value={x.fecha} onChange={poner('fecha')} aria-label="Fecha" />
       </div>
       {x.motivo === 'recuento' && <label className="check"><input type="checkbox" checked={x.como === 'consumo'} onChange={(e) => setX({ ...x, como: e.target.checked ? 'consumo' : '' })} /> Si falta, es material gastado en servicios (consumo, no pérdida)</label>}

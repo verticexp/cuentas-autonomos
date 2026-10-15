@@ -40,6 +40,8 @@ button:focus-visible, input:focus-visible, a:focus-visible, select:focus-visible
 
 /* Grupos */
 .grupo { margin-bottom: 28px; }
+/* Una sección que sigue a una nota al pie no puede ir pegada a ella */
+.grupo-pie + .bloque, .grupo-pie + .grupo, .grupo-pie + section { margin-top: 28px; }
 .grupo-t { font-size: 20px; font-weight: 700; letter-spacing: 0.01em; margin: 0 0 8px; }
 .grupo-c { background: var(--surface); border-radius: 12px; overflow: hidden; }
 .grupo-c.relleno { padding: 14px 16px 10px; }
@@ -244,6 +246,8 @@ fieldset.solo-ver:disabled .campo { opacity: 1; color: var(--ink); -webkit-text-
 .ico-cuadro svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .celda:has(.ico-cuadro) + .celda::before { left: 58px; }
 .modelo-num { flex: none; min-width: 40px; height: 29px; padding: 0 6px; border-radius: 7px; background: var(--relleno); display: grid; place-items: center; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+/* «Calculado» en pequeño: a tamaño normal estrechaba tanto el nombre del modelo que se partía en cuatro líneas */
+.modelo-num ~ .v { flex: none; font-size: 14px; }
 .tipo.varias { display: flex; overflow-x: auto; }
 .tipo.varias button { flex: 1 0 auto; padding: 7px 12px; white-space: nowrap; }
 
@@ -308,8 +312,12 @@ a.fila:active { transform: scale(0.985); }
 .deslizable::-webkit-scrollbar { display: none; }
 .chips.deslizable { flex-wrap: nowrap; margin: 0 -16px 8px; padding: 0 16px; scroll-padding: 0 16px; }
 .chips.deslizable a { flex: none; white-space: nowrap; padding: 7px 14px; font-size: 15px; }
+/* En el ordenador hay sitio: las fichas bajan de línea en vez de cortarse en el borde */
+@media (min-width: 1024px) { .chips.deslizable { flex-wrap: wrap; overflow: visible; margin: 0 0 8px; padding: 0; } }
 .tipo.varias { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(max-content, 1fr); }
 .tipo.varias button { padding: 7px 14px; white-space: nowrap; }
+/* En el ordenador, las actividades bajan de línea en vez de quedar cortadas por los lados */
+@media (min-width: 1024px) { .tipo.varias { display: grid; grid-auto-flow: row; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 2px; overflow: visible; } }
 .txt small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* Botones bajo la factura o el presupuesto: el principal a lo ancho y el resto en dos columnas iguales */
@@ -423,3 +431,13 @@ html[data-arranque=visto] #arranque { display: none; }
 .acceso .ico-cuadro { width: 48px; height: 48px; border-radius: 15px; }
 .acceso .ico-cuadro svg { width: 22px; height: 22px; stroke-width: 1.6; }
 .acceso:active { transform: scale(0.95); }
+
+/* Ficha de factura en el ordenador: la página es ancha (lleva la vista previa al lado) y los botones a todo lo ancho
+   quedaban como barras de casi un metro. Allí van en fila, cada uno a su medida. */
+@media (min-width: 1024px) {
+  .acciones-factura { display: flex; flex-wrap: wrap; gap: 10px; }
+  .acciones-factura > * { width: auto; padding-left: 22px; padding-right: 22px; }
+  .pagina .portal-enlace .portal-botones { display: flex; flex-wrap: wrap; }
+  .pagina .portal-enlace .portal-botones > * { width: auto; padding-left: 22px; padding-right: 22px; }
+  .pagina .envios > .boton.ancho, .pagina .boton.ancho.recurrente-boton { display: inline-flex; width: auto; align-self: flex-start; justify-self: start; padding-left: 22px; padding-right: 22px; }
+}

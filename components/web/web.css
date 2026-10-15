@@ -470,6 +470,7 @@ body:has(.web):has(.tabbar) { padding-left: 0 !important; }
 .web-seg-ind { position: absolute; top: 5px; bottom: 5px; left: 5px; width: calc((100% - 10px) / 3); border-radius: 12px; background: var(--v); box-shadow: 0 6px 14px -6px rgba(15, 31, 27, 0.6); transform: translateX(calc(var(--i) * 100%)); transition: transform 0.4s var(--e2); }
 .web-ciclo { display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 15px; }
 .web-ciclo > button:not(.web-switch) { color: var(--g) !important; transition: color 0.2s ease; } .web-ciclo > button.on { color: var(--v) !important; }
+.web-ciclo > button:not(.web-switch) { min-height: 40px; padding: 0 4px; } /* zona táctil cómoda en el móvil */
 .web-ciclo em { font-style: normal; font-size: 12px; font-weight: 700; background: #D8F3E6; color: #137050; padding: 3px 8px; border-radius: 999px; margin-left: 4px; }
 .web-switch { width: 48px; height: 28px; border-radius: 999px; background: #CBD3CE !important; position: relative; transition: background-color 0.3s ease, transform 0.15s var(--e); }
 .web-switch span { position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25); transition: transform 0.35s var(--e); }

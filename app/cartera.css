@@ -14,4 +14,11 @@
 .car-recibido, .car-solo { font-size: 13px; color: var(--muted); }
 .car-solo { margin: 0; padding: 0 16px 12px 24px; }
 .car-aviso { display: block; background: color-mix(in srgb, var(--hacienda) 14%, var(--surface)); color: var(--ink); border-radius: 12px; padding: 10px 14px; font-size: 15px; text-decoration: none; margin: 0 0 20px; }
-.car-formas { margin: 0 -16px 14px; padding: 0 16px; }
+.chips.deslizable.car-formas { margin: 0 -16px 16px; padding: 0 16px; }
+@media (min-width: 1024px) { .chips.deslizable.car-formas { margin: 0 0 16px; padding: 0; } }
+/* Móvil: la fecha estrecha y el detalle en dos líneas como mucho, para que el nombre del cliente no se corte a la mitad */
+@media (max-width: 599.98px) {
+  .car-lista .teso-tipo { width: 66px; font-size: 12px; padding-left: 6px; }
+  .car-lista .txt small { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; white-space: normal; }
+  .car-lista .fila { gap: 10px; }
+}

@@ -25,12 +25,12 @@
 .jor-dia small { color: var(--muted); font-size: 13px; display: flex; flex-direction: column; }
 .jor-corregida { color: var(--hacienda); }
 .jor-dia .imp { font-variant-numeric: tabular-nums; }
-.jor-editar { display: block; margin: -6px 0 8px 16px; border: 0; background: none; color: var(--acento); font: inherit; font-size: 13px; cursor: pointer; padding: 4px 0; }
+.jor-editar { display: block; margin: -6px 0 8px 16px; border: 0; background: none; color: var(--marca); font: inherit; font-size: 13px; cursor: pointer; padding: 4px 0; }
 .jor-editando { padding: 0 8px 8px; }
 .jor-form { margin: 8px 0; }
 .jor-pausa { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end; }
 .jor-quitar { width: 36px; height: 42px; border: 0; border-radius: 10px; background: var(--relleno); color: var(--ink); font-size: 20px; cursor: pointer; }
-.jor-anadir { align-self: flex-start; border: 0; background: none; color: var(--acento); font: inherit; font-size: 15px; padding: 4px 0; cursor: pointer; }
+.jor-anadir { align-self: flex-start; border: 0; background: none; color: var(--marca); font: inherit; font-size: 15px; padding: 4px 0; cursor: pointer; }
 .nomina-jornada { margin-bottom: 16px; }
 .nomina-horas a { color: inherit; }
 

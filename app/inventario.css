@@ -8,7 +8,7 @@
 .inv-pedido li { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-top: 0.5px solid var(--line); font-size: 14px; }
 .inv-pedido li small { display: block; color: var(--muted); font-size: 12.5px; }
 .inv-pedido li b { white-space: nowrap; }
-.inv-ajuste { margin: 12px 0; }
+.tarjeta.inv-ajuste { margin: 12px 0 28px; }
 .inv-borrar { padding: 0 16px 10px; text-align: right; }
 .inv-acciones { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .inv-recibir { display: grid; gap: 8px; margin-bottom: 10px; }
