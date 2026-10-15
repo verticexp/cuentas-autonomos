@@ -40,3 +40,4 @@
   background: color-mix(in srgb, var(--out) 14%, var(--surface));
   color: var(--out);
 }
+@media (min-width: 1024px) { .volver-movil { display: none; } }
