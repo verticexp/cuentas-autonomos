@@ -32,8 +32,15 @@ npx cap open ios   # compilar y ejecutar desde Xcode
 | Carga Netto (login) dentro de la app | OK |
 | Restricción a dominios de Netto | OK |
 | Pantalla sin conexión | OK |
-| Iniciar sesión y mantener la sesión (cookies) | Pendiente: requiere credenciales del usuario |
+| Iniciar sesión dentro de la app | OK |
+| Sesión conservada al cerrar y reabrir la app | OK: al reabrir aparece el bloqueo obligatorio (`components/Bloqueo.js`), no el login |
 | Foto de ticket (`capture`) | Pendiente: tras iniciar sesión, en iPhone real |
 | Descarga de PDF | Pendiente: previsiblemente necesita Filesystem + Share |
 | Face ID | Pendiente: requiere integrar el plugin en la web |
 | Passkeys y push nativas | Bloqueado: requieren cuenta de Apple Developer (empresa) |
+
+## Notas
+
+- La pantalla de bloqueo pide la contraseña cada vez que se abre la app. En móvil debería desbloquearse con
+  Face ID: es la primera función nativa que conviene integrar.
+- `simctl terminate` cierra la app a la fuerza; es la forma de reproducir que iOS la cierre en segundo plano.
