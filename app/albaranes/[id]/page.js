@@ -43,6 +43,7 @@ export default async function Doc({ params }) {
         <div className="fh-pie"><span>{est ? { pendiente: 'Pendiente de servir', parcial: 'Servido en parte', servido: 'Servido', cerrado: 'Cerrado' }[est.estado] : d.factura ? 'Facturado' : 'Por facturar'}</span><span>{fechaTexto(d.fecha)}</span></div>
       </section>
       <div className="acciones-factura">
+        <Ir href={`/albaranes/${d.id}/pdf`} className="boton">Ver / descargar PDF</Ir>
         {est && ['pendiente', 'parcial'].includes(est.estado) && <Ir href={`/albaranes/nuevo?pedido=${d.id}`} tipo="subir" className="boton">Entregar (hacer albarán)</Ir>}
         {est && est.estado !== 'servido' && <CerrarPedido id={d.id} cerrado={Boolean(d.cerrado)} />}
         {factura && <Link href={`/facturas/${factura.id}`} className="boton sec">Ver la factura {numeroFactura(factura)}</Link>}
