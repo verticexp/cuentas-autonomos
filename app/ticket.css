@@ -11,3 +11,6 @@
 .gasto-stock .mini-t { margin: 0; font-size: 13px; color: var(--muted); }
 .gasto-stock-linea { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) 28px; gap: 6px; align-items: center; }
 .gasto-stock-linea .campo { margin: 0; min-width: 0; }
+.gasto-justificante { display: grid; gap: 8px; padding: 12px; border: 0.5px solid var(--line); border-radius: 12px; }
+.gasto-justificante .mini-t { margin: 0; }
+.gasto-justificante .boton { font-size: 15px; }

@@ -10,6 +10,7 @@ import { limpiarProyecto } from '@/lib/proyectos';
 import { borrarGasto, crearGasto, editarGasto, pagarGasto } from '@/lib/gastosServidor';
 import { hoy } from '@/lib/formato';
 import { secundarios } from '@/lib/trabajos';
+import { borrarJustificantes, huellaValida } from '@/lib/justificantes';
 
 export const dynamic = 'force-dynamic';
 
@@ -69,6 +70,9 @@ export async function POST(req) {
     ...(categoriaDe(b) ? { categoria: categoriaDe(b) } : {}),
     ...(inversionDe(b) ? { inversion: inversionDe(b) } : {}),
     ...(stockDe(b) ? { stock: stockDe(b), categoria: categoriaDe(b) || '600' } : {}),
+    // Huella del justificante que el navegador va a subir justo después (PUT /api/gastos/justificante): avisa de duplicados
+    // ya al guardar. Al subirlo, el servidor la vuelve a calcular sobre el archivo.
+    ...(huellaValida(b.huella) ? { archivo: { huella: b.huella } } : {}),
   };
   if (origenDe(b, g.ivaPct)) g.origen = origenDe(b, g.ivaPct);
   if (retencionDe(b)) g.irpfPct = retencionDe(b);
@@ -123,6 +127,7 @@ export async function DELETE(req) {
   if (r.error) return error(r.error, r.status || 400);
   const { antes } = r;
   if (antes) await auditar(u, 'Gasto borrado', `${antes.concepto} · ${antes.fecha} · ${antes.base} € sin IVA`);
+  if (antes?.archivo) await borrarJustificantes(u, [antes.archivo]);
   if (antes) await secundarios(u, { meses: [antes.fecha] });
   return Response.json({ ok: true });
 }

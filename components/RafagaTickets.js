@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
 import { nifUE } from '@/lib/calculos';
 import { fotograma, reducir } from '@/lib/reducirImagen';
+import { preparar, subir } from '@/lib/justificanteCliente';
 import '@/app/rafaga.css';
 
 // Modo ráfaga de Gastos: varios tickets seguidos con la cámara en vivo. Se hacen las fotos una tras otra, se leen de una
@@ -107,15 +108,18 @@ export default function RafagaTickets({ hoy, actividades }) {
   };
   const reintentar = (it) => { poner(it.id, { estado: 'leyendo', error: '' }); leerTodas([it]); };
 
+  // Cada ticket se guarda con su foto como justificante (la huella va con el gasto para avisar de duplicados).
   const guardar = async (it, confirmado = false) => {
     poner(it.id, { estado: 'guardando', error: '' });
     try {
-      const r = await fetch('/api/gastos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...it.g, ...(confirmado ? { duplicadoConfirmado: true } : {}) }) });
+      const j = await preparar(null, it.foto).catch(() => null);
+      const r = await fetch('/api/gastos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...it.g, ...(j?.huella ? { huella: j.huella } : {}), ...(confirmado ? { duplicadoConfirmado: true } : {}) }) });
       const d = await r.json().catch(() => ({}));
       if (r.status === 423 && d.bloqueada) window.location.replace(`/bloqueo?a=${encodeURIComponent(window.location.pathname + window.location.search)}`);
       if (r.status === 409 && Array.isArray(d.duplicados) && d.duplicados.length) { poner(it.id, { estado: 'duplicado', duplicados: d.duplicados }); return false; }
       if (!r.ok) throw new Error(d.error || 'Algo ha fallado');
-      poner(it.id, { estado: 'guardado' });
+      const fallo = j?.blob && d.gasto?.id ? await subir(d.gasto.id, j.blob, { alGuardar: true }) : '';
+      poner(it.id, { estado: 'guardado', aviso: fallo ? `Sin la foto: ${fallo}. Adjúntala desde la ficha del gasto.` : '' });
       return true;
     } catch (err) { poner(it.id, { estado: 'leido', error: err.message }); return false; }
   };
@@ -180,6 +184,7 @@ export default function RafagaTickets({ hoy, actividades }) {
                       {it.estado === 'leyendo' && <p className="rafaga-estado" role="status">Leyendo el ticket {i + 1}…</p>}
                       {it.estado === 'error' && <><p className="error">{it.error}</p><div className="rafaga-acc"><button type="button" className="boton sec pequeno" onClick={() => reintentar(it)}>Reintentar</button><button type="button" className="boton sec pequeno" onClick={() => poner(it.id, { estado: 'descartado' })}>Descartar</button></div></>}
                       {it.estado === 'guardado' && <p className="rafaga-estado ok">✓ Guardado: {it.g.concepto} · {it.g.base} €</p>}
+                      {it.estado === 'guardado' && it.aviso && <p className="nota">{it.aviso}</p>}
                       {it.estado === 'descartado' && <p className="rafaga-estado">Descartado</p>}
                       {['leido', 'guardando', 'duplicado'].includes(it.estado) && (
                         <>

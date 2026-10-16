@@ -5,8 +5,13 @@ import { datosPaquete, nombrePaquete, paqueteXlsx } from '@/lib/paquete';
 import { paquetePdf } from '@/lib/paquetePdf';
 import { zip } from '@/lib/zip';
 import { delosAnios } from '@/lib/indices';
+import { justificantesParaZip } from '@/lib/justificantes';
+import { trimestre } from '@/lib/calculos';
 
 export const dynamic = 'force-dynamic';
+
+// Los mismos gastos que el paquete (lib/paquete.js datosPaquete).
+const gastosDelTrimestre = (gastos, anio, t) => (gastos || []).filter((g) => g.fecha?.startsWith(`${anio}-`) && trimestre(g.fecha) === t);
 
 // Paquete trimestral para la gestoría. ?anio=2026&t=3&formato=zip|xlsx|pdf (por defecto, un .zip con los dos).
 export async function GET(req) {
@@ -23,7 +28,8 @@ export async function GET(req) {
     const formato = q.get('formato');
     const [cuerpo, tipo, ext] = formato === 'xlsx' ? [paqueteXlsx(d), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'xlsx']
       : formato === 'pdf' ? [await paquetePdf(d), 'application/pdf', 'pdf']
-        : [zip([{ nombre: `${n}.xlsx`, datos: paqueteXlsx(d) }, { nombre: `${n}.pdf`, datos: await paquetePdf(d) }]), 'application/zip', 'zip'];
+        // El .zip lleva también los justificantes de los gastos del trimestre.
+        : [zip([{ nombre: `${n}.xlsx`, datos: paqueteXlsx(d) }, { nombre: `${n}.pdf`, datos: await paquetePdf(d) }, ...(await justificantesParaZip(u, gastosDelTrimestre(gastos, anio, t)))]), 'application/zip', 'zip'];
     return new Response(cuerpo, { headers: { 'Content-Type': tipo, 'Content-Disposition': `attachment; filename="${n}.${ext}"` } });
   });
   return resultado?.ocupado ? respuesta429(5, 'Ya hay una exportación en curso en tu empresa. Espera a que termine y prueba de nuevo.') : resultado;

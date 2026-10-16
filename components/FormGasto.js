@@ -13,6 +13,7 @@ import { emparejarLineas } from '@/lib/inventario';
 import { leerFacturaElectronica } from '@/lib/facturae';
 import { reducir } from '@/lib/reducirImagen';
 import RafagaTickets from './RafagaTickets';
+import { preparar, subir } from '@/lib/justificanteCliente';
 import '@/app/ticket.css';
 
 // plegado: en la lista de gastos empieza como una tarjeta con «Escanear ticket»; el formulario se abre al escanear o al pedirlo.
@@ -29,11 +30,14 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, r
   const [leyendo, setLeyendo] = useState('');
   const [abierto, setAbierto] = useState(Boolean(gasto) || !plegado);
   const [hecho, setHecho] = useState(false);
+  // Justificante leído (foto reducida o PDF): se sube al guardar el gasto nuevo. En la ficha, se adjunta o sustituye aparte.
+  const [adjunto, setAdjunto] = useState(null);
+  const [avisoArchivo, setAvisoArchivo] = useState('');
   const foto = async (e) => {
     const archivo = e.target.files?.[0];
     e.target.value = '';
     if (!archivo) return;
-    setAvisoDuplicados(null);
+    setAvisoDuplicados(null); setAdjunto(null); setAvisoArchivo('');
     setAbierto(true); setHecho(false);
     // Factura electrónica (Facturae, UBL o CII): se lee aquí mismo, sin IA, con todos sus datos exactos.
     if (/xml/.test(archivo.type) || /\.(xml|xsig)$/i.test(archivo.name)) {
@@ -54,6 +58,8 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, r
     try {
       const imagen = pdf ? await new Promise((ok, mal) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = mal; r.readAsDataURL(archivo); }) : await reducir(archivo);
       const d = await llamar('/api/gastos/ticket', { method: 'POST', body: JSON.stringify({ imagen }) });
+      const j = await preparar(archivo, pdf ? null : imagen).catch(() => null);
+      if (j?.blob) setAdjunto(j);
       const t = d.gasto;
       // Con inventario: las líneas de la factura que son productos del catálogo entran al almacén.
       const stock = productos.length ? emparejarLineas(t.lineas, productos).map((l) => ({ ...l, cantidad: String(l.cantidad).replace('.', ','), coste: String(l.coste).replace('.', ',') })) : [];
@@ -67,13 +73,14 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, r
   const enviar = async (e, confirmacion = null) => {
     e?.preventDefault();
     if (enviando || (avisoDuplicados && !confirmacion)) return;
-    setEnviando(true); setError('');
+    setEnviando(true); setError(''); setAvisoArchivo('');
+    let fallo = '';
     try {
       if (gasto) {
         await llamar('/api/gastos', { method: 'PATCH', body: JSON.stringify(g) });
       } else {
         const datos = confirmacion || g;
-        const r = await fetch('/api/gastos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...datos, ...(confirmacion ? { duplicadoConfirmado: true } : {}) }) });
+        const r = await fetch('/api/gastos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...datos, ...(adjunto ? { huella: adjunto.huella } : {}), ...(confirmacion ? { duplicadoConfirmado: true } : {}) }) });
         const d = await r.json().catch(() => ({}));
         if (r.status === 423 && d.bloqueada) window.location.replace(`/bloqueo?a=${encodeURIComponent(window.location.pathname + window.location.search)}`);
         if (r.status === 409 && Array.isArray(d.duplicados) && d.duplicados.length) {
@@ -81,9 +88,14 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, r
           return;
         }
         if (!r.ok) throw new Error(d.error || 'Algo ha fallado');
+        // El gasto ya está guardado: si el archivo no sube, se avisa y se puede adjuntar después desde su ficha.
+        if (adjunto && d.gasto?.id) fallo = await subir(d.gasto.id, adjunto.blob, { alGuardar: true });
+        setAdjunto(null);
+        if (fallo) fallo = `Gasto guardado sin el justificante: ${fallo}. Puedes adjuntarlo desde la ficha del gasto.`;
       }
       setAvisoDuplicados(null);
-      if (gasto || movimiento) { volverA(router, '/gastos'); router.refresh(); return; }
+      if (gasto || movimiento) { if (fallo) alert(fallo); volverA(router, '/gastos'); router.refresh(); return; }
+      setAvisoArchivo(fallo);
       setG(vacio);
       setLeyendo('');
       if (plegado) { setAbierto(false); setHecho(true); }
@@ -100,6 +112,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, r
           <small>Haz una foto al ticket o sube la factura: Netto lee proveedor, base, IVA y fecha.</small>
         </div>
         {error && <p className="error">{error}</p>}
+        {avisoArchivo && <p className="nota" role="alert">{avisoArchivo}</p>}
         <div className="gasto-rapido-botones">
           <label className="boton gasto-escanear"><svg viewBox="0 0 24 24" aria-hidden><path d="M4 8V6a2 2 0 012-2h2M16 4h2a2 2 0 012 2v2M20 16v2a2 2 0 01-2 2h-2M8 20H6a2 2 0 01-2-2v-2M4 12h16" /></svg>Escanear ticket<input type="file" accept="image/*" capture="environment" onChange={foto} hidden /></label>
           {!gasto && !movimiento && <RafagaTickets hoy={hoy} actividades={actividades} />}
@@ -127,7 +140,8 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, r
           <label className="boton sec ticket-foto">Subir factura<input type="file" accept="image/*,application/pdf,.xml,.xsig,text/xml,application/xml" onChange={foto} hidden /></label>
         </div>
       </div>}
-      {leyendo && <p className="nota ticket-nota" role="status">{leyendo}</p>}
+      {leyendo && <p className="nota ticket-nota" role="status">{leyendo}{adjunto ? ` Al guardar, ${adjunto.blob.type === 'application/pdf' ? 'el PDF' : 'la foto'} queda como justificante del gasto.` : ''}</p>}
+      {gasto && <Justificante gasto={gasto} />}
       <input className="campo" placeholder="Proveedor (opcional)" value={g.proveedor || ''} onChange={(e) => poner('proveedor', e.target.value)} />
       {g.proveedor && <input className="campo" placeholder="NIF del proveedor (opcional)" value={g.proveedorNif || ''} onChange={(e) => poner('proveedorNif', e.target.value)} />}
       <input className="campo" placeholder="Concepto" value={g.concepto} onChange={(e) => poner('concepto', e.target.value)} required />
@@ -193,6 +207,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, r
       )}
       {pareceBien({ ...g, base: parseImporte(g.base) }) && <p className="nota">¿Es un equipo que vas a usar varios años? Márcalo como bien de inversión: se resta repartido en varios años, como pide Hacienda.</p>}
       {error && <p className="error">{error}</p>}
+      {avisoArchivo && <p className="nota" role="alert">{avisoArchivo}</p>}
       {avisoDuplicados && <div className="nota" role="alert">
         <strong>Puede que este gasto ya esté apuntado</strong>
         <p>Revisa los gastos coincidentes antes de guardarlo de nuevo.</p>
@@ -204,9 +219,46 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, r
       </div>}
       {!avisoDuplicados && <div className="gasto-guardar">
         <button className="boton" disabled={enviando}>{enviando ? 'Guardando…' : gasto ? 'Guardar cambios' : 'Añadir'}</button>
-        {plegado && !gasto && <button type="button" className="boton sec" onClick={() => { setAbierto(false); setG(vacio); setLeyendo(''); setError(''); }}>Cancelar</button>}
+        {plegado && !gasto && <button type="button" className="boton sec" onClick={() => { setAbierto(false); setG(vacio); setLeyendo(''); setError(''); setAdjunto(null); }}>Cancelar</button>}
         {movimiento && <button type="button" className="boton sec" onClick={() => atras(router, '/gastos')}>Cancelar</button>}
       </div>}
     </form>
+  );
+}
+
+// En la ficha del gasto: ver el justificante guardado, o adjuntarlo o sustituirlo a mano (foto o PDF, máx. 5 MB).
+function Justificante({ gasto }) {
+  const router = useRouter();
+  const [estado, setEstado] = useState('');
+  const [error, setError] = useState('');
+  const tiene = Boolean(gasto.archivo?.clave);
+  const url = `/api/gastos/justificante?id=${encodeURIComponent(gasto.id)}`;
+  const elegir = async (e) => {
+    const archivo = e.target.files?.[0];
+    e.target.value = '';
+    if (!archivo) return;
+    if (!/^image\//.test(archivo.type) && archivo.type !== 'application/pdf') { setError('Sube una foto (JPG, PNG o WebP) o un PDF'); return; }
+    if (tiene && !confirm('¿Sustituir el justificante que ya tiene este gasto?')) return;
+    setError(''); setEstado('Guardando el justificante…');
+    try {
+      const j = await preparar(archivo);
+      if (j.error) throw new Error(j.error);
+      const fallo = await subir(gasto.id, j.blob);
+      if (fallo) throw new Error(fallo);
+      setEstado(tiene ? 'Justificante sustituido.' : 'Justificante guardado.');
+      router.refresh();
+    } catch (err) { setEstado(''); setError(err.message || 'No se ha podido guardar el justificante'); }
+  };
+  return (
+    <div className="gasto-justificante">
+      <p className="mini-t">Justificante {tiene && <small>({gasto.archivo.tipo === 'application/pdf' ? 'PDF' : 'foto'} · {Math.max(1, Math.round(gasto.archivo.tamano / 1024)).toLocaleString('es-ES')} KB)</small>}</p>
+      {!tiene && <p className="nota">Este gasto no tiene guardada la foto del ticket ni el PDF de la factura.</p>}
+      <div className="gasto-guardar">
+        {tiene && <a className="boton sec" href={url} target="_blank" rel="noopener">Ver justificante</a>}
+        <label className="boton sec">{tiene ? 'Sustituir' : 'Adjuntar justificante'}<input type="file" accept="image/*,application/pdf" onChange={elegir} hidden /></label>
+      </div>
+      {estado && <p className="nota" role="status">{estado}</p>}
+      {error && <p className="error">{error}</p>}
+    </div>
   );
 }
