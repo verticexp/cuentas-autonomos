@@ -4,6 +4,7 @@ import { error, usuarioApi } from '@/lib/api';
 import { membresias } from '@/lib/membresias';
 import { auditar, leerAuditoria } from '@/lib/auditoria';
 import { zip } from '@/lib/zip';
+import { justificantesParaZip } from '@/lib/justificantes';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,6 +39,8 @@ export async function GET() {
       { nombre: 'personas.json', datos: json(personas) },
       ...LISTAS.map((n, i) => ({ nombre: `${n}.json`, datos: json(listas[i] || []) })),
       { nombre: 'actividad.json', datos: json(actividad) },
+      // Las fotos y PDF de los gastos (fuera de Redis, lib/justificantes.js), con el nombre que se ve en gastos.json.
+      ...(await justificantesParaZip(u, listas[LISTAS.indexOf('gastos')] || [])),
     ];
     const fecha = new Date().toISOString().slice(0, 10);
     return new Response(zip(archivos), { headers: { 'Content-Type': 'application/zip', 'Content-Disposition': `attachment; filename="netto-datos-${fecha}.zip"` } });
