@@ -147,7 +147,7 @@ test('F12: contraseña corta o igual a la anterior se rechaza sin consumir el to
     assert.equal(await R.redis.get(`sesion:${s}`), u.id);
     assert.ok(await A.comprobar(anterior, (await R.redis.hget('usuarios', u.id)).pass));
   }
-  assert.deepEqual(await F.recuperarPassword(t, '1234567890'), { ok: true });
+  assert.deepEqual(await F.recuperarPassword(t, 'Nueva-Clave-2026'), { ok: true });
 });
 
 test('F12: dos cambios simultáneos solo pueden usar el token una vez', async () => {

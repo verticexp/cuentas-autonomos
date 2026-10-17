@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { register } from 'node:module';
 import { EventEmitter } from 'node:events';
 import https from 'node:https';
+import dns from 'node:dns/promises';
 import './apoyo/cargador.mjs';
 import { crearBase } from './apoyo/upstash-mem.mjs';
 
@@ -20,7 +21,7 @@ const fetchReal = globalThis.fetch;
 const variables = ['KV_REST_API_URL', 'KV_REST_API_TOKEN', 'LIMITES', 'VERIFACTU_P12', 'VERIFACTU_P12_CLAVE'];
 const entorno = Object.fromEntries(variables.map((k) => [k, process.env[k]]));
 let redis, POST;
-const valido = { nombre: 'Ana García', email: 'ana@ejemplo.es', password: 'contraseña segura', tipo: 'aut', plan: 'Esencial', razon: 'García Pérez Ana', nif: '12345678Z', direccion: 'Calle Mayor 12', cp: '08001', ciudad: 'Barcelona', provincia: 'Barcelona', telefono: '+34 600 123 456', periodo: 'anio', acepto: '1' };
+const valido = { nombre: 'Ana García', email: 'ana@ejemplo.es', password: 'Luna!Bosque72Rio', tipo: 'aut', plan: 'Esencial', razon: 'García Pérez Ana', nif: '12345678Z', direccion: 'Calle Mayor 12', cp: '08001', ciudad: 'Barcelona', provincia: 'Barcelona', telefono: '+34 600 123 456', periodo: 'anio', acepto: '1' };
 
 before(async () => {
   process.env.KV_REST_API_URL = 'https://registro-upstash.test';
@@ -41,6 +42,7 @@ before(async () => {
 });
 beforeEach(async () => {
   mock.restoreAll();
+  mock.method(dns, 'resolveMx', async () => [{ exchange: 'mx.ejemplo.es' }]);
   base.run(['flushdb']);
   process.env.LIMITES = 'activo';
   delete process.env.VERIFACTU_P12; delete process.env.VERIFACTU_P12_CLAVE;
@@ -57,7 +59,7 @@ async function alta(cambios = {}, ip = '192.0.2.1') {
   const res = await POST(new Request('https://netto.test/api/registro', { method: 'POST', headers: { Accept: 'application/json', 'x-real-ip': ip }, body: form }));
   return { res, datos: await res.json() };
 }
-async function rechaza(cambios, mensaje, paso = 3) {
+async function rechaza(cambios, mensaje, paso = 2) {
   const { res, datos } = await alta(cambios);
   assert.equal(res.status, 400);
   assert.match(datos.error, mensaje);
@@ -106,9 +108,9 @@ test('registro: valida CP de cinco dígitos, dirección, ciudad, provincia y nom
 });
 
 test('registro: errores de nombre, email y contraseña vuelven a Tu cuenta', async () => {
-  await rechaza({ nombre: ' ' }, /nombre/, 1);
-  await rechaza({ email: 'incorrecto' }, /email/, 1);
-  await rechaza({ password: 'corta' }, /contraseña/, 1);
+  await rechaza({ nombre: ' ' }, /nombre/, 4);
+  await rechaza({ email: 'incorrecto' }, /email/, 4);
+  await rechaza({ password: 'corta' }, /contraseña/, 4);
 });
 
 test('registro: rechaza un NIF repetido en el índice antes de consultar el censo', async () => {
@@ -117,7 +119,7 @@ test('registro: rechaza un NIF repetido en el índice antes de consultar el cens
   const { res, datos } = await alta({ nif: 'es 12.345.678-z' });
   assert.equal(res.status, 400);
   assert.equal(datos.error, 'Ya hay una cuenta con ese NIF. Entra con ella o escríbenos a corporate@nettohq.com.');
-  assert.equal(datos.paso, 3);
+  assert.equal(datos.paso, 2);
   assert.equal(red.mock.callCount(), 0);
   assert.equal(await redis.hlen('empresas'), 0);
 });
@@ -135,6 +137,7 @@ test('registro: NO IDENTIFICADO y similares no crean la cuenta', async () => {
     simularCenso(resultado);
     await rechaza({}, /Hacienda no reconoce ese NIF con ese nombre/);
     mock.restoreAll();
+    mock.method(dns, 'resolveMx', async () => [{ exchange: 'mx.ejemplo.es' }]);
   }
   assert.equal(await redis.get('registro-nif:12345678Z'), null);
 });
@@ -144,6 +147,7 @@ test('registro: NIF de baja o revocado bloquea el alta', async () => {
     simularCenso(resultado);
     await rechaza({}, /Ese NIF figura de baja en Hacienda/);
     mock.restoreAll();
+    mock.method(dns, 'resolveMx', async () => [{ exchange: 'mx.ejemplo.es' }]);
   }
 });
 
@@ -194,7 +198,7 @@ test('registro: dos altas simultáneas con el mismo NIF crean una sola empresa',
 
 test('registro: un email existente libera el NIF y permite corregir el alta', async () => {
   await redis.hset('emails', { [valido.email]: 'fundador' });
-  await rechaza({}, /email ya tiene cuenta/, 1);
+  await rechaza({}, /email ya tiene cuenta/, 4);
   assert.equal(await redis.get('registro-nif:12345678Z'), null);
   assert.equal((await alta({ email: 'nueva@ejemplo.es' })).res.status, 200);
 });
@@ -215,4 +219,24 @@ test('registro: la primera cuenta no necesita datos fiscales, censo, plan ni ace
   assert.equal(usuario.admin, true); assert.equal(empresa.nombre, 'Netto');
   assert.deepEqual(empresa.emisor, {}); assert.equal(empresa.censo, undefined);
   assert.equal(empresa.plan, undefined); assert.equal(await redis.hlen('empresa-nif'), 0);
+});
+
+ test('registro: email inexistente y contraseña débil indican paso 4', async () => {
+  await rechaza({ password: 'password123' }, /común/, 4);
+  for (const metodo of ['resolveMx', 'resolve4', 'resolve6']) mock.method(dns, metodo, async () => { throw Object.assign(new Error(), { code: 'ENOTFOUND' }); });
+  await rechaza({ email: 'nadie@inexistente.es' }, /no parece existir/, 4);
+});
+test('registro: tipo y plan indican los pasos nuevos', async () => {
+  await rechaza({ tipo: 'otro' }, /tipo/, 1);
+  await rechaza({ plan: 'otro' }, /plan/, 3);
+  await rechaza({ periodo: 'otro' }, /periodo/, 3);
+});
+
+test('registro-email: ruta pública valida y limita a 30 intentos por IP', async () => {
+  const { POST: comprobar } = await import('../app/api/registro/email/route.js');
+  const pedir = (email) => comprobar(new Request('https://netto.test/api/registro/email', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-real-ip': '192.0.2.99' }, body: JSON.stringify({ email }) }));
+  assert.deepEqual(await (await pedir('ana@ejemplo.es')).json(), { ok: true });
+  assert.match((await (await pedir('ana@yopmail.com')).json()).error, /temporales/);
+  for (let i = 2; i < 30; i++) assert.equal((await pedir('ana@ejemplo.es')).status, 200);
+  assert.equal((await pedir('ana@ejemplo.es')).status, 429);
 });
