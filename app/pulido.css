@@ -166,3 +166,18 @@ html[data-entrada] .tabbar { animation: entrada-barra 0.5s var(--vt-curva) 0.15s
 .registro .registro-acepto input { flex: 0 0 20px; width: 20px; height: 20px; margin: 1px 0 0; padding: 0; accent-color: var(--marca); }
 .registro .registro-acepto span { min-width: 0; }
 .registro .error { overflow-wrap: anywhere; }
+.registro-contenido { overflow: hidden; transition: height 220ms ease-out; }
+.registro-bloque { display: flow-root; min-width: 0; animation: registro-entrada 220ms ease-out; }
+.registro-avanza { --entrada: 12px; }
+.registro-vuelve { --entrada: -12px; }
+@keyframes registro-entrada { from { opacity: 0; transform: translateX(var(--entrada)); } to { opacity: 1; transform: translateX(0); } }
+.registro-progreso, .registro-fuerza { display: flex; gap: 5px; margin: 10px 0 20px; }
+.registro-progreso span, .registro-fuerza span { flex: 1; height: 3px; background: var(--line); border-radius: 2px; transition: background-color 220ms ease-out; }
+.registro-progreso .lleno, .registro-fuerza .lleno { background: var(--marca); }
+.registro-seguridad { font-size: 13px; line-height: 1.5; }
+.registro-seguridad ul { padding-left: 18px; }
+.registro-seguridad .registro-fuerza { margin-bottom: 6px; }
+@media (prefers-reduced-motion: reduce) {
+  .registro-bloque { animation: none; }
+  .registro-contenido, .registro-progreso span, .registro-fuerza span { transition: none; }
+}
