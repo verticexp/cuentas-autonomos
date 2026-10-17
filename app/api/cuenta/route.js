@@ -19,6 +19,11 @@ export async function PATCH(req) {
   if (res) return res;
   const b = await cuerpo(req);
   const sin = (p) => !puede(u, p) && error('No tienes permiso para esto. Pídeselo al administrador de tu empresa.', 403);
+  // Bloqueo de pantalla opcional (Ajustes › Face ID y contraseña): personal, no de la empresa.
+  if ('bloqueoPantalla' in b) {
+    await actualizarUsuario(u, { bloqueoPantalla: Boolean(b.bloqueoPantalla) });
+    return Response.json({ ok: true });
+  }
   if (b.presentado) {
     if (sin('resumen')) return sin('resumen');
     const { anio, t, importe } = b.presentado;
