@@ -78,7 +78,7 @@ export default async function Modelos({ searchParams }) {
       <section className="bloque" id="calendario">
         <h2 className="grupo-t">Qué presentas y cuándo</h2>
         <div className="grupo-c">
-          {modelosDe(f).map((m) => <div key={m.id} className="celda"><span className="modelo-num">{m.num || m.id}</span><span className="txt">{m.nombre}<small>{m.cuando}</small></span></div>)}
+          {modelosDe({ ...f, intracom: hay349 }).map((m) => <div key={m.id} className="celda"><span className="modelo-num">{m.num || m.id}</span><span className="txt">{m.nombre}<small>{m.cuando}</small></span></div>)}
         </div>
         <p className="grupo-pie">Según cómo trabajas ({f.tipo === 'sociedad' ? 'sociedad' : 'autónomo'}). Si algo no encaja, cámbialo en Ajustes › Actividades y modelos.</p>
       </section>

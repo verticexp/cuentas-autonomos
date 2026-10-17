@@ -1,10 +1,13 @@
-import { redis, clave } from '@/lib/redis';
+import { redis, clave, leerUno } from '@/lib/redis';
+import { leerRango } from '@/lib/indices';
 import { actividadesDe } from '@/lib/empresa';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { leerImporte, r2 } from '@/lib/calculos';
+import { fusionarCuotas, idCuota, mesesEntre } from '@/lib/cuotas';
 
-// Crea la cuota de autónomos de cada mes (sin IVA) desde el mes indicado hasta el actual.
-// Si un mes ya estaba, lo actualiza en vez de duplicarlo.
+// Crea la cuota de autónomos de cada mes (sin IVA) desde el mes indicado hasta el actual, siempre con el id del mes
+// (lib/cuotas.js): si un mes ya estaba (del formulario o del banco), se actualiza en vez de duplicarlo, y las cuotas
+// repetidas de esos meses se unen en una.
 export async function POST(req) {
   const { u, res } = await usuarioApi({ permiso: 'gastar' });
   if (res) return res;
@@ -13,13 +16,24 @@ export async function POST(req) {
   if (!importe) return error('Importe no válido');
   if (!/^(20\d{2})-(0[1-9]|1[0-2])$/.test(b.desde || '')) return error('Mes de inicio no válido');
   const hoy = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' }).slice(0, 7);
+  const meses = mesesEntre(b.desde, hoy);
+  if (!meses.length) return error('El mes de inicio es posterior al actual');
+  const { guardar, borrar } = fusionarCuotas(await leerRango(u, 'gastos', `${b.desde}-01`, `${hoy}-31`));
+  const existentes = new Map(guardar.map((g) => [g.id, g]));
   const nuevos = {};
-  for (let [y, m] = b.desde.split('-').map(Number); `${y}-${String(m).padStart(2, '0')}` <= hoy; m === 12 ? (y++, m = 1) : m++) {
-    const mes = `${y}-${String(m).padStart(2, '0')}`;
-    const ultimo = new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);
-    nuevos[`cuota-${mes}`] = { id: `cuota-${mes}`, fecha: ultimo, actividad: actividadesDe(u)[0].id, concepto: `Cuota de autónomos ${mes}`, base: importe, ivaPct: 0 };
+  for (const g of guardar) nuevos[g.id] = g;
+  for (const mes of meses) {
+    const [y, m] = mes.split('-').map(Number);
+    const antes = existentes.get(idCuota(mes)) || (await leerUno(u, 'gastos', idCuota(mes)));
+    nuevos[idCuota(mes)] = { ...(antes || { fecha: new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10), actividad: actividadesDe(u)[0].id, concepto: `Cuota de autónomos ${mes}`, ivaPct: 0 }), id: idCuota(mes), base: importe };
   }
-  if (!Object.keys(nuevos).length) return error('El mes de inicio es posterior al actual');
-  await redis.hset(clave(u, 'gastos'), nuevos);
-  return Response.json({ ok: true, meses: Object.keys(nuevos).length });
+  const tx = redis.multi().hset(clave(u, 'gastos'), nuevos);
+  if (borrar.length) tx.hdel(clave(u, 'gastos'), ...borrar);
+  // Los movimientos del banco que apuntaban a una cuota repetida pasan a apuntar a la del mes.
+  for (const g of guardar) {
+    const mov = g.banco && (await leerUno(u, 'banco', g.banco));
+    if (mov?.enlace?.tipo === 'gasto' && mov.enlace.id !== g.id) tx.hset(clave(u, 'banco'), { [mov.id]: { ...mov, enlace: { ...mov.enlace, id: g.id } } });
+  }
+  await tx.exec();
+  return Response.json({ ok: true, meses: meses.length, unidas: borrar.length });
 }
