@@ -12,6 +12,7 @@ import { eur } from '@/lib/formato';
 import { TIPOS_OPERACION } from '@/lib/operaciones';
 import { evaluarRiesgo, tieneLimite } from '@/lib/riesgo';
 import { mismoCliente, nombreForma } from '@/lib/terceros';
+import { cambiarActividadFactura, etiquetaClienteFactura, lineaFacturaVacia, resolverClienteFactura } from '@/lib/formFactura';
 import '@/app/riesgo.css';
 
 const aTexto = (n) => String(n ?? '').replace('.', ',');
@@ -38,6 +39,11 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
       : plantilla
         ? { actividad: plantilla.actividad, fecha: hoy, cliente: plantilla.cliente, lineas: lineasDe(plantilla), irpfPct: plantilla.irpfPct, nota: plantilla.nota || '', cobrada: false, proyecto: plantilla.proyecto || '' }
       : { actividad: actividades[0].id, fecha: hoy, cliente: { nombre: '', nif: '', direccion: '', ciudad: '' }, lineas: [lineaVacia(defecto(actividades[0].id).ivaPct)], nota: '', cobrada: false, irpfPct: defecto(actividades[0].id).irpfPct });
+  // La selección vive solo en el formulario; el cuerpo de la API conserva el cliente histórico completo.
+  const [clienteSeleccionado, setClienteSeleccionado] = useState(() => resolverClienteFactura(clientes, f.cliente)?.id || '');
+  // La retención de una plantilla ya está elegida. Un cambio manual cuenta incluso si coincide con el defecto.
+  const irpfPersonalizado = useRef(Boolean(plantilla) || Number(f.irpfPct) !== Number(defecto(f.actividad).irpfPct));
+  const ivasPersonalizados = useRef(new Set());
   const [error, setError] = useState('');
   const [errores, setErrores] = useState({});
   const prefijo = useId();
@@ -78,15 +84,23 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
   // Clave de idempotencia de este formulario: si se pulsa dos veces o se reintenta, sale una sola factura.
   const [idem] = useState(() => crypto.randomUUID());
 
-  const poner = (k, v) => { limpiarErrores(k); setF((x) => ({ ...x, [k]: v })); };
+  const poner = (k, v) => {
+    if (k === 'irpfPct') irpfPersonalizado.current = true;
+    limpiarErrores(k); setF((x) => ({ ...x, [k]: v }));
+  };
   const ponerCliente = (k, v) => {
+    if (k === 'nombre' || k === 'nif') setClienteSeleccionado('');
     limpiarErrores(`cliente.${k}`);
     setF((x) => ({ ...x, cliente: { ...x.cliente, [k]: v } }));
   };
   const ordenados = [...clientes].sort((a, b) => a.nombre.localeCompare(b.nombre));
-  const elegido = clientes.find((x) => x.nombre.toUpperCase() === f.cliente.nombre.trim().toUpperCase())?.id || '';
+  const ficha = resolverClienteFactura(clientes, f.cliente, clienteSeleccionado);
+  const elegido = ficha?.id || '';
   const elegirCliente = (id) => {
-    const c = clientes.find((x) => x.id === id);
+    const coincidencias = clientes.filter((x) => x.id === id);
+    if (id && coincidencias.length !== 1) return;
+    const c = coincidencias[0];
+    setClienteSeleccionado(c?.id || '');
     poner('cliente', c ? { nombre: c.nombre, nif: c.nif, direccion: c.direccion, ciudad: c.ciudad, email: c.email || '', pais: c.pais || '' } : { nombre: '', nif: '', direccion: '', ciudad: '', pais: '' });
   };
   // Móvil (solo en la factura nueva, app/factura-movil.css): buscador de clientes y, plegados, los datos del cliente y los
@@ -105,16 +119,18 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
   const eligiendo = !nuevoCli && (cambiando || !f.cliente.nombre.trim());
   const camposAbiertos = nuevoCli || datosCli;
   const cambiarActividad = (a) => {
-    if (nueva && !orig) limpiarErrores('irpfPct', 'ivaPct', ...f.lineas.map((_, i) => `lineas.${i}.ivaPct`));
-    setF((x) => (nueva && !orig
-      ? { ...x, actividad: a, irpfPct: defecto(a).irpfPct, lineas: x.lineas.map((l) => ({ ...l, ivaPct: defecto(a).ivaPct })) }
-      : { ...x, actividad: a }));
+    if (nueva && !orig) limpiarErrores(...(!irpfPersonalizado.current ? ['irpfPct'] : []),
+      ...f.lineas.flatMap((l, i) => lineaFacturaVacia(l) && !ivasPersonalizados.current.has(i) ? [`lineas.${i}.ivaPct`, ...(i === 0 ? ['ivaPct'] : [])] : []));
+    const opciones = { nueva, rectificativa: Boolean(orig), irpfPersonalizado: irpfPersonalizado.current, ivasPersonalizados: [...ivasPersonalizados.current] };
+    setF((x) => cambiarActividadFactura(x, a, defecto(a), opciones));
   };
   const ponerLinea = (i, k, v) => {
+    if (k === 'ivaPct') ivasPersonalizados.current.add(i);
     limpiarErrores(`lineas.${i}.${k}`, ...(k === 'ivaPct' ? ['ivaPct'] : k !== 'concepto' ? ['base'] : []));
     setF((x) => ({ ...x, lineas: x.lineas.map((l, j) => (j === i ? { ...l, [k]: v } : l)) }));
   };
   const quitarLinea = (i) => {
+    ivasPersonalizados.current = new Set([...ivasPersonalizados.current].filter((j) => j !== i).map((j) => j > i ? j - 1 : j));
     setErrores((actuales) => Object.fromEntries(Object.entries(actuales).flatMap(([k, v]) => {
       if (k === 'lineas' || k === 'base') return [];
       const m = /^lineas\.(\d+)\.(.+)$/.exec(k);
@@ -127,6 +143,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
   // Del catálogo: rellena la última línea si está vacía; si no, añade una.
   const delCatalogo = (p) => {
     const ult = f.lineas.at(-1);
+    if (ult && !ult.concepto && !ult.precio) ivasPersonalizados.current.delete(f.lineas.length - 1);
     limpiarErrores('lineas', 'base', ...(ult && !ult.concepto && !ult.precio ? [`lineas.${f.lineas.length - 1}`] : []));
     setF((x) => {
       const l = { concepto: p.nombre, cantidad: '1', precio: aTexto(p.precio), dto: '', ivaPct: p.ivaPct, producto: p.id };
@@ -142,7 +159,6 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
   const tipos = desglose({ lineas: nums });
   // Ficha del cliente elegido: cómo y cuándo cobra, y su riesgo máximo con esta factura. Lo que ya debe incluye esta misma
   // factura si se está editando (propio), y lo cobrado no cuenta; si no suma riesgo, nunca se avisa.
-  const ficha = clientes.find((x) => x.id === elegido);
   const resumen = ficha && [ficha.formaCobro && nombreForma(ficha.formaCobro), Number.isInteger(ficha.plazo) && (ficha.plazo ? `${ficha.plazo} días` : 'al contado'),
     ficha.comercial && `Comercial: ${ficha.comercial}`, ficha.zona && `Zona: ${ficha.zona}`].filter(Boolean).join(' · ');
   const pendiente = f.cobrada ? 0 : r2(t.total - (factura ? pagadoDe(factura) : 0));
@@ -193,7 +209,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
               <div className="ff-cli-busca">
                 <input type="search" className="campo" placeholder="Buscar cliente por nombre o NIF" value={buscando} onChange={(e) => setBuscando(e.target.value)} aria-label="Buscar cliente" autoComplete="off" enterKeyHint="search" />
                 <ul className="ff-cli-res">
-                  {resultados.map((c) => <li key={c.id}><button type="button" onClick={() => elegirBuscado(c.id)}><strong>{c.nombre}</strong><small>{[c.nif, c.ciudad].filter(Boolean).join(' · ')}</small></button></li>)}
+                  {resultados.map((c) => <li key={c.id}><button type="button" onClick={() => elegirBuscado(c.id)}><strong>{c.nombre}</strong><small>{[c.nif || 'Sin NIF', c.ciudad].filter(Boolean).join(' · ')}</small></button></li>)}
                   <li><button type="button" className="ff-cli-nuevo" onClick={clienteNuevo}>+ Cliente nuevo{buscando.trim() ? `: «${buscando.trim()}»` : ''}</button></li>
                 </ul>
                 {cambiando && f.cliente.nombre.trim() && <button type="button" className="ff-cli-enlace" onClick={() => { setCambiando(false); setBuscando(''); }}>Dejar a {f.cliente.nombre}</button>}
@@ -216,9 +232,10 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
         )}
         <div className={`ff-datos-cliente${camposAbiertos ? ' abierto' : ''}`}>
           <label className="ff-etiqueta-oculta" htmlFor={idCampo('cliente-selector')}>Elegir cliente</label>
-          <select id={idCampo('cliente-selector')} className="campo ff-sel-cli" value={elegido} onChange={(e) => elegirCliente(e.target.value)}>
+          <select id={idCampo('cliente-selector')} className="campo ff-sel-cli" value={elegido || (f.cliente.nombre.trim() ? '__sin_ficha__' : '')} onChange={(e) => elegirCliente(e.target.value)}>
+            {!elegido && f.cliente.nombre.trim() && <option value="__sin_ficha__" disabled>{etiquetaClienteFactura(f.cliente)} (sin ficha seleccionada)</option>}
             <option value="">+ Cliente nuevo</option>
-            {ordenados.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+            {ordenados.map((c) => <option key={c.id} value={c.id}>{etiquetaClienteFactura(c)}</option>)}
           </select>
           <label className="ff-etiqueta-oculta" htmlFor={idCampo('cliente.nombre')}>Razón social</label>
           <input {...atributos('cliente.nombre')} className="campo" placeholder="Ej.: Eventos SL" value={f.cliente.nombre} onChange={(e) => ponerCliente('nombre', e.target.value)} required />{mensaje('cliente.nombre')}
