@@ -11,7 +11,7 @@ const euros = (n) => n.toLocaleString('es-ES', { minimumFractionDigits: n % 1 ? 
 // (app/api/suscripcion). En la app de iOS no se enseña la compra (lib/app.js); solo el administrador puede cambiarlo.
 export default function ElegirPlan({ plan, uso, admin, app }) {
   const [tipo, setTipo] = useState(plan?.tipo || 'aut');
-  const [periodo, setPeriodo] = useState(plan?.periodo || 'anio');
+  const [periodo, setPeriodo] = useState(plan?.periodo || 'mes');
   const [estado, setEstado] = useState('');
   const [actual, setActual] = useState(plan);
   const router = useRouter();
