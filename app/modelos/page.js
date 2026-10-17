@@ -6,7 +6,7 @@ import Rend130 from '@/components/Rend130';
 import { modelo111 } from '@/lib/nominas';
 import { borradorRenta, borradorSociedades, modelo115, modelo180, modelo190, modelo202, modelo347, modelo349, modelo390, retencionesProfesionales, MINIMO_PERSONAL, RET_ALQUILER } from '@/lib/modelos';
 import CuotaIS from '@/components/CuotaIS';
-import { Presentado202 } from '@/components/Acciones';
+import { Presentado, Presentado202 } from '@/components/Acciones';
 import { eur, hoy } from '@/lib/formato';
 import Volver from '@/components/Volver';
 import Ir from '@/components/Ir';
@@ -105,7 +105,8 @@ export default async function Modelos({ searchParams }) {
                   liquidaciones[t - 1].compensado > 0 && ['Cuotas anteriores compensadas', menos(liquidaciones[t - 1].compensado)],
                   c['46'] >= 0 && ['A ingresar tras compensación', liquidaciones[t - 1].ingresar, true],
                 ]} />
-                <p className="nota">Hasta el {plazo(t, anio)}.{presentado(t) ? ' Marcado como presentado.' : ''}</p>
+                <p className="nota">Hasta el {plazo(t, anio)}.</p>
+                {!r130 && <Presentado anio={anio} t={t} importe={0} pagado={u.pagos130?.[anio]?.[t]} con130={false} />}
               </div>
             ); })}
           </div>
@@ -115,7 +116,7 @@ export default async function Modelos({ searchParams }) {
       {r130 && (
         <section className="bloque" id="m130">
           <h2 className="grupo-t">130 · Pago a cuenta del IRPF</h2>
-          <p className="grupo-pie arriba">Acumulado desde enero: el 20 % de tu rendimiento, menos las retenciones de tus facturas y lo que ya pagaste en trimestres anteriores. Marca cada trimestre como presentado en el Resumen.</p>
+          <p className="grupo-pie arriba">Acumulado desde enero: el 20 % de tu rendimiento, menos las retenciones de tus facturas y lo que ya pagaste en trimestres anteriores. Marca aquí cada trimestre cuando lo presentes: lo que no está presentado no cuenta en el siguiente.</p>
           <Rend130 anio={anio - 1} valor={rendAnterior ?? null} sugerido={sugerido} minoracion={minoracion130(rendAnterior)} />
           <div className="tarjetas">
             {r130.trimestres.map((q) => (
@@ -127,7 +128,8 @@ export default async function Modelos({ searchParams }) {
                   q.minoracion && ['13 · Minoración por el rendimiento de ' + (anio - 1), q.minoracion], q.negPrev && ['15 · Negativos de trimestres anteriores', q.negPrev],
                   ['19 · A ingresar', q.m130, true],
                 ]} />
-                <p className="nota">Hasta el {plazo(q.t, anio)}.{q.presentado ? ' Marcado como presentado.' : ''}</p>
+                <p className="nota">Hasta el {plazo(q.t, anio)}.</p>
+                <Presentado anio={anio} t={q.t} importe={q.m130} pagado={u.pagos130?.[anio]?.[q.t]} />
               </div>
             ))}
           </div>
