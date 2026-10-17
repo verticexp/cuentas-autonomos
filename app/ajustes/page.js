@@ -1,3 +1,4 @@
+import { TIPOS, diasPrueba } from '@/lib/prueba';
 import Ir from '@/components/Ir';
 import { requerir } from '@/lib/auth';
 import { redis } from '@/lib/redis';
@@ -47,6 +48,7 @@ export default async function Page() {
         <section className="grupo">
           <h2 className="grupo-t">Empresa</h2>
           <div className="grupo-c">
+            {u.plan && <Celda href="/ajustes/plan" ico="datos" titulo="Tu plan" detalle={`${TIPOS[u.plan.tipo]} ${u.plan.nombre}${diasPrueba(u.plan) !== null ? ` · prueba: ${diasPrueba(u.plan)} días` : ''}`} aviso={diasPrueba(u.plan) !== null && diasPrueba(u.plan) <= 7} />}
             <Celda href="/ajustes/facturacion" ico="datos" titulo="Datos de facturación" detalle={datosCompletos ? `${e.nombre} · ${e.nif}` : 'Faltan datos: rellénalos antes de facturar'} aviso={!datosCompletos} />
             <Celda href="/bienvenida?editar=1" ico="actividad" titulo="Actividades y modelos" detalle={`${fiscalDe(u).tipo === 'sociedad' ? 'Sociedad' : 'Autónomo'} · ${actividadesDe(u).map((x) => x.nombre).join(', ')}`} />
             <Celda href="/ajustes/marca" ico="marca" titulo="Logo y color" detalle={u.marca?.logo ? 'Con logo' : 'Sin logo'} />

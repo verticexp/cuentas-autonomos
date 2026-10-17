@@ -4,7 +4,7 @@ import { desvioApp } from '@/lib/app';
 
 // Lo que se ve sin sesión: la web pública (/ y app/(web)), login, páginas legales, enlaces públicos (presupuesto, portal, pago), avisos de Stripe,
 // crons de Vercel (con su secreto) e iconos.
-const PUBLICO = /^\/($|(funciones|precios|autonomos|pymes|grandes-empresas|seguridad|contacto)(\/|$)|login|recuperar|privacidad|condiciones|declaracion-responsable|invitacion|p\/|portal\/|api\/portal\/|api\/presupuestos\/aceptar|api\/abierta\/|api\/pagar|pagar\/|api\/stripe|api\/recordatorios|api\/recurrentes\/cron|api\/trabajos|api\/login|api\/recuperar|api\/registro|api\/contacto|api\/csp|api\/invitacion|api\/passkey|api\/confirmar|favicon\.ico|icon1\.svg|apple-icon|manifest\.webmanifest|sw)/;
+const PUBLICO = /^\/($|(funciones|precios|autonomos|pymes|grandes-empresas|seguridad|contacto)(\/|$)|login|registro|recuperar|privacidad|condiciones|declaracion-responsable|invitacion|p\/|portal\/|api\/portal\/|api\/presupuestos\/aceptar|api\/abierta\/|api\/pagar|pagar\/|api\/stripe|api\/recordatorios|api\/recurrentes\/cron|api\/trabajos|api\/login|api\/recuperar|api\/registro|api\/contacto|api\/csp|api\/invitacion|api\/passkey|api\/confirmar|favicon\.ico|icon1\.svg|apple-icon|manifest\.webmanifest|sw)/;
 
 export function proxy(req) {
   // Anti-CSRF en TODAS las rutas (también login, registro, invitación y llaves de acceso): lo que modifica datos solo

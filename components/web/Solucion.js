@@ -18,7 +18,7 @@ export default function Solucion({ id }) {
           <h1 className="web-entra" style={{ '--d': '60ms' }}>{s.titulo}</h1>
           <p className="web-sub web-entra" style={{ '--d': '120ms' }}>{s.sub}</p>
           <div className="web-cta web-entra" style={{ '--d': '180ms' }}>
-            <Link className="web-btn web-btn-grande" href={`/contacto?plan=${encodeURIComponent(s.n)}`}>Pruébalo 1 mes gratis<Flecha /></Link>
+            <Link className="web-btn web-btn-grande" href={`/registro?tipo=${s.id}`}>Pruébalo 1 mes gratis<Flecha /></Link>
             <a className="web-btn web-btn-claro web-btn-grande" href="#planes">Ver planes</a>
           </div>
         </div>

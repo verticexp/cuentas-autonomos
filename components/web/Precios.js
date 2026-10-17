@@ -50,7 +50,7 @@ export default function Precios({ inicial = 'aut', tabla = false, solo = false }
                 {anual && <s>{p.p} €</s>}<strong>{mes} €</strong><span>/mes</span>
               </p>
               <p className="web-pie-precio">{anual ? `${conDescuento(p.p, 12)} € al año · sin IVA` : 'Sin IVA · sin permanencia'}</p>
-              <Link className={`web-btn${p.fuerte ? '' : ' web-btn-oscuro'}`} href={`/contacto?plan=${encodeURIComponent(`${nombreSeg} ${p.n}`)}`}>Probar 1 mes gratis<Icono n="flecha" className="ico web-flecha" /></Link>
+              <Link className={`web-btn${p.fuerte ? '' : ' web-btn-oscuro'}`} href={`/registro?tipo=${seg}&plan=${encodeURIComponent(p.n)}`}>Probar 1 mes gratis<Icono n="flecha" className="ico web-flecha" /></Link>
               <ul>
                 {p.herencia && <li className="web-herencia">Todo lo de {p.herencia}, y además:</li>}
                 {p.l.map((x) => <li key={x}><Icono n="tic" />{x}</li>)}

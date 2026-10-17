@@ -17,6 +17,7 @@ import Grafica from '@/components/Grafica';
 import Cifra from '@/components/Cifra';
 import Ico from '@/components/Ico';
 import Logo from '@/components/Logo';
+import AvisoPrueba from '@/components/AvisoPrueba';
 import { puede } from '@/lib/permisos';
 import { accionesHoy } from '@/lib/hoy';
 import '@/app/asistente.css';
@@ -68,6 +69,7 @@ export default async function Resumen({ searchParams }) {
 
   return (
     <main className="pagina mk-look">
+      <AvisoPrueba plan={u.plan} />
       <header className="inicio">
         <div className="inicio-barra">
           <Logo />

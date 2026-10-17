@@ -125,3 +125,16 @@ html[data-entrada] .tabbar { animation: entrada-barra 0.5s var(--vt-curva) 0.15s
   html[data-vt]::view-transition-old(root) { animation: 0.15s ease both vt-fuera !important; }
   html[data-vt]::view-transition-new(root) { animation: 0.2s ease both vt-dentro !important; }
 }
+/* Mes de prueba (components/AvisoPrueba.js) y Ajustes › Tu plan (components/ElegirPlan.js) */
+.aviso-prueba { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 0 0 12px; padding: 10px 14px; border-radius: 12px; background: var(--relleno); font-size: 14px; color: var(--ink); }
+.aviso-prueba.pronto { background: color-mix(in srgb, #E8A33D 18%, var(--surface)); }
+.aviso-prueba a { font-weight: 600; color: var(--ink); white-space: nowrap; }
+.elegir-plan .segmentado button { flex: 1; margin: 0; padding: 6px 4px; border: 0; border-radius: 7px; background: none; box-shadow: none; font-size: 13px; font-weight: 500; color: var(--ink); }
+.elegir-plan .segmentado button.activo { background: var(--surface); font-weight: 600; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12); }
+.planes-app { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.planes-app li { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; }
+.planes-app li.actual { border-color: var(--ink); }
+.planes-app li div { flex: 1; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.planes-app li small { flex-basis: 100%; color: var(--muted); }
+.planes-app li em { font-style: normal; font-size: 12px; font-weight: 600; color: var(--muted); }
+.planes-app li .boton { margin: 0; white-space: nowrap; }
