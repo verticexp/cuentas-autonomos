@@ -166,7 +166,14 @@ html[data-entrada] .tabbar { animation: entrada-barra 0.5s var(--vt-curva) 0.15s
 .registro .registro-acepto input { flex: 0 0 20px; width: 20px; height: 20px; margin: 1px 0 0; padding: 0; accent-color: var(--marca); }
 .registro .registro-acepto span { min-width: 0; }
 .registro .error { overflow-wrap: anywhere; }
-.registro-contenido { overflow: hidden; transition: height 220ms ease-out; }
+.registro-contenido { overflow: hidden; transition: height 220ms ease-out; padding: 6px; margin: -6px; } /* margen para que el anillo de foco no se corte */
+/* Foco de los campos: anillo de la marca dentro del propio campo, sin contorno que sobresalga */
+.registro input:not([type=checkbox]):focus-visible, .registro select:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--marca), 0 0 0 6px color-mix(in srgb, var(--marca) 16%, transparent); }
+.registro input:not([type=checkbox]), .registro select { transition: border-color 150ms ease-out, box-shadow 150ms ease-out; }
+/* La provincia, igual que los demás campos */
+.registro select { width: 100%; padding: 14px 40px 14px 16px; border-radius: 14px; border: 1px solid var(--line); background-color: var(--surface); font-size: 17px; color: var(--ink); -webkit-appearance: none; appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%); background-position: calc(100% - 22px) 50%, calc(100% - 17px) 50%; background-size: 5px 5px; background-repeat: no-repeat; }
+.registro select:invalid { color: var(--muted); }
 .registro-bloque { display: flow-root; min-width: 0; animation: registro-entrada 220ms ease-out; }
 .registro-avanza { --entrada: 12px; }
 .registro-vuelve { --entrada: -12px; }
