@@ -17,7 +17,7 @@ const MOTIVO = {
   alternativa: 'Otro gasto encajaba mejor, pero ya está reservado para otro cargo.',
 };
 
-// Un cargo sin conciliar: el gasto que puede ser (emparejar o borrarlo si no cuadra), elegir otro, añadirlo o apartarlo.
+// Un cargo sin conciliar: revisar su gasto, elegir otro, añadirlo o apartarlo.
 function Cargo({ x, abierto, abrir }) {
   const router = useRouter();
   const { m, sugerencia: s, otras } = x;
@@ -31,8 +31,6 @@ function Cargo({ x, abierto, abrir }) {
   const emparejar = (gasto) => hacer(() => llamar('/api/gastos/revision', { method: 'POST', body: JSON.stringify({ accion: 'emparejar', id: m.id, gasto }) }));
   const apartar = () => confirm('¿Apartar este cargo? No es un gasto (un traspaso, un préstamo…) y deja de salir aquí. Puedes recuperarlo en Banco.')
     && hacer(() => llamar('/api/gastos/revision', { method: 'POST', body: JSON.stringify({ accion: 'ignorar', id: m.id }) }));
-  const borrar = (g) => confirm(`¿Eliminar el gasto «${g.texto}» del ${fechaCorta(g.fecha)} (${eur(g.importe)})? Se borra con su justificante y no se puede deshacer.`)
-    && hacer(() => llamar(`/api/gastos?id=${encodeURIComponent(g.id)}`, { method: 'DELETE' }));
   const quien = m.contraparte || m.concepto;
   const elegida = otras.find((o) => o.id === elegido);
   return (
@@ -51,7 +49,7 @@ function Cargo({ x, abierto, abrir }) {
               {s.motivo && MOTIVO[s.motivo] && <small className="nota">{MOTIVO[s.motivo]}</small>}
               <div className="rev-botones">
                 <button type="button" className="boton pequeno" disabled={ocupado} onClick={() => emparejar(s.id)}>Emparejar</button>
-                <button type="button" className="boton pequeno sec peligro" disabled={ocupado} onClick={() => borrar(s)}>No cuadra: eliminar gasto</button>
+                <Link className="boton pequeno sec" href={`/gastos/${encodeURIComponent(s.id)}`}>Revisar gasto</Link>
               </div>
             </div>
           )}
@@ -66,7 +64,7 @@ function Cargo({ x, abierto, abrir }) {
               {elegida && (
                 <div className="rev-botones">
                   <button type="button" className="boton pequeno" disabled={ocupado || !elegida.cuadra} onClick={() => emparejar(elegida.id)}>Emparejar</button>
-                  <button type="button" className="boton pequeno sec peligro" disabled={ocupado} onClick={() => borrar(elegida)}>Eliminar gasto</button>
+                  <Link className="boton pequeno sec" href={`/gastos/${encodeURIComponent(elegida.id)}`}>Revisar gasto</Link>
                 </div>
               )}
             </div>
@@ -87,7 +85,7 @@ export default function RevisionGastos({ items, total }) {
   return (
     <section className="grupo gastos-revision">
       <h2 className="grupo-t">En revisión · {total}</h2>
-      <p className="grupo-pie arriba">Cargos de tu banco sin su gasto en Netto. Toca uno para emparejarlo, borrar el gasto que no cuadra o añadirlo con su factura.</p>
+      <p className="grupo-pie arriba">Cargos de tu banco sin su gasto en Netto. Toca uno para revisar la coincidencia, elegir otro gasto o añadirlo con su factura.</p>
       <ul className="grupo-lista">
         {items.map((x) => <Cargo key={x.m.id} x={x} abierto={abierto === x.m.id} abrir={() => setAbierto(abierto === x.m.id ? null : x.m.id)} />)}
       </ul>
