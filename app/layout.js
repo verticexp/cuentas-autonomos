@@ -9,6 +9,7 @@ import TabBar from '@/components/TabBar';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { bloqueoDe, desbloqueada, usuarioActual } from '@/lib/auth';
+import { soloLectura } from '@/lib/planes';
 import { COLOR_BASE } from '@/lib/marca';
 import { fuente } from '@/components/fuente';
 import { permisosDe } from '@/lib/permisos';
@@ -56,6 +57,9 @@ export default async function RootLayout({ children }) {
       <body className={fuente.variable} style={{ '--acento': COLOR_BASE }} data-marca="base">
         <Arranque />
         <script nonce={nonce} suppressHydrationWarning dangerouslySetInnerHTML={{ __html: 'window.__arranque=performance.now()' }} />
+        {u && soloLectura(u.plan) && !ruta.startsWith('/ajustes/plan') && (
+          <p className="aviso-lectura" role="status"><span>Tu prueba ha terminado: puedes ver y exportar todo, pero no crear ni editar.</span><a href="/ajustes/plan">Elegir plan</a></p>
+        )}
         {children}
         <Suspense>{u && <TabBar permisos={permisosDe(u)} empresas={u.misEmpresas} empresa={u.empresa} admin={Boolean(u.admin)} inventario={Boolean(u.fiscal?.inventario)} fiscal={{ tipo: u.fiscal?.tipo, iva: u.fiscal?.iva }} />}<Llegada /><BarraEstado /></Suspense>
         {u?.bloqueoPantalla && <Bloqueo email={u.email} servidor={abierta} />}

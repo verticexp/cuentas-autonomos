@@ -6,6 +6,7 @@ import { datosStock } from '@/lib/stockServidor';
 import { xlsx } from '@/lib/xlsx';
 import { hoy } from '@/lib/formato';
 import { auditar } from '@/lib/auditoria';
+import { sinFuncion } from '@/lib/planes';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,6 +15,8 @@ export const dynamic = 'force-dynamic';
 export async function POST(req) {
   const { u, res } = await usuarioApi({ permiso: 'gastar' });
   if (res) return res;
+  const sinPlan = sinFuncion(u.plan, 'inventario');
+  if (sinPlan) return error(sinPlan, 403);
   const b = await cuerpo(req);
   const datos = await datosStock(u);
   const p = datos.productos.find((x) => x.id === b.producto);

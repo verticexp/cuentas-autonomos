@@ -1,4 +1,6 @@
+import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
+import { esApp } from '@/lib/app';
 import { estadoVerifactu } from '@/lib/verifactuEstado';
 import { requerir } from '@/lib/auth';
 import { redis } from '@/lib/redis';
@@ -41,7 +43,7 @@ export default async function Seccion({ params }) {
       <h1 className="titulo">{TITULOS[seccion]}</h1>
       {seccion === 'marca' && <Marca marca={u.marca} nombre={u.emisor?.nombre} />}
       {seccion === 'seguridad' && <FaceId lista={llaves} bloqueo={Boolean(u.bloqueoPantalla)} />}
-      {seccion === 'plan' && <><AvisoPrueba plan={u.plan} enlace={false} /><ElegirPlan plan={u.plan} nombre={u.nombre} email={u.email} empresa={u.empresaNombre} /></>}
+      {seccion === 'plan' && <><AvisoPrueba plan={u.plan} enlace={false} /><ElegirPlan plan={u.plan} admin={u.rol === 'admin'} app={esApp((await headers()).get('user-agent'))} /></>}
       {seccion === 'controlat' && <Controlat activo={Boolean(u.controlat)} />}
       {seccion === 'avisos' && <AvisosPush listo={pushListo()} />}
       {seccion === 'importar' && <Importar />}

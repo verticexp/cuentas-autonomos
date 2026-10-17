@@ -3,6 +3,7 @@ import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { leerImporte, r2 } from '@/lib/calculos';
 import { hoy } from '@/lib/formato';
 import { puede } from '@/lib/permisos';
+import { sinFuncion } from '@/lib/planes';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,6 +11,8 @@ export const dynamic = 'force-dynamic';
 export async function POST(req) {
   const { u, res } = await usuarioApi({ permiso: 'resumen' });
   if (res) return res;
+  const sinPlan = sinFuncion(u.plan, 'tesoreria');
+  if (sinPlan) return error(sinPlan, 403);
   // Cambia el saldo real del que parte Tesorería: no basta con ver el resumen.
   if (!puede(u, 'facturar') && !puede(u, 'gastar')) return error('No tienes permiso para esto. Pídeselo al administrador de tu empresa.', 403);
   const b = await cuerpo(req);

@@ -6,6 +6,7 @@ import { gastoDeNomina } from '@/lib/nominas';
 import { extrasNomina, resumenMes } from '@/lib/jornada';
 import { secundarios } from '@/lib/trabajos';
 import { hoy } from '@/lib/formato';
+import { sinFuncion } from '@/lib/planes';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,6 +22,8 @@ async function guardarConGasto(u, n) {
 export async function POST(req) {
   const { u, res } = await usuarioApi({ permiso: 'nominas' });
   if (res) return res;
+  const sinPlan = sinFuncion(u.plan, 'nominas');
+  if (sinPlan) return error(sinPlan, 403);
   const { mes } = await cuerpo(req);
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(mes || '')) return error('Mes no válido');
   const [empleados, nominas, jornada] = await Promise.all([leer(u, 'empleados'), leer(u, 'nominas'), leer(u, 'jornada')]);

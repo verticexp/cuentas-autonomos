@@ -146,7 +146,7 @@ function preparar() {
     usuarioApi: async () => ({ u: globalThis.__limitesE07.u }),
     error: (error, status = 400) => Response.json({ error }, { status }),
     cuerpo: (req) => req.json(), hoy: () => '2026-10-14',
-    iaLista: () => true, limpiarHistorial: () => [], preguntar: async () => ({ respuesta: 'Hola' }),
+    iaLista: () => true, limpiarHistorial: () => [], preguntar: async () => ({ respuesta: 'Hola' }), sinFuncion: () => null,
     leerTicket: async () => ({ datos: {} }), limpiarTicket: () => ({}),
     puede: () => true, TIPOS: { clientes: { permiso: 'empresa' } },
     marcarPagada: async () => {},
