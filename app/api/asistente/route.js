@@ -4,6 +4,7 @@ import { hoy } from '@/lib/formato';
 import { iaLista } from '@/lib/ticket';
 import { limpiarHistorial } from '@/lib/asistente';
 import { preguntar } from '@/lib/asistenteIA';
+import { usarFuncion } from '@/lib/usoPlan';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -13,6 +14,8 @@ const POR_DIA = 60;
 export async function POST(req) {
   const { u, res } = await usuarioApi();
   if (res) return res;
+  const sinPlan = await usarFuncion(u, 'asistente');
+  if (sinPlan) return error(sinPlan, 403);
   if (!iaLista()) return error('El asistente aún no está configurado (falta ANTHROPIC_API_KEY en Vercel)', 503);
   const b = await cuerpo(req);
   const pregunta = String(b.pregunta || '').trim().slice(0, 500);

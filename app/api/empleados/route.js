@@ -2,6 +2,7 @@ import { guardar, borrar, leer, leerUno } from '@/lib/redis';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { leerImporte, r2 } from '@/lib/calculos';
 import { SS_EMPRESA, SS_TRABAJADOR } from '@/lib/nominas';
+import { sinHueco } from '@/lib/planes';
 
 export const dynamic = 'force-dynamic';
 const pct = (v, def) => Math.min(100, Math.max(0, v === '' || v === undefined ? def : Number(String(v).replace(',', '.')) || 0));
@@ -39,6 +40,8 @@ const emailRepetido = async (u, e) => e.email && ((await leer(u, 'empleados')) |
 export async function POST(req) {
   const { u, res } = await usuarioApi({ permiso: 'nominas' });
   if (res) return res;
+  const sinPlan = sinHueco(u.plan, 'empleados', (await leer(u, 'empleados')).filter((e) => !e.baja).length);
+  if (sinPlan) return error(sinPlan, 403);
   const r = limpio(await cuerpo(req), { id: crypto.randomUUID() });
   if (r.error) return error(r.error);
   if (await emailRepetido(u, r.e)) return error('Otro empleado ya tiene ese email');

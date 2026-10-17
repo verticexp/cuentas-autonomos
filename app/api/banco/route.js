@@ -3,6 +3,7 @@ import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { sugerencias } from '@/lib/banco';
 import { candidatosConciliacion, contabilizar, deshacer, emparejar, ignorar } from '@/lib/bancoServidor';
 import { puede } from '@/lib/permisos';
+import { usarFuncion } from '@/lib/usoPlan';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,6 +12,8 @@ export const dynamic = 'force-dynamic';
 export async function POST(req) {
   const { u, res } = await usuarioApi({ permiso: 'resumen' });
   if (res) return res;
+  const sinPlan = await usarFuncion(u, 'conciliacion');
+  if (sinPlan) return error(sinPlan, 403);
   const b = await cuerpo(req);
   if (b.accion === 'seguras') {
     if (b.ids !== undefined && (!Array.isArray(b.ids) || b.ids.length > 200 || b.ids.some((id) => typeof id !== 'string' || !id.trim()))) return error('Elige como máximo 200 ids de movimiento válidos');

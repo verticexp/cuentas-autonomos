@@ -7,6 +7,7 @@ import { conMembresia, enEmpresa, membresias } from '@/lib/membresias';
 import { INVITACION_DIAS, limpiarEmail, tokenEmail } from '@/lib/auth';
 import { enviarInvitacion } from '@/lib/invitacion';
 import { auditar } from '@/lib/auditoria';
+import { sinHueco } from '@/lib/planes';
 
 const enlace = (req, codigo) => new URL(`/invitacion/${codigo}`, req.url).toString();
 // Crea la respuesta con el enlace (que el administrador ve siempre) y le manda la invitación por email.
@@ -61,6 +62,10 @@ export async function POST(req) {
     await auditar(u, 'Invitación reenviada', o.email);
     return invitar(req, u, o, nombreEmpresa(u), codigo);
   }
+  // Límite de usuarios del plan (lib/planes.js): cuenta quien ya está en la empresa, con o sin invitación aceptada.
+  const enLaEmpresa = Object.values((await redis.hgetall('usuarios')) || {}).filter((x) => enEmpresa(x, u.empresa)).length;
+  const sinPlan = sinHueco(u.plan, 'usuarios', enLaEmpresa);
+  if (sinPlan) return error(sinPlan, 403);
   // Si ya tiene cuenta en Netto (de otra empresa), se le añade esta empresa: la verá al cambiar de empresa.
   const yaId = await redis.hget('emails', limpiarEmail(b.email));
   const ya = yaId && (await redis.hget('usuarios', yaId));

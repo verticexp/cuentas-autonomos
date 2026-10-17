@@ -22,6 +22,8 @@ export function proxy(req) {
     // x-ruta: adónde volver tras desbloquear (lib/auth.js exigirDesbloqueo). Siempre la pone el servidor.
     const h = new Headers(req.headers);
     h.set('x-ruta', req.nextUrl.pathname + req.nextUrl.search);
+    // x-metodo: para el modo solo lectura (lib/api.js usuarioApi).
+    h.set('x-metodo', req.method);
     if (modoCsp() === 'off') return NextResponse.next({ request: { headers: h } });
     // Nonce nuevo en cada petición: Next.js lo lee de la cabecera para sus scripts; x-nonce, para los nuestros (lib/csp.js).
     const nonce = btoa(crypto.randomUUID());
