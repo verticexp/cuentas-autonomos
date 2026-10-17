@@ -3,7 +3,7 @@ import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { sugerencias } from '@/lib/banco';
 import { candidatosConciliacion, contabilizar, deshacer, emparejar, ignorar } from '@/lib/bancoServidor';
 import { puede } from '@/lib/permisos';
-import { sinFuncion } from '@/lib/planes';
+import { usarFuncion } from '@/lib/usoPlan';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(req) {
   const { u, res } = await usuarioApi({ permiso: 'resumen' });
   if (res) return res;
-  const sinPlan = sinFuncion(u.plan, 'conciliacion');
+  const sinPlan = await usarFuncion(u, 'conciliacion');
   if (sinPlan) return error(sinPlan, 403);
   const b = await cuerpo(req);
   if (b.accion === 'seguras') {

@@ -1,6 +1,8 @@
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { esApp } from '@/lib/app';
+import { perderia, planQueLoIncluye } from '@/lib/planes';
+import { genteDe, usoDe } from '@/lib/usoPlan';
 import { estadoVerifactu } from '@/lib/verifactuEstado';
 import { requerir } from '@/lib/auth';
 import { redis } from '@/lib/redis';
@@ -37,13 +39,17 @@ export default async function Seccion({ params }) {
   const llaves = seccion === 'seguridad'
     ? Object.entries((await redis.hgetall(`passkeys:${u.id}`)) || {}).map(([id, k]) => ({ id, nombre: k.nombre, creada: k.creada, usada: k.usada || null }))
     : [];
+  // Tu plan: lo que ha usado en la prueba y su plan no incluye (lib/planes.js), con el plan que lo cubre.
+  const usoPlan = seccion === 'plan' && u.plan && !u.plan.pagado
+    ? await Promise.all([usoDe(u.empresa), genteDe(u.empresa, leer)]).then(([uso, gente]) => ({ perdidas: perderia(u.plan, uso, gente).map((x) => x.texto), recomendado: planQueLoIncluye(u.plan, uso, gente)?.n || null }))
+    : null;
   return (
     <main className="pagina mk-look">
       <Volver href="/ajustes">Ajustes</Volver>
       <h1 className="titulo">{TITULOS[seccion]}</h1>
       {seccion === 'marca' && <Marca marca={u.marca} nombre={u.emisor?.nombre} />}
       {seccion === 'seguridad' && <FaceId lista={llaves} bloqueo={Boolean(u.bloqueoPantalla)} />}
-      {seccion === 'plan' && <><AvisoPrueba plan={u.plan} enlace={false} /><ElegirPlan plan={u.plan} admin={u.rol === 'admin'} app={esApp((await headers()).get('user-agent'))} /></>}
+      {seccion === 'plan' && <><AvisoPrueba plan={u.plan} enlace={false} /><ElegirPlan plan={u.plan} uso={usoPlan} admin={u.rol === 'admin'} app={esApp((await headers()).get('user-agent'))} /></>}
       {seccion === 'controlat' && <Controlat activo={Boolean(u.controlat)} />}
       {seccion === 'avisos' && <AvisosPush listo={pushListo()} />}
       {seccion === 'importar' && <Importar />}

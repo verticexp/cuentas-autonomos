@@ -8,7 +8,7 @@ const euros = (n) => n.toLocaleString('es-ES', { minimumFractionDigits: n % 1 ? 
 
 // Ajustes › Tu plan: contratar con Stripe Checkout, cambiar de plan y gestionar el pago en el portal de Stripe
 // (app/api/suscripcion). En la app de iOS no se enseña la compra (lib/app.js); solo el administrador puede cambiarlo.
-export default function ElegirPlan({ plan, admin, app }) {
+export default function ElegirPlan({ plan, uso, admin, app }) {
   const [tipo, setTipo] = useState(plan?.tipo || 'aut');
   const [periodo, setPeriodo] = useState(plan?.periodo || 'anio');
   const [estado, setEstado] = useState('');
@@ -48,6 +48,21 @@ export default function ElegirPlan({ plan, admin, app }) {
         <div className="plan-pagado">
           <p>Plan <strong>{TIPOS[actual.tipo]} {actual.nombre}</strong>, pago {actual.periodo === 'anio' ? 'anual' : 'mensual'}{actual.estado === 'past_due' ? ' · el último cobro ha fallado: revisa tu tarjeta' : ''}.</p>
           {admin && <button type="button" className="boton secundario" disabled={estado === 'enviando'} onClick={() => llamar({ portal: true })}>Tarjeta, facturas y baja</button>}
+        </div>
+      )}
+      {!paga && actual?.nombre && admin && (
+        <div className="plan-pagado">
+          <p>Tu plan: <strong>{TIPOS[actual.tipo]} {actual.nombre}</strong>. Añade la tarjeta y sigues sin cortes; si te queda prueba, no se cobra hasta que acabe.</p>
+          <button type="button" className="boton" disabled={estado === 'enviando'} onClick={() => llamar({ tipo: actual.tipo, nombre: actual.nombre, periodo })}>Añadir tarjeta · {periodo === 'anio' ? 'anual' : 'mensual'}</button>
+        </div>
+      )}
+      {uso?.perdidas?.length > 0 && (
+        <div className="plan-uso">
+          <p>Durante la prueba has usado cosas que el plan {actual.nombre} no incluye:</p>
+          <ul>{uso.perdidas.map((t) => <li key={t}>{t}</li>)}</ul>
+          {uso.recomendado
+            ? <p>Con el plan <strong>{uso.recomendado}</strong> lo sigues teniendo todo.{admin && <> <button type="button" className="enlace" disabled={estado === 'enviando'} onClick={() => { setTipo(actual.tipo); llamar({ tipo: actual.tipo, nombre: uso.recomendado, periodo }); }}>Contratar {uso.recomendado}</button></>}</p>
+            : <p>Para seguir con todo, escríbenos y te preparamos un plan a medida.</p>}
         </div>
       )}
       <div className="segmentado" role="tablist">

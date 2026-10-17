@@ -6,7 +6,7 @@ import { datosStock } from '@/lib/stockServidor';
 import { xlsx } from '@/lib/xlsx';
 import { hoy } from '@/lib/formato';
 import { auditar } from '@/lib/auditoria';
-import { sinFuncion } from '@/lib/planes';
+import { usarFuncion } from '@/lib/usoPlan';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +15,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(req) {
   const { u, res } = await usuarioApi({ permiso: 'gastar' });
   if (res) return res;
-  const sinPlan = sinFuncion(u.plan, 'inventario');
+  const sinPlan = await usarFuncion(u, 'inventario');
   if (sinPlan) return error(sinPlan, 403);
   const b = await cuerpo(req);
   const datos = await datosStock(u);

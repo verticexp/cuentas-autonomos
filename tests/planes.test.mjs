@@ -64,3 +64,31 @@ test('suscripción viva: pagado con su plan; cancelada o impagada: solo lectura 
   // Metadatos raros: se queda el plan que tenía.
   assert.equal(planTrasSuscripcion(antes, { ...sub, metadata: { tipo: 'aut', nombre: 'Oro' } }, HOY).nombre, 'Esencial');
 });
+
+test('perderia: lo usado en la prueba que no entra en su plan, y el plan más barato que lo cubre', async () => {
+  const { perderia, planQueLoIncluye } = await import('../lib/planes.js');
+  const esencial = { tipo: 'aut', nombre: 'Esencial', hasta: '2026-03-20' };
+  const uso = { asistente: '2', conciliacion: '14' };
+  assert.deepEqual(perderia(esencial, uso, { usuarios: 1 }).map((x) => x.texto), ['La conciliación automática (14 movimientos conciliados)', 'El asistente IA (2 preguntas)']);
+  assert.equal(planQueLoIncluye(esencial, uso, { usuarios: 1 }).n, 'Pro');
+  assert.equal(planQueLoIncluye(esencial, { ...uso, nominas: 1 }, { usuarios: 1, empleados: 1 }).n, 'Plus');
+  assert.equal(planQueLoIncluye({ ...esencial, nombre: 'Pro' }, uso, { usuarios: 2 }), null);
+  const pyme = { tipo: 'pym', nombre: 'Esencial' };
+  assert.equal(planQueLoIncluye(pyme, {}, { usuarios: 5, empleados: 2 }).n, 'Pro');
+  assert.equal(planQueLoIncluye({ tipo: 'gra', nombre: 'Esencial' }, {}, { empleados: 900 }), null);
+});
+
+test('avisos a 7, 3, el último día y al acabar; el texto dice lo que perdería', async () => {
+  const { avisoDelDia, textoAviso } = await import('../lib/planes.js');
+  assert.deepEqual([8, 7, 4, 3, 2, 1, 0, null].map(avisoDelDia), [null, 'semana', null, 'tres', null, 'ultimo', 'fin', null]);
+  const plan = { tipo: 'aut', nombre: 'Esencial' };
+  const t = textoAviso({ aviso: 'tres', plan, nombre: 'Ana López', hasta: '20 de marzo', perdidas: [{ texto: 'El asistente IA (2 preguntas)' }], recomendado: { n: 'Pro', p: 12 }, enlace: 'https://x/ajustes/plan?contratar=1' });
+  assert.equal(t.asunto, 'Tu prueba de Netto acaba dentro de 3 días');
+  assert.match(t.mensaje, /Hola Ana,/);
+  assert.match(t.mensaje, /· El asistente IA \(2 preguntas\)/);
+  assert.match(t.mensaje, /plan Pro \(12 €\/mes \+ IVA\)/);
+  assert.match(t.mensaje, /no se te cobra nada/);
+  const fin = textoAviso({ aviso: 'fin', plan, hasta: '20 de marzo', enlace: 'e' });
+  assert.match(fin.mensaje, /No se ha borrado nada/);
+  assert.doesNotMatch(fin.mensaje, /no se te cobra/);
+});
