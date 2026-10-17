@@ -167,6 +167,12 @@ export default function TabBar({ permisos = [], empresas = [], empresa, admin = 
             </div>
           );
         })}
+        <form method="post" action="/api/logout" className="tabs-salir">
+          <button type="submit">
+            <svg viewBox="0 0 24 24" aria-hidden><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l-5-5 5-5M5 12h11" /></svg>
+            <span>Cerrar sesión</span>
+          </button>
+        </form>
       </nav>
       {permisos.includes('facturar')
         ? <Link ref={botonMas} href={nuevo} prefetch className={`mas${path === nuevo || (hoja && movil) ? ' abierta' : ''}`} aria-label={movil ? 'Crear' : path.startsWith('/presupuestos') ? 'Nuevo presupuesto' : 'Nueva factura'}

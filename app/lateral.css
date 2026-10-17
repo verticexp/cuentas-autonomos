@@ -9,6 +9,9 @@
   .tabs-extra a svg { flex: none; width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
   .tabs-extra a.activo { color: var(--marca); background: var(--relleno); }
   .tabs-extra a:not(.activo):hover { background: var(--relleno); }
+  .tabs-salir button { display: flex; align-items: center; gap: 12px; width: 100%; height: 38px; margin: 0; padding: 0 12px; border: 0; border-radius: 10px; background: none; box-shadow: none; font: inherit; font-size: 15px; color: var(--muted); cursor: pointer; }
+  .tabs-salir button svg { flex: none; width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .tabs-salir button:hover { background: var(--relleno); color: var(--ink); }
   /* Ajustes pasa al final, en «Empresa» */
   .tabs a[data-href="/ajustes"] { display: none; }
   /* Si se está en una de estas pantallas, se marca ella y no la pestaña de arriba */
