@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation';
 import { bloquearPorEmail, exigirDesbloqueo, usuarioActual } from '@/lib/auth';
 import { puede } from '@/lib/permisos';
-import { leer } from '@/lib/redis';
 import { actividadesDe, fiscalDe } from '@/lib/empresa';
 import Cuestionario from '@/components/Cuestionario';
 
@@ -24,9 +23,10 @@ export default async function Bienvenida({ searchParams }) {
     <main className="pagina mk-look bienvenida">
       <Cuestionario
         editar={editar}
+        puedeFacturar={puede(u, 'facturar')}
         inicial={{
           fiscal: fiscalDe(u),
-          emisor: { nombre: u.emisor?.nombre || (u.pendiente ? u.empresaNombre : ''), nif: u.emisor?.nif || '', direccion: u.emisor?.direccion || '', ciudad: u.emisor?.ciudad || '', iban: u.emisor?.iban || '', plazo: u.emisor?.plazo ?? 30 },
+          emisor: { nombre: u.emisor?.nombre || (u.pendiente ? u.empresaNombre : ''), nif: u.emisor?.nif || '', direccion: u.emisor?.direccion || '', ciudad: u.emisor?.ciudad || '', cp: u.emisor?.cp || '', provincia: u.emisor?.provincia || '', iban: u.emisor?.iban || '', plazo: u.emisor?.plazo ?? 30 },
           actividades: u.pendiente ? [] : actividadesDe(u),
         }}
         conFacturas={conFacturas}

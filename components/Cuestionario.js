@@ -1,18 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import ProgresoAlta from './ProgresoAlta';
 import { llamar } from './Acciones';
 import { limpiarFiscal, modelosDe } from '@/lib/empresa';
 
 const IVAS = [[21, '21 %'], [10, '10 %'], [4, '4 %'], [0, 'Sin IVA']];
 const RETENCIONES = [[15, '15 %'], [7, '7 % (nuevos autónomos)'], [0, 'Sin retención']];
 
-function Opcion({ activo, titulo, detalle, onClick }) {
+function Opcion({ activo, titulo, detalle, onClick, grupo }) {
   return (
-    <button type="button" className={`opcion${activo ? ' activa' : ''}`} onClick={onClick} aria-pressed={activo}>
+    <label className={`opcion${activo ? ' activa' : ''}`}>
       <span><strong>{titulo}</strong>{detalle && <small>{detalle}</small>}</span>
-      <i aria-hidden />
-    </button>
+      <input type="radio" name={grupo} checked={activo} onChange={onClick} />
+    </label>
   );
 }
 
@@ -25,28 +26,54 @@ function SiNo({ valor, cambiar, titulo, detalle }) {
   );
 }
 
+function CamposEmisor({ emisor, sociedad, cambiar }) {
+  const campos = [
+    ['nombre', sociedad ? 'Razón social' : 'Nombre y apellidos', 'organization', false],
+    ['nif', sociedad ? 'CIF' : 'NIF/NIE', 'off', false],
+    ['direccion', 'Dirección fiscal', 'street-address', true],
+    ['ciudad', 'Ciudad', 'address-level2', true],
+    ['iban', 'IBAN para cobrar', 'off', true],
+  ];
+  return <div className="grupo-c alta-campos">{campos.map(([clave, titulo, completar, opcional]) => (
+    <label className="alta-campo" key={clave}>
+      <span>{titulo}{opcional ? ' (opcional)' : ' (obligatorio)'}</span>
+      <input className="campo" value={emisor[clave]} autoComplete={clave === 'nombre' && !sociedad ? 'name' : completar} required={!opcional} onChange={(ev) => cambiar(clave, ['nif', 'iban'].includes(clave) ? ev.target.value.toUpperCase() : ev.target.value)} />
+    </label>
+  ))}</div>;
+}
+
 // Preguntas una a una; al final, los modelos que le tocan.
-export default function Cuestionario({ inicial, editar, conFacturas }) {
+export default function Cuestionario({ inicial, editar, conFacturas, puedeFacturar = true }) {
+  // Los datos fiscales del registro ya están guardados. Se revisan sin repetir dos pantallas.
+  const datosCompletos = !editar && Boolean(inicial.emisor.nombre?.trim() && inicial.emisor.nif?.trim());
   const [paso, setPaso] = useState(0);
+  const [terminado, setTerminado] = useState(false);
+  const tituloRef = useRef(null);
+  const errorRef = useRef(null);
+  useEffect(() => {
+    tituloRef.current?.focus({ preventScroll: true });
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [paso, terminado]);
   const [fiscal, setFiscal] = useState(inicial.fiscal);
   const [emisor, setEmisor] = useState(inicial.emisor);
   const [acts, setActs] = useState(inicial.actividades.length ? inicial.actividades : [{ nombre: '', ivaPct: 21, irpfPct: inicial.fiscal.tipo === 'sociedad' ? 0 : 15 }]);
   const [error, setError] = useState('');
+  useEffect(() => { if (error) errorRef.current?.focus(); }, [error]);
   const [guardando, setGuardando] = useState(false);
   const sociedad = fiscal.tipo === 'sociedad';
   const f = (k, v) => setFiscal((x) => ({ ...x, [k]: v }));
   const e = (k, v) => setEmisor((x) => ({ ...x, [k]: v }));
   const a = (i, k, v) => setActs((l) => l.map((x, j) => (j === i ? { ...x, [k]: v } : x)));
 
-  const pasos = [
+  const todosPasos = [
     {
       titulo: '¿Cómo trabajas?',
       texto: 'Según la forma, Hacienda te pide unos modelos u otros.',
       listo: true,
       cuerpo: (
         <div className="opciones">
-          <Opcion activo={!sociedad} titulo="Autónomo" detalle="Trabajas por tu cuenta, con tu NIF" onClick={() => f('tipo', 'autonomo')} />
-          <Opcion activo={sociedad} titulo="Sociedad" detalle="SL, SA, cooperativa… con CIF propio" onClick={() => { f('tipo', 'sociedad'); setActs((l) => l.map((x) => ({ ...x, irpfPct: 0 }))); }} />
+          <Opcion grupo="forma" activo={!sociedad} titulo="Autónomo" detalle="Trabajas por tu cuenta, con tu NIF" onClick={() => f('tipo', 'autonomo')} />
+          <Opcion grupo="forma" activo={sociedad} titulo="Sociedad" detalle="SL, SA, cooperativa… con CIF propio" onClick={() => { f('tipo', 'sociedad'); setActs((l) => l.map((x) => ({ ...x, irpfPct: 0 }))); }} />
         </div>
       ),
     },
@@ -55,19 +82,13 @@ export default function Cuestionario({ inicial, editar, conFacturas }) {
       texto: 'Salen en cada factura.',
       listo: emisor.nombre.trim() && emisor.nif.trim(),
       cuerpo: (
-        <div className="grupo-c campos">
-          <input className="campo" placeholder={sociedad ? 'Razón social' : 'Nombre y apellidos'} value={emisor.nombre} onChange={(x) => e('nombre', x.target.value)} autoComplete="organization" />
-          <input className="campo" placeholder={sociedad ? 'CIF' : 'NIF'} value={emisor.nif} onChange={(x) => e('nif', x.target.value.toUpperCase())} />
-          <input className="campo" placeholder="Dirección" value={emisor.direccion} onChange={(x) => e('direccion', x.target.value)} autoComplete="street-address" />
-          <input className="campo" placeholder="Código postal y ciudad" value={emisor.ciudad} onChange={(x) => e('ciudad', x.target.value)} />
-          <input className="campo" placeholder="IBAN para cobrar (opcional)" value={emisor.iban} onChange={(x) => e('iban', x.target.value.toUpperCase())} />
-        </div>
+        <CamposEmisor emisor={emisor} sociedad={sociedad} cambiar={e} />
       ),
     },
     {
       titulo: '¿A qué te dedicas?',
       texto: 'Cada actividad tiene su propia numeración de facturas. Puedes añadir varias.',
-      listo: acts.every((x) => String(x.nombre).trim()),
+      listo: acts.every((x) => String(x.nombre).trim()) && Boolean(emisor.nombre.trim() && emisor.nif.trim()),
       cuerpo: (
         <>
           {acts.map((x, i) => {
@@ -75,16 +96,15 @@ export default function Cuestionario({ inicial, editar, conFacturas }) {
             return (
               <div key={i} className="grupo-c actividad-form">
                 <div className="fila-act">
-                  <input className="campo" placeholder={i === 0 ? 'Por ejemplo: Diseño gráfico' : 'Otra actividad'} value={x.nombre} onChange={(v) => a(i, 'nombre', v.target.value)} />
+                  <label className="alta-campo"><span>{i === 0 ? 'Nombre de tu actividad' : `Actividad ${i + 1}`}</span><input className="campo" placeholder="Por ejemplo: Diseño gráfico" value={x.nombre} onChange={(v) => a(i, 'nombre', v.target.value)} /></label>
                   {acts.length > 1 && !fija && <button type="button" className="quitar" aria-label="Quitar" onClick={() => setActs((l) => l.filter((_, j) => j !== i))}>Quitar</button>}
                 </div>
                 <p className="mini-t">IVA de tus facturas</p>
-                <div className="segmentado">{IVAS.map(([v, n]) => <a key={v} href="#" role="button" className={Number(x.ivaPct) === v ? 'activo' : ''} onClick={(ev) => { ev.preventDefault(); a(i, 'ivaPct', v); }}>{n}</a>)}</div>
+                <div className="segmentado">{IVAS.map(([v, n]) => <button key={v} type="button" aria-pressed={Number(x.ivaPct) === v} className={Number(x.ivaPct) === v ? 'activo' : ''} onClick={() => a(i, 'ivaPct', v)}>{n}</button>)}</div>
                 {!sociedad && <>
                   <p className="mini-t">Retención de IRPF <small>(si facturas a empresas o autónomos como profesional)</small></p>
-                  <div className="segmentado">{RETENCIONES.map(([v, n]) => <a key={v} href="#" role="button" className={Number(x.irpfPct) === v ? 'activo' : ''} onClick={(ev) => { ev.preventDefault(); a(i, 'irpfPct', v); }}>{n}</a>)}</div>
-                  <p className="mini-t">Epígrafe del IAE <small>(opcional: está en tu alta de autónomo; va en los libros registro)</small></p>
-                  <input className="campo" inputMode="numeric" placeholder="Por ejemplo: 844" value={x.iae || ''} onChange={(v) => a(i, 'iae', v.target.value)} />
+                  <div className="segmentado">{RETENCIONES.map(([v, n]) => <button key={v} type="button" aria-pressed={Number(x.irpfPct) === v} className={Number(x.irpfPct) === v ? 'activo' : ''} onClick={() => a(i, 'irpfPct', v)}>{n}</button>)}</div>
+                  <label className="alta-campo"><span>Epígrafe del IAE (opcional)</span><small>Está en tu alta de autónomo; va en los libros registro.</small><input className="campo" inputMode="numeric" placeholder="Por ejemplo: 844" value={x.iae || ''} onChange={(v) => a(i, 'iae', v.target.value)} /></label>
                 </>}
                 {fija && <p className="mini-t">Ya tiene facturas: su numeración no cambia.</p>}
               </div>
@@ -95,16 +115,16 @@ export default function Cuestionario({ inicial, editar, conFacturas }) {
       ),
     },
     {
-      titulo: 'Un par de preguntas más',
+      titulo: 'Prepara tus impuestos',
       texto: 'Para saber qué modelos tienes que presentar.',
       listo: true,
       cuerpo: (
         <>
           <p className="mini-t fuera">¿Cobras IVA?</p>
           <div className="opciones">
-            <Opcion activo={fiscal.iva === 'general'} titulo="Sí, cobro IVA" onClick={() => f('iva', 'general')} />
-            <Opcion activo={fiscal.iva === 'exento'} titulo="No, mi actividad está exenta" detalle="Sanidad, enseñanza, seguros, alquiler de vivienda…" onClick={() => f('iva', 'exento')} />
-            {!sociedad && <Opcion activo={fiscal.iva === 'recargo'} titulo="Tienda con recargo de equivalencia" detalle="Comercio minorista: el IVA lo paga tu proveedor" onClick={() => f('iva', 'recargo')} />}
+            <Opcion grupo="regimen-iva" activo={fiscal.iva === 'general'} titulo="Sí, cobro IVA" onClick={() => f('iva', 'general')} />
+            <Opcion grupo="regimen-iva" activo={fiscal.iva === 'exento'} titulo="No, mi actividad está exenta" detalle="Sanidad, enseñanza, seguros, alquiler de vivienda…" onClick={() => f('iva', 'exento')} />
+            {!sociedad && <Opcion grupo="regimen-iva" activo={fiscal.iva === 'recargo'} titulo="Tienda con recargo de equivalencia" detalle="Comercio minorista: el IVA lo paga tu proveedor" onClick={() => f('iva', 'recargo')} />}
           </div>
           <div className="grupo-c">
             {!sociedad && <SiNo valor={fiscal.retenidas} cambiar={(v) => f('retenidas', v)} titulo="Más del 70 % de lo que facturas lleva retención" detalle="Si es así, no tienes que presentar el 130" />}
@@ -129,30 +149,58 @@ export default function Cuestionario({ inicial, editar, conFacturas }) {
       ),
     },
   ];
+  const pasos = datosCompletos ? todosPasos.slice(2) : todosPasos;
   const p = pasos[paso];
   const ultimo = paso === pasos.length - 1;
 
   async function terminar() {
+    if (guardando) return;
     setGuardando(true); setError('');
     try {
       await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify({ configuracion: { fiscal: limpiarFiscal(fiscal), emisor, actividades: acts } }) });
-      location.replace('/');
+      if (editar) location.replace('/ajustes');
+      else { setGuardando(false); setTerminado(true); }
     } catch (err) { setError(err.message); setGuardando(false); }
   }
 
-  return (
+  if (terminado) return (
     <div className="cuestionario">
-      <div className="progreso" aria-label={`Paso ${paso + 1} de ${pasos.length}`}>{pasos.map((_, i) => <span key={i} className={i <= paso ? 'hecho' : ''} />)}</div>
-      {paso === 0 && !editar && <p className="hola">Bienvenido. Antes de empezar, cuéntanos cómo trabajas para preparar la app a tu medida.</p>}
+      <ProgresoAlta fase={2} paso={pasos.length} total={pasos.length} etiqueta="Configuración guardada" />
+      <div className="alta-final">
+        <span className="alta-exito" aria-hidden>✓</span>
+        <h1 className="titulo" ref={tituloRef} tabIndex={-1}>Tu negocio ya está preparado</h1>
+        <p className="grupo-pie">Tus datos, actividades e impuestos están guardados. ¿Por dónde quieres empezar?</p>
+        <div className="alta-acciones">
+          {puedeFacturar && <a className="boton" href="/facturas/nueva">Crear mi primera factura</a>}
+          <a className="boton sec" href="/ajustes/importar">Importar mis datos</a>
+        </div>
+        <a className="alta-resumen-enlace" href="/">Ir al resumen</a>
+      </div>
+    </div>
+  );
+
+  function avanzar() { setError(''); setPaso(paso + 1); }
+
+  return (
+    <div className="cuestionario" aria-busy={guardando}>
+      {editar ? <p className="nota" role="status">Configuración del negocio · Paso {paso + 1} de {pasos.length}</p> : <ProgresoAlta fase={2} paso={paso + 1} total={pasos.length} etiqueta={p.titulo} />}
+      {paso === 0 && !editar && <p className="hola">Tu cuenta ya está creada. Ahora preparamos tus actividades e impuestos. Podrás cambiar esta configuración en Ajustes.</p>}
       <div className="paso" key={paso}>
-        <h1 className="titulo">{p.titulo}</h1>
+        <h1 className="titulo" ref={tituloRef} tabIndex={-1}>{p.titulo}</h1>
         <p className="grupo-pie arriba">{p.texto}</p>
         {p.cuerpo}
+        {datosCompletos && paso === 0 && (
+          <details className="alta-datos">
+            <summary>Revisar datos de facturación y cuenta de cobro</summary>
+            <p>{emisor.nombre} · {emisor.nif}<br />{emisor.direccion}<br />{emisor.cp} {emisor.ciudad} {emisor.provincia}</p>
+            <CamposEmisor emisor={emisor} sociedad={sociedad} cambiar={e} />
+          </details>
+        )}
       </div>
-      {error && <p className="error">{error}</p>}
+      {error && <p className="error" role="alert" ref={errorRef} tabIndex={-1}>{error}</p>}
       <div className="cuestionario-botones">
-        {paso > 0 ? <button type="button" className="boton sec" onClick={() => setPaso(paso - 1)}>Atrás</button> : editar ? <a href="/ajustes" className="boton sec">Cancelar</a> : <span />}
-        <button type="button" className="boton" disabled={!p.listo || guardando} onClick={() => (ultimo ? terminar() : setPaso(paso + 1))}>{ultimo ? (guardando ? 'Guardando…' : editar ? 'Guardar' : 'Empezar') : 'Siguiente'}</button>
+        {paso > 0 ? <button type="button" className="boton sec" disabled={guardando} onClick={() => { setError(''); setPaso(paso - 1); }}>Atrás</button> : editar ? <a href="/ajustes" className="boton sec">Cancelar</a> : <span />}
+        <button type="button" className="boton" disabled={!p.listo || guardando} onClick={() => (ultimo ? terminar() : avanzar())}>{ultimo ? (guardando ? 'Guardando…' : editar ? 'Guardar' : 'Guardar y continuar') : 'Siguiente'}</button>
       </div>
     </div>
   );
