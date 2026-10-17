@@ -18,3 +18,22 @@
 .login-aviso { text-align: center; margin: 0; }
 .login-etiqueta { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
 .login-etiqueta a { font-size: 0.875rem; color: var(--ink); }
+.login-cambiar { text-align: center; margin: 4px 0 0; }
+/* Crear cuenta (components/FormRegistro.js) */
+.registro-paso { margin: 0; font-size: 13px; color: var(--muted); }
+.registro-bloque { display: flex; flex-direction: column; gap: 10px; }
+.registro-bloque[hidden] { display: none; }
+.registro-ayuda { margin: -4px 0 0; font-size: 13px; }
+.registro-trampa { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.registro-opciones { display: flex; flex-direction: column; gap: 8px; }
+.login .registro-opcion { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; margin: 0; padding: 14px 16px; text-align: left; border-radius: 12px; background: var(--surface); color: var(--ink); border: 1px solid var(--line); box-shadow: none; font-weight: 400; }
+.login .registro-opcion:hover { border-color: var(--muted); }
+.login .registro-opcion.elegida { border: 1.5px solid var(--ink); background: var(--surface); }
+.registro-opcion strong { font-size: 16px; font-weight: 600; }
+.registro-opcion small { font-size: 13px; color: var(--muted); }
+.registro-plan-cab { display: flex; align-items: baseline; gap: 8px; width: 100%; }
+.registro-plan-cab em { font-style: normal; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--relleno); color: var(--ink); }
+.registro-plan-cab b { margin-left: auto; font-size: 16px; font-weight: 600; }
+.registro-plan-cab b small { font-weight: 400; }
+.login .registro-atras { margin: 0; padding: 8px; background: none; color: var(--ink); border: 0; box-shadow: none; font-weight: 500; }
+.login .registro-atras:hover { background: none; text-decoration: underline; }

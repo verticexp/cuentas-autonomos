@@ -9,7 +9,7 @@ export default function Pie() {
         <div className="web-pie-marca">
           <Logo className="web-logo" />
           <p>Facturas, gastos e impuestos, en orden. Gestión financiera para autónomos, pymes y grandes empresas.</p>
-          <Link href="/contacto" className="web-btn web-btn-peq">Pedir acceso</Link>
+          <Link href="/registro" className="web-btn web-btn-peq">Empieza gratis</Link>
         </div>
         <nav aria-label="Producto">
           <p>Producto</p>

@@ -40,7 +40,7 @@ export function Cta({ titulo = 'Empieza a ver tu dinero con claridad', sub = '1 
       <h2>{titulo}</h2>
       <p>{sub}</p>
       <div className="web-cta-btns">
-        <Link href="/contacto" className="web-btn web-btn-grande">Pedir acceso <Flecha /></Link>
+        <Link href="/registro" className="web-btn web-btn-grande">Empieza gratis <Flecha /></Link>
         <Link href={otro[0]} className="web-btn web-btn-claro web-btn-grande">{otro[1]}</Link>
       </div>
     </section>

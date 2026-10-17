@@ -56,7 +56,7 @@ export default function Cabecera() {
         </nav>
         <div className="web-cab-acciones">
           <a href="/login" className="web-cab-entrar">Entrar</a>
-          <Link href="/contacto" className="web-btn web-btn-peq">Pedir acceso</Link>
+          <Link href="/registro" className="web-btn web-btn-peq">Empieza gratis</Link>
           <button className="web-hamburguesa" aria-label={movil ? 'Cerrar menú' : 'Abrir menú'} aria-expanded={movil} onClick={() => setMovil(!movil)}>
             <Icono n={movil ? 'cerrar' : 'menu'} />
           </button>
@@ -95,7 +95,7 @@ export default function Cabecera() {
           <Link href="/contacto" style={{ '--n': 12 }} tabIndex={movil ? 0 : -1}><Icono n="correo" />Contacto</Link>
           <div className="web-cajon-cta">
             <a href="/login" className="web-btn web-btn-claro" tabIndex={movil ? 0 : -1}>Entrar</a>
-            <Link href="/contacto" className="web-btn" tabIndex={movil ? 0 : -1}>Pedir acceso</Link>
+            <Link href="/registro" className="web-btn" tabIndex={movil ? 0 : -1}>Empieza gratis</Link>
           </div>
         </div>
       </div>

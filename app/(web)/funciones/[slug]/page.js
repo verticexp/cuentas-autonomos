@@ -28,7 +28,7 @@ export default async function PaginaFuncion({ params }) {
         <h1 className="web-entra" style={{ '--d': '80ms' }}>{f.titulo}</h1>
         <p className="web-sub web-entra" style={{ '--d': '140ms' }}>{f.sub}</p>
         <div className="web-cta web-entra" style={{ '--d': '200ms' }}>
-          <Link className="web-btn web-btn-grande" href="/contacto">Pruébalo gratis<Flecha /></Link>
+          <Link className="web-btn web-btn-grande" href="/registro">Pruébalo gratis<Flecha /></Link>
           <Link className="web-btn web-btn-claro web-btn-grande" href="/precios">Ver precios</Link>
         </div>
       </section>
