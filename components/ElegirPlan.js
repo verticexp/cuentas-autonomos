@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { DESCUENTO, PLANES } from '@/components/web/datos';
 import { TIPOS } from '@/lib/prueba';
 
@@ -13,6 +14,7 @@ export default function ElegirPlan({ plan, uso, admin, app }) {
   const [periodo, setPeriodo] = useState(plan?.periodo || 'anio');
   const [estado, setEstado] = useState('');
   const [actual, setActual] = useState(plan);
+  const router = useRouter();
   const paga = Boolean(actual?.pagado && actual?.suscripcion);
 
   async function llamar(datos) {
@@ -30,13 +32,13 @@ export default function ElegirPlan({ plan, uso, admin, app }) {
     const sesion = new URLSearchParams(window.location.search).get('sesion');
     if (!sesion) return;
     window.history.replaceState(null, '', window.location.pathname);
-    llamar({ sesion }).then((d) => { if (d?.plan) { setActual(d.plan); setEstado(`Hecho: ya tienes el plan ${d.plan.nombre}.`); } });
+    llamar({ sesion }).then((d) => { if (d?.plan) { setActual(d.plan); setEstado(`Hecho: ya tienes el plan ${d.plan.nombre}.`); router.refresh(); } });
   }, []);
 
   async function elegir(nombre) {
     if (paga && !window.confirm(`¿Pasar al plan ${TIPOS[tipo]} ${nombre} (${periodo === 'anio' ? 'anual' : 'mensual'})? Stripe ajusta la diferencia en tu próxima factura.`)) return;
     const d = await llamar({ tipo, nombre, periodo });
-    if (d?.plan) { setActual(d.plan); setEstado(`Hecho: ahora tienes el plan ${d.plan.nombre}.`); }
+    if (d?.plan) { setActual(d.plan); setEstado(`Hecho: ahora tienes el plan ${d.plan.nombre}.`); router.refresh(); }
   }
 
   if (app) return <p className="nota">El plan se gestiona desde la web de Netto, entrando con tu cuenta en un navegador.</p>;
@@ -56,7 +58,7 @@ export default function ElegirPlan({ plan, uso, admin, app }) {
           <button type="button" className="boton" disabled={estado === 'enviando'} onClick={() => llamar({ tipo: actual.tipo, nombre: actual.nombre, periodo })}>Añadir tarjeta · {periodo === 'anio' ? 'anual' : 'mensual'}</button>
         </div>
       )}
-      {uso?.perdidas?.length > 0 && (
+      {!paga && uso?.perdidas?.length > 0 && (
         <div className="plan-uso">
           <p>Durante la prueba has usado cosas que el plan {actual.nombre} no incluye:</p>
           <ul>{uso.perdidas.map((t) => <li key={t}>{t}</li>)}</ul>
