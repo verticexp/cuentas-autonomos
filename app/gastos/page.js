@@ -18,7 +18,8 @@ import Deslizable from '@/components/Deslizable';
 import Deslizar from '@/components/Deslizar';
 import { puede } from '@/lib/permisos';
 import Link from 'next/link';
-import { clasificar, sugerencias } from '@/lib/banco';
+import { revisionGastos } from '@/lib/revisionGastos';
+import RevisionGastos from '@/components/RevisionGastos';
 import '@/app/proveedores.css';
 
 import '@/app/mk.css';
@@ -39,12 +40,11 @@ export default async function Gastos({ searchParams }) {
   const [movs, productos, total, delAnioTodos, agr, nBienes] = await Promise.all([leer(u, 'banco'), leer(u, 'productos'), contar(u, 'gastos'), leerRango(u, 'gastos', `${anio}-01-01`, `${anio}-12-31`), totales(u, 'gastos', ['dc', 'sn']), contarMarcados(u, 'gastos', 'i')]);
   // Con inventario: los productos que llevan stock, para apuntar lo que entra con cada compra.
   const stockProductos = fiscalDe(u).inventario ? (productos || []).filter((p) => !p.servicio).sort((a, b) => a.nombre.localeCompare(b.nombre)) : [];
-  // En revisión: cargos del banco que no casan con ningún gasto y parecen un gasto (no impuestos, nóminas, préstamos…).
+  // En revisión (lib/revisionGastos.js): cargos del banco sin gasto que parecen un gasto (no impuestos, nóminas, préstamos…).
   const sinPareja = (movs || []).filter((m) => (m.estado === 'pendiente' || !m.estado) && m.importe < 0);
   const cand = await candidatosConciliacion(u, movs || []);
-  const sug = sugerencias(movs || [], cand.facturas, cand.gastos);
-  // Con una sugerencia floja (parcial, conflicto…) también está en revisión: solo la segura lo saca de aquí.
-  const revision = sinPareja.filter((m) => !sug[m.id]?.segura && clasificar(m, { autonomo: fiscalDe(u).tipo === 'autonomo' }) === 'gasto').sort((a, b) => b.fecha.localeCompare(a.fecha));
+  // Todos los que siguen pendientes, también los de sugerencia segura (si no, no se ven en ningún sitio hasta conciliarlos).
+  const revision = revisionGastos(movs || [], cand.gastos, { autonomo: fiscalDe(u).tipo === 'autonomo' });
   const movimiento = banco && sinPareja.find((m) => m.id === banco);
   const buscado = String(q || '').trim().toLowerCase();
   // Los bienes traídos de otro programa no son gastos de aquí: se ven en Contabilidad › Amortizaciones.
@@ -105,23 +105,7 @@ export default async function Gastos({ searchParams }) {
 
       {puede(u, 'gastar') && movimiento && <FormGasto key={movimiento.id} hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} productos={stockProductos} movimiento={movimiento} proyectos={proyectos} />}
 
-      {puede(u, 'gastar') && !movimiento && revision.length > 0 && (
-        <section className="grupo gastos-revision">
-          <h2 className="grupo-t">En revisión · {revision.length}</h2>
-          <p className="grupo-pie arriba">Cargos de tu banco que no están en Netto. Añade cada uno con su factura para deducir el IVA; si no es un gasto (un traspaso, un préstamo…), dilo en Banco.</p>
-          <ul className="grupo-lista">
-            {revision.slice(0, 30).map((m) => (
-              <li key={m.id}>
-                <Ir href={sug[m.id] ? '/banco' : `/gastos?banco=${encodeURIComponent(m.id)}`} className="fila">
-                  <span className="txt"><strong>{m.contraparte || m.concepto}</strong><small>{fechaCorta(m.fecha)} · {m.contraparte ? m.concepto : 'Banco'} · {sug[m.id] ? 'puede ser un gasto ya apuntado: revísalo en Banco' : 'cargo sin conciliar: falta su factura'}</small></span>
-                  <span className="imp-col"><span className="imp">{eur(Math.abs(m.importe))}</span><span className="estado-txt e-pendiente">{sug[m.id] ? 'Revisar' : 'Añadir'}</span></span>
-                </Ir>
-              </li>
-            ))}
-          </ul>
-          {revision.length > 30 && <p className="grupo-pie"><Link href="/banco">Y {revision.length - 30} más en Banco ›</Link></p>}
-        </section>
-      )}
+      {puede(u, 'gastar') && !movimiento && revision.total > 0 && <RevisionGastos items={revision.items} total={revision.total} />}
 
       {total > 5 && <Buscar action="/gastos" q={q} ocultos={{ estado }} placeholder="Buscar proveedor o concepto" />}
       {sinPagar > 0 && (
