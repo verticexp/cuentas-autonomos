@@ -3,19 +3,19 @@
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 
-// Color de la barra de estado del móvil (hora, batería): verde en el resumen y en la pantalla de inicio,
-// del color del fondo en el resto. iOS pone el texto en blanco o negro según el color, así siempre se lee.
+// Color de la barra de estado del móvil (hora, batería): acompaña a la cabecera del resumen,
+// al arranque de marca o al fondo de la pantalla. iOS pone el texto en blanco o negro según el color, así siempre se lee.
 export default function BarraEstado() {
   const path = usePathname();
   useEffect(() => {
     const html = document.documentElement;
     const poner = () => {
       const oscuro = matchMedia('(prefers-color-scheme: dark)').matches;
-      const verde = oscuro ? '#102521' : '#0F1F1B';
-      const papel = oscuro ? '#08110F' : '#F3F4F1';
+      const cabecera = oscuro ? '#242629' : '#0F1F1B';
+      const papel = oscuro ? '#111214' : '#F3F4F1';
       const inicio = document.getElementById('arranque') && html.dataset.arranque !== 'visto';
       const bloqueada = !html.dataset.abierta && document.querySelector('.pantalla-bloqueo');
-      const color = inicio || (location.pathname === '/' && !bloqueada) ? verde : papel;
+      const color = inicio ? '#0F1F1B' : (location.pathname === '/' && !bloqueada) ? cabecera : papel;
       // Solo se cambia el color de las etiquetas que ya hay (son de Next: quitarlas rompía la navegación)
       const metas = [...document.querySelectorAll('meta[name="theme-color"]')];
       if (!metas.length) { const m = document.createElement('meta'); m.name = 'theme-color'; document.head.appendChild(m); metas.push(m); }

@@ -19,7 +19,6 @@ import Ico from '@/components/Ico';
 import Logo from '@/components/Logo';
 import AvisoPrueba from '@/components/AvisoPrueba';
 import { puede } from '@/lib/permisos';
-import { accionesHoy } from '@/lib/hoy';
 import '@/app/asistente.css';
 import '@/app/empresas.css';
 import '@/app/mk.css';
@@ -53,12 +52,6 @@ export default async function Resumen({ searchParams }) {
   const [bajo, alto] = [Math.min(0, ...acum), Math.max(1, ...acum)];
   const puntos = acum.map((v, i) => [acum.length > 1 ? (i / (acum.length - 1)) * 120 : 120, 40 - ((v - bajo) / (alto - bajo)) * 36]);
   const linea = puntos.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join('');
-  // «Qué hacer hoy» (móvil): lo que pide una acción, con lo que el panel ya tiene calculado (lib/hoy.js).
-  const acciones = accionesHoy({
-    vencidas: vencidas.length > 0 ? { n: vencidas.length, nombres: vencidas.nombres } : null,
-    hacienda: esteAnio && (c303 || c130) && debe ? { dias: plazo.dias, importe: aPagar } : null,
-    teso: teso?.minimo,
-  }).filter((a) => a.id !== 'vencidas' || puede(u, 'facturas'));
   const accesos = [
     puede(u, 'facturas') && { href: '/facturas', n: 'factura', t: 'Facturas', enBarra: true },
     puede(u, 'gastos') && { href: '/gastos', n: 'gasto', t: 'Gastos', enBarra: true },
@@ -98,25 +91,6 @@ export default async function Resumen({ searchParams }) {
           </div>
           {cambio !== null && <p className={`saldo-cambio ${cambio >= 0 ? 'sube' : 'baja'}`}>{cambio >= 0 ? '↑' : '↓'} {Math.abs(cambio).toFixed(0)} % frente a {anio - 1}</p>}
           <p className="saldo-s">Facturado {eur(facturado)} · Gastos {eur(gastado)}</p>
-        </section>
-      )}
-
-      {nFacturas > 0 && (
-        <section className="hoy" aria-labelledby="hoy-t">
-          <h2 id="hoy-t" className="grupo-t">Qué hacer hoy</h2>
-          {acciones.length > 0 ? (
-            <ul className="hoy-lista">
-              {acciones.map((a) => (
-                <li key={a.id}>
-                  <Ir href={a.href} className={`hoy-card ${a.tono}`}>
-                    <Ico n={a.icono} />
-                    <span className="txt"><strong>{a.titulo}</strong>{a.detalle && <small>{a.detalle}</small>}</span>
-                    <span className="hoy-cta">{a.cta}</span>
-                  </Ir>
-                </li>
-              ))}
-            </ul>
-          ) : <p className="hoy-ok">Nada urgente: estás al día ✓</p>}
         </section>
       )}
 
