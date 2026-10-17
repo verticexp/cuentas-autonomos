@@ -45,7 +45,7 @@ export default async function Resumen({ searchParams }) {
   const fiscal = fiscalDe(u);
   const ACTIVIDADES = nombresActividad(actividades);
   const { anio, anioActual, esteAnio, r, c303, c130, facturado, gastado, beneficio, plazo, debe, tHoy, qAhora, apartado, aPagar, mesPago,
-    sinCobrar, porCobrar, vencidas, prevFact, prevBeneficio, meses, cambio, ultimoMes, top, limite } = P;
+    sinCobrar, porCobrar, vencidas, prevFact, prevBeneficio, meses, cambio, ultimoMes, top, limite, cuotasSS, rendSS, prevRendSS } = P;
   const pagos = (y) => u.pagos130?.[y] || {};
   const exportar = (tipo, t) => `/api/exportar?tipo=${tipo}&anio=${anio}${t ? `&t=${t}` : ''}`;
   // Curva del beneficio acumulado mes a mes, hasta el último mes con movimiento.
@@ -252,8 +252,14 @@ export default async function Resumen({ searchParams }) {
                           {fila('45', 'Total a deducir', c['45'])}
                           {fila('46', 'Resultado', c['46'])}
                         </dl>
-                        {c['59'] !== 0 && <dl>{fila('59', 'Empresas de otros países de la UE', c['59'])}</dl>}
-                        {r2(c.sinIva - c['59']) !== 0 && <p className="nota">Otras facturas sin IVA por {eur(r2(c.sinIva - c['59']))}: van en otra casilla según el tipo de operación (exportación, exenta o no sujeta). Pregúntale a tu gestor cuál.</p>}
+                        {(c['59'] || c['60'] || c['120'] || c['122']) ? <dl>
+                          {c['59'] !== 0 && fila('59', 'Empresas de otros países de la UE', c['59'])}
+                          {c['60'] !== 0 && fila('60', 'Exportaciones', c['60'])}
+                          {c['120'] !== 0 && fila('120', 'No sujetas por localización (clientes de fuera de la UE)', c['120'])}
+                          {c['122'] !== 0 && fila('122', 'Inversión del sujeto pasivo', c['122'])}
+                        </dl> : null}
+                        {c['59'] !== 0 && <p className="nota">Con operaciones con empresas de la UE presentas también el 349 en el mismo plazo: lo tienes en <a href={`/modelos?anio=${anio}#m349`}>Impuestos</a>.</p>}
+                        {r2(c.sinIva - c['59'] - c['60'] - c['120'] - c['122']) !== 0 && <p className="nota">Facturas sin IVA por {eur(r2(c.sinIva - c['59'] - c['60'] - c['120'] - c['122']))} sin motivo claro: si el cliente es de otro país de la UE, pon en su NIF el NIF-IVA con el prefijo del país (por ejemplo, DE…) o elige el tipo de operación en la factura. Si es una operación exenta, va en la casilla de exentas.</p>}
                         </>}
                         {c130 && <>
                         <p className="nota" style={{ margin: '12px 0 6px' }}><strong>Modelo 130</strong> (acumulado desde enero)</p>
@@ -286,11 +292,11 @@ export default async function Resumen({ searchParams }) {
               <h2 className="grupo-t">Tarifa plana</h2>
               <div className="grupo-c">
                 <div className="celda columna">
-                  <div className="linea"><span>Rendimiento neto {anio}</span><span className="v">{eur(beneficio)} <small>de {eur(limite)}</small></span></div>
-                  <div className="barra-limite"><span className={beneficio > limite ? 'pasado' : beneficio > limite * 0.8 ? 'cerca' : ''} style={{ width: `${Math.min(100, Math.max(0, (beneficio / limite) * 100))}%` }} /></div>
+                  <div className="linea"><span>Rendimiento para la Seguridad Social {anio}</span><span className="v">{eur(rendSS)} <small>de {eur(limite)}</small></span></div>
+                  <div className="barra-limite"><span className={rendSS > limite ? 'pasado' : rendSS > limite * 0.8 ? 'cerca' : ''} style={{ width: `${Math.min(100, Math.max(0, (rendSS / limite) * 100))}%` }} /></div>
                 </div>
               </div>
-              <p className="grupo-pie">{beneficio > limite ? `Te pasas en ${eur(beneficio - limite)}.` : `Te quedan ${eur(limite - beneficio)} de margen.`} Solo cuenta facturas menos gastos de la app; resta tu cuota de autónomos y otros gastos que no tengas aquí.</p>
+              <p className="grupo-pie">{rendSS > limite ? `Te pasas en ${eur(rendSS - limite)}.` : `Te quedan ${eur(limite - rendSS)} de margen.`}{esteAnio && prevRendSS > limite ? ` A este ritmo acabarías el año en ${eur(prevRendSS)}: ${eur(prevRendSS - limite)} por encima, y perderías la tarifa plana.` : ''} Es lo que mira la Seguridad Social: facturas menos gastos ({eur(beneficio)}), más tus cuotas de autónomos ({eur(cuotasSS)}), menos un 7 % de gastos genéricos. Si tienes gastos que no están en Netto, el número real será menor.</p>
             </section>
           )}
 
@@ -301,7 +307,7 @@ export default async function Resumen({ searchParams }) {
                 <div className="celda"><Ico n="factura" /><span className="txt">Facturarás en {anio}</span><span className="v">{eur(prevFact)}</span></div>
                 <div className="celda"><Ico n="beneficio" /><span className="txt">Ganarás tras gastos</span><span className="v">{eur(prevBeneficio)}</span></div>
               </div>
-              <p className="grupo-pie">Lo facturado hasta hoy ({eur(facturado)}) llevado a 12 meses.{limite > 0 ? (prevBeneficio > limite ? ` Te pasarías del límite de la tarifa plana en ${eur(prevBeneficio - limite)}.` : ` Quedarías ${eur(limite - prevBeneficio)} por debajo del límite de la tarifa plana.`) : ''}</p>
+              <p className="grupo-pie">Lo facturado hasta hoy ({eur(facturado)}) llevado a 12 meses.{limite > 0 ? (prevRendSS > limite ? ` Para la Seguridad Social te pasarías del límite de la tarifa plana en ${eur(prevRendSS - limite)}.` : ` Para la Seguridad Social quedarías ${eur(limite - prevRendSS)} por debajo del límite de la tarifa plana.`) : ''}</p>
             </section>
           )}
 
