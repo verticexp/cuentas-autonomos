@@ -1,0 +1,63 @@
+/* Paleta, factura y globitos de la web, acotados al panel decorativo del registro. */
+@media (min-width: 900px) {
+  .login-marca.registro-marca {
+    --panel-ink: #0F1F1B; --panel-paper: #FAFAF8; --panel-muted: #5B6360; --panel-line: #E3E7E4; --panel-green: #1F9D74;
+    display: flex; align-items: center; justify-content: center; isolation: isolate; overflow: hidden;
+    height: auto; min-height: 100dvh; max-height: 100dvh; padding: 40px clamp(28px, 4vw, 68px);
+    background: var(--panel-ink); color: var(--panel-paper);
+  }
+  .registro-marca::before { content: ''; position: absolute; inset: 0; z-index: -1; background: radial-gradient(ellipse at 100% 10%, #1f9d743d, transparent 65%), radial-gradient(ellipse at 0% 100%, #7fe3bd17, transparent 60%); }
+  .registro-marca::after { content: ''; position: absolute; inset: 0; z-index: -1; background-image: linear-gradient(#fafaf80b 1px, transparent 1px), linear-gradient(90deg, #fafaf80b 1px, transparent 1px); background-size: 60px 60px; mask-image: radial-gradient(ellipse at 70% 25%, #000, transparent 75%); }
+  .registro-marca-interior { width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: clamp(22px, 3.4vh, 38px); }
+  .registro-marca-logo { display: block; width: 124px; height: auto; }
+  .registro-marca-texto h2 { font-size: clamp(29px, 3vw, 42px); font-weight: 750; letter-spacing: -0.035em; line-height: 1.08; text-wrap: balance; margin: 0 0 14px; }
+  .registro-marca-texto p { color: #cedbd5; font-size: 15px; line-height: 1.6; margin: 0; }
+  .registro-escena { position: relative; margin: 20px 0 46px; padding: 14px 14px 22px; }
+  .registro-papel { position: relative; width: 100%; padding: 24px; border-radius: 16px; background: var(--panel-paper); color: var(--panel-ink); box-shadow: 0 24px 60px -20px #0006; transform: rotate(-4deg); }
+  .registro-papel-cab { display: flex; align-items: center; gap: 10px; padding-bottom: 17px; border-bottom: 1px solid var(--panel-line); }
+  .registro-papel-n { width: 29px; height: 35px; flex: none; }
+  .registro-papel-cab > div { flex: 1; }
+  .registro-papel-cab b { display: block; font-size: 14px; }
+  .registro-papel small { display: block; font-size: 11px; color: var(--panel-muted); margin-top: 3px; }
+  .registro-papel-estado { border-radius: 999px; background: #E6F2EC; color: #167A59; font-size: 10px; font-weight: 600; padding: 4px 7px; }
+  .registro-papel-cliente { margin: 17px 0; }
+  .registro-papel-cliente b { display: block; font-size: 12px; margin-top: 3px; }
+  .registro-papel-linea { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; font-size: 11px; padding: 0 0 16px; border-bottom: 1px solid var(--panel-line); }
+  .registro-papel-linea b { white-space: nowrap; }
+  .registro-papel-totales { display: grid; gap: 6px; margin-top: 13px; font-size: 11px; color: var(--panel-muted); }
+  .registro-papel-totales > span { display: flex; justify-content: space-between; gap: 10px; }
+  .registro-papel-totales b { color: var(--panel-ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .registro-papel-totales > .registro-papel-total { padding-top: 10px; margin-top: 5px; border-top: 1px dashed var(--panel-line); font-size: 17px; font-weight: 700; color: var(--panel-ink); }
+  .registro-globo { position: absolute; display: flex; align-items: center; gap: 9px; padding: 11px 14px 11px 11px; border-radius: 16px; background: #fff; color: var(--panel-ink); box-shadow: 0 18px 40px -16px #0008; white-space: nowrap; }
+  .registro-globo b { display: block; font-size: 12px; font-weight: 650; }
+  .registro-globo small { display: block; color: var(--panel-muted); font-size: 10px; margin-top: 2px; }
+  .registro-globo-icono { width: 30px; height: 30px; border-radius: 9px; flex: none; display: grid; place-items: center; background: #E6F2EC; color: #167A59; }
+  .registro-globo-icono.cobro { background: var(--panel-green); color: white; }
+  .registro-globo-icono.impuestos { background: #FCF3E3; color: #986218; }
+  .registro-globo-icono svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .registro-globo-cobro { top: -15px; right: -10px; transform: rotate(3deg); }
+  .registro-globo-ticket { right: -20px; top: 70px; transform: rotate(3deg); }
+  .registro-globo-impuestos { left: -12px; bottom: -36px; transform: rotate(-2deg); }
+  .registro-marca-pie { margin: 0; color: #d0ded7; font-size: 13px; }
+  .registro-marca-pie span { display: block; margin-top: 6px; color: #a5bab0; font-size: 11px; }
+  @media (prefers-reduced-motion: no-preference) {
+    .registro-globo { animation: registro-globo-entra 380ms cubic-bezier(.23,1,.32,1) both, registro-globo-flota 7s ease-in-out 400ms infinite; }
+    .registro-globo-ticket { animation-delay: 90ms, 490ms; animation-duration: 380ms, 8s; }
+    .registro-globo-impuestos { animation-delay: 160ms, 560ms; animation-direction: normal, reverse; }
+  }
+}
+@keyframes registro-globo-entra { from { opacity: .4; translate: 0 5px; } to { opacity: 1; translate: 0 0; } }
+@keyframes registro-globo-flota { 50% { translate: 0 -5px; } }
+@media (min-width: 900px) and (max-height: 760px) {
+  .login-marca.registro-marca { padding-block: 24px; }
+  .registro-marca-interior { gap: 18px; }
+  .registro-marca-logo { width: 100px; }
+  .registro-marca-texto h2 { font-size: 29px; margin-bottom: 9px; }
+  .registro-marca-texto p { font-size: 13px; }
+  .registro-escena { margin-top: 14px; margin-bottom: 38px; }
+  .registro-papel { padding: 18px; }
+  .registro-papel-cliente { margin: 12px 0; }
+}
+@media (min-width: 900px) and (max-height: 620px) {
+  .login-marca.registro-marca { position: relative; max-height: none; }
+}
