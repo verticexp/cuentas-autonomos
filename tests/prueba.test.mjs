@@ -6,15 +6,22 @@ const HOY = new Date('2026-03-15T00:00:00.000Z');
 
 test('crea un plan válido y fija el último día: hoy es el día 1 de 30', () => {
   assert.deepEqual(nuevoPlan('aut', 'Esencial', HOY), {
-    tipo: 'aut', nombre: 'Esencial', hasta: '2026-04-13',
+    tipo: 'aut', nombre: 'Esencial', periodo: 'mes', hasta: '2026-04-13',
   });
   assert.deepEqual(nuevoPlan('pym', 'Pro', HOY), {
-    tipo: 'pym', nombre: 'Pro', hasta: '2026-04-13',
+    tipo: 'pym', nombre: 'Pro', periodo: 'mes', hasta: '2026-04-13',
   });
+});
+
+test('conserva el periodo anual y usa mensual ante cualquier otro valor', () => {
+  assert.equal(nuevoPlan('aut', 'Pro', HOY, 'anio').periodo, 'anio');
+  for (const periodo of ['mes', 'otro', '', null, 1]) assert.equal(nuevoPlan('aut', 'Pro', HOY, periodo).periodo, 'mes');
 });
 
 test('rechaza tipos y planes inexistentes', () => {
   assert.equal(nuevoPlan('xyz', 'Esencial', HOY), null);
+  assert.equal(nuevoPlan('__proto__', 'Esencial', HOY), null);
+  assert.equal(nuevoPlan('constructor', 'Esencial', HOY), null);
   assert.equal(nuevoPlan('aut', 'Inexistente', HOY), null);
 });
 
