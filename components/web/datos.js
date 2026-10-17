@@ -123,7 +123,7 @@ export const FUNCIONES = [
     faqs: [
       ['¿Qué formatos acepta?', 'Norma 43 (el formato estándar de la banca española), CSV, Excel y PDF. Todos los bancos permiten descargar al menos uno.'],
       ['¿Y si subo el mismo extracto dos veces?', 'No pasa nada: Netto detecta los movimientos repetidos y no los duplica.'],
-      ['¿Se puede conectar el banco directamente?', 'Todavía no. Es una de las próximas funciones de Netto.'],
+      ['¿Se puede conectar el banco directamente?', 'La conexión directa está prevista para más adelante. Ahora subes los extractos de tu banco y Netto extrae los movimientos para conciliarlos con tus facturas y gastos.'],
     ],
   },
   {
@@ -296,7 +296,7 @@ export const FAQ_GENERAL = [
   ['¿Qué pasa cuando acaba la prueba?', 'Nada se borra. Eliges plan o te llevas tus datos: puedes exportar tus facturas y registros en cualquier momento.'],
   ['¿Puede mi gestoría entrar?', 'Sí. La invitas por email con el perfil de gestoría: ve tus facturas, gastos e impuestos sin poder marcar cobros ni crear facturas, y lleva las nóminas de tu equipo si se las dejas.'],
   ['¿Funciona en el móvil?', 'Se instala como app desde el navegador, con barra de pestañas en el móvil y panel lateral en el ordenador. La app para iPhone está en preparación.'],
-  ['¿Se conecta con mi banco?', 'Subes el extracto cada mes (Norma 43, CSV, Excel o PDF) y Netto lo concilia solo: lo que no casa te sale para revisar. La conexión directa con el banco está en camino.'],
+  ['¿Se conecta con mi banco?', 'Ahora subes el extracto de tu banco (Norma 43, CSV, Excel o PDF) y Netto extrae los movimientos para conciliarlos con tus facturas y gastos. Lo que no coincide queda para revisar. La conexión directa está prevista para más adelante.'],
 ];
 
 export const FAQ_PRECIOS = [

@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { borrar, leer, leerUno, redis } from '@/lib/redis';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
-import { bancoListo, cerrarSesion, iniciar, listaBancos, urlApp } from '@/lib/enableBanking';
+import { bancoDirectoPermitido, bancoListo, cerrarSesion, iniciar, listaBancos, urlApp } from '@/lib/enableBanking';
 import { actualizarSaldo } from '@/lib/bancoServidor';
 
 export const dynamic = 'force-dynamic';
@@ -9,8 +9,9 @@ const NO_LISTO = 'La conexión con los bancos aún no está activada. Mientras, 
 
 // Bancos de España que se pueden conectar (se guardan un día).
 export async function GET() {
-  const { res } = await usuarioApi({ permiso: 'empresa' });
+  const { u, res } = await usuarioApi({ permiso: 'empresa' });
   if (res) return res;
+  if (!bancoDirectoPermitido(u)) return error('Para gestionar tu banco, sube un extracto.', 403);
   if (!bancoListo()) return error(NO_LISTO, 503);
   let lista = await redis.get('banco-lista');
   if (!lista) {
@@ -24,6 +25,7 @@ export async function GET() {
 export async function POST(req) {
   const { u, res } = await usuarioApi({ permiso: 'empresa' });
   if (res) return res;
+  if (!bancoDirectoPermitido(u)) return error('Para gestionar tu banco, sube un extracto.', 403);
   if (!bancoListo()) return error(NO_LISTO, 503);
   const b = await cuerpo(req);
   const banco = String(b.banco || '').slice(0, 120);
@@ -45,9 +47,13 @@ export async function DELETE(req) {
   const id = req.nextUrl.searchParams.get('id');
   const c = id && (await leerUno(u, 'bancos', id));
   if (!c) return error('Esa cuenta ya no está', 404);
+  if (c.origen === 'enable' && !bancoDirectoPermitido(u)) return error('Para gestionar tu banco, sube un extracto.', 403);
   if (c.sesion) {
     const otras = ((await leer(u, 'bancos')) || []).filter((x) => x.sesion === c.sesion && x.id !== c.id);
-    if (!otras.length) await cerrarSesion(c.sesion);
+    if (!otras.length) {
+      try { await cerrarSesion(c.sesion); }
+      catch { return error('El banco no ha confirmado la desconexión. La cuenta se conserva para que puedas volver a intentarlo.', 502); }
+    }
   }
   await borrar(u, 'bancos', id);
   await actualizarSaldo(u);

@@ -20,6 +20,20 @@ function Importe({ v }) {
   return <span className={`bco-imp ${v > 0 ? 'teso-in' : 'teso-out'}`}>{v > 0 ? '+' : '−'}{eur(Math.abs(v))}</span>;
 }
 
+function Paginas({ datos, estado }) {
+  if (!datos?.total) return null;
+  return (
+    <nav className="bco-paginas" aria-label={`Páginas de movimientos ${estado}`}>
+      <span role="status">Mostrando {datos.desde}–{datos.hasta} de {datos.total}</span>
+      <div>
+        {datos.anterior && <Link href={datos.anterior} className="boton pequeno sec" aria-label={`Movimientos ${estado}: página anterior`}>Anterior</Link>}
+        {datos.paginas > 1 && <span>Página {datos.pagina} de {datos.paginas}</span>}
+        {datos.siguiente && <Link href={datos.siguiente} className="boton pequeno sec" aria-label={`Movimientos ${estado}: página siguiente`}>Siguiente</Link>}
+      </div>
+    </nav>
+  );
+}
+
 // Por qué una sugerencia no es segura (lib/banco.js sugerencias: motivo).
 const MOTIVO = {
   parcial: 'El importe es menor que lo que falta: sería un cobro parcial.',
@@ -65,6 +79,7 @@ function QueEs({ m, accion }) {
 function Pendiente({ m, permisos, accion }) {
   const [eligiendo, setEligiendo] = useState(false);
   const [elegida, setElegida] = useState('');
+  const elegidaValida = m.opciones.some((o) => o.id === elegida) ? elegida : '';
   const s = m.sugerencia;
   const puedeAqui = m.importe > 0 ? permisos.facturar : permisos.gastar;
   const confirmar = (tipo, destino) => accion({ accion: 'emparejar', id: m.id, tipo, destino });
@@ -85,12 +100,12 @@ function Pendiente({ m, permisos, accion }) {
       {puedeAqui && !s && !eligiendo && <QueEs m={m} accion={accion} />}
       {puedeAqui && (eligiendo ? (
         <div className="bco-elegir">
-          <select className="campo" value={elegida} onChange={(e) => setElegida(e.target.value)} aria-label={m.importe > 0 ? 'Factura' : 'Gasto'}>
+          <select className="campo" value={elegidaValida} onChange={(e) => setElegida(e.target.value)} aria-label={m.importe > 0 ? 'Factura' : 'Gasto'}>
             <option value="">{m.importe > 0 ? 'Elige la factura…' : 'Elige el gasto…'}</option>
             {m.opciones.map((o) => <option key={o.id} value={o.id}>{o.texto} · {fechaCorta(o.fecha)} · {o.total !== undefined && o.saldo !== undefined && Math.abs(o.total - o.saldo) > 0.005 ? `${eur(o.total)}, faltan ${eur(o.saldo)}` : eur(o.importe)}</option>)}
           </select>
           <div className="bco-botones">
-            <button className="boton pequeno" disabled={!elegida} onClick={() => confirmar(m.importe > 0 ? 'factura' : 'gasto', elegida)}>Emparejar</button>
+            <button className="boton pequeno" disabled={!elegidaValida} onClick={() => { if (elegidaValida) confirmar(m.importe > 0 ? 'factura' : 'gasto', elegidaValida); }}>Emparejar</button>
             <button className="boton pequeno sec" onClick={() => setEligiendo(false)}>Cancelar</button>
           </div>
           {!m.opciones.length && <p className="bco-nota">{m.importe > 0 ? 'No hay facturas sin cobrar.' : 'No hay gastos de esas fechas sin emparejar. Apúntalo en Gastos y vuelve.'}</p>}
@@ -140,7 +155,7 @@ function Conectar({ cerrar }) {
   );
 }
 
-export default function Banco({ cuentas, pendientes, emparejados, ignorados, automaticos = 0, aviso, listo, permisos }) {
+export default function Banco({ cuentas, pendientes, emparejados, ignorados, automaticos = 0, aviso, listo, permisos, historial, cuentasFiltro = [] }) {
   const router = useRouter();
   const [msg, setMsg] = useState(aviso);
   const [ocupado, setOcupado] = useState(false);
@@ -167,7 +182,7 @@ export default function Banco({ cuentas, pendientes, emparejados, ignorados, aut
     try { const d = await llamar('/api/banco/sincronizar', { method: 'POST', body: JSON.stringify({ forzar }) }); if (forzar) setMsg({ texto: d.nuevos ? `✓ ${d.nuevos} movimientos nuevos` : '✓ Al día' }); router.refresh(); } catch (e) { setMsg({ error: true, texto: e.message }); } finally { setOcupado(false); }
   };
   // Al abrir, si hay cuentas conectadas, se traen los últimos movimientos (el servidor no repite si hace menos de 6 horas).
-  useEffect(() => { if (conectadas.length && (permisos.facturar || permisos.gastar)) actualizar(false); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (listo && conectadas.length && (permisos.facturar || permisos.gastar)) actualizar(false); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [encima, setEncima] = useState(false);
   const subir = (e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) subirArchivo(f); };
   const soltar = (e) => { e.preventDefault(); setEncima(false); const f = e.dataTransfer.files?.[0]; if (f) subirArchivo(f); };
@@ -206,7 +221,7 @@ export default function Banco({ cuentas, pendientes, emparejados, ignorados, aut
               </small>
             </span>
             <span className="bco-cuenta-v">{typeof c.saldo === 'number' ? eur(c.saldo) : ''}</span>
-            {permisos.empresa && <button className="bco-quitar" onClick={() => quitar(c)} aria-label={`Quitar ${c.nombre}`}>Quitar</button>}
+            {permisos.empresa && (c.origen !== 'enable' || listo) && <button className="bco-quitar" onClick={() => quitar(c)} aria-label={`Quitar ${c.nombre}`}>Quitar</button>}
           </div>
         ))}
         {!cuentas.length && ((permisos.facturar || permisos.gastar)
@@ -225,7 +240,7 @@ export default function Banco({ cuentas, pendientes, emparejados, ignorados, aut
           : <p className="bco-nota">Aún no hay ninguna cuenta. Cuando alguien con permiso suba un extracto, verás aquí el saldo real.</p>)}
         <div className="bco-botones">
           {permisos.empresa && listo && <button className="boton pequeno" onClick={() => setConectando(true)}>Conectar banco</button>}
-          {conectadas.length > 0 && (permisos.facturar || permisos.gastar) && <button className="boton pequeno sec" onClick={() => actualizar(true)}>Actualizar</button>}
+          {listo && conectadas.length > 0 && (permisos.facturar || permisos.gastar) && <button className="boton pequeno sec" onClick={() => actualizar(true)}>Actualizar</button>}
           {(permisos.facturar || permisos.gastar) && <button className="boton pequeno sec" onClick={() => fichero.current?.click()}>Subir extracto</button>}
           {(permisos.facturar || permisos.gastar) && <input ref={fichero} type="file" hidden accept=".csv,.xlsx,.txt,.n43,.aeb,.q43,.pdf,text/csv,text/plain,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={subir} aria-label="Extracto del banco" />}
         </div>
@@ -233,6 +248,28 @@ export default function Banco({ cuentas, pendientes, emparejados, ignorados, aut
       </section>
 
       {conectando && <Conectar cerrar={() => setConectando(false)} />}
+
+      {historial && <section className="grupo bco-historial" aria-label="Historial de movimientos">
+        <h2 className="grupo-t">Movimientos</h2>
+        <form action="/banco" className="bco-filtros" key={JSON.stringify(historial.filtros)}>
+          <label>Buscar movimiento<input className="campo" type="search" name="q" placeholder="Concepto, contraparte o referencia" defaultValue={historial.filtros.q} maxLength={200} /></label>
+          <label>Cuenta<select className="campo" name="cuenta" defaultValue={historial.filtros.cuenta}>
+            <option value="">Todas las cuentas</option>
+            {!cuentasFiltro.some((c) => c.id === historial.filtros.cuenta) && historial.filtros.cuenta && <option value={historial.filtros.cuenta}>Cuenta no disponible</option>}
+            {cuentasFiltro.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+          </select></label>
+          <label>Desde<input className="campo" type="date" name="desde" defaultValue={historial.filtros.desde} /></label>
+          <label>Hasta<input className="campo" type="date" name="hasta" defaultValue={historial.filtros.hasta} /></label>
+          <div className="bco-botones"><button className="boton pequeno" type="submit">Filtrar movimientos</button>
+            {Object.values(historial.filtros).some(Boolean) && <Link href="/banco" className="boton pequeno sec">Quitar filtros</Link>}
+          </div>
+        </form>
+        <p className="bco-nota">{historial.encontrados} {historial.encontrados === 1 ? 'movimiento' : 'movimientos'}{Object.values(historial.filtros).some(Boolean) ? ` de ${historial.total} con estos filtros` : ' en el historial'}.</p>
+        {historial.filtros.desde && historial.filtros.hasta && historial.filtros.desde > historial.filtros.hasta && <p className="bco-nota rojo">La fecha inicial es posterior a la final. Revisa el intervalo.</p>}
+        {historial.encontrados === 0 && historial.total > 0 && <p className="bco-nota">No hay movimientos con estos filtros.</p>}
+      </section>}
+
+      <div id="banco-pendientes">
 
       {porConfirmar.length > 0 && (
         <section className="grupo">
@@ -250,9 +287,11 @@ export default function Banco({ cuentas, pendientes, emparejados, ignorados, aut
           <ul className="bco-lista">{sinPareja.map((m) => <Pendiente key={m.id} m={m} permisos={permisos} accion={accion} />)}</ul>
         </section>
       )}
+      <Paginas datos={historial?.grupos.pendientes} estado="pendientes" />
+      </div>
 
       {emparejados.length > 0 && (
-        <section className="grupo">
+        <section className="grupo" id="banco-emparejados">
           <h2 className="grupo-t">Emparejados{automaticos > 0 && <span> · {automaticos} automáticos</span>}</h2>
           <ul className="bco-lista">
             {emparejados.map((m) => (
@@ -266,12 +305,13 @@ export default function Banco({ cuentas, pendientes, emparejados, ignorados, aut
               </li>
             ))}
           </ul>
+          <Paginas datos={historial?.grupos.emparejados} estado="emparejados" />
         </section>
       )}
 
       {ignorados.length > 0 && (
-        <details className="grupo bco-ignorados">
-          <summary className="grupo-t">Ignorados <span>{ignorados.length}</span></summary>
+        <details className="grupo bco-ignorados" id="banco-ignorados" open={historial?.grupos.ignorados.pagina > 1 || undefined}>
+          <summary className="grupo-t">Ignorados <span>{historial?.grupos.ignorados.total ?? ignorados.length}</span></summary>
           <ul className="bco-lista">
             {ignorados.map((m) => (
               <li key={m.id} className="bco-mov hecho">
@@ -284,10 +324,11 @@ export default function Banco({ cuentas, pendientes, emparejados, ignorados, aut
               </li>
             ))}
           </ul>
+          <Paginas datos={historial?.grupos.ignorados} estado="ignorados" />
         </details>
       )}
 
-      {!pendientes.length && !emparejados.length && cuentas.length > 0 && <div className="vacio"><p>Todo emparejado</p><p>Cuando lleguen movimientos nuevos te diremos con qué factura o gasto va cada uno.</p></div>}
+      {!pendientes.length && !emparejados.length && !ignorados.length && cuentas.length > 0 && (!historial || historial.total === 0) && <div className="vacio"><p>Sin movimientos</p><p>Sube un extracto para revisar sus cobros y pagos.</p></div>}
     </div>
   );
 }
