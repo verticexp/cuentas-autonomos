@@ -13,3 +13,5 @@
 .importar-fila.i-duplicado .txt { opacity: 0.6; }
 .importar .asiento-campo { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); margin-bottom: 10px; }
 .importar .nota.rojo { color: var(--out); }
+
+.importar-paginacion { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }

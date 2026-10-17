@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { vistaImportacion } from '@/lib/vistaImportacion';
 import Link from 'next/link';
 import { eur, fechaCorta } from '@/lib/formato';
 import { saldoDe as saldo } from '@/lib/calculos';
@@ -30,8 +31,15 @@ export default function Importar() {
   const [msg, setMsg] = useState('');
   const [ocupado, setOcupado] = useState(false);
   const [fecha, setFecha] = useState('');
+  const [pagina, setPagina] = useState(1);
+  const [estado, setEstado] = useState('todos');
+  const enCurso = useRef(false);
+  const reiniciar = () => { setPagina(1); setEstado('todos'); setVista(null); setMsg(''); };
+  const filas = vistaImportacion(vista?.items || [], estado, pagina);
   const pedir = async (guardar) => {
-    setOcupado(true); setMsg('');
+    if (enCurso.current || !archivo) return;
+    enCurso.current = true;
+    setOcupado(true); setMsg(''); setPagina(1);
     const fd = new FormData();
     fd.set('tipo', tipo); fd.set('archivo', archivo);
     if (fecha) fd.set('fecha', fecha);
@@ -40,26 +48,26 @@ export default function Importar() {
       const r = await fetch('/api/importar', { method: 'POST', body: fd });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) { setVista(null); setMsg(d.error || 'No se pudo leer el archivo'); return; }
-      setVista(d);
+      setVista(d); setPagina(1);
       if (!fecha && d.corte) setFecha(d.corte);
       if (guardar) setMsg(`✓ Importados ${d.guardados}`);
-    } catch { setMsg('Sin conexión: inténtalo de nuevo'); } finally { setOcupado(false); }
+    } catch { setMsg('Sin conexión: inténtalo de nuevo'); } finally { enCurso.current = false; setOcupado(false); }
   };
-  const cambiar = (t) => { setTipo(t); setVista(null); setMsg(''); };
+  const cambiar = (t) => { if (enCurso.current) return; setTipo(t); reiniciar(); };
   const hecho = vista && 'guardados' in vista;
   return (
     <div className="importar">
       <section className="formulario tarjeta">
         <h3>Qué quieres importar</h3>
-        <div className="tipo importar-tipos">{TIPOS.map(([k, n]) => <button type="button" key={k} className={tipo === k ? 'activo' : ''} onClick={() => cambiar(k)}>{n}</button>)}</div>
+        <div className="tipo importar-tipos">{TIPOS.map(([k, n]) => <button type="button" disabled={ocupado} key={k} className={tipo === k ? 'activo' : ''} onClick={() => cambiar(k)}>{n}</button>)}</div>
         {CONTABLE.includes(tipo) ? <>
           <p className="nota">{tipo === 'saldos'
             ? 'Para traer la contabilidad de otro programa (Holded, A3, Sage, Contasol…): exporta el balance de sumas y saldos a Excel a la fecha del cambio y súbelo. Pasa a ser el asiento de apertura; lo anterior a esa fecha no se vuelve a contabilizar. Puedes traer también las facturas sin cobrar y los gastos sin pagar: cuando se cobren o paguen, se apuntará solo el cobro o el pago.'
             : 'Exporta el libro o inventario de bienes de inversión con la fecha de compra, el valor y lo ya amortizado a la fecha del cambio. Netto sigue amortizándolos desde ahí, con el mismo % si lo trae el archivo.'}</p>
-          <label className="asiento-campo">Fecha de los saldos (la del cambio de programa)<input className="campo" type="date" value={fecha} onChange={(e) => { setFecha(e.target.value); setVista(null); }} /></label>
+          <label className="asiento-campo">Fecha de los saldos (la del cambio de programa)<input className="campo" type="date" disabled={ocupado} value={fecha} onChange={(e) => { if (enCurso.current) return; setFecha(e.target.value); reiniciar(); }} /></label>
         </> : <p className="nota">Desde Holded: exporta {TIPOS.find((t) => t[0] === tipo)[1].toLowerCase()} a Excel y súbelo tal cual. También vale un Excel o CSV tuyo con la primera fila de títulos.</p>}
         <label className="importar-archivo">
-          <input type="file" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" onChange={(e) => { setArchivo(e.target.files?.[0] || null); setVista(null); setMsg(''); }} />
+          <input type="file" disabled={ocupado} accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" onChange={(e) => { if (enCurso.current) return; setArchivo(e.target.files?.[0] || null); reiniciar(); }} />
         </label>
         <button className="boton" disabled={!archivo || ocupado} onClick={() => pedir(false)}>{ocupado && !vista ? 'Leyendo…' : 'Ver vista previa'}</button>
         {msg && <p role="status" className={msg.startsWith('✓') ? 'nota guardado' : 'error'}>{msg}</p>}
@@ -75,8 +83,19 @@ export default function Importar() {
           {tipo === 'saldos' && <p className={`nota${vista.descuadre ? ' rojo' : ''}`}>Saldos deudores {eur(vista.debe)} · acreedores {eur(vista.haber)}{vista.descuadre ? ` · la diferencia (${eur(Math.abs(vista.descuadre))}) irá a la cuenta 129, resultado del ejercicio${vista.conResultados ? ': revisa el archivo, porque ya trae cuentas de gastos e ingresos' : ''}` : ' · cuadra'}.</p>}
           {tipo === 'facturas' && vista.pendienteTotal !== undefined && <p className="nota">Pendiente de cobro de las facturas nuevas: <strong>{eur(vista.pendienteTotal)}</strong>{vista.parciales ? ` · ${vista.parciales} cobradas en parte (sin fecha ni método del cobro: no constan en el archivo)` : ''}. Compáralo con tu programa de origen antes de importar.</p>}
           <p className="nota">Columnas: {Object.entries(vista.columnas).map(([k, c]) => `${CAMPO[k] || k} ← «${c}»`).join(' · ')}</p>
+          <label>Filtrar por estado
+            <select className="campo" value={estado} onChange={(e) => { setEstado(e.target.value); setPagina(1); }}>
+              <option value="todos">Todos</option>
+              <option value="nuevo">Nuevos</option>
+              <option value="duplicado">Duplicados</option>
+              <option value="error">Errores</option>
+              {['omitida', 'agrupada'].filter((e) => vista.items.some((x) => x.estado === e)).map((e) => <option key={e} value={e}>{e === 'omitida' ? 'Omitidas' : 'Agrupadas'}</option>)}
+            </select>
+          </label>
+          <p className="nota" role="status">Filas {filas.desde}–{filas.hasta} de {filas.total}</p>
+          {!filas.total && <p className="nota">No hay filas con este estado.</p>}
           <ul className="grupo-lista importar-filas">
-            {vista.items.slice(0, 100).map((x) => {
+            {filas.items.map((x) => {
               const [a, b] = x.datos ? resumen(tipo, x.datos) : [`Fila ${x.n}`, x.error];
               return (
                 <li key={x.n} className={`fila importar-fila i-${x.estado}`}>
@@ -86,7 +105,11 @@ export default function Importar() {
               );
             })}
           </ul>
-          {vista.items.length > 100 && <p className="nota">Y {vista.items.length - 100} filas más.</p>}
+          <nav aria-label="Páginas de la vista previa" className="importar-paginacion">
+            <button type="button" className="boton sec" aria-label="Página anterior de la vista previa" disabled={filas.pagina <= 1} onClick={() => setPagina(filas.pagina - 1)}>Anterior</button>
+            <span>Página {filas.pagina} de {filas.paginas}</span>
+            <button type="button" className="boton sec" aria-label="Página siguiente de la vista previa" disabled={filas.pagina >= filas.paginas} onClick={() => setPagina(filas.pagina + 1)}>Siguiente</button>
+          </nav>
           {hecho
             ? DESTINO[tipo] && <Link href={DESTINO[tipo]} className="boton sec">Ver {TIPOS.find((t) => t[0] === tipo)[1].toLowerCase()}</Link>
             : <button className="boton" disabled={!vista.nuevos || ocupado || (CONTABLE.includes(tipo) && !fecha)} onClick={() => pedir(true)}>{ocupado ? 'Importando…' : !vista.nuevos ? 'No hay nada nuevo' : tipo === 'saldos' ? `Crear la apertura con ${vista.nuevos} cuentas` : `Importar ${vista.nuevos}`}</button>}

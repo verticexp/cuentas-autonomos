@@ -50,7 +50,7 @@ export default function Seguridad() {
       </section>
 
       <section className="web-sec">
-        <Encabezado kicker="Banco" titulo="Tu banco, sin darnos las llaves" sub="Hoy trabajas con extractos que tú descargas y subes: Netto nunca tiene acceso a tu banca online. Cuando llegue la conexión directa, será de solo lectura a través de un proveedor autorizado, y podrás desconectarla cuando quieras." />
+        <Encabezado kicker="Banco" titulo="Tu banco, sin darnos las llaves" sub="Ahora trabajas con extractos que tú descargas y subes. Netto extrae los movimientos y te ayuda a conciliarlos, sin pedirte las claves de tu banca online. La conexión directa está prevista para más adelante y será de solo lectura." />
       </section>
 
       <Cta titulo="¿Tienes preguntas sobre seguridad?" sub="Escríbenos y te contamos con detalle cómo tratamos tus datos." />
