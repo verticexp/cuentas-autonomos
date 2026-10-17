@@ -149,3 +149,20 @@ html[data-entrada] .tabbar { animation: entrada-barra 0.5s var(--vt-curva) 0.15s
 /* Solo lectura al acabar la prueba (app/layout.js) */
 .aviso-lectura { position: sticky; top: 0; z-index: 30; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; padding: 8px 16px; padding-top: max(8px, env(safe-area-inset-top)); background: color-mix(in srgb, #E8A33D 22%, var(--surface)); font-size: 14px; color: var(--ink); text-align: center; }
 .aviso-lectura a { font-weight: 600; color: var(--ink); }
+
+/* Registro en pasos (components/FormRegistro.js) */
+.registro .registro-bloque[hidden] { display: none; }
+.registro .login-titulo { font-size: 22px; font-weight: 600; }
+.registro input, .registro select { min-width: 0; max-width: 100%; box-sizing: border-box; }
+.registro .registro-periodo { display: flex; gap: 8px; margin: 16px 0; }
+.registro .registro-periodo button { flex: 1; margin: 0; padding: 12px 8px; background: var(--surface); color: var(--ink); border: 1px solid var(--line); font-size: 14px; }
+.registro .registro-periodo button.elegida { border-color: var(--ink); background: var(--relleno); }
+.registro .registro-plan-cab { flex-wrap: wrap; gap: 6px 10px; }
+.registro .registro-plan-cab b { white-space: nowrap; }
+.registro-resumen { margin: 16px 0; overflow-wrap: anywhere; }
+.registro-resumen dt { margin-top: 16px; font-weight: 600; }
+.registro-resumen dd { margin: 4px 0 0; line-height: 1.5; }
+.registro .registro-acepto { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; line-height: 1.5; margin: 20px 0; }
+.registro .registro-acepto input { flex: 0 0 20px; width: 20px; height: 20px; margin: 1px 0 0; padding: 0; accent-color: var(--marca); }
+.registro .registro-acepto span { min-width: 0; }
+.registro .error { overflow-wrap: anywhere; }

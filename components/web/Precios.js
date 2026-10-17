@@ -5,7 +5,8 @@ import { Fragment, useState } from 'react';
 import Icono from '@/components/web/Icono';
 import { COMPARATIVA, DESCUENTO, PERSONALIZADO, PLANES, SEGMENTOS } from '@/components/web/datos';
 
-const conDescuento = (p, meses = 1) => Math.round((p * meses * (100 - DESCUENTO)) / 100);
+const importe = (p) => p.toLocaleString('es-ES', { minimumFractionDigits: Number.isInteger(p) ? 0 : 2, maximumFractionDigits: 2 });
+const conDescuento = (p, meses = 1) => importe((p * meses * (100 - DESCUENTO)) / 100);
 
 function Celda({ v }) {
   if (v === true) return <span className="web-tabla-si"><Icono n="tic" /><span className="oculto">Incluido</span></span>;
@@ -50,7 +51,7 @@ export default function Precios({ inicial = 'aut', tabla = false, solo = false }
                 {anual && <s>{p.p} €</s>}<strong>{mes} €</strong><span>/mes</span>
               </p>
               <p className="web-pie-precio">{anual ? `${conDescuento(p.p, 12)} € al año · sin IVA` : 'Sin IVA · sin permanencia'}</p>
-              <Link className={`web-btn${p.fuerte ? '' : ' web-btn-oscuro'}`} href={`/registro?tipo=${seg}&plan=${encodeURIComponent(p.n)}`}>Probar 1 mes gratis<Icono n="flecha" className="ico web-flecha" /></Link>
+              <Link className={`web-btn${p.fuerte ? '' : ' web-btn-oscuro'}`} href={`/registro?tipo=${seg}&plan=${encodeURIComponent(p.n)}${anual ? '&periodo=anio' : ''}`}>Probar 1 mes gratis<Icono n="flecha" className="ico web-flecha" /></Link>
               <ul>
                 {p.herencia && <li className="web-herencia">Todo lo de {p.herencia}, y además:</li>}
                 {p.l.map((x) => <li key={x}><Icono n="tic" />{x}</li>)}
