@@ -8,7 +8,7 @@ import './v2.css';
 import TabBar from '@/components/TabBar';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { desbloqueada, modoBloqueo, usuarioActual } from '@/lib/auth';
+import { bloqueoDe, desbloqueada, usuarioActual } from '@/lib/auth';
 import { COLOR_BASE } from '@/lib/marca';
 import { fuente } from '@/components/fuente';
 import { permisosDe } from '@/lib/permisos';
@@ -41,7 +41,7 @@ export default async function RootLayout({ children }) {
   // de cobro (con algunos colores, en modo oscuro los botones parecían desactivados).
   const u = await usuarioActual().catch(() => null);
   // Con el bloqueo del servidor activo y sin desbloquear, la pantalla de bloqueo sale aunque el navegador la diera por abierta.
-  const abierta = !u || modoBloqueo() !== 'activo' || (await desbloqueada().catch(() => false));
+  const abierta = !u || bloqueoDe(u) !== 'activo' || (await desbloqueada().catch(() => false));
   // Al abrir una página de la app sin desbloquear: redirección de verdad (307) antes de pintar nada. Desde la página, la
   // redirección ya va dentro del HTML (app/loading.js) y el navegador recarga: dos documentos, fundido lento y barra «fantasma».
   const cab = await headers();
@@ -58,7 +58,7 @@ export default async function RootLayout({ children }) {
         <script nonce={nonce} suppressHydrationWarning dangerouslySetInnerHTML={{ __html: 'window.__arranque=performance.now()' }} />
         {children}
         <Suspense>{u && <TabBar permisos={permisosDe(u)} empresas={u.misEmpresas} empresa={u.empresa} admin={Boolean(u.admin)} inventario={Boolean(u.fiscal?.inventario)} fiscal={{ tipo: u.fiscal?.tipo, iva: u.fiscal?.iva }} />}<Llegada /><BarraEstado /></Suspense>
-        {u && <Bloqueo email={u.email} servidor={abierta} />}
+        {u?.bloqueoPantalla && <Bloqueo email={u.email} servidor={abierta} />}
       </body>
     </html>
   );

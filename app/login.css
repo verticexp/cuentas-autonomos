@@ -9,3 +9,12 @@
 .ver-pass svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .login-ayuda { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 2px 0 0; }
 .login .login-ayuda button { margin: 0; padding: 0; background: none; border: 0; color: inherit; font: inherit; text-decoration: underline; box-shadow: none; width: auto; min-height: 0; }
+/* Entrar con Google o Apple (aún sin conectar) y la fila de la contraseña con «¿Has olvidado…?» (components/FormEntrar.js) */
+.login .login-titulo { display: block; margin: 0 0 6px; font-size: 26px; font-weight: 700; letter-spacing: -0.02em; color: var(--ink); }
+.login-sociales { display: flex; flex-direction: column; gap: 10px; }
+.login .boton-social { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 0; background: var(--surface); color: var(--ink); border: 1px solid var(--line); font-weight: 600; box-shadow: none; }
+.login .boton-social:hover { background: var(--relleno); }
+.boton-social svg { width: 20px; height: 20px; flex: none; }
+.login-aviso { text-align: center; margin: 0; }
+.login-etiqueta { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.login-etiqueta a { font-size: 0.875rem; color: var(--ink); }

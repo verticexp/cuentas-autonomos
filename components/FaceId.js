@@ -6,10 +6,11 @@ import { MARCA, activarFaceId, faceIdDisponible, nombreDispositivo } from '@/lib
 import { fechaCorta } from '@/lib/formato';
 
 // Ajustes → Face ID: activarlo en este dispositivo y ver en cuáles está.
-export default function FaceId({ lista }) {
+export default function FaceId({ lista, bloqueo = false }) {
   const router = useRouter();
   const [disponible, setDisponible] = useState(null);
   const [msg, setMsg] = useState('');
+  const [bloquear, setBloquear] = useState(bloqueo);
 
   useEffect(() => { faceIdDisponible().then(setDisponible); }, []);
 
@@ -17,6 +18,13 @@ export default function FaceId({ lista }) {
     setMsg('');
     try { await activarFaceId(nombreDispositivo()); setMsg('Listo: la próxima vez entrarás con Face ID.'); router.refresh(); }
     catch (e) { setMsg(e.name === 'NotAllowedError' ? 'Cancelado.' : e.message); }
+  }
+
+  async function cambiarBloqueo(e) {
+    const valor = e.target.checked;
+    setBloquear(valor);
+    const r = await fetch('/api/cuenta', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bloqueoPantalla: valor }) }).catch(() => null);
+    if (!r?.ok) { setBloquear(!valor); setMsg('No se ha podido guardar. Inténtalo otra vez.'); }
   }
 
   async function quitar(id) {
@@ -28,7 +36,11 @@ export default function FaceId({ lista }) {
   return (
     <section className="tarjeta formulario faceid">
       <h3>Face ID</h3>
-      <p className="nota">Netto siempre se bloquea al cerrarla. Con Face ID (o la huella) la desbloqueas sin escribir la contraseña. Tu cara nunca sale del dispositivo.</p>
+      <p className="nota">Con Face ID (o la huella) entras sin escribir la contraseña. Tu cara nunca sale del dispositivo.</p>
+      <label className="check">
+        <input type="checkbox" checked={bloquear} onChange={cambiarBloqueo} />
+        Pedir Face ID o contraseña cada vez que abra Netto
+      </label>
       {lista.length > 0 && (
         <ul className="dispositivos">
           {lista.map((k) => (

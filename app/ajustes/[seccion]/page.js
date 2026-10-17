@@ -38,7 +38,7 @@ export default async function Seccion({ params }) {
       <Volver href="/ajustes">Ajustes</Volver>
       <h1 className="titulo">{TITULOS[seccion]}</h1>
       {seccion === 'marca' && <Marca marca={u.marca} nombre={u.emisor?.nombre} />}
-      {seccion === 'seguridad' && <FaceId lista={llaves} />}
+      {seccion === 'seguridad' && <FaceId lista={llaves} bloqueo={Boolean(u.bloqueoPantalla)} />}
       {seccion === 'controlat' && <Controlat activo={Boolean(u.controlat)} />}
       {seccion === 'avisos' && <AvisosPush listo={pushListo()} />}
       {seccion === 'importar' && <Importar />}
