@@ -110,7 +110,6 @@ test('no infiere retenciones ambiguas, incoherentes o inválidas', () => {
     { base: 100, irpf: 10 },
     { base: 100, irpf: 0.01 },
     { base: 100, irpf: 15, irpfPct: 7 },
-    { base: 100, irpf: -15 },
     { base: 100, irpfPct: 15 },
   ]) {
     const t = ticket(datos);
@@ -148,4 +147,38 @@ test('extractos: conserva margen para las líneas de una página sin permitir sa
   try { for (const paginas of [1, 2, 10]) assert.ok((await leerExtracto('YQ==', paginas)).filas); }
   finally { globalThis.fetch = original; }
   assert.deepEqual(limites, [4000, 8000, 16000]);
+});
+
+
+test('Registro Mercantil: IRPF impreso con signo negativo conserva base y neto', () => {
+  const t = ticket({ base: '22,54', ivaPct: 21, irpf: '-3,38 €', irpfPct: '15%', total: '23,89', desglose: [{ ivaPct: 21, base: '22,54', cuota: '4,73' }] });
+  assert.equal(t.base, 22.54);
+  assert.equal(t.irpf, 3.38);
+  assert.equal(t.irpfPct, 15);
+  assert.equal(t.cuadra, true);
+  assert.deepEqual(t.avisos, []);
+});
+
+test('porcentaje explícito sin cuota: reconstruye desde el neto y valida contra el total', () => {
+  for (const pct of [7, 15]) {
+    const t = ticket({ ivaPct: 21, irpfPct: pct, total: 121 - pct });
+    assert.equal(t.base, 100);
+    assert.equal(t.irpfPct, pct);
+    assert.equal(t.irpf, pct);
+    assert.equal(t.cuadra, true);
+    const directo = ticket({ base: 100, ivaPct: 21, irpfPct: pct, total: 121 - pct });
+    assert.equal(directo.irpfPct, pct);
+    assert.equal(ticket({ base: 100, ivaPct: 21, irpfPct: pct, total: 121 }).irpfPct, null);
+  }
+});
+
+
+test('IVA no leído no se convierte en IVA cero al reconstruir una base', () => {
+  for (const ivaPct of [null, undefined, '']) {
+    const t = ticket({ ivaPct, total: 106, irpf: -15 });
+    assert.equal(t.ivaPct, 21);
+    assert.equal(t.base, 100);
+    assert.equal(t.irpfPct, 15);
+  }
+  assert.equal(ticket({ ivaPct: 0, total: 85, irpf: 15 }).ivaPct, 0);
 });

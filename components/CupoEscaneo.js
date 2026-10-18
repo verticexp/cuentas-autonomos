@@ -4,10 +4,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { esApp } from '@/lib/app';
 import '@/app/ticket.css';
 
-export default function CupoEscaneo() {
-  const [cupo, setCupo] = useState(null);
+export default function CupoEscaneo({ inicial = null }) {
+  const [cupo, setCupo] = useState(inicial);
   const [error, setError] = useState(false);
-  const [cargando, setCargando] = useState(true);
+  const [cargando, setCargando] = useState(!inicial);
   const [app, setApp] = useState(false);
   const peticion = useRef({ secuencia: 0, abortar: null });
   const cargar = useCallback(async () => {
@@ -25,10 +25,10 @@ export default function CupoEscaneo() {
     finally { clearTimeout(limite); if (peticion.current.secuencia === secuencia) setCargando(false); }
   }, []);
   useEffect(() => {
-    setApp(esApp(navigator.userAgent)); cargar();
+    setApp(esApp(navigator.userAgent)); if (!inicial) cargar();
     window.addEventListener('netto:escaneos', cargar);
     return () => { peticion.current.secuencia++; peticion.current.abortar?.abort(); window.removeEventListener('netto:escaneos', cargar); };
-  }, [cargar]);
+  }, [cargar, inicial]);
   if (cargando && !cupo) return <p className="nota" role="status">Consultando páginas disponibles…</p>;
   if (error && !cupo) return <p className="nota" role="status">No se pudo consultar el cupo. <button type="button" className="enlace" disabled={cargando} onClick={cargar}>Reintentar</button></p>;
   if (!cupo) return null;
