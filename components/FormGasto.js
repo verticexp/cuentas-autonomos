@@ -17,7 +17,7 @@ import { preparar, subir } from '@/lib/justificanteCliente';
 import '@/app/ticket.css';
 
 // plegado: en la lista de gastos empieza como una tarjeta con «Escanear ticket»; el formulario se abre al escanear o al pedirlo.
-export default function FormGasto({ hoy, gasto, actividades, alquiler = false, retenciones = false, plegado = false, destacar = false, regimen = 'autonomo', movimiento = null, productos = [], proyectos = [] }) {
+export default function FormGasto({ hoy, gasto, actividades, alquiler = false, plegado = false, destacar = false, regimen = 'autonomo', movimiento = null, productos = [], proyectos = [] }) {
   const router = useRouter();
   const vacio = { fecha: hoy, actividad: actividades[0].id, concepto: '', proveedor: '', base: '', ivaPct: 21 };
   // Desde un cargo del banco sin gasto: fecha, proveedor e importe del banco (base estimada al 21 %, hasta leer la factura).
@@ -33,6 +33,19 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, r
   // Justificante leído (foto reducida o PDF): se sube al guardar el gasto nuevo. En la ficha, se adjunta o sustituye aparte.
   const [adjunto, setAdjunto] = useState(null);
   const [avisoArchivo, setAvisoArchivo] = useState('');
+  const [archivoPendiente, setArchivoPendiente] = useState(null);
+  const [procesando, setProcesando] = useState(false);
+  const reintentarArchivo = async () => {
+    setEnviando(true);
+    const fallo = await subir(archivoPendiente.id, archivoPendiente.blob);
+    setAvisoArchivo(fallo ? `Gasto guardado sin el justificante: ${fallo}. Reintenta guardar el archivo.` : 'Justificante guardado.');
+    if (!fallo) { setArchivoPendiente(null); router.refresh(); }
+    setEnviando(false);
+  };
+  const avisoAdjunto = <>
+    {avisoArchivo && <p className="nota" role="alert">{avisoArchivo}</p>}
+    {archivoPendiente && <div className="gasto-guardar"><button type="button" className="boton sec" disabled={enviando} onClick={reintentarArchivo}>Reintentar guardar justificante</button><a className="boton sec" href={`/gastos/${encodeURIComponent(archivoPendiente.id)}`}>Ver gasto guardado</a></div>}
+  </>;
   const foto = async (e) => {
     const archivo = e.target.files?.[0];
     e.target.value = '';
@@ -54,25 +67,28 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, r
     }
     const pdf = archivo.type === 'application/pdf';
     if (pdf && archivo.size > 5e6) { setError('El PDF es demasiado grande (máx. 5 MB)'); return; }
+    setProcesando(true);
     setLeyendo(pdf ? 'Leyendo la factura…' : 'Leyendo el ticket…'); setError('');
     try {
       const imagen = pdf ? await new Promise((ok, mal) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = mal; r.readAsDataURL(archivo); }) : await reducir(archivo);
+      const j = await preparar(archivo, pdf ? null : imagen);
+      if (j.error) throw new Error(j.error);
+      setAdjunto(j);
       const d = await llamar('/api/gastos/ticket', { method: 'POST', body: JSON.stringify({ imagen }) });
-      const j = await preparar(archivo, pdf ? null : imagen).catch(() => null);
-      if (j?.blob) setAdjunto(j);
       const t = d.gasto;
       // Con inventario: las líneas de la factura que son productos del catálogo entran al almacén.
       const stock = productos.length ? emparejarLineas(t.lineas, productos).map((l) => ({ ...l, cantidad: String(l.cantidad).replace('.', ','), coste: String(l.coste).replace('.', ',') })) : [];
-      setG((x) => ({ ...x, ...(stock.length ? { stock } : {}), proveedor: t.proveedor || x.proveedor, proveedorNif: t.nif || x.proveedorNif, concepto: t.concepto || t.proveedor || x.concepto, base: t.base !== '' ? String(t.base).replace('.', ',') : x.base, ivaPct: t.ivaPct, fecha: t.fecha, ...(!Number(t.ivaPct) && nifUE(t.nif) ? { origen: 'ue' } : {}) }));
+      setG((x) => ({ ...x, ...(stock.length ? { stock } : {}), proveedor: t.proveedor || x.proveedor, proveedorNif: t.nif || x.proveedorNif, concepto: t.concepto || t.proveedor || x.concepto, base: t.base !== '' ? String(t.base).replace('.', ',') : x.base, ivaPct: t.ivaPct, irpfPct: t.irpfPct || 0, fecha: t.fecha, ...(!Number(t.ivaPct) && nifUE(t.nif) ? { origen: 'ue' } : {}) }));
       const avisos = Array.isArray(t.avisos) ? t.avisos : [];
       const detalle = t.varios ? `Tiene varios tipos de IVA: ver desglose. ${t.desglose.map((l) => `${l.ivaPct} %: base ${Number(l.base).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`).join('; ')}.` : '';
       setLeyendo(['Revisa los datos antes de guardar.', ...avisos, detalle].filter(Boolean).join(' '));
-    } catch (err) { setLeyendo(''); setError(err.message); }
+    } catch (err) { setLeyendo('Revisa o rellena los datos antes de guardar.'); setError(err.message); }
+    finally { setProcesando(false); }
   };
 
   const enviar = async (e, confirmacion = null) => {
     e?.preventDefault();
-    if (enviando || (avisoDuplicados && !confirmacion)) return;
+    if (enviando || procesando || archivoPendiente || (avisoDuplicados && !confirmacion)) return;
     setEnviando(true); setError(''); setAvisoArchivo('');
     let fallo = '';
     try {
@@ -91,10 +107,13 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, r
         // El gasto ya está guardado: si el archivo no sube, se avisa y se puede adjuntar después desde su ficha.
         if (adjunto && d.gasto?.id) fallo = await subir(d.gasto.id, adjunto.blob, { alGuardar: true });
         setAdjunto(null);
-        if (fallo) fallo = `Gasto guardado sin el justificante: ${fallo}. Puedes adjuntarlo desde la ficha del gasto.`;
+        if (fallo) {
+          setArchivoPendiente({ id: d.gasto.id, blob: adjunto.blob });
+          fallo = `Gasto guardado sin el justificante: ${fallo}. Reintenta guardar el archivo sin volver a crear el gasto.`;
+        }
       }
       setAvisoDuplicados(null);
-      if (gasto || movimiento) { if (fallo) alert(fallo); volverA(router, '/gastos'); router.refresh(); return; }
+      if (gasto || (movimiento && !fallo)) { volverA(router, '/gastos'); router.refresh(); return; }
       setAvisoArchivo(fallo);
       setG(vacio);
       setLeyendo('');
@@ -109,10 +128,10 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, r
       <div className={`gasto-rapido${destacar ? ' destacado' : ''}`}>
         <div className="gasto-rapido-txt">
           <strong>{hecho ? '✓ Gasto añadido' : 'Añadir un gasto'}</strong>
-          <small>Haz una foto al ticket o sube la factura: Netto lee proveedor, base, IVA y fecha.</small>
+          <small>Haz una foto al ticket o sube la factura: Netto lee proveedor, base, IVA, IRPF y fecha.</small>
         </div>
         {error && <p className="error">{error}</p>}
-        {avisoArchivo && <p className="nota" role="alert">{avisoArchivo}</p>}
+        {avisoAdjunto}
         <div className="gasto-rapido-botones">
           <label className="boton gasto-escanear"><svg viewBox="0 0 24 24" aria-hidden><path d="M4 8V6a2 2 0 012-2h2M16 4h2a2 2 0 012 2v2M20 16v2a2 2 0 01-2 2h-2M8 20H6a2 2 0 01-2-2v-2M4 12h16" /></svg>Escanear ticket<input type="file" accept="image/*" capture="environment" onChange={foto} hidden /></label>
           {!gasto && !movimiento && <RafagaTickets hoy={hoy} actividades={actividades} />}
@@ -125,6 +144,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, r
 
   return (
     <form className="formulario tarjeta" onSubmit={enviar}>
+      <fieldset disabled={enviando || procesando || Boolean(archivoPendiente)} style={{ border: 0, padding: 0, margin: 0, minWidth: 0, gap: 12 }}>
       <h3>{gasto ? 'Editar gasto' : movimiento ? 'Gasto del banco' : 'Añadir gasto deducible'}</h3>
       {movimiento && <p className="nota">Cargo del {movimiento.fecha.split('-').reverse().join('-')} por {Math.abs(movimiento.importe).toLocaleString('es-ES', { minimumFractionDigits: 2 })} € ({movimiento.concepto}). Sube la factura para que Netto lea la base y el IVA; al guardar queda emparejado con el banco.</p>}
       {actividades.length > 1 && <Deslizable className={`tipo ${actividades.length === 2 ? 'dos' : 'varias'}`}>
@@ -134,7 +154,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, r
       </Deslizable>}
       {!gasto && <div className="ticket-ia">
         <p className="ticket-ia-t">Rellénalo con IA</p>
-        <p className="ticket-ia-txt">Haz una foto del ticket o sube la factura que te han enviado (imagen o PDF). Netto lee el proveedor, el NIF, la base, el IVA y la fecha; tú solo revisas y guardas.</p>
+        <p className="ticket-ia-txt">Haz una foto del ticket o sube la factura que te han enviado (imagen o PDF). Netto lee el proveedor, el NIF, la base, el IVA, el IRPF y la fecha; tú solo revisas y guardas.</p>
         <div className="ticket-ia-botones">
           <label className="boton sec ticket-foto">Hacer foto<input type="file" accept="image/*" capture="environment" onChange={foto} hidden /></label>
           <label className="boton sec ticket-foto">Subir factura<input type="file" accept="image/*,application/pdf,.xml,.xsig,text/xml,application/xml" onChange={foto} hidden /></label>
@@ -151,8 +171,8 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, r
           {[21, 10, 4, 0].map((n) => <option key={n} value={n}>IVA {n}%</option>)}
         </select>
       </div>
-      {(retenciones || Number(g.irpfPct) > 0) && (
-        <select className="campo" value={g.irpfPct || 0} onChange={(e) => poner('irpfPct', Number(e.target.value))} aria-label="Retención">
+      {(
+        <select className="campo" value={g.irpfPct || 0} onChange={(e) => poner('irpfPct', Number(e.target.value))} aria-label="Retención de IRPF">
           <option value={0}>Sin retención</option>
           <option value={15}>Le retengo el 15 % (profesional)</option>
           <option value={7}>Le retengo el 7 % (profesional que empieza)</option>
@@ -207,7 +227,6 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, r
       )}
       {pareceBien({ ...g, base: parseImporte(g.base) }) && <p className="nota">¿Es un equipo que vas a usar varios años? Márcalo como bien de inversión: se resta repartido en varios años, como pide Hacienda.</p>}
       {error && <p className="error">{error}</p>}
-      {avisoArchivo && <p className="nota" role="alert">{avisoArchivo}</p>}
       {avisoDuplicados && <div className="nota" role="alert">
         <strong>Puede que este gasto ya esté apuntado</strong>
         <p>Revisa los gastos coincidentes antes de guardarlo de nuevo.</p>
@@ -222,6 +241,8 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, r
         {plegado && !gasto && <button type="button" className="boton sec" onClick={() => { setAbierto(false); setG(vacio); setLeyendo(''); setError(''); setAdjunto(null); }}>Cancelar</button>}
         {movimiento && <button type="button" className="boton sec" onClick={() => atras(router, '/gastos')}>Cancelar</button>}
       </div>}
+      </fieldset>
+      {avisoAdjunto}
     </form>
   );
 }
