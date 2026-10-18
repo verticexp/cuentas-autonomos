@@ -5,7 +5,7 @@ import Icono from '@/components/web/Icono';
 import { CONTACTO, SEGMENTOS } from '@/components/web/datos';
 
 // Envía la solicitud a /api/contacto, que la guarda y avisa por email al equipo de Netto.
-export default function FormContacto({ plan }) {
+export default function FormContacto({ plan = '' }) {
   const inicial = SEGMENTOS.find((s) => plan.startsWith(s.n))?.n || '';
   const [tipo, setTipo] = useState(inicial);
   const [estado, setEstado] = useState('listo'); // listo → enviando → hecho
@@ -31,7 +31,7 @@ export default function FormContacto({ plan }) {
       <div className="web-form web-form-hecho" role="status">
         <span className="web-form-ok"><Icono n="tic" /></span>
         <h2>¡Recibido!</h2>
-        <p>Te escribimos muy pronto para darte acceso y empezar tu mes gratis.</p>
+        <p>Te escribimos pronto para concretar lo que necesitas y los siguientes pasos.</p>
         <a href="/funciones" className="web-btn web-btn-oscuro">Mientras, mira las funciones<Icono n="flecha" className="ico web-flecha" /></a>
       </div>
     );
@@ -66,7 +66,7 @@ export default function FormContacto({ plan }) {
       {/* Trampa para bots: fuera de la vista y del teclado */}
       <input name="web" tabIndex={-1} autoComplete="off" aria-hidden="true" className="web-form-trampa" />
       {error && <p className="web-form-error" role="alert">{error}</p>}
-      <button type="submit" className="web-btn web-btn-grande" disabled={estado === 'enviando'}>{estado === 'enviando' ? 'Enviando…' : 'Pedir acceso'}<Icono n="flecha" className="ico web-flecha" /></button>
+      <button type="submit" className="web-btn web-btn-grande" disabled={estado === 'enviando'}>{estado === 'enviando' ? 'Enviando…' : 'Enviar consulta'}<Icono n="flecha" className="ico web-flecha" /></button>
       <p className="web-form-nota">Te responderemos desde {CONTACTO}. Consulta la <a href="/privacidad">política de privacidad</a>.</p>
     </form>
   );

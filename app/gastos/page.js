@@ -1,3 +1,4 @@
+import { sinFuncion } from '@/lib/planes';
 import { requerir } from '@/lib/auth';
 import { nombresProyectos } from '@/lib/proyectos';
 import { leer, redis } from '@/lib/redis';
@@ -45,7 +46,7 @@ export default async function Gastos({ searchParams }) {
   const cand = await candidatosConciliacion(u, movs || []);
   // Todos los que siguen pendientes, también los de sugerencia segura (si no, no se ven en ningún sitio hasta conciliarlos).
   const revision = revisionGastos(movs || [], cand.gastos, { autonomo: fiscalDe(u).tipo === 'autonomo' });
-  const movimiento = banco && sinPareja.find((m) => m.id === banco);
+  const movimiento = !sinFuncion(u.plan, 'revision') && banco && sinPareja.find((m) => m.id === banco);
   const buscado = String(q || '').trim().toLowerCase();
   // Los bienes traídos de otro programa no son gastos de aquí: se ven en Contabilidad › Amortizaciones.
   // La búsqueda va por el índice de texto (revisión S06); el resto, por la ficha.
@@ -90,7 +91,7 @@ export default async function Gastos({ searchParams }) {
         <h1 className="titulo">Gastos</h1>
       </header>
       {/* Primero lo que más se hace: escanear el ticket. El formulario entero se abre al escanear o al pedirlo. */}
-      {puede(u, 'gastar') && !movimiento && <FormGasto hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} productos={stockProductos} plegado={hay} destacar={Boolean(escanear)} proyectos={proyectos} />}
+      {!sinFuncion(u.plan, 'revision') && puede(u, 'gastar') && !movimiento && <FormGasto hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} productos={stockProductos} plegado={hay} destacar={Boolean(escanear)} proyectos={proyectos} />}
 
       {(delAnio.length > 0 || hayProveedores) && (
         <p className="resumen-linea">
@@ -105,7 +106,7 @@ export default async function Gastos({ searchParams }) {
 
       {puede(u, 'gastar') && movimiento && <FormGasto key={movimiento.id} hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} productos={stockProductos} movimiento={movimiento} proyectos={proyectos} />}
 
-      {puede(u, 'gastar') && !movimiento && revision.total > 0 && <RevisionGastos items={revision.items} total={revision.total} />}
+      {!sinFuncion(u.plan, 'revision') && puede(u, 'gastar') && !movimiento && revision.total > 0 && <RevisionGastos items={revision.items} total={revision.total} />}
 
       {total > 5 && <Buscar action="/gastos" q={q} ocultos={{ estado }} placeholder="Buscar proveedor o concepto" />}
       {sinPagar > 0 && (

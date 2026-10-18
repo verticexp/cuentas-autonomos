@@ -14,7 +14,7 @@ test('reconoce la app solo por su marca', () => {
 });
 
 test('en el navegador no cambia nada', () => {
-  for (const ruta of ['/', '/precios', '/contacto', '/funciones/facturas']) {
+  for (const ruta of ['/', '/business', '/precios', '/contacto', '/funciones/facturas']) {
     assert.equal(desvioApp({ ua: SAFARI, ruta, conSesion: false }), null);
   }
 });
@@ -24,6 +24,8 @@ test('en la app, la web pública manda al login o al panel', () => {
   assert.equal(desvioApp({ ua: APP, ruta: '/precios', conSesion: false }), '/login');
   assert.equal(desvioApp({ ua: APP, ruta: '/funciones/facturas', conSesion: false }), '/login');
   assert.equal(desvioApp({ ua: APP, ruta: '/contacto', conSesion: true }), '/');
+  assert.equal(desvioApp({ ua: APP, ruta: '/business', conSesion: false }), '/login');
+  assert.equal(desvioApp({ ua: APP, ruta: '/business', conSesion: true }), '/');
 });
 
 test('en la app, el panel, el login y lo legal siguen igual', () => {

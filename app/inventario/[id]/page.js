@@ -1,3 +1,5 @@
+import { sinFuncion } from '@/lib/planes';
+import SinPlan from '@/components/SinPlan';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requerir } from '@/lib/auth';
@@ -21,6 +23,7 @@ const TIPO = { venta: 'Venta', devolucion: 'Devolución', compra: 'Compra', ajus
 
 export default async function Producto({ params }) {
   const u = await requerir('facturas');
+  if (u.plan?.version === 2 && sinFuncion(u.plan, 'inventario')) return <SinPlan usuario={u} funcion="inventario" />;
   const id = (await params).id;
   const datos = await datosStock(u);
   const { facturas, gastos, albaranes } = datos;

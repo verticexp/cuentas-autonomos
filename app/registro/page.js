@@ -5,7 +5,7 @@ import { redis } from '@/lib/redis';
 import SinBD from '@/components/SinBD';
 import PanelRegistro from '@/components/PanelRegistro';
 import FormRegistro from '@/components/FormRegistro';
-import { planDe } from '@/lib/prueba';
+import { planDe, TIPOS_ALTA } from '@/lib/prueba';
 import '@/app/legal.css';
 
 export const dynamic = 'force-dynamic';
@@ -13,10 +13,12 @@ export const metadata = { title: 'Crear cuenta · Netto' };
 
 // El plan y el periodo elegidos en Precios se conservan durante el alta.
 export default async function Registro({ searchParams }) {
+  const seleccion = await searchParams;
+  if (seleccion.tipo === 'gra' || seleccion.tipo === 'business') redirect('/business');
   if (!redis) return <SinBD />;
   if (await usuarioActual()) redirect('/');
-  const { tipo, plan, periodo } = await searchParams;
-  const elegido = planDe(tipo, plan) ? { tipo, plan } : { tipo: planDe(tipo, 'Pro') ? tipo : '', plan: '' };
+  const { tipo, plan, periodo } = seleccion;
+  const elegido = Object.hasOwn(TIPOS_ALTA, tipo) && planDe(tipo, plan) ? { tipo, plan } : { tipo: planDe(tipo, 'Pro') ? tipo : '', plan: '' };
   return (
     <TransicionPublica acceso><main className="login">
       <PanelRegistro />

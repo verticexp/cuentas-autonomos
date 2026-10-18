@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic';
 // { accion: 'facturar', ids, fecha, actividad, irpfPct, cobrada } → una factura con esos albaranes.
 // { accion: 'cerrar', id, cerrado } → un pedido que ya no se va a servir entero.
 export async function POST(req) {
-  const { u, res } = await usuarioApi({ permiso: 'facturar' });
+  const { u, res } = await usuarioApi({ permiso: 'facturar', funcion: 'albaranes' });
   if (res) return res;
   const b = await cuerpo(req);
 
@@ -47,7 +47,7 @@ export async function POST(req) {
 }
 
 export async function DELETE(req) {
-  const { u, res } = await usuarioApi({ permiso: 'facturar' });
+  const { u, res } = await usuarioApi({ permiso: 'facturar', funcion: 'albaranes' });
   if (res) return res;
   const r = await borrarDoc(u, req.nextUrl.searchParams.get('id') || '');
   if (r.error) return error(r.error, r.status || 400);

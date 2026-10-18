@@ -91,7 +91,8 @@ test('registro: rechaza NIF incorrecto, vacío y extranjero', async () => {
 test('registro: autónomo exige persona física y sociedad exige persona jurídica', async () => {
   await rechaza({ nif: 'B12345674' }, /persona física/);
   await rechaza({ tipo: 'pym' }, /persona jurídica/);
-  await rechaza({ tipo: 'gra' }, /persona jurídica/);
+  await rechaza({ tipo: 'gra' }, /tipo de negocio/, 1);
+  await rechaza({ tipo: 'business' }, /tipo de negocio/, 1);
 });
 
 test('registro: valida CP de cinco dígitos, dirección, ciudad, provincia y nombre fiscal', async () => {
@@ -161,6 +162,7 @@ test('registro: sin servicio crea emisor completo, censo pendiente, índice y pe
   assert.deepEqual(empresa.emisor, { nombre: valido.razon, nif: '12345678Z', direccion: valido.direccion, cp: '08001', ciudad: 'Barcelona', provincia: 'Barcelona', telefono: valido.telefono });
   assert.equal(empresa.censo.estado, 'pendiente');
   assert.ok(Date.parse(empresa.censo.fecha) >= antes);
+  assert.equal(empresa.plan.version, 2);
   assert.deepEqual({ tipo: empresa.plan.tipo, nombre: empresa.plan.nombre, periodo: empresa.plan.periodo }, { tipo: 'aut', nombre: 'Esencial', periodo: 'anio' });
   assert.equal(empresa.fiscal.tipo, 'autonomo');
   assert.equal(await redis.hget('empresa-nif', '12345678Z'), id);

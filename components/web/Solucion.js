@@ -5,9 +5,9 @@ import Pantalla from '@/components/web/demos/Pantallas';
 import { Cta, Encabezado, Faq, Flecha } from '@/components/web/Bloques';
 import { FAQ_GENERAL, funcion, segmento } from '@/components/web/datos';
 
-const VISUAL = { aut: 'factura', pym: 'equipo', gra: 'empresas' };
+const VISUAL = { aut: 'factura', pym: 'equipo', business: 'empresas' };
 
-// Página de cada tipo de negocio: autónomos, pymes y grandes empresas.
+// Página de cada tipo de negocio: autónomos, pymes y Business.
 export default function Solucion({ id }) {
   const s = segmento(id);
   return (
@@ -18,8 +18,8 @@ export default function Solucion({ id }) {
           <h1 className="web-entra" style={{ '--d': '60ms' }}>{s.titulo}</h1>
           <p className="web-sub web-entra" style={{ '--d': '120ms' }}>{s.sub}</p>
           <div className="web-cta web-entra" style={{ '--d': '180ms' }}>
-            <Link className="web-btn web-btn-grande" href={`/registro?tipo=${s.id}`}>Pruébalo 1 mes gratis<Flecha /></Link>
-            <a className="web-btn web-btn-claro web-btn-grande" href="#planes">Ver planes</a>
+            <Link className="web-btn web-btn-grande" href={id === 'business' ? '/contacto?plan=Business' : `/registro?tipo=${s.id}`}>{id === 'business' ? 'Hablemos de tu negocio' : 'Pruébalo 30 días gratis'}<Flecha /></Link>
+            <a className="web-btn web-btn-claro web-btn-grande" href="#planes">{id === 'business' ? 'Ver propuesta' : 'Ver planes'}</a>
           </div>
         </div>
         <div className="web-hero-sol-vis web-entra" style={{ '--d': '220ms' }}>
@@ -40,7 +40,7 @@ export default function Solucion({ id }) {
       </section>
 
       <section className="web-sec">
-        <Encabezado kicker="Funciones clave" titulo={`Lo que más usan los ${s.n.toLowerCase()}`} />
+        <Encabezado kicker="Funciones clave" titulo={id === 'business' ? 'Funciones para definir tu propuesta' : `Lo que más usan los ${s.n.toLowerCase()}`} />
         <div className="web-relacionadas cuatro">
           {s.funciones.map((slug, k) => {
             const f = funcion(slug);
@@ -57,13 +57,23 @@ export default function Solucion({ id }) {
       </section>
 
       <section className="web-sec" id="planes">
-        <Encabezado kicker="Planes" titulo={`Planes para ${s.n.toLowerCase()}`} sub="Todos con 1 mes gratis y sin permanencia." centro />
-        <Precios inicial={id} solo />
-        <p className="web-centro"><Link href="/precios" className="web-enlace">Ver la comparativa completa<Flecha /></Link></p>
+        {id === 'business' ? (
+          <>
+            <Encabezado kicker="Business" titulo="Un alcance acordado. Un precio cerrado." sub="Definimos contigo las sociedades, los equipos, los accesos y los servicios que necesitas." centro />
+            <p className="web-centro">Los seis planes de Autónomos y Pymes incluyen una empresa por suscripción. Business permite acordar una propuesta para varias sociedades o equipos, con sus datos separados. La implantación, la personalización y el soporte se concretan en la oferta.</p>
+            <p className="web-centro"><Link href="/contacto?plan=Business" className="web-btn">Solicitar propuesta<Flecha /></Link></p>
+          </>
+        ) : (
+          <>
+            <Encabezado kicker="Planes" titulo={`Planes para ${s.n.toLowerCase()}`} sub="Todos con 30 días gratis y sin permanencia." centro />
+            <Precios inicial={id} solo />
+            <p className="web-centro"><Link href="/precios" className="web-enlace">Ver la comparativa completa<Flecha /></Link></p>
+          </>
+        )}
       </section>
 
       <Faq preguntas={FAQ_GENERAL} />
-      <Cta />
+      {id !== 'business' && <Cta />}
     </>
   );
 }

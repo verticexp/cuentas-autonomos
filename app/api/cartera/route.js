@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 
 // Excel de la cartera de efectos a cobrar: facturas pendientes por vencimiento, por tramos y por cliente.
 export async function GET() {
-  const { u, res } = await usuarioApi({ permiso: 'facturas' });
+  const { u, res } = await usuarioApi({ permiso: 'facturas', funcion: 'cartera' });
   if (res) return res;
   const h = hoy();
   const [facturas, clientes] = await Promise.all([leerMarcados(u, 'facturas', 'p'), leer(u, 'clientes')]);

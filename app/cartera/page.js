@@ -1,3 +1,5 @@
+import { usarFuncion } from '@/lib/usoPlan';
+import SinPlan from '@/components/SinPlan';
 import { requerir } from '@/lib/auth';
 import { puede } from '@/lib/permisos';
 import { leer, redis } from '@/lib/redis';
@@ -20,6 +22,7 @@ const cuando = (e) => (e.dias < 0 ? `vencida hace ${-e.dias} ${e.dias === -1 ? '
 
 export default async function Cartera({ searchParams }) {
   const u = await requerir('facturas');
+  if (await usarFuncion(u, 'cartera')) return <SinPlan usuario={u} funcion="cartera" />;
   if (!redis) return <SinBD />;
   const h = hoy();
   const [pendientes, clientes] = await Promise.all([leerMarcados(u, 'facturas', 'p'), leer(u, 'clientes')]);

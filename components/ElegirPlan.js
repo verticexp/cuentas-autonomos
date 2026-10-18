@@ -3,14 +3,14 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { DESCUENTO, PLANES } from '@/components/web/datos';
-import { TIPOS } from '@/lib/prueba';
+import { TIPOS, TIPOS_ALTA } from '@/lib/prueba';
 
 const euros = (n) => n.toLocaleString('es-ES', { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 });
 
 // Ajustes › Tu plan: contratar con Stripe Checkout, cambiar de plan y gestionar el pago en el portal de Stripe
 // (app/api/suscripcion). En la app de iOS no se enseña la compra (lib/app.js); solo el administrador puede cambiarlo.
 export default function ElegirPlan({ plan, uso, admin, app }) {
-  const [tipo, setTipo] = useState(plan?.tipo || 'aut');
+  const [tipo, setTipo] = useState(plan?.tipo === 'gra' ? 'pym' : plan?.tipo || 'aut');
   const [periodo, setPeriodo] = useState(plan?.periodo || 'mes');
   const [estado, setEstado] = useState('');
   const [actual, setActual] = useState(plan);
@@ -67,8 +67,9 @@ export default function ElegirPlan({ plan, uso, admin, app }) {
             : <p>Para seguir con todo, escríbenos y te preparamos un plan a medida.</p>}
         </div>
       )}
+      {actual && actual.version !== 2 && <p className="nota">Tu suscripción conserva las condiciones anteriores. Los planes de esta página se ofrecen por empresa.</p>}
       <div className="segmentado" role="tablist">
-        {Object.entries(TIPOS).map(([k, t]) => <button key={k} type="button" role="tab" aria-selected={tipo === k} className={tipo === k ? 'activo' : ''} onClick={() => setTipo(k)}>{t}</button>)}
+        {Object.entries(TIPOS_ALTA).map(([k, t]) => <button key={k} type="button" role="tab" aria-selected={tipo === k} className={tipo === k ? 'activo' : ''} onClick={() => setTipo(k)}>{t}</button>)}
       </div>
       <div className="segmentado" role="tablist">
         <button type="button" role="tab" aria-selected={periodo === 'mes'} className={periodo === 'mes' ? 'activo' : ''} onClick={() => setPeriodo('mes')}>Mensual</button>
@@ -88,6 +89,7 @@ export default function ElegirPlan({ plan, uso, admin, app }) {
           </li>
         ))}
       </ul>
+      <p className="nota">Cada suscripción incluye una empresa y un acceso de gestoría aparte. ¿Gestionas varias sociedades o necesitas más equipo? <a href="/business">Consulta Netto Business</a>.</p>
       <p className="nota">Precios sin IVA, sin permanencia. {paga ? '' : 'Si aún te queda prueba, no se cobra nada hasta que acabe. '}Todo lo que incluye cada plan, en <a href="/precios" target="_blank" rel="noopener">Precios</a>.</p>
       {!admin && <p className="nota">Solo el administrador de la empresa puede cambiar el plan.</p>}
       {estado && estado !== 'enviando' && <p className={estado.startsWith('Hecho') ? 'nota' : 'error'}>{estado}</p>}

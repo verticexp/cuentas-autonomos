@@ -1,4 +1,5 @@
 import { cuerpo, error, usuarioApi } from '@/lib/api';
+import { sinFuncion } from '@/lib/planes';
 import { emparejar } from '@/lib/bancoServidor';
 import { auditar } from '@/lib/auditoria';
 import { leerImporte, nifUE, r2 } from '@/lib/calculos';
@@ -52,6 +53,10 @@ export async function POST(req) {
   const { u, res } = await usuarioApi({ permiso: 'gastar' });
   if (res) return res;
   const b = await cuerpo(req);
+  if (b.banco) {
+    const no = sinFuncion(u.plan, 'revision');
+    if (no) return error(no, 403);
+  }
   const v = validarGasto(b);
   if (!v.ok) return Response.json({ error: v.error, errores: v.errores }, { status: 400 });
   const base = r2(leerImporte(b.base));

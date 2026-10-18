@@ -7,7 +7,8 @@ import { conMembresia, enEmpresa, membresias } from '@/lib/membresias';
 import { INVITACION_DIAS, limpiarEmail, tokenEmail } from '@/lib/auth';
 import { enviarInvitacion } from '@/lib/invitacion';
 import { auditar } from '@/lib/auditoria';
-import { sinHueco } from '@/lib/planes';
+import { sinPlaza } from '@/lib/planes';
+import { conCerrojo } from '@/lib/cerrojo';
 
 const enlace = (req, codigo) => new URL(`/invitacion/${codigo}`, req.url).toString();
 // Crea la respuesta con el enlace (que el administrador ve siempre) y le manda la invitación por email.
@@ -62,23 +63,25 @@ export async function POST(req) {
     await auditar(u, 'Invitación reenviada', o.email);
     return invitar(req, u, o, nombreEmpresa(u), codigo);
   }
-  // Límite de usuarios del plan (lib/planes.js): cuenta quien ya está en la empresa, con o sin invitación aceptada.
-  const enLaEmpresa = Object.values((await redis.hgetall('usuarios')) || {}).filter((x) => enEmpresa(x, u.empresa)).length;
-  const sinPlan = sinHueco(u.plan, 'usuarios', enLaEmpresa);
-  if (sinPlan) return error(sinPlan, 403);
-  // Si ya tiene cuenta en Netto (de otra empresa), se le añade esta empresa: la verá al cambiar de empresa.
-  const yaId = await redis.hget('emails', limpiarEmail(b.email));
-  const ya = yaId && (await redis.hget('usuarios', yaId));
-  if (ya) {
-    if (enEmpresa(ya, u.empresa)) return error('Esa persona ya está en tu empresa');
-    await redis.hset('usuarios', { [ya.id]: conMembresia(ya, u.empresa, papel(u, b)) });
-    await auditar(u, 'Persona añadida', `${ya.email} · ${quePapel(papel(u, b))}`);
-    return Response.json({ ok: true, existente: ya.nombre });
-  }
-  const r = await crearUsuario({ nombre: b.nombre, email: b.email, empresa: u.empresa, ...papel(u, b) });
-  if (r.error) return error(r.error);
-  await auditar(u, 'Persona invitada', `${r.usuario.email} · ${quePapel(papel(u, b))}`);
-  return invitar(req, u, r.usuario, nombreEmpresa(u), r.codigo);
+  // Las invitaciones pendientes ya reservan plaza. El cerrojo evita rebasar el cupo con dos altas simultáneas.
+  return conCerrojo(`usuarios:${u.empresa}`, async () => {
+    const personas = Object.values((await redis.hgetall('usuarios')) || {}).filter((x) => enEmpresa(x, u.empresa)).map((x) => ({ id: x.id, ...membresias(x)[u.empresa] }));
+    const sinPlan = sinPlaza(u.plan, personas, papel(u, b));
+    if (sinPlan) return error(sinPlan, 403);
+    // Si ya tiene cuenta en Netto se le añade la membresía de esta empresa.
+    const yaId = await redis.hget('emails', limpiarEmail(b.email));
+    const ya = yaId && (await redis.hget('usuarios', yaId));
+    if (ya) {
+      if (enEmpresa(ya, u.empresa)) return error('Esa persona ya está en tu empresa');
+      await redis.hset('usuarios', { [ya.id]: conMembresia(ya, u.empresa, papel(u, b)) });
+      await auditar(u, 'Persona añadida', `${ya.email} · ${quePapel(papel(u, b))}`);
+      return Response.json({ ok: true, existente: ya.nombre });
+    }
+    const r = await crearUsuario({ nombre: b.nombre, email: b.email, empresa: u.empresa, ...papel(u, b) });
+    if (r.error) return error(r.error);
+    await auditar(u, 'Persona invitada', `${r.usuario.email} · ${quePapel(papel(u, b))}`);
+    return invitar(req, u, r.usuario, nombreEmpresa(u), r.codigo);
+  });
 }
 
 // Cambiar el perfil y los permisos de alguien de tu empresa.
@@ -90,9 +93,17 @@ export async function PATCH(req) {
   if (!o) return error('Esa persona no está en tu empresa', 404);
   if (o.id === u.id) return error('No puedes cambiar tus propios permisos: pídeselo a otro administrador');
   if ((esAdminDe(o, u.empresa) || b.rol === 'admin') && u.rol !== 'admin') return error('Solo un administrador de la empresa puede dar o quitar el acceso de administrador', 403);
-  await redis.hset('usuarios', { [o.id]: conMembresia(o, u.empresa, papel(u, b)) });
-  await auditar(u, 'Permisos cambiados', `${o.email} · ${quePapel(papel(u, b))}`);
-  return Response.json({ ok: true });
+  return conCerrojo(`usuarios:${u.empresa}`, async () => {
+    const personas = Object.values((await redis.hgetall('usuarios')) || {}).filter((x) => enEmpresa(x, u.empresa)).map((x) => ({ id: x.id, ...membresias(x)[u.empresa] }));
+    const sinPlan = sinPlaza(u.plan, personas, papel(u, b), o.id);
+    if (sinPlan) return error(sinPlan, 403);
+    // Leer de nuevo bajo el cerrojo para conservar otras membresías y evitar sobrescribir un cambio concurrente.
+    const actual = await deMiEmpresa(u, o.id);
+    if (!actual) return error('Esa persona no está en tu empresa', 404);
+    await redis.hset('usuarios', { [o.id]: conMembresia(actual, u.empresa, papel(u, b)) });
+    await auditar(u, 'Permisos cambiados', `${o.email} · ${quePapel(papel(u, b))}`);
+    return Response.json({ ok: true });
+  });
 }
 
 // Quitar el acceso a alguien (sus facturas y gastos se quedan en la empresa) o borrar una empresa entera.

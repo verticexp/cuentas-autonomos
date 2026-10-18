@@ -1,3 +1,4 @@
+import { sinFuncion } from '@/lib/planes';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requerir } from '@/lib/auth';
@@ -32,7 +33,8 @@ export default async function Doc({ params }) {
   const entregas = est ? datos.albaranes.filter((a) => est.albaranes.includes(a.id)).sort((a, b) => a.fecha.localeCompare(b.fecha)) : [];
   const h = hoy();
   const stock = Object.fromEntries(inventario(datos, { hoy: h }).productos.map((p) => [p.id, p.stock]));
-  const editable = !d.factura && !(d.tipo === 'pedido' && entregas.length);
+  const puedeOperar = !sinFuncion(u.plan, 'albaranes');
+  const editable = puedeOperar && !d.factura && !(d.tipo === 'pedido' && entregas.length);
   return (
     <main className="pagina mk-look">
       <Volver href={`/albaranes${d.tipo === 'albaran' ? `?ver=${d.factura ? 'facturados' : 'albaranes'}` : ''}`}>Pedidos y albaranes</Volver>
@@ -44,10 +46,10 @@ export default async function Doc({ params }) {
       </section>
       <div className="acciones-factura">
         <Ir href={`/albaranes/${d.id}/pdf`} className="boton">Ver / descargar PDF</Ir>
-        {est && ['pendiente', 'parcial'].includes(est.estado) && <Ir href={`/albaranes/nuevo?pedido=${d.id}`} tipo="subir" className="boton">Entregar (hacer albarán)</Ir>}
-        {est && est.estado !== 'servido' && <CerrarPedido id={d.id} cerrado={Boolean(d.cerrado)} />}
+        {puedeOperar && est && ['pendiente', 'parcial'].includes(est.estado) && <Ir href={`/albaranes/nuevo?pedido=${d.id}`} tipo="subir" className="boton">Entregar (hacer albarán)</Ir>}
+        {puedeOperar && est && est.estado !== 'servido' && <CerrarPedido id={d.id} cerrado={Boolean(d.cerrado)} />}
         {factura && <Link href={`/facturas/${factura.id}`} className="boton sec">Ver la factura {numeroFactura(factura)}</Link>}
-        {!d.factura && <Borrar url={`/api/albaranes?id=${d.id}`} pregunta={`¿Borrar ${d.tipo === 'pedido' ? 'el pedido' : 'el albarán'} ${numeroDoc(d)}?${d.tipo === 'albaran' ? ' Su mercancía vuelve al stock.' : ''}`} volver="/albaranes" />}
+        {puedeOperar && !d.factura && <Borrar url={`/api/albaranes?id=${d.id}`} pregunta={`¿Borrar ${d.tipo === 'pedido' ? 'el pedido' : 'el albarán'} ${numeroDoc(d)}?${d.tipo === 'albaran' ? ' Su mercancía vuelve al stock.' : ''}`} volver="/albaranes" />}
       </div>
       {pedido && <p className="nota">Entrega del pedido <Link href={`/albaranes/${pedido.id}`}>{numeroDoc(pedido)}</Link>.</p>}
       {est && (
@@ -57,7 +59,7 @@ export default async function Doc({ params }) {
           {entregas.length > 0 && <p className="nota">Albaranes: {entregas.map((a, i) => <span key={a.id}>{i ? ', ' : ''}<Link href={`/albaranes/${a.id}`}>{numeroDoc(a)}</Link></span>)}</p>}
         </section>
       )}
-      {d.tipo === 'albaran' && !d.factura && (
+      {puedeOperar && d.tipo === 'albaran' && !d.factura && (
         <FacturarAlbaranes grupos={[{ clave: 'x', nombre: 'Facturar este albarán', albaranes: [{ id: d.id, numero: numeroDoc(d), fecha: d.fecha, base: baseDoc(d), resumen: `${d.lineas.length} ${d.lineas.length === 1 ? 'línea' : 'líneas'}` }] }]} hoy={h} actividades={actividadesDe(u)} />
       )}
       {editable ? (

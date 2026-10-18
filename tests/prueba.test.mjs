@@ -6,10 +6,10 @@ const HOY = new Date('2026-03-15T00:00:00.000Z');
 
 test('crea un plan válido y fija el último día: hoy es el día 1 de 30', () => {
   assert.deepEqual(nuevoPlan('aut', 'Esencial', HOY), {
-    tipo: 'aut', nombre: 'Esencial', periodo: 'mes', hasta: '2026-04-13',
+    tipo: 'aut', nombre: 'Esencial', version: 2, periodo: 'mes', hasta: '2026-04-13',
   });
   assert.deepEqual(nuevoPlan('pym', 'Pro', HOY), {
-    tipo: 'pym', nombre: 'Pro', periodo: 'mes', hasta: '2026-04-13',
+    tipo: 'pym', nombre: 'Pro', version: 2, periodo: 'mes', hasta: '2026-04-13',
   });
 });
 
