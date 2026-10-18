@@ -148,6 +148,11 @@ function preparar() {
     cuerpo: (req) => req.json(), hoy: () => '2026-10-14',
     iaLista: () => true, limpiarHistorial: () => [], preguntar: async () => ({ respuesta: 'Hola' }), usarFuncion: async () => null,
     leerTicket: async () => ({ datos: {} }), limpiarTicket: () => ({}),
+    validarEntradaIA: async () => ({ inputTokens: 1000 }),
+    MAX_BYTES_IA: 3 * 1024 * 1024, paginasIA: async () => ({ paginas: 1 }),
+    cupoEscaneos: async () => ({ limite: 10000, usadas: 0, restantes: 10000 }),
+    consumirEscaneos: async () => ({ cupo: { limite: 10000, usadas: 1, restantes: 9999 } }),
+    registrarConsumoIA: async () => {}, respuestaCupo: () => Response.json({ error: 'Sin cupo' }, { status: 429 }),
     puede: () => true, TIPOS: { clientes: { permiso: 'empresa' } },
     marcarPagada: async () => {},
   };

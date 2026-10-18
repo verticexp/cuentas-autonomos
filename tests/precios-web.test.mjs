@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { ESCANEOS_MES } from '../lib/cuotasIAConfig.js';
 import { PLANES, SEGMENTOS, COMPARATIVA, DESCUENTO, FAQ_PRECIOS } from '../components/web/datos.js';
 
 const valores = (seg, fila) => COMPARATIVA[seg].flatMap(([, filas]) => filas).find(([nombre]) => nombre === fila)?.[1];
@@ -20,7 +21,7 @@ test('oferta pública: seis planes, dos segmentos y Business sin precio', () => 
     }
     assert.deepEqual(valores(seg, 'Empresas por suscripción'), ['1', '1', '1']);
     assert.deepEqual(valores(seg, 'Acceso separado de gestoría (no consume usuarios)'), ['1', '1', '1']);
-    assert.deepEqual(valores(seg, 'Escaneo IA (mismas condiciones de uso)'), ['Incluido', 'Incluido', 'Incluido']);
+    assert.deepEqual(valores(seg, 'Páginas al mes'), PLANES[seg].map(p => ESCANEOS_MES[seg][p.n].toLocaleString('es-ES', { useGrouping: 'always' })));
     for (const [, filas] of COMPARATIVA[seg]) for (const [, celdas] of filas) assert.equal(celdas.length, 3);
   }
 });

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import CupoEscaneo from '@/components/CupoEscaneo';
 import { eur, fechaCorta } from '@/lib/formato';
 
 const iban = (s) => (s ? `•••• ${s.replace(/\s/g, '').slice(-4)}` : '');
@@ -196,7 +197,7 @@ export default function Banco({ cuentas, pendientes, emparejados, ignorados, aut
       if (!r.ok) throw new Error(d.error || 'No se pudo leer el extracto');
       setMsg({ texto: `✓ ${d.nuevos === 1 ? '1 movimiento nuevo' : `${d.nuevos} movimientos nuevos`}${d.repetidos ? ` · ${d.repetidos} ya estaban` : ''}${d.errores ? ` · ${d.errores} filas sin leer` : ''}` });
       router.refresh();
-    } catch (err) { setMsg({ error: true, texto: err.message }); } finally { setOcupado(false); }
+    } catch (err) { setMsg({ error: true, texto: err.message }); } finally { setOcupado(false); window.dispatchEvent(new Event('netto:escaneos')); }
   };
   const quitar = async (c) => {
     if (!confirm(c.origen === 'enable' ? `¿Desconectar ${c.nombre}? Se retira el permiso del banco; los movimientos se quedan.` : `¿Quitar ${c.nombre}? Deja de contar su saldo; los movimientos se quedan.`)) return;
@@ -244,6 +245,8 @@ export default function Banco({ cuentas, pendientes, emparejados, ignorados, aut
           {(permisos.facturar || permisos.gastar) && <button className="boton pequeno sec" onClick={() => fichero.current?.click()}>Subir extracto</button>}
           {(permisos.facturar || permisos.gastar) && <input ref={fichero} type="file" hidden accept=".csv,.xlsx,.txt,.n43,.aeb,.q43,.pdf,text/csv,text/plain,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={subir} aria-label="Extracto del banco" />}
         </div>
+        {(permisos.facturar || permisos.gastar) && <CupoEscaneo />}
+        {(permisos.facturar || permisos.gastar) && cuentas.length > 0 && <p className="bco-nota">Los PDF consumen una lectura IA por página de la bolsa de tu empresa (máximo 10 páginas y 3 MB por PDF). Norma 43, CSV y Excel no consumen páginas IA.</p>}
         {(permisos.facturar || permisos.gastar) && cuentas.length > 0 && <p className="bco-nota">Extracto: descárgalo de tu banca online en Norma 43 (cuaderno 43), CSV, Excel (.xlsx) o PDF. Súbelo cada mes: lo que no case con tus facturas y gastos te sale para revisar.</p>}
       </section>
 

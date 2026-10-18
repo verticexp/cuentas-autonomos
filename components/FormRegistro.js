@@ -10,6 +10,7 @@ import { DESCUENTO, PLANES } from '@/components/web/datos';
 import { datosFiscalesRegistro, PRUEBA_DIAS, PROVINCIAS, TIPOS, TIPOS_ALTA } from '@/lib/prueba';
 import { irALaApp, useTrasArranque } from '@/lib/arranque';
 import { validarContrasena } from '@/lib/contrasena';
+import { ESCANEOS_MES } from '@/lib/cuotasIAConfig';
 
 const DETALLE = { aut: 'Trabajas por tu cuenta, con o sin empleados', pym: 'Una sociedad con su equipo' };
 const ETIQUETAS = ['Negocio', 'Datos fiscales', 'Plan', 'Cuenta', 'Revisar'];
@@ -198,12 +199,14 @@ export default function FormRegistro({ inicial = {} }) {
               <span className="registro-opcion-texto">
               <span className="registro-plan-cab"><strong>{p.n}</strong>{p.fuerte && <em>Recomendado</em>}<b>{importe(periodo === 'anio' ? p.p * (100 - DESCUENTO) / 100 : p.p)} €<small>/mes</small></b></span>
               <small>{p.para}</small>
+              <small>{ESCANEOS_MES[tipo]?.[p.n]?.toLocaleString('es-ES')} páginas de lectura IA al mes</small>
               {periodo === 'anio' && <small>{precio(p.p, periodo)} · Pago anual</small>}
               </span>
             </label>
           ))}
         </div>
         <p className="nota">Precios sin IVA. Puedes ver todo lo que incluye cada plan en <a href="/precios" target="_blank" rel="noopener">Precios</a>.</p>
+        <p className="nota">La prueba tiene 50 páginas de lectura IA en total. Al empezar el periodo de pago se activa la cuota mensual indicada, también si eliges pago anual; se comparte por empresa con la gestoría, se renueva cada mes natural y no se acumula.</p>
       </div>
 
       <div hidden={paso !== 4} data-paso="4" className="registro-bloque">
