@@ -1,13 +1,17 @@
 'use client';
 
-import { ViewTransition } from 'react';
+import { useLayoutEffect } from 'react';
+import { usePathname } from 'next/navigation';
+import { instalarTransicionesPublicas, paginaPublica } from '@/lib/transicionPublica';
 import '@/app/publico-motion.css';
 
-// Next coordina la captura con el contenido nuevo, sin temporizadores ni bloquear la navegación.
-export default function TransicionPublica({ children, acceso = false }) {
-  return (
-    <ViewTransition name={acceso ? 'netto-acceso' : 'netto-web-pagina'} default="none" update="publico-cambio" share="publico-cambio" enter="publico-entra" exit="publico-sale">
-      {children}
-    </ViewTransition>
-  );
+// Notificamos el commit real, sin capturar cada fallback/revelado de Suspense como otra transición.
+export default function TransicionPublica({ children }) {
+  const ruta = usePathname();
+  useLayoutEffect(() => {
+    const pagina = paginaPublica();
+    if (pagina) pagina.dataset.publicoRuta = ruta;
+    instalarTransicionesPublicas();
+  }, [ruta]);
+  return children;
 }

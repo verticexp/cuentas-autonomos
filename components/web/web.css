@@ -763,3 +763,8 @@ html:has(.web) #arranque { display: none; }
 @media (prefers-reduced-motion: reduce) { .web-cinta-contenedor { padding-right: 0; } .web-cinta-pausa { display: none; } .web-cinta-pista > [aria-hidden=true] { display: none; } }
 /* La navegación ya tiene su transición: no se vuelve a animar el hero dentro de la página nueva. */
 .web-hero-txt > *, .web-hero-vis, .web-entra { animation: none; }
+/* Las secciones no vuelven a moverse detrás del fundido de página. */
+.web-js .web [data-r].visto, .web-plan { animation: none; }
+/* La marca de página activa no cambia el ancho del enlace ni desplaza el resto del menú. */
+.web-nav-btn { position: relative; }
+.web-nav-btn.activo::after { position: absolute; right: 3px; top: calc(50% - 2px); margin-left: 0; }

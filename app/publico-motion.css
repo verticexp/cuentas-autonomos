@@ -1,25 +1,9 @@
-/* Solo participan la web pública y los accesos; las transiciones de la app conservan sus nombres y reglas. */
-html:has(.web, main.login:not(.pantalla-bloqueo))::view-transition { pointer-events: none; }
-html:has(.web, main.login:not(.pantalla-bloqueo))::view-transition-old(root),
-html:has(.web, main.login:not(.pantalla-bloqueo))::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
-::view-transition-group(.publico-cambio), ::view-transition-group(.publico-entra), ::view-transition-group(.publico-sale) { animation-duration: 240ms; animation-timing-function: cubic-bezier(.23,1,.32,1); }
-::view-transition-old(.publico-cambio), ::view-transition-old(.publico-sale) { animation: publico-sale 120ms cubic-bezier(.23,1,.32,1) both; }
-::view-transition-new(.publico-cambio), ::view-transition-new(.publico-entra) { animation: publico-entra 240ms cubic-bezier(.23,1,.32,1) both; }
-@keyframes publico-entra { from { opacity: 0; transform: translateY(6px); } }
-@keyframes publico-sale { to { opacity: 0; } }
-:root[data-publico-teclado="1"]::view-transition-old(.publico-cambio),
-:root[data-publico-teclado="1"]::view-transition-new(.publico-cambio),
-:root[data-publico-teclado="1"]::view-transition-old(.publico-sale),
-:root[data-publico-teclado="1"]::view-transition-new(.publico-entra) { animation: none; }
+/* Fundido del viewport: una sola capa nueva sobre la anterior, sin deslizar ni redimensionar páginas. */
+html[data-publico-transicion]::view-transition { pointer-events: none; }
+html[data-publico-transicion]::view-transition-group(root) { animation: none; }
+html[data-publico-transicion]::view-transition-old(root) { animation: none; mix-blend-mode: normal; }
+html[data-publico-transicion]::view-transition-new(root) { animation: publico-fundido 220ms ease both; mix-blend-mode: normal; }
+@keyframes publico-fundido { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) {
-  ::view-transition-old(.publico-cambio), ::view-transition-old(.publico-sale) { animation: publico-sale 80ms linear both; }
-  ::view-transition-new(.publico-cambio), ::view-transition-new(.publico-entra) { animation: publico-aparece 120ms linear both; }
-  ::view-transition-group(.publico-cambio), ::view-transition-group(.publico-entra), ::view-transition-group(.publico-sale) { animation-duration: 0s; }
+  html[data-publico-transicion]::view-transition-new(root) { animation: none; }
 }
-@keyframes publico-aparece { from { opacity: 0; } }
-:root[data-publico-teclado="1"]::view-transition-group(.publico-cambio),
-:root[data-publico-teclado="1"]::view-transition-group(.publico-entra),
-:root[data-publico-teclado="1"]::view-transition-group(.publico-sale) { animation-duration: 0s; }
-
-::view-transition-group(.publico-cambio) { animation-name: none; }
-::view-transition-old(.publico-cambio), ::view-transition-new(.publico-cambio) { height: 100%; object-fit: none; object-position: top left; }
