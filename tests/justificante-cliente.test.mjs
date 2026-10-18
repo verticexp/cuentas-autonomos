@@ -23,10 +23,16 @@ test('la subida informa de almacén ausente incluso al guardar el gasto', async 
 
 test('subida confirmada, error de tamaño y desconexión se distinguen', async (t) => {
   const pdf = new Blob(['%PDF-1.7'], { type: 'application/pdf' });
-  const mock = t.mock.method(globalThis, 'fetch', async () => new Response(null, { status: 200 }));
+  const mock = t.mock.method(globalThis, 'fetch', async () => Response.json({ archivo: { tipo: 'application/pdf', tamano: pdf.size } }));
   assert.equal(await subir('g', pdf), '');
   mock.mock.mockImplementation(async () => new Response(null, { status: 413 }));
   assert.match(await subir('g', pdf), /demasiado grande/);
   mock.mock.mockImplementation(async () => { throw new Error('offline'); });
   assert.match(await subir('g', pdf), /sin conexión/);
+});
+
+
+test('un HTTP 200 sin confirmación de archivo no se considera guardado', async (t) => {
+  t.mock.method(globalThis, 'fetch', async () => new Response('<html>Login</html>'));
+  assert.match(await subir('g', new Blob(['PDF'])), /no ha confirmado/);
 });

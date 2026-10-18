@@ -1,3 +1,4 @@
+import { cupoEscaneos } from '@/lib/cuotasIA';
 import { sinFuncion } from '@/lib/planes';
 import { requerir } from '@/lib/auth';
 import { nombresProyectos } from '@/lib/proyectos';
@@ -38,7 +39,7 @@ export default async function Gastos({ searchParams }) {
   const h = hoy();
   const anio = h.slice(0, 4);
   // E06: lo que se debe y lo que queda sin pagar salen de los totales precalculados.
-  const [movs, productos, total, delAnioTodos, agr, nBienes] = await Promise.all([leer(u, 'banco'), leer(u, 'productos'), contar(u, 'gastos'), leerRango(u, 'gastos', `${anio}-01-01`, `${anio}-12-31`), totales(u, 'gastos', ['dc', 'sn']), contarMarcados(u, 'gastos', 'i')]);
+  const [movs, productos, total, delAnioTodos, agr, nBienes, cupoIA] = await Promise.all([leer(u, 'banco'), leer(u, 'productos'), contar(u, 'gastos'), leerRango(u, 'gastos', `${anio}-01-01`, `${anio}-12-31`), totales(u, 'gastos', ['dc', 'sn']), contarMarcados(u, 'gastos', 'i'), puede(u, 'gastar') ? cupoEscaneos(u).catch(() => null) : null]);
   // Con inventario: los productos que llevan stock, para apuntar lo que entra con cada compra.
   const stockProductos = fiscalDe(u).inventario ? (productos || []).filter((p) => !p.servicio).sort((a, b) => a.nombre.localeCompare(b.nombre)) : [];
   // En revisión (lib/revisionGastos.js): cargos del banco sin gasto que parecen un gasto (no impuestos, nóminas, préstamos…).
@@ -91,7 +92,7 @@ export default async function Gastos({ searchParams }) {
         <h1 className="titulo">Gastos</h1>
       </header>
       {/* Primero lo que más se hace: escanear el ticket. El formulario entero se abre al escanear o al pedirlo. */}
-      {puede(u, 'gastar') && !movimiento && <FormGasto hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} productos={stockProductos} plegado={hay} destacar={Boolean(escanear)} proyectos={proyectos} />}
+      {puede(u, 'gastar') && !movimiento && <FormGasto cupoInicial={cupoIA} hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} productos={stockProductos} plegado={hay} destacar={Boolean(escanear)} proyectos={proyectos} />}
 
       {(delAnio.length > 0 || hayProveedores) && (
         <p className="resumen-linea">
@@ -104,7 +105,7 @@ export default async function Gastos({ searchParams }) {
         </p>
       )}
 
-      {puede(u, 'gastar') && movimiento && <FormGasto key={movimiento.id} hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} productos={stockProductos} movimiento={movimiento} proyectos={proyectos} />}
+      {puede(u, 'gastar') && movimiento && <FormGasto cupoInicial={cupoIA} key={movimiento.id} hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} productos={stockProductos} movimiento={movimiento} proyectos={proyectos} />}
 
       {!sinFuncion(u.plan, 'revision') && puede(u, 'gastar') && !movimiento && revision.total > 0 && <RevisionGastos items={revision.items} total={revision.total} />}
 
@@ -133,6 +134,7 @@ export default async function Gastos({ searchParams }) {
                         </span>
                         <span className="imp-col">
                           <span className="imp">{eur(g.base)}</span>
+                          {g.archivo?.clave && <span className="estado-txt">{g.archivo.tipo === 'application/pdf' ? 'PDF adjunto' : 'Foto adjunta'}</span>}
                           {g.pendiente && <span className="estado-txt e-pendiente">Sin pagar</span>}
                           {g.inversion && <span className="estado-txt">Bien de inversión</span>}
                         </span>

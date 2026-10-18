@@ -23,3 +23,15 @@
 .ticket-cupo a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 
 .gasto-rapido > .ticket-cupo { grid-column: 1 / -1; }
+
+.gasto-adjunto { display: grid; gap: 4px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; overflow-wrap: anywhere; }
+.gasto-adjunto strong { font-size: 14px; }
+.gasto-adjunto span, .gasto-adjunto small { color: var(--muted); font-size: 13px; }
+.gasto-confirmacion { margin: 0; font-size: 14px; line-height: 1.5; grid-column: 1 / -1; overflow-wrap: anywhere; }
+.gasto-confirmacion a { text-decoration: underline; text-underline-offset: 2px; }
+.gasto-importes { display: grid; gap: 8px; margin: 0; padding: 12px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); font-size: 14px; }
+.gasto-importes > div { display: flex; justify-content: space-between; gap: 12px; }
+.gasto-importes dt { color: var(--muted); }
+.gasto-importes dd { margin: 0; flex: none; font-variant-numeric: tabular-nums; }
+.gasto-importes .gasto-total { font-weight: 600; }
+.gasto-importes .gasto-total dt { color: var(--ink); }

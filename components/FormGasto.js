@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
 import { atras, volverA } from '@/lib/transicion';
 import Deslizable from './Deslizable';
-import { nifUE } from '@/lib/calculos';
+import { eur } from '@/lib/formato';
+import { importes, nifUE } from '@/lib/calculos';
 import { parseImporte } from '@/lib/importe';
 import { CATEGORIAS, categoria, categoriaDe, pareceBien } from '@/lib/categorias';
 import { LIMITE_LIBERTAD, TIPOS_BIEN, coeficiente } from '@/lib/amortizaciones';
@@ -18,7 +19,7 @@ import { preparar, subir } from '@/lib/justificanteCliente';
 import '@/app/ticket.css';
 
 // plegado: en la lista de gastos empieza como una tarjeta con «Escanear ticket»; el formulario se abre al escanear o al pedirlo.
-export default function FormGasto({ hoy, gasto, actividades, alquiler = false, plegado = false, destacar = false, regimen = 'autonomo', movimiento = null, productos = [], proyectos = [] }) {
+export default function FormGasto({ hoy, gasto, actividades, alquiler = false, plegado = false, destacar = false, regimen = 'autonomo', cupoInicial = null, movimiento = null, productos = [], proyectos = [] }) {
   const router = useRouter();
   const vacio = { fecha: hoy, actividad: actividades[0].id, concepto: '', proveedor: '', base: '', ivaPct: 21 };
   // Desde un cargo del banco sin gasto: fecha, proveedor e importe del banco (base estimada al 21 %, hasta leer la factura).
@@ -31,6 +32,8 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
   const [leyendo, setLeyendo] = useState('');
   const [abierto, setAbierto] = useState(Boolean(gasto) || !plegado);
   const [hecho, setHecho] = useState(false);
+  const [ultimoGuardado, setUltimoGuardado] = useState(null);
+  const calculo = importes({ ...g, base: parseImporte(g.base) || 0 });
   // Justificante leído (foto reducida o PDF): se sube al guardar el gasto nuevo. En la ficha, se adjunta o sustituye aparte.
   const [adjunto, setAdjunto] = useState(null);
   const [avisoArchivo, setAvisoArchivo] = useState('');
@@ -40,18 +43,19 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
     setEnviando(true);
     const fallo = await subir(archivoPendiente.id, archivoPendiente.blob);
     setAvisoArchivo(fallo ? `Gasto guardado sin el justificante: ${fallo}. Reintenta guardar el archivo.` : 'Justificante guardado.');
-    if (!fallo) { setArchivoPendiente(null); router.refresh(); }
+    if (!fallo) { setUltimoGuardado({ id: archivoPendiente.id, archivo: true }); setArchivoPendiente(null); router.refresh(); }
     setEnviando(false);
   };
   const avisoAdjunto = <>
     {avisoArchivo && <p className="nota" role="alert">{avisoArchivo}</p>}
+    {ultimoGuardado && !archivoPendiente && <p className="gasto-confirmacion" role="status">{ultimoGuardado.archivo ? 'Gasto y justificante guardados.' : 'Gasto guardado.'} <a href={`/gastos/${encodeURIComponent(ultimoGuardado.id)}`}>{ultimoGuardado.archivo ? 'Ver gasto y justificante' : 'Ver gasto'}</a></p>}
     {archivoPendiente && <div className="gasto-guardar"><button type="button" className="boton sec" disabled={enviando} onClick={reintentarArchivo}>Reintentar guardar justificante</button><a className="boton sec" href={`/gastos/${encodeURIComponent(archivoPendiente.id)}`}>Ver gasto guardado</a></div>}
   </>;
   const foto = async (e) => {
     const archivo = e.target.files?.[0];
     e.target.value = '';
     if (!archivo) return;
-    setAvisoDuplicados(null); setAdjunto(null); setAvisoArchivo('');
+    setAvisoDuplicados(null); setAdjunto(null); setAvisoArchivo(''); setUltimoGuardado(null);
     setAbierto(true); setHecho(false);
     // Factura electrónica (Facturae, UBL o CII): se lee aquí mismo, sin IA, con todos sus datos exactos.
     if (/xml/.test(archivo.type) || /\.(xml|xsig)$/i.test(archivo.name)) {
@@ -74,7 +78,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
       const imagen = pdf ? await new Promise((ok, mal) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = mal; r.readAsDataURL(archivo); }) : await reducir(archivo);
       const j = await preparar(archivo, pdf ? null : imagen);
       if (j.error) throw new Error(j.error);
-      setAdjunto(j);
+      setAdjunto({ ...j, nombre: archivo.name });
       let d;
       try { d = await llamar('/api/gastos/ticket', { method: 'POST', body: JSON.stringify({ imagen }) }); }
       finally { window.dispatchEvent(new Event('netto:escaneos')); }
@@ -107,8 +111,10 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
           return;
         }
         if (!r.ok) throw new Error(d.error || 'Algo ha fallado');
+        if (!d.gasto?.id) throw new Error('No se ha podido confirmar el gasto. Revisa la lista antes de volver a guardarlo.');
         // El gasto ya está guardado: si el archivo no sube, se avisa y se puede adjuntar después desde su ficha.
-        if (adjunto && d.gasto?.id) fallo = await subir(d.gasto.id, adjunto.blob, { alGuardar: true });
+        if (adjunto) fallo = await subir(d.gasto.id, adjunto.blob);
+        setUltimoGuardado(fallo ? null : { id: d.gasto.id, archivo: Boolean(adjunto) });
         setAdjunto(null);
         if (fallo) {
           setArchivoPendiente({ id: d.gasto.id, blob: adjunto.blob });
@@ -120,7 +126,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
       setAvisoArchivo(fallo);
       setG(vacio);
       setLeyendo('');
-      if (plegado) { setAbierto(false); setHecho(true); }
+      if (plegado && !fallo) { setAbierto(false); setHecho(true); }
       router.refresh();
     } catch (err) { setError(err.message); }
     finally { setEnviando(false); }
@@ -133,7 +139,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
           <strong>{hecho ? '✓ Gasto añadido' : 'Añadir un gasto'}</strong>
           <small>Haz una foto al ticket o sube la factura: Netto lee proveedor, base, IVA, IRPF y fecha.</small>
         </div>
-        <CupoEscaneo />
+        <CupoEscaneo inicial={cupoInicial} />
         {error && <p className="error">{error}</p>}
         {avisoAdjunto}
         <div className="gasto-rapido-botones">
@@ -163,9 +169,10 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
           <label className="boton sec ticket-foto">Hacer foto<input type="file" accept="image/*" capture="environment" onChange={foto} hidden /></label>
           <label className="boton sec ticket-foto">Subir factura<input type="file" accept="image/*,application/pdf,.xml,.xsig,text/xml,application/xml" onChange={foto} hidden /></label>
         </div>
-        <CupoEscaneo />
+        <CupoEscaneo inicial={cupoInicial} />
       </div>}
-      {leyendo && <p className="nota ticket-nota" role="status">{leyendo}{adjunto ? ` Al guardar, ${adjunto.blob.type === 'application/pdf' ? 'el PDF' : 'la foto'} queda como justificante del gasto.` : ''}</p>}
+      {leyendo && <p className="nota ticket-nota" role="status">{leyendo}</p>}
+      {adjunto && <div className="gasto-adjunto" role="status"><strong>{adjunto.blob.type === 'application/pdf' ? 'PDF adjunto' : 'Foto adjunta'}</strong><span>{adjunto.nombre}</span><small>Se guardará junto con este gasto al pulsar Añadir.</small></div>}
       {gasto && <Justificante gasto={gasto} />}
       <input className="campo" placeholder="Proveedor (opcional)" value={g.proveedor || ''} onChange={(e) => poner('proveedor', e.target.value)} />
       {g.proveedor && <input className="campo" placeholder="NIF del proveedor (opcional)" value={g.proveedorNif || ''} onChange={(e) => poner('proveedorNif', e.target.value)} />}
@@ -184,6 +191,12 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
         </select>
       )}
       {Number(g.irpfPct) > 0 && <p className="nota">Le pagas la factura menos la retención, y esa retención la ingresas tú en el 111.</p>}
+      {parseImporte(g.base) > 0 && <dl className="gasto-importes" aria-label="Importes del gasto">
+        <div><dt>Base imponible</dt><dd>{eur(calculo.base)}</dd></div>
+        <div><dt>IVA</dt><dd>{eur(calculo.iva)}</dd></div>
+        <div><dt>Retención de IRPF</dt><dd>{calculo.irpf ? '−' : ''}{eur(calculo.irpf)}</dd></div>
+        <div className="gasto-total"><dt>Total a pagar</dt><dd>{eur(calculo.total)}</dd></div>
+      </dl>}
       {!Number(g.ivaPct) && (
         <select className="campo" value={g.origen || (nifUE(g.proveedorNif) ? 'ue' : 'es')} onChange={(e) => poner('origen', e.target.value)} aria-label="De dónde es el proveedor">
           <option value="es">Proveedor de España</option>

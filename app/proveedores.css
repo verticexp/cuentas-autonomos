@@ -10,14 +10,16 @@
 /* En revisión (components/RevisionGastos.js): cada cargo se abre para emparejarlo, borrar el gasto o añadirlo. */
 .gastos-revision .rev-cab { width: 100%; background: none; border: 0; font: inherit; text-align: left; cursor: pointer; display: flex; align-items: center; justify-content: space-between; }
 .gastos-revision .rev-cargo.abierto .rev-cab { background: var(--relleno); }
-.gastos-revision .rev-cuerpo { padding: 4px 16px 14px; display: grid; gap: 12px; }
-.gastos-revision .rev-sug, .gastos-revision .rev-elegir { display: grid; gap: 6px; }
+.gastos-revision .rev-cuerpo { padding: 12px 16px 16px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; overflow-wrap: anywhere; }
+.gastos-revision .rev-cuerpo .nota { margin: 0; }
+.gastos-revision .rev-sug, .gastos-revision .rev-elegir { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; }
 .gastos-revision .rev-sug-t { font-size: 0.8125rem; font-weight: 600; color: var(--ink-2, var(--ink)); margin: 0; }
-.gastos-revision .rev-sug-d { display: grid; text-decoration: none; color: var(--ink); padding: 8px 10px; border: 1px solid var(--linea, currentColor); border-radius: 10px; }
+.gastos-revision .rev-sug-d { display: grid; grid-template-columns: minmax(0, 1fr); text-decoration: none; color: var(--ink); padding: 8px 10px; border: 1px solid var(--linea, currentColor); border-radius: 10px; }
 .gastos-revision .rev-sug-d small { opacity: 0.75; }
 .gastos-revision .rev-botones { display: flex; flex-wrap: wrap; gap: 8px; }
+.gastos-revision .rev-botones > .boton { display: inline-flex; align-items: center; justify-content: center; min-width: 0; max-width: 100%; }
 .gastos-revision .peligro { color: var(--out); }
-.gastos-revision .campo { width: 100%; max-width: 100%; }
+.gastos-revision .rev-elegir > .campo { width: 100%; min-width: 0; max-width: 100%; }
 @media (max-width: 600px) {
   .gastos-revision .rev-botones > * { flex: 1 1 100%; min-height: 44px; justify-content: center; }
 }
