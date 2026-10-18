@@ -9,7 +9,7 @@ import { FUNCIONES, SEGMENTOS } from '@/components/web/datos';
 
 const MENUS = {
   producto: { t: 'Producto', items: FUNCIONES.map((f) => ({ href: `/funciones/${f.slug}`, icono: f.icono, t: f.nombre, d: f.corto })), pie: { href: '/funciones', t: 'Ver todas las funciones' } },
-  soluciones: { t: 'Soluciones', items: SEGMENTOS.map((s) => ({ href: s.ruta, icono: s.icono, t: s.n, d: `Desde ${s.desde} €/mes` })), pie: { href: '/precios', t: 'Comparar planes' } },
+  soluciones: { t: 'Soluciones', items: SEGMENTOS.map((s) => ({ href: s.ruta, icono: s.icono, t: s.n, d: s.id === 'business' ? 'Alcance y precio a medida' : `Desde ${s.desde} €/mes sin IVA` })), pie: { href: '/precios', t: 'Comparar planes' } },
 };
 
 export default function Cabecera() {

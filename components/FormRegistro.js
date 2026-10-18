@@ -7,11 +7,11 @@ import Logo from '@/components/Logo';
 import Link from '@/components/web/EnlacePublico';
 import ProgresoAlta from '@/components/ProgresoAlta';
 import { DESCUENTO, PLANES } from '@/components/web/datos';
-import { datosFiscalesRegistro, PRUEBA_DIAS, PROVINCIAS, TIPOS } from '@/lib/prueba';
+import { datosFiscalesRegistro, PRUEBA_DIAS, PROVINCIAS, TIPOS, TIPOS_ALTA } from '@/lib/prueba';
 import { irALaApp, useTrasArranque } from '@/lib/arranque';
 import { validarContrasena } from '@/lib/contrasena';
 
-const DETALLE = { aut: 'Trabajas por tu cuenta', pym: 'Sociedad con equipo pequeño', gra: 'Varias empresas o mucho equipo' };
+const DETALLE = { aut: 'Trabajas por tu cuenta, con o sin empleados', pym: 'Una sociedad con su equipo' };
 const ETIQUETAS = ['Negocio', 'Datos fiscales', 'Plan', 'Cuenta', 'Revisar'];
 const importe = (p) => p.toLocaleString('es-ES', { minimumFractionDigits: Number.isInteger(p) ? 0 : 2, maximumFractionDigits: 2 });
 const precio = (p, periodo) => periodo === 'anio' ? `${importe(p * 12 * (100 - DESCUENTO) / 100)} €/año` : `${importe(p)} €/mes`;
@@ -107,7 +107,7 @@ export default function FormRegistro({ inicial = {} }) {
     setError(null);
     if (!comprobarPaso(paso)) return;
     if (paso === 1) {
-      if (!TIPOS[tipo]) { setError({ mensaje: 'Elige tu tipo de negocio.', campo: 'tipo' }); return; }
+      if (!Object.hasOwn(TIPOS_ALTA, tipo)) { setError({ mensaje: 'Elige tu tipo de negocio.', campo: 'tipo' }); return; }
       if (!PLANES[tipo].some((p) => p.n === plan)) setPlan(PLANES[tipo].find((p) => p.fuerte)?.n || '');
     }
     if (paso === 3 && !PLANES[tipo]?.some((p) => p.n === plan)) { setError({ mensaje: 'Elige un plan.', campo: 'plan' }); return; }
@@ -153,7 +153,7 @@ export default function FormRegistro({ inicial = {} }) {
         <h2 className="login-titulo" tabIndex={-1}>¿Qué tipo de negocio tienes?</h2>
         <p className="nota registro-intro">Primero creamos tu cuenta. Después prepararemos tu negocio con sus actividades e impuestos.</p>
         <div className="registro-opciones" role="radiogroup" aria-label="Tipo de negocio">
-          {Object.entries(TIPOS).map(([k, t]) => (
+          {Object.entries(TIPOS_ALTA).map(([k, t]) => (
             <label key={k} className={`registro-opcion${tipo === k ? ' elegida' : ''}`}>
               <input type="radio" name="tipo" value={k} checked={tipo === k} onChange={() => setTipo(k)} {...accesibilidad('tipo')} />
               <span className="registro-opcion-texto"><strong>{t}</strong><small>{DETALLE[k]}</small></span>
@@ -254,6 +254,7 @@ export default function FormRegistro({ inicial = {} }) {
         {comprobando ? 'Comprobando email…' : paso < 5 ? 'Continuar' : enviando ? 'Creando la cuenta…' : 'Crear cuenta'}
       </button>
       {paso > 1 && <button type="button" className="registro-atras" disabled={enviando || comprobando} onClick={atras}>Atrás</button>}
+      {paso === 1 && <p className="nota">¿Llevas varias sociedades o un equipo mayor? <Link href="/business">Consulta Netto Business</Link>.</p>}
       {paso === 1 && <p className="nota login-cambiar">¿Ya tienes cuenta? <Link href="/login">Inicia sesión</Link></p>}
     </form>
   );

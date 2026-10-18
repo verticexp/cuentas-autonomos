@@ -1,3 +1,4 @@
+import { sinFuncion } from '@/lib/planes';
 import Link from 'next/link';
 import { requerir } from '@/lib/auth';
 import { leer } from '@/lib/redis';
@@ -21,6 +22,7 @@ export default async function Albaranes({ searchParams }) {
   const u = await requerir('facturar');
   const docs = await leer(u, 'albaranes');
   if (!docs) return <SinBD />;
+  const puedeOperar = !sinFuncion(u.plan, 'albaranes');
   const sp = await searchParams;
   const ver = VISTAS.some(([v]) => v === sp.ver) ? sp.ver : 'pedidos';
   const orden = (a, b) => b.fecha.localeCompare(a.fecha) || b.numero - a.numero;
@@ -41,7 +43,7 @@ export default async function Albaranes({ searchParams }) {
       <Volver href="/facturas">Facturas</Volver>
       <header className="cabecera">
         <h1 className="titulo">Pedidos y albaranes</h1>
-        <Ir href={`/albaranes/nuevo?tipo=${ver === 'pedidos' ? 'pedido' : 'albaran'}`} tipo="subir" className="boton pequeno">{ver === 'pedidos' ? 'Nuevo pedido' : 'Nuevo albarán'}</Ir>
+        {puedeOperar && <Ir href={`/albaranes/nuevo?tipo=${ver === 'pedidos' ? 'pedido' : 'albaran'}`} tipo="subir" className="boton pequeno">{ver === 'pedidos' ? 'Nuevo pedido' : 'Nuevo albarán'}</Ir>}
       </header>
       <p className="resumen-linea"><span>Pedidos abiertos <strong>{abiertos.length}</strong></span><span>Por facturar <strong>{eur(sinFacturar.reduce((s, a) => s + baseDoc(a), 0))}</strong></span></p>
       <nav className="segmentado">{VISTAS.map(([v, n]) => <Link key={v} href={`/albaranes?ver=${v}`} className={v === ver ? 'activo' : ''}>{n}{v === 'albaranes' && sinFacturar.length ? ` (${sinFacturar.length})` : ''}</Link>)}</nav>
@@ -57,7 +59,7 @@ export default async function Albaranes({ searchParams }) {
         </ul>
       ) : <div className="vacio"><p>Sin pedidos de clientes</p><p>Apunta lo que te piden; al entregarlo, haz el albarán desde el pedido (el stock sale entonces) y a final de mes factura todos los albaranes juntos.</p></div>)}
 
-      {ver === 'albaranes' && (grupos.length ? <FacturarAlbaranes grupos={grupos} hoy={hoy()} actividades={actividadesDe(u)} />
+      {puedeOperar && ver === 'albaranes' && (grupos.length ? <FacturarAlbaranes grupos={grupos} hoy={hoy()} actividades={actividadesDe(u)} />
         : <div className="vacio"><p>Ningún albarán por facturar</p><p>Los albaranes restan el stock al entregar. Elige varios del mismo cliente y haz una sola factura: no vuelve a restar el stock.</p></div>)}
 
       {ver === 'facturados' && (

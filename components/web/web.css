@@ -464,10 +464,10 @@ body:has(.web):has(.tabbar) { padding-left: 0 !important; }
 /* ───── Precios ───── */
 .web-controles { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 28px; }
 .web-precios:has(.web-seg) .web-controles { justify-content: space-between; } .web-precios:not(:has(.web-seg)) .web-controles { justify-content: center; }
-.web-seg { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); background: #ECEFEC; border-radius: 16px; padding: 5px; width: min(100%, 480px); }
+.web-seg { position: relative; display: grid; grid-template-columns: repeat(2, 1fr); background: #ECEFEC; border-radius: 16px; padding: 5px; width: min(100%, 480px); }
 .web-seg button { position: relative; z-index: 1; padding: 11px 8px; border-radius: 12px; font-weight: 600; font-size: 15px; color: var(--g) !important; transition: color 0.25s ease, transform 0.15s var(--e); }
 .web-seg button.on { color: var(--c) !important; } .web-seg button:active { transform: scale(0.96); }
-.web-seg-ind { position: absolute; top: 5px; bottom: 5px; left: 5px; width: calc((100% - 10px) / 3); border-radius: 12px; background: var(--v); box-shadow: 0 6px 14px -6px rgba(15, 31, 27, 0.6); transform: translateX(calc(var(--i) * 100%)); transition: transform 0.4s var(--e2); }
+.web-seg-ind { position: absolute; top: 5px; bottom: 5px; left: 5px; width: calc((100% - 10px) / 2); border-radius: 12px; background: var(--v); box-shadow: 0 6px 14px -6px rgba(15, 31, 27, 0.6); transform: translateX(calc(var(--i) * 100%)); transition: transform 0.4s var(--e2); }
 .web-ciclo { display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 15px; }
 .web-ciclo > button:not(.web-switch) { color: var(--g) !important; transition: color 0.2s ease; } .web-ciclo > button.on { color: var(--v) !important; }
 .web-ciclo > button:not(.web-switch) { min-height: 40px; padding: 0 4px; } /* zona táctil cómoda en el móvil */

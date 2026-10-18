@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { crearSesion, crearUsuario, desbloqueo, hayUsuarios, opcionesCookie, opcionesDesbloqueo, tokenEmail } from '@/lib/auth';
 import { enviarConfirmacion } from '@/lib/invitacion';
 import { ipDe, MUCHOS, pasado } from '@/lib/limite';
-import { datosFiscalesRegistro, fiscalDeTipo, normalizarNifRegistro, nuevoPlan, TIPOS } from '@/lib/prueba';
+import { datosFiscalesRegistro, fiscalDeTipo, normalizarNifRegistro, nuevoPlan, TIPOS_ALTA } from '@/lib/prueba';
 import { comprobarNif } from '@/lib/censoAeat';
 import { redis } from '@/lib/redis';
 
@@ -39,7 +39,7 @@ export async function POST(req) {
     if (form.get('acepto') !== '1') return fallo('Acepta las condiciones y la política de privacidad para crear tu cuenta.', 400, 5);
     const periodo = String(form.get('periodo') || 'mes');
     if (!['mes', 'anio'].includes(periodo)) return fallo('Elige un periodo mensual o anual.', 400, 3);
-    if (!TIPOS[String(form.get('tipo') || '')]) return fallo('Elige tu tipo de negocio.', 400, 1);
+    if (!Object.hasOwn(TIPOS_ALTA, String(form.get('tipo') || ''))) return fallo('Elige tu tipo de negocio.', 400, 1);
     const plan = nuevoPlan(String(form.get('tipo') || ''), String(form.get('plan') || ''), new Date(), periodo);
     if (!plan) return fallo('Elige un plan.', 400, 3);
     const datos = datosFiscalesRegistro({ ...Object.fromEntries(form), tipo: plan.tipo });

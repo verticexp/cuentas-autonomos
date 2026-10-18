@@ -40,7 +40,7 @@ export async function POST(req) {
 }
 
 export async function DELETE(req) {
-  const { u, res } = await usuarioApi({ permiso: 'gastar' });
+  const { u, res } = await usuarioApi({ permiso: 'gastar', funcion: 'inventario' });
   if (res) return res;
   const id = req.nextUrl.searchParams.get('id') || '';
   const a = await leerUno(u, 'stock', id);

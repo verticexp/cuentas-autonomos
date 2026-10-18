@@ -28,7 +28,7 @@ export async function POST(req) {
     return r.error ? error(r.error) : Response.json(r);
   }
   const { tipo, nombre, periodo } = b;
-  if (!planDe(tipo, nombre) || !PERIODOS[periodo]) return error('Plan no válido');
+  if (!planDe(tipo, nombre) || !PERIODOS[periodo] || (tipo === 'gra' && (u.plan.tipo !== 'gra' || nombre !== u.plan.nombre))) return error('Plan no válido');
   const r = u.plan.pagado && u.plan.suscripcion
     ? await cambiarPlan({ plan: u.plan, tipo, nombre, periodo, empresa: u.empresa })
     : await crearCheckout({ empresa: u.empresa, plan: u.plan, tipo, nombre, periodo, email: u.email, volver });

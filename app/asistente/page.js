@@ -1,3 +1,5 @@
+import { sinFuncion } from '@/lib/planes';
+import SinPlan from '@/components/SinPlan';
 import { requerir } from '@/lib/auth';
 import { herramientasPara } from '@/lib/asistente';
 import { iaLista } from '@/lib/ticket';
@@ -21,6 +23,7 @@ const EJEMPLOS = {
 
 export default async function PaginaAsistente() {
   const u = await requerir();
+  if (u.plan?.version === 2 && sinFuncion(u.plan, 'asistente')) return <SinPlan usuario={u} funcion="asistente" />;
   const h = herramientasPara(u).map((x) => x.name);
   return (
     <main className="pagina mk-look asistente">

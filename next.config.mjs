@@ -12,6 +12,9 @@ const seguridad = [
 
 export default {
   poweredByHeader: false,
+  async redirects() {
+    return [{ source: '/grandes-empresas', destination: '/business', permanent: true }];
+  },
   async headers() {
     return [{ source: '/:path*', headers: seguridad }];
   },
