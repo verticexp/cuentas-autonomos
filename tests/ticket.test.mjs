@@ -76,3 +76,17 @@ test('ignora tipos no admitidos y admite 21, 10, 5, 4, 2 y 0', () => {
     assert.equal(ticket({ total: 100 + ivaPct, desglose: [{ ivaPct, base: 100, cuota: ivaPct }] }).cuadra, true);
   }
 });
+
+
+test('extractos: conserva margen para las líneas de una página sin permitir salida ilimitada', async () => {
+  const { leerExtracto } = await import('../lib/ticket.js');
+  const original = globalThis.fetch;
+  const limites = [];
+  globalThis.fetch = async (_url, opciones) => {
+    limites.push(JSON.parse(opciones.body).max_tokens);
+    return Response.json({ model: 'claude-haiku-4-5-20251001', usage: { input_tokens: 1000, output_tokens: 100 }, content: [{ text: '{"movimientos":[]}' }] });
+  };
+  try { for (const paginas of [1, 2, 10]) assert.ok((await leerExtracto('YQ==', paginas)).filas); }
+  finally { globalThis.fetch = original; }
+  assert.deepEqual(limites, [4000, 8000, 16000]);
+});
