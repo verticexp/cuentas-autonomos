@@ -44,7 +44,7 @@ try {
   assert.match(await p.locator('.web-sub').innerText(),/precio y las condiciones/);
   await p.screenshot({path:`${salida}/ampliacion-${width}.png`,fullPage:true});
   await p.goto(`${BASE}/ajustes/plan`);await p.locator('.ticket-cupo').getByText('50 de 50 páginas este mes',{exact:true}).waitFor();
-  assert.match(await p.locator('.planes-app').innerText(),/200 páginas/);
+  assert.match(await p.getByLabel('Planes disponibles').innerText(),/200 páginas/);
   await ctx.clearCookies();await p.goto(`${BASE}/precios`);
   assert.match(await p.locator('.web-plan').first().innerText(),/50 páginas\/mes/);
   await p.getByRole('tab',{name:'Pymes',exact:true}).click();assert.match(await p.locator('.web-plan-fuerte').innerText(),/600 páginas\/mes/);
