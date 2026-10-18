@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
 import { atras, volverA } from '@/lib/transicion';
@@ -21,6 +21,8 @@ import '@/app/ticket.css';
 // plegado: en la lista de gastos empieza como una tarjeta con «Escanear ticket»; el formulario se abre al escanear o al pedirlo.
 export default function FormGasto({ hoy, gasto, actividades, alquiler = false, plegado = false, destacar = false, regimen = 'autonomo', cupoInicial = null, movimiento = null, productos = [], proyectos = [] }) {
   const router = useRouter();
+  const camaraInput = useRef(null);
+  const facturaInput = useRef(null);
   const vacio = { fecha: hoy, actividad: actividades[0].id, concepto: '', proveedor: '', base: '', ivaPct: 21 };
   // Desde un cargo del banco sin gasto: fecha, proveedor e importe del banco (base estimada al 21 %, hasta leer la factura).
   const delBanco = movimiento && { ...vacio, fecha: movimiento.fecha, concepto: movimiento.contraparte || movimiento.concepto, proveedor: movimiento.contraparte || '', base: String(Math.round((Math.abs(movimiento.importe) / 1.21) * 100) / 100).replace('.', ','), banco: movimiento.id };
@@ -143,9 +145,9 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
         {error && <p className="error">{error}</p>}
         {avisoAdjunto}
         <div className="gasto-rapido-botones">
-          <label className="boton gasto-escanear"><svg viewBox="0 0 24 24" aria-hidden><path d="M4 8V6a2 2 0 012-2h2M16 4h2a2 2 0 012 2v2M20 16v2a2 2 0 01-2 2h-2M8 20H6a2 2 0 01-2-2v-2M4 12h16" /></svg>Escanear ticket<input type="file" accept="image/*" capture="environment" onChange={foto} hidden /></label>
+          <button type="button" className="boton gasto-escanear" onClick={() => camaraInput.current?.click()}><svg viewBox="0 0 24 24" aria-hidden><path d="M4 8V6a2 2 0 012-2h2M16 4h2a2 2 0 012 2v2M20 16v2a2 2 0 01-2 2h-2M8 20H6a2 2 0 01-2-2v-2M4 12h16" /></svg>Escanear ticket</button><input ref={camaraInput} type="file" accept="image/*" capture="environment" onChange={foto} hidden />
           {!gasto && !movimiento && <RafagaTickets hoy={hoy} actividades={actividades} />}
-          <label className="boton sec">Subir factura<input type="file" accept="image/*,application/pdf,.xml,.xsig,text/xml,application/xml" onChange={foto} hidden /></label>
+          <button type="button" className="boton sec" onClick={() => facturaInput.current?.click()}>Subir factura</button><input ref={facturaInput} type="file" accept="image/*,application/pdf,.xml,.xsig,text/xml,application/xml" onChange={foto} hidden />
           <button type="button" className="boton sec" onClick={() => { setAbierto(true); setHecho(false); }}>A mano</button>
         </div>
       </div>
@@ -166,8 +168,8 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
         <p className="ticket-ia-t">Rellénalo con IA</p>
         <p className="ticket-ia-txt">Haz una foto del ticket o sube la factura que te han enviado (imagen o PDF de hasta 3 MB y 10 páginas). Netto lee también el IRPF. Cada página cuenta como una lectura; si la vuelves a enviar, cuenta otra vez, aunque no guardes el gasto.</p>
         <div className="ticket-ia-botones">
-          <label className="boton sec ticket-foto">Hacer foto<input type="file" accept="image/*" capture="environment" onChange={foto} hidden /></label>
-          <label className="boton sec ticket-foto">Subir factura<input type="file" accept="image/*,application/pdf,.xml,.xsig,text/xml,application/xml" onChange={foto} hidden /></label>
+          <button type="button" className="boton sec ticket-foto" onClick={() => camaraInput.current?.click()}>Hacer foto</button><input ref={camaraInput} type="file" accept="image/*" capture="environment" onChange={foto} hidden />
+          <button type="button" className="boton sec ticket-foto" onClick={() => facturaInput.current?.click()}>Subir factura</button><input ref={facturaInput} type="file" accept="image/*,application/pdf,.xml,.xsig,text/xml,application/xml" onChange={foto} hidden />
         </div>
         <CupoEscaneo inicial={cupoInicial} />
       </div>}
@@ -268,6 +270,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
 // En la ficha del gasto: ver el justificante guardado, o adjuntarlo o sustituirlo a mano (foto o PDF, máx. 5 MB).
 function Justificante({ gasto }) {
   const router = useRouter();
+  const archivoInput = useRef(null);
   const [estado, setEstado] = useState('');
   const [error, setError] = useState('');
   const tiene = Boolean(gasto.archivo?.clave);
@@ -294,8 +297,9 @@ function Justificante({ gasto }) {
       {!tiene && <p className="nota">Este gasto no tiene guardada la foto del ticket ni el PDF de la factura.</p>}
       <div className="gasto-guardar">
         {tiene && <a className="boton sec" href={url} target="_blank" rel="noopener">Ver justificante</a>}
-        <label className="boton sec">{tiene ? 'Sustituir' : 'Adjuntar justificante'}<input type="file" accept="image/*,application/pdf" onChange={elegir} hidden /></label>
+        <button type="button" className="boton sec" onClick={() => archivoInput.current?.click()}>{tiene ? 'Sustituir' : 'Adjuntar justificante'}</button>
       </div>
+      <input ref={archivoInput} type="file" accept="image/*,application/pdf" onChange={elegir} hidden />
       {estado && <p className="nota" role="status">{estado}</p>}
       {error && <p className="error">{error}</p>}
     </div>
