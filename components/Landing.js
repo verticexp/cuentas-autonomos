@@ -1,4 +1,5 @@
-import Link from 'next/link';
+import CintaFunciones from '@/components/web/CintaFunciones';
+import Link from '@/components/web/EnlacePublico';
 import Marco from '@/components/web/Marco';
 import Icono from '@/components/web/Icono';
 import Precios from '@/components/web/Precios';
@@ -40,9 +41,7 @@ export default function Landing() {
         </div>
       </section>
 
-      <div className="web-cinta" aria-label="Qué incluye Netto">
-        <div className="web-cinta-pista">{[...CINTA, ...CINTA].map((x, i) => <span key={i} aria-hidden={i >= CINTA.length}>{x}</span>)}</div>
-      </div>
+      <CintaFunciones items={CINTA} />
 
       <section className="web-sec">
         <div className="web-cifras">

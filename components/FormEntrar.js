@@ -1,5 +1,7 @@
 'use client';
 
+import Link from '@/components/web/EnlacePublico';
+
 import { useEffect, useRef, useState } from 'react';
 import BotonesSociales from '@/components/BotonesSociales';
 import EntrarLlave from '@/components/EntrarLlave';
@@ -7,8 +9,7 @@ import Logo from '@/components/Logo';
 import CampoPassword from '@/components/CampoPassword';
 import { enfocar, irALaApp, useTrasArranque } from '@/lib/arranque';
 
-// Formulario de la pantalla de entrar. No se pinta hasta que se va la animación de inicio (así el navegador no ofrece
-// contraseñas encima) y entra sin recargar el login: si falla, el error sale aquí mismo y lo escrito se queda.
+// El formulario público ya se ve en el HTML inicial. Si falla, el error aparece aquí y el email se conserva.
 export default function FormEntrar({ errorInicial = '' }) {
   const listo = useTrasArranque();
   const [error, setError] = useState(errorInicial);
@@ -30,7 +31,6 @@ export default function FormEntrar({ errorInicial = '' }) {
     pass.current.focus();
   }
 
-  if (!listo) return null;
   return (
     <form method="post" action="/api/login" onSubmit={entrar}>
       <h1><Logo className="logo-login" /></h1>
@@ -42,12 +42,12 @@ export default function FormEntrar({ errorInicial = '' }) {
       <input ref={email} id="email" name="email" type="email" autoComplete="username webauthn" required />
       <div className="login-etiqueta">
         <label htmlFor="password">Contraseña</label>
-        <a href="/recuperar">¿Has olvidado la contraseña?</a>
+        <Link href="/recuperar">¿Has olvidado la contraseña?</Link>
       </div>
       <CampoPassword ref={pass} id="password" />
       <button type="submit" disabled={enviando}>{enviando ? 'Entrando…' : 'Iniciar sesión'}</button>
       <EntrarLlave auto alEntrar={irALaApp} />
-      <p className="nota login-cambiar">¿No tienes cuenta? <a href="/registro">Crea una gratis</a></p>
+      <p className="nota login-cambiar">¿No tienes cuenta? <Link href="/registro">Crea una gratis</Link></p>
     </form>
   );
 }

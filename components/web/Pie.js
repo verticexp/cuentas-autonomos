@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '@/components/web/EnlacePublico';
 import Logo from '@/components/Logo';
 import { CONTACTO, FUNCIONES, SEGMENTOS } from '@/components/web/datos';
 

@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import BotonesSociales from '@/components/BotonesSociales';
 import CampoPassword from '@/components/CampoPassword';
 import Logo from '@/components/Logo';
+import Link from '@/components/web/EnlacePublico';
 import ProgresoAlta from '@/components/ProgresoAlta';
 import { DESCUENTO, PLANES } from '@/components/web/datos';
 import { datosFiscalesRegistro, PRUEBA_DIAS, PROVINCIAS, TIPOS } from '@/lib/prueba';
@@ -51,12 +52,12 @@ export default function FormRegistro({ inicial = {} }) {
     // Solo un cambio real de paso anima; escribir y medir no reinician la entrada.
     if (!listo || anterior === paso || !bloque?.animate) return;
     const reducido = window.matchMedia('(prefers-reduced-motion: reduce)');
-    if (reducido.matches) return;
+    if (reducido.matches || conTeclado.current) return;
     const desplazar = !conTeclado.current && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
     const animacion = bloque.animate([
       { opacity: 0.7, transform: desplazar ? `translateX(${direccion * 6}px)` : 'none' },
       { opacity: 1, transform: 'none' },
-    ], { duration: 180, easing: 'ease-out' });
+    ], { duration: 180, easing: 'cubic-bezier(.23,1,.32,1)' });
     const cancelar = () => animacion.cancel();
     reducido.addEventListener('change', cancelar);
     return () => { cancelar(); reducido.removeEventListener('change', cancelar); };
@@ -144,7 +145,7 @@ export default function FormRegistro({ inicial = {} }) {
   const elegido = PLANES[tipo]?.find((p) => p.n === plan);
 
   return (
-    <form ref={form} className="registro" onKeyDownCapture={() => { conTeclado.current = true; }} onPointerDownCapture={() => { conTeclado.current = false; }} onSubmit={siguiente} onChange={(e) => { if (error?.campo === e.target.name) setError(null); }} noValidate aria-busy={enviando || comprobando}>
+    <form ref={form} className="registro" onKeyDownCapture={() => { conTeclado.current = true; form.current.dataset.teclado = '1'; }} onPointerDownCapture={() => { conTeclado.current = false; delete form.current.dataset.teclado; }} onSubmit={siguiente} onChange={(e) => { if (error?.campo === e.target.name) setError(null); }} noValidate aria-busy={!listo || enviando || comprobando}>
       <h1><Logo className="logo-login" /></h1>
       <ProgresoAlta fase={1} paso={paso} total={5} etiqueta={ETIQUETAS[paso - 1]} atras={paso > 1 ? atras : undefined} ocupado={enviando || comprobando} />
       <div className="registro-contenido">
@@ -253,7 +254,7 @@ export default function FormRegistro({ inicial = {} }) {
         {comprobando ? 'Comprobando email…' : paso < 5 ? 'Continuar' : enviando ? 'Creando la cuenta…' : 'Crear cuenta'}
       </button>
       {paso > 1 && <button type="button" className="registro-atras" disabled={enviando || comprobando} onClick={atras}>Atrás</button>}
-      {paso === 1 && <p className="nota login-cambiar">¿Ya tienes cuenta? <a href="/login">Inicia sesión</a></p>}
+      {paso === 1 && <p className="nota login-cambiar">¿Ya tienes cuenta? <Link href="/login">Inicia sesión</Link></p>}
     </form>
   );
 }

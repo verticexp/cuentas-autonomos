@@ -44,7 +44,8 @@
 .login .registro-periodo input[type="radio"] { margin: 0; }
 /* Altura natural: teclado, errores y ayuda no disparan transiciones de layout.
    La entrada entre pasos se controla con WAAPI; el contenido es visible por defecto. */
-.login .registro-contenido { min-width: 0; overflow: visible; }
+.login .registro-contenido { min-width: 0; overflow: visible; height: auto; transition: none; }
+.login .registro-bloque { animation: none; }
 .login .registro .login-titulo, .login .registro-error { scroll-margin-block: 24px; }
 /* El título recibe foco para anunciar el paso, pero no es una opción seleccionable. */
 .login .registro .login-titulo:focus { outline: none; }
@@ -65,3 +66,5 @@
 @media (prefers-reduced-motion: reduce) {
   .login .registro-opcion, .login .registro-periodo label { transition: none; }
 }
+
+.login .registro[data-teclado="1"] :is(input, select, .registro-opcion, .registro-periodo label) { transition: none; }

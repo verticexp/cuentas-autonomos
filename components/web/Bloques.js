@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '@/components/web/EnlacePublico';
 import Icono from '@/components/web/Icono';
 
 // Piezas comunes de las páginas públicas.
