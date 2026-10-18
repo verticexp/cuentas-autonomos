@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import Link from '@/components/web/EnlacePublico';
 import { Fragment, useState } from 'react';
 import Icono from '@/components/web/Icono';
 import { COMPARATIVA, DESCUENTO, PERSONALIZADO, PLANES, SEGMENTOS } from '@/components/web/datos';

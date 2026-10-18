@@ -25,7 +25,7 @@
 .registro-ayuda { margin: -4px 0 0; font-size: 13px; }
 .registro-trampa { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
 .registro-opciones { display: flex; flex-direction: column; gap: 8px; }
-.login .registro-opcion { display: flex; flex-direction: row; align-items: flex-start; gap: 12px; margin: 0; padding: 14px 16px; text-align: left; border-radius: 12px; background: var(--surface); color: var(--ink); border: 1px solid var(--line); box-shadow: none; font-weight: 400; cursor: pointer; transition: border-color 140ms ease-out, background-color 140ms ease-out; }
+.login .registro-opcion { display: flex; flex-direction: row; align-items: flex-start; gap: 12px; margin: 0; padding: 14px 16px; text-align: left; border-radius: 12px; background: var(--surface); color: var(--ink); border: 1px solid var(--line); box-shadow: none; font-weight: 400; cursor: pointer; transition: border-color 160ms ease-out, background-color 160ms ease-out; }
 .login .registro-opcion.elegida { border-color: var(--green, #218255); background: color-mix(in srgb, var(--green, #218255) 8%, var(--surface)); }
 .registro-opcion-texto { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
 .login .registro-opcion input[type="radio"], .login .registro-periodo input[type="radio"] { appearance: auto; position: static; flex: 0 0 20px; width: 20px; height: 20px; min-height: 20px; margin: 2px 0 0; padding: 0; border: 0; border-radius: 50%; box-shadow: none; accent-color: var(--green, #218255); cursor: pointer; }
@@ -39,11 +39,13 @@
 .login .registro-atras { margin: 0; padding: 8px; background: none; color: var(--ink); border: 0; box-shadow: none; font-weight: 500; }
 .login .registro-atras:hover { background: none; text-decoration: underline; }
 .login .registro-periodo { display: flex; flex-wrap: wrap; gap: 8px; }
-.login .registro-periodo label { display: flex; align-items: center; justify-content: center; flex: 1 1 140px; gap: 8px; margin: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); cursor: pointer; font-size: 14px; font-weight: 500; }
+.login .registro-periodo label { display: flex; align-items: center; justify-content: center; flex: 1 1 140px; gap: 8px; margin: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); cursor: pointer; font-size: 14px; font-weight: 500; transition: border-color 160ms ease-out, background-color 160ms ease-out; }
 .login .registro-periodo label.elegida { border-color: var(--green, #218255); background: color-mix(in srgb, var(--green, #218255) 8%, var(--surface)); }
 .login .registro-periodo input[type="radio"] { margin: 0; }
-.login .registro-contenido { min-width: 0; overflow: visible; transition: height 200ms cubic-bezier(0.22, 1, 0.36, 1); }
-.login .registro-bloque { animation: registro-entrada 180ms ease-out; }
+/* Altura natural: teclado, errores y ayuda no disparan transiciones de layout.
+   La entrada entre pasos se controla con WAAPI; el contenido es visible por defecto. */
+.login .registro-contenido { min-width: 0; overflow: visible; height: auto; transition: none; }
+.login .registro-bloque { animation: none; }
 .login .registro .login-titulo, .login .registro-error { scroll-margin-block: 24px; }
 /* El título recibe foco para anunciar el paso, pero no es una opción seleccionable. */
 .login .registro .login-titulo:focus { outline: none; }
@@ -54,18 +56,15 @@
 .login .registro-corregir:hover { background: none; }
 .registro-intro, .registro-siguiente { margin: 0 0 6px; line-height: 1.5; }
 #registro-email-error:empty { display: none; }
-@keyframes registro-entrada { from { opacity: 0.65; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 @media (hover: hover) and (pointer: fine) {
   .login .registro-opcion:hover, .login .registro-periodo label:hover { border-color: var(--muted); }
   .login .registro-opcion.elegida:hover, .login .registro-periodo label.elegida:hover { border-color: var(--green, #218255); }
 }
 @media (max-width: 640px) {
-  /* La altura natural evita recortes al abrir el teclado, girar el móvil o mostrar errores. */
-  .login .registro-contenido { height: auto !important; transition: none; }
   .login .registro-plan-cab b { white-space: nowrap; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .login .registro-contenido { height: auto !important; transition: none; }
-  .login .registro-bloque { animation: none; transform: none; }
   .login .registro-opcion, .login .registro-periodo label { transition: none; }
 }
+
+.login .registro[data-teclado="1"] :is(input, select, .registro-opcion, .registro-periodo label) { transition: none; }

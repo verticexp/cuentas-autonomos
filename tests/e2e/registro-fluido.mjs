@@ -34,6 +34,7 @@ for (const width of [320,768,1280]) {
  await p.route('**/api/registro',async r=>{enviados++;const body=r.request().postData();assert(body.includes('Diseño Prueba'));assert(body.includes('08001'));await r.fulfill({status:400,contentType:'application/json',body:JSON.stringify({error:'Hacienda no reconoce ese NIF con ese nombre.',paso:2})});});
  await p.goto(`${BASE}/registro?tipo=aut&plan=Pro&periodo=anio`);
  await p.getByRole('radio',{name:'Autónomo',exact:false}).waitFor();
+ await p.locator('form.registro[aria-busy="false"]').waitFor();
  assert.equal(await p.getByRole('button',{name:'Volver al paso anterior'}).count(),0);
  assert(await p.locator('input[name=tipo][value=aut]').isChecked());
  // Teclado nativo: ArrowDown cambia de opción y ArrowUp vuelve al autónomo.

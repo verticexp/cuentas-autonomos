@@ -1,3 +1,4 @@
+import TransicionPublica from '@/components/web/TransicionPublica';
 import { redirect } from 'next/navigation';
 import { usuarioActual } from '@/lib/auth';
 import { redis } from '@/lib/redis';
@@ -17,12 +18,12 @@ export default async function Registro({ searchParams }) {
   const { tipo, plan, periodo } = await searchParams;
   const elegido = planDe(tipo, plan) ? { tipo, plan } : { tipo: planDe(tipo, 'Pro') ? tipo : '', plan: '' };
   return (
-    <main className="login">
+    <TransicionPublica acceso><main className="login">
       <PanelRegistro />
       <div className="form-entrar">
         <FormRegistro inicial={{ ...elegido, periodo: periodo === 'anio' ? 'anio' : 'mes' }} />
         <p className="nota login-legal"><a href="/privacidad">Privacidad</a> · <a href="/condiciones">Condiciones</a></p>
       </div>
-    </main>
+    </main></TransicionPublica>
   );
 }

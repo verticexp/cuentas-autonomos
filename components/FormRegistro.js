@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import BotonesSociales from '@/components/BotonesSociales';
 import CampoPassword from '@/components/CampoPassword';
 import Logo from '@/components/Logo';
+import Link from '@/components/web/EnlacePublico';
 import ProgresoAlta from '@/components/ProgresoAlta';
 import { DESCUENTO, PLANES } from '@/components/web/datos';
 import { datosFiscalesRegistro, PRUEBA_DIAS, PROVINCIAS, TIPOS } from '@/lib/prueba';
@@ -38,20 +39,29 @@ export default function FormRegistro({ inicial = {} }) {
   const [errorEmail, setErrorEmail] = useState('');
   const [comprobando, setComprobando] = useState(false);
   const [direccion, setDireccion] = useState(1);
-  const [alto, setAlto] = useState();
+  const pasoAnterior = useRef(paso);
+  const conTeclado = useRef(false);
   const emailActual = useRef('');
   const seguridad = validarContrasena(password, cuenta);
   function atras() { if (enviando || comprobando) return; setError(null); cambiarPaso(paso - 1); }
   function cambiarPaso(n) { setDireccion(n > paso ? 1 : -1); setPaso(n); }
   useLayoutEffect(() => {
+    const anterior = pasoAnterior.current;
+    pasoAnterior.current = paso;
     const bloque = form.current?.querySelector(`[data-paso="${paso}"]`);
-    if (!bloque) return;
-    const medir = () => setAlto(bloque.getBoundingClientRect().height);
-    medir();
-    const observador = new ResizeObserver(medir);
-    observador.observe(bloque);
-    return () => observador.disconnect();
-  }, [paso, listo]);
+    // Solo un cambio real de paso anima; escribir y medir no reinician la entrada.
+    if (!listo || anterior === paso || !bloque?.animate) return;
+    const reducido = window.matchMedia('(prefers-reduced-motion: reduce)');
+    if (reducido.matches || conTeclado.current) return;
+    const desplazar = !conTeclado.current && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    const animacion = bloque.animate([
+      { opacity: 0.7, transform: desplazar ? `translateX(${direccion * 6}px)` : 'none' },
+      { opacity: 1, transform: 'none' },
+    ], { duration: 180, easing: 'cubic-bezier(.23,1,.32,1)' });
+    const cancelar = () => animacion.cancel();
+    reducido.addEventListener('change', cancelar);
+    return () => { cancelar(); reducido.removeEventListener('change', cancelar); };
+  }, [paso, listo, direccion]);
   async function comprobarEmail(email, alContinuar = false) {
     emailActual.current = email;
     const r = await fetch('/api/registro/email', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }), signal: AbortSignal.timeout(5000) }).catch(() => null);
@@ -134,18 +144,12 @@ export default function FormRegistro({ inicial = {} }) {
   function campoFiscal(e) { setFiscales((antes) => ({ ...antes, [e.target.name]: e.target.value })); }
   const elegido = PLANES[tipo]?.find((p) => p.n === plan);
 
-  if (!listo) return null;
   return (
-    <form ref={form} className="registro" onSubmit={siguiente} onChange={(e) => { if (error?.campo === e.target.name) setError(null); }} noValidate aria-busy={enviando || comprobando}>
+    <form ref={form} className="registro" onKeyDownCapture={() => { conTeclado.current = true; form.current.dataset.teclado = '1'; }} onPointerDownCapture={() => { conTeclado.current = false; delete form.current.dataset.teclado; }} onSubmit={siguiente} onChange={(e) => { if (error?.campo === e.target.name) setError(null); }} noValidate aria-busy={!listo || enviando || comprobando}>
       <h1><Logo className="logo-login" /></h1>
       <ProgresoAlta fase={1} paso={paso} total={5} etiqueta={ETIQUETAS[paso - 1]} atras={paso > 1 ? atras : undefined} ocupado={enviando || comprobando} />
-      <div className="registro-contenido" style={{ height: alto }} onTransitionEnd={(e) => {
-        if (e.target === e.currentTarget && e.propertyName === 'height') {
-          const titulo = e.currentTarget.querySelector(`[data-paso="${paso}"] h2`);
-          if (document.activeElement === titulo) enfocarVisible(titulo);
-        }
-      }}>
-      <div hidden={paso !== 1} data-paso="1" className={`registro-bloque ${direccion > 0 ? 'registro-avanza' : 'registro-vuelve'}`}>
+      <div className="registro-contenido">
+      <div hidden={paso !== 1} data-paso="1" className="registro-bloque">
         <h2 className="login-titulo" tabIndex={-1}>¿Qué tipo de negocio tienes?</h2>
         <p className="nota registro-intro">Primero creamos tu cuenta. Después prepararemos tu negocio con sus actividades e impuestos.</p>
         <div className="registro-opciones" role="radiogroup" aria-label="Tipo de negocio">
@@ -158,7 +162,7 @@ export default function FormRegistro({ inicial = {} }) {
         </div>
       </div>
 
-      <div hidden={paso !== 2} data-paso="2" className={`registro-bloque ${direccion > 0 ? 'registro-avanza' : 'registro-vuelve'}`}>
+      <div hidden={paso !== 2} data-paso="2" className="registro-bloque">
         <h2 className="login-titulo" tabIndex={-1}>Datos fiscales</h2>
         <p className="nota">Escríbelos como aparecen en Hacienda. Comprobaremos el NIF y el nombre fiscal.</p>
         <label htmlFor="razon">{tipo === 'aut' ? 'Nombre y apellidos como en Hacienda' : 'Razón social'}</label>
@@ -180,7 +184,7 @@ export default function FormRegistro({ inicial = {} }) {
         <input id="telefono" name="telefono" type="tel" autoComplete="tel" maxLength={30} value={fiscales.telefono} onChange={campoFiscal} {...accesibilidad('telefono')} />
       </div>
 
-      <div hidden={paso !== 3} data-paso="3" className={`registro-bloque ${direccion > 0 ? 'registro-avanza' : 'registro-vuelve'}`}>
+      <div hidden={paso !== 3} data-paso="3" className="registro-bloque">
         <h2 className="login-titulo" tabIndex={-1}>Elige tu plan</h2>
         <p className="nota">{TIPOS[tipo]} · El primer mes es gratis. Podrás cambiar de plan cuando quieras.</p>
         <div className="registro-periodo" role="radiogroup" aria-label="Periodo de pago">
@@ -202,7 +206,7 @@ export default function FormRegistro({ inicial = {} }) {
         <p className="nota">Precios sin IVA. Puedes ver todo lo que incluye cada plan en <a href="/precios" target="_blank" rel="noopener">Precios</a>.</p>
       </div>
 
-      <div hidden={paso !== 4} data-paso="4" className={`registro-bloque ${direccion > 0 ? 'registro-avanza' : 'registro-vuelve'}`}>
+      <div hidden={paso !== 4} data-paso="4" className="registro-bloque">
         <h2 className="login-titulo" tabIndex={-1}>Tu cuenta</h2>
         <p className="nota">{PRUEBA_DIAS} días gratis con todo incluido. Sin tarjeta.</p>
         <BotonesSociales />
@@ -223,7 +227,7 @@ export default function FormRegistro({ inicial = {} }) {
         <input name="web" tabIndex={-1} autoComplete="off" className="registro-trampa" aria-hidden />
       </div>
 
-      <div hidden={paso !== 5} data-paso="5" className={`registro-bloque ${direccion > 0 ? 'registro-avanza' : 'registro-vuelve'}`}>
+      <div hidden={paso !== 5} data-paso="5" className="registro-bloque">
         <h2 className="login-titulo" tabIndex={-1}>Revisar y crear</h2>
         <dl className="registro-resumen">
           <dt>Tu cuenta</dt><dd>{cuenta.nombre}<br />{cuenta.email}</dd>
@@ -250,7 +254,7 @@ export default function FormRegistro({ inicial = {} }) {
         {comprobando ? 'Comprobando email…' : paso < 5 ? 'Continuar' : enviando ? 'Creando la cuenta…' : 'Crear cuenta'}
       </button>
       {paso > 1 && <button type="button" className="registro-atras" disabled={enviando || comprobando} onClick={atras}>Atrás</button>}
-      {paso === 1 && <p className="nota login-cambiar">¿Ya tienes cuenta? <a href="/login">Inicia sesión</a></p>}
+      {paso === 1 && <p className="nota login-cambiar">¿Ya tienes cuenta? <Link href="/login">Inicia sesión</Link></p>}
     </form>
   );
 }

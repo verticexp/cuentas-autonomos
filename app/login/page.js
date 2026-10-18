@@ -1,3 +1,4 @@
+import TransicionPublica from '@/components/web/TransicionPublica';
 import { redirect } from 'next/navigation';
 import { hayUsuarios, usuarioActual } from '@/lib/auth';
 import { redis } from '@/lib/redis';
@@ -20,7 +21,7 @@ export default async function Login({ searchParams }) {
   const primera = !(await hayUsuarios());
   // Sin cuentas todavía: alta del administrador (formulario normal). Con cuentas: components/FormEntrar.js.
   return (
-    <main className="login">
+    <TransicionPublica acceso><main className="login">
       <PanelMarca />
       <div className="form-entrar">
         {primera ? (
@@ -41,6 +42,6 @@ export default async function Login({ searchParams }) {
         {/* Fuera del formulario: los enlaces legales salen siempre, también sin JavaScript. */}
         <p className="nota login-legal"><a href="/privacidad">Privacidad</a> · <a href="/condiciones">Condiciones</a></p>
       </div>
-    </main>
+    </main></TransicionPublica>
   );
 }
