@@ -41,6 +41,7 @@ export default function FormRegistro({ inicial = {} }) {
   const [alto, setAlto] = useState();
   const emailActual = useRef('');
   const seguridad = validarContrasena(password, cuenta);
+  function atras() { if (enviando || comprobando) return; setError(null); cambiarPaso(paso - 1); }
   function cambiarPaso(n) { setDireccion(n > paso ? 1 : -1); setPaso(n); }
   useLayoutEffect(() => {
     const bloque = form.current?.querySelector(`[data-paso="${paso}"]`);
@@ -137,7 +138,7 @@ export default function FormRegistro({ inicial = {} }) {
   return (
     <form ref={form} className="registro" onSubmit={siguiente} onChange={(e) => { if (error?.campo === e.target.name) setError(null); }} noValidate aria-busy={enviando || comprobando}>
       <h1><Logo className="logo-login" /></h1>
-      <ProgresoAlta fase={1} paso={paso} total={5} etiqueta={ETIQUETAS[paso - 1]} />
+      <ProgresoAlta fase={1} paso={paso} total={5} etiqueta={ETIQUETAS[paso - 1]} atras={paso > 1 ? atras : undefined} ocupado={enviando || comprobando} />
       <div className="registro-contenido" style={{ height: alto }} onTransitionEnd={(e) => {
         if (e.target === e.currentTarget && e.propertyName === 'height') {
           const titulo = e.currentTarget.querySelector(`[data-paso="${paso}"] h2`);
@@ -248,7 +249,7 @@ export default function FormRegistro({ inicial = {} }) {
       <button type="submit" disabled={enviando || comprobando || (paso === 1 && !tipo) || (paso === 3 && !plan)}>
         {comprobando ? 'Comprobando email…' : paso < 5 ? 'Continuar' : enviando ? 'Creando la cuenta…' : 'Crear cuenta'}
       </button>
-      {paso > 1 && <button type="button" className="registro-atras" disabled={enviando || comprobando} onClick={() => { setError(null); cambiarPaso(paso - 1); }}>Atrás</button>}
+      {paso > 1 && <button type="button" className="registro-atras" disabled={enviando || comprobando} onClick={atras}>Atrás</button>}
       {paso === 1 && <p className="nota login-cambiar">¿Ya tienes cuenta? <a href="/login">Inicia sesión</a></p>}
     </form>
   );
