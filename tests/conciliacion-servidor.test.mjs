@@ -277,8 +277,8 @@ test('5: importar devuelve auto, concilia lo importado y conserva la importació
   const servidor = new URL('../lib/bancoServidor.js', import.meta.url).href;
   const ruta = (await cargarRuta('../app/api/banco/importar/route.js', {
     hoja: modulo(`export const leerHoja = () => globalThis.__conciliacionDobles.filas;`),
-    limite: modulo(`export const MUCHOS = 'Muchos'; export const pasado = async () => false;`),
-    ticket: modulo(`export const iaLista = () => false; export const leerExtracto = async () => ({});`),
+    limite: modulo(`export const MUCHOS = 'Muchos'; export const pasado = async () => false; export const concurrencia = async (_t,_u,_n,_ttl,fn) => fn(); export const respuesta429 = () => Response.json({}, {status:429});`),
+    ticket: modulo(`export const iaLista = () => false; export const leerExtracto = async () => ({}); export const validarEntradaIA = async () => ({});`),
     bancoServidor: modulo(`import * as B from ${JSON.stringify(servidor)};
       export const guardarMovimientos = B.guardarMovimientos; export const actualizarSaldo = B.actualizarSaldo;
       export const autoconciliar = (u) => { if (globalThis.__conciliacionDobles.fallar) throw new Error('fallo automático'); return B.autoconciliar(u); };`),

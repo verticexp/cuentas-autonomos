@@ -91,7 +91,7 @@ export default async function Gastos({ searchParams }) {
         <h1 className="titulo">Gastos</h1>
       </header>
       {/* Primero lo que más se hace: escanear el ticket. El formulario entero se abre al escanear o al pedirlo. */}
-      {!sinFuncion(u.plan, 'revision') && puede(u, 'gastar') && !movimiento && <FormGasto hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} productos={stockProductos} plegado={hay} destacar={Boolean(escanear)} proyectos={proyectos} />}
+      {puede(u, 'gastar') && !movimiento && <FormGasto hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} productos={stockProductos} plegado={hay} destacar={Boolean(escanear)} proyectos={proyectos} />}
 
       {(delAnio.length > 0 || hayProveedores) && (
         <p className="resumen-linea">

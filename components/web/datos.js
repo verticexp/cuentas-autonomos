@@ -39,7 +39,7 @@ export const FUNCIONES = [
       { t: 'Pendiente o pagado, siempre claro', d: 'Cada gasto tiene su estado. Ves de un vistazo lo que debes a cada proveedor y cuándo vence.', l: ['Estado pendiente o pagado', 'Ficha de proveedor', 'Gastos recurrentes automáticos'], visual: 'proveedores' },
     ],
     faqs: [
-      ['¿Cuántos tickets puedo escanear?', 'Hasta 100 tickets o facturas al día por usuario, con el mismo límite en todos los planes.'],
+      ['¿Cuántas páginas de tickets puedo leer?', 'El cupo mensual depende del tipo de negocio y el plan: Autónomos tiene 50, 200 o 500 páginas; Pymes, 200, 600 o 1.500. Una imagen cuenta como una página y cada página del PDF también; se admiten hasta 10 páginas y 3 MB por PDF. Si vuelves a enviar una lectura, cuenta otra vez. El cupo es por empresa, lo comparte la gestoría, se renueva cada mes natural incluso con pago anual y no se acumula. Durante los 30 días de prueba hay 50 páginas en total; al empezar el periodo de pago se activa el cupo mensual del plan. Las lecturas enviadas a la IA cuentan aunque no guardes el gasto.'],
       ['¿Y si la IA se equivoca?', 'Siempre revisas los datos antes de guardar. Puedes corregir cualquier campo.'],
     ],
   },
@@ -237,14 +237,14 @@ export const segmento = (id) => SEGMENTOS.find((s) => s.id === id);
 // «Todo lo del plan anterior» va en `herencia`; cada plan lista solo lo que añade.
 export const PLANES = {
   aut: [
-    { n: 'Esencial', p: 9, para: 'Facturar y declarar sin sustos', l: ['Facturas, presupuestos y recurrentes', 'Gastos y escaneo IA', 'Modelos aplicables y libros registro', 'Bienes de inversión y amortizaciones', 'Extractos, saldo y resumen', '1 empresa · 1 usuario interno + gestoría'] },
-    { n: 'Pro', p: 12, para: 'Más control por 3 € más al mes', fuerte: true, herencia: 'Esencial', l: ['Conciliación, revisión del banco y previsión', 'Inventario, pedidos y albaranes', 'Cartera avanzada y SEPA', 'Análisis financiero y rentabilidad por proyecto', 'Asistente IA con tus cifras'] },
-    { n: 'Plus', p: 20, para: 'Más equipo con las funciones de Pro', herencia: 'Pro', l: ['1 empresa · 3 usuarios internos + gestoría', 'Nóminas y jornada para 2 empleados', 'Atención prioritaria'] },
+    { n: 'Esencial', p: 9, para: 'Facturar y declarar sin sustos', l: ['Facturas, presupuestos y recurrentes', 'Gastos y escaneo IA · 50 páginas/mes', 'Modelos aplicables y libros registro', 'Bienes de inversión y amortizaciones', 'Extractos, saldo y resumen', '1 empresa · 1 usuario interno + gestoría'] },
+    { n: 'Pro', p: 12, para: 'Más control por 3 € más al mes', fuerte: true, herencia: 'Esencial', l: ['Conciliación, revisión del banco y previsión', 'Inventario, pedidos y albaranes', 'Cartera avanzada y SEPA', 'Análisis financiero y rentabilidad por proyecto', 'Asistente IA con tus cifras', 'Escaneo IA · 200 páginas/mes'] },
+    { n: 'Plus', p: 20, para: 'Más equipo con las funciones de Pro', herencia: 'Pro', l: ['1 empresa · 3 usuarios internos + gestoría', 'Nóminas y jornada para 2 empleados', 'Atención prioritaria', 'Escaneo IA · 500 páginas/mes'] },
   ],
   pym: [
-    { n: 'Esencial', p: 25, para: 'Equipo pequeño, finanzas claras', l: ['Facturación, presupuestos y recurrentes', 'Gastos, escaneo IA y modelos aplicables', 'Contabilidad y cuentas anuales', 'Extractos y conciliación', '1 empresa · 3 usuarios internos + gestoría', 'Nóminas y jornada para 5 empleados'] },
-    { n: 'Pro', p: 35, para: 'Más control por 10 € más al mes', fuerte: true, herencia: 'Esencial', l: ['Pedidos, albaranes e inventario', 'Revisión del banco y previsión de caja', 'Cartera avanzada y SEPA', 'Análisis financiero, proyectos y asistente IA', '8 usuarios internos · 15 empleados', 'Soporte prioritario'] },
-    { n: 'Plus', p: 55, para: 'Más capacidad con las funciones de Pro', herencia: 'Pro', l: ['1 empresa · 15 usuarios internos + gestoría', 'Nóminas y jornada para 30 empleados', 'Incorporación guiada'] },
+    { n: 'Esencial', p: 25, para: 'Equipo pequeño, finanzas claras', l: ['Facturación, presupuestos y recurrentes', 'Gastos y lectura IA · 200 páginas/mes', 'Contabilidad y cuentas anuales', 'Extractos y conciliación', '1 empresa · 3 usuarios internos + gestoría', 'Nóminas y jornada para 5 empleados'] },
+    { n: 'Pro', p: 35, para: 'Más control por 10 € más al mes', fuerte: true, herencia: 'Esencial', l: ['Pedidos, albaranes e inventario', 'Revisión del banco y previsión de caja', 'Cartera avanzada y SEPA', 'Análisis financiero, proyectos y asistente IA', '8 usuarios internos · 15 empleados', 'Escaneo IA · 600 páginas/mes · soporte prioritario'] },
+    { n: 'Plus', p: 55, para: 'Más capacidad con las funciones de Pro', herencia: 'Pro', l: ['1 empresa · 15 usuarios internos + gestoría', 'Nóminas y jornada para 30 empleados', 'Incorporación guiada', 'Escaneo IA · 1.500 páginas/mes'] },
   ],
   gra: [
     { n: 'Esencial', p: 45, para: 'Control para estructuras grandes', l: ['Todo lo de Pymes Plus', '5 empresas · 20 usuarios', 'Nóminas y jornada (hasta 50 empleados)', 'Roles y permisos por área', 'Acceso para gestorías y auditores', 'Soporte prioritario'] },
@@ -261,7 +261,6 @@ const COMUNES = [
     ['Portal del cliente y avisos push', [true, true, true]],
     ['Exportación de datos y importación desde otro programa', [true, true, true]],
     ['Seguridad y copias de respaldo', [true, true, true]],
-    ['Escaneo IA (mismas condiciones de uso)', ['Incluido', 'Incluido', 'Incluido']],
   ]],
 ];
 const OPERACIONES = [
@@ -277,6 +276,7 @@ const OPERACIONES = [
 export const COMPARATIVA = {
   aut: [
     ...COMUNES,
+    ['Lectura IA', [['Páginas al mes', ['50', '200', '500']]]],
     ['Facturación, gastos y fiscalidad', [
       ['Facturas y presupuestos ilimitados', [true, true, true]],
       ['Verifactu: huella y QR', [true, true, true]],
@@ -297,6 +297,7 @@ export const COMPARATIVA = {
   ],
   pym: [
     ...COMUNES,
+    ['Lectura IA', [['Páginas al mes', ['200', '600', '1.500']]]],
     ['Facturación, contabilidad y banco', [
       ['Facturas, presupuestos, catálogo y recurrentes', [true, true, true]],
       ['Verifactu: huella y QR', [true, true, true]],
@@ -335,7 +336,8 @@ export const FAQ_PRECIOS = [
   ['¿Necesito tarjeta para la prueba?', 'No. Puedes probar Netto durante 30 días sin tarjeta.'],
   ['¿Mi gestoría consume un usuario?', 'No. Los seis planes incluyen 1 acceso separado para tu gestoría, además de los usuarios internos del plan.'],
   ['¿Qué diferencia hay entre Pro, Plus y Business?', 'Pro añade operaciones, previsión y análisis a Esencial. Plus conserva las funciones de Pro y amplía el equipo; en Autónomos añade nóminas y jornada, y en Pymes incorporación guiada. Business es una oferta a medida para varias sociedades o equipos, con alcance y precio acordados por contacto.'],
-  ['¿El escaneo IA mejora al subir de plan?', 'El escaneo IA tiene las mismas condiciones de uso en los seis planes. Pro incorpora además el asistente IA.'],
+  ['¿Cuántas páginas de lectura IA incluye cada plan?', 'Autónomos: 50 en Esencial, 200 en Pro y 500 en Plus. Pymes: 200 en Esencial, 600 en Pro y 1.500 en Plus. La cuota se comparte por empresa con la gestoría, se renueva cada mes natural también en pago anual y no se acumula. La prueba incluye 50 páginas en total; la cuota mensual del plan empieza con el periodo de pago. Una imagen cuenta una página y cada página del PDF una lectura, hasta 10 páginas y 3 MB por PDF. Volver a enviar una lectura consume otra página. Cuentan las lecturas enviadas a la IA aunque no guardes el gasto.'],
+  ['¿Qué pasa al agotar las páginas?', 'Puedes seguir registrando gastos a mano y subiendo extractos en CSV, Excel o Norma 43. Puedes cambiar de plan o solicitar una ampliación por contacto: te confirmamos el precio y las condiciones antes de contratar, sin cargos automáticos. Los PDF bancarios comparten la bolsa de páginas con las facturas y tickets.'],
   ['¿Puedo cambiar de plan?', 'Puedes elegir otro plan desde tu suscripción. Antes de confirmar verás las condiciones y el importe del cambio.'],
   ['¿Cómo funciona el pago anual?', 'Ahorras un 30 % sobre las mensualidades. Mostramos el equivalente mensual y el importe total que se cobra al año, sin IVA.'],
   ['¿Presentáis los impuestos automáticamente?', 'No. Netto calcula los modelos aplicables a tu situación; tú o tu gestoría los revisáis y presentáis.'],

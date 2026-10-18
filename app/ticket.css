@@ -14,3 +14,12 @@
 .gasto-justificante { display: grid; gap: 8px; padding: 12px; border: 0.5px solid var(--line); border-radius: 12px; }
 .gasto-justificante .mini-t { margin: 0; }
 .gasto-justificante .boton { font-size: 15px; }
+/* Bolsa compartida de lecturas IA: también visible en Banco y Tu plan. */
+.ticket-cupo { display: grid; gap: 8px; padding: 12px; margin: 8px 0; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); }
+.ticket-cupo p { margin: 0; font-size: 14px; font-weight: 600; }
+.ticket-cupo small { display: block; font-size: 13px; line-height: 1.45; }
+.ticket-cupo progress { display: block; width: 100%; height: 6px; accent-color: var(--marca, var(--ink)); }
+.ticket-cupo-aviso { border-color: var(--ink); }
+.ticket-cupo a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+
+.gasto-rapido > .ticket-cupo { grid-column: 1 / -1; }

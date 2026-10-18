@@ -5,10 +5,12 @@ import { leerHoja } from '@/lib/hoja';
 import { esNorma43, leerNorma43, leerTablaBanco } from '@/lib/banco';
 import { actualizarSaldo, autoconciliar, guardarMovimientos } from '@/lib/bancoServidor';
 import { hoy } from '@/lib/formato';
-import { MUCHOS, pasado } from '@/lib/limite';
-import { iaLista, leerExtracto } from '@/lib/ticket';
+import { MUCHOS, pasado, concurrencia, respuesta429 } from '@/lib/limite';
+import { consumirEscaneos, cupoEscaneos, paginasIA, registrarConsumoIA, respuestaCupo } from '@/lib/cuotasIA';
+import { iaLista, leerExtracto, validarEntradaIA } from '@/lib/ticket';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 const MAX_MB = 5, MAX_MOV = 5000;
 
 // Extracto del banco (Norma 43, CSV, Excel o PDF, este leído con IA) → movimientos. Los ya subidos no se repiten.
@@ -24,12 +26,31 @@ export async function POST(req) {
   if (archivo.size > MAX_MB * 1024 * 1024) return error(`El archivo pasa de ${MAX_MB} MB`);
   const buf = Buffer.from(await archivo.arrayBuffer());
   const texto = buf.toString('latin1');
-  let r;
+  let r, cupo;
   if (texto.startsWith('%PDF')) {
     if (!iaLista()) return error('Para leer extractos en PDF hace falta la IA: descárgalo en Excel o Norma 43.');
-    const x = await leerExtracto(buf.toString('base64'));
-    if (x.error) return error(x.error);
-    r = leerTablaBanco(x.filas);
+    const archivoIA = await paginasIA(buf, 'application/pdf');
+    if (archivoIA.error) return error(archivoIA.error);
+    let reserva;
+    try {
+      const x = await concurrencia('ticket', u.empresa, 3, 30000, () => concurrencia('ia', 'global', 20, 60000, async () => {
+        const cupo = await cupoEscaneos(u);
+        if (archivoIA.paginas > cupo.restantes) { reserva = { error: 'No quedan suficientes páginas IA. Puedes subir el extracto en CSV, Excel o Norma 43 sin consumir páginas.', cupo }; return { sinCupo: true }; }
+        const preparacion = await validarEntradaIA(buf.toString('base64'), 'application/pdf', archivoIA.paginas, true);
+        if (preparacion.error) return { ...preparacion, sinEnvio: true, cupo };
+        reserva = await consumirEscaneos(u, archivoIA.paginas);
+        if (reserva.error) return { sinCupo: true };
+        const lectura = await leerExtracto(buf.toString('base64'), archivoIA.paginas);
+        await registrarConsumoIA(reserva, lectura.consumo);
+        return lectura;
+      }));
+      if (x?.ocupado) return respuesta429(5, 'La lectura de PDF está ocupada. Espera unos segundos.');
+      if (x.sinCupo) return respuestaCupo(reserva);
+      if (x.sinEnvio) return Response.json({ error: x.error, cupo: x.cupo }, { status: x.status });
+      cupo = reserva.cupo;
+      if (x.error) return Response.json({ error: x.error, cupo }, { status: 502 });
+      r = leerTablaBanco(x.filas);
+    } catch { return error('No se ha podido leer el PDF. Consulta tu consumo o sube el extracto en CSV, Excel o Norma 43.', 503); }
   } else {
     try { r = esNorma43(texto) ? leerNorma43(texto) : leerTablaBanco(leerHoja(buf)); } catch { return error('No se puede leer el archivo: descárgalo del banco en Norma 43, .csv, .xlsx o PDF'); }
   }
@@ -49,5 +70,5 @@ export async function POST(req) {
   const saldo = conSaldo ? await actualizarSaldo(u) : null;
   let auto = 0;
   if (g.nuevos) { try { auto = (await autoconciliar(u)).hechos; } catch { /* El extracto ya se ha guardado. */ } }
-  return Response.json({ ok: true, ...g, errores: r.errores || 0, saldo, auto });
+  return Response.json({ ok: true, ...g, errores: r.errores || 0, saldo, auto, ...(cupo ? { cupo } : {}) });
 }

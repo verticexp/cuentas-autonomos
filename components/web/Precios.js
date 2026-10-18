@@ -62,7 +62,7 @@ export default function Precios({ inicial = 'aut', tabla = false, solo = false }
         })}
       </div>
 
-      <p className="web-nota">Todos incluyen portal del cliente, avisos push, exportación, seguridad y importación desde otro programa. Escaneo de hasta 100 tickets o facturas al día por usuario en todos los planes.</p>
+      <p className="web-nota">Todos incluyen portal del cliente, avisos push, exportación, seguridad e importación desde otro programa. La lectura IA tiene una cuota mensual de páginas por empresa, compartida con la gestoría; se renueva cada mes natural también con pago anual y no se acumula. En la prueba hay 50 páginas en total. La cuota del plan empieza con el periodo de pago. Consulta la tabla para ver el límite de cada plan.</p>
 
       <article data-foco className="web-medida">
         <div>

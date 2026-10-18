@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { DESCUENTO, PLANES } from '@/components/web/datos';
 import { TIPOS, TIPOS_ALTA } from '@/lib/prueba';
+import CupoEscaneo from '@/components/CupoEscaneo';
+import { ESCANEOS_MES } from '@/lib/cuotasIAConfig';
 
 const euros = (n) => n.toLocaleString('es-ES', { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 });
 
@@ -46,6 +48,7 @@ export default function ElegirPlan({ plan, uso, admin, app }) {
 
   return (
     <section className="tarjeta formulario elegir-plan">
+      <CupoEscaneo />
       {paga && (
         <div className="plan-pagado">
           <p>Plan <strong>{TIPOS[actual.tipo]} {actual.nombre}</strong>, pago {actual.periodo === 'anio' ? 'anual' : 'mensual'}{actual.estado === 'past_due' ? ' · el último cobro ha fallado: revisa tu tarjeta' : ''}.</p>
@@ -82,6 +85,7 @@ export default function ElegirPlan({ plan, uso, admin, app }) {
               <strong>{p.n}</strong>
               <span>{periodo === 'anio' ? `${euros((p.p * 12 * (100 - DESCUENTO)) / 100)} €/año` : `${p.p} €/mes`}</span>
               <small>{p.para}</small>
+              <small>{ESCANEOS_MES[tipo]?.[p.n]?.toLocaleString('es-ES') || 'Capacidad acordada'} páginas de lectura IA al mes</small>
             </div>
             {esActual(p.n) ? <em>Tu plan</em> : admin && (
               <button type="button" className="boton" disabled={estado === 'enviando'} onClick={() => elegir(p.n)}>{paga ? 'Cambiar' : 'Contratar'}</button>
@@ -91,6 +95,7 @@ export default function ElegirPlan({ plan, uso, admin, app }) {
       </ul>
       <p className="nota">Cada suscripción incluye una empresa y un acceso de gestoría aparte. ¿Gestionas varias sociedades o necesitas más equipo? <a href="/business">Consulta Netto Business</a>.</p>
       <p className="nota">Precios sin IVA, sin permanencia. {paga ? '' : 'Si aún te queda prueba, no se cobra nada hasta que acabe. '}Todo lo que incluye cada plan, en <a href="/precios" target="_blank" rel="noopener">Precios</a>.</p>
+      <p className="nota">La prueba incluye 50 páginas de lectura IA en total. Al empezar el periodo de pago se activa la cuota mensual del plan, compartida por empresa con la gestoría; se renueva cada mes natural incluso con pago anual y no se acumula.</p>
       {!admin && <p className="nota">Solo el administrador de la empresa puede cambiar el plan.</p>}
       {estado && estado !== 'enviando' && <p className={estado.startsWith('Hecho') ? 'nota' : 'error'}>{estado}</p>}
     </section>
