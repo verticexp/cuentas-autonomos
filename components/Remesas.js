@@ -43,7 +43,7 @@ function Lote({ tipo, documentos, cuentas, fechaInicial, hoy, emisorListo, bloqu
   const cobros = tipo === 'cobros';
   const [seleccion, seleccionar] = useState([]);
   const [fecha, ponerFecha] = useState(fechaInicial);
-  const [marcar, ponerMarcar] = useState(true);
+  const [marcar, ponerMarcar] = useState(false);
   const porCuenta = new Map(cuentas.map((c) => [c.id, c]));
   const grupos = new Map();
   for (const d of documentos) {
@@ -101,7 +101,7 @@ function Lote({ tipo, documentos, cuentas, fechaInicial, hoy, emisorListo, bloqu
             <p className="rem-total">{elegidos.length} {cobros ? 'recibos' : 'pagos'} seleccionados · <strong>{eur(elegidos.reduce((s, d) => s + d.importe, 0))}</strong></p>
             <label>Fecha de {cobros ? 'cobro' : 'ejecución'}<input className="campo" type="date" value={fecha} min={hoy} required onChange={(e) => ponerFecha(e.target.value)} /></label>
             <label className="check rem-check"><input type="checkbox" checked={marcar} onChange={(e) => ponerMarcar(e.target.checked)} />Marcar como {cobros ? 'cobradas' : 'pagados'}</label>
-            <p className="grupo-pie">{marcar ? 'Se marcarán al generar el archivo. La descarga no confirma que el banco haya ejecutado la remesa.' : 'Los documentos seguirán pendientes después de descargar el archivo.'}</p>
+            <p className="grupo-pie">{marcar ? 'Se marcarán al generar el archivo. Activa esta opción solo si tu banco ya ha confirmado los cobros o pagos.' : 'Los documentos seguirán pendientes después de descargar el archivo. Confirma los cobros o pagos cuando tu banco los ejecute.'}</p>
             {!emisorListo && <p className="nota">Completa tus datos de facturación en Ajustes para descargar.</p>}
             <button className="boton" disabled={!elegidos.length || !emisorListo || bloqueado}>{bloqueado ? 'Preparando…' : 'Descargar remesa (XML)'}</button>
           </fieldset>

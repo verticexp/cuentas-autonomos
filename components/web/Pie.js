@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '@/components/web/EnlacePublico';
 import Logo from '@/components/Logo';
 import { CONTACTO, FUNCIONES, SEGMENTOS } from '@/components/web/datos';
 
@@ -8,7 +8,7 @@ export default function Pie() {
       <div className="web-pie-in">
         <div className="web-pie-marca">
           <Logo className="web-logo" />
-          <p>Facturas, gastos e impuestos, en orden. Gestión financiera para autónomos, pymes y grandes empresas.</p>
+          <p>Facturas, gastos e impuestos, en orden. Gestión financiera para autónomos y pymes. Business para varias sociedades o equipos.</p>
           <Link href="/registro" className="web-btn web-btn-peq">Empieza gratis</Link>
         </div>
         <nav aria-label="Producto">

@@ -1,3 +1,5 @@
+import { usarFuncion } from '@/lib/usoPlan';
+import SinPlan from '@/components/SinPlan';
 import Link from 'next/link';
 import { requerir } from '@/lib/auth';
 import { leer, redis } from '@/lib/redis';
@@ -19,6 +21,7 @@ const igual = (a, b) => limpiarProyecto(a).toLowerCase() === limpiarProyecto(b).
 // Rentabilidad por proyecto, obra o centro de coste (un local, un cliente grande…): lo facturado menos lo gastado en cada uno.
 export default async function Proyectos({ searchParams }) {
   const u = await requerir('resumen');
+  if (await usarFuncion(u, 'proyectos')) return <SinPlan usuario={u} funcion="proyectos" />;
   if (!redis) return <SinBD />;
   const sp = await searchParams;
   const h = hoy();

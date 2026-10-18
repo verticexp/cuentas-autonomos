@@ -59,6 +59,15 @@
 .bco-ignorados summary::after { content: ' ›'; color: var(--muted); }
 .bco-ignorados[open] summary::after { content: ' ⌄'; }
 
+.bco-filtros { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.bco-filtros label { display: flex; flex-direction: column; gap: 5px; font-size: 15px; min-width: 0; }
+.bco-filtros .campo { width: 100%; min-width: 0; box-sizing: border-box; background: var(--surface); }
+.bco-filtros > .bco-botones { grid-column: 1 / -1; }
+.bco-paginas, .bco-paginas > div { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.bco-paginas { justify-content: space-between; margin: 12px 0 24px; font-size: 14px; color: var(--muted); }
+#banco-pendientes, #banco-emparejados, #banco-ignorados { scroll-margin-top: 24px; }
+@media (max-width: 479px) { .bco-filtros { grid-template-columns: minmax(0, 1fr); } }
+
 /* Enlace desde la previsión de tesorería */
 .teso-saldo-real { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .teso-banco { display: flex; align-items: center; gap: 10px; background: var(--surface); border-radius: 12px; padding: 12px 16px; margin: -8px 0 16px; color: var(--ink); text-decoration: none; }

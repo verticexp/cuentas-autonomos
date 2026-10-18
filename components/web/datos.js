@@ -39,7 +39,7 @@ export const FUNCIONES = [
       { t: 'Pendiente o pagado, siempre claro', d: 'Cada gasto tiene su estado. Ves de un vistazo lo que debes a cada proveedor y cuándo vence.', l: ['Estado pendiente o pagado', 'Ficha de proveedor', 'Gastos recurrentes automáticos'], visual: 'proveedores' },
     ],
     faqs: [
-      ['¿Cuántos tickets puedo escanear?', 'Hasta 100 al día por usuario, de sobra para el día a día de cualquier negocio.'],
+      ['¿Cuántas páginas de tickets puedo leer?', 'El cupo mensual depende del tipo de negocio y el plan: Autónomos tiene 50, 200 o 500 páginas; Pymes, 200, 600 o 1.500. Una imagen cuenta como una página y cada página del PDF también; se admiten hasta 10 páginas y 3 MB por PDF. Si vuelves a enviar una lectura, cuenta otra vez. El cupo es por empresa, lo comparte la gestoría, se renueva cada mes natural incluso con pago anual y no se acumula. Durante los 30 días de prueba hay 50 páginas en total; al empezar el periodo de pago se activa el cupo mensual del plan. Las lecturas enviadas a la IA cuentan aunque no guardes el gasto.'],
       ['¿Y si la IA se equivoca?', 'Siempre revisas los datos antes de guardar. Puedes corregir cualquier campo.'],
     ],
   },
@@ -123,7 +123,7 @@ export const FUNCIONES = [
     faqs: [
       ['¿Qué formatos acepta?', 'Norma 43 (el formato estándar de la banca española), CSV, Excel y PDF. Todos los bancos permiten descargar al menos uno.'],
       ['¿Y si subo el mismo extracto dos veces?', 'No pasa nada: Netto detecta los movimientos repetidos y no los duplica.'],
-      ['¿Se puede conectar el banco directamente?', 'Todavía no. Es una de las próximas funciones de Netto.'],
+      ['¿Se puede conectar el banco directamente?', 'La conexión directa está prevista para más adelante. Ahora subes los extractos de tu banco y Netto extrae los movimientos para conciliarlos con tus facturas y gastos.'],
     ],
   },
   {
@@ -153,9 +153,9 @@ export const FUNCIONES = [
     ],
     secciones: [
       { t: 'Invita a tu equipo y a tu gestoría', d: 'Envía invitaciones por email desde Netto. Caducan a los 7 días y se pueden reenviar. Tu gestoría entra con su propio perfil: ve tus facturas y gastos sin tocarlos.', l: ['Roles de administrador y miembro', 'Perfil de gestoría sin poder marcar cobros', 'Invitaciones que caducan'], visual: 'invitaciones' },
-      { t: 'Varias empresas, una sola cuenta', d: '¿Llevas más de una sociedad? Cambia de empresa con un toque, cada una con sus datos, su marca y su equipo.', l: ['Cambio de empresa al instante', 'Datos separados por empresa', 'Marca propia en cada una'], visual: 'empresas' },
+      { t: 'Una suscripción por empresa', d: 'Los planes de Autónomos y Pymes incluyen una empresa. Para varias sociedades o equipos, Business permite acordar el alcance y un precio cerrado por contacto.', l: ['Datos separados por empresa', 'Equipos y accesos según acuerdo', 'Propuesta Business a medida'], visual: 'empresas' },
     ],
-    faqs: [['¿Cuántos usuarios puedo tener?', 'Depende del plan: desde 1 en Autónomos Esencial hasta ilimitados en Grandes empresas Plus.']],
+    faqs: [['¿Cuántos usuarios puedo tener?', 'Autónomos incluye 1 usuario interno en Esencial y Pro, y 3 en Plus. Pymes incluye 3, 8 o 15. Todos incluyen 1 acceso separado de gestoría sin consumir usuarios internos. Para otros equipos, consulta Business.']],
   },
   {
     slug: 'asistente', icono: 'asistente', nombre: 'Asistente IA', corto: 'Pregunta a tus cuentas',
@@ -194,7 +194,7 @@ export const SEGMENTOS = [
   {
     id: 'aut', ruta: '/autonomos', icono: 'persona', n: 'Autónomos', desde: 9,
     titulo: 'La gestión de un autónomo, sin perder tus tardes',
-    sub: 'Factura en segundos, apunta gastos con una foto y sabe cada trimestre cuánto apartar para Hacienda. Desde 9 € al mes.',
+    sub: 'Factura en segundos, apunta gastos con una foto y sabe cada trimestre cuánto apartar para Hacienda. Desde 9 € al mes sin IVA.',
     dolores: [
       ['Facturas en Word o Excel', 'Plantilla profesional, numeración correlativa y Verifactu en cada factura.'],
       ['Tickets perdidos en la cartera', 'Foto al ticket y la IA lo apunta por ti.'],
@@ -207,7 +207,7 @@ export const SEGMENTOS = [
   {
     id: 'pym', ruta: '/pymes', icono: 'tienda', n: 'Pymes', desde: 25,
     titulo: 'Facturas, contabilidad, equipo y caja de tu pyme en un solo sitio',
-    sub: 'Contabilidad y cuentas anuales, usuarios con permisos, nóminas y jornada, conciliación y previsión de caja. Todo conectado. Desde 25 € al mes.',
+    sub: 'Facturación, contabilidad y cuentas anuales, conciliación, nóminas y jornada desde 25 € al mes sin IVA. Añade operaciones y previsión de caja con Pro.',
     dolores: [
       ['Cada uno con su Excel', 'Un solo Netto con permisos por área para cada persona.'],
       ['No sabes cuánta caja tendrás', 'Previsión a 3, 6 y 12 meses desde tu saldo real.'],
@@ -219,11 +219,11 @@ export const SEGMENTOS = [
     funciones: ['contabilidad', 'banco', 'tesoreria', 'equipo'],
   },
   {
-    id: 'gra', ruta: '/grandes-empresas', icono: 'edificio', n: 'Grandes empresas', desde: 45,
+    id: 'business', ruta: '/business', icono: 'edificio', n: 'Business',
     titulo: 'Control financiero para grupos y equipos grandes',
-    sub: 'Varias empresas, decenas de usuarios y cientos de empleados con roles y permisos claros. Desde 45 € al mes.',
+    sub: 'Una propuesta a medida para varias sociedades o equipos: acordamos contigo el alcance, los accesos y un precio cerrado antes de empezar.',
     dolores: [
-      ['Varias sociedades, varias herramientas', 'Todas tus empresas en una cuenta, cambiando con un toque.'],
+      ['Varias sociedades, varias herramientas', 'Un alcance acordado para tus sociedades, con datos separados y accesos definidos.'],
       ['Accesos que nadie controla', 'Roles y permisos por área, e invitaciones que caducan.'],
       ['Auditorías y gestorías', 'Perfiles para gestorías y exportaciones completas.'],
       ['Implantaciones eternas', 'Sube los saldos de tu programa actual y sigue donde lo dejaste.'],
@@ -237,14 +237,14 @@ export const segmento = (id) => SEGMENTOS.find((s) => s.id === id);
 // «Todo lo del plan anterior» va en `herencia`; cada plan lista solo lo que añade.
 export const PLANES = {
   aut: [
-    { n: 'Esencial', p: 9, para: 'Facturar y declarar sin sustos', l: ['Facturas y presupuestos ilimitados', 'Verifactu: huella encadenada y QR', 'Clientes, catálogo y recurrentes', 'Gastos y proveedores', 'Escaneo de tickets y PDF con IA', 'Modelos 303, 130, 111, 115 y 100 calculados', 'Libros registro del IVA y del IRPF (formato AEAT)', 'Bienes de inversión y amortizaciones', 'Extractos del banco y saldo', 'Importación desde Holded y otros programas', '1 empresa · 1 usuario'] },
-    { n: 'Pro', p: 12, para: 'Que tus cuentas cuadren solas', fuerte: true, herencia: 'Esencial', l: ['Conciliación automática de extractos', 'Gastos del banco sin factura, en revisión', 'Inventario: stock, mínimos y qué pedir', 'Resultados, balance y diario (para ti o tu banco)', 'Previsión de caja a 3, 6 y 12 meses', 'Asistente IA con tus cifras', 'Varias actividades con su IVA e IRPF', 'Acceso para tu gestoría', 'Portal del cliente', 'Recordatorios y avisos push'] },
-    { n: 'Plus', p: 20, para: 'Para quien lo lleva todo', herencia: 'Pro', l: ['Hasta 3 empresas', 'Hasta 3 usuarios con permisos', 'Nóminas y jornada (2 empleados)', 'Escaneos IA ampliados', 'Soporte prioritario'] },
+    { n: 'Esencial', p: 9, para: 'Facturar y declarar sin sustos', l: ['Facturas, presupuestos y recurrentes', 'Gastos y escaneo IA · 50 páginas/mes', 'Modelos aplicables y libros registro', 'Bienes de inversión y amortizaciones', 'Extractos, saldo y resumen', '1 empresa · 1 usuario interno + gestoría'] },
+    { n: 'Pro', p: 12, para: 'Más control por 3 € más al mes', fuerte: true, herencia: 'Esencial', l: ['Conciliación, revisión del banco y previsión', 'Inventario, pedidos y albaranes', 'Cartera avanzada y SEPA', 'Análisis financiero y rentabilidad por proyecto', 'Asistente IA con tus cifras', 'Escaneo IA · 200 páginas/mes'] },
+    { n: 'Plus', p: 20, para: 'Más equipo con las funciones de Pro', herencia: 'Pro', l: ['1 empresa · 3 usuarios internos + gestoría', 'Nóminas y jornada para 2 empleados', 'Atención prioritaria', 'Escaneo IA · 500 páginas/mes'] },
   ],
   pym: [
-    { n: 'Esencial', p: 25, para: 'Equipo pequeño, finanzas claras', l: ['Todo lo de Autónomos Pro', 'Cuentas anuales de pymes para el Registro', 'Inventario y valor del almacén', 'Migración de saldos y bienes de otro programa', '1 empresa · 3 usuarios con permisos', 'Nóminas y jornada (hasta 5 empleados)', 'Conciliación y previsión de caja', 'Modelos 303, 130, 111, 115', 'Acceso para tu gestoría', 'Escaneo IA para todo el equipo', 'Soporte por email'] },
-    { n: 'Pro', p: 35, para: 'Varias empresas, un solo panel', fuerte: true, herencia: 'Esencial', l: ['3 empresas · 8 usuarios', 'Nóminas y jornada (hasta 15 empleados)', 'Roles y permisos por área', 'Varias actividades por empresa', 'Escaneos IA ampliados', 'Soporte prioritario'] },
-    { n: 'Plus', p: 55, para: 'Cuando el equipo ya es grande', herencia: 'Pro', l: ['5 empresas · 15 usuarios', 'Nóminas y jornada (hasta 30 empleados)', 'Incorporación guiada y migración'] },
+    { n: 'Esencial', p: 25, para: 'Equipo pequeño, finanzas claras', l: ['Facturación, presupuestos y recurrentes', 'Gastos y lectura IA · 200 páginas/mes', 'Contabilidad y cuentas anuales', 'Extractos y conciliación', '1 empresa · 3 usuarios internos + gestoría', 'Nóminas y jornada para 5 empleados'] },
+    { n: 'Pro', p: 35, para: 'Más control por 10 € más al mes', fuerte: true, herencia: 'Esencial', l: ['Pedidos, albaranes e inventario', 'Revisión del banco y previsión de caja', 'Cartera avanzada y SEPA', 'Análisis financiero, proyectos y asistente IA', '8 usuarios internos · 15 empleados', 'Escaneo IA · 600 páginas/mes · soporte prioritario'] },
+    { n: 'Plus', p: 55, para: 'Más capacidad con las funciones de Pro', herencia: 'Pro', l: ['1 empresa · 15 usuarios internos + gestoría', 'Nóminas y jornada para 30 empleados', 'Incorporación guiada', 'Escaneo IA · 1.500 páginas/mes'] },
   ],
   gra: [
     { n: 'Esencial', p: 45, para: 'Control para estructuras grandes', l: ['Todo lo de Pymes Plus', '5 empresas · 20 usuarios', 'Nóminas y jornada (hasta 50 empleados)', 'Roles y permisos por área', 'Acceso para gestorías y auditores', 'Soporte prioritario'] },
@@ -254,40 +254,72 @@ export const PLANES = {
 };
 
 // Tabla comparativa: [fila, valores por plan (true = incluido, texto = límite)].
+const COMUNES = [
+  ['Cuenta y servicios incluidos', [
+    ['Empresas por suscripción', ['1', '1', '1']],
+    ['Acceso separado de gestoría (no consume usuarios)', ['1', '1', '1']],
+    ['Portal del cliente y avisos push', [true, true, true]],
+    ['Exportación de datos y importación desde otro programa', [true, true, true]],
+    ['Seguridad y copias de respaldo', [true, true, true]],
+  ]],
+];
+const OPERACIONES = [
+  ['Operaciones y análisis', [
+    ['Inventario, pedidos y albaranes', [false, true, true]],
+    ['Revisión de gastos del banco', [false, true, true]],
+    ['Previsión de caja', [false, true, true]],
+    ['Cartera avanzada y remesas SEPA', [false, true, true]],
+    ['Análisis financiero y rentabilidad por proyecto', [false, true, true]],
+    ['Asistente IA', [false, true, true]],
+  ]],
+];
 export const COMPARATIVA = {
   aut: [
-    ['Facturación', [
-      ['Facturas y presupuestos ilimitados', [true, true, true]], ['Verifactu', [true, true, true]], ['Recurrentes y catálogo', [true, true, true]], ['Portal del cliente', [false, true, true]],
+    ...COMUNES,
+    ['Lectura IA', [['Páginas al mes', ['50', '200', '500']]]],
+    ['Facturación, gastos y fiscalidad', [
+      ['Facturas y presupuestos ilimitados', [true, true, true]],
+      ['Verifactu: huella y QR', [true, true, true]],
+      ['Clientes, catálogo y recurrentes', [true, true, true]],
+      ['Gastos y proveedores', [true, true, true]],
+      ['Cálculo de modelos aplicables (presentas tú o tu gestoría)', [true, true, true]],
+      ['Libros registro y amortizaciones', [true, true, true]],
+      ['Varias actividades', [true, true, true]],
+      ['Extractos N43, CSV, Excel y PDF, saldo y resumen', [true, true, true]],
+      ['Conciliación bancaria', [false, true, true]],
     ]],
-    ['Gastos e impuestos', [
-      ['Escaneo con IA', ['Incluido', 'Incluido', 'Ampliado']], ['Modelos 303, 130, 111, 115 y 100', [true, true, true]], ['Varias actividades', [false, true, true]],
+    ...OPERACIONES,
+    ['Equipo y atención', [
+      ['Usuarios internos', ['1', '1', '3']],
+      ['Nóminas y jornada', [false, false, '2 empleados']],
+      ['Soporte', ['Email', 'Email', 'Prioritario']],
     ]],
-    ['Banco y caja', [
-      ['Extractos N43, CSV, Excel y PDF', [true, true, true]], ['Conciliación automática', [false, true, true]], ['Gastos del banco en revisión', [false, true, true]], ['Previsión de caja', [false, true, true]],
-    ]],
-    ['Libros y contabilidad', [
-      ['Libros registro del IVA y del IRPF', [true, true, true]], ['Bienes de inversión y amortizaciones', [true, true, true]], ['Inventario y stock', [false, true, true]], ['Resultados, balance y diario', [false, true, true]],
-    ]],
-    ['Equipo', [
-      ['Empresas', ['1', '1', '3']], ['Usuarios', ['1', '1 + gestoría', '3']], ['Nóminas y jornada', [false, false, '2 empleados']],
-    ]],
-    ['Extras', [['Asistente IA', [false, true, true]], ['Soporte', ['Email', 'Email', 'Prioritario']]]],
   ],
   pym: [
-    ['Cuenta', [['Empresas', ['1', '3', '5']], ['Usuarios', ['3', '8', '15']], ['Empleados en nómina', ['5', '15', '30']]]],
-    ['Funciones', [
-      ['Facturación, gastos e impuestos', [true, true, true]], ['Conciliación y previsión de caja', [true, true, true]], ['Contabilidad y cuentas anuales', [true, true, true]], ['Inventario y stock', [true, true, true]], ['Migración desde otro programa', [true, true, true]], ['Roles y permisos por área', ['Básicos', true, true]], ['Varias actividades por empresa', [false, true, true]], ['Escaneo con IA', ['Incluido', 'Ampliado', 'Ampliado']],
+    ...COMUNES,
+    ['Lectura IA', [['Páginas al mes', ['200', '600', '1.500']]]],
+    ['Facturación, contabilidad y banco', [
+      ['Facturas, presupuestos, catálogo y recurrentes', [true, true, true]],
+      ['Verifactu: huella y QR', [true, true, true]],
+      ['Gastos y proveedores', [true, true, true]],
+      ['Cálculo de modelos aplicables (presentas tú o tu gestoría)', [true, true, true]],
+      ['Contabilidad, balance y cuentas anuales', [true, true, true]],
+      ['Bienes de inversión y amortizaciones', [true, true, true]],
+      ['Varias actividades', [true, true, true]],
+      ['Extractos N43, CSV, Excel y PDF, saldo y resumen', [true, true, true]],
+      ['Conciliación bancaria', [true, true, true]],
     ]],
-    ['Servicio', [['Soporte', ['Email', 'Prioritario', 'Prioritario']], ['Incorporación guiada', [false, false, true]]]],
-  ],
-  gra: [
-    ['Cuenta', [['Empresas', ['5', '15', '40']], ['Usuarios', ['20', '50', 'Ilimitados']], ['Empleados en nómina', ['50', '150', '500']]]],
-    ['Funciones', [['Todo Netto', [true, true, true]], ['Perfiles para gestorías y auditores', [true, true, true]], ['Escaneo con IA', ['Ampliado', 'Sin límite práctico', 'Sin límite práctico']]]],
-    ['Servicio', [['Soporte', ['Prioritario', 'Prioritario', 'Dedicado']], ['Incorporación guiada', [false, true, true]], ['Gestor de cuenta', [false, false, true]]]],
+    ...OPERACIONES,
+    ['Equipo y atención', [
+      ['Usuarios internos con permisos', ['3', '8', '15']],
+      ['Nóminas y jornada', ['5 empleados', '15 empleados', '30 empleados']],
+      ['Soporte', ['Email', 'Prioritario', 'Prioritario']],
+      ['Incorporación guiada', [false, false, true]],
+    ]],
   ],
 };
 
-export const PERSONALIZADO = ['Más empresas, usuarios o empleados', 'Plantillas de factura a tu medida', 'Migración completa de tus datos', 'Funciones e integraciones a medida'];
+export const PERSONALIZADO = ['Alcance para varias sociedades o equipos', 'Usuarios y empleados según acuerdo', 'Implantación y servicios definidos contigo', 'Precio cerrado por contacto'];
 
 export const FAQ_GENERAL = [
   ['¿Puedo traer mis datos de otro programa?', 'Sí. Netto importa clientes, facturas y gastos desde Holded o cualquier Excel, y para la contabilidad, el balance de sumas y saldos y los bienes de inversión de Holded, A3, Sage o Contasol. Sigues donde lo dejaste.'],
@@ -296,13 +328,17 @@ export const FAQ_GENERAL = [
   ['¿Qué pasa cuando acaba la prueba?', 'Nada se borra. Eliges plan o te llevas tus datos: puedes exportar tus facturas y registros en cualquier momento.'],
   ['¿Puede mi gestoría entrar?', 'Sí. La invitas por email con el perfil de gestoría: ve tus facturas, gastos e impuestos sin poder marcar cobros ni crear facturas, y lleva las nóminas de tu equipo si se las dejas.'],
   ['¿Funciona en el móvil?', 'Se instala como app desde el navegador, con barra de pestañas en el móvil y panel lateral en el ordenador. La app para iPhone está en preparación.'],
-  ['¿Se conecta con mi banco?', 'Subes el extracto cada mes (Norma 43, CSV, Excel o PDF) y Netto lo concilia solo: lo que no casa te sale para revisar. La conexión directa con el banco está en camino.'],
+  ['¿Se conecta con mi banco?', 'Ahora subes el extracto de tu banco (Norma 43, CSV, Excel o PDF) y Netto extrae los movimientos para conciliarlos con tus facturas y gastos. Lo que no coincide queda para revisar. La conexión directa está prevista para más adelante.'],
 ];
 
 export const FAQ_PRECIOS = [
-  ['¿Los precios llevan IVA?', 'No. Todos los precios se muestran sin IVA.'],
-  ['¿Necesito tarjeta para la prueba?', 'No. Pruebas Netto un mes entero sin dar ninguna tarjeta.'],
-  ['¿Puedo cambiar de plan?', 'Cuando quieras. Subes o bajas de plan y se ajusta a partir del siguiente periodo.'],
-  ['¿Qué es el precio de fundador?', 'Un precio especial para los primeros negocios que confían en Netto. Escríbenos desde Contacto.'],
-  ['¿Y si necesito algo que no está en ningún plan?', 'Para eso está el plan personalizado: cuéntanos qué necesitas y te damos un precio cerrado.'],
+  ['¿Los precios llevan IVA y son por empresa?', 'Los precios no incluyen IVA y corresponden a una empresa por suscripción. Para varias sociedades, Business ofrece alcance y precio cerrado por contacto.'],
+  ['¿Necesito tarjeta para la prueba?', 'No. Puedes probar Netto durante 30 días sin tarjeta.'],
+  ['¿Mi gestoría consume un usuario?', 'No. Los seis planes incluyen 1 acceso separado para tu gestoría, además de los usuarios internos del plan.'],
+  ['¿Qué diferencia hay entre Pro, Plus y Business?', 'Pro añade operaciones, previsión y análisis a Esencial. Plus conserva las funciones de Pro y amplía el equipo; en Autónomos añade nóminas y jornada, y en Pymes incorporación guiada. Business es una oferta a medida para varias sociedades o equipos, con alcance y precio acordados por contacto.'],
+  ['¿Cuántas páginas de lectura IA incluye cada plan?', 'Autónomos: 50 en Esencial, 200 en Pro y 500 en Plus. Pymes: 200 en Esencial, 600 en Pro y 1.500 en Plus. La cuota se comparte por empresa con la gestoría, se renueva cada mes natural también en pago anual y no se acumula. La prueba incluye 50 páginas en total; la cuota mensual del plan empieza con el periodo de pago. Una imagen cuenta una página y cada página del PDF una lectura, hasta 10 páginas y 3 MB por PDF. Volver a enviar una lectura consume otra página. Cuentan las lecturas enviadas a la IA aunque no guardes el gasto.'],
+  ['¿Qué pasa al agotar las páginas?', 'Puedes seguir registrando gastos a mano y subiendo extractos en CSV, Excel o Norma 43. Puedes cambiar de plan o solicitar una ampliación por contacto: te confirmamos el precio y las condiciones antes de contratar, sin cargos automáticos. Los PDF bancarios comparten la bolsa de páginas con las facturas y tickets.'],
+  ['¿Puedo cambiar de plan?', 'Puedes elegir otro plan desde tu suscripción. Antes de confirmar verás las condiciones y el importe del cambio.'],
+  ['¿Cómo funciona el pago anual?', 'Ahorras un 30 % sobre las mensualidades. Mostramos el equivalente mensual y el importe total que se cobra al año, sin IVA.'],
+  ['¿Presentáis los impuestos automáticamente?', 'No. Netto calcula los modelos aplicables a tu situación; tú o tu gestoría los revisáis y presentáis.'],
 ];

@@ -9,7 +9,7 @@ const solapa = (fichajes, empleado, entrada, salida, excepto) => fichajes.some((
 
 // Fichar (entrar, pausa, volver, salir) con la hora del servidor; o, quien lleva las nóminas, apuntar un día a mano.
 export async function POST(req) {
-  const { u, res } = await usuarioApi();
+  const { u, res } = await usuarioApi({ funcion: 'nominas' });
   if (res) return res;
   const b = await cuerpo(req);
   const ahora = ahoraMadrid();
@@ -40,7 +40,7 @@ export async function POST(req) {
 
 // Corregir una jornada: se guarda cómo estaba, quién la cambió, cuándo y por qué.
 export async function PATCH(req) {
-  const { u, res } = await usuarioApi({ permiso: 'nominas' });
+  const { u, res } = await usuarioApi({ permiso: 'nominas', funcion: 'nominas' });
   if (res) return res;
   const b = await cuerpo(req);
   const antes = b.id && (await leerUno(u, 'jornada', b.id));

@@ -2,6 +2,7 @@ import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { MUCHOS, pasado } from '@/lib/limite';
 import { puede } from '@/lib/permisos';
 import { sincronizar } from '@/lib/bancoServidor';
+import { bancoDirectoPermitido } from '@/lib/enableBanking';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,6 +10,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(req) {
   const { u, res } = await usuarioApi({ permiso: 'resumen' });
   if (res) return res;
+  if (!bancoDirectoPermitido(u)) return error('Para actualizar tu banco, sube un extracto.', 403);
   // Escribe movimientos y el saldo real: como subir un extracto, hace falta poder facturar o apuntar gastos.
   if (!puede(u, 'facturar') && !puede(u, 'gastar')) return error('No tienes permiso para esto. Pídeselo al administrador de tu empresa.', 403);
   const b = await cuerpo(req);

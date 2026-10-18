@@ -11,8 +11,8 @@ import Ajustes from '@/components/Ajustes';
 import Controlat from '@/components/Controlat';
 import Marca from '@/components/Marca';
 import FaceId from '@/components/FaceId';
-import AvisoPrueba from '@/components/AvisoPrueba';
 import ElegirPlan from '@/components/ElegirPlan';
+import estilosPlan from '@/components/ElegirPlan.module.css';
 import AvisosPush from '@/components/AvisosPush';
 import { pushListo } from '@/lib/push';
 import Volver from '@/components/Volver';
@@ -44,12 +44,12 @@ export default async function Seccion({ params }) {
     ? await Promise.all([usoDe(u.empresa), genteDe(u.empresa, leer)]).then(([uso, gente]) => ({ perdidas: perderia(u.plan, uso, gente).map((x) => x.texto), recomendado: planQueLoIncluye(u.plan, uso, gente)?.n || null }))
     : null;
   return (
-    <main className="pagina mk-look">
+    <main className={`pagina mk-look${seccion === 'plan' ? ` ${estilosPlan.pagina}` : ''}`}>
       <Volver href="/ajustes">Ajustes</Volver>
       <h1 className="titulo">{TITULOS[seccion]}</h1>
       {seccion === 'marca' && <Marca marca={u.marca} nombre={u.emisor?.nombre} />}
       {seccion === 'seguridad' && <FaceId lista={llaves} bloqueo={Boolean(u.bloqueoPantalla)} />}
-      {seccion === 'plan' && <><AvisoPrueba plan={u.plan} enlace={false} /><ElegirPlan plan={u.plan} uso={usoPlan} admin={u.rol === 'admin'} app={esApp((await headers()).get('user-agent'))} /></>}
+      {seccion === 'plan' && <ElegirPlan plan={u.plan} uso={usoPlan} admin={u.rol === 'admin'} app={esApp((await headers()).get('user-agent'))} />}
       {seccion === 'controlat' && <Controlat activo={Boolean(u.controlat)} />}
       {seccion === 'avisos' && <AvisosPush listo={pushListo()} />}
       {seccion === 'importar' && <Importar />}

@@ -13,6 +13,7 @@ import { emparejarLineas } from '@/lib/inventario';
 import { leerFacturaElectronica } from '@/lib/facturae';
 import { reducir } from '@/lib/reducirImagen';
 import RafagaTickets from './RafagaTickets';
+import CupoEscaneo from './CupoEscaneo';
 import { preparar, subir } from '@/lib/justificanteCliente';
 import '@/app/ticket.css';
 
@@ -74,7 +75,9 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
       const j = await preparar(archivo, pdf ? null : imagen);
       if (j.error) throw new Error(j.error);
       setAdjunto(j);
-      const d = await llamar('/api/gastos/ticket', { method: 'POST', body: JSON.stringify({ imagen }) });
+      let d;
+      try { d = await llamar('/api/gastos/ticket', { method: 'POST', body: JSON.stringify({ imagen }) }); }
+      finally { window.dispatchEvent(new Event('netto:escaneos')); }
       const t = d.gasto;
       // Con inventario: las líneas de la factura que son productos del catálogo entran al almacén.
       const stock = productos.length ? emparejarLineas(t.lineas, productos).map((l) => ({ ...l, cantidad: String(l.cantidad).replace('.', ','), coste: String(l.coste).replace('.', ',') })) : [];
@@ -130,6 +133,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
           <strong>{hecho ? '✓ Gasto añadido' : 'Añadir un gasto'}</strong>
           <small>Haz una foto al ticket o sube la factura: Netto lee proveedor, base, IVA, IRPF y fecha.</small>
         </div>
+        <CupoEscaneo />
         {error && <p className="error">{error}</p>}
         {avisoAdjunto}
         <div className="gasto-rapido-botones">
@@ -154,11 +158,12 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
       </Deslizable>}
       {!gasto && <div className="ticket-ia">
         <p className="ticket-ia-t">Rellénalo con IA</p>
-        <p className="ticket-ia-txt">Haz una foto del ticket o sube la factura que te han enviado (imagen o PDF). Netto lee el proveedor, el NIF, la base, el IVA, el IRPF y la fecha; tú solo revisas y guardas.</p>
+        <p className="ticket-ia-txt">Haz una foto del ticket o sube la factura que te han enviado (imagen o PDF de hasta 3 MB y 10 páginas). Netto lee también el IRPF. Cada página cuenta como una lectura; si la vuelves a enviar, cuenta otra vez, aunque no guardes el gasto.</p>
         <div className="ticket-ia-botones">
           <label className="boton sec ticket-foto">Hacer foto<input type="file" accept="image/*" capture="environment" onChange={foto} hidden /></label>
           <label className="boton sec ticket-foto">Subir factura<input type="file" accept="image/*,application/pdf,.xml,.xsig,text/xml,application/xml" onChange={foto} hidden /></label>
         </div>
+        <CupoEscaneo />
       </div>}
       {leyendo && <p className="nota ticket-nota" role="status">{leyendo}{adjunto ? ` Al guardar, ${adjunto.blob.type === 'application/pdf' ? 'el PDF' : 'la foto'} queda como justificante del gasto.` : ''}</p>}
       {gasto && <Justificante gasto={gasto} />}

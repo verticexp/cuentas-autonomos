@@ -41,3 +41,21 @@ html[data-saliendo] main.login { animation-duration: 0.42s; }
 @keyframes entrar-sale { to { opacity: 0; transform: scale(1.06); } }
 @media (prefers-reduced-motion: reduce) { .pantalla-bloqueo.saliendo, html[data-saliendo] main.login { animation: none; } }
 html[data-saliendo] #arranque { opacity: 0; transition: opacity 0.42s var(--vt-curva); }
+
+/* Accesos públicos: entrada breve, sin zoom de toda la página ni otra espera tras autenticar. */
+@media (prefers-reduced-motion: no-preference) {
+  .login:not(.pantalla-bloqueo) .form-entrar form { animation: none; }
+  .login:not(.pantalla-bloqueo) .login-lema, .login:not(.pantalla-bloqueo) .login-legal { animation: none; }
+}
+html[data-saliendo] main.login:not(.pantalla-bloqueo) { animation: acceso-sale 180ms var(--salida) forwards; transform-origin: initial; }
+html[data-saliendo] main.login:not(.pantalla-bloqueo) .form-entrar form { transform: none; transition-duration: 180ms; }
+@keyframes acceso-sale { to { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .login:not(.pantalla-bloqueo) .form-entrar form, .login:not(.pantalla-bloqueo) .login-legal, .login:not(.pantalla-bloqueo) .login-lema { animation: none; }
+  html[data-saliendo] main.login:not(.pantalla-bloqueo) { animation: acceso-sale 80ms linear forwards; }
+  html[data-saliendo] main.login:not(.pantalla-bloqueo) .form-entrar form { transform: none; transition: opacity 80ms linear; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .login:not(.pantalla-bloqueo) .registro-globo { animation-duration: 380ms, 4s; animation-iteration-count: 1, 1; }
+}
+main.login:not(.pantalla-bloqueo) button:focus-visible:active { transform: none; }

@@ -1,0 +1,86 @@
+.pagina:global(.pagina) { max-width: 1200px; }
+.contenido { color: var(--ink); }
+.intro { margin: -8px 0 28px; color: var(--muted); font-size: 16px; line-height: 1.5; }
+.resumen { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 40px; }
+.actual, .consumo { min-width: 0; padding: 24px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+.cabeceraActual { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 16px; justify-content: space-between; }
+.cabeceraActual h2, .consumo h2 { margin: 0; font-size: 14px; font-weight: 600; }
+.estado { border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; font-size: 12px; line-height: 1.3; }
+.nombreActual { margin: 18px 0 6px; font-size: 24px; font-weight: 650; line-height: 1.2; letter-spacing: -0.025em; }
+.detalleActual { margin: 0; max-width: 50ch; color: var(--muted); font-size: 14px; line-height: 1.6; }
+.gestion { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; margin-top: 20px; }
+.gestion > span { color: var(--muted); font-size: 12px; }
+.botonGestion { padding: 0; border: 0; background: none; color: var(--ink); font: inherit; font-size: 14px; font-weight: 600; text-align: left; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
+.botonGestion span { margin-left: 6px; }
+.consumo :global(.ticket-cupo) { margin: 16px 0 0; padding: 0; border: 0; border-radius: 0; background: none; }
+.consumo :global(.ticket-cupo) > p { font-size: 20px; font-weight: 600; }
+.consumo :global(.ticket-cupo) small { font-size: 12px; line-height: 1.5; color: var(--muted); }
+.consumo :global(.ticket-cupo) small + small { color: var(--ink); }
+.consumo :global(.ticket-cupo) progress { height: 5px; margin: 12px 0; }
+.cabecera { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 14px 24px; }
+.cabecera h2 { margin: 0; font-size: 24px; letter-spacing: -0.025em; }
+.cabecera p { margin: 8px 0 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
+.enlace { color: var(--ink); font-size: 14px; font-weight: 500; text-underline-offset: 4px; }
+.enlace span { margin-left: 6px; }
+.controles { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 20px; margin: 24px 0; }
+.selector { display: inline-flex; gap: 2px; min-width: 0; margin: 0; padding: 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.selector legend { padding: 0; margin-bottom: 8px; color: var(--muted); font-size: 12px; }
+.selector label { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 9px 16px; border-radius: 6px; font-size: 14px; cursor: pointer; }
+.selector input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.selector label:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 3px; }
+.selector .seleccionado { background: var(--ink); color: var(--surface); }
+.selector label span { font-size: 12px; font-weight: 600; }
+.selector:disabled label { cursor: wait; opacity: 0.6; }
+.planes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.plan { min-width: 0; padding: 24px 20px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+.plan.destacado { border: 2px solid var(--ink); padding: 23px 19px; }
+.planCabecera { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; min-height: 26px; }
+.planCabecera h3 { margin: 0; font-size: 20px; letter-spacing: -0.02em; }
+.recomendado { padding: 4px 7px; border-radius: 5px; background: var(--ink); color: var(--surface); font-size: 11px; font-weight: 600; }
+.para { min-height: 44px; margin: 10px 0 24px; color: var(--muted); font-size: 14px; line-height: 1.5; }
+.precio { display: flex; align-items: baseline; gap: 6px; margin: 0; }
+.precio strong { font-size: 38px; font-weight: 650; letter-spacing: -0.035em; line-height: 1.2; }
+.precio > span { font-size: 14px; color: var(--muted); }
+.facturacion { min-height: 36px; margin: 8px 0 20px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.botonPlan, .planElegido, .soloAdmin { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 46px; margin: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--ink); font: inherit; font-size: 14px; font-weight: 600; text-align: center; }
+.botonPlan { cursor: pointer; }
+.botonPlan.botonPro { background: var(--ink); border-color: var(--ink); color: var(--surface); }
+.planElegido { color: var(--muted); background: var(--paper); border-color: transparent; }
+.soloAdmin { color: var(--muted); font-weight: 400; }
+.botonPlan:hover:not(:disabled) { box-shadow: inset 0 0 0 1px var(--ink); }
+.botonPlan:focus-visible, .enlace:focus-visible, .botonGestion:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; }
+.botonPlan:disabled, .botonGestion:disabled, .enlaceBoton:disabled { opacity: 0.55; cursor: wait; }
+.funciones { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line); }
+.funciones > p { margin: 0 0 14px; font-size: 13px; font-weight: 600; }
+.funciones ul { display: flex; flex-direction: column; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.funciones li { display: flex; align-items: flex-start; gap: 9px; font-size: 13px; line-height: 1.5; }
+.funciones svg { flex: 0 0 16px; width: 16px; height: 16px; margin-top: 2px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.business { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-top: 28px; padding: 24px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.business h2 { margin: 0; font-size: 17px; }
+.business p { margin: 6px 0 0; font-size: 14px; color: var(--muted); line-height: 1.5; }
+.detalles { margin-top: 22px; color: var(--muted); font-size: 13px; line-height: 1.6; }
+.detalles summary { padding: 6px 0; cursor: pointer; color: var(--ink); }
+.detalles p { max-width: 85ch; margin: 12px 0; }
+.aviso { margin: 0 0 28px; padding: 20px; border-left: 3px solid var(--ink); background: var(--surface); font-size: 14px; line-height: 1.6; }
+.aviso h2 { margin: 0 0 8px; font-size: 17px; }
+.aviso p { margin: 8px 0; }
+.aviso ul { padding-left: 20px; }
+.enlaceBoton { padding: 0; border: 0; background: none; font: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; color: var(--ink); cursor: pointer; }
+.condiciones, .alerta { font-size: 14px; line-height: 1.5; }
+.alerta { margin: 12px 0 0; }
+.mensaje { position: sticky; bottom: 100px; z-index: 1; padding: 16px; border: 1px solid var(--ink); border-radius: 10px; background: var(--surface); color: var(--ink); font-size: 14px; box-shadow: 0 6px 20px #0001; }
+@media (max-width: 1050px) and (min-width: 900px), (max-width: 700px) {
+  .planes { grid-template-columns: 1fr; }
+  .resumen { grid-template-columns: 1fr; gap: 14px; margin-bottom: 32px; }
+  .plan { padding: 24px; }
+  .plan.destacado { padding: 23px; }
+  .para { min-height: 0; margin-bottom: 20px; }
+  .facturacion { min-height: 0; }
+}
+@media (max-width: 480px) {
+  .intro { font-size: 14px; }
+  .actual, .consumo { padding: 20px; }
+  .cabecera h2 { font-size: 22px; }
+  .controles { gap: 18px; }
+  .selector label { padding: 10px 14px; }
+}

@@ -1,3 +1,5 @@
+import { usarFuncion } from '@/lib/usoPlan';
+import SinPlan from '@/components/SinPlan';
 import { requerir } from '@/lib/auth';
 import { puede } from '@/lib/permisos';
 import { leer } from '@/lib/redis';
@@ -17,6 +19,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function PaginaRemesas() {
   const u = await requerir();
+  if (await usarFuncion(u, 'remesas')) return <SinPlan usuario={u} funcion="remesas" />;
   const cobros = puede(u, 'facturar'), pagos = puede(u, 'gastar');
   if (!cobros && !pagos) return <SinAcceso texto="Necesitas permiso para facturar o apuntar gastos para gestionar remesas." />;
   const [facturas, gastos, domiciliaciones, cuentasProv, historial] = await Promise.all([

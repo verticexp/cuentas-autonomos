@@ -14,7 +14,7 @@ const PERMISO = { domiciliacion: 'facturar', borrarDomiciliacion: 'facturar', cu
 export async function POST(req) {
   const b = await cuerpo(req);
   const accion = typeof b?.accion === 'string' && Object.hasOwn(PERMISO, b.accion) ? b.accion : '';
-  const { u, res } = await usuarioApi({ permiso: PERMISO[accion] });
+  const { u, res } = await usuarioApi({ permiso: PERMISO[accion], funcion: 'remesas' });
   if (res) return res;
   if (!accion) return error('Acción de remesa no válida');
   try {

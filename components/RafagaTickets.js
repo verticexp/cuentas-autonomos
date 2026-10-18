@@ -7,6 +7,7 @@ import { llamar } from './Acciones';
 import { nifUE } from '@/lib/calculos';
 import { fotograma, reducir } from '@/lib/reducirImagen';
 import { preparar, subir } from '@/lib/justificanteCliente';
+import CupoEscaneo from './CupoEscaneo';
 import '@/app/rafaga.css';
 
 // Modo ráfaga de Gastos: varios tickets seguidos con la cámara en vivo. Se hacen las fotos una tras otra, se leen de una
@@ -92,7 +93,9 @@ export default function RafagaTickets({ hoy, actividades }) {
     for (const it of lista) {
       if (corrida.current !== mi) return;
       try {
-        const d = await llamar('/api/gastos/ticket', { method: 'POST', body: JSON.stringify({ imagen: it.foto }) });
+        let d;
+        try { d = await llamar('/api/gastos/ticket', { method: 'POST', body: JSON.stringify({ imagen: it.foto }) }); }
+        finally { window.dispatchEvent(new Event('netto:escaneos')); }
         const t = d.gasto;
         const g = { fecha: t.fecha, actividad, proveedor: t.proveedor || '', proveedorNif: t.nif || '', concepto: t.concepto || t.proveedor || '', base: t.base !== '' ? aTexto(t.base) : '', ivaPct: t.ivaPct, irpfPct: t.irpfPct || 0,
           ...(!Number(t.ivaPct) && nifUE(t.nif) ? { origen: 'ue' } : {}) };
@@ -151,6 +154,7 @@ export default function RafagaTickets({ hoy, actividades }) {
                 <p className="rafaga-cuenta" role="status">{fotos.length === 0 ? 'Haz una foto a cada ticket' : fotos.length === 1 ? '1 ticket' : `${fotos.length} tickets`}{fotos.length >= cupo ? ' (máximo)' : ''}</p>
               </div>
               <div className="rafaga-barra">
+                <CupoEscaneo />
                 <ul className="rafaga-tiras" aria-label="Fotos hechas">
                   {fotos.map((f, i) => (
                     <li key={i}><img src={f} alt={`Ticket ${i + 1}`} /><button type="button" aria-label={`Quitar el ticket ${i + 1}`} onClick={() => setFotos((l) => l.filter((_, j) => j !== i))}>×</button></li>
@@ -177,6 +181,7 @@ export default function RafagaTickets({ hoy, actividades }) {
                   </select>
                 </label>
               )}
+              <CupoEscaneo />
               <ul className="rafaga-lista">
                 {items.map((it, i) => (
                   <li key={it.id} className={`rafaga-it e-${it.estado}`}>

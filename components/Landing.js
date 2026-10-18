@@ -1,4 +1,5 @@
-import Link from 'next/link';
+import CintaFunciones from '@/components/web/CintaFunciones';
+import Link from '@/components/web/EnlacePublico';
 import Marco from '@/components/web/Marco';
 import Icono from '@/components/web/Icono';
 import Precios from '@/components/web/Precios';
@@ -40,9 +41,7 @@ export default function Landing() {
         </div>
       </section>
 
-      <div className="web-cinta" aria-label="Qué incluye Netto">
-        <div className="web-cinta-pista">{[...CINTA, ...CINTA].map((x, i) => <span key={i} aria-hidden={i >= CINTA.length}>{x}</span>)}</div>
-      </div>
+      <CintaFunciones items={CINTA} />
 
       <section className="web-sec">
         <div className="web-cifras">
@@ -90,11 +89,11 @@ export default function Landing() {
           {SEGMENTOS.map((s, i) => (
             <Link key={s.id} href={s.ruta} data-foco data-r className="web-segcard" style={{ '--d': `${i * 80}ms` }}>
               <span className="web-fcard-ico"><Icono n={s.icono} /></span>
-              <small>Desde {s.desde} €/mes</small>
+              <small>{s.id === 'business' ? 'Propuesta a medida' : `Desde ${s.desde} €/mes sin IVA`}</small>
               <h3>{s.n}</h3>
               <p>{s.sub}</p>
               <ul>{s.dolores.slice(0, 3).map(([, sol]) => <li key={sol}><Icono n="tic" />{sol}</li>)}</ul>
-              <span className="web-enlace">Netto para {s.n.toLowerCase()}<Flecha /></span>
+              <span className="web-enlace">{s.id === 'business' ? 'Conoce Netto Business' : `Netto para ${s.n.toLowerCase()}`}<Flecha /></span>
             </Link>
           ))}
         </div>

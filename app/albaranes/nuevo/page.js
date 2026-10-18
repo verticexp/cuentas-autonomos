@@ -1,3 +1,5 @@
+import { sinFuncion } from '@/lib/planes';
+import SinPlan from '@/components/SinPlan';
 import { requerir } from '@/lib/auth';
 import { leer, leerUno } from '@/lib/redis';
 import { albaranDePedido, numeroDoc, siguiente } from '@/lib/albaranes';
@@ -15,6 +17,7 @@ export const dynamic = 'force-dynamic';
 // Pedido o albarán nuevo. ?pedido=ID: el albarán de lo que falta por servir de ese pedido.
 export default async function Nuevo({ searchParams }) {
   const u = await requerir('facturar');
+  if (sinFuncion(u.plan, 'albaranes')) return <SinPlan usuario={u} funcion="albaranes" />;
   const sp = await searchParams;
   const datos = await datosStock(u);
   if (datos.sinBD) return <SinBD />;

@@ -1,3 +1,5 @@
+import { usarFuncion } from '@/lib/usoPlan';
+import SinPlan from '@/components/SinPlan';
 import { requerir } from '@/lib/auth';
 import { clave, leer, redis } from '@/lib/redis';
 import { fiscalDe } from '@/lib/empresa';
@@ -35,6 +37,7 @@ const Fila = ({ n, v, ant, fuerte, sub }) => (
 
 export default async function Analisis({ searchParams }) {
   const u = await requerir('resumen');
+  if (await usarFuncion(u, 'analisis')) return <SinPlan usuario={u} funcion="analisis" />;
   const [facturas, gastos, nominas, manuales, saldo, productos, ajustes, albaranes] = await Promise.all([leer(u, 'facturas'), leer(u, 'gastos'), leer(u, 'nominas'), leer(u, 'asientos'), redis?.get(clave(u, 'saldo')), leer(u, 'productos'), leer(u, 'stock'), leer(u, 'albaranes')]);
   if (!facturas) return <SinBD />;
   const sp = await searchParams;

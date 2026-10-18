@@ -1,11 +1,13 @@
 'use client';
 
-import Link from 'next/link';
+import Link from '@/components/web/EnlacePublico';
 import { Fragment, useState } from 'react';
 import Icono from '@/components/web/Icono';
 import { COMPARATIVA, DESCUENTO, PERSONALIZADO, PLANES, SEGMENTOS } from '@/components/web/datos';
 
-const conDescuento = (p, meses = 1) => Math.round((p * meses * (100 - DESCUENTO)) / 100);
+const importe = (p) => p.toLocaleString('es-ES', { minimumFractionDigits: Number.isInteger(p) ? 0 : 2, maximumFractionDigits: 2 });
+const CONTRATABLES = SEGMENTOS.filter((s) => s.id === 'aut' || s.id === 'pym');
+const conDescuento = (p, meses = 1) => importe((p * meses * (100 - DESCUENTO)) / 100);
 
 function Celda({ v }) {
   if (v === true) return <span className="web-tabla-si"><Icono n="tic" /><span className="oculto">Incluido</span></span>;
@@ -14,10 +16,10 @@ function Celda({ v }) {
 }
 
 export default function Precios({ inicial = 'aut', tabla = false, solo = false }) {
-  const [seg, setSeg] = useState(inicial);
+  const [seg, setSeg] = useState(CONTRATABLES.some((s) => s.id === inicial) ? inicial : 'aut');
   const [anual, setAnual] = useState(false);
-  const i = SEGMENTOS.findIndex((s) => s.id === seg);
-  const nombreSeg = SEGMENTOS[i].n;
+  const i = CONTRATABLES.findIndex((s) => s.id === seg);
+  const nombreSeg = CONTRATABLES[i].n;
   const planes = PLANES[seg];
 
   return (
@@ -26,7 +28,7 @@ export default function Precios({ inicial = 'aut', tabla = false, solo = false }
         {!solo && (
           <div className="web-seg" role="tablist" aria-label="Tipo de negocio" style={{ '--i': i }}>
             <span className="web-seg-ind" aria-hidden />
-            {SEGMENTOS.map((s) => (
+            {CONTRATABLES.map((s) => (
               <button key={s.id} role="tab" aria-selected={s.id === seg} className={s.id === seg ? 'on' : undefined} onClick={() => setSeg(s.id)}>{s.n}</button>
             ))}
           </div>
@@ -43,14 +45,14 @@ export default function Precios({ inicial = 'aut', tabla = false, solo = false }
           const mes = anual ? conDescuento(p.p) : p.p;
           return (
             <article key={p.n} data-foco className={`web-plan${p.fuerte ? ' web-plan-fuerte' : ''}`} style={{ '--k': k }}>
-              {p.fuerte && <span className="web-etiqueta">El más elegido</span>}
+              {p.fuerte && <span className="web-etiqueta">Recomendado</span>}
               <h3>{p.n}</h3>
-              <p className="web-para">{p.para}</p>
+              <p className="web-para">{p.fuerte ? `Más control por ${anual ? conDescuento(p.p - planes[0].p) : importe(p.p - planes[0].p)} € más al mes${anual ? ' con pago anual' : ''}` : p.para}</p>
               <p className="web-precio" key={`${anual}`}>
                 {anual && <s>{p.p} €</s>}<strong>{mes} €</strong><span>/mes</span>
               </p>
               <p className="web-pie-precio">{anual ? `${conDescuento(p.p, 12)} € al año · sin IVA` : 'Sin IVA · sin permanencia'}</p>
-              <Link className={`web-btn${p.fuerte ? '' : ' web-btn-oscuro'}`} href={`/registro?tipo=${seg}&plan=${encodeURIComponent(p.n)}`}>Probar 1 mes gratis<Icono n="flecha" className="ico web-flecha" /></Link>
+              <Link className={`web-btn${p.fuerte ? '' : ' web-btn-oscuro'}`} href={`/registro?tipo=${seg}&plan=${encodeURIComponent(p.n)}${anual ? '&periodo=anio' : ''}`}>Probar 30 días gratis<Icono n="flecha" className="ico web-flecha" /></Link>
               <ul>
                 {p.herencia && <li className="web-herencia">Todo lo de {p.herencia}, y además:</li>}
                 {p.l.map((x) => <li key={x}><Icono n="tic" />{x}</li>)}
@@ -60,14 +62,16 @@ export default function Precios({ inicial = 'aut', tabla = false, solo = false }
         })}
       </div>
 
+      <p className="web-nota">Todos incluyen portal del cliente, avisos push, exportación, seguridad e importación desde otro programa. La lectura IA tiene una cuota mensual de páginas por empresa, compartida con la gestoría; se renueva cada mes natural también con pago anual y no se acumula. En la prueba hay 50 páginas en total. La cuota del plan empieza con el periodo de pago. Consulta la tabla para ver el límite de cada plan.</p>
+
       <article data-foco className="web-medida">
         <div>
           <span className="web-medida-ico"><Icono n="rayo" /></span>
-          <h3>Personalización</h3>
-          <p>¿Tu caso no encaja en un plan? Montamos uno a tu medida, con precio cerrado.</p>
+          <h3>Business</h3>
+          <p>¿Gestionas varias sociedades o necesitas otro equipo? Acordamos el alcance y un precio cerrado contigo.</p>
         </div>
         <ul>{PERSONALIZADO.map((x) => <li key={x}><Icono n="tic" />{x}</li>)}</ul>
-        <Link className="web-btn web-btn-claro-oscuro" href="/contacto">Hablemos<Icono n="flecha" className="ico web-flecha" /></Link>
+        <Link className="web-btn web-btn-claro-oscuro" href="/business">Conoce Business<Icono n="flecha" className="ico web-flecha" /></Link>
       </article>
 
       {tabla && (
@@ -93,7 +97,7 @@ export default function Precios({ inicial = 'aut', tabla = false, solo = false }
         </div>
       )}
 
-      <p className="web-nota">1 mes de prueba sin tarjeta · Precio de fundador para los primeros usuarios · Pagando al año ahorras un {DESCUENTO} %</p>
+      <p className="web-nota">30 días de prueba sin tarjeta · 1 empresa por suscripción · 1 acceso de gestoría aparte · Pagando al año ahorras un {DESCUENTO} %</p>
     </div>
   );
 }

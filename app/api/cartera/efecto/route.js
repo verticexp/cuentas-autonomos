@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 
 // Forma de cobro de un efecto y si ya se ha recibido (cheque, confirming, pagaré). Body: { id, forma?, recibido? }.
 export async function POST(req) {
-  const { u, res } = await usuarioApi({ permiso: 'facturar' });
+  const { u, res } = await usuarioApi({ permiso: 'facturar', funcion: 'cartera' });
   if (res) return res;
   const b = await cuerpo(req);
   const antes = typeof b.id === 'string' && (await leerUno(u, 'facturas', b.id));

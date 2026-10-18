@@ -1,0 +1,45 @@
+/* Registro y bienvenida comparten recorrido, proporciones y estados. */
+.alta-progreso { display: flex; flex-direction: column; gap: 16px; margin: 0 0 14px; }
+.alta-fases { display: flex; gap: 16px; list-style: none; padding: 0; margin: 0; }
+.alta-fases li { flex: 1; display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 12px; line-height: 1.4; }
+.alta-fases li > span { display: grid; place-items: center; flex: none; width: 24px; height: 24px; border: 1px solid var(--line); border-radius: 50%; font-weight: 600; }
+.alta-fases .actual { color: var(--ink); font-weight: 600; }
+.alta-fases .actual > span, .alta-fases .completa > span { color: var(--paper); background: var(--marca, var(--ink)); border-color: transparent; }
+.alta-etapa { flex: 1; min-width: 0; display: flex; justify-content: space-between; gap: 12px; margin: 0; font-size: 13px; color: var(--ink); }
+.alta-etapa > span { color: var(--muted); white-space: nowrap; }
+.alta-barra { display: flex; gap: 6px; }
+.alta-barra > span { height: 4px; flex: 1; border-radius: 4px; background: var(--relleno); }
+.alta-barra > .hecho { background: var(--marca, var(--ink)); }
+.bienvenida .cuestionario { max-width: 640px; margin: 0 auto; }
+.bienvenida .alta-progreso { margin-top: 16px; }
+.bienvenida .alta-datos { border-top: 1px solid var(--line); padding-top: 16px; margin-top: 8px; }
+.bienvenida .alta-datos summary { cursor: pointer; font-size: 14px; font-weight: 600; padding: 8px 0; }
+.bienvenida .alta-datos > p { font-size: 14px; color: var(--muted); margin: 6px 0 12px; overflow-wrap: anywhere; }
+.bienvenida .alta-campos { display: flex; flex-direction: column; gap: 14px; padding: 16px; }
+.bienvenida .alta-campo { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.bienvenida .alta-campo > span, .bienvenida .alta-etiqueta { font-size: 14px; color: var(--ink); }
+.bienvenida .alta-campo small { color: var(--muted); font-size: 12px; }
+.bienvenida .alta-campo .campo { width: 100%; min-width: 0; border-radius: 8px; background: var(--relleno); }
+.bienvenida .opcion:has(input:checked) { background: color-mix(in srgb, var(--marca) 7%, var(--surface)); }
+.bienvenida .opcion input[type="radio"] { appearance: none; width: 22px; height: 22px; padding: 0; margin: 0; border-radius: 50%; border: 1.5px solid var(--muted); flex: none; }
+.bienvenida .opcion input[type="radio"]:checked { border: 6px solid var(--marca); background: var(--surface); }
+.bienvenida .opcion { cursor: pointer; min-height: 56px; }
+.bienvenida .opcion:focus-within { outline: 2px solid var(--marca); outline-offset: -3px; }
+.bienvenida .segmentado button { flex: 1; padding: 9px 8px; border-radius: 7px; font: inherit; color: var(--muted); background: transparent; min-height: 44px; }
+.bienvenida .segmentado button.activo { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px #0001; }
+.bienvenida .segmentado { flex-wrap: wrap; }
+.bienvenida .fila-act { min-width: 0; }
+.bienvenida .fila-act .alta-campo { flex: 1; }
+.bienvenida .alta-final { display: flex; flex-direction: column; align-items: flex-start; gap: 18px; padding-top: 32px; }
+.alta-exito { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 50%; color: var(--marca); background: color-mix(in srgb, var(--marca) 10%, var(--surface)); font-size: 24px; }
+.alta-acciones { display: flex; flex-direction: column; gap: 12px; width: 100%; }
+.alta-acciones .boton { text-align: center; white-space: normal; }
+.alta-final .alta-resumen-enlace { align-self: center; color: var(--ink); padding: 10px; }
+@media (min-width: 900px) { .bienvenida .cuestionario-botones { position: static; padding: 20px 0; background: transparent; backdrop-filter: none; } .bienvenida .cuestionario { padding-bottom: 40px; } }
+
+/* Volver a mano, junto al paso actual; el mismo control en registro y bienvenida. */
+.alta-etapa-fila { display: flex; align-items: center; gap: 10px; min-height: 44px; }
+.alta-volver, .login .alta-volver { display: grid; place-items: center; flex: none; width: 44px; min-width: 44px; height: 44px; margin: 0; padding: 10px; border: 1px solid var(--line); border-radius: 50%; background: transparent; color: var(--ink); box-shadow: none; }
+.alta-volver svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.alta-volver:disabled { opacity: .45; cursor: default; }
+@media (hover: hover) { .alta-volver:not(:disabled):hover, .login .alta-volver:not(:disabled):hover { background: var(--relleno); } }

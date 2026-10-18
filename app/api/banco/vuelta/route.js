@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { guardar, redis } from '@/lib/redis';
 import { usuarioActual } from '@/lib/auth';
 import { puede } from '@/lib/permisos';
-import { abrirSesion, urlApp } from '@/lib/enableBanking';
+import { abrirSesion, bancoDirectoPermitido, urlApp } from '@/lib/enableBanking';
 import { sincronizar } from '@/lib/bancoServidor';
 
 export const dynamic = 'force-dynamic';
@@ -15,7 +15,7 @@ export async function GET(req) {
   const estado = p.get('state') || '';
   const datos = estado && (await redis.get(`banco-estado:${estado}`));
   const u = await usuarioActual();
-  if (!datos || !u || datos.u !== u.id || datos.empresa !== u.empresa || !puede(u, 'empresa')) return ir('error=caducado');
+  if (!datos || !u || !bancoDirectoPermitido(u) || datos.u !== u.id || datos.empresa !== u.empresa || !puede(u, 'empresa')) return ir('error=caducado');
   await redis.del(`banco-estado:${estado}`);
   if (p.get('error') || !p.get('code')) return ir('error=cancelado');
   let s;

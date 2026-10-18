@@ -1,0 +1,28 @@
+import Ir from './Ir';
+import styles from './SinPlan.module.css';
+
+const MENSAJES = {
+  proyectos: ['Rentabilidad por proyecto', 'Consulta los ingresos, los gastos y el margen de cada proyecto con Pro.'],
+  analisis: ['Análisis financiero', 'Consulta la evolución de tu negocio y compara sus resultados con Pro.'],
+  inventario: ['Inventario', 'Controla las existencias y los movimientos de tus productos con Pro.'],
+  tesoreria: ['Previsión de caja', 'Anticipa tus cobros y pagos para conocer el dinero disponible con Pro.'],
+  asistente: ['Pregunta a Netto', 'Resuelve dudas sobre tus cuentas con el asistente IA incluido en Pro.'],
+  albaranes: ['Pedidos y albaranes', 'Prepara tus pedidos y albaranes y conviértelos en facturas con Pro.'],
+  cartera: ['Cartera de cobros', 'Organiza tus vencimientos y haz seguimiento de los cobros pendientes con Pro.'],
+  remesas: ['Remesas SEPA', 'Agrupa tus recibos en remesas para enviarlas al banco con Pro.'],
+};
+
+export default function SinPlan({ usuario, funcion }) {
+  const [titulo, descripcion] = MENSAJES[funcion] || ['Más herramientas para tu negocio', 'Esta herramienta está disponible a partir del plan Pro.'];
+  return <main className="pagina mk-look"><section className={styles.aviso} aria-labelledby="sin-plan-titulo">
+    <p className={styles.etiqueta}>Incluido en Pro</p>
+    <h1 id="sin-plan-titulo" className={styles.titulo}>{titulo}</h1>
+    <p className={styles.descripcion}>{descripcion}</p>
+    <p className={styles.plan}>Tu plan actual: <strong>{usuario.plan?.nombre || 'Esencial'}</strong>.</p>
+    {usuario.rol !== 'admin' && <p className={styles.descripcion}>Para activar esta herramienta, consulta al administrador de tu empresa.</p>}
+    <div className={styles.acciones}>
+      {usuario.rol === 'admin' && <Ir href="/ajustes/plan" className="boton">Ver planes</Ir>}
+      <Ir href="/" className={styles.volver}>Volver al resumen</Ir>
+    </div>
+  </section></main>;
+}

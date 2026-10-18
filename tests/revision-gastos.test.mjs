@@ -7,7 +7,7 @@ const gasto = (extra = {}) => ({ id: 'g', numero: 'P2026-01', fecha: '2026-06-15
 const cargo = (extra = {}) => ({ id: 'm', fecha: '2026-06-17', importe: -100,
   concepto: 'COMPRA HOTEL MIRADOR P2026-01', contraparte: 'Hotel Mirador', estado: 'pendiente', ...extra });
 
-test('un cargo con su gasto sugerido sale con el gasto para emparejarlo o borrarlo, también si la sugerencia es segura', () => {
+test('un cargo con su gasto sugerido sale con el gasto para revisarlo o emparejarlo, también si la sugerencia es segura', () => {
   const r = revisionGastos([cargo()], [gasto()]);
   assert.equal(r.total, 1);
   const [x] = r.items;

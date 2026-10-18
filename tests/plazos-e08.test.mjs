@@ -87,11 +87,14 @@ test('E08: Stripe reintenta GET como máximo dos veces; POST y email solo una ve
   globalThis.fetch = async () => ok({ id: 'ok' }); await S.leerPago('cs_1'); await E.enviarEmail({ para: 'a@b.test' });
 });
 
-test('E08: IA reintenta inferencias y no reintenta errores definitivos', async () => {
+test('E08: las lecturas IA no se reintentan para evitar duplicar consumo, y los errores definitivos tampoco', async () => {
   let llamadas = 0;
   globalThis.fetch = async () => ++llamadas < 3 ? fallo() : ok({ content: [{ text: '{"proveedor":"Comercio"}' }] });
-  assert.equal((await T.leerTicket('YQ==', 'image/png')).datos.proveedor, 'Comercio');
-  assert.equal(llamadas, 3);
+  assert.ok((await T.leerTicket('YQ==', 'image/png')).error);
+  assert.equal(llamadas, 1);
+  llamadas = 0;
+  assert.ok((await T.leerExtracto('YQ==')).error);
+  assert.equal(llamadas, 1);
   llamadas = 0; globalThis.fetch = async () => { llamadas++; return fallo(400); };
   assert.ok((await S.leerPago('cs_1')).error); assert.equal(llamadas, 1);
 });

@@ -6,9 +6,9 @@ import { secundarios } from '@/lib/trabajos';
 export const dynamic = 'force-dynamic';
 
 // «En revisión» de Gastos (components/RevisionGastos.js): emparejar un cargo del banco con un gasto o apartarlo. Con el
-// permiso de gastos basta (el perfil Gastos no tiene «resumen», que pide /api/banco). Borrar el gasto va por DELETE /api/gastos.
+// permiso de gastos basta (el perfil Gastos no tiene «resumen», que pide /api/banco).
 export async function POST(req) {
-  const { u, res } = await usuarioApi({ permiso: 'gastar' });
+  const { u, res } = await usuarioApi({ permiso: 'gastar', funcion: 'revision' });
   if (res) return res;
   const b = await cuerpo(req);
   const id = String(b.id || '');

@@ -277,8 +277,8 @@ test('5: importar devuelve auto, concilia lo importado y conserva la importació
   const servidor = new URL('../lib/bancoServidor.js', import.meta.url).href;
   const ruta = (await cargarRuta('../app/api/banco/importar/route.js', {
     hoja: modulo(`export const leerHoja = () => globalThis.__conciliacionDobles.filas;`),
-    limite: modulo(`export const MUCHOS = 'Muchos'; export const pasado = async () => false;`),
-    ticket: modulo(`export const iaLista = () => false; export const leerExtracto = async () => ({});`),
+    limite: modulo(`export const MUCHOS = 'Muchos'; export const pasado = async () => false; export const concurrencia = async (_t,_u,_n,_ttl,fn) => fn(); export const respuesta429 = () => Response.json({}, {status:429});`),
+    ticket: modulo(`export const iaLista = () => false; export const leerExtracto = async () => ({}); export const validarEntradaIA = async () => ({});`),
     bancoServidor: modulo(`import * as B from ${JSON.stringify(servidor)};
       export const guardarMovimientos = B.guardarMovimientos; export const actualizarSaldo = B.actualizarSaldo;
       export const autoconciliar = (u) => { if (globalThis.__conciliacionDobles.fallar) throw new Error('fallo automático'); return B.autoconciliar(u); };`),
@@ -300,7 +300,8 @@ test('5: importar devuelve auto, concilia lo importado y conserva la importació
 
 test('5: sincronizar devuelve auto y no pierde movimientos si falla autoconciliar; la ruta lo propaga', async () => {
   // Se sustituye solo el proveedor externo para ejercitar sincronizar sin red ni credenciales bancarias.
-  const banco = modulo(`export const saldos = async () => [{balance_type:'CLAV', transaction_amount: {amount:'100'}}];
+  const banco = modulo(`export { bancoDirectoPermitido } from ${JSON.stringify(new URL('../lib/enableBanking.js', import.meta.url).href)};
+    export const saldos = async () => [{balance_type:'CLAV', transaction_amount: {amount:'100'}}];
     export const movimientos = async () => [{entry_reference:'ref', booking_date:'2026-06-17', credit_debit_indicator:'CRDT',
       transaction_amount:{amount:'100'}, remittance_information:'F2026-001'}];`);
   const codigo = (await readFile(new URL('../lib/bancoServidor.js', import.meta.url), 'utf8'))
@@ -312,7 +313,7 @@ test('5: sincronizar devuelve auto y no pierde movimientos si falla autoconcilia
     bancoServidor: moduloServidor, limite: modulo(`export const MUCHOS = 'Muchos'; export const pasado = async () => false;`),
   })).POST;
   for (const fallar of [false, true]) {
-    const u = empresa();
+    const u = empresa({ admin: true });
     globalThis.__conciliacionApi = u;
     globalThis.__conciliacionDobles = { fallar };
     await sembrar(u, { facturas: [factura()] });

@@ -2,6 +2,7 @@ import { requerir } from '@/lib/auth';
 import { leer } from '@/lib/redis';
 import { r2, trimestre } from '@/lib/calculos';
 import { eur, fechaCorta, hoy } from '@/lib/formato';
+import { historialNominas, equipoPorFecha } from '@/lib/historialNominas';
 import { calculoNomina, modelo111, nombreMes } from '@/lib/nominas';
 import { FormEmpleado, GenerarMes } from '@/components/Nominas';
 import Ir from '@/components/Ir';
@@ -14,7 +15,7 @@ import '@/app/mk.css';
 
 export const dynamic = 'force-dynamic';
 
-export default async function Nominas() {
+export default async function Nominas({ searchParams }) {
   const u = await requerir('nominas');
   const [empleados, nominas, jornada] = await Promise.all([leer(u, 'empleados'), leer(u, 'nominas'), leer(u, 'jornada')]);
   if (!empleados) return <SinBD />;
@@ -22,7 +23,7 @@ export default async function Nominas() {
   const mes = h.slice(0, 7);
   const anio = Number(h.slice(0, 4));
   const activos = empleados.filter((e) => e.alta.slice(0, 7) <= mes && (!e.baja || e.baja.slice(0, 7) >= mes)).sort((a, b) => a.nombre.localeCompare(b.nombre));
-  const antiguos = empleados.filter((e) => !activos.includes(e));
+  const { actuales, futuras, bajas: antiguos } = equipoPorFecha(empleados, h);
   const N = (nominas || []).sort((a, b) => b.mes.localeCompare(a.mes) || a.empleadoNombre.localeCompare(b.empleadoNombre));
   const delMes = N.filter((n) => n.mes === mes).map(calculoNomina);
   const faltan = activos.filter((e) => !N.some((n) => n.mes === mes && n.empleado === e.id)).length;
@@ -30,7 +31,7 @@ export default async function Nominas() {
   const m111 = modelo111(N, anio, t);
   // Plazo del 111: del 1 al 20 del mes siguiente al trimestre (el 4T, hasta el 20 de enero).
   const plazo111 = t === 4 ? `20 de enero de ${anio + 1}` : `20 de ${['abril', 'julio', 'octubre'][t - 1]}`;
-  const meses = [...new Set(N.map((n) => n.mes))].slice(0, 12);
+  const { anios, anio: anioHistorial, meses } = historialNominas(N, anio, (await searchParams)?.anio);
 
   return (
     <main className="pagina mk-look">
@@ -69,12 +70,12 @@ export default async function Nominas() {
       </div>
 
       <p className="rotulo">Empleados</p>
-      {activos.length > 0 && (
+      {actuales.length > 0 && (
         <ul className="grupo-lista bloque">
-          {activos.map((e) => (
+          {[...actuales].sort((a, b) => a.nombre.localeCompare(b.nombre)).map((e) => (
             <li key={e.id}>
               <Ir href={`/nominas/empleado/${e.id}`} className="fila">
-                <span className="txt"><strong>{e.nombre}</strong><small>{[(jornada || []).some((f) => f.empleado === e.id && f.fecha.startsWith(mes)) && `${hhmm(resumenMes(jornada, e, mes, h).trabajados)} h este mes`, e.puesto, `desde ${fechaCorta(e.alta)}`].filter(Boolean).join(' · ')}</small></span>
+                <span className="txt"><strong>{e.nombre}</strong><small>{[(jornada || []).some((f) => f.empleado === e.id && f.fecha.startsWith(mes)) && `${hhmm(resumenMes(jornada, e, mes, h).trabajados)} h este mes`, e.puesto, `desde ${fechaCorta(e.alta)}`, e.baja && e.baja > h && `Baja prevista el ${fechaCorta(e.baja)}`].filter(Boolean).join(' · ')}</small></span>
                 <span className="imp">{eur(e.bruto)}<small>bruto/mes</small></span>
               </Ir>
             </li>
@@ -84,6 +85,26 @@ export default async function Nominas() {
       {!empleados.length && <p className="nota">Añade a tu equipo y Netto hará cada mes sus nóminas, las apuntará como gasto y te dirá cuánto ingresar en el modelo 111.</p>}
       <FormEmpleado hoy={h} />
 
+      {futuras.length > 0 && (
+        <>
+          <p className="rotulo">Próximas incorporaciones</p>
+          <ul className="grupo-lista bloque">
+            {futuras.map((e) => (
+              <li key={e.id}><Ir href={`/nominas/empleado/${e.id}`} className="fila"><span className="txt"><strong>{e.nombre}</strong><small>Alta el {fechaCorta(e.alta)}{e.baja ? ` · Baja prevista el ${fechaCorta(e.baja)}` : ''}</small></span></Ir></li>
+            ))}
+          </ul>
+        </>
+      )}
+
+      <h2>Historial de nóminas</h2>
+      <form action="/nominas" method="get" className="bloque">
+        <label htmlFor="anio-nominas">Año del historial</label>{' '}
+        <select id="anio-nominas" name="anio" defaultValue={anioHistorial} key={anioHistorial} className="campo">
+          {anios.map((a) => <option key={a} value={a}>{a}</option>)}
+        </select>{' '}
+        <button type="submit" className="boton sec">Ver año</button>
+      </form>
+      {!meses.length && <p className="nota">No hay nóminas en {anioHistorial}.</p>}
       {meses.map((m) => (
         <div key={m}>
           <p className="rotulo">{nombreMes(m)}</p>
