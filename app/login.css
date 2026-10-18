@@ -45,7 +45,9 @@
 .login .registro-contenido { min-width: 0; overflow: visible; transition: height 200ms cubic-bezier(0.22, 1, 0.36, 1); }
 .login .registro-bloque { animation: registro-entrada 180ms ease-out; }
 .login .registro .login-titulo, .login .registro-error { scroll-margin-block: 24px; }
-.login .registro .login-titulo:focus-visible, .login .registro-error:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; border-radius: 3px; }
+/* El título recibe foco para anunciar el paso, pero no es una opción seleccionable. */
+.login .registro .login-titulo:focus { outline: none; }
+.login .registro-error:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; border-radius: 3px; }
 .login .registro [aria-invalid="true"] { outline: 2px solid var(--danger, #b42318); outline-offset: 2px; }
 .registro-error p { margin: 0; }
 .login .registro-corregir { width: auto; min-height: 44px; margin: 0; padding: 8px 0; border: 0; background: none; color: inherit; box-shadow: none; font: inherit; text-decoration: underline; }
