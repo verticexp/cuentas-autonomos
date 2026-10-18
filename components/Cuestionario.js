@@ -179,11 +179,12 @@ export default function Cuestionario({ inicial, editar, conFacturas, puedeFactur
     </div>
   );
 
+  function atras() { if (guardando) return; setError(''); setPaso(paso - 1); }
   function avanzar() { setError(''); setPaso(paso + 1); }
 
   return (
     <div className="cuestionario" aria-busy={guardando}>
-      {editar ? <p className="nota" role="status">Configuración del negocio · Paso {paso + 1} de {pasos.length}</p> : <ProgresoAlta fase={2} paso={paso + 1} total={pasos.length} etiqueta={p.titulo} />}
+      {editar ? <p className="nota" role="status">Configuración del negocio · Paso {paso + 1} de {pasos.length}</p> : <ProgresoAlta fase={2} paso={paso + 1} total={pasos.length} etiqueta={p.titulo} atras={paso > 0 ? atras : undefined} ocupado={guardando} />}
       {paso === 0 && !editar && <p className="hola">Tu cuenta ya está creada. Ahora preparamos tus actividades e impuestos. Podrás cambiar esta configuración en Ajustes.</p>}
       <div className="paso" key={paso}>
         <h1 className="titulo" ref={tituloRef} tabIndex={-1}>{p.titulo}</h1>
@@ -199,7 +200,7 @@ export default function Cuestionario({ inicial, editar, conFacturas, puedeFactur
       </div>
       {error && <p className="error" role="alert" ref={errorRef} tabIndex={-1}>{error}</p>}
       <div className="cuestionario-botones">
-        {paso > 0 ? <button type="button" className="boton sec" disabled={guardando} onClick={() => { setError(''); setPaso(paso - 1); }}>Atrás</button> : editar ? <a href="/ajustes" className="boton sec">Cancelar</a> : <span />}
+        {paso > 0 ? <button type="button" className="boton sec" disabled={guardando} onClick={atras}>Atrás</button> : editar ? <a href="/ajustes" className="boton sec">Cancelar</a> : <span />}
         <button type="button" className="boton" disabled={!p.listo || guardando} onClick={() => (ultimo ? terminar() : avanzar())}>{ultimo ? (guardando ? 'Guardando…' : editar ? 'Guardar' : 'Guardar y continuar') : 'Siguiente'}</button>
       </div>
     </div>

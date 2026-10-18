@@ -34,6 +34,7 @@ for (const width of [320,768,1280]) {
  await p.route('**/api/registro',async r=>{enviados++;const body=r.request().postData();assert(body.includes('Diseño Prueba'));assert(body.includes('08001'));await r.fulfill({status:400,contentType:'application/json',body:JSON.stringify({error:'Hacienda no reconoce ese NIF con ese nombre.',paso:2})});});
  await p.goto(`${BASE}/registro?tipo=aut&plan=Pro&periodo=anio`);
  await p.getByRole('radio',{name:'Autónomo',exact:false}).waitFor();
+ assert.equal(await p.getByRole('button',{name:'Volver al paso anterior'}).count(),0);
  assert(await p.locator('input[name=tipo][value=aut]').isChecked());
  // Teclado nativo: ArrowDown cambia de opción y ArrowUp vuelve al autónomo.
  await p.locator('input[name=tipo][value=aut]').focus();await p.keyboard.press('ArrowDown');assert(await p.locator('input[name=tipo][value=pym]').isChecked());await p.keyboard.press('ArrowUp');
@@ -47,7 +48,7 @@ for (const width of [320,768,1280]) {
  await p.getByRole('button',{name:'Continuar',exact:true}).click();
  assert(await p.locator('input[name=plan][value=Pro]').isChecked());assert(await p.locator('input[name=periodo][value=anio]').isChecked());
  assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
- await p.getByRole('button',{name:'Atrás',exact:true}).click();assert.equal(await p.getByLabel('Código postal').inputValue(),'08001');
+ await p.getByRole('button',{name:'Volver al paso anterior',exact:true}).click();assert.equal(await p.getByLabel('Código postal').inputValue(),'08001');
  await p.getByRole('button',{name:'Continuar',exact:true}).click();await p.getByRole('button',{name:'Continuar',exact:true}).click();
  await p.getByLabel('Nombre',{exact:true}).fill('Prueba');await p.getByLabel('Email',{exact:true}).fill('prueba@netto-local.test');await p.getByLabel('Contraseña',{exact:true}).fill('Luna!Bosque72Rio');
  await p.getByRole('button',{name:'Continuar',exact:true}).click();await p.getByRole('heading',{name:'Revisar y crear'}).waitFor();
@@ -70,7 +71,7 @@ for (const [clave, viewport] of [['aut',{width:390,height:844}], ['sociedad',{wi
     await page.getByRole('button',{name:'Siguiente'}).click();
     await page.getByLabel('Razón social (obligatorio)').fill('Empresa de pruebas');
     await page.getByLabel('CIF (obligatorio)').fill('B12345674');
-    await page.getByRole('button',{name:'Atrás'}).click();
+    await page.getByRole('button',{name:'Volver al paso anterior'}).click();
     await page.getByRole('button',{name:'Siguiente'}).click();
     assert.equal(await page.getByLabel('Razón social (obligatorio)').inputValue(),'Empresa de pruebas');
     await page.getByRole('button',{name:'Siguiente'}).click();
@@ -81,7 +82,7 @@ for (const [clave, viewport] of [['aut',{width:390,height:844}], ['sociedad',{wi
   await page.getByLabel('Nombre de tu actividad').fill('Diseño y eventos');
   await page.getByRole('button',{name:'Siguiente'}).click();
   await page.getByRole('switch',{name:'Alquilo un local u oficina'}).check();
-  await page.getByRole('button',{name:'Atrás'}).click();
+  await page.getByRole('button',{name:'Volver al paso anterior'}).click();
   assert.equal(await page.getByLabel('Nombre de tu actividad').inputValue(),'Diseño y eventos');
   await page.getByRole('button',{name:'Siguiente'}).click();
   assert(await page.getByRole('switch',{name:'Alquilo un local u oficina'}).isChecked());
