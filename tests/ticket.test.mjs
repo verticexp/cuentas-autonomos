@@ -77,6 +77,65 @@ test('ignora tipos no admitidos y admite 21, 10, 5, 4, 2 y 0', () => {
   }
 });
 
+for (const pct of [7, 15]) {
+  test(`valida IRPF ${pct} % por importe y base con tolerancia de céntimos`, () => {
+    for (const extra of [{}, { irpfPct: `${pct} %` }]) {
+      const t = ticket({ base: 100, ivaPct: 21, irpf: pct, total: 121 - pct, ...extra });
+      assert.equal(t.irpfPct, pct);
+      assert.equal(t.cuadra, true);
+      assert.deepEqual(t.avisos, []);
+    }
+    assert.equal(ticket({ base: 100, irpf: pct + 0.02 }).irpfPct, pct);
+    assert.equal(ticket({ base: 100, irpf: pct + 0.03 }).irpfPct, null);
+  });
+  test(`reconstruye la base desde el total neto retenido al ${pct} %`, () => {
+    const t = ticket({ total: 121 - pct, ivaPct: 21, irpf: pct, irpfPct: pct });
+    assert.equal(t.base, 100);
+    assert.equal(t.irpfPct, pct);
+    assert.equal(t.cuadra, true);
+    assert.deepEqual(t.avisos, []);
+  });
+}
+
+test('sin retención explícita valida cero sin confundir un dato ausente', () => {
+  assert.equal(ticket({ base: 100, total: 121, irpf: 0 }).irpfPct, 0);
+  assert.equal(ticket({ base: 100, total: 121, irpfPct: 0 }).irpfPct, 0);
+  assert.equal(ticket({ base: 100, total: 121, desglose: [] }).irpfPct, null);
+});
+
+test('no infiere retenciones ambiguas, incoherentes o inválidas', () => {
+  for (const datos of [
+    { base: 0.1, irpf: 0.01 },
+    { base: 0.1, irpf: 0.01, irpfPct: 7 },
+    { base: 100, irpf: 10 },
+    { base: 100, irpf: 0.01 },
+    { base: 100, irpf: 15, irpfPct: 7 },
+    { base: 100, irpf: -15 },
+    { base: 100, irpfPct: 15 },
+  ]) {
+    const t = ticket(datos);
+    assert.equal(t.irpfPct, null);
+    assert.ok(t.avisos.some((a) => a.includes('IRPF')));
+  }
+});
+
+test('avisa del tipo no soportado sin convertirlo a un tipo admitido', () => {
+  for (const irpf of [19, 15]) {
+    const t = ticket({ base: 100, total: 121 - irpf, irpf, irpfPct: 19 });
+    assert.equal(t.irpfPct, null);
+    assert.ok(t.avisos.some((a) => a.includes('no está soportado')));
+  }
+});
+
+test('el desglose manda sobre el fallback del total neto', () => {
+  const t = ticket({ total: 216, irpf: 15, desglose: [
+    { ivaPct: 21, base: 100, cuota: 21 }, { ivaPct: 10, base: 100, cuota: 10 },
+  ] });
+  assert.equal(t.base, 200);
+  assert.equal(t.irpfPct, null);
+  assert.equal(t.cuadra, true);
+});
+
 
 test('extractos: conserva margen para las líneas de una página sin permitir salida ilimitada', async () => {
   const { leerExtracto } = await import('../lib/ticket.js');
