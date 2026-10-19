@@ -28,11 +28,13 @@ test('amortización lineal por días con el coeficiente de la tabla', () => {
   assert.equal(l.pendiente, 608.93);
 });
 
-test('el bien de inversión: IVA entero en el 303 (30 y 31) y en el 130 solo la amortización', () => {
+test('el bien de inversión: IVA entero en el 303 y en el 130 solo la amortización; de menos de 3.005,06 € va en 28 y 29 (art. 108 LIVA)', () => {
   const facturas = [{ fecha: '2026-07-10', actividad: 'dj', base: 3000, ivaPct: 21, irpfPct: 0, cliente: { nombre: 'X' } }];
   const gastos = [portatil, { id: 'g', fecha: '2026-07-02', actividad: 'dj', concepto: 'Gestoría', base: 100, ivaPct: 21 }];
   const c = casillas303(facturas, gastos, 2026, 3);
-  assert.equal(c['28'], 100); assert.equal(c['30'], 1000); assert.equal(c['31'], 210); assert.equal(c['45'], 231);
+  assert.equal(c['28'], 1100); assert.equal(c['29'], 231); assert.equal(c['30'], 0); assert.equal(c['31'], 0); assert.equal(c['45'], 231);
+  const grande = casillas303(facturas, [{ ...portatil, base: 4000 }], 2026, 3);
+  assert.deepEqual([grande['30'], grande['31']], [4000, 840]);
   const q3 = resumenAnual(facturas, gastos, 2026, {}, ['dj']).trimestres[2];
   assert.equal(q3.amortizacion, 65.53); // 92 días
   assert.equal(q3.gastos, 165.53);
@@ -134,6 +136,8 @@ test('cuentas anuales de pymes: epígrafes, cuadre, aplicación del resultado y 
   assert.equal(epigrafe('4750', -50), 'PC.IV.2');
   assert.equal(epigrafe('4700', 50), 'B.II.3');
   assert.equal(epigrafe('281', -10), 'A.II');
+  assert.equal(epigrafe('490', -100), 'B.II.1'); // deterioro: menor valor de clientes
+  assert.equal(epigrafe('5133', -100), 'PC.III'); // deuda con empresas del grupo
   const facturas = [{ id: 'f', numero: 1, anio: 2025, fecha: '2025-03-01', actividad: 'a', base: 10000, ivaPct: 21, irpfPct: 0, cobrada: true, cliente: { nombre: 'X' } }];
   const gastos = [{ ...portatil, fecha: '2025-01-01', inversion: { tipo: 'informatica' } }, { id: 'g', fecha: '2025-02-01', concepto: 'Gestoría', base: 1000, ivaPct: 21 }];
   const manuales = [asientoApertura({ fecha: '2025-01-01', banco: 3000, capital: 3000 }, true)];
@@ -211,15 +215,18 @@ test('libros registro con el formato de la AEAT', async () => {
     { id: 'b1', fecha: '2026-01-01', concepto: 'Portátil', proveedor: 'Tienda', proveedorNif: 'B11111111', base: 1000, ivaPct: 21, inversion: { tipo: 'informatica' } },
   ];
   const l = librosRegistro({ facturas, gastos, fiscal: { tipo: 'autonomo', iva: 'general' }, actividades: [{ id: 'a', irpfPct: 15, iae: '844' }], empresa: { nombre: 'Ana', nif: '12345678Z' } }, 2026, '2026-12-31');
-  assert.deepEqual(l.archivos.map((a) => a.nombre), ['202612345678ZUAna.xlsx', '202612345678ZVAna.xlsx', '202612345678ZWAna.xlsx']);
-  const [ing, gas, bie] = l.archivos.map((a) => a.filas);
+  // Un solo .xlsx (tipo T, libros unificados) con un libro por hoja, como piden Renta WEB, el Pre303 y el 130.
+  assert.equal(l.fichero, '202612345678ZTAna.xlsx');
+  assert.deepEqual(l.hojas.map((a) => a.hoja), ['EXPEDIDAS_INGRESOS', 'RECIBIDAS_GASTOS', 'BIENES-INVERSIÓN']);
+  const [ing, gas, bie] = l.hojas.map((a) => a.filas);
   // Columnas de la plantilla: A ejercicio, B periodo, C-E actividad, F tipo de factura, G concepto, H importe…
   assert.deepEqual(ing[0].slice(0, 9), [2026, '1T', 'A', '05', '844', 'F1', 'I01', '1000,00', '03/02/2026']);
   assert.equal(ing[0][31], '150,00'); // AF: retención
   assert.deepEqual([ing[1][13], ing[1][14], ing[1][15], ing[1][18]], ['02', 'DE', '123456789', 'N2']); // cliente de la UE, no sujeta
   assert.equal(gas.find((f) => f[41] === 'g1')[6], 'G17'); // teléfono
   assert.deepEqual(gas.find((f) => f[41] === 'g2').slice(5, 8), ['SF', 'G45', '300,00']); // cuota de autónomos, sin factura
-  assert.equal(gas.find((f) => f[41] === 'b1')[20], 'S'); // bien de inversión: en el libro de gastos, sin gasto deducible
+  // Inmovilizado de 1.000 €: sin gasto deducible (se amortiza), pero no es bien de inversión del IVA (art. 108 LIVA, menos de 3.005,06 €).
+  assert.equal(gas.find((f) => f[41] === 'b1')[20], 'N');
   assert.equal(gas.find((f) => f[6] === 'G31')[7], '260,00'); // y su amortización del año (26 %)
   assert.deepEqual(bie[0].slice(5, 17), ['23', 'b1', 'Portátil', '01/01/2026', '1000,00', '1000,00', '01', '26,00', '0,00', '260,00', '260,00', '740,00']);
   assert.equal(l.totales.ingresos, 1500);

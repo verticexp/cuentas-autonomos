@@ -242,3 +242,21 @@ test('registro-email: ruta pública valida y limita a 30 intentos por IP', async
   for (let i = 2; i < 30; i++) assert.equal((await pedir('ana@ejemplo.es')).status, 200);
   assert.equal((await pedir('ana@ejemplo.es')).status, 429);
 });
+
+test('registro con enlace de recomendación: 60 días de prueba, queda apuntada y no se suma a la gestoría', async () => {
+  await redis.hset('empresas', { reco: { id: 'reco', nombre: 'Recomienda SL', recomienda: { codigo: 'ABCDEFGH', meses: 0 } } });
+  await redis.hset('recomendaciones', { ABCDEFGH: 'reco' });
+  const { res } = await alta({ ref: 'abcdefgh' });
+  assert.equal(res.status, 200);
+  const id = await redis.hget('emails', valido.email);
+  const empresa = await redis.hget('empresas', id);
+  assert.deepEqual(empresa.plan.recomendacion, { codigo: 'ABCDEFGH', empresa: 'reco' });
+  const dias = Math.round((Date.parse(`${empresa.plan.hasta}T12:00:00Z`) - Date.now()) / 86400000);
+  assert.ok(dias >= 58 && dias <= 60, `prueba de ${dias} días`);
+  assert.deepEqual(await redis.smembers('recomendadas:ABCDEFGH'), [id]);
+  const mala = await alta({ ref: 'NOEXISTE', email: 'otra@ejemplo.es', nif: '87654321X' });
+  assert.equal(mala.res.status, 400); assert.match(mala.datos.error, /recomendación ya no es válido/);
+  await redis.hset('gestorias', { ASESORIA: { codigo: 'ASESORIA', nombre: 'Asesoría', activa: true } });
+  const dos = await alta({ ref: 'ABCDEFGH', gestoria: 'ASESORIA', email: 'otra@ejemplo.es', nif: '87654321X' });
+  assert.equal(dos.res.status, 400); assert.match(dos.datos.error, /no los dos/);
+});

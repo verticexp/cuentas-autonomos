@@ -27,10 +27,6 @@ export default async function Presupuestos() {
         <h1 className="titulo">Presupuestos</h1>
         {puede(u, 'facturar') && <Ir href="/presupuestos/nuevo" tipo="subir" className="boton pequeno">Nuevo</Ir>}
       </header>
-      <nav className="segmentado vt">
-        <Ir href="/facturas" tipo="fundido">Facturas</Ir>
-        <Ir href="/presupuestos" tipo="fundido" className="activo">Presupuestos</Ir>
-      </nav>
       {abiertos.length > 0 && <p className="resumen-linea"><span>Abiertos <strong>{eur(abiertos.reduce((s, p) => s + importes(p).base, 0))}</strong> sin IVA</span></p>}
       {lista.length > 0 && <ul className="grupo-lista">
         {lista.map((p) => {

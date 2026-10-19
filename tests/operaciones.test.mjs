@@ -59,6 +59,9 @@ test('Verifactu: E5 entrega intracomunitaria, E2 exportación, N2 servicios, S2 
   const xml = (x) => xmlAlta(registroAlta(x, 'B12345674', ''), { factura: x, emisorNombre: 'E', anterior: null, sistema, fiscal: { iva: 'general' } });
   assert.match(xml(f(DE, { operacion: 'intracomunitaria' })), /<sum1:OperacionExenta>E5<\/sum1:OperacionExenta>/);
   assert.match(xml(f(US, { operacion: 'exportacion' })), /<sum1:OperacionExenta>E2<\/sum1:OperacionExenta>/);
+  // Validación 15.5 de la AEAT: con la clave de régimen 01 no se admite E2; la exportación va con la 02.
+  assert.match(xml(f(US, { operacion: 'exportacion' })), /<sum1:ClaveRegimen>02<\/sum1:ClaveRegimen>/);
+  assert.match(xml(f(DE, { operacion: 'intracomunitaria' })), /<sum1:ClaveRegimen>01<\/sum1:ClaveRegimen>/);
   assert.match(xml(f(DE)), /<sum1:CalificacionOperacion>N2<\/sum1:CalificacionOperacion>/);
   assert.match(xml(f(ES, { operacion: 'isp' })), /<sum1:CalificacionOperacion>S2<\/sum1:CalificacionOperacion>/);
   assert.match(xml(f(ES)), /<sum1:OperacionExenta>E1<\/sum1:OperacionExenta>/);
@@ -66,7 +69,7 @@ test('Verifactu: E5 entrega intracomunitaria, E2 exportación, N2 servicios, S2 
 
 test('libros registro: la calificación o la causa de exención de cada operación', () => {
   const L = librosRegistro({ facturas: [f(DE, { operacion: 'intracomunitaria' }), f(US, { operacion: 'exportacion', id: 'x2' }), f(ES, { operacion: 'isp', id: 'x3' })], fiscal: { tipo: 'autonomo', iva: 'general' }, actividades: [{ id: 'a', nombre: 'A' }] }, 2026, '2026-12-31');
-  const filas = L.archivos[0].filas.map((x) => x.join('|'));
+  const filas = L.hojas[0].filas.map((x) => x.join('|'));
   assert.ok(filas.some((x) => x.includes('E5')));
   assert.ok(filas.some((x) => x.includes('E2')));
   assert.ok(filas.some((x) => x.includes('S2')));

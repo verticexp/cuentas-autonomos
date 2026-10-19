@@ -32,11 +32,13 @@ Cada uno tiene una prueba que falla con el código anterior y pasa con el nuevo.
 
 ## Pendiente (no corregido aquí)
 
-- **Varias cuentas por CSV/Excel**: todos los extractos subidos van a una sola cuenta «Extracto subido». Con dos bancos, un
-  movimiento idéntico en ambos se toma por repetido y el saldo de uno pisa al del otro. Necesita elegir la cuenta al subir.
-- ~~**Stripe + banco parcial**~~ (resuelto después en `claude/liquidacion-externos`): cada cobro externo lleva en
-  `liquidado` el movimiento del banco que lo liquida; `cobradoSinBanco` cuenta los que faltan aunque haya pagos del banco y
-  la liquidación solo se enlaza. 250 € con 50 del banco + 100 de Stripe + liquidación de 100 → 150 cobrados, saldo 100.
+- ~~**Varias cuentas por CSV/Excel**: todos los extractos subidos van a una sola cuenta «Extracto subido». Con dos bancos, un
+  movimiento idéntico en ambos se toma por repetido y el saldo de uno pisa al del otro.~~ Resuelto en el PR #171: se elige
+  la cuenta al subir o se detecta por el IBAN del archivo (`cuentaDeExtracto` en `lib/banco.js`).
+- ~~**Stripe + banco parcial**: si una factura tiene un cobro parcial del banco y otro de Stripe, la liquidación de Stripe
+  que llega al banco se sugiere como un cobro nuevo en vez de solo enlazarse.~~ Resuelto en el PR #172: cada cobro externo
+  lleva en `liquidado` el movimiento del banco que lo liquida; `cobradoSinBanco` cuenta los que faltan aunque haya pagos del
+  banco y la liquidación solo se enlaza. 250 € con 50 del banco + 100 de Stripe + liquidación de 100 → 150 cobrados, saldo 100.
 - Limitaciones conocidas, ya documentadas: IVA parcialmente deducible (vehículos), recargo de equivalencia repercutido,
   entidades de nueva creación en el IS, festivos en los plazos.
 
@@ -51,3 +53,66 @@ Cada uno tiene una prueba que falla con el código anterior y pasa con el nuevo.
   130 1T 106,50 €, acumulado al 3T 300,50 €; pendiente de cobro 1.485,00 €.
 - Normativa contrastada: casillas 303 y 130, minoración de la casilla 13, 5 % de difícil justificación (máx. 2.000 €),
   tipos del IS 2025–2028 (Ley 7/2024), 202 al 18 %, 347 desde 3.005,06 €, dietas y 0,26 €/km (RIRPF art. 9).
+
+## Segunda ronda (19-10-2026, tarde): IVA deducible en parte y modelos
+
+### Función nueva: IVA deducible en parte (arts. 95 y 96 LIVA)
+
+Cada gasto puede llevar `deduciblePct` (0–100; sin él, 100): un turismo se presume afecto al 50 % (art. 95.Tres.2.ª).
+Módulo `lib/ivaDeducible.js`, sin dependencias. Efectos, todos con prueba (`tests/iva-deducible.test.mjs`):
+
+- 303 y 390: a las casillas 28-31 y 36-39 solo va la parte deducible (base y cuota en la misma proporción); lo
+  autoliquidado de un proveedor de fuera se devenga entero (10-13) y se deduce en parte.
+- IRPF, Sociedades, panel, proyectos y paquete: el IVA no deducible es gasto (norma 12.ª del PGC). En un bien de
+  inversión, más valor amortizable.
+- Contabilidad: la parte no deducible va a la cuenta de gasto o al bien; a la 472, solo la deducible.
+- Libros registro: cuota soportada (AC) entera y cuota deducible (AD) en parte; gasto deducible con lo no deducible.
+- Formulario de gastos: «Me deduzco todo / el 50 % / nada / otro porcentaje», con el IVA que te deduces. Importación
+  de Excel con la columna «% IVA deducible» (también celdas con formato de porcentaje) y exportación con esa columna.
+- Aviso en el formulario: un ticket sin tu NIF no permite deducir el IVA (art. 97 LIVA).
+
+### Fallos de la revisión de modelos (Codex), comprobados y corregidos
+
+| Id | Fallo | Corrección |
+|---|---|---|
+| M01 | Las rectificativas restaban dentro de las casillas 07/09 y, si en un trimestre solo había un abono, **el fichero del 303 no se podía descargar** («importe negativo en un campo sin signo») | Casillas 14 y 15 con signo (art. 80 LIVA) en pantalla, resumen, paquete, 390 y fichero |
+| M02 | Un inmovilizado de menos de 3.005,06 € iba a las casillas 30/31 y al libro como bien de inversión | Art. 108 LIVA: solo desde 3.005,06 €; los de la UE, en 38/39 |
+| M03 | Los libros registro salían en tres ficheros (U, V, W): Renta WEB, Pre303 y el 130 no los importan | Un solo .xlsx tipo T (autónomos: EXPEDIDAS_INGRESOS, RECIBIDAS_GASTOS, BIENES-INVERSIÓN) o C (sociedades: EXPEDIDAS, RECIBIDAS), según «Formatos de los Libros Registro de IVA e IRPF 2025-2026» |
+| M04 | 349: compras de bienes a la UE con clave I | A para bienes (inversión, mercaderías o stock), I para servicios |
+| M05 | 349: servicios con Irlanda del Norte (XI) | Fuera: XI solo cuenta como UE para bienes |
+| M06 | Sociedades: una facturación anterior de 0 € se tomaba como «sin datos» y se usaba la del año en curso (tipo de reducida dimensión en vez de microempresa) | Con datos del año anterior en la app, se usa ese importe aunque sea cero |
+| M07 | 202: el plazo de diciembre de 2026 caía en domingo (20) | Al lunes 21 |
+| M08 | Paquete: el 130 negativo por la minoración salía a 0; en actividades exentas el rendimiento no restaba el IVA de los gastos | Resultado con signo, como el fichero; coste con el IVA no recuperable |
+
+### Fallos de la revisión de contabilidad, Verifactu y factura electrónica, comprobados y corregidos
+
+| Id | Fallo | Corrección | Quién |
+|---|---|---|---|
+| C01 | **Verifactu**: las exportaciones iban con clave de régimen 01 y exención E2; la AEAT rechaza esa combinación (validación 15.5) | Clave 02 para E2 y E3 | Claude |
+| C02 | Facturae y UBL ponían el vencimiento con el plazo actual de Ajustes, no el guardado al emitir | Usan `vence` | Claude |
+| C03 | UBL: la inversión del sujeto pasivo salía como «exenta» (E) | Categoría AE | Claude |
+| C04 | Un ejercicio con solo asientos manuales no se regularizaba ni liquidaba el IVA | Se incluyen sus años | Codex |
+| C05 | Si los pagos a cuenta del IS superan la cuota, la devolución quedaba en la 4752 | A la 4709 | Codex |
+| C06 | PyG: 773/775 y 696-699 iban a explotación | A resultado financiero | Codex |
+| C07 | Balance: las correctoras (490, 29x, 59x…) con saldo acreedor pasaban al pasivo | Minoran su activo | Codex |
+| C08 | Balance: deudas 510-514 con empresas del grupo en «otros acreedores» | Epígrafe C.III | Codex |
+| C09 | Memoria: el periodo medio de pago no seguía la fórmula de pymes | Saldo medio de acreedores / (compras + servicios) × 365 (Resolución ICAC 29-1-2016) | Codex |
+
+Pendientes de decisión (no cambiados): aplicar el resultado el 1 de enero sin acuerdo de junta (hoy se reparte solo:
+reserva legal y remanente); compensar un IVA a devolver traído de otro programa en el asiento de apertura; bases de
+cierres de caja reconstruidas desde el total por tipo (céntimos); retención en UBL frente a BR-CO-16 de Peppol; previsión
+de Tesorería en el día exacto (sin pasar al lunes) y 111/115 previstos solo si el trimestre no está presentado.
+
+### Revisados y no cambiados
+
+- Nóminas con 14 pagas: la app pide el sueldo con las pagas extra prorrateadas (12 pagos), y así la cotización es
+  correcta. Pagar extras aparte sin prorratear no está contemplado (limitación).
+- A confirmar con el diseño de registro detallado de la AEAT: claves de operación del libro de recibidas para servicios
+  de la UE (09) frente a inversión del sujeto pasivo, e identificación de clientes y proveedores de fuera de la UE
+  (tipo de documento y país). 347 con servicios a o de empresas de fuera de la UE.
+
+### Evidencia
+
+`npm test` 809/809 · `verificar` 370 ✓ · `integridad` y `regresiones` correctas · `numeros-aurora` 2.063/2.063 ·
+`numeros-circuitos` 5/5 · navegador: gasto al 50 % → 303 con 500/105 en 28/29, 130 con 1.105 € de gasto, 390 coherente;
+formulario y pantallas en tamaño móvil sin desbordes.

@@ -1,16 +1,31 @@
-/* Pestaña «Más» del móvil: cuadrícula de iconos con el resto de pantallas. */
-.mas-perfil { display: flex; align-items: center; gap: 12px; padding: 12px 14px; margin-bottom: 22px; border-radius: 18px; background: var(--surface); color: var(--ink); text-decoration: none; border: 1px solid var(--line); -webkit-tap-highlight-color: transparent; }
+/* Pestaña «Más» del móvil: buscador, atajos y el resto de pantallas en listas por grupos (cada grupo con su color). */
+.mas-perfil { display: flex; align-items: center; gap: 12px; padding: 12px 14px; margin-bottom: 14px; border-radius: 18px; background: var(--surface); color: var(--ink); text-decoration: none; border: 1px solid var(--line); -webkit-tap-highlight-color: transparent; }
 .mas-perfil:active { background: var(--line); }
 .mas-perfil .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .mas-perfil .txt strong, .mas-perfil .txt small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mas-perfil-ir { flex: none; color: var(--muted); font-weight: 600; font-size: 15px; }
-.mas-grupo { margin-bottom: 22px; }
-.mas-rejilla { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-.mas-tile { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 8px; min-height: 104px; padding: 14px 6px 10px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); color: var(--ink); text-decoration: none; text-align: center; -webkit-tap-highlight-color: transparent; transition: transform 0.12s cubic-bezier(0.23, 1, 0.32, 1), background-color 0.12s; }
+.mas-perfil:focus-visible, .mas-tile:focus-visible { outline: 2px solid var(--marca); outline-offset: 2px; }
+
+.mas-buscar { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px; margin-bottom: 22px; border-radius: 12px; background: var(--relleno); color: var(--muted); }
+.mas-buscar svg { flex: none; width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.mas-buscar input { flex: 1; min-width: 0; height: 100%; border: 0; background: none; font-size: 17px; color: var(--ink); outline: none; -webkit-appearance: none; appearance: none; }
+.mas-buscar input::placeholder { color: var(--muted); }
+.mas-buscar:focus-within { box-shadow: 0 0 0 2px var(--marca); }
+
+.mas-pagina .grupo { margin-bottom: 24px; }
+.mas-fila { min-height: 56px; -webkit-tap-highlight-color: transparent; }
+.mas-fila .txt { font-size: 17px; }
+.mas-fila .txt small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.celda.mas-fila + .celda::before { left: 60px; }
+.mas-ico { flex: none; width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; background: var(--tono-fondo, var(--menta)); color: var(--tono, var(--ico)); }
+.mas-ico svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.mas-aviso { flex: none; font-size: 13px; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: var(--tono-fondo); color: var(--tono); white-space: nowrap; }
+
+.mas-atajos { margin-bottom: 24px; }
+.mas-rejilla { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.mas-tile { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 4px 10px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); color: var(--ink); text-decoration: none; text-align: center; -webkit-tap-highlight-color: transparent; transition: transform 0.12s cubic-bezier(0.23, 1, 0.32, 1), background-color 0.12s; }
 .mas-tile:active { transform: scale(0.97); background: var(--line); }
-.mas-tile:focus-visible, .mas-perfil:focus-visible { outline: 2px solid var(--marca); outline-offset: 2px; }
-.mas-ico { width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; background: var(--menta, var(--relleno)); color: var(--ico, var(--marca)); }
-.mas-ico svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.mas-nombre { font-size: 13px; font-weight: 600; line-height: 1.2; overflow-wrap: anywhere; hyphens: auto; }
-@media (min-width: 560px) { .mas-rejilla { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.mas-tile .mas-ico { width: 40px; height: 40px; border-radius: 12px; }
+.mas-tile .mas-ico svg { width: 22px; height: 22px; }
+.mas-nombre { font-size: 12px; font-weight: 600; line-height: 1.2; overflow-wrap: anywhere; hyphens: auto; }
 @media (prefers-reduced-motion: reduce) { .mas-tile { transition: none; } }

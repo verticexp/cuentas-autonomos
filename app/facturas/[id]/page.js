@@ -3,7 +3,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requerir } from '@/lib/auth';
 import { leer, leerUno } from '@/lib/redis';
-import { apartar, desglose, emisorDe, importes, numeroFactura, pagadoDe, pendienteDe, vencida, vencimiento } from '@/lib/calculos';
+import { leerRango } from '@/lib/indices';
+import { apartar, margenIrpf, resumenAnual, trimestre, desglose, emisorDe, importes, numeroFactura, pagadoDe, pendienteDe, vencida, vencimiento } from '@/lib/calculos';
 import { eur, fechaCorta, fechaTexto, hoy } from '@/lib/formato';
 import FormFactura from '@/components/FormFactura';
 import Volver from '@/components/Volver';
@@ -87,6 +88,7 @@ export default async function Factura({ params }) {
         <dl className="fh-desglose">
           <div><dt>Base</dt><dd>{eur(i.base)}</dd></div>
           {desglose(f).map((d) => <div key={d.pct}><dt>IVA {d.pct} %</dt><dd>{eur(d.iva)}</dd></div>)}
+          {desglose(f).filter((d) => d.re).map((d) => <div key={`re${d.pct}`}><dt>Recargo {String(d.re).replace('.', ',')} %</dt><dd>{eur(d.recargo)}</dd></div>)}
           {f.irpfPct > 0 && <div><dt>IRPF {f.irpfPct} %</dt><dd>−{eur(i.irpf)}</dd></div>}
         </dl>
         <div className="fh-pie">
@@ -105,17 +107,24 @@ export default async function Factura({ params }) {
       </div>
       {String(f.cliente?.nif || '').trim() && <p className="nota efactura">Factura electrónica: <a href={`/api/facturas/efactura?id=${encodeURIComponent(f.id)}&formato=facturae`} download>Facturae 3.2.2</a> · <a href={`/api/facturas/efactura?id=${encodeURIComponent(f.id)}&formato=ubl`} download>UBL (Peppol)</a>{f.cobrada ? ` · cobrada${f.cobro?.fecha ? ` el ${fechaTexto(f.cobro.fecha.slice(0, 10))}` : ''}` : ''}</p>}
       {(editar || f.envios?.length > 0) && <EnviarFactura id={f.id} email={f.cliente.email} envios={f.envios} editar={editar}
-        asunto={asuntoFactura(f, emisorDe(f, u))} mensaje={mensajeFactura(f, emisorDe(f, u))} />}
+        asunto={asuntoFactura(f, emisorDe(f, u), u.envio)} mensaje={mensajeFactura(f, emisorDe(f, u), u.envio)} />}
       {portal && <section className="portal-enlace">
         <p className="nota">Portal de {f.cliente.nombre}: ve todas sus facturas y presupuestos, los descarga en PDF y paga.</p>
         <div className="portal-botones"><Compartir ruta={portal} texto={`Tus documentos de ${u.emisor?.nombre || ''}`.trim()} etiqueta="Enviar su portal" className="boton sec" /><Link href={portal} className="boton sec">Ver su portal</Link></div>
       </section>}
       {editar && f.serie !== 'R' && <RepetirFactura factura={f.id} dia={Math.min(28, Number(f.fecha.slice(8, 10)))} existente={recurrentes.find((r) => r.origen === f.id)} />}
-      {f.base > 0 && (usa303(fiscal) || usa130(fiscal)) && (() => {
-        const a = apartar(f);
+      {f.base > 0 && (usa303(fiscal) || usa130(fiscal)) && await (async () => {
+        // El IRPF, con el beneficio real del año hasta el trimestre de la factura (sus gastos restan), no con el 95 %.
+        let margen;
+        if (usa130(fiscal)) {
+          const anio = Number(f.fecha.slice(0, 4)), hasta = `${anio}-12-31`;
+          const [fs, gs] = await Promise.all([leerRango(u, 'facturas', `${anio}-01-01`, hasta), leerRango(u, 'gastos', `${anio}-01-01`, hasta)]);
+          margen = margenIrpf(resumenAnual(fs, gs, anio, {}, actividadesDe(u).map((x) => x.id), { ivaCoste: !usa303(fiscal) }), trimestre(f.fecha)) ?? undefined;
+        }
+        const a = apartar(f, { margen });
         const iva = usa303(fiscal) ? a.iva : 0;
         const irpf = usa130(fiscal) ? a.irpf : 0;
-        return <p className="aviso-plazo"><strong>De esta factura, aparta {eur(iva + irpf)} para Hacienda</strong><span>{[usa303(fiscal) && `IVA ${eur(iva)}`, usa130(fiscal) && `IRPF que te faltará en el 130 ≈ ${eur(irpf)}`].filter(Boolean).join(' + ')}</span></p>;
+        return <p className="aviso-plazo"><strong>De esta factura, aparta {eur(iva + irpf)} para Hacienda</strong><span>{[usa303(fiscal) && `IVA ${eur(iva)}`, usa130(fiscal) && `IRPF que te faltará en el 130 ≈ ${eur(irpf)}${margen !== undefined ? ` (con tu beneficio real: ${Math.round(a.margen * 100)} % de lo facturado)` : ''}`].filter(Boolean).join(' + ')}</span></p>;
       })()}
       {f.cobro?.metodo === 'stripe' && <p className="nota">Pagada con tarjeta o Bizum el {fechaTexto(f.cobro.fecha.slice(0, 10))} ({eur(f.cobro.importe)}).</p>}
       {f.rectifica && <p className="nota">Rectifica la factura {f.rectifica.numero}.</p>}
@@ -123,7 +132,7 @@ export default async function Factura({ params }) {
         { Correcto: `registrada en la AEAT${f.verifactu.csv ? ` (CSV ${f.verifactu.csv})` : ''}.`, AceptadoConErrores: `registrada en la AEAT con avisos: ${f.verifactu.error}`, Incorrecto: `la AEAT la ha rechazado: ${f.verifactu.error}` }[f.verifactu.estado]
         || `pendiente de enviar a la AEAT${f.verifactu.error ? ` (último intento: ${f.verifactu.error})` : ''}. Se envía sola.`}`}</p>}
       {f.verifactu && editar && <VerifactuFactura factura={f} admin={u.rol === 'admin'} />}
-      <fieldset className="solo-ver" disabled={!editar}><FormFactura key={JSON.stringify(f)} factura={f} clientes={clientes} actividades={actividades} productos={(productos || []).sort((a, b) => a.nombre.localeCompare(b.nombre))} riesgos={riesgos} proyectos={editar ? await proyectosDe(u) : []} /></fieldset>
+      <fieldset className="solo-ver" disabled={!editar}><FormFactura key={JSON.stringify(f)} recargo={usa303(fiscal)} factura={f} clientes={clientes} actividades={actividades} productos={(productos || []).sort((a, b) => a.nombre.localeCompare(b.nombre))} riesgos={riesgos} proyectos={editar ? await proyectosDe(u) : []} /></fieldset>
     </main>
   );
 }

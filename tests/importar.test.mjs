@@ -168,3 +168,9 @@ test('auditoría: sin columna de IVA no se supone un 0 %: con base y total se de
   const g = previa('gastos', [['Fecha', 'Proveedor', 'Total'], ['2026-02-01', 'Repsol', 60.5]], []);
   assert.match(g.items[0].error, /Falta el IVA/);
 });
+
+test('IVA deducible en parte: columna «% IVA deducible» (50, «0,5» o celda de porcentaje); fuera de 0–100, error', () => {
+  const p = previa('gastos', [['Fecha', 'Concepto', 'Base', '% IVA', '% IVA deducible'], ['2026-02-01', 'Coche', 1000, 21, 50], ['2026-02-02', 'Luz', 100, 21, 1],
+    ['2026-02-03', 'Móvil', 100, 21, '0,5'], ['2026-02-04', 'X', 100, 21, 150], ['2026-02-05', 'Y', 100, 21, '']], []);
+  assert.deepEqual(p.items.map((x) => x.datos?.deduciblePct ?? x.error ?? 100), [50, 100, 50, 'El % de IVA deducible tiene que estar entre 0 y 100', 100]);
+});

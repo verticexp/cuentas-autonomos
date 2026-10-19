@@ -7,9 +7,7 @@
 .emp-inicial { flex: none; width: 30px; height: 30px; border-radius: 8px; background: var(--menta); color: var(--ico); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; }
 .emp-nombre { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .emp-opcion.activa .emp-nombre { font-weight: 600; }
-.emp-anadir { color: var(--marca); }
-.emp-nueva { display: flex; gap: 8px; align-items: center; padding: 8px 12px; }
-.emp-nueva .campo { flex: 1; min-width: 0; background: var(--relleno); padding: 10px 12px; }
+.emp-anadir { color: var(--marca); text-decoration: none; }
 .emp-msg { margin: 0; padding: 8px 16px 12px; font-size: 14px; }
 
 /* Chip del resumen y selector de la barra lateral: se abre una lista flotante */

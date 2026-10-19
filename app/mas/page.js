@@ -1,7 +1,13 @@
 import Ir from '@/components/Ir';
 import Avatar from '@/components/Avatar';
+import MasLista from '@/components/MasLista';
 import { requerir } from '@/lib/auth';
 import { perfilDe, permisosDe } from '@/lib/permisos';
+import { sinFuncion } from '@/lib/planes';
+import { plazosFiscales } from '@/lib/avisos';
+import { fiscalDe } from '@/lib/empresa';
+import { ahoraMadrid } from '@/lib/jornada';
+import { miEmpleado } from '@/lib/jornadaServidor';
 import { gruposVisibles } from '@/components/secciones';
 import '@/app/mk.css';
 import '@/app/mas.css';
@@ -9,11 +15,32 @@ import '@/app/mas.css';
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Más · Netto' };
 
-// «Más»: todas las pantallas que no caben en la barra del móvil, en una cuadrícula, y Ajustes dentro.
+const DIAS_AVISO = 15;
+const dias = (de, a) => Math.round((Date.parse(`${a}T12:00:00Z`) - Date.parse(`${de}T12:00:00Z`)) / 864e5);
+
+// El próximo plazo de Hacienda si es en menos de 15 días. Solo con el perfil fiscal: sin lecturas a la base de datos.
+function avisoHacienda(u, hoy) {
+  const y = Number(hoy.slice(0, 4));
+  const p = [...plazosFiscales(fiscalDe(u), y, { cuotaIS: u.cuotaIS }), ...plazosFiscales(fiscalDe(u), y + 1)].find((x) => x.fecha >= hoy);
+  const d = p && dias(hoy, p.fecha);
+  if (d === undefined || d > DIAS_AVISO) return null;
+  return { tono: d <= 3 ? 'rojo' : 'ambar', texto: d === 0 ? 'Plazo hoy' : d === 1 ? 'Plazo mañana' : `Plazo en ${d} días` };
+}
+
+// «Más»: el resto de pantallas en listas por grupos, con un buscador que también pregunta a Netto. Ajustes, en el perfil.
 // Lo que sale depende de los permisos de cada persona y de si la empresa lleva inventario (components/secciones.js).
 export default async function Mas() {
   const u = await requerir();
-  const grupos = gruposVisibles(permisosDe(u), Boolean(u.fiscal?.inventario));
+  const permisos = permisosDe(u);
+  const hoy = ahoraMadrid().slice(0, 10);
+  const hacienda = permisos.includes('resumen') ? avisoHacienda(u, hoy) : null;
+  const grupos = gruposVisibles(permisos, Boolean(u.fiscal?.inventario))
+    .map((g) => ({ ...g, enlaces: g.enlaces.map((e) => (e.href === '/modelos' && hacienda ? { ...e, aviso: hacienda } : e)) }));
+  // Quien ficha pero no lleva las nóminas: su «Fichar» en Equipo (el registro de jornada completo es de quien las lleva).
+  if (!permisos.includes('nominas') && (await miEmpleado(u, hoy)).yo) {
+    grupos.push({ titulo: 'Equipo', tono: 'violeta', enlaces: [{ href: '/jornada', nombre: 'Fichar', detalle: 'Entrada, salida, pausas y tus horas del mes', icono: <><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></> }] });
+  }
+  const asistente = !(u.plan?.version === 2 && sinFuncion(u.plan, 'asistente'));
   return (
     <main className="pagina mk-look mas-pagina">
       <h1 className="titulo">Más</h1>
@@ -22,19 +49,7 @@ export default async function Mas() {
         <span className="txt"><strong>{u.nombre}</strong><small>{perfilDe(u)} en {u.empresaNombre}</small></span>
         <span className="mas-perfil-ir">Ajustes ›</span>
       </Ir>
-      {grupos.map((g) => (
-        <section key={g.titulo} className="mas-grupo" aria-label={g.titulo}>
-          <h2 className="grupo-t">{g.titulo}</h2>
-          <div className="mas-rejilla">
-            {g.enlaces.map((e) => (
-              <Ir key={e.href} href={e.href} prefetch={false} className="mas-tile">
-                <span className="mas-ico"><svg viewBox="0 0 24 24" aria-hidden>{e.icono}</svg></span>
-                <span className="mas-nombre">{e.nombre}</span>
-              </Ir>
-            ))}
-          </div>
-        </section>
-      ))}
+      <MasLista grupos={grupos} asistente={asistente} />
     </main>
   );
 }

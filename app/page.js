@@ -74,7 +74,7 @@ export default async function Resumen({ searchParams }) {
         </div>
         <h1 className="inicio-hola">Hola, {String(u.nombre || '').split(' ')[0] || 'equipo'}</h1>
         <p className="inicio-sub">{esteAnio ? 'Así va tu año.' : `Así cerraste ${anio}.`}</p>
-        {u.misEmpresas?.length > 1 && <CambiarEmpresa empresas={u.misEmpresas} actual={u.empresa} variante="chip" puedeCrear={u.admin} />}
+        {u.misEmpresas?.length > 1 && <CambiarEmpresa empresas={u.misEmpresas} actual={u.empresa} variante="chip" />}
       </header>
 
       {facturado > 0 && (
@@ -118,7 +118,7 @@ export default async function Resumen({ searchParams }) {
               {debe ? (
                 <>
                   <p className="hcard-v"><Cifra v={aPagar} /><small>€ a pagar</small></p>
-                  <p className="hcard-s">Hasta el {fechaTexto(plazo.fecha)}, {plazo.dias === 0 ? 'hoy es el último día' : plazo.dias === 1 ? 'queda 1 día' : `quedan ${plazo.dias} días`}{debe.pend303 ? ` · 303 ${debe.m303 < 0 ? `${eur(-debe.m303)} a compensar` : eur(debe.ivaIngresar)}` : c303 ? ' · 303 presentado' : ''}{debe.pend130 ? ` · 130 ${eur(debe.m130)}` : c130 ? ' · 130 presentado' : ''}</p>
+                  <p className="hcard-s">Hasta el {fechaTexto(plazo.fecha)}, {plazo.dias === 0 ? 'hoy es el último día' : plazo.dias === 1 ? 'queda 1 día' : `quedan ${plazo.dias} días`}{debe.pend303 ? ` · 303\u00a0${debe.m303 < 0 ? `${eur(-debe.m303)} a compensar` : eur(debe.ivaIngresar)}` : c303 ? ' · 303 presentado' : ''}{debe.pend130 ? ` · 130\u00a0${eur(debe.m130)}` : c130 ? ' · 130 presentado' : ''}</p>
                   <p className="hcard-s">Del {tHoy}T llevas {eur(apartado)} para apartar.</p>
                 </>
               ) : (
@@ -218,6 +218,9 @@ export default async function Resumen({ searchParams }) {
                           {fila('07', 'Base al 21 %', c['07'])}
                           {fila('09', 'Cuota al 21 %', c['09'])}
                           {c.otros.flatMap((o) => [fila('—', `Base al ${o.pct} % (revisar casilla)`, o.base), fila('—', `Cuota al ${o.pct} % (revisar casilla)`, o.iva)])}
+                          {(c['14'] !== 0 || c['15'] !== 0) && <>{fila('14', 'Rectificativas: base', c['14'])}{fila('15', 'Rectificativas: cuota', c['15'])}</>}
+                          {[['16', '18', '0,5'], ['19', '21', '1,4'], ['22', '24', '5,2']].filter(([b]) => c[b]).flatMap(([b, q, r]) => [fila(b, `Recargo ${r} %: base`, c[b]), fila(q, `Recargo ${r} %: cuota`, c[q])])}
+                          {(c['25'] || c['26']) ? <>{fila('25', 'Recargo de rectificativas: base', c['25'])}{fila('26', 'Recargo de rectificativas: cuota', c['26'])}</> : null}
                           {c['10'] > 0 && <>{fila('10', 'Compras a la UE: base', c['10'])}{fila('11', 'Compras a la UE: cuota', c['11'])}</>}
                           {c['12'] > 0 && <>{fila('12', 'Compras de fuera de la UE: base', c['12'])}{fila('13', 'Compras de fuera de la UE: cuota', c['13'])}</>}
                           {fila('27', 'Total cuota devengada', c['27'])}

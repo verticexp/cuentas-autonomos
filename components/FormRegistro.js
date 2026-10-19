@@ -28,14 +28,17 @@ function enfocarVisible(elemento) {
 }
 
 // Los campos permanecen montados para conservar lo escrito al cambiar de paso.
-export default function FormRegistro({ inicial = {} }) {
+// sesion: { nombre, email } si ya tiene cuenta y añade otra empresa: se salta el paso de la cuenta (4).
+// recomendacion: { codigo, nombre } si llega con el enlace de otra empresa (lib/recomendaciones.js): 2 meses gratis.
+export default function FormRegistro({ inicial = {}, sesion = null, recomendacion = null }) {
   const listo = useTrasArranque();
   const [paso, setPaso] = useState(1);
   const [tipo, setTipo] = useState(inicial.tipo || '');
   const [plan, setPlan] = useState(inicial.plan || '');
   const [periodo, setPeriodo] = useState(inicial.periodo === 'anio' ? 'anio' : 'mes');
+  const [gestoria, setGestoria] = useState(inicial.gestoria || '');
   const [fiscales, setFiscales] = useState({ razon: '', nif: '', direccion: '', cp: '', ciudad: '', provincia: '', telefono: '' });
-  const [cuenta, setCuenta] = useState({});
+  const [cuenta, setCuenta] = useState(sesion || {});
   const [password, setPassword] = useState('');
   const [errorEmail, setErrorEmail] = useState('');
   const [comprobando, setComprobando] = useState(false);
@@ -44,7 +47,7 @@ export default function FormRegistro({ inicial = {} }) {
   const conTeclado = useRef(false);
   const emailActual = useRef('');
   const seguridad = validarContrasena(password, cuenta);
-  function atras() { if (enviando || comprobando) return; setError(null); cambiarPaso(paso - 1); }
+  function atras() { if (enviando || comprobando) return; setError(null); cambiarPaso(sesion && paso === 5 ? 3 : paso - 1); }
   function cambiarPaso(n) { setDireccion(n > paso ? 1 : -1); setPaso(n); }
   useLayoutEffect(() => {
     const anterior = pasoAnterior.current;
@@ -122,7 +125,7 @@ export default function FormRegistro({ inicial = {} }) {
       setComprobando(false);
       if (!ok) return;
     }
-    if (paso < 5) cambiarPaso(paso + 1);
+    if (paso < 5) cambiarPaso(sesion && paso === 3 ? 5 : paso + 1);
     else crear();
   }
 
@@ -135,7 +138,7 @@ export default function FormRegistro({ inicial = {} }) {
     if (r?.ok) { irALaApp(); return; }
     setEnviando(false);
     const mensaje = j?.error || 'No se ha podido crear la cuenta. Revisa la conexión.';
-    const campo = /nif|cif|hacienda/i.test(mensaje) ? 'nif' : /postal/i.test(mensaje) ? 'cp' : /provincia/i.test(mensaje) ? 'provincia' : /direcci[oó]n/i.test(mensaje) ? 'direccion' : /ciudad/i.test(mensaje) ? 'ciudad' : /tel[eé]fono/i.test(mensaje) ? 'telefono' : /fiscal|raz[oó]n social/i.test(mensaje) ? 'razon' : /email/i.test(mensaje) ? 'email' : /contraseña/i.test(mensaje) ? 'password' : /nombre/i.test(mensaje) ? 'nombre' : /condiciones/i.test(mensaje) ? 'acepto' : /periodo/i.test(mensaje) ? 'periodo' : /plan/i.test(mensaje) ? 'plan' : /tipo/i.test(mensaje) ? 'tipo' : undefined;
+    const campo = /recomendaci[oó]n/i.test(mensaje) ? undefined : /gestor[ií]a/i.test(mensaje) ? 'gestoria' : /nif|cif|hacienda/i.test(mensaje) ? 'nif' : /postal/i.test(mensaje) ? 'cp' : /provincia/i.test(mensaje) ? 'provincia' : /direcci[oó]n/i.test(mensaje) ? 'direccion' : /ciudad/i.test(mensaje) ? 'ciudad' : /tel[eé]fono/i.test(mensaje) ? 'telefono' : /fiscal|raz[oó]n social/i.test(mensaje) ? 'razon' : /email/i.test(mensaje) ? 'email' : /contraseña/i.test(mensaje) ? 'password' : /nombre/i.test(mensaje) ? 'nombre' : /condiciones/i.test(mensaje) ? 'acepto' : /periodo/i.test(mensaje) ? 'periodo' : /plan/i.test(mensaje) ? 'plan' : /tipo/i.test(mensaje) ? 'tipo' : undefined;
     setError({ mensaje, campo });
     if ([1, 2, 3, 4, 5].includes(j?.paso)) cambiarPaso(j.paso);
     else if (/nif|cif|hacienda|empresa|fiscal|postal|provincia/i.test(j?.error || '')) cambiarPaso(2);
@@ -152,7 +155,7 @@ export default function FormRegistro({ inicial = {} }) {
       <div className="registro-contenido">
       <div hidden={paso !== 1} data-paso="1" className="registro-bloque">
         <h2 className="login-titulo" tabIndex={-1}>¿Qué tipo de negocio tienes?</h2>
-        <p className="nota registro-intro">Primero creamos tu cuenta. Después prepararemos tu negocio con sus actividades e impuestos.</p>
+        <p className="nota registro-intro">{sesion ? `Vas a añadir otra empresa a tu cuenta (${sesion.email}). Tendrá su propio plan y su prueba gratis.` : 'Primero creamos tu cuenta. Después prepararemos tu negocio con sus actividades e impuestos.'}</p>
         <div className="registro-opciones" role="radiogroup" aria-label="Tipo de negocio">
           {Object.entries(TIPOS_ALTA).map(([k, t]) => (
             <label key={k} className={`registro-opcion${tipo === k ? ' elegida' : ''}`}>
@@ -161,6 +164,14 @@ export default function FormRegistro({ inicial = {} }) {
             </label>
           ))}
         </div>
+        {recomendacion ? <>
+          <input type="hidden" name="ref" value={recomendacion.codigo} />
+          <p className="nota registro-recomendacion">Te recomienda <strong>{recomendacion.nombre}</strong>: tienes 2 meses gratis en lugar de uno.</p>
+        </> : <>
+          <label htmlFor="gestoria">Código de tu gestoría (opcional)</label>
+          <input id="gestoria" name="gestoria" autoCapitalize="characters" autoComplete="off" autoCorrect="off" spellCheck={false} value={gestoria} onChange={(e) => setGestoria(e.target.value)} {...accesibilidad('gestoria', 'registro-gestoria-ayuda')} />
+          <p id="registro-gestoria-ayuda" className="nota">Con el código de tu gestoría tienes 3 meses gratis.</p>
+        </>}
       </div>
 
       <div hidden={paso !== 2} data-paso="2" className="registro-bloque">
@@ -187,7 +198,7 @@ export default function FormRegistro({ inicial = {} }) {
 
       <div hidden={paso !== 3} data-paso="3" className="registro-bloque">
         <h2 className="login-titulo" tabIndex={-1}>Elige tu plan</h2>
-        <p className="nota">{TIPOS[tipo]} · El primer mes es gratis. Podrás cambiar de plan cuando quieras.</p>
+        <p className="nota">{TIPOS[tipo]} · {gestoria.trim() ? 'Con un código de gestoría válido tienes 3 meses gratis.' : recomendacion ? 'Los dos primeros meses son gratis por venir recomendado.' : 'El primer mes es gratis.'} Podrás cambiar de plan cuando quieras.</p>
         <div className="registro-periodo" role="radiogroup" aria-label="Periodo de pago">
           <label className={periodo === 'mes' ? 'elegida' : ''}><input type="radio" name="periodo" value="mes" checked={periodo === 'mes'} onChange={() => setPeriodo('mes')} {...accesibilidad('periodo')} />Mensual</label>
           <label className={periodo === 'anio' ? 'elegida' : ''}><input type="radio" name="periodo" value="anio" checked={periodo === 'anio'} onChange={() => setPeriodo('anio')} {...accesibilidad('periodo')} />Anual (−{DESCUENTO} %)</label>
@@ -209,9 +220,9 @@ export default function FormRegistro({ inicial = {} }) {
         <p className="nota">La prueba tiene 50 páginas de lectura IA en total. Al empezar el periodo de pago se activa la cuota mensual indicada, también si eliges pago anual; se comparte por empresa con la gestoría, se renueva cada mes natural y no se acumula.</p>
       </div>
 
-      <div hidden={paso !== 4} data-paso="4" className="registro-bloque">
+      {!sesion && <div hidden={paso !== 4} data-paso="4" className="registro-bloque">
         <h2 className="login-titulo" tabIndex={-1}>Tu cuenta</h2>
-        <p className="nota">{PRUEBA_DIAS} días gratis con todo incluido. Sin tarjeta.</p>
+        <p className="nota">{gestoria.trim() ? 'Con un código de gestoría válido tienes 3 meses gratis con todo incluido.' : recomendacion ? '2 meses gratis con todo incluido, por venir recomendado.' : `${PRUEBA_DIAS} días gratis con todo incluido.`} Sin tarjeta.</p>
         <BotonesSociales />
         <p className="separador"><span>o con tu email</span></p>
         <label htmlFor="nombre">Nombre</label>
@@ -228,7 +239,7 @@ export default function FormRegistro({ inicial = {} }) {
         </div>
         {/* Trampa para bots: invisible para personas. */}
         <input name="web" tabIndex={-1} autoComplete="off" className="registro-trampa" aria-hidden />
-      </div>
+      </div>}
 
       <div hidden={paso !== 5} data-paso="5" className="registro-bloque">
         <h2 className="login-titulo" tabIndex={-1}>Revisar y crear</h2>
@@ -238,8 +249,8 @@ export default function FormRegistro({ inicial = {} }) {
           <dt>Dirección fiscal</dt><dd>{fiscales.direccion}<br />{fiscales.cp} {fiscales.ciudad}<br />{fiscales.provincia}{fiscales.telefono && <><br />{fiscales.telefono}</>}</dd>
           <dt>Plan y periodo</dt><dd>{plan} · {periodo === 'anio' ? 'Anual' : 'Mensual'}<br />{elegido && precio(elegido.p, periodo)} sin IVA después de la prueba</dd>
         </dl>
-        <p className="nota">{PRUEBA_DIAS} días gratis, sin tarjeta.</p>
-        <p className="nota">Te enviaremos un email para confirmar que es tuyo.</p>
+        <p className="nota">{gestoria.trim() ? 'Con un código de gestoría válido tienes 3 meses gratis, sin tarjeta.' : recomendacion ? '2 meses gratis por venir recomendado, sin tarjeta.' : `${PRUEBA_DIAS} días gratis, sin tarjeta.`}</p>
+        {!sesion && <p className="nota">Te enviaremos un email para confirmar que es tuyo.</p>}
         <p className="nota registro-siguiente">Después de crear la cuenta, configuraremos las actividades y los impuestos de tu negocio.</p>
         <label className="registro-acepto" htmlFor="acepto">
           <input id="acepto" name="acepto" type="checkbox" value="1" required {...accesibilidad('acepto')} />
@@ -254,11 +265,11 @@ export default function FormRegistro({ inicial = {} }) {
         {error.campo && <button type="button" className="registro-corregir" onClick={() => enfocarVisible(form.current?.querySelector(`[data-paso="${paso}"] [name="${error.campo}"]`))}>Revisar campo</button>}
       </div>}
       <button type="submit" disabled={enviando || comprobando || (paso === 1 && !tipo) || (paso === 3 && !plan)}>
-        {comprobando ? 'Comprobando email…' : paso < 5 ? 'Continuar' : enviando ? 'Creando la cuenta…' : 'Crear cuenta'}
+        {comprobando ? 'Comprobando email…' : paso < 5 ? 'Continuar' : enviando ? 'Creando…' : sesion ? 'Crear empresa' : 'Crear cuenta'}
       </button>
       {paso > 1 && <button type="button" className="registro-atras" disabled={enviando || comprobando} onClick={atras}>Atrás</button>}
       {paso === 1 && <p className="nota">¿Llevas varias sociedades o un equipo mayor? <Link href="/business">Consulta Netto Business</Link>.</p>}
-      {paso === 1 && <p className="nota login-cambiar">¿Ya tienes cuenta? <Link href="/login">Inicia sesión</Link></p>}
+      {paso === 1 && (sesion ? <p className="nota login-cambiar"><a href="/ajustes">Volver a Netto</a></p> : <p className="nota login-cambiar">¿Ya tienes cuenta? <Link href="/login">Inicia sesión</Link></p>)}
     </form>
   );
 }

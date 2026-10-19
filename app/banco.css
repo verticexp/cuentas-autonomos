@@ -5,6 +5,11 @@
 .bco-nota { color: var(--muted); font-size: 13px; margin: 8px 0 0; line-height: 1.4; }
 .bco-botones { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .bco-botones .boton { font-size: 14px; }
+/* A qué cuenta va el extracto (components/Banco.js): en el móvil ocupa la fila entera. */
+.bco-destino { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); flex: 1 1 100%; min-width: 0; white-space: nowrap; }
+.bco-destino .campo, .bco-destino-nombre { flex: 1; min-width: 0; font-size: 14px; }
+.bco-destino-nombre { flex: 1 1 100%; box-sizing: border-box; }
+@media (min-width: 480px) { .bco-destino .campo { min-width: 200px; } .bco-destino-nombre { flex: 0 1 240px; } }
 
 .bco-cuentas { background: var(--surface); border-radius: 12px; padding: 14px 16px; margin: 8px 0 20px; }
 .bco-total { display: flex; flex-direction: column; gap: 2px; padding-bottom: 10px; }
@@ -81,21 +86,30 @@
   .bco-cuenta, .bco-cuentas > .bco-nota:not(:last-child) { grid-column: 1 / -1; }
   .bco-cuentas > .bco-botones { grid-column: 1; margin-top: 12px; }
   .bco-cuentas > .bco-nota:last-child { grid-column: 2; align-self: center; margin: 12px 0 0; max-width: 320px; text-align: right; }
-  .bco-mov:not(.hecho) { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) auto; align-items: center; column-gap: 16px; }
+  .bco-conectar .bco-bancos { columns: 2; column-gap: 24px; max-height: none; }
+  .bco-conectar .bco-bancos li { break-inside: avoid; }
+}
+/* Tres columnas por movimiento (qué es, pareja y botones) solo donde caben con el menú lateral */
+@media (min-width: 1280px) {
+  .pagina.banco { max-width: 1040px; }
+  .bco-mov:not(.hecho) { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 320px) 264px; align-items: center; column-gap: 16px; }
   .bco-mov:not(.hecho) .bco-sug { margin: 0; }
+  .bco-mov:not(.hecho) > .bco-quees { grid-column: 2 / 4; margin: 0; }
   .bco-mov:not(.hecho) > .bco-botones, .bco-mov:not(.hecho) > .bco-elegir { margin: 0; justify-content: flex-end; }
+  .bco-mov:not(.hecho) > .bco-botones { flex-wrap: nowrap; }
   .bco-mov:not(.hecho) > .bco-mov-fila:only-child { grid-column: 1 / -1; }
   .bco-mov:not(.hecho):not(:has(.bco-sug)) > .bco-botones { grid-column: 2 / 4; }
   .bco-mov:not(.hecho) > .bco-elegir { grid-column: 1 / -1; margin: 10px 0 0 52px; display: flex; gap: 8px; align-items: center; }
   .bco-elegir .campo { flex: 1; }
   .bco-elegir .bco-botones { margin: 0; flex-wrap: nowrap; }
   .bco-elegir .bco-nota { display: none; }
-  .bco-conectar .bco-bancos { columns: 2; column-gap: 24px; max-height: none; }
-  .bco-conectar .bco-bancos li { break-inside: avoid; }
 }
-.bco-quees { margin-top: 8px; padding: 10px 12px; border-radius: 12px; background: var(--relleno); }
+.bco-quees { margin: 10px 0 0 52px; padding: 10px 12px; border-radius: 12px; background: var(--relleno); }
 .bco-quees-t { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
 .bco-quees .campo { margin: 4px 0 0; }
 .bco-quees .bco-nota { margin: 6px 0; }
+.bco-mov .bco-quees .bco-botones { margin: 10px 0 0; }
+/* Al elegir factura o gasto, la fila deja hueco bajo la barra flotante para que el desplegable no tape los botones */
+.bco-elegir { scroll-margin: 24px 0 120px; }
 .bco-sug-m { display: block; color: var(--muted); font-size: 13px; margin-top: 4px; }
 .bco-auto { font-style: normal; font-weight: 500; color: var(--in); font-size: 0.85em; }

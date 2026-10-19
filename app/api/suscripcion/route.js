@@ -1,7 +1,8 @@
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { esApp } from '@/lib/app';
 import { PERIODOS } from '@/lib/planes';
-import { planDe } from '@/lib/prueba';
+import { esFundador, planDe } from '@/lib/prueba';
+import { fiscalDe } from '@/lib/empresa';
 import { stripeListo } from '@/lib/stripe';
 import { cambiarPlan, confirmarCheckout, crearCheckout, portal } from '@/lib/suscripcion';
 
@@ -16,7 +17,7 @@ export async function POST(req) {
   if (u.rol !== 'admin') return error('Solo el administrador de la empresa puede cambiar el plan', 403);
   if (esApp(req.headers.get('user-agent'))) return error('El plan se contrata desde la web', 403);
   if (!stripeListo()) return error('Los pagos no están activados todavía. Escríbenos a corporate@nettohq.com.', 503);
-  if (!u.plan) return error('Tu cuenta no tiene plan: escríbenos a corporate@nettohq.com.', 400);
+  if (esFundador(u.plan)) return error('Tu empresa tiene el plan Fundador: es gratis de por vida y no tienes que contratar nada.', 400);
   const b = await cuerpo(req);
   const volver = new URL('/ajustes/plan', req.url).toString();
   if (b.portal) {
@@ -29,6 +30,8 @@ export async function POST(req) {
   }
   const { tipo, nombre, periodo } = b;
   if (!planDe(tipo, nombre) || !PERIODOS[periodo] || (tipo === 'gra' && (u.plan.tipo !== 'gra' || nombre !== u.plan.nombre))) return error('Plan no válido');
+  // Autónomo o pyme según los datos fiscales de la empresa (Ajustes › Tu plan ya no deja elegirlo).
+  if (tipo !== 'gra' && tipo !== (fiscalDe(u).tipo === 'sociedad' ? 'pym' : 'aut')) return error('Este plan no corresponde al tipo de tu empresa.');
   const r = u.plan.pagado && u.plan.suscripcion
     ? await cambiarPlan({ plan: u.plan, tipo, nombre, periodo, empresa: u.empresa })
     : await crearCheckout({ empresa: u.empresa, plan: u.plan, tipo, nombre, periodo, email: u.email, volver });

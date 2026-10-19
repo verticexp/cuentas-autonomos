@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { apartar, casillas303, desglose, importes, minoracion130, origenGasto, siguienteNumero, resumenAnual, leerImporte, numeroFactura, proximoPlazo, vencimiento, vencida } from '../lib/calculos.js';
+import { apartar, margenIrpf, casillas303, desglose, importes, minoracion130, origenGasto, siguienteNumero, resumenAnual, leerImporte, numeroFactura, proximoPlazo, vencimiento, vencida } from '../lib/calculos.js';
 
 const { facturas, gastos } = JSON.parse(readFileSync(new URL('../data/inicial.json', import.meta.url)));
 
@@ -26,8 +26,14 @@ test('130: acumulado, 5 % de difícil justificación y arrastre de lo no present
 });
 
 test('apartar para Hacienda', () => {
-  assert.deepEqual(apartar({ base: 1000, ivaPct: 21, irpfPct: 15 }), { iva: 210, irpf: 40, total: 250 });
-  assert.deepEqual(apartar({ base: 1000, ivaPct: 21, irpfPct: 0 }), { iva: 210, irpf: 190, total: 400 });
+  assert.deepEqual(apartar({ base: 1000, ivaPct: 21, irpfPct: 15 }), { iva: 210, irpf: 40, total: 250, margen: 0.95 });
+  assert.deepEqual(apartar({ base: 1000, ivaPct: 21, irpfPct: 0 }), { iva: 210, irpf: 190, total: 400, margen: 0.95 });
+  // Con gastos: si solo el 40 % de lo facturado es beneficio, el 20 % de 400 € = 80 €; con retención del 15 %, nada.
+  assert.equal(apartar({ base: 1000, ivaPct: 21, irpfPct: 0 }, { margen: 0.4 }).irpf, 80);
+  assert.equal(apartar({ base: 1000, ivaPct: 21, irpfPct: 15 }, { margen: 0.4 }).irpf, 0);
+  // Con pérdidas, nada de IRPF; null (sin datos) vuelve al 95 %.
+  assert.equal(apartar({ base: 1000, ivaPct: 21, irpfPct: 0 }, { margen: 0 }).irpf, 0);
+  assert.equal(apartar({ base: 1000, ivaPct: 21, irpfPct: 0 }, { margen: margenIrpf(null, 1) ?? undefined }).irpf, 190);
 });
 
 test('series, plazos y vencimientos', () => {
@@ -160,4 +166,13 @@ test('130, casilla 13: minoración según el rendimiento del año anterior', () 
   assert.deepEqual([poco[1].c07, poco[1].negPrev, poco[1].m130], [380, 43, 237]);
   // Sin minoración, todo igual que antes.
   assert.deepEqual(resumenAnual(F, [], 2026, { 1: 190, 2: 190 }).trimestres.map((q) => q.m130), [190, 190, 0, 0]);
+});
+
+test('margen para apartar: rendimiento ÷ ingresos acumulados hasta el trimestre', () => {
+  const F = [{ fecha: '2026-02-01', base: 10000, ivaPct: 21, irpfPct: 0, actividad: 'dj' }];
+  const G = [{ fecha: '2026-02-02', base: 6000, ivaPct: 21, actividad: 'dj' }];
+  // 10.000 − 6.000 = 4.000; menos el 5 % de difícil justificación = 3.800 → 38 %.
+  assert.equal(margenIrpf(resumenAnual(F, G, 2026), 1), 0.38);
+  assert.equal(margenIrpf(resumenAnual([], G, 2026), 1), null);
+  assert.equal(margenIrpf(resumenAnual(F, [{ ...G[0], base: 20000 }], 2026), 1), 0);
 });

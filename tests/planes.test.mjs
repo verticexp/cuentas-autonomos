@@ -92,3 +92,19 @@ test('avisos a 7, 3, el último día y al acabar; el texto dice lo que perdería
   assert.match(fin.mensaje, /No se ha borrado nada/);
   assert.doesNotMatch(fin.mensaje, /no se te cobra/);
 });
+
+test('plan Fundador: sin plan o con plan.fundador, gratis de por vida, sin prueba, límites ni solo lectura', async () => {
+  const { diasPrueba, esFundador } = await import('../lib/prueba.js');
+  const { perderia } = await import('../lib/planes.js');
+  const regalado = { ...prueba('aut', 'Esencial', '2026-01-01'), fundador: true };
+  assert.equal(esFundador(null), true);
+  assert.equal(esFundador(regalado), true);
+  assert.equal(esFundador(prueba('aut', 'Pro')), false);
+  assert.equal(diasPrueba(regalado, HOY), null);
+  assert.equal(soloLectura(regalado, HOY), false);
+  assert.equal(limitesDe(regalado), null);
+  assert.equal(sinFuncion(regalado, 'nominas'), null);
+  assert.equal(sinHueco(regalado, 'usuarios', 99), null);
+  assert.deepEqual(perderia(regalado, { nominas: 3 }, { usuarios: 9 }), []);
+  assert.equal(soloLectura(prueba('aut', 'Esencial', '2026-01-01'), HOY), true);
+});

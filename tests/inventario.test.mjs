@@ -46,7 +46,7 @@ test('el valor del almacén entra en la contabilidad y en los libros registro', 
   assert.equal(b.total, b.totalPasivo);
   assert.equal(b.activo.find((x) => x.id === 'ac').detalle.find((x) => x.id === '300').importe, 62.5);
   const l = librosRegistro({ ...datos, fiscal: { tipo: 'autonomo', iva: 'general' }, actividades: [{ id: 'x' }], empresa: { nif: '1Z' } }, 2025, '2026-02-01');
-  const i06 = l.archivos[0].filas.find((f) => f[6] === 'I06');
+  const i06 = l.hojas[0].filas.find((f) => f[6] === 'I06');
   assert.equal(i06[7], '62,50'); // las existencias suben de 0 a 62,50 €
 });
 

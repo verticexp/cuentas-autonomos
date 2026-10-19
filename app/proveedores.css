@@ -4,7 +4,7 @@
 .gasto-pendiente input { width: 20px; height: 20px; accent-color: var(--marca); margin: 0; }
 .prov-cifras { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 4px 0 16px; color: var(--muted); font-size: 14px; }
 .prov-cifras strong { color: var(--ink); font-variant-numeric: tabular-nums; }
-.prov-debe { color: #C0392B; }
+.prov-debe, .txt small.prov-debe { color: var(--out); }
 .prov-pagar { margin: 0 0 16px; }
 
 /* En revisión (components/RevisionGastos.js): cada cargo se abre para emparejarlo, borrar el gasto o añadirlo. */

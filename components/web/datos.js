@@ -44,12 +44,12 @@ export const FUNCIONES = [
     ],
   },
   {
-    slug: 'impuestos', icono: 'impuestos', nombre: 'Impuestos y modelos', corto: '303, 130, 111, 115, 100…',
+    slug: 'impuestos', icono: 'impuestos', nombre: 'Impuestos y modelos', corto: '303, 130, 111, 390, 347, Sociedades…',
     titulo: 'Tus impuestos, calculados antes de que te los pidan',
     sub: 'Netto calcula tus modelos a partir de tus facturas y gastos. Sabes cuánto apartar cada trimestre, sin sustos en abril.',
     demo: 'calculadora',
     puntos: [
-      { t: 'Modelos al día', d: '303 de IVA, 130 de pago fraccionado, 111 y 115 de retenciones y la renta (100), calculados con tus datos.' },
+      { t: 'Modelos al día', d: 'IVA (303 y 390), pago fraccionado (130), retenciones (111, 115, 180 y 190), 347, 349, Sociedades (200 y 202) y la renta (100), calculados con tus datos.' },
       { t: 'Cuánto apartar', d: 'El panel te dice cuánto dinero reservar para Hacienda este trimestre.' },
       { t: 'Recordatorios', d: 'Te avisamos antes de cada plazo de presentación para que no se te pase.' },
     ],

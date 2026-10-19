@@ -6,7 +6,8 @@ import { llamar } from './Acciones';
 import { atras, volverA } from '@/lib/transicion';
 import Deslizable from './Deslizable';
 import { eur } from '@/lib/formato';
-import { importes, nifUE } from '@/lib/calculos';
+import { importes, nifUE, origenGasto } from '@/lib/calculos';
+import { partirIva, pctDeducible } from '@/lib/ivaDeducible';
 import { parseImporte } from '@/lib/importe';
 import { CATEGORIAS, categoria, categoriaDe, pareceBien } from '@/lib/categorias';
 import { LIMITE_LIBERTAD, TIPOS_BIEN, coeficiente } from '@/lib/amortizaciones';
@@ -28,6 +29,8 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
   const delBanco = movimiento && { ...vacio, fecha: movimiento.fecha, concepto: movimiento.contraparte || movimiento.concepto, proveedor: movimiento.contraparte || '', base: String(Math.round((Math.abs(movimiento.importe) / 1.21) * 100) / 100).replace('.', ','), banco: movimiento.id };
   const [g, setG] = useState(gasto ? { ...gasto, base: String(gasto.base).replace('.', ',') } : delBanco || vacio);
   const [error, setError] = useState('');
+  // IVA deducible en parte (lib/ivaDeducible.js): 100, 50 y 0 en el desplegable; cualquier otro, escrito a mano.
+  const [pctOtro, setPctOtro] = useState(() => ![undefined, null, '', 100, 50, 0].includes(gasto?.deduciblePct));
   const [enviando, setEnviando] = useState(false);
   const [avisoDuplicados, setAvisoDuplicados] = useState(null);
   const poner = (k, v) => { setAvisoDuplicados(null); setG((x) => ({ ...x, [k]: v })); };
@@ -193,9 +196,22 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
         </select>
       )}
       {Number(g.irpfPct) > 0 && <p className="nota">Le pagas la factura menos la retención, y esa retención la ingresas tú en el 111.</p>}
+      {(Number(g.ivaPct) > 0 || origenGasto(g)) && <>
+        <select className="campo" value={pctOtro ? 'otro' : String(pctDeducible(g))} aria-label="IVA que te deduces"
+          onChange={(e) => { const v = e.target.value; setPctOtro(v === 'otro'); poner('deduciblePct', v === 'otro' ? '' : v === '100' ? undefined : Number(v)); }}>
+          <option value="100">Me deduzco todo el IVA</option>
+          <option value="50">Me deduzco el 50 % (coche, uso mixto)</option>
+          <option value="0">No me deduzco el IVA</option>
+          <option value="otro">Me deduzco otro porcentaje…</option>
+        </select>
+        {pctOtro && <label>% del IVA que te deduces<input className="campo" inputMode="decimal" value={g.deduciblePct ?? ''} onChange={(e) => poner('deduciblePct', e.target.value)} placeholder="Ej.: 30" /></label>}
+        {pctDeducible(g) === 100 && Number(g.ivaPct) > 0 && !g.proveedorNif && <p className="nota">¿Es un ticket sin tu NIF? Su IVA no se deduce (art. 97 de la Ley del IVA): pide factura con tu NIF o elige «No me deduzco el IVA».</p>}
+        {pctDeducible(g) < 100 && <p className="nota">Solo se deduce el IVA de la parte que usas para tu actividad (un turismo se presume al 50 %). El IVA que no te deduces cuenta como gasto{g.inversion ? ' y se amortiza con el bien' : ''}.</p>}
+      </>}
       {parseImporte(g.base) > 0 && <dl className="gasto-importes" aria-label="Importes del gasto">
         <div><dt>Base imponible</dt><dd>{eur(calculo.base)}</dd></div>
         <div><dt>IVA</dt><dd>{eur(calculo.iva)}</dd></div>
+        {pctDeducible(g) < 100 && Number(g.ivaPct) > 0 && <div><dt>IVA que te deduces</dt><dd>{eur(partirIva(g, calculo.iva).deducible)}</dd></div>}
         <div><dt>Retención de IRPF</dt><dd>{calculo.irpf ? '−' : ''}{eur(calculo.irpf)}</dd></div>
         <div className="gasto-total"><dt>Total a pagar</dt><dd>{eur(calculo.total)}</dd></div>
       </dl>}
@@ -219,7 +235,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
         </select>
         <p className="nota">{parseImporte(g.base) > 0 && parseImporte(g.base) <= LIMITE_LIBERTAD
           ? 'Como no pasa de 300 €, se resta entero este año.'
-          : `No se resta entero: se amortiza un ${coeficiente(g, regimen)} % al año desde la fecha de compra.`} El IVA sí lo deduces entero en el 303 de este trimestre.</p>
+          : `No se resta entero: se amortiza un ${coeficiente(g, regimen)} % al año desde la fecha de compra.`} {pctDeducible(g) < 100 ? 'La parte deducible del IVA' : 'El IVA'} sí la deduces entera en el 303 de este trimestre.</p>
       </> : (
         <select className="campo" value={g.categoria || ''} onChange={(e) => poner('categoria', e.target.value || undefined)} aria-label="Categoría">
           <option value="">{categoria(categoriaDe({ ...g, categoria: undefined })).nombre} (automática)</option>

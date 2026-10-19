@@ -363,3 +363,12 @@ test('funciones puras, serie personalizada, sin líneas y concepto limitado a 14
   }
   assert.equal(JSON.stringify({ factura, emisor }), original);
 });
+
+test('auditoría: el vencimiento guardado al emitir manda en Facturae y UBL; la inversión del sujeto pasivo, categoría AE', () => {
+  const conVence = { ...f, fecha: '2026-10-01', vence: '2026-12-15' };
+  assert.match(facturae(conVence, { ...emisor, plazo: 30 }), /<InstallmentDueDate>2026-12-15<\/InstallmentDueDate>/);
+  assert.match(ubl(conVence, { ...emisor, plazo: 30 }), /<cbc:DueDate>2026-12-15<\/cbc:DueDate>/);
+  const isp = { ...f, operacion: 'isp', lineas: [{ concepto: 'Obra', cantidad: 1, precio: 100, dto: 0, ivaPct: 0 }], base: 100, ivaPct: 0, irpfPct: 0, cliente: { ...f.cliente, nif: 'B12345674' } };
+  assert.match(ubl(isp, emisor), /<cbc:ID>AE<\/cbc:ID>/);
+  assert.match(ubl(isp, emisor), /Inversión del sujeto pasivo/);
+});

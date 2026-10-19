@@ -5,7 +5,10 @@
 .cobro-boton { min-height: 52px; padding: 14px 20px; border-radius: 14px; background: var(--in); color: #fff; font-size: 1.0625rem; font-weight: 700; text-align: center; cursor: pointer; }
 .cobro-boton:disabled { opacity: 0.65; cursor: wait; }
 .cobro-boton:focus-visible, .cobro-enlace:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
-@media (prefers-color-scheme: dark) { .cobro-boton { color: var(--paper); } }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="claro"]) .cobro-boton { color: var(--paper); }
+}
+:root[data-tema="oscuro"] .cobro-boton { color: var(--paper); }
 .cobro-menores { display: flex; flex-wrap: wrap; gap: 4px 18px; justify-content: center; }
 .cobro-enlace { min-height: 36px; padding: 6px 2px; color: var(--muted); font-size: 0.9375rem; text-decoration: underline; text-underline-offset: 3px; }
 .cobro-hecho { grid-auto-flow: column; justify-content: space-between; align-items: center; }

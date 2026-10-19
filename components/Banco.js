@@ -57,7 +57,7 @@ const AYUDA = {
 };
 
 // Sin factura ni gasto: qué es (Netto propone una opción por el concepto) y apuntarlo con un toque.
-function QueEs({ m, accion }) {
+function QueEs({ m, accion, children }) {
   const [clase, setClase] = useState(m.clase);
   const [intereses, setIntereses] = useState('');
   return (
@@ -71,6 +71,7 @@ function QueEs({ m, accion }) {
         {clase === 'gasto'
           ? <Link href={`/gastos?banco=${encodeURIComponent(m.id)}`} className="boton pequeno">Añadir con su factura</Link>
           : <button className="boton pequeno" onClick={() => accion({ accion: 'contabilizar', id: m.id, clase, intereses })}>{['hacienda', 'seguridad', 'nomina'].includes(clase) ? 'Entendido' : clase === 'traspaso' ? 'Apartar' : 'Apuntar'}</button>}
+        {children}
       </div>
     </div>
   );
@@ -80,6 +81,8 @@ function QueEs({ m, accion }) {
 function Pendiente({ m, permisos, accion }) {
   const [eligiendo, setEligiendo] = useState(false);
   const [elegida, setElegida] = useState('');
+  const elegir = useRef(null);
+  useEffect(() => { if (eligiendo) elegir.current?.scrollIntoView({ block: 'nearest', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); }, [eligiendo]);
   const elegidaValida = m.opciones.some((o) => o.id === elegida) ? elegida : '';
   const s = m.sugerencia;
   const puedeAqui = m.importe > 0 ? permisos.facturar : permisos.gastar;
@@ -98,9 +101,8 @@ function Pendiente({ m, permisos, accion }) {
           {(s.motivo && MOTIVO[s.motivo]) && <small className="bco-sug-m">{MOTIVO[s.motivo]}</small>}
         </div>
       )}
-      {puedeAqui && !s && !eligiendo && <QueEs m={m} accion={accion} />}
       {puedeAqui && (eligiendo ? (
-        <div className="bco-elegir">
+        <div className="bco-elegir" ref={elegir}>
           <select className="campo" value={elegidaValida} onChange={(e) => setElegida(e.target.value)} aria-label={m.importe > 0 ? 'Factura' : 'Gasto'}>
             <option value="">{m.importe > 0 ? 'Elige la factura…' : 'Elige el gasto…'}</option>
             {m.opciones.map((o) => <option key={o.id} value={o.id}>{o.texto} · {fechaCorta(o.fecha)} · {o.total !== undefined && o.saldo !== undefined && Math.abs(o.total - o.saldo) > 0.005 ? `${eur(o.total)}, faltan ${eur(o.saldo)}` : eur(o.importe)}</option>)}
@@ -111,6 +113,11 @@ function Pendiente({ m, permisos, accion }) {
           </div>
           {!m.opciones.length && <p className="bco-nota">{m.importe > 0 ? 'No hay facturas sin cobrar.' : 'No hay gastos de esas fechas sin emparejar. Apúntalo en Gastos y vuelve.'}</p>}
         </div>
+      ) : !s ? (
+        <QueEs m={m} accion={accion}>
+          <button className="boton pequeno sec" onClick={() => setEligiendo(true)}>{m.importe > 0 ? 'Elegir factura' : 'Elegir gasto'}</button>
+          <button className="boton pequeno sec" onClick={() => accion({ accion: 'ignorar', id: m.id })}>Ignorar</button>
+        </QueEs>
       ) : (
         <div className="bco-botones">
           {s && <button className="boton pequeno" onClick={() => confirmar(s.tipo, s.id)}>{s.yaCobrada ? 'Vincular' : s.motivo === 'parcial' ? 'Cobro parcial' : 'Confirmar'}</button>}
@@ -185,17 +192,28 @@ export default function Banco({ cuentas, pendientes, emparejados, ignorados, aut
   // Al abrir, si hay cuentas conectadas, se traen los últimos movimientos (el servidor no repite si hace menos de 6 horas).
   useEffect(() => { if (listo && conectadas.length && (permisos.facturar || permisos.gastar)) actualizar(false); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [encima, setEncima] = useState(false);
+  // A qué cuenta va el extracto: '' = la que diga el archivo (IBAN) o la única que hay; 'nueva' = otra, con su nombre.
+  const deExtracto = cuentas.filter((c) => c.origen !== 'enable');
+  const [destino, setDestino] = useState('');
+  const [nombreNueva, setNombreNueva] = useState('');
+  const [enEspera, setEnEspera] = useState(null);
   const subir = (e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) subirArchivo(f); };
   const soltar = (e) => { e.preventDefault(); setEncima(false); const f = e.dataTransfer.files?.[0]; if (f) subirArchivo(f); };
   const subirArchivo = async (f) => {
+    if (destino === 'nueva' && !nombreNueva.trim()) { setEnEspera(f); setMsg({ error: true, texto: 'Pon un nombre a la cuenta nueva' }); return; }
     setOcupado(true); setMsg(null);
     const fd = new FormData();
     fd.set('archivo', f);
+    if (destino) fd.set('cuenta', destino);
+    if (destino === 'nueva') fd.set('nombre', nombreNueva.trim());
     try {
       const r = await fetch('/api/banco/importar', { method: 'POST', body: fd });
       const d = await r.json().catch(() => ({}));
+      if (d.elegir) { setEnEspera(f); setMsg({ error: true, texto: `${d.error}: elígela en «Cuenta del extracto» y pulsa «Subir a esta cuenta».` }); return; }
       if (!r.ok) throw new Error(d.error || 'No se pudo leer el extracto');
-      setMsg({ texto: `✓ ${d.nuevos === 1 ? '1 movimiento nuevo' : `${d.nuevos} movimientos nuevos`}${d.repetidos ? ` · ${d.repetidos} ya estaban` : ''}${d.errores ? ` · ${d.errores} filas sin leer` : ''}` });
+      setEnEspera(null);
+      if (destino === 'nueva') { setDestino(d.cuenta?.id || ''); setNombreNueva(''); }
+      setMsg({ texto: `✓ ${d.nuevos === 1 ? '1 movimiento nuevo' : `${d.nuevos} movimientos nuevos`}${d.cuenta && deExtracto.length ? ` en ${d.cuenta.nombre}` : ''}${d.repetidos ? ` · ${d.repetidos} ya estaban` : ''}${d.errores ? ` · ${d.errores} filas sin leer` : ''}` });
       router.refresh();
     } catch (err) { setMsg({ error: true, texto: err.message }); } finally { setOcupado(false); window.dispatchEvent(new Event('netto:escaneos')); }
   };
@@ -242,6 +260,17 @@ export default function Banco({ cuentas, pendientes, emparejados, ignorados, aut
         <div className="bco-botones">
           {permisos.empresa && listo && <button className="boton pequeno" onClick={() => setConectando(true)}>Conectar banco</button>}
           {listo && conectadas.length > 0 && (permisos.facturar || permisos.gastar) && <button className="boton pequeno sec" onClick={() => actualizar(true)}>Actualizar</button>}
+          {(permisos.facturar || permisos.gastar) && (deExtracto.length > 0 || enEspera) && (
+            <label className="bco-destino">Cuenta del extracto
+              <select className="campo" value={destino} onChange={(e) => setDestino(e.target.value)}>
+                <option value="">Según el archivo</option>
+                {deExtracto.map((c) => <option key={c.id} value={c.id}>{c.nombre}{c.iban ? ` ${iban(c.iban)}` : ''}</option>)}
+                <option value="nueva">Otra cuenta (nueva)…</option>
+              </select>
+            </label>
+          )}
+          {(permisos.facturar || permisos.gastar) && destino === 'nueva' && <input className="campo bco-destino-nombre" placeholder="Nombre de la cuenta (p. ej. Sabadell)" maxLength={40} value={nombreNueva} onChange={(e) => setNombreNueva(e.target.value)} aria-label="Nombre de la cuenta nueva" />}
+          {(permisos.facturar || permisos.gastar) && enEspera && <button className="boton pequeno" disabled={!destino || ocupado} onClick={() => subirArchivo(enEspera)}>Subir a esta cuenta</button>}
           {(permisos.facturar || permisos.gastar) && <button className="boton pequeno sec" onClick={() => fichero.current?.click()}>Subir extracto</button>}
           {(permisos.facturar || permisos.gastar) && <input ref={fichero} type="file" hidden accept=".csv,.xlsx,.txt,.n43,.aeb,.q43,.pdf,text/csv,text/plain,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={subir} aria-label="Extracto del banco" />}
         </div>

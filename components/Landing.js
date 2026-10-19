@@ -9,13 +9,13 @@ import { VentanaApp } from '@/components/web/demos/Pantallas';
 import { Cta, Encabezado, Faq, Flecha } from '@/components/web/Bloques';
 import { FAQ_GENERAL, FUNCIONES, SEGMENTOS } from '@/components/web/datos';
 
-const CINTA = ['Facturas ilimitadas', 'Verifactu', 'Presupuestos online', 'Gastos con IA', 'Modelo 303', 'Modelo 130', 'Modelos 111 y 115', 'Renta (100)', 'Conciliación de extractos', 'Libros registro (formato AEAT)', 'Contabilidad por partida doble', 'Balance y resultados', 'Amortizaciones', 'Cuentas anuales', 'Inventario y stock', 'Previsión de caja', 'Nóminas', 'Registro de jornada', 'Permisos por área', 'Varias empresas', 'Portal del cliente', 'Asistente IA', 'Cámbiate desde Holded, A3 o Sage', 'Face ID'];
+const CINTA = ['Facturas ilimitadas', 'Verifactu', 'Presupuestos online', 'Gastos con IA', 'Modelo 303', 'Modelo 130', 'Modelos 111 y 115', 'Modelos 390, 347 y 349', 'Impuesto de Sociedades', 'Renta (100)', 'Conciliación de extractos', 'Libros registro (formato AEAT)', 'Contabilidad por partida doble', 'Balance y resultados', 'Amortizaciones', 'Cuentas anuales', 'Inventario y stock', 'Previsión de caja', 'Nóminas', 'Registro de jornada', 'Permisos por área', 'Varias empresas', 'Portal del cliente', 'Asistente IA', 'Cámbiate desde Holded, A3 o Sage', 'Face ID'];
 
 const CIFRAS = [
-  { n: 9, suf: ' €', t: 'al mes, desde', d: 'Sin cuotas de alta ni permanencia' },
+  { pre: 'desde', n: 9, suf: ' €', t: 'al mes', d: 'Sin cuotas de alta ni permanencia' },
   { n: 1, suf: ' mes', t: 'de prueba gratis', d: 'Sin dar ninguna tarjeta' },
-  { n: 100, suf: '', t: 'tickets al día con IA', d: 'Por usuario, incluidos en tu plan' },
-  { n: 5, suf: ' modelos', t: 'fiscales calculados', d: '303, 130, 111, 115 y 100' },
+  { pre: 'hasta', n: 1500, suf: '', t: 'páginas al mes leídas con IA', d: 'Tickets y facturas, en foto o PDF' },
+  { n: 12, suf: ' modelos', t: 'fiscales calculados', d: '303, 130, 111, 390, 347, Sociedades…' },
 ];
 
 // Web pública de nettohq.com: lo que ve en / quien aún no ha entrado.
@@ -24,12 +24,12 @@ export default function Landing() {
     <Marco>
       <section className="web-hero">
         <div className="web-hero-txt">
-          <Link href="/funciones/impuestos" className="web-aviso"><span>Nuevo</span>Calcula tus modelos 303 y 130 al momento<Icono n="flecha" className="ico web-flecha" /></Link>
+          <Link href="/funciones/facturacion" className="web-aviso"><span>2027</span>Verifactu: tus facturas ya cumplen<i className="web-solo-ancho"> con Netto</i><Icono n="flecha" className="ico web-flecha" /></Link>
           <h1>Las cuentas de tu negocio, <em>por fin en orden</em>.</h1>
-          <p className="web-sub">Facturas, gastos con IA, impuestos, contabilidad, stock, caja y equipo en una sola app. La alternativa a Holded más sencilla y más barata, para autónomos, pymes y grandes empresas.</p>
+          <p className="web-sub">Facturas, gastos con IA, impuestos<span className="web-solo-ancho">, contabilidad, stock, caja y equipo</span><span className="web-solo-movil"> y contabilidad</span> en una sola app. La alternativa a Holded más sencilla y más barata<span className="web-solo-ancho">, para autónomos, pymes y grandes empresas</span>.</p>
           <div className="web-cta">
             <Link className="web-btn web-btn-grande" href="/contacto">Empieza gratis<Flecha /></Link>
-            <Link className="web-btn web-btn-claro web-btn-grande" href="/funciones">Ver cómo funciona</Link>
+            <Link className="web-btn web-btn-claro web-btn-grande" href="/funciones"><span><span className="web-solo-ancho">Ver cómo</span><span className="web-solo-movil">Cómo</span> funciona</span></Link>
           </div>
           <ul className="web-micro"><li><Icono n="tic" />1 mes gratis sin tarjeta</li><li><Icono n="tic" />Importa desde Holded</li><li><Icono n="tic" />Preparada para Verifactu</li></ul>
         </div>
@@ -47,7 +47,7 @@ export default function Landing() {
         <div className="web-cifras">
           {CIFRAS.map((c, i) => (
             <div key={c.t} data-r style={{ '--d': `${i * 70}ms` }}>
-              <b><span data-contar={c.n}>{c.n}</span>{c.suf}</b>
+              <b>{c.pre && <i>{c.pre}</i>}<span data-contar={c.n}>{c.n.toLocaleString('es-ES', { useGrouping: 'always' })}</span>{c.suf}</b>
               <p>{c.t}</p><small>{c.d}</small>
             </div>
           ))}
@@ -61,7 +61,7 @@ export default function Landing() {
 
       <section className="web-sec">
         <Encabezado kicker="Funciones" titulo="Hecho para lo que de verdad te quita tiempo" />
-        <div className="web-funciones">
+        <div className="web-funciones web-carrusel">
           {FUNCIONES.map((f, i) => (
             <Link key={f.slug} href={`/funciones/${f.slug}`} data-foco data-r className="web-fcard" style={{ '--d': `${(i % 3) * 70}ms` }}>
               <span className="web-fcard-ico"><Icono n={f.icono} /></span>
@@ -85,7 +85,7 @@ export default function Landing() {
 
       <section className="web-sec">
         <Encabezado kicker="Para quién" titulo="Crece sin cambiar de herramienta" sub="Empieza como autónomo y sigue con Netto cuando contrates a tu primer empleado o abras tu segunda empresa." />
-        <div className="web-segs">
+        <div className="web-segs web-carrusel">
           {SEGMENTOS.map((s, i) => (
             <Link key={s.id} href={s.ruta} data-foco data-r className="web-segcard" style={{ '--d': `${i * 80}ms` }}>
               <span className="web-fcard-ico"><Icono n={s.icono} /></span>
