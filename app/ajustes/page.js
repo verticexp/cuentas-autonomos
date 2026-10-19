@@ -151,7 +151,10 @@ export default async function Page() {
         <Celda href="/ajustes/ayuda" ico="ayuda" tono="gris" titulo="Ayuda y contacto" detalle="Preguntas frecuentes y escribirnos" />
       </Grupo>
 
-      {admin && !u.admin && <Grupo><Celda href="/ajustes/baja" ico="baja" tono="rojo" titulo="Dar de baja la empresa" detalle="Cerrar la cuenta y borrar los datos" /></Grupo>}
+      {!u.admin && <Grupo>
+        {admin && <Celda href="/ajustes/baja" ico="baja" tono="rojo" titulo="Dar de baja la empresa" detalle="Cerrar la empresa y borrar los datos" />}
+        <Celda href="/ajustes/eliminar-cuenta" ico="baja" tono="rojo" titulo="Eliminar mi cuenta" detalle="Borrar tu cuenta y tus datos personales" />
+      </Grupo>}
 
       <form method="post" action="/api/logout"><button className="borrar ancho">Cerrar sesión</button></form>
     </main>

@@ -7,6 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		EAA03D65538004A9F00E51EE /* NettoViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67F007CA9B4BDDEA0BC526F5 /* NettoViewController.swift */; };
+		BE30F154C5E8AE45790CD397 /* DelegadoWeb.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D1A8A91BB052D33AC515876 /* DelegadoWeb.swift */; };
+		40F5802323D50EBF093FB0EB /* VisorWeb.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6674664CB3F660366394C11D /* VisorWeb.swift */; };
+		2948E4A40034FB9CC633D311 /* EscanerPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EF50F239EFD060987FE5B9F /* EscanerPlugin.swift */; };
+		361397FDC74E92989A490E6C /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 81B271E7FC41A532CBFA31FF /* PrivacyInfo.xcprivacy */; };
 		2FAD9763203C412B000D30F8 /* config.xml in Resources */ = {isa = PBXBuildFile; fileRef = 2FAD9762203C412B000D30F8 /* config.xml */; };
 		4D22ABE92AF431CB00220026 /* CapApp-SPM in Frameworks */ = {isa = PBXBuildFile; productRef = 4D22ABE82AF431CB00220026 /* CapApp-SPM */; };
 		50379B232058CBB4000EE86E /* capacitor.config.json in Resources */ = {isa = PBXBuildFile; fileRef = 50379B222058CBB4000EE86E /* capacitor.config.json */; };
@@ -19,6 +24,12 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		67F007CA9B4BDDEA0BC526F5 /* NettoViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NettoViewController.swift; sourceTree = "<group>"; };
+		3D1A8A91BB052D33AC515876 /* DelegadoWeb.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DelegadoWeb.swift; sourceTree = "<group>"; };
+		6674664CB3F660366394C11D /* VisorWeb.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisorWeb.swift; sourceTree = "<group>"; };
+		3EF50F239EFD060987FE5B9F /* EscanerPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EscanerPlugin.swift; sourceTree = "<group>"; };
+		81B271E7FC41A532CBFA31FF /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		554C5F735A3F59354808D975 /* App.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = App.entitlements; sourceTree = "<group>"; };
 		2FAD9762203C412B000D30F8 /* config.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = config.xml; sourceTree = "<group>"; };
 		50379B222058CBB4000EE86E /* capacitor.config.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = capacitor.config.json; sourceTree = "<group>"; };
 		504EC3041FED79650016851F /* App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = App.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -67,6 +78,12 @@
 				9582B6822FE993A50072D4E8 /* SceneDelegate.swift */,
 				50379B222058CBB4000EE86E /* capacitor.config.json */,
 				504EC3071FED79650016851F /* AppDelegate.swift */,
+				67F007CA9B4BDDEA0BC526F5 /* NettoViewController.swift */,
+				3D1A8A91BB052D33AC515876 /* DelegadoWeb.swift */,
+				6674664CB3F660366394C11D /* VisorWeb.swift */,
+				3EF50F239EFD060987FE5B9F /* EscanerPlugin.swift */,
+				81B271E7FC41A532CBFA31FF /* PrivacyInfo.xcprivacy */,
+				554C5F735A3F59354808D975 /* App.entitlements */,
 				504EC30B1FED79650016851F /* Main.storyboard */,
 				504EC30E1FED79650016851F /* Assets.xcassets */,
 				504EC3101FED79650016851F /* LaunchScreen.storyboard */,
@@ -142,6 +159,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				361397FDC74E92989A490E6C /* PrivacyInfo.xcprivacy in Resources */,
 				504EC3121FED79650016851F /* LaunchScreen.storyboard in Resources */,
 				50B271D11FEDC1A000F3C39B /* public in Resources */,
 				504EC30F1FED79650016851F /* Assets.xcassets in Resources */,
@@ -159,6 +177,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
+				EAA03D65538004A9F00E51EE /* NettoViewController.swift in Sources */,
+				BE30F154C5E8AE45790CD397 /* DelegadoWeb.swift in Sources */,
+				40F5802323D50EBF093FB0EB /* VisorWeb.swift in Sources */,
+				2948E4A40034FB9CC633D311 /* EscanerPlugin.swift in Sources */,
 				9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -234,7 +256,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
@@ -285,7 +307,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = iphoneos;
 				SWIFT_COMPILATION_MODE = wholemodule;
@@ -302,7 +324,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				INFOPLIST_FILE = App/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -313,7 +335,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -324,17 +346,18 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				INFOPLIST_FILE = App/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
 				PRODUCT_BUNDLE_IDENTIFIER = com.nettohq.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};

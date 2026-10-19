@@ -17,6 +17,8 @@ import { reducir } from '@/lib/reducirImagen';
 import RafagaTickets from './RafagaTickets';
 import CupoEscaneo from './CupoEscaneo';
 import { preparar, subir } from '@/lib/justificanteCliente';
+import { escanearNativo } from '@/lib/escanerNativo';
+import { NO_IA, permisoIA } from '@/lib/permisoIA';
 import '@/app/ticket.css';
 
 // plegado: en la lista de gastos empieza como una tarjeta con «Escanear ticket»; el formulario se abre al escanear o al pedirlo.
@@ -56,6 +58,12 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
     {ultimoGuardado && !archivoPendiente && <p className="gasto-confirmacion" role="status">{ultimoGuardado.archivo ? 'Gasto y justificante guardados.' : 'Gasto guardado.'} <a href={`/gastos/${encodeURIComponent(ultimoGuardado.id)}`}>{ultimoGuardado.archivo ? 'Ver gasto y justificante' : 'Ver gasto'}</a></p>}
     {archivoPendiente && <div className="gasto-guardar"><button type="button" className="boton sec" disabled={enviando} onClick={reintentarArchivo}>Reintentar guardar justificante</button><a className="boton sec" href={`/gastos/${encodeURIComponent(archivoPendiente.id)}`}>Ver gasto guardado</a></div>}
   </>;
+  // En la app de iOS, el escáner de documentos nativo (lib/escanerNativo.js); si no lo hay, la cámara del <input>.
+  const abrirCamara = async () => {
+    const escaneo = await escanearNativo();
+    if (escaneo === undefined) { camaraInput.current?.click(); return; }
+    if (escaneo[0]) foto({ target: { files: [escaneo[0]], value: '' } });
+  };
   const foto = async (e) => {
     const archivo = e.target.files?.[0];
     e.target.value = '';
@@ -85,6 +93,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
       if (j.error) throw new Error(j.error);
       setAdjunto({ ...j, nombre: archivo.name });
       let d;
+      if (!permisoIA()) throw new Error(NO_IA);
       try { d = await llamar('/api/gastos/ticket', { method: 'POST', body: JSON.stringify({ imagen }) }); }
       finally { window.dispatchEvent(new Event('netto:escaneos')); }
       const t = d.gasto;
@@ -148,7 +157,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
         {error && <p className="error">{error}</p>}
         {avisoAdjunto}
         <div className="gasto-rapido-botones">
-          <button type="button" className="boton gasto-escanear" onClick={() => camaraInput.current?.click()}><svg viewBox="0 0 24 24" aria-hidden><path d="M4 8V6a2 2 0 012-2h2M16 4h2a2 2 0 012 2v2M20 16v2a2 2 0 01-2 2h-2M8 20H6a2 2 0 01-2-2v-2M4 12h16" /></svg>Escanear ticket</button><input ref={camaraInput} type="file" accept="image/*" capture="environment" onChange={foto} hidden />
+          <button type="button" className="boton gasto-escanear" onClick={abrirCamara}><svg viewBox="0 0 24 24" aria-hidden><path d="M4 8V6a2 2 0 012-2h2M16 4h2a2 2 0 012 2v2M20 16v2a2 2 0 01-2 2h-2M8 20H6a2 2 0 01-2-2v-2M4 12h16" /></svg>Escanear ticket</button><input ref={camaraInput} type="file" accept="image/*" capture="environment" onChange={foto} hidden />
           {!gasto && !movimiento && <RafagaTickets hoy={hoy} actividades={actividades} />}
           <button type="button" className="boton sec" onClick={() => facturaInput.current?.click()}>Subir factura</button><input ref={facturaInput} type="file" accept="image/*,application/pdf,.xml,.xsig,text/xml,application/xml" onChange={foto} hidden />
           <button type="button" className="boton sec" onClick={() => { setAbierto(true); setHecho(false); }}>A mano</button>
@@ -171,7 +180,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
         <p className="ticket-ia-t">Rellénalo con IA</p>
         <p className="ticket-ia-txt">Haz una foto del ticket o sube la factura que te han enviado (imagen o PDF de hasta 3 MB y 10 páginas). Netto lee también el IRPF. Cada página cuenta como una lectura; si la vuelves a enviar, cuenta otra vez, aunque no guardes el gasto.</p>
         <div className="ticket-ia-botones">
-          <button type="button" className="boton sec ticket-foto" onClick={() => camaraInput.current?.click()}>Hacer foto</button><input ref={camaraInput} type="file" accept="image/*" capture="environment" onChange={foto} hidden />
+          <button type="button" className="boton sec ticket-foto" onClick={abrirCamara}>Hacer foto</button><input ref={camaraInput} type="file" accept="image/*" capture="environment" onChange={foto} hidden />
           <button type="button" className="boton sec ticket-foto" onClick={() => facturaInput.current?.click()}>Subir factura</button><input ref={facturaInput} type="file" accept="image/*,application/pdf,.xml,.xsig,text/xml,application/xml" onChange={foto} hidden />
         </div>
         <CupoEscaneo inicial={cupoInicial} />
