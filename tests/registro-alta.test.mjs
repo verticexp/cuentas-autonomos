@@ -260,3 +260,31 @@ test('registro con enlace de recomendación: 60 días de prueba, queda apuntada 
   const dos = await alta({ ref: 'ABCDEFGH', gestoria: 'ASESORIA', email: 'otra@ejemplo.es', nif: '87654321X' });
   assert.equal(dos.res.status, 400); assert.match(dos.datos.error, /no los dos/);
 });
+
+test('código promocional: vale el de una empresa que recomienda (60 días) y el de una gestoría (90)', async () => {
+  await redis.hset('empresas', { reco: { id: 'reco', nombre: 'Recomienda SL', recomienda: { codigo: 'ABCDEFGH', meses: 0 } } });
+  await redis.hset('recomendaciones', { ABCDEFGH: 'reco' });
+  await redis.hset('gestorias', { ASESORIA: { codigo: 'ASESORIA', nombre: 'Asesoría Sol', activa: true } });
+  const dias = (e) => Math.round((Date.parse(`${e.plan.hasta}T12:00:00Z`) - Date.now()) / 86400000);
+  assert.equal((await alta({ codigo: ' abcdefgh ' })).res.status, 200);
+  const una = await redis.hget('empresas', await redis.hget('emails', valido.email));
+  assert.deepEqual(una.plan.recomendacion, { codigo: 'ABCDEFGH', empresa: 'reco' });
+  assert.ok(dias(una) >= 58 && dias(una) <= 60);
+  assert.deepEqual(await redis.smembers('recomendadas:ABCDEFGH'), [una.id]);
+  // El mismo código por el enlace y por el campo no es «los dos».
+  assert.equal((await alta({ ref: 'ABCDEFGH', codigo: 'ABCDEFGH', email: 'dos@ejemplo.es', nif: '87654321X' }, '192.0.2.2')).res.status, 200);
+  assert.equal((await alta({ codigo: 'asesoria', email: 'tres@ejemplo.es', nif: '11111111H' }, '192.0.2.3')).res.status, 200);
+  const tres = await redis.hget('empresas', await redis.hget('emails', 'tres@ejemplo.es'));
+  assert.equal(tres.plan.gestoria, 'ASESORIA'); assert.equal(tres.plan.recomendacion, undefined);
+  assert.ok(dias(tres) >= 88 && dias(tres) <= 90);
+  const mala = await alta({ codigo: 'NOEXISTE', email: 'cuatro@ejemplo.es', nif: '22222222J' }, '192.0.2.4');
+  assert.deepEqual(mala.datos, { error: 'Ese código promocional no existe o ya no está activo.', paso: 3 });
+  const ambos = await alta({ ref: 'ABCDEFGH', codigo: 'ASESORIA', email: 'cinco@ejemplo.es', nif: '33333333P' }, '192.0.2.5');
+  assert.match(ambos.datos.error, /no los dos/);
+
+  const { POST: comprobar } = await import('../app/api/registro/codigo/route.js');
+  const pedir = async (codigo) => (await comprobar(new Request('https://netto.test/api/registro/codigo', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-real-ip': '192.0.2.98' }, body: JSON.stringify({ codigo }) }))).json();
+  assert.deepEqual(await pedir('abcdefgh'), { ok: true, tipo: 'recomendacion', dias: 60, texto: 'Te recomienda Recomienda SL: tienes 2 meses gratis en lugar de uno.' });
+  assert.deepEqual(await pedir('ASESORIA'), { ok: true, tipo: 'gestoria', dias: 90, texto: 'Código de Asesoría Sol: tienes 3 meses gratis.' });
+  assert.equal((await pedir('NOEXISTE')).ok, false);
+});

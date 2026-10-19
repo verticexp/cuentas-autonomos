@@ -8,7 +8,8 @@ import { ipDe, MUCHOS, pasado } from '@/lib/limite';
 import { datosFiscalesRegistro, fiscalDeTipo, normalizarNifRegistro, nuevoPlan, PRUEBA_DIAS, TIPOS_ALTA } from '@/lib/prueba';
 import { comprobarNif } from '@/lib/censoAeat';
 import { redis } from '@/lib/redis';
-import { apuntarCliente, gestoriaPorCodigo, PRUEBA_GESTORIA_DIAS } from '@/lib/gestorias';
+import { apuntarCliente, PRUEBA_GESTORIA_DIAS } from '@/lib/gestorias';
+import { NO_VALIDO, resolverCodigo } from '@/lib/codigoPromocional';
 import { apuntarRecomendada, empresaPorCodigo, normalizarRef, RECOMENDACION_DIAS } from '@/lib/recomendaciones';
 import { enEmpresa } from '@/lib/membresias';
 
@@ -42,15 +43,19 @@ export async function POST(req) {
   if (primera) {
     r = await crearUsuario({ ...cuenta, empresaNombre: String(form.get('empresa') || '').trim() || undefined });
   } else {
-    const codigoGestoria = String(form.get('gestoria') || '').trim();
-    const gestoria = codigoGestoria ? await gestoriaPorCodigo(codigoGestoria) : null;
-    if (codigoGestoria && !gestoria) return fallo('Ese código promocional no existe o ya no está activo.', 400, 3);
+    // Código promocional (lib/codigoPromocional.js): el de una gestoría o el de una empresa que recomienda Netto.
+    const codigo = String(form.get('codigo') || form.get('gestoria') || '').trim();
+    const promo = codigo ? await resolverCodigo(codigo) : null;
+    if (codigo && !promo) return fallo(NO_VALIDO, 400, 3);
+    const gestoria = promo?.tipo === 'gestoria' ? promo.gestoria : null;
     // Enlace de recomendación (lib/recomendaciones.js): un mes más de prueba; no se suma al código de una gestoría.
-    const ref = String(form.get('ref') || '').trim();
-    const recomienda = ref ? await empresaPorCodigo(ref) : null;
-    if (ref && !recomienda) return fallo('Ese enlace de recomendación ya no es válido. Puedes registrarte sin él.', 400, 1);
-    if (recomienda && gestoria) return fallo('Usa el código promocional o el enlace de recomendación, no los dos.', 400, 3);
-    if (recomienda && sesion && enEmpresa(sesion, recomienda.id)) return fallo('No puedes usar el enlace de recomendación de una empresa tuya.', 400, 1);
+    const enlace = String(form.get('ref') || '').trim();
+    const recomiendaEnlace = enlace ? await empresaPorCodigo(enlace) : null;
+    if (enlace && !recomiendaEnlace) return fallo('Ese enlace de recomendación ya no es válido. Puedes registrarte sin él.', 400, 1);
+    if (recomiendaEnlace && promo && !(promo.tipo === 'recomendacion' && promo.empresa.id === recomiendaEnlace.id)) return fallo('Usa el código promocional o el enlace de recomendación, no los dos.', 400, 3);
+    const ref = enlace || (promo?.tipo === 'recomendacion' ? promo.codigo : '');
+    const recomienda = recomiendaEnlace || (promo?.tipo === 'recomendacion' ? promo.empresa : null);
+    if (recomienda && sesion && enEmpresa(sesion, recomienda.id)) return fallo(`No puedes usar ${enlace ? 'el enlace' : 'el código'} de recomendación de una empresa tuya.`, 400, enlace ? 1 : 3);
     if (!sesion && (typeof cuenta.nombre !== 'string' || !cuenta.nombre.trim() || cuenta.nombre.trim().length > 60)) return fallo('Escribe tu nombre (máximo 60 caracteres).', 400, 4);
     if (!sesion && (typeof cuenta.email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cuenta.email.trim()))) return fallo('Escribe un email válido.', 400, 4);
     if (form.get('acepto') !== '1') return fallo('Acepta las condiciones y la política de privacidad para crear tu cuenta.', 400, 5);

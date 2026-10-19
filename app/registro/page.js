@@ -29,7 +29,7 @@ export default async function Registro({ searchParams }) {
     <TransicionPublica acceso><main className="login">
       <PanelRegistro />
       <div className="form-entrar">
-        <FormRegistro inicial={{ ...elegido, periodo: periodo === 'anio' ? 'anio' : 'mes', gestoria: typeof seleccion.gestoria === 'string' ? seleccion.gestoria : '' }} recomendacion={ref} sesion={u ? { nombre: u.nombre, email: u.email } : null} />
+        <FormRegistro inicial={{ ...elegido, periodo: periodo === 'anio' ? 'anio' : 'mes', codigo: [seleccion.codigo, seleccion.gestoria].find((c) => typeof c === 'string') || '' }} recomendacion={ref} sesion={u ? { nombre: u.nombre, email: u.email } : null} />
         <p className="nota login-legal"><a href="/privacidad">Privacidad</a> · <a href="/condiciones">Condiciones</a></p>
       </div>
     </main></TransicionPublica>
