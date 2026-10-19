@@ -3,7 +3,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requerir } from '@/lib/auth';
 import { leer, leerUno } from '@/lib/redis';
-import { apartar, desglose, emisorDe, importes, numeroFactura, pagadoDe, pendienteDe, vencida, vencimiento } from '@/lib/calculos';
+import { leerRango } from '@/lib/indices';
+import { apartar, margenIrpf, resumenAnual, trimestre, desglose, emisorDe, importes, numeroFactura, pagadoDe, pendienteDe, vencida, vencimiento } from '@/lib/calculos';
 import { eur, fechaCorta, fechaTexto, hoy } from '@/lib/formato';
 import FormFactura from '@/components/FormFactura';
 import Volver from '@/components/Volver';
@@ -111,11 +112,18 @@ export default async function Factura({ params }) {
         <div className="portal-botones"><Compartir ruta={portal} texto={`Tus documentos de ${u.emisor?.nombre || ''}`.trim()} etiqueta="Enviar su portal" className="boton sec" /><Link href={portal} className="boton sec">Ver su portal</Link></div>
       </section>}
       {editar && f.serie !== 'R' && <RepetirFactura factura={f.id} dia={Math.min(28, Number(f.fecha.slice(8, 10)))} existente={recurrentes.find((r) => r.origen === f.id)} />}
-      {f.base > 0 && (usa303(fiscal) || usa130(fiscal)) && (() => {
-        const a = apartar(f);
+      {f.base > 0 && (usa303(fiscal) || usa130(fiscal)) && await (async () => {
+        // El IRPF, con el beneficio real del año hasta el trimestre de la factura (sus gastos restan), no con el 95 %.
+        let margen;
+        if (usa130(fiscal)) {
+          const anio = Number(f.fecha.slice(0, 4)), hasta = `${anio}-12-31`;
+          const [fs, gs] = await Promise.all([leerRango(u, 'facturas', `${anio}-01-01`, hasta), leerRango(u, 'gastos', `${anio}-01-01`, hasta)]);
+          margen = margenIrpf(resumenAnual(fs, gs, anio, {}, actividadesDe(u).map((x) => x.id), { ivaCoste: !usa303(fiscal) }), trimestre(f.fecha)) ?? undefined;
+        }
+        const a = apartar(f, { margen });
         const iva = usa303(fiscal) ? a.iva : 0;
         const irpf = usa130(fiscal) ? a.irpf : 0;
-        return <p className="aviso-plazo"><strong>De esta factura, aparta {eur(iva + irpf)} para Hacienda</strong><span>{[usa303(fiscal) && `IVA ${eur(iva)}`, usa130(fiscal) && `IRPF que te faltará en el 130 ≈ ${eur(irpf)}`].filter(Boolean).join(' + ')}</span></p>;
+        return <p className="aviso-plazo"><strong>De esta factura, aparta {eur(iva + irpf)} para Hacienda</strong><span>{[usa303(fiscal) && `IVA ${eur(iva)}`, usa130(fiscal) && `IRPF que te faltará en el 130 ≈ ${eur(irpf)}${margen !== undefined ? ` (con tu beneficio real: ${Math.round(a.margen * 100)} % de lo facturado)` : ''}`].filter(Boolean).join(' + ')}</span></p>;
       })()}
       {f.cobro?.metodo === 'stripe' && <p className="nota">Pagada con tarjeta o Bizum el {fechaTexto(f.cobro.fecha.slice(0, 10))} ({eur(f.cobro.importe)}).</p>}
       {f.rectifica && <p className="nota">Rectifica la factura {f.rectifica.numero}.</p>}
