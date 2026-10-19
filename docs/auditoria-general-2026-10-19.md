@@ -32,8 +32,9 @@ Cada uno tiene una prueba que falla con el código anterior y pasa con el nuevo.
 
 ## Pendiente (no corregido aquí)
 
-- **Varias cuentas por CSV/Excel**: todos los extractos subidos van a una sola cuenta «Extracto subido». Con dos bancos, un
-  movimiento idéntico en ambos se toma por repetido y el saldo de uno pisa al del otro. Necesita elegir la cuenta al subir.
+- ~~**Varias cuentas por CSV/Excel**: todos los extractos subidos van a una sola cuenta «Extracto subido». Con dos bancos, un
+  movimiento idéntico en ambos se toma por repetido y el saldo de uno pisa al del otro.~~ Resuelto en el PR #171: se elige
+  la cuenta al subir o se detecta por el IBAN del archivo (`cuentaDeExtracto` en `lib/banco.js`).
 - **Stripe + banco parcial**: si una factura tiene un cobro parcial del banco y otro de Stripe, la liquidación de Stripe
   que llega al banco se sugiere como un cobro nuevo en vez de solo enlazarse. Necesita enlazar cada cobro externo por separado.
 - Limitaciones conocidas, ya documentadas: IVA parcialmente deducible (vehículos), recargo de equivalencia repercutido,
