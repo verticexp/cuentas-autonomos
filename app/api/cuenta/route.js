@@ -8,6 +8,7 @@ import { actividadesDe, limpiarActividades, limpiarFiscal } from '@/lib/empresa'
 import { clave, leer, redis } from '@/lib/redis';
 import { auditar } from '@/lib/auditoria';
 import { leerImporte } from '@/lib/calculos';
+import { hoy } from '@/lib/formato';
 import { todasFichas } from '@/lib/indices';
 
 const CAMPOS = ['nombre', 'nif', 'direccion', 'ciudad', 'iban'];
@@ -21,6 +22,14 @@ const emailValido = (v) => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 const recortar = (b, lista) => Object.fromEntries(lista.filter(([k]) => k in b).map(([k, max]) => [k, texto(b[k], max)]));
 // En el registro de actividad: si cambia el IBAN (donde cobra la empresa), con sus 4 últimas cifras.
 const cambioIban = (antes, ahora) => (String(antes || '') !== String(ahora || '') ? ` · IBAN cambiado a ${ahora ? `…${String(ahora).replace(/\s/g, '').slice(-4)}` : 'ninguno'}` : '');
+
+// Cuándo se marcó cada 303/130 como pagado: Tesorería lo resta del saldo hasta que llegue un extracto posterior.
+function marcarPagado(u, k, si) {
+  const m = { ...(u.pagadosHacienda || {}) };
+  if (!si) delete m[k];
+  else if (!m[k]) m[k] = { fecha: hoy(), en: new Date().toISOString() };
+  return m;
+}
 
 export async function PATCH(req) {
   const b = await cuerpo(req);
@@ -50,7 +59,7 @@ export async function PATCH(req) {
     pagos[anio] = { ...(pagos[anio] || {}) };
     if (importe === null) delete pagos[anio][t];
     else pagos[anio][t] = Math.max(0, Number(importe) || 0);
-    await actualizarUsuario(u, { pagos130: pagos });
+    await actualizarUsuario(u, { pagos130: pagos, pagadosHacienda: marcarPagado(u, `${anio}-${t}-130`, importe !== null && Number(importe) > 0) });
     return Response.json({ ok: true });
   }
   if (b.presentado303) {
@@ -59,7 +68,7 @@ export async function PATCH(req) {
     if (!Number.isInteger(anio) || anio < 2000 || anio > 2100 || ![1, 2, 3, 4].includes(t)) return error('Trimestre no válido');
     const pres = { ...(u.pres303 || {}) };
     pres[anio] = { ...(pres[anio] || {}), [t]: Boolean(hecho) };
-    await actualizarUsuario(u, { pres303: pres });
+    await actualizarUsuario(u, { pres303: pres, pagadosHacienda: marcarPagado(u, `${anio}-${t}-303`, Boolean(hecho)) });
     return Response.json({ ok: true });
   }
   // Verifactu: 'pruebas', 'real' o null (sin activar). Solo el administrador. En real se mantiene todo el año natural.

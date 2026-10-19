@@ -72,11 +72,6 @@ export default async function Facturas({ searchParams }) {
         {puede(u, 'facturar') && <Ir href="/facturas/nueva" tipo="subir" className="boton pequeno">Nueva factura</Ir>}
       </header>
 
-      <nav className="segmentado vt">
-        <Ir href="/facturas" tipo="fundido" className="activo">Facturas</Ir>
-        <Ir href="/presupuestos" tipo="fundido">Presupuestos</Ir>
-      </nav>
-
       {total > 0 && (
         <p className="resumen-linea solo-pc">
           <span>Por cobrar <strong>{eur(porCobrar)}</strong></span>
