@@ -226,7 +226,9 @@ export default function Banco({ cuentas, pendientes, emparejados, ignorados, aut
             <span className="bco-txt">
               <strong>{c.nombre}{c.iban ? <em> {iban(c.iban)}</em> : null}</strong>
               <small>
-                {c.origen === 'enable'
+                {/* Quien no conecta bancos ve una cuenta conectada como cualquier otra: su saldo, sin hablar de la conexión. */}
+                {c.origen === 'enable' && !listo ? (c.fechaSaldo ? `Saldo a ${fechaCorta(c.fechaSaldo)}` : 'Sin saldo')
+                  : c.origen === 'enable'
                   ? (c.caducada || c.error ? <span className="rojo">{c.error || 'El permiso del banco ha caducado: vuelve a conectarlo'}</span>
                     : `${c.sincronizada ? `Actualizada ${cuando(c.sincronizada)}` : 'Conectada'}${c.valida && diasHasta(c.valida) <= 14 ? ` · el permiso caduca en ${Math.max(0, diasHasta(c.valida))} días` : ''}`)
                   : `Extracto${c.fechaSaldo ? ` · saldo a ${fechaCorta(c.fechaSaldo)}` : ' sin saldo'}`}

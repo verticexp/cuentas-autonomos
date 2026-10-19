@@ -817,6 +817,12 @@ console.log('Banco: extractos, conexión y emparejar');
     ok('saldo real: la suma de las tres cuentas', () => assert.deepEqual([saldo.importe, saldo.cuentas], [10662.55, 3]));
     const pb3 = n(await texto('/banco', bq));
     ok('pantalla: la cuenta y la factura cobrada por el banco', () => assert.ok(pb3.includes('Cuenta Negocios') && pb3.includes('•••• 1332') && pb3.includes(`Factura ${numeroFactura(f4)}`) && pb3.includes(n(eur(10662.55)))));
+    // Solo el administrador de Netto ve la conexión; Berta ve la cuenta con su saldo y nada más (ni con ?conectado o ?error).
+    const pbAviso = n(await texto('/banco?conectado=1&error=cancelado', bq)), paAdmin = n(await texto('/banco', ad));
+    ok('Berta no ve nada de la conexión: ni «Conectar banco», ni «Actualizar», ni su estado', () => assert.ok(
+      ![pb3, pbAviso].some((t) => /Conectar banco|>Actualizar<|Conectada|Actualizada|permiso del banco|Cuenta conectada|cuentas conectadas/.test(t))
+      && pb3.includes('Saldo a ') && pbAviso.includes('Cuenta Negocios'), pb3.slice(0, 400)));
+    ok('el administrador de Netto sí: «Conectar banco», «Actualizar» y el estado de la cuenta', () => assert.ok(paAdmin.includes('Conectar banco') && paAdmin.includes('Actualizar') && /Actualizada|Conectada/.test(paAdmin)));
     const antes = (await sim('/_prueba')).llamadas;
     const s1 = await (await pedir('/api/banco/sincronizar', { metodo: 'POST', cookie: ad, cuerpo: {} })).json();
     const medio = (await sim('/_prueba')).llamadas;
