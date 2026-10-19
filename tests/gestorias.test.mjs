@@ -42,6 +42,8 @@ const fuente = `
   export const ipDe = () => 'pruebas';
   export const MUCHOS = 'Demasiadas peticiones';
   export const hayUsuarios = async () => true;
+  export const usuarioActual = async () => null;
+  export const nuevaEmpresa = async () => ({ error: 'sin sesión en estas pruebas' });
   export const opcionesCookie = {};
   export const opcionesDesbloqueo = {};
   export const enviarConfirmacion = async () => {};

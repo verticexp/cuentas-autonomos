@@ -129,7 +129,7 @@ export default function TabBar({ permisos = [], empresas = [], empresa, admin = 
     <>
     <div className="tabbar" data-teclado={teclado || undefined}>
       <Link href="/" className="tabbar-logo" aria-label="Netto, resumen" onClick={(e) => { e.preventDefault(); ir('/'); }}><Logo /></Link>
-      {empresa && <CambiarEmpresa empresas={empresas} actual={empresa} variante="lateral" puedeCrear={admin} />}
+      {empresa && <CambiarEmpresa empresas={empresas} actual={empresa} variante="lateral" />}
       <nav
         ref={nav}
         className="tabs"

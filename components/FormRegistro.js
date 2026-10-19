@@ -28,7 +28,8 @@ function enfocarVisible(elemento) {
 }
 
 // Los campos permanecen montados para conservar lo escrito al cambiar de paso.
-export default function FormRegistro({ inicial = {} }) {
+// sesion: { nombre, email } si ya tiene cuenta y añade otra empresa: se salta el paso de la cuenta (4).
+export default function FormRegistro({ inicial = {}, sesion = null }) {
   const listo = useTrasArranque();
   const [paso, setPaso] = useState(1);
   const [tipo, setTipo] = useState(inicial.tipo || '');
@@ -36,7 +37,7 @@ export default function FormRegistro({ inicial = {} }) {
   const [periodo, setPeriodo] = useState(inicial.periodo === 'anio' ? 'anio' : 'mes');
   const [gestoria, setGestoria] = useState(inicial.gestoria || '');
   const [fiscales, setFiscales] = useState({ razon: '', nif: '', direccion: '', cp: '', ciudad: '', provincia: '', telefono: '' });
-  const [cuenta, setCuenta] = useState({});
+  const [cuenta, setCuenta] = useState(sesion || {});
   const [password, setPassword] = useState('');
   const [errorEmail, setErrorEmail] = useState('');
   const [comprobando, setComprobando] = useState(false);
@@ -45,7 +46,7 @@ export default function FormRegistro({ inicial = {} }) {
   const conTeclado = useRef(false);
   const emailActual = useRef('');
   const seguridad = validarContrasena(password, cuenta);
-  function atras() { if (enviando || comprobando) return; setError(null); cambiarPaso(paso - 1); }
+  function atras() { if (enviando || comprobando) return; setError(null); cambiarPaso(sesion && paso === 5 ? 3 : paso - 1); }
   function cambiarPaso(n) { setDireccion(n > paso ? 1 : -1); setPaso(n); }
   useLayoutEffect(() => {
     const anterior = pasoAnterior.current;
@@ -123,7 +124,7 @@ export default function FormRegistro({ inicial = {} }) {
       setComprobando(false);
       if (!ok) return;
     }
-    if (paso < 5) cambiarPaso(paso + 1);
+    if (paso < 5) cambiarPaso(sesion && paso === 3 ? 5 : paso + 1);
     else crear();
   }
 
@@ -153,7 +154,7 @@ export default function FormRegistro({ inicial = {} }) {
       <div className="registro-contenido">
       <div hidden={paso !== 1} data-paso="1" className="registro-bloque">
         <h2 className="login-titulo" tabIndex={-1}>¿Qué tipo de negocio tienes?</h2>
-        <p className="nota registro-intro">Primero creamos tu cuenta. Después prepararemos tu negocio con sus actividades e impuestos.</p>
+        <p className="nota registro-intro">{sesion ? `Vas a añadir otra empresa a tu cuenta (${sesion.email}). Tendrá su propio plan y su prueba gratis.` : 'Primero creamos tu cuenta. Después prepararemos tu negocio con sus actividades e impuestos.'}</p>
         <div className="registro-opciones" role="radiogroup" aria-label="Tipo de negocio">
           {Object.entries(TIPOS_ALTA).map(([k, t]) => (
             <label key={k} className={`registro-opcion${tipo === k ? ' elegida' : ''}`}>
@@ -213,7 +214,7 @@ export default function FormRegistro({ inicial = {} }) {
         <p className="nota">La prueba tiene 50 páginas de lectura IA en total. Al empezar el periodo de pago se activa la cuota mensual indicada, también si eliges pago anual; se comparte por empresa con la gestoría, se renueva cada mes natural y no se acumula.</p>
       </div>
 
-      <div hidden={paso !== 4} data-paso="4" className="registro-bloque">
+      {!sesion && <div hidden={paso !== 4} data-paso="4" className="registro-bloque">
         <h2 className="login-titulo" tabIndex={-1}>Tu cuenta</h2>
         <p className="nota">{gestoria.trim() ? 'Con un código de gestoría válido tienes 3 meses gratis con todo incluido.' : `${PRUEBA_DIAS} días gratis con todo incluido.`} Sin tarjeta.</p>
         <BotonesSociales />
@@ -232,7 +233,7 @@ export default function FormRegistro({ inicial = {} }) {
         </div>
         {/* Trampa para bots: invisible para personas. */}
         <input name="web" tabIndex={-1} autoComplete="off" className="registro-trampa" aria-hidden />
-      </div>
+      </div>}
 
       <div hidden={paso !== 5} data-paso="5" className="registro-bloque">
         <h2 className="login-titulo" tabIndex={-1}>Revisar y crear</h2>
@@ -243,7 +244,7 @@ export default function FormRegistro({ inicial = {} }) {
           <dt>Plan y periodo</dt><dd>{plan} · {periodo === 'anio' ? 'Anual' : 'Mensual'}<br />{elegido && precio(elegido.p, periodo)} sin IVA después de la prueba</dd>
         </dl>
         <p className="nota">{gestoria.trim() ? 'Con un código de gestoría válido tienes 3 meses gratis, sin tarjeta.' : `${PRUEBA_DIAS} días gratis, sin tarjeta.`}</p>
-        <p className="nota">Te enviaremos un email para confirmar que es tuyo.</p>
+        {!sesion && <p className="nota">Te enviaremos un email para confirmar que es tuyo.</p>}
         <p className="nota registro-siguiente">Después de crear la cuenta, configuraremos las actividades y los impuestos de tu negocio.</p>
         <label className="registro-acepto" htmlFor="acepto">
           <input id="acepto" name="acepto" type="checkbox" value="1" required {...accesibilidad('acepto')} />
@@ -258,11 +259,11 @@ export default function FormRegistro({ inicial = {} }) {
         {error.campo && <button type="button" className="registro-corregir" onClick={() => enfocarVisible(form.current?.querySelector(`[data-paso="${paso}"] [name="${error.campo}"]`))}>Revisar campo</button>}
       </div>}
       <button type="submit" disabled={enviando || comprobando || (paso === 1 && !tipo) || (paso === 3 && !plan)}>
-        {comprobando ? 'Comprobando email…' : paso < 5 ? 'Continuar' : enviando ? 'Creando la cuenta…' : 'Crear cuenta'}
+        {comprobando ? 'Comprobando email…' : paso < 5 ? 'Continuar' : enviando ? 'Creando…' : sesion ? 'Crear empresa' : 'Crear cuenta'}
       </button>
       {paso > 1 && <button type="button" className="registro-atras" disabled={enviando || comprobando} onClick={atras}>Atrás</button>}
       {paso === 1 && <p className="nota">¿Llevas varias sociedades o un equipo mayor? <Link href="/business">Consulta Netto Business</Link>.</p>}
-      {paso === 1 && <p className="nota login-cambiar">¿Ya tienes cuenta? <Link href="/login">Inicia sesión</Link></p>}
+      {paso === 1 && (sesion ? <p className="nota login-cambiar"><a href="/ajustes">Volver a Netto</a></p> : <p className="nota login-cambiar">¿Ya tienes cuenta? <Link href="/login">Inicia sesión</Link></p>)}
     </form>
   );
 }

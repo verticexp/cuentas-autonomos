@@ -1,5 +1,5 @@
 import { cookies } from 'next/headers';
-import { TIPOS, diasPrueba } from '@/lib/prueba';
+import { TIPOS, diasPrueba, esFundador } from '@/lib/prueba';
 import Ir from '@/components/Ir';
 import { requerir } from '@/lib/auth';
 import { redis } from '@/lib/redis';
@@ -19,6 +19,7 @@ export const dynamic = 'force-dynamic';
 
 // Iconos de cada ajuste, con el color de su grupo (app/lateral.css [data-tono]), como en «Más».
 const I = {
+  panel: <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />,
   plan: <><rect x="3" y="6" width="18" height="13" rx="2" /><path d="M3 10h18M7 15h4" /></>,
   empresa: <><rect x="3" y="5" width="18" height="14" rx="2" /><circle cx="8.5" cy="11" r="2" /><path d="M5.5 16c.6-1.5 1.7-2.2 3-2.2s2.4.7 3 2.2M14 10h4M14 13.5h3" /></>,
   actividad: <path d="M4 8h16v11H4zM9 8V5h6v3M4 13h16" />,
@@ -82,7 +83,7 @@ export default async function Page() {
   const series = actividadesDe(u).map((a) => a.serie || 'sin letra');
   const formas = ['Transferencia', e.bizum && 'Bizum', e.otroPago].filter(Boolean);
   const tema = TEMA[(await cookies()).get('tema')?.value] || 'Automático';
-  const dias = u.plan && diasPrueba(u.plan);
+  const dias = diasPrueba(u.plan);
   // Quien ficha sin llevar las nóminas no tiene el registro de jornada en la barra lateral del ordenador: aquí, su «Fichar».
   const fichar = !puede(u, 'nominas') && (await miEmpleado(u, ahoraMadrid().slice(0, 10))).yo;
   return (
@@ -96,9 +97,11 @@ export default async function Page() {
         <span className="mas-perfil-ir">›</span>
       </Ir>
 
+      {u.admin && <Grupo titulo="Netto"><Celda href="/admin" ico="panel" tono="azul" titulo="Panel de Netto" detalle="Empresas, ingresos, pruebas y actividad" /></Grupo>}
+
       {empresa && (
         <Grupo titulo="Tu empresa">
-          {u.plan && <Celda href="/ajustes/plan" ico="plan" tono="azul" titulo="Tu plan" detalle={`${TIPOS[u.plan.tipo]} ${u.plan.nombre}${dias !== null ? ` · prueba: ${dias} días` : ''}`} aviso={dias !== null && dias <= 7} />}
+          <Celda href="/ajustes/plan" ico="plan" tono="azul" titulo="Tu plan" detalle={esFundador(u.plan) ? 'Fundador · gratis de por vida' : `${TIPOS[u.plan.tipo]} ${u.plan.nombre}${dias !== null ? ` · prueba: ${dias} días` : ''}`} aviso={dias !== null && dias <= 7} />
           <Celda href="/ajustes/facturacion" ico="empresa" tono="azul" titulo="Datos de la empresa" detalle={datosCompletos ? `${e.nombre} · ${e.nif}` : 'Faltan datos: rellénalos antes de facturar'} aviso={!datosCompletos} />
           <Celda href="/bienvenida?editar=1" ico="actividad" tono="azul" titulo="Actividades e impuestos" detalle={`${fiscalDe(u).tipo === 'sociedad' ? 'Sociedad' : 'Autónomo'} · ${actividadesDe(u).map((x) => x.nombre).join(', ')}`} />
           {(puede(u, 'usuarios') || u.admin) && <Celda href="/usuarios" ico="usuarios" tono="azul" titulo="Usuarios y permisos" detalle="Quién entra y qué puede hacer" />}
@@ -125,13 +128,11 @@ export default async function Page() {
         </Grupo>
       )}
 
-      {(u.misEmpresas?.length > 1 || u.admin) && (
-        <section className="grupo" id="empresas">
-          <h2 className="grupo-t">{u.misEmpresas?.length > 1 ? 'Tus empresas' : 'Más empresas'}</h2>
-          <CambiarEmpresa empresas={u.misEmpresas} actual={u.empresa} puedeCrear={u.admin} />
-          <p className="grupo-pie">Cada empresa con sus datos, su numeración de facturas, sus modelos y sus permisos.</p>
-        </section>
-      )}
+      <section className="grupo" id="empresas">
+        <h2 className="grupo-t">{u.misEmpresas?.length > 1 ? 'Tus empresas' : 'Más empresas'}</h2>
+        <CambiarEmpresa empresas={u.misEmpresas} actual={u.empresa} />
+        <p className="grupo-pie">Cada empresa con sus datos, su numeración de facturas, sus permisos y su propio plan, con su mes de prueba.</p>
+      </section>
 
       {fichar && <Grupo titulo="Tu jornada"><Celda href="/jornada" ico="reloj" tono="violeta" titulo="Fichar" detalle="Entrada, salida, pausas y tus horas del mes" /></Grupo>}
 

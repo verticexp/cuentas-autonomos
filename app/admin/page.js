@@ -1,0 +1,82 @@
+import { requerirAdmin } from '@/lib/auth';
+import { redis } from '@/lib/redis';
+import { actividadReciente, ultimaActividad } from '@/lib/actividad';
+import { ESTADOS, resumenAdmin } from '@/lib/admin';
+import { emailListo } from '@/lib/email';
+import Volver from '@/components/Volver';
+import AdminEmpresas from '@/components/AdminEmpresas';
+import '@/app/admin/admin.css';
+
+export const dynamic = 'force-dynamic';
+export const metadata = { title: 'Panel de Netto' };
+
+const euros = (c) => (c / 100).toLocaleString('es-ES', { maximumFractionDigits: 0 }) + ' €';
+const fecha = (d) => new Date(`${d}T12:00:00Z`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+
+// Barras sencillas (sin librería): cada barra lleva su valor en el título y en texto para lectores de pantalla.
+function Barras({ datos, etiqueta, valor, titulo }) {
+  const max = Math.max(1, ...datos.map(valor));
+  return <figure className="adm-barras">
+    <figcaption>{titulo}</figcaption>
+    <div className="adm-barras-zona" role="list">
+      {datos.map((d) => <div key={etiqueta(d)} role="listitem" className="adm-barra" title={`${etiqueta(d)}: ${valor(d)}`}>
+        <span style={{ height: `${(100 * valor(d)) / max}%` }} /><b className="sr">{etiqueta(d)}: {valor(d)}</b>
+      </div>)}
+    </div>
+    <div className="adm-barras-eje"><span>{etiqueta(datos[0])}</span><span>{etiqueta(datos.at(-1))}</span></div>
+  </figure>;
+}
+
+// Panel del administrador de Netto: negocio (ingresos, pruebas, conversión), uso y todas las empresas.
+export default async function Admin() {
+  await requerirAdmin();
+  const [empresas, usuarios, actividad, ultima] = await Promise.all([redis.hgetall('empresas'), redis.hgetall('usuarios'), actividadReciente(30), ultimaActividad()]);
+  const r = resumenAdmin({ empresas: Object.values(empresas || {}), usuarios: Object.values(usuarios || {}), actividad, ultima });
+  const k = r.kpis;
+  const clave = process.env.STRIPE_SECRET_KEY || '';
+  const cobros = [
+    ['Clave de Stripe', clave ? (clave.startsWith('sk_live') || clave.startsWith('rk_live') ? 'Real' : 'De pruebas: todavía no se cobra de verdad') : 'Falta: nadie puede contratar', clave.includes('_live')],
+    ['Aviso de pagos (webhook)', process.env.STRIPE_WEBHOOK_SECRET ? 'Configurado' : 'Falta', Boolean(process.env.STRIPE_WEBHOOK_SECRET)],
+    ['Emails (avisos de prueba)', emailListo() ? 'Configurado' : 'Falta', emailListo()],
+  ];
+
+  return <main className="pagina mk-look adm">
+    <Volver href="/ajustes">Ajustes</Volver>
+    <h1 className="titulo">Panel de Netto</h1>
+    <p className="adm-intro">Solo lo ves tú. Las cifras son sin IVA; las empresas Fundador no cuentan en ingresos ni en conversión.</p>
+
+    <section className="adm-kpis" aria-label="Cifras principales">
+      <div><small>Ingresos al mes</small><strong>{euros(k.mrr)}</strong><span>{euros(k.arr)} al año</span></div>
+      <div><small>Empresas de pago</small><strong>{r.porEstado.pago}</strong><span>{r.porEstado.impago ? `${r.porEstado.impago} con pago fallido` : 'Sin pagos fallidos'}</span></div>
+      <div><small>En prueba</small><strong>{r.porEstado.prueba}</strong><span>{k.pruebasQueAcabanEn7} acaban esta semana</span></div>
+      <div><small>Conversión</small><strong>{k.conversion === null ? '—' : `${k.conversion} %`}</strong><span>Pruebas acabadas que pagan</span></div>
+      <div><small>Altas este mes</small><strong>{k.altasMes}</strong><span>Registros con prueba</span></div>
+      <div><small>Personas activas</small><strong>{k.activos7}</strong><span>7 días · {k.activosHoy} hoy · {k.activos30} en 30 días</span></div>
+    </section>
+
+    <section className="adm-graficos">
+      <Barras titulo="Altas por semana (12 semanas)" datos={r.altas} etiqueta={(d) => fecha(d.desde)} valor={(d) => d.n} />
+      <Barras titulo="Personas que entran cada día (30 días)" datos={r.diario} etiqueta={(d) => fecha(d.dia)} valor={(d) => d.usuarios} />
+    </section>
+
+    <section className="adm-dos">
+      <div className="adm-caja">
+        <h2>Empresas por estado</h2>
+        <ul className="adm-lista">{Object.entries(ESTADOS).map(([e, t]) => <li key={e}><span className={`adm-estado adm-${e}`}>{t}</span><b>{r.porEstado[e]}</b></li>)}</ul>
+        <p className="adm-pie">{k.empresas} empresas · {k.usuarios} personas ({k.verificados} con el email confirmado)</p>
+      </div>
+      <div className="adm-caja">
+        <h2>Planes</h2>
+        {r.planes.length ? <ul className="adm-lista">{r.planes.map((p) => <li key={p.plan}><span>{p.plan}</span><b>{p.pago} de pago · {p.prueba} en prueba</b></li>)}</ul> : <p className="adm-pie">Todavía no hay empresas registradas con plan.</p>}
+      </div>
+      <div className="adm-caja">
+        <h2>Cobros</h2>
+        <ul className="adm-lista">{cobros.map(([t, v, ok]) => <li key={t}><span>{t}</span><b className={ok ? 'adm-ok' : 'adm-mal'}>{v}</b></li>)}</ul>
+        <p className="adm-pie">Las claves se ponen en Vercel › Settings › Environment Variables (Production). Los precios e IVA se crean solos en Stripe.</p>
+      </div>
+    </section>
+
+    <AdminEmpresas filas={r.filas} />
+    <p className="adm-pie">Para regalar una empresa a otra persona (plan Fundador), usa <a href="/usuarios">Usuarios › Dar de alta una empresa</a>.</p>
+  </main>;
+}

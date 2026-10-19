@@ -2,6 +2,7 @@ import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { enviarEmail, emailValido } from '@/lib/email';
 import { MUCHOS, pasado } from '@/lib/limite';
 import { CONTACTO } from '@/components/web/datos';
+import { esFundador } from '@/lib/prueba';
 import { TEMAS_SOPORTE as TEMAS } from '@/lib/soporte';
 
 export const dynamic = 'force-dynamic';
@@ -19,7 +20,7 @@ export async function POST(req) {
   const mensaje = String(b?.mensaje || '').trim().slice(0, 3000);
   if (mensaje.length < 5) return error('Cuéntanos un poco más');
   const pagina = String(b?.pagina || '').slice(0, 200);
-  const datos = [['Persona', `${u.nombre} <${u.email}>`], ['Empresa', `${u.empresaNombre || ''} (${u.empresa})`], ['Plan', u.plan ? `${u.plan.tipo || ''} ${u.plan.nombre || ''}`.trim() : '—'], ['Tema', tema], ...(pagina ? [['Desde', pagina]] : [])];
+  const datos = [['Persona', `${u.nombre} <${u.email}>`], ['Empresa', `${u.empresaNombre || ''} (${u.empresa})`], ['Plan', esFundador(u.plan) ? 'Fundador' : `${u.plan.tipo || ''} ${u.plan.nombre || ''}`.trim()], ['Tema', tema], ...(pagina ? [['Desde', pagina]] : [])];
   const r = await enviarEmail({
     para: process.env.CONTACTO_EMAIL || CONTACTO,
     asunto: `[Ayuda] ${tema} · ${u.empresaNombre || u.nombre}`,
