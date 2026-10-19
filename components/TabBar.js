@@ -116,7 +116,13 @@ export default function TabBar({ permisos = [], empresas = [], empresa, admin = 
   if (path === '/login' || path === '/privacidad' || path === '/condiciones' || path.startsWith('/invitacion') || path.startsWith('/p/') || path.startsWith('/portal/') || path.startsWith('/pagar/') || path.endsWith('/pdf')) return null;
 
   const orden = (h) => tabs.findIndex((t) => t.href === h);
-  const ir = (h) => { if (h !== path) { activoRef.current = h; navegar(router, h, orden(h) > orden(activo) ? 'tab-der' : 'tab-izq'); setActivo(h); } };
+  // En el ordenador, como el resto de la barra lateral: sin deslizar la página entera (con la barra dentro parecía recargarse).
+  const ir = (h) => {
+    if (h === path) return;
+    activoRef.current = h;
+    if (movil) navegar(router, h, orden(h) > orden(activo) ? 'tab-der' : 'tab-izq'); else router.push(h);
+    setActivo(h);
+  };
   const tabEn = (x, y) => document.elementFromPoint(x, y)?.closest('[data-href]')?.dataset.href ?? null;
   const marcado = dedo ?? activo;
   // En presupuestos, el + crea un presupuesto; en el resto, una factura.
