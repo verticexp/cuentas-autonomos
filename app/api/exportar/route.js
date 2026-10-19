@@ -1,5 +1,6 @@
 import { usuarioApi } from '@/lib/api';
 import { importes, numeroFactura, trimestre } from '@/lib/calculos';
+import { pctDeducible } from '@/lib/ivaDeducible';
 import { actividadesDe, nombresActividad } from '@/lib/empresa';
 import { fechaCorta } from '@/lib/formato';
 import { auditar } from '@/lib/auditoria';
@@ -29,8 +30,8 @@ export async function GET(req) {
   const filas = tipo === 'facturas'
     ? [['Número', 'Fecha', 'Cliente', 'NIF', 'Actividad', 'Concepto', 'Base', 'IVA %', 'Cuota IVA', 'IRPF %', 'Retención', 'Total', 'Cobrada', 'Rectifica'],
       ...lista.map((f) => { const i = importes(f); return [numeroFactura(f), fechaCorta(f.fecha), f.cliente.nombre, f.cliente.nif, ACTIVIDADES[f.actividad], f.concepto, num(i.base), f.ivaPct, num(i.iva), f.irpfPct, num(i.irpf), num(i.total), f.cobrada ? 'Sí' : 'No', f.rectifica?.numero || '']; })]
-    : [['Fecha', 'Concepto', 'Actividad', 'Base', 'IVA %', 'Cuota IVA', 'Total', 'Retención'],
-      ...lista.map((g) => { const i = importes(g); return [fechaCorta(g.fecha), g.concepto, ACTIVIDADES[g.actividad], num(i.base), g.ivaPct, num(i.iva), num(i.total), num(i.irpf)]; })];
+    : [['Fecha', 'Concepto', 'Actividad', 'Base', 'IVA %', 'Cuota IVA', '% IVA deducible', 'Total', 'Retención'],
+      ...lista.map((g) => { const i = importes(g); return [fechaCorta(g.fecha), g.concepto, ACTIVIDADES[g.actividad], num(i.base), g.ivaPct, num(i.iva), pctDeducible(g), num(i.total), num(i.irpf)]; })];
 
   const nombre = `${tipo}-${anio}${t ? `-${t}T` : ''}.csv`;
   await auditar(u, 'Exportación a Excel', `${nombre} · ${lista.length} ${tipo}`);

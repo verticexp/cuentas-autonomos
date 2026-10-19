@@ -66,7 +66,7 @@ test('Verifactu: E5 entrega intracomunitaria, E2 exportación, N2 servicios, S2 
 
 test('libros registro: la calificación o la causa de exención de cada operación', () => {
   const L = librosRegistro({ facturas: [f(DE, { operacion: 'intracomunitaria' }), f(US, { operacion: 'exportacion', id: 'x2' }), f(ES, { operacion: 'isp', id: 'x3' })], fiscal: { tipo: 'autonomo', iva: 'general' }, actividades: [{ id: 'a', nombre: 'A' }] }, 2026, '2026-12-31');
-  const filas = L.archivos[0].filas.map((x) => x.join('|'));
+  const filas = L.hojas[0].filas.map((x) => x.join('|'));
   assert.ok(filas.some((x) => x.includes('E5')));
   assert.ok(filas.some((x) => x.includes('E2')));
   assert.ok(filas.some((x) => x.includes('S2')));

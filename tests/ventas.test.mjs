@@ -68,7 +68,7 @@ test('cierre de caja en contabilidad, libros y 347', () => {
   assert.equal(linea('572').debe, 6000);
   // Asiento resumen (F4) con el primer y el último tique; sin cliente.
   const L = librosRegistro({ facturas: [c], fiscal: { tipo: 'autonomo', iva: 'general' }, actividades: [{ id: 'a', nombre: 'Tienda' }] }, 2026, '2026-12-31');
-  const fila = L.archivos[0].filas[0];
+  const fila = L.hojas[0].filas[0];
   assert.ok(fila.includes('F4') && fila.includes('1') && fila.includes('300') && fila.includes('VENTAS A CONSUMIDOR FINAL'));
   // Ventas a consumidores finales: no van en el 347.
   assert.equal(modelo347([c], [], 2026).sinNif.length, 0);

@@ -194,7 +194,8 @@ await comprobar('HTTP: exportación CSV de gastos conserva las retenciones y el 
   assert.ok(csv.includes('Retención'));
   for (const g of del(datos.gastos, actual)) {
     const d = doc(g), num = (n) => (n / 100).toFixed(2).replace('.', ',');
-    assert.ok(csv.includes(`${num(d.base)};${g.ivaPct};${num(d.iva)};${num(d.total)};${num(d.irpf)}`), g.id);
+    // Tras la cuota, el % de IVA deducible (100 si no se indica, lib/ivaDeducible.js).
+    assert.ok(csv.includes(`${num(d.base)};${g.ivaPct};${num(d.iva)};${g.deduciblePct ?? 100};${num(d.total)};${num(d.irpf)}`), g.id);
   }
 });
 await comprobar('HTTP: Excel contable mantiene el saldo bancario del mayor', async () => {
