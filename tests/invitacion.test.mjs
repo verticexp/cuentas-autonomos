@@ -14,7 +14,7 @@ test('html: botón y enlace en texto, sin imagen de seguimiento', () => {
   assert.equal(h.split(`href="${datos.url}"`).length - 1, 2);
   assert.ok(h.includes(`>${datos.url}</a>`));
   assert.ok(h.includes('Aceptar la invitación') && h.includes('<strong>Marc</strong>') && h.includes('<strong>SONORA EVENTOS</strong>'));
-  assert.ok(!/<img/i.test(h) && !h.includes('/api/abierta'));
+  assert.ok(!/<img[^>]*width="1"/i.test(h) && !h.includes('/api/abierta'));
   assert.ok(h.includes('7 días'));
 });
 

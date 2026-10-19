@@ -1,4 +1,5 @@
 import { notFound, redirect } from 'next/navigation';
+import { cobroFacturasListo } from '@/lib/stripe';
 import { importes, numeroFactura, saldoDe, vencida } from '@/lib/calculos';
 import { eur, fechaTexto, hoy } from '@/lib/formato';
 import { ESTADOS, estadoDe, numeroPresupuesto } from '@/lib/presupuestos';
@@ -37,7 +38,7 @@ export default async function Portal({ params }) {
       {facturas.length ? <ul className="grupo-lista portal-lista">
         {facturas.map((f) => {
           const est = f.cobrada ? 'cobrada' : vencida(f, e.plazo, h) ? 'vencida' : 'pendiente';
-          const pagar = !f.cobrada && importes(f).total > 0;
+          const pagar = cobroFacturasListo() && !f.cobrada && importes(f).total > 0;
           return (
             <li key={f.id} className="portal-doc">
               <span className="txt">

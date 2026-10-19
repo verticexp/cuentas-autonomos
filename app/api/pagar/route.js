@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { numeroFactura, saldoDe } from '@/lib/calculos';
 import { facturaDePago } from '@/lib/cobros';
-import { crearPago, stripeListo } from '@/lib/stripe';
+import { cobroFacturasListo, crearPago } from '@/lib/stripe';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,7 +13,7 @@ export async function POST(req) {
   const d = await facturaDePago(token);
   if (!d) return NextResponse.json({ error: 'Este enlace ya no es válido' }, { status: 404 });
   if (d.f.cobrada) return NextResponse.redirect(volver, 303);
-  if (!stripeListo()) return atras('El pago con tarjeta no está disponible: paga por transferencia.');
+  if (!cobroFacturasListo()) return atras('El pago con tarjeta no está disponible: paga por transferencia.');
   // Lo que queda por pagar (si ya hubo un pago parcial, solo el resto).
   const total = saldoDe(d.f);
   if (total <= 0) return atras('Esta factura no tiene nada que pagar.');
