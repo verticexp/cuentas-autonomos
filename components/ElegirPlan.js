@@ -92,11 +92,11 @@ export default function ElegirPlan({ plan, uso, admin, app }) {
       </div>
       <div className={styles.controles}>
         <fieldset className={styles.selector} disabled={ocupado}><legend>Tipo de negocio</legend>
-          {Object.entries(TIPOS_ALTA).map(([k, t]) => <label key={k} className={tipo === k ? styles.seleccionado : ''}><input type="radio" name="tipo-plan" value={k} checked={tipo === k} onChange={() => setTipo(k)} />{t}</label>)}
+          <div className={styles.opciones}>{Object.entries(TIPOS_ALTA).map(([k, t]) => <label key={k} className={tipo === k ? styles.seleccionado : ''}><input type="radio" name="tipo-plan" value={k} checked={tipo === k} onChange={() => setTipo(k)} />{t}</label>)}</div>
         </fieldset>
         <fieldset className={styles.selector} disabled={ocupado}><legend>Forma de pago</legend>
-          <label className={periodo === 'mes' ? styles.seleccionado : ''}><input type="radio" name="periodo-plan" value="mes" checked={periodo === 'mes'} onChange={() => setPeriodo('mes')} />Mensual</label>
-          <label className={periodo === 'anio' ? styles.seleccionado : ''}><input type="radio" name="periodo-plan" value="anio" checked={periodo === 'anio'} onChange={() => setPeriodo('anio')} />Anual <span>−{DESCUENTO} %</span></label>
+          <div className={styles.opciones}><label className={periodo === 'mes' ? styles.seleccionado : ''}><input type="radio" name="periodo-plan" value="mes" checked={periodo === 'mes'} onChange={() => setPeriodo('mes')} />Mensual</label>
+          <label className={periodo === 'anio' ? styles.seleccionado : ''}><input type="radio" name="periodo-plan" value="anio" checked={periodo === 'anio'} onChange={() => setPeriodo('anio')} />Anual <span>−{DESCUENTO} %</span></label></div>
         </fieldset>
       </div>
       <div className={styles.planes} aria-label="Planes disponibles">
@@ -104,12 +104,12 @@ export default function ElegirPlan({ plan, uso, admin, app }) {
           const anual = Math.round(p.p * 12 * (100 - DESCUENTO)) / 100;
           const elegido = esActual(p.n);
           return <article key={p.n} className={`${styles.plan} ${p.fuerte ? styles.destacado : ''}`} aria-labelledby={`plan-${p.n}`}>
-            <div className={styles.planCabecera}><h3 id={`plan-${p.n}`}>{p.n}</h3>{p.fuerte && <span className={styles.recomendado}>Recomendado</span>}</div>
+            <div className={styles.planPrincipal}><div className={styles.planCabecera}><h3 id={`plan-${p.n}`}>{p.n}</h3>{p.fuerte && <span className={styles.recomendado}>Recomendado</span>}</div>
             <p className={styles.para}>{p.fuerte ? 'Operaciones, previsión y análisis en un solo plan' : p.para}</p>
             <p className={styles.precio}><strong>{euros(periodo === 'anio' ? anual / 12 : p.p)} €</strong><span>/mes</span></p>
             <p className={styles.facturacion}>{periodo === 'anio' ? `${euros(anual)} € facturados al año` : 'Facturación mensual'} · sin IVA</p>
-            {fundador ? <p className={styles.soloAdmin}>Incluido en tu plan Fundador</p> : elegido ? <p className={styles.planElegido}>Tu plan actual</p> : admin ? <button type="button" className={`${styles.botonPlan} ${p.fuerte ? styles.botonPro : ''}`} disabled={ocupado} onClick={() => elegir(p.n)}>{paga ? `Cambiar a ${p.n}` : `Elegir ${p.n}`}</button> : <p className={styles.soloAdmin}>Gestionado por el administrador</p>}
-            <div className={styles.funciones}>
+            {fundador ? <p className={styles.incluido}><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m3 8 3 3 7-7" /></svg>Incluido en tu plan Fundador</p> : elegido ? <p className={styles.planElegido}>Tu plan actual</p> : admin ? <button type="button" className={`${styles.botonPlan} ${p.fuerte ? styles.botonPro : ''}`} disabled={ocupado} onClick={() => elegir(p.n)}>{paga ? `Cambiar a ${p.n}` : `Elegir ${p.n}`}</button> : <p className={styles.soloAdmin}>Gestionado por el administrador</p>}
+            </div><div className={styles.funciones}>
               <p>{p.herencia ? `Todo lo de ${p.herencia}, más:` : 'Lo esencial para tu día a día:'}</p>
               <ul>{p.l.map((t) => <li key={t}><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m3 8 3 3 7-7" /></svg><span>{t}</span></li>)}</ul>
             </div>

@@ -23,16 +23,18 @@
 .enlace { color: var(--ink); font-size: 14px; font-weight: 500; text-underline-offset: 4px; }
 .enlace span { margin-left: 6px; }
 .controles { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 20px; margin: 24px 0; }
-.selector { display: inline-flex; gap: 2px; min-width: 0; margin: 0; padding: 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.selector { min-width: 0; margin: 0; padding: 0; border: 0; }
 .selector legend { padding: 0; margin-bottom: 8px; color: var(--muted); font-size: 12px; }
-.selector label { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 9px 16px; border-radius: 6px; font-size: 14px; cursor: pointer; }
+.opciones { display: inline-flex; gap: 2px; padding: 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.selector label { position: relative; display: inline-flex; flex: 1 1 0; align-items: center; justify-content: center; gap: 6px; padding: 9px 16px; border-radius: 6px; font-size: 14px; white-space: nowrap; cursor: pointer; transition: background-color .15s, color .15s; }
 .selector input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 .selector label:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 3px; }
 .selector .seleccionado { background: var(--ink); color: var(--surface); }
 .selector label span { font-size: 12px; font-weight: 600; }
 .selector:disabled label { cursor: wait; opacity: 0.6; }
+.comparacion { container-type: inline-size; }
 .planes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
-.plan { min-width: 0; padding: 24px 20px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+.plan { display: flex; flex-direction: column; min-width: 0; padding: 24px 20px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
 .plan.destacado { border: 2px solid var(--ink); padding: 23px 19px; }
 .planCabecera { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; min-height: 26px; }
 .planCabecera h3 { margin: 0; font-size: 20px; letter-spacing: -0.02em; }
@@ -47,6 +49,8 @@
 .botonPlan.botonPro { background: var(--ink); border-color: var(--ink); color: var(--surface); }
 .planElegido { color: var(--muted); background: var(--paper); border-color: transparent; }
 .soloAdmin { color: var(--muted); font-weight: 400; }
+.incluido { display: flex; align-items: center; gap: 8px; min-height: 46px; margin: 0; color: var(--muted); font-size: 14px; }
+.incluido svg { flex: 0 0 16px; width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 .botonPlan:hover:not(:disabled) { box-shadow: inset 0 0 0 1px var(--ink); }
 .botonPlan:focus-visible, .enlace:focus-visible, .botonGestion:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; }
 .botonPlan:disabled, .botonGestion:disabled, .enlaceBoton:disabled { opacity: 0.55; cursor: wait; }
@@ -70,17 +74,28 @@
 .alerta { margin: 12px 0 0; }
 .mensaje { position: sticky; bottom: 100px; z-index: 1; padding: 16px; border: 1px solid var(--ink); border-radius: 10px; background: var(--surface); color: var(--ink); font-size: 14px; box-shadow: 0 6px 20px #0001; }
 @media (max-width: 1050px) and (min-width: 900px), (max-width: 700px) {
-  .planes { grid-template-columns: 1fr; }
   .resumen { grid-template-columns: 1fr; gap: 14px; margin-bottom: 32px; }
+}
+/* Las tres columnas solo caben con 760px de contenido; por debajo, una tarjeta por fila. */
+@container (max-width: 759px) {
+  .planes { grid-template-columns: 1fr; }
   .plan { padding: 24px; }
   .plan.destacado { padding: 23px; }
   .para { min-height: 0; margin-bottom: 20px; }
   .facturacion { min-height: 0; }
 }
+/* Una sola columna con sitio de sobra: precio y botón a la izquierda, funciones a la derecha. */
+@container (min-width: 520px) and (max-width: 759px) {
+  .plan { display: grid; align-items: start; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 0 28px; }
+  .funciones { margin-top: 0; padding-top: 0; padding-left: 28px; border-top: 0; border-left: 1px solid var(--line); }
+}
 @media (max-width: 480px) {
   .intro { font-size: 14px; }
+  .controles { flex-direction: column; align-items: stretch; }
+  .opciones { display: flex; }
+  .precio strong { font-size: 34px; }
   .actual, .consumo { padding: 20px; }
   .cabecera h2 { font-size: 22px; }
-  .controles { gap: 18px; }
+  .controles { gap: 16px; }
   .selector label { padding: 10px 14px; }
 }
