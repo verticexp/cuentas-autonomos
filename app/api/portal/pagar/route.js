@@ -9,7 +9,8 @@ export const dynamic = 'force-dynamic';
 export async function POST(req) {
   const form = await req.formData();
   const t = String(form.get('t') || '');
-  const d = await portalDe(t);
+  const d = await portalDe(t, req);
+  if (d instanceof Response) return d;
   const f = d?.facturas.find((x) => x.id === String(form.get('id') || ''));
   if (!f) return NextResponse.json({ error: 'Ese documento no existe' }, { status: 404 });
   if (f.cobrada || importes(f).total <= 0) return NextResponse.redirect(`${req.nextUrl.origin}/portal/${t}`, 303);

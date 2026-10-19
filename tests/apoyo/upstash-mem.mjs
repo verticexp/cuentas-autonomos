@@ -12,6 +12,7 @@ export const SCRIPTS = {
   DEJAR_PLAZA: "if redis.call('GET', KEYS[2]) ~= ARGV[1] or redis.call('EXISTS', KEYS[1]) == 0 then return 0 end\nlocal n = redis.call('DECR', KEYS[1])\nif n <= 0 then redis.call('DEL', KEYS[1], KEYS[2]) end\nreturn n",
 
   soltar: "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end",
+  DESCONTAR: "if redis.call('GET', KEYS[1]) then return redis.call('DECR', KEYS[1]) end return 0",
 };
 
 export function crearBase() {
@@ -96,6 +97,7 @@ export function crearBase() {
       case 'eval': {
         const [script, n, ...resto] = a;
         const keys = resto.slice(0, Number(n)), args = resto.slice(Number(n));
+        if (script === SCRIPTS.DESCONTAR) return run(['get', keys[0]]) === null ? 0 : run(['incrby', keys[0], -1]);
         if (script === SCRIPTS.CONTAR_VENTANA) {
           const n = run(['incr', keys[0]]);
           if (n === 1) run(['pexpire', keys[0], args[0]]);

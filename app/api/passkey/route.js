@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { generateAuthenticationOptions, generateRegistrationOptions, verifyAuthenticationResponse, verifyRegistrationResponse } from '@simplewebauthn/server';
 import { redis } from '@/lib/redis';
 import { crearSesion, desbloqueo, opcionesCookie, opcionesDesbloqueo, usuarioActual } from '@/lib/auth';
-import { cuerpo, error } from '@/lib/api';
+import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { MUCHOS, ipDe, pasado } from '@/lib/limite';
 import { auditar } from '@/lib/auditoria';
 
@@ -38,7 +38,8 @@ export async function POST(req) {
 
   // Activar Face ID en este dispositivo (con la sesión ya abierta).
   if (b.accion === 'registro-opciones' || b.accion === 'registro') {
-    if (!u) return error('No autorizado', 401);
+    const { res } = await usuarioApi();
+    if (res) return res;
     const mias = (await redis.hgetall(`passkeys:${u.id}`)) || {};
     if (b.accion === 'registro-opciones') {
       const opciones = await generateRegistrationOptions({
@@ -92,6 +93,8 @@ export async function POST(req) {
     const cambio = Boolean(u && u.id !== dueno);
     const c = await cookies();
     const token = !u || cambio ? await crearSesion(dueno) : c.get('t')?.value;
+    // Sin sesión: la cuenta ya no existe o cambió su contraseña justo ahora.
+    if (!token) return error('No se pudo entrar. Vuelve a intentarlo.', 401);
     if (!u || cambio) c.set('t', token, opcionesCookie);
     c.set('d', await desbloqueo(token), opcionesDesbloqueo);
     return Response.json({ ok: true, cambio });
@@ -101,8 +104,8 @@ export async function POST(req) {
 
 // Desactivar Face ID en un dispositivo.
 export async function DELETE(req) {
-  const u = await usuarioActual();
-  if (!u) return error('No autorizado', 401);
+  const { u, res } = await usuarioApi();
+  if (res) return res;
   const id = req.nextUrl.searchParams.get('id') || '';
   await redis.hdel(`passkeys:${u.id}`, id);
   if ((await redis.hget('passkey-usuario', id)) === u.id) await redis.hdel('passkey-usuario', id);

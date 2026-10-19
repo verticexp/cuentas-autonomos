@@ -8,7 +8,8 @@ export const dynamic = 'force-dynamic';
 // Público: el PDF de una factura o un presupuesto, solo si es de ese cliente.
 export async function GET(req) {
   const q = req.nextUrl.searchParams;
-  const d = await portalDe(q.get('t'));
+  const d = await portalDe(q.get('t'), req);
+  if (d instanceof Response) return d;
   if (!d) return Response.json({ error: 'Este enlace ya no es válido' }, { status: 404 });
   const presupuesto = q.get('tipo') === 'presupuesto';
   const doc = (presupuesto ? d.presupuestos : d.facturas).find((x) => x.id === q.get('id'));

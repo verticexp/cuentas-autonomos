@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { importes, numeroFactura, saldoDe, vencida } from '@/lib/calculos';
 import { eur, fechaTexto, hoy } from '@/lib/formato';
 import { ESTADOS, estadoDe, numeroPresupuesto } from '@/lib/presupuestos';
@@ -12,6 +12,8 @@ export const metadata = { title: 'Tus documentos', robots: { index: false } };
 export default async function Portal({ params }) {
   const { token } = await params;
   const d = await portalDe(token);
+  // Las páginas no pueden fijar un 429: el endpoint público devuelve el límite sin leer documentos.
+  if (d instanceof Response) redirect(`/api/portal/limite?espera=${d.headers.get('Retry-After')}`);
   if (!d) notFound();
   const { cliente, empresa, facturas, presupuestos } = d;
   const e = empresa.emisor || {};

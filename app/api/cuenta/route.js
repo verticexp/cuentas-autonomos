@@ -15,9 +15,12 @@ const CAMPOS = ['nombre', 'nif', 'direccion', 'ciudad', 'iban'];
 const cambioIban = (antes, ahora) => (String(antes || '') !== String(ahora || '') ? ` · IBAN cambiado a ${ahora ? `…${String(ahora).replace(/\s/g, '').slice(-4)}` : 'ninguno'}` : '');
 
 export async function PATCH(req) {
-  const { u, res } = await usuarioApi();
-  if (res) return res;
   const b = await cuerpo(req);
+  // Solo estas ramas son personales; «nombre» aquí es la razón social de la empresa.
+  const cuentaPersonal = b && ('bloqueoPantalla' in b || b.nueva !== undefined)
+    && Object.keys(b).every((k) => ['bloqueoPantalla', 'actual', 'nueva'].includes(k));
+  const { u, res } = await usuarioApi({ cuentaPersonal });
+  if (res) return res;
   const sin = (p) => !puede(u, p) && error('No tienes permiso para esto. Pídeselo al administrador de tu empresa.', 403);
   // Bloqueo de pantalla opcional (Ajustes › Face ID y contraseña): personal, no de la empresa.
   if ('bloqueoPantalla' in b) {

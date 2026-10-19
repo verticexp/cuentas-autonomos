@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createHash } from 'node:crypto';
 import { guardar, redis } from '@/lib/redis';
-import { usuarioActual } from '@/lib/auth';
+import { usuarioApi } from '@/lib/api';
 import { puede } from '@/lib/permisos';
 import { abrirSesion, bancoDirectoPermitido, urlApp } from '@/lib/enableBanking';
 import { sincronizar } from '@/lib/bancoServidor';
@@ -12,9 +12,11 @@ export const dynamic = 'force-dynamic';
 export async function GET(req) {
   const p = req.nextUrl.searchParams;
   const ir = (q) => NextResponse.redirect(`${urlApp(req)}/banco?${q}`, 303);
+  // Con la app bloqueada o el plan en solo lectura no se guarda nada: se vuelve a Banco con el motivo.
+  const { u, res } = await usuarioApi({ escritura: true });
+  if (res) return res.status === 401 ? res : ir(`error=${res.status === 402 ? 'solo-lectura' : 'bloqueada'}`);
   const estado = p.get('state') || '';
   const datos = estado && (await redis.get(`banco-estado:${estado}`));
-  const u = await usuarioActual();
   if (!datos || !u || !bancoDirectoPermitido(u) || datos.u !== u.id || datos.empresa !== u.empresa || !puede(u, 'empresa')) return ir('error=caducado');
   await redis.del(`banco-estado:${estado}`);
   if (p.get('error') || !p.get('code')) return ir('error=cancelado');
