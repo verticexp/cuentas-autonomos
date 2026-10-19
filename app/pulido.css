@@ -188,3 +188,15 @@ html[data-entrada] .tabbar { animation: entrada-barra 0.5s var(--vt-curva) 0.15s
   .registro-bloque { animation: none; }
   .registro-contenido, .registro-progreso span, .registro-fuerza span { transition: none; }
 }
+
+/* Plegables (<details>): abren y cierran deslizando en vez de saltar. Donde el navegador no lo soporta, se abren al instante como siempre. */
+:root { interpolate-size: allow-keywords; }
+details::details-content { block-size: 0; overflow: clip; opacity: 0; transition: block-size 0.32s var(--vt-curva), opacity 0.2s var(--salida), content-visibility 0.32s allow-discrete; }
+details[open]::details-content { block-size: auto; opacity: 1; }
+/* Una .nota dentro del título de un plegable va en la misma línea: sin el margen de párrafo, que la montaba sobre el texto al partirse */
+summary .nota { margin: 0; }
+/* Los campos y botones se resaltan suave al enfocarlos */
+.campo { transition: border-color 0.15s var(--salida), box-shadow 0.15s var(--salida); }
+input.campo:focus-visible, select.campo:focus-visible, textarea.campo:focus-visible { border-color: var(--ink); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ink) 10%, transparent); outline: none; }
+.campos .campo:focus-visible { box-shadow: none; border-color: var(--line); background: var(--relleno); }
+@media (prefers-reduced-motion: reduce) { details::details-content { transition: none; } }

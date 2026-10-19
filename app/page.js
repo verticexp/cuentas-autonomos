@@ -118,7 +118,7 @@ export default async function Resumen({ searchParams }) {
               {debe ? (
                 <>
                   <p className="hcard-v"><Cifra v={aPagar} /><small>€ a pagar</small></p>
-                  <p className="hcard-s">Hasta el {fechaTexto(plazo.fecha)}, {plazo.dias === 0 ? 'hoy es el último día' : plazo.dias === 1 ? 'queda 1 día' : `quedan ${plazo.dias} días`}{debe.pend303 ? ` · 303 ${debe.m303 < 0 ? `${eur(-debe.m303)} a compensar` : eur(debe.ivaIngresar)}` : c303 ? ' · 303 presentado' : ''}{debe.pend130 ? ` · 130 ${eur(debe.m130)}` : c130 ? ' · 130 presentado' : ''}</p>
+                  <p className="hcard-s">Hasta el {fechaTexto(plazo.fecha)}, {plazo.dias === 0 ? 'hoy es el último día' : plazo.dias === 1 ? 'queda 1 día' : `quedan ${plazo.dias} días`}{debe.pend303 ? ` · 303\u00a0${debe.m303 < 0 ? `${eur(-debe.m303)} a compensar` : eur(debe.ivaIngresar)}` : c303 ? ' · 303 presentado' : ''}{debe.pend130 ? ` · 130\u00a0${eur(debe.m130)}` : c130 ? ' · 130 presentado' : ''}</p>
                   <p className="hcard-s">Del {tHoy}T llevas {eur(apartado)} para apartar.</p>
                 </>
               ) : (

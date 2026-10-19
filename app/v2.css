@@ -65,7 +65,7 @@
 .trim-cab { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
 .trim-cab h3 { font-size: 17px; font-weight: 700; margin: 0; }
 .trim .estado { max-width: 64%; min-width: 0; text-overflow: ellipsis; }
-.trim-cifras { display: flex; flex-wrap: wrap; gap: 6px 22px; margin: 12px 0 2px; }
+.trim-cifras { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 22px; margin: 12px 0 2px; }
 .trim-cifras p { display: flex; flex-direction: column; margin: 0; }
 .trim-cifras span { color: var(--muted); font-size: 13px; }
 .trim-cifras strong { font-size: 20px; font-weight: 700; }
