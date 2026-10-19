@@ -306,6 +306,7 @@ export default async function Contabilidad({ searchParams }) {
 
       <a className="boton sec cont-excel" href={`/api/contabilidad?anio=${anio}${p ? `&p=${p}` : ''}`} download>Descargar en Excel</a>
       <p className="grupo-pie arriba">Libro diario, mayor, sumas y saldos, pérdidas y ganancias, balance y bienes de inversión de {anio}, en una sola hoja de cálculo para tu gestor.</p>
+      <p className="grupo-pie">Libro diario de {anio} para importar en el programa de tu gestoría: <a href={`/api/exportar/contable?formato=a3&anio=${anio}`} download>A3</a> · <a href={`/api/exportar/contable?formato=contaplus&anio=${anio}`} download>ContaPlus</a> · <a href={`/api/exportar/contable?formato=contasol&anio=${anio}`} download>Contasol</a></p>
     </main>
   );
 }
