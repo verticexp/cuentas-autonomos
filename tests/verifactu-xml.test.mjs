@@ -113,3 +113,11 @@ test('operaciones sin IVA (E2, E5, N2, S2): válidas según los esquemas de la A
   });
   assert.equal(validar(sobre({ nombre: 'Mi Empresa SL', nif: 'B11111111' }, xmls)), '');
 });
+
+test('recargo de equivalencia (TipoRecargoEquivalencia y CuotaRecargoEquivalencia): válido según los esquemas de la AEAT', { skip: !conXmllint && 'sin xmllint' }, () => {
+  const f = { ...f3, id: 'f4', numero: 13, recargo: true, cliente: { nombre: 'Ultramarinos Pepa', nif: '12345678Z' } };
+  const r = registroAlta(f, 'B11111111', '', '2026-10-06T10:00:00+02:00');
+  const xml = sobre({ nombre: 'Mi Empresa SL', nif: 'B11111111' }, [xmlAlta(r, { factura: f, emisorNombre: 'Mi Empresa SL', anterior: null, sistema, fiscal: { iva: 'general' } })]);
+  assert.match(xml, /<sum1:TipoRecargoEquivalencia>5.2<\/sum1:TipoRecargoEquivalencia><sum1:CuotaRecargoEquivalencia>5.20<\/sum1:CuotaRecargoEquivalencia>/);
+  assert.equal(validar(xml), '');
+});

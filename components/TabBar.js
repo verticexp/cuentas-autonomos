@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { alPulsar, instalarHistorial, navegar, posicion } from '@/lib/transicion';
 import Logo from '@/components/Logo';
 import CambiarEmpresa from '@/components/CambiarEmpresa';
-import { EXTRA, extraDe } from '@/components/secciones';
+import { ASISTENTE, extraDe, gruposVisibles } from '@/components/secciones';
 import { atajosDe } from '@/lib/navegacion';
 import { useHojaDeslizable } from '@/components/useHojaDeslizable';
 import useTecladoFormulario from '@/components/useTecladoFormulario';
@@ -47,8 +47,11 @@ function vibrar() {
   interruptor.click();
 }
 
+// Pantallas de Ajustes que no cuelgan de /ajustes.
+const DE_AJUSTES = ['/usuarios', '/bienvenida'];
+const deAjustes = (path) => path.startsWith('/ajustes') || DE_AJUSTES.some((h) => path === h || path.startsWith(`${h}/`));
 // Las pantallas de Facturas y Gastos (caja, catálogo, proveedores…) siguen contando como esas pestañas; el resto de las de «Más» y Ajustes, como «Más».
-const deMas = (path) => path === '/mas' || path.startsWith('/ajustes') || extraDe(path) !== null;
+const deMas = (path) => path === '/mas' || deAjustes(path) || extraDe(path) !== null;
 const RAICES = ['/', '/facturas', '/gastos', '/mas', '/ajustes'];
 const seccion = (path) => (path === '/' ? '/' : path.startsWith('/presupuestos') ? '/facturas'
   : ['/facturas', '/gastos'].some((h) => path.startsWith(h)) ? TABS.find((t) => t.href !== '/' && path.startsWith(t.href))?.href ?? null
@@ -113,7 +116,13 @@ export default function TabBar({ permisos = [], empresas = [], empresa, admin = 
   if (path === '/login' || path === '/privacidad' || path === '/condiciones' || path.startsWith('/invitacion') || path.startsWith('/p/') || path.startsWith('/portal/') || path.startsWith('/pagar/') || path.endsWith('/pdf')) return null;
 
   const orden = (h) => tabs.findIndex((t) => t.href === h);
-  const ir = (h) => { if (h !== path) { activoRef.current = h; navegar(router, h, orden(h) > orden(activo) ? 'tab-der' : 'tab-izq'); setActivo(h); } };
+  // En el ordenador, como el resto de la barra lateral: sin deslizar la página entera (con la barra dentro parecía recargarse).
+  const ir = (h) => {
+    if (h === path) return;
+    activoRef.current = h;
+    if (movil) navegar(router, h, orden(h) > orden(activo) ? 'tab-der' : 'tab-izq'); else router.push(h);
+    setActivo(h);
+  };
   const tabEn = (x, y) => document.elementFromPoint(x, y)?.closest('[data-href]')?.dataset.href ?? null;
   const marcado = dedo ?? activo;
   // En presupuestos, el + crea un presupuesto; en el resto, una factura.
@@ -126,7 +135,7 @@ export default function TabBar({ permisos = [], empresas = [], empresa, admin = 
     <>
     <div className="tabbar" data-teclado={teclado || undefined}>
       <Link href="/" className="tabbar-logo" aria-label="Netto, resumen" onClick={(e) => { e.preventDefault(); ir('/'); }}><Logo /></Link>
-      {empresa && <CambiarEmpresa empresas={empresas} actual={empresa} variante="lateral" puedeCrear={admin} />}
+      {empresa && <CambiarEmpresa empresas={empresas} actual={empresa} variante="lateral" />}
       <nav
         ref={nav}
         className="tabs"
@@ -155,20 +164,31 @@ export default function TabBar({ permisos = [], empresas = [], empresa, admin = 
         ))}
       </nav>
       <nav className="tabs-extra" aria-label="Más secciones">
-        {EXTRA.map((g) => {
-          const enlaces = g.enlaces.filter((e) => (!e.permiso || permisos.includes(e.permiso)) && (!e.inventario || inventario));
-          return enlaces.length > 0 && (
-            <div key={g.titulo} className="tabs-grupo">
-              <p className="tabs-grupo-t">{g.titulo}</p>
-              {enlaces.map((e) => (
-                <Link key={e.href} href={e.href} prefetch={false} className={extraDe(path) === e.href ? 'activo' : ''} aria-current={extraDe(path) === e.href ? 'page' : undefined}>
-                  <svg viewBox="0 0 24 24" aria-hidden>{e.icono}</svg>
-                  <span>{e.nombre}</span>
-                </Link>
-              ))}
-            </div>
+        {(() => {
+          const enlace = (e) => (
+            <Link key={e.href} href={e.href} prefetch={false} className={extraDe(path) === e.href ? 'activo' : ''} aria-current={extraDe(path) === e.href ? 'page' : undefined}>
+              <svg viewBox="0 0 24 24" aria-hidden>{e.icono}</svg>
+              <span>{e.nombre}</span>
+            </Link>
           );
-        })}
+          return (
+            <>
+              <div className="tabs-grupo">{enlace(ASISTENTE)}</div>
+              {gruposVisibles(permisos, inventario).map((g) => (
+                <div key={g.titulo} className="tabs-grupo" data-tono={g.tono}>
+                  <p className="tabs-grupo-t">{g.titulo}</p>
+                  {g.enlaces.map(enlace)}
+                </div>
+              ))}
+            </>
+          );
+        })()}
+        <div className="tabs-grupo">
+          <Link href="/ajustes" prefetch={false} className={deAjustes(path) ? 'activo' : ''} aria-current={deAjustes(path) ? 'page' : undefined}>
+            <svg viewBox="0 0 24 24" aria-hidden><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" /></svg>
+            <span>Ajustes</span>
+          </Link>
+        </div>
         <form method="post" action="/api/logout" className="tabs-salir">
           <button type="submit">
             <svg viewBox="0 0 24 24" aria-hidden><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l-5-5 5-5M5 12h11" /></svg>

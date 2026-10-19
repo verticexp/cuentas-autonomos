@@ -10,7 +10,9 @@ export default function BarraEstado() {
   useEffect(() => {
     const html = document.documentElement;
     const poner = () => {
-      const oscuro = matchMedia('(prefers-color-scheme: dark)').matches;
+      const oscuro = html.dataset.tema === 'oscuro' || (
+        html.dataset.tema !== 'claro' && matchMedia('(prefers-color-scheme: dark)').matches
+      );
       const cabecera = oscuro ? '#242629' : '#0F1F1B';
       const papel = oscuro ? '#111214' : '#F3F4F1';
       const inicio = document.getElementById('arranque') && html.dataset.arranque !== 'visto';
@@ -31,7 +33,12 @@ export default function BarraEstado() {
     o.observe(document.head, { childList: true }); // por si Next vuelve a poner su theme-color al cambiar de pantalla
     const oscuro = matchMedia('(prefers-color-scheme: dark)');
     oscuro.addEventListener('change', poner);
-    return () => { o.disconnect(); oscuro.removeEventListener('change', poner); };
+    window.addEventListener('netto-tema', poner);
+    return () => {
+      o.disconnect();
+      oscuro.removeEventListener('change', poner);
+      window.removeEventListener('netto-tema', poner);
+    };
   }, [path]);
   return null;
 }

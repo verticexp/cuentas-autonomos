@@ -4,6 +4,7 @@ import { listarClientes } from '@/lib/tercerosServidor';
 import { filtrarFichas, nombreForma } from '@/lib/terceros';
 import { eur } from '@/lib/formato';
 import Ir from '@/components/Ir';
+import Volver from '@/components/Volver';
 import { FiltrosFichas, UsoRiesgo } from '@/components/FichaCliente';
 import '@/app/fichas.css';
 import '@/app/mk.css';
@@ -16,6 +17,7 @@ export default async function Clientes({ searchParams }) {
   const filtros = await searchParams || {};
   const visibles = filtrarFichas(lista, filtros);
   return <main className="pagina mk-look fichas-pagina">
+    <Volver href="/mas">Más</Volver>
     <div className="ficha-cabecera"><h1 className="titulo">Clientes</h1>{puede(u, 'facturar') && <Ir className="boton" href="/clientes/nuevo">+ Nuevo cliente</Ir>}</div>
     <p className="resumen-linea">{lista.length} clientes · Te deben {eur(lista.reduce((s, c) => s + c.riesgo, 0))} · {lista.filter((c) => c.excedido).length} por encima de su límite</p>
     <FiltrosFichas lista={lista} filtros={filtros} />

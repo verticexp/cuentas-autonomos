@@ -133,6 +133,28 @@ export default function Cuestionario({ inicial, editar, conFacturas, puedeFactur
             <SiNo valor={fiscal.intracom} cambiar={(v) => f('intracom', v)} titulo="Compro o vendo a empresas de otros países de la UE" />
             <SiNo valor={fiscal.inventario} cambiar={(v) => f('inventario', v)} titulo="Vendo productos y quiero controlar el stock" detalle="Inventario: entradas, salidas, stock mínimo y su valor" />
           </div>
+          {!sociedad && (
+            <details className="alta-renta">
+              <summary>Para el borrador de la renta (opcional)</summary>
+              <p className="nota">Con esto la renta tiene en cuenta tus mínimos familiares y las reducciones para rendimientos bajos. Solo se usa en el borrador.</p>
+              <div className="alta-campos">
+                <label className="alta-campo"><span>Tu año de nacimiento</span><input className="campo" inputMode="numeric" placeholder="1985" value={fiscal.renta?.nacimiento || ''} onChange={(v) => f('renta', { ...fiscal.renta, nacimiento: v.target.value })} /></label>
+                <label className="alta-campo"><span>Hijos menores de 25 que viven contigo</span><small>Su año de nacimiento, separados por comas.</small><input className="campo" placeholder="2015, 2019" value={Array.isArray(fiscal.renta?.hijos) ? fiscal.renta.hijos.join(', ') : fiscal.renta?.hijos || ''} onChange={(v) => f('renta', { ...fiscal.renta, hijos: v.target.value })} /></label>
+                <label className="alta-campo"><span>Padres o abuelos mayores de 65 que viven contigo</span><small>Su año de nacimiento, separados por comas.</small><input className="campo" placeholder="1950" value={Array.isArray(fiscal.renta?.ascendientes) ? fiscal.renta.ascendientes.join(', ') : fiscal.renta?.ascendientes || ''} onChange={(v) => f('renta', { ...fiscal.renta, ascendientes: v.target.value })} /></label>
+                <label className="alta-campo"><span>Otras rentas del año, en euros</span><small>Nómina, alquileres, intereses… (para calcular tu tipo).</small><input className="campo" inputMode="decimal" placeholder="0" value={fiscal.renta?.otrasRentas || ''} onChange={(v) => f('renta', { ...fiscal.renta, otrasRentas: v.target.value })} /></label>
+              </div>
+              <div className="grupo-c">
+                <SiNo valor={fiscal.renta?.compartidos !== false} cambiar={(v) => f('renta', { ...fiscal.renta, compartidos: v })} titulo="El otro progenitor también hace la renta" detalle="Cada uno aplica la mitad del mínimo por hijos" />
+                <SiNo valor={Boolean(fiscal.renta?.dependiente)} cambiar={(v) => f('renta', { ...fiscal.renta, dependiente: v })} titulo="Trabajas para un único cliente (o eres TRADE)" detalle="Sin empleados y con al menos el 70 % de tus ingresos con retención: reducción de 2.000 € o más" />
+              </div>
+            </details>
+          )}
+          {sociedad && (
+            <label className="alta-campo"><span>Fecha de constitución de la sociedad (opcional)</span>
+              <small>Las sociedades nuevas pagan el 15 % del Impuesto sobre Sociedades el primer año con beneficio y el siguiente.</small>
+              <input className="campo" type="date" min="1900-01-01" value={fiscal.constitucion || ''} onChange={(v) => f('constitucion', v.target.value)} />
+            </label>
+          )}
         </>
       ),
     },

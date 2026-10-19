@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { requerir } from '@/lib/auth';
 import { redis } from '@/lib/redis';
-import { perfilDe, permisosDe, puede } from '@/lib/permisos';
+import { PERFILES, perfilDe, permisosDe, puede } from '@/lib/permisos';
 import Usuarios from '@/components/Usuarios';
 import Volver from '@/components/Volver';
 import { membresias } from '@/lib/membresias';
@@ -10,7 +10,7 @@ import '@/app/mk.css';
 
 export const dynamic = 'force-dynamic';
 
-export default async function Page() {
+export default async function Page({ searchParams }) {
   const yo = await requerir();
   if (!puede(yo, 'usuarios') && !yo.admin) redirect('/ajustes');
   const [todos, empresas] = await Promise.all([redis.hgetall('usuarios'), yo.admin ? redis.hgetall('empresas') : null]);
@@ -23,11 +23,15 @@ export default async function Page() {
   const listaEmpresas = empresas && Object.values(empresas).map((e) => ({
     id: e.id, nombre: e.nombre, personas: usuarios.filter((o) => membresias(o)[e.id]).length,
   })).sort((a, b) => a.nombre.localeCompare(b.nombre));
+  // ?invitar=gestoria: llega desde Ajustes › Tu gestoría, con su nombre y email ya puestos y el perfil Gestoría.
+  const { invitar } = await searchParams;
+  const gestoria = invitar === 'gestoria' && PERFILES.find((p) => p.id === 'gestoria');
+  const inicial = gestoria ? { nombre: yo.gestoria?.nombre || '', email: yo.gestoria?.email || '', rol: 'miembro', permisos: gestoria.permisos } : null;
   return (
     <main className="pagina mk-look">
       <Volver href="/ajustes">Ajustes</Volver>
       <h1 className="titulo">Usuarios</h1>
-      <Usuarios lista={puede(yo, 'usuarios') ? lista : null} yo={yo.id} empresa={yo.empresaNombre} empresas={listaEmpresas} miEmpresa={yo.empresa} soyAdmin={yo.rol === 'admin'} />
+      <Usuarios lista={puede(yo, 'usuarios') ? lista : null} yo={yo.id} empresa={yo.empresaNombre} empresas={listaEmpresas} miEmpresa={yo.empresa} soyAdmin={yo.rol === 'admin'} inicial={inicial} />
     </main>
   );
 }

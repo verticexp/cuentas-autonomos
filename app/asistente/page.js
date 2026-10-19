@@ -21,16 +21,19 @@ const EJEMPLOS = {
   nominas: '¿Cuánto me cuestan las nóminas este año?',
 };
 
-export default async function PaginaAsistente() {
+export default async function PaginaAsistente({ searchParams }) {
   const u = await requerir();
   if (u.plan?.version === 2 && sinFuncion(u.plan, 'asistente')) return <SinPlan usuario={u} funcion="asistente" />;
   const h = herramientasPara(u).map((x) => x.name);
+  // ?pregunta=…: llega desde el buscador de «Más» y se envía sola al abrir.
+  const { pregunta } = await searchParams;
+  const inicial = typeof pregunta === 'string' ? pregunta.trim().slice(0, 500) : '';
   return (
     <main className="pagina mk-look asistente">
       <Volver href="/">Resumen</Volver>
       <h1 className="titulo">Pregunta a Netto</h1>
       <p className="asi-sub">Responde con las cifras que calcula la app, solo de {u.empresaNombre || 'tu empresa'} y de lo que tú puedes ver.</p>
-      <Asistente listo={iaLista()} ejemplos={Object.keys(EJEMPLOS).filter((k) => h.includes(k)).map((k) => EJEMPLOS[k])} />
+      <Asistente listo={iaLista()} inicial={inicial} ejemplos={Object.keys(EJEMPLOS).filter((k) => h.includes(k)).map((k) => EJEMPLOS[k])} />
     </main>
   );
 }

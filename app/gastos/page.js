@@ -5,7 +5,8 @@ import { nombresProyectos } from '@/lib/proyectos';
 import { leer, redis } from '@/lib/redis';
 import { contar, contarMarcados, documentos, fichasRango, leerRango, pagina, totales } from '@/lib/indices';
 import { candidatosConciliacion } from '@/lib/bancoServidor';
-import { importes, r2 } from '@/lib/calculos';
+import { importes, origenGasto, r2 } from '@/lib/calculos';
+import { partirIva } from '@/lib/ivaDeducible';
 import { actividadesDe, fiscalDe, nombresActividad } from '@/lib/empresa';
 import { DEDUCCIONES_GENERALES } from '@/lib/empresa';
 import { DEDUCCIONES, cubierta } from '@/lib/deducciones';
@@ -98,7 +99,7 @@ export default async function Gastos({ searchParams }) {
         <p className="resumen-linea">
           {delAnio.length > 0 && <>
           <span>Este año, sin IVA <strong>{eur(r2(delAnio.reduce((s, g) => s + g.base, 0)))}</strong></span>
-          <span>IVA que recuperas <strong>{eur(r2(delAnio.reduce((s, g) => s + importes(g).iva, 0)))}</strong></span>
+          <span>IVA que recuperas <strong>{eur(r2(delAnio.reduce((s, g) => s + importes(g).iva - (origenGasto(g) ? 0 : partirIva(g, importes(g).iva).noDeducible), 0)))}</strong></span>
           </>}
           {puede(u, 'resumen') && nBienes > 0 && <Link href="/contabilidad?ver=bienes" className="prov-enlace">Bienes de inversión ›</Link>}
           {hayProveedores && <Link href="/gastos/proveedores" className="prov-enlace">Proveedores{debes > 0 ? ` · debes ${eur(r2(debes))}` : ''} ›</Link>}

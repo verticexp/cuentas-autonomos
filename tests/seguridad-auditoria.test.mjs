@@ -142,8 +142,8 @@ test('S3: vuelta bancaria exige desbloqueo y plan antes de consumir el estado', 
 test('S4: reserva atómica de los 10 intentos por email y 30 por IP, con TTL de 15 minutos', async () => {
   const rs = await Promise.all(Array.from({ length: 18 }, () => A.entrar('nadie@example.test', 'mal', 'ip')));
   assert.equal(rs.filter((r) => r?.bloqueado).length, 8); assert.equal(estado.hashes, 10);
-  assert.ok(await R.redis.ttl('intentos:nadie@example.test') <= 900);
-  assert.ok(await R.redis.ttl('intentos:nadie@example.test') > 0);
+  assert.ok(await R.redis.ttl('intentos:nadie@example.test:ip') <= 900);
+  assert.ok(await R.redis.ttl('intentos:nadie@example.test:ip') > 0);
   base.run(['flushdb']); estado.hashes = 0;
   const ips = await Promise.all(Array.from({ length: 36 }, (_, i) => A.entrar(`nadie${i}@example.test`, 'mal', 'misma')));
   assert.equal(ips.filter((r) => r?.bloqueado).length, 6); assert.equal(estado.hashes, 30);
@@ -165,7 +165,7 @@ test('S5: un login antiguo pendiente no sobrevive al cambio de contraseña; sesi
   if (pendiente?.token) { estado.cookies.set('t', pendiente.token); assert.equal(await A.usuarioActual(), null); }
   estado.cookies.set('t', vieja); assert.equal(await A.usuarioActual(), null);
   estado.cookies.set('t', cambio.token); assert.ok(await A.usuarioActual());
-  assert.equal(await R.redis.get(`intentos:${u.email}`), null);
+  assert.equal(await R.redis.get(`intentos:${u.email}:ip`), null);
 });
 
 test('S5: la lectura rechaza una sesión versionada si las credenciales cambian sin borrar su clave', async () => {
@@ -215,8 +215,23 @@ test('S1: el login por llave sigue disponible con la sesión bloqueada', async (
 test('S4: un acierto limpia el email y devuelve su reserva a la IP (oficinas con una IP)', async () => {
   const u = await usuario({ pass: await A.cifrar(antigua) });
   const r = await A.entrar(u.email, antigua, 'ip');
-  assert.ok(r.token); assert.equal(await R.redis.get(`intentos:${u.email}`), null);
+  assert.ok(r.token); assert.equal(await R.redis.get(`intentos:${u.email}:ip`), null);
+  assert.equal(Number(await R.redis.get(`intentos:${u.email}`)), 0);
   assert.equal(Number(await R.redis.get('intentos-ip:ip')), 0);
+});
+
+test('S4: quien prueba contraseñas desde su IP no deja sin entrar a la persona desde la suya', async () => {
+  const u = await usuario({ pass: await A.cifrar(antigua) });
+  for (let i = 0; i < 12; i++) await A.entrar(u.email, 'mal', 'atacante');
+  assert.equal((await A.entrar(u.email, antigua, 'atacante'))?.bloqueado, true);
+  assert.ok((await A.entrar(u.email, antigua, 'victima'))?.token);
+});
+
+test('S4: tope alto por email contra una prueba repartida entre muchas IP', async () => {
+  const u = await usuario({ pass: await A.cifrar(antigua) });
+  const rs = [];
+  for (let i = 0; i < 105; i++) rs.push(await A.entrar(u.email, 'mal', `ip${i}`));
+  assert.ok(rs.slice(100).every((r) => r?.bloqueado));
 });
 
 test('S5: una emisión pausada antes de guardar tampoco publica credenciales anteriores', async () => {

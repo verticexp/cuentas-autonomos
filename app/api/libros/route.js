@@ -2,14 +2,14 @@ import { concurrencia, respuesta429 } from '@/lib/limite';
 import { leer } from '@/lib/redis';
 import { usuarioApi } from '@/lib/api';
 import { actividadesDe, fiscalDe } from '@/lib/empresa';
-import { librosRegistro, librosZip } from '@/lib/librosRegistro';
+import { librosRegistro, librosXlsx } from '@/lib/librosRegistro';
 import { hoy } from '@/lib/formato';
 import { auditar } from '@/lib/auditoria';
 import { delosAnios } from '@/lib/indices';
 
 export const dynamic = 'force-dynamic';
 
-// Libros registro del IVA y del IRPF de un año (?anio=2026), en el formato de la AEAT: un .zip con los tres .xlsx.
+// Libros registro del IVA y del IRPF de un año (?anio=2026), en el formato de la AEAT: un .xlsx con un libro por hoja.
 export async function GET(req) {
   const { u, res } = await usuarioApi({ permiso: 'resumen' });
   if (res) return res;
@@ -24,7 +24,9 @@ export async function GET(req) {
     const l = librosRegistro({ facturas: facturas || [], gastos: gastos || [], nominas: nominas || [], productos: productos || [], ajustes: ajustes || [], albaranes: albaranes || [], fiscal: fiscalDe(u), actividades: actividadesDe(u),
       empresa: { nombre: u.emisor?.nombre || u.empresaNombre || '', nif: u.emisor?.nif || '' } }, anio, h);
     await auditar(u, 'Libros registro', `Descarga de ${anio}`);
-    return new Response(librosZip(l), { headers: { 'Content-Type': 'application/zip', 'Content-Disposition': `attachment; filename="libros-registro-${anio}.zip"` } });
+    const ascii = l.fichero.normalize('NFD').replace(/[^\x20-\x7e]/g, '').replace(/"/g, '');
+    return new Response(librosXlsx(l), { headers: { 'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': `attachment; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(l.fichero)}` } });
   });
   return resultado?.ocupado ? respuesta429(5, 'Ya hay una exportación en curso en tu empresa. Espera a que termine y prueba de nuevo.') : resultado;
 }

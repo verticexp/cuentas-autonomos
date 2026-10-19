@@ -4,12 +4,16 @@
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
-  :root { --paper: #121A2E; --surface: #1B2540; --ink: #EEF1F7; --muted: #97A1B8; --line: #2A3555; --in: #3DC495; --out: #F0707F; color-scheme: dark; }
+  :root:not([data-tema="claro"]) { --paper: #121A2E; --surface: #1B2540; --ink: #EEF1F7; --muted: #97A1B8; --line: #2A3555; --in: #3DC495; --out: #F0707F; color-scheme: dark; }
 }
+:root[data-tema="oscuro"] { --paper: #121A2E; --surface: #1B2540; --ink: #EEF1F7; --muted: #97A1B8; --line: #2A3555; --in: #3DC495; --out: #F0707F; color-scheme: dark; }
 * { box-sizing: border-box; margin: 0; }
 html, body { height: 100%; }
+/* Como una app: la página nunca se desplaza de lado aunque algo sobresalga (clip, no hidden, para no romper position: sticky) */
+html, body { overflow-x: clip; overscroll-behavior-x: none; }
 body { background: var(--paper); color: var(--ink); font-family: var(--font); font-size: 16px; line-height: 1.4; font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; }
 a { color: inherit; }
+html { touch-action: pan-x pan-y; } /* sin zoom por pellizco en Safari, que ignora user-scalable */
 a, button { touch-action: manipulation; }
 button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; transition: transform 0.15s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.2s cubic-bezier(0.23, 1, 0.32, 1); }
 button:active { transform: scale(0.96); }

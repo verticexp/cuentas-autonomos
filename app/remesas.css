@@ -2,7 +2,10 @@
 .remesas .segmentado { margin: 18px 0; }
 .remesas .segmentado button { flex: 1 1 auto; text-align: center; padding: 6px 10px; border: 0; background: none; border-radius: 7px; font: inherit; font-size: 13px; font-weight: 500; color: var(--ink); white-space: nowrap; cursor: pointer; }
 .remesas .segmentado button.activo { background: var(--surface); font-weight: 600; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12), 0 3px 1px rgba(0, 0, 0, 0.04); }
-@media (prefers-color-scheme: dark) { .remesas .segmentado button.activo { background: #2A3A35; } }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="claro"]) .remesas .segmentado button.activo { background: #2A3A35; }
+}
+:root[data-tema="oscuro"] .remesas .segmentado button.activo { background: #2A3A35; }
 .remesas .grupo { margin: 24px 0; }
 .remesas .grupo-t { overflow-wrap: anywhere; }
 .remesas .grupo-lista { margin-top: 12px; }

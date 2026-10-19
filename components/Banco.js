@@ -57,7 +57,7 @@ const AYUDA = {
 };
 
 // Sin factura ni gasto: qué es (Netto propone una opción por el concepto) y apuntarlo con un toque.
-function QueEs({ m, accion }) {
+function QueEs({ m, accion, children }) {
   const [clase, setClase] = useState(m.clase);
   const [intereses, setIntereses] = useState('');
   return (
@@ -71,6 +71,7 @@ function QueEs({ m, accion }) {
         {clase === 'gasto'
           ? <Link href={`/gastos?banco=${encodeURIComponent(m.id)}`} className="boton pequeno">Añadir con su factura</Link>
           : <button className="boton pequeno" onClick={() => accion({ accion: 'contabilizar', id: m.id, clase, intereses })}>{['hacienda', 'seguridad', 'nomina'].includes(clase) ? 'Entendido' : clase === 'traspaso' ? 'Apartar' : 'Apuntar'}</button>}
+        {children}
       </div>
     </div>
   );
@@ -80,6 +81,8 @@ function QueEs({ m, accion }) {
 function Pendiente({ m, permisos, accion }) {
   const [eligiendo, setEligiendo] = useState(false);
   const [elegida, setElegida] = useState('');
+  const elegir = useRef(null);
+  useEffect(() => { if (eligiendo) elegir.current?.scrollIntoView({ block: 'nearest', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); }, [eligiendo]);
   const elegidaValida = m.opciones.some((o) => o.id === elegida) ? elegida : '';
   const s = m.sugerencia;
   const puedeAqui = m.importe > 0 ? permisos.facturar : permisos.gastar;
@@ -98,9 +101,8 @@ function Pendiente({ m, permisos, accion }) {
           {(s.motivo && MOTIVO[s.motivo]) && <small className="bco-sug-m">{MOTIVO[s.motivo]}</small>}
         </div>
       )}
-      {puedeAqui && !s && !eligiendo && <QueEs m={m} accion={accion} />}
       {puedeAqui && (eligiendo ? (
-        <div className="bco-elegir">
+        <div className="bco-elegir" ref={elegir}>
           <select className="campo" value={elegidaValida} onChange={(e) => setElegida(e.target.value)} aria-label={m.importe > 0 ? 'Factura' : 'Gasto'}>
             <option value="">{m.importe > 0 ? 'Elige la factura…' : 'Elige el gasto…'}</option>
             {m.opciones.map((o) => <option key={o.id} value={o.id}>{o.texto} · {fechaCorta(o.fecha)} · {o.total !== undefined && o.saldo !== undefined && Math.abs(o.total - o.saldo) > 0.005 ? `${eur(o.total)}, faltan ${eur(o.saldo)}` : eur(o.importe)}</option>)}
@@ -111,6 +113,11 @@ function Pendiente({ m, permisos, accion }) {
           </div>
           {!m.opciones.length && <p className="bco-nota">{m.importe > 0 ? 'No hay facturas sin cobrar.' : 'No hay gastos de esas fechas sin emparejar. Apúntalo en Gastos y vuelve.'}</p>}
         </div>
+      ) : !s ? (
+        <QueEs m={m} accion={accion}>
+          <button className="boton pequeno sec" onClick={() => setEligiendo(true)}>{m.importe > 0 ? 'Elegir factura' : 'Elegir gasto'}</button>
+          <button className="boton pequeno sec" onClick={() => accion({ accion: 'ignorar', id: m.id })}>Ignorar</button>
+        </QueEs>
       ) : (
         <div className="bco-botones">
           {s && <button className="boton pequeno" onClick={() => confirmar(s.tipo, s.id)}>{s.yaCobrada ? 'Vincular' : s.motivo === 'parcial' ? 'Cobro parcial' : 'Confirmar'}</button>}

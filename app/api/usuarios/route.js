@@ -68,14 +68,18 @@ export async function POST(req) {
     const personas = Object.values((await redis.hgetall('usuarios')) || {}).filter((x) => enEmpresa(x, u.empresa)).map((x) => ({ id: x.id, ...membresias(x)[u.empresa] }));
     const sinPlan = sinPlaza(u.plan, personas, papel(u, b));
     if (sinPlan) return error(sinPlan, 403);
-    // Si ya tiene cuenta en Netto se le añade la membresía de esta empresa.
+    // Si ya tiene cuenta en Netto no se le añade sin más: recibe un enlace y entra en la empresa cuando lo acepta
+    // con su sesión (api/invitacion/unirse). La respuesta no da su nombre ni ningún otro dato de su cuenta.
     const yaId = await redis.hget('emails', limpiarEmail(b.email));
     const ya = yaId && (await redis.hget('usuarios', yaId));
     if (ya) {
       if (enEmpresa(ya, u.empresa)) return error('Esa persona ya está en tu empresa');
-      await redis.hset('usuarios', { [ya.id]: conMembresia(ya, u.empresa, papel(u, b)) });
-      await auditar(u, 'Persona añadida', `${ya.email} · ${quePapel(papel(u, b))}`);
-      return Response.json({ ok: true, existente: ya.nombre });
+      const codigo = randomBytes(18).toString('base64url');
+      await redis.set(`union:${codigo}`, { usuario: ya.id, empresa: u.empresa, ...papel(u, b) }, { ex: INVITACION_DIAS * 86400 });
+      await auditar(u, 'Persona invitada (ya tenía cuenta)', `${ya.email} · ${quePapel(papel(u, b))}`);
+      const url = new URL(`/api/invitacion/unirse?c=${codigo}`, req.url).toString();
+      const e = await enviarInvitacion({ para: ya.email, nombre: ya.nombre, quien: u.nombre, empresa: nombreEmpresa(u), url, responderA: u.email, dias: INVITACION_DIAS });
+      return Response.json({ ok: true, pendiente: true, enlace: url, email: ya.email, ...e });
     }
     const r = await crearUsuario({ nombre: b.nombre, email: b.email, empresa: u.empresa, ...papel(u, b) });
     if (r.error) return error(r.error);
