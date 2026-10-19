@@ -634,7 +634,10 @@ console.log('Barra lateral del ordenador');
 {
   const lateral = async (cookie) => /<nav class="tabs-extra"[\s\S]*?<\/nav>/.exec(await (await pedir('/gastos', { cookie })).text())?.[0] || '';
   const mia = await lateral(yo);
-  ok('el administrador ve todas las secciones', () => assert.ok(['/presupuestos', '/facturas/recurrentes', '/facturas/catalogo', '/tesoreria', '/modelos', '/gastos/proveedores', '/nominas', '/ajustes/importar', '/usuarios', '/ajustes'].every((h) => mia.includes(`href="${h}"`))));
+  ok('el administrador ve todas las secciones', () => assert.ok(['/asistente', '/presupuestos', '/facturas/recurrentes', '/facturas/catalogo', '/tesoreria', '/modelos', '/gastos/proveedores', '/nominas', '/ajustes'].every((h) => mia.includes(`href="${h}"`))));
+  // Desde el 19-10-2026 cada pantalla sale una sola vez: Importar y Usuarios viven en Ajustes, no en la barra.
+  const ajMia = await (await pedir('/ajustes', { cookie: yo })).text();
+  ok('Importar datos y Usuarios están en Ajustes y no repetidos en la barra', () => assert.ok(!mia.includes('href="/ajustes/importar"') && !mia.includes('href="/usuarios"') && ajMia.includes('href="/ajustes/importar"') && ajMia.includes('href="/usuarios"')));
   const suya = await lateral(otro);
   ok('el de gastos solo ve lo suyo', () => assert.ok(suya.includes('href="/gastos/proveedores"') && !suya.includes('href="/tesoreria"') && !suya.includes('href="/presupuestos"') && !suya.includes('href="/ajustes/importar"')));
   const marca = await (await pedir('/tesoreria', { cookie: yo })).text();
@@ -863,7 +866,9 @@ if (process.env.ANTHROPIC_URL) {
   ok('pantalla con preguntas de ejemplo según los permisos', () => assert.ok(pa.includes('Pregunta a Netto') && pa.includes('¿Cuánto IVA llevo este trimestre?') && po.includes('¿Cuánto he gastado este mes?') && !po.includes('IVA llevo')));
   const res = n(await texto('/', yo));
   const aj = await (await pedir('/ajustes', { cookie: otro })).text();
-  ok('se llega desde el resumen, desde Ajustes y desde la barra lateral', () => assert.ok(res.includes('Pregunta por tus cuentas') && aj.includes('href="/asistente"') && /<nav class="tabs-extra"[\s\S]*?href="\/asistente"/.test(aj)));
+  const mas = await (await pedir('/mas', { cookie: otro })).text();
+  // Desde el 19-10-2026, en el móvil se llega por el buscador de «Más» (pregunta a Netto) y no desde Ajustes.
+  ok('se llega desde el resumen, desde el buscador de «Más» y desde la barra lateral', () => assert.ok(res.includes('Pregunta por tus cuentas') && mas.includes('Busca o pregunta a Netto') && /<nav class="tabs-extra"[\s\S]*?href="\/asistente"/.test(aj)));
 } else console.log('  (sin ANTHROPIC_URL: se salta)');
 
 console.log('Varias empresas en la misma cuenta');
@@ -998,7 +1003,8 @@ console.log('Registro de jornada');
   ok('el empleado ve solo sus horas', () => assert.ok(pe.includes('Eva Fichadora') && !pe.includes('Leo Sinapp') && !pe.includes('Apuntar un día a mano')));
   const ajEva = n(await texto('/ajustes', eva));
   const lat = await (await pedir('/nominas', { cookie: yo })).text();
-  ok('se llega desde Ajustes (empleado), desde Nóminas y desde la barra lateral', () => assert.ok(ajEva.includes('Fichar y registro de jornada') && lat.includes('href="/jornada"') && /<nav class="tabs-extra"[\s\S]*?href="\/jornada"/.test(lat)));
+  const [ajEvaHtml, masEva] = await Promise.all(['/ajustes', '/mas'].map(async (r) => (await pedir(r, { cookie: eva })).text()));
+  ok('se llega desde «Más» y Ajustes (empleado), desde Nóminas y desde la barra lateral', () => assert.ok(ajEva.includes('Fichar') && ajEvaHtml.includes('href="/jornada"') && masEva.includes('Fichar') && masEva.includes('href="/jornada"') && lat.includes('href="/jornada"') && /<nav class="tabs-extra"[\s\S]*?href="\/jornada"/.test(lat)));
 }
 
 console.log('\nSeguridad');
@@ -1693,6 +1699,42 @@ if (process.env.VERIFACTU_URL) {
   const decl = n(await texto('/declaracion-responsable'));
   ok('declaración responsable pública, con los datos de la entidad productora', () => assert.ok(decl.includes('Declaración responsable del sistema informático de facturación') && decl.includes('Empresa de Netto SL') && decl.includes('B12345674') && decl.includes('S - Sí') && decl.includes('Real Decreto 1007/2023')));
 } else console.log('  (sin VERIFACTU_URL: se salta)');
+
+console.log('Ajustes nuevos: perfil, empresa, cobros, diseño, email de envío, series y gestoría');
+{
+  const { readFileSync, rmSync } = await import('node:fs');
+  const patch = async (cuerpo, cookie = yo) => { const r = await pedir('/api/cuenta', { metodo: 'PATCH', cookie, cuerpo }); return [r.status, await r.json().catch(() => ({}))]; };
+  const [sCob] = await patch({ cobros: { plazo: 45, bizum: '600 123 456', otroPago: 'Efectivo', recordatorios: 7 } });
+  const [sBiz] = await patch({ cobros: { bizum: 'no es un teléfono' } });
+  ok('Cobros: guarda plazo, Bizum y otra forma de pago; rechaza un Bizum mal escrito', () => assert.deepEqual([sCob, sBiz], [200, 400]));
+  const [sDis] = await patch({ diseno: { pie: 'Pie <b>legal</b>', notaDefecto: 'Gracias por tu confianza' } });
+  const [sEnv] = await patch({ envio: { asunto: 'Tu factura {numero}', mensaje: 'Hola {cliente}', firma: 'Equipo Prueba' } });
+  const [sGesMala] = await patch({ gestoria: { email: 'mal', auto: true } });
+  const [sGes] = await patch({ gestoria: { nombre: 'Gestoría Prueba', email: 'gestoria@test.es', auto: true } });
+  ok('Diseño de factura, Email de envío y Tu gestoría se guardan (y un email de gestoría mal escrito no)', () => assert.deepEqual([sDis, sEnv, sGesMala, sGes], [200, 200, 400, 200]));
+  const [sPer] = await patch({ perfil: { nombre: 'Prueba Pérez' } });
+  const [sPerOtro] = await patch({ perfil: { nombre: 'Otro Nombre' } }, otro);
+  ok('Tu perfil: cada persona cambia su nombre, aunque no gestione la empresa', () => assert.deepEqual([sPer, sPerOtro], [200, 200]));
+  const [sDatos] = await patch({ nombre: 'Prueba Pérez', nif: '12345678Z', direccion: 'C/ Uno 1', ciudad: '08001 Barcelona', iban: 'ES00', email: 'hola@prueba.es', telefono: '600000000', web: 'prueba.es' });
+  const aj = n(await texto('/ajustes', yo));
+  ok('Datos de la empresa conserva lo de Cobros, y Ajustes lo resume', () => assert.ok(sDatos === 200 && aj.includes('45 días') && aj.includes('Bizum') && aj.includes('Gestoría Prueba') && aj.includes('Mensaje propio'), aj.slice(0, 400)));
+  const [sNumMal] = await patch({ numeracion: { serie: 'NO', anio: Y, siguiente: 50 } });
+  const [sNum, rNum] = await patch({ numeracion: { serie: '', anio: Y, siguiente: 500 } });
+  const [sAtras] = await patch({ numeracion: { serie: '', anio: Y, siguiente: 10 } });
+  ok('Series: la siguiente factura puede saltar hacia delante, nunca hacia atrás', () => assert.deepEqual([sNumMal, sNum, rNum.siguiente, sAtras], [400, 200, 500, 400]));
+  const fNum = (await (await pedir('/api/facturas', { metodo: 'POST', cookie: yo, cuerpo: { fecha: hoy, cliente: { nombre: 'Cliente Salto' }, concepto: 'Tras el salto', base: '10', ivaPct: 21 } })).json()).factura;
+  ok('y la siguiente factura lleva ese número', () => assert.equal(fNum?.numero, 500, JSON.stringify(fNum)));
+  const ser = n(await texto('/ajustes/series', yo));
+  ok('la pantalla de Series enseña el siguiente número', () => assert.ok(ser.includes(`501-${Y}`), ser.slice(0, 400)));
+  if (process.env.RESEND_URL) {
+    rmSync('/tmp/resend.json', { force: true });
+    const env = await pedir('/api/paquete', { metodo: 'POST', cookie: yo, cuerpo: { anio: Y, t: 1 } });
+    let m = {}; try { m = JSON.parse(readFileSync('/tmp/resend.json', 'utf8').trim().split('\n').pop()); } catch {}
+    ok('Tu gestoría: el paquete del trimestre le llega por email, con el .zip', () => assert.ok(env.status === 200 && m.to?.[0] === 'gestoria@test.es' && m.subject?.includes(`1T ${Y}`) && m.attachments?.[0]?.filename?.endsWith('.zip'), JSON.stringify(m).slice(0, 300)));
+    const sinPermiso = await pedir('/api/paquete', { metodo: 'POST', cookie: otro, cuerpo: { anio: Y, t: 1 } });
+    ok('y solo lo manda quien gestiona la empresa (403)', () => assert.equal(sinPermiso.status, 403));
+  }
+}
 
 console.log('Formulario de contacto de la web');
 {

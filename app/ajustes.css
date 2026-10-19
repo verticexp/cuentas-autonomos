@@ -1,0 +1,27 @@
+/* Pantallas nuevas de Ajustes: gestoría, series, ayuda. */
+.formulario .ges-auto { align-items: flex-start; }
+.formulario .ges-auto input { margin-top: 3px; }
+.ges-auto span { display: flex; flex-direction: column; gap: 2px; }
+.ges-auto small { color: var(--muted); font-size: 13px; }
+.ges-trim { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--muted); margin-bottom: 12px; }
+.ges-trim .campo { background: var(--relleno); padding: 10px 12px; color: var(--ink); }
+.grupo-c .linea .boton { flex: 1; text-align: center; text-decoration: none; }
+.grupo-c.relleno .nota { margin: 10px 0 2px; }
+button.celda { width: 100%; text-align: left; font: inherit; }
+.celda .v { font-size: 15px; }
+.celda.columna label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--muted); }
+.celda.columna .campo { background: var(--relleno); padding: 10px 12px; color: var(--ink); }
+.celda.columna .linea .boton { flex: 1; }
+
+.ayuda-p { position: relative; padding: 0 16px; }
+.ayuda-p + .ayuda-p::before { content: ''; position: absolute; top: 0; left: 16px; right: 0; height: 0.5px; background: var(--line); }
+.ayuda-p summary { list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px; padding: 12px 0; cursor: pointer; font-size: 17px; }
+.ayuda-p summary::-webkit-details-marker { display: none; }
+.ayuda-p summary::after { content: ''; flex: none; width: 7px; height: 7px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(45deg); opacity: 0.55; transition: transform 0.2s; }
+.ayuda-p[open] summary::after { transform: rotate(225deg); }
+.ayuda-p p { color: var(--muted); font-size: 15px; line-height: 1.45; margin: -4px 0 10px; }
+.ayuda-ir { display: inline-block; margin-bottom: 14px; font-size: 15px; font-weight: 600; text-decoration: none; }
+.grupo-c.relleno .linea { display: flex; gap: 10px; }
+.ges-botones { display: grid; gap: 8px; }
+.ges-botones .boton { text-align: center; text-decoration: none; }
+textarea.campo { font: inherit; line-height: 1.4; resize: vertical; }

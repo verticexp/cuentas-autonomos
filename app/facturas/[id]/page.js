@@ -105,7 +105,7 @@ export default async function Factura({ params }) {
       </div>
       {String(f.cliente?.nif || '').trim() && <p className="nota efactura">Factura electrónica: <a href={`/api/facturas/efactura?id=${encodeURIComponent(f.id)}&formato=facturae`} download>Facturae 3.2.2</a> · <a href={`/api/facturas/efactura?id=${encodeURIComponent(f.id)}&formato=ubl`} download>UBL (Peppol)</a>{f.cobrada ? ` · cobrada${f.cobro?.fecha ? ` el ${fechaTexto(f.cobro.fecha.slice(0, 10))}` : ''}` : ''}</p>}
       {(editar || f.envios?.length > 0) && <EnviarFactura id={f.id} email={f.cliente.email} envios={f.envios} editar={editar}
-        asunto={asuntoFactura(f, emisorDe(f, u))} mensaje={mensajeFactura(f, emisorDe(f, u))} />}
+        asunto={asuntoFactura(f, emisorDe(f, u), u.envio)} mensaje={mensajeFactura(f, emisorDe(f, u), u.envio)} />}
       {portal && <section className="portal-enlace">
         <p className="nota">Portal de {f.cliente.nombre}: ve todas sus facturas y presupuestos, los descarga en PDF y paga.</p>
         <div className="portal-botones"><Compartir ruta={portal} texto={`Tus documentos de ${u.emisor?.nombre || ''}`.trim()} etiqueta="Enviar su portal" className="boton sec" /><Link href={portal} className="boton sec">Ver su portal</Link></div>

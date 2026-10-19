@@ -1,4 +1,4 @@
-import { headers } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { esApp } from '@/lib/app';
 import { perderia, planQueLoIncluye } from '@/lib/planes';
@@ -21,15 +21,47 @@ import Verifactu from '@/components/Verifactu';
 import { certificadoListo } from '@/lib/verifactuEnvio';
 import { leer } from '@/lib/redis';
 import Importar from '@/components/Importar';
-import { fiscalDe } from '@/lib/empresa';
+import { actividadesDe, fiscalDe } from '@/lib/empresa';
+import { numeroPrevisto } from '@/lib/facturas';
+import { todasFichas } from '@/lib/indices';
+import { SERIE_CAJA } from '@/lib/caja';
+import { emailListo } from '@/lib/email';
+import { trimestreAnterior } from '@/lib/gestoriaEnvio';
+import { ahoraMadrid } from '@/lib/jornada';
+import { CONTACTO } from '@/components/web/datos';
+import Series from '@/components/Series';
+import Gestoria from '@/components/Gestoria';
+import Apariencia from '@/components/Apariencia';
+import Ayuda from '@/components/Ayuda';
+import EmailEnvio from '@/components/EmailEnvio';
+import '@/app/ajustes.css';
 
 import '@/app/mk.css';
 import { documentos } from '@/lib/indices';
 
 export const dynamic = 'force-dynamic';
 
-const TITULOS = { facturacion: 'Datos de facturación', marca: 'Logo y color', seguridad: 'Face ID y contraseña', drive: 'Google Drive', controlat: "Controla'T", avisos: 'Avisos en el móvil', importar: 'Importar datos', verifactu: 'Verifactu', plan: 'Tu plan' };
-const DE_EMPRESA = ['plan', 'facturacion', 'marca', 'drive', 'controlat', 'importar', 'verifactu'];
+const TITULOS = {
+  perfil: 'Tu perfil', facturacion: 'Datos de la empresa', marca: 'Diseño de factura', series: 'Series y numeración', cobros: 'Cobros', envio: 'Email de envío', gestoria: 'Tu gestoría',
+  seguridad: 'Face ID y contraseña', drive: 'Google Drive', controlat: "Controla'T", avisos: 'Avisos en el móvil', importar: 'Importar datos',
+  verifactu: 'Verifactu', plan: 'Tu plan', apariencia: 'Apariencia', ayuda: 'Ayuda y contacto',
+};
+const DE_EMPRESA = ['plan', 'facturacion', 'marca', 'series', 'cobros', 'envio', 'gestoria', 'drive', 'controlat', 'importar', 'verifactu'];
+
+// Series y numeración: cada actividad con su serie, si ya tiene facturas (entonces no se cambia) y el siguiente número.
+async function datosSeries(u, anio) {
+  const conFacturas = new Set((await todasFichas(u, 'facturas')).map((f) => f.a));
+  const actividades = await Promise.all(actividadesDe(u).map(async (a) => ({ id: a.id, nombre: a.nombre, serie: a.serie || '', bloqueada: conFacturas.has(a.id), siguiente: await numeroPrevisto(u, a.serie || '', anio) })));
+  const [rectificativas, caja] = await Promise.all([numeroPrevisto(u, 'R', anio), numeroPrevisto(u, SERIE_CAJA, anio)]);
+  return { actividades, anio, rectificativas, caja: caja > 1 ? caja : 0 };
+}
+// Los 8 últimos trimestres cerrados, del más reciente al más antiguo.
+function ultimosTrimestres(hoy) {
+  const lista = [];
+  let x = trimestreAnterior(hoy);
+  for (let i = 0; i < 8; i++) { lista.push(x); x = x.t === 1 ? { anio: x.anio - 1, t: 4 } : { anio: x.anio, t: x.t - 1 }; }
+  return lista;
+}
 
 export default async function Seccion({ params }) {
   const { seccion } = await params;
@@ -48,6 +80,11 @@ export default async function Seccion({ params }) {
       <Volver href="/ajustes">Ajustes</Volver>
       <h1 className="titulo">{TITULOS[seccion]}</h1>
       {seccion === 'marca' && <Marca marca={u.marca} nombre={u.emisor?.nombre} />}
+      {seccion === 'series' && <Series {...await datosSeries(u, Number(ahoraMadrid().slice(0, 4)))} />}
+      {seccion === 'gestoria' && <Gestoria gestoria={u.gestoria || null} trimestres={ultimosTrimestres(ahoraMadrid().slice(0, 10))} invitar={u.rol === 'admin'} emailListo={emailListo()} />}
+      {seccion === 'apariencia' && <Apariencia inicial={(await cookies()).get('tema')?.value} />}
+      {seccion === 'ayuda' && <Ayuda contacto={CONTACTO} />}
+      {seccion === 'envio' && <EmailEnvio inicial={u.envio || {}} empresa={u.emisor || {}} />}
       {seccion === 'seguridad' && <FaceId lista={llaves} bloqueo={Boolean(u.bloqueoPantalla)} />}
       {seccion === 'plan' && <ElegirPlan plan={u.plan} uso={usoPlan} admin={u.rol === 'admin'} app={esApp((await headers()).get('user-agent'))} />}
       {seccion === 'controlat' && <Controlat activo={Boolean(u.controlat)} />}
@@ -59,7 +96,16 @@ export default async function Seccion({ params }) {
         const cuentas = estadoVerifactu(regs || [], { modo: u.verifactu || undefined, facturas: Object.fromEntries((facturas || []).map((f) => [f.id, f])) });
         return <Verifactu modo={u.verifactu || null} admin={u.rol === 'admin'} listo={certificadoListo()} faltaEmisor={!u.emisor?.nif || !u.emisor?.nombre} netto={{ razon: process.env.NETTO_RAZON || '', nif: process.env.NETTO_NIF || '' }} cuentas={cuentas} />;
       })()}
-      {['facturacion', 'drive', 'seguridad'].includes(seccion) && <Ajustes seccion={seccion} emisor={u.emisor || {}} drive={u.drive} driveError={u.driveError} sociedad={fiscalDe(u).tipo === 'sociedad'} />}
+      {['facturacion', 'cobros', 'marca', 'perfil', 'drive', 'seguridad'].includes(seccion) && <Ajustes seccion={seccion} emisor={u.emisor || {}} drive={u.drive} driveError={u.driveError} sociedad={fiscalDe(u).tipo === 'sociedad'} nombre={u.nombre} />}
+      {seccion === 'perfil' && (
+        <section className="grupo">
+          <div className="grupo-c">
+            <div className="celda"><span className="txt">Email<small>{u.email}</small></span></div>
+            <a href="/ajustes/seguridad" className="celda ir"><span className="txt">Face ID y contraseña</span></a>
+          </div>
+          <p className="grupo-pie">Para cambiar tu email, escríbenos desde Ayuda y contacto.</p>
+        </section>
+      )}
       {seccion === 'seguridad' && <form method="post" action="/api/logout?todas=1"><button className="borrar ancho">Cerrar sesión en todos los dispositivos</button></form>}
     </main>
   );

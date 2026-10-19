@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 // Chat con el asistente: la conversación vive en la pantalla (no se guarda) y cada respuesta dice de dónde salen las cifras.
-export default function Asistente({ listo, ejemplos }) {
+export default function Asistente({ listo, ejemplos, inicial = '' }) {
   const [mensajes, setMensajes] = useState([]);
   const [texto, setTexto] = useState('');
   const [pensando, setPensando] = useState(false);
@@ -26,6 +26,14 @@ export default function Asistente({ listo, ejemplos }) {
       setMensajes((m) => [...m, { role: 'assistant', content: e.message, error: true }]);
     } finally { setPensando(false); }
   };
+
+  // La pregunta que llega del buscador de «Más», una sola vez.
+  const enviada = useRef(false);
+  useEffect(() => {
+    if (!listo || !inicial || enviada.current) return;
+    enviada.current = true;
+    enviar(inicial);
+  }, [listo, inicial]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!listo) return <div className="vacio"><p>Aún no está activado</p><p>Falta configurar la clave de la IA (ANTHROPIC_API_KEY) en Vercel.</p></div>;
   return (

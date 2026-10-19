@@ -1,4 +1,22 @@
 /* Barra lateral del ordenador: más secciones por grupos. En el móvil no se ve (solo las 4 pestañas). */
+/* Color de cada grupo de pantallas (components/secciones.js): iconos de la barra lateral y de «Más». */
+[data-tono="verde"] { --tono: #1F5A44; --tono-fondo: #E6F2EC; }
+[data-tono="azul"] { --tono: #1D4E89; --tono-fondo: #E4EEFB; }
+[data-tono="ambar"] { --tono: #8A4B0F; --tono-fondo: #FBEEDC; }
+[data-tono="violeta"] { --tono: #4A3F9E; --tono-fondo: #ECEAFB; }
+[data-tono="rojo"] { --tono: #A8261C; --tono-fondo: #FCE9E7; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="claro"]) [data-tono="verde"] { --tono: #9FD8BD; --tono-fondo: #20302A; }
+  :root:not([data-tema="claro"]) [data-tono="azul"] { --tono: #9CC3F0; --tono-fondo: #1E2A3B; }
+  :root:not([data-tema="claro"]) [data-tono="ambar"] { --tono: #F5C07A; --tono-fondo: #33291D; }
+  :root:not([data-tema="claro"]) [data-tono="violeta"] { --tono: #BDB5F5; --tono-fondo: #26243A; }
+  :root:not([data-tema="claro"]) [data-tono="rojo"] { --tono: #FF9A90; --tono-fondo: #3A2220; }
+}
+:root[data-tema="oscuro"] [data-tono="verde"] { --tono: #9FD8BD; --tono-fondo: #20302A; }
+:root[data-tema="oscuro"] [data-tono="azul"] { --tono: #9CC3F0; --tono-fondo: #1E2A3B; }
+:root[data-tema="oscuro"] [data-tono="ambar"] { --tono: #F5C07A; --tono-fondo: #33291D; }
+:root[data-tema="oscuro"] [data-tono="violeta"] { --tono: #BDB5F5; --tono-fondo: #26243A; }
+:root[data-tema="oscuro"] [data-tono="rojo"] { --tono: #FF9A90; --tono-fondo: #3A2220; }
 .tabs-extra { display: none; }
 @media (min-width: 1024px) {
   .tabbar { overflow-y: auto; }
@@ -8,11 +26,12 @@
   .tabs-extra a { display: flex; align-items: center; gap: 12px; height: 38px; padding: 0 12px; border-radius: 10px; font-size: 15px; color: var(--ink); text-decoration: none; cursor: pointer; transition: background-color 0.15s var(--salida); }
   .tabs-extra a svg { flex: none; width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
   .tabs-extra a.activo { color: var(--marca); background: var(--relleno); }
+  .tabs-grupo[data-tono] a:not(.activo) svg { color: var(--tono); }
   .tabs-extra a:not(.activo):hover { background: var(--relleno); }
   .tabs-salir button { display: flex; align-items: center; gap: 12px; width: 100%; height: 38px; margin: 0; padding: 0 12px; border: 0; border-radius: 10px; background: none; box-shadow: none; font: inherit; font-size: 15px; color: var(--muted); cursor: pointer; }
   .tabs-salir button svg { flex: none; width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
   .tabs-salir button:hover { background: var(--relleno); color: var(--ink); }
-  /* Ajustes pasa al final, en «Empresa» */
+  /* Ajustes pasa al final de la barra lateral */
   .tabs a[data-href="/ajustes"] { display: none; }
   /* Si se está en una de estas pantallas, se marca ella y no la pestaña de arriba */
   .tabbar:has(.tabs-extra a.activo) .tabs a.activo { color: inherit; background: none; }

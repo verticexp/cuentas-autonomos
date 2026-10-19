@@ -6,7 +6,7 @@ import './diseno.css';
 import './pulido.css';
 import './v2.css';
 import TabBar from '@/components/TabBar';
-import { headers } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { bloqueoDe, desbloqueada, usuarioActual } from '@/lib/auth';
 import { soloLectura } from '@/lib/planes';
@@ -49,12 +49,14 @@ export default async function RootLayout({ children }) {
   const abierta = !u || bloqueoDe(u) !== 'activo' || (await desbloqueada().catch(() => false));
   // Al abrir una página de la app sin desbloquear: redirección de verdad (307) antes de pintar nada. Desde la página, la
   // redirección ya va dentro del HTML (app/loading.js) y el navegador recarga: dos documentos, fundido lento y barra «fantasma».
+  const temaCookie = (await cookies()).get('tema')?.value;
+  const tema = temaCookie === 'claro' || temaCookie === 'oscuro' ? temaCookie : undefined;
   const cab = await headers();
   const ruta = cab.get('x-ruta') || '/';
   const nonce = cab.get('x-nonce') || undefined;
   if (!abierta && !LIBRE.test(ruta)) redirect(`/bloqueo?a=${encodeURIComponent(ruta)}`);
   return (
-    <html lang="es" suppressHydrationWarning>
+    <html lang="es" data-tema={tema} suppressHydrationWarning>
       <head>
         <script nonce={nonce} suppressHydrationWarning dangerouslySetInnerHTML={{ __html: YA_VISTO }} />
       </head>
