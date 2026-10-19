@@ -29,6 +29,7 @@ export default function Pie() {
           <summary>Netto</summary>
           <nav aria-label="Netto">
             <Link href="/seguridad">Seguridad</Link>
+            <Link href="/verificado">Cálculos verificados</Link>
             <Link href="/contacto">Contacto</Link>
             <Link href="/gestorias">¿Eres gestoría? Trabaja con nosotros</Link>
             <a href="/login">Entrar</a>
