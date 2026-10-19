@@ -781,10 +781,7 @@ html:has(.web) #arranque { display: none; }
   .web-carrusel { display: flex; gap: 12px; max-width: none; margin: 0 -20px; padding: 4px 20px 16px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: 20px; overscroll-behavior-x: contain; scrollbar-width: none; }
   .web-carrusel::-webkit-scrollbar { display: none; }
   .web-carrusel > * { flex: 0 0 84%; min-width: 0; scroll-snap-align: start; }
-
-  /* Precios: los planes apilados y el recomendado el primero. */
-  .web-planes { gap: 14px; }
-  .web-planes > .web-plan-fuerte { order: -1; }
+  .web-planes.web-carrusel > * { scroll-snap-align: center; }
 
   /* Comparativa: un plan cada vez, sin deslizar en horizontal. */
   .web-tabla-elige { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; background: #ECEFEC; border-radius: 16px; padding: 5px; margin-bottom: 14px; position: sticky; top: calc(env(safe-area-inset-top) + 64px); z-index: 2; }

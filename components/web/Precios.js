@@ -1,7 +1,7 @@
 'use client';
 
 import Link from '@/components/web/EnlacePublico';
-import { Fragment, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import Icono from '@/components/web/Icono';
 import { COMPARATIVA, DESCUENTO, PERSONALIZADO, PLANES, SEGMENTOS } from '@/components/web/datos';
 
@@ -22,6 +22,13 @@ export default function Precios({ inicial = 'aut', tabla = false, solo = false }
   const i = CONTRATABLES.findIndex((s) => s.id === seg);
   const nombreSeg = CONTRATABLES[i].n;
   const planes = PLANES[seg];
+  const carril = useRef(null);
+
+  // En el móvil los planes se deslizan en horizontal: se empieza centrado en el recomendado.
+  useEffect(() => {
+    const c = carril.current, f = c?.querySelector('.web-plan-fuerte');
+    if (c && f && c.scrollWidth > c.clientWidth) c.scrollLeft = f.offsetLeft - (c.clientWidth - f.offsetWidth) / 2;
+  }, [seg]);
   // En el móvil la comparativa enseña un plan cada vez; se empieza por el recomendado.
   const fuerte = Math.max(0, planes.findIndex((p) => p.fuerte));
   const [ver, setVer] = useState({ seg, k: fuerte });
@@ -46,7 +53,7 @@ export default function Precios({ inicial = 'aut', tabla = false, solo = false }
         </div>
       </div>
 
-      <div className="web-planes" key={seg}>
+      <div className="web-planes web-carrusel" key={seg} ref={carril}>
         {planes.map((p, k) => {
           const mes = anual ? conDescuento(p.p) : p.p;
           return (
