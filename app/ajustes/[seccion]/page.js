@@ -38,6 +38,9 @@ import '@/app/ajustes.css';
 
 import '@/app/mk.css';
 import { esFundador } from '@/lib/prueba';
+import { resumenRecomendaciones } from '@/lib/recomendaciones';
+import { WEB } from '@/lib/web';
+import Recomienda from '@/components/Recomienda';
 import { documentos } from '@/lib/indices';
 
 export const dynamic = 'force-dynamic';
@@ -45,7 +48,7 @@ export const dynamic = 'force-dynamic';
 const TITULOS = {
   perfil: 'Tu perfil', facturacion: 'Datos de la empresa', marca: 'Diseño de factura', series: 'Series y numeración', cobros: 'Cobros', envio: 'Email de envío', gestoria: 'Tu gestoría',
   seguridad: 'Face ID y contraseña', drive: 'Google Drive', controlat: "Controla'T", avisos: 'Avisos en el móvil', importar: 'Importar datos',
-  verifactu: 'Verifactu', plan: 'Tu plan', apariencia: 'Apariencia', ayuda: 'Ayuda y contacto',
+  verifactu: 'Verifactu', plan: 'Tu plan', apariencia: 'Apariencia', ayuda: 'Ayuda y contacto', recomienda: 'Recomienda Netto',
 };
 const DE_EMPRESA = ['plan', 'facturacion', 'marca', 'series', 'cobros', 'envio', 'gestoria', 'drive', 'controlat', 'importar', 'verifactu'];
 
@@ -69,6 +72,7 @@ export default async function Seccion({ params }) {
   if (!TITULOS[seccion]) notFound();
   const u = await requerir();
   if (DE_EMPRESA.includes(seccion) && !puede(u, 'empresa')) return <SinAcceso texto="Para cambiar esto necesitas el permiso «Datos de la empresa». Pídeselo al administrador." />;
+  if (seccion === 'recomienda' && u.rol !== 'admin') return <SinAcceso texto="Solo el administrador de la empresa puede recomendar Netto con el enlace de la empresa." />;
   const llaves = seccion === 'seguridad'
     ? Object.entries((await redis.hgetall(`passkeys:${u.id}`)) || {}).map(([id, k]) => ({ id, nombre: k.nombre, creada: k.creada, usada: k.usada || null }))
     : [];
@@ -88,6 +92,10 @@ export default async function Seccion({ params }) {
       {seccion === 'envio' && <EmailEnvio inicial={u.envio || {}} empresa={u.emisor || {}} />}
       {seccion === 'seguridad' && <FaceId lista={llaves} bloqueo={Boolean(u.bloqueoPantalla)} />}
       {seccion === 'plan' && <ElegirPlan plan={u.plan} uso={usoPlan} admin={u.rol === 'admin'} app={esApp((await headers()).get('user-agent'))} />}
+      {seccion === 'recomienda' && await (async () => {
+        const resumen = await resumenRecomendaciones(u.empresa);
+        return <Recomienda enlace={`${WEB}/registro?ref=${resumen.codigo}`} resumen={resumen} />;
+      })()}
       {seccion === 'controlat' && <Controlat activo={Boolean(u.controlat)} />}
       {seccion === 'avisos' && <AvisosPush listo={pushListo()} />}
       {seccion === 'importar' && <Importar />}

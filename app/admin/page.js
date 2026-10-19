@@ -1,7 +1,7 @@
 import { requerirAdmin } from '@/lib/auth';
 import { redis } from '@/lib/redis';
 import { actividadReciente, ultimaActividad } from '@/lib/actividad';
-import { ESTADOS, resumenAdmin } from '@/lib/admin';
+import { ESTADOS, ORIGENES, resumenAdmin } from '@/lib/admin';
 import { emailListo } from '@/lib/email';
 import Volver from '@/components/Volver';
 import AdminEmpresas from '@/components/AdminEmpresas';
@@ -73,6 +73,23 @@ export default async function Admin() {
         <h2>Cobros</h2>
         <ul className="adm-lista">{cobros.map(([t, v, ok]) => <li key={t}><span>{t}</span><b className={ok ? 'adm-ok' : 'adm-mal'}>{v}</b></li>)}</ul>
         <p className="adm-pie">Las claves se ponen en Vercel › Settings › Environment Variables (Production). Los precios e IVA se crean solos en Stripe.</p>
+      </div>
+    </section>
+
+    <section className="adm-dos">
+      <div className="adm-caja">
+        <h2>De dónde vienen</h2>
+        <ul className="adm-lista">{r.origenes.map((o) => <li key={o.origen}><span>{ORIGENES[o.origen]}{o.origen === 'gestoria' ? ' (3 meses)' : o.origen === 'recomendacion' ? ' (2 meses)' : ' (1 mes)'}</span><b>{o.total} · {o.prueba} en prueba · {o.pagan} pagan{o.conversion !== null ? ` · ${o.conversion} %` : ''}</b></li>)}</ul>
+        <p className="adm-pie">El porcentaje es la conversión de las pruebas ya acabadas de cada canal. Los cupones de Stripe se descuentan de los ingresos.</p>
+      </div>
+      <div className="adm-caja">
+        <h2>Recomendaciones</h2>
+        <ul className="adm-lista">
+          <li><span>Empresas que llegan recomendadas</span><b>{r.recomendaciones.registradas}</b></li>
+          <li><span>Ya han pagado (premio dado)</span><b>{r.recomendaciones.premiadas}</b></li>
+          <li><span>Meses regalados a quien recomienda</span><b>{r.recomendaciones.meses}</b></li>
+          {r.recomendaciones.top.map((t) => <li key={t.nombre}><span>· {t.nombre}</span><b>{t.meses} {t.meses === 1 ? 'mes' : 'meses'}</b></li>)}
+        </ul>
       </div>
     </section>
 

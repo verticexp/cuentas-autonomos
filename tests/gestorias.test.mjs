@@ -63,7 +63,7 @@ const hooks = registerHooks({
   resolve(spec, context, next) {
     if (dobles.has(spec)) return { url: 'data:text/javascript,' + encodeURIComponent(fuente), shortCircuit: true };
     if (spec === 'next/server') return next('next/server.js', context);
-    if (spec === '@/lib/prueba' || spec === '@/lib/gestorias' || spec === '@/lib/redis') {
+    if (['@/lib/prueba', '@/lib/gestorias', '@/lib/redis', '@/lib/recomendaciones', '@/lib/membresias'].includes(spec)) {
       return { url: new URL('../' + spec.slice(2) + '.js', import.meta.url).href, shortCircuit: true };
     }
     return next(spec, context);

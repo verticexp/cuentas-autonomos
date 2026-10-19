@@ -25,3 +25,13 @@ button.celda { width: 100%; text-align: left; font: inherit; }
 .ges-botones { display: grid; gap: 8px; }
 .ges-botones .boton { text-align: center; text-decoration: none; }
 textarea.campo { font: inherit; line-height: 1.4; resize: vertical; }
+
+/* Ajustes › Recomienda Netto */
+.recomienda { display: grid; gap: 12px; max-width: 640px; }
+.recomienda h2 { font-size: 17px; margin: 0 0 8px; }
+.recomienda-como ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.recomienda-enlace code { display: block; padding: 10px 12px; border-radius: 10px; background: var(--relleno); overflow-wrap: anywhere; font-size: 14px; }
+.recomienda-botones { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.recomienda-cifras { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; text-align: center; }
+.recomienda-cifras strong { display: block; font-size: 26px; font-variant-numeric: tabular-nums; }
+.recomienda-cifras span { color: var(--muted); font-size: 13px; }

@@ -5,10 +5,12 @@ import { randomUUID } from 'node:crypto';
 import { crearSesion, crearUsuario, desbloqueo, hayUsuarios, nuevaEmpresa, opcionesCookie, opcionesDesbloqueo, tokenEmail, usuarioActual } from '@/lib/auth';
 import { enviarConfirmacion } from '@/lib/invitacion';
 import { ipDe, MUCHOS, pasado } from '@/lib/limite';
-import { datosFiscalesRegistro, fiscalDeTipo, normalizarNifRegistro, nuevoPlan, TIPOS_ALTA } from '@/lib/prueba';
+import { datosFiscalesRegistro, fiscalDeTipo, normalizarNifRegistro, nuevoPlan, PRUEBA_DIAS, TIPOS_ALTA } from '@/lib/prueba';
 import { comprobarNif } from '@/lib/censoAeat';
 import { redis } from '@/lib/redis';
 import { apuntarCliente, gestoriaPorCodigo, PRUEBA_GESTORIA_DIAS } from '@/lib/gestorias';
+import { apuntarRecomendada, empresaPorCodigo, normalizarRef, RECOMENDACION_DIAS } from '@/lib/recomendaciones';
+import { enEmpresa } from '@/lib/membresias';
 
 // Alta de una cuenta con su empresa. La primera de todas es la del administrador de Netto (formulario de app/login);
 // las demás llegan desde /registro con tipo de negocio y plan, y empiezan el mes de prueba (lib/prueba.js).
@@ -43,15 +45,22 @@ export async function POST(req) {
     const codigoGestoria = String(form.get('gestoria') || '').trim();
     const gestoria = codigoGestoria ? await gestoriaPorCodigo(codigoGestoria) : null;
     if (codigoGestoria && !gestoria) return fallo('Ese código de gestoría no existe o ya no está activo.', 400, 1);
+    // Enlace de recomendación (lib/recomendaciones.js): un mes más de prueba; no se suma al código de una gestoría.
+    const ref = String(form.get('ref') || '').trim();
+    const recomienda = ref ? await empresaPorCodigo(ref) : null;
+    if (ref && !recomienda) return fallo('Ese enlace de recomendación ya no es válido. Puedes registrarte sin él.', 400, 1);
+    if (recomienda && gestoria) return fallo('Usa el código de tu gestoría o el enlace de recomendación, no los dos.', 400, 1);
+    if (recomienda && sesion && enEmpresa(sesion, recomienda.id)) return fallo('No puedes usar el enlace de recomendación de una empresa tuya.', 400, 1);
     if (!sesion && (typeof cuenta.nombre !== 'string' || !cuenta.nombre.trim() || cuenta.nombre.trim().length > 60)) return fallo('Escribe tu nombre (máximo 60 caracteres).', 400, 4);
     if (!sesion && (typeof cuenta.email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cuenta.email.trim()))) return fallo('Escribe un email válido.', 400, 4);
     if (form.get('acepto') !== '1') return fallo('Acepta las condiciones y la política de privacidad para crear tu cuenta.', 400, 5);
     const periodo = String(form.get('periodo') || 'mes');
     if (!['mes', 'anio'].includes(periodo)) return fallo('Elige un periodo mensual o anual.', 400, 3);
     if (!Object.hasOwn(TIPOS_ALTA, String(form.get('tipo') || ''))) return fallo('Elige tu tipo de negocio.', 400, 1);
-    const plan = nuevoPlan(String(form.get('tipo') || ''), String(form.get('plan') || ''), new Date(), periodo, gestoria ? PRUEBA_GESTORIA_DIAS : undefined);
+    const plan = nuevoPlan(String(form.get('tipo') || ''), String(form.get('plan') || ''), new Date(), periodo, gestoria ? PRUEBA_GESTORIA_DIAS : recomienda ? PRUEBA_DIAS + RECOMENDACION_DIAS : undefined);
     if (!plan) return fallo('Elige un plan.', 400, 3);
     if (gestoria) plan.gestoria = gestoria.codigo;
+    if (recomienda) plan.recomendacion = { codigo: normalizarRef(ref), empresa: recomienda.id };
     const datos = datosFiscalesRegistro({ ...Object.fromEntries(form), tipo: plan.tipo });
     if (datos.error) return fallo(datos.error, 400, 2);
     const emisor = datos.emisor;
@@ -74,6 +83,7 @@ export async function POST(req) {
       empresaNueva = sesion ? r.id : r.usuario?.empresa;
       if (!r.error) await redis.hset('empresa-nif', { [emisor.nif]: empresaNueva });
       if (!r.error && gestoria) await apuntarCliente(gestoria.codigo, empresaNueva);
+      if (!r.error && plan.recomendacion) await apuntarRecomendada(plan.recomendacion.codigo, empresaNueva);
     } finally {
       await redis.eval("if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end", [cerrojo], [propietario]).catch(() => {});
     }
