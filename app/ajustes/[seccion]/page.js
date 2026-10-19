@@ -37,6 +37,7 @@ import EmailEnvio from '@/components/EmailEnvio';
 import '@/app/ajustes.css';
 
 import '@/app/mk.css';
+import { esFundador } from '@/lib/prueba';
 import { documentos } from '@/lib/indices';
 
 export const dynamic = 'force-dynamic';
@@ -72,7 +73,7 @@ export default async function Seccion({ params }) {
     ? Object.entries((await redis.hgetall(`passkeys:${u.id}`)) || {}).map(([id, k]) => ({ id, nombre: k.nombre, creada: k.creada, usada: k.usada || null }))
     : [];
   // Tu plan: lo que ha usado en la prueba y su plan no incluye (lib/planes.js), con el plan que lo cubre.
-  const usoPlan = seccion === 'plan' && u.plan && !u.plan.pagado
+  const usoPlan = seccion === 'plan' && !esFundador(u.plan) && !u.plan.pagado
     ? await Promise.all([usoDe(u.empresa), genteDe(u.empresa, leer)]).then(([uso, gente]) => ({ perdidas: perderia(u.plan, uso, gente).map((x) => x.texto), recomendado: planQueLoIncluye(u.plan, uso, gente)?.n || null }))
     : null;
   return (

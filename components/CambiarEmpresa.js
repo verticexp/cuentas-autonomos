@@ -2,13 +2,12 @@
 
 import { useState } from 'react';
 
-// Cambio rápido de empresa (y alta de otra en la misma cuenta). Al cambiar se vuelve a cargar todo con la nueva empresa.
+// Cambio rápido de empresa. Al cambiar se vuelve a cargar todo con la nueva empresa.
 // variante: «lista» (Ajustes), «lateral» (barra del ordenador) o «chip» (resumen, solo si hay varias).
-// puedeCrear: solo el administrador de la app da de alta empresas.
-export default function CambiarEmpresa({ empresas = [], actual, variante = 'lista', puedeCrear = false }) {
+// Otra empresa se da de alta como cualquier cliente: /registro?nueva=1, con su plan y su prueba, sin repetir la cuenta.
+// Las empresas gratis (Fundador) solo las da de alta el administrador de Netto desde /admin.
+export default function CambiarEmpresa({ empresas = [], actual, variante = 'lista' }) {
   const [abierto, setAbierto] = useState(variante === 'lista');
-  const [creando, setCreando] = useState(false);
-  const [nombre, setNombre] = useState('');
   const [msg, setMsg] = useState('');
   const [ocupado, setOcupado] = useState(false);
   const pedir = async (cuerpo, destino) => {
@@ -22,7 +21,6 @@ export default function CambiarEmpresa({ empresas = [], actual, variante = 'list
     } catch (e) { setMsg(e.message); setOcupado(false); }
   };
   const cambiar = (id) => (id === actual ? setAbierto(variante === 'lista') : pedir({ id }, '/'));
-  const crear = (e) => { e.preventDefault(); if (nombre.trim()) pedir({ nueva: nombre }, '/bienvenida'); };
   const nombreActual = empresas.find((x) => x.id === actual)?.nombre || 'Mi empresa';
 
   const lista = (
@@ -34,16 +32,9 @@ export default function CambiarEmpresa({ empresas = [], actual, variante = 'list
           {x.id === actual && <svg viewBox="0 0 24 24" aria-hidden><path d="M5 12l5 5 9-10" /></svg>}
         </button>
       ))}
-      {!puedeCrear ? null : creando ? (
-        <form className="emp-nueva" onSubmit={crear}>
-          <input className="campo" autoFocus placeholder="Nombre de la empresa" value={nombre} maxLength={80} onChange={(e) => setNombre(e.target.value)} aria-label="Nombre de la nueva empresa" />
-          <button className="boton pequeno" disabled={!nombre.trim() || ocupado}>Crear</button>
-        </form>
-      ) : (
-        <button type="button" className="emp-opcion emp-anadir" onClick={() => setCreando(true)}>
-          <span className="emp-inicial" aria-hidden>+</span><span className="emp-nombre">Añadir empresa</span>
-        </button>
-      )}
+      <a className="emp-opcion emp-anadir" href="/registro?nueva=1">
+        <span className="emp-inicial" aria-hidden>+</span><span className="emp-nombre">Añadir empresa</span>
+      </a>
       {msg && <p className="rojo emp-msg">{msg}</p>}
     </div>
   );
@@ -51,7 +42,7 @@ export default function CambiarEmpresa({ empresas = [], actual, variante = 'list
   if (variante === 'lista') return lista;
   return (
     <div className={`emp emp-${variante}${abierto ? ' abierto' : ''}`}>
-      <button type="button" className="emp-actual" aria-expanded={abierto} onClick={() => { setAbierto(!abierto); setCreando(false); }}>
+      <button type="button" className="emp-actual" aria-expanded={abierto} onClick={() => setAbierto(!abierto)}>
         <span className="emp-nombre">{nombreActual}</span>
         <svg viewBox="0 0 24 24" aria-hidden><path d="M7 10l5 5 5-5" /></svg>
       </button>
