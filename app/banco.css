@@ -5,6 +5,11 @@
 .bco-nota { color: var(--muted); font-size: 13px; margin: 8px 0 0; line-height: 1.4; }
 .bco-botones { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .bco-botones .boton { font-size: 14px; }
+/* A qué cuenta va el extracto (components/Banco.js): en el móvil ocupa la fila entera. */
+.bco-destino { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); flex: 1 1 100%; min-width: 0; white-space: nowrap; }
+.bco-destino .campo, .bco-destino-nombre { flex: 1; min-width: 0; font-size: 14px; }
+.bco-destino-nombre { flex: 1 1 100%; box-sizing: border-box; }
+@media (min-width: 480px) { .bco-destino .campo { min-width: 200px; } .bco-destino-nombre { flex: 0 1 240px; } }
 
 .bco-cuentas { background: var(--surface); border-radius: 12px; padding: 14px 16px; margin: 8px 0 20px; }
 .bco-total { display: flex; flex-direction: column; gap: 2px; padding-bottom: 10px; }
