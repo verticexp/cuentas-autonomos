@@ -7,6 +7,7 @@ import { colorValido, logoValido } from '@/lib/marca';
 import { actividadesDe, limpiarActividades, limpiarFiscal } from '@/lib/empresa';
 import { clave, leer, redis } from '@/lib/redis';
 import { auditar } from '@/lib/auditoria';
+import { contrasenaCambiada } from '@/lib/avisosCorreo';
 import { leerImporte } from '@/lib/calculos';
 import { hoy } from '@/lib/formato';
 import { todasFichas } from '@/lib/indices';
@@ -151,6 +152,7 @@ export async function PATCH(req) {
     const r = await cambiarPassword(u, b.actual, b.nueva);
     if (r.error) return error(r.error);
     await auditar(u, 'Contraseña cambiada');
+    await contrasenaCambiada(u);
     (await cookies()).set('t', r.token, opcionesCookie);
     (await cookies()).set('d', await desbloqueo(r.token), opcionesDesbloqueo);
     return Response.json({ ok: true });
