@@ -9,13 +9,13 @@ import { VentanaApp } from '@/components/web/demos/Pantallas';
 import { Cta, Encabezado, Faq, Flecha } from '@/components/web/Bloques';
 import { FAQ_GENERAL, FUNCIONES, SEGMENTOS } from '@/components/web/datos';
 
-const CINTA = ['Facturas ilimitadas', 'Verifactu', 'Presupuestos online', 'Gastos con IA', 'Modelo 303', 'Modelo 130', 'Modelos 111 y 115', 'Renta (100)', 'Conciliación de extractos', 'Libros registro (formato AEAT)', 'Contabilidad por partida doble', 'Balance y resultados', 'Amortizaciones', 'Cuentas anuales', 'Inventario y stock', 'Previsión de caja', 'Nóminas', 'Registro de jornada', 'Permisos por área', 'Varias empresas', 'Portal del cliente', 'Asistente IA', 'Cámbiate desde Holded, A3 o Sage', 'Face ID'];
+const CINTA = ['Facturas ilimitadas', 'Verifactu', 'Presupuestos online', 'Gastos con IA', 'Modelo 303', 'Modelo 130', 'Modelos 111 y 115', 'Modelos 390, 347 y 349', 'Impuesto de Sociedades', 'Renta (100)', 'Conciliación de extractos', 'Libros registro (formato AEAT)', 'Contabilidad por partida doble', 'Balance y resultados', 'Amortizaciones', 'Cuentas anuales', 'Inventario y stock', 'Previsión de caja', 'Nóminas', 'Registro de jornada', 'Permisos por área', 'Varias empresas', 'Portal del cliente', 'Asistente IA', 'Cámbiate desde Holded, A3 o Sage', 'Face ID'];
 
 const CIFRAS = [
   { pre: 'desde', n: 9, suf: ' €', t: 'al mes', d: 'Sin cuotas de alta ni permanencia' },
   { n: 1, suf: ' mes', t: 'de prueba gratis', d: 'Sin dar ninguna tarjeta' },
-  { n: 100, suf: '', t: 'tickets al día con IA', d: 'Por usuario, incluidos en tu plan' },
-  { n: 5, suf: ' modelos', t: 'fiscales calculados', d: '303, 130, 111, 115 y 100' },
+  { pre: 'desde', n: 50, suf: '', t: 'páginas al mes leídas con IA', d: 'Tickets y facturas, en foto o PDF' },
+  { n: 12, suf: ' modelos', t: 'fiscales calculados', d: '303, 130, 111, 390, 347, Sociedades…' },
 ];
 
 // Web pública de nettohq.com: lo que ve en / quien aún no ha entrado.
