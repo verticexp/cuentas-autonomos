@@ -19,7 +19,7 @@ jobs:
       KV_REST_API_TOKEN: ${{ secrets.KV_REST_API_TOKEN }}
       COPIA_CLAVE: ${{ secrets.COPIA_CLAVE }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: 22
