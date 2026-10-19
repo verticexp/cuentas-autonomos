@@ -38,17 +38,33 @@ export default function Interacciones() {
       };
       cuadro(paso);
     };
+    const revelar = (el) => {
+      if (!el.hasAttribute('data-espera')) return;
+      el.removeAttribute('data-espera');
+      el.classList.add('visto', 'entra');
+      io.unobserve(el);
+    };
     const io = new IntersectionObserver((es) => es.forEach((e) => {
       if (!e.isIntersecting) return;
-      if (e.target.hasAttribute('data-contar')) contar(e.target);
-      else e.target.classList.add('visto');
-      io.unobserve(e.target);
-    }), { rootMargin: '0px 0px -3% 0px', threshold: 0.02 });
+      if (e.target.hasAttribute('data-contar')) { contar(e.target); io.unobserve(e.target); return; }
+      // En un carrusel entran todas las tarjetas a la vez: las de fuera de pantalla no aparecen al deslizar.
+      const carril = e.target.parentElement?.closest('.web-carrusel');
+      if (carril) carril.querySelectorAll(':scope > [data-espera]').forEach(revelar);
+      else revelar(e.target);
+    }), { rootMargin: '0px 0px -8% 0px', threshold: 0.02 });
     const SEL = '[data-r]:not(.visto), [data-contar]:not([data-contado])';
+    // Lo que ya se ve al montar se queda quieto (nada parpadea ni se mueve tras el fundido de página);
+    // lo que está más abajo espera oculto y aparece al llegar con el scroll.
+    const preparar = (el) => {
+      if (el.hasAttribute('data-contar')) { io.observe(el); return; }
+      if (movimiento.matches || el.getBoundingClientRect().top < innerHeight) { el.classList.add('visto'); return; }
+      el.setAttribute('data-espera', '');
+      io.observe(el);
+    };
     const vigilar = (n) => {
       if (n.nodeType !== 1) return;
-      if (n.matches(SEL)) io.observe(n);
-      n.querySelectorAll(SEL).forEach((el) => io.observe(el));
+      if (n.matches(SEL)) preparar(n);
+      n.querySelectorAll(SEL).forEach(preparar);
     };
     vigilar(raiz);
     if (matchMedia('(max-width: 640px)').matches) raiz.querySelectorAll('.web-pie-grupo[open]').forEach((d) => { d.open = false; });
@@ -73,6 +89,7 @@ export default function Interacciones() {
     const reducir = () => {
       if (!movimiento.matches) return;
       raiz.querySelectorAll('[data-contar]').forEach((el) => { el.textContent = fmt.format(Number(el.dataset.contar)); el.dataset.contado = '1'; });
+      raiz.querySelectorAll('[data-espera]').forEach(revelar);
     };
     raiz.addEventListener('pointermove', mover, { passive: true });
     document.addEventListener('keydown', teclado, true);
@@ -82,6 +99,7 @@ export default function Interacciones() {
       vivo = false;
       cuadros.forEach(cancelAnimationFrame);
       raiz.querySelectorAll('[data-contar][data-contado]').forEach((el) => { el.textContent = fmt.format(Number(el.dataset.contar)); });
+      raiz.querySelectorAll('[data-espera]').forEach((el) => el.removeAttribute('data-espera'));
       io.disconnect(); mo.disconnect();
       raiz.removeEventListener('pointermove', mover);
       document.removeEventListener('keydown', teclado, true);

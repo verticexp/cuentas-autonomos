@@ -17,7 +17,7 @@ function Celda({ v }) {
 
 export default function Precios({ inicial = 'aut', tabla = false, solo = false }) {
   const [seg, setSeg] = useState(CONTRATABLES.some((s) => s.id === inicial) ? inicial : 'aut');
-  const [anual, setAnual] = useState(false);
+  const [anual, setAnual] = useState(true); // de entrada, el precio con pago anual
   const [nota, setNota] = useState(false);
   const carril = useRef(null);
   const i = CONTRATABLES.findIndex((s) => s.id === seg);
