@@ -127,3 +127,14 @@ test('sin cobro con Stripe: ni la factura ni el recordatorio llevan botón de pa
   }
   assert.match(componer('recordatorio-cobro', CORREOS['recordatorio-cobro'].ejemplo).texto, /Bizum al 600 123 456/);
 });
+
+test('factura: botón al portal del cliente, sin el enlace de respaldo; sin portal, sin botón', () => {
+  const { html, texto } = componer('factura', CORREOS.factura.ejemplo);
+  const url = CORREOS.factura.ejemplo.urlPortal;
+  assert.equal(html.split(`href="${url}"`).length - 1, 1);
+  assert.match(html, />Ver mis facturas<\/a>/);
+  assert.ok(!html.includes('Si el botón no funciona'));
+  assert.ok(texto.includes(`Ver mis facturas: ${url}`));
+  const sin = componer('factura', { ...CORREOS.factura.ejemplo, urlPortal: undefined });
+  assert.ok(!sin.html.includes('Ver mis facturas') && !sin.html.includes('área de cliente'));
+});
