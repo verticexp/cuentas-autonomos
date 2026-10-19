@@ -10,6 +10,7 @@ import { numeroFactura, siguienteNumero, limpiarLineas, baseLinea, importes, r2 
 import { borradorSociedades, modelo202 } from '../lib/modelos.js';
 import { asientoApertura, generarAsientos, mayor } from '../lib/asientos.js';
 import { idMovimiento } from '../lib/banco.js';
+import { claveVersion, VERSIONADAS } from '../lib/fichas.js';
 import { inventario } from '../lib/inventario.js';
 import { limpiarCierre } from '../lib/caja.js';
 import { limpiarDoc, siguiente, albaranDePedido, facturaDeAlbaranes, limpiarPedidoProv, gastoDeRecepcion, estadoPedido, enCamino } from '../lib/albaranes.js';
@@ -457,5 +458,7 @@ mov(mas(desde, 12), -1000, 'TRASPASO A CUENTA PROPIA');
 const conIds = movs.map((m, i) => ({ id: idMovimiento('extracto', m, i), cuenta: 'extracto', estado: 'pendiente', ...m }));
 await r.hset(`${P}banco:${id}`, porId(conIds));
 await r.hset(`${P}bancos:${id}`, { extracto: { id: 'extracto', nombre: 'CaixaBank', origen: 'extracto', subido: hoy, saldo: banco, fechaSaldo: hoy } });
+// Escrito sin pasar por lib/redis.js: se sube aquí la versión de los datos (lo calculado con la demo de antes no vale).
+for (const col of VERSIONADAS) await r.hincrby(`${P}${claveVersion(id)}`, col, 1);
 
 console.log(`Demo lista: ${EMAIL} · ${facturas.length} facturas · ${gastos.length} gastos · desde ${inicio.toISOString().slice(0, 10)}`);
