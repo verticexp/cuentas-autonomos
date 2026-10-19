@@ -9,8 +9,8 @@
     "verificar": "node tests/e2e/verificar.mjs"
   },
   "dependencies": {
-    "@simplewebauthn/browser": "13.3.0",
-    "@simplewebauthn/server": "13.3.3",
+    "@simplewebauthn/browser": "14.0.0",
+    "@simplewebauthn/server": "14.0.3",
     "@upstash/redis": "1.39.0",
     "@vercel/blob": "2.8.2",
     "next": "16.4.2",
