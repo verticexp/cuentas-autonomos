@@ -12,7 +12,7 @@ import { FAQ_GENERAL, FUNCIONES, SEGMENTOS } from '@/components/web/datos';
 const CINTA = ['Facturas ilimitadas', 'Verifactu', 'Presupuestos online', 'Gastos con IA', 'Modelo 303', 'Modelo 130', 'Modelos 111 y 115', 'Renta (100)', 'Conciliación de extractos', 'Libros registro (formato AEAT)', 'Contabilidad por partida doble', 'Balance y resultados', 'Amortizaciones', 'Cuentas anuales', 'Inventario y stock', 'Previsión de caja', 'Nóminas', 'Registro de jornada', 'Permisos por área', 'Varias empresas', 'Portal del cliente', 'Asistente IA', 'Cámbiate desde Holded, A3 o Sage', 'Face ID'];
 
 const CIFRAS = [
-  { n: 9, suf: ' €', t: 'al mes, desde', d: 'Sin cuotas de alta ni permanencia' },
+  { pre: 'desde', n: 9, suf: ' €', t: 'al mes', d: 'Sin cuotas de alta ni permanencia' },
   { n: 1, suf: ' mes', t: 'de prueba gratis', d: 'Sin dar ninguna tarjeta' },
   { n: 100, suf: '', t: 'tickets al día con IA', d: 'Por usuario, incluidos en tu plan' },
   { n: 5, suf: ' modelos', t: 'fiscales calculados', d: '303, 130, 111, 115 y 100' },
@@ -47,7 +47,7 @@ export default function Landing() {
         <div className="web-cifras">
           {CIFRAS.map((c, i) => (
             <div key={c.t} data-r style={{ '--d': `${i * 70}ms` }}>
-              <b><span data-contar={c.n}>{c.n}</span>{c.suf}</b>
+              <b>{c.pre && <i>{c.pre}</i>}<span data-contar={c.n}>{c.n}</span>{c.suf}</b>
               <p>{c.t}</p><small>{c.d}</small>
             </div>
           ))}
