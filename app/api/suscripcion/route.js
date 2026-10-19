@@ -2,6 +2,7 @@ import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { esApp } from '@/lib/app';
 import { PERIODOS } from '@/lib/planes';
 import { esFundador, planDe } from '@/lib/prueba';
+import { fiscalDe } from '@/lib/empresa';
 import { stripeListo } from '@/lib/stripe';
 import { cambiarPlan, confirmarCheckout, crearCheckout, portal } from '@/lib/suscripcion';
 
@@ -29,6 +30,8 @@ export async function POST(req) {
   }
   const { tipo, nombre, periodo } = b;
   if (!planDe(tipo, nombre) || !PERIODOS[periodo] || (tipo === 'gra' && (u.plan.tipo !== 'gra' || nombre !== u.plan.nombre))) return error('Plan no válido');
+  // Autónomo o pyme según los datos fiscales de la empresa (Ajustes › Tu plan ya no deja elegirlo).
+  if (tipo !== 'gra' && tipo !== (fiscalDe(u).tipo === 'sociedad' ? 'pym' : 'aut')) return error('Este plan no corresponde al tipo de tu empresa.');
   const r = u.plan.pagado && u.plan.suscripcion
     ? await cambiarPlan({ plan: u.plan, tipo, nombre, periodo, empresa: u.empresa })
     : await crearCheckout({ empresa: u.empresa, plan: u.plan, tipo, nombre, periodo, email: u.email, volver });

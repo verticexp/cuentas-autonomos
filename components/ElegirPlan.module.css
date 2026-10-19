@@ -84,6 +84,12 @@
   .para { min-height: 0; margin-bottom: 20px; }
   .facturacion { min-height: 0; }
 }
+/* Móvil: como en la web, los planes se deslizan en horizontal en vez de apilarse. */
+@container (max-width: 519px) {
+  .planes { display: flex; gap: 12px; margin: 0 -16px; padding: 4px 16px 12px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: 16px; overscroll-behavior-x: contain; scrollbar-width: none; }
+  .planes::-webkit-scrollbar { display: none; }
+  .plan { flex: 0 0 86%; scroll-snap-align: center; }
+}
 /* Una sola columna con sitio de sobra: precio y botón a la izquierda, funciones a la derecha. */
 @container (min-width: 520px) and (max-width: 759px) {
   .plan { display: grid; align-items: start; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 0 28px; }

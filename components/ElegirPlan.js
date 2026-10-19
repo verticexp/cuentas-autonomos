@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { DESCUENTO, PLANES } from '@/components/web/datos';
-import { diasPrueba, esFundador, TIPOS, TIPOS_ALTA } from '@/lib/prueba';
+import { diasPrueba, esFundador, TIPOS } from '@/lib/prueba';
 import CupoEscaneo from '@/components/CupoEscaneo';
 import styles from './ElegirPlan.module.css';
 
@@ -11,8 +11,9 @@ const euros = (n) => n.toLocaleString('es-ES', { minimumFractionDigits: n % 1 ? 
 
 // Ajustes › Tu plan: contratar con Stripe Checkout, cambiar de plan y gestionar el pago en el portal de Stripe
 // (app/api/suscripcion). En la app de iOS no se enseña la compra (lib/app.js); solo el administrador puede cambiarlo.
-export default function ElegirPlan({ plan, uso, admin, app }) {
-  const [tipo, setTipo] = useState(plan?.tipo === 'gra' ? 'pym' : plan?.tipo || 'aut');
+// El tipo de negocio sale de los datos fiscales de la empresa (autónomo o sociedad): no se elige aquí.
+export default function ElegirPlan({ plan, tipoEmpresa, uso, admin, app }) {
+  const tipo = tipoEmpresa === 'pym' ? 'pym' : 'aut';
   const [periodo, setPeriodo] = useState(plan?.periodo || 'mes');
   const [estado, setEstado] = useState('');
   const [actual, setActual] = useState(plan);
@@ -81,19 +82,16 @@ export default function ElegirPlan({ plan, uso, admin, app }) {
       <h2>Conserva las herramientas que has probado</h2>
       <p>Tu plan {actual.nombre} no incluye lo siguiente:</p>
       <ul>{uso.perdidas.map((t) => <li key={t}>{t}</li>)}</ul>
-      {uso.recomendado ? <p>El plan <strong>{uso.recomendado}</strong> cubre este uso.{admin && <> <button type="button" className={styles.enlaceBoton} disabled={ocupado} onClick={() => { setTipo(actual.tipo); llamar({ tipo: actual.tipo, nombre: uso.recomendado, periodo }); }}>Elegir {uso.recomendado}</button></>}</p>
+      {uso.recomendado ? <p>El plan <strong>{uso.recomendado}</strong> cubre este uso.{admin && <> <button type="button" className={styles.enlaceBoton} disabled={ocupado} onClick={() => { llamar({ tipo: actual.tipo, nombre: uso.recomendado, periodo }); }}>Elegir {uso.recomendado}</button></>}</p>
         : <p>Contacta con nosotros para acordar un plan a medida.</p>}
     </section>}
     {!fundador && actual.version !== 2 && <p className={styles.condiciones}>Tu suscripción conserva las condiciones anteriores. Los planes siguientes se ofrecen por empresa.</p>}
     <section className={styles.comparacion} aria-labelledby="planes-titulo">
       <div className={styles.cabecera}>
-        <div><h2 id="planes-titulo">Un plan para cada etapa</h2><p>Todos incluyen una empresa y un acceso separado para tu gestoría.</p></div>
+        <div><h2 id="planes-titulo">Un plan para cada etapa</h2><p>Planes para {tipo === 'pym' ? 'pymes y sociedades' : 'autónomos'}. Todos incluyen una empresa y un acceso separado para tu gestoría.</p></div>
         <a className={styles.enlace} href="/precios" target="_blank" rel="noopener">Comparar todas las funciones <span aria-hidden="true">↗</span></a>
       </div>
       <div className={styles.controles}>
-        <fieldset className={styles.selector} disabled={ocupado}><legend>Tipo de negocio</legend>
-          <div className={styles.opciones}>{Object.entries(TIPOS_ALTA).map(([k, t]) => <label key={k} className={tipo === k ? styles.seleccionado : ''}><input type="radio" name="tipo-plan" value={k} checked={tipo === k} onChange={() => setTipo(k)} />{t}</label>)}</div>
-        </fieldset>
         <fieldset className={styles.selector} disabled={ocupado}><legend>Forma de pago</legend>
           <div className={styles.opciones}><label className={periodo === 'mes' ? styles.seleccionado : ''}><input type="radio" name="periodo-plan" value="mes" checked={periodo === 'mes'} onChange={() => setPeriodo('mes')} />Mensual</label>
           <label className={periodo === 'anio' ? styles.seleccionado : ''}><input type="radio" name="periodo-plan" value="anio" checked={periodo === 'anio'} onChange={() => setPeriodo('anio')} />Anual <span>−{DESCUENTO} %</span></label></div>
