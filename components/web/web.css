@@ -26,8 +26,6 @@ body:has(.web):has(.tabbar) { padding-left: 0 !important; }
 .web-centro { text-align: center; margin-top: 28px; }
 
 /* Movimiento: aparición al hacer scroll (solo con JS) y entrada al cargar */
-.web-js .web [data-r]:not(.visto) { opacity: 0; }
-.web-js .web [data-r].visto { animation: web-revela 0.8s var(--e) var(--d, 0ms) backwards; }
 @keyframes web-revela { from { opacity: 0; transform: translateY(20px); } }
 .web-entra { animation: web-sube 0.8s var(--e) var(--d, 0ms) both; }
 @keyframes web-sube { from { opacity: 0; transform: translateY(16px); } }
@@ -111,7 +109,7 @@ body:has(.web):has(.tabbar) { padding-left: 0 !important; }
 .web-cajon.abierto a:not(.web-btn) { animation: web-sube 0.45s var(--e) calc(var(--n) * 22ms) both; }
 .web-cajon-cta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 24px; }
 @media (max-width: 980px) {
-  .web-nav, .web-mega, .web-cab-entrar, .web-cab-acciones > .web-btn { display: none; }
+  .web-nav, .web-mega, .web-cab-entrar { display: none; }
   .web-hamburguesa { display: grid; }
 }
 
@@ -705,15 +703,6 @@ body:has(.web):has(.tabbar) { padding-left: 0 !important; }
 
 /* Ritmo de la web: entradas cortas, controles inmediatos y contenido visible antes de hidratar. */
 .web { --motion-control: 180ms; --motion-enter: 280ms; --motion-reveal: 360ms; }
-.web-js .web [data-r]:not(.visto) { opacity: 1; }
-.web-js .web [data-r].visto { animation: web-revela var(--motion-reveal) var(--e) min(var(--d, 0ms), 80ms) backwards; }
-@keyframes web-revela { from { opacity: .65; transform: translateY(8px); } }
-.web-entra { animation-duration: var(--motion-enter); }
-.web-hero-txt > * { animation-duration: 360ms; }
-.web-hero-txt > :nth-child(n) { animation-delay: 0ms; }
-.web-hero-txt > :nth-child(2) { animation-delay: 40ms; }
-.web-hero-txt > :nth-child(3) { animation-delay: 70ms; }
-.web-hero-vis { animation: web-sube 440ms var(--e) both; }
 .web-mega, .web-mega.abierto { transition: opacity 140ms var(--e), transform 180ms var(--e), visibility 0s; }
 .web-mega:not(.abierto) { transition: opacity 120ms var(--e), transform 160ms var(--e), visibility 0s 160ms; pointer-events: none; }
 .web-mega-panel.visible { animation: web-aparece 140ms var(--e); }
@@ -750,9 +739,6 @@ body:has(.web):has(.tabbar) { padding-left: 0 !important; }
 .dm-reparto i, .dm-conc-barra i, .dm-inv-barra i { transition: none; }
 .dm-prev-graf i, .mk-pulso, .web-cta-brillo { animation: none; }
 .dm-switch, .dm-switch i, .dm-toggle, .dm-toggle::after { transition-duration: 180ms; transition-delay: 0ms; }
-.web-flota.f1 { animation: web-pop 280ms var(--e) 120ms both, web-flotar 4s ease-in-out 400ms 1; }
-.web-flota.f2 { animation: web-pop 280ms var(--e) 180ms both, web-flotar 4.2s ease-in-out 460ms 1 reverse; }
-.web-flota.f3 { animation: web-pop 280ms var(--e) 240ms both, web-flotar 4s ease-in-out 520ms 1; }
 .web-espera { min-height: 85svh; }
 .web-espera-hero { min-height: 440px; padding: 150px var(--pad) 80px; border-radius: 0 0 44px 44px; background: var(--v); display: grid; align-content: center; gap: 18px; }
 .web-espera-hero span { display: block; height: 24px; width: min(440px, 65vw); background: #ffffff12; border-radius: 8px; }
@@ -765,25 +751,17 @@ html:has(.web) #arranque { display: none; }
 .web-cinta-pausa svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .web[data-teclado="1"] .web-cinta-pista { animation-play-state: paused; }
 @media (prefers-reduced-motion: reduce) { .web-cinta-contenedor { padding-right: 0; } .web-cinta-pausa { display: none; } .web-cinta-pista > [aria-hidden=true] { display: none; } }
-/* La navegación ya tiene su transición: no se vuelve a animar el hero dentro de la página nueva. */
-.web-hero-txt > *, .web-hero-vis, .web-entra { animation: none; }
-/* Las secciones no vuelven a moverse detrás del fundido de página. */
-.web-js .web [data-r].visto, .web-plan { animation: none; }
 /* La marca de página activa no cambia el ancho del enlace ni desplaza el resto del menú. */
 .web-nav-btn { position: relative; }
 .web-nav-btn.activo::after { position: absolute; right: 3px; top: calc(50% - 2px); margin-left: 0; }
 
-/* ───── Móvil: portada más corta, carruseles y botón de alta siempre a mano ───── */
-.web-solo-movil, .web-barra-cta, .web-nota-mas { display: none; }
+/* ───── Móvil: portada más corta, carruseles y botón de alta en la cabecera ───── */
+.web-solo-movil, .web-nota-mas { display: none; }
 @media (max-width: 980px) {
   /* Cabecera opaca: sobre fondos claros no se transparenta el texto de debajo. */
   .web-cab::before { background: var(--v); }
-  .web-barra-cta { position: fixed; left: 12px; right: 12px; bottom: calc(env(safe-area-inset-bottom) + 12px); z-index: 45; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 9px 9px 18px; border-radius: 18px; background: var(--v); color: var(--c); box-shadow: 0 18px 40px -16px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(250, 250, 248, 0.1) inset; transform: translateY(calc(100% + 24px)); opacity: 0; transition: transform 260ms var(--e), opacity 200ms var(--e); }
-  .web-barra-cta.visible { transform: none; opacity: 1; }
-  .web-barra-cta > span { font-weight: 700; font-size: 15px; line-height: 1.25; }
-  .web-barra-cta small { display: block; font-weight: 500; font-size: 12.5px; color: rgba(250, 250, 248, 0.62); }
-  .web-barra-cta .web-btn { padding: 12px 18px; }
-  html.web-sin-scroll .web-barra-cta { display: none; }
+  /* «Empieza gratis» se queda en la cabecera, junto al menú: no ocupa pantalla abajo. */
+  .web-cab-acciones > .web-btn { padding: 9px 14px; font-size: 14px; border-radius: 11px; }
 }
 @media (max-width: 640px) {
   .web-solo-ancho { display: none; }
@@ -828,4 +806,30 @@ html:has(.web) #arranque { display: none; }
   .web-pie nav a { padding: 12px 0; }
   .web-pie-base { margin-top: 0; }
   .web-pie-base a { padding: 10px 0; }
+}
+
+/* ───── Movimiento ─────
+   Al abrir la web por primera vez, la portada entra escalonada. Al navegar dentro de la web (html[data-web-nav])
+   el fundido de página ya hace de transición y nada se vuelve a animar.
+   Lo que está debajo de la primera pantalla aparece al llegar a ello con el scroll (Interacciones marca data-espera);
+   lo que ya se ve al cargar nunca parpadea. */
+@keyframes web-sube-vis { from { opacity: 0; transform: translateY(36px) scale(0.98); } }
+html:not([data-web-nav]) .web-hero-txt > * { animation: web-sube 760ms var(--e) backwards; }
+html:not([data-web-nav]) .web-hero-txt > :nth-child(2) { animation-delay: 70ms; }
+html:not([data-web-nav]) .web-hero-txt > :nth-child(3) { animation-delay: 150ms; }
+html:not([data-web-nav]) .web-hero-txt > :nth-child(4) { animation-delay: 230ms; }
+html:not([data-web-nav]) .web-hero-txt > :nth-child(5) { animation-delay: 300ms; }
+html:not([data-web-nav]) .web-entra { animation: web-sube 760ms var(--e) var(--d, 0ms) backwards; }
+html:not([data-web-nav]) .web-hero-vis { animation: web-sube-vis 1000ms var(--e) 260ms backwards; }
+html:not([data-web-nav]) .web-flota.f1 { animation: web-pop 520ms var(--e) 900ms backwards, web-flotar 6s ease-in-out 1.6s infinite; }
+html:not([data-web-nav]) .web-flota.f2 { animation: web-pop 520ms var(--e) 1050ms backwards, web-flotar 7s ease-in-out 1.8s infinite reverse; }
+html:not([data-web-nav]) .web-flota.f3 { animation: web-pop 520ms var(--e) 1200ms backwards, web-flotar 6.5s ease-in-out 2s infinite; }
+html[data-web-nav] :is(.web-hero-txt > *, .web-entra, .web-hero-vis) { animation: none; }
+html[data-web-nav] .web-flota { animation: web-flotar 6s ease-in-out infinite; }
+.web-js .web [data-r][data-espera] { opacity: 0; }
+.web-js .web [data-r].entra { animation: web-revela 700ms var(--e) min(var(--d, 0ms), 280ms) backwards; }
+.web-plan { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .web-js .web [data-r][data-espera] { opacity: 1; }
+  .web .web-flota { animation: none !important; }
 }
