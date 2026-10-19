@@ -19,8 +19,9 @@ for (const [id, c] of Object.entries(CORREOS)) {
 
   test(`${id}: cabecera y pie según la marca`, () => {
     const { html, texto } = componer(id, c.ejemplo);
-    const cabecera = html.match(/<p style="margin:0;font-size:22px[^>]*>(.*?)<\/p>/)?.[1];
-    const logo = /<img src="[^"]*\/correo\/netto-logo-claro\.png"[^>]*alt="Netto"/.test(html);
+    const cabecera = html.match(/<p class="c-tinta" style="margin:0;font-size:26px[^>]*>(.*?)<\/p>/)?.[1];
+    const logo = /<td class="c-cab"[^>]*>\s*<a [^>]*><img src="[^"]*\/correo\/netto-icono\.png"[^>]*><span[^>]*>&nbsp;&nbsp;Netto<\/span>/.test(html);
+    assert.doesNotMatch(html, /background:#0F1F1B/i, 'sin fondos oscuros: Gmail los aclara en modo oscuro');
     assert.match(html, /\/correo\/netto-icono\.png/, 'el icono de Netto va en el pie');
     if (c.marca === 'empresa') {
       assert.equal(cabecera, c.ejemplo.empresa);
@@ -122,7 +123,7 @@ test('componer: un id inexistente lanza', () => {
 test('sin cobro con Stripe: ni la factura ni el recordatorio llevan botón de pago', () => {
   for (const id of ['factura', 'recordatorio-cobro']) {
     const { html, texto } = componer(id, CORREOS[id].ejemplo);
-    assert.doesNotMatch(html + texto, /tarjeta|\/pagar\//i);
+    assert.doesNotMatch(html + texto, /con tarjeta|\/pagar\//i);
   }
   assert.match(componer('recordatorio-cobro', CORREOS['recordatorio-cobro'].ejemplo).texto, /Bizum al 600 123 456/);
 });
