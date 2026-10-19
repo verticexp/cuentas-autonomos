@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ESTADOS } from '@/lib/admin';
+import { ESTADOS, ORIGENES } from '@/lib/admin';
 
 const euros = (c) => (c / 100).toLocaleString('es-ES', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + ' €';
 
@@ -10,14 +10,15 @@ const euros = (c) => (c / 100).toLocaleString('es-ES', { minimumFractionDigits: 
 export default function AdminEmpresas({ filas }) {
   const [busca, setBusca] = useState('');
   const [estado, setEstado] = useState('');
+  const [origen, setOrigen] = useState('');
   const [abierta, setAbierta] = useState('');
   const [msg, setMsg] = useState('');
   const [ocupado, setOcupado] = useState(false);
   const router = useRouter();
   const lista = useMemo(() => {
     const q = busca.trim().toLowerCase();
-    return filas.filter((f) => (!estado || f.estado === estado) && (!q || `${f.nombre} ${f.nif} ${f.id}`.toLowerCase().includes(q)));
-  }, [filas, busca, estado]);
+    return filas.filter((f) => (!estado || f.estado === estado) && (!origen || f.origen === origen) && (!q || `${f.nombre} ${f.nif} ${f.id}`.toLowerCase().includes(q)));
+  }, [filas, busca, estado, origen]);
 
   async function accion(empresa, datos, pregunta) {
     if (pregunta && !window.confirm(pregunta)) return;
@@ -37,6 +38,10 @@ export default function AdminEmpresas({ filas }) {
         <option value="">Todos los estados</option>
         {Object.entries(ESTADOS).map(([k, t]) => <option key={k} value={k}>{t}</option>)}
       </select>
+      <select className="campo" value={origen} onChange={(e) => setOrigen(e.target.value)} aria-label="Filtrar por origen">
+        <option value="">Todos los orígenes</option>
+        {Object.entries(ORIGENES).map(([k, t]) => <option key={k} value={k}>{t}</option>)}
+      </select>
     </div>
     {msg && <p className={msg === 'Hecho.' ? 'adm-ok' : 'adm-mal'} role="status">{msg}</p>}
     <p className="adm-pie">{lista.length} de {filas.length}</p>
@@ -51,7 +56,7 @@ export default function AdminEmpresas({ filas }) {
           <span className="adm-num">{f.ultima ? `Activa ${f.ultima}` : 'Sin actividad'}</span>
         </button>
         {abierta === f.id && <div className="adm-acciones">
-          <p className="adm-pie">Id {f.id}{f.hasta ? ` · prueba hasta ${f.hasta}` : ''}{f.gestoria ? ` · gestoría ${f.gestoria}` : ''}</p>
+          <p className="adm-pie">Id {f.id} · {ORIGENES[f.origen]}{f.hasta ? ` · prueba hasta ${f.hasta}` : ''}{f.gestoria ? ` · gestoría ${f.gestoria}` : ''}{f.recomendadaPor ? ` · recomendada por ${f.recomendadaPor}${f.premiada ? ` (premio dado el ${f.premiada})` : ''}` : ''}{f.cupon ? ` · cupón ${f.cupon}` : ''}{f.mesesGanados ? ` · ${f.mesesGanados} meses ganados recomendando` : ''}</p>
           {f.estado !== 'fundador' && <button type="button" className="boton pequeno" disabled={ocupado} onClick={() => accion(f.id, { accion: 'fundador' }, `¿Dar a ${f.nombre} el plan Fundador, gratis de por vida?`)}>Regalar plan Fundador</button>}
           {f.regalo && <button type="button" className="boton pequeno sec" disabled={ocupado} onClick={() => accion(f.id, { accion: 'quitar-fundador' }, `¿Quitar el plan Fundador a ${f.nombre}? Vuelve a su plan y, si su prueba ya acabó, queda en solo lectura.`)}>Quitar plan Fundador</button>}
           {['prueba', 'caducada'].includes(f.estado) && [7, 15, 30].map((n) => <button key={n} type="button" className="boton pequeno sec" disabled={ocupado} onClick={() => accion(f.id, { accion: 'alargar', dias: n })}>+{n} días de prueba</button>)}

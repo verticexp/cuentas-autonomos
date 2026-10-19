@@ -19,6 +19,7 @@ export const dynamic = 'force-dynamic';
 
 // Iconos de cada ajuste, con el color de su grupo (app/lateral.css [data-tono]), como en «Más».
 const I = {
+  regalo: <path d="M4 11h16v9H4zM3 7h18v4H3zM12 7v13M12 7c-1.5-3-5-3.5-5-1.5S9 7 12 7c3 0 5-.5 5-1.5S13.5 4 12 7z" />,
   panel: <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />,
   plan: <><rect x="3" y="6" width="18" height="13" rx="2" /><path d="M3 10h18M7 15h4" /></>,
   empresa: <><rect x="3" y="5" width="18" height="14" rx="2" /><circle cx="8.5" cy="11" r="2" /><path d="M5.5 16c.6-1.5 1.7-2.2 3-2.2s2.4.7 3 2.2M14 10h4M14 13.5h3" /></>,
@@ -102,6 +103,7 @@ export default async function Page() {
       {empresa && (
         <Grupo titulo="Tu empresa">
           <Celda href="/ajustes/plan" ico="plan" tono="azul" titulo="Tu plan" detalle={esFundador(u.plan) ? 'Fundador · gratis de por vida' : `${TIPOS[u.plan.tipo]} ${u.plan.nombre}${dias !== null ? ` · prueba: ${dias} días` : ''}`} aviso={dias !== null && dias <= 7} />
+          {u.rol === 'admin' && <Celda href="/ajustes/recomienda" ico="regalo" tono="azul" titulo="Recomienda Netto" detalle="Un mes gratis para ti y para quien invites" />}
           <Celda href="/ajustes/facturacion" ico="empresa" tono="azul" titulo="Datos de la empresa" detalle={datosCompletos ? `${e.nombre} · ${e.nif}` : 'Faltan datos: rellénalos antes de facturar'} aviso={!datosCompletos} />
           <Celda href="/bienvenida?editar=1" ico="actividad" tono="azul" titulo="Actividades e impuestos" detalle={`${fiscalDe(u).tipo === 'sociedad' ? 'Sociedad' : 'Autónomo'} · ${actividadesDe(u).map((x) => x.nombre).join(', ')}`} />
           {(puede(u, 'usuarios') || u.admin) && <Celda href="/usuarios" ico="usuarios" tono="azul" titulo="Usuarios y permisos" detalle="Quién entra y qué puede hacer" />}
