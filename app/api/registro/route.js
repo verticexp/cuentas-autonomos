@@ -44,12 +44,12 @@ export async function POST(req) {
   } else {
     const codigoGestoria = String(form.get('gestoria') || '').trim();
     const gestoria = codigoGestoria ? await gestoriaPorCodigo(codigoGestoria) : null;
-    if (codigoGestoria && !gestoria) return fallo('Ese código de gestoría no existe o ya no está activo.', 400, 1);
+    if (codigoGestoria && !gestoria) return fallo('Ese código promocional no existe o ya no está activo.', 400, 3);
     // Enlace de recomendación (lib/recomendaciones.js): un mes más de prueba; no se suma al código de una gestoría.
     const ref = String(form.get('ref') || '').trim();
     const recomienda = ref ? await empresaPorCodigo(ref) : null;
     if (ref && !recomienda) return fallo('Ese enlace de recomendación ya no es válido. Puedes registrarte sin él.', 400, 1);
-    if (recomienda && gestoria) return fallo('Usa el código de tu gestoría o el enlace de recomendación, no los dos.', 400, 1);
+    if (recomienda && gestoria) return fallo('Usa el código promocional o el enlace de recomendación, no los dos.', 400, 3);
     if (recomienda && sesion && enEmpresa(sesion, recomienda.id)) return fallo('No puedes usar el enlace de recomendación de una empresa tuya.', 400, 1);
     if (!sesion && (typeof cuenta.nombre !== 'string' || !cuenta.nombre.trim() || cuenta.nombre.trim().length > 60)) return fallo('Escribe tu nombre (máximo 60 caracteres).', 400, 4);
     if (!sesion && (typeof cuenta.email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cuenta.email.trim()))) return fallo('Escribe un email válido.', 400, 4);

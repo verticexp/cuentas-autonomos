@@ -226,7 +226,7 @@ test('alta con código inexistente, mal formado o inactivo vuelve al paso 1 sin 
   for (const codigo of ['NO-EXISTE', 'no válido', g.codigo]) {
     const r = await registro.POST(alta(codigo));
     assert.equal(r.status, 400);
-    assert.deepEqual(await r.json(), { error: 'Ese código de gestoría no existe o ya no está activo.', paso: 1 });
+    assert.deepEqual(await r.json(), { error: 'Ese código promocional no existe o ya no está activo.', paso: 3 });
   }
   assert.equal(estado.altas.length, 0);
   assert.equal(await redis.hlen('empresas'), 0);
