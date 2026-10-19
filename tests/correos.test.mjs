@@ -19,14 +19,19 @@ for (const [id, c] of Object.entries(CORREOS)) {
 
   test(`${id}: cabecera y pie según la marca`, () => {
     const { html, texto } = componer(id, c.ejemplo);
-    const cabecera = html.match(/<p style="margin:0 0 20px;font-size:22px[^>]*>(.*?)<\/p>/)?.[1];
+    const cabecera = html.match(/<p style="margin:0;font-size:22px[^>]*>(.*?)<\/p>/)?.[1];
+    const logo = /<img src="[^"]*\/correo\/netto-logo-claro\.png"[^>]*alt="Netto"/.test(html);
+    assert.match(html, /\/correo\/netto-icono\.png/, 'el icono de Netto va en el pie');
     if (c.marca === 'empresa') {
       assert.equal(cabecera, c.ejemplo.empresa);
+      assert.ok(!logo, 'en nombre de la empresa no lleva la cabecera de Netto');
+      assert.match(html, /Enviado con <strong[^>]*>Netto<\/strong>/);
       assert.ok(!html.includes('corporate@nettohq.com'));
       assert.ok(!texto.includes('corporate@nettohq.com'));
       assert.ok(!html.includes('Si tienes cualquier duda, responde a este email'));
     } else {
-      assert.equal(cabecera, 'Netto');
+      assert.equal(cabecera, undefined);
+      assert.ok(logo, 'cabecera con el logo de Netto');
       if (!c.interno) {
         assert.match(html, /Si tienes cualquier duda, responde a este email o escríbenos a corporate@nettohq\.com/);
         assert.match(texto, /corporate@nettohq\.com/);
@@ -34,11 +39,13 @@ for (const [id, c] of Object.entries(CORREOS)) {
     }
   });
 
-  if (c.ejemplo.url || c.ejemplo.urlPago) {
+  if (c.ejemplo.url) {
     test(`${id}: botón y enlace alternativo en HTML y texto`, () => {
-      const url = c.ejemplo.url || c.ejemplo.urlPago;
+      const url = c.ejemplo.url;
       const { html, texto } = componer(id, c.ejemplo);
-      assert.equal(html.split(`href="${url}"`).length - 1, 2);
+      // Botón + enlace en texto (la bienvenida enlaza además a la web desde el logo y el pie).
+      assert.ok(html.split(`href="${url}"`).length - 1 >= 2);
+      assert.ok(html.includes(`>${url}</a>`));
       assert.ok(texto.includes(url));
     });
   }
@@ -56,7 +63,7 @@ test('factura: convierte enlaces libres y añade el píxel solo cuando se pide',
   const sinPixel = componer('factura', datos);
   assert.match(sinPixel.html, /<a href="https:\/\/ejemplo\.es\/factura"[^>]*>https:\/\/ejemplo\.es\/factura<\/a>/);
   assert.ok(sinPixel.texto.includes('https://ejemplo.es/factura'));
-  assert.doesNotMatch(sinPixel.html, /<img\b/);
+  assert.doesNotMatch(sinPixel.html, /width="1" height="1"/);
   const pixel = 'https://ejemplo.es/abierta';
   const { html } = componer('factura', datos, { pixel });
   assert.ok(html.includes(`<img src="${pixel}" width="1" height="1"`));
@@ -110,4 +117,12 @@ test('enviarCorreo: falta de configuración y cuerpo enviado a Resend', async ()
 
 test('componer: un id inexistente lanza', () => {
   assert.throws(() => componer('correo-inexistente'), /No existe el correo/);
+});
+
+test('sin cobro con Stripe: ni la factura ni el recordatorio llevan botón de pago', () => {
+  for (const id of ['factura', 'recordatorio-cobro']) {
+    const { html, texto } = componer(id, CORREOS[id].ejemplo);
+    assert.doesNotMatch(html + texto, /tarjeta|\/pagar\//i);
+  }
+  assert.match(componer('recordatorio-cobro', CORREOS['recordatorio-cobro'].ejemplo).texto, /Bizum al 600 123 456/);
 });

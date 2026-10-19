@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { importes } from '@/lib/calculos';
 import { enlacePago } from '@/lib/cobros';
 import { portalDe } from '@/lib/portal';
+import { cobroFacturasListo } from '@/lib/stripe';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,7 +14,7 @@ export async function POST(req) {
   if (d instanceof Response) return d;
   const f = d?.facturas.find((x) => x.id === String(form.get('id') || ''));
   if (!f) return NextResponse.json({ error: 'Ese documento no existe' }, { status: 404 });
-  if (f.cobrada || importes(f).total <= 0) return NextResponse.redirect(`${req.nextUrl.origin}/portal/${t}`, 303);
+  if (!cobroFacturasListo() || f.cobrada || importes(f).total <= 0) return NextResponse.redirect(`${req.nextUrl.origin}/portal/${t}`, 303);
   const { ruta } = await enlacePago(d.e, f);
   return NextResponse.redirect(`${req.nextUrl.origin}${ruta}`, 303);
 }
