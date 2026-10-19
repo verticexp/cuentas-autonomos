@@ -24,7 +24,7 @@ const lineasDe = (x) => (x.lineas?.length
 const numero = (v) => leerImporte(v) || 0;
 
 // riesgos: lo que debe ahora cada cliente con riesgo máximo ({ id: euros }); el límite lo comprueba el servidor.
-export default function FormFactura({ factura, clientes, numeros, hoy, rectifica: orig, plantilla, notaDefecto = '', actividades, productos = [], stock = null, proyectos = [], riesgos = {} }) {
+export default function FormFactura({ factura, clientes, numeros, hoy, rectifica: orig, plantilla, notaDefecto = '', actividades, productos = [], stock = null, proyectos = [], riesgos = {}, recargo = false }) {
   // IVA y retención de cada actividad, para rellenar la factura nueva.
   const defecto = (id) => { const a = actividades.find((x) => x.id === id) || actividades[0]; return { ivaPct: a.ivaPct, irpfPct: a.irpfPct }; };
   const router = useRouter();
@@ -32,12 +32,12 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
   const [f, setF] = useState(() => factura
     ? { ...factura, lineas: lineasDe(factura) }
     : orig
-      ? { actividad: orig.actividad, fecha: hoy, cliente: orig.cliente, irpfPct: orig.irpfPct, nota: '', cobrada: false, rectifica: orig.id, proyecto: orig.proyecto || '',
+      ? { actividad: orig.actividad, fecha: hoy, cliente: orig.cliente, irpfPct: orig.irpfPct, nota: '', cobrada: false, rectifica: orig.id, proyecto: orig.proyecto || '', ...(orig.recargo ? { recargo: true } : {}),
         lineas: orig.lineas?.length
           ? lineasDe(orig).map((l) => ({ ...l, precio: aTexto(-numero(l.precio)) }))
           : [{ concepto: `Anulación de la factura ${numeroFactura(orig)}`, cantidad: '1', precio: aTexto(-orig.base), dto: '', ivaPct: orig.ivaPct }] }
       : plantilla
-        ? { actividad: plantilla.actividad, fecha: hoy, cliente: plantilla.cliente, lineas: lineasDe(plantilla), irpfPct: plantilla.irpfPct, nota: plantilla.nota || '', cobrada: false, proyecto: plantilla.proyecto || '' }
+        ? { actividad: plantilla.actividad, fecha: hoy, cliente: plantilla.cliente, lineas: lineasDe(plantilla), irpfPct: plantilla.irpfPct, nota: plantilla.nota || '', cobrada: false, proyecto: plantilla.proyecto || '', ...(plantilla.recargo ? { recargo: true } : {}) }
       : { actividad: actividades[0].id, fecha: hoy, cliente: { nombre: '', nif: '', direccion: '', ciudad: '' }, lineas: [lineaVacia(defecto(actividades[0].id).ivaPct)], nota: notaDefecto, cobrada: false, irpfPct: defecto(actividades[0].id).irpfPct });
   // La selección vive solo en el formulario; el cuerpo de la API conserva el cliente histórico completo.
   const [clienteSeleccionado, setClienteSeleccionado] = useState(() => resolverClienteFactura(clientes, f.cliente)?.id || '');
@@ -155,8 +155,8 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
 
   const nums = f.lineas.map((l) => ({ cantidad: numero(l.cantidad), precio: numero(l.precio), dto: Number(String(l.dto).replace(',', '.')) || 0, ivaPct: Number(l.ivaPct) }));
   const base = r2(nums.reduce((s, l) => s + baseLinea(l), 0));
-  const t = importes({ base, lineas: nums, irpfPct: Number(f.irpfPct) });
-  const tipos = desglose({ lineas: nums });
+  const t = importes({ base, lineas: nums, irpfPct: Number(f.irpfPct), recargo: Boolean(f.recargo) });
+  const tipos = desglose({ lineas: nums, recargo: Boolean(f.recargo) });
   // Ficha del cliente elegido: cómo y cuándo cobra, y su riesgo máximo con esta factura. Lo que ya debe incluye esta misma
   // factura si se está editando (propio), y lo cobrado no cuenta; si no suma riesgo, nunca se avisa.
   const resumen = ficha && [ficha.formaCobro && nombreForma(ficha.formaCobro), Number.isInteger(ficha.plazo) && (ficha.plazo ? `${ficha.plazo} días` : 'al contado'),
@@ -325,6 +325,8 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
         </select>{mensaje('irpfPct')}
       </label>
 
+      {(recargo || f.recargo) && <label className="check ff-det"><input type="checkbox" checked={Boolean(f.recargo)} onChange={(e) => poner('recargo', e.target.checked)} /> Cliente en recargo de equivalencia (comercio minorista: 5,2 % con el 21 %, 1,4 % con el 10 %, 0,5 % con el 4 %)</label>}
+
       <label className="ff-det">Nota en la factura (opcional)
         <input className="campo" placeholder="Ej.: operación exenta de IVA, inversión del sujeto pasivo" value={f.nota || ''} onChange={(e) => poner('nota', e.target.value)} />
       </label>
@@ -357,6 +359,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
           <dl className="ff-tot">
             <div><dt>Base</dt><dd>{eur(t.base)}</dd></div>
             {tipos.length > 1 ? tipos.map((x) => <div key={x.pct}><dt>IVA {x.pct} %</dt><dd>{eur(x.iva)}</dd></div>) : <div><dt>IVA</dt><dd>{eur(t.iva)}</dd></div>}
+            {t.recargo > 0 && <div><dt>Recargo de equivalencia</dt><dd>{eur(t.recargo)}</dd></div>}
             {Number(f.irpfPct) > 0 && <div><dt>IRPF {f.irpfPct} %</dt><dd>−{eur(t.irpf)}</dd></div>}
           </dl>
           <p className="ff-total"><span>Total</span><b key={t.total}>{eur(t.total)}</b></p>

@@ -88,6 +88,7 @@ export default async function Factura({ params }) {
         <dl className="fh-desglose">
           <div><dt>Base</dt><dd>{eur(i.base)}</dd></div>
           {desglose(f).map((d) => <div key={d.pct}><dt>IVA {d.pct} %</dt><dd>{eur(d.iva)}</dd></div>)}
+          {desglose(f).filter((d) => d.re).map((d) => <div key={`re${d.pct}`}><dt>Recargo {String(d.re).replace('.', ',')} %</dt><dd>{eur(d.recargo)}</dd></div>)}
           {f.irpfPct > 0 && <div><dt>IRPF {f.irpfPct} %</dt><dd>−{eur(i.irpf)}</dd></div>}
         </dl>
         <div className="fh-pie">
@@ -131,7 +132,7 @@ export default async function Factura({ params }) {
         { Correcto: `registrada en la AEAT${f.verifactu.csv ? ` (CSV ${f.verifactu.csv})` : ''}.`, AceptadoConErrores: `registrada en la AEAT con avisos: ${f.verifactu.error}`, Incorrecto: `la AEAT la ha rechazado: ${f.verifactu.error}` }[f.verifactu.estado]
         || `pendiente de enviar a la AEAT${f.verifactu.error ? ` (último intento: ${f.verifactu.error})` : ''}. Se envía sola.`}`}</p>}
       {f.verifactu && editar && <VerifactuFactura factura={f} admin={u.rol === 'admin'} />}
-      <fieldset className="solo-ver" disabled={!editar}><FormFactura key={JSON.stringify(f)} factura={f} clientes={clientes} actividades={actividades} productos={(productos || []).sort((a, b) => a.nombre.localeCompare(b.nombre))} riesgos={riesgos} proyectos={editar ? await proyectosDe(u) : []} /></fieldset>
+      <fieldset className="solo-ver" disabled={!editar}><FormFactura key={JSON.stringify(f)} recargo={usa303(fiscal)} factura={f} clientes={clientes} actividades={actividades} productos={(productos || []).sort((a, b) => a.nombre.localeCompare(b.nombre))} riesgos={riesgos} proyectos={editar ? await proyectosDe(u) : []} /></fieldset>
     </main>
   );
 }

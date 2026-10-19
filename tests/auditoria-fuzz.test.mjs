@@ -44,6 +44,7 @@ function empresa(seed) {
       f.ivaPct = pick([21, 21, 10, 4, 0]);
     }
     if (R() < 0.08) { f.rectifica = 'x'; f.serie = 'R'; f.base = -f.base; if (f.lineas) f.lineas = f.lineas.map((l) => ({ ...l, precio: -l.precio })); }
+    if (R() < 0.12) f.recargo = true;
     if (R() < 0.4) f.cobrada = true;
     else if (R() < 0.3) f.pagos = [{ fecha: f.fecha, importe: importe(500) }];
     facturas.push(f);
@@ -70,17 +71,18 @@ function refImportes(x) {
     const b = Math.sign(l.cantidad * l.precio) * Math.round(Math.abs(l.cantidad * l.precio * (1 - l.dto / 100)) * 100 + 1e-6);
     porTipo.set(l.ivaPct, (porTipo.get(l.ivaPct) || 0) + b);
   } else porTipo.set(x.ivaPct, c(x.base));
-  let iva = 0;
-  for (const [pct, b] of porTipo) iva += rc(b * pct * 10);
+  let iva = 0, recargo = 0;
+  const RE = { 21: 52, 10: 14, 4: 5 }; // décimas de punto
+  for (const [pct, b] of porTipo) { iva += rc(b * pct * 10); if (x.recargo && RE[pct]) recargo += rc(b * RE[pct]); }
   const base = c(x.base);
   const irpf = rc(base * (x.alquiler ? 19 : x.irpfPct || 0) * 10);
-  return { base, iva, irpf, total: base + iva - irpf };
+  return { base, iva, recargo, irpf, total: base + iva + recargo - irpf };
 }
 
 const delT = (l, t, anio = ANIO) => l.filter((x) => x.fecha.startsWith(`${anio}-`) && trimestre(x.fecha) === t);
 function ref303(facturas, gastos, t) {
   let devengado = 0, deducible = 0;
-  for (const f of delT(facturas, t)) devengado += refImportes(f).iva;
+  for (const f of delT(facturas, t)) { const r = refImportes(f); devengado += r.iva + r.recargo; }
   for (const g of delT(gastos, t)) {
     const iva = refImportes(g).iva;
     const auto = (!g.ivaPct && (g.origen === 'ue' || g.origen === 'fuera' || (!g.origen && /^IE/.test(g.proveedorNif)))) ? rc(c(g.base) * 210) : 0;
@@ -104,7 +106,7 @@ test(`simulación: ${EMPRESAS} empresas ficticias contra cálculos de referencia
     // 1. Importes de cada documento: base + IVA − retención, IVA por tipo sobre la suma de bases del tipo.
     for (const x of [...facturas, ...gastos]) {
       const i = importes(x), r = refImportes(x);
-      ok(c(i.iva) === r.iva && c(i.irpf) === r.irpf && c(i.total) === r.total, `${E} ${x.id}: importes ${JSON.stringify(i)} ≠ ref ${JSON.stringify(r)}`);
+      ok(c(i.iva) === r.iva && c(i.recargo || 0) === r.recargo && c(i.irpf) === r.irpf && c(i.total) === r.total, `${E} ${x.id}: importes ${JSON.stringify(i)} ≠ ref ${JSON.stringify(r)}`);
       ok(c(desglose(x).reduce((s, d) => s + d.base, 0)) === c(x.base), `${E} ${x.id}: el desglose no suma la base`);
       // Espejo: la rectificativa total de un documento es su negativo exacto.
       const espejo = x.lineas ? { ...x, base: -x.base, lineas: x.lineas.map((l) => ({ ...l, precio: -l.precio })) } : { ...x, base: -x.base };
