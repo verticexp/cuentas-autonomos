@@ -46,7 +46,7 @@ export default async function Analisis({ searchParams }) {
   const anio = Number(sp.anio) || actual;
   const p = /^[1-4]$/.test(sp.p || '') ? sp.p : '';
   const fiscal = fiscalDe(u);
-  const d = informe({ facturas, gastos, nominas: nominas || [], manuales: manuales || [], saldo, fiscal, pagos130: u.pagos130 || {}, pagos202: u.pagos202 || {}, cuotaIS: u.cuotaIS || {}, productos: productos || [], ajustes: ajustes || [], albaranes: albaranes || [] }, anio, p, h);
+  const d = informe({ facturas, gastos, nominas: nominas || [], manuales: manuales || [], saldo, fiscal, pagos130: u.pagos130 || {}, pres303: u.pres303 || {}, pagos202: u.pagos202 || {}, cuotaIS: u.cuotaIS || {}, productos: productos || [], ajustes: ajustes || [], albaranes: albaranes || [] }, anio, p, h);
   // El balance, al cierre del periodo (o a hoy si aún no ha acabado).
   const bal = balanceContable(d.asientos, d.per.hasta > h ? h : d.per.hasta, { sociedad: fiscal.tipo === 'sociedad' });
   const a = analisis({ pyg: d.actual, anterior: d.anterior, bal, per: d.per, hoy: h, facturas, gastos });

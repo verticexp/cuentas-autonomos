@@ -9,7 +9,7 @@ import { contar } from '@/lib/indices';
 import { panelDe } from '@/lib/panelCache';
 import '@/app/tesoreria.css';
 import { importes, r2 } from '@/lib/calculos';
-import { actividadesDe, fiscalDe, modelosDe, nombresActividad } from '@/lib/empresa';
+import { actividadesDe, fiscalDe, hecho303, modelosDe, nombresActividad } from '@/lib/empresa';
 import { eur, fechaCorta, fechaTexto, hoy } from '@/lib/formato';
 import SinBD from '@/components/SinBD';
 import { Presentado } from '@/components/Acciones';
@@ -118,7 +118,7 @@ export default async function Resumen({ searchParams }) {
               {debe ? (
                 <>
                   <p className="hcard-v"><Cifra v={aPagar} /><small>€ a pagar</small></p>
-                  <p className="hcard-s">Hasta el {fechaTexto(plazo.fecha)}, {plazo.dias === 0 ? 'hoy es el último día' : plazo.dias === 1 ? 'queda 1 día' : `quedan ${plazo.dias} días`}{c303 ? ` · 303 ${debe.m303 < 0 ? `${eur(-debe.m303)} a compensar` : eur(debe.ivaIngresar)}` : ''}{c130 ? ` · 130 ${eur(debe.m130)}` : ''}</p>
+                  <p className="hcard-s">Hasta el {fechaTexto(plazo.fecha)}, {plazo.dias === 0 ? 'hoy es el último día' : plazo.dias === 1 ? 'queda 1 día' : `quedan ${plazo.dias} días`}{debe.pend303 ? ` · 303 ${debe.m303 < 0 ? `${eur(-debe.m303)} a compensar` : eur(debe.ivaIngresar)}` : c303 ? ' · 303 presentado' : ''}{debe.pend130 ? ` · 130 ${eur(debe.m130)}` : c130 ? ' · 130 presentado' : ''}</p>
                   <p className="hcard-s">Del {tHoy}T llevas {eur(apartado)} para apartar.</p>
                 </>
               ) : (
@@ -173,14 +173,16 @@ export default async function Resumen({ searchParams }) {
 
           <section className="grupo res-trim">
             <h2 className="grupo-t">Hacienda por trimestre</h2>
-            <p className="grupo-pie arriba">Orientativo; confírmalo con tu gestor.{c130 ? ' Marca en cada trimestre si pagaste el 130: lo que no pagaste se suma al siguiente.' : ' Marca cada trimestre cuando lo presentes.'}</p>
+            <p className="grupo-pie arriba">Orientativo; confírmalo con tu gestor.{c130 ? ' Marca el 303 y el 130 de cada trimestre por separado. Si no pagaste el 130, se suma al siguiente.' : ' Marca cada trimestre cuando lo presentes.'}</p>
             <div className="trims">
               {r.trimestres.map((q) => (
                 <div key={q.t} className="trim trimestre">
-                  <div className="trim-cab"><h3>{q.t}T {anio}</h3><Presentado anio={anio} t={q.t} importe={c130 ? q.m130 : 0} pagado={pagos(anio)[q.t]} con130={c130} /></div>
+                  <div className="trim-cab"><h3>{q.t}T {anio}</h3></div>
                   <div className="trim-cifras">
                     {c303 && <p><span>Modelo 303</span><strong>{q.m303 < 0 ? `${eur(-q.m303)} a compensar` : eur(q.ivaIngresar)}</strong></p>}
+                    {c303 && <Presentado modelo="303" anio={anio} t={q.t} importe={0} pagado={hecho303(u.pres303, u.pagos130, anio, q.t)} con130={false} />}
                     {c130 && <p><span>Modelo 130</span><strong>{eur(q.m130)}</strong></p>}
+                    {c130 && <Presentado anio={anio} t={q.t} importe={q.m130} pagado={pagos(anio)[q.t]} />}
                     {!c303 && !c130 && <p><span>Base facturada</span><strong>{eur(q.ingresos)}</strong></p>}
                   </div>
                   <details className="trim-mas">
