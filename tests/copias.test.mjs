@@ -507,3 +507,23 @@ test('copia nocturna: los descuadres del banco no impiden guardarla, la cadena r
   alterada.huella = 'x';
   assert.equal(verificarCopia(alterada, { tolerarIncidencias: true }).ok, false);
 });
+
+test('Liquidación de un cobro externo: la marca del pago y el movimiento yaCobrada deben corresponderse', () => {
+  const datos = {
+    'cuentas:empresas': { tipo: 'hash', valor: { e1: '{}' } },
+    'cuentas:facturas:e1': { tipo: 'hash', valor: { f1: JSON.stringify({ id: 'f1', pagos: [{ fecha: '2026-03-01', importe: 50, metodo: 'banco', banco: 'm1' }, { fecha: '2026-03-02', importe: 100, metodo: 'stripe', liquidado: 'm2' }] }) } },
+    'cuentas:banco:e1': { tipo: 'hash', valor: {
+      m1: JSON.stringify({ id: 'm1', estado: 'emparejado', enlace: { tipo: 'factura', id: 'f1' } }),
+      m2: JSON.stringify({ id: 'm2', estado: 'emparejado', enlace: { tipo: 'factura', id: 'f1', yaCobrada: true } }),
+    } },
+  };
+  assert.equal(verificarCopia(copiaDeDatos(datos)).ok, true);
+  for (const m2 of [undefined, { id: 'm2', estado: 'pendiente' }, { id: 'm2', estado: 'emparejado', enlace: { tipo: 'factura', id: 'f1' } }]) {
+    const alterados = structuredClone(datos);
+    if (m2) alterados['cuentas:banco:e1'].valor.m2 = JSON.stringify(m2);
+    else delete alterados['cuentas:banco:e1'].valor.m2;
+    const v = verificarCopia(copiaDeDatos(alterados));
+    assert.equal(v.ok, false);
+    assert.ok(v.errores.some((x) => /liquidaci/.test(x)), v.errores.join('\n'));
+  }
+});

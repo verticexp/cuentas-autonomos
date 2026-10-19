@@ -63,9 +63,11 @@ export default async function PaginaBanco({ searchParams }) {
   const ignorados = historial.grupos.ignorados.items;
   const cuentasFiltro = new Map((cuentas || []).map((c) => [c.id, c.nombre]));
   for (const m of lista) if (m.cuenta && !cuentasFiltro.has(m.cuenta)) cuentasFiltro.set(m.cuenta, `Cuenta anterior (${m.cuenta.slice(-6)})`);
-  const n = Number(q.conectado) || 0;
+  // La conexión directa es solo del administrador de Netto: al resto ni se le habla de ella, aunque traiga ?conectado o ?error.
+  const directo = conectarVisible(u);
+  const n = directo ? Number(q.conectado) || 0 : 0;
   const app = esApp((await headers()).get('user-agent'));
-  const aviso = q.error ? { error: true, texto: app && q.error === 'solo-lectura' ? SOLO_LECTURA_APP : ERRORES[q.error] || 'No se pudo conectar el banco.' } : n ? { texto: n === 1 ? '✓ Cuenta conectada' : `✓ ${n} cuentas conectadas` } : null;
+  const aviso = directo && q.error ? { error: true, texto: app && q.error === 'solo-lectura' ? SOLO_LECTURA_APP : ERRORES[q.error] || 'No se pudo conectar el banco.' } : n ? { texto: n === 1 ? '✓ Cuenta conectada' : `✓ ${n} cuentas conectadas` } : null;
 
   return (
     <main className="pagina mk-look banco">
@@ -76,7 +78,7 @@ export default async function PaginaBanco({ searchParams }) {
         pendientes={pendientes} emparejados={emparejados} ignorados={ignorados} automaticos={automaticos} aviso={aviso}
         historial={{ ...historial, grupos: Object.fromEntries(Object.entries(historial.grupos).map(([k, { items, ...p }]) => [k, p])) }}
         cuentasFiltro={[...cuentasFiltro].map(([id, nombre]) => ({ id, nombre }))}
-        listo={conectarVisible(u)} permisos={{ facturar: puede(u, 'facturar'), gastar: puede(u, 'gastar'), empresa: puede(u, 'empresa') }}
+        listo={directo} permisos={{ facturar: puede(u, 'facturar'), gastar: puede(u, 'gastar'), empresa: puede(u, 'empresa') }}
       />
     </main>
   );

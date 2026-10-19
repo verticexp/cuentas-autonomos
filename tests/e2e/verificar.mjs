@@ -772,6 +772,17 @@ console.log('Banco: extractos, conexión y emparejar');
   await par(mov(605).id, f2.id);
 
   if (process.env.ENABLE_BANKING_URL) {
+    // La conexión directa con el banco es solo del administrador de Netto; el resto sube extractos. Berta (administradora
+    // de su empresa) le invita a la suya para conectarla, y al final le quita.
+    const noLista = await pedir('/api/banco/conectar', { cookie: bq });
+    const noConecta = await pedir('/api/banco/conectar', { metodo: 'POST', cookie: bq, cuerpo: { banco: 'Banco Simulado', tipo: 'business' } });
+    const noActualiza = await pedir('/api/banco/sincronizar', { metodo: 'POST', cookie: bq, cuerpo: { forzar: true } });
+    ok('quien no es el administrador de Netto no lista, conecta ni actualiza bancos (403)', () => assert.deepEqual([noLista.status, noConecta.status, noActualiza.status], [403, 403, 403]));
+    // Ya tiene cuenta: la invitación queda pendiente hasta que él la acepta con su sesión (enlace /api/invitacion/unirse).
+    const invitaAdmin = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: bq, cuerpo: { nombre: 'Prueba', email: fd.get('email'), rol: 'admin' } })).json();
+    const acepta = await pedir(new URL(invitaAdmin.enlace).pathname + new URL(invitaAdmin.enlace).search, { cookie: yo });
+    const ad = `${yo}; e=${/(?:^|,\s*)e=([^;]+)/.exec(acepta.headers.get('set-cookie') || '')?.[1]}`;
+    ok('el administrador de Netto acepta la invitación y entra en la empresa que va a conectar', () => assert.ok(invitaAdmin.pendiente && ad.endsWith(`e=${empresa}`), JSON.stringify(invitaAdmin)));
     const sim = (ruta, cuerpo) => fetch(`${process.env.ENABLE_BANKING_URL}${ruta}`, cuerpo ? { method: 'POST', body: JSON.stringify(cuerpo) } : {}).then((r) => r.json());
     const f4 = await fac(masD(-4), 'Agencia Brisa Incentivos S.L.', 2000);
     const tx = (d, imp, info, nombre, ref) => ({ entry_reference: ref, transaction_amount: { amount: String(Math.abs(imp)), currency: 'EUR' }, credit_debit_indicator: imp < 0 ? 'DBIT' : 'CRDT', status: 'BOOK', booking_date: masD(d), remittance_information: [info], ...(imp < 0 ? { creditor: { name: nombre } } : { debtor: { name: nombre } }) });
@@ -779,17 +790,17 @@ console.log('Banco: extractos, conexión y emparejar');
       tx(-1, 2420, `FRA ${numeroFactura(f4)}`, 'AGENCIA BRISA INCENTIVOS SL', 'R1'), tx(-2, -15, 'COMISION', 'BANCO', 'R2'), tx(-3, -9.99, 'SPOTIFY', 'Spotify', 'R3'),
       tx(-4, 50, 'BIZUM', 'Ana', 'R4'), tx(-5, -30, 'PARKING', 'Saba', 'R5'), { ...tx(-1, 99, 'PENDIENTE', 'X', 'R6'), status: 'PDNG' },
     ] }] });
-    const lista = await (await pedir('/api/banco/conectar', { cookie: bq })).json();
+    const lista = await (await pedir('/api/banco/conectar', { cookie: ad })).json();
     ok('lista de bancos de España', () => assert.deepEqual(lista.bancos.map((b) => [b.nombre, b.dias]), [['Banco Simulado', 90], ['Caja Simulada', 180]]));
-    const ini = await (await pedir('/api/banco/conectar', { metodo: 'POST', cookie: bq, cuerpo: { banco: 'Banco Simulado', tipo: 'business' } })).json();
+    const ini = await (await pedir('/api/banco/conectar', { metodo: 'POST', cookie: ad, cuerpo: { banco: 'Banco Simulado', tipo: 'business' } })).json();
     const auth = Object.values((await sim('/_prueba')).auth).at(-1);
     const APP = (process.env.APP_URL || BASE).replace(/\/$/, '');
     ok('pide permiso al banco con firma, 90 días y vuelta a la app (APP_URL si está)', () => assert.ok(ini.url && auth.psu_type === 'business' && auth.redirect_url === `${APP}/api/banco/vuelta` &&Math.abs(Date.parse(auth.access.valid_until) - Date.now() - 90 * 864e5) < 120000));
     const banco = await fetch(ini.url, { redirect: 'manual' });
     const vuelta = new URL(banco.headers.get('location'));
-    const robo = await pedir(vuelta.pathname + vuelta.search, { cookie: yo });
-    ok('otra persona no puede usar esa vuelta del banco', () => assert.ok(robo.headers.get('location')?.endsWith('/banco?error=caducado')));
-    const bien = await pedir(vuelta.pathname + vuelta.search, { cookie: bq });
+    const robo = await pedir(vuelta.pathname + vuelta.search, { cookie: bq });
+    ok('otra persona (aunque sea de la empresa) no puede usar esa vuelta del banco', () => assert.ok(robo.headers.get('location')?.endsWith('/banco?error=caducado')));
+    const bien = await pedir(vuelta.pathname + vuelta.search, { cookie: ad });
     ok('al volver del banco queda conectada', () => assert.ok(bien.headers.get('location')?.endsWith('/banco?conectado=1'), bien.headers.get('location')));
     ok('la vuelta lleva a la dirección fija de la app', () => assert.ok(bien.headers.get('location')?.startsWith(`${APP}/banco?`) && robo.headers.get('location')?.startsWith(`${APP}/banco?`)));
     const ebMod = await import('../../lib/enableBanking.js');
@@ -812,21 +823,34 @@ console.log('Banco: extractos, conexión y emparejar');
     ok('saldo real: la suma de las tres cuentas', () => assert.deepEqual([saldo.importe, saldo.cuentas], [10662.55, 3]));
     const pb3 = n(await texto('/banco', bq));
     ok('pantalla: la cuenta y la factura cobrada por el banco', () => assert.ok(pb3.includes('Cuenta Negocios') && pb3.includes('•••• 1332') && pb3.includes(`Factura ${numeroFactura(f4)}`) && pb3.includes(n(eur(10662.55)))));
+    // Solo el administrador de Netto ve la conexión; Berta ve la cuenta con su saldo y nada más (ni con ?conectado o ?error).
+    const pbAviso = n(await texto('/banco?conectado=1&error=cancelado', bq)), paAdmin = n(await texto('/banco', ad));
+    const conexion = /Conectar banco|>Actualizar<|Conectada|Actualizada|permiso del banco|Cuenta conectada|cuentas conectadas/;
+    const visto = [pb3, pbAviso].map((t) => { const i = t.search(conexion); return i < 0 ? null : t.slice(Math.max(0, i - 80), i + 80); }).filter(Boolean);
+    ok('Berta no ve nada de la conexión: ni «Conectar banco», ni «Actualizar», ni su estado', () => assert.ok(
+      !visto.length && pb3.includes('Saldo a ') && pbAviso.includes('Cuenta Negocios'), visto.join(' | ') || pb3.slice(0, 400)));
+    ok('el administrador de Netto sí: «Conectar banco», «Actualizar» y el estado de la cuenta', () => assert.ok(paAdmin.includes('Conectar banco') && paAdmin.includes('Actualizar') && /Actualizada|Conectada/.test(paAdmin)));
     const antes = (await sim('/_prueba')).llamadas;
-    const s1 = await (await pedir('/api/banco/sincronizar', { metodo: 'POST', cookie: bq, cuerpo: {} })).json();
+    const s1 = await (await pedir('/api/banco/sincronizar', { metodo: 'POST', cookie: ad, cuerpo: {} })).json();
     const medio = (await sim('/_prueba')).llamadas;
-    const s2 = await (await pedir('/api/banco/sincronizar', { metodo: 'POST', cookie: bq, cuerpo: { forzar: true } })).json();
+    const s2 = await (await pedir('/api/banco/sincronizar', { metodo: 'POST', cookie: ad, cuerpo: { forzar: true } })).json();
     const despues = (await sim('/_prueba')).llamadas;
     ok('al abrir no vuelve a llamar al banco antes de 6 horas; «Actualizar» sí', () => assert.ok(s1.nuevos === 0 && medio === antes && s2.nuevos === 0 && despues > medio));
-    const no = await (await pedir('/api/banco/conectar', { metodo: 'POST', cookie: bq, cuerpo: { banco: 'Caja Simulada', tipo: 'personal' } })).json();
+    const no = await (await pedir('/api/banco/conectar', { metodo: 'POST', cookie: ad, cuerpo: { banco: 'Caja Simulada', tipo: 'personal' } })).json();
     const v2 = new URL((await fetch(no.url, { redirect: 'manual' })).headers.get('location'));
-    const can = await pedir(v2.pathname + v2.search, { cookie: bq });
+    const can = await pedir(v2.pathname + v2.search, { cookie: ad });
     ok('si no da permiso en el banco, lo dice', () => assert.ok(can.headers.get('location')?.endsWith('/banco?error=cancelado')));
-    const des = await pedir(`/api/banco/conectar?id=${eb.id}`, { metodo: 'DELETE', cookie: bq });
+    const noDesconecta = await pedir(`/api/banco/conectar?id=${eb.id}`, { metodo: 'DELETE', cookie: bq });
+    ok('ni desconectar una cuenta conectada (403)', () => assert.equal(noDesconecta.status, 403));
+    const des = await pedir(`/api/banco/conectar?id=${eb.id}`, { metodo: 'DELETE', cookie: ad });
     const saldo2 = JSON.parse(await kv(['GET', `cuentas:saldo:${empresa}`]));
     ok('desconectar retira el permiso del banco y su saldo', () => assert.ok(des.status === 200 && saldo2.importe === 7452));
     const cerr = (await sim('/_prueba')).cerradas;
     ok('sesión cerrada en el banco', () => assert.ok(cerr.includes('sesion-1')));
+    const adminId = await kv(['GET', `cuentas:sesion:${yo}`]);
+    const sale = await pedir(`/api/usuarios?id=${adminId}`, { metodo: 'DELETE', cookie: bq });
+    const vuelve = await pedir('/api/empresas', { metodo: 'POST', cookie: ad, cuerpo: { id: await kv(['HGET', 'cuentas:emails', fd.get('email')]) } });
+    ok('Berta le quita de su empresa y él vuelve a la suya', () => assert.deepEqual([sale.status, vuelve.status], [200, 200]));
   } else console.log('  (sin ENABLE_BANKING_URL: se salta la conexión)');
 }
 
