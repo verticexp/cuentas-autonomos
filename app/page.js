@@ -219,6 +219,8 @@ export default async function Resumen({ searchParams }) {
                           {fila('09', 'Cuota al 21 %', c['09'])}
                           {c.otros.flatMap((o) => [fila('—', `Base al ${o.pct} % (revisar casilla)`, o.base), fila('—', `Cuota al ${o.pct} % (revisar casilla)`, o.iva)])}
                           {(c['14'] !== 0 || c['15'] !== 0) && <>{fila('14', 'Rectificativas: base', c['14'])}{fila('15', 'Rectificativas: cuota', c['15'])}</>}
+                          {[['16', '18', '0,5'], ['19', '21', '1,4'], ['22', '24', '5,2']].filter(([b]) => c[b]).flatMap(([b, q, r]) => [fila(b, `Recargo ${r} %: base`, c[b]), fila(q, `Recargo ${r} %: cuota`, c[q])])}
+                          {(c['25'] || c['26']) ? <>{fila('25', 'Recargo de rectificativas: base', c['25'])}{fila('26', 'Recargo de rectificativas: cuota', c['26'])}</> : null}
                           {c['10'] > 0 && <>{fila('10', 'Compras a la UE: base', c['10'])}{fila('11', 'Compras a la UE: cuota', c['11'])}</>}
                           {c['12'] > 0 && <>{fila('12', 'Compras de fuera de la UE: base', c['12'])}{fila('13', 'Compras de fuera de la UE: cuota', c['13'])}</>}
                           {fila('27', 'Total cuota devengada', c['27'])}
