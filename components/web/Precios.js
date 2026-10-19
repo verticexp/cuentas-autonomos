@@ -1,7 +1,7 @@
 'use client';
 
 import Link from '@/components/web/EnlacePublico';
-import { Fragment, useEffect, useRef, useState } from 'react';
+import { Fragment, useState } from 'react';
 import Icono from '@/components/web/Icono';
 import { COMPARATIVA, DESCUENTO, PERSONALIZADO, PLANES, SEGMENTOS } from '@/components/web/datos';
 
@@ -19,16 +19,14 @@ export default function Precios({ inicial = 'aut', tabla = false, solo = false }
   const [seg, setSeg] = useState(CONTRATABLES.some((s) => s.id === inicial) ? inicial : 'aut');
   const [anual, setAnual] = useState(true); // de entrada, el precio con pago anual
   const [nota, setNota] = useState(false);
-  const carril = useRef(null);
   const i = CONTRATABLES.findIndex((s) => s.id === seg);
   const nombreSeg = CONTRATABLES[i].n;
   const planes = PLANES[seg];
-
-  // En el móvil los planes se deslizan en horizontal: se empieza centrado en el recomendado.
-  useEffect(() => {
-    const c = carril.current, f = c?.querySelector('.web-plan-fuerte');
-    if (c && f && c.scrollWidth > c.clientWidth) c.scrollLeft = f.offsetLeft - (c.clientWidth - f.offsetWidth) / 2;
-  }, [seg]);
+  // En el móvil la comparativa enseña un plan cada vez; se empieza por el recomendado.
+  const fuerte = Math.max(0, planes.findIndex((p) => p.fuerte));
+  const [ver, setVer] = useState({ seg, k: fuerte });
+  const visto = ver.seg === seg ? ver.k : fuerte;
+  const col = (k) => [planes[k].fuerte && 'fuerte', k !== visto && 'web-tabla-otra'].filter(Boolean).join(' ') || undefined;
 
   return (
     <div className="web-precios">
@@ -48,7 +46,7 @@ export default function Precios({ inicial = 'aut', tabla = false, solo = false }
         </div>
       </div>
 
-      <div className="web-planes web-carrusel" key={seg} ref={carril}>
+      <div className="web-planes" key={seg}>
         {planes.map((p, k) => {
           const mes = anual ? conDescuento(p.p) : p.p;
           return (
@@ -89,17 +87,24 @@ export default function Precios({ inicial = 'aut', tabla = false, solo = false }
       {tabla && (
         <div className="web-tabla-caja" key={`t${seg}`}>
           <h3 className="web-tabla-titulo">Compara los planes de {nombreSeg.toLowerCase()}</h3>
+          <div className="web-tabla-elige" role="group" aria-label="Plan que ver">
+            {planes.map((p, k) => (
+              <button key={p.n} aria-pressed={k === visto} className={k === visto ? 'on' : undefined} onClick={() => setVer({ seg, k })}>
+                {p.n}{p.fuerte && <small>Recomendado</small>}
+              </button>
+            ))}
+          </div>
           <div className="web-tabla-scroll">
             <table className="web-tabla">
               <thead>
-                <tr><th scope="col"><span className="oculto">Función</span></th>{planes.map((p) => <th key={p.n} scope="col" className={p.fuerte ? 'fuerte' : undefined}>{p.n}<small>{anual ? conDescuento(p.p) : p.p} €/mes</small></th>)}</tr>
+                <tr><th scope="col"><span className="oculto">Función</span></th>{planes.map((p, k) => <th key={p.n} scope="col" className={col(k)}>{p.n}<small>{anual ? conDescuento(p.p) : p.p} €/mes</small></th>)}</tr>
               </thead>
               <tbody>
                 {COMPARATIVA[seg].map(([grupo, filas]) => (
                   <Fragment key={grupo}>
                     <tr className="web-tabla-grupo"><th colSpan={4} scope="colgroup">{grupo}</th></tr>
                     {filas.map(([f, v]) => (
-                      <tr key={f}><th scope="row">{f}</th>{v.map((x, k) => <td key={k} className={planes[k].fuerte ? 'fuerte' : undefined}><Celda v={x} /></td>)}</tr>
+                      <tr key={f}><th scope="row">{f}</th>{v.map((x, k) => <td key={k} className={col(k)}><Celda v={x} /></td>)}</tr>
                     ))}
                   </Fragment>
                 ))}

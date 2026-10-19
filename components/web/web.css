@@ -756,7 +756,7 @@ html:has(.web) #arranque { display: none; }
 .web-nav-btn.activo::after { position: absolute; right: 3px; top: calc(50% - 2px); margin-left: 0; }
 
 /* ───── Móvil: portada más corta, carruseles y botón de alta en la cabecera ───── */
-.web-solo-movil, .web-nota-mas { display: none; }
+.web-solo-movil, .web-nota-mas, .web-tabla-elige { display: none; }
 @media (max-width: 980px) {
   /* Cabecera opaca: sobre fondos claros no se transparenta el texto de debajo. */
   .web-cab::before { background: var(--v); }
@@ -780,7 +780,21 @@ html:has(.web) #arranque { display: none; }
   .web-carrusel { display: flex; gap: 12px; max-width: none; margin: 0 -20px; padding: 4px 20px 16px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: 20px; overscroll-behavior-x: contain; scrollbar-width: none; }
   .web-carrusel::-webkit-scrollbar { display: none; }
   .web-carrusel > * { flex: 0 0 84%; min-width: 0; scroll-snap-align: start; }
-  .web-planes.web-carrusel > * { scroll-snap-align: center; }
+
+  /* Precios: los planes apilados y el recomendado el primero. */
+  .web-planes { gap: 14px; }
+  .web-planes > .web-plan-fuerte { order: -1; }
+
+  /* Comparativa: un plan cada vez, sin deslizar en horizontal. */
+  .web-tabla-elige { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; background: #ECEFEC; border-radius: 16px; padding: 5px; margin-bottom: 14px; position: sticky; top: calc(env(safe-area-inset-top) + 64px); z-index: 2; }
+  .web-tabla-elige button { padding: 9px 4px; border-radius: 12px; font-weight: 600; font-size: 14.5px; color: var(--g) !important; line-height: 1.15; transition: background-color 0.2s ease, color 0.2s ease; }
+  .web-tabla-elige button small { display: block; font-size: 10.5px; font-weight: 600; opacity: 0.8; }
+  .web-tabla-elige button.on { background: var(--v); color: var(--c) !important; }
+  .web-tabla-scroll { overflow: visible; }
+  .web-tabla { min-width: 0; font-size: 14.5px; }
+  .web-tabla th, .web-tabla td { padding: 13px 14px; }
+  .web-tabla .web-tabla-otra { display: none; }
+  .web-tabla td:not(.web-tabla-otra) { width: 34%; }
   .web-fcard, .web-segcard { padding: 24px; }
   .web [data-foco].web-fcard-todas { flex-direction: column; align-items: flex-start; justify-content: center; }
   .web-fcard-todas p { min-width: 0; flex: none; }
