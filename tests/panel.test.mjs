@@ -70,9 +70,26 @@ test('cuadre con datos reales', () => {
     assert.equal(sum(qs, 'gastos'), P.gastado, hoy);
     assert.equal(r2(P.meses.reduce((s, m) => s + m.ing, 0)), P.facturado, hoy);
     assert.equal(r2(P.meses.reduce((s, m) => s + m.gas, 0)), P.gastado, hoy);
-    assert.equal(sum(qs, 'm303'), r2(sum(delAnio(facturas).map(importes), 'iva') - sum(delAnio(gastos).filter((x) => x.ivaPct > 0).map(importes), 'iva')), hoy);
+    // El 303 de la tabla es el del trimestre entero, como en Impuestos (no se corta en hoy).
+    const todoAnio = (l) => l.filter((x) => x.fecha.startsWith('2026-'));
+    assert.equal(sum(qs, 'm303'), r2(sum(todoAnio(facturas).map(importes), 'iva') - sum(todoAnio(gastos).filter((x) => x.ivaPct > 0).map(importes), 'iva')), hoy);
     assert.equal(P.porCobrar, r2(facturas.filter((x) => !x.cobrada).reduce((s, x) => s + importes(x).total, 0)), hoy);
     assert.ok(qs.every((q) => q.m130 >= 0) && P.apartado >= 0 && P.aPagar >= 0, hoy);
     for (const [cliente, v] of P.top) assert.equal(v, sum(delAnio(facturas).filter((x) => x.cliente.nombre === cliente), 'base'), hoy);
   }
+});
+
+test('Hacienda por trimestre: el 303 y el 130 coinciden con Impuestos, aunque haya facturas con fecha posterior a hoy', async () => {
+  const { casillas303, liquidaciones303 } = await import('../lib/calculos.js');
+  const facturas = [...FACTURAS, f('F6', '2026-09-25', 1000, 15, false, 'Eva')];
+  const P = panelResumen({ facturas, gastos: GASTOS, emisor: EMISOR, hoy: '2026-09-10' });
+  const liq = liquidaciones303(facturas, GASTOS, 2026);
+  for (const q of P.r.trimestres) {
+    assert.equal(q.m303, casillas303(facturas, GASTOS, 2026, q.t)['46']);
+    assert.equal(q.ivaIngresar, liq[q.t - 1].ingresar);
+  }
+  assert.equal(P.r.trimestres[2].ivaIngresar, 336); // 168 + 210 de F6 − 42 de G2
+  // Con los datos de Impuestos aparte (lib/datosImpuestos.js), el 303 sale de ellos y no de los del panel.
+  const Q = panelResumen({ facturas: FACTURAS, gastos: GASTOS, emisor: EMISOR, hoy: '2026-09-10', impuestos: { 2026: { facturas, gastos: GASTOS } } });
+  assert.equal(Q.r.trimestres[2].ivaIngresar, 336);
 });

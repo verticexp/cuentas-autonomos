@@ -1,9 +1,8 @@
-import { leer } from '@/lib/redis';
 import { usuarioApi } from '@/lib/api';
 import { actividadesDe, fiscalDe, usa130, usa303 } from '@/lib/empresa';
 import { casillas303, liquidaciones303, minoracion130, resumenAnual } from '@/lib/calculos';
 import { declarante, fichero130, fichero303, nombreFichero } from '@/lib/ficheroAeat';
-import { delosAnios } from '@/lib/indices';
+import { datosImpuestos } from '@/lib/datosImpuestos';
 import { hoy } from '@/lib/formato';
 
 export const dynamic = 'force-dynamic';
@@ -23,10 +22,7 @@ export async function GET(req) {
   const yo = declarante(u.emisor);
   if (yo.error) return Response.json({ error: yo.error }, { status: 400 });
 
-  const [{ facturas }, gastos] = await Promise.all([
-    f.inventario ? leer(u, 'facturas').then((facturas) => ({ facturas })) : delosAnios(u, Array.from({ length: 5 }, (_, i) => anio - i)),
-    leer(u, 'gastos'),
-  ]);
+  const { facturas, gastos } = await datosImpuestos(u, anio);
   const h = hoy();
   const hasta = h < `${anio}-12-31` ? h : `${anio}-12-31`;
   let r;
