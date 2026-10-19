@@ -42,7 +42,7 @@ export default async function Nueva({ searchParams }) {
     <main className="pagina mk-look">
       <Volver href={original || plantilla ? `/facturas/${(original || plantilla).id}` : '/facturas'} />
       <h1 className="titulo">{original ? 'Factura rectificativa' : plantilla ? 'Duplicar factura' : 'Nueva factura'}</h1>
-      <FormFactura clientes={clientes} hoy={h} rectifica={original} plantilla={plantilla || null} numeros={numeros} actividades={actividades} productos={(productos || []).sort((a, b) => a.nombre.localeCompare(b.nombre))} stock={stock} riesgos={riesgos} proyectos={nombresProyectos([...fFichas, ...gFichas].map((f) => ({ proyecto: f.pr })))} />
+      <FormFactura clientes={clientes} hoy={h} rectifica={original} plantilla={plantilla || null} notaDefecto={u.emisor?.notaDefecto || ''} numeros={numeros} actividades={actividades} productos={(productos || []).sort((a, b) => a.nombre.localeCompare(b.nombre))} stock={stock} riesgos={riesgos} proyectos={nombresProyectos([...fFichas, ...gFichas].map((f) => ({ proyecto: f.pr })))} />
     </main>
   );
 }

@@ -24,7 +24,7 @@ const lineasDe = (x) => (x.lineas?.length
 const numero = (v) => leerImporte(v) || 0;
 
 // riesgos: lo que debe ahora cada cliente con riesgo máximo ({ id: euros }); el límite lo comprueba el servidor.
-export default function FormFactura({ factura, clientes, numeros, hoy, rectifica: orig, plantilla, actividades, productos = [], stock = null, proyectos = [], riesgos = {} }) {
+export default function FormFactura({ factura, clientes, numeros, hoy, rectifica: orig, plantilla, notaDefecto = '', actividades, productos = [], stock = null, proyectos = [], riesgos = {} }) {
   // IVA y retención de cada actividad, para rellenar la factura nueva.
   const defecto = (id) => { const a = actividades.find((x) => x.id === id) || actividades[0]; return { ivaPct: a.ivaPct, irpfPct: a.irpfPct }; };
   const router = useRouter();
@@ -38,7 +38,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
           : [{ concepto: `Anulación de la factura ${numeroFactura(orig)}`, cantidad: '1', precio: aTexto(-orig.base), dto: '', ivaPct: orig.ivaPct }] }
       : plantilla
         ? { actividad: plantilla.actividad, fecha: hoy, cliente: plantilla.cliente, lineas: lineasDe(plantilla), irpfPct: plantilla.irpfPct, nota: plantilla.nota || '', cobrada: false, proyecto: plantilla.proyecto || '' }
-      : { actividad: actividades[0].id, fecha: hoy, cliente: { nombre: '', nif: '', direccion: '', ciudad: '' }, lineas: [lineaVacia(defecto(actividades[0].id).ivaPct)], nota: '', cobrada: false, irpfPct: defecto(actividades[0].id).irpfPct });
+      : { actividad: actividades[0].id, fecha: hoy, cliente: { nombre: '', nif: '', direccion: '', ciudad: '' }, lineas: [lineaVacia(defecto(actividades[0].id).ivaPct)], nota: notaDefecto, cobrada: false, irpfPct: defecto(actividades[0].id).irpfPct });
   // La selección vive solo en el formulario; el cuerpo de la API conserva el cliente histórico completo.
   const [clienteSeleccionado, setClienteSeleccionado] = useState(() => resolverClienteFactura(clientes, f.cliente)?.id || '');
   // La retención de una plantilla ya está elegida. Un cambio manual cuenta incluso si coincide con el defecto.
@@ -109,7 +109,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
   const [cambiando, setCambiando] = useState(false);
   const [nuevoCli, setNuevoCli] = useState(false);
   const [datosCli, setDatosCli] = useState(false);
-  const [detalles, setDetalles] = useState(() => Boolean(f.nota || f.proyecto || f.evento?.fecha || f.evento?.lugar || (nueva && Number(f.irpfPct) !== Number(defecto(f.actividad).irpfPct))));
+  const [detalles, setDetalles] = useState(() => Boolean((f.nota && (!nueva || orig || plantilla)) || f.proyecto || f.evento?.fecha || f.evento?.lugar || (nueva && Number(f.irpfPct) !== Number(defecto(f.actividad).irpfPct))));
   const [verEvento, setVerEvento] = useState(false);
   const norm = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   const q = norm(buscando).trim();
