@@ -91,7 +91,7 @@ export default async function Seccion({ params }) {
       {seccion === 'ayuda' && <Ayuda contacto={CONTACTO} />}
       {seccion === 'envio' && <EmailEnvio inicial={u.envio || {}} empresa={u.emisor || {}} />}
       {seccion === 'seguridad' && <FaceId lista={llaves} bloqueo={Boolean(u.bloqueoPantalla)} />}
-      {seccion === 'plan' && <ElegirPlan plan={u.plan} uso={usoPlan} admin={u.rol === 'admin'} app={esApp((await headers()).get('user-agent'))} />}
+      {seccion === 'plan' && <ElegirPlan plan={u.plan} tipoEmpresa={fiscalDe(u).tipo === 'sociedad' ? 'pym' : 'aut'} uso={usoPlan} admin={u.rol === 'admin'} app={esApp((await headers()).get('user-agent'))} />}
       {seccion === 'recomienda' && await (async () => {
         const resumen = await resumenRecomendaciones(u.empresa);
         return <Recomienda enlace={`${WEB}/registro?ref=${resumen.codigo}`} resumen={resumen} />;
