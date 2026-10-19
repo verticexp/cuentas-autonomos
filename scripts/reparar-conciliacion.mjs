@@ -1,7 +1,8 @@
 // Repara los descuadres de la conciliación bancaria que dejaba borrar un documento emparejado (issue #72): el movimiento
 // seguía apuntando a una factura o un gasto que ya no existe. Esos movimientos vuelven a «pendiente», igual que al
 // deshacer el emparejamiento. Una factura cobrada que perdió la referencia al movimiento (se desmarcaba y volvía a
-// marcar como cobrada) se deja como un enlace con una factura ya cobrada (yaCobrada), sin tocar la factura. El resto de
+// marcar como cobrada) se deja como un enlace con una factura ya cobrada (yaCobrada), sin tocar la factura; un segundo
+// ingreso enlazado con una factura ya cobrada por otro movimiento vuelve a «pendiente». El resto de
 // descuadres solo se describen (sin importes, nombres ni conceptos) para decidir a mano.
 // Uso:
 //   KV_REST_API_URL=… KV_REST_API_TOKEN=… node --import ./tests/apoyo/cargador.mjs scripts/reparar-conciliacion.mjs   → simula
@@ -34,6 +35,14 @@ for (const e of empresas) {
       if (!yaCobrada && d.cobrada && !otroBanco && enlazadas.filter((x) => x === id).length === 1) {
         cambios[m.id] = { ...m, enlace: { ...m.enlace, yaCobrada: true } };
         informe.push({ ...linea, problema: 'factura cobrada sin referencia al movimiento', accion: 'marcar yaCobrada' });
+        continue;
+      }
+      // Enlace duplicado (versiones anteriores lo permitían): la factura ya está cobrada por otro movimiento enlazado con
+      // ella. Este ingreso vuelve a pendiente para emparejarlo con lo que de verdad sea.
+      const suyos = [d.cobro?.banco, ...(d.pagos || []).map((p) => p.banco)].filter(Boolean);
+      if (!yaCobrada && d.cobrada && suyos.length && !suyos.includes(m.id) && suyos.every((b) => movs.some((x) => x.id === b && x.enlace.id === id))) {
+        cambios[m.id] = movimientoLibre(m);
+        informe.push({ ...linea, problema: 'enlace duplicado: la factura ya está cobrada por otro movimiento', accion: 'soltar' });
         continue;
       }
       informe.push({ ...linea, problema: 'factura sin referencia recíproca', accion: 'revisar a mano',
