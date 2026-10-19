@@ -28,7 +28,7 @@ const menos = (v) => (v ? -v : 0);
 // Fichero para el botón «Importar» del formulario de la Sede (app/api/aeat): sin NIF en Ajustes no se puede generar.
 const Fichero = ({ modelo, anio, t, nif, aeat, aviso }) => (
   <p className="descargas">{aviso || (nif
-    ? <><a href={`/api/aeat?modelo=${modelo}&anio=${anio}&t=${t}`} download>Descargar fichero para la Sede</a> · <a href={aeat} target="_blank" rel="noopener noreferrer">Abrir la Sede</a></>
+    ? <><a href={`/api/aeat?modelo=${modelo}&anio=${anio}&t=${t}`} download>Descargar fichero para la Sede (.txt, para «Importar»)</a> · <a href={aeat} target="_blank" rel="noopener noreferrer">Abrir la Sede</a></>
     : <>Para descargar el fichero de la Sede, <a href="/ajustes">rellena tu NIF en Ajustes</a>.</>)}</p>
 );
 // Importe destacado arriba de cada tarjeta del 303/130; sin «0,00 €» cuando no hay nada que ingresar.

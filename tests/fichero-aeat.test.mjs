@@ -45,6 +45,10 @@ test('303: cabecera, longitudes de página y casillas en su posición', () => {
   assert.equal(p3.indexOf('</T30303000>'), 1017 - 12);
   assert.equal(campo(p3, 340, 17), importe(168)); // 69
   assert.equal(campo(p3, 408, 17), importe(168)); // 71
+  assert.equal(campo(p1, 115, 2), '22'); // prorrata especial: NO (la Sede no admite blanco)
+  const did = pagina(contenido, '303DID00');
+  assert.equal(did.indexOf('</T303DID00>'), 823 - 12);
+  assert.equal(campo(did, 194, 1), '0');
   assert.equal(resultado, 168);
   assert.equal(tipo, 'I');
 });
