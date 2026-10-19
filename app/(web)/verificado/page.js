@@ -1,7 +1,7 @@
 import Icono from '@/components/web/Icono';
 import { Cta, Encabezado } from '@/components/web/Bloques';
 
-export const metadata = { title: 'Cálculos verificados · Netto', description: 'Cómo se comprueban los cálculos fiscales de Netto: 1.000 empresas simuladas, recalculadas por otro camino y comparadas céntimo a céntimo en cada versión.' };
+export const metadata = { title: 'Cálculos verificados · Netto', description: 'Cómo se comprueban los cálculos fiscales de Netto: 1.000 empresas simuladas, recalculadas por otro camino y comparadas céntimo a céntimo antes de cada versión.' };
 
 const CIFRAS = [
   { n: 1000, t: 'empresas simuladas', d: 'Autónomos y sociedades ficticias' },
@@ -23,7 +23,7 @@ const SIMULA = [
 ];
 
 const COMPARA = [
-  { i: 'impuestos', t: 'Modelos fiscales', d: 'Los modelos 303, 390, 130, 111, 115, 347 y 349 se recalculan y se comparan con los de Netto.' },
+  { i: 'impuestos', t: 'Modelos fiscales', d: 'Los modelos 303, 390, 130, 115, 347 y 349 se recalculan y se comparan con los de Netto.' },
   { i: 'tesoreria', t: 'Compensación de IVA', d: 'Si te sale IVA a devolver, se comprueba que la compensación entre periodos es la correcta.' },
   { i: 'contabilidad', t: 'Asientos y balance', d: 'Los asientos tienen que cuadrar y el balance también. Si no, la prueba falla.' },
   { i: 'inventario', t: 'Amortizaciones', d: 'Cada bien de inversión se amortiza por otro camino y las cuotas tienen que coincidir.' },
@@ -36,8 +36,8 @@ export default function Verificado() {
     <>
       <section className="web-hero-pag centro">
         <span className="web-fcard-ico grande web-entra"><Icono n="tic" /></span>
-        <h1 className="web-entra" style={{ '--d': '60ms' }}>Tus números se comprueban <em>a diario.</em></h1>
-        <p className="web-sub web-entra" style={{ '--d': '120ms' }}>Netto recalcula cada día miles de operaciones por otro camino y las compara con las suyas. Así sabemos que los cálculos no se han roto.</p>
+        <h1 className="web-entra" style={{ '--d': '60ms' }}>Tus números se comprueban <em>en cada versión.</em></h1>
+        <p className="web-sub web-entra" style={{ '--d': '120ms' }}>Antes de publicar cualquier cambio, Netto recalcula miles de operaciones por otro camino y las compara con las suyas. Así sabemos que los cálculos no se han roto.</p>
       </section>
 
       <section className="web-sec web-sec-pegada">
