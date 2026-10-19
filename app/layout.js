@@ -9,7 +9,8 @@ import TabBar from '@/components/TabBar';
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { bloqueoDe, desbloqueada, usuarioActual } from '@/lib/auth';
-import { soloLectura } from '@/lib/planes';
+import { SOLO_LECTURA_APP, soloLectura } from '@/lib/planes';
+import { esApp } from '@/lib/app';
 import { COLOR_BASE } from '@/lib/marca';
 import { fuente } from '@/components/fuente';
 import { permisosDe } from '@/lib/permisos';
@@ -54,11 +55,12 @@ export default async function RootLayout({ children }) {
   const temaCookie = (await cookies()).get('tema')?.value;
   const tema = temaCookie === 'claro' || temaCookie === 'oscuro' ? temaCookie : undefined;
   const cab = await headers();
+  const app = esApp(cab.get('user-agent'));
   const ruta = cab.get('x-ruta') || '/';
   const nonce = cab.get('x-nonce') || undefined;
   if (!abierta && !LIBRE.test(ruta)) redirect(`/bloqueo?a=${encodeURIComponent(ruta)}`);
   return (
-    <html lang="es" data-tema={tema} suppressHydrationWarning>
+    <html lang="es" data-tema={tema} data-app={app ? 'ios' : undefined} suppressHydrationWarning>
       <head>
         <script nonce={nonce} suppressHydrationWarning dangerouslySetInnerHTML={{ __html: YA_VISTO }} />
       </head>
@@ -66,7 +68,7 @@ export default async function RootLayout({ children }) {
         <Arranque />
         <script nonce={nonce} suppressHydrationWarning dangerouslySetInnerHTML={{ __html: 'window.__arranque=performance.now()' }} />
         {u && soloLectura(u.plan) && !ruta.startsWith('/ajustes/plan') && (
-          <p className="aviso-lectura" role="status"><span>Tu prueba ha terminado: puedes ver y exportar todo, pero no crear ni editar.</span><a href="/ajustes/plan">Elegir plan</a></p>
+          <p className="aviso-lectura" role="status"><span>{app ? SOLO_LECTURA_APP : 'Tu prueba ha terminado: puedes ver y exportar todo, pero no crear ni editar.'}</span>{!app && <a href="/ajustes/plan">Elegir plan</a>}</p>
         )}
         {children}
         <Suspense>{u && <TabBar permisos={permisosDe(u)} empresas={u.misEmpresas} empresa={u.empresa} admin={Boolean(u.admin)} inventario={Boolean(u.fiscal?.inventario)} fiscal={{ tipo: u.fiscal?.tipo, iva: u.fiscal?.iva }} />}<Llegada /><BarraEstado /></Suspense>

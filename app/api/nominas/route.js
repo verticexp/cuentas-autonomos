@@ -1,3 +1,4 @@
+import { mensajePlan } from '@/lib/app';
 import { guardar, leer, leerUno, redis, clave } from '@/lib/redis';
 import { soltarEnlaces } from '@/lib/enlacesBanco';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
@@ -24,7 +25,7 @@ export async function POST(req) {
   const { u, res } = await usuarioApi({ permiso: 'nominas' });
   if (res) return res;
   const sinPlan = await usarFuncion(u, 'nominas');
-  if (sinPlan) return error(sinPlan, 403);
+  if (sinPlan) return error(mensajePlan(sinPlan, req.headers.get('user-agent')), 403);
   const { mes } = await cuerpo(req);
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(mes || '')) return error('Mes no válido');
   const [empleados, nominas, jornada] = await Promise.all([leer(u, 'empleados'), leer(u, 'nominas'), leer(u, 'jornada')]);

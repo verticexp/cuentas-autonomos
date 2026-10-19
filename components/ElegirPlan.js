@@ -34,11 +34,12 @@ export default function ElegirPlan({ plan, tipoEmpresa, uso, admin, app }) {
 
   // Vuelta del Checkout: ?sesion=… activa el plan sin esperar al aviso de Stripe.
   useEffect(() => {
+    if (app) return;
     const sesion = new URLSearchParams(window.location.search).get('sesion');
     if (!sesion) return;
     window.history.replaceState(null, '', window.location.pathname);
     llamar({ sesion }).then((d) => { if (d?.plan) { setActual(d.plan); setEstado(`Hecho: ya tienes el plan ${d.plan.nombre}.`); router.refresh(); } });
-  }, []);
+  }, [app]);
 
   async function elegir(nombre) {
     if (paga && !window.confirm(`¿Pasar al plan ${TIPOS[tipo]} ${nombre} (${periodo === 'anio' ? 'anual' : 'mensual'})? Stripe ajusta la diferencia en tu próxima factura.`)) return;
@@ -47,10 +48,7 @@ export default function ElegirPlan({ plan, tipoEmpresa, uso, admin, app }) {
   }
 
   const dias = diasPrueba(actual);
-  if (app) return <>
-    {dias !== null && <p className="nota">{dias === 0 ? 'Tu prueba ha terminado. Tus datos siguen disponibles para consultar y exportar.' : `Te quedan ${dias} días de prueba.`}</p>}
-    <p className="nota">El plan se gestiona desde la web de Netto, entrando con tu cuenta en un navegador.</p>
-  </>;
+  if (app) return dias === 0 ? <p className="nota">Tu periodo de prueba ha terminado. Puedes consultar y exportar todos tus datos.</p> : null;
   const ocupado = estado === 'enviando';
   const esActual = (n) => actual?.tipo === tipo && actual?.nombre === n && (actual.periodo || 'mes') === periodo;
   const estadoPlan = fundador ? 'Gratis de por vida' : paga ? actual.estado === 'past_due' ? 'Revisar pago' : actual.estado === 'trialing' ? 'Prueba con tarjeta' : 'Activo'

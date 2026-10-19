@@ -1,3 +1,4 @@
+import { mensajePlan } from '@/lib/app';
 import { randomBytes } from 'crypto';
 import { borrarEmpresa, borrarUsuario, crearUsuario } from '@/lib/auth';
 import { redis } from '@/lib/redis';
@@ -67,7 +68,7 @@ export async function POST(req) {
   return conCerrojo(`usuarios:${u.empresa}`, async () => {
     const personas = Object.values((await redis.hgetall('usuarios')) || {}).filter((x) => enEmpresa(x, u.empresa)).map((x) => ({ id: x.id, ...membresias(x)[u.empresa] }));
     const sinPlan = sinPlaza(u.plan, personas, papel(u, b));
-    if (sinPlan) return error(sinPlan, 403);
+    if (sinPlan) return error(mensajePlan(sinPlan, req.headers.get('user-agent')), 403);
     // Si ya tiene cuenta en Netto no se le añade sin más: recibe un enlace y entra en la empresa cuando lo acepta
     // con su sesión (api/invitacion/unirse). La respuesta no da su nombre ni ningún otro dato de su cuenta.
     const yaId = await redis.hget('emails', limpiarEmail(b.email));
@@ -100,7 +101,7 @@ export async function PATCH(req) {
   return conCerrojo(`usuarios:${u.empresa}`, async () => {
     const personas = Object.values((await redis.hgetall('usuarios')) || {}).filter((x) => enEmpresa(x, u.empresa)).map((x) => ({ id: x.id, ...membresias(x)[u.empresa] }));
     const sinPlan = sinPlaza(u.plan, personas, papel(u, b), o.id);
-    if (sinPlan) return error(sinPlan, 403);
+    if (sinPlan) return error(mensajePlan(sinPlan, req.headers.get('user-agent')), 403);
     // Leer de nuevo bajo el cerrojo para conservar otras membresías y evitar sobrescribir un cambio concurrente.
     const actual = await deMiEmpresa(u, o.id);
     if (!actual) return error('Esa persona no está en tu empresa', 404);

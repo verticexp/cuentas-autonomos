@@ -1,4 +1,6 @@
 import { Fragment } from 'react';
+import { headers } from 'next/headers';
+import { esApp } from '@/lib/app';
 import Link from 'next/link';
 import { enviarLuego } from '@/lib/verifactuEnvio';
 import Ir from '@/components/Ir';
@@ -62,7 +64,7 @@ export default async function Resumen({ searchParams }) {
 
   return (
     <main className="pagina mk-look">
-      <AvisoPrueba plan={u.plan} />
+      <AvisoPrueba plan={u.plan} app={esApp((await headers()).get('user-agent'))} />
       <header className="inicio">
         <div className="inicio-barra">
           <Logo />

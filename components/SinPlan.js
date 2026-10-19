@@ -1,4 +1,6 @@
 import Ir from './Ir';
+import { headers } from 'next/headers';
+import { esApp } from '@/lib/app';
 import styles from './SinPlan.module.css';
 
 const MENSAJES = {
@@ -12,16 +14,17 @@ const MENSAJES = {
   remesas: ['Remesas SEPA', 'Agrupa tus recibos en remesas para enviarlas al banco con Pro.'],
 };
 
-export default function SinPlan({ usuario, funcion }) {
+export default async function SinPlan({ usuario, funcion }) {
+  const app = esApp((await headers()).get('user-agent'));
   const [titulo, descripcion] = MENSAJES[funcion] || ['Más herramientas para tu negocio', 'Esta herramienta está disponible a partir del plan Pro.'];
   return <main className="pagina mk-look"><section className={styles.aviso} aria-labelledby="sin-plan-titulo">
-    <p className={styles.etiqueta}>Incluido en Pro</p>
+    {!app && <p className={styles.etiqueta}>Incluido en Pro</p>}
     <h1 id="sin-plan-titulo" className={styles.titulo}>{titulo}</h1>
-    <p className={styles.descripcion}>{descripcion}</p>
-    <p className={styles.plan}>Tu plan actual: <strong>{usuario.plan?.nombre || 'Esencial'}</strong>.</p>
-    {usuario.rol !== 'admin' && <p className={styles.descripcion}>Para activar esta herramienta, consulta al administrador de tu empresa.</p>}
+    <p className={styles.descripcion}>{app ? 'Esta herramienta no está disponible en tu cuenta.' : descripcion}</p>
+    {!app && <p className={styles.plan}>Tu plan actual: <strong>{usuario.plan?.nombre || 'Esencial'}</strong>.</p>}
+    {!app && usuario.rol !== 'admin' && <p className={styles.descripcion}>Para activar esta herramienta, consulta al administrador de tu empresa.</p>}
     <div className={styles.acciones}>
-      {usuario.rol === 'admin' && <Ir href="/ajustes/plan" className="boton">Ver planes</Ir>}
+      {!app && usuario.rol === 'admin' && <Ir href="/ajustes/plan" className="boton">Ver planes</Ir>}
       <Ir href="/" className={styles.volver}>Volver al resumen</Ir>
     </div>
   </section></main>;
