@@ -94,3 +94,12 @@ test('desmarcar «cobrada» una factura cobrada por el banco se rechaza', async 
   assert.equal((await R.leerUno(u, 'facturas', 'f')).pagos?.[0]?.banco, 'm');
   delete globalThis.__bsbApi;
 });
+
+test('un segundo ingreso no se empareja con una factura ya cobrada por el banco (formato antiguo)', async () => {
+  const u = empresa();
+  await sembrar(u, { facturas: [factura({ cobrada: true, cobro: { fecha: '2026-06-17', banco: 'm' } })],
+    movs: [movimiento({ estado: 'emparejado', enlace: { tipo: 'factura', id: 'f' } }), movimiento({ id: 'm2', fecha: '2026-06-20' })] });
+  const r = await B.emparejar(u, 'm2', 'factura', 'f');
+  assert.ok(r.error, JSON.stringify(r));
+  assert.equal((await R.leerUno(u, 'banco', 'm2')).estado, 'pendiente');
+});
