@@ -129,7 +129,7 @@ export default function Usuarios({ lista, yo, empresa, empresas, miEmpresa, soyA
     setError(''); setEnlace(null); setYaTiene('');
     try {
       const r = await llamar('/api/usuarios', { method: 'POST', body: JSON.stringify(d) });
-      if (r.existente) setYaTiene(`${r.existente} ya tenía cuenta en Netto: verá ${empresa} al cambiar de empresa.`);
+      if (r.pendiente) setYaTiene(`${r.email} ya tenía cuenta en Netto: ${r.enviado ? 'le hemos enviado' : 'mándale'} un enlace para que acepte unirse a ${empresa}${r.enviado ? '' : `: ${r.enlace}`}.`);
       else setEnlace(r);
       setD({ ...d, nombre: '', email: '' });
       router.refresh();
