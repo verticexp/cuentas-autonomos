@@ -82,6 +82,25 @@ Módulo `lib/ivaDeducible.js`, sin dependencias. Efectos, todos con prueba (`tes
 | M07 | 202: el plazo de diciembre de 2026 caía en domingo (20) | Al lunes 21 |
 | M08 | Paquete: el 130 negativo por la minoración salía a 0; en actividades exentas el rendimiento no restaba el IVA de los gastos | Resultado con signo, como el fichero; coste con el IVA no recuperable |
 
+### Fallos de la revisión de contabilidad, Verifactu y factura electrónica, comprobados y corregidos
+
+| Id | Fallo | Corrección | Quién |
+|---|---|---|---|
+| C01 | **Verifactu**: las exportaciones iban con clave de régimen 01 y exención E2; la AEAT rechaza esa combinación (validación 15.5) | Clave 02 para E2 y E3 | Claude |
+| C02 | Facturae y UBL ponían el vencimiento con el plazo actual de Ajustes, no el guardado al emitir | Usan `vence` | Claude |
+| C03 | UBL: la inversión del sujeto pasivo salía como «exenta» (E) | Categoría AE | Claude |
+| C04 | Un ejercicio con solo asientos manuales no se regularizaba ni liquidaba el IVA | Se incluyen sus años | Codex |
+| C05 | Si los pagos a cuenta del IS superan la cuota, la devolución quedaba en la 4752 | A la 4709 | Codex |
+| C06 | PyG: 773/775 y 696-699 iban a explotación | A resultado financiero | Codex |
+| C07 | Balance: las correctoras (490, 29x, 59x…) con saldo acreedor pasaban al pasivo | Minoran su activo | Codex |
+| C08 | Balance: deudas 510-514 con empresas del grupo en «otros acreedores» | Epígrafe C.III | Codex |
+| C09 | Memoria: el periodo medio de pago no seguía la fórmula de pymes | Saldo medio de acreedores / (compras + servicios) × 365 (Resolución ICAC 29-1-2016) | Codex |
+
+Pendientes de decisión (no cambiados): aplicar el resultado el 1 de enero sin acuerdo de junta (hoy se reparte solo:
+reserva legal y remanente); compensar un IVA a devolver traído de otro programa en el asiento de apertura; bases de
+cierres de caja reconstruidas desde el total por tipo (céntimos); retención en UBL frente a BR-CO-16 de Peppol; previsión
+de Tesorería en el día exacto (sin pasar al lunes) y 111/115 previstos solo si el trimestre no está presentado.
+
 ### Revisados y no cambiados
 
 - Nóminas con 14 pagas: la app pide el sueldo con las pagas extra prorrateadas (12 pagos), y así la cotización es
@@ -92,6 +111,6 @@ Módulo `lib/ivaDeducible.js`, sin dependencias. Efectos, todos con prueba (`tes
 
 ### Evidencia
 
-`npm test` 797/797 · `verificar` 370 ✓ · `integridad` y `regresiones` correctas · `numeros-aurora` 2.063/2.063 ·
+`npm test` 809/809 · `verificar` 370 ✓ · `integridad` y `regresiones` correctas · `numeros-aurora` 2.063/2.063 ·
 `numeros-circuitos` 5/5 · navegador: gasto al 50 % → 303 con 500/105 en 28/29, 130 con 1.105 € de gasto, 390 coherente;
 formulario y pantallas en tamaño móvil sin desbordes.

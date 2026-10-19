@@ -136,6 +136,8 @@ test('cuentas anuales de pymes: epígrafes, cuadre, aplicación del resultado y 
   assert.equal(epigrafe('4750', -50), 'PC.IV.2');
   assert.equal(epigrafe('4700', 50), 'B.II.3');
   assert.equal(epigrafe('281', -10), 'A.II');
+  assert.equal(epigrafe('490', -100), 'B.II.1'); // deterioro: menor valor de clientes
+  assert.equal(epigrafe('5133', -100), 'PC.III'); // deuda con empresas del grupo
   const facturas = [{ id: 'f', numero: 1, anio: 2025, fecha: '2025-03-01', actividad: 'a', base: 10000, ivaPct: 21, irpfPct: 0, cobrada: true, cliente: { nombre: 'X' } }];
   const gastos = [{ ...portatil, fecha: '2025-01-01', inversion: { tipo: 'informatica' } }, { id: 'g', fecha: '2025-02-01', concepto: 'Gestoría', base: 1000, ivaPct: 21 }];
   const manuales = [asientoApertura({ fecha: '2025-01-01', banco: 3000, capital: 3000 }, true)];
