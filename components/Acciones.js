@@ -1,7 +1,9 @@
 'use client';
 
+import { useOptimistic, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { volverA } from '@/lib/transicion';
+import { textoSituacion } from '@/lib/formato';
 
 async function llamar(url, opciones) {
   const r = await fetch(url, { headers: { 'Content-Type': 'application/json' }, ...opciones });
@@ -29,26 +31,77 @@ export function Imprimir() {
   return <button className="boton" onClick={() => window.print()}>Descargar PDF</button>;
 }
 
+// Icono de cada estado (`situacion` = { estado: 'curso' | 'listo' | 'fuera', dias }, de situacionTrimestre en lib/calculos.js).
+const PUNTO = { hecho: '✓', fuera: '!', listo: '', curso: '' };
+
+// Franja de estado (solo lectura): la usa la tarjeta del 303 cuando el trimestre se marca en el 130.
+export function EstadoTrimestre({ hecho, situacion, plazo, nota }) {
+  const clave = hecho ? 'hecho' : situacion.estado;
+  return (
+    <div className={`pres pres-${clave}`}>
+      <p className="pres-estado"><span className="pres-txt"><span className="pres-punto" aria-hidden="true">{PUNTO[clave]}</span>{hecho ? 'Presentado' : textoSituacion(situacion, plazo, nota)}</span></p>
+    </div>
+  );
+}
+
 // Estado del trimestre: pendiente, presentado y 130 pagado (resta en los siguientes) o presentado sin pagar el 130 (se arrastra).
-export function Presentado({ anio, t, importe, pagado, con130 = true }) {
+// Con `situacion` y `plazo` (página de Impuestos) va dentro de una franja con el estado por fecha y una confirmación al marcarlo.
+// El selector queda bloqueado durante todo el guardado (PATCH + refresco) y muestra al momento la opción elegida;
+// si falla, vuelve a la de antes y se desbloquea. Se bloquea con aria-disabled y una guarda, no con `disabled`,
+// para no quitarle el foco a quien usa el teclado.
+export function Presentado({ anio, t, importe, pagado, con130 = true, situacion, plazo }) {
   const router = useRouter();
-  const valor = pagado === undefined || pagado === null ? 'pendiente' : pagado > 0 && con130 ? 'pagado' : 'sinpagar';
-  const cambiar = async (e) => {
+  const [guardando, empezar] = useTransition();
+  const ocupado = useRef(false);
+  const [confirmado, setConfirmado] = useState(false);
+  const servidor = pagado === undefined || pagado === null ? 'pendiente' : pagado > 0 && con130 ? 'pagado' : 'sinpagar';
+  // Lo ya guardado manda hasta que el refresco trae ese mismo valor: así ni la franja ni el selector vuelven
+  // un instante al estado anterior si la transición termina antes de que lleguen los datos nuevos.
+  const [guardado, setGuardado] = useState(null);
+  if (guardado !== null && guardado === servidor) setGuardado(null);
+  const valor = guardado ?? servidor;
+  const [elegido, elegir] = useOptimistic(valor);
+  const cambiar = (e) => {
+    if (ocupado.current || guardando) return;
+    ocupado.current = true;
     const v = e.target.value;
     const imp = v === 'pendiente' ? null : v === 'pagado' ? importe : 0;
-    try {
-      await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify({ presentado: { anio, t, importe: imp } }) });
-      router.refresh();
-    } catch (err) { alert(err.message); }
+    setConfirmado(false);
+    empezar(async () => {
+      elegir(v);
+      try {
+        await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify({ presentado: { anio, t, importe: imp } }) });
+        setGuardado(v);
+        setConfirmado(v !== 'pendiente');
+        empezar(() => router.refresh());
+      } catch (err) { alert(err.message); } finally { ocupado.current = false; }
+    });
   };
-  return (
-    <select className={`estado ${valor === 'pagado' || (!con130 && valor !== 'pendiente') ? 'ok' : 'pend'}`} value={valor} onChange={cambiar}>
+  const selector = (
+    <select className={`estado ${elegido === 'pagado' || (!con130 && elegido !== 'pendiente') ? 'ok' : 'pend'}`} value={elegido} onChange={cambiar} aria-label={`Estado del ${t}T ${anio}`} aria-disabled={guardando || undefined} aria-busy={guardando || undefined}>
       <option value="pendiente">Pendiente</option>
       {con130 ? <>
         <option value="pagado">Presentado y 130 pagado</option>
         <option value="sinpagar">Presentado, 130 sin pagar</option>
       </> : <option value="sinpagar">Presentado</option>}
     </select>
+  );
+  // Sin situación (Resumen): solo el selector, como antes.
+  if (!situacion) return selector;
+  const hecho = valor !== 'pendiente';
+  const clave = hecho ? 'hecho' : situacion.estado;
+  const texto = guardando ? 'Guardando…' : hecho ? (confirmado ? `Hecho: ${t}T ${anio} presentado` : `${t}T ${anio} presentado`) : textoSituacion(situacion, plazo);
+  // La región «live» está siempre montada y solo cambia su texto (así los lectores de pantalla lo anuncian);
+  // el <span> interior cambia de key para repetir la animación de entrada.
+  return (
+    <div className={`pres pres-${clave}`} data-busy={guardando || undefined}>
+      <p className="pres-estado" role="status" aria-live="polite">
+        <span key={guardando ? 'g' : `${clave}-${confirmado}`} className="pres-txt">
+          <span className="pres-punto" aria-hidden="true">{guardando ? '' : PUNTO[clave]}</span>{texto}
+        </span>
+      </p>
+      {selector}
+    </div>
   );
 }
 
