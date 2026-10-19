@@ -1,4 +1,5 @@
-import { guardar, borrar, leer, leerUno } from '@/lib/redis';
+import { guardar, leer, leerUno, redis, clave } from '@/lib/redis';
+import { soltarEnlaces } from '@/lib/enlacesBanco';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { leerImporte, r2 } from '@/lib/calculos';
 import { actividadesDe, actividadValida } from '@/lib/empresa';
@@ -70,7 +71,10 @@ export async function DELETE(req) {
   const id = req.nextUrl.searchParams.get('id');
   const antes = id && (await leerUno(u, 'nominas', id));
   if (!antes) return error('Esa nómina ya no existe', 404);
-  await Promise.all([borrar(u, 'nominas', id), borrar(u, 'gastos', `nomina-${id}`)]);
+  // El gasto de la nómina se va con ella; si su pago estaba emparejado con el banco, el cargo vuelve a pendiente.
+  const tx = redis.multi().hdel(clave(u, 'nominas'), id).hdel(clave(u, 'gastos'), `nomina-${id}`);
+  await soltarEnlaces(u, tx, 'gasto', `nomina-${id}`);
+  await tx.exec();
   await secundarios(u, { meses: [gastoDeNomina(antes, '').fecha] });
   return Response.json({ ok: true });
 }

@@ -67,8 +67,9 @@ export async function simulacro(rutaOCopia, { clave = process.env.COPIA_CLAVE } 
         const contenido = await readFile(c);
         c = c.endsWith('.enc') ? descifrar(contenido, clave) : JSON.parse(contenido.toString('utf8'));
       }
-      const v = verificarCopia(c);
+      const v = verificarCopia(c, { tolerarIncidencias: true });
       if (!v.ok) throw new Error(`La copia no verifica: ${v.errores.join('; ')}`);
+      informe.incidencias = v.incidencias.length;
       if (c.resumen?.inconsistentes?.length) throw new Error('La copia contiene empresas inconsistentes');
       informe.avisos = v.avisos;
       informe.fechaCopia = c.fecha;

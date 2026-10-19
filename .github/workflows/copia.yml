@@ -34,6 +34,27 @@ jobs:
             copia-resumen.json
           if-no-files-found: error
           retention-days: 90
+      # La copia se guarda aunque los datos tengan incidencias (scripts/copia.mjs); se avisa con su propia issue, con
+      # el recuento y sin detalles (el detalle está en el registro de la ejecución).
+      - name: Avisar de incidencias en los datos
+        if: success() && hashFiles('copia-incidencias.txt') != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          etiqueta=copia-incidencias
+          fecha=$(date -u +'%Y-%m-%d %H:%M:%S UTC')
+          cuerpo="Copia guardada el $fecha con $(wc -l < copia-incidencias.txt | tr -d ' ') incidencias en los datos. Ejecución: $RUN_URL"
+          if ! gh label list --limit 1000 --json name --jq '.[].name' | grep -Fxq "$etiqueta"; then
+            gh label create "$etiqueta" --color FBCA04 --description 'Copia guardada con incidencias en los datos'
+          fi
+          issue=$(gh issue list --state open --label "$etiqueta" --json number --jq '.[0].number // empty')
+          if [ -n "$issue" ]; then
+            gh issue comment "$issue" --body "$cuerpo"
+          else
+            gh issue create --title "Copia con incidencias: $fecha" --label "$etiqueta" --body "$cuerpo"
+          fi
       - name: Avisar de copia fallida
         if: failure()
         env:
