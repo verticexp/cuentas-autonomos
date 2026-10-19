@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
 import Avatar from './Avatar';
@@ -113,9 +113,11 @@ function Persona({ o, yo, soyAdmin, onCambio }) {
   );
 }
 
-export default function Usuarios({ lista, yo, empresa, empresas, miEmpresa, soyAdmin }) {
+export default function Usuarios({ lista, yo, empresa, empresas, miEmpresa, soyAdmin, inicial = null }) {
   const router = useRouter();
-  const [d, setD] = useState({ nombre: '', email: '', rol: 'miembro', permisos: PERFILES[1].permisos });
+  const [d, setD] = useState(inicial || { nombre: '', email: '', rol: 'miembro', permisos: PERFILES[1].permisos });
+  // Si llega con la invitación ya rellenada (Ajustes › Tu gestoría), el formulario a la vista.
+  useEffect(() => { if (inicial) document.getElementById('invitar')?.scrollIntoView({ block: 'center' }); }, [Boolean(inicial)]); // eslint-disable-line react-hooks/exhaustive-deps
   const [enlace, setEnlace] = useState(null);
   const [yaTiene, setYaTiene] = useState('');
   const [error, setError] = useState('');
@@ -152,7 +154,7 @@ export default function Usuarios({ lista, yo, empresa, empresas, miEmpresa, soyA
             {lista.map((o) => <Persona key={o.id} o={o} yo={yo} soyAdmin={soyAdmin} onCambio={() => router.refresh()} />)}
           </ul>
 
-          {soyAdmin && <form className="formulario tarjeta bloque" onSubmit={invitar} style={{ marginTop: 16 }}>
+          {soyAdmin && <form id="invitar" className="formulario tarjeta bloque" onSubmit={invitar} style={{ marginTop: 16 }}>
             <h3>Invitar a alguien</h3>
             <input className="campo" placeholder="Nombre" value={d.nombre} onChange={(e) => setD({ ...d, nombre: e.target.value })} required />
             <input className="campo" type="email" placeholder="Email" value={d.email} onChange={(e) => setD({ ...d, email: e.target.value })} required />
