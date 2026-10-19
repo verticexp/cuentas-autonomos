@@ -12,6 +12,11 @@ export default function ModeloPlegable({ id, num, nombre, estado, detalle, dato,
     const abrir = () => { if (window.location.hash === `#${id}` && ref.current) ref.current.open = true; };
     // Un enlace a la misma ancla que ya está en la dirección no lanza «hashchange»: se abre también al tocarlo.
     const tocar = (e) => { if (e.target.closest?.(`a[href="#${id}"]`) && ref.current) ref.current.open = true; };
+    // En el ordenador se abre de verdad (con sus casillas): no basta con forzarlo por CSS, que algunos navegadores ignoran y dejaban la página en blanco.
+    if (window.matchMedia('(min-width: 900px)').matches && ref.current) {
+      ref.current.open = true;
+      ref.current.querySelectorAll('details.casillas-plegable').forEach((d) => { d.open = true; });
+    }
     abrir();
     window.addEventListener('hashchange', abrir);
     document.addEventListener('click', tocar);
