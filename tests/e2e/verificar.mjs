@@ -634,7 +634,10 @@ console.log('Barra lateral del ordenador');
 {
   const lateral = async (cookie) => /<nav class="tabs-extra"[\s\S]*?<\/nav>/.exec(await (await pedir('/gastos', { cookie })).text())?.[0] || '';
   const mia = await lateral(yo);
-  ok('el administrador ve todas las secciones', () => assert.ok(['/presupuestos', '/facturas/recurrentes', '/facturas/catalogo', '/tesoreria', '/modelos', '/gastos/proveedores', '/nominas', '/ajustes/importar', '/usuarios', '/ajustes'].every((h) => mia.includes(`href="${h}"`))));
+  ok('el administrador ve todas las secciones', () => assert.ok(['/asistente', '/presupuestos', '/facturas/recurrentes', '/facturas/catalogo', '/tesoreria', '/modelos', '/gastos/proveedores', '/nominas', '/ajustes'].every((h) => mia.includes(`href="${h}"`))));
+  // Desde el 19-10-2026 cada pantalla sale una sola vez: Importar y Usuarios viven en Ajustes, no en la barra.
+  const ajMia = await (await pedir('/ajustes', { cookie: yo })).text();
+  ok('Importar datos y Usuarios están en Ajustes y no repetidos en la barra', () => assert.ok(!mia.includes('href="/ajustes/importar"') && !mia.includes('href="/usuarios"') && ajMia.includes('href="/ajustes/importar"') && ajMia.includes('href="/usuarios"')));
   const suya = await lateral(otro);
   ok('el de gastos solo ve lo suyo', () => assert.ok(suya.includes('href="/gastos/proveedores"') && !suya.includes('href="/tesoreria"') && !suya.includes('href="/presupuestos"') && !suya.includes('href="/ajustes/importar"')));
   const marca = await (await pedir('/tesoreria', { cookie: yo })).text();
@@ -1000,7 +1003,8 @@ console.log('Registro de jornada');
   ok('el empleado ve solo sus horas', () => assert.ok(pe.includes('Eva Fichadora') && !pe.includes('Leo Sinapp') && !pe.includes('Apuntar un día a mano')));
   const ajEva = n(await texto('/ajustes', eva));
   const lat = await (await pedir('/nominas', { cookie: yo })).text();
-  ok('se llega desde Ajustes (empleado), desde Nóminas y desde la barra lateral', () => assert.ok(ajEva.includes('Fichar y registro de jornada') && lat.includes('href="/jornada"') && /<nav class="tabs-extra"[\s\S]*?href="\/jornada"/.test(lat)));
+  const [ajEvaHtml, masEva] = await Promise.all(['/ajustes', '/mas'].map(async (r) => (await pedir(r, { cookie: eva })).text()));
+  ok('se llega desde «Más» y Ajustes (empleado), desde Nóminas y desde la barra lateral', () => assert.ok(ajEva.includes('Fichar') && ajEvaHtml.includes('href="/jornada"') && masEva.includes('Fichar') && masEva.includes('href="/jornada"') && lat.includes('href="/jornada"') && /<nav class="tabs-extra"[\s\S]*?href="\/jornada"/.test(lat)));
 }
 
 console.log('\nSeguridad');
