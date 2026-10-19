@@ -7,6 +7,7 @@ import { MUCHOS, pasado } from '@/lib/limite';
 import { membresias } from '@/lib/membresias';
 import { redis } from '@/lib/redis';
 import { cancelarSuscripcion } from '@/lib/suscripcion';
+import { avisarBaja } from '@/lib/avisosCorreo';
 
 // Eliminar la propia cuenta (lib/baja.js eliminarCuenta), con su contraseña. Vale también en solo lectura.
 export async function POST(req) {
@@ -25,6 +26,7 @@ export async function POST(req) {
     const fallo = await cancelarSuscripcion(planes[id]);
     if (fallo) console.error(`[baja] no se pudo cancelar la suscripción de ${id}: ${fallo}`);
   }
+  await avisarBaja(u, { cuenta: true });
   const respuesta = NextResponse.json({ ok: true });
   respuesta.cookies.delete('t');
   return respuesta;

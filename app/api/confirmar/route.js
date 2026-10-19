@@ -2,10 +2,12 @@ import { NextResponse } from 'next/server';
 import { redis } from '@/lib/redis';
 import { confirmarEmail, tokenEmail, usuarioActual } from '@/lib/auth';
 import { enviarConfirmacion } from '@/lib/invitacion';
+import { bienvenida } from '@/lib/avisosCorreo';
 
 // Enlace del email de confirmación (vale aunque se abra en otro dispositivo sin sesión).
 export async function GET(req) {
   const ok = redis && (await confirmarEmail(req.nextUrl.searchParams.get('t')));
+  if (ok) await bienvenida(ok, req.nextUrl.origin);
   return NextResponse.redirect(new URL(ok ? '/' : '/confirmar-email?caducado=1', req.url), 303);
 }
 

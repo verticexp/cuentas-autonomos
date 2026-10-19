@@ -72,6 +72,7 @@ export default async function Admin() {
       <div className="adm-caja">
         <h2>Cobros</h2>
         <ul className="adm-lista">{cobros.map(([t, v, ok]) => <li key={t}><span>{t}</span><b className={ok ? 'adm-ok' : 'adm-mal'}>{v}</b></li>)}</ul>
+        <p className="adm-pie"><a href="/admin/correos">Ver los correos que envía Netto</a></p>
         <p className="adm-pie">Las claves se ponen en Vercel › Settings › Environment Variables (Production). Los precios e IVA se crean solos en Stripe.</p>
       </div>
     </section>

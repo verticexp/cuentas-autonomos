@@ -5,6 +5,7 @@ import { darDeBaja } from '@/lib/baja';
 import { MUCHOS, pasado } from '@/lib/limite';
 import { redis } from '@/lib/redis';
 import { cancelarSuscripcion } from '@/lib/suscripcion';
+import { avisarBaja } from '@/lib/avisosCorreo';
 
 // Dar de baja la empresa (lib/baja.js). Solo su administrador, con su contraseña. La del administrador de Netto, no.
 export async function POST(req) {
@@ -21,5 +22,6 @@ export async function POST(req) {
   // Sin esto, una empresa dada de baja seguiría pagando su suscripción.
   const fallo = await cancelarSuscripcion(plan);
   if (fallo) console.error(`[baja] no se pudo cancelar la suscripción de ${u.empresa}: ${fallo}`);
+  await avisarBaja(u, { empresa: u.empresaNombre, borrarEl });
   return Response.json({ ok: true, borrarEl });
 }
