@@ -1,4 +1,4 @@
-import { validarContrasena } from '@/lib/contrasena';
+import { validarContrasenaSegura } from '@/lib/contrasenaFiltrada';
 import { emailReal } from '@/lib/emailReal';
 import { NextResponse } from 'next/server';
 import { randomUUID } from 'node:crypto';
@@ -26,7 +26,7 @@ export async function POST(req) {
 
   const primera = !(await hayUsuarios());
   const cuenta = { nombre: form.get('nombre'), email: form.get('email'), password: String(form.get('password') || ''), admin: primera };
-  const seguridad = validarContrasena(cuenta.password, cuenta);
+  const seguridad = await validarContrasenaSegura(cuenta.password, cuenta);
   if (!seguridad.ok) return fallo(seguridad.error, 400, 4);
   const correo = await emailReal(cuenta.email);
   if (!correo.ok) return fallo(correo.error, 400, 4);
