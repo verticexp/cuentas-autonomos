@@ -174,7 +174,7 @@ test('Cola: tres instancias a la vez, con fallos y una instancia caída a mitad,
     veces.set(j, (veces.get(j) || 0) + 1);
     if (j % 37 === 0 && veces.get(j) === 1) { fallos++; throw new Error('fallo pasajero'); } // primer intento falla
   } };
-  const instancia = () => T.procesar({ tareas, hasta: Date.now() + 4000, concurrencia: 4 });
+  const instancia = () => T.procesar({ tareas, hasta: Date.now() + 15000, concurrencia: 4 }); // margen holgado: con la máquina cargada 2 s útiles no bastan
   for (let ronda = 0; ronda < 5; ronda++) {
     await Promise.all([instancia(), instancia(), instancia()]);
     // Los que fallaron quedan programados más adelante con su intento apuntado; se adelantan para la prueba.

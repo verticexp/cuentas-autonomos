@@ -1,0 +1,39 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+
+// Safari y WKWebView reducen el viewport visual al mostrar el teclado.
+// El foco por sí solo no basta: también puede haber un teclado físico.
+export function observarTecladoFormulario(ventana, documento, actualizar) {
+  const vista = ventana.visualViewport;
+  if (!vista) return () => {};
+  let alto = ventana.innerHeight;
+  let ancho = ventana.innerWidth;
+  const medir = () => {
+    const campo = documento.activeElement;
+    const editando = campo?.matches('.formulario input:not([type="checkbox"]):not([type="radio"]), .formulario textarea');
+    if (ancho !== ventana.innerWidth) { ancho = ventana.innerWidth; alto = ventana.innerHeight; }
+    if (!editando && vista.scale === 1) alto = ventana.innerHeight;
+    // Capacitor puede reducir también innerHeight al abrir el teclado.
+    actualizar(Boolean(editando && vista.scale === 1 && Math.max(alto, ventana.innerHeight) - vista.height > 150));
+  };
+  vista.addEventListener('resize', medir);
+  documento.addEventListener('focusin', medir);
+  documento.addEventListener('focusout', medir);
+  medir();
+  return () => {
+    vista.removeEventListener('resize', medir);
+    documento.removeEventListener('focusin', medir);
+    documento.removeEventListener('focusout', medir);
+    actualizar(false);
+  };
+}
+
+export default function useTecladoFormulario(activo) {
+  const [abierto, setAbierto] = useState(false);
+  useEffect(() => {
+    if (!activo) { setAbierto(false); return; }
+    return observarTecladoFormulario(window, document, setAbierto);
+  }, [activo]);
+  return activo && abierto;
+}

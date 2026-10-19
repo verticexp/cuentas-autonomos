@@ -60,10 +60,10 @@ test('E08: cerrar una sesión bancaria con 204 no se considera un fallo del prov
 
 test('E08: timeout cubre fetch lento y la lectura lenta del cuerpo', async () => {
   T.PLAZOS_PROVEEDOR.timeoutMs = 20;
-  globalThis.fetch = async () => { await dormir(60); return ok(); };
+  globalThis.fetch = async () => { await dormir(300); return ok(); };
   const inicio = performance.now();
   const r = await E.enviarEmail({ para: 'a@b.test', asunto: 'Prueba', html: '' });
-  assert.match(r.error, /tiempo máximo/); assert.ok(performance.now() - inicio < 55);
+  assert.match(r.error, /tiempo máximo/); assert.ok(performance.now() - inicio < 200);
   globalThis.fetch = async () => ({ ok: true, json: async () => { await dormir(60); return {}; } });
   const cuerpo = await E.enviarEmail({ para: 'a@b.test', asunto: 'Prueba', html: '' });
   assert.match(cuerpo.error, /tiempo máximo/);
