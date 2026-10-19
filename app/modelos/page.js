@@ -7,7 +7,8 @@ import { modelo111 } from '@/lib/nominas';
 import { borradorRenta, borradorSociedades, modelo115, modelo180, modelo190, modelo202, modelo347, modelo349, modelo390, retencionesProfesionales, MINIMO_PERSONAL, RET_ALQUILER } from '@/lib/modelos';
 import CuotaIS from '@/components/CuotaIS';
 import { EstadoTrimestre, Presentado, Presentado202 } from '@/components/Acciones';
-import { eur, fechaTexto, hoy } from '@/lib/formato';
+import { eur, fechaTexto, hoy, textoResumenModelos, textoSituacion } from '@/lib/formato';
+import PresentarAhora from '@/components/PresentarAhora';
 import Volver from '@/components/Volver';
 import Ir from '@/components/Ir';
 import SinBD from '@/components/SinBD';
@@ -26,6 +27,13 @@ const plazo = (t, anio, dia = 30) => (t === 4 ? `${dia} de enero de ${anio + 1}`
 const menos = (v) => (v ? -v : 0);
 // Importe destacado arriba de cada tarjeta del 303/130; sin «0,00 €» cuando no hay nada que ingresar.
 const Importe = ({ texto, v }) => <p className={`resumen-importe${v ? '' : ' cero'}`}>{v ? <><span>{texto}</span><strong>{eur(v)}</strong></> : <span>Sin importe a ingresar</span>}</p>;
+// Página de cada modelo en la Sede de la AEAT (G414: 303 · IVA; G601: 130 · IRPF).
+const AEAT = {
+  m303: 'https://sede.agenciatributaria.gob.es/Sede/procedimientoini/G414.shtml',
+  m130: 'https://sede.agenciatributaria.gob.es/Sede/procedimientoini/G601.shtml',
+};
+// Desglose por casillas plegado en el móvil (el importe ya se ve arriba); en el ordenador, siempre abierto.
+const Plegable = ({ children }) => <details className="casillas-plegable"><summary>Ver las casillas</summary>{children}</details>;
 const Casillas = ({ filas }) => <dl>{filas.filter(Boolean).map(([t, v, b]) => <div key={t} className={b ? 'fuerte' : ''}><dt>{t}</dt><dd>{typeof v === 'number' ? eur(v) : v}</dd></div>)}</dl>;
 
 export default async function Modelos({ searchParams }) {
@@ -68,6 +76,41 @@ export default async function Modelos({ searchParams }) {
   // Fecha límite real en texto (pasa al lunes si cae en fin de semana); con el año en el 4T y si no es el actual.
   const limite = (t) => { const l = limiteTrimestre(t, anio); return fechaTexto(l) + (t === 4 || Number(l.slice(0, 4)) !== actual ? ` de ${l.slice(0, 4)}` : ''); };
 
+  // Trimestre que toca presentar ya: el primero listo (cerrado y dentro de plazo) que aún no está marcado como presentado.
+  const tAhora = (c303 || r130) ? T.find((t) => !presentado(t) && situacion(t).estado === 'listo') : undefined;
+  let ahora = null;
+  if (tAhora) {
+    const c = c303 && casillas303(facturas, gastos, anio, tAhora);
+    const m303 = c && (c['46'] < 0 ? { importe: 0, compensar: -c['46'] } : { importe: liquidaciones[tAhora - 1].ingresar });
+    const m130 = r130 && { importe: r130.trimestres[tAhora - 1].m130 };
+    const texto = (m) => (m.compensar ? `A compensar ${eur(m.compensar)}` : m.importe ? `A ingresar ${eur(m.importe)}` : 'Sin importe a ingresar');
+    ahora = (
+      <PresentarAhora t={tAhora} anio={anio}
+        aviso={textoSituacion(situacion(tAhora), limite(tAhora))}
+        importes={[
+          m303 && { num: '303', modelo: '303 · IVA', href: '#m303', texto: texto(m303), aeat: AEAT.m303 },
+          m130 && { num: '130', modelo: '130 · IRPF', href: '#m130', texto: texto(m130), aeat: AEAT.m130 },
+        ].filter(Boolean)}
+        texto={textoResumenModelos({ t: tAhora, anio, plazo: limite(tAhora), m303, m130 })} />
+    );
+  } else if ((c303 || r130) && anio === actual) {
+    // En enero toca el 4T del año anterior, que no sale en la vista del año en curso: aviso con enlace a ese año.
+    const p = u.pagos130?.[anio - 1]?.[4];
+    const s4 = situacionTrimestre(4, anio - 1, h);
+    const l4 = limiteTrimestre(4, anio - 1);
+    if ((p === undefined || p === null) && s4.estado === 'listo') {
+      ahora = (
+        <section className="bloque presentar-ahora" aria-labelledby="presentar-t">
+          <h2 className="grupo-t" id="presentar-t">Toca presentar el 4T {anio - 1}</h2>
+          <div className="tarjeta">
+            <p className="presentar-plazo">{textoSituacion(s4, `${fechaTexto(l4)} de ${l4.slice(0, 4)}`)}</p>
+            <div className="presentar-acc"><Ir href={`/modelos?anio=${anio - 1}`} className="boton">Ver importes y pasos del 4T</Ir></div>
+          </div>
+        </section>
+      );
+    }
+  }
+
   return (
     <main className="pagina mk-look modelos">
       <Volver href="/">Resumen</Volver>
@@ -80,6 +123,8 @@ export default async function Modelos({ searchParams }) {
         </nav>
       </header>
       <p className="grupo-pie arriba">Calculados con lo que hay en Netto. Son orientativos: revísalos con tu gestor antes de presentarlos.</p>
+
+      {ahora}
 
       <section className="bloque" id="calendario">
         <h2 className="grupo-t">Qué presentas y cuándo</h2>
@@ -97,7 +142,7 @@ export default async function Modelos({ searchParams }) {
             {T.map((t) => { const c = casillas303(facturas, gastos, anio, t); return (
               <div key={t} className="tarjeta"><h3>{t}T {anio}</h3>
                 {c['46'] < 0 ? <Importe texto="A compensar" v={-c['46']} /> : <Importe texto="A ingresar" v={liquidaciones[t - 1].ingresar} />}
-                <Casillas filas={[
+                <Plegable><Casillas filas={[
                   c['01'] && ['01 · Base al 4 %', c['01']], c['03'] && ['03 · Cuota al 4 %', c['03']],
                   c['04'] && ['04 · Base al 10 %', c['04']], c['06'] && ['06 · Cuota al 10 %', c['06']],
                   ['07 · Base al 21 %', c['07']], ['09 · Cuota al 21 %', c['09']],
@@ -111,7 +156,7 @@ export default async function Modelos({ searchParams }) {
                   [c['46'] < 0 ? '46 · A compensar' : '46 · Resultado', Math.abs(c['46']), true],
                   liquidaciones[t - 1].compensado > 0 && ['Cuotas anteriores compensadas', menos(liquidaciones[t - 1].compensado)],
                   c['46'] >= 0 && ['A ingresar tras compensación', liquidaciones[t - 1].ingresar, true],
-                ]} />
+                ]} /></Plegable>
                 {r130
                   ? <EstadoTrimestre hecho={presentado(t)} situacion={situacion(t)} plazo={limite(t)} nota="se marca en el 130" />
                   : <Presentado anio={anio} t={t} importe={0} pagado={u.pagos130?.[anio]?.[t]} con130={false} situacion={situacion(t)} plazo={limite(t)} />}
@@ -130,13 +175,13 @@ export default async function Modelos({ searchParams }) {
             {r130.trimestres.map((q) => (
               <div key={q.t} className="tarjeta"><h3>{q.t}T {anio}</h3>
                 <Importe texto="A ingresar" v={q.m130} />
-                <Casillas filas={[
+                <Plegable><Casillas filas={[
                   ['01 · Ingresos', q.ingAcum], ['02 · Gastos (con el 5 % de difícil justificación)', q.gasAcum], ['03 · Rendimiento neto', q.rendAcum],
                   ['04 · 20 % de la 03', r2(0.2 * Math.max(0, q.rendAcum))], ['05 · Pagado en trimestres anteriores', q.pagosPrev],
                   ['06 · Retenciones de tus facturas', q.retAcum], ['07 · Resultado', q.c07],
                   q.minoracion && ['13 · Minoración por el rendimiento de ' + (anio - 1), q.minoracion], q.negPrev && ['15 · Negativos de trimestres anteriores', q.negPrev],
                   ['19 · A ingresar', q.m130, true],
-                ]} />
+                ]} /></Plegable>
                 <Presentado anio={anio} t={q.t} importe={q.m130} pagado={u.pagos130?.[anio]?.[q.t]} situacion={situacion(q.t)} plazo={limite(q.t)} />
               </div>
             ))}
