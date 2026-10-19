@@ -25,6 +25,12 @@ const plazo = (t, anio, dia = 30) => (t === 4 ? `${dia} de enero de ${anio + 1}`
 
 // Resta en un desglose; sin «−0,00 €» cuando es cero.
 const menos = (v) => (v ? -v : 0);
+// Fichero para el botón «Importar» del formulario de la Sede (app/api/aeat): sin NIF en Ajustes no se puede generar.
+const Fichero = ({ modelo, anio, t, nif, aeat, aviso }) => (
+  <p className="descargas">{aviso || (nif
+    ? <><a href={`/api/aeat?modelo=${modelo}&anio=${anio}&t=${t}`} download>Descargar fichero para la Sede</a> · <a href={aeat} target="_blank" rel="noopener noreferrer">Abrir la Sede</a></>
+    : <>Para descargar el fichero de la Sede, <a href="/ajustes">rellena tu NIF en Ajustes</a>.</>)}</p>
+);
 // Importe destacado arriba de cada tarjeta del 303/130; sin «0,00 €» cuando no hay nada que ingresar.
 const Importe = ({ texto, v }) => <p className={`resumen-importe${v ? '' : ' cero'}`}>{v ? <><span>{texto}</span><strong>{eur(v)}</strong></> : <span>Sin importe a ingresar</span>}</p>;
 // Página de cada modelo en la Sede de la AEAT (G414: 303 · IVA; G601: 130 · IRPF).
@@ -157,6 +163,7 @@ export default async function Modelos({ searchParams }) {
                   liquidaciones[t - 1].compensado > 0 && ['Cuotas anteriores compensadas', menos(liquidaciones[t - 1].compensado)],
                   c['46'] >= 0 && ['A ingresar tras compensación', liquidaciones[t - 1].ingresar, true],
                 ]} /></Plegable>
+                <Fichero modelo="303" anio={anio} t={t} nif={u.emisor?.nif} aeat={AEAT.m303} aviso={c.otros.length > 0 && 'Con tipos de IVA distintos del 4, 10 y 21 % rellénalo a mano en la Sede.'} />
                 {r130
                   ? <EstadoTrimestre hecho={presentado(t)} situacion={situacion(t)} plazo={limite(t)} nota="se marca en el 130" />
                   : <Presentado anio={anio} t={t} importe={0} pagado={u.pagos130?.[anio]?.[t]} con130={false} situacion={situacion(t)} plazo={limite(t)} />}
@@ -182,6 +189,7 @@ export default async function Modelos({ searchParams }) {
                   q.minoracion && ['13 · Minoración por el rendimiento de ' + (anio - 1), q.minoracion], q.negPrev && ['15 · Negativos de trimestres anteriores', q.negPrev],
                   ['19 · A ingresar', q.m130, true],
                 ]} /></Plegable>
+                <Fichero modelo="130" anio={anio} t={q.t} nif={u.emisor?.nif} aeat={AEAT.m130} />
                 <Presentado anio={anio} t={q.t} importe={q.m130} pagado={u.pagos130?.[anio]?.[q.t]} situacion={situacion(q.t)} plazo={limite(q.t)} />
               </div>
             ))}
