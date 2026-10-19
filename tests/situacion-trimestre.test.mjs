@@ -1,7 +1,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { limiteTrimestre, proximoPlazo, situacionTrimestre } from '../lib/calculos.js';
-import { textoSituacion } from '../lib/formato.js';
+import { textoSituacion, textoResumenModelos } from '../lib/formato.js';
+
+test('texto de resumen del trimestre a presentar', () => {
+  const t = textoResumenModelos({ t: 3, anio: 2026, plazo: '20 de octubre', m303: { importe: 1234.5 }, m130: { importe: 0 } });
+  assert.match(t, /^Netto · 3T 2026 · se presenta hasta el 20 de octubre/);
+  assert.match(t, /303 \(IVA\): a ingresar 1\.234,50/);
+  assert.match(t, /130 \(IRPF\): sin importe a ingresar/);
+  assert.doesNotMatch(t, /0,00/);
+  const solo303 = textoResumenModelos({ t: 3, anio: 2026, plazo: 'x', m303: { importe: 0, compensar: 80 }, m130: null });
+  assert.match(solo303, /303 \(IVA\): a compensar 80,00/);
+  assert.doesNotMatch(solo303, /130/);
+  assert.match(textoResumenModelos({ t: 3, anio: 2026, plazo: 'x', m303: { importe: 0 }, m130: null }), /303 \(IVA\): sin importe a ingresar/);
+});
 
 test('límite de cada trimestre del 303/130', () => {
   assert.equal(limiteTrimestre(1, 2026), '2026-04-20');

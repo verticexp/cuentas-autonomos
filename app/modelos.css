@@ -15,6 +15,17 @@
 .modelos .resumen-importe span { color: var(--muted); font-size: 14px; }
 .modelos .resumen-importe strong { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .modelos .resumen-importe.cero span { font-size: 15px; font-weight: 500; }
+/* Casillas del 303/130 plegadas en el móvil; en el ordenador se ven siempre (si el navegador no sabe forzarlo, queda plegable) */
+.casillas-plegable > summary { display: flex; align-items: center; gap: 6px; min-height: 44px; color: var(--marca); font-size: 15px; font-weight: 600; cursor: pointer; list-style: none; }
+.casillas-plegable > summary::-webkit-details-marker { display: none; }
+.casillas-plegable > summary::after { content: ''; width: 6px; height: 6px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg) translateY(-2px); transition: transform .2s ease-out; }
+.casillas-plegable[open] > summary::after { transform: rotate(225deg) translate(-1px, -1px); }
+@supports selector(::details-content) {
+  @media (min-width: 900px) {
+    .casillas-plegable > summary { display: none; }
+    .casillas-plegable::details-content { content-visibility: visible; display: block; }
+  }
+}
 
 /* Estado de presentación: en curso (neutro), listo (naranja de Hacienda), fuera de plazo (rojo) y hecho (verde).
    Cambia de color en 180 ms y el texto entra con un fundido corto; sin movimiento si se pide reducirlo. */
@@ -35,7 +46,23 @@
 .pres .estado { min-height: 36px; max-width: 100%; transition: opacity .15s ease-out, background-color .15s ease-out, color .15s ease-out; }
 .pres[data-busy] .estado { opacity: .6; cursor: progress; }
 @keyframes pres-in { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+/* «Toca presentar»: tarjeta de arriba con el trimestre listo, sus importes y los pasos (pensada para el móvil) */
+.presentar-ahora .tarjeta { display: grid; gap: 12px; }
+.presentar-plazo { margin: 0; font-size: 15px; font-weight: 600; color: var(--hacienda); }
+.presentar-importes, .presentar-pasos { list-style: none; margin: 0; padding: 0; }
+.presentar-importes { display: grid; gap: 8px; }
+.presentar-importes a { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; min-height: 44px; padding: 10px 12px; border-radius: 12px; background: var(--relleno); color: inherit; text-decoration: none; }
+.presentar-importes span { color: var(--muted); font-size: 14px; }
+.presentar-importes strong { font-size: 17px; font-variant-numeric: tabular-nums; text-align: right; }
+.presentar-pasos li + li { border-top: 0.5px solid var(--line); }
+.presentar-pasos label { display: flex; align-items: flex-start; gap: 12px; min-height: 44px; padding: 10px 0; font-size: 15px; line-height: 22px; }
+.presentar-pasos input { flex: none; width: 22px; height: 22px; margin: 0; accent-color: var(--in); }
+.presentar-pasos input:checked + span { color: var(--muted); text-decoration: line-through; }
+.presentar-acc { display: flex; flex-wrap: wrap; gap: 8px; }
+.presentar-acc .boton { flex: 1 1 10rem; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; text-align: center; text-decoration: none; }
+.presentar-ahora .nota { min-height: 1em; margin: 0; }
+
 @media (prefers-reduced-motion: reduce) {
-  .pres, .pres-estado, .pres .estado { transition: none; }
+  .pres, .pres-estado, .pres .estado, .casillas-plegable > summary::after { transition: none; }
   .pres-txt { animation: none; }
 }

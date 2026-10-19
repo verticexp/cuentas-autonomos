@@ -112,14 +112,16 @@ test('E07: si falla la liberación, se conserva el resultado y la plaza caduca',
 });
 
 test('E07: una adquisición tardía renueva el TTL de las plazas que siguen trabajando', async () => {
+  // TTL inicial holgado (300 ms) para que la carga del build no lo agote antes de la segunda adquisición;
+  // después se espera más que ese TTL para comprobar que la renovación mantuvo viva la primera plaza.
   await ocupado('renovar', 'e', 2, async () => {
-    await dormir(25);
+    await dormir(5);
     await ocupado('renovar', 'e', 2, async () => {
-      await dormir(30);
+      await dormir(350);
       assert.deepEqual(await L.concurrencia('renovar', 'e', 2, 1000, () => assert.fail('sin plaza')), { ocupado: true });
-      assert.ok(srv.base.run(['pttl', 'cuentas:concurrencia:renovar:e']) > 900);
+      assert.ok(srv.base.run(['pttl', 'cuentas:concurrencia:renovar:e']) > 500);
     });
-  }, 40);
+  }, 300);
 });
 
 test('E07: 429 uniforme, con Retry-After y mensaje castellano', async () => {
