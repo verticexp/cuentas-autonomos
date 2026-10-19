@@ -34,6 +34,7 @@ export default function FormRegistro({ inicial = {} }) {
   const [tipo, setTipo] = useState(inicial.tipo || '');
   const [plan, setPlan] = useState(inicial.plan || '');
   const [periodo, setPeriodo] = useState(inicial.periodo === 'anio' ? 'anio' : 'mes');
+  const [gestoria, setGestoria] = useState(inicial.gestoria || '');
   const [fiscales, setFiscales] = useState({ razon: '', nif: '', direccion: '', cp: '', ciudad: '', provincia: '', telefono: '' });
   const [cuenta, setCuenta] = useState({});
   const [password, setPassword] = useState('');
@@ -135,7 +136,7 @@ export default function FormRegistro({ inicial = {} }) {
     if (r?.ok) { irALaApp(); return; }
     setEnviando(false);
     const mensaje = j?.error || 'No se ha podido crear la cuenta. Revisa la conexión.';
-    const campo = /nif|cif|hacienda/i.test(mensaje) ? 'nif' : /postal/i.test(mensaje) ? 'cp' : /provincia/i.test(mensaje) ? 'provincia' : /direcci[oó]n/i.test(mensaje) ? 'direccion' : /ciudad/i.test(mensaje) ? 'ciudad' : /tel[eé]fono/i.test(mensaje) ? 'telefono' : /fiscal|raz[oó]n social/i.test(mensaje) ? 'razon' : /email/i.test(mensaje) ? 'email' : /contraseña/i.test(mensaje) ? 'password' : /nombre/i.test(mensaje) ? 'nombre' : /condiciones/i.test(mensaje) ? 'acepto' : /periodo/i.test(mensaje) ? 'periodo' : /plan/i.test(mensaje) ? 'plan' : /tipo/i.test(mensaje) ? 'tipo' : undefined;
+    const campo = /gestor[ií]a/i.test(mensaje) ? 'gestoria' : /nif|cif|hacienda/i.test(mensaje) ? 'nif' : /postal/i.test(mensaje) ? 'cp' : /provincia/i.test(mensaje) ? 'provincia' : /direcci[oó]n/i.test(mensaje) ? 'direccion' : /ciudad/i.test(mensaje) ? 'ciudad' : /tel[eé]fono/i.test(mensaje) ? 'telefono' : /fiscal|raz[oó]n social/i.test(mensaje) ? 'razon' : /email/i.test(mensaje) ? 'email' : /contraseña/i.test(mensaje) ? 'password' : /nombre/i.test(mensaje) ? 'nombre' : /condiciones/i.test(mensaje) ? 'acepto' : /periodo/i.test(mensaje) ? 'periodo' : /plan/i.test(mensaje) ? 'plan' : /tipo/i.test(mensaje) ? 'tipo' : undefined;
     setError({ mensaje, campo });
     if ([1, 2, 3, 4, 5].includes(j?.paso)) cambiarPaso(j.paso);
     else if (/nif|cif|hacienda|empresa|fiscal|postal|provincia/i.test(j?.error || '')) cambiarPaso(2);
@@ -161,6 +162,9 @@ export default function FormRegistro({ inicial = {} }) {
             </label>
           ))}
         </div>
+        <label htmlFor="gestoria">Código de tu gestoría (opcional)</label>
+        <input id="gestoria" name="gestoria" autoCapitalize="characters" autoComplete="off" autoCorrect="off" spellCheck={false} value={gestoria} onChange={(e) => setGestoria(e.target.value)} {...accesibilidad('gestoria', 'registro-gestoria-ayuda')} />
+        <p id="registro-gestoria-ayuda" className="nota">Con el código de tu gestoría tienes 3 meses gratis.</p>
       </div>
 
       <div hidden={paso !== 2} data-paso="2" className="registro-bloque">
@@ -187,7 +191,7 @@ export default function FormRegistro({ inicial = {} }) {
 
       <div hidden={paso !== 3} data-paso="3" className="registro-bloque">
         <h2 className="login-titulo" tabIndex={-1}>Elige tu plan</h2>
-        <p className="nota">{TIPOS[tipo]} · El primer mes es gratis. Podrás cambiar de plan cuando quieras.</p>
+        <p className="nota">{TIPOS[tipo]} · {gestoria.trim() ? 'Con un código de gestoría válido tienes 3 meses gratis.' : 'El primer mes es gratis.'} Podrás cambiar de plan cuando quieras.</p>
         <div className="registro-periodo" role="radiogroup" aria-label="Periodo de pago">
           <label className={periodo === 'mes' ? 'elegida' : ''}><input type="radio" name="periodo" value="mes" checked={periodo === 'mes'} onChange={() => setPeriodo('mes')} {...accesibilidad('periodo')} />Mensual</label>
           <label className={periodo === 'anio' ? 'elegida' : ''}><input type="radio" name="periodo" value="anio" checked={periodo === 'anio'} onChange={() => setPeriodo('anio')} {...accesibilidad('periodo')} />Anual (−{DESCUENTO} %)</label>
@@ -211,7 +215,7 @@ export default function FormRegistro({ inicial = {} }) {
 
       <div hidden={paso !== 4} data-paso="4" className="registro-bloque">
         <h2 className="login-titulo" tabIndex={-1}>Tu cuenta</h2>
-        <p className="nota">{PRUEBA_DIAS} días gratis con todo incluido. Sin tarjeta.</p>
+        <p className="nota">{gestoria.trim() ? 'Con un código de gestoría válido tienes 3 meses gratis con todo incluido.' : `${PRUEBA_DIAS} días gratis con todo incluido.`} Sin tarjeta.</p>
         <BotonesSociales />
         <p className="separador"><span>o con tu email</span></p>
         <label htmlFor="nombre">Nombre</label>
@@ -238,7 +242,7 @@ export default function FormRegistro({ inicial = {} }) {
           <dt>Dirección fiscal</dt><dd>{fiscales.direccion}<br />{fiscales.cp} {fiscales.ciudad}<br />{fiscales.provincia}{fiscales.telefono && <><br />{fiscales.telefono}</>}</dd>
           <dt>Plan y periodo</dt><dd>{plan} · {periodo === 'anio' ? 'Anual' : 'Mensual'}<br />{elegido && precio(elegido.p, periodo)} sin IVA después de la prueba</dd>
         </dl>
-        <p className="nota">{PRUEBA_DIAS} días gratis, sin tarjeta.</p>
+        <p className="nota">{gestoria.trim() ? 'Con un código de gestoría válido tienes 3 meses gratis, sin tarjeta.' : `${PRUEBA_DIAS} días gratis, sin tarjeta.`}</p>
         <p className="nota">Te enviaremos un email para confirmar que es tuyo.</p>
         <p className="nota registro-siguiente">Después de crear la cuenta, configuraremos las actividades y los impuestos de tu negocio.</p>
         <label className="registro-acepto" htmlFor="acepto">
