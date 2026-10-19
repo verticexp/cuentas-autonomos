@@ -47,5 +47,6 @@
   .ficha-cabecera .boton { width: 100%; }
 }
 @media (prefers-color-scheme: dark) {
-  .ficha-alerta, .ficha-alerta .ficha-cifras strong { color: #E7B85A; }
+  :root:not([data-tema="claro"]) .ficha-alerta, :root:not([data-tema="claro"]) .ficha-alerta .ficha-cifras strong { color: #E7B85A; }
 }
+:root[data-tema="oscuro"] .ficha-alerta, :root[data-tema="oscuro"] .ficha-alerta .ficha-cifras strong { color: #E7B85A; }
