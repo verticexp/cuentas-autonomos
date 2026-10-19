@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { desvioApp, esApp } from '../lib/app.js';
+import { desvioApp, esApp, mensajePlan } from '../lib/app.js';
 
 const APP = 'Mozilla/5.0 (iPhone; CPU iPhone OS 27_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 NettoApp/1';
 const SAFARI = 'Mozilla/5.0 (iPhone; CPU iPhone OS 27_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Mobile/15E148 Safari/604.1';
@@ -14,9 +14,34 @@ test('reconoce la app solo por su marca', () => {
 });
 
 test('en el navegador no cambia nada', () => {
-  for (const ruta of ['/', '/business', '/precios', '/contacto', '/funciones/facturas']) {
-    assert.equal(desvioApp({ ua: SAFARI, ruta, conSesion: false }), null);
+  for (const ruta of ['/', '/business', '/precios', '/contacto', '/funciones/facturas', '/registro', '/registro?nueva=1', '/registro?plan=Pro&periodo=anio', '/ajustes/plan', '/ajustes/plan?sesion=123', '/ajustes/recomienda', '/ajustes/avisos']) {
+    for (const conSesion of [false, true]) assert.equal(desvioApp({ ua: SAFARI, ruta, conSesion }), null, ruta);
   }
+});
+
+test('en la app, registro redirige con y sin query, según la sesión', () => {
+  for (const ruta of ['/registro', '/registro?nueva=1', '/registro?plan=Pro&periodo=anio', '/registro/']) {
+    assert.equal(desvioApp({ ua: APP, ruta, conSesion: false }), '/login', ruta);
+    assert.equal(desvioApp({ ua: APP, ruta, conSesion: true }), '/', ruta);
+  }
+});
+
+test('en la app con sesión, plan, recomendaciones y avisos vuelven a Ajustes', () => {
+  for (const ruta of ['/ajustes/plan', '/ajustes/plan?sesion=123', '/ajustes/recomienda', '/ajustes/recomienda/', '/ajustes/avisos']) {
+    assert.equal(desvioApp({ ua: APP, ruta, conSesion: true }), '/ajustes', ruta);
+    assert.equal(desvioApp({ ua: APP, ruta, conSesion: false }), null, ruta);
+  }
+  for (const ruta of ['/registrox', '/ajustes/planificacion', '/ajustes/seguridad', '/ajustes/avisos-extra']) {
+    assert.equal(desvioApp({ ua: APP, ruta, conSesion: true }), null, ruta);
+  }
+});
+
+test('los errores de plan son neutros solo para la app', () => {
+  const texto = 'El plan Esencial admite 1 usuarios. Puedes cambiar de plan en Ajustes › Tu plan.';
+  assert.equal(mensajePlan(texto, APP), 'Esta acción no está disponible en tu cuenta.');
+  assert.equal(mensajePlan(texto, SAFARI), texto);
+  assert.equal(mensajePlan(texto, null), texto);
+  assert.equal(mensajePlan(null, APP), null);
 });
 
 test('en la app, la web pública manda al login o al panel', () => {

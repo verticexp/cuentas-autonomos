@@ -1,3 +1,4 @@
+import { mensajePlan } from '@/lib/app';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { sinFuncion } from '@/lib/planes';
 import { emparejar } from '@/lib/bancoServidor';
@@ -56,7 +57,7 @@ export async function POST(req) {
   const b = await cuerpo(req);
   if (b.banco) {
     const no = sinFuncion(u.plan, 'revision');
-    if (no) return error(no, 403);
+    if (no) return error(mensajePlan(no, req.headers.get('user-agent')), 403);
   }
   const v = validarGasto(b);
   if (!v.ok) return Response.json({ error: v.error, errores: v.errores }, { status: 400 });

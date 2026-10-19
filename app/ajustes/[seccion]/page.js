@@ -71,6 +71,7 @@ export default async function Seccion({ params }) {
   const { seccion } = await params;
   if (!TITULOS[seccion]) notFound();
   const u = await requerir();
+  const app = esApp((await headers()).get('user-agent'));
   if (DE_EMPRESA.includes(seccion) && !puede(u, 'empresa')) return <SinAcceso texto="Para cambiar esto necesitas el permiso «Datos de la empresa». Pídeselo al administrador." />;
   if (seccion === 'recomienda' && u.rol !== 'admin') return <SinAcceso texto="Solo el administrador de la empresa puede recomendar Netto con el enlace de la empresa." />;
   const llaves = seccion === 'seguridad'
@@ -83,15 +84,15 @@ export default async function Seccion({ params }) {
   return (
     <main className={`pagina mk-look${seccion === 'plan' ? ` ${estilosPlan.pagina}` : ''}`}>
       <Volver href="/ajustes">Ajustes</Volver>
-      <h1 className="titulo">{TITULOS[seccion]}</h1>
+      <h1 className="titulo">{app && seccion === 'seguridad' ? 'Contraseña y bloqueo' : TITULOS[seccion]}</h1>
       {seccion === 'marca' && <Marca marca={u.marca} nombre={u.emisor?.nombre} />}
       {seccion === 'series' && <Series {...await datosSeries(u, Number(ahoraMadrid().slice(0, 4)))} />}
-      {seccion === 'gestoria' && <Gestoria gestoria={u.gestoria || null} trimestres={ultimosTrimestres(ahoraMadrid().slice(0, 10))} invitar={u.rol === 'admin'} emailListo={emailListo()} />}
+      {seccion === 'gestoria' && <Gestoria gestoria={u.gestoria || null} trimestres={ultimosTrimestres(ahoraMadrid().slice(0, 10))} invitar={u.rol === 'admin'} emailListo={emailListo()} app={app} />}
       {seccion === 'apariencia' && <Apariencia inicial={(await cookies()).get('tema')?.value} />}
-      {seccion === 'ayuda' && <Ayuda contacto={CONTACTO} />}
+      {seccion === 'ayuda' && <Ayuda contacto={CONTACTO} app={app} />}
       {seccion === 'envio' && <EmailEnvio inicial={u.envio || {}} empresa={u.emisor || {}} />}
-      {seccion === 'seguridad' && <FaceId lista={llaves} bloqueo={Boolean(u.bloqueoPantalla)} />}
-      {seccion === 'plan' && <ElegirPlan plan={u.plan} tipoEmpresa={fiscalDe(u).tipo === 'sociedad' ? 'pym' : 'aut'} uso={usoPlan} admin={u.rol === 'admin'} app={esApp((await headers()).get('user-agent'))} />}
+      {seccion === 'seguridad' && <FaceId lista={llaves} bloqueo={Boolean(u.bloqueoPantalla)} app={app} />}
+      {seccion === 'plan' && <ElegirPlan plan={u.plan} tipoEmpresa={fiscalDe(u).tipo === 'sociedad' ? 'pym' : 'aut'} uso={usoPlan} admin={u.rol === 'admin'} app={app} />}
       {seccion === 'recomienda' && await (async () => {
         const resumen = await resumenRecomendaciones(u.empresa);
         return <Recomienda enlace={`${WEB}/registro?ref=${resumen.codigo}`} resumen={resumen} />;

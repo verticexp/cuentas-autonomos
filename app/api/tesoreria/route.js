@@ -1,3 +1,4 @@
+import { mensajePlan } from '@/lib/app';
 import { clave, redis } from '@/lib/redis';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { leerImporte, r2 } from '@/lib/calculos';
@@ -12,7 +13,7 @@ export async function POST(req) {
   const { u, res } = await usuarioApi({ permiso: 'resumen' });
   if (res) return res;
   const sinPlan = await usarFuncion(u, 'tesoreria');
-  if (sinPlan) return error(sinPlan, 403);
+  if (sinPlan) return error(mensajePlan(sinPlan, req.headers.get('user-agent')), 403);
   // Cambia el saldo real del que parte Tesorería: no basta con ver el resumen.
   if (!puede(u, 'facturar') && !puede(u, 'gastar')) return error('No tienes permiso para esto. Pídeselo al administrador de tu empresa.', 403);
   const b = await cuerpo(req);

@@ -47,7 +47,7 @@ export default function FormEntrar({ errorInicial = '' }) {
       <CampoPassword ref={pass} id="password" />
       <button type="submit" disabled={enviando}>{enviando ? 'Entrando…' : 'Iniciar sesión'}</button>
       <EntrarLlave auto alEntrar={irALaApp} />
-      <p className="nota login-cambiar">¿No tienes cuenta? <Link href="/registro">Crea una gratis</Link></p>
+      <p className="nota login-cambiar solo-web">¿No tienes cuenta? <Link href="/registro">Crea una gratis</Link></p>
     </form>
   );
 }

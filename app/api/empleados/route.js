@@ -1,3 +1,4 @@
+import { mensajePlan } from '@/lib/app';
 import { guardar, borrar, leer, leerUno } from '@/lib/redis';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { leerImporte, r2 } from '@/lib/calculos';
@@ -41,7 +42,7 @@ export async function POST(req) {
   const { u, res } = await usuarioApi({ permiso: 'nominas' });
   if (res) return res;
   const sinPlan = sinHueco(u.plan, 'empleados', (await leer(u, 'empleados')).filter((e) => !e.baja).length);
-  if (sinPlan) return error(sinPlan, 403);
+  if (sinPlan) return error(mensajePlan(sinPlan, req.headers.get('user-agent')), 403);
   const r = limpio(await cuerpo(req), { id: crypto.randomUUID() });
   if (r.error) return error(r.error);
   if (await emailRepetido(u, r.e)) return error('Otro empleado ya tiene ese email');

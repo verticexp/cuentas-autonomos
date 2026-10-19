@@ -32,7 +32,7 @@ export default function CambiarEmpresa({ empresas = [], actual, variante = 'list
           {x.id === actual && <svg viewBox="0 0 24 24" aria-hidden><path d="M5 12l5 5 9-10" /></svg>}
         </button>
       ))}
-      <a className="emp-opcion emp-anadir" href="/registro?nueva=1">
+      <a className="emp-opcion emp-anadir solo-web" href="/registro?nueva=1">
         <span className="emp-inicial" aria-hidden>+</span><span className="emp-nombre">Añadir empresa</span>
       </a>
       {msg && <p className="rojo emp-msg">{msg}</p>}

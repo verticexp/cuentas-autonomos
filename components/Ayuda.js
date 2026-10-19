@@ -20,7 +20,7 @@ const PREGUNTAS = [
 ];
 
 // contacto: el email del equipo. Con el mensaje va la pantalla desde la que se llegó, para entender el contexto.
-export default function Ayuda({ contacto }) {
+export default function Ayuda({ contacto, app = false }) {
   const temas = TEMAS_SOPORTE;
   const [d, setD] = useState({ tema: temas[0], mensaje: '' });
   const [msg, setMsg] = useState('');
@@ -40,7 +40,7 @@ export default function Ayuda({ contacto }) {
           {PREGUNTAS.map((x) => (
             <details key={x.p} className="ayuda-p">
               <summary>{x.p}</summary>
-              <p>{x.r}</p>
+              <p>{app && x.href === '/modelos' ? 'En Impuestos ves cada modelo (303, 130, 111, 115…) con su importe calculado y su plazo.' : x.r}</p>
               {x.href && <Ir href={x.href} className="ayuda-ir">{x.ir} ›</Ir>}
             </details>
           ))}
@@ -50,7 +50,7 @@ export default function Ayuda({ contacto }) {
       <form className="formulario tarjeta" onSubmit={enviar}>
         <h3>Escríbenos</h3>
         <label>Sobre qué
-          <select className="campo" value={d.tema} onChange={(e) => setD({ ...d, tema: e.target.value })}>{temas.map((t) => <option key={t}>{t}</option>)}</select>
+          <select className="campo" value={d.tema} onChange={(e) => setD({ ...d, tema: e.target.value })}>{temas.map((t) => <option key={t} value={t}>{app && t === 'Mi plan o mi factura de Netto' ? 'Mi cuenta' : t}</option>)}</select>
         </label>
         <label>Mensaje<textarea className="campo" rows={5} maxLength={3000} value={d.mensaje} onChange={(e) => setD({ ...d, mensaje: e.target.value })} placeholder="Cuéntanos qué necesitas o qué ha pasado" required /></label>
         {msg && <p role="status" className={msg === 'Enviado' ? 'nota guardado' : msg === 'Enviando…' ? 'nota' : 'error'}>{msg === 'Enviado' ? '✓ Enviado: te respondemos a tu email, normalmente en el día.' : msg}</p>}
