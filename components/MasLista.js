@@ -59,7 +59,7 @@ export default function MasLista({ grupos, asistente = true }) {
               <h2 className="grupo-t">Lo que más usas</h2>
               <div className="mas-rejilla">
                 {atajos.map((e) => (
-                  <Ir key={e.href} href={e.href} prefetch={false} className="mas-tile" onClick={() => contar(e.href)}>
+                  <Ir key={e.href} href={e.href} className="mas-tile" onClick={() => contar(e.href)}>
                     <Icono e={e} tono={e.tono} />
                     <span className="mas-nombre">{e.nombre}</span>
                   </Ir>
