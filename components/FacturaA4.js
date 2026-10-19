@@ -13,6 +13,7 @@ export default async function FacturaA4({ f, e, marca, presupuesto = f.serie ===
   const base = colorValido(marca?.color) || COLOR_FACTURA;
   const t = importes(f);
   const c = f.cliente;
+  const contacto = [e.email, e.telefono, e.web].filter(Boolean).join(' · ');
   const fechaFin = fechaCorta(presupuesto ? caduca(f) : vencimiento(f, e.plazo));
   const qr = f.verifactu ? await QRCode.toString(urlQr(f.verifactu.modo, e.nif, f), { type: 'svg', errorCorrectionLevel: 'M', margin: 4 }) : null;
   const numeroStyle = (s, w) => ({ fontSize: `${tamanoNumero(s, w)}pt` });
@@ -32,7 +33,7 @@ export default async function FacturaA4({ f, e, marca, presupuesto = f.serie ===
           <div><p className="fa-et">{presupuesto ? 'Válido hasta' : 'Vencimiento'}</p><p>{fechaFin}</p></div>
         </div>
         <div className="fa-partes">
-          <div><p className="fa-et">De</p><p><strong>{e.nombre}</strong><br />NIF {e.nif}{e.direccion && <><br />{e.direccion}</>}{e.ciudad && <><br />{e.ciudad}</>}</p></div>
+          <div><p className="fa-et">De</p><p><strong>{e.nombre}</strong><br />NIF {e.nif}{e.direccion && <><br />{e.direccion}</>}{e.ciudad && <><br />{e.ciudad}</>}{contacto && <><br />{contacto}</>}</p></div>
           <div><p className="fa-et">Para</p><p><strong>{c.nombre}</strong>{c.nif && <><br />NIF {c.nif}</>}{c.direccion && <><br />{c.direccion}</>}{c.ciudad && <><br />{c.ciudad}</>}</p></div>
         </div>
         {f.lineas?.length ? (() => {
@@ -74,10 +75,10 @@ export default async function FacturaA4({ f, e, marca, presupuesto = f.serie ===
           </div>
         )}
         <div className="fa-pago">
-          <div><p className="fa-et">Forma de pago</p><p>Transferencia bancaria<br /><strong>{e.iban}</strong></p><p className="fa-vencimiento">{presupuesto ? `Válido hasta: ${fechaFin}` : `Vencimiento: ${fechaFin}`}</p></div>
+          <div><p className="fa-et">Forma de pago</p>{(e.iban || (!e.bizum && !e.otroPago)) && <p>Transferencia bancaria<br /><strong>{e.iban}</strong></p>}{e.bizum && <p style={{ overflowWrap: 'anywhere' }}>Bizum: {e.bizum}</p>}{e.otroPago && <p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{e.otroPago}</p>}<p className="fa-vencimiento">{presupuesto ? `Válido hasta: ${fechaFin}` : `Vencimiento: ${fechaFin}`}</p></div>
           {qr && <div className="fa-qr"><span dangerouslySetInnerHTML={{ __html: qr }} /><small>VERI*FACTU</small></div>}
         </div>
-        <footer className="fa-pie"><span>{e.nombre} · NIF {e.nif}</span>{qr && <span>Factura verificable en la sede electrónica de la AEAT</span>}</footer>
+        <footer className="fa-pie" style={e.pie ? { flexWrap: 'wrap', rowGap: '4pt' } : undefined}>{e.pie && <p style={{ flexBasis: '100%', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{e.pie}</p>}<span>{e.nombre} · NIF {e.nif}{e.registro && <> · {e.registro}</>}</span>{qr && <span>Factura verificable en la sede electrónica de la AEAT</span>}</footer>
       </div>
     </article>
   );

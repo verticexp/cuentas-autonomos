@@ -1,7 +1,7 @@
 'use client';
 
 import Link from '@/components/web/EnlacePublico';
-import { Fragment, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import Icono from '@/components/web/Icono';
 import { COMPARATIVA, DESCUENTO, PERSONALIZADO, PLANES, SEGMENTOS } from '@/components/web/datos';
 
@@ -18,9 +18,17 @@ function Celda({ v }) {
 export default function Precios({ inicial = 'aut', tabla = false, solo = false }) {
   const [seg, setSeg] = useState(CONTRATABLES.some((s) => s.id === inicial) ? inicial : 'aut');
   const [anual, setAnual] = useState(false);
+  const [nota, setNota] = useState(false);
+  const carril = useRef(null);
   const i = CONTRATABLES.findIndex((s) => s.id === seg);
   const nombreSeg = CONTRATABLES[i].n;
   const planes = PLANES[seg];
+
+  // En el móvil los planes se deslizan en horizontal: se empieza centrado en el recomendado.
+  useEffect(() => {
+    const c = carril.current, f = c?.querySelector('.web-plan-fuerte');
+    if (c && f && c.scrollWidth > c.clientWidth) c.scrollLeft = f.offsetLeft - (c.clientWidth - f.offsetWidth) / 2;
+  }, [seg]);
 
   return (
     <div className="web-precios">
@@ -40,7 +48,7 @@ export default function Precios({ inicial = 'aut', tabla = false, solo = false }
         </div>
       </div>
 
-      <div className="web-planes" key={seg}>
+      <div className="web-planes web-carrusel" key={seg} ref={carril}>
         {planes.map((p, k) => {
           const mes = anual ? conDescuento(p.p) : p.p;
           return (
@@ -62,7 +70,11 @@ export default function Precios({ inicial = 'aut', tabla = false, solo = false }
         })}
       </div>
 
-      <p className="web-nota">Todos incluyen portal del cliente, avisos push, exportación, seguridad e importación desde otro programa. La lectura IA tiene una cuota mensual de páginas por empresa, compartida con la gestoría; se renueva cada mes natural también con pago anual y no se acumula. En la prueba hay 50 páginas en total. La cuota del plan empieza con el periodo de pago. Consulta la tabla para ver el límite de cada plan.</p>
+      <p className="web-nota">
+        Todos incluyen portal del cliente, avisos push, exportación, seguridad e importación desde otro programa.
+        <span id="web-nota-ia" className={`web-nota-extra${nota ? ' abierta' : ''}`}> La lectura IA tiene una cuota mensual de páginas por empresa, compartida con la gestoría; se renueva cada mes natural también con pago anual y no se acumula. En la prueba hay 50 páginas en total. La cuota del plan empieza con el periodo de pago. Consulta la tabla para ver el límite de cada plan.</span>
+        {!nota && <button className="web-nota-mas" aria-expanded={false} aria-controls="web-nota-ia" onClick={() => setNota(true)}>Más detalles</button>}
+      </p>
 
       <article data-foco className="web-medida">
         <div>
