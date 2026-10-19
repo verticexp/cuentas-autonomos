@@ -81,7 +81,7 @@ test('F14: copia → cifrado → verificación → recuperación conserva tipos,
   assert.ok(!Object.keys(copia.datos).some((k) => /sesion|intentos|desbloqueo|cerrojo|otro:/.test(k)));
   const vuelta = descifrar(cifrar(copia, clave), clave);
   assert.deepEqual(vuelta, copia);
-  assert.deepEqual(verificarCopia(vuelta), { ok: true, errores: [], avisos: [] });
+  assert.deepEqual(verificarCopia(vuelta), { ok: true, errores: [], avisos: [], incidencias: [] });
   const informe = await restaurar(b, vuelta, { escribir: true });
   assert.equal(informe.nuevas, copia.resumen.claves);
   await iguales(b, copia);
@@ -240,7 +240,7 @@ test('N04: conciliar atómicamente documentos existentes durante la lectura obli
   assert.equal(lecturasBanco, 6);
   assert.deepEqual(JSON.parse(copia.datos['cuentas:facturas:e1'].valor.f1), cobrada);
   assert.deepEqual(JSON.parse(copia.datos['cuentas:banco:e1'].valor.m1), { id: 'm1', estado: 'emparejado', enlace: { tipo: 'factura', id: 'f1' }, importe: 100 });
-  assert.deepEqual(verificarCopia(copia), { ok: true, errores: [], avisos: [] });
+  assert.deepEqual(verificarCopia(copia), { ok: true, errores: [], avisos: [], incidencias: [] });
 });
 
 test('N04: ediciones continuas sin cambiar tamaños, numeración ni cabeza fallan tras tres intentos', async () => {
@@ -491,4 +491,19 @@ test('F14: CLI exige cifrado, verifica antes de escribir y guarda recuperación 
   assert.equal(verificarCopia(previa).ok, true);
   await restaurar(b, previa, { empresa: 'e1', sobrescribir: true, escribir: true });
   assert.equal(await b.get('cuentas:nota:e1'), 'antes');
+});
+
+test('copia nocturna: los descuadres del banco no impiden guardarla, la cadena rota sí', async () => {
+  const a = memoria();
+  await sembrar(a);
+  const datos = (await hacerCopia(a)).datos;
+  datos['cuentas:banco:e1'] = { tipo: 'hash', valor: { m1: JSON.stringify({ id: 'm1', estado: 'emparejado', importe: -50, enlace: { tipo: 'gasto', id: 'borrado' } }) } };
+  const copia = copiaDeDatos(datos);
+  assert.equal(verificarCopia(copia).ok, false);
+  const v = verificarCopia(copia, { tolerarIncidencias: true });
+  assert.equal(v.ok, true);
+  assert.deepEqual(v.incidencias, ['e1: conciliacion-bancaria: movimiento m1: gasto borrado inexistente']);
+  const alterada = structuredClone(copia);
+  alterada.huella = 'x';
+  assert.equal(verificarCopia(alterada, { tolerarIncidencias: true }).ok, false);
 });
