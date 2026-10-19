@@ -3,6 +3,8 @@ import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { auditar } from '@/lib/auditoria';
 import { darDeBaja } from '@/lib/baja';
 import { MUCHOS, pasado } from '@/lib/limite';
+import { redis } from '@/lib/redis';
+import { cancelarSuscripcion } from '@/lib/suscripcion';
 
 // Dar de baja la empresa (lib/baja.js). Solo su administrador, con su contraseña. La del administrador de Netto, no.
 export async function POST(req) {
@@ -14,6 +16,10 @@ export async function POST(req) {
   const { password } = await cuerpo(req);
   if (!(await comprobar(String(password || ''), u.pass))) return error('La contraseña no es correcta');
   await auditar(u, 'Baja de la empresa', u.empresaNombre);
+  const plan = (await redis.hget('empresas', u.empresa))?.plan;
   const borrarEl = await darDeBaja(u.empresa);
+  // Sin esto, una empresa dada de baja seguiría pagando su suscripción.
+  const fallo = await cancelarSuscripcion(plan);
+  if (fallo) console.error(`[baja] no se pudo cancelar la suscripción de ${u.empresa}: ${fallo}`);
   return Response.json({ ok: true, borrarEl });
 }

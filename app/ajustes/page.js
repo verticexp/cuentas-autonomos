@@ -1,4 +1,5 @@
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
+import { esApp } from '@/lib/app';
 import { TIPOS, diasPrueba, esFundador } from '@/lib/prueba';
 import Ir from '@/components/Ir';
 import { requerir } from '@/lib/auth';
@@ -75,6 +76,7 @@ const TEMA = { claro: 'Claro', oscuro: 'Oscuro' };
 // trabajo (nóminas, jornada, Pregunta a Netto…) están en «Más».
 export default async function Page() {
   const u = await requerir();
+  const app = esApp((await headers()).get('user-agent'));
   const [llaves, avisos] = await Promise.all([redis.hgetall(`passkeys:${u.id}`).then((x) => Object.keys(x || {}).length), redis.hlen(`push:${u.id}`)]);
   const empresa = puede(u, 'empresa');
   const admin = u.rol === 'admin';
@@ -98,12 +100,12 @@ export default async function Page() {
         <span className="mas-perfil-ir">›</span>
       </Ir>
 
-      {u.admin && <Grupo titulo="Netto"><Celda href="/admin" ico="panel" tono="azul" titulo="Panel de Netto" detalle="Empresas, ingresos, pruebas y actividad" /></Grupo>}
+      {!app && u.admin && <Grupo titulo="Netto"><Celda href="/admin" ico="panel" tono="azul" titulo="Panel de Netto" detalle="Empresas, ingresos, pruebas y actividad" /></Grupo>}
 
       {empresa && (
         <Grupo titulo="Tu empresa">
-          <Celda href="/ajustes/plan" ico="plan" tono="azul" titulo="Tu plan" detalle={esFundador(u.plan) ? 'Fundador · gratis de por vida' : `${TIPOS[u.plan.tipo]} ${u.plan.nombre}${dias !== null ? ` · prueba: ${dias} días` : ''}`} aviso={dias !== null && dias <= 7} />
-          {u.rol === 'admin' && <Celda href="/ajustes/recomienda" ico="regalo" tono="azul" titulo="Recomienda Netto" detalle="Un mes gratis para ti y para quien invites" />}
+          {!app && <Celda href="/ajustes/plan" ico="plan" tono="azul" titulo="Tu plan" detalle={esFundador(u.plan) ? 'Fundador · gratis de por vida' : `${TIPOS[u.plan.tipo]} ${u.plan.nombre}${dias !== null ? ` · prueba: ${dias} días` : ''}`} aviso={dias !== null && dias <= 7} />}
+          {!app && u.rol === 'admin' && <Celda href="/ajustes/recomienda" ico="regalo" tono="azul" titulo="Recomienda Netto" detalle="Un mes gratis para ti y para quien invites" />}
           <Celda href="/ajustes/facturacion" ico="empresa" tono="azul" titulo="Datos de la empresa" detalle={datosCompletos ? `${e.nombre} · ${e.nif}` : 'Faltan datos: rellénalos antes de facturar'} aviso={!datosCompletos} />
           <Celda href="/bienvenida?editar=1" ico="actividad" tono="azul" titulo="Actividades e impuestos" detalle={`${fiscalDe(u).tipo === 'sociedad' ? 'Sociedad' : 'Autónomo'} · ${actividadesDe(u).map((x) => x.nombre).join(', ')}`} />
           {(puede(u, 'usuarios') || u.admin) && <Celda href="/usuarios" ico="usuarios" tono="azul" titulo="Usuarios y permisos" detalle="Quién entra y qué puede hacer" />}
@@ -133,14 +135,14 @@ export default async function Page() {
       <section className="grupo" id="empresas">
         <h2 className="grupo-t">{u.misEmpresas?.length > 1 ? 'Tus empresas' : 'Más empresas'}</h2>
         <CambiarEmpresa empresas={u.misEmpresas} actual={u.empresa} />
-        <p className="grupo-pie">Cada empresa con sus datos, su numeración de facturas, sus permisos y su propio plan, con su mes de prueba.</p>
+        <p className="grupo-pie">{app ? 'Cada empresa con sus datos, su numeración de facturas y sus permisos.' : 'Cada empresa con sus datos, su numeración de facturas, sus permisos y su propio plan, con su mes de prueba.'}</p>
       </section>
 
       {fichar && <Grupo titulo="Tu jornada"><Celda href="/jornada" ico="reloj" tono="violeta" titulo="Fichar" detalle="Entrada, salida, pausas y tus horas del mes" /></Grupo>}
 
       <Grupo titulo="Seguridad y avisos">
-        <Celda href="/ajustes/seguridad" ico="seguridad" tono="violeta" titulo="Face ID y contraseña" detalle={llaves ? `Face ID en ${llaves} ${llaves === 1 ? 'dispositivo' : 'dispositivos'}` : 'Face ID desactivado'} />
-        <Celda href="/ajustes/avisos" ico="avisos" tono="violeta" titulo="Avisos en el móvil" detalle={avisos ? `Activados en ${avisos} ${avisos === 1 ? 'dispositivo' : 'dispositivos'}` : 'Plazos de Hacienda y facturas vencidas'} />
+        <Celda href="/ajustes/seguridad" ico="seguridad" tono="violeta" titulo={app ? 'Contraseña y bloqueo' : 'Face ID y contraseña'} detalle={app ? 'Contraseña y bloqueo de pantalla' : llaves ? `Face ID en ${llaves} ${llaves === 1 ? 'dispositivo' : 'dispositivos'}` : 'Face ID desactivado'} />
+        {!app && <Celda href="/ajustes/avisos" ico="avisos" tono="violeta" titulo="Avisos en el móvil" detalle={avisos ? `Activados en ${avisos} ${avisos === 1 ? 'dispositivo' : 'dispositivos'}` : 'Plazos de Hacienda y facturas vencidas'} />}
         {admin && <Celda href="/ajustes/actividad" ico="registro" tono="violeta" titulo="Actividad" detalle="Permisos, datos, borrados y exportaciones" />}
       </Grupo>
 
@@ -151,7 +153,10 @@ export default async function Page() {
         <Celda href="/ajustes/ayuda" ico="ayuda" tono="gris" titulo="Ayuda y contacto" detalle="Preguntas frecuentes y escribirnos" />
       </Grupo>
 
-      {admin && !u.admin && <Grupo><Celda href="/ajustes/baja" ico="baja" tono="rojo" titulo="Dar de baja la empresa" detalle="Cerrar la cuenta y borrar los datos" /></Grupo>}
+      {!u.admin && <Grupo>
+        {admin && <Celda href="/ajustes/baja" ico="baja" tono="rojo" titulo="Dar de baja la empresa" detalle="Cerrar la empresa y borrar los datos" />}
+        <Celda href="/ajustes/eliminar-cuenta" ico="baja" tono="rojo" titulo="Eliminar mi cuenta" detalle="Borrar tu cuenta y tus datos personales" />
+      </Grupo>}
 
       <form method="post" action="/api/logout"><button className="borrar ancho">Cerrar sesión</button></form>
     </main>

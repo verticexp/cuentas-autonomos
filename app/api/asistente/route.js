@@ -1,3 +1,4 @@
+import { mensajePlan } from '@/lib/app';
 import { contarVentana, rafaga, concurrencia, respuesta429 } from '@/lib/limite';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { hoy } from '@/lib/formato';
@@ -15,7 +16,7 @@ export async function POST(req) {
   const { u, res } = await usuarioApi();
   if (res) return res;
   const sinPlan = await usarFuncion(u, 'asistente');
-  if (sinPlan) return error(sinPlan, 403);
+  if (sinPlan) return error(mensajePlan(sinPlan, req.headers.get('user-agent')), 403);
   if (!iaLista()) return error('El asistente aún no está configurado (falta ANTHROPIC_API_KEY en Vercel)', 503);
   const b = await cuerpo(req);
   const pregunta = String(b.pregunta || '').trim().slice(0, 500);

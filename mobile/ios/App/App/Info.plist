@@ -5,7 +5,7 @@
 	<key>CAPACITOR_DEBUG</key>
 	<string>$(CAPACITOR_DEBUG)</string>
 	<key>CFBundleDevelopmentRegion</key>
-	<string>en</string>
+	<string>es</string>
 	<key>CFBundleDisplayName</key>
 	<string>Netto</string>
 	<key>CFBundleExecutable</key>
@@ -14,6 +14,10 @@
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>es</string>
+	</array>
 	<key>CFBundleName</key>
 	<string>$(PRODUCT_NAME)</string>
 	<key>CFBundlePackageType</key>
@@ -22,14 +26,14 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>Netto usa la cámara para fotografiar tickets y facturas de gasto.</string>
-	<key>NSFaceIDUsageDescription</key>
-	<string>Netto usa Face ID para desbloquear la app y proteger tus datos.</string>
+	<string>Netto usa la cámara para escanear tus tickets y facturas de gasto y leer sus importes.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Netto accede a tus fotos para adjuntar tickets y facturas.</string>
+	<string>Netto accede a las fotos que elijas para adjuntar tickets y facturas a tus gastos.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -43,32 +47,61 @@
 					<string>Default Configuration</string>
 					<key>UISceneDelegateClassName</key>
 					<string>$(PRODUCT_MODULE_NAME).SceneDelegate</string>
-					<key>UISceneStoryboardFile</key>
-					<string>Main</string>
 				</dict>
 			</array>
 		</dict>
 	</dict>
+	<key>UIApplicationShortcutItems</key>
+	<array>
+		<dict>
+			<key>UIApplicationShortcutItemIconSymbolName</key>
+			<string>doc.viewfinder</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Escanear ticket</string>
+			<key>UIApplicationShortcutItemType</key>
+			<string>com.nettohq.app.ticket</string>
+			<key>UIApplicationShortcutItemUserInfo</key>
+			<dict>
+				<key>ruta</key>
+				<string>/gastos?escanear=1</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>UIApplicationShortcutItemIconSymbolName</key>
+			<string>doc.badge.plus</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Nueva factura</string>
+			<key>UIApplicationShortcutItemType</key>
+			<string>com.nettohq.app.factura</string>
+			<key>UIApplicationShortcutItemUserInfo</key>
+			<dict>
+				<key>ruta</key>
+				<string>/facturas/nueva</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>UIApplicationShortcutItemIconSymbolName</key>
+			<string>building.columns</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Impuestos</string>
+			<key>UIApplicationShortcutItemType</key>
+			<string>com.nettohq.app.impuestos</string>
+			<key>UIApplicationShortcutItemUserInfo</key>
+			<dict>
+				<key>ruta</key>
+				<string>/modelos</string>
+			</dict>
+		</dict>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
-	<key>UIMainStoryboardFile</key>
-	<string>Main</string>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
-		<string>armv7</string>
+		<string>arm64</string>
 	</array>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
-	</array>
-	<key>UISupportedInterfaceOrientations~ipad</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationPortraitUpsideDown</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>

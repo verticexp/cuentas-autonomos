@@ -6,13 +6,13 @@ import { MARCA, activarFaceId, faceIdDisponible, nombreDispositivo } from '@/lib
 import { fechaCorta } from '@/lib/formato';
 
 // Ajustes → Face ID: activarlo en este dispositivo y ver en cuáles está.
-export default function FaceId({ lista, bloqueo = false }) {
+export default function FaceId({ lista, bloqueo = false, app = false }) {
   const router = useRouter();
   const [disponible, setDisponible] = useState(null);
   const [msg, setMsg] = useState('');
   const [bloquear, setBloquear] = useState(bloqueo);
 
-  useEffect(() => { faceIdDisponible().then(setDisponible); }, []);
+  useEffect(() => { if (!app) faceIdDisponible().then(setDisponible); }, [app]);
 
   async function activar() {
     setMsg('');
@@ -35,13 +35,13 @@ export default function FaceId({ lista, bloqueo = false }) {
 
   return (
     <section className="tarjeta formulario faceid">
-      <h3>Face ID</h3>
-      <p className="nota">Con Face ID (o la huella) entras sin escribir la contraseña. Tu cara nunca sale del dispositivo.</p>
+      <h3>{app ? 'Bloqueo de pantalla' : 'Face ID'}</h3>
+      {!app && <p className="nota">Con Face ID (o la huella) entras sin escribir la contraseña. Tu cara nunca sale del dispositivo.</p>}
       <label className="check">
         <input type="checkbox" checked={bloquear} onChange={cambiarBloqueo} />
-        Pedir Face ID o contraseña cada vez que abra Netto
+        {app ? 'Pedir la contraseña cada vez que abra Netto' : 'Pedir Face ID o contraseña cada vez que abra Netto'}
       </label>
-      {lista.length > 0 && (
+      {!app && lista.length > 0 && (
         <ul className="dispositivos">
           {lista.map((k) => (
             <li key={k.id}>
@@ -51,8 +51,8 @@ export default function FaceId({ lista, bloqueo = false }) {
           ))}
         </ul>
       )}
-      {disponible === false && <p className="nota">Este dispositivo no tiene Face ID ni huella.</p>}
-      {disponible && <button type="button" className="boton" onClick={activar}>Activar en este dispositivo</button>}
+      {!app && disponible === false && <p className="nota">Este dispositivo no tiene Face ID ni huella.</p>}
+      {!app && disponible && <button type="button" className="boton" onClick={activar}>Activar en este dispositivo</button>}
       {msg && <p className={msg.startsWith('Listo') ? 'nota' : 'error'}>{msg}</p>}
     </section>
   );

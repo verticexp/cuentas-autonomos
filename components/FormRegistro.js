@@ -224,7 +224,7 @@ export default function FormRegistro({ inicial = {}, sesion = null, recomendacio
         <h2 className="login-titulo" tabIndex={-1}>Tu cuenta</h2>
         <p className="nota">{gestoria.trim() ? 'Con un código de gestoría válido tienes 3 meses gratis con todo incluido.' : recomendacion ? '2 meses gratis con todo incluido, por venir recomendado.' : `${PRUEBA_DIAS} días gratis con todo incluido.`} Sin tarjeta.</p>
         <BotonesSociales />
-        <p className="separador"><span>o con tu email</span></p>
+        <p className="separador solo-web"><span>o con tu email</span></p>
         <label htmlFor="nombre">Nombre</label>
         <input onChange={(e) => setCuenta((c) => ({ ...c, nombre: e.target.value }))} id="nombre" name="nombre" autoComplete="name" required maxLength={60} {...accesibilidad('nombre')} />
         <label htmlFor="email">Email</label>

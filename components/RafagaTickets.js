@@ -8,6 +8,8 @@ import { nifUE } from '@/lib/calculos';
 import { fotograma, reducir } from '@/lib/reducirImagen';
 import { preparar, subir } from '@/lib/justificanteCliente';
 import CupoEscaneo from './CupoEscaneo';
+import { escanearNativo, escanerDisponible } from '@/lib/escanerNativo';
+import { NO_IA, permisoIA } from '@/lib/permisoIA';
 import '@/app/rafaga.css';
 
 // Modo ráfaga de Gastos: varios tickets seguidos con la cámara en vivo. Se hacen las fotos una tras otra, se leen de una
@@ -52,6 +54,8 @@ export default function RafagaTickets({ hoy, actividades }) {
     let parar = false;
     (async () => {
       try {
+        // App de iOS: el escáner de documentos nativo, que ya hace varias páginas seguidas (lib/escanerNativo.js).
+        if (await escanerDisponible()) { if (!parar) setCamara('nativo'); return; }
         if (!navigator.mediaDevices?.getUserMedia) throw Object.assign(new Error('sin cámara'), { name: 'NoCamara' });
         const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1920 } }, audio: false });
         if (parar) { s.getTracks().forEach((t) => t.stop()); return; }
@@ -80,6 +84,13 @@ export default function RafagaTickets({ hoy, actividades }) {
     navigator.vibrate?.(8);
     setFotos((f) => [...f, fotograma(v)]);
   };
+  const escanear = async () => {
+    const escaneo = await escanearNativo();
+    if (escaneo === undefined) { setCamara('no'); return; }
+    const nuevas = await Promise.all(escaneo.slice(0, Math.max(0, cupo - fotos.length)).map((a) => reducir(a).catch(() => null)));
+    setFotos((f) => [...f, ...nuevas.filter(Boolean)].slice(0, cupo));
+  };
+
   const delArchivo = async (e) => {
     const archivos = [...(e.target.files || [])].filter((a) => a.type.startsWith('image/')).slice(0, Math.max(0, cupo - fotos.length));
     e.target.value = '';
@@ -90,6 +101,7 @@ export default function RafagaTickets({ hoy, actividades }) {
   // De la foto al borrador: igual que un ticket suelto (components/FormGasto.js), una foto cada vez.
   const leerTodas = async (lista) => {
     const mi = corrida.current;
+    if (!permisoIA()) { for (const it of lista) poner(it.id, { estado: 'error', error: NO_IA }); return; }
     for (const it of lista) {
       if (corrida.current !== mi) return;
       try {
@@ -144,6 +156,12 @@ export default function RafagaTickets({ hoy, actividades }) {
               <div className="rafaga-visor">
                 <video ref={video} playsInline muted autoPlay aria-label="Cámara" />
                 {camara === 'esperando' && <p className="rafaga-aviso">Abriendo la cámara…</p>}
+                {camara === 'nativo' && (
+                  <div className="rafaga-aviso">
+                    <p>Escanea los tickets uno detrás de otro: cada página será un gasto.</p>
+                    <button type="button" className="boton" onClick={escanear}>{fotos.length ? 'Escanear más tickets' : 'Escanear tickets'}</button>
+                  </div>
+                )}
                 {(camara === 'denegada' || camara === 'no') && (
                   <div className="rafaga-aviso">
                     <p>{camara === 'denegada' ? 'Netto no tiene permiso para usar la cámara. Puedes darlo en los ajustes del navegador o elegir las fotos de tu galería.' : 'No se ha podido abrir la cámara. Elige las fotos de tu galería.'}</p>

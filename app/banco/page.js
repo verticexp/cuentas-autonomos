@@ -1,4 +1,7 @@
 import { requerir } from '@/lib/auth';
+import { headers } from 'next/headers';
+import { esApp } from '@/lib/app';
+import { SOLO_LECTURA_APP } from '@/lib/planes';
 import { leer } from '@/lib/redis';
 import { candidatosConciliacion } from '@/lib/bancoServidor';
 import { documentos, unir } from '@/lib/indices';
@@ -63,7 +66,8 @@ export default async function PaginaBanco({ searchParams }) {
   // La conexión directa es solo del administrador de Netto: al resto ni se le habla de ella, aunque traiga ?conectado o ?error.
   const directo = conectarVisible(u);
   const n = directo ? Number(q.conectado) || 0 : 0;
-  const aviso = directo && q.error ? { error: true, texto: ERRORES[q.error] || 'No se pudo conectar el banco.' } : n ? { texto: n === 1 ? '✓ Cuenta conectada' : `✓ ${n} cuentas conectadas` } : null;
+  const app = esApp((await headers()).get('user-agent'));
+  const aviso = directo && q.error ? { error: true, texto: app && q.error === 'solo-lectura' ? SOLO_LECTURA_APP : ERRORES[q.error] || 'No se pudo conectar el banco.' } : n ? { texto: n === 1 ? '✓ Cuenta conectada' : `✓ ${n} cuentas conectadas` } : null;
 
   return (
     <main className="pagina mk-look banco">

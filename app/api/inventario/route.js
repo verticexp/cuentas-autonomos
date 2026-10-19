@@ -1,3 +1,4 @@
+import { mensajePlan } from '@/lib/app';
 import { borrar, guardar, leerUno } from '@/lib/redis';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { leerImporte, r2 } from '@/lib/calculos';
@@ -16,7 +17,7 @@ export async function POST(req) {
   const { u, res } = await usuarioApi({ permiso: 'gastar' });
   if (res) return res;
   const sinPlan = await usarFuncion(u, 'inventario');
-  if (sinPlan) return error(sinPlan, 403);
+  if (sinPlan) return error(mensajePlan(sinPlan, req.headers.get('user-agent')), 403);
   const b = await cuerpo(req);
   const datos = await datosStock(u);
   const p = datos.productos.find((x) => x.id === b.producto);

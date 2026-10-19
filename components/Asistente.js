@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { permisoIA } from '@/lib/permisoIA';
 
 // Chat con el asistente: la conversación vive en la pantalla (no se guarda) y cada respuesta dice de dónde salen las cifras.
 export default function Asistente({ listo, ejemplos, inicial = '' }) {
@@ -13,6 +14,7 @@ export default function Asistente({ listo, ejemplos, inicial = '' }) {
   const enviar = async (pregunta) => {
     const p = pregunta.trim();
     if (!p || pensando) return;
+    if (!permisoIA()) { setMensajes((m) => [...m, { role: 'user', content: p }, { role: 'assistant', content: 'Sin tu permiso, Netto no envía tu pregunta a la IA.', error: true }]); setTexto(''); return; }
     const historial = mensajes.filter((m) => !m.error).map((m) => ({ role: m.role, content: m.content }));
     setMensajes((m) => [...m, { role: 'user', content: p }]);
     setTexto('');

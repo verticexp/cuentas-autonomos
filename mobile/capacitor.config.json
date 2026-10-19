@@ -13,7 +13,10 @@
   "ios": {
     "appendUserAgent": "NettoApp/1",
     "contentInset": "never",
-    "limitsNavigationsToAppBoundDomains": true
+    "limitsNavigationsToAppBoundDomains": true,
+    "backgroundColor": "#F4F4F1",
+    "scrollEnabled": true,
+    "preferredContentMode": "mobile"
   },
   "plugins": {
     "SplashScreen": {

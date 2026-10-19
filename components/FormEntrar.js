@@ -36,7 +36,7 @@ export default function FormEntrar({ errorInicial = '' }) {
       <h1><Logo className="logo-login" /></h1>
       <p className="login-titulo">Inicia sesión</p>
       <BotonesSociales />
-      <p className="separador"><span>o con tu email</span></p>
+      <p className="separador solo-web"><span>o con tu email</span></p>
       {error && <p className="error" role="alert">{error}</p>}
       <label htmlFor="email">Email</label>
       <input ref={email} id="email" name="email" type="email" autoComplete="username webauthn" required />
@@ -47,7 +47,7 @@ export default function FormEntrar({ errorInicial = '' }) {
       <CampoPassword ref={pass} id="password" />
       <button type="submit" disabled={enviando}>{enviando ? 'Entrando…' : 'Iniciar sesión'}</button>
       <EntrarLlave auto alEntrar={irALaApp} />
-      <p className="nota login-cambiar">¿No tienes cuenta? <Link href="/registro">Crea una gratis</Link></p>
+      <p className="nota login-cambiar solo-web">¿No tienes cuenta? <Link href="/registro">Crea una gratis</Link></p>
     </form>
   );
 }
