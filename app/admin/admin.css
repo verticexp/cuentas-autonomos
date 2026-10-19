@@ -38,6 +38,20 @@
 .adm-plan { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .adm-acciones { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 0 14px 12px; }
 .adm-acciones .adm-pie { flex-basis: 100%; margin: 0; }
+.adm-correo-panel { overflow-wrap: anywhere; }
+.adm-correo-grupo { margin: 24px 0; }
+.adm-correo { margin: 10px 0; }
+.adm-correo h3 { margin: 0 0 10px; font-size: 16px; }
+.adm-correo p, .adm-correo dl { font-size: 14px; }
+.adm-correo dt { font-weight: 600; }
+.adm-correo dd { margin: 4px 0 12px; color: var(--muted); }
+.adm-correo details { margin: 12px 0; }
+.adm-correo summary { cursor: pointer; padding: 8px 0; }
+.adm-correo iframe { display: block; width: 100%; height: 520px; box-sizing: border-box; border: 1px solid var(--line); border-radius: 8px; background: #FAFAF8; }
+.adm-correo pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; line-height: 1.6; }
+.adm-correo-prueba button { max-width: 100%; min-height: 44px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); font: inherit; cursor: pointer; }
+.adm-correo-prueba button:disabled { opacity: .6; cursor: wait; }
+.adm-correo-prueba .adm-pie { margin-top: 8px; }
 @media (max-width: 760px) {
   .adm-fila { grid-template-columns: minmax(0, 1fr) auto; row-gap: 4px; }
   .adm-plan, .adm-num { grid-column: 1 / -1; }
