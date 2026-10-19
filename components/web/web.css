@@ -251,6 +251,7 @@ body:has(.web):has(.tabbar) { padding-left: 0 !important; }
 .web-cifras > div:first-child { border-left: 0; }
 .web-cifras b { display: block; font-size: clamp(2.2rem, 4vw, 3.2rem); letter-spacing: -0.05em; line-height: 1; font-variant-numeric: tabular-nums; }
 .web-cifras b span { color: var(--acc); }
+.web-cifras b i { font-style: normal; font-size: 0.45em; letter-spacing: 0; font-weight: 600; margin-right: 6px; vertical-align: 0.35em; }
 .web-cifras p { font-weight: 700; margin: 10px 0 4px; } .web-cifras small { color: var(--g); font-size: 14px; }
 @media (max-width: 860px) { .web-cifras { grid-template-columns: 1fr 1fr; } .web-cifras > div:nth-child(3) { border-left: 0; } .web-cifras > div:nth-child(n+3) { border-top: 1px solid var(--linea); } }
 
