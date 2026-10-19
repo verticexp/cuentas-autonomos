@@ -31,7 +31,8 @@ export default async function Proveedores({ searchParams }) {
               <Ir href={`/gastos/proveedores/${encodeURIComponent(p.clave)}`} className="fila ficha-fila">
                 <span className="txt">
                   <strong>{p.nombre}</strong>
-                  <small>{[p.nif, nombreForma(p.ficha?.formaPago), p.zona, p.comercial, p.n === 1 ? '1 gasto' : `${p.n} gastos`].filter(Boolean).join(' · ')}{p.debe > 0 ? <span className="prov-debe"> · debes {eur(p.debe)}</span> : p.ultimo ? ` · último ${fechaCorta(p.ultimo)}` : ''}</small>
+                  <small>{[p.nif, nombreForma(p.ficha?.formaPago), p.zona, p.comercial, p.n === 1 ? '1 gasto' : `${p.n} gastos`].filter(Boolean).join(' · ')}{p.debe <= 0 && p.ultimo ? ` · último ${fechaCorta(p.ultimo)}` : ''}</small>
+                  {p.debe > 0 && <small className="prov-debe">Le debes {eur(p.debe)}</small>}
                 </span>
                 <span className="imp">{eur(p.total)}</span>
               </Ir>

@@ -37,12 +37,21 @@
 .ficha-nueva-factura { margin-bottom: 18px; }
 .fichas-pagina select:focus-visible, .fichas-pagina textarea:focus-visible, .fichas-pagina a:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
 @media (max-width: 560px) {
-  .ficha-filtros, .ficha-rejilla { grid-template-columns: minmax(0, 1fr); }
+  .ficha-rejilla { grid-template-columns: minmax(0, 1fr); }
+  /* Filtros compactos: la búsqueda a lo ancho y comercial y zona lado a lado */
+  .ficha-filtros { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; margin: 16px 0; }
+  .ficha-filtros label { font-size: 13px; color: var(--muted); gap: 4px; }
+  .ficha-filtros label:first-child { grid-column: 1 / -1; }
+  .ficha-filtros .campo { color: var(--ink); }
+  .ficha-filtros .boton { justify-self: stretch; }
   .ficha-fila { flex-wrap: wrap; }
   .ficha-fila .txt { flex-basis: 100%; }
   /* Una factura (número, fecha e importe) cabe en una línea: el importe a la derecha */
   .ficha-fila.ficha-doc { flex-wrap: nowrap; }
   .ficha-fila.ficha-doc .txt { flex-basis: auto; }
+  /* Sin barra de riesgo (proveedores) el importe también cabe a la derecha */
+  .ficha-fila:not(:has(.ficha-riesgo)) { flex-wrap: nowrap; }
+  .ficha-fila:not(:has(.ficha-riesgo)) .txt { flex-basis: auto; }
   .ficha-riesgo { max-width: 100%; width: 100%; text-align: left; }
   .ficha-cabecera .boton { width: 100%; }
 }
