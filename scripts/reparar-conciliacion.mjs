@@ -38,6 +38,8 @@ for (const e of empresas) {
       }
       informe.push({ ...linea, problema: 'factura sin referencia recíproca', accion: 'revisar a mano',
         diagnostico: { yaCobrada: Boolean(yaCobrada), cobrada: Boolean(d.cobrada), metodoCobro: d.cobro?.metodo || null, cobroBanco: d.cobro?.banco === m.id,
+          cobroOtroMovimiento: d.cobro?.banco ? (d.cobro.banco === m.id ? null : movs.some((x) => x.id === d.cobro.banco && x.enlace.id === id) ? 'enlazado con esta factura' : 'no enlazado') : null,
+          enlacesAEstaFactura: enlazadas.filter((x) => x === id).length,
           pagos: (d.pagos || []).map((p) => ({ metodo: p.metodo || null, esteMovimiento: p.banco === m.id, otroMovimiento: Boolean(p.banco && p.banco !== m.id) })) } });
     } else if (d.banco !== m.id || d.pendiente) {
       informe.push({ ...linea, problema: 'gasto sin referencia recíproca', accion: 'revisar a mano',
