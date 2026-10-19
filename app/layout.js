@@ -35,6 +35,8 @@ export const metadata = {
 
 export const viewport = {
   width: 'device-width', initialScale: 1, viewportFit: 'cover',
+  // Como una app: sin zoom por pellizco (WKWebView lo respeta; Safari, con touch-action en globals.css).
+  maximumScale: 1, userScalable: false,
   themeColor: '#0F1F1B', // verde de la pantalla de inicio; luego lo cambia components/BarraEstado.js
 };
 
