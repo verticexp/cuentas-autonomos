@@ -778,10 +778,11 @@ console.log('Banco: extractos, conexión y emparejar');
     const noConecta = await pedir('/api/banco/conectar', { metodo: 'POST', cookie: bq, cuerpo: { banco: 'Banco Simulado', tipo: 'business' } });
     const noActualiza = await pedir('/api/banco/sincronizar', { metodo: 'POST', cookie: bq, cuerpo: { forzar: true } });
     ok('quien no es el administrador de Netto no lista, conecta ni actualiza bancos (403)', () => assert.deepEqual([noLista.status, noConecta.status, noActualiza.status], [403, 403, 403]));
+    // Ya tiene cuenta: la invitación queda pendiente hasta que él la acepta con su sesión (enlace /api/invitacion/unirse).
     const invitaAdmin = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: bq, cuerpo: { nombre: 'Prueba', email: fd.get('email'), rol: 'admin' } })).json();
-    const pasa = await pedir('/api/empresas', { metodo: 'POST', cookie: yo, cuerpo: { id: empresa } });
-    const ad = `${yo}; e=${/(?:^|,\s*)e=([^;]+)/.exec(pasa.headers.get('set-cookie') || '')?.[1]}`;
-    ok('el administrador de Netto entra en la empresa que va a conectar', () => assert.ok(invitaAdmin.existente && pasa.status === 200, JSON.stringify(invitaAdmin)));
+    const acepta = await pedir(new URL(invitaAdmin.enlace).pathname + new URL(invitaAdmin.enlace).search, { cookie: yo });
+    const ad = `${yo}; e=${/(?:^|,\s*)e=([^;]+)/.exec(acepta.headers.get('set-cookie') || '')?.[1]}`;
+    ok('el administrador de Netto acepta la invitación y entra en la empresa que va a conectar', () => assert.ok(invitaAdmin.pendiente && ad.endsWith(`e=${empresa}`), JSON.stringify(invitaAdmin)));
     const sim = (ruta, cuerpo) => fetch(`${process.env.ENABLE_BANKING_URL}${ruta}`, cuerpo ? { method: 'POST', body: JSON.stringify(cuerpo) } : {}).then((r) => r.json());
     const f4 = await fac(masD(-4), 'Agencia Brisa Incentivos S.L.', 2000);
     const tx = (d, imp, info, nombre, ref) => ({ entry_reference: ref, transaction_amount: { amount: String(Math.abs(imp)), currency: 'EUR' }, credit_debit_indicator: imp < 0 ? 'DBIT' : 'CRDT', status: 'BOOK', booking_date: masD(d), remittance_information: [info], ...(imp < 0 ? { creditor: { name: nombre } } : { debtor: { name: nombre } }) });
