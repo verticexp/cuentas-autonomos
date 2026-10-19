@@ -36,9 +36,12 @@ export default function FormRegistro({ inicial = {}, sesion = null, recomendacio
   const [tipo, setTipo] = useState(inicial.tipo || '');
   const [plan, setPlan] = useState(inicial.plan || '');
   const [periodo, setPeriodo] = useState(inicial.periodo === 'anio' ? 'anio' : 'mes');
-  const [gestoria, setGestoria] = useState(inicial.gestoria || '');
-  // El código promocional (de una gestoría, lib/gestorias.js) va plegado en el paso del plan.
-  const [verCodigo, setVerCodigo] = useState(Boolean(inicial.gestoria));
+  const [codigo, setCodigo] = useState(inicial.codigo || '');
+  // Código promocional (lib/codigoPromocional.js): de una gestoría o de otra empresa; va plegado en el paso del plan.
+  // promo: { codigo, texto, dias } cuando el servidor lo ha dado por bueno.
+  const [verCodigo, setVerCodigo] = useState(Boolean(inicial.codigo));
+  const [promo, setPromo] = useState(null);
+  const codigoActual = useRef('');
   const [fiscales, setFiscales] = useState({ razon: '', nif: '', direccion: '', cp: '', ciudad: '', provincia: '', telefono: '' });
   const [cuenta, setCuenta] = useState(sesion || {});
   const [password, setPassword] = useState('');
@@ -77,6 +80,18 @@ export default function FormRegistro({ inicial = {}, sesion = null, recomendacio
     if (alContinuar && j?.ok === false) setError({ mensaje: j.error, campo: 'email' });
     return j?.ok !== false;
   }
+  async function comprobarCodigo(texto, alContinuar = false, avisar = true) {
+    const valor = texto.trim();
+    codigoActual.current = valor;
+    if (!valor) { setPromo(null); return true; }
+    const r = await fetch('/api/registro/codigo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ codigo: valor }), signal: AbortSignal.timeout(5000) }).catch(() => null);
+    const j = r?.ok || r?.status === 429 ? await r.json().catch(() => null) : null;
+    if (codigoActual.current !== valor) return false;
+    // Sin respuesta (red caída) no se bloquea: el alta lo vuelve a comprobar.
+    setPromo(j?.ok ? { codigo: valor, texto: j.texto, dias: j.dias } : null);
+    if (j?.ok === false && avisar) setError({ mensaje: j.error, campo: 'codigo' });
+    return j?.ok !== false || !alContinuar;
+  }
   const [error, setError] = useState(null);
   const [enviando, setEnviando] = useState(false);
   const form = useRef(null);
@@ -87,6 +102,7 @@ export default function FormRegistro({ inicial = {}, sesion = null, recomendacio
     if (listo && !error) enfocarVisible(bloque?.querySelector('h2'));
   }, [listo, paso]);
   useEffect(() => { if (error) enfocarVisible(errorRef.current); }, [error, paso]);
+  useEffect(() => { if (inicial.codigo && !recomendacion) comprobarCodigo(inicial.codigo, false, false); }, []); // el que llega por la URL
 
   function accesibilidad(campo, descripcion) {
     const invalido = error?.campo === campo;
@@ -117,6 +133,12 @@ export default function FormRegistro({ inicial = {}, sesion = null, recomendacio
       if (!PLANES[tipo].some((p) => p.n === plan)) setPlan(PLANES[tipo].find((p) => p.fuerte)?.n || '');
     }
     if (paso === 3 && !PLANES[tipo]?.some((p) => p.n === plan)) { setError({ mensaje: 'Elige un plan.', campo: 'plan' }); return; }
+    if (paso === 3 && codigo.trim() && promo?.codigo !== codigo.trim()) {
+      setComprobando(true);
+      const ok = await comprobarCodigo(codigo, true);
+      setComprobando(false);
+      if (!ok) return;
+    }
     if (paso === 4) {
       const d = new FormData(form.current);
       const validacion = validarContrasena(d.get('password'), { email: d.get('email'), nombre: d.get('nombre') });
@@ -140,7 +162,7 @@ export default function FormRegistro({ inicial = {}, sesion = null, recomendacio
     if (r?.ok) { irALaApp(); return; }
     setEnviando(false);
     const mensaje = j?.error || 'No se ha podido crear la cuenta. Revisa la conexión.';
-    const campo = /recomendaci[oó]n/i.test(mensaje) ? undefined : /promocional/i.test(mensaje) ? 'gestoria' : /nif|cif|hacienda/i.test(mensaje) ? 'nif' : /postal/i.test(mensaje) ? 'cp' : /provincia/i.test(mensaje) ? 'provincia' : /direcci[oó]n/i.test(mensaje) ? 'direccion' : /ciudad/i.test(mensaje) ? 'ciudad' : /tel[eé]fono/i.test(mensaje) ? 'telefono' : /fiscal|raz[oó]n social/i.test(mensaje) ? 'razon' : /email/i.test(mensaje) ? 'email' : /contraseña/i.test(mensaje) ? 'password' : /nombre/i.test(mensaje) ? 'nombre' : /condiciones/i.test(mensaje) ? 'acepto' : /periodo/i.test(mensaje) ? 'periodo' : /plan/i.test(mensaje) ? 'plan' : /tipo/i.test(mensaje) ? 'tipo' : undefined;
+    const campo = /recomendaci[oó]n/i.test(mensaje) ? undefined : /promocional|c[oó]digo de recomendaci[oó]n/i.test(mensaje) ? 'codigo' : /nif|cif|hacienda/i.test(mensaje) ? 'nif' : /postal/i.test(mensaje) ? 'cp' : /provincia/i.test(mensaje) ? 'provincia' : /direcci[oó]n/i.test(mensaje) ? 'direccion' : /ciudad/i.test(mensaje) ? 'ciudad' : /tel[eé]fono/i.test(mensaje) ? 'telefono' : /fiscal|raz[oó]n social/i.test(mensaje) ? 'razon' : /email/i.test(mensaje) ? 'email' : /contraseña/i.test(mensaje) ? 'password' : /nombre/i.test(mensaje) ? 'nombre' : /condiciones/i.test(mensaje) ? 'acepto' : /periodo/i.test(mensaje) ? 'periodo' : /plan/i.test(mensaje) ? 'plan' : /tipo/i.test(mensaje) ? 'tipo' : undefined;
     setError({ mensaje, campo });
     if ([1, 2, 3, 4, 5].includes(j?.paso)) cambiarPaso(j.paso);
     else if (/nif|cif|hacienda|empresa|fiscal|postal|provincia/i.test(j?.error || '')) cambiarPaso(2);
@@ -149,6 +171,8 @@ export default function FormRegistro({ inicial = {}, sesion = null, recomendacio
 
   function campoFiscal(e) { setFiscales((antes) => ({ ...antes, [e.target.name]: e.target.value })); }
   const elegido = PLANES[tipo]?.find((p) => p.n === plan);
+  // Días de prueba distintos del normal: 90 con código de gestoría, 60 recomendado (enlace o código).
+  const gratis = promo?.dias || (recomendacion ? 60 : 0);
 
   return (
     <form ref={form} className="registro" onKeyDownCapture={() => { conTeclado.current = true; form.current.dataset.teclado = '1'; }} onPointerDownCapture={() => { conTeclado.current = false; delete form.current.dataset.teclado; }} onSubmit={siguiente} onChange={(e) => { if (error?.campo === e.target.name) setError(null); }} noValidate aria-busy={!listo || enviando || comprobando}>
@@ -196,7 +220,7 @@ export default function FormRegistro({ inicial = {}, sesion = null, recomendacio
 
       <div hidden={paso !== 3} data-paso="3" className="registro-bloque">
         <h2 className="login-titulo" tabIndex={-1}>Elige tu plan</h2>
-        <p className="nota">{TIPOS[tipo]} · {gestoria.trim() ? 'Con un código promocional válido tienes 3 meses gratis.' : recomendacion ? 'Los dos primeros meses son gratis por venir recomendado.' : 'El primer mes es gratis.'} Podrás cambiar de plan cuando quieras.</p>
+        <p className="nota">{TIPOS[tipo]} · {gratis === 90 ? 'Los tres primeros meses son gratis con tu código.' : gratis ? 'Los dos primeros meses son gratis por venir recomendado.' : 'El primer mes es gratis.'} Podrás cambiar de plan cuando quieras.</p>
         <div className="registro-periodo" role="radiogroup" aria-label="Periodo de pago">
           <label className={periodo === 'mes' ? 'elegida' : ''}><input type="radio" name="periodo" value="mes" checked={periodo === 'mes'} onChange={() => setPeriodo('mes')} {...accesibilidad('periodo')} />Mensual</label>
           <label className={periodo === 'anio' ? 'elegida' : ''}><input type="radio" name="periodo" value="anio" checked={periodo === 'anio'} onChange={() => setPeriodo('anio')} {...accesibilidad('periodo')} />Anual (−{DESCUENTO} %)</label>
@@ -215,17 +239,17 @@ export default function FormRegistro({ inicial = {}, sesion = null, recomendacio
           ))}
         </div>
         {!recomendacion && (verCodigo ? <div className="registro-codigo">
-          <label htmlFor="gestoria">Código promocional</label>
-          <input id="gestoria" name="gestoria" autoCapitalize="characters" autoComplete="off" autoCorrect="off" spellCheck={false} value={gestoria} onChange={(e) => setGestoria(e.target.value)} {...accesibilidad('gestoria', 'registro-codigo-ayuda')} />
-          <p id="registro-codigo-ayuda" className="nota">Si tu gestoría te ha dado un código, tienes 3 meses gratis.</p>
-        </div> : <button type="button" className="registro-corregir registro-ver-codigo" aria-expanded="false" onClick={() => { setVerCodigo(true); requestAnimationFrame(() => document.getElementById('gestoria')?.focus()); }}>¿Tienes un código promocional?</button>)}
+          <label htmlFor="codigo">Código promocional</label>
+          <input id="codigo" name="codigo" autoCapitalize="characters" autoComplete="off" autoCorrect="off" spellCheck={false} value={codigo} onChange={(e) => { setCodigo(e.target.value); setPromo(null); }} onBlur={(e) => comprobarCodigo(e.target.value)} {...accesibilidad('codigo', 'registro-codigo-ayuda')} />
+          <p id="registro-codigo-ayuda" className={promo ? 'nota registro-recomendacion' : 'nota'} role="status">{promo ? promo.texto : 'El de tu gestoría te da 3 meses gratis; el de otro cliente de Netto, 2.'}</p>
+        </div> : <button type="button" className="registro-corregir registro-ver-codigo" aria-expanded="false" onClick={() => { setVerCodigo(true); requestAnimationFrame(() => document.getElementById('codigo')?.focus()); }}>¿Tienes un código promocional?</button>)}
         <p className="nota">Precios sin IVA. Puedes ver todo lo que incluye cada plan en <a href="/precios" target="_blank" rel="noopener">Precios</a>.</p>
         <p className="nota">La prueba tiene 50 páginas de lectura IA en total. Al empezar el periodo de pago se activa la cuota mensual indicada, también si eliges pago anual; se comparte por empresa con la gestoría, se renueva cada mes natural y no se acumula.</p>
       </div>
 
       {!sesion && <div hidden={paso !== 4} data-paso="4" className="registro-bloque">
         <h2 className="login-titulo" tabIndex={-1}>Tu cuenta</h2>
-        <p className="nota">{gestoria.trim() ? 'Con un código promocional válido tienes 3 meses gratis con todo incluido.' : recomendacion ? '2 meses gratis con todo incluido, por venir recomendado.' : `${PRUEBA_DIAS} días gratis con todo incluido.`} Sin tarjeta.</p>
+        <p className="nota">{gratis === 90 ? '3 meses gratis con todo incluido, con tu código.' : gratis ? '2 meses gratis con todo incluido, por venir recomendado.' : `${PRUEBA_DIAS} días gratis con todo incluido.`} Sin tarjeta.</p>
         <BotonesSociales />
         <p className="separador solo-web"><span>o con tu email</span></p>
         <label htmlFor="nombre">Nombre</label>
@@ -252,7 +276,7 @@ export default function FormRegistro({ inicial = {}, sesion = null, recomendacio
           <dt>Dirección fiscal</dt><dd>{fiscales.direccion}<br />{fiscales.cp} {fiscales.ciudad}<br />{fiscales.provincia}{fiscales.telefono && <><br />{fiscales.telefono}</>}</dd>
           <dt>Plan y periodo</dt><dd>{plan} · {periodo === 'anio' ? 'Anual' : 'Mensual'}<br />{elegido && precio(elegido.p, periodo)} sin IVA después de la prueba</dd>
         </dl>
-        <p className="nota">{gestoria.trim() ? 'Con un código promocional válido tienes 3 meses gratis, sin tarjeta.' : recomendacion ? '2 meses gratis por venir recomendado, sin tarjeta.' : `${PRUEBA_DIAS} días gratis, sin tarjeta.`}</p>
+        <p className="nota">{gratis === 90 ? '3 meses gratis con tu código, sin tarjeta.' : gratis ? '2 meses gratis por venir recomendado, sin tarjeta.' : `${PRUEBA_DIAS} días gratis, sin tarjeta.`}</p>
         {!sesion && <p className="nota">Te enviaremos un email para confirmar que es tuyo.</p>}
         <p className="nota registro-siguiente">Después de crear la cuenta, configuraremos las actividades y los impuestos de tu negocio.</p>
         <label className="registro-acepto" htmlFor="acepto">
