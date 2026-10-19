@@ -15,7 +15,7 @@ import SinBD from '@/components/SinBD';
 import '@/app/modelos.css';
 
 import '@/app/mk.css';
-import { delosAnios } from '@/lib/indices';
+import { datosImpuestos } from '@/lib/datosImpuestos';
 
 export const dynamic = 'force-dynamic';
 const T = [1, 2, 3, 4];
@@ -51,9 +51,8 @@ export default async function Modelos({ searchParams }) {
   const f = fiscalDe(u);
   // La valoración del almacén requiere el histórico completo; las retenciones se imputan al pago,
   // que puede pertenecer a otro año que la factura de proveedor.
-  const [{ facturas }, gastos, nominas, empleados, productos, ajustes, albaranes, manuales] = await Promise.all([
-    f.inventario ? Promise.all([leer(u, 'facturas'), leer(u, 'gastos')]).then(([facturas, gastos]) => ({ facturas, gastos })) : delosAnios(u, Array.from({ length: 5 }, (_, i) => anio - i)),
-    leer(u, 'gastos'), leer(u, 'nominas'), leer(u, 'empleados'), leer(u, 'productos'), leer(u, 'stock'), leer(u, 'albaranes'), leer(u, 'asientos'),
+  const [{ facturas, gastos }, nominas, empleados, productos, ajustes, albaranes, manuales] = await Promise.all([
+    datosImpuestos(u, anio), leer(u, 'nominas'), leer(u, 'empleados'), leer(u, 'productos'), leer(u, 'stock'), leer(u, 'albaranes'), leer(u, 'asientos'),
   ]);
   const h = hoy();
   const liquidaciones = liquidaciones303(facturas, gastos, anio);
