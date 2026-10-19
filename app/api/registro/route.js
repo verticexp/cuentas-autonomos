@@ -8,6 +8,7 @@ import { ipDe, MUCHOS, pasado } from '@/lib/limite';
 import { datosFiscalesRegistro, fiscalDeTipo, normalizarNifRegistro, nuevoPlan, TIPOS_ALTA } from '@/lib/prueba';
 import { comprobarNif } from '@/lib/censoAeat';
 import { redis } from '@/lib/redis';
+import { apuntarCliente, gestoriaPorCodigo, PRUEBA_GESTORIA_DIAS } from '@/lib/gestorias';
 
 // Alta de una cuenta con su empresa. La primera de todas es la del administrador de Netto (formulario de app/login);
 // las demás llegan desde /registro con tipo de negocio y plan, y empiezan el mes de prueba (lib/prueba.js).
@@ -34,14 +35,18 @@ export async function POST(req) {
   if (primera) {
     r = await crearUsuario({ ...cuenta, empresaNombre: String(form.get('empresa') || '').trim() || undefined });
   } else {
+    const codigoGestoria = String(form.get('gestoria') || '').trim();
+    const gestoria = codigoGestoria ? await gestoriaPorCodigo(codigoGestoria) : null;
+    if (codigoGestoria && !gestoria) return fallo('Ese código de gestoría no existe o ya no está activo.', 400, 1);
     if (typeof cuenta.nombre !== 'string' || !cuenta.nombre.trim() || cuenta.nombre.trim().length > 60) return fallo('Escribe tu nombre (máximo 60 caracteres).', 400, 4);
     if (typeof cuenta.email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cuenta.email.trim())) return fallo('Escribe un email válido.', 400, 4);
     if (form.get('acepto') !== '1') return fallo('Acepta las condiciones y la política de privacidad para crear tu cuenta.', 400, 5);
     const periodo = String(form.get('periodo') || 'mes');
     if (!['mes', 'anio'].includes(periodo)) return fallo('Elige un periodo mensual o anual.', 400, 3);
     if (!Object.hasOwn(TIPOS_ALTA, String(form.get('tipo') || ''))) return fallo('Elige tu tipo de negocio.', 400, 1);
-    const plan = nuevoPlan(String(form.get('tipo') || ''), String(form.get('plan') || ''), new Date(), periodo);
+    const plan = nuevoPlan(String(form.get('tipo') || ''), String(form.get('plan') || ''), new Date(), periodo, gestoria ? PRUEBA_GESTORIA_DIAS : undefined);
     if (!plan) return fallo('Elige un plan.', 400, 3);
+    if (gestoria) plan.gestoria = gestoria.codigo;
     const datos = datosFiscalesRegistro({ ...Object.fromEntries(form), tipo: plan.tipo });
     if (datos.error) return fallo(datos.error, 400, 2);
     const emisor = datos.emisor;
@@ -64,6 +69,7 @@ export async function POST(req) {
         empresaDatos: { nombre: emisor.nombre, emisor, plan, fiscal: { tipo: fiscalDeTipo(plan.tipo) }, censo: { estado: censo.estado === 'ok' ? 'ok' : 'pendiente', fecha: new Date().toISOString() } },
       });
       if (!r.error) await redis.hset('empresa-nif', { [emisor.nif]: r.usuario.empresa });
+      if (!r.error && gestoria) await apuntarCliente(gestoria.codigo, r.usuario.empresa);
     } finally {
       await redis.eval("if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end", [cerrojo], [propietario]).catch(() => {});
     }
