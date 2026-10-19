@@ -22,7 +22,7 @@
 .casillas-plegable[open] > summary::after { transform: rotate(225deg) translate(-1px, -1px); }
 @supports selector(::details-content) {
   @media (min-width: 900px) {
-    .casillas-plegable > summary { display: none; }
+    .casillas-plegable[open] > summary { display: none; }
     .casillas-plegable::details-content { content-visibility: visible; display: block; }
   }
 }
@@ -91,8 +91,8 @@
 @supports selector(::details-content) {
   @media (min-width: 900px) {
     .modelos .bloque.modelo { margin-bottom: 28px; }
-    .modelo-plegable > summary { display: none; }
-    .modelo-plegable > .grupo-t { display: block; }
+    .modelo-plegable[open] > summary { display: none; }
+    .modelo-plegable[open] > .grupo-t { display: block; }
     .modelo-plegable[open] { padding-bottom: 0; }
     .modelo-plegable::details-content { content-visibility: visible; display: block; }
   }
