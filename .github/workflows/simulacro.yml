@@ -13,8 +13,8 @@ jobs:
   simulacro:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
       - name: Exigir clave de cifrado
@@ -31,7 +31,7 @@ jobs:
           run_id=$(gh run list --workflow copia.yml --status success --limit 1 --json databaseId --jq '.[0].databaseId // empty')
           test -n "$run_id" || { echo 'No hay una ejecución correcta de copia.yml'; exit 1; }
           echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: copia-${{ steps.copia.outputs.run_id }}
           run-id: ${{ steps.copia.outputs.run_id }}
