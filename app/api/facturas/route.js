@@ -4,6 +4,7 @@ import { borrarFactura, crearFactura, guardarCliente, limpiar } from '@/lib/fact
 import { numeroFactura, pendienteDe } from '@/lib/calculos';
 import { conLimiteDe, revisarRiesgo } from '@/lib/tercerosServidor';
 import { mismoCliente } from '@/lib/terceros';
+import { enlazadosCon } from '@/lib/enlacesBanco';
 import { cobrarFactura, deshacerCobro, estadoCobro } from '@/lib/cobroManual';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { auditar } from '@/lib/auditoria';
@@ -45,6 +46,8 @@ export async function PATCH(req) {
     return Response.json({ ok: true, ...estadoCobro(r.factura), ...(r.extra || {}) });
   }
   if (Object.keys(b).length === 2 && 'cobrada' in b) {
+    // Lo cobrado por el banco se deshace desde Banco: si no, el movimiento queda emparejado con una factura sin cobrar.
+    if (!b.cobrada && (await enlazadosCon(u, 'factura', antes.id)).length) return error('Este cobro está enlazado con un movimiento del banco: deshaz primero el emparejamiento en Banco', 409);
     // La fecha del cobro: para el estado de pago (Ley Crea y Crece) y el asiento del cobro.
     // Volver a dejarla sin cobrar suma riesgo al cliente: no puede pasar de su riesgo máximo.
     const r = await conLimiteDe(u, antes.cliente, () => actualizarFactura(u, antes.id, async (actual) => {
