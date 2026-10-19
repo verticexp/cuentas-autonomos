@@ -25,11 +25,11 @@ const html = async (ruta, cookie) => (await (await pedir(ruta, { cookie })).text
 const form = (o) => { const f = new FormData(); for (const [k, v] of Object.entries(o)) f.set(k, v); return f; };
 
 // Cuenta del administrador de Netto y, con ella, una empresa de prueba (Bruno) que sí puede darse de baja.
-const alta = await pedir('/api/registro', { metodo: 'POST', form: form({ nombre: 'Prueba', email: `reg${Date.now()}@test.es`, password: 'pruebaprueba1' }) });
+const alta = await pedir('/api/registro', { metodo: 'POST', form: form({ nombre: 'Prueba', email: `reg${Date.now()}@test.es`, password: 'Clave-Local-01-2026' }) });
 const yo = /t=([^;]+)/.exec(alta.headers.get('set-cookie') || '')?.[1];
 if (!yo) throw new Error('No se pudo crear la cuenta de prueba: ¿la base de datos está vacía?');
 const invitacion = (await json('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva: 'Regresiones SL', nombre: 'Bruno', email: `bruno${Date.now()}@test.es` } })).enlace;
-const bruno = /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: form({ codigo: invitacion.split('/').pop(), password: 'brunobruno1' }) })).headers.get('set-cookie') || '')?.[1];
+const bruno = /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: form({ codigo: invitacion.split('/').pop(), password: 'Clave-Local-17-2026' }) })).headers.get('set-cookie') || '')?.[1];
 if (!bruno) throw new Error('No se pudo crear la empresa de prueba');
 const E = JSON.parse(await kv(['HGET', 'cuentas:usuarios', await kv(['GET', `cuentas:sesion:${bruno}`])])).empresa;
 const conf = await json('/api/cuenta', { metodo: 'PATCH', cookie: bruno, cuerpo: { configuracion: {
@@ -140,7 +140,7 @@ console.log('P01–P03 · cobros parciales por Stripe');
 
 console.log('N02 · baja de la empresa');
 {
-  const r = await json('/api/baja', { metodo: 'POST', cookie: bruno, cuerpo: { password: 'brunobruno1' } });
+  const r = await json('/api/baja', { metodo: 'POST', cookie: bruno, cuerpo: { password: 'Clave-Local-17-2026' } });
   ok('la baja se hace', () => assert.ok(r.ok, JSON.stringify(r)));
   // Un enlace desconocido responde con la página de «no encontrado» (Next envía 200 en las rutas ya en streaming): lo que
   // importa es que ya no salgan los documentos.

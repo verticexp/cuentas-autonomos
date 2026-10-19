@@ -136,3 +136,35 @@ test('Importar: fechas imposibles y tipos de IVA no admitidos se rechazan', () =
   const p = previa('gastos', [['Fecha', 'Concepto', 'Base', '% IVA'], ['31/02/2026', 'x', 100, 21], ['10/03/2026', 'y', 100, 99]], []);
   assert.deepEqual(p.items.map((x) => x.estado), ['error', 'error']);
 });
+
+// Auditoría 19-10-2026: números con el año detrás, estados en negativo y archivos sin IVA.
+test('auditoría: «001/2026», «F12-26» y «07-2026» (como numera la app) no se confunden con el año', () => {
+  assert.deepEqual(['001/2026', '002/2026', 'F12-26', '07-2026', 'FAC 12/2026', '2026/26', '2026-12-001', 'F260012'].map((x) => numeroDe(x, 2026)?.numero),
+    [1, 2, 12, 7, 12, 26, 1, 260012]);
+  const p = previa('facturas', [['Número', 'Fecha', 'Cliente', 'Base', '% IVA', 'Total'],
+    ['001/2026', '15/01/2026', 'Ana SL', 100, 21, 121], ['002/2026', '16/01/2026', 'Ana SL', 200, 21, 242], ['003/2026', '17/01/2026', 'Ana SL', 300, 21, 363]], []);
+  assert.deepEqual(p.items.map((x) => [x.estado, x.datos?.numero]), [['nuevo', 1], ['nuevo', 2], ['nuevo', 3]]);
+  // Y la misma factura repetida en el archivo, o ya en la app, sigue siendo duplicada.
+  const q = previa('facturas', [['Número', 'Fecha', 'Cliente', 'Base', '% IVA'], ['001/2026', '15/01/2026', 'Ana SL', 100, 21], ['001/2026', '15/01/2026', 'Ana SL', 100, 21], ['04/2026', '15/02/2026', 'Ana SL', 100, 21]],
+    [{ serie: '', anio: 2026, numero: 4 }]);
+  assert.deepEqual(q.items.map((x) => x.estado), ['nuevo', 'duplicado', 'duplicado']);
+});
+
+test('auditoría: «Impagada», «No cobrada», «Vencida» o «No pagado» no entran como cobradas; «en parte» pide el pendiente', () => {
+  const estados = ['Cobrada', 'Pagado', 'Sí', 'Impagada', 'No cobrada', 'Pendiente de cobro', 'Vencida', 'Unpaid', 'No'];
+  const p = previa('facturas', [['Número', 'Fecha', 'Cliente', 'Base', '% IVA', 'Estado'], ...estados.map((e, i) => [`F${i + 1}`, '10/03/2026', 'Cli', 100, 21, e])], []);
+  assert.deepEqual(p.items.map((x) => x.datos.cobrada), [true, true, true, false, false, false, false, false, false]);
+  const g = previa('gastos', [['Fecha', 'Proveedor', 'Base', '% IVA', 'Estado'], ['10/03/2026', 'Luz', 50, 21, 'No pagado'], ['11/03/2026', 'Agua', 20, 10, 'Pagado']], []);
+  assert.deepEqual(g.items.map((x) => Boolean(x.datos.pendiente)), [true, false]);
+  const parcial = previa('facturas', [['Número', 'Fecha', 'Cliente', 'Base', '% IVA', 'Estado'], ['F1', '10/03/2026', 'Cli', 100, 21, 'Parcialmente cobrada']], []);
+  assert.match(parcial.items[0].error, /Pendiente/);
+});
+
+test('auditoría: sin columna de IVA no se supone un 0 %: con base y total se deduce, con solo el total se pide', () => {
+  const p = previa('facturas', [['Num', 'Fecha', 'Cliente', 'Total'], ['7', '2026-02-01', 'Pepe', 121]], []);
+  assert.match(p.items[0].error, /Falta el IVA/);
+  const q = previa('facturas', [['Num', 'Fecha', 'Cliente', 'Base', 'Total'], ['7', '2026-02-01', 'Pepe', 100, 121], ['8', '2026-02-01', 'Pepe', 100, 110], ['9', '2026-02-01', 'Pepe', 100, 106]], []);
+  assert.deepEqual(q.items.map((x) => x.datos?.ivaPct ?? x.error), [21, 10, 'Tipo de IVA no admitido (6 %)']);
+  const g = previa('gastos', [['Fecha', 'Proveedor', 'Total'], ['2026-02-01', 'Repsol', 60.5]], []);
+  assert.match(g.items[0].error, /Falta el IVA/);
+});
