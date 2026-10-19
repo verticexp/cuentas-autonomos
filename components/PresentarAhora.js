@@ -12,7 +12,8 @@ const pasos = (nums) => [
 
 // Tarjeta de arriba de Impuestos: el trimestre que toca presentar, con sus importes, una lista de pasos
 // (se recuerda en este dispositivo), un botón para copiar o compartir el resumen y el enlace a la Sede de cada modelo.
-// `importes`: [{ num, modelo, href, texto, aeat }], solo los modelos que presenta la persona.
+// `importes`: [{ num, modelo, href, texto, aeat?, plazo? }], todos los modelos que vencen con el trimestre (lib/presentar.js);
+// `plazo`, solo si vence otro día (el 111 y el 115 del 4T); `aeat`, la página de la Sede si la hay.
 export default function PresentarAhora({ t, anio, aviso, importes, texto }) {
   const clave = `presentar:${anio}:${t}`;
   const [hechos, setHechos] = useState([]);
@@ -35,7 +36,7 @@ export default function PresentarAhora({ t, anio, aviso, importes, texto }) {
       <div className="tarjeta">
         <p className="presentar-plazo">{aviso}</p>
         <ul className="presentar-importes">
-          {importes.map((m) => <li key={m.num}><a href={m.href}><span>{m.modelo}</span><strong>{m.texto}</strong></a></li>)}
+          {importes.map((m) => <li key={m.num}><a href={m.href}><span>{m.modelo}{m.plazo && <small> · hasta el {m.plazo}</small>}</span><strong>{m.texto}</strong></a></li>)}
         </ul>
         <ol className="presentar-pasos">
           {pasos(importes.map((m) => m.num)).map((p, i) => (
@@ -44,7 +45,7 @@ export default function PresentarAhora({ t, anio, aviso, importes, texto }) {
         </ol>
         <div className="presentar-acc">
           <button type="button" className="boton" onClick={compartir}>Compartir resumen</button>
-          {importes.map((m) => (
+          {importes.filter((m) => m.aeat).map((m) => (
             <a key={m.num} className="boton secundario" href={m.aeat} target="_blank" rel="noopener noreferrer">Presentar el {m.num} en la AEAT</a>
           ))}
         </div>
