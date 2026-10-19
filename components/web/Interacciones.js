@@ -51,6 +51,7 @@ export default function Interacciones() {
       n.querySelectorAll(SEL).forEach((el) => io.observe(el));
     };
     vigilar(raiz);
+    if (matchMedia('(max-width: 640px)').matches) raiz.querySelectorAll('.web-pie-grupo[open]').forEach((d) => { d.open = false; });
     const mo = new MutationObserver((ms) => ms.forEach((m) => m.addedNodes.forEach(vigilar)));
     mo.observe(raiz, { childList: true, subtree: true });
     const mover = (ev) => {
