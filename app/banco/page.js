@@ -21,6 +21,8 @@ export const dynamic = 'force-dynamic';
 const ERRORES = {
   caducado: 'La conexión ha caducado. Vuelve a empezar.',
   cancelado: 'No se ha dado permiso en el banco.',
+  bloqueada: 'Netto estaba bloqueado al volver del banco. Desbloquéalo y vuelve a conectar.',
+  'solo-lectura': 'Tu mes de prueba ha terminado: elige un plan en Ajustes › Tu plan para conectar el banco.',
   banco: 'El banco no ha respondido. Prueba otra vez en un rato.',
   sincuentas: 'El banco no ha compartido ninguna cuenta.',
 };

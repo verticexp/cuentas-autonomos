@@ -46,8 +46,8 @@ test('solo lectura: prueba acabada sin pagar; nunca con pago ni sin plan', () =>
 });
 
 test('en solo lectura se puede pagar, salir y cambiar de empresa, pero no escribir datos', () => {
-  for (const r of ['/api/suscripcion', '/api/logout', '/api/empresas', '/api/cuenta', '/api/bloqueo']) assert.equal(escrituraLibre(r), true, r);
-  for (const r of ['/api/facturas', '/api/gastos', '/api/suscripciones-falsas', '/api/stripe']) assert.equal(escrituraLibre(r), false, r);
+  for (const r of ['/api/suscripcion', '/api/logout', '/api/empresas', '/api/bloqueo']) assert.equal(escrituraLibre(r), true, r);
+  for (const r of ['/api/cuenta', '/api/facturas', '/api/gastos', '/api/suscripciones-falsas', '/api/stripe']) assert.equal(escrituraLibre(r), false, r);
 });
 
 test('suscripción viva: pagado con su plan; cancelada o impagada: solo lectura desde hoy', () => {
