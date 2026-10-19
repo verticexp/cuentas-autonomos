@@ -87,7 +87,7 @@ export default async function Gastos({ searchParams }) {
   })));
 
   return (
-    <main className="pagina mk-look gastos">
+    <main className="pagina mk-look gastos gastos-formulario">
       <header className="cabecera">
         <h1 className="titulo">Gastos</h1>
       </header>

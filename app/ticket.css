@@ -35,3 +35,17 @@
 .gasto-importes dd { margin: 0; flex: none; font-variant-numeric: tabular-nums; }
 .gasto-importes .gasto-total { font-weight: 600; }
 .gasto-importes .gasto-total dt { color: var(--ink); }
+
+@media (max-width: 600px) {
+  .gastos-formulario .formulario label.gasto-pendiente { min-height: 44px; }
+  .gastos-formulario .gasto-stock-linea { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 44px; }
+  .gastos-formulario .gasto-stock-linea > select { grid-column: 1 / -1; }
+  .gastos-formulario .gasto-stock-linea .linea-quitar { width: 44px; height: 44px; }
+  .gastos-formulario .gasto-stock .boton,
+  .gastos-formulario .ticket-ia-botones .boton,
+  .gastos-formulario .gasto-guardar .boton { min-height: 44px; white-space: normal; }
+  .gastos-formulario .formulario:has(.gasto-guardar) .campo { scroll-margin-block: 24px; }
+}
+@media (max-width: 380px) {
+  .gastos-formulario .formulario .gasto-guardar:has(> :nth-child(2)) { grid-template-columns: minmax(0, 1fr); }
+}

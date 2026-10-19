@@ -21,7 +21,7 @@ export default async function Gasto({ params }) {
   const stockProductos = fiscalDe(u).inventario ? (productos || []).filter((p) => !p.servicio).sort((a, b) => a.nombre.localeCompare(b.nombre)) : [];
   if (!g) notFound();
   return (
-    <main className="pagina mk-look">
+    <main className="pagina mk-look gastos-formulario">
       <Volver href="/gastos">Gastos</Volver>
       <fieldset className="solo-ver" disabled={!puede(u, 'gastar')}><FormGasto hoy={hoy()} gasto={g} actividades={actividadesDe(u)} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} productos={stockProductos} proyectos={puede(u, 'gastar') ? await proyectosDe(u) : []} /></fieldset>
       {g.dieta && <p className="nota">{g.dieta.quien === 'titular' ? `Pagaste ${eur(g.dieta.pagado)}; deducible ${eur(g.dieta.deducible)}${g.dieta.exceso ? `, ${eur(g.dieta.exceso)} por encima del límite` : ''}.` : `Exento para el trabajador: ${eur(g.dieta.exento)}${g.dieta.exceso ? `; los ${eur(g.dieta.exceso)} de más van en su nómina con retención` : ''}.`}</p>}

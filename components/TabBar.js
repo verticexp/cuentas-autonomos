@@ -9,6 +9,7 @@ import CambiarEmpresa from '@/components/CambiarEmpresa';
 import { EXTRA, extraDe } from '@/components/secciones';
 import { atajosDe } from '@/lib/navegacion';
 import { useHojaDeslizable } from '@/components/useHojaDeslizable';
+import useTecladoFormulario from '@/components/useTecladoFormulario';
 import '@/app/empresas.css';
 import '@/app/lateral.css';
 import '@/app/hoja.css';
@@ -64,6 +65,7 @@ export default function TabBar({ permisos = [], empresas = [], empresa, admin = 
   const nav = useRef(null);
   // Móvil: el «+» abre una hoja con lo que se puede crear. En el ordenador sigue siendo el botón «Nueva factura» de siempre.
   const [movil, setMovil] = useState(false);
+  const teclado = useTecladoFormulario(movil && (path.startsWith('/gastos') || path === '/modelos'));
   const [hoja, setHoja] = useState(false);
   const botonMas = useRef(null);
   const panel = useRef(null);
@@ -122,7 +124,7 @@ export default function TabBar({ permisos = [], empresas = [], empresa, admin = 
 
   return (
     <>
-    <div className="tabbar">
+    <div className="tabbar" data-teclado={teclado || undefined}>
       <Link href="/" className="tabbar-logo" aria-label="Netto, resumen" onClick={(e) => { e.preventDefault(); ir('/'); }}><Logo /></Link>
       {empresa && <CambiarEmpresa empresas={empresas} actual={empresa} variante="lateral" puedeCrear={admin} />}
       <nav
