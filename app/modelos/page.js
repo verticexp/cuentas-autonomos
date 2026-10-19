@@ -19,9 +19,9 @@ import { datosImpuestos } from '@/lib/datosImpuestos';
 
 export const dynamic = 'force-dynamic';
 const T = [1, 2, 3, 4];
-const MES = ['abril', 'julio', 'octubre'];
 // Hasta cuándo se presenta cada trimestre: el 4T, en enero (303, 130 y 349 hasta el 30; las retenciones, 111 y 115, hasta el 20).
-const plazo = (t, anio, dia = 30) => (t === 4 ? `${dia} de enero de ${anio + 1}` : `20 de ${MES[t - 1]}`);
+// Último día del plazo; si cae en sábado o domingo, el lunes siguiente (como el 303 y el 130, auditoría 10-2026).
+const plazo = (t, anio, dia = 30) => { const l = limiteTrimestre(t, anio, dia); return fechaTexto(l) + (t === 4 ? ` de ${l.slice(0, 4)}` : ''); };
 
 // Resta en un desglose; sin «−0,00 €» cuando es cero.
 const menos = (v) => (v ? -v : 0);

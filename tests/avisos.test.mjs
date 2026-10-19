@@ -8,7 +8,9 @@ const fac = (id, fecha, extra = {}) => ({ id, numero: Number(id), anio: 2026, fe
 test('plazos de Hacienda: 7 días antes, el día antes y el último día', () => {
   assert.deepEqual(avisosDelDia({ fiscal }, '2026-10-13').map((a) => a.titulo), ['Queda una semana: 303 y 130 del 3T']);
   assert.deepEqual(avisosDelDia({ fiscal }, '2026-10-19').map((a) => a.titulo), ['Mañana acaba el plazo: 303 y 130 del 3T']);
-  assert.deepEqual(avisosDelDia({ fiscal }, '2027-01-30').map((a) => a.titulo), ['Hoy es el último día: 303 y 130 del 4T y 390']);
+  // El 30 de enero de 2027 es sábado: el plazo acaba el lunes 1 de febrero (auditoría 10-2026).
+  assert.equal(avisosDelDia({ fiscal }, '2027-01-30').length, 0);
+  assert.deepEqual(avisosDelDia({ fiscal }, '2027-02-01').map((a) => a.titulo), ['Hoy es el último día: 303 y 130 del 4T y 390']);
   assert.equal(avisosDelDia({ fiscal }, '2026-10-14').length, 0);
   assert.deepEqual(avisosDelDia({ fiscal: { tipo: 'sociedad', iva: 'general' } }, '2026-10-19').map((a) => a.titulo), ['Mañana acaba el plazo: 303 del 3T y 202']);
   assert.deepEqual(avisosDelDia({ fiscal: { tipo: 'sociedad', iva: 'exento' }, cuotaIS: { 2025: 0 } }, '2026-10-19').length, 0);
@@ -27,8 +29,9 @@ test('facturas: solo el día siguiente a vencer, sin cobrar', () => {
 test('calendario: todos los plazos del año según cómo trabaja', () => {
   const aut = plazosFiscales({ tipo: 'autonomo', iva: 'general', trabajadores: true, alquiler: true, intracom: true }, 2027);
   assert.deepEqual(aut.map((p) => [p.fecha, p.texto]), [
-    ['2027-01-20', '111 y 115 del 4T'], ['2027-01-30', '303, 130 y 349 del 4T y 390'], ['2027-01-31', '190 y 180'],
-    ['2027-02-28', '347 (si pasas de 3.005,06 € con alguien)'],
+    // 30 y 31 de enero y 28 de febrero de 2027 caen en fin de semana: pasan al lunes.
+    ['2027-01-20', '111 y 115 del 4T'], ['2027-02-01', '303, 130 y 349 del 4T y 390; 190 y 180'],
+    ['2027-03-01', '347 (si pasas de 3.005,06 € con alguien)'],
     ['2027-04-20', '303, 130, 349, 111 y 115 del 1T'], ['2027-07-20', '303, 130, 349, 111 y 115 del 2T'], ['2027-10-20', '303, 130, 349, 111 y 115 del 3T'],
     ['2027-06-30', 'la renta'],
   ].sort((a, b) => aut.findIndex((p) => p.fecha === a[0]) - aut.findIndex((p) => p.fecha === b[0])));

@@ -25,7 +25,7 @@ const pedir = (ruta, { metodo = 'GET', cuerpo, form, sinDesbloqueo, cabeceras = 
 });
 const json = async (ruta, op) => { const r = await pedir(ruta, op); return { status: r.status, d: await r.json().catch(() => ({})) }; };
 
-const fd = new FormData(); fd.set('nombre', 'Prueba'); fd.set('email', `integridad${Date.now()}@test.es`); fd.set('password', 'pruebaprueba1');
+const fd = new FormData(); fd.set('nombre', 'Prueba'); fd.set('email', `integridad${Date.now()}@test.es`); fd.set('password', 'Clave-Local-01-2026');
 const alta = await pedir('/api/registro', { metodo: 'POST', form: fd });
 const ck = alta.headers.getSetCookie();
 t = /^t=([^;]+)/.exec(ck.find((c) => c.startsWith('t=')) || '')?.[1];
@@ -41,6 +41,8 @@ const factura = (i, extra = {}) => ({ fecha: '2026-03-10', actividad: ACT, clien
 const empresa = (await db('hkeys', 'cuentas:empresas'))[0];
 
 console.log('F07 · bloqueo de pantalla también en la API');
+// Desde el 17-10-2026 el bloqueo es opcional y personal (Ajustes › Face ID y contraseña): se activa para comprobarlo.
+await json('/api/cuenta', { metodo: 'PATCH', cuerpo: { bloqueoPantalla: true } });
 await ok('sin desbloqueo, la API no da datos (423)', async () => {
   assert.equal((await pedir('/api/exportar?tipo=facturas', { sinDesbloqueo: true })).status, 423);
   assert.equal((await pedir('/api/facturas', { metodo: 'POST', cuerpo: factura(0), sinDesbloqueo: true })).status, 423);

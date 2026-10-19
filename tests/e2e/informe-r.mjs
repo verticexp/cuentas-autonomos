@@ -22,11 +22,11 @@ const pedir = (ruta, { metodo = 'GET', cuerpo, cookie, form } = {}) => fetch(BAS
 const json = async (ruta, op) => { const r = await pedir(ruta, op); return { status: r.status, ...(await r.json().catch(() => ({}))) }; };
 const form = (o) => { const f = new FormData(); for (const [k, v] of Object.entries(o)) f.set(k, v); return f; };
 
-const alta = await pedir('/api/registro', { metodo: 'POST', form: form({ nombre: 'Prueba', email: `regr${Date.now()}@test.es`, password: 'pruebaprueba1' }) });
+const alta = await pedir('/api/registro', { metodo: 'POST', form: form({ nombre: 'Prueba', email: `regr${Date.now()}@test.es`, password: 'Clave-Local-01-2026' }) });
 const yo = /t=([^;]+)/.exec(alta.headers.get('set-cookie') || '')?.[1];
 if (!yo) throw new Error('No se pudo crear la cuenta de prueba: ¿la base de datos está vacía?');
 const invitacion = (await json('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva: 'Informe R SL', nombre: 'Rita', email: `rita${Date.now()}@test.es` } })).enlace;
-const rita = /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: form({ codigo: invitacion.split('/').pop(), password: 'ritarita12' }) })).headers.get('set-cookie') || '')?.[1];
+const rita = /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: form({ codigo: invitacion.split('/').pop(), password: 'Clave-Local-02-2026' }) })).headers.get('set-cookie') || '')?.[1];
 if (!rita) throw new Error('No se pudo crear la empresa de prueba');
 const E = JSON.parse(await kv(['HGET', 'cuentas:usuarios', await kv(['GET', `cuentas:sesion:${rita}`])])).empresa;
 const conf = await json('/api/cuenta', { metodo: 'PATCH', cookie: rita, cuerpo: { configuracion: {

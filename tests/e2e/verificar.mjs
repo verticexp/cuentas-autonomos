@@ -3,7 +3,8 @@
 // Uso: BASE=http://localhost:3001 node tests/e2e/verificar.mjs   (nunca contra la app de verdad)
 import assert from 'node:assert/strict';
 import { panelResumen } from '../../lib/panel.js';
-import { importes, numeroFactura, r2 } from '../../lib/calculos.js';
+import { importes, limiteTrimestre, numeroFactura, r2 } from '../../lib/calculos.js';
+const limite4T = limiteTrimestre(4, new Date().getFullYear());
 import { eur, eurSin } from '../../lib/formato.js';
 import { limpiarFiscal } from '../../lib/empresa.js';
 import { prevision } from '../../lib/tesoreria.js';
@@ -52,7 +53,7 @@ const n = (s) => s.replace(/\u00A0/g, ' ');
 
 // 1. Alta de la cuenta (la primera de la base de datos es la del administrador).
 const fd = new FormData();
-fd.set('nombre', 'Prueba'); fd.set('email', `prueba${Date.now()}@test.es`); fd.set('password', 'pruebaprueba1');
+fd.set('nombre', 'Prueba'); fd.set('email', `prueba${Date.now()}@test.es`); fd.set('password', 'Clave-Local-01-2026');
 const alta = await pedir('/api/registro', { metodo: 'POST', form: fd });
 const yo = /t=([^;]+)/.exec(alta.headers.get('set-cookie') || '')?.[1];
 if (!yo) throw new Error('No se pudo crear la cuenta de prueba: ¿la base de datos está vacía?');
@@ -341,7 +342,7 @@ console.log('Más modelos: 115, 349, 390 y renta');
   ok('349: el cliente francés con su NIF-IVA', () => assert.ok(m.includes(`FR12345678901 · Studio Paris (S) ${n(eur(700))}`)));
   const res59 = n(await texto(`/?anio=${Y}`, yo));
   ok('303: lo facturado sin IVA al cliente francés, en la casilla 59', () => assert.ok(res59.includes(`59 · Empresas de otros países de la UE ${n(eur(700))}`)));
-  ok('Impuestos: qué presentas y cuándo, y el 303 trimestral con la casilla 59', () => assert.ok(m.includes('Impuestos') && m.includes('Qué presentas y cuándo') && m.includes('303 · IVA trimestral') && m.includes(`59 · Empresas de otros países de la UE ${n(eur(700))}`) && m.includes(`Hasta el 30 de enero de ${Y + 1}`)));
+  ok('Impuestos: qué presentas y cuándo, y el 303 trimestral con la casilla 59', () => assert.ok(m.includes('Impuestos') && m.includes('Qué presentas y cuándo') && m.includes('303 · IVA trimestral') && m.includes(`59 · Empresas de otros países de la UE ${n(eur(700))}`) && m.includes(`hasta el ${Number(limite4T.slice(8))} de ${limite4T.slice(5, 7) === '01' ? 'enero' : 'febrero'} de ${Y + 1}`)));
   ok('Impuestos: el 115 del 4T, hasta el 20 de enero', () => assert.ok(/115 · Retenciones del alquiler[\s\S]*?Hasta el 20 de enero de \d{4}/.test(m)));
   // Gastos de proveedores de fuera de España sin IVA: el de la UE (por su NIF-IVA) y uno de fuera, a mano.
   const gUE = (await (await pedir('/api/gastos', { metodo: 'POST', cookie: yo, cuerpo: { fecha: `${Y}-05-06`, actividad: ACTS[0].id, concepto: 'Publicidad', base: '120', ivaPct: 0, proveedor: 'Google Ireland', proveedorNif: 'IE6388047V' } })).json()).gasto;
@@ -432,7 +433,7 @@ if (process.env.PUSH_PRUEBAS && process.env.CRON_SECRET) {
 
 console.log('Permisos');
 const inv = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { nombre: 'Solo gastos', email: `g${Date.now()}@test.es`, rol: 'miembro', permisos: ['gastos', 'gastar'] } })).json();
-const fd2 = new FormData(); fd2.set('codigo', inv.enlace.split('/').pop()); fd2.set('password', 'gastosgastos1');
+const fd2 = new FormData(); fd2.set('codigo', inv.enlace.split('/').pop()); fd2.set('password', 'Clave-Local-03-2026');
 const acepta = await pedir('/api/invitacion', { metodo: 'POST', form: fd2 });
 const otro = /t=([^;]+)/.exec(acepta.headers.get('set-cookie') || '')?.[1];
 const intento = await pedir('/api/facturas', { metodo: 'POST', cookie: otro, cuerpo: { fecha: `${Y}-09-01`, cliente: { nombre: 'X' }, base: '10', ivaPct: 21 } });
@@ -451,7 +452,7 @@ ok('el de gastos no ve cifras del resumen', () => assert.ok(!html.includes(eurSi
 
 console.log('Sociedad');
 const alta2 = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva: 'Náutica Prueba SL', nombre: 'Pere', email: `p${Date.now()}@test.es` } })).json();
-const fd3 = new FormData(); fd3.set('codigo', alta2.enlace.split('/').pop()); fd3.set('password', 'perepere123');
+const fd3 = new FormData(); fd3.set('codigo', alta2.enlace.split('/').pop()); fd3.set('password', 'Clave-Local-04-2026');
 const soc = /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: fd3 })).headers.get('set-cookie') || '')?.[1];
 await pedir('/api/cuenta', { metodo: 'PATCH', cookie: soc, cuerpo: { configuracion: { fiscal: { tipo: 'sociedad', iva: 'general', trabajadores: true }, emisor: { nombre: 'Náutica Prueba SL', nif: 'B12345674' }, actividades: [{ nombre: 'Chárter', ivaPct: 21, irpfPct: 15 }] } } });
 const sf = await (await pedir('/api/facturas', { metodo: 'POST', cookie: soc, cuerpo: { fecha: `${Y}-02-02`, cliente: { nombre: 'Cliente' }, base: '1000', ivaPct: 21, irpfPct: 15 } })).json();
@@ -496,7 +497,7 @@ console.log('Kilometraje y dietas');
 console.log('Previsión de tesorería');
 {
   const alta3 = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva: 'Tesorería Prueba', nombre: 'Tere', email: `t${Date.now()}@test.es` } })).json();
-  const fd4 = new FormData(); fd4.set('codigo', alta3.enlace.split('/').pop()); fd4.set('password', 'teretere123');
+  const fd4 = new FormData(); fd4.set('codigo', alta3.enlace.split('/').pop()); fd4.set('password', 'Clave-Local-05-2026');
   const te = /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: fd4 })).headers.get('set-cookie') || '')?.[1];
   const cfg = await (await pedir('/api/cuenta', { metodo: 'PATCH', cookie: te, cuerpo: { configuracion: { fiscal: { tipo: 'autonomo', iva: 'general' }, emisor: { nombre: 'Tere', nif: '11111111H', plazo: 30 }, actividades: [{ nombre: 'Música', ivaPct: 21, irpfPct: 15 }] } } })).json();
   const masD = (d) => new Date(Date.parse(`${hoy}T12:00:00Z`) + d * 864e5).toISOString().slice(0, 10);
@@ -521,7 +522,7 @@ console.log('Previsión de tesorería');
   const res3 = n(await texto('/', te));
   ok('el resumen enseña el saldo previsto', () => assert.ok(res3.includes('Tesorería') && res3.includes(n(eurSin(esp.final)))));
   const invL = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: te, cuerpo: { nombre: 'Lectora', email: `le${Date.now()}@test.es`, rol: 'miembro', permisos: ['resumen', 'facturas', 'gastos'] } })).json();
-  const fL = new FormData(); fL.set('codigo', invL.enlace.split('/').pop()); fL.set('password', 'lectora123');
+  const fL = new FormData(); fL.set('codigo', invL.enlace.split('/').pop()); fL.set('password', 'Clave-Local-06-2026');
   const lectora = /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: fL })).headers.get('set-cookie') || '')?.[1];
   const ptL = await (await pedir('/tesoreria', { cookie: lectora })).text();
   const ptLt = n(await texto('/tesoreria', lectora));
@@ -538,7 +539,7 @@ console.log('Previsión de tesorería');
 console.log('Portal del cliente');
 {
   const alta4 = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva: 'Portal Prueba', nombre: 'Pau', email: `pp${Date.now()}@test.es` } })).json();
-  const fd5 = new FormData(); fd5.set('codigo', alta4.enlace.split('/').pop()); fd5.set('password', 'paupaupau123');
+  const fd5 = new FormData(); fd5.set('codigo', alta4.enlace.split('/').pop()); fd5.set('password', 'Clave-Local-07-2026');
   const pp = /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: fd5 })).headers.get('set-cookie') || '')?.[1];
   const cfg = await (await pedir('/api/cuenta', { metodo: 'PATCH', cookie: pp, cuerpo: { configuracion: { fiscal: { tipo: 'autonomo', iva: 'general' }, emisor: { nombre: 'Pau Portal', nif: '22222222J', iban: 'ES11 2222', plazo: 30 }, actividades: [{ nombre: 'Música', ivaPct: 21, irpfPct: 15 }] } } })).json();
   const act = cfg.actividades[0].id;
@@ -582,7 +583,7 @@ console.log('Portal del cliente');
 console.log('Importar desde Holded o Excel');
 {
   const alta5 = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva: 'Importar Prueba', nombre: 'Imma', email: `im${Date.now()}@test.es` } })).json();
-  const fd6 = new FormData(); fd6.set('codigo', alta5.enlace.split('/').pop()); fd6.set('password', 'immaimma123');
+  const fd6 = new FormData(); fd6.set('codigo', alta5.enlace.split('/').pop()); fd6.set('password', 'Clave-Local-08-2026');
   const im = /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: fd6 })).headers.get('set-cookie') || '')?.[1];
   await pedir('/api/cuenta', { metodo: 'PATCH', cookie: im, cuerpo: { configuracion: { fiscal: { tipo: 'autonomo', iva: 'general' }, emisor: { nombre: 'Imma', nif: '33333333P', iban: 'ES22', plazo: 30 }, actividades: [{ nombre: 'Música', ivaPct: 21, irpfPct: 15 }] } } });
   const subir = async (tipo, nombre, datos, guardar, cookie = im) => {
@@ -648,7 +649,7 @@ console.log('Banco: extractos, conexión y emparejar');
   const es = (f) => f.split('-').reverse().join('/');
   const entrar = async (alta, pass) => { const f = new FormData(); f.set('codigo', alta.enlace.split('/').pop()); f.set('password', pass); return /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: f })).headers.get('set-cookie') || '')?.[1]; };
   const emailB = `banco${Date.now()}@test.es`;
-  const bq = await entrar(await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva: 'Banco Prueba', nombre: 'Berta', email: emailB } })).json(), 'bertaberta1');
+  const bq = await entrar(await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva: 'Banco Prueba', nombre: 'Berta', email: emailB } })).json(), 'Clave-Local-16-2026');
   const empresa = await kv(['HGET', 'cuentas:emails', emailB]);
   const cfg = await (await pedir('/api/cuenta', { metodo: 'PATCH', cookie: bq, cuerpo: { configuracion: { fiscal: { tipo: 'autonomo', iva: 'general' }, emisor: { nombre: 'Berta', nif: '22222222J', plazo: 30 }, actividades: [{ nombre: 'Eventos', ivaPct: 21, irpfPct: 0 }] } } })).json();
   const act = cfg.actividades[0].id;
@@ -691,7 +692,7 @@ console.log('Banco: extractos, conexión y emparejar');
   const pt = n(await texto('/tesoreria', bq));
   ok('tesorería parte del saldo real y enlaza al banco con lo pendiente', () => assert.ok(pt.includes('De tus cuentas') && pt.includes('7.452,00') && pt.includes('6 movimientos por revisar') === false && /Banco Saldo real[^€]*? 4 /.test(pt), pt.slice(0, 600)));
 
-  const gestoria = await entrar(await (await pedir('/api/usuarios', { metodo: 'POST', cookie: bq, cuerpo: { nombre: 'Gestoría', email: `ge${Date.now()}@test.es`, rol: 'miembro', permisos: ['resumen', 'facturas', 'gastos', 'nominas'] } })).json(), 'gestoria123');
+  const gestoria = await entrar(await (await pedir('/api/usuarios', { metodo: 'POST', cookie: bq, cuerpo: { nombre: 'Gestoría', email: `ge${Date.now()}@test.es`, rol: 'miembro', permisos: ['resumen', 'facturas', 'gastos', 'nominas'] } })).json(), 'Clave-Local-21-2026');
   const g403 = await pedir('/api/banco', { metodo: 'POST', cookie: gestoria, cuerpo: { accion: 'emparejar', id: mov(1210).id, tipo: 'factura', destino: f1.id } });
   ok('la gestoría ve el banco pero no puede marcar cobros (403)', () => assert.equal(g403.status, 403));
   const gs = await (await pedir('/api/banco', { metodo: 'POST', cookie: gestoria, cuerpo: { accion: 'seguras' } })).json();
@@ -707,7 +708,7 @@ console.log('Banco: extractos, conexión y emparejar');
   const pbG = await (await pedir('/banco', { cookie: gestoria })).text();
   const pbA = await (await pedir('/banco', { cookie: bq })).text();
   ok('y no le sale «Subir extracto» (al administrador sí)', () => assert.ok(!pbG.includes('Subir extracto') && pbA.includes('Subir extracto')));
-  const contable = await entrar(await (await pedir('/api/usuarios', { metodo: 'POST', cookie: bq, cuerpo: { nombre: 'Contable', email: `co${Date.now()}@test.es`, rol: 'miembro', permisos: ['resumen', 'gastos', 'gastar'] } })).json(), 'contable123');
+  const contable = await entrar(await (await pedir('/api/usuarios', { metodo: 'POST', cookie: bq, cuerpo: { nombre: 'Contable', email: `co${Date.now()}@test.es`, rol: 'miembro', permisos: ['resumen', 'gastos', 'gastar'] } })).json(), 'Clave-Local-20-2026');
   const ci = await subir(csv, 'extracto.csv', contable);
   ok('quien puede apuntar gastos (o facturar) sí sube extractos', () => assert.equal(ci.status, 200));
   const gSync = await pedir('/api/banco/sincronizar', { metodo: 'POST', cookie: gestoria, cuerpo: { forzar: true } });
@@ -928,7 +929,7 @@ console.log('Registro de jornada');
   const mesPrev = new Date(Date.UTC(Number(hoy.slice(0, 4)), Number(hoy.slice(5, 7)) - 2, 1)).toISOString().slice(0, 7);
   const evaEmail = `eva${Date.now()}@test.es`;
   const altaEva = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { nombre: 'Eva Fichadora', email: evaEmail, rol: 'miembro', permisos: [] } })).json();
-  const fe = new FormData(); fe.set('codigo', altaEva.enlace.split('/').pop()); fe.set('password', 'evaevaeva123');
+  const fe = new FormData(); fe.set('codigo', altaEva.enlace.split('/').pop()); fe.set('password', 'Clave-Local-09-2026');
   const eva = /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: fe })).headers.get('set-cookie') || '')?.[1];
   const emp = async (cuerpo) => pedir('/api/empleados', { metodo: 'POST', cookie: yo, cuerpo: { nif: '', puesto: '', baja: '', irpfPct: 12, ssTrabajadorPct: 6.5, ssEmpresaPct: 31.65, ...cuerpo } });
   const E = (await (await emp({ nombre: 'Eva Fichadora', nif: '87654321X', alta: `${mesPrev}-01`, bruto: '1500', email: evaEmail.toUpperCase(), horasSemana: 5, precioHoraExtra: '20' })).json()).empleado;
@@ -974,7 +975,9 @@ console.log('Registro de jornada');
   ok('la nómina del mes lleva sus horas registradas', () => assert.ok(gen.ok && nE.horas.trabajadas === 1440 && nE.horas.teoricas === teor && nE.horas.extra === extra, JSON.stringify(nE)));
   ok('y le paga las horas extra a su precio, dentro del bruto', () => assert.ok(nE.extras.importe === r2((extra / 60) * 20) && nE.bruto === r2(1500 + (extra / 60) * 20)));
   ok('quien no ficha, nómina como siempre', () => assert.ok(nL && !nL.horas && nL.bruto === 1200));
-  const m111 = n(await texto(`/modelos?anio=${mesPrev.slice(0, 4)}`, yo));
+  // La retención se declara al pagar la nómina (art. 78 RIRPF): se pagan hoy y salen en el 111 del trimestre de hoy.
+  for (const x of [nE, nL]) await pedir('/api/nominas', { metodo: 'PATCH', cookie: yo, cuerpo: { id: x.id, pagada: true } });
+  const m111 = n(await texto(`/modelos?anio=${hoy.slice(0, 4)}`, yo));
   ok('Impuestos: el 111 del trimestre con los trabajadores y sus retenciones', () => assert.ok(/111 · Retenciones de trabajadores y profesionales[\s\S]*?01 · Trabajadores \d[\s\S]*?03 · Retenciones [\d.,]+ €/.test(m111)));
   const pn = n(await texto(`/nominas/${nE.id}`, yo));
   ok('la nómina enseña las horas del registro', () => assert.ok(pn.includes('Registro de jornada') && pn.includes('24:00 h trabajadas') && pn.includes('h extra pagadas'), pn.slice(0, 400)));
@@ -1017,7 +1020,7 @@ console.log('\nSeguridad');
 
   // Alguien que gestiona usuarios sin ser administrador no puede crear administradores ni tocar a uno.
   const alta = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { nombre: 'Gestor', email: `gu${Date.now()}@test.es`, rol: 'miembro', permisos: ['usuarios', 'facturas'] } })).json();
-  const gestor = /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: form({ codigo: alta.enlace.split('/').pop(), password: 'gestorgestor1' }) })).headers.get('set-cookie') || '')?.[1];
+  const gestor = /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: form({ codigo: alta.enlace.split('/').pop(), password: 'Clave-Local-10-2026' }) })).headers.get('set-cookie') || '')?.[1];
   const nuevoAdmin = await pedir('/api/usuarios', { metodo: 'POST', cookie: gestor, cuerpo: { nombre: 'Colado', email: `co${Date.now()}@test.es`, rol: 'admin' } });
   const yoId = await kv(['GET', `cuentas:sesion:${yo}`]);
   const tocarAdmin = await pedir('/api/usuarios', { metodo: 'PATCH', cookie: gestor, cuerpo: { id: yoId, rol: 'miembro', permisos: [] } });
@@ -1036,7 +1039,7 @@ console.log('\nSeguridad');
   const pushMalo = await pedir('/api/push', { metodo: 'POST', cookie: yo, cuerpo: { sub: { endpoint: 'https://malo.example/x', keys: { p256dh: 'a', auth: 'b' } } } });
   ok('avisos: solo servicios push de los navegadores (nada de direcciones cualquiera)', () => assert.ok([400, 503].includes(pushMalo.status)));
   const otra = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva: 'Otra Seguridad SL', nombre: 'Olga', email: `os${Date.now()}@test.es` } })).json();
-  const olga = /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: form({ codigo: otra.enlace.split('/').pop(), password: 'olgaolga123' }) })).headers.get('set-cookie') || '')?.[1];
+  const olga = /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: form({ codigo: otra.enlace.split('/').pop(), password: 'Clave-Local-11-2026' }) })).headers.get('set-cookie') || '')?.[1];
   const ct = await pedir('/api/controlat', { metodo: 'POST', cookie: olga, cuerpo: { activar: true } });
   ok("Controla'T: el administrador de otra empresa no lo activa (escribiría en la cuenta de Controla'T de ese email)", () => assert.equal(ct.status, 403));
 
@@ -1064,7 +1067,7 @@ console.log('\nPrivacidad y condiciones');
   ok('sin barra de la app en las páginas legales', () => assert.ok(!prT.includes('class="tabs') && !coT.includes('class="tabs')));
   const lg = n(await (await pedir('/login')).text());
   ok('el login enlaza a privacidad y condiciones', () => assert.ok(lg.includes('href="/privacidad"') && lg.includes('href="/condiciones"')));
-  ok('el formulario de entrar no llega pintado (no sale bajo la animación de inicio) y sí el panel de marca', () => assert.ok(!lg.includes('type="password"') && lg.includes('login-marca')));
+  ok('el formulario de entrar llega ya en el HTML inicial, con el panel de marca', () => assert.ok(lg.includes('type="password"') && lg.includes('login-marca')));
   const mal = await pedir('/api/login', { metodo: 'POST', form: (() => { const f = new FormData(); f.set('email', 'nadie@test.es'); f.set('password', 'x'); return f; })() });
   const malJ = await fetch(BASE + '/api/login', { method: 'POST', headers: { Origin: BASE, Accept: 'application/json' }, body: (() => { const f = new FormData(); f.set('email', 'nadie@test.es'); f.set('password', 'x'); return f; })() });
   const malD = await malJ.json();
@@ -1135,7 +1138,7 @@ if (process.env.RESEND_URL) {
   const altaAj = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva: 'Ajena Eventos SL', nombre: 'Álex', email: `aj${Date.now()}@test.es` } })).json();
   const mAj = correos().pop();
   ok('dar de alta una empresa también envía la invitación a su administrador', () => assert.ok(altaAj.enviado && mAj?.subject === 'Prueba te ha invitado a Ajena Eventos SL en Netto'));
-  const fA = new FormData(); fA.set('codigo', codigoDe(altaAj.enlace)); fA.set('password', 'ajenaajena1');
+  const fA = new FormData(); fA.set('codigo', codigoDe(altaAj.enlace)); fA.set('password', 'Clave-Local-12-2026');
   const aj = /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: fA })).headers.get('set-cookie') || '')?.[1];
   rmSync('/tmp/resend.json', { force: true });
   const ajeno = await pedir('/api/usuarios', { metodo: 'POST', cookie: aj, cuerpo: { reenviar: lid } });
@@ -1145,7 +1148,7 @@ if (process.env.RESEND_URL) {
   await pedir('/api/usuarios', { metodo: 'POST', cookie: aj, cuerpo: { nombre: 'Técnico', email: `tec${Date.now()}@test.es`, rol: 'miembro', permisos: ['gastos'] } });
   ok('cada empresa con su nombre y quien la envía', () => assert.equal(correos()[0]?.subject, 'Álex te ha invitado a Ajena Eventos SL en Netto'));
   const altaX = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva: 'Xavi Soler', nombre: 'Xavi Soler', email: `xs${Date.now()}@test.es` } })).json();
-  const fX = new FormData(); fX.set('codigo', codigoDe(altaX.enlace)); fX.set('password', 'xavixavi12');
+  const fX = new FormData(); fX.set('codigo', codigoDe(altaX.enlace)); fX.set('password', 'Clave-Local-13-2026');
   const xs = /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: fX })).headers.get('set-cookie') || '')?.[1];
   rmSync('/tmp/resend.json', { force: true });
   await pedir('/api/usuarios', { metodo: 'POST', cookie: xs, cuerpo: { nombre: 'Ayuda', email: `ayx${Date.now()}@test.es`, rol: 'miembro', permisos: ['gastos'] } });
@@ -1169,11 +1172,11 @@ if (process.env.RESEND_URL) {
   // El enlace sigue caducando a los 7 días (también el reenviado).
   const lu = JSON.parse(await kv(['HGET', 'cuentas:usuarios', lid]));
   await kv(['HSET', 'cuentas:usuarios', lid, JSON.stringify({ ...lu, creado: new Date(Date.now() - 8 * 864e5).toISOString() })]);
-  const fC = new FormData(); fC.set('codigo', codigoDe(re.enlace)); fC.set('password', 'lauralaura1');
+  const fC = new FormData(); fC.set('codigo', codigoDe(re.enlace)); fC.set('password', 'Clave-Local-14-2026');
   const cad = await pedir('/api/invitacion', { metodo: 'POST', form: fC });
   ok('a los 8 días el enlace ha caducado', () => assert.ok(decodeURIComponent(cad.headers.get('location') || '').includes('ha caducado')));
   const re2 = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { reenviar: lid } })).json();
-  const fC2 = new FormData(); fC2.set('codigo', codigoDe(re2.enlace)); fC2.set('password', 'lauralaura1');
+  const fC2 = new FormData(); fC2.set('codigo', codigoDe(re2.enlace)); fC2.set('password', 'Clave-Local-14-2026');
   const entra = await pedir('/api/invitacion', { metodo: 'POST', form: fC2 });
   ok('al reenviarla vuelve a valer 7 días y se puede entrar', () => assert.ok(re2.enviado && /t=/.test(entra.headers.get('set-cookie') || ''), `${entra.status}`));
 } else console.log('  (sin RESEND_URL: se salta)');
@@ -1181,7 +1184,7 @@ if (process.env.RESEND_URL) {
 console.log('\nSolo el administrador de Netto da de alta empresas');
 {
   const entrar = async (alta, pass) => { const f = new FormData(); f.set('codigo', alta.enlace.split('/').pop()); f.set('password', pass); return /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: f })).headers.get('set-cookie') || '')?.[1]; };
-  const jefa = await entrar(await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva: 'Cliente Pagando SL', nombre: 'Julia', email: `ju${Date.now()}@test.es` } })).json(), 'juliajulia1');
+  const jefa = await entrar(await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva: 'Cliente Pagando SL', nombre: 'Julia', email: `ju${Date.now()}@test.es` } })).json(), 'Clave-Local-22-2026');
   await pedir('/api/cuenta', { metodo: 'PATCH', cookie: jefa, cuerpo: { configuracion: { fiscal: { tipo: 'sociedad', iva: 'general' }, emisor: { nombre: 'Cliente Pagando SL', nif: 'B11111119', plazo: 30 }, actividades: [{ nombre: 'Eventos', ivaPct: 21, irpfPct: 0 }] } } });
   const crea = await pedir('/api/empresas', { metodo: 'POST', cookie: jefa, cuerpo: { nueva: 'Empresa Gratis' } });
   ok('el administrador de una empresa cliente no puede crear otra empresa (403)', () => assert.equal(crea.status, 403));
@@ -1205,7 +1208,7 @@ console.log('\nAislamiento entre empresas (todas las rutas /api)');
   const alta = async (empresaNueva, nombre) => {
     const email = `${nombre.toLowerCase()}${Date.now()}@test.es`;
     const inv = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva, nombre, email } })).json();
-    const f = new FormData(); f.set('codigo', inv.enlace.split('/').pop()); f.set('password', `${nombre}clave123`);
+    const f = new FormData(); f.set('codigo', inv.enlace.split('/').pop()); f.set('password', `Clave-Local-${nombre.length}x-2026`);
     const t = /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: f })).headers.get('set-cookie') || '')?.[1];
     const conf = await (await pedir('/api/cuenta', { metodo: 'PATCH', cookie: t, cuerpo: { configuracion: { fiscal: { tipo: 'sociedad', iva: 'general' }, emisor: { nombre: empresaNueva, nif: 'B22222228', plazo: 30 }, actividades: [{ nombre: 'Eventos', ivaPct: 21, irpfPct: 0 }] } } })).json();
     const id = await kv(['HGET', 'cuentas:emails', email]);
@@ -1343,7 +1346,7 @@ console.log('\nBloqueo en el servidor');
   const modo = { activo: 'activo', off: 'off' }[process.env.BLOQUEO_SERVIDOR] || 'registrar';
   const dDe = (r) => r.headers.getSetCookie().find((c) => /^d=[^;]+/.test(c));
   ok('al registrarse se recibe la cookie de desbloqueo', () => assert.ok(dDe(alta)));
-  const f = new FormData(); f.set('email', fd.get('email')); f.set('password', 'pruebaprueba1');
+  const f = new FormData(); f.set('email', fd.get('email')); f.set('password', 'Clave-Local-01-2026');
   const lr = await fetchReal(BASE + '/api/login', { method: 'POST', headers: { Origin: BASE, Accept: 'application/json' }, body: f });
   const t2 = /^t=([^;]+)/.exec(lr.headers.getSetCookie().find((c) => c.startsWith('t=')) || '')?.[1];
   const cd = dDe(lr) || '';
@@ -1385,7 +1388,7 @@ console.log('\nBloqueo en el servidor');
   const ajena = await fetchReal(BASE + '/api/bloqueo', { method: 'POST', headers: { Origin: 'https://malo.com', Cookie: `t=${t2}`, 'Content-Type': 'application/json' }, body: '{}' });
   ok('bloquear desde otra web: no (CSRF)', () => assert.equal(ajena.status, 403));
   const inv = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { nombre: 'Bloqueo', email: `bq${Date.now()}@test.es`, rol: 'miembro', permisos: ['facturas'] } })).json();
-  const fi = new FormData(); fi.set('codigo', inv.enlace.split('/').pop()); fi.set('password', 'bloqueo123');
+  const fi = new FormData(); fi.set('codigo', inv.enlace.split('/').pop()); fi.set('password', 'Clave-Local-15-2026');
   const acepta = await fetchReal(BASE + '/api/invitacion', { method: 'POST', redirect: 'manual', headers: { Origin: BASE }, body: fi });
   ok('al aceptar una invitación también se recibe', () => assert.ok(dDe(acepta)));
 }
@@ -1419,14 +1422,14 @@ if (process.env.RESEND_URL) {
   const pv = await (await fetchReal(BASE + new URL(ana.url).pathname + new URL(ana.url).search)).text();
   ok('la página de invitación lo pasa al formulario', () => assert.ok(pv.includes(`name="v" value="${vAna}"`)));
   rmSync('/tmp/resend.json', { force: true });
-  await aceptar(ana.enlace.split('/').pop(), 'anaana1234', vAna);
+  await aceptar(ana.enlace.split('/').pop(), 'Clave-Local-18-2026', vAna);
   const anaU = await usuario(ana.id);
   ok('quien entra con el enlace del email queda confirmada y no recibe otro email', () => assert.ok(anaU.emailVerificado === true && correos().length === 0, JSON.stringify(anaU.emailVerificado)));
 
   const bea = await invitar('Bea');
   const otro = await invitar('Otro');
   rmSync('/tmp/resend.json', { force: true });
-  const ab = await aceptar(bea.enlace.split('/').pop(), 'beabea1234', new URL(otro.url).searchParams.get('v'));
+  const ab = await aceptar(bea.enlace.split('/').pop(), 'Clave-Local-19-2026', new URL(otro.url).searchParams.get('v'));
   const ckB = cookiesDe(ab);
   const beaU = await usuario(bea.id);
   const conf = correos().find((m) => m.to?.[0] === bea.email);
@@ -1457,14 +1460,14 @@ if (process.env.RESEND_URL) {
   const aYa = await destino(ya);
   ok('/confirmar-email ya confirmada la devuelve a la app', () => assert.equal(aYa, '/'));
   const zoe = await invitar('Zoe');
-  const az = await aceptar(zoe.enlace.split('/').pop(), 'zoezoe1234');
+  const az = await aceptar(zoe.enlace.split('/').pop(), 'Clave-Local-24-2026');
   const z = await usuario(zoe.id);
   delete z.emailVerificado;
   await kv(['HSET', 'cuentas:usuarios', zoe.id, JSON.stringify(z)]);
   const aZ = await destino(await con('/facturas', cookiesDe(az)));
   ok('las cuentas de antes (sin la marca) siguen entrando: no hace falta migrar', () => assert.ok(!aZ.startsWith('/confirmar-email'), aZ));
   const leo = await invitar('Leo');
-  const al = await aceptar(leo.enlace.split('/').pop(), 'leoleo1234');
+  const al = await aceptar(leo.enlace.split('/').pop(), 'Clave-Local-23-2026');
   const l = await usuario(leo.id);
   await kv(['HSET', 'cuentas:usuarios', leo.id, JSON.stringify({ ...l, emailVerificado: false, creado: '2026-01-01T00:00:00.000Z' })]);
   const aL = await destino(await con('/facturas', cookiesDe(al)));
@@ -1475,7 +1478,7 @@ if (process.env.RESEND_URL) {
 
 console.log('\nLímite de intentos');
 {
-  const modo = { activo: 'activo', off: 'off' }[process.env.LIMITES] || 'registrar';
+  const modo = { registrar: 'registrar', off: 'off' }[process.env.LIMITES] || 'activo'; // igual que lib/limite.js
   const activo = modo === 'activo';
   const ip = `203.0.113.${Date.now() % 200}`;
   const conIp = (ruta, op = {}, desde = ip) => fetchReal(BASE + ruta, { redirect: 'manual', ...op, headers: { Origin: BASE, 'X-Real-IP': desde, ...op.headers } });
@@ -1580,9 +1583,9 @@ console.log('Baja de una empresa');
   const entra = async (enlace, password) => /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: form({ codigo: enlace.split('/').pop(), password }) })).headers.get('set-cookie') || '')?.[1];
   // Empresa nueva con su administrador (Bruno), una persona solo de ella (Berta) y otra que también está en la de A («Solo gastos»).
   const eBruno = `bruno${Date.now()}@test.es`, eBerta = `berta${Date.now()}@test.es`;
-  const bruno = await entra((await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva: 'Baja Prueba SL', nombre: 'Bruno', email: eBruno } })).json()).enlace, 'brunobruno1');
+  const bruno = await entra((await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva: 'Baja Prueba SL', nombre: 'Bruno', email: eBruno } })).json()).enlace, 'Clave-Local-17-2026');
   const E = JSON.parse(await kv(['HGET', 'cuentas:usuarios', await kv(['GET', `cuentas:sesion:${bruno}`])])).empresa;
-  const berta = await entra((await (await pedir('/api/usuarios', { metodo: 'POST', cookie: bruno, cuerpo: { nombre: 'Berta', email: eBerta, rol: 'miembro', permisos: ['facturas'] } })).json()).enlace, 'bertaberta1');
+  const berta = await entra((await (await pedir('/api/usuarios', { metodo: 'POST', cookie: bruno, cuerpo: { nombre: 'Berta', email: eBerta, rol: 'miembro', permisos: ['facturas'] } })).json()).enlace, 'Clave-Local-16-2026');
   const otroId = await kv(['GET', `cuentas:sesion:${otro}`]);
   await pedir('/api/usuarios', { metodo: 'POST', cookie: bruno, cuerpo: { nombre: 'Solo gastos', email: JSON.parse(await kv(['HGET', 'cuentas:usuarios', otroId])).email, rol: 'miembro', permisos: ['gastos'] } });
   const emp = JSON.parse(await kv(['HGET', 'cuentas:empresas', E]));
@@ -1594,14 +1597,14 @@ console.log('Baja de una empresa');
 
   const pag = n(await texto('/ajustes/baja', bruno));
   ok('el administrador ve qué se borra y qué se guarda, y el enlace para descargar antes', () => assert.ok(pag.includes('Baja Prueba SL') && pag.includes('se guardan bloqueados 6 años') && pag.includes('descarga todos tus datos'), pag.slice(-300)));
-  const noBerta = await pedir('/api/baja', { metodo: 'POST', cookie: berta, cuerpo: { password: 'bertaberta1' } });
-  const noYo = await pedir('/api/baja', { metodo: 'POST', cookie: yo, cuerpo: { password: 'pruebaprueba1' } });
+  const noBerta = await pedir('/api/baja', { metodo: 'POST', cookie: berta, cuerpo: { password: 'Clave-Local-16-2026' } });
+  const noYo = await pedir('/api/baja', { metodo: 'POST', cookie: yo, cuerpo: { password: 'Clave-Local-01-2026' } });
   const malPass = await pedir('/api/baja', { metodo: 'POST', cookie: bruno, cuerpo: { password: 'otra-cosa' } });
   ok('quien no es administrador no puede (403), ni la empresa del administrador de Netto (403), ni con otra contraseña (400)', () => assert.deepEqual([noBerta.status, noYo.status, malPass.status], [403, 403, 400]));
   const sigue = JSON.parse(await kv(['HGET', 'cuentas:empresas', E]));
   ok('con la contraseña mal no cambia nada', () => assert.ok(!sigue.baja && sigue.drive));
 
-  const baja = await (await pedir('/api/baja', { metodo: 'POST', cookie: bruno, cuerpo: { password: 'brunobruno1' } })).json();
+  const baja = await (await pedir('/api/baja', { metodo: 'POST', cookie: bruno, cuerpo: { password: 'Clave-Local-17-2026' } })).json();
   const tras = JSON.parse(await kv(['HGET', 'cuentas:empresas', E]));
   const hoyU = new Date().toISOString().slice(0, 10);
   ok('la baja se hace y el borrado final queda a 6 años', () => assert.ok(baja.ok && baja.borrarEl === `${Number(hoyU.slice(0, 4)) + 6}${hoyU.slice(4)}` && tras.baja?.borrarEl === baja.borrarEl, JSON.stringify(baja)));
