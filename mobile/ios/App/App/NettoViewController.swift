@@ -48,7 +48,7 @@ class NettoViewController: CAPBridgeViewController {
     }
 
     // Abre una ruta de Netto (accesos rápidos del icono). Si la web aún no ha cargado, espera a que lo haga.
-    func abrir(ruta: String) {
+    @objc func abrir(ruta: String) {
         guard cargada, let base = bridge?.config.serverURL, let url = URL(string: ruta, relativeTo: base) else {
             rutaPendiente = ruta
             return

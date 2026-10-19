@@ -128,6 +128,12 @@ final class DelegadoWeb: NSObject, WKNavigationDelegate, WKUIDelegate, WKDownloa
     }
 
     func webView(_ webView: WKWebView, runJavaScriptTextInputPanelWithPrompt prompt: String, defaultText: String?, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (String?) -> Void) {
+        // El puente de Capacitor usa prompt() con un JSON {"type": …} para sus llamadas síncronas (cookies, http).
+        if let datos = prompt.data(using: .utf8),
+           (try? JSONSerialization.jsonObject(with: datos, options: .fragmentsAllowed) as? [String: Any])?["type"] != nil {
+            capacitor.webView(webView, runJavaScriptTextInputPanelWithPrompt: prompt, defaultText: defaultText, initiatedByFrame: frame, completionHandler: completionHandler)
+            return
+        }
         guard let vista = arriba else { return completionHandler(nil) }
         let aviso = UIAlertController(title: nil, message: prompt, preferredStyle: .alert)
         aviso.addTextField { $0.text = defaultText }
