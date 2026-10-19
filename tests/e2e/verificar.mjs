@@ -825,9 +825,10 @@ console.log('Banco: extractos, conexión y emparejar');
     ok('pantalla: la cuenta y la factura cobrada por el banco', () => assert.ok(pb3.includes('Cuenta Negocios') && pb3.includes('•••• 1332') && pb3.includes(`Factura ${numeroFactura(f4)}`) && pb3.includes(n(eur(10662.55)))));
     // Solo el administrador de Netto ve la conexión; Berta ve la cuenta con su saldo y nada más (ni con ?conectado o ?error).
     const pbAviso = n(await texto('/banco?conectado=1&error=cancelado', bq)), paAdmin = n(await texto('/banco', ad));
+    const conexion = /Conectar banco|>Actualizar<|Conectada|Actualizada|permiso del banco|Cuenta conectada|cuentas conectadas/;
+    const visto = [pb3, pbAviso].map((t) => { const i = t.search(conexion); return i < 0 ? null : t.slice(Math.max(0, i - 80), i + 80); }).filter(Boolean);
     ok('Berta no ve nada de la conexión: ni «Conectar banco», ni «Actualizar», ni su estado', () => assert.ok(
-      ![pb3, pbAviso].some((t) => /Conectar banco|>Actualizar<|Conectada|Actualizada|permiso del banco|Cuenta conectada|cuentas conectadas/.test(t))
-      && pb3.includes('Saldo a ') && pbAviso.includes('Cuenta Negocios'), pb3.slice(0, 400)));
+      !visto.length && pb3.includes('Saldo a ') && pbAviso.includes('Cuenta Negocios'), visto.join(' | ') || pb3.slice(0, 400)));
     ok('el administrador de Netto sí: «Conectar banco», «Actualizar» y el estado de la cuenta', () => assert.ok(paAdmin.includes('Conectar banco') && paAdmin.includes('Actualizar') && /Actualizada|Conectada/.test(paAdmin)));
     const antes = (await sim('/_prueba')).llamadas;
     const s1 = await (await pedir('/api/banco/sincronizar', { metodo: 'POST', cookie: ad, cuerpo: {} })).json();
