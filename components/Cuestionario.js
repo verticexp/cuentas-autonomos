@@ -133,6 +133,12 @@ export default function Cuestionario({ inicial, editar, conFacturas, puedeFactur
             <SiNo valor={fiscal.intracom} cambiar={(v) => f('intracom', v)} titulo="Compro o vendo a empresas de otros países de la UE" />
             <SiNo valor={fiscal.inventario} cambiar={(v) => f('inventario', v)} titulo="Vendo productos y quiero controlar el stock" detalle="Inventario: entradas, salidas, stock mínimo y su valor" />
           </div>
+          {sociedad && (
+            <label className="alta-campo"><span>Fecha de constitución de la sociedad (opcional)</span>
+              <small>Las sociedades nuevas pagan el 15 % del Impuesto sobre Sociedades el primer año con beneficio y el siguiente.</small>
+              <input className="campo" type="date" min="1900-01-01" value={fiscal.constitucion || ''} onChange={(v) => f('constitucion', v.target.value)} />
+            </label>
+          )}
         </>
       ),
     },

@@ -40,13 +40,23 @@ export function amortizacionIndependiente(g, desde, hasta, sociedad = true) {
   if (hasta < g.fecha || valor <= 0) return 0;
   const coef = { edificios: [3, 2], instalaciones: [10, 10], mobiliario: [10, 10], maquinaria: [12, 12], electronicos: [12, 20], informatica: [26, 25], software: [26, 33], transporte: [16, 16], utiles: [30, 25], otros: [10, 10] }[g.inversion.tipo] || [10, 10];
   const max = coef[sociedad ? 1 : 0], tipo = g.inversion.coef > 0 && g.inversion.coef < max ? g.inversion.coef : max;
+  // Cada día vale 1/365 o 1/366 de año según el suyo: fracción exacta con denominador 100 × 365 × 366.
+  const largo = (y) => (y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0) ? 366n : 365n);
+  const porDias = (de, a) => {
+    let n = 0n;
+    for (let y = Number(de.slice(0, 4)); y <= Number(a.slice(0, 4)); y++) {
+      const i = de > `${y}-01-01` ? de : `${y}-01-01`, f = a < `${y}-12-31` ? a : `${y}-12-31`;
+      if (f >= i) n += BigInt(fin(f) - fin(i) + 1) * (365n * 366n / largo(y));
+    }
+    return Number(redondear(BigInt(valor) * BigInt(tipo) * n, 100n * 365n * 366n));
+  };
   const acumulada = (fecha) => {
     if (fecha < g.fecha) return 0;
     if (g.inversion.acumulada !== undefined && g.inversion.desde) {
       const anterior = centimos(g.inversion.acumulada);
-      return fecha < g.inversion.desde ? Math.min(valor, anterior) : Math.min(valor, anterior + Number(redondear(BigInt(valor) * BigInt(tipo) * BigInt(fin(fecha) - fin(g.inversion.desde) + 1), 36500n)));
+      return fecha < g.inversion.desde ? Math.min(valor, anterior) : Math.min(valor, anterior + porDias(g.inversion.desde, fecha));
     }
-    return valor <= 30000 ? valor : Math.min(valor, Number(redondear(BigInt(valor) * BigInt(tipo) * BigInt(fin(fecha) - fin(g.fecha) + 1), 36500n)));
+    return valor <= 30000 ? valor : Math.min(valor, porDias(g.fecha, fecha));
   };
   const ayer = new Date((fin(desde) - 1) * 864e5).toISOString().slice(0, 10);
   return acumulada(hasta) - acumulada(ayer);

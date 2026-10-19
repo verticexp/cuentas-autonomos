@@ -9,6 +9,7 @@ import CuotaIS from '@/components/CuotaIS';
 import { Presentado, Presentado202 } from '@/components/Acciones';
 import { eur, fechaTexto, hoy, textoResumenModelos, textoSituacion } from '@/lib/formato';
 import PresentarAhora from '@/components/PresentarAhora';
+import { modelosAPresentar } from '@/lib/presentar';
 import Volver from '@/components/Volver';
 import Ir from '@/components/Ir';
 import SinBD from '@/components/SinBD';
@@ -63,7 +64,7 @@ export default async function Modelos({ searchParams }) {
   const m390 = usa303(f) && modelo390(facturas, gastos, anio);
   const conRetencion = gastos.some((g) => Number(g.irpfPct) > 0);
   const m190 = (f.trabajadores || nominas?.length > 0 || conRetencion) && modelo190(nominas || [], empleados || [], anio, gastos);
-  const is = f.tipo === 'sociedad' && borradorSociedades(facturas, gastos, anio, { pagos202: u.pagos202 || {}, ivaCoste: !usa303(f), productos: productos || [], ajustes: ajustes || [], albaranes: albaranes || [], manuales: manuales || [], hasta: h < `${anio}-12-31` ? h : `${anio}-12-31` });
+  const is = f.tipo === 'sociedad' && borradorSociedades(facturas, gastos, anio, { pagos202: u.pagos202 || {}, ivaCoste: !usa303(f), productos: productos || [], ajustes: ajustes || [], albaranes: albaranes || [], manuales: manuales || [], hasta: h < `${anio}-12-31` ? h : `${anio}-12-31`, constitucion: f.constitucion, cuotaIS: u.cuotaIS || {} });
   const renta = f.tipo === 'autonomo' && borradorRenta(facturas, gastos, anio, u.pagos130?.[anio], { ivaCoste: !usa303(f) });
   const m180 = hay115 && modelo180(gastos, anio);
   const m347 = modelo347(facturas, gastos, anio);
@@ -113,15 +114,19 @@ export default async function Modelos({ searchParams }) {
     const c = c303 && casillas303(facturas, gastos, anio, tAhora);
     const m303 = c && (c['46'] < 0 ? { importe: 0, compensar: -c['46'] } : { importe: liquidaciones[tAhora - 1].ingresar });
     const m130 = r130 && { importe: r130.trimestres[tAhora - 1].m130 };
-    const texto = (m) => (m.compensar ? `A compensar ${eur(m.compensar)}` : m.importe ? `A ingresar ${eur(m.importe)}` : 'Sin importe a ingresar');
+    // Con el 303 y el 130, el resto de modelos que vencen a la vez (111, 115, 349 y el 202 de abril u octubre).
+    const importes = modelosAPresentar(tAhora, {
+      m303, m130,
+      m111: hay111 ? r2(modelo111(nominas || [], anio, tAhora).retenciones + retencionesProfesionales(gastos, anio, tAhora).retenciones) : null,
+      m115: hay115 ? modelo115(gastos, anio, tAhora).retenciones : null,
+      m349: hay349 ? modelo349(facturas, anio, tAhora, gastos) : null,
+      pagos202: f.tipo === 'sociedad' ? modelo202(u.cuotaIS, anio) : null, pagados202: u.pagos202?.[anio], constitucion: f.constitucion,
+    }).map((m) => ({ ...m, aeat: AEAT[`m${m.num}`], ...(m.dia ? { plazo: plazo(tAhora, anio, m.dia) } : {}) }));
     ahora = (
       <PresentarAhora t={tAhora} anio={anio}
         aviso={textoSituacion(situacion(tAhora), limite(tAhora))}
-        importes={[
-          m303 && { num: '303', modelo: '303 · IVA', href: '#m303', texto: texto(m303), aeat: AEAT.m303 },
-          m130 && { num: '130', modelo: '130 · IRPF', href: '#m130', texto: texto(m130), aeat: AEAT.m130 },
-        ].filter(Boolean)}
-        texto={textoResumenModelos({ t: tAhora, anio, plazo: limite(tAhora), m303, m130 })} />
+        importes={importes}
+        texto={textoResumenModelos({ t: tAhora, anio, plazo: limite(tAhora), m303, m130, otros: importes.filter((m) => !['303', '130'].includes(m.num)) })} />
     );
   } else if ((c303 || r130) && anio === actual) {
     // En enero toca el 4T del año anterior, que no sale en la vista del año en curso: aviso con enlace a ese año.
@@ -385,7 +390,11 @@ export default async function Modelos({ searchParams }) {
               ['Cuota', is.cuota, true], is.retenciones && ['Retenciones soportadas', menos(is.retenciones)], ['Pagos del 202 marcados', menos(is.pagos)],
               [is.resultado >= 0 ? 'Saldría a pagar' : 'Saldría a devolver', Math.abs(is.resultado), true],
             ]} />
-            <p className="nota">Tipo de {is.tamano === 'micro' ? 'microempresa (facturación de menos de 1 millón)' : is.tamano === 'reducida' ? 'empresa de reducida dimensión (menos de 10 millones)' : 'general'}{is.conAnterior ? ` según lo facturado en ${anio - 1}` : ', con lo facturado este año (no hay datos del anterior)'}. Si la sociedad es de nueva creación, los dos primeros años con beneficio tributa al 15 %.</p>
+            <p className="nota">Tipo de {is.tamano === 'micro' ? 'microempresa (facturación de menos de 1 millón)' : is.tamano === 'reducida' ? 'empresa de reducida dimensión (menos de 10 millones)' : 'general'}{is.conAnterior ? ` según lo facturado en ${anio - 1}` : ', con lo facturado este año (no hay datos del anterior)'}.{' '}
+              {is.nuevaCreacion?.aplica ? `Sociedad de nueva creación: tributa al 15 % (primer año con beneficio, ${is.nuevaCreacion.primero}, y el siguiente). No vale si la actividad ya la hacía antes otra persona o sociedad vinculada, si es del mismo grupo o si es patrimonial: confírmalo con tu gestor.`
+                : !f.constitucion ? 'Si la sociedad es de nueva creación, añade su fecha de constitución en Ajustes › Actividades y modelos: el primer año con beneficio y el siguiente tributa al 15 %.'
+                : is.nuevaCreacion?.falta ? `No hay datos de ${is.nuevaCreacion.falta} en Netto para saber si aún toca el 15 % de nueva creación: confírmalo con tu gestor.`
+                : is.nuevaCreacion?.primero && is.nuevaCreacion.primero < anio - 1 ? `El 15 % de nueva creación ya se aplicó en ${is.nuevaCreacion.primero} y ${is.nuevaCreacion.primero + 1}.` : ''}</p>
           </div>
         </ModeloPlegable>
       )}
