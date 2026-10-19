@@ -24,6 +24,7 @@ export default function Pie() {
           <p>Netto</p>
           <Link href="/seguridad">Seguridad</Link>
           <Link href="/contacto">Contacto</Link>
+          <Link href="/gestorias">¿Eres gestoría? Trabaja con nosotros</Link>
           <a href="/login">Entrar</a>
           <a href="/privacidad">Privacidad</a>
           <a href="/condiciones">Condiciones</a>
