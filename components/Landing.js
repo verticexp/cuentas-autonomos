@@ -14,7 +14,7 @@ const CINTA = ['Facturas ilimitadas', 'Verifactu', 'Presupuestos online', 'Gasto
 const CIFRAS = [
   { pre: 'desde', n: 9, suf: ' €', t: 'al mes', d: 'Sin cuotas de alta ni permanencia' },
   { n: 1, suf: ' mes', t: 'de prueba gratis', d: 'Sin dar ninguna tarjeta' },
-  { pre: 'desde', n: 50, suf: '', t: 'páginas al mes leídas con IA', d: 'Tickets y facturas, en foto o PDF' },
+  { pre: 'hasta', n: 1500, suf: '', t: 'páginas al mes leídas con IA', d: 'Tickets y facturas, en foto o PDF' },
   { n: 12, suf: ' modelos', t: 'fiscales calculados', d: '303, 130, 111, 390, 347, Sociedades…' },
 ];
 
@@ -47,7 +47,7 @@ export default function Landing() {
         <div className="web-cifras">
           {CIFRAS.map((c, i) => (
             <div key={c.t} data-r style={{ '--d': `${i * 70}ms` }}>
-              <b>{c.pre && <i>{c.pre}</i>}<span data-contar={c.n}>{c.n}</span>{c.suf}</b>
+              <b>{c.pre && <i>{c.pre}</i>}<span data-contar={c.n}>{c.n.toLocaleString('es-ES', { useGrouping: 'always' })}</span>{c.suf}</b>
               <p>{c.t}</p><small>{c.d}</small>
             </div>
           ))}
