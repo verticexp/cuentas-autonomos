@@ -16,7 +16,7 @@ export async function GET(req) {
   if (res) return res;
   const anio = Number(req.nextUrl.searchParams.get('anio')) || Number(hoy().slice(0, 4)) - 1;
   const [facturas, gastos, nominas, manuales, guardado, productos, ajustes, albaranes] = await Promise.all([leer(u, 'facturas'), leer(u, 'gastos'), leer(u, 'nominas'), leer(u, 'asientos'), leerUno(u, 'cuentasAnuales', String(anio)), leer(u, 'productos'), leer(u, 'stock'), leer(u, 'albaranes')]);
-  const asientos = generarAsientos({ facturas, gastos, nominas: nominas || [], manuales: manuales || [], fiscal: fiscalDe(u), pagos130: u.pagos130 || {}, pagos202: u.pagos202 || {}, cuotaIS: u.cuotaIS || {}, productos: productos || [], ajustes: ajustes || [], albaranes: albaranes || [] }, hoy());
+  const asientos = generarAsientos({ facturas, gastos, nominas: nominas || [], manuales: manuales || [], fiscal: fiscalDe(u), pagos130: u.pagos130 || {}, pres303: u.pres303 || {}, pagos202: u.pagos202 || {}, cuotaIS: u.cuotaIS || {}, productos: productos || [], ajustes: ajustes || [], albaranes: albaranes || [] }, hoy());
   const c = cuentasAnuales({ asientos, gastos, nominas: nominas || [], empresa: u, anio, guardado: guardado || {} });
   const nombre = `cuentas-anuales-${anio}.pdf`;
   await auditar(u, 'Cuentas anuales', `Descarga del PDF de ${anio}`);

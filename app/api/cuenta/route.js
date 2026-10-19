@@ -35,6 +35,15 @@ export async function PATCH(req) {
     await actualizarUsuario(u, { pagos130: pagos });
     return Response.json({ ok: true });
   }
+  if (b.presentado303) {
+    if (sin('resumen')) return sin('resumen');
+    const { anio, t, hecho } = b.presentado303;
+    if (!Number.isInteger(anio) || anio < 2000 || anio > 2100 || ![1, 2, 3, 4].includes(t)) return error('Trimestre no válido');
+    const pres = { ...(u.pres303 || {}) };
+    pres[anio] = { ...(pres[anio] || {}), [t]: Boolean(hecho) };
+    await actualizarUsuario(u, { pres303: pres });
+    return Response.json({ ok: true });
+  }
   // Verifactu: 'pruebas', 'real' o null (sin activar). Solo el administrador. En real se mantiene todo el año natural.
   if ('verifactu' in b) {
     if (sin('empresa')) return sin('empresa');

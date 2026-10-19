@@ -93,3 +93,18 @@ test('Hacienda por trimestre: el 303 y el 130 coinciden con Impuestos, aunque ha
   const Q = panelResumen({ facturas: FACTURAS, gastos: GASTOS, emisor: EMISOR, hoy: '2026-09-10', impuestos: { 2026: { facturas, gastos: GASTOS } } });
   assert.equal(Q.r.trimestres[2].ivaIngresar, 336);
 });
+
+test('303 y 130 se marcan por separado: presentar el 303 no da por presentado el 130', async () => {
+  const { hecho130, hecho303 } = await import('../lib/empresa.js');
+  // Lo marcado antes de separarlos (solo pagos130) vale también para el 303; una marca propia del 303 manda.
+  assert.equal(hecho303({}, { 2026: { 1: 0 } }, 2026, 1), true);
+  assert.equal(hecho303({ 2026: { 1: false } }, { 2026: { 1: 0 } }, 2026, 1), false);
+  assert.equal(hecho130({ 2026: { 2: 0 } }, 2026, 1), false);
+  // 5 de julio, 2T: con solo el 303 presentado queda por pagar el 130 (80) y no cambia su cálculo.
+  const base = { facturas: FACTURAS, gastos: GASTOS, pagos130: { 2026: { 1: 116 } }, emisor: EMISOR, hoy: '2026-07-05' };
+  const P = panelResumen({ ...base, pres303: { 2026: { 2: true } } });
+  assert.deepEqual([P.debe.t, P.debe.pend303, P.debe.pend130, P.aPagar, P.debe.m130], [2, false, true, 80, 80]);
+  // Y al revés: con el 130 presentado queda el 303 (420).
+  const Q = panelResumen({ ...base, pagos130: { 2026: { 1: 116, 2: 80 } }, pres303: { 2026: { 2: false } } });
+  assert.deepEqual([Q.debe.pend303, Q.debe.pend130, Q.aPagar], [true, false, 420]);
+});

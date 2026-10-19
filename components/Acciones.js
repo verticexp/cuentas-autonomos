@@ -49,12 +49,13 @@ export function EstadoTrimestre({ hecho, situacion, plazo, nota }) {
 // El selector queda bloqueado durante todo el guardado (PATCH + refresco) y muestra al momento la opción elegida;
 // si falla, vuelve a la de antes y se desbloquea. Se bloquea con aria-disabled y una guarda, no con `disabled`,
 // para no quitarle el foco a quien usa el teclado.
-export function Presentado({ anio, t, importe, pagado, con130 = true, situacion, plazo }) {
+// modelo="303": solo el 303 (pendiente o presentado), guardado aparte del 130; `pagado` es entonces true o false.
+export function Presentado({ anio, t, importe, pagado, con130 = true, situacion, plazo, modelo }) {
   const router = useRouter();
   const [guardando, empezar] = useTransition();
   const ocupado = useRef(false);
   const [confirmado, setConfirmado] = useState(false);
-  const servidor = pagado === undefined || pagado === null ? 'pendiente' : pagado > 0 && con130 ? 'pagado' : 'sinpagar';
+  const servidor = modelo === '303' ? (pagado ? 'sinpagar' : 'pendiente') : pagado === undefined || pagado === null ? 'pendiente' : pagado > 0 && con130 ? 'pagado' : 'sinpagar';
   // Lo ya guardado manda hasta que el refresco trae ese mismo valor: así ni la franja ni el selector vuelven
   // un instante al estado anterior si la transición termina antes de que lleguen los datos nuevos.
   const [guardado, setGuardado] = useState(null);
@@ -70,7 +71,7 @@ export function Presentado({ anio, t, importe, pagado, con130 = true, situacion,
     empezar(async () => {
       elegir(v);
       try {
-        await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify({ presentado: { anio, t, importe: imp } }) });
+        await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify(modelo === '303' ? { presentado303: { anio, t, hecho: v !== 'pendiente' } } : { presentado: { anio, t, importe: imp } }) });
         setGuardado(v);
         setConfirmado(v !== 'pendiente');
         empezar(() => router.refresh());
@@ -78,7 +79,7 @@ export function Presentado({ anio, t, importe, pagado, con130 = true, situacion,
     });
   };
   const selector = (
-    <select className={`estado ${elegido === 'pagado' || (!con130 && elegido !== 'pendiente') ? 'ok' : 'pend'}`} value={elegido} onChange={cambiar} aria-label={`Estado del ${t}T ${anio}`} aria-disabled={guardando || undefined} aria-busy={guardando || undefined}>
+    <select className={`estado ${elegido === 'pagado' || (!con130 && elegido !== 'pendiente') ? 'ok' : 'pend'}`} value={elegido} onChange={cambiar} aria-label={`Estado del ${modelo || (con130 ? '130' : '303')} del ${t}T ${anio}`} aria-disabled={guardando || undefined} aria-busy={guardando || undefined}>
       <option value="pendiente">Pendiente</option>
       {con130 ? <>
         <option value="pagado">Presentado y 130 pagado</option>

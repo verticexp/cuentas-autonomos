@@ -1,12 +1,12 @@
 import { requerir } from '@/lib/auth';
 import { leer, redis } from '@/lib/redis';
-import { actividadesDe, fiscalDe, modelosDe, usa130, usa303 } from '@/lib/empresa';
+import { actividadesDe, fiscalDe, hecho130, hecho303, modelosDe, usa130, usa303 } from '@/lib/empresa';
 import { casillas303, liquidaciones303, minoracion130, r2, limiteTrimestre, resumenAnual, situacionTrimestre } from '@/lib/calculos';
 import Rend130 from '@/components/Rend130';
 import { modelo111 } from '@/lib/nominas';
 import { borradorRenta, borradorSociedades, modelo115, modelo180, modelo190, modelo202, modelo347, modelo349, modelo390, retencionesProfesionales, MINIMO_PERSONAL, RET_ALQUILER } from '@/lib/modelos';
 import CuotaIS from '@/components/CuotaIS';
-import { EstadoTrimestre, Presentado, Presentado202 } from '@/components/Acciones';
+import { Presentado, Presentado202 } from '@/components/Acciones';
 import { eur, fechaTexto, hoy, textoResumenModelos, textoSituacion } from '@/lib/formato';
 import PresentarAhora from '@/components/PresentarAhora';
 import Volver from '@/components/Volver';
@@ -73,8 +73,10 @@ export default async function Modelos({ searchParams }) {
   // Lo que Netto sabe del año anterior, como sugerencia (si ese año no está entero en Netto, no vale: lo confirma la persona).
   const conAnterior = usa130(f) && facturas.some((x) => x.fecha.startsWith(`${anio - 1}-`));
   const sugerido = conAnterior ? resumenAnual(facturas, gastos, anio - 1, {}, ids, { ivaCoste: !c303 }).trimestres[3].rendAcum : null;
-  // Cada trimestre se marca como presentado en el Resumen (vale para todos sus modelos trimestrales).
-  const presentado = (t) => u.pagos130?.[anio]?.[t] !== undefined && u.pagos130?.[anio]?.[t] !== null;
+  // El 303 y el 130 se marcan como presentados cada uno por su cuenta; el trimestre está hecho cuando lo están los dos.
+  const p303 = (t, y = anio) => hecho303(u.pres303, u.pagos130, y, t);
+  const p130 = (t, y = anio) => hecho130(u.pagos130, y, t);
+  const presentado = (t, y = anio) => (!c303 || p303(t, y)) && (!r130 || p130(t, y));
   const hay111 = f.trabajadores || nominas?.length > 0 || conRetencion;
   // Estado de cada trimestre del 303/130 según la fecha de hoy (en curso, listo para presentar o fuera de plazo).
   const situacion = (t) => situacionTrimestre(t, anio, h);
@@ -100,10 +102,9 @@ export default async function Modelos({ searchParams }) {
     );
   } else if ((c303 || r130) && anio === actual) {
     // En enero toca el 4T del año anterior, que no sale en la vista del año en curso: aviso con enlace a ese año.
-    const p = u.pagos130?.[anio - 1]?.[4];
     const s4 = situacionTrimestre(4, anio - 1, h);
     const l4 = limiteTrimestre(4, anio - 1);
-    if ((p === undefined || p === null) && s4.estado === 'listo') {
+    if (!presentado(4, anio - 1) && s4.estado === 'listo') {
       ahora = (
         <section className="bloque presentar-ahora" aria-labelledby="presentar-t">
           <h2 className="grupo-t" id="presentar-t">Toca presentar el 4T {anio - 1}</h2>
@@ -163,9 +164,7 @@ export default async function Modelos({ searchParams }) {
                   c['46'] >= 0 && ['A ingresar tras compensación', liquidaciones[t - 1].ingresar, true],
                 ]} /></Plegable>
                 <Fichero modelo="303" anio={anio} t={t} nif={u.emisor?.nif} aeat={AEAT.m303} aviso={c.otros.length > 0 && 'Con tipos de IVA distintos del 4, 10 y 21 % rellénalo a mano en la Sede.'} />
-                {r130
-                  ? <EstadoTrimestre hecho={presentado(t)} situacion={situacion(t)} plazo={limite(t)} nota="se marca en el 130" />
-                  : <Presentado anio={anio} t={t} importe={0} pagado={u.pagos130?.[anio]?.[t]} con130={false} situacion={situacion(t)} plazo={limite(t)} />}
+                <Presentado modelo="303" anio={anio} t={t} importe={0} pagado={p303(t)} con130={false} situacion={situacion(t)} plazo={limite(t)} />
               </div>
             ); })}
           </div>
