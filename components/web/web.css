@@ -631,6 +631,9 @@ body:has(.web):has(.tabbar) { padding-left: 0 !important; }
 .web-contacto-pasos b { font-size: 16.5px; } .web-contacto-pasos span { color: rgba(250, 250, 248, 0.66); font-size: 15px; }
 .web-contacto-mail { display: inline-flex; align-items: center; gap: 10px; color: rgba(250, 250, 248, 0.85) !important; font-weight: 600; border-bottom: 1px solid rgba(250, 250, 248, 0.25); padding-bottom: 3px; }
 .web-contacto-mail .ico { color: var(--luz); }
+.web-gestorias-ventajas { display: grid; gap: 10px; margin: 0 0 32px; }
+.web-gestorias-ventajas li { display: flex; align-items: flex-start; gap: 10px; color: rgba(250, 250, 248, 0.85); font-size: 15px; }
+.web-gestorias-ventajas .ico { flex: none; color: var(--luz); margin-top: 2px; }
 .web-form { background: #fff; color: var(--v); border-radius: 28px; padding: 32px; display: grid; gap: 16px; box-shadow: 0 50px 100px -40px rgba(0, 0, 0, 0.7); }
 .web-form small { font-weight: 500; color: var(--g2); }
 .web-form-dos { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
