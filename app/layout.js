@@ -17,13 +17,17 @@ import Bloqueo from '@/components/Bloqueo';
 import Llegada from '@/components/Llegada';
 import Arranque from '@/components/Arranque';
 import BarraEstado from '@/components/BarraEstado';
+import { WEB } from '@/lib/web';
 
 // Si ya se vio en esta sesión (o es una página pública/PDF), la pantalla de inicio no llega a pintarse.
 // Si la app ya se desbloqueó en esta sesión, el bloqueo tampoco (components/Bloqueo.js).
 const YA_VISTO = "try{if(sessionStorage.getItem('netto-abierta')||document.cookie.indexOf('recien=1')>-1)document.documentElement.dataset.abierta='1';var p=location.pathname;if(sessionStorage.getItem('netto-arranque')||p.startsWith('/p/')||p.startsWith('/portal/')||p.startsWith('/pagar/')||p.endsWith('/pdf')||p.startsWith('/invitacion')||p==='/privacidad'||p==='/condiciones'||p==='/login'||p==='/registro')document.documentElement.dataset.arranque='visto'}catch(e){}";
 
 export const metadata = {
+  metadataBase: new URL(WEB),
   title: 'Netto',
+  description: 'Facturación, gastos, impuestos y contabilidad para autónomos y pymes.',
+  openGraph: { siteName: 'Netto', type: 'website', locale: 'es_ES' },
   // App a pantalla completa sin estilo de barra de estado: así iOS pinta la barra con theme-color
   // (components/BarraEstado.js) y pone la hora en blanco o negro según toque.
   other: { 'apple-mobile-web-app-capable': 'yes', 'mobile-web-app-capable': 'yes', 'apple-mobile-web-app-title': 'Netto' },
