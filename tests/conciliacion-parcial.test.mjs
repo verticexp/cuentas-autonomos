@@ -139,3 +139,80 @@ test('R01: un gasto con retención se paga con lo que de verdad sale del banco (
   const mov = await movimiento(u, -106);
   assert.equal((await B.emparejar(u, mov, 'gasto', 'g2')).ok, true);
 });
+
+// Auditoría 10-2026: cada cobro externo se liquida por separado, aunque la factura tenga pagos del banco.
+test('Liquidación: 50 € del banco + 100 € de Stripe; la liquidación de Stripe (100 €) solo se enlaza → cobrado 150, saldo 100', async () => {
+  const u = empresa();
+  await R.redis.hset('empresas', { [u.empresa]: { id: u.empresa } });
+  const BL = await import('../lib/banco.js');
+  const f = (await F.crearFactura(u, { ...datos, base: 250, ivaPct: 0 })).factura;
+  const banco = await movimiento(u, 50);
+  assert.equal((await B.emparejar(u, banco, 'factura', f.id)).ok, true);
+  const { f: conEnlace } = await C.enlacePago(u, await leerF(u, f.id));
+  const s = { id: 'cs_liq', payment_status: 'paid', currency: 'eur', amount_total: 10000, metadata: { token: conEnlace.pago, factura: f.id, empresa: u.empresa } };
+  assert.equal((await C.marcarPagada(s)).aplicado, true);
+  const antes = await leerF(u, f.id);
+  assert.equal(Cal.pagadoDe(antes), 150);
+  assert.equal(BL.cobradoSinBanco(antes), 100);
+
+  const liq = await movimiento(u, 100, 'mov-liquidacion');
+  const movs = await R.leer(u, 'banco');
+  const { facturas } = await B.candidatosConciliacion(u, movs);
+  assert.ok(facturas.some((x) => x.id === f.id), 'la factura sigue siendo candidata a liquidación');
+  const sug = BL.sugerencias(movs, facturas, [])[liq];
+  assert.deepEqual([sug.id, sug.yaCobrada, sug.importe], [f.id, true, 100]);
+
+  assert.equal((await B.emparejar(u, liq, 'factura', f.id)).ok, true);
+  let x = await leerF(u, f.id);
+  assert.equal(Cal.pagadoDe(x), 150);
+  assert.equal(Cal.saldoDe(x), 100);
+  assert.notEqual(x.cobrada, true);
+  assert.equal(bancoContable(x), bancoContable(antes));
+  assert.deepEqual(x.pagos.map((p) => [p.metodo, p.importe, p.banco || p.liquidado]), [['banco', 50, banco], ['stripe', 100, liq]]);
+  const m = await R.leerUno(u, 'banco', liq);
+  assert.equal(m.estado, 'emparejado');
+  assert.deepEqual(m.enlace, { tipo: 'factura', id: f.id, yaCobrada: true });
+  // Ya liquidado, no se vuelve a ofrecer como cobro externo.
+  assert.equal(BL.cobradoSinBanco(x), 0);
+
+  // El resto (100 €) sí es un cobro nuevo y completa la factura.
+  const resto = await movimiento(u, 100);
+  assert.equal((await B.emparejar(u, resto, 'factura', f.id)).ok, true);
+  x = await leerF(u, f.id);
+  assert.equal(Cal.pagadoDe(x), 250);
+  assert.equal(x.cobrada, true);
+
+  // Deshacer la liquidación solo quita la marca: los cobros se quedan.
+  assert.equal((await B.deshacer(u, liq)).ok, true);
+  x = await leerF(u, f.id);
+  assert.equal(Cal.pagadoDe(x), 250);
+  assert.deepEqual(x.pagos.map((p) => [p.metodo, p.importe, p.liquidado]), [['banco', 50, undefined], ['stripe', 100, undefined], ['banco', 100, undefined]]);
+  assert.equal((await R.leerUno(u, 'banco', liq)).estado, 'pendiente');
+  assert.equal(BL.cobradoSinBanco(x), 100);
+});
+
+test('Liquidación: dos cobros externos se liquidan uno a uno o juntos; un enlace antiguo sin marca lo sigue cubriendo todo', async () => {
+  const u = empresa();
+  const BL = await import('../lib/banco.js');
+  const f = (await F.crearFactura(u, { ...datos, base: 300, ivaPct: 0 })).factura;
+  await R.guardar(u, 'facturas', { ...(await leerF(u, f.id)), pagos: [{ fecha: '2026-03-12', importe: 100, metodo: 'stripe', ref: 'cs_a' }, { fecha: '2026-03-13', importe: 40, metodo: 'sepa', ref: 'REM-1' }] });
+  const juntos = await movimiento(u, 140);
+  assert.equal((await B.emparejar(u, juntos, 'factura', f.id)).ok, true);
+  assert.deepEqual((await leerF(u, f.id)).pagos.map((p) => p.liquidado), [juntos, juntos]);
+  assert.equal((await B.deshacer(u, juntos)).ok, true);
+  const sepa = await movimiento(u, 40);
+  assert.equal((await B.emparejar(u, sepa, 'factura', f.id)).ok, true);
+  assert.deepEqual((await leerF(u, f.id)).pagos.map((p) => p.liquidado), [undefined, sepa]);
+  assert.equal(Cal.pagadoDe(await leerF(u, f.id)), 140);
+
+  // Un enlace de antes de este cambio (yaCobrada, sin marca en la factura) liquidaba todo lo externo.
+  const v = (await F.crearFactura(u, { ...datos, base: 100, ivaPct: 0 })).factura;
+  await R.guardar(u, 'facturas', { ...(await leerF(u, v.id)), pagos: [{ fecha: '2026-03-12', importe: 100, metodo: 'stripe', ref: 'cs_v' }], cobrada: true, cobro: { fecha: '2026-03-12', metodo: 'stripe', importe: 100 } });
+  const viejo = await movimiento(u, 100, 'mov-viejo');
+  await R.guardar(u, 'banco', { ...(await R.leerUno(u, 'banco', viejo)), estado: 'emparejado', enlace: { tipo: 'factura', id: v.id, yaCobrada: true } });
+  const otro = await movimiento(u, 100);
+  assert.equal(BL.sugerencias(await R.leer(u, 'banco'), [await leerF(u, v.id)], [])[otro], undefined);
+  assert.match((await B.emparejar(u, otro, 'factura', v.id)).error, /enlazada/);
+  assert.equal((await B.deshacer(u, viejo)).ok, true);
+  assert.equal((await leerF(u, v.id)).pagos[0].liquidado, undefined);
+});

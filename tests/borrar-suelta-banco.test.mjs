@@ -64,7 +64,7 @@ test('un cobro a mano enlazado después con el banco no se deshace desde la fact
   const r = await C.deshacerCobro(u, 'f');
   assert.equal(r.status, 409);
   assert.equal((await R.leerUno(u, 'facturas', 'f')).cobrada, true);
-  // Y la copia lo da por bueno: la factura no lleva referencia al movimiento, pero sigue cobrada.
+  // Y la copia lo da por bueno: la factura marca en su cobro qué movimiento lo liquida y sigue cobrada.
   const v = copias.verificarCopia(await copias.hacerCopia(R.redis));
   assert.deepEqual(v.incidencias.filter((x) => x.startsWith(u.empresa)), []);
   // Deshecho desde Banco, ya se puede deshacer el cobro.

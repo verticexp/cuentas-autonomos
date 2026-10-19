@@ -5,12 +5,12 @@ import { readFile } from 'node:fs/promises';
 import './apoyo/cargador.mjs';
 import { arrancar } from './apoyo/upstash-mem.mjs';
 
-let srv, R, B, POST;
+let srv, R, B, BL, Cal, POST;
 before(async () => {
   srv = await arrancar();
   process.env.KV_REST_API_URL = srv.url;
   process.env.KV_REST_API_TOKEN = 'pruebas';
-  [R, B] = await Promise.all([import('../lib/redis.js'), import('../lib/bancoServidor.js')]);
+  [R, B, BL, Cal] = await Promise.all([import('../lib/redis.js'), import('../lib/bancoServidor.js'), import('../lib/banco.js'), import('../lib/calculos.js')]);
   POST = (await cargarRuta('../app/api/banco/route.js')).POST;
 });
 after(async () => { if (srv) await srv.cerrar(); delete globalThis.__conciliacionApi; delete globalThis.__conciliacionDobles; });
@@ -113,7 +113,16 @@ test('1: si falla la transacción de deshacer, conserva ambas parejas', async ()
   assert.equal((await leer(u, 'banco', 'm')).estado, 'emparejado');
 });
 
-test('3: solo enlace conserva byte a byte el cobro externo al emparejar y deshacer', async () => {
+// Una liquidación solo marca en el cobro externo qué movimiento lo liquida; lo cobrado no cambia y deshacer la deja igual.
+const soloMarca = async (u, antes, movId) => {
+  const ahora = await leer(u, 'facturas', antes.id);
+  assert.deepEqual(BL.desliquidar(ahora, movId), antes);
+  assert.equal(Cal.pagadoDe(ahora), Cal.pagadoDe(antes));
+  assert.equal(Cal.saldoDe(ahora), Cal.saldoDe(antes));
+  assert.equal(BL.cobrosExternos(ahora).filter((x) => x.liquidado === movId).length > 0, true);
+};
+
+test('3: solo enlace conserva el cobro externo (solo lo marca) al emparejar y lo deja byte a byte al deshacer', async () => {
   for (const extra of [
     { cobrada: true, cobro: { metodo: 'remesa', importe: 100, fecha: '2026-06-16' } },
     { cobrada: true, cobro: { metodo: 'stripe', importe: 100 }, pagos: [{ metodo: 'stripe', importe: 100, fecha: '2026-06-16' }] },
@@ -124,7 +133,7 @@ test('3: solo enlace conserva byte a byte el cobro externo al emparejar y deshac
     await sembrar(u, { facturas: [factura(extra)], movs: [movimiento(), movimiento({ id: 'otro' })] });
     const antes = await leer(u, 'facturas', 'f');
     assert.equal((await B.emparejar(u, 'm', 'factura', 'f', { auto: true })).ok, true);
-    assert.deepEqual(await leer(u, 'facturas', 'f'), antes);
+    await soloMarca(u, antes, 'm');
     assert.deepEqual((await leer(u, 'banco', 'm')).enlace, { tipo: 'factura', id: 'f', yaCobrada: true });
     assert.match((await B.emparejar(u, 'otro', 'factura', 'f')).error, /enlazada/);
     assert.equal((await B.deshacer(u, 'm')).ok, true);
@@ -141,9 +150,12 @@ test('3/6: solo enlace usa cobro.importe; tolerancia de un céntimo y error clar
     await sembrar(u, { facturas: [factura({ cobrada: true, cobro: { metodo: 'stripe', importe: 90 } })], movs: [movimiento({ importe })] });
     const antes = await leer(u, 'facturas', 'f');
     const r = await B.emparejar(u, 'm', 'factura', 'f');
-    if (importe >= 89.99 && importe <= 90.01) assert.equal(r.ok, true, r.error);
-    else { assert.match(r.error, importe > 90 ? /supera el importe ya cobrado/ : /no coincide/); assert.equal((await leer(u, 'banco', 'm')).estado, 'pendiente'); }
-    assert.deepEqual(await leer(u, 'facturas', 'f'), antes);
+    if (importe >= 89.99 && importe <= 90.01) { assert.equal(r.ok, true, r.error); await soloMarca(u, antes, 'm'); }
+    else {
+      assert.match(r.error, importe > 90 ? /supera el importe ya cobrado/ : /no coincide/);
+      assert.equal((await leer(u, 'banco', 'm')).estado, 'pendiente');
+      assert.deepEqual(await leer(u, 'facturas', 'f'), antes);
+    }
   }
 });
 
@@ -333,7 +345,7 @@ test('3: liquidación de un pago externo parcial se enlaza sin duplicar el pago 
   const antes = await leer(u, 'facturas', 'f');
   assert.equal((await B.emparejar(u, 'm', 'factura', 'f')).ok, true);
   assert.equal((await leer(u, 'banco', 'm')).enlace.yaCobrada, true);
-  assert.deepEqual(await leer(u, 'facturas', 'f'), antes);
+  await soloMarca(u, antes, 'm');
   assert.equal((await B.deshacer(u, 'm')).ok, true);
   assert.deepEqual(await leer(u, 'facturas', 'f'), antes);
 });
