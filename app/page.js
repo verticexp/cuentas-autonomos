@@ -218,6 +218,7 @@ export default async function Resumen({ searchParams }) {
                           {fila('07', 'Base al 21 %', c['07'])}
                           {fila('09', 'Cuota al 21 %', c['09'])}
                           {c.otros.flatMap((o) => [fila('—', `Base al ${o.pct} % (revisar casilla)`, o.base), fila('—', `Cuota al ${o.pct} % (revisar casilla)`, o.iva)])}
+                          {(c['14'] !== 0 || c['15'] !== 0) && <>{fila('14', 'Rectificativas: base', c['14'])}{fila('15', 'Rectificativas: cuota', c['15'])}</>}
                           {c['10'] > 0 && <>{fila('10', 'Compras a la UE: base', c['10'])}{fila('11', 'Compras a la UE: cuota', c['11'])}</>}
                           {c['12'] > 0 && <>{fila('12', 'Compras de fuera de la UE: base', c['12'])}{fila('13', 'Compras de fuera de la UE: cuota', c['13'])}</>}
                           {fila('27', 'Total cuota devengada', c['27'])}

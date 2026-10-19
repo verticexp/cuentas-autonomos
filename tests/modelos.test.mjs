@@ -74,7 +74,7 @@ test('111 y 190: retenciones a profesionales (gastos con retención), aparte de 
 
 test('202: 18 % de la cuota del último Impuesto sobre Sociedades presentado', () => {
   const m = modelo202({ 2024: 0, 2025: 1000 }, 2026);
-  assert.deepEqual(m.map((x) => [x.mes, x.de, x.cuota, x.pago, x.fecha]), [['abril', 2024, 0, 0, '2026-04-20'], ['octubre', 2025, 1000, 180, '2026-10-20'], ['diciembre', 2025, 1000, 180, '2026-12-20']]);
+  assert.deepEqual(m.map((x) => [x.mes, x.de, x.cuota, x.pago, x.fecha]), [['abril', 2024, 0, 0, '2026-04-20'], ['octubre', 2025, 1000, 180, '2026-10-20'], ['diciembre', 2025, 1000, 180, '2026-12-21']]);
   assert.equal(modelo202({}, 2026)[1].cuota, null);
 });
 

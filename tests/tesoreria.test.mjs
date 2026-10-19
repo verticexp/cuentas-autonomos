@@ -74,10 +74,10 @@ test('Hacienda: el 115 del 4T se paga el 20 de enero; el 303 y el 130, el 30', (
 test('Hacienda: el 202 de una sociedad, el 20 de octubre y de diciembre', () => {
   const p = prevision({ facturas: [], gastos: [], fiscal: { tipo: 'sociedad', iva: 'general' }, cuotaIS: { 2025: 1000 }, hoy: '2026-10-08', meses: 3, actividades: [] });
   const h = p.movimientos.filter((m) => m.concepto.includes('202'));
-  assert.deepEqual(h.map((m) => [m.fecha, m.importe]), [['2026-10-20', -180], ['2026-12-20', -180]]);
+  assert.deepEqual(h.map((m) => [m.fecha, m.importe]), [['2026-10-20', -180], ['2026-12-21', -180]]);
 });
 
 test('Hacienda: un 202 marcado como presentado ya no se cuenta', () => {
   const p = prevision({ facturas: [], gastos: [], fiscal: { tipo: 'sociedad', iva: 'general' }, cuotaIS: { 2025: 1000 }, pagos202: { 2026: { 2: 180 } }, hoy: '2026-10-08', meses: 3, actividades: [] });
-  assert.deepEqual(p.movimientos.filter((m) => m.concepto.includes('202')).map((m) => m.fecha), ['2026-12-20']);
+  assert.deepEqual(p.movimientos.filter((m) => m.concepto.includes('202')).map((m) => m.fecha), ['2026-12-21']);
 });
