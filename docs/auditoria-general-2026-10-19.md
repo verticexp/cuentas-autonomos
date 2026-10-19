@@ -34,8 +34,9 @@ Cada uno tiene una prueba que falla con el código anterior y pasa con el nuevo.
 
 - **Varias cuentas por CSV/Excel**: todos los extractos subidos van a una sola cuenta «Extracto subido». Con dos bancos, un
   movimiento idéntico en ambos se toma por repetido y el saldo de uno pisa al del otro. Necesita elegir la cuenta al subir.
-- **Stripe + banco parcial**: si una factura tiene un cobro parcial del banco y otro de Stripe, la liquidación de Stripe
-  que llega al banco se sugiere como un cobro nuevo en vez de solo enlazarse. Necesita enlazar cada cobro externo por separado.
+- ~~**Stripe + banco parcial**~~ (resuelto después en `claude/liquidacion-externos`): cada cobro externo lleva en
+  `liquidado` el movimiento del banco que lo liquida; `cobradoSinBanco` cuenta los que faltan aunque haya pagos del banco y
+  la liquidación solo se enlaza. 250 € con 50 del banco + 100 de Stripe + liquidación de 100 → 150 cobrados, saldo 100.
 - Limitaciones conocidas, ya documentadas: IVA parcialmente deducible (vehículos), recargo de equivalencia repercutido,
   entidades de nueva creación en el IS, festivos en los plazos.
 

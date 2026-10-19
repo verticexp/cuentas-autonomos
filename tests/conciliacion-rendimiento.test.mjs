@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { performance } from 'node:perf_hooks';
-import { sugerencias, opciones, cobradoSinBanco } from '../lib/banco.js';
+import { sugerencias, opciones } from '../lib/banco.js';
 import { importes, numeroFactura, saldoDe } from '../lib/calculos.js';
 import { totalDe } from '../lib/proveedores.js';
 
@@ -25,9 +25,29 @@ const fuerte = (nombre, texto) => {
   return ws.length === 1 ? ws[0].length >= 5 && n === 1 : ws.length > 1 && (n === ws.length || n >= 2);
 };
 
+// Cobros por otra vía que el banco aún no ha liquidado, cada uno por separado (auditoría 10-2026): los pagos del banco
+// de la misma factura no los anulan. Sin lista de pagos, uno solo por el importe de su cobro (o lo cobrado).
+function sinLiquidar(f) {
+  if (f.banco) return [];
+  const pagos = f.pagos || [], total = importes(f).total, externo = (x) => x.metodo && x.metodo !== 'banco' && !x.banco;
+  const cobro = { metodo: 'manual', ...f.cobro };
+  if (!pagos.length) {
+    const x = f.cobro?.importe ?? (f.cobrada ? total : 0);
+    return externo(cobro) && !cobro.liquidado && x > 0 ? [x] : [];
+  }
+  const xs = pagos.filter((p) => externo(p) && !p.liquidado && Number(p.importe) > 0).map((p) => Number(p.importe));
+  const resto = Math.round((total - pagos.reduce((s, p) => s + (Number(p.importe) || 0), 0)) * 100) / 100;
+  if (f.cobrada && resto > 0 && externo(cobro) && !cobro.liquidado) xs.push(resto);
+  return xs;
+}
+const sumaSinLiquidar = (f) => Math.round(sinLiquidar(f).reduce((s, x) => s + x, 0) * 100) / 100;
+// Un movimiento emparejado que la factura no recoge (de antes de marcar las liquidaciones) lo liquidaba todo.
+const enlaceAntiguo = (f, movimientos) => movimientos.some((x) => x.estado === 'emparejado' && x.enlace?.tipo === 'factura' && x.enlace.id === f.id
+  && ![f.banco, f.cobro?.banco, f.cobro?.liquidado, ...(f.pagos || []).flatMap((p) => [p.banco, p.liquidado])].includes(x.id));
+
 function candidatasFactura(m, facturas) {
   const texto = `${m.concepto} ${m.contraparte || ''}`;
-  return facturas.filter((f) => !f.cobrada && !(f.cobro && cobradoSinBanco(f) > 0) && cts(saldoDe(f)) > 0).flatMap((f) => {
+  return facturas.filter((f) => !f.cobrada && !(f.cobro && sumaSinLiquidar(f) > 0) && cts(saldoDe(f)) > 0).flatMap((f) => {
     const importe = saldoDe(f), porNumero = porReferencia(m, numeroFactura(f));
     const exacta = Math.abs(cts(importe) - cts(m.importe)) <= 1 && cts(m.importe) <= cts(importe);
     if ((!exacta && !porNumero) || dias(f.fecha, m.fecha) < (porNumero ? -15 : -3)) return [];
@@ -47,10 +67,13 @@ const sinProveedorPorConcepto = (g, texto) => {
 };
 
 // Facturas ya cobradas por otra vía (remesa, Stripe, caja o a mano) que el banco ingresa después: solo se enlazan.
-function candidatasCobradas(m, facturas, enlazadas) {
+// Cada cobro se liquida por separado o todos juntos: vale el importe de uno o la suma de los pendientes.
+function candidatasCobradas(m, facturas, movimientos) {
   const texto = `${m.concepto} ${m.contraparte || ''}`;
-  return facturas.filter((f) => !enlazadas.has(f.id) && cts(cobradoSinBanco(f)) > 0).flatMap((f) => {
-    const importe = cobradoSinBanco(f), porNumero = porReferencia(m, numeroFactura(f));
+  return facturas.filter((f) => cts(sumaSinLiquidar(f)) > 0 && !enlaceAntiguo(f, movimientos)).flatMap((f) => {
+    const xs = sinLiquidar(f), posibles = xs.length > 1 ? [...xs, sumaSinLiquidar(f)] : xs;
+    const importe = posibles.reduce((a, x) => (Math.abs(cts(x) - cts(m.importe)) < Math.abs(cts(a) - cts(m.importe)) ? x : a));
+    const porNumero = porReferencia(m, numeroFactura(f));
     if (Math.abs(cts(importe) - cts(m.importe)) > 1 || Math.abs(dias(f.fecha, m.fecha)) > 45) return [];
     let puntos = 50;
     if (porNumero) puntos += 35;
@@ -83,11 +106,10 @@ function candidatosGasto(m, gastos, enlazados) {
 // Segura: el importe cuadra y además el número de factura, el cliente o el proveedor aparecen en el concepto.
 function sugerenciasRef(movimientos, facturas, gastos) {
   const enlazados = new Set(movimientos.filter((m) => m.estado === 'emparejado' && m.enlace?.tipo === 'gasto').map((m) => m.enlace.id));
-  const facturasEnlazadas = new Set(movimientos.filter((m) => m.estado === 'emparejado' && m.enlace?.tipo === 'factura').map((m) => m.enlace.id));
   const pendientes = movimientos.filter((m) => (!m.estado || m.estado === 'pendiente') && cts(Math.abs(m.importe)) > 0);
   const todas = new Map(pendientes.map((m) => [m.id,
     (m.importe > 0 ? (() => {
-      const cobradas = candidatasCobradas(m, facturas, facturasEnlazadas), ids = new Set(cobradas.map((x) => x.id));
+      const cobradas = candidatasCobradas(m, facturas, movimientos), ids = new Set(cobradas.map((x) => x.id));
       return [...candidatasFactura(m, facturas).filter((x) => !ids.has(x.id)), ...cobradas];
     })() : candidatosGasto(m, gastos, enlazados)).sort((a, b) => b.puntos - a.puntos)]));
   // Referencia exhaustiva para las disputas: compara cada par de movimientos.
@@ -221,7 +243,9 @@ function conjunto(semilla) {
       numero: i + 1, serie: elegir(['', 'V', 'R']), importada: i % 7 === 0 ? `EXT-${i}` : undefined,
       fecha: fechaMas('2026-04-01', Math.floor(azar() * 100)), cliente: { nombre: elegir(nombres) },
       ivaPct: elegir([0, 0, 21]), irpfPct: elegir([0, 0, 15]), cobrada: i % 11 === 0,
-      pagos: parcial ? [{ importe: 20, metodo: 'stripe' }, { importe: 20, metodo: 'banco' }] : [],
+      // Uno de cada seis tiene ya liquidado su cobro de Stripe; uno de cada nueve, otro de remesa por liquidar.
+      pagos: parcial ? [{ importe: 20, metodo: 'stripe', ...(i % 6 === 0 ? { liquidado: `liq${i}` } : {}) }, { importe: 20, metodo: 'banco', banco: `b${i}` },
+        ...(i % 9 === 0 ? [{ importe: 15, metodo: 'sepa' }] : [])] : [],
       ...(i % 5 === 0 ? { lineas: [{ cantidad: 2, precio: base / 2, dto: 0, ivaPct: 21 }] } : {}),
     });
   });
@@ -242,6 +266,8 @@ function conjunto(semilla) {
   });
   movimientos.push(movimiento('ya-gasto', -50, { estado: 'emparejado', enlace: { tipo: 'gasto', id: 'g1' } }));
   movimientos.push(movimiento('ya-factura', 50, { estado: 'emparejado', enlace: { tipo: 'factura', id: 'f1' } }));
+  movimientos.push(movimiento('liq0', 20, { estado: 'emparejado', enlace: { tipo: 'factura', id: 'f0', yaCobrada: true } }));
+  movimientos.push(movimiento('b3', 20, { estado: 'emparejado', enlace: { tipo: 'factura', id: 'f3' } }));
   return { movimientos, facturas, gastos };
 }
 
