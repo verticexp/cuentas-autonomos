@@ -19,7 +19,7 @@ export async function POST(req) {
   if (b.saldo === null || b.saldo === '') { await redis.del(clave(u, 'saldo')); return Response.json({ ok: true }); }
   const importe = r2(leerImporte(b.saldo));
   if (!Number.isFinite(importe)) return error('Importe no válido');
-  const saldo = { importe, fecha: hoy() };
+  const saldo = { importe, fecha: hoy(), en: new Date().toISOString() };
   await redis.set(clave(u, 'saldo'), saldo);
   return Response.json({ ok: true, saldo });
 }
