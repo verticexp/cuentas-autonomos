@@ -2,6 +2,7 @@
 // apuntando a un documento inexistente y la copia nocturna dejaba de verificar (issue #72, 14-10-2026).
 import test, { after, before } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import './apoyo/cargador.mjs';
 import { arrancar } from './apoyo/upstash-mem.mjs';
 
@@ -69,4 +70,27 @@ test('un cobro a mano enlazado después con el banco no se deshace desde la fact
   // Deshecho desde Banco, ya se puede deshacer el cobro.
   assert.equal((await B.deshacer(u, 'm')).ok, true);
   assert.equal((await C.deshacerCobro(u, 'f')).factura.cobrada, false);
+});
+
+// Igual que tests/conciliacion-servidor.test.mjs: la ruta real, con la autenticación sustituida.
+const modulo = (codigo) => `data:text/javascript;base64,${Buffer.from(codigo).toString('base64')}`;
+async function rutaFacturas() {
+  const api = modulo(`export const usuarioApi = async () => ({ u: globalThis.__bsbApi });
+    export const cuerpo = (req) => req.json();
+    export const error = (error, status = 400) => Response.json({error}, {status});`);
+  const codigo = (await readFile(new URL('../app/api/facturas/route.js', import.meta.url), 'utf8')).replace(/(['"])@\/lib\/([^'"]+)\1/g,
+    (_, _c, nombre) => JSON.stringify(nombre === 'api' ? api : new URL(`../lib/${nombre}.js`, import.meta.url).href));
+  return import(modulo(codigo));
+}
+
+test('desmarcar «cobrada» una factura cobrada por el banco se rechaza', async () => {
+  const u = empresa();
+  await sembrar(u, { facturas: [factura()], movs: [movimiento()] });
+  assert.equal((await B.emparejar(u, 'm', 'factura', 'f')).ok, true);
+  globalThis.__bsbApi = u;
+  const { PATCH } = await rutaFacturas();
+  const res = await PATCH(new Request('http://localhost/api/facturas', { method: 'PATCH', body: JSON.stringify({ id: 'f', cobrada: false }) }));
+  assert.equal(res.status, 409);
+  assert.equal((await R.leerUno(u, 'facturas', 'f')).pagos?.[0]?.banco, 'm');
+  delete globalThis.__bsbApi;
 });
