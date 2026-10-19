@@ -68,7 +68,37 @@
 .presentar-acc .boton { flex: 1 1 10rem; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; text-align: center; text-decoration: none; }
 .presentar-ahora .nota { min-height: 1em; margin: 0; }
 
+/* Cada modelo, plegado en una fila en el móvil (número, cómo va e importe); al tocarla se abren sus trimestres.
+   En el ordenador se ve abierto con su título, como siempre (si el navegador no sabe forzarlo, queda plegable). */
+.modelos .bloque.modelo { margin-bottom: 8px; }
+.modelo-plegable > summary { display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 10px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); box-shadow: 0 1px 2px rgba(15, 31, 27, 0.05); color: var(--ink); cursor: pointer; list-style: none; -webkit-tap-highlight-color: transparent; transition: background-color .15s ease-out; }
+.modelo-plegable > summary::-webkit-details-marker { display: none; }
+.modelo-plegable > summary:active { background: var(--relleno); }
+.modelo-plegable > summary .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; font-size: 16px; font-weight: 600; line-height: 21px; }
+.modelo-plegable > summary small { white-space: normal; overflow: visible; text-overflow: clip; margin-top: 2px; color: var(--muted); font-size: 13px; font-weight: 400; line-height: 17px; }
+.modelo-plegable > summary small.est-listo { color: var(--hacienda); font-weight: 600; }
+.modelo-plegable > summary small.est-fuera { color: var(--out); font-weight: 600; }
+.modelo-plegable > summary small.est-hecho { color: var(--in); }
+.modelo-plegable > summary .modelo-num svg { display: block; }
+.modelo-dato { flex: none; font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.modelo-dato.favor { color: var(--in); }
+.modelo-plegable > summary::after { content: ''; flex: none; width: 7px; height: 7px; margin-left: -2px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(45deg) translateY(-2px); opacity: .7; transition: transform .2s ease-out; }
+.modelo-plegable[open] > summary::after { transform: rotate(225deg) translate(-1px, -1px); }
+.modelo-plegable[open] > summary { margin-bottom: 12px; }
+.modelo-plegable[open] { padding-bottom: 16px; }
+.modelo-plegable > .grupo-t { display: none; }
+@media (prefers-color-scheme: dark) { .modelo-plegable > summary { box-shadow: none; } }
+@supports selector(::details-content) {
+  @media (min-width: 900px) {
+    .modelos .bloque.modelo { margin-bottom: 28px; }
+    .modelo-plegable > summary { display: none; }
+    .modelo-plegable > .grupo-t { display: block; }
+    .modelo-plegable[open] { padding-bottom: 0; }
+    .modelo-plegable::details-content { content-visibility: visible; display: block; }
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .pres, .pres-estado, .pres .estado, .casillas-plegable > summary::after { transition: none; }
+  .pres, .pres-estado, .pres .estado, .casillas-plegable > summary::after, .modelo-plegable > summary, .modelo-plegable > summary::after { transition: none; }
   .pres-txt { animation: none; }
 }
