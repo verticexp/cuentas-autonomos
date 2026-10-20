@@ -70,7 +70,8 @@ export default async function Facturas({ searchParams }) {
       <AvisoDeshacer />
       <header className="cabecera">
         <h1 className="titulo">Facturas</h1>
-        {puede(u, 'facturar') && <Ir href="/facturas/nueva" tipo="subir" className="boton pequeno">Nueva factura</Ir>}
+        {/* Sin ninguna factura, el botón va dentro del vacío (uno solo). */}
+        {puede(u, 'facturar') && total > 0 && <Ir href="/facturas/nueva" tipo="subir" className="boton pequeno">Nueva factura</Ir>}
       </header>
 
       {total > 0 && (

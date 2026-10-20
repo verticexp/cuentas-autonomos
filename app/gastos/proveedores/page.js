@@ -22,7 +22,7 @@ export default async function Proveedores({ searchParams }) {
   return (
     <main className="pagina mk-look fichas-pagina">
       <Volver href="/gastos">Gastos</Volver>
-      <div className="ficha-cabecera"><h1 className="titulo">Proveedores</h1>{puede(u, 'gastar') && <Ir className="boton" href="/gastos/proveedores/nuevo">+ Nuevo proveedor</Ir>}</div>
+      <div className="ficha-cabecera"><h1 className="titulo">Proveedores</h1>{puede(u, 'gastar') && lista.length > 0 && <Ir className="boton" href="/gastos/proveedores/nuevo">+ Nuevo proveedor</Ir>}</div>
       {lista.length > 0 && <p className="resumen-linea"><span>{lista.length === 1 ? '1 proveedor' : `${lista.length} proveedores`}</span>{debes > 0 && <span className="prov-debe">Les debes <strong>{eur(debes)}</strong></span>}</p>}
       {lista.length > 0 && <FiltrosFichas lista={lista.map((p) => p.ficha || {})} filtros={filtros} />}
       {visibles.length ? (
