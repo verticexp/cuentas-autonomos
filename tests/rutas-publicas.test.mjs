@@ -16,3 +16,13 @@ test('un nombre que solo empieza como uno público no queda abierto (m7)', () =>
     assert.ok(!PUBLICO.test(r), r);
   }
 });
+
+test('M4: «Resumen e impuestos» solo no basta para el detalle (libros, banco, paquete)', async () => {
+  const { DETALLE, PERFILES, puede } = await import('../lib/permisos.js');
+  const solo = { rol: 'miembro', permisos: ['resumen'] };
+  const gestoria = { rol: 'miembro', permisos: PERFILES.find((p) => p.id === 'gestoria').permisos };
+  assert.equal(puede(solo, 'resumen'), true);
+  assert.equal(puede(solo, DETALLE), false);
+  assert.equal(puede(gestoria, DETALLE), true, 'la gestoría sigue viéndolo todo');
+  assert.equal(puede({ rol: 'admin' }, DETALLE), true);
+});

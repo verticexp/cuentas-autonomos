@@ -3,7 +3,7 @@ import { redis, guardar, leerUno } from '@/lib/redis';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { auditar } from '@/lib/auditoria';
 import { conCerrojo, Ocupado } from '@/lib/cerrojo';
-import { cambiarEnlacePortal } from '@/lib/portal';
+import { cambiarEnlacePortal } from '@/lib/enlaces';
 import { numeroPresupuesto } from '@/lib/presupuestos';
 
 export const dynamic = 'force-dynamic';
