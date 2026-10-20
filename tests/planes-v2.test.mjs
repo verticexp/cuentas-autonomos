@@ -5,12 +5,14 @@ import { nuevoPlan } from '../lib/prueba.js';
 import { PERFILES } from '../lib/permisos.js';
 import { planTrasSuscripcion } from '../lib/suscripcion.js';
 
-const pagado = (tipo, nombre) => ({ ...nuevoPlan(tipo, nombre), pagado: true });
+// Altas de la versión 2: conservan sus condiciones aunque las nuevas sean de la versión 3 (tests/planes-v3.test.mjs).
+const v2 = (tipo, nombre) => ({ ...nuevoPlan(tipo, nombre), version: 2 });
+const pagado = (tipo, nombre) => ({ ...v2(tipo, nombre), pagado: true });
 const gestor = { id: 'g', rol: 'miembro', permisos: PERFILES.find((p) => p.id === 'gestoria').permisos };
 const admin = { id: 'a', rol: 'admin' };
 const empleado = { id: 'b', rol: 'miembro', permisos: ['facturas', 'facturar'] };
 
-test('los seis planes nuevos cumplen el reparto de módulos y capacidad', () => {
+test('los seis planes de la versión 2 cumplen el reparto de módulos y capacidad', () => {
   const matriz = {
     aut: { Esencial: [1, 0, []], Pro: [1, 0, Object.keys(FUNCIONES).filter((f) => f !== 'nominas')], Plus: [3, 2, Object.keys(FUNCIONES)] },
     pym: { Esencial: [3, 5, ['conciliacion', 'nominas']], Pro: [8, 15, Object.keys(FUNCIONES)], Plus: [15, 30, Object.keys(FUNCIONES)] },
@@ -27,8 +29,9 @@ test('los seis planes nuevos cumplen el reparto de módulos y capacidad', () => 
 test('las altas nuevas prueban Plus y Business no es contratable mediante registro', () => {
   for (const tipo of ['aut', 'pym']) {
     const plan = nuevoPlan(tipo, 'Esencial');
-    assert.equal(plan.version, 2);
-    for (const funcion of Object.keys(FUNCIONES)) assert.equal(sinFuncion(plan, funcion), null);
+    assert.equal(plan.version, 3);
+    // La prueba es el Plus de su tipo: en autónomos, todo menos las remesas SEPA (solo pymes).
+    for (const funcion of Object.keys(FUNCIONES)) assert.equal(sinFuncion(plan, funcion) === null, !(tipo === 'aut' && funcion === 'remesas'), `${tipo}: ${funcion}`);
   }
   for (const tipo of ['gra', 'business', '__proto__', 'constructor']) assert.equal(nuevoPlan(tipo, 'Pro'), null);
 });
@@ -47,11 +50,11 @@ test('una gestoría no consume plaza interna, pero sus permisos no permiten elud
 });
 
 test('el aviso de fin de prueba cuenta usuarios internos y recomienda Pro por módulos reales', () => {
-  const plan = nuevoPlan('aut', 'Esencial');
+  const plan = v2('aut', 'Esencial');
   assert.deepEqual(perderia(plan, {}, plazasDe([admin, gestor])), []);
   assert.equal(planQueLoIncluye(plan, { remesas: 1, albaranes: 2, proyectos: 1 }, plazasDe([admin, gestor])).n, 'Pro');
   assert.equal(planQueLoIncluye(plan, {}, plazasDe([admin, empleado, gestor])).n, 'Plus');
-  assert.equal(planQueLoIncluye(nuevoPlan('pym', 'Esencial'), { tesoreria: 1, asistente: 1 }).n, 'Pro');
+  assert.equal(planQueLoIncluye(v2('pym', 'Esencial'), { tesoreria: 1, asistente: 1 }).n, 'Pro');
 });
 
 test('los contratos anteriores conservan módulos y capacidad tras avisos de Stripe', () => {

@@ -162,7 +162,7 @@ test('registro: sin servicio crea emisor completo, censo pendiente, índice y pe
   assert.deepEqual(empresa.emisor, { nombre: valido.razon, nif: '12345678Z', direccion: valido.direccion, cp: '08001', ciudad: 'Barcelona', provincia: 'Barcelona', telefono: valido.telefono });
   assert.equal(empresa.censo.estado, 'pendiente');
   assert.ok(Date.parse(empresa.censo.fecha) >= antes);
-  assert.equal(empresa.plan.version, 2);
+  assert.equal(empresa.plan.version, 3);
   assert.deepEqual({ tipo: empresa.plan.tipo, nombre: empresa.plan.nombre, periodo: empresa.plan.periodo }, { tipo: 'aut', nombre: 'Esencial', periodo: 'anio' });
   assert.equal(empresa.fiscal.tipo, 'autonomo');
   assert.equal(await redis.hget('empresa-nif', '12345678Z'), id);

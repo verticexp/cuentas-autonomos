@@ -238,12 +238,12 @@ export const segmento = (id) => SEGMENTOS.find((s) => s.id === id);
 export const PLANES = {
   aut: [
     { n: 'Esencial', p: 9, para: 'Facturar y declarar sin sustos', l: ['Facturas, presupuestos y recurrentes', 'Gastos y escaneo IA · 50 páginas/mes', 'Modelos aplicables y libros registro', 'Bienes de inversión y amortizaciones', 'Extractos, saldo y resumen', '1 empresa · 1 usuario interno + gestoría'] },
-    { n: 'Pro', p: 12, para: 'Más control por 3 € más al mes', fuerte: true, herencia: 'Esencial', l: ['Conciliación, revisión del banco y previsión', 'Inventario, pedidos y albaranes', 'Cartera avanzada y SEPA', 'Análisis financiero y rentabilidad por proyecto', 'Asistente IA con tus cifras', 'Escaneo IA · 200 páginas/mes'] },
-    { n: 'Plus', p: 20, para: 'Más equipo con las funciones de Pro', herencia: 'Pro', l: ['1 empresa · 3 usuarios internos + gestoría', 'Nóminas y jornada para 2 empleados', 'Atención prioritaria', 'Escaneo IA · 500 páginas/mes'] },
+    { n: 'Pro', p: 12, para: 'Más control por 3 € más al mes', fuerte: true, herencia: 'Esencial', l: ['Conciliación, revisión del banco y previsión', 'Inventario, pedidos y albaranes', 'Cartera de cobros', 'Análisis de ventas, gastos y margen', 'Asistente IA con tus cifras', 'Escaneo IA · 200 páginas/mes'] },
+    { n: 'Plus', p: 20, para: 'Para crecer con un pequeño equipo', herencia: 'Pro', l: ['Rentabilidad por proyecto', '1 empresa · 2 usuarios internos + gestoría', 'Nóminas y jornada para 1 empleado', 'Atención prioritaria', 'Escaneo IA · 500 páginas/mes'] },
   ],
   pym: [
-    { n: 'Esencial', p: 25, para: 'Equipo pequeño, finanzas claras', l: ['Facturación, presupuestos y recurrentes', 'Gastos y lectura IA · 200 páginas/mes', 'Contabilidad y cuentas anuales', 'Extractos y conciliación', '1 empresa · 3 usuarios internos + gestoría', 'Nóminas y jornada para 5 empleados'] },
-    { n: 'Pro', p: 35, para: 'Más control por 10 € más al mes', fuerte: true, herencia: 'Esencial', l: ['Pedidos, albaranes e inventario', 'Revisión del banco y previsión de caja', 'Cartera avanzada y SEPA', 'Análisis financiero, proyectos y asistente IA', '8 usuarios internos · 15 empleados', 'Escaneo IA · 600 páginas/mes · soporte prioritario'] },
+    { n: 'Esencial', p: 25, para: 'Lo que una sociedad necesita', l: ['Facturación, presupuestos y recurrentes', 'Gastos y lectura IA · 200 páginas/mes', 'Contabilidad, cuentas anuales e Impuesto sobre Sociedades', 'Extractos, conciliación y revisión del banco', '1 empresa · 2 usuarios internos + gestoría', 'Nóminas y jornada para 3 empleados'] },
+    { n: 'Pro', p: 32, para: 'Todo el control por 7 € más al mes', fuerte: true, herencia: 'Esencial', l: ['Cartera de cobros y previsión de caja', 'Pedidos, albaranes e inventario', 'Remesas SEPA y análisis financiero con ratios', 'Rentabilidad por proyecto y asistente IA', '8 usuarios internos · 15 empleados', 'Escaneo IA · 600 páginas/mes · soporte prioritario'] },
     { n: 'Plus', p: 55, para: 'Más capacidad con las funciones de Pro', herencia: 'Pro', l: ['1 empresa · 15 usuarios internos + gestoría', 'Nóminas y jornada para 30 empleados', 'Incorporación guiada', 'Escaneo IA · 1.500 páginas/mes'] },
   ],
   gra: [
@@ -263,16 +263,30 @@ const COMUNES = [
     ['Seguridad y copias de respaldo', [true, true, true]],
   ]],
 ];
-const OPERACIONES = [
-  ['Operaciones y análisis', [
-    ['Inventario, pedidos y albaranes', [false, true, true]],
-    ['Revisión de gastos del banco', [false, true, true]],
-    ['Previsión de caja', [false, true, true]],
-    ['Cartera avanzada y remesas SEPA', [false, true, true]],
-    ['Análisis financiero y rentabilidad por proyecto', [false, true, true]],
-    ['Asistente IA', [false, true, true]],
-  ]],
-];
+const OPERACIONES = {
+  aut: [
+    ['Operaciones y análisis', [
+      ['Inventario, pedidos y albaranes', [false, true, true]],
+      ['Revisión de gastos del banco', [false, true, true]],
+      ['Previsión de caja', [false, true, true]],
+      ['Cartera de cobros', [false, true, true]],
+      ['Análisis de ventas, gastos y margen', [false, true, true]],
+      ['Asistente IA', [false, true, true]],
+      ['Rentabilidad por proyecto', [false, false, true]],
+    ]],
+  ],
+  pym: [
+    ['Operaciones y análisis', [
+      ['Revisión de gastos del banco', [true, true, true]],
+      ['Inventario, pedidos y albaranes', [false, true, true]],
+      ['Previsión de caja', [false, true, true]],
+      ['Cartera de cobros y remesas SEPA', [false, true, true]],
+      ['Análisis financiero y ratios', [false, true, true]],
+      ['Rentabilidad por proyecto', [false, true, true]],
+      ['Asistente IA', [false, true, true]],
+    ]],
+  ],
+};
 export const COMPARATIVA = {
   aut: [
     ...COMUNES,
@@ -288,10 +302,10 @@ export const COMPARATIVA = {
       ['Extractos N43, CSV, Excel y PDF, saldo y resumen', [true, true, true]],
       ['Conciliación bancaria', [false, true, true]],
     ]],
-    ...OPERACIONES,
+    ...OPERACIONES.aut,
     ['Equipo y atención', [
-      ['Usuarios internos', ['1', '1', '3']],
-      ['Nóminas y jornada', [false, false, '2 empleados']],
+      ['Usuarios internos', ['1', '1', '2']],
+      ['Nóminas y jornada', [false, false, '1 empleado']],
       ['Soporte', ['Email', 'Email', 'Prioritario']],
     ]],
   ],
@@ -303,16 +317,16 @@ export const COMPARATIVA = {
       ['Verifactu: huella y QR', [true, true, true]],
       ['Gastos y proveedores', [true, true, true]],
       ['Cálculo de modelos aplicables (presentas tú o tu gestoría)', [true, true, true]],
-      ['Contabilidad, balance y cuentas anuales', [true, true, true]],
+      ['Contabilidad, balance, cuentas anuales e Impuesto sobre Sociedades', [true, true, true]],
       ['Bienes de inversión y amortizaciones', [true, true, true]],
       ['Varias actividades', [true, true, true]],
       ['Extractos N43, CSV, Excel y PDF, saldo y resumen', [true, true, true]],
       ['Conciliación bancaria', [true, true, true]],
     ]],
-    ...OPERACIONES,
+    ...OPERACIONES.pym,
     ['Equipo y atención', [
-      ['Usuarios internos con permisos', ['3', '8', '15']],
-      ['Nóminas y jornada', ['5 empleados', '15 empleados', '30 empleados']],
+      ['Usuarios internos con permisos', ['2', '8', '15']],
+      ['Nóminas y jornada', ['3 empleados', '15 empleados', '30 empleados']],
       ['Soporte', ['Email', 'Prioritario', 'Prioritario']],
       ['Incorporación guiada', [false, false, true]],
     ]],
@@ -335,7 +349,7 @@ export const FAQ_PRECIOS = [
   ['¿Los precios llevan IVA y son por empresa?', 'Los precios no incluyen IVA y corresponden a una empresa por suscripción. Para varias sociedades, Business ofrece alcance y precio cerrado por contacto.'],
   ['¿Necesito tarjeta para la prueba?', 'No. Puedes probar Netto durante 30 días sin tarjeta.'],
   ['¿Mi gestoría consume un usuario?', 'No. Los seis planes incluyen 1 acceso separado para tu gestoría, además de los usuarios internos del plan.'],
-  ['¿Qué diferencia hay entre Pro, Plus y Business?', 'Pro añade operaciones, previsión y análisis a Esencial. Plus conserva las funciones de Pro y amplía el equipo; en Autónomos añade nóminas y jornada, y en Pymes incorporación guiada. Business es una oferta a medida para varias sociedades o equipos, con alcance y precio acordados por contacto.'],
+  ['¿Qué diferencia hay entre Pro, Plus y Business?', 'Pro añade operaciones, previsión y análisis a Esencial. Plus conserva las funciones de Pro y amplía el equipo; en Autónomos añade nóminas, jornada y rentabilidad por proyecto, y en Pymes incorporación guiada. Business es una oferta a medida para varias sociedades o equipos, con alcance y precio acordados por contacto.'],
   ['¿Cuántas páginas de lectura IA incluye cada plan?', 'Autónomos: 50 en Esencial, 200 en Pro y 500 en Plus. Pymes: 200 en Esencial, 600 en Pro y 1.500 en Plus. La cuota se comparte por empresa con la gestoría, se renueva cada mes natural también en pago anual y no se acumula. La prueba incluye 50 páginas en total; la cuota mensual del plan empieza con el periodo de pago. Una imagen cuenta una página y cada página del PDF una lectura, hasta 10 páginas y 3 MB por PDF. Volver a enviar una lectura consume otra página. Cuentan las lecturas enviadas a la IA aunque no guardes el gasto.'],
   ['¿Qué pasa al agotar las páginas?', 'Puedes seguir registrando gastos a mano y subiendo extractos en CSV, Excel o Norma 43. Puedes cambiar de plan o solicitar una ampliación por contacto: te confirmamos el precio y las condiciones antes de contratar, sin cargos automáticos. Los PDF bancarios comparten la bolsa de páginas con las facturas y tickets.'],
   ['¿Puedo cambiar de plan?', 'Puedes elegir otro plan desde tu suscripción. Antes de confirmar verás las condiciones y el importe del cambio.'],

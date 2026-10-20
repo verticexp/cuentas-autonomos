@@ -12,7 +12,7 @@ test('oferta pública: seis planes, dos segmentos y Business sin precio', () => 
   assert.equal(SEGMENTOS[2].desde, undefined);
   assert.equal(PLANES.business, undefined);
   assert.deepEqual(PLANES.aut.map(({ p }) => p), [9, 12, 20]);
-  assert.deepEqual(PLANES.pym.map(({ p }) => p), [25, 35, 55]);
+  assert.deepEqual(PLANES.pym.map(({ p }) => p), [25, 32, 55]);
   for (const seg of ['aut', 'pym']) {
     assert.equal(PLANES[seg].length, 3);
     for (const plan of PLANES[seg]) {
@@ -27,14 +27,18 @@ test('oferta pública: seis planes, dos segmentos y Business sin precio', () => 
 });
 
 test('capacidad y funciones de cada segmento sin heredar Autónomos Pro en Pymes', () => {
-  assert.deepEqual(valores('aut', 'Usuarios internos'), ['1', '1', '3']);
-  assert.deepEqual(valores('pym', 'Usuarios internos con permisos'), ['3', '8', '15']);
-  assert.deepEqual(valores('aut', 'Nóminas y jornada'), [false, false, '2 empleados']);
-  assert.deepEqual(valores('pym', 'Nóminas y jornada'), ['5 empleados', '15 empleados', '30 empleados']);
+  assert.deepEqual(valores('aut', 'Usuarios internos'), ['1', '1', '2']);
+  assert.deepEqual(valores('pym', 'Usuarios internos con permisos'), ['2', '8', '15']);
+  assert.deepEqual(valores('aut', 'Nóminas y jornada'), [false, false, '1 empleado']);
+  assert.deepEqual(valores('pym', 'Nóminas y jornada'), ['3 empleados', '15 empleados', '30 empleados']);
   assert.deepEqual(valores('aut', 'Conciliación bancaria'), [false, true, true]);
   assert.deepEqual(valores('pym', 'Conciliación bancaria'), [true, true, true]);
+  assert.deepEqual(valores('aut', 'Rentabilidad por proyecto'), [false, false, true]);
+  assert.deepEqual(valores('pym', 'Rentabilidad por proyecto'), [false, true, true]);
+  assert.deepEqual(valores('pym', 'Cartera de cobros y remesas SEPA'), [false, true, true]);
+  assert.equal(valores('aut', 'Cartera de cobros y remesas SEPA'), undefined);
   for (const seg of ['aut', 'pym']) {
-    for (const fila of ['Inventario, pedidos y albaranes', 'Previsión de caja', 'Asistente IA', 'Cartera avanzada y remesas SEPA']) {
+    for (const fila of ['Inventario, pedidos y albaranes', 'Previsión de caja', 'Asistente IA']) {
       assert.deepEqual(valores(seg, fila), [false, true, true]);
     }
     assert.deepEqual(valores(seg, 'Portal del cliente y avisos push'), [true, true, true]);
@@ -44,7 +48,7 @@ test('capacidad y funciones de cada segmento sin heredar Autónomos Pro en Pymes
 test('importes anuales exactos de los seis planes con 30 % de descuento', () => {
   assert.equal(DESCUENTO, 30);
   const centimosAnuales = ['aut', 'pym'].flatMap((seg) => PLANES[seg].map(({ p }) => Math.round(p * 12 * (100 - DESCUENTO))));
-  assert.deepEqual(centimosAnuales, [7560, 10080, 16800, 21000, 29400, 46200]);
+  assert.deepEqual(centimosAnuales, [7560, 10080, 16800, 21000, 26880, 46200]);
 });
 
 test('catálogo histórico gra conserva precios y capacidad existentes', () => {
