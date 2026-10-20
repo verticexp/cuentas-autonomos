@@ -14,10 +14,10 @@
 .ficha-form .campo, .ficha-filtros .campo { min-width: 0; min-height: 44px; max-width: 100%; }
 .ficha-form .campo:disabled { opacity: .75; cursor: not-allowed; }
 .ficha-form .campo[readonly] { background: var(--paper); }
-.ficha-form .campo[aria-invalid="true"] { border-color: #C0392B; }
+.ficha-form .campo[aria-invalid="true"] { border-color: var(--out); }
 .ficha-ayuda { display: block; color: var(--muted); line-height: 1.5; }
 .ficha-acciones { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
-.ficha-acciones .borrar { min-height: 44px; padding: 12px; color: #C0392B; }
+.ficha-acciones .borrar { min-height: 44px; padding: 12px; color: var(--out); }
 .ficha-acciones button:disabled { opacity: .6; cursor: wait; }
 .ficha-titulo { font-size: 20px; margin: 24px 0 14px; }
 .ficha-fila { text-decoration: none; }
@@ -30,10 +30,11 @@
 .ficha-cifras strong { color: var(--ink); font-size: 20px; }
 .ficha-barra { height: 5px; overflow: hidden; border-radius: 4px; background: var(--line); margin: 4px 0; }
 .ficha-barra span { display: block; height: 100%; background: var(--in); }
-.ficha-alerta, .ficha-alerta .ficha-cifras strong { color: #946000; }
-.ficha-alerta .ficha-barra span { background: #946000; }
-.ficha-excedido, .ficha-excedido small, .ficha-excedido .ficha-cifras strong { color: #C0392B; }
-.ficha-excedido .ficha-barra span { background: #C0392B; }
+/* Ámbar y rojo de las fichas de color (app/globals.css): cambian con el tema y se leen a ≥ 4,5:1 en los dos. */
+.ficha-alerta, .ficha-alerta .ficha-cifras strong { color: var(--aviso); }
+.ficha-alerta .ficha-barra span { background: var(--aviso); }
+.ficha-excedido, .ficha-excedido small, .ficha-excedido .ficha-cifras strong { color: var(--out); }
+.ficha-excedido .ficha-barra span { background: var(--out); }
 .ficha-nueva-factura { margin-bottom: 18px; }
 .fichas-pagina select:focus-visible, .fichas-pagina textarea:focus-visible, .fichas-pagina a:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
 @media (max-width: 560px) {
@@ -55,7 +56,3 @@
   .ficha-riesgo { max-width: 100%; width: 100%; text-align: left; }
   .ficha-cabecera .boton { width: 100%; }
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-tema="claro"]) .ficha-alerta, :root:not([data-tema="claro"]) .ficha-alerta .ficha-cifras strong { color: #E7B85A; }
-}
-:root[data-tema="oscuro"] .ficha-alerta, :root[data-tema="oscuro"] .ficha-alerta .ficha-cifras strong { color: #E7B85A; }

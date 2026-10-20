@@ -13,7 +13,7 @@ export default function BarraEstado() {
       const oscuro = html.dataset.tema === 'oscuro' || (
         html.dataset.tema !== 'claro' && matchMedia('(prefers-color-scheme: dark)').matches
       );
-      const cabecera = oscuro ? '#242629' : '#0F1F1B';
+      const cabecera = oscuro ? '#13231E' : '#0F1F1B'; // como .inicio en app/diseno.css
       const papel = oscuro ? '#111214' : '#F3F4F1';
       const inicio = document.getElementById('arranque') && html.dataset.arranque !== 'visto';
       const bloqueada = !html.dataset.abierta && document.querySelector('.pantalla-bloqueo');

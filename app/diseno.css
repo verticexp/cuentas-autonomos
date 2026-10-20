@@ -1,12 +1,16 @@
 /* Marca Fisquo: verde principal, menta, crema y gris; letra del sistema.
    Listas agrupadas como en el iPhone, sin sombras: el contenido va en grupos. */
 body { --marca: var(--acento, #0F1F1B); --sobre: #fff; font-size: 17px; letter-spacing: -0.01em; line-height: 1.3; }
+/* En oscuro, la marca base es un menta vivo (el pálido #9FD8BD hacía que el botón principal pareciera desactivado) y los
+   botones secundarios llevan el texto en --ink, como en claro: si no, parecían enlaces de marca y competían con el principal. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-tema="claro"]) body { --marca: color-mix(in srgb, var(--acento, #0F1F1B) 70%, #fff); }
-  :root:not([data-tema="claro"]) body[data-marca="base"] { --marca: #9FD8BD; --sobre: #0F1F1B; }
+  :root:not([data-tema="claro"]) body[data-marca="base"] { --marca: #7FD6AC; --sobre: #0F1F1B; }
+  :root:not([data-tema="claro"]) .boton.sec { color: var(--ink); }
 }
 :root[data-tema="oscuro"] body { --marca: color-mix(in srgb, var(--acento, #0F1F1B) 70%, #fff); }
-:root[data-tema="oscuro"] body[data-marca="base"] { --marca: #9FD8BD; --sobre: #0F1F1B; }
+:root[data-tema="oscuro"] body[data-marca="base"] { --marca: #7FD6AC; --sobre: #0F1F1B; }
+:root[data-tema="oscuro"] .boton.sec { color: var(--ink); }
 .pagina { padding-left: 16px; padding-right: 16px; animation: none; }
 .titulo { font-size: 34px; font-weight: 700; letter-spacing: 0.01em; line-height: 1.2; margin: 6px 0 14px; }
 .cabecera { margin-bottom: 10px; }
@@ -405,17 +409,19 @@ html[data-arranque=visto] #arranque { display: none; }
 .inicio { --cima: calc(env(safe-area-inset-top, 0px) + 20px); margin: calc(-1 * var(--cima)) -16px 0; padding: var(--cima) 20px 76px; --fondo-logo: var(--verde); background: var(--fondo-logo); color: var(--crema); border-radius: 0 0 28px 28px; }
 @media (min-width: 640px) { .inicio { margin-left: 0; margin-right: 0; } }
 @media (min-width: 900px) { .inicio { --cima: 40px; margin-top: 0; padding-top: 24px; border-radius: 28px; } }
+/* En oscuro, un verde muy oscuro (antes gris #242629): conserva la marca y el texto crema sigue a más de 15:1.
+   components/BarraEstado.js pinta la barra de estado del mismo color. */
 @media (prefers-color-scheme: dark) {
-  :root:not([data-tema="claro"]) .inicio { --fondo-logo: #242629; }
+  :root:not([data-tema="claro"]) .inicio { --fondo-logo: #13231E; }
 }
-:root[data-tema="oscuro"] .inicio { --fondo-logo: #242629; }
+:root[data-tema="oscuro"] .inicio { --fondo-logo: #13231E; }
 .inicio-barra { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; }
 .inicio .anios { gap: 10px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .inicio .anios a, .inicio .anios .off { width: 32px; height: 32px; background: rgba(250, 250, 248, 0.1); color: var(--crema); font-size: 18px; }
 .inicio .anios .off { opacity: 0.35; }
 .inicio-hola { font-size: 28px; font-weight: 700; letter-spacing: 0.01em; line-height: 1.15; margin-top: 26px; }
 .inicio-sub { color: rgba(250, 250, 248, 0.68); font-size: 15px; margin-top: 4px; }
-.saldo { position: relative; background: var(--surface); border-radius: 22px; padding: 16px 18px 16px; margin: -52px 4px 18px; box-shadow: 0 1px 2px rgba(15, 31, 27, 0.06), 0 12px 32px rgba(15, 31, 27, 0.1); }
+.saldo { position: relative; background: var(--surface-2); border-radius: 22px; padding: 16px 18px 16px; margin: -52px 4px 18px; box-shadow: 0 1px 2px rgba(15, 31, 27, 0.06), 0 12px 32px rgba(15, 31, 27, 0.1); }
 @media (prefers-color-scheme: dark) {
   :root:not([data-tema="claro"]) .saldo { box-shadow: 0 0 0 0.5px var(--line); }
 }

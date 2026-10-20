@@ -4,21 +4,27 @@
      cookie `tema` (Ajustes › Apariencia): todo color nuevo se define en los tres bloques.
      Escala de letra (px): 11 · 12 · 13 · 14 · 15 · 16 · 17 · 18 · 20 · 22 · 24 · 26 · 28 · 30 · 32 · 34 · 40 (las hojas
      de factura imitan el papel y van aparte, en pt). tests/css-escala.test.mjs no deja añadir tamaños fuera de ella.
-     Radios: 8 (controles pequeños), 12 (campos y tarjetas), 20 (grupos y hojas), 999px (pastillas). */
+     Radios: 8 (controles pequeños), 12 (campos y tarjetas), 20 (grupos y hojas), 999px (pastillas).
+     Contraste (tests/contraste.test.mjs): todo texto ≥ 4,5:1 sobre --surface y --paper en los dos temas; --muted en torno
+     a 5–5,5:1 para que se distinga de --ink. --surface-2 es lo que flota encima (en oscuro, más claro que lo de debajo).
+     --in-boton y --out-boton son rellenos con texto blanco; --aviso (ámbar) e --info (azul) completan los avisos. */
   --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --verde: #0F1F1B; --menta: #E6F2EC; --crema: #FAFAF8; --gris: #8A8F8C;
-  --paper: #F3F4F1; --surface: #FFFFFF; --ink: #0F1F1B; --muted: #646B67; --line: rgba(15, 31, 27, 0.12);
-  --in: #1F8A55; --out: #D64035; --hacienda: #C2551C; --irpf: #E8833A;
+  --paper: #F3F4F1; --surface: #FFFFFF; --surface-2: #FFFFFF; --ink: #0F1F1B; --muted: #646B67; --line: rgba(15, 31, 27, 0.12);
+  --in: #1A7A4B; --out: #C8382D; --hacienda: #B54E17; --irpf: #C46A1C; --aviso: #8A6500; --info: #0062D1;
+  --in-boton: #1A7A4B; --out-boton: #C8382D;
   --relleno: rgba(15, 31, 27, 0.06); --ico: #1F5A44;
   --r-s: 8px; --r-m: 12px; --r-l: 20px; --r-pastilla: 999px;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-tema="claro"]) { --paper: #111214; --surface: #1B1D20; --ink: #F1F2F3; --muted: #A4A7AA; --line: rgba(255, 255, 255, 0.11);
-    --in: #5CC98F; --out: #FF6B5E; --hacienda: #FF9F5A; --irpf: #FFC46B; --relleno: rgba(255, 255, 255, 0.065); --menta: #252A28; --ico: #9FD8BD; color-scheme: dark; }
+  :root:not([data-tema="claro"]) { --paper: #111214; --surface: #1B1D20; --surface-2: #26292D; --ink: #F1F2F3; --muted: #909397; --line: rgba(255, 255, 255, 0.11);
+    --in: #5CC98F; --out: #FF6B5E; --hacienda: #FF9F5A; --irpf: #FFC46B; --aviso: #E8B931; --info: #4BA3FF; --in-boton: #1E7A4D; --out-boton: #C0352B;
+    --relleno: rgba(255, 255, 255, 0.065); --menta: #252A28; --ico: #9FD8BD; color-scheme: dark; }
 }
-:root[data-tema="oscuro"] { --paper: #111214; --surface: #1B1D20; --ink: #F1F2F3; --muted: #A4A7AA; --line: rgba(255, 255, 255, 0.11);
-    --in: #5CC98F; --out: #FF6B5E; --hacienda: #FF9F5A; --irpf: #FFC46B; --relleno: rgba(255, 255, 255, 0.065); --menta: #252A28; --ico: #9FD8BD; color-scheme: dark; }
+:root[data-tema="oscuro"] { --paper: #111214; --surface: #1B1D20; --surface-2: #26292D; --ink: #F1F2F3; --muted: #909397; --line: rgba(255, 255, 255, 0.11);
+    --in: #5CC98F; --out: #FF6B5E; --hacienda: #FF9F5A; --irpf: #FFC46B; --aviso: #E8B931; --info: #4BA3FF; --in-boton: #1E7A4D; --out-boton: #C0352B;
+    --relleno: rgba(255, 255, 255, 0.065); --menta: #252A28; --ico: #9FD8BD; color-scheme: dark; }
 * { box-sizing: border-box; margin: 0; }
 html, body { height: 100%; }
 /* El servidor identifica la app antes de pintar, también sin JavaScript. */
