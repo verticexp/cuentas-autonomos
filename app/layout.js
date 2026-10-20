@@ -21,9 +21,10 @@ import Arranque from '@/components/Arranque';
 import BarraEstado from '@/components/BarraEstado';
 import { WEB } from '@/lib/web';
 
-// Si ya se vio en esta sesión (o es una página pública/PDF), la pantalla de inicio no llega a pintarse.
+// Si ya se vio en esta sesión (o es una página pública/PDF), la pantalla de inicio no llega a pintarse. Entrar y registrarse
+// tampoco la llevan en la web, pero sí en la app de iOS: al abrirla sin sesión es lo primero que se ve tras el verde de lanzamiento.
 // Si la app ya se desbloqueó en esta sesión, el bloqueo tampoco (components/Bloqueo.js).
-const YA_VISTO = "try{if(sessionStorage.getItem('fisquo-abierta')||document.cookie.indexOf('recien=1')>-1)document.documentElement.dataset.abierta='1';var p=location.pathname;if(sessionStorage.getItem('fisquo-arranque')||p.startsWith('/p/')||p.startsWith('/portal/')||p.startsWith('/pagar/')||p.endsWith('/pdf')||p.startsWith('/invitacion')||p==='/privacidad'||p==='/condiciones'||p==='/login'||p==='/registro')document.documentElement.dataset.arranque='visto'}catch(e){}";
+const YA_VISTO = "try{if(sessionStorage.getItem('fisquo-abierta')||document.cookie.indexOf('recien=1')>-1)document.documentElement.dataset.abierta='1';var p=location.pathname;if(sessionStorage.getItem('fisquo-arranque')||p.startsWith('/p/')||p.startsWith('/portal/')||p.startsWith('/pagar/')||p.endsWith('/pdf')||p.startsWith('/invitacion')||p==='/privacidad'||p==='/condiciones'||((p==='/login'||p==='/registro')&&!/FisquoApp\\//.test(navigator.userAgent)))document.documentElement.dataset.arranque='visto'}catch(e){}";
 
 export const metadata = {
   metadataBase: new URL(WEB),

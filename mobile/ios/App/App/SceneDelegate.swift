@@ -10,6 +10,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let windowScene = scene as? UIWindowScene else { return }
 
         window = UIWindow(windowScene: windowScene)
+        window?.backgroundColor = FisquoViewController.verde // sin negro mientras arranca, igual que la pantalla de lanzamiento
         window?.rootViewController = FisquoViewController()
         window?.makeKeyAndVisible()
 
