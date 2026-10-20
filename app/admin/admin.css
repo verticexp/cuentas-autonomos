@@ -60,3 +60,12 @@
 .adm-forma { margin: 10px 0; }
 .adm-forma .adm-lista li { flex-wrap: wrap; }
 .adm-forma .adm-lista b { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; font-weight: 500; }
+.adm-accesos { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 16px 0; }
+.adm-accesos a { display: block; min-height: 44px; padding: 12px 16px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); color: var(--ink); text-decoration: none; }
+.adm-accesos a:hover { border-color: var(--marca); }
+.adm-accesos strong { display: block; font-size: 15px; }
+.adm-accesos span { color: var(--muted); font-size: 13px; }
+.adm-botones { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 4px; }
+.adm-boton { display: inline-flex; align-items: center; min-height: 44px; padding: 8px 14px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); text-decoration: none; font-size: 14px; }
+.adm-boton:hover { border-color: var(--marca); }
+#adm-ajustes, #adm-empresas { scroll-margin-top: 16px; }
