@@ -111,7 +111,7 @@ export default async function Gastos({ searchParams }) {
 
       {!sinFuncion(u.plan, 'revision') && puede(u, 'gastar') && !movimiento && revision.total > 0 && <RevisionGastos items={revision.items} total={revision.total} />}
 
-      {total > 5 && <Buscar action="/gastos" q={q} ocultos={{ estado }} placeholder="Buscar proveedor o concepto" />}
+      {total > 5 && <Buscar action="/gastos" q={q} ocultos={{ estado }} placeholder="Buscar gastos" etiqueta="Buscar por proveedor o concepto" />}
       {sinPagar > 0 && (
         <Deslizable className="chips">
           <Link href={url({ estado: null })} className={estado !== 'sinpagar' ? 'activo' : ''}>Todos</Link>

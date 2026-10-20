@@ -1,5 +1,6 @@
 'use client';
 
+import { fraseBanco } from '@/lib/textoBanco';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -31,7 +32,7 @@ function Cargo({ x, abierto, abrir }) {
   const emparejar = (gasto) => hacer(() => llamar('/api/gastos/revision', { method: 'POST', body: JSON.stringify({ accion: 'emparejar', id: m.id, gasto }) }));
   const apartar = () => confirm('¿Apartar este cargo? No es un gasto (un traspaso, un préstamo…) y deja de salir aquí. Puedes recuperarlo en Banco.')
     && hacer(() => llamar('/api/gastos/revision', { method: 'POST', body: JSON.stringify({ accion: 'ignorar', id: m.id }) }));
-  const quien = m.contraparte || m.concepto;
+  const quien = m.contraparte ? fraseBanco(m.contraparte, { nombre: true }) : fraseBanco(m.concepto);
   const elegida = otras.find((o) => o.id === elegido);
   return (
     <li className={`rev-cargo${abierto ? ' abierto' : ''}`}>

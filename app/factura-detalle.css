@@ -1,0 +1,19 @@
+/* Detalle de una factura (app/facturas/[id]/page.js): las acciones de vez en cuando van plegadas en «Más opciones»
+   (con Borrar al final, lejos de los botones de cada día) y los datos completos, en «Ver y editar los datos». */
+.acciones-factura > :last-child:nth-child(even) { grid-column: 1 / -1; }
+.mas-opciones, .editar-factura { margin: 4px 0 16px; }
+.mas-opciones > summary, .editar-factura > summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 18px; border-radius: 999px; background: var(--relleno); color: var(--ink); font-weight: 600; -webkit-tap-highlight-color: transparent; }
+.mas-opciones > summary::-webkit-details-marker, .editar-factura > summary::-webkit-details-marker { display: none; }
+.mas-opciones > summary::after, .editar-factura > summary::after { content: ''; width: 7px; height: 7px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: translateY(-2px) rotate(45deg); transition: transform 0.2s cubic-bezier(0.23, 1, 0.32, 1); }
+.mas-opciones[open] > summary::after, .editar-factura[open] > summary::after { transform: translateY(2px) rotate(-135deg); }
+.mas-opciones > summary:focus-visible, .editar-factura > summary:focus-visible { outline: 2px solid var(--marca); outline-offset: 2px; }
+.mas-opciones-c { display: flex; flex-direction: column; gap: 14px; padding-top: 14px; }
+.mas-opciones-c .portal-enlace { margin: 0; }
+.mas-opciones-borrar { display: flex; justify-content: center; padding-top: 10px; border-top: 1px solid var(--line); }
+.editar-factura[open] > summary { margin-bottom: 14px; }
+@media (min-width: 1024px) {
+  .mas-opciones > summary, .editar-factura > summary { width: fit-content; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mas-opciones > summary::after, .editar-factura > summary::after { transition: none; }
+}

@@ -175,3 +175,10 @@
 .bco-vacio li b { color: var(--ink); }
 .bco-vacio + .bco-botones { justify-content: center; }
 .bco-mov.hecho { animation: graf-dato 0.4s var(--salida) both; }
+
+/* Actividades de la factura (3 o más): en el móvil, en dos columnas que se ven enteras (con desplazamiento lateral
+   se cortaban: «luminación», «DJ y músic»). */
+@media (max-width: 1023.98px) {
+  .tipo.varias { display: grid; grid-auto-flow: row; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px; overflow: visible; }
+  .tipo.varias button { white-space: normal; min-height: 40px; }
+}
