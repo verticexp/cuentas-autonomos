@@ -1,5 +1,7 @@
 'use client';
 
+import Termino from '@/components/Termino';
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
@@ -8,7 +10,7 @@ import { llamar } from './Acciones';
 // se deduce un porcentaje de su IVA soportado. Durante el año se usa el provisional (el definitivo del año anterior, o el
 // que se propuso a Hacienda al empezar) y en el 4T se regulariza con el definitivo (casilla 44). Fisquo lo calcula con
 // lo facturado; aquí se puede guardar el provisional de verdad si es otro.
-export default function Prorrata({ anio, guardado, provisional, definitiva, anterior }) {
+export default function Prorrata({ anio, guardado, provisional, definitiva, anterior, titulo }) {
   const router = useRouter();
   const [v, setV] = useState(guardado === null || guardado === undefined ? '' : String(guardado));
   const [msg, setMsg] = useState('');
@@ -18,7 +20,7 @@ export default function Prorrata({ anio, guardado, provisional, definitiva, ante
   };
   return (
     <form className="formulario tarjeta bloque" onSubmit={(e) => { e.preventDefault(); guardar(v.trim() === '' ? null : v); }}>
-      <p><strong>Prorrata del IVA en {anio}</strong>: como tienes facturas exentas y otras con IVA, solo te deduces una parte del IVA de tus gastos.</p>
+      <p><strong>{titulo || <Termino id="prorrata">Prorrata del IVA</Termino>} en {anio}</strong>: como tienes facturas exentas y otras con IVA, solo te deduces una parte del IVA de tus gastos.</p>
       <p className="nota">
         {guardado !== null && guardado !== undefined ? `Durante el año se aplica el ${provisional} %, el que has guardado.`
           : anterior !== null ? `Durante el año se aplica el ${provisional} %, el definitivo de ${anio - 1}.`

@@ -1,3 +1,5 @@
+import Termino from '@/components/Termino';
+import { GLOSARIO } from '@/lib/glosario';
 import { requerir } from '@/lib/auth';
 import { leer, redis } from '@/lib/redis';
 import { actividadesDe, ajustesIva, fiscalDe, hecho130, hecho303, modelosDe, usa130, usa303 } from '@/lib/empresa';
@@ -183,7 +185,7 @@ export default async function Modelos({ searchParams }) {
         nombre="Qué presentas y cuándo" detalle={`${modelosDe({ ...f, intracom: hay349 }).length} modelos y plazos según cómo trabajas`}>
         <h2 className="grupo-t">Qué presentas y cuándo</h2>
         <div className="grupo-c">
-          {modelosDe({ ...f, intracom: hay349 }).map((m) => <div key={m.id} className="celda"><span className="modelo-num">{m.num || m.id}</span><span className="txt">{m.nombre}<small>{m.cuando}</small></span></div>)}
+          {modelosDe({ ...f, intracom: hay349 }).map((m) => <div key={m.id} className="celda"><span className="modelo-num">{GLOSARIO[`m${m.id}`] ? <Termino id={`m${m.id}`}>{m.num || m.id}</Termino> : m.num || m.id}</span><span className="txt">{m.nombre}<small>{m.cuando}</small></span></div>)}
         </div>
         <p className="grupo-pie">Según cómo trabajas ({f.tipo === 'sociedad' ? 'sociedad' : 'autónomo'}). Si algo no encaja, cámbialo en Ajustes › Actividades y modelos.</p>
       </ModeloPlegable>
@@ -195,7 +197,7 @@ export default async function Modelos({ searchParams }) {
           dato={c && importeFila(comp ? -c['46'] : liquidaciones[t - 1].ingresar)}>
           <h2 className="grupo-t">303 · IVA trimestral</h2>
           <p className="grupo-pie arriba">El IVA de tus facturas menos el de tus gastos. Si sale negativo, se compensa en los trimestres siguientes (durante cuatro años como máximo) o, en el 4T, puedes pedir que te lo devuelvan.</p>
-          {verProrrata && <Prorrata anio={anio} {...prorrata} />}
+          {verProrrata && <Prorrata anio={anio} {...prorrata} titulo={<Termino id="prorrata">Prorrata del IVA</Termino>} />}
           <div className="tarjetas">
             {T.map((t) => { const c = casillas303(facturas, gastos, anio, t, iva); return (
               <div key={t} className="tarjeta"><h3>{t}T {anio}</h3>
@@ -449,3 +451,5 @@ export default async function Modelos({ searchParams }) {
     </main>
   );
 }
+
+export const metadata = { title: 'Impuestos' };

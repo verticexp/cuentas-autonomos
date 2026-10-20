@@ -135,3 +135,5 @@ export default async function Nominas({ searchParams }) {
     </main>
   );
 }
+
+export const metadata = { title: 'Nóminas' };

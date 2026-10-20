@@ -19,7 +19,7 @@ function prepararLogo(file) {
       URL.revokeObjectURL(img.src);
       ok(url);
     };
-    img.onerror = () => mal(new Error('No se pudo leer la imagen'));
+    img.onerror = () => mal(new Error('No se ha podido leer la imagen'));
     img.src = URL.createObjectURL(file);
   });
 }

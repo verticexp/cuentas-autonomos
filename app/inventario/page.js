@@ -134,3 +134,5 @@ export default async function Inventario({ searchParams }) {
     </main>
   );
 }
+
+export const metadata = { title: 'Inventario' };

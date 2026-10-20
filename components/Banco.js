@@ -16,7 +16,7 @@ const diasHasta = (iso) => Math.ceil((Date.parse(iso) - Date.now()) / 864e5);
 async function llamar(url, opciones) {
   const r = await fetch(url, { headers: { 'Content-Type': 'application/json' }, ...opciones });
   const d = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(d.error || 'Algo ha fallado');
+  if (!r.ok) throw new Error(d.error || 'No se ha podido completar la operación del banco. Revisa la conexión e inténtalo otra vez.');
   return d;
 }
 
@@ -150,7 +150,7 @@ function Conectar({ cerrar }) {
     <section className="bco-conectar">
       <div className="bco-conectar-cab">
         <h2>Conectar un banco</h2>
-        <button className="bco-x" onClick={cerrar} aria-label="Cerrar">×</button>
+        <button className="bco-x" onClick={cerrar} aria-label="Cancelar">×</button>
       </div>
       <p className="bco-nota">Tu banco te pedirá permiso para que Fisquo vea el saldo y los movimientos (solo lectura, hasta 180 días). Lo gestiona Enable Banking, entidad autorizada.</p>
       <div className="segmentado bco-tipo">
@@ -214,7 +214,7 @@ export default function Banco({ cuentas, pendientes, emparejados, ignorados, aut
       const r = await fetch('/api/banco/importar', { method: 'POST', body: fd });
       const d = await r.json().catch(() => ({}));
       if (d.elegir) { setEnEspera(f); setMsg({ error: true, texto: `${d.error}: elígela en «Cuenta del extracto» y pulsa «Subir a esta cuenta».` }); return; }
-      if (!r.ok) throw new Error(d.error || 'No se pudo leer el extracto');
+      if (!r.ok) throw new Error(d.error || 'No se ha podido leer el extracto. Comprueba el formato e inténtalo otra vez.');
       setEnEspera(null);
       if (destino === 'nueva') { setDestino(d.cuenta?.id || ''); setNombreNueva(''); }
       setMsg({ texto: `✓ ${d.nuevos === 1 ? '1 movimiento nuevo' : `${d.nuevos} movimientos nuevos`}${d.cuenta && deExtracto.length ? ` en ${d.cuenta.nombre}` : ''}${d.repetidos ? ` · ${d.repetidos} ya estaban` : ''}${d.errores ? ` · ${d.errores} filas sin leer` : ''}` });

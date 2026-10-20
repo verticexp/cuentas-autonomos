@@ -14,3 +14,5 @@ export default async function NuevoCliente() {
   const lista = await listarClientes(u);
   return <main className="pagina mk-look fichas-pagina"><Volver href="/clientes">Clientes</Volver><h1 className="titulo">Nuevo cliente</h1><FichaCliente puedeRiesgo={puede(u, 'empresa')} comerciales={valoresDe(lista, 'comercial')} zonas={valoresDe(lista, 'zona')} /></main>;
 }
+
+export const metadata = { title: 'Nuevo cliente' };

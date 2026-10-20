@@ -11,7 +11,7 @@ export default function CrearAurora() {
     try {
       const r = await fetch('/api/aurora', { method, headers: { Accept: 'application/json' } });
       const d = await r.json();
-      if (!r.ok) throw new Error(d.error || 'No se pudo completar la operación');
+      if (!r.ok) throw new Error(d.error || 'No se ha podido completar la operación. Revisa la conexión e inténtalo otra vez.');
       setResultado(d);
     } catch (e) { setError(e.message); }
     finally { setOcupada(false); }

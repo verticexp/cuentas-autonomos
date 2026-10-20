@@ -28,7 +28,7 @@ export default function Grafica({ meses, anio, actual }) {
           <strong>{NOMBRES[sel]}</strong>
           <span><i className="graf-punto in" />Facturado <b>{eur(m.ing)}</b></span>
           <span><i className="graf-punto out" />Gastos <b>{eur(m.gas)}</b></span>
-          <span className={beneficioMes < 0 ? 'rojo' : undefined}>Beneficio del mes <b>{eur(beneficioMes)}</b></span>
+          <span className={beneficioMes < 0 ? 'rojo' : undefined}>Beneficio del mes <b>{eur(beneficioMes).replace(/^-/, '\u2212')}</b></span>
         </div>
         <Link href={`/mes/${anio}-${String(sel + 1).padStart(2, '0')}`} className="boton pequeno sec">Ver mes</Link>
       </div>

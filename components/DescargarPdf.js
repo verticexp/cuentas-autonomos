@@ -11,7 +11,7 @@ export default function DescargarPdf({ id, nombre, url = `/api/facturas/pdf?id=$
     setEstado('Generando…');
     try {
       const r = await fetch(url);
-      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'No se pudo generar el PDF');
+      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'No se ha podido generar el PDF. Inténtalo de nuevo en unos minutos.');
       const blob = await r.blob();
       const archivo = new File([blob], nombre, { type: 'application/pdf' });
       setEstado('');

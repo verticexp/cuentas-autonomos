@@ -44,3 +44,5 @@ export default async function Proveedores({ searchParams }) {
     </main>
   );
 }
+
+export const metadata = { title: 'Proveedores' };

@@ -25,3 +25,9 @@ export default async function Empleado({ params }) {
     </main>
   );
 }
+
+export async function generateMetadata({ params }) {
+  const u = await requerir('nominas');
+  const d = await leerUno(u, 'empleados', (await params).id);
+  return { title: d?.nombre || 'Empleado' };
+}

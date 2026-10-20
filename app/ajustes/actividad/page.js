@@ -38,3 +38,5 @@ export default async function Actividad() {
     </main>
   );
 }
+
+export const metadata = { title: 'Actividad' };

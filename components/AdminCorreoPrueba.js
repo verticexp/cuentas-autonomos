@@ -16,9 +16,9 @@ export default function AdminCorreoPrueba({ id }) {
         body: JSON.stringify({ id }),
       });
       const datos = await res.json();
-      setMensaje(res.ok && !datos.error ? 'Enviado a tu email' : datos.error || 'No se pudo enviar el correo.');
+      setMensaje(res.ok && !datos.error ? 'Enviado a tu email' : datos.error || 'No se ha podido enviar el correo.');
     } catch {
-      setMensaje('No se pudo enviar el correo. Comprueba la conexión e inténtalo de nuevo.');
+      setMensaje('No se ha podido enviar el correo. Comprueba la conexión e inténtalo de nuevo.');
     } finally {
       setEnviando(false);
     }

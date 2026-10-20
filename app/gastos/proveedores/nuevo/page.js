@@ -14,3 +14,5 @@ export default async function NuevoProveedor() {
   const fichas = (await listarProveedores(u)).map((p) => p.ficha);
   return <main className="pagina mk-look fichas-pagina"><Volver href="/gastos/proveedores">Proveedores</Volver><h1 className="titulo">Nuevo proveedor</h1><FichaProveedor comerciales={valoresDe(fichas, 'comercial')} zonas={valoresDe(fichas, 'zona')} /></main>;
 }
+
+export const metadata = { title: 'Nuevo proveedor' };

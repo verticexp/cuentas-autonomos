@@ -1,7 +1,7 @@
 import '@/app/legal.css';
 import { VERSION } from '@/lib/verifactuEnvio';
 
-export const metadata = { title: 'Declaración responsable · Fisquo' };
+export const metadata = { title: 'Declaración responsable' };
 
 // Declaración responsable del sistema informático de facturación (RD 1007/2023, art. 13; Orden HAC/1177/2024, art. 15),
 // según el ejemplo 1 de la AEAT (producto de uso solo VERI*FACTU). Los datos del productor salen de las variables

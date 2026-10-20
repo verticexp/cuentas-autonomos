@@ -27,6 +27,6 @@ export async function POST(req) {
     volver,
     datos: { token, factura: d.f.id, empresa: d.e.empresa, importe: String(Math.round(total * 100)) },
   });
-  if (s.error) { console.error('Stripe:', s.error); return atras('No se pudo abrir el pago. Inténtalo de nuevo o paga por transferencia.'); }
+  if (s.error) { console.error('Stripe:', s.error); return atras('No se ha podido abrir el pago. Inténtalo de nuevo o paga por transferencia.'); }
   return NextResponse.redirect(s.url, 303);
 }

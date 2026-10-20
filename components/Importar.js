@@ -48,7 +48,7 @@ export default function Importar() {
     try {
       const r = await fetch('/api/importar', { method: 'POST', body: fd });
       const d = await r.json().catch(() => ({}));
-      if (!r.ok) { setVista(null); setMsg(d.error || 'No se pudo leer el archivo'); return; }
+      if (!r.ok) { setVista(null); setMsg(d.error || 'No se ha podido leer el archivo. Comprueba el formato e inténtalo otra vez.'); return; }
       setVista(d); setPagina(1);
       if (!fecha && d.corte) setFecha(d.corte);
       if (guardar) setMsg(`✓ Importados ${d.guardados}`);

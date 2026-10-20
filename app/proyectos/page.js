@@ -80,3 +80,5 @@ export default async function Proyectos({ searchParams }) {
     </main>
   );
 }
+
+export const metadata = { title: 'Proyectos' };

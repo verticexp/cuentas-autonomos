@@ -48,7 +48,7 @@ export default function MasLista({ grupos, asistente = true }) {
             {asistente && (
               <Ir href={`/asistente?pregunta=${encodeURIComponent(q.trim())}`} prefetch={false} className="celda ir mas-fila">
                 <span className="mas-ico" data-tono="verde"><svg viewBox="0 0 24 24" aria-hidden><path d="M4 5h16v11H9l-5 4zM8 10h8M8 13h5" /></svg></span>
-                <span className="txt">Preguntar a Fisquo<small>«{q.trim()}»</small></span>
+                <span className="txt">Pregunta a Fisquo<small>«{q.trim()}»</small></span>
               </Ir>
             )}
           </div>

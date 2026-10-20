@@ -166,3 +166,5 @@ export default async function Analisis({ searchParams }) {
     </main>
   );
 }
+
+export const metadata = { title: 'Análisis' };

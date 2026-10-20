@@ -34,3 +34,5 @@ export default async function Bienvenida({ searchParams }) {
     </main>
   );
 }
+
+export const metadata = { title: 'Bienvenida' };

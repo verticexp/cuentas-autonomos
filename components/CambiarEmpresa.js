@@ -15,7 +15,7 @@ export default function CambiarEmpresa({ empresas = [], actual, variante = 'list
     try {
       const r = await fetch('/api/empresas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo) });
       const d = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(d.error || 'No se pudo cambiar de empresa');
+      if (!r.ok) throw new Error(d.error || 'No se ha podido cambiar de empresa. Revisa la conexión e inténtalo otra vez.');
       try { sessionStorage.removeItem('fisquo-arranque'); } catch {}
       window.location.replace(destino);
     } catch (e) { setMsg(e.message); setOcupado(false); }

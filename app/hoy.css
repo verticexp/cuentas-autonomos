@@ -22,3 +22,8 @@
   .pagina .accesos:has(> .acceso-tab) { grid-template-columns: repeat(3, 1fr); gap: 4px; }
   .pagina .accesos:has(> .acceso-tab) .acceso { font-size: 12px; letter-spacing: 0; }
 }
+
+/* La ayuda del número y el enlace al modelo tienen focos separados. */
+.enlace-modelo { color: inherit; text-decoration: none; }
+.enlace-modelo::after { content: ''; position: absolute; inset: 0; }
+.celda .modelo-num:has(.termino) { position: relative; z-index: 1; }

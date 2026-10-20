@@ -136,7 +136,7 @@ export default function RafagaTickets({ hoy, actividades }) {
       const d = await r.json().catch(() => ({}));
       if (r.status === 423 && d.bloqueada) window.location.replace(`/bloqueo?a=${encodeURIComponent(window.location.pathname + window.location.search)}`);
       if (r.status === 409 && Array.isArray(d.duplicados) && d.duplicados.length) { poner(it.id, { estado: 'duplicado', duplicados: d.duplicados }); return false; }
-      if (!r.ok) throw new Error(d.error || 'Algo ha fallado');
+      if (!r.ok) throw new Error(d.error || 'No se ha podido guardar el ticket. Revisa la conexión e inténtalo otra vez.');
       const fallo = j?.blob && d.gasto?.id ? await subir(d.gasto.id, j.blob, { alGuardar: true }) : '';
       poner(it.id, { estado: 'guardado', aviso: fallo ? `Sin la foto: ${fallo}. Adjúntala desde la ficha del gasto.` : '' });
       return true;
@@ -171,7 +171,7 @@ export default function RafagaTickets({ hoy, actividades }) {
                     <label className="boton">Elegir fotos<input type="file" accept="image/*" multiple hidden onChange={delArchivo} /></label>
                   </div>
                 )}
-                <button type="button" className="rafaga-x" onClick={cerrar} aria-label="Cerrar">×</button>
+                <button type="button" className="rafaga-x" onClick={cerrar} aria-label="Cancelar">×</button>
                 <p className="rafaga-cuenta" role="status">{fotos.length === 0 ? 'Haz una foto a cada ticket' : fotos.length === 1 ? '1 ticket' : `${fotos.length} tickets`}{fotos.length >= cupo ? ' (máximo)' : ''}</p>
               </div>
               <div className="rafaga-barra">
@@ -194,7 +194,7 @@ export default function RafagaTickets({ hoy, actividades }) {
             <div className="rafaga-rev">
               <header className="rafaga-cab">
                 <h2>{terminados ? 'Todo guardado' : `Revisa ${items.length === 1 ? 'el ticket' : 'los tickets'}`}</h2>
-                <button type="button" className="rafaga-x oscuro" onClick={cerrar} aria-label={terminados ? 'Hecho' : 'Cerrar'}>×</button>
+                <button type="button" className="rafaga-x oscuro" onClick={cerrar} aria-label={terminados ? 'Cerrar' : 'Cancelar'}>×</button>
               </header>
               {actividades.length > 1 && !terminados && (
                 <label className="rafaga-act">Actividad
@@ -252,7 +252,7 @@ export default function RafagaTickets({ hoy, actividades }) {
               </ul>
               <div className="rafaga-pie">
                 {terminados
-                  ? <button type="button" className="boton" onClick={cerrar}>Hecho</button>
+                  ? <button type="button" className="boton" onClick={cerrar}>Cerrar</button>
                   : <>
                     {limpios.length === 0 && <p id={`${ayudaId}-limpios`} className="nota">Revisa los avisos y guarda cada ticket por separado.</p>}
                     <button type="button" className="boton" disabled={limpios.length === 0} aria-describedby={limpios.length === 0 ? `${ayudaId}-limpios` : undefined} onClick={guardarLimpios}>{limpios.length === 0 ? 'Revisa cada ticket' : limpios.length === pendientes.length ? `Guardar los ${limpios.length}` : `Guardar los ${limpios.length} sin avisos`}</button>

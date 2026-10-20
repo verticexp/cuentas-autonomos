@@ -183,3 +183,5 @@ export default async function Gastos({ searchParams }) {
     </main>
   );
 }
+
+export const metadata = { title: 'Gastos' };

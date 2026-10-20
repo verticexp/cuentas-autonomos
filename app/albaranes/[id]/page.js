@@ -39,7 +39,7 @@ export default async function Doc({ params }) {
     <main className="pagina mk-look">
       <Volver href={`/albaranes${d.tipo === 'albaran' ? `?ver=${d.factura ? 'facturados' : 'albaranes'}` : ''}`}>Pedidos y albaranes</Volver>
       <section className="factura-hero">
-        <p className="fh-num">{d.tipo === 'pedido' ? 'Pedido' : 'Albarán'} {numeroDoc(d)}</p>
+        <p className="fh-num">{d.tipo === 'proveedor' ? 'Pedido a proveedor' : d.tipo === 'pedido' ? 'Pedido' : 'Albarán'} {numeroDoc(d)}</p>
         <h1 className="fh-cliente">{d.cliente.nombre}</h1>
         <p className="fh-total">{eur(baseDoc(d))} <small>sin IVA</small></p>
         <div className="fh-pie"><span>{est ? { pendiente: 'Pendiente de servir', parcial: 'Servido en parte', servido: 'Servido', cerrado: 'Cerrado' }[est.estado] : d.factura ? 'Facturado' : 'Por facturar'}</span><span>{fechaTexto(d.fecha)}</span></div>
@@ -73,4 +73,10 @@ export default async function Doc({ params }) {
       )}
     </main>
   );
+}
+
+export async function generateMetadata({ params }) {
+  const u = await requerir('facturar');
+  const d = await leerUno(u, 'albaranes', (await params).id);
+  return { title: d ? `${d.tipo === 'proveedor' ? 'Pedido a proveedor' : d.tipo === 'pedido' ? 'Pedido' : 'Albarán'} ${numeroDoc(d)}` : 'Albarán' };
 }

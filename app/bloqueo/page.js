@@ -12,3 +12,5 @@ export default async function PaginaBloqueo({ searchParams }) {
   if (await desbloqueada()) redirect(/^\/(?![/\\])/.test(a) && !a.startsWith('/bloqueo') ? a : '/');
   return <main className="pagina"><RecargarBloqueo /></main>;
 }
+
+export const metadata = { title: 'Desbloquear' };

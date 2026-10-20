@@ -1,5 +1,7 @@
 'use client';
 
+import Termino from '@/components/Termino';
+
 import { useEffect, useId, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { navegar } from '@/lib/transicion';
@@ -183,7 +185,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
           if (claves.some((k) => ['irpfPct', 'nota', 'proyecto'].includes(k) || k.startsWith('evento'))) setDetalles(true);
           setErrores(d.errores);
         }
-        throw new Error(d.error || 'Algo ha fallado');
+        throw new Error(d.error || 'No se ha podido guardar la factura. Revisa la conexión e inténtalo otra vez.');
       }
       if (nueva) navegar(router, `/facturas/${d.factura.id}`, 'fundido', undefined, true);
       router.refresh();
@@ -193,7 +195,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
   return (
     <form ref={formulario} className={`formulario ff${nueva ? ' ff-nuevo' : ''}`} onSubmit={enviar}>
       <div className={`ff-campos${detalles ? ' det-abierto' : ''}`}>
-      <p className="rotulo">{nueva ? `Se numerará como ${numeros[f.actividad]}` : `Factura ${numeroFactura(f)}`}{orig ? ` · rectifica la ${numeroFactura(orig)} (pon el importe que corrige: en negativo si anula)` : ''}</p>
+      <p className="rotulo">{nueva ? `Se numerará como ${numeros[f.actividad]}` : `Factura ${numeroFactura(f)}`}{orig ? <> · <Termino id="rectificativa">Rectificativa</Termino> de la {numeroFactura(orig)} (pon el importe que corrige: en negativo si anula)</> : ''}</p>
       {actividades.length > 1 && <Deslizable className={`tipo ${actividades.length === 2 ? 'dos' : 'varias'}`}>
         {actividades.map(({ id, nombre }) => (
           <button type="button" key={id} className={f.actividad === id ? 'activo' : ''} onClick={() => cambiarActividad(id)}>{nombre}</button>
@@ -247,7 +249,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
           <label className="ff-etiqueta" htmlFor={idCampo('cliente.direccion')}>Dirección</label>
           <input {...atributos('cliente.direccion')} className="campo" placeholder="Ej.: Calle Mayor, 1" value={f.cliente.direccion} onChange={(e) => ponerCliente('direccion', e.target.value)} />{mensaje('cliente.direccion')}
           <label className="ff-etiqueta" htmlFor={idCampo('cliente.ciudad')}>Código postal y ciudad</label>
-          <input {...atributos('cliente.ciudad')} className="campo" placeholder="Ej.: Barcelona, 08001" value={f.cliente.ciudad} onChange={(e) => ponerCliente('ciudad', e.target.value)} />{mensaje('cliente.ciudad')}
+          <input {...atributos('cliente.ciudad')} className="campo" placeholder="Ej.: 08001 Barcelona" value={f.cliente.ciudad} onChange={(e) => ponerCliente('ciudad', e.target.value)} />{mensaje('cliente.ciudad')}
           <label className="ff-etiqueta" htmlFor={idCampo('cliente.email')}>Email</label>
           <input autoComplete="email" {...atributos('cliente.email')} className="campo" type="email" placeholder="Ej.: cliente@empresa.es" value={f.cliente.email || ''} onChange={(e) => ponerCliente('email', e.target.value)} />{mensaje('cliente.email')}
         </div>
@@ -344,13 +346,14 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
         return null;
       })()}
 
-      <label className="ff-det">IRPF
-        <select {...atributos('irpfPct')} className="campo" value={f.irpfPct} onChange={(e) => poner('irpfPct', Number(e.target.value))}>
+      <div className="ff-det termino-campo">
+        <span id={idCampo('irpf-etiqueta')}><Termino id="retencion">Retención de IRPF</Termino></span>
+        <select aria-labelledby={idCampo('irpf-etiqueta')} {...atributos('irpfPct')} className="campo" value={f.irpfPct} onChange={(e) => poner('irpfPct', Number(e.target.value))}>
           {[...new Set([15, 7, 0, Number(f.irpfPct) || 0])].map((n) => <option key={n} value={n}>{n}%</option>)}
         </select>{mensaje('irpfPct')}
-      </label>
+      </div>
 
-      {(recargo || f.recargo) && <label className="check ff-det"><input type="checkbox" checked={Boolean(f.recargo)} onChange={(e) => poner('recargo', e.target.checked)} /> Cliente en recargo de equivalencia (comercio minorista: 5,2 % con el 21 %, 1,4 % con el 10 %, 0,5 % con el 4 %)</label>}
+      {(recargo || f.recargo) && <div className="check ff-det termino-check"><input id={idCampo('recargo')} aria-labelledby={idCampo('recargo-etiqueta')} type="checkbox" checked={Boolean(f.recargo)} onChange={(e) => poner('recargo', e.target.checked)} /><span id={idCampo('recargo-etiqueta')}><label htmlFor={idCampo('recargo')}>Cliente en </label><Termino id="recargo">recargo de equivalencia</Termino><label htmlFor={idCampo('recargo')}> (comercio minorista: 5,2 % con el 21 %, 1,4 % con el 10 %, 0,5 % con el 4 %)</label></span></div>}
 
       <label className="ff-det">Nota en la factura (opcional)
         <input className="campo" placeholder="Ej.: operación exenta de IVA, inversión del sujeto pasivo" value={f.nota || ''} onChange={(e) => poner('nota', e.target.value)} />
@@ -363,7 +366,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
 
       <div className="ff-pie">
         <div className="totales">
-          <span>Base {eur(t.base)}</span>{tipos.length > 1 ? tipos.map((x) => <span key={x.pct}>IVA {x.pct}% {eur(x.iva)}</span>) : <span>IVA {eur(t.iva)}</span>}<span>IRPF −{eur(t.irpf)}</span><strong>Total {eur(t.total)}</strong>
+          <span>Base {eur(t.base)}</span>{tipos.length > 1 ? tipos.map((x) => <span key={x.pct}>IVA {x.pct} % {eur(x.iva)}</span>) : <span>IVA {eur(t.iva)}</span>}{t.irpf > 0 && <span>IRPF −{eur(t.irpf)}</span>}<strong>Total {eur(t.total)}</strong>
         </div>
 
         {error && <p className="error" role="alert">{error}</p>}

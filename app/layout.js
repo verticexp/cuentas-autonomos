@@ -31,15 +31,22 @@ const INICIO_IOS = [[440, 956, 3], [420, 912, 3], [402, 874, 3], [430, 932, 3], 
 // Si la app ya se desbloqueó en esta sesión, el bloqueo tampoco (components/Bloqueo.js).
 const YA_VISTO = "try{if(sessionStorage.getItem('fisquo-abierta')||document.cookie.indexOf('recien=1')>-1)document.documentElement.dataset.abierta='1';var p=location.pathname;if(sessionStorage.getItem('fisquo-arranque')||p.startsWith('/p/')||p.startsWith('/portal/')||p.startsWith('/pagar/')||p.endsWith('/pdf')||p.startsWith('/invitacion')||p==='/privacidad'||p==='/condiciones'||((p==='/login'||p==='/registro')&&!/FisquoApp\\//.test(navigator.userAgent)&&!navigator.standalone&&!matchMedia('(display-mode: standalone)').matches))document.documentElement.dataset.arranque='visto'}catch(e){}";
 
-export const metadata = {
+const metadata = {
   metadataBase: new URL(WEB),
-  title: 'Fisquo',
+  title: { default: 'Fisquo', template: '%s · Fisquo' },
   description: 'Facturación, gastos, impuestos y contabilidad para autónomos y pymes.',
   openGraph: { siteName: 'Fisquo', type: 'website', locale: 'es_ES' },
   // App a pantalla completa sin estilo de barra de estado: así iOS pinta la barra con theme-color
   // (components/BarraEstado.js) y pone la hora en blanco o negro según toque.
   other: { 'apple-mobile-web-app-capable': 'yes', 'mobile-web-app-capable': 'yes', 'apple-mobile-web-app-title': 'Fisquo' },
 };
+
+// La web pública ya tiene títulos completos; no añade otra vez el nombre de la app.
+export async function generateMetadata() {
+  const ruta = (await headers()).get('x-ruta')?.split('?')[0] || '/';
+  const web = /^\/(precios|pymes|grandes-empresas|autonomos|gestorias|funciones|verificado|business|contacto|seguridad)(?:\/|$)/.test(ruta);
+  return web ? { ...metadata, title: { default: 'Fisquo', template: '%s' } } : metadata;
+}
 
 export async function generateViewport() {
   const app = esApp((await headers()).get('user-agent'));

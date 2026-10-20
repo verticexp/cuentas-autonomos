@@ -155,10 +155,12 @@ export default async function Page() {
 
       {!u.admin && <Grupo>
         {admin && <Celda href="/ajustes/baja" ico="baja" tono="rojo" titulo="Dar de baja la empresa" detalle="Cerrar la empresa y borrar los datos" />}
-        <Celda href="/ajustes/eliminar-cuenta" ico="baja" tono="rojo" titulo="Eliminar mi cuenta" detalle="Borrar tu cuenta y tus datos personales" />
+        <Celda href="/ajustes/eliminar-cuenta" ico="baja" tono="rojo" titulo="Eliminar mi cuenta" detalle="Eliminar tu cuenta y tus datos personales" />
       </Grupo>}
 
       <form method="post" action="/api/logout"><button type="submit" className="borrar ancho">Cerrar sesión</button></form>
     </main>
   );
 }
+
+export const metadata = { title: 'Ajustes' };

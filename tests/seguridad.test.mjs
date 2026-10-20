@@ -27,6 +27,6 @@ test('bomba zip: 100 MB de ceros comprimidos no se descomprimen enteros', () => 
 
 test('?error= solo enseña textos de la app', () => {
   assert.equal(mensajeSeguro('Ese email ya tiene cuenta'), 'Ese email ya tiene cuenta');
-  assert.equal(mensajeSeguro('Tu cuenta está bloqueada: llama al 600 000 000'), 'Algo ha fallado. Vuelve a intentarlo.');
+  assert.equal(mensajeSeguro('Tu cuenta está bloqueada: llama al 600 000 000'), 'No se ha podido completar la acción. Inténtalo de nuevo en unos minutos.');
   assert.equal(mensajeSeguro(''), '');
 });

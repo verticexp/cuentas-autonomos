@@ -35,3 +35,5 @@ export default async function Page({ searchParams }) {
     </main>
   );
 }
+
+export const metadata = { title: 'Equipo' };

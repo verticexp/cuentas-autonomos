@@ -52,3 +52,9 @@ export default async function Proveedor({ params }) {
     </main>
   );
 }
+
+export async function generateMetadata({ params }) {
+  const u = await requerir('gastos');
+  const d = await detalleProveedor(u, decodeURIComponent((await params).clave));
+  return { title: d?.nombre || 'Proveedor' };
+}

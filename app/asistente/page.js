@@ -37,3 +37,5 @@ export default async function PaginaAsistente({ searchParams }) {
     </main>
   );
 }
+
+export const metadata = { title: 'Pregunta a Fisquo' };

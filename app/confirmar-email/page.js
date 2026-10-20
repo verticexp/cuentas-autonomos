@@ -25,3 +25,5 @@ export default async function ConfirmarEmail({ searchParams }) {
     </main>
   );
 }
+
+export const metadata = { title: 'Confirma tu email' };

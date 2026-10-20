@@ -111,3 +111,9 @@ export default async function Mes({ params }) {
     </main>
   );
 }
+
+export async function generateMetadata({ params }) {
+  const { mes } = await params;
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) return { title: 'Resumen mensual' };
+  return { title: `${MESES[Number(mes.slice(5)) - 1]} ${mes.slice(0, 4)}` };
+}

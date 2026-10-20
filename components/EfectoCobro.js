@@ -15,7 +15,7 @@ export default function EfectoCobro({ id, forma, formas, requiere, recibido, fec
       const r = await fetch('/api/cartera/efecto', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, ...cambio }) });
       const d = await r.json().catch(() => ({}));
       if (r.status === 423 && d.bloqueada) window.location.replace(`/bloqueo?a=${encodeURIComponent(window.location.pathname + window.location.search)}`);
-      if (!r.ok) throw new Error(d.error || 'Algo ha fallado');
+      if (!r.ok) throw new Error(d.error || 'No se ha podido guardar el cobro. Revisa la conexión e inténtalo otra vez.');
       router.refresh();
     } catch (e) { setError(e.message); } finally { setOcupado(false); }
   };

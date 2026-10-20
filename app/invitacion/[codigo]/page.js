@@ -24,3 +24,5 @@ export default async function Invitacion({ params, searchParams }) {
     </main>
   );
 }
+
+export const metadata = { title: 'Aceptar invitación' };

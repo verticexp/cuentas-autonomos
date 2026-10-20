@@ -55,3 +55,5 @@ export default async function Caja({ searchParams }) {
     </main>
   );
 }
+
+export const metadata = { title: 'Cierre de caja' };

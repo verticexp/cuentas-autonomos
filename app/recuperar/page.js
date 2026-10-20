@@ -16,3 +16,5 @@ export default async function PaginaRecuperar({ searchParams }) {
     </main>
   );
 }
+
+export const metadata = { title: 'Recuperar contraseña' };
