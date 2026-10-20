@@ -66,7 +66,7 @@ body:has(.web):has(.tabbar) { padding-left: 0 !important; }
 .web-cab.menu-abierto::before { opacity: 1; background: var(--v); }
 .web-cab-in { display: flex; align-items: center; gap: 28px; height: 68px; padding: env(safe-area-inset-top) var(--pad) 0; }
 .web-marca { display: block; flex: none; }
-.web-logo { height: 25px; width: 99px; color: var(--c); }
+.web-logo { height: 25px; width: auto; color: var(--c); }
 .web-nav { display: flex; align-items: center; gap: 2px; flex: 1; }
 .web-nav-grupo { position: relative; }
 .web-nav-btn { display: inline-flex; align-items: center; gap: 4px; padding: 8px 12px; border-radius: 10px; font-size: 15px; font-weight: 500; color: rgba(250, 250, 248, 0.78) !important; transition: color 0.2s ease, background-color 0.2s ease; }
@@ -155,7 +155,7 @@ body:has(.web):has(.tabbar) { padding-left: 0 !important; }
 .mk-app-barra span { margin: 0 auto; font-size: 11.5px; color: var(--g); background: #fff; padding: 3px 40px; border-radius: 8px; box-shadow: 0 0 0 1px var(--linea) inset; }
 .mk-app-cuerpo { display: grid; grid-template-columns: 150px minmax(0, 1fr); }
 .mk-lateral { background: var(--v); color: rgba(250, 250, 248, 0.72); padding: 16px 10px; display: grid; align-content: start; gap: 2px; }
-.mk-lateral-logo { width: 72px; height: 18px; color: var(--c); margin: 2px 8px 16px; }
+.mk-lateral-logo { width: auto; height: 18px; color: var(--c); margin: 2px 8px 16px; }
 .mk-lateral span { display: flex; align-items: center; gap: 9px; padding: 8px 9px; border-radius: 9px; font-size: 12.5px; font-weight: 500; }
 .mk-lateral span.on { background: rgba(250, 250, 248, 0.1); color: #fff; }
 .mk-lateral .ico { width: 16px; height: 16px; }
@@ -546,7 +546,7 @@ body:has(.web):has(.tabbar) { padding-left: 0 !important; }
 .web-pie nav a { color: rgba(250, 250, 248, 0.72); font-size: 15px; width: fit-content; transition: color 0.2s ease, transform 0.3s var(--e); }
 @media (hover: hover) and (pointer: fine) { .web-pie nav a:hover { color: #fff; transform: translateX(3px); } }
 .web-pie-base { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; margin-top: 56px; padding: 22px 0; border-top: 1px solid rgba(250, 250, 248, 0.1); color: rgba(250, 250, 248, 0.5); font-size: 14px; }
-.web-pie-gigante { display: block; width: 100%; height: auto; color: rgba(250, 250, 248, 0.04); margin: 0 0 -6%; pointer-events: none; }
+.web-pie-gigante { display: block; width: 100%; height: auto; color: #FAFAF8; opacity: 0.04; --logo-acento: #FAFAF8; margin: 0 0 -6%; pointer-events: none; }
 @media (max-width: 860px) { .web-pie-in { grid-template-columns: 1fr 1fr; } .web-pie-marca { grid-column: 1 / -1; } }
 
 /* ───── Cabeceras de página ───── */
