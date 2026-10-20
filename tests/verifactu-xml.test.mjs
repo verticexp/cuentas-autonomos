@@ -126,30 +126,22 @@ test('recargo de equivalencia (TipoRecargoEquivalencia y CuotaRecargoEquivalenci
 });
 
 
-test('el certificado admite las variables anteriores y da prioridad a FISQUO', async () => {
+test('el certificado necesita FISQUO_RAZON y FISQUO_NIF', async () => {
   const { certificadoListo } = await import('../lib/verifactuEnvio.js');
-  const claves = ['VERIFACTU_P12', 'VERIFACTU_P12_CLAVE', 'FISQUO_RAZON', 'FISQUO_NIF', 'NETTO_RAZON', 'NETTO_NIF'];
+  const claves = ['VERIFACTU_P12', 'VERIFACTU_P12_CLAVE', 'FISQUO_RAZON', 'FISQUO_NIF'];
   const antes = Object.fromEntries(claves.map((k) => [k, process.env[k]]));
   try {
     for (const k of claves) delete process.env[k];
     process.env.VERIFACTU_P12 = 'certificado-de-prueba';
     process.env.VERIFACTU_P12_CLAVE = 'clave-de-prueba';
-    process.env.NETTO_RAZON = 'Productor anterior';
-    process.env.NETTO_NIF = 'B12345674';
-    assert.equal(certificadoListo(), true);
-    process.env.FISQUO_RAZON = ''; // Una cadena vacía explícita no usa el respaldo.
     assert.equal(certificadoListo(), false);
     process.env.FISQUO_RAZON = 'Productor actual';
-    process.env.FISQUO_NIF = '';
     assert.equal(certificadoListo(), false);
     process.env.FISQUO_NIF = 'B87654321';
-    delete process.env.NETTO_RAZON;
-    delete process.env.NETTO_NIF;
     assert.equal(certificadoListo(), true);
   } finally {
     for (const k of claves) {
-      if (antes[k] === undefined) delete process.env[k];
-      else process.env[k] = antes[k];
+      if (antes[k] === undefined) delete process.env[k]; else process.env[k] = antes[k];
     }
   }
 });

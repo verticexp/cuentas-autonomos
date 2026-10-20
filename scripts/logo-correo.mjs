@@ -21,7 +21,6 @@ const F = (px) => h('svg', { width: px, height: px, viewBox: F_VISTA }, h('path'
 const fondo = (lado, px, extra = {}) => h('div', { style: { width: lado, height: lado, background: '#0F1F1B', display: 'flex', alignItems: 'center', justifyContent: 'center', ...extra } }, F(px));
 
 // Icono: la F sobre el cuadrado oscuro con esquinas redondeadas (como el de la app), a 3x de 40×40.
-// (public/correo/netto-icono.png se queda para los correos ya enviados).
 await png('fisquo-icono.png', fondo(120, 64, { borderRadius: 27 }), 120, 120);
 
 // App de iOS: icono a sangre (iOS redondea las esquinas) y pantalla de carga con la F pequeña en el centro.

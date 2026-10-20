@@ -34,7 +34,6 @@ final class DelegadoWeb: NSObject, WKNavigationDelegate, WKUIDelegate, WKDownloa
     private func esFisquo(_ url: URL?) -> Bool {
         guard let host = url?.host?.lowercased() else { return false }
         return host == servidor?.host?.lowercased() || host == "fisquo.com" || host.hasSuffix(".fisquo.com")
-            || host == "nettohq.com" || host.hasSuffix(".nettohq.com")
     }
 
     private var arriba: UIViewController? {

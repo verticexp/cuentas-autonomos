@@ -6,9 +6,7 @@
     "url": "https://www.fisquo.com",
     "allowNavigation": [
       "www.fisquo.com",
-      "fisquo.com",
-      "www.nettohq.com",
-      "nettohq.com"
+      "fisquo.com"
     ],
     "errorPath": "sin-conexion.html"
   },

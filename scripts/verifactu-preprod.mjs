@@ -18,8 +18,8 @@ const RUTA = '/wlpl/TIKE-CONT/ws/SistemaFacturacion/VerifactuSOAP';
 const URL_PRE = `https://${process.env.VERIFACTU_SELLO ? 'prewww10.aeat.es' : 'prewww1.aeat.es'}${RUTA}`;
 const soloXml = process.argv.includes('--solo-xml');
 
-const razon = process.env.FISQUO_RAZON ?? process.env.NETTO_RAZON;
-const nifProductor = process.env.FISQUO_NIF ?? process.env.NETTO_NIF;
+const razon = process.env.FISQUO_RAZON;
+const nifProductor = process.env.FISQUO_NIF;
 const falta = ['OBLIGADO_NIF', 'OBLIGADO_NOMBRE', ...(soloXml ? [] : ['VERIFACTU_P12_CLAVE'])].filter((k) => !process.env[k]);
 if (!razon) falta.push('FISQUO_RAZON');
 if (!nifProductor) falta.push('FISQUO_NIF');

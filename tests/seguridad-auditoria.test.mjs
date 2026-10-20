@@ -220,12 +220,12 @@ test('m4: en producción Face ID solo responde en los dominios de Fisquo', async
   process.env.VERCEL_ENV = 'production';
   try {
     assert.equal((await ruta.POST(desde('https://otra-web.example'))).status, 403);
-    // Los dominios anteriores conservan las llaves registradas durante la transición.
-    for (const host of ['www.fisquo.com', 'fisquo.com', 'www.nettohq.com', 'nettohq.com']) {
+    for (const host of ['www.fisquo.com', 'fisquo.com']) {
       const r = await ruta.POST(desde(`https://${host}`));
       assert.equal(r.status, 200, host); assert.equal((await r.json()).rpId, host);
     }
     assert.equal((await ruta.POST(desde('https://www.fisquo.com.otra-web.example'))).status, 403);
+    assert.equal((await ruta.POST(desde('https://www.nettohq.com'))).status, 403);
   } finally { delete process.env.VERCEL_ENV; }
 });
 

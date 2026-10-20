@@ -7,9 +7,7 @@ const SAFARI = 'Mozilla/5.0 (iPhone; CPU iPhone OS 27_0 like Mac OS X) AppleWebK
 
 test('reconoce la app solo por su marca', () => {
   assert.equal(esApp(APP), true);
-  const anterior = 'Mozilla/5.0 NettoApp/1'; // Compatibilidad con las apps ya instaladas.
-  assert.equal(esApp(anterior), true);
-  assert.equal(desvioApp({ ua: anterior, ruta: '/precios', conSesion: false }), '/login');
+  assert.equal(esApp('Mozilla/5.0 NettoApp/1'), false);
   assert.equal(esApp(SAFARI), false);
   assert.equal(esApp(''), false);
   assert.equal(esApp(null), false);
