@@ -15,7 +15,7 @@ export async function GET() {
   if (!bancoListo()) return error(NO_LISTO, 503);
   let lista = await redis.get('banco-lista');
   if (!lista) {
-    try { lista = await listaBancos(); } catch (e) { return error(e.message, 502); }
+    try { lista = await listaBancos(); } catch (e) { console.error('[api/banco/conectar]', e); return error('No se ha podido conectar con el banco. Inténtalo de nuevo en unos minutos.', 502); }
     await redis.set('banco-lista', lista, { ex: 86400 });
   }
   return Response.json({ bancos: lista });
@@ -37,7 +37,7 @@ export async function POST(req) {
   try {
     const url = await iniciar({ banco, tipo: b.tipo, dias, estado, vuelta: `${urlApp(req)}/api/banco/vuelta` });
     return Response.json({ url });
-  } catch (e) { return error(e.message, 502); }
+  } catch (e) { console.error('[api/banco/conectar]', e); return error('No se ha podido conectar con el banco. Inténtalo de nuevo en unos minutos.', 502); }
 }
 
 // Quita una cuenta (si es conectada, retira también el permiso del banco). Sus movimientos se quedan.

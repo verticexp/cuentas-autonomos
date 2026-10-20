@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import { redis, leerUno } from '@/lib/redis';
 import { importes } from '@/lib/calculos';
 import { eur, fechaTexto, hoy, textoEvento } from '@/lib/formato';
-import { baseSenal, caduca, estadoDe, numeroPresupuesto } from '@/lib/presupuestos';
+import { baseSenal, caduca, enlaceCaducado, estadoDe, numeroPresupuesto } from '@/lib/presupuestos';
 import { Responder } from '@/components/AccionesPresupuesto';
 import Conceptos from '@/components/Conceptos';
 
@@ -14,7 +14,7 @@ export default async function PresupuestoCliente({ params }) {
   const { token } = await params;
   const enlace = redis && (await redis.hget('presupuesto-enlaces', token));
   const p = enlace && (await leerUno({ empresa: enlace.empresa }, 'presupuestos', enlace.id));
-  if (!p) notFound();
+  if (!p || enlaceCaducado(p, hoy())) notFound();
   const empresa = (await redis.hget('empresas', enlace.empresa)) || {};
   const e = empresa.emisor || {};
   const estado = estadoDe(p, hoy());

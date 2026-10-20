@@ -8,7 +8,7 @@ import '@/app/envios.css';
 const cuando = (iso) => new Date(iso).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Madrid' });
 
 // Envía la factura en PDF por email y enseña cada envío con si el cliente lo ha abierto.
-export default function EnviarFactura({ id, email, asunto, mensaje, envios = [], editar }) {
+export default function EnviarFactura({ id, email, asunto, mensaje, envios = [], editar, asuntoFijo = false }) {
   const router = useRouter();
   const [abierto, setAbierto] = useState(false);
   const [d, setD] = useState({ para: email || '', asunto, mensaje });
@@ -28,7 +28,8 @@ export default function EnviarFactura({ id, email, asunto, mensaje, envios = [],
       {abierto && (
         <form className="formulario tarjeta" onSubmit={enviar}>
           <label>Para<input className="campo" type="email" required value={d.para} onChange={(e) => poner('para', e.target.value)} placeholder="cliente@empresa.com" /></label>
-          <label>Asunto<input className="campo" value={d.asunto} onChange={(e) => poner('asunto', e.target.value)} /></label>
+          <label>Asunto<input className="campo" value={d.asunto} readOnly={asuntoFijo} onChange={(e) => poner('asunto', e.target.value)} /></label>
+          {asuntoFijo && <p className="envios-nota">En el mes de prueba el asunto es el de tu plantilla.</p>}
           <label>Mensaje<textarea className="campo" rows={5} value={d.mensaje} onChange={(e) => poner('mensaje', e.target.value)} /></label>
           <p className="envios-nota">Va con la factura en PDF adjunta.</p>
           {estado && estado !== 'enviando' && <p className="error">{estado}</p>}

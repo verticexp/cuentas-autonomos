@@ -30,5 +30,5 @@ export async function POST(req) {
       concurrencia('ia', 'global', 20, 60000, () => preguntar(u, pregunta, limpiarHistorial(b.historial), hoy())));
     if (r?.ocupado) return respuesta429(5, 'El asistente está ocupado. Espera unos segundos y prueba de nuevo.');
     return Response.json({ ok: true, ...r });
-  } catch (e) { return error(e.message, 502); }
+  } catch (e) { console.error('[api/asistente]', e); return error('El asistente no está disponible ahora mismo. Inténtalo de nuevo en unos minutos.', 502); }
 }

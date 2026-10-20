@@ -1,3 +1,4 @@
+import { DETALLE } from '@/lib/permisos';
 import { leer } from '@/lib/redis';
 import { error, usuarioApi } from '@/lib/api';
 import { fiscalDe } from '@/lib/empresa';
@@ -9,7 +10,7 @@ import { auditar } from '@/lib/auditoria';
 export const dynamic = 'force-dynamic';
 
 export async function GET(req) {
-  const { u, res } = await usuarioApi({ permiso: 'resumen' });
+  const { u, res } = await usuarioApi({ permiso: DETALLE });
   if (res) return res;
   const q = req.nextUrl.searchParams;
   const fecha = hoy();

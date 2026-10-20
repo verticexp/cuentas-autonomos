@@ -1,3 +1,4 @@
+import { DETALLE } from '@/lib/permisos';
 import { clave, leer, redis } from '@/lib/redis';
 import { usuarioApi } from '@/lib/api';
 import { fiscalDe } from '@/lib/empresa';
@@ -9,7 +10,7 @@ export const dynamic = 'force-dynamic';
 
 // Excel de la contabilidad: pérdidas y ganancias, balance, libro diario, sumas y saldos y bienes de inversión. ?anio=2026&p=3 (sin p: todo el año)
 export async function GET(req) {
-  const { u, res } = await usuarioApi({ permiso: 'resumen' });
+  const { u, res } = await usuarioApi({ permiso: DETALLE });
   if (res) return res;
   const q = req.nextUrl.searchParams;
   const h = hoy();

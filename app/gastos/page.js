@@ -19,7 +19,7 @@ import Ir from '@/components/Ir';
 import Buscar from '@/components/Buscar';
 import Deslizable from '@/components/Deslizable';
 import Deslizar from '@/components/Deslizar';
-import { puede } from '@/lib/permisos';
+import { DETALLE, puede } from '@/lib/permisos';
 import Link from 'next/link';
 import { revisionGastos } from '@/lib/revisionGastos';
 import RevisionGastos from '@/components/RevisionGastos';
@@ -101,7 +101,7 @@ export default async function Gastos({ searchParams }) {
           <span>Este año, sin IVA <strong>{eur(r2(delAnio.reduce((s, g) => s + g.base, 0)))}</strong></span>
           <span>IVA que recuperas <strong>{eur(r2(delAnio.reduce((s, g) => s + importes(g).iva - (origenGasto(g) ? 0 : partirIva(g, importes(g).iva).noDeducible), 0)))}</strong></span>
           </>}
-          {puede(u, 'resumen') && nBienes > 0 && <Link href="/contabilidad?ver=bienes" className="prov-enlace">Bienes de inversión ›</Link>}
+          {puede(u, DETALLE) && nBienes > 0 && <Link href="/contabilidad?ver=bienes" className="prov-enlace">Bienes de inversión ›</Link>}
           {hayProveedores && <Link href="/gastos/proveedores" className="prov-enlace">Proveedores{debes > 0 ? ` · debes ${eur(r2(debes))}` : ''} ›</Link>}
         </p>
       )}

@@ -58,3 +58,16 @@ export function Responder({ token }) {
     </div>
   );
 }
+
+// Cambia el enlace público (portal o presupuesto): el anterior deja de funcionar. Para cuando se ha reenviado por error.
+export function CambiarEnlace({ datos, pregunta }) {
+  const router = useRouter();
+  const [enviando, setEnviando] = useState(false);
+  const cambiar = async () => {
+    if (!confirm(pregunta)) return;
+    setEnviando(true);
+    try { await llamar('/api/enlaces', { method: 'POST', body: JSON.stringify(datos) }); router.refresh(); } catch (e) { alert(e.message); }
+    setEnviando(false);
+  };
+  return <button className="boton sec" disabled={enviando} onClick={cambiar}>{enviando ? 'Cambiando…' : 'Cambiar enlace'}</button>;
+}

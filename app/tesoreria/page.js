@@ -1,7 +1,7 @@
 import { sinFuncion } from '@/lib/planes';
 import SinPlan from '@/components/SinPlan';
 import { requerir } from '@/lib/auth';
-import { puede } from '@/lib/permisos';
+import { DETALLE, puede } from '@/lib/permisos';
 import { clave, leer, redis } from '@/lib/redis';
 import { actividadesDe, fiscalDe } from '@/lib/empresa';
 import { esSociedad } from '@/lib/modulos';
@@ -47,10 +47,12 @@ export default async function Tesoreria({ searchParams }) {
 
       <SaldoBanco saldo={saldo ? saldo.importe : null} fecha={saldo?.fecha} banco={Boolean(saldo?.banco)} editable={puede(u, 'facturar') || puede(u, 'gastar')} />
       {p.descontado.length > 0 && <p className="nota">Ya restados del saldo: {p.descontado.map((d) => `${d.modelo} del ${d.t}T (${eur(d.importe)})`).join(', ')}, marcados como pagados después del {fechaTexto(saldo.fecha)}. Dejan de restarse cuando subas un extracto o actualices el saldo.</p>}
-      <Ir href="/banco" className="teso-banco">
-        <span className="bco-txt"><strong>Banco</strong><small>{saldo?.banco ? 'Saldo real y movimientos emparejados con facturas y gastos' : (conectarVisible(u) ? 'Conecta tu banco o sube el extracto' : 'Sube el extracto de tu banco y concilia cobros y pagos')}</small></span>
-        {sinRevisar > 0 && <span className="num" aria-label={`${sinRevisar} movimientos por revisar`}>{sinRevisar}</span>}
-      </Ir>
+      {puede(u, DETALLE) && (
+        <Ir href="/banco" className="teso-banco">
+          <span className="bco-txt"><strong>Banco</strong><small>{saldo?.banco ? 'Saldo real y movimientos emparejados con facturas y gastos' : (conectarVisible(u) ? 'Conecta tu banco o sube el extracto' : 'Sube el extracto de tu banco y concilia cobros y pagos')}</small></span>
+          {sinRevisar > 0 && <span className="num" aria-label={`${sinRevisar} movimientos por revisar`}>{sinRevisar}</span>}
+        </Ir>
+      )}
 
       <div className="teso-cifras">
         <div className="teso-cifra"><span>Vas a cobrar</span><strong className="teso-in">{eur(p.entra)}</strong></div>

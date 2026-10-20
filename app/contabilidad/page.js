@@ -1,5 +1,5 @@
 import { requerir } from '@/lib/auth';
-import { puede } from '@/lib/permisos';
+import { DETALLE, puede } from '@/lib/permisos';
 import { clave, leer, leerUno, redis } from '@/lib/redis';
 import { actividadesDe, fiscalDe } from '@/lib/empresa';
 import { informe } from '@/lib/contabilidad';
@@ -40,7 +40,7 @@ const Total = ({ n, v, ant }) => <div className="cont-fila cont-total"><span cla
 const imp = (v) => (v ? eur(v) : '');
 
 export default async function Contabilidad({ searchParams }) {
-  const u = await requerir('resumen');
+  const u = await requerir(DETALLE);
   const [facturas, gastos, nominas, manuales, saldo, productos, ajustes, albaranes] = await Promise.all([leer(u, 'facturas'), leer(u, 'gastos'), leer(u, 'nominas'), leer(u, 'asientos'), redis?.get(clave(u, 'saldo')), leer(u, 'productos'), leer(u, 'stock'), leer(u, 'albaranes')]);
   if (!facturas) return <SinBD />;
   const sp = await searchParams;
@@ -64,7 +64,7 @@ export default async function Contabilidad({ searchParams }) {
   const antDe = (fn) => (B ? fn(B) : undefined);
   const visibles = (ids) => A.partidas.filter((x) => ids.includes(x.id) && (x.importe || ant(x.id) || x.id === 'cifra'));
   const totalLibro = (k) => d.libro.reduce((s, b) => s + b[k], 0);
-  const escribe = puede(u, 'resumen');
+  const escribe = puede(u, DETALLE);
   const ca = ver === 'anuales' && sociedad && cuentasAnuales({ asientos: d.asientos, gastos, nominas: nominas || [], empresa: u, anio, guardado: (await leerUno(u, 'cuentasAnuales', String(anio))) || {} });
   const cerrado = anio < actual;
   // Filas del balance oficial con importe en alguno de los dos años (las masas, siempre).

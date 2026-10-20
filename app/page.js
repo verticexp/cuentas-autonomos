@@ -20,7 +20,7 @@ import Cifra from '@/components/Cifra';
 import Ico from '@/components/Ico';
 import Logo from '@/components/Logo';
 import AvisoPrueba from '@/components/AvisoPrueba';
-import { puede } from '@/lib/permisos';
+import { DETALLE, puede } from '@/lib/permisos';
 import '@/app/asistente.css';
 import '@/app/empresas.css';
 import '@/app/mk.css';
@@ -59,7 +59,7 @@ export default async function Resumen({ searchParams }) {
     puede(u, 'gastos') && { href: '/gastos', n: 'gasto', t: 'Gastos', enBarra: true },
     puede(u, 'facturas') && { href: '/presupuestos', n: 'presupuesto', t: 'Presupuestos' },
     { href: '/modelos', n: 'hacienda', t: 'Impuestos' },
-    { href: `/contabilidad?anio=${anio}`, n: 'contabilidad', t: 'Contabilidad' },
+    puede(u, DETALLE) && { href: `/contabilidad?anio=${anio}`, n: 'contabilidad', t: 'Contabilidad' },
   ].filter(Boolean);
 
   return (
@@ -260,7 +260,7 @@ export default async function Resumen({ searchParams }) {
                       </details>
                     );
                   })()}
-                  <p className="descargas">Excel: <a href={exportar('facturas', q.t)}>facturas</a> · <a href={exportar('gastos', q.t)}>gastos</a> · <a href={`/api/paquete?anio=${anio}&t=${q.t}`}>paquete para la gestoría</a></p>
+                  <p className="descargas">Excel: <a href={exportar('facturas', q.t)}>facturas</a> · <a href={exportar('gastos', q.t)}>gastos</a>{puede(u, DETALLE) && <> · <a href={`/api/paquete?anio=${anio}&t=${q.t}`}>paquete para la gestoría</a></>}</p>
                   </details>
                 </div>
               ))}
@@ -321,7 +321,7 @@ export default async function Resumen({ searchParams }) {
             <div className="grupo-c">
               <a href={exportar('facturas')} className="celda ir"><Ico n="factura" /><span className="txt">Facturas de {anio} en Excel</span></a>
               <a href={exportar('gastos')} className="celda ir"><Ico n="gasto" /><span className="txt">Gastos de {anio} en Excel</span></a>
-              {esteAnio && (() => { const g = plazo.dias <= 25 ? plazo : { anio, t: tHoy }; return <a href={`/api/paquete?anio=${g.anio}&t=${g.t}`} className="celda ir"><Ico n="hacienda" /><span className="txt">Paquete del {g.t}T {g.anio} para la gestoría<small>Excel y PDF con facturas, gastos e impuestos</small></span></a>; })()}
+              {esteAnio && puede(u, DETALLE) && (() => { const g = plazo.dias <= 25 ? plazo : { anio, t: tHoy }; return <a href={`/api/paquete?anio=${g.anio}&t=${g.t}`} className="celda ir"><Ico n="hacienda" /><span className="txt">Paquete del {g.t}T {g.anio} para la gestoría<small>Excel y PDF con facturas, gastos e impuestos</small></span></a>; })()}
               <a href="/api/avisos" className="celda ir"><Ico n="plazo" /><span className="txt">Plazos de Hacienda en tu calendario<small>Aviso 7 días y 1 día antes</small></span></a>
             </div>
           </section>

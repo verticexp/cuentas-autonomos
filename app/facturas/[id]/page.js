@@ -12,13 +12,14 @@ import { Borrar } from '@/components/Acciones';
 import Cobro from '@/components/Cobro';
 import { deshacerDe } from '@/lib/cobroManual';
 import EnviarFactura from '@/components/EnviarFactura';
+import { diasPrueba } from '@/lib/prueba';
 import VerifactuFactura from '@/components/VerifactuFactura';
 import { RepetirFactura } from '@/components/Recurrente';
 import { asuntoFactura, mensajeFactura } from '@/lib/envio';
 import { puede } from '@/lib/permisos';
 import { actividadesDe, fiscalDe, nombresActividad, usa130, usa303, ajustesIva } from '@/lib/empresa';
 import { enlacePortal } from '@/lib/portal';
-import { Compartir } from '@/components/AccionesPresupuesto';
+import { CambiarEnlace, Compartir } from '@/components/AccionesPresupuesto';
 import { proyectosDe } from '@/lib/stockServidor';
 import { riesgosPendientes } from '@/lib/tercerosServidor';
 import { tieneLimite } from '@/lib/riesgo';
@@ -107,10 +108,10 @@ export default async function Factura({ params }) {
       </div>
       {String(f.cliente?.nif || '').trim() && <p className="nota efactura">Factura electrónica: <a href={`/api/facturas/efactura?id=${encodeURIComponent(f.id)}&formato=facturae`} download>Facturae 3.2.2</a> · <a href={`/api/facturas/efactura?id=${encodeURIComponent(f.id)}&formato=ubl`} download>UBL (Peppol)</a>{f.cobrada ? ` · cobrada${f.cobro?.fecha ? ` el ${fechaTexto(f.cobro.fecha.slice(0, 10))}` : ''}` : ''}</p>}
       {(editar || f.envios?.length > 0) && <EnviarFactura id={f.id} email={f.cliente.email} envios={f.envios} editar={editar}
-        asunto={asuntoFactura(f, emisorDe(f, u), u.envio)} mensaje={mensajeFactura(f, emisorDe(f, u), u.envio)} />}
+        asunto={asuntoFactura(f, emisorDe(f, u), u.envio)} mensaje={mensajeFactura(f, emisorDe(f, u), u.envio)} asuntoFijo={diasPrueba(u.plan) > 0} />}
       {portal && <section className="portal-enlace">
         <p className="nota">Portal de {f.cliente.nombre}: ve todas sus facturas y presupuestos, los descarga en PDF y paga.</p>
-        <div className="portal-botones"><Compartir ruta={portal} texto={`Tus documentos de ${u.emisor?.nombre || ''}`.trim()} etiqueta="Enviar su portal" className="boton sec" /><Link href={portal} className="boton sec">Ver su portal</Link></div>
+        <div className="portal-botones"><Compartir ruta={portal} texto={`Tus documentos de ${u.emisor?.nombre || ''}`.trim()} etiqueta="Enviar su portal" className="boton sec" /><Link href={portal} className="boton sec">Ver su portal</Link><CambiarEnlace datos={{ tipo: 'portal', cliente: f.cliente.nombre, nif: f.cliente.nif || '' }} pregunta={`¿Cambiar el enlace del portal de ${f.cliente.nombre}? El que tiene dejará de funcionar y tendrás que enviarle el nuevo.`} /></div>
       </section>}
       {editar && f.serie !== 'R' && <RepetirFactura factura={f.id} dia={Math.min(28, Number(f.fecha.slice(8, 10)))} existente={recurrentes.find((r) => r.origen === f.id)} />}
       {f.base > 0 && (usa303(fiscal) || usa130(fiscal)) && await (async () => {

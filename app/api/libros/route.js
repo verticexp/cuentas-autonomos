@@ -1,3 +1,4 @@
+import { DETALLE } from '@/lib/permisos';
 import { concurrencia, respuesta429 } from '@/lib/limite';
 import { leer } from '@/lib/redis';
 import { usuarioApi } from '@/lib/api';
@@ -11,7 +12,7 @@ export const dynamic = 'force-dynamic';
 
 // Libros registro del IVA y del IRPF de un año (?anio=2026), en el formato de la AEAT: un .xlsx con un libro por hoja.
 export async function GET(req) {
-  const { u, res } = await usuarioApi({ permiso: 'resumen' });
+  const { u, res } = await usuarioApi({ permiso: DETALLE });
   if (res) return res;
   const resultado = await concurrencia('exportar', u.empresa, 1, 300000, async () => {
     const h = hoy();

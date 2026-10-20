@@ -4,6 +4,7 @@
 // una sola vez: Ajustes, Usuarios e Importar viven en Ajustes; «Pregunta a Netto», en el buscador de «Más» (y en la barra lateral).
 // tono: el color del grupo (app/mas.css). detalle: la línea de debajo en «Más». palabras: lo que también la encuentra en el buscador.
 import { PARA_AUTONOMO, esSociedad } from '@/lib/modulos';
+import { DETALLE } from '@/lib/permisos';
 export const EXTRA = [
   { titulo: 'Vender', tono: 'verde', enlaces: [
     { href: '/clientes', permiso: 'facturas', nombre: 'Clientes', detalle: 'Fichas, riesgo y lo que te deben', palabras: 'contactos empresas', icono: <path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21c1-4 4-6 7-6s6 2 7 6M17 3a4 4 0 0 1 0 8M22 21c-.5-2.5-2-4.5-4-5.5" /> },
@@ -15,14 +16,14 @@ export const EXTRA = [
     { href: '/albaranes', permiso: 'facturar', inventario: true, nombre: 'Pedidos y albaranes', detalle: 'Entregas a clientes y pedidos', palabras: 'entregas pedidos', icono: <path d="M9 4h6v3H9zM7 5H5v16h14V5h-2M8 12h8M8 16h5" /> },
   ] },
   { titulo: 'Cobrar y pagar', tono: 'azul', enlaces: [
-    { href: '/banco', permiso: 'resumen', nombre: 'Banco', detalle: 'Movimientos y conciliación', palabras: 'cuenta extracto conciliar movimientos', icono: <path d="M3 10l9-6 9 6M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18" /> },
+    { href: '/banco', permiso: DETALLE, nombre: 'Banco', detalle: 'Movimientos y conciliación', palabras: 'cuenta extracto conciliar movimientos', icono: <path d="M3 10l9-6 9 6M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18" /> },
     { href: '/cartera', permiso: 'facturas', nombre: 'Cartera de cobros', detalle: 'Lo que te deben y cuándo vence', palabras: 'cobros pendientes deudas vencidas morosos', icono: <><circle cx="12" cy="12" r="8.5" /><path d="M14.8 9.2A3 3 0 0 0 12 8c-1.7 0-3 .9-3 2s1.3 1.6 3 2 3 .9 3 2-1.3 2-3 2a3 3 0 0 1-2.8-1.2M12 6.5V8M12 16v1.5" /></> },
     { href: '/tesoreria', permiso: 'resumen', nombre: 'Tesorería', detalle: 'Previsión de caja y remesas', palabras: 'prevision saldo remesas sepa liquidez', icono: <path d="M3 17l5-5 4 4 8-8M15 8h5v5" /> },
     { href: '/gastos/proveedores', permiso: 'gastos', nombre: 'Proveedores', detalle: 'Fichas y pagos pendientes', palabras: 'acreedores compras', icono: <path d="M3 7h11v9H3zM14 10h4l3 3v3h-7M7 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM17 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" /> },
   ] },
   { titulo: 'Hacienda y números', tono: 'ambar', enlaces: [
     { href: '/modelos', permiso: 'resumen', nombre: 'Impuestos', detalle: 'Modelos, plazos y lo que toca pagar', palabras: 'hacienda aeat modelos 303 130 111 115 iva irpf', icono: <><path d="M4 20h16M5 20V10h14v10M3 10l9-6 9 6" /><path d="M9.5 17l5-5M9.6 12.2h.01M14.4 16.8h.01" /></> },
-    { href: '/contabilidad', permiso: 'resumen', nombre: 'Contabilidad', detalle: 'Libro diario, mayor y cuentas anuales', palabras: 'asientos diario mayor balance cuentas anuales', icono: <path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h11M9 8h6" /> },
+    { href: '/contabilidad', permiso: DETALLE, nombre: 'Contabilidad', detalle: 'Libro diario, mayor y cuentas anuales', palabras: 'asientos diario mayor balance cuentas anuales', icono: <path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h11M9 8h6" /> },
     { href: '/analisis', permiso: 'resumen', nombre: 'Análisis', detalle: 'Ventas, gastos y márgenes', palabras: 'graficas informes estadisticas margen', icono: <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /> },
     { href: '/proyectos', permiso: 'resumen', nombre: 'Proyectos', detalle: 'Rentabilidad de cada trabajo', palabras: 'trabajos obras encargos', icono: <path d="M3 7h18v13H3zM8 7V4h8v3M3 12h18" /> },
   ] },
@@ -44,6 +45,6 @@ export const extraDe = (path) => TODAS.filter((e) => path === e.href || path.sta
 // que incluye cada pantalla que el suyo no tiene (se enseña al lado del nombre).
 export const gruposVisibles = (permisos = [], inventario = false, { fiscal, faltan = {} } = {}) => EXTRA
   .map((g) => ({ ...g, enlaces: g.enlaces
-    .filter((e) => (!e.permiso || permisos.includes(e.permiso)) && (!e.inventario || inventario))
+    .filter((e) => (!e.permiso || [].concat(e.permiso).every((p) => permisos.includes(p))) && (!e.inventario || inventario))
     .map((e) => ({ ...e, ...(fiscal?.tipo && !esSociedad(fiscal) ? PARA_AUTONOMO[e.href] : {}), ...(faltan[e.href] ? { plan: faltan[e.href] } : {}) })) }))
   .filter((g) => g.enlaces.length > 0);

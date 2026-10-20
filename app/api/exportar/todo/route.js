@@ -12,7 +12,7 @@ const LISTAS = ['facturas', 'registros', 'gastos', 'clientes', 'productos', 'pre
 const json = (x) => Buffer.from(JSON.stringify(x, null, 1));
 
 // Todos los datos de la empresa en un .zip con un JSON por tipo (portabilidad, RGPD art. 20). Solo su administrador.
-// Sin contraseñas, sesiones ni el token de Google Drive.
+// Sin contraseñas, sesiones (tampoco la del banco) ni el token de Google Drive.
 export async function GET() {
   const { u, res } = await usuarioApi();
   if (res) return res;
@@ -37,7 +37,8 @@ export async function GET() {
     const archivos = [
       { nombre: 'empresa.json', datos: json({ ...datosEmpresa, drive: drive?.url ? { url: drive.url } : null, saldo, ultimaHuellaVerifactu: verifactu }) },
       { nombre: 'personas.json', datos: json(personas) },
-      ...LISTAS.map((n, i) => ({ nombre: `${n}.json`, datos: json(listas[i] || []) })),
+      // Las cuentas conectadas, sin la sesión ni el identificador del banco (informe de seguridad m11): no sirven fuera de Netto.
+      ...LISTAS.map((n, i) => ({ nombre: `${n}.json`, datos: json(n === 'bancos' ? (listas[i] || []).map(({ sesion: _s, uid: _u, ...c }) => c) : listas[i] || []) })),
       { nombre: 'actividad.json', datos: json(actividad) },
       // Las fotos y PDF de los gastos (fuera de Redis, lib/justificantes.js), con el nombre que se ve en gastos.json.
       ...(await justificantesParaZip(u, listas[LISTAS.indexOf('gastos')] || [])),

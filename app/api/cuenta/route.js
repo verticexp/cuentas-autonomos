@@ -1,3 +1,4 @@
+import { pasado, respuesta429 } from '@/lib/limite';
 import { cookies } from 'next/headers';
 import { congelarInstantaneas, saltarNumeracion } from '@/lib/facturas';
 import { actualizarUsuario, cambiarPassword, desbloqueo, opcionesCookie, opcionesDesbloqueo } from '@/lib/auth';
@@ -192,6 +193,7 @@ export async function PATCH(req) {
     return Response.json({ ok: true });
   }
   if (b.nueva !== undefined) {
+    if (await pasado('cambiar-password', u.id, 5, 900)) return respuesta429(900);
     const r = await cambiarPassword(u, b.actual, b.nueva);
     if (r.error) return error(r.error);
     await auditar(u, 'Contraseña cambiada');

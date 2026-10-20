@@ -1,3 +1,4 @@
+import { pasado, ipDe, MUCHOS } from '@/lib/limite';
 import { NextResponse } from 'next/server';
 import { numeroFactura, saldoDe } from '@/lib/calculos';
 import { facturaDePago } from '@/lib/cobros';
@@ -10,6 +11,8 @@ export async function POST(req) {
   const token = String((await req.formData()).get('token') || '');
   const volver = `${req.nextUrl.origin}/pagar/${token}`;
   const atras = (msg) => NextResponse.redirect(`${volver}?error=${encodeURIComponent(msg)}`, 303);
+  if (await pasado('pagar-ip', ipDe(req), 20, 600)) return atras(MUCHOS);
+  if (await pasado('pagar-token', token, 10, 3600)) return atras(MUCHOS);
   const d = await facturaDePago(token);
   if (!d) return NextResponse.json({ error: 'Este enlace ya no es válido' }, { status: 404 });
   if (d.f.cobrada) return NextResponse.redirect(volver, 303);

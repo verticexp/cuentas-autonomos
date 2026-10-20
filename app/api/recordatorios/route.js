@@ -1,3 +1,4 @@
+import { secretoCron } from '@/lib/secreto';
 import { redis } from '@/lib/redis';
 import { hoy } from '@/lib/formato';
 import { purgarBajas } from '@/lib/baja';
@@ -12,8 +13,7 @@ export const maxDuration = 60;
 // recordatorios de cobro, avisos
 // en el móvil, envíos de Verifactu pendientes, avisos del mes de prueba y el paquete trimestral a la gestoría) y lo procesa en tandas encadenadas (la primera aquí, las siguientes en app/api/trabajos).
 export async function GET(req) {
-  const secreto = process.env.CRON_SECRET;
-  if (!secreto || req.headers.get('authorization') !== `Bearer ${secreto}`) return Response.json({ error: 'No autorizado' }, { status: 401 });
+  if (!secretoCron(req)) return Response.json({ error: 'No autorizado' }, { status: 401 });
   if (!redis) return Response.json({ ok: true, planificados: 0, motivo: 'sin base de datos' });
   const inicio = Date.now();
   const dia = hoy();

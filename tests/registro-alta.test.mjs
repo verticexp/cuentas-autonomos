@@ -18,7 +18,7 @@ export async function resolve(s, c, next) {
 
 const base = crearBase();
 const fetchReal = globalThis.fetch;
-const variables = ['KV_REST_API_URL', 'KV_REST_API_TOKEN', 'LIMITES', 'VERIFACTU_P12', 'VERIFACTU_P12_CLAVE'];
+const variables = ['KV_REST_API_URL', 'KV_REST_API_TOKEN', 'LIMITES', 'VERIFACTU_P12', 'VERIFACTU_P12_CLAVE', 'VERCEL_ENV', 'ADMIN_EMAIL'];
 const entorno = Object.fromEntries(variables.map((k) => [k, process.env[k]]));
 let redis, POST;
 const valido = { nombre: 'Ana García', email: 'ana@ejemplo.es', password: 'Luna!Bosque72Rio', tipo: 'aut', plan: 'Esencial', razon: 'García Pérez Ana', nif: '12345678Z', direccion: 'Calle Mayor 12', cp: '08001', ciudad: 'Barcelona', provincia: 'Barcelona', telefono: '+34 600 123 456', periodo: 'anio', acepto: '1' };
@@ -213,6 +213,8 @@ test('registro: conserva el límite de cinco intentos por IP', async () => {
 
 test('registro: la primera cuenta no necesita datos fiscales, censo, plan ni aceptación', async () => {
   base.run(['flushdb']);
+  // Fuera de Vercel (en local). Vercel define VERCEL_ENV también al compilar, donde corren estas pruebas.
+  delete process.env.VERCEL_ENV;
   const red = simularCenso('NO IDENTIFICADO');
   const { res } = await alta({ tipo: '', plan: '', acepto: '', nif: '', razon: '', direccion: '', cp: '', provincia: '', periodo: 'otro', empresa: 'Netto' });
   assert.equal(res.status, 200); assert.equal(red.mock.callCount(), 0);
@@ -223,7 +225,27 @@ test('registro: la primera cuenta no necesita datos fiscales, censo, plan ni ace
   assert.equal(empresa.plan, undefined); assert.equal(await redis.hlen('empresa-nif'), 0);
 });
 
- test('registro: email inexistente y contraseña débil indican paso 4', async () => {
+ test('registro: en Vercel, la primera cuenta solo es del administrador de Netto si es ADMIN_EMAIL (m12)', async () => {
+  process.env.VERCEL_ENV = 'production';
+  try {
+    base.run(['flushdb']);
+    delete process.env.ADMIN_EMAIL;
+    await alta({ tipo: '', plan: '', acepto: '', nif: '', razon: '', empresa: 'Netto' });
+    assert.equal(await redis.hlen('usuarios'), 0, 'sin ADMIN_EMAIL no se crea el administrador');
+    process.env.ADMIN_EMAIL = 'otra@ejemplo.es';
+    await alta({ tipo: '', plan: '', acepto: '', nif: '', razon: '', empresa: 'Netto' });
+    assert.equal(await redis.hlen('usuarios'), 0, 'con otro email tampoco');
+    process.env.ADMIN_EMAIL = ' Ana@Ejemplo.es ';
+    const { res } = await alta({ tipo: '', plan: '', acepto: '', nif: '', razon: '', empresa: 'Netto' });
+    assert.equal(res.status, 200);
+    assert.equal(Object.values(await redis.hgetall('usuarios'))[0].admin, true);
+  } finally {
+    delete process.env.VERCEL_ENV;
+    delete process.env.ADMIN_EMAIL;
+  }
+});
+
+test('registro: email inexistente y contraseña débil indican paso 4', async () => {
   await rechaza({ password: 'password123' }, /común/, 4);
   for (const metodo of ['resolveMx', 'resolve4', 'resolve6']) mock.method(dns, metodo, async () => { throw Object.assign(new Error(), { code: 'ENOTFOUND' }); });
   await rechaza({ email: 'nadie@inexistente.es' }, /no parece existir/, 4);
