@@ -333,7 +333,8 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
             {[...r.errores, ...r.avisos].map((t) => <p key={t}><strong>{t}</strong></p>)}
             <p>Para recuperar el IVA de un impagado hace falta:</p>
             <ul>{r.requisitos.map((t) => <li key={t}>{t}</li>)}</ul>
-            <p>Con esta fecha, el modelo 952 se presenta hasta el {r.limite952.split('-').reverse().join('/')}. Si facturas más de 6 millones al año, el plazo de espera es de un año, no de seis meses.</p>
+            {!r.errores.length && <p>Con esta fecha, el modelo 952 se presenta hasta el {r.limite952.split('-').reverse().join('/')}.</p>}
+            <p>Si facturaste más de 6 millones el año pasado, la espera es de un año desde la factura, no de seis meses.</p>
             <label className="check"><input type="checkbox" checked={Boolean(f.reclamado)} onChange={(e) => poner('reclamado', e.target.checked)} /> He reclamado el cobro por vía judicial, con requerimiento notarial o por otro medio fehaciente que admita la ley</label>
           </div>;
         }

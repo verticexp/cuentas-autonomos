@@ -20,7 +20,9 @@ export default function Prorrata({ anio, guardado, provisional, definitiva, ante
     <form className="formulario tarjeta bloque" onSubmit={(e) => { e.preventDefault(); guardar(v.trim() === '' ? null : v); }}>
       <p><strong>Prorrata del IVA en {anio}</strong>: como tienes facturas exentas y otras con IVA, solo te deduces una parte del IVA de tus gastos.</p>
       <p className="nota">
-        Durante el año se aplica el {provisional} % {guardado !== null && guardado !== undefined ? '(el que has guardado)' : anterior !== null ? `(el definitivo de ${anio - 1})` : '(con lo facturado este año, porque el año pasado no hubo prorrata: propón el tuyo a Hacienda y guárdalo aquí)'}.
+        {guardado !== null && guardado !== undefined ? `Durante el año se aplica el ${provisional} %, el que has guardado.`
+          : anterior !== null ? `Durante el año se aplica el ${provisional} %, el definitivo de ${anio - 1}.`
+          : `En ${anio - 1} no hubo prorrata, así que Netto aplica en cada trimestre la que sale con lo facturado hasta entonces (ahora, el ${provisional} %). Si propusiste otro porcentaje a Hacienda (art. 105.Dos de la Ley del IVA), guárdalo aquí.`}
         {definitiva !== null && ` Con todo lo facturado en ${anio}, el definitivo sale del ${definitiva} %: en el 4T se regulariza la diferencia (casilla 44).`}
         {' '}Solo cuentan como exentas las facturas marcadas como «Exenta». Si alguna operación no debe contar (venta de un bien de inversión, operaciones financieras o inmobiliarias ocasionales), revísalo con tu gestor.
       </p>
