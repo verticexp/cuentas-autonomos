@@ -15,14 +15,12 @@ import Deslizable from '@/components/Deslizable';
 import { Borrar } from '@/components/Acciones';
 import { Apertura, AsientoPersonal, NuevoAsiento } from '@/components/Asiento';
 import '@/app/modelos.css';
+import { vistasContabilidad } from '@/lib/modulos';
 import '@/app/contabilidad.css';
 
 import '@/app/mk.css';
 
 export const dynamic = 'force-dynamic';
-const VISTAS = [['pyg', 'Resultados'], ['balance', 'Balance'], ['diario', 'Diario'], ['sumas', 'Sumas y saldos'], ['mayor', 'Mayor'], ['bienes', 'Amortizaciones'], ['anuales', 'Cuentas anuales'], ['libros', 'Libros registro']];
-// Autónomos: primero lo que les pide la ley (libros registro y amortizaciones); el resto, como extra. Sin cuentas anuales.
-const VISTAS_AUTONOMO = ['libros', 'bienes', 'pyg', 'balance', 'diario', 'sumas', 'mayor'];
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 const ORIGEN = { factura: (id) => `/facturas/${encodeURIComponent(id)}`, gasto: (id) => `/gastos/${encodeURIComponent(id)}`, nomina: (id) => `/nominas/${encodeURIComponent(id)}` };
 const TIPO = { apertura: 'Apertura', manual: 'Manual', amortizacion: 'Amortización', impuesto: 'Impuestos', cierre: 'Cierre', regularizacion: 'Cierre', factura: 'Factura', gasto: 'Gasto', nomina: 'Nómina' };
@@ -51,7 +49,8 @@ export default async function Contabilidad({ searchParams }) {
   const anio = Number(sp.anio) || actual;
   const fiscal = fiscalDe(u);
   const sociedad = fiscal.tipo === 'sociedad';
-  const vistas = sociedad ? VISTAS : VISTAS_AUTONOMO.map((v) => VISTAS.find((x) => x[0] === v));
+  // Autónomos: solo lo que les pide la ley (libros registro y amortizaciones) y su cuenta de resultados (lib/modulos.js).
+  const vistas = vistasContabilidad(fiscal);
   const ver = vistas.some(([v]) => v === sp.ver) ? sp.ver : vistas[0][0];
   const p = /^[1-4]$/.test(sp.p || '') ? sp.p : '';
   const cuenta = /^\d{1,9}$/.test(sp.cuenta || '') ? sp.cuenta : '572';
@@ -76,7 +75,7 @@ export default async function Contabilidad({ searchParams }) {
     <main className="pagina mk-look modelos contabilidad">
       <Volver href="/">Resumen</Volver>
       <header className="cabecera modelos-cab">
-        <h1 className="titulo">Contabilidad</h1>
+        <h1 className="titulo">{sociedad ? 'Contabilidad' : 'Libros registro'}</h1>
         <nav className="anios">
           <Ir href={url({ anio: anio - 1 })} tipo="cifras" aria-label="Año anterior">‹</Ir>
           <strong>{anio}</strong>
@@ -244,13 +243,7 @@ export default async function Contabilidad({ searchParams }) {
           <a className="boton cont-excel" href={`/api/libros?anio=${anio}`} download>Descargar los libros registro de {anio}</a>
           <p className="grupo-pie">{sociedad
             ? 'Libros registro del IVA con el formato electrónico de la AEAT (un Excel por libro, con el nombre que pide Hacienda). Como sociedad, además llevas la contabilidad completa: la tienes en las demás pestañas.'
-            : 'Es lo que te pide la ley si estás en estimación directa: los libros registro del IVA y del IRPF, unificados y con el formato electrónico de la AEAT (un Excel por libro, con el nombre que pide Hacienda). Sirven para un requerimiento y se pueden importar en el Pre303. Resultados, balance y diario no te los pide nadie (salvo una actividad mercantil en directa normal), pero te enseñan tu beneficio real y te los puede pedir el banco.'}</p>
-        </section>
-      )}
-
-      {ver === 'anuales' && !sociedad && (
-        <section className="bloque">
-          <div className="vacio"><p>Los autónomos no depositan cuentas anuales</p><p>El depósito en el Registro Mercantil es para las sociedades. Como autónomo, con el libro diario, los libros registro y el de bienes de inversión que ya lleva Netto cumples; descárgalos en Excel abajo.</p></div>
+            : 'Es lo que te pide la ley si estás en estimación directa: los libros registro del IVA y del IRPF, unificados y con el formato electrónico de la AEAT (un Excel por libro, con el nombre que pide Hacienda). Sirven para un requerimiento y se pueden importar en el Pre303. En Resultados ves tu beneficio real del año, que te puede pedir el banco.'}</p>
         </section>
       )}
 

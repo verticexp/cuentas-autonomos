@@ -3,6 +3,7 @@ import SinPlan from '@/components/SinPlan';
 import { requerir } from '@/lib/auth';
 import { clave, leer, redis } from '@/lib/redis';
 import { fiscalDe } from '@/lib/empresa';
+import { esSociedad } from '@/lib/modulos';
 import { informe } from '@/lib/contabilidad';
 import { balanceContable } from '@/lib/asientos';
 import { analisis } from '@/lib/analisis';
@@ -73,7 +74,7 @@ export default async function Analisis({ searchParams }) {
         {['', '1', '2', '3', '4'].map((x) => <Ir key={x} href={url({ p: x })} tipo="fundido" className={x === p ? 'activo' : ''}>{x ? `${x}T` : 'Año'}</Ir>)}
       </nav>
 
-      {sinDatos ? <div className="vacio"><p>Aún no hay nada que analizar</p><p>Cuando apuntes facturas y gastos, aquí verás tu margen bruto, el EBITDA, el punto de equilibrio y los ratios.</p></div> : <>
+      {sinDatos ? <div className="vacio"><p>Aún no hay nada que analizar</p><p>Cuando apuntes facturas y gastos, aquí verás tu margen bruto, el EBITDA y el punto de equilibrio{esSociedad(fiscal) ? ' y los ratios' : ''}.</p></div> : <>
         <div className="teso-cifras">
           <div className="teso-cifra"><span>Margen bruto</span><strong>{eur(a.margenBruto)}</strong><small className="ana-pie">{a.margenBrutoPct === null ? '' : `${num.format(a.margenBrutoPct)} % de las ventas`}</small></div>
           <div className="teso-cifra"><span>EBITDA</span><strong className={a.ebitda < 0 ? 'teso-out' : ''}>{eur(a.ebitda)}</strong><small className="ana-pie">{a.ebitdaPct === null ? '' : `${num.format(a.ebitdaPct)} % de las ventas`}</small></div>
@@ -128,10 +129,11 @@ export default async function Analisis({ searchParams }) {
           <p className="grupo-pie">Ventas de equilibrio = costes fijos ÷ margen de contribución. Se toman como variables las compras y aprovisionamientos (suben con las ventas); como fijos, el personal, los demás gastos, la amortización y los intereses. Es una aproximación: si algún gasto fijo depende de lo que vendes (comisiones, por ejemplo), el punto real será algo distinto.</p>
         </section>
 
+        {/* Los ratios salen del balance: solo para sociedades (lib/modulos.js). */}
+        {esSociedad(fiscal) && <>
         <section className="bloque">
           <h2 className="grupo-t">Ratios financieros</h2>
-          {fiscal.tipo !== 'sociedad' && a.patrimonioNeto <= 0 && a.activo > 0 && <p className="cont-alerta">Tu patrimonio neto es {eur(a.patrimonioNeto)}: sin un asiento de apertura con tu capital y tu banco, el balance se queda corto y varios ratios salen vacíos. Apúntalo en Contabilidad › Diario.</p>}
-          {fiscal.tipo === 'sociedad' && a.patrimonioNeto <= 0 && a.activo > 0 && <p className="cont-alerta">El patrimonio neto es {eur(a.patrimonioNeto)}: las deudas superan a lo que tiene la empresa, o falta el asiento de apertura con el capital.</p>}
+          {a.patrimonioNeto <= 0 && a.activo > 0 && <p className="cont-alerta">El patrimonio neto es {eur(a.patrimonioNeto)}: las deudas superan a lo que tiene la empresa, o falta el asiento de apertura con el capital.</p>}
           {GRUPOS.map(([titulo, detalle, ids]) => (
             <div key={titulo} className="ana-grupo">
               <h3 className="ana-gt">{titulo}<small>{detalle}</small></h3>
@@ -156,9 +158,10 @@ export default async function Analisis({ searchParams }) {
           </div>
           <p className="grupo-pie">Calculados con el balance a {fechaCorta(bal.fecha)}. Los ratios de rentabilidad son del periodo, sin anualizar. Los verdes, ámbar y rojos son orientativos: lo normal depende del sector y de si eres autónomo o sociedad.</p>
         </section>
+        </>}
       </>}
 
-      <p className="grupo-pie arriba">Todo sale de la <Ir href="/contabilidad">contabilidad</Ir> de Netto, así que cuadra con ella. Para ver lo que te deben los clientes, por fechas de vencimiento, abre la <Ir href="/cartera">cartera de cobros</Ir>.</p>
+      <p className="grupo-pie arriba">{esSociedad(fiscal) ? <>Todo sale de la <Ir href="/contabilidad">contabilidad</Ir> de Netto, así que cuadra con ella.</> : <>Todo sale de tus facturas y gastos, así que cuadra con tus <Ir href="/contabilidad">libros registro</Ir>.</>} Para ver lo que te deben los clientes, por fechas de vencimiento, abre la <Ir href="/cartera">cartera de cobros</Ir>.</p>
     </main>
   );
 }

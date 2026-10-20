@@ -202,7 +202,7 @@ export const SEGMENTOS = [
       ['Mil correos con tu gestoría', 'Acceso para tu gestoría o el paquete trimestral en un clic.'],
       ['Libros registro a mano', 'Tus libros de IVA e IRPF, con el formato de Hacienda y tus amortizaciones.'],
     ],
-    funciones: ['facturacion', 'gastos', 'impuestos', 'contabilidad'],
+    funciones: ['facturacion', 'gastos', 'impuestos', 'banco'],
   },
   {
     id: 'pym', ruta: '/pymes', icono: 'tienda', n: 'Pymes', desde: 25,

@@ -18,6 +18,7 @@ function Fila({ e, tono }) {
       <Icono e={e} tono={tono} />
       <span className="txt">{e.nombre}{e.detalle && <small>{e.detalle}</small>}</span>
       {e.aviso && <span className="mas-aviso" data-tono={e.aviso.tono}>{e.aviso.texto}</span>}
+      {e.plan && !e.aviso && <span className="plan-chip" title={`Incluido en el plan ${e.plan}`}>{e.plan}</span>}
     </Ir>
   );
 }

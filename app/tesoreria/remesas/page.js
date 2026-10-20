@@ -1,4 +1,7 @@
+import { redirect } from 'next/navigation';
 import { usarFuncion } from '@/lib/usoPlan';
+import { fiscalDe } from '@/lib/empresa';
+import { soloSociedad } from '@/lib/modulos';
 import SinPlan from '@/components/SinPlan';
 import { requerir } from '@/lib/auth';
 import { puede } from '@/lib/permisos';
@@ -19,6 +22,8 @@ export const dynamic = 'force-dynamic';
 
 export default async function PaginaRemesas() {
   const u = await requerir();
+  // Las remesas SEPA son de sociedades (lib/modulos.js): un autónomo vuelve a la tesorería.
+  if (soloSociedad(fiscalDe(u), '/tesoreria/remesas')) redirect('/tesoreria');
   if (await usarFuncion(u, 'remesas')) return <SinPlan usuario={u} funcion="remesas" />;
   const cobros = puede(u, 'facturar'), pagos = puede(u, 'gastar');
   if (!cobros && !pagos) return <SinAcceso texto="Necesitas permiso para facturar o apuntar gastos para gestionar remesas." />;
