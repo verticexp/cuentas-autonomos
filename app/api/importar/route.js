@@ -7,7 +7,7 @@ import { actividadesDe } from '@/lib/empresa';
 import { leerHoja } from '@/lib/hoja';
 import { TIPOS, previa } from '@/lib/importar';
 import { auditar } from '@/lib/auditoria';
-import { guardarImportadas } from '@/lib/facturas';
+import { guardarImportadas, RiesgoSuperado } from '@/lib/facturas';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,7 +65,7 @@ export async function POST(req) {
     const act = actividadesDe(u)[0]?.id;
     const nuevos = p.items.filter((x) => x.estado === 'nuevo').map((x) => crear[tipo](x.datos, act, corte));
     if (tipo === 'facturas') {
-      try { await guardarImportadas(u, nuevos); } catch (e) { return error(e.message || 'No se pudieron guardar las facturas'); }
+      try { await guardarImportadas(u, nuevos); } catch (e) { if (e instanceof RiesgoSuperado) return error(e.message); console.error('[api/importar]', e); return error('No se pudieron guardar las facturas'); }
     } else for (let i = 0; i < nuevos.length; i += 200) {
       await redis.hset(clave(u, HASH[tipo] || tipo), Object.fromEntries(nuevos.slice(i, i + 200).map((x) => [x.id, x])));
     }

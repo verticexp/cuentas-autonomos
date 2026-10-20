@@ -1,3 +1,4 @@
+import { conCerrojo, Ocupado } from '@/lib/cerrojo';
 import { randomBytes } from 'node:crypto';
 import { leer, guardar, borrar, leerUno, redis } from '@/lib/redis';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
@@ -35,18 +36,27 @@ export async function PATCH(req) {
   const { u, res } = await usuarioApi({ permiso: 'facturar' });
   if (res) return res;
   const b = await cuerpo(req);
-  const antes = b.id && (await leerUno(u, 'presupuestos', b.id));
-  if (!antes) return error('Ese presupuesto ya no existe', 404);
-  if (antes.estado !== 'pendiente') return error('Ya está respondido: no se puede cambiar');
-  if (b.estado === 'aceptado') {
-    await guardar(u, 'presupuestos', { ...antes, estado: 'aceptado', respuesta: { fecha: new Date().toISOString(), nombre: `${u.nombre} (a mano)` } });
-    return Response.json({ ok: true });
+  try {
+    return await conCerrojo(`presupuesto:${u.empresa || u.id}:${b.id}`, async ({ quedaMs }) => {
+      const antes = b.id && (await leerUno(u, 'presupuestos', b.id));
+      if (!antes) return error('Ese presupuesto ya no existe', 404);
+      if (antes.estado !== 'pendiente') return error('Ya está respondido: no se puede cambiar');
+      if (b.estado === 'aceptado') {
+        if (quedaMs() <= 0) throw new Ocupado('La operación ha tardado demasiado: inténtalo de nuevo.');
+        await guardar(u, 'presupuestos', { ...antes, estado: 'aceptado', respuesta: { fecha: new Date().toISOString(), nombre: `${u.nombre} (a mano)` } });
+        return Response.json({ ok: true });
+      }
+      const d = datosDe(u, b);
+      if (d.error) return error(d.error);
+      if (quedaMs() <= 0) throw new Ocupado('La operación ha tardado demasiado: inténtalo de nuevo.');
+      await guardar(u, 'presupuestos', { ...antes, evento: undefined, ...d, anio: antes.anio });
+      await guardarCliente(u, d.cliente);
+      return Response.json({ ok: true });
+    });
+  } catch (e) {
+    if (e instanceof Ocupado) return error(e.message, 409);
+    throw e;
   }
-  const d = datosDe(u, b);
-  if (d.error) return error(d.error);
-  await guardar(u, 'presupuestos', { ...antes, evento: undefined, ...d, anio: antes.anio });
-  await guardarCliente(u, d.cliente);
-  return Response.json({ ok: true });
 }
 
 export async function DELETE(req) {
