@@ -1,7 +1,7 @@
 import { requisitosIncobrable } from '@/lib/incobrables';
 import { leerUno } from '@/lib/redis';
 import { actualizarFactura } from '@/lib/actualizarFactura';
-import { borrarFactura, crearFactura, guardarCliente, limpiar } from '@/lib/facturas';
+import { borrarFactura, crearFactura, fechaFueraDeOrden, guardarCliente, limpiar } from '@/lib/facturas';
 import { numeroFactura, pendienteDe } from '@/lib/calculos';
 import { conLimiteDe, revisarRiesgo } from '@/lib/tercerosServidor';
 import { mismoCliente } from '@/lib/terceros';
@@ -71,6 +71,12 @@ export async function PATCH(req) {
   const datos = limpiar(b, actividadesDe(u), fiscalDe(u).tipo === 'sociedad', { rectificativa: Boolean(antes.rectifica || antes.serie === 'R'), conRecargo: usa303(fiscalDe(u)) });
   if (datos.error) return Response.json({ error: datos.error, errores: datos.errores }, { status: 400 });
   if (Number(datos.fecha.slice(0, 4)) !== antes.anio) return error(`La fecha debe ser de ${antes.anio}`);
+  // Al cambiar la fecha, sigue en el orden de su serie (lib/facturas.js fechaFueraDeOrden). Si no se toca, no se mira:
+  // una factura antigua ya desordenada se puede seguir corrigiendo en lo demás.
+  if (datos.fecha !== antes.fecha) {
+    const fuera = await fechaFueraDeOrden(u, { serie: antes.serie || '', anio: antes.anio, numero: antes.numero, fecha: datos.fecha });
+    if (fuera) return error(fuera);
+  }
   // Sobre la factura de ahora: lo cobrado o enviado mientras se editaba se conserva.
   // Si sube lo que queda por cobrar (o pasa a otro cliente), el cliente no puede quedar por encima de su riesgo máximo.
   const r = await conLimiteDe(u, datos.cliente, () => actualizarFactura(u, antes.id, async (actual) => {

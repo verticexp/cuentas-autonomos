@@ -26,6 +26,8 @@ import '@/app/empresas.css';
 import '@/app/mk.css';
 import '@/app/hoy.css';
 import CambiarEmpresa from '@/components/CambiarEmpresa';
+import { accionesHoy } from '@/lib/hoy';
+import { proximoPlazoDe } from '@/lib/avisos';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Fisquo · Facturas, gastos e impuestos en orden', description: 'Software de gestión financiera para autónomos, pymes y empresas: facturas, gastos con IA, conciliación bancaria, impuestos y nóminas.' };
@@ -40,7 +42,7 @@ export default async function Resumen({ searchParams }) {
   // Informe de capacidad E01/E06: el panel se calcula con los años que enseña y lo pendiente, y se guarda por versión de
   // los datos (lib/panelCache.js): mientras nada cambie, no se vuelven a leer los documentos.
   const anioPedido = Number((await searchParams).anio) || Number(h.slice(0, 4));
-  const [nFacturas, recurrentes, nominas, saldo] = await Promise.all([contar(u, 'facturas'), leer(u, 'recurrentes'), leer(u, 'nominas'), redis.get(clave(u, 'saldo'))]);
+  const [nFacturas, nGastos, recurrentes, nominas, saldo] = await Promise.all([contar(u, 'facturas'), contar(u, 'gastos'), leer(u, 'recurrentes'), leer(u, 'nominas'), redis.get(clave(u, 'saldo'))]);
   const { P, teso, casillas } = await panelDe(u, { anio: anioPedido, hoy: h, recurrentes: recurrentes || [], nominas: nominas || [], saldo });
   const actividades = actividadesDe(u);
   const fiscal = fiscalDe(u);
@@ -54,6 +56,28 @@ export default async function Resumen({ searchParams }) {
   const [bajo, alto] = [Math.min(0, ...acum), Math.max(1, ...acum)];
   const puntos = acum.map((v, i) => [acum.length > 1 ? (i / (acum.length - 1)) * 120 : 120, 40 - ((v - bajo) / (alto - bajo)) * 36]);
   const linea = puntos.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join('');
+  // Cuenta recién creada: ni facturas ni gastos. En vez de gráficas y trimestres a cero, los primeros pasos.
+  const sinDatos = !nFacturas && !nGastos;
+  const e = u.emisor || {};
+  const pasos = [
+    puede(u, 'empresa') && { id: 'datos', hecho: Boolean(e.nombre && e.nif && e.direccion), href: '/ajustes/facturacion', t: 'Completa los datos de tu empresa', d: 'Nombre, NIF y dirección: salen en cada factura', n: 'datos' },
+    puede(u, 'empresa') && { id: 'logo', hecho: Boolean(u.marca?.logo), href: '/ajustes/marca', t: 'Pon tu logo y tu color', d: 'Tus facturas, con tu imagen', n: 'marca' },
+    puede(u, 'facturar') && { id: 'factura', hecho: nFacturas > 0, href: '/facturas/nueva', t: 'Crea tu primera factura', d: 'En un minuto, con el IVA y el IRPF ya calculados', n: 'factura' },
+    puede(u, 'gastar') && { id: 'gasto', hecho: nGastos > 0, href: '/gastos', t: 'Apunta tu primer gasto', d: 'Hazle una foto al ticket y Fisquo lo rellena', n: 'gasto' },
+    puede(u, DETALLE) && { id: 'banco', hecho: saldo !== null && saldo !== undefined, href: '/banco', t: 'Sube el extracto del banco', d: 'Fisquo empareja cobros y pagos con tus facturas', n: 'beneficio' },
+    u.rol === 'admin' && { id: 'gestoria', hecho: Boolean(u.gestoria?.email), href: '/ajustes/gestoria', t: 'Invita a tu gestoría', d: 'Le llega todo cada trimestre, sin pedírtelo', n: 'usuarios' },
+  ].filter(Boolean);
+  const hechos = pasos.filter((x) => x.hecho).length;
+  const verPasos = pasos.length > 0 && hechos < pasos.length && nFacturas < 10;
+  // Hacienda: el último tramo del plazo (3 días o menos) se avisa en rojo (lib/hoy.js).
+  const avisoHacienda = esteAnio && debe ? accionesHoy({ hacienda: { dias: plazo.dias, importe: aPagar } })[0] : null;
+  const urgente = avisoHacienda?.tono === 'rojo';
+  const menos = (t) => t.replace(/^-/, '\u2212');
+  const listaNombres = (v) => {
+    const extra = Math.max(0, (v.clientes ?? v.nombres.length) - v.nombres.length);
+    if (extra) return `${v.nombres.join(', ')} y ${extra === 1 ? '1 más' : `${extra} más`}`;
+    return v.nombres.length > 1 ? `${v.nombres.slice(0, -1).join(', ')} y ${v.nombres.at(-1)}` : v.nombres[0] || '';
+  };
   const accesos = [
     puede(u, 'facturas') && { href: '/facturas', n: 'factura', t: 'Facturas', enBarra: true },
     puede(u, 'gastos') && { href: '/gastos', n: 'gasto', t: 'Gastos', enBarra: true },
@@ -65,17 +89,17 @@ export default async function Resumen({ searchParams }) {
   return (
     <main className="pagina mk-look">
       <AvisoPrueba plan={u.plan} app={esApp((await headers()).get('user-agent'))} />
-      <header className="inicio">
+      <header className={`inicio${facturado > 0 ? '' : ' sin-saldo'}`}>
         <div className="inicio-barra">
           <Logo />
-          <nav className="anios">
+          {!sinDatos && <nav className="anios">
             <Ir href={`/?anio=${anio - 1}`} tipo="cifras" aria-label="Año anterior">‹</Ir>
             <strong>{anio}</strong>
             {anio < anioActual ? <Ir href={`/?anio=${anio + 1}`} tipo="cifras" aria-label="Año siguiente">›</Ir> : <span className="off">›</span>}
-          </nav>
+          </nav>}
         </div>
         <h1 className="inicio-hola">Hola, {String(u.nombre || '').split(' ')[0] || 'equipo'}</h1>
-        <p className="inicio-sub">{esteAnio ? 'Así va tu año.' : `Así cerraste ${anio}.`}</p>
+        <p className="inicio-sub">{sinDatos ? 'Vamos a dejarlo todo listo.' : esteAnio ? 'Así va tu año.' : `Así cerraste ${anio}.`}</p>
         {u.misEmpresas?.length > 1 && <CambiarEmpresa empresas={u.misEmpresas} actual={u.empresa} variante="chip" />}
       </header>
 
@@ -91,7 +115,8 @@ export default async function Resumen({ searchParams }) {
               </svg>
             )}
           </div>
-          {cambio !== null && <p className={`saldo-cambio ${cambio >= 0 ? 'sube' : 'baja'}`}>{cambio >= 0 ? '↑' : '↓'} {Math.abs(cambio).toFixed(0)} % frente a {anio - 1}</p>}
+          {/* El porcentaje es de lo facturado (sin IVA) en el mismo periodo: así lo dice, para no leerlo como beneficio. */}
+          {cambio !== null && <p className={`saldo-cambio ${cambio >= 0 ? 'sube' : 'baja'}`}>{cambio >= 0 ? '↑' : '↓'} {Math.abs(cambio).toFixed(0)} % {cambio >= 0 ? 'más' : 'menos'} facturado que {esteAnio ? 'hace un año' : `en ${anio - 1}`}</p>}
           <p className="saldo-s">Facturado {eur(facturado)} · Gastos {eur(gastado)}</p>
         </section>
       )}
@@ -104,23 +129,33 @@ export default async function Resumen({ searchParams }) {
         ))}
       </nav>
 
-      {!nFacturas && (
-        <div className="vacio">
-          <p>Crea tu primera factura</p>
-          <p>Aquí verás cuánto de lo que facturas es tuyo y cuánto tienes que apartar para Hacienda.</p>
-          {puede(u, 'facturar') && <Ir href="/facturas/nueva" tipo="subir" className="boton">Nueva factura</Ir>}
-        </div>
+      {verPasos && (
+        <section className="grupo pasos" aria-labelledby="pasos-t">
+          <div className="pasos-cab">
+            <h2 className="grupo-t" id="pasos-t">Primeros pasos</h2>
+            <span className="pasos-n">{hechos} de {pasos.length}</span>
+          </div>
+          <div className="pasos-barra" aria-hidden><span style={{ width: `${(hechos / pasos.length) * 100}%` }} /></div>
+          <div className="grupo-c">
+            {pasos.map((x) => (
+              x.hecho
+                ? <div key={x.id} className="celda pp-paso hecho"><span className="pp-ok" aria-hidden>✓</span><span className="txt">{x.t}<small>Hecho</small></span></div>
+                : <Ir key={x.id} href={x.href} tipo="adelante" className="celda ir pp-paso"><Ico n={x.n} /><span className="txt">{x.t}<small>{x.d}</small></span></Ir>
+            ))}
+          </div>
+        </section>
       )}
 
       {facturado > 0 && (
         <div className="hcards">
           {esteAnio && (c303 || c130) && (
-            <section className="hcard" style={{ '--c': '#FF9500' }}>
+            <Ir href={`/modelos?anio=${debe ? plazo.anio : anioActual}`} className={`hcard ir${urgente ? ' urgente' : ''}`} style={{ '--c': urgente ? '#FF3B30' : '#FF9500' }}>
               <h2 className="hcard-t"><Ico n="hacienda" solo />Hacienda<span>{debe ? `${plazo.t}T ${plazo.anio}` : `${tHoy}T ${anioActual}`}</span></h2>
               {debe ? (
                 <>
                   <p className="hcard-v"><Cifra v={aPagar} /><small>€ a pagar</small></p>
-                  <p className="hcard-s">Hasta el {fechaTexto(plazo.fecha)}, {plazo.dias === 0 ? 'hoy es el último día' : plazo.dias === 1 ? 'queda 1 día' : `quedan ${plazo.dias} días`}{debe.pend303 ? ` · 303\u00a0${debe.m303 < 0 ? `${eur(-debe.m303)} a compensar` : eur(debe.ivaIngresar)}` : c303 ? ' · 303 presentado' : ''}{debe.pend130 ? ` · 130\u00a0${eur(debe.m130)}` : c130 ? ' · 130 presentado' : ''}</p>
+                  <p className={`hcard-s${urgente ? ' rojo' : ''}`}>{plazo.dias === 0 ? <strong>Hoy es el último día para presentarlo</strong> : plazo.dias === 1 ? <strong>Mañana acaba el plazo</strong> : `Hasta el ${fechaTexto(plazo.fecha)} · quedan ${plazo.dias} días`}</p>
+                  <p className="hcard-s">{[debe.pend303 ? `Modelo 303: ${debe.m303 < 0 ? `${eur(-debe.m303)} a compensar` : eur(debe.ivaIngresar)}` : c303 && 'Modelo 303 presentado', debe.pend130 ? `Modelo 130: ${eur(debe.m130)}` : c130 && 'Modelo 130 presentado'].filter(Boolean).join(' · ')}</p>
                   <p className="hcard-s">Del {tHoy}T llevas {eur(apartado)} para apartar.</p>
                 </>
               ) : (
@@ -129,14 +164,14 @@ export default async function Resumen({ searchParams }) {
                   <p className="hcard-s">{[c303 && `IVA ${eur(qAhora.ivaIngresar)}`, c130 && `IRPF ${eur(qAhora.m130)}`].filter(Boolean).join(' + ')} · se paga del 1 al {tHoy === 4 ? 30 : 20} de {mesPago}</p>
                 </>
               )}
-            </section>
+            </Ir>
           )}
 
           {porCobrar > 0 && (
             <Ir href="/facturas?estado=pendientes" className="hcard ir" style={{ '--c': '#C69500' }}>
               <h2 className="hcard-t"><Ico n="cobrar" solo />Por cobrar<span>{sinCobrar.length === 1 ? '1 factura' : `${sinCobrar.length} facturas`}</span></h2>
               <p className="hcard-v"><Cifra v={porCobrar} /><small>€</small></p>
-              {vencidas.length > 0 && <p className="hcard-s rojo">{vencidas.length === 1 ? '1 vencida' : `${vencidas.length} vencidas`}: {vencidas.nombres.join(', ')}</p>}
+              {vencidas.length > 0 && <p className="hcard-s rojo">{vencidas.length === 1 ? '1 vencida' : `${vencidas.length} vencidas`}: {listaNombres(vencidas)}</p>}
             </Ir>
           )}
 
@@ -151,8 +186,9 @@ export default async function Resumen({ searchParams }) {
       )}
 
       {/* En el ordenador, dos columnas: la evolución a la izquierda y lo de consultar a la derecha. En el móvil, una. */}
-      <div className="res-rejilla">
+      <div className={`res-rejilla${sinDatos ? ' sin-datos' : ''}`}>
         <div className="res-col">
+          {!sinDatos && <>
           <section className="grupo">
             <h2 className="grupo-t">Mes a mes</h2>
             <div className="grupo-c relleno">
@@ -167,7 +203,7 @@ export default async function Resumen({ searchParams }) {
                 <div key={a.actividad} className="celda">
                   <Ico n="actividad" />
                   <span className="txt">{ACTIVIDADES[a.actividad] || 'Otra actividad'}<small>Facturado {eur(a.ingresos)}, gastos {eur(a.gastos)}</small></span>
-                  <span className="v">{eur(a.rendimiento)}</span>
+                  <span className={`v${a.rendimiento < 0 ? ' rojo' : ''}`}>{menos(eur(a.rendimiento))}</span>
                 </div>
               ))}
             </div>
@@ -177,14 +213,17 @@ export default async function Resumen({ searchParams }) {
             <h2 className="grupo-t">Hacienda por trimestre</h2>
             <p className="grupo-pie arriba">Orientativo; confírmalo con tu gestor.{c130 ? ' Marca el 303 y el 130 de cada trimestre por separado. Si no pagaste el 130, se suma al siguiente.' : ' Marca cada trimestre cuando lo presentes.'}</p>
             <div className="trims">
-              {r.trimestres.map((q) => (
-                <div key={q.t} className="trim trimestre">
-                  <div className="trim-cab"><h3>{q.t}T {anio}</h3></div>
+              {r.trimestres.map((q) => {
+                // El trimestre en curso (y los que faltan) aún no se pueden presentar: «En curso», sin selector.
+                const abierto = anio === anioActual && q.t >= tHoy;
+                return (
+                <div key={q.t} className={`trim trimestre${anio === anioActual && q.t > tHoy ? ' futuro' : ''}`}>
+                  <div className="trim-cab"><h3>{q.t}T {anio}</h3>{abierto && <span className="estado-txt e-curso">{q.t === tHoy ? 'En curso' : 'Aún no ha empezado'}</span>}</div>
                   <div className="trim-cifras">
                     {c303 && <p><span>Modelo 303</span><strong>{q.ivaDevolucion > 0 ? `${eur(q.ivaDevolucion)} a devolver` : q.m303 < 0 ? `${eur(-q.m303)} a compensar` : eur(q.ivaIngresar)}</strong></p>}
-                    {c303 && <Presentado modelo="303" anio={anio} t={q.t} importe={0} pagado={q.t === 4 && u.pres303?.[anio]?.[4] === 'devolucion' ? 'devolucion' : hecho303(u.pres303, u.pagos130, anio, q.t)} con130={false} />}
+                    {c303 && !abierto && <Presentado modelo="303" anio={anio} t={q.t} importe={0} pagado={q.t === 4 && u.pres303?.[anio]?.[4] === 'devolucion' ? 'devolucion' : hecho303(u.pres303, u.pagos130, anio, q.t)} con130={false} />}
                     {c130 && <p><span>Modelo 130</span><strong>{eur(q.m130)}</strong></p>}
-                    {c130 && <Presentado anio={anio} t={q.t} importe={q.m130} pagado={pagos(anio)[q.t]} />}
+                    {c130 && !abierto && <Presentado anio={anio} t={q.t} importe={q.m130} pagado={pagos(anio)[q.t]} />}
                     {!c303 && !c130 && <p><span>Base facturada</span><strong>{eur(q.ingresos)}</strong></p>}
                   </div>
                   <details className="trim-mas">
@@ -263,9 +302,11 @@ export default async function Resumen({ searchParams }) {
                   <p className="descargas">Excel: <a href={exportar('facturas', q.t)}>facturas</a> · <a href={exportar('gastos', q.t)}>gastos</a>{puede(u, DETALLE) && <> · <a href={`/api/paquete?anio=${anio}&t=${q.t}`}>paquete para la gestoría</a></>}</p>
                   </details>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </section>
+          </>}
         </div>
         <div className="res-col">
           {limite > 0 && fiscal.tipo === 'autonomo' && (
@@ -307,7 +348,7 @@ export default async function Resumen({ searchParams }) {
           <section className="grupo">
             <h2 className="grupo-t">Tus modelos</h2>
             <div className="grupo-c">
-              {modelosDe(fiscal).map((m) => (
+              {modelosDe(fiscal).map((m) => ({ ...m, prox: proximoPlazoDe(fiscal, m.id, h, { cuotaIS: u.cuotaIS }) })).map((m) => ({ ...m, cuando: m.prox ? `${m.prox === h ? 'Hoy es el último día' : `Próximo: ${fechaTexto(m.prox)}${m.prox.slice(0, 4) !== h.slice(0, 4) ? ` de ${m.prox.slice(0, 4)}` : ''}`}` : m.cuando })).map((m) => (
                 m.calcula
                   ? <Ir key={m.id} href={`/modelos?anio=${anio}#m${m.id}`} tipo="adelante" className="celda ir"><span className="modelo-num">{m.num || m.id}</span><span className="txt">{m.nombre}<small>{m.cuando}</small></span><span className="v">{m.id === '100' ? 'Borrador' : 'Calculado'}</span></Ir>
                   : <div key={m.id} className="celda"><span className="modelo-num">{m.num || m.id}</span><span className="txt">{m.nombre}<small>{m.cuando}</small></span>{m.calcula && <span className="v">Calculado</span>}</div>
@@ -319,9 +360,9 @@ export default async function Resumen({ searchParams }) {
           <section className="grupo">
             <h2 className="grupo-t">Descargas</h2>
             <div className="grupo-c">
-              <a href={exportar('facturas')} className="celda ir"><Ico n="factura" /><span className="txt">Facturas de {anio} en Excel</span></a>
-              <a href={exportar('gastos')} className="celda ir"><Ico n="gasto" /><span className="txt">Gastos de {anio} en Excel</span></a>
-              {esteAnio && puede(u, DETALLE) && (() => { const g = plazo.dias <= 25 ? plazo : { anio, t: tHoy }; return <a href={`/api/paquete?anio=${g.anio}&t=${g.t}`} className="celda ir"><Ico n="hacienda" /><span className="txt">Paquete del {g.t}T {g.anio} para la gestoría<small>Excel y PDF con facturas, gastos e impuestos</small></span></a>; })()}
+              {!sinDatos && <a href={exportar('facturas')} className="celda ir"><Ico n="factura" /><span className="txt">Facturas de {anio} en Excel</span></a>}
+              {!sinDatos && <a href={exportar('gastos')} className="celda ir"><Ico n="gasto" /><span className="txt">Gastos de {anio} en Excel</span></a>}
+              {!sinDatos && esteAnio && puede(u, DETALLE) && (() => { const g = plazo.dias <= 25 ? plazo : { anio, t: tHoy }; return <a href={`/api/paquete?anio=${g.anio}&t=${g.t}`} className="celda ir"><Ico n="hacienda" /><span className="txt">Paquete del {g.t}T {g.anio} para la gestoría<small>Excel y PDF con facturas, gastos e impuestos</small></span></a>; })()}
               <a href="/api/avisos" className="celda ir"><Ico n="plazo" /><span className="txt">Plazos de Hacienda en tu calendario<small>Aviso 7 días y 1 día antes</small></span></a>
             </div>
           </section>

@@ -40,7 +40,7 @@ test('el PDF de un presupuesto dice «Presupuesto» y hasta cuándo vale', async
   const e = { nombre: 'Marc', nif: '11111111H', iban: 'ES00 0000', plazo: 30 };
   const p = { id: 'P2026-1', serie: 'P', numero: 1, anio: 2026, fecha: '2026-05-01', validez: 15, cliente: { nombre: 'Sala Apolo' }, concepto: 'Bolo', base: 1000, ivaPct: 21, irpfPct: 0 };
   const txt = texto(await facturaPdf(p, e, {}, { presupuesto: true }));
-  assert.ok(txt.includes(hex('Presupuesto')) && txt.includes(hex('VÁLIDO HASTA')) && txt.includes(hex('16-05-2026')));
+  assert.ok(txt.includes(hex('Presupuesto')) && txt.includes(hex('VÁLIDO HASTA')) && txt.includes(hex('16/05/2026')));
   assert.ok(!txt.includes(hex('VENCIMIENTO')));
   const f = texto(await facturaPdf({ ...p, serie: '', id: '1' }, e, {}));
   assert.ok(f.includes(hex('PARA')) && f.includes(hex('VENCIMIENTO')) && !f.includes(hex('VÁLIDO HASTA')));
@@ -78,7 +78,7 @@ function dentroDeMargenes(paginas) {
 test('rectificativas: IRPF con un solo signo y sin cero negativo en PDF y HTML', async () => {
   const f = { ...ejemploPdf, serie: 'R', base: -1000 };
   const pages = await paginasPdf(await facturaPdf(f, emisorPdf));
-  const retencion = pages.flat().find((r) => r.texto === 'Retención IRPF 15,00%');
+  const retencion = pages.flat().find((r) => r.texto === 'Retención IRPF 15,00\u00a0%');
   const valor = pages.flat().find((r) => r.x > retencion.x && r.y === retencion.y);
   assert.equal(valor.texto, '150,00\u00a0€');
   assert.ok(!facturaHtml(f, emisorPdf).includes('--150'));
@@ -119,7 +119,7 @@ test('HTML: presupuesto con validez y QR con cuatro módulos de margen blanco', 
   const html = facturaHtml(p, emisorPdf);
   assert.match(html, /Presupuesto/);
   assert.match(html, /VÁLIDO HASTA/);
-  assert.match(html, /29-10-2026/);
+  assert.match(html, /29\/10\/2026/);
   assert.ok(!html.includes('VENCIMIENTO') && !html.includes('Vencimiento:'));
   const hqr = facturaHtml({ ...ejemploPdf, verifactu: { modo: 'pruebas' } }, emisorPdf);
   const png = Buffer.from(hqr.match(/alt="QR de Verifactu" src="data:image\/png;base64,([^"]+)"/)[1], 'base64');

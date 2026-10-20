@@ -84,7 +84,7 @@ export default async function Cartera({ searchParams }) {
               {g.efectos.map((e) => (
                 <li key={e.id} className="car-efecto-fila">
                   <Ir href={e.url} className="fila">
-                    <span className={`teso-tipo ${e.vencido ? 'vencida' : 'cobro'}`}>{fechaCorta(e.vence).replace(/-20(\d\d)$/, '-$1')}</span>
+                    <span className={`teso-tipo ${e.vencido ? 'vencida' : 'cobro'}`}>{fechaCorta(e.vence).replace(/\/20(\d\d)$/, '/$1')}</span>
                     <span className="txt"><strong>{e.cliente}</strong><small>{e.numero} · <span className={e.vencido ? 'car-venc' : ''}>{cuando(e)}</span>{e.concepto ? ` · ${e.concepto}` : ''}</small></span>
                     <span className="teso-imp"><span className={e.vencido ? 'teso-out' : 'teso-in'}>{eur(e.pendiente)}</span>{e.cobrado > 0 && <small>de {eur(e.total)}</small>}</span>
                   </Ir>

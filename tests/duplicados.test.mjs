@@ -19,14 +19,14 @@ test('mismo archivo: coincidencia segura incluso con otro proveedor, fecha e imp
   const resultado = posiblesDuplicados(nuevo({ archivo: { huella } }), [
     gasto({ proveedor: 'Otro', fecha: '2026-01-01', base: 5, archivo: { huella } }),
   ]);
-  assert.deepEqual(resultado, [{ id: 'guardado', motivo: 'Mismo archivo adjunto del 01-01-2026', certeza: 'segura' }]);
+  assert.deepEqual(resultado, [{ id: 'guardado', motivo: 'Mismo archivo adjunto del 01/01/2026', certeza: 'segura' }]);
 });
 
 test('mismo proveedor y número con distinta escritura: coincidencia segura', () => {
   const resultado = posiblesDuplicados(nuevo({ proveedor: '  ÉNDESA ', numero: 'f12' }), [
     gasto({ numero: 'F-0012', base: 20, fecha: '2026-01-01' }),
   ]);
-  assert.deepEqual(resultado, [{ id: 'guardado', motivo: 'Misma factura de Endesa (nº F-0012) del 01-01-2026', certeza: 'segura' }]);
+  assert.deepEqual(resultado, [{ id: 'guardado', motivo: 'Misma factura de Endesa (nº F-0012) del 01/01/2026', certeza: 'segura' }]);
 });
 
 test('mismo NIF permite nombres distintos tanto para número como para importe', () => {
@@ -97,5 +97,5 @@ test('seguras antes de probables, una coincidencia por gasto y sin modificar ent
   assert.deepEqual(posiblesDuplicados(n, lista).map((g) => [g.id, g.certeza]),
     [['numero', 'segura'], ['archivo', 'segura'], ['probable', 'probable'], ['probable2', 'probable']]);
   assert.deepEqual({ n, lista }, original);
-  assert.equal(posiblesDuplicados(n, lista).find((g) => g.id === 'archivo').motivo, 'Mismo archivo adjunto del 03-03-2026');
+  assert.equal(posiblesDuplicados(n, lista).find((g) => g.id === 'archivo').motivo, 'Mismo archivo adjunto del 03/03/2026');
 });

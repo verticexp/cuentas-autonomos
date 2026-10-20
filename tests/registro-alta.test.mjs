@@ -275,7 +275,7 @@ test('registro con enlace de recomendación: 60 días de prueba, queda apuntada 
   assert.deepEqual(empresa.plan.recomendacion, { codigo: 'ABCDEFGH', empresa: 'reco' });
   const dias = Math.round((Date.parse(`${empresa.plan.hasta}T12:00:00Z`) - Date.now()) / 86400000);
   assert.ok(dias >= 58 && dias <= 60, `prueba de ${dias} días`);
-  assert.deepEqual(await redis.smembers('recomendadas:ABCDEFGH'), [id]);
+  assert.deepEqual((await redis.smembers('recomendadas:ABCDEFGH')).map(String), [String(id)]);
   const mala = await alta({ ref: 'NOEXISTE', email: 'otra@ejemplo.es', nif: '87654321X' });
   assert.equal(mala.res.status, 400); assert.match(mala.datos.error, /recomendación ya no es válido/);
   await redis.hset('gestorias', { ASESORIA: { codigo: 'ASESORIA', nombre: 'Asesoría', activa: true } });
@@ -292,7 +292,8 @@ test('código promocional: vale el de una empresa que recomienda (60 días) y el
   const una = await redis.hget('empresas', await redis.hget('emails', valido.email));
   assert.deepEqual(una.plan.recomendacion, { codigo: 'ABCDEFGH', empresa: 'reco' });
   assert.ok(dias(una) >= 58 && dias(una) <= 60);
-  assert.deepEqual(await redis.smembers('recomendadas:ABCDEFGH'), [una.id]);
+  // Upstash devuelve como número un id que solo tiene cifras (p. ej. 79875265): se compara como texto.
+  assert.deepEqual((await redis.smembers('recomendadas:ABCDEFGH')).map(String), [String(una.id)]);
   // El mismo código por el enlace y por el campo no es «los dos».
   assert.equal((await alta({ ref: 'ABCDEFGH', codigo: 'ABCDEFGH', email: 'dos@ejemplo.es', nif: '87654321X' }, '192.0.2.2')).res.status, 200);
   assert.equal((await alta({ codigo: 'asesoria', email: 'tres@ejemplo.es', nif: '11111111H' }, '192.0.2.3')).res.status, 200);

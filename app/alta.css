@@ -35,6 +35,8 @@
 .alta-acciones { display: flex; flex-direction: column; gap: 12px; width: 100%; }
 .alta-acciones .boton { text-align: center; white-space: normal; }
 .alta-final .alta-resumen-enlace { align-self: center; color: var(--ink); padding: 10px; }
+/* El texto va alineado con el título (.grupo-pie trae margen lateral para las listas). */
+.alta-final .grupo-pie { margin-inline: 0; }
 @media (min-width: 900px) { .bienvenida .cuestionario-botones { position: static; padding: 20px 0; background: transparent; backdrop-filter: none; } .bienvenida .cuestionario { padding-bottom: 40px; } }
 
 /* Volver a mano, junto al paso actual; el mismo control en registro y bienvenida. */

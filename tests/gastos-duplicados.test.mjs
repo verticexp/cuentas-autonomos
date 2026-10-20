@@ -24,7 +24,7 @@ test('C4: la misma factura del proveedor avisa sin guardar y se guarda al confir
   const nuevo = datos('nuevo', { numero: 'F/1', base: 200 });
   const aviso = await G.crearGasto(u, nuevo);
   assert.equal(aviso.error, 'Puede que este gasto ya esté apuntado');
-  assert.deepEqual(aviso.duplicados, [{ id: 'original', motivo: 'Misma factura de Sonido S.L. (nº F-001) del 13-10-2026', certeza: 'segura' }]);
+  assert.deepEqual(aviso.duplicados, [{ id: 'original', motivo: 'Misma factura de Sonido S.L. (nº F-001) del 13/10/2026', certeza: 'segura' }]);
   assert.deepEqual(await todas(u), [datos('original')]);
 
   const alta = await G.crearGasto(u, nuevo, { duplicadoConfirmado: true });

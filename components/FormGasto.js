@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
 import { atras, volverA } from '@/lib/transicion';
 import Deslizable from './Deslizable';
-import { eur } from '@/lib/formato';
+import { eur, fechaCorta } from '@/lib/formato';
 import { importes, nifUE, origenGasto } from '@/lib/calculos';
 import { costeAfecto, partirIva, pctAfecto, pctDeducible } from '@/lib/ivaDeducible';
 import { parseImporte } from '@/lib/importe';
@@ -173,7 +173,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
     <form className="formulario tarjeta" onSubmit={enviar}>
       <fieldset disabled={enviando || procesando || Boolean(archivoPendiente)} style={{ border: 0, padding: 0, margin: 0, minWidth: 0, gap: 12 }}>
       <h3>{gasto ? 'Editar gasto' : movimiento ? 'Gasto del banco' : 'Añadir gasto deducible'}</h3>
-      {movimiento && <p className="nota">Cargo del {movimiento.fecha.split('-').reverse().join('-')} por {Math.abs(movimiento.importe).toLocaleString('es-ES', { minimumFractionDigits: 2 })} € ({movimiento.concepto}). Sube la factura para que Fisquo lea la base y el IVA; al guardar queda emparejado con el banco.</p>}
+      {movimiento && <p className="nota">Cargo del {fechaCorta(movimiento.fecha)} por {eur(Math.abs(movimiento.importe))} ({movimiento.concepto}). Sube la factura para que Fisquo lea la base y el IVA; al guardar queda emparejado con el banco.</p>}
       {actividades.length > 1 && <Deslizable className={`tipo ${actividades.length === 2 ? 'dos' : 'varias'}`}>
         {actividades.map(({ id, nombre }) => (
           <button type="button" key={id} className={g.actividad === id ? 'activo' : ''} onClick={() => poner('actividad', id)}>{nombre}</button>

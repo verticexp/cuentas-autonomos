@@ -24,7 +24,7 @@ test('la señal se descuenta del resto y el presupuesto queda facturado', () => 
 });
 
 test('texto del evento', () => {
-  assert.equal(textoEvento({ evento: { fecha: '2026-06-12', lugar: 'Hotel Arts' } }), 'Evento del 12-06-2026 en Hotel Arts');
+  assert.equal(textoEvento({ evento: { fecha: '2026-06-12', lugar: 'Hotel Arts' } }), 'Evento del 12/06/2026 en Hotel Arts');
   assert.equal(textoEvento({ evento: { fecha: '', lugar: '' } }), '');
   assert.equal(textoEvento({}), '');
 });
