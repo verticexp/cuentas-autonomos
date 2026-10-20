@@ -19,15 +19,15 @@
 .ficha-acciones { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
 .ficha-acciones .borrar { min-height: 44px; padding: 12px; color: #C0392B; }
 .ficha-acciones button:disabled { opacity: .6; cursor: wait; }
-.ficha-titulo { font-size: 1.25rem; margin: 24px 0 14px; }
+.ficha-titulo { font-size: 20px; margin: 24px 0 14px; }
 .ficha-fila { text-decoration: none; }
 .ficha-fila .txt small { overflow-wrap: anywhere; }
-.ficha-riesgo { display: flex; flex-direction: column; gap: 5px; text-align: right; max-width: 48%; min-width: 0; font-size: .875rem; }
+.ficha-riesgo { display: flex; flex-direction: column; gap: 5px; text-align: right; max-width: 48%; min-width: 0; font-size: 14px; }
 .ficha-riesgo small { color: var(--muted); }
 .ficha-riesgo-panel { padding: 20px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); margin-bottom: 16px; }
 .ficha-cifras { display: flex; flex-wrap: wrap; gap: 18px 28px; margin-bottom: 14px; }
 .ficha-cifras span { display: flex; flex-direction: column; gap: 4px; color: var(--muted); }
-.ficha-cifras strong { color: var(--ink); font-size: 1.25rem; }
+.ficha-cifras strong { color: var(--ink); font-size: 20px; }
 .ficha-barra { height: 5px; overflow: hidden; border-radius: 4px; background: var(--line); margin: 4px 0; }
 .ficha-barra span { display: block; height: 100%; background: var(--in); }
 .ficha-alerta, .ficha-alerta .ficha-cifras strong { color: #946000; }

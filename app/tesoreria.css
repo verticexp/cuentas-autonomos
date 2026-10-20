@@ -8,7 +8,7 @@
 .teso-cifras { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
 .teso-cifra { background: var(--surface); border-radius: 12px; padding: 10px 14px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .teso-cifra span { color: var(--muted); font-size: 13px; }
-.teso-cifra strong { font-size: 19px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.teso-cifra strong { font-size: 20px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .teso-in { color: var(--in); } .teso-out { color: var(--out); } .teso-hac { color: var(--hacienda); }
 .teso-alerta { background: color-mix(in srgb, var(--out) 12%, var(--surface)); color: var(--out); border-radius: 12px; padding: 10px 14px; font-size: 15px; margin: 0 0 20px; }
 .teso-mes .txt small { white-space: normal; }

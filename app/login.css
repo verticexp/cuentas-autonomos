@@ -17,7 +17,7 @@
 .boton-social svg { width: 20px; height: 20px; flex: none; }
 .login-aviso { text-align: center; margin: 0; }
 .login-etiqueta { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
-.login-etiqueta a { font-size: 0.875rem; color: var(--ink); }
+.login-etiqueta a { font-size: 14px; color: var(--ink); }
 .login-cambiar { text-align: center; margin: 4px 0 0; }
 /* Crear cuenta (components/FormRegistro.js) */
 .registro-bloque { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
