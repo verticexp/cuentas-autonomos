@@ -22,11 +22,12 @@ beforeEach(() => {
 });
 
 test('la API rechaza funciones Pro aunque la petición llegue directamente al endpoint', async () => {
-  for (const funcion of ['remesas', 'albaranes', 'cartera', 'analisis', 'proyectos', 'revision', 'tesoreria', 'asistente', 'inventario']) {
+  for (const funcion of ['remesas', 'albaranes', 'cartera', 'analisis', 'proyectos', 'tesoreria', 'asistente', 'inventario']) {
     const r = await usuarioApi({ funcion });
     assert.equal(r.res.status, 403, funcion);
     assert.match((await r.res.json()).error, /plan Esencial/);
   }
+  assert.ok((await usuarioApi({ funcion: 'revision' })).u, 'la revisión del banco va en Pyme Esencial');
   const ruta = await usuarioApi();
   assert.equal(ruta.res.status, 403, 'la ruta del proxy también protege el endpoint');
   assert.deepEqual(globalThis.__planUsos, []);
@@ -76,7 +77,7 @@ test('el error 402 conserva la señal de solo lectura y adapta solo el texto a l
 
 test('las funciones no disponibles siguen bloqueadas en la app sin anunciar planes', async () => {
   globalThis.__planCabeceras.set('user-agent', 'Mozilla/5.0 NettoApp/1');
-  for (const funcion of ['remesas', 'albaranes', 'cartera', 'analisis', 'proyectos', 'revision', 'tesoreria', 'asistente', 'inventario']) {
+  for (const funcion of ['remesas', 'albaranes', 'cartera', 'analisis', 'proyectos', 'tesoreria', 'asistente', 'inventario']) {
     const { res } = await usuarioApi({ funcion });
     assert.equal(res.status, 403);
     assert.deepEqual(await res.json(), { error: 'Esta acción no está disponible en tu cuenta.' });
