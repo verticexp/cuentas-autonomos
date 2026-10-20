@@ -21,10 +21,15 @@ import Arranque from '@/components/Arranque';
 import BarraEstado from '@/components/BarraEstado';
 import { WEB } from '@/lib/web';
 
+// Pantalla de arranque de la web guardada en la pantalla de inicio del iPhone: el mismo verde que la animación de inicio,
+// así no hay destello blanco al abrirla. iOS elige la de su tamaño (ancho y alto en puntos, escala); public/inicio-ios/.
+const INICIO_IOS = [[440, 956, 3], [420, 912, 3], [402, 874, 3], [430, 932, 3], [428, 926, 3], [393, 852, 3], [390, 844, 3], [375, 812, 3], [360, 780, 3], [414, 896, 3], [414, 896, 2], [414, 736, 3], [375, 667, 2]];
+
 // Si ya se vio en esta sesión (o es una página pública/PDF), la pantalla de inicio no llega a pintarse. Entrar y registrarse
-// tampoco la llevan en la web, pero sí en la app de iOS: al abrirla sin sesión es lo primero que se ve tras el verde de lanzamiento.
+// tampoco la llevan en la web, pero sí en la app de iOS y en la web guardada en la pantalla de inicio: al abrirlas sin sesión
+// es lo primero que se ve tras el verde de lanzamiento.
 // Si la app ya se desbloqueó en esta sesión, el bloqueo tampoco (components/Bloqueo.js).
-const YA_VISTO = "try{if(sessionStorage.getItem('fisquo-abierta')||document.cookie.indexOf('recien=1')>-1)document.documentElement.dataset.abierta='1';var p=location.pathname;if(sessionStorage.getItem('fisquo-arranque')||p.startsWith('/p/')||p.startsWith('/portal/')||p.startsWith('/pagar/')||p.endsWith('/pdf')||p.startsWith('/invitacion')||p==='/privacidad'||p==='/condiciones'||((p==='/login'||p==='/registro')&&!/FisquoApp\\//.test(navigator.userAgent)))document.documentElement.dataset.arranque='visto'}catch(e){}";
+const YA_VISTO = "try{if(sessionStorage.getItem('fisquo-abierta')||document.cookie.indexOf('recien=1')>-1)document.documentElement.dataset.abierta='1';var p=location.pathname;if(sessionStorage.getItem('fisquo-arranque')||p.startsWith('/p/')||p.startsWith('/portal/')||p.startsWith('/pagar/')||p.endsWith('/pdf')||p.startsWith('/invitacion')||p==='/privacidad'||p==='/condiciones'||((p==='/login'||p==='/registro')&&!/FisquoApp\\//.test(navigator.userAgent)&&!navigator.standalone&&!matchMedia('(display-mode: standalone)').matches))document.documentElement.dataset.arranque='visto'}catch(e){}";
 
 export const metadata = {
   metadataBase: new URL(WEB),
@@ -64,6 +69,10 @@ export default async function RootLayout({ children }) {
   return (
     <html lang="es" data-tema={tema} data-app={app ? 'ios' : undefined} suppressHydrationWarning>
       <head>
+        {INICIO_IOS.map(([an, al, e]) => (
+          <link key={`${an}x${al}x${e}`} rel="apple-touch-startup-image" href={`/inicio-ios/${an * e}x${al * e}.png`}
+            media={`(device-width: ${an}px) and (device-height: ${al}px) and (-webkit-device-pixel-ratio: ${e}) and (orientation: portrait)`} />
+        ))}
         <script nonce={nonce} suppressHydrationWarning dangerouslySetInnerHTML={{ __html: YA_VISTO }} />
       </head>
       <body className={fuente.variable} style={{ '--acento': COLOR_BASE }} data-marca="base">
