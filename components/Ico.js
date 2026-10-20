@@ -1,4 +1,4 @@
-// Iconos de las filas, en un cuadrado menta con el trazo en verde (marca Netto).
+// Iconos de las filas, en un cuadrado menta con el trazo en verde (marca Fisquo).
 const P = {
   factura: <path d="M7 3h7l4 4v14H7zM14 3v4h4M10 12h5M10 16h5" />,
   gasto: <><rect x="3.5" y="6" width="17" height="12" rx="2" /><path d="M3.5 10h17" /></>,

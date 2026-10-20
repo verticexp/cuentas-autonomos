@@ -15,7 +15,7 @@ test('importe: mensual el de la web y anual 12 meses con el 30 % de descuento, e
 });
 
 test('la clave del precio cambia si cambia el importe', () => {
-  assert.equal(claveDePrecio('aut', 'Pro', 'anio'), 'netto_aut_pro_anio_10080');
+  assert.equal(claveDePrecio('aut', 'Pro', 'anio'), 'fisquo_aut_pro_anio_10080');
 });
 
 test('en la prueba, lo máximo de su tipo; pagado, lo de su plan; sin plan, sin límites', () => {

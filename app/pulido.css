@@ -49,7 +49,7 @@ html[data-vt=abrir] .fh-total { view-transition-name: factura-total; }
   .inicio + .saldo, .saldo { margin-left: 24px; margin-right: 24px; }
   .cuestionario-botones { left: 0; }
   /* El logo ya está en la barra lateral: en la cabecera verde sobra */
-  .inicio .inicio-barra > svg.logo-netto { display: none; }
+  .inicio .inicio-barra > svg.logo-marca { display: none; }
   .inicio-barra { justify-content: flex-end; }
 }
 

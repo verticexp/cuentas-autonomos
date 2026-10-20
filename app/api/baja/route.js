@@ -7,7 +7,7 @@ import { redis } from '@/lib/redis';
 import { cancelarSuscripcion } from '@/lib/suscripcion';
 import { avisarBaja } from '@/lib/avisosCorreo';
 
-// Dar de baja la empresa (lib/baja.js). Solo su administrador, con su contraseña. La del administrador de Netto, no.
+// Dar de baja la empresa (lib/baja.js). Solo su administrador, con su contraseña. La del administrador de Fisquo, no.
 export async function POST(req) {
   const { u, res } = await usuarioApi();
   if (res) return res;

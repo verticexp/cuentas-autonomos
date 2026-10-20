@@ -39,7 +39,7 @@ export default function Pie() {
         </details>
       </div>
       <div className="web-pie-base">
-        <span>© {new Date().getFullYear()} Fisquo · nettohq.com</span>
+        <span>© {new Date().getFullYear()} Fisquo · fisquo.com</span>
         <a href={`mailto:${CONTACTO}`}>{CONTACTO}</a>
       </div>
       <Logo className="web-pie-gigante" />

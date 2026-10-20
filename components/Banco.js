@@ -56,7 +56,7 @@ const AYUDA = {
   ingreso: 'Si es el cobro de una factura que no está en Fisquo, mejor créala; si no, se apunta como otro ingreso.',
 };
 
-// Sin factura ni gasto: qué es (Netto propone una opción por el concepto) y apuntarlo con un toque.
+// Sin factura ni gasto: qué es (Fisquo propone una opción por el concepto) y apuntarlo con un toque.
 function QueEs({ m, accion, children }) {
   const [clase, setClase] = useState(m.clase);
   const [intereses, setIntereses] = useState('');
@@ -215,7 +215,7 @@ export default function Banco({ cuentas, pendientes, emparejados, ignorados, aut
       if (destino === 'nueva') { setDestino(d.cuenta?.id || ''); setNombreNueva(''); }
       setMsg({ texto: `✓ ${d.nuevos === 1 ? '1 movimiento nuevo' : `${d.nuevos} movimientos nuevos`}${d.cuenta && deExtracto.length ? ` en ${d.cuenta.nombre}` : ''}${d.repetidos ? ` · ${d.repetidos} ya estaban` : ''}${d.errores ? ` · ${d.errores} filas sin leer` : ''}` });
       router.refresh();
-    } catch (err) { setMsg({ error: true, texto: err.message }); } finally { setOcupado(false); window.dispatchEvent(new Event('netto:escaneos')); }
+    } catch (err) { setMsg({ error: true, texto: err.message }); } finally { setOcupado(false); window.dispatchEvent(new Event('fisquo:escaneos')); }
   };
   const quitar = async (c) => {
     if (!confirm(c.origen === 'enable' ? `¿Desconectar ${c.nombre}? Se retira el permiso del banco; los movimientos se quedan.` : `¿Quitar ${c.nombre}? Deja de contar su saldo; los movimientos se quedan.`)) return;

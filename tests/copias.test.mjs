@@ -456,7 +456,7 @@ function ejecutar(script, args, cwd, r, env = {}) {
 
 test('F14: CLI exige cifrado, verifica antes de escribir y guarda recuperación previa cifrada', async (t) => {
   const { origen, destino, a, b } = await bases(t);
-  const dir = await mkdtemp(join(tmpdir(), 'netto-copias-'));
+  const dir = await mkdtemp(join(tmpdir(), 'fisquo-copias-'));
   t.after(() => rm(dir, { recursive: true, force: true }));
   await sembrar(a);
   await sembrar(b);

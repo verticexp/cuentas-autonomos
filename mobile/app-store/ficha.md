@@ -46,9 +46,9 @@ autónomo,facturas,gastos,IVA,impuestos,contabilidad,tickets,modelo 303,Hacienda
 
 **Novedades de esta versión**: Primera versión de Fisquo para iPhone.
 
-**URL de soporte**: https://www.nettohq.com/contacto
-**URL de marketing**: https://www.nettohq.com
-**URL de la política de privacidad**: https://www.nettohq.com/privacidad
+**URL de soporte**: https://www.fisquo.com/contacto
+**URL de marketing**: https://www.fisquo.com
+**URL de la política de privacidad**: https://www.fisquo.com/privacidad
 
 **Copyright**: 2026 <nombre legal de la empresa>
 

@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { asuntoInvitacion, enviarInvitacion, htmlInvitacion } from '../lib/invitacion.js';
 
-const datos = { nombre: 'Laura', quien: 'Marc', empresa: 'SONORA EVENTOS', url: 'https://nettohq.com/invitacion/abc_123' };
+const datos = { nombre: 'Laura', quien: 'Marc', empresa: 'SONORA EVENTOS', url: 'https://fisquo.com/invitacion/abc_123' };
 
 test('asunto: quién invita y a qué empresa', () => {
   assert.equal(asuntoInvitacion(datos), 'Marc te ha invitado a SONORA EVENTOS en Fisquo');

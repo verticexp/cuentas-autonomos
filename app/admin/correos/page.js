@@ -15,7 +15,7 @@ export default async function CorreosAdmin() {
   return <main className="pagina mk-look adm adm-correo-panel">
     <Volver href="/admin">Volver</Volver>
     <h1 className="titulo">Correos de Fisquo</h1>
-    <p className="adm-intro">{emailListo() ? 'El envío de emails está configurado.' : 'El envío de emails no está configurado (falta RESEND_API_KEY).'} Remitente: {process.env.RESEND_FROM || 'Fisquo <onboarding@resend.dev> (falta RESEND_FROM)'}.</p>
+    <p className="adm-intro">{emailListo() ? 'El envío de emails está configurado.' : 'El envío de emails no está configurado (falta RESEND_API_KEY).'} Remitente: {process.env.RESEND_FROM || 'Fisquo <no-reply@fisquo.com> (falta RESEND_FROM)'}.</p>
     {GRUPOS.map((grupo) => <section className="adm-correo-grupo" key={grupo}>
       <h2>{grupo}</h2>
       {correos.filter((c) => c.grupo === grupo).map((c) => <article className="adm-caja adm-correo" key={c.id}>

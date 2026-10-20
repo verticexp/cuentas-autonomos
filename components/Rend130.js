@@ -6,7 +6,7 @@ import { llamar } from './Acciones';
 import { eur } from '@/lib/formato';
 
 // Rendimiento neto de la actividad del año anterior: si fue de 12.000 € o menos, el 130 resta hasta 100 € cada trimestre
-// (casilla 13). Netto sugiere el suyo, pero solo vale si ese año está entero en Netto: lo confirma la persona.
+// (casilla 13). Fisquo sugiere el suyo, pero solo vale si ese año está entero en Fisquo: lo confirma la persona.
 export default function Rend130({ anio, valor, sugerido, minoracion }) {
   const router = useRouter();
   const [v, setV] = useState(valor === null ? '' : String(valor).replace('.', ','));

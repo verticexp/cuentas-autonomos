@@ -104,7 +104,7 @@ export default async function Seccion({ params }) {
         const regs = await leer(u, 'registros');
         const facturas = await documentos(u, 'facturas', [...new Set((regs || []).map((r) => r.factura))]);
         const cuentas = estadoVerifactu(regs || [], { modo: u.verifactu || undefined, facturas: Object.fromEntries((facturas || []).map((f) => [f.id, f])) });
-        return <Verifactu modo={u.verifactu || null} admin={u.rol === 'admin'} listo={certificadoListo()} faltaEmisor={!u.emisor?.nif || !u.emisor?.nombre} netto={{ razon: process.env.NETTO_RAZON || '', nif: process.env.NETTO_NIF || '' }} cuentas={cuentas} />;
+        return <Verifactu modo={u.verifactu || null} admin={u.rol === 'admin'} listo={certificadoListo()} faltaEmisor={!u.emisor?.nif || !u.emisor?.nombre} fisquo={{ razon: (process.env.FISQUO_RAZON ?? process.env.NETTO_RAZON) || '', nif: (process.env.FISQUO_NIF ?? process.env.NETTO_NIF) || '' }} cuentas={cuentas} />;
       })()}
       {['facturacion', 'cobros', 'marca', 'perfil', 'drive', 'seguridad'].includes(seccion) && <Ajustes seccion={seccion} emisor={u.emisor || {}} drive={u.drive} driveError={u.driveError} sociedad={fiscalDe(u).tipo === 'sociedad'} nombre={u.nombre} />}
       {seccion === 'perfil' && (

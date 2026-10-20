@@ -66,7 +66,7 @@ export default async function PaginaBanco({ searchParams }) {
   const ignorados = historial.grupos.ignorados.items;
   const cuentasFiltro = new Map((cuentas || []).map((c) => [c.id, c.nombre]));
   for (const m of lista) if (m.cuenta && !cuentasFiltro.has(m.cuenta)) cuentasFiltro.set(m.cuenta, `Cuenta anterior (${m.cuenta.slice(-6)})`);
-  // La conexión directa es solo del administrador de Netto: al resto ni se le habla de ella, aunque traiga ?conectado o ?error.
+  // La conexión directa es solo del administrador de Fisquo: al resto ni se le habla de ella, aunque traiga ?conectado o ?error.
   const directo = conectarVisible(u);
   const n = directo ? Number(q.conectado) || 0 : 0;
   const app = esApp((await headers()).get('user-agent'));

@@ -7,7 +7,7 @@ const UPSTASH = process.env.UPSTASH || 'http://127.0.0.1:18083';
 for (const url of [BASE, UPSTASH]) if (!['localhost', '127.0.0.1', '[::1]'].includes(new URL(url).hostname)) throw new Error('Solo app y Redis simulados locales');
 process.env.KV_REST_API_URL = UPSTASH; process.env.KV_REST_API_TOKEN = 'prueba-local';
 const { crearUsuario } = await import('../../lib/auth.js');
-const correo = `movimiento-${randomBytes(5).toString('hex')}@netto-local.test`;
+const correo = `movimiento-${randomBytes(5).toString('hex')}@fisquo-local.test`;
 const clave = `Brisa!${randomBytes(12).toString('hex')}73a`;
 const alta = await crearUsuario({ nombre: 'Prueba de movimiento', email: correo, password: clave, empresaNombre: 'Movimiento (simulada)' });
 if (alta.error) throw new Error(alta.error);

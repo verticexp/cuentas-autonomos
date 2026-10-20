@@ -1,4 +1,4 @@
-// Asociación con la app de iOS (mobile/): con ella, las llaves de acceso de www.nettohq.com (Face ID) funcionan dentro
+// Asociación con la app de iOS (mobile/): con ella, las llaves de acceso de www.fisquo.com (Face ID) funcionan dentro
 // de la app. Necesita APPLE_TEAM_ID (el Team ID de la cuenta de Apple Developer); sin él, 404 como hasta ahora.
 export const dynamic = 'force-dynamic';
 

@@ -13,7 +13,7 @@ export default function Apariencia({ inicial }) {
     if (automatico) delete document.documentElement.dataset.tema;
     else document.documentElement.dataset.tema = valor;
     setTema(valor);
-    window.dispatchEvent(new Event('netto-tema'));
+    window.dispatchEvent(new Event('fisquo-tema'));
   }
 
   return (

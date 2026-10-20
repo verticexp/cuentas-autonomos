@@ -12,7 +12,7 @@ import { usarFuncion } from '@/lib/usoPlan';
 export const dynamic = 'force-dynamic';
 
 // Ajuste de stock a mano: stock inicial, recuento, rotura, consumo… { producto, fecha, cantidad (+ entra, − sale) o recuento, motivo, coste }.
-// Con «recuento», se apunta la diferencia entre lo contado y lo que dice Netto (con como: 'consumo', si falta, como consumo).
+// Con «recuento», se apunta la diferencia entre lo contado y lo que dice Fisquo (con como: 'consumo', si falta, como consumo).
 export async function POST(req) {
   const { u, res } = await usuarioApi({ permiso: 'gastar' });
   if (res) return res;

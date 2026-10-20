@@ -16,7 +16,7 @@ await redis.hset('empresas',{[empresa]:{id:empresa,nombre:'UI Cuotas (ficticia)'
 await redis.hset('usuarios',{[empresa]:{id:empresa,empresa,rol:'admin',admin:false,emailVerificado:true,nombre:'Prueba ficticia'}});
 await redis.hset(`gastos:${empresa}`,{manual:{id:'manual',fecha:'2026-10-18',actividad:'servicios',concepto:'Gasto manual ficticio',base:10,ivaPct:21}});
 const token=await crearSesion(empresa),clave=`escaneos-ia:${empresa}:${periodoEscaneos(plan).periodo}`;
-const salida=process.env.QA_SALIDA || '/private/tmp/netto-cuotas-ui';await mkdir(salida,{recursive:true});
+const salida=process.env.QA_SALIDA || '/private/tmp/fisquo-cuotas-ui';await mkdir(salida,{recursive:true});
 const browser=await chromium.launch({executablePath:process.env.CHROME_PATH,headless:true});
 const errores=[];
 try {
@@ -37,7 +37,7 @@ try {
   assert((await p.locator('form.formulario input').count())>0,'Esencial debe mostrar el formulario manual');
   assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
   await p.locator('.ticket-ia').screenshot({path:`${salida}/aviso-${width}.png`});
-  await redis.hset(clave,{paginas:50});await p.evaluate(()=>window.dispatchEvent(new Event('netto:escaneos')));
+  await redis.hset(clave,{paginas:50});await p.evaluate(()=>window.dispatchEvent(new Event('fisquo:escaneos')));
   await p.getByText('Has agotado las lecturas disponibles.',{exact:false}).waitFor();
   await p.getByRole('link',{name:'Solicitar ampliación',exact:true}).click();
   await p.getByRole('heading',{name:'Más páginas para tu negocio'}).waitFor();

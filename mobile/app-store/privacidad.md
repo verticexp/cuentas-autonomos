@@ -1,6 +1,6 @@
 # Privacidad de la app (App Store Connect)
 
-Coincide con `ios/App/App/PrivacyInfo.xcprivacy` y con https://www.nettohq.com/privacidad.
+Coincide con `ios/App/App/PrivacyInfo.xcprivacy` y con https://www.fisquo.com/privacidad.
 
 **¿Recoges datos de esta app?** Sí. **¿Se usan para rastrear (tracking)?** No, ninguno.
 

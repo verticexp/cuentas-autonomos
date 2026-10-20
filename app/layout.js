@@ -23,7 +23,7 @@ import { WEB } from '@/lib/web';
 
 // Si ya se vio en esta sesión (o es una página pública/PDF), la pantalla de inicio no llega a pintarse.
 // Si la app ya se desbloqueó en esta sesión, el bloqueo tampoco (components/Bloqueo.js).
-const YA_VISTO = "try{if(sessionStorage.getItem('netto-abierta')||document.cookie.indexOf('recien=1')>-1)document.documentElement.dataset.abierta='1';var p=location.pathname;if(sessionStorage.getItem('netto-arranque')||p.startsWith('/p/')||p.startsWith('/portal/')||p.startsWith('/pagar/')||p.endsWith('/pdf')||p.startsWith('/invitacion')||p==='/privacidad'||p==='/condiciones'||p==='/login'||p==='/registro')document.documentElement.dataset.arranque='visto'}catch(e){}";
+const YA_VISTO = "try{if(sessionStorage.getItem('fisquo-abierta')||document.cookie.indexOf('recien=1')>-1)document.documentElement.dataset.abierta='1';var p=location.pathname;if(sessionStorage.getItem('fisquo-arranque')||p.startsWith('/p/')||p.startsWith('/portal/')||p.startsWith('/pagar/')||p.endsWith('/pdf')||p.startsWith('/invitacion')||p==='/privacidad'||p==='/condiciones'||p==='/login'||p==='/registro')document.documentElement.dataset.arranque='visto'}catch(e){}";
 
 export const metadata = {
   metadataBase: new URL(WEB),
@@ -46,7 +46,7 @@ export const viewport = {
 const LIBRE = /^\/(bloqueo|login|registro|confirmar-email|privacidad|condiciones|declaracion-responsable|invitacion|p\/|portal\/|pagar\/|sw|manifest|favicon|icon|apple-icon)/;
 
 export default async function RootLayout({ children }) {
-  // La app va siempre con el color de Netto: el de cada empresa solo sale en sus facturas, presupuestos y páginas
+  // La app va siempre con el color de Fisquo: el de cada empresa solo sale en sus facturas, presupuestos y páginas
   // de cobro (con algunos colores, en modo oscuro los botones parecían desactivados).
   const u = await usuarioActual().catch(() => null);
   // Con el bloqueo del servidor activo y sin desbloquear, la pantalla de bloqueo sale aunque el navegador la diera por abierta.

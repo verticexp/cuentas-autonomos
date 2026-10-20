@@ -20,7 +20,7 @@ Las nóminas sustituyen los gastos salariales agregados de la demo. Se recalcula
 
 Incluye IVA mixto, cobro parcial, reembolso pendiente, operaciones UE y retenciones explícitas de alquiler y profesionales.
 
-El proceso debe permanecer abierto: sus cambios viven en memoria. Al crear la cuenta se guarda una copia inicial en `/private/tmp/netto-cuenta-simulada.json`; esa copia no incorpora las ediciones posteriores. Reiniciar el generador crea una simulación nueva.
+El proceso debe permanecer abierto: sus cambios viven en memoria. Al crear la cuenta se guarda una copia inicial en `/private/tmp/fisquo-cuenta-simulada.json`; esa copia no incorpora las ediciones posteriores. Reiniciar el generador crea una simulación nueva.
 
 ## Hallazgos
 

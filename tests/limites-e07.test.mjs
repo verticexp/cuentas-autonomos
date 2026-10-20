@@ -159,7 +159,7 @@ function preparar() {
     marcarPagada: async () => {},
   };
 }
-const peticion = (b) => new Request('https://netto.test/api', { method: 'POST', headers: { 'content-type': 'application/json', 'x-real-ip': '1.2.3.4' }, body: JSON.stringify(b) });
+const peticion = (b) => new Request('https://fisquo.test/api', { method: 'POST', headers: { 'content-type': 'application/json', 'x-real-ip': '1.2.3.4' }, body: JSON.stringify(b) });
 
 test('E07: rutas de IA usan el id de usuario, mantienen cuotas y cortan por empresa y global', async () => {
   preparar();
@@ -226,7 +226,7 @@ test('E07: el webhook Stripe sigue procesando avisos sin llamar a límites', asy
   srv.ganchos.antes = async (body) => comandos.push(JSON.parse(body));
   try {
     for (let i = 0; i < 25; i++) {
-      const r = await api.POST(new Request('https://netto.test/api/stripe', { method: 'POST', body, headers: { 'stripe-signature': `t=${t},v1=${firma}` } }));
+      const r = await api.POST(new Request('https://fisquo.test/api/stripe', { method: 'POST', body, headers: { 'stripe-signature': `t=${t},v1=${firma}` } }));
       assert.equal(r.status, 200);
     }
     assert.deepEqual(comandos, []);

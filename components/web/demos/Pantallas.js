@@ -1,7 +1,7 @@
 import Logo, { N } from '@/components/Logo';
 import Icono from '@/components/web/Icono';
 
-// Maquetas de pantallas de Netto para la web pública. Todo son datos de ejemplo.
+// Maquetas de pantallas de Fisquo para la web pública. Todo son datos de ejemplo.
 
 const Fila = ({ a, b, c, d, chip, tipo = 'ok' }) => (
   <div className="mk-fila">
@@ -10,12 +10,12 @@ const Fila = ({ a, b, c, d, chip, tipo = 'ok' }) => (
   </div>
 );
 
-// Ventana grande del hero: el panel de Netto con barra lateral.
+// Ventana grande del hero: el panel de Fisquo con barra lateral.
 export function VentanaApp() {
   const barras = [38, 52, 44, 61, 58, 72, 66, 84, 79, 92, 88, 100];
   return (
     <div className="mk-app" aria-hidden>
-      <div className="mk-app-barra"><i /><i /><i /><span>nettohq.com</span></div>
+      <div className="mk-app-barra"><i /><i /><i /><span>fisquo.com</span></div>
       <div className="mk-app-cuerpo">
         <aside className="mk-lateral">
           <Logo className="mk-lateral-logo" />

@@ -46,7 +46,7 @@ before(async () => {
   process.env.KV_REST_API_URL = urlRedis;
   process.env.KV_REST_API_TOKEN = 'pruebas';
   process.env.HIBP = 'off';
-  // Fuera de producción: en el build de Vercel VERCEL_ENV vale «production» y Face ID solo admite los dominios de Netto.
+  // Fuera de producción: en el build de Vercel VERCEL_ENV vale «production» y Face ID solo admite los dominios de Fisquo.
   delete process.env.VERCEL_ENV;
   globalThis.fetch = async (url, opciones) => {
     if (!String(url).startsWith(urlRedis)) throw new Error('Red externa no permitida en esta prueba');
@@ -74,15 +74,15 @@ beforeEach(() => {
     scrypt(...args, async (e, b) => { await estado.pausarHash?.(); cb(e, b); });
   };
   Object.assign(estado, { auditar: async () => {}, congelarInstantaneas: async () => {}, bancoDirectoPermitido: () => true,
-    urlApp: () => 'http://netto.test', abrirSesion: async () => ({ cuentas: [{ uid: 'c', iban: 'ES1' }] }), sincronizar: async () => {} });
+    urlApp: () => 'http://fisquo.test', abrirSesion: async () => ({ cuentas: [{ uid: 'c', iban: 'ES1' }] }), sincronizar: async () => {} });
 });
 after(() => {
   globalThis.fetch = fetchAnterior; delete globalThis.__seguridadAuditoria;
   for (const [k, v] of Object.entries(env)) if (v === undefined) delete process.env[k]; else process.env[k] = v;
 });
-const req = (ruta, b, method = 'POST', ip = '1.2.3.4') => Object.assign(new Request(`http://netto.test${ruta}`, {
+const req = (ruta, b, method = 'POST', ip = '1.2.3.4') => Object.assign(new Request(`http://fisquo.test${ruta}`, {
   method, headers: { 'content-type': 'application/json', 'x-real-ip': ip }, ...(b === undefined ? {} : { body: JSON.stringify(b) }),
-}), { nextUrl: new URL(`http://netto.test${ruta}`) });
+}), { nextUrl: new URL(`http://fisquo.test${ruta}`) });
 const antigua = 'Bosque!72RioGrande';
 const nueva = 'Faro!89LunaAzul';
 async function usuario(extra = {}, empresa = {}) {
@@ -220,8 +220,12 @@ test('m4: en producción Face ID solo responde en los dominios de Fisquo', async
   process.env.VERCEL_ENV = 'production';
   try {
     assert.equal((await ruta.POST(desde('https://otra-web.example'))).status, 403);
-    const r = await ruta.POST(desde('https://www.nettohq.com'));
-    assert.equal(r.status, 200); assert.equal((await r.json()).rpId, 'www.nettohq.com');
+    // Los dominios anteriores conservan las llaves registradas durante la transición.
+    for (const host of ['www.fisquo.com', 'fisquo.com', 'www.nettohq.com', 'nettohq.com']) {
+      const r = await ruta.POST(desde(`https://${host}`));
+      assert.equal(r.status, 200, host); assert.equal((await r.json()).rpId, host);
+    }
+    assert.equal((await ruta.POST(desde('https://www.fisquo.com.otra-web.example'))).status, 403);
   } finally { delete process.env.VERCEL_ENV; }
 });
 

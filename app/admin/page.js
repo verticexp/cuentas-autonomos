@@ -27,7 +27,7 @@ function Barras({ datos, etiqueta, valor, titulo }) {
   </figure>;
 }
 
-// Panel del administrador de Netto: negocio (ingresos, pruebas, conversión), uso y todas las empresas.
+// Panel del administrador de Fisquo: negocio (ingresos, pruebas, conversión), uso y todas las empresas.
 export default async function Admin() {
   await requerirAdmin();
   const [empresas, usuarios, actividad, ultima] = await Promise.all([redis.hgetall('empresas'), redis.hgetall('usuarios'), actividadReciente(30), ultimaActividad()]);

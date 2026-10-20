@@ -125,7 +125,7 @@ try {
   for (const [key, banco] of Object.entries(bancos || {})) await redis.hset(`bancos:${id}`, { [key]: { ...banco, saldo, fechaSaldo: hoy } });
   const resumen = {};
   for (const col of ['facturas', 'gastos', 'clientes', 'productos', 'presupuestos', 'empleados', 'nominas', 'recurrentes', 'albaranes', 'pedidosProv', 'banco', 'remesas']) resumen[col] = await redis.hlen(`${col}:${id}`);
-  const copia = process.env.SIMULADA_COPIA || join(tmpdir(), 'netto-cuenta-simulada.json');
+  const copia = process.env.SIMULADA_COPIA || join(tmpdir(), 'fisquo-cuenta-simulada.json');
   await writeFile(copia, JSON.stringify({ empresa, email, resumen, datos: [...s.base.db].map(([k, v]) => [k, { ...v, ...(v.m ? { m: [...v.m] } : {}) }]) }, null, 2));
   console.log(JSON.stringify({ empresa, email, password, redis: s.url, resumen }, null, 2));
   console.log(`Cuenta en memoria preparada. Copia local: ${copia}`);

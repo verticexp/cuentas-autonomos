@@ -7,7 +7,7 @@ const PERSONA = '12345678Z', CIF = 'B12345674';
 const antes = { tipo: 'autonomo', nif: PERSONA, nombre: 'Ana López García' };
 
 test('reconoce el nombre de una sociedad solo como forma jurídica al final', () => {
-  for (const n of ['Netto SL', 'NETTO, S.L.', 'Netto S.L.U.', 'Acme SLU', 'Acme S.A.', 'Acme SAU', 'Talleres SLL', 'Nueva S.L.N.E.', 'Huerta S.Coop.', 'Huerta S. Coop. Andaluza', 'Obras Sociedad Limitada', 'Obras (S.L.)'])
+  for (const n of ['Fisquo SL', 'FISQUO, S.L.', 'Fisquo S.L.U.', 'Acme SLU', 'Acme S.A.', 'Acme SAU', 'Talleres SLL', 'Nueva S.L.N.E.', 'Huerta S.Coop.', 'Huerta S. Coop. Andaluza', 'Obras Sociedad Limitada', 'Obras (S.L.)'])
     assert.ok(pareceSociedad(n), n);
   for (const n of ['Ana López García', 'José Sala', 'Marta Salas', 'Slava Petrov', 'Estudio Sauce', 'Clínica Dental Ana', ''])
     assert.equal(pareceSociedad(n), false, n);
@@ -49,7 +49,7 @@ test('una sociedad solo contrata Pymes; un autónomo puede contratar los dos', (
 });
 
 test('el registro de autónomo rechaza el nombre de una sociedad', () => {
-  const datos = { tipo: 'aut', razon: 'Netto Software SL', nif: PERSONA, direccion: 'Calle Mayor 1', cp: '08001', ciudad: 'Barcelona', provincia: 'Barcelona', telefono: '' };
+  const datos = { tipo: 'aut', razon: 'Fisquo Software SL', nif: PERSONA, direccion: 'Calle Mayor 1', cp: '08001', ciudad: 'Barcelona', provincia: 'Barcelona', telefono: '' };
   assert.equal(datosFiscalesRegistro(datos).campo, 'razon');
   assert.ok(datosFiscalesRegistro({ ...datos, razon: 'Ana López García' }).emisor);
   assert.ok(datosFiscalesRegistro({ ...datos, tipo: 'pym', nif: CIF }).emisor, 'en Pymes sí vale');

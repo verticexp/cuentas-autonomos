@@ -32,7 +32,7 @@ async function ruta(archivo) {
   });
   return import(`data:text/javascript,${encodeURIComponent(fuente)}`);
 }
-const peticion = (url, opciones = {}) => Object.assign(new Request(`http://netto.test${url}`, opciones), { nextUrl: new URL(`http://netto.test${url}`) });
+const peticion = (url, opciones = {}) => Object.assign(new Request(`http://fisquo.test${url}`, opciones), { nextUrl: new URL(`http://fisquo.test${url}`) });
 
 let n = 0;
 const empresa = (permisos = ['gastos', 'gastar']) => {

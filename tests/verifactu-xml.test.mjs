@@ -22,7 +22,7 @@ function validar(xml) {
   try { execFileSync('xmllint', ['--noout', '--schema', join(d, 'SuministroLR.xsd'), join(d, 'r.xml')], { stdio: 'pipe' }); return ''; } catch (err) { return String(err.stderr); }
 }
 
-const sistema = { nombre: 'Empresa de Netto SL', nif: 'B12345674', version: '1.0', instalacion: 'emp1' };
+const sistema = { nombre: 'Empresa de Fisquo SL', nif: 'B12345674', version: '1.0', instalacion: 'emp1' };
 const f1 = { id: 'f1', numero: 7, anio: 2026, fecha: '2026-10-02', base: 100, ivaPct: 21, irpfPct: 15, concepto: 'Diseño & web <logo>', cliente: { nombre: 'Cliente SL', nif: 'B87654321' } };
 const f2 = { id: 'f2', numero: 1, anio: 2026, serie: 'R', fecha: '2026-10-03', base: -50, ivaPct: 0, concepto: 'Abono', cliente: { nombre: 'Studio Paris', nif: 'FR12345678901' }, rectifica: { id: 'f1', numero: '07-2026', fecha: '2026-10-02' } };
 const f3 = { id: 'f3', numero: 8, anio: 2026, fecha: '2026-10-04', concepto: 'Varias', cliente: { nombre: 'Athens', nif: 'EL123456789' }, lineas: [{ concepto: 'A', cantidad: 1, precio: 100, ivaPct: 21 }, { concepto: 'B', cantidad: 2, precio: 10, ivaPct: 10 }], base: 120, ivaPct: 21 };
@@ -37,6 +37,7 @@ test('XML de alta de Verifactu válido según los esquemas de la AEAT (primero, 
     xmlAlta(r3, { factura: f3, emisorNombre: 'Mi Empresa SL', anterior: r2, sistema, fiscal: { iva: 'general' } }),
   ]);
   assert.equal(validar(xml), '');
+  assert.ok(xml.includes('<sum1:NombreSistemaInformatico>Fisquo</sum1:NombreSistemaInformatico>'));
   assert.ok(xml.includes('<sum1:PrimerRegistro>S</sum1:PrimerRegistro>') && xml.includes(`<sum1:Huella>${r1.Huella}</sum1:Huella>`));
   assert.ok(xml.includes('Diseño &amp; web &lt;logo&gt;'));
   assert.ok(xml.includes('<sum1:TipoFactura>R4</sum1:TipoFactura><sum1:TipoRectificativa>I</sum1:TipoRectificativa>'));
@@ -85,6 +86,7 @@ test('subsanación, anulación y lo que viene detrás: válidos según los esque
     xmlAlta(r2, { ...op, factura: { ...f2, rectifica: { ...f2.rectifica, motivo: 'error' } }, anterior: an }),
   ]);
   assert.equal(validar(xml), '');
+  assert.ok(xml.includes('<sum1:NombreSistemaInformatico>Fisquo</sum1:NombreSistemaInformatico>'));
   assert.ok(xml.includes('<sum1:Subsanacion>S</sum1:Subsanacion><sum1:RechazoPrevio>X</sum1:RechazoPrevio>'));
   assert.ok(xml.includes('<sum1:Subsanacion>S</sum1:Subsanacion><sum1:RechazoPrevio>N</sum1:RechazoPrevio>'));
   assert.ok(xml.includes(`<sum1:NumSerieFacturaAnulada>${an.NumSerieFacturaAnulada}</sum1:NumSerieFacturaAnulada>`));
@@ -120,4 +122,34 @@ test('recargo de equivalencia (TipoRecargoEquivalencia y CuotaRecargoEquivalenci
   const xml = sobre({ nombre: 'Mi Empresa SL', nif: 'B11111111' }, [xmlAlta(r, { factura: f, emisorNombre: 'Mi Empresa SL', anterior: null, sistema, fiscal: { iva: 'general' } })]);
   assert.match(xml, /<sum1:TipoRecargoEquivalencia>5.2<\/sum1:TipoRecargoEquivalencia><sum1:CuotaRecargoEquivalencia>5.20<\/sum1:CuotaRecargoEquivalencia>/);
   assert.equal(validar(xml), '');
+  assert.ok(xml.includes('<sum1:NombreSistemaInformatico>Fisquo</sum1:NombreSistemaInformatico>'));
+});
+
+
+test('el certificado admite las variables anteriores y da prioridad a FISQUO', async () => {
+  const { certificadoListo } = await import('../lib/verifactuEnvio.js');
+  const claves = ['VERIFACTU_P12', 'VERIFACTU_P12_CLAVE', 'FISQUO_RAZON', 'FISQUO_NIF', 'NETTO_RAZON', 'NETTO_NIF'];
+  const antes = Object.fromEntries(claves.map((k) => [k, process.env[k]]));
+  try {
+    for (const k of claves) delete process.env[k];
+    process.env.VERIFACTU_P12 = 'certificado-de-prueba';
+    process.env.VERIFACTU_P12_CLAVE = 'clave-de-prueba';
+    process.env.NETTO_RAZON = 'Productor anterior';
+    process.env.NETTO_NIF = 'B12345674';
+    assert.equal(certificadoListo(), true);
+    process.env.FISQUO_RAZON = ''; // Una cadena vacía explícita no usa el respaldo.
+    assert.equal(certificadoListo(), false);
+    process.env.FISQUO_RAZON = 'Productor actual';
+    process.env.FISQUO_NIF = '';
+    assert.equal(certificadoListo(), false);
+    process.env.FISQUO_NIF = 'B87654321';
+    delete process.env.NETTO_RAZON;
+    delete process.env.NETTO_NIF;
+    assert.equal(certificadoListo(), true);
+  } finally {
+    for (const k of claves) {
+      if (antes[k] === undefined) delete process.env[k];
+      else process.env[k] = antes[k];
+    }
+  }
 });

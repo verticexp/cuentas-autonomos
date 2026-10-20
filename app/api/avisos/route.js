@@ -13,7 +13,7 @@ export async function GET() {
     const dia = fecha.replace(/-/g, '');
     return [
       'BEGIN:VEVENT',
-      `UID:netto-${dia}@nettohq.com`,
+      `UID:fisquo-${dia}@fisquo.com`,
       `DTSTAMP:${y}0101T000000Z`,
       `DTSTART;VALUE=DATE:${dia}`,
       `SUMMARY:Último día: ${texto}`,

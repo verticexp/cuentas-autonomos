@@ -59,7 +59,7 @@ export function NuevoAsiento({ hoy, cuentas }) {
   );
 }
 
-// Asiento de apertura: lo que había al empezar a llevar la contabilidad en Netto (lo que no sale de facturas ni gastos).
+// Asiento de apertura: lo que había al empezar a llevar la contabilidad en Fisquo (lo que no sale de facturas ni gastos).
 export function Apertura({ fecha, sociedad, previa }) {
   const router = useRouter();
   const de = (c) => previa?.lineas.find((l) => l.cuenta === c);
@@ -101,7 +101,7 @@ export function Apertura({ fecha, sociedad, previa }) {
 }
 
 // Gastos de personal del listado de la gestoría: se piden los importes por cuentas (sueldos, IRPF, Seguridad Social del
-// trabajador y de la empresa, resto de personal) y Netto monta el asiento; si ya está pagado, también los de pago.
+// trabajador y de la empresa, resto de personal) y Fisquo monta el asiento; si ya está pagado, también los de pago.
 export function AsientoPersonal({ hoy }) {
   const router = useRouter();
   const vacio = { fecha: hoy, concepto: '', sueldos: '', ssEmpresa: '', irpf: '', ssTrabajador: '', otros: [], pagoLiquido: '', pagoSS: '', pagoIRPF: '' };

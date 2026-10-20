@@ -8,7 +8,7 @@ import { TEMAS_SOPORTE as TEMAS } from '@/lib/soporte';
 
 export const dynamic = 'force-dynamic';
 
-// Ajustes › Ayuda y contacto: el mensaje de una persona con sesión llega al equipo de Netto con su empresa y su email
+// Ajustes › Ayuda y contacto: el mensaje de una persona con sesión llega al equipo de Fisquo con su empresa y su email
 // para responderle. CONTACTO_EMAIL cambia el destinatario (como en app/api/contacto).
 export async function POST(req) {
   const { u, res } = await usuarioApi();

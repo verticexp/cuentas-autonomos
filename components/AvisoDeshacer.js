@@ -11,7 +11,7 @@ const SEGUNDOS = 7;
 // Aviso con «Deshacer» tras cobrar de un deslizamiento (components/Deslizar.js lo pide con avisarCobro). Va aparte de la fila:
 // al refrescar la lista la fila puede cambiar de sitio o desaparecer, y el aviso tiene que seguir. Uno por pantalla.
 export function avisarCobro(id) {
-  window.dispatchEvent(new CustomEvent('netto-cobro', { detail: { id } }));
+  window.dispatchEvent(new CustomEvent('fisquo-cobro', { detail: { id } }));
 }
 
 export default function AvisoDeshacer() {
@@ -27,8 +27,8 @@ export default function AvisoDeshacer() {
       setError(''); setAviso(e.detail);
       reloj.current = setTimeout(() => setAviso(null), SEGUNDOS * 1000);
     };
-    window.addEventListener('netto-cobro', alCobrar);
-    return () => { window.removeEventListener('netto-cobro', alCobrar); clearTimeout(reloj.current); };
+    window.addEventListener('fisquo-cobro', alCobrar);
+    return () => { window.removeEventListener('fisquo-cobro', alCobrar); clearTimeout(reloj.current); };
   }, []);
 
   if (!aviso || typeof document === 'undefined') return null;

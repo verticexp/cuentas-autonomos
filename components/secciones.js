@@ -1,7 +1,7 @@
 // Las pantallas que no caben en la barra: en el ordenador, la barra lateral por grupos; en el móvil, la pestaña «Más» (app/mas).
 // Módulo sin 'use client': lo leen la barra (cliente) y la página /mas (servidor).
 // Agrupadas por lo que se quiere hacer (vender, cobrar y pagar, Hacienda, equipo), no por áreas contables. Cada pantalla sale
-// una sola vez: Ajustes, Usuarios e Importar viven en Ajustes; «Pregunta a Netto», en el buscador de «Más» (y en la barra lateral).
+// una sola vez: Ajustes, Usuarios e Importar viven en Ajustes; «Pregunta a Fisquo», en el buscador de «Más» (y en la barra lateral).
 // tono: el color del grupo (app/mas.css). detalle: la línea de debajo en «Más». palabras: lo que también la encuentra en el buscador.
 import { PARA_AUTONOMO, esSociedad } from '@/lib/modulos';
 import { DETALLE } from '@/lib/permisos';

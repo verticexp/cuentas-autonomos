@@ -28,7 +28,7 @@ function avisoHacienda(u, hoy) {
   return { tono: d <= 3 ? 'rojo' : 'ambar', texto: d === 0 ? 'Plazo hoy' : d === 1 ? 'Plazo mañana' : `Plazo en ${d} días` };
 }
 
-// «Más»: el resto de pantallas en listas por grupos, con un buscador que también pregunta a Netto. Ajustes, en el perfil.
+// «Más»: el resto de pantallas en listas por grupos, con un buscador que también pregunta a Fisquo. Ajustes, en el perfil.
 // Lo que sale depende de los permisos de cada persona y de si la empresa lleva inventario (components/secciones.js).
 export default async function Mas() {
   const u = await requerir();

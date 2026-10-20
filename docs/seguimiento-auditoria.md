@@ -1,6 +1,6 @@
 # Seguimiento de la auditoría de facturación (octubre de 2026)
 
-Punto de partida: informe «Análisis de Netto: preparación como software de facturación» (13-10-2026, commit `109f4cf`) y
+Punto de partida: informe «Análisis de Fisquo: preparación como software de facturación» (13-10-2026, commit `109f4cf`) y
 sus evidencias. Cada hallazgo se ha vuelto a comprobar contra `main` (`89fbabc`, con #46–#52 ya integrados).
 
 **Responsables:** Claude (dirige, diseña e integra) · Codex (encargos acotados, revisados por Claude) · Usuario (decisiones
@@ -113,10 +113,10 @@ encargado del tratamiento. **Estado:** ⏳.
 
 ## Normativa vigente contrastada (13-10-2026)
 
-| Norma | Qué dice | Fuente | Consecuencia para Netto |
+| Norma | Qué dice | Fuente | Consecuencia para Fisquo |
 |---|---|---|---|
 | VERI\*FACTU (RD 1007/2023, modificado por RD-ley 15/2025) | Obligatorio desde el **1-1-2027** (contribuyentes del Impuesto sobre Sociedades) y el **1-7-2027** (resto). Los productores siguen con su plazo de 9 meses desde la Orden HAC/1177/2024 | [BOE-A-2025-24446](https://www.boe.es/buscar/doc.php?id=BOE-A-2025-24446) · [nota AEAT](https://sede.agenciatributaria.gob.es/Sede/iva/sistemas-informaticos-facturacion-verifactu/nota-informativa-ampliacion-plazo-adaptacion-facturacion.html) | La integridad de la cadena (F02) y F11 deben estar cerradas antes del 1-1-2027 para las sociedades usuarias |
-| Factura electrónica B2B (Ley 18/2022, RD 238/2026, Orden HAC/1028/2026) | RD en vigor desde el 20-4-2026; plazos desde el **6-10-2026**: 12 meses para quien facture más de 8 M€ y 24 meses para el resto. Vías: plataformas privadas o solución pública de la AEAT. El destinatario comunica a la solución pública el **pago completo o el rechazo** | [RD 238/2026](https://www.boe.es/buscar/act.php?id=BOE-A-2026-7295) · [Orden HAC/1028/2026](https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-20587) · [calendario AEAT](https://sede.agenciatributaria.gob.es/Sede/iva/factura-electronica/calendario-implantacion.html) | Para el público de Netto (menos de 8 M€) es obligatorio hacia **octubre de 2028**. Facturae/UBL (#50) es la base; falta el intercambio con la solución pública y la comunicación del estado de pago. Fechas calculadas a partir de la Orden: ⚖ confirmar |
+| Factura electrónica B2B (Ley 18/2022, RD 238/2026, Orden HAC/1028/2026) | RD en vigor desde el 20-4-2026; plazos desde el **6-10-2026**: 12 meses para quien facture más de 8 M€ y 24 meses para el resto. Vías: plataformas privadas o solución pública de la AEAT. El destinatario comunica a la solución pública el **pago completo o el rechazo** | [RD 238/2026](https://www.boe.es/buscar/act.php?id=BOE-A-2026-7295) · [Orden HAC/1028/2026](https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-20587) · [calendario AEAT](https://sede.agenciatributaria.gob.es/Sede/iva/factura-electronica/calendario-implantacion.html) | Para el público de Fisquo (menos de 8 M€) es obligatorio hacia **octubre de 2028**. Facturae/UBL (#50) es la base; falta el intercambio con la solución pública y la comunicación del estado de pago. Fechas calculadas a partir de la Orden: ⚖ confirmar |
 
 ## Decisiones que necesitan revisión fiscal (⚖)
 1. Tipos de IVA (2 % y 5 % temporales) e IRPF admitidos y a qué operaciones; si se admiten por fecha de devengo.

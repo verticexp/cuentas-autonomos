@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 
 // Avisos de Stripe (webhook). Dos cosas distintas en la misma cuenta de Stripe:
 // - cobros de facturas a clientes (Checkout en modo pago, lib/cobros.js): la factura pasa a cobrada aunque no vuelva a la página;
-// - la suscripción de la empresa a Netto (modo suscripción, lib/suscripcion.js): empresa.plan.
+// - la suscripción de la empresa a Fisquo (modo suscripción, lib/suscripcion.js): empresa.plan.
 const SUSCRIPCION = ['customer.subscription.created', 'customer.subscription.updated', 'customer.subscription.deleted'];
 
 export async function POST(req) {

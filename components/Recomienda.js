@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-// Ajustes › Recomienda Netto (lib/recomendaciones.js): el enlace de la empresa y lo que ha ganado con él.
+// Ajustes › Recomienda Fisquo (lib/recomendaciones.js): el enlace de la empresa y lo que ha ganado con él.
 export default function Recomienda({ enlace, resumen }) {
   const [copiado, setCopiado] = useState(false);
   const copiar = async () => {

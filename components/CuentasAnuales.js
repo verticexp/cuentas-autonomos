@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
 
-// Lo que Netto no puede saber de las cuentas anuales: administradores, datos registrales, fechas y retoques de la memoria.
-// memoria: { n: texto actual }; borrador: { n: texto que propone Netto }; secciones: [[n, título]]
+// Lo que Fisquo no puede saber de las cuentas anuales: administradores, datos registrales, fechas y retoques de la memoria.
+// memoria: { n: texto actual }; borrador: { n: texto que propone Fisquo }; secciones: [[n, título]]
 export default function CuentasAnuales({ anio, datos, memoria, borrador, secciones }) {
   const router = useRouter();
   const [x, setX] = useState({ ...datos, memoria: { ...memoria } });

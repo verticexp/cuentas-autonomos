@@ -5,7 +5,7 @@ import Ir from '@/components/Ir';
 import { buscar } from '@/lib/navegacion';
 
 // Lo que más abre cada persona, contado en este dispositivo (solo para ordenar los atajos; nunca sale del navegador).
-const CLAVE = 'netto-mas-usos';
+const CLAVE = 'fisquo-mas-usos';
 const leerUsos = () => { try { return JSON.parse(localStorage.getItem(CLAVE)) || {}; } catch { return {}; } };
 const contar = (href) => { try { const u = leerUsos(); u[href] = (u[href] || 0) + 1; localStorage.setItem(CLAVE, JSON.stringify(u)); } catch { /* sin almacenamiento: sin atajos */ } };
 const ATAJOS = 4;

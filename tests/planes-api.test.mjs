@@ -64,11 +64,11 @@ test('el perfil de gestoría no adquiere permisos de escritura por estar incluid
 
 test('el error 402 conserva la señal de solo lectura y adapta solo el texto a la app', async () => {
   globalThis.__planUsuario.plan = { ...nuevoPlan('pym', 'Esencial'), hasta: '2020-01-01' };
-  for (const ua of ['Mozilla/5.0 Safari/604.1', 'Mozilla/5.0 NettoApp/1']) {
+  for (const ua of ['Mozilla/5.0 Safari/604.1', 'Mozilla/5.0 FisquoApp/1']) {
     globalThis.__planCabeceras = new Headers({ 'x-ruta': '/api/facturas', 'x-metodo': 'POST', 'user-agent': ua });
     const { res } = await usuarioApi();
     assert.equal(res.status, 402);
-    assert.deepEqual(await res.json(), { error: ua.includes('NettoApp/') ? SOLO_LECTURA_APP : SOLO_LECTURA, soloLectura: true });
+    assert.deepEqual(await res.json(), { error: ua.includes('FisquoApp/') ? SOLO_LECTURA_APP : SOLO_LECTURA, soloLectura: true });
     globalThis.__planCabeceras.set('x-ruta', '/api/exportar/todo');
     globalThis.__planCabeceras.set('x-metodo', 'GET');
     assert.ok((await usuarioApi()).u);
@@ -76,7 +76,7 @@ test('el error 402 conserva la señal de solo lectura y adapta solo el texto a l
 });
 
 test('las funciones no disponibles siguen bloqueadas en la app sin anunciar planes', async () => {
-  globalThis.__planCabeceras.set('user-agent', 'Mozilla/5.0 NettoApp/1');
+  globalThis.__planCabeceras.set('user-agent', 'Mozilla/5.0 FisquoApp/1');
   for (const funcion of ['remesas', 'albaranes', 'cartera', 'analisis', 'proyectos', 'tesoreria', 'asistente', 'inventario']) {
     const { res } = await usuarioApi({ funcion });
     assert.equal(res.status, 403);

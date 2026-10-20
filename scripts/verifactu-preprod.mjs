@@ -1,8 +1,8 @@
 // Prueba de Verifactu contra el entorno de preproducción de la AEAT (prewww1.aeat.es), sin la app ni la base de datos:
-// genera una cadena de registros de ejemplo con los mismos módulos que usa Netto (lib/verifactu.js y lib/verifactuXml.js),
+// genera una cadena de registros de ejemplo con los mismos módulos que usa Fisquo (lib/verifactu.js y lib/verifactuXml.js),
 // la envía con el certificado de pruebas y enseña lo que contesta la AEAT para cada registro.
 //
-//   VERIFACTU_P12_FICHERO=certificado.p12 VERIFACTU_P12_CLAVE=… NETTO_RAZON='…' NETTO_NIF=… \
+//   VERIFACTU_P12_FICHERO=certificado.p12 VERIFACTU_P12_CLAVE=… FISQUO_RAZON='…' FISQUO_NIF=… \
 //   OBLIGADO_NIF=… OBLIGADO_NOMBRE='…' node scripts/verifactu-preprod.mjs [--solo-xml]
 //
 // OBLIGADO_*: el emisor de las facturas de prueba (en preproducción, el titular del certificado o alguien que le haya
@@ -18,12 +18,16 @@ const RUTA = '/wlpl/TIKE-CONT/ws/SistemaFacturacion/VerifactuSOAP';
 const URL_PRE = `https://${process.env.VERIFACTU_SELLO ? 'prewww10.aeat.es' : 'prewww1.aeat.es'}${RUTA}`;
 const soloXml = process.argv.includes('--solo-xml');
 
-const falta = ['OBLIGADO_NIF', 'OBLIGADO_NOMBRE', 'NETTO_RAZON', 'NETTO_NIF', ...(soloXml ? [] : ['VERIFACTU_P12_CLAVE'])].filter((k) => !process.env[k]);
+const razon = process.env.FISQUO_RAZON ?? process.env.NETTO_RAZON;
+const nifProductor = process.env.FISQUO_NIF ?? process.env.NETTO_NIF;
+const falta = ['OBLIGADO_NIF', 'OBLIGADO_NOMBRE', ...(soloXml ? [] : ['VERIFACTU_P12_CLAVE'])].filter((k) => !process.env[k]);
+if (!razon) falta.push('FISQUO_RAZON');
+if (!nifProductor) falta.push('FISQUO_NIF');
 if (!soloXml && !process.env.VERIFACTU_P12 && !process.env.VERIFACTU_P12_FICHERO) falta.push('VERIFACTU_P12_FICHERO');
 if (falta.length) { console.error(`Faltan variables: ${falta.join(', ')}`); process.exit(1); }
 
 const nif = process.env.OBLIGADO_NIF.toUpperCase();
-const sistema = { nombre: process.env.NETTO_RAZON, nif: process.env.NETTO_NIF, version: '1.0', instalacion: 'preprod' };
+const sistema = { nombre: razon, nif: nifProductor, version: '1.0', instalacion: 'preprod' };
 const hoy = horaMadrid().slice(0, 10);
 const serie = `PRUEBA${Date.now().toString(36).toUpperCase()}`;
 const cliente = { nombre: 'Cliente de pruebas SL', nif: 'B12345674' };

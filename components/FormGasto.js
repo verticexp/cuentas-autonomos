@@ -98,7 +98,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
       let d;
       if (!permisoIA()) throw new Error(NO_IA);
       try { d = await llamar('/api/gastos/ticket', { method: 'POST', body: JSON.stringify({ imagen }) }); }
-      finally { window.dispatchEvent(new Event('netto:escaneos')); }
+      finally { window.dispatchEvent(new Event('fisquo:escaneos')); }
       const t = d.gasto;
       // Con inventario: las líneas de la factura que son productos del catálogo entran al almacén.
       const stock = productos.length ? emparejarLineas(t.lineas, productos).map((l) => ({ ...l, cantidad: String(l.cantidad).replace('.', ','), coste: String(l.coste).replace('.', ',') })) : [];

@@ -1,4 +1,4 @@
-/* Web pública de Netto (components/web, app/(web)). Nada de aquí afecta a la app: todo cuelga de .web */
+/* Web pública de Fisquo (components/web, app/(web)). Nada de aquí afecta a la app: todo cuelga de .web */
 .web {
   --v: #0F1F1B; --v2: #173129; --v3: #1E3D33; --m: #E6F2EC; --m2: #F2F8F5; --c: #FAFAF8; --g: #5B6360; --g2: #8A918D; --linea: #E3E7E4;
   --acc: #1F9D74; --acc2: #167A59; --luz: #7FE3BD; --ambar: #B7791F; --ambar-f: #FCF3E3; --rojo: #C2453A;

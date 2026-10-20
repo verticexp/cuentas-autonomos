@@ -4,7 +4,10 @@
 <dict>
 	<key>com.apple.developer.associated-domains</key>
 	<array>
+		<string>webcredentials:www.fisquo.com</string>
+		<string>webcredentials:fisquo.com</string>
 		<string>webcredentials:www.nettohq.com</string>
+		<string>webcredentials:nettohq.com</string>
 	</array>
 </dict>
 </plist>

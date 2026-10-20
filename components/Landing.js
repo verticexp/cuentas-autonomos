@@ -18,7 +18,7 @@ const CIFRAS = [
   { n: 12, suf: ' modelos', t: 'fiscales calculados', d: '303, 130, 111, 390, 347, Sociedades…' },
 ];
 
-// Web pública de nettohq.com: lo que ve en / quien aún no ha entrado.
+// Web pública de fisquo.com: lo que ve en / quien aún no ha entrado.
 export default function Landing() {
   return (
     <Marco>

@@ -12,7 +12,7 @@ export default function Arranque() {
   useEffect(() => {
     if (document.documentElement.dataset.arranque === 'visto') { setFase('fin'); avisarFin(); return; }
     // Se marca como vista al acabar, no al empezar: si el servidor manda a /bloqueo mientras tanto (recarga), vuelve a salir.
-    const vista = () => { try { sessionStorage.setItem('netto-arranque', '1'); } catch {} };
+    const vista = () => { try { sessionStorage.setItem('fisquo-arranque', '1'); } catch {} };
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) { vista(); setFase('fin'); avisarFin(); return; }
     // En el login, el verde se recoge junto al logo. El registro tiene otra composición y usa el fundido general.
     const panel = document.querySelector('.login-marca:not(.registro-marca)')?.getClientRects().length > 0 && matchMedia('(min-width: 900px)').matches;

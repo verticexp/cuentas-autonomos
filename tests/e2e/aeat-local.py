@@ -72,7 +72,7 @@ class H(BaseHTTPRequestHandler):
         b = resp.encode('utf-8')
         self.send_response(estado); self.send_header('Content-Type', 'text/xml; charset=utf-8'); self.send_header('Content-Length', str(len(b))); self.end_headers(); self.wfile.write(b)
 
-# Certificados de un solo uso: el del servidor y el de cliente (este, en .p12 para Netto: /tmp/aeat-cliente.p12, clave «prueba»).
+# Certificados de un solo uso: el del servidor y el de cliente (este, en .p12 para Fisquo: /tmp/aeat-cliente.p12, clave «prueba»).
 if not os.path.exists('/tmp/aeat-cliente.p12'):
     for n in ['servidor', 'cliente']:
         subprocess.run(['openssl', 'req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-keyout', '/tmp/aeat-%s-key.pem' % n, '-out', '/tmp/aeat-%s.pem' % n, '-days', '2', '-subj', '/CN=%s' % ('127.0.0.1' if n == 'servidor' else 'B12345674 Empresa de pruebas')], check=True, capture_output=True)

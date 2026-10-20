@@ -21,7 +21,7 @@ export default async function Registro({ searchParams }) {
   const u = await usuarioActual();
   if (u && !seleccion.nueva) redirect('/');
   const { tipo, plan, periodo } = seleccion;
-  // Enlace de recomendación: solo si sigue valiendo; se enseña quién lo manda (Ajustes › Recomienda Netto).
+  // Enlace de recomendación: solo si sigue valiendo; se enseña quién lo manda (Ajustes › Recomienda Fisquo).
   const recomienda = typeof seleccion.ref === 'string' ? await empresaPorCodigo(seleccion.ref) : null;
   const ref = recomienda ? { codigo: normalizarRef(seleccion.ref), nombre: recomienda.nombre } : null;
   const elegido = Object.hasOwn(TIPOS_ALTA, tipo) && planDe(tipo, plan) ? { tipo, plan } : { tipo: planDe(tipo, 'Pro') ? tipo : '', plan: '' };

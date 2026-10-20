@@ -4,7 +4,7 @@ import SafariServices
 import Capacitor
 
 // Se pone delante del delegado de Capacitor (WebViewDelegationHandler) y le pasa todo lo que no resuelve aquí:
-// - target="_blank" de Netto (un justificante, un PDF): se abre en un visor dentro de la app con la misma sesión.
+// - target="_blank" de Fisquo (un justificante, un PDF): se abre en un visor dentro de la app con la misma sesión.
 //   Capacitor lo mandaba a Safari, donde no hay sesión y sale el login.
 // - Enlaces a otras webs (la sede de la AEAT, la de la AEPD): en un Safari dentro de la app.
 // - Descargas (<a download>, ficheros adjuntos, exportaciones): se bajan y se ofrecen con la hoja de compartir
@@ -31,9 +31,10 @@ final class DelegadoWeb: NSObject, WKNavigationDelegate, WKUIDelegate, WKDownloa
         capacitor.responds(to: aSelector) ? capacitor : nil
     }
 
-    private func esNetto(_ url: URL?) -> Bool {
+    private func esFisquo(_ url: URL?) -> Bool {
         guard let host = url?.host?.lowercased() else { return false }
-        return host == servidor?.host?.lowercased() || host == "nettohq.com" || host.hasSuffix(".nettohq.com")
+        return host == servidor?.host?.lowercased() || host == "fisquo.com" || host.hasSuffix(".fisquo.com")
+            || host == "nettohq.com" || host.hasSuffix(".nettohq.com")
     }
 
     private var arriba: UIViewController? {
@@ -51,7 +52,7 @@ final class DelegadoWeb: NSObject, WKNavigationDelegate, WKUIDelegate, WKDownloa
         }
         let url = navigationAction.request.url
         let principal = navigationAction.targetFrame?.isMainFrame ?? true
-        if principal, let url = url, ["http", "https"].contains(url.scheme?.lowercased() ?? ""), !esNetto(url) {
+        if principal, let url = url, ["http", "https"].contains(url.scheme?.lowercased() ?? ""), !esFisquo(url) {
             abrirFuera(url)
             decisionHandler(.cancel)
             return
@@ -86,7 +87,7 @@ final class DelegadoWeb: NSObject, WKNavigationDelegate, WKUIDelegate, WKDownloa
             webView.startDownload(using: navigationAction.request) { $0.delegate = self }
             return nil
         }
-        guard esNetto(url) || url.scheme == "blob" else {
+        guard esFisquo(url) || url.scheme == "blob" else {
             abrirFuera(url)
             return nil
         }
@@ -148,7 +149,7 @@ final class DelegadoWeb: NSObject, WKNavigationDelegate, WKUIDelegate, WKDownloa
         let carpeta = FileManager.default.temporaryDirectory.appendingPathComponent("descargas/\(UUID().uuidString)", isDirectory: true)
         do {
             try FileManager.default.createDirectory(at: carpeta, withIntermediateDirectories: true)
-            let nombre = suggestedFilename.isEmpty ? "netto" : suggestedFilename
+            let nombre = suggestedFilename.isEmpty ? "fisquo" : suggestedFilename
             let destino = carpeta.appendingPathComponent(nombre)
             destinos[ObjectIdentifier(download)] = destino
             completionHandler(destino)

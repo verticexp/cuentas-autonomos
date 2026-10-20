@@ -22,12 +22,12 @@ async function sembrar(plan=pagado,miembro=false){
 }
 await sembrar();
 const token=await crearSesion(id);
-const salida=process.env.SALIDA || '/private/tmp/netto-planes-diseno-capturas'; await mkdir(salida,{recursive:true});
+const salida=process.env.SALIDA || '/private/tmp/fisquo-planes-diseno-capturas'; await mkdir(salida,{recursive:true});
 const browser=await chromium.launch({executablePath:process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless:true,args:['--no-sandbox']});
 async function abrir(width=1440,colorScheme='light',app=false){
- const ctx=await browser.newContext({viewport:{width,height:1050},colorScheme,...(app?{userAgent:'Mozilla/5.0 NettoApp/1'}:{})});
+ const ctx=await browser.newContext({viewport:{width,height:1050},colorScheme,...(app?{userAgent:'Mozilla/5.0 FisquoApp/1'}:{})});
  await ctx.addCookies([{name:'t',value:token,url:BASE}]);
- await ctx.addInitScript(()=>{sessionStorage.setItem('netto-arranque','1');sessionStorage.setItem('netto-abierta','1');});
+ await ctx.addInitScript(()=>{sessionStorage.setItem('fisquo-arranque','1');sessionStorage.setItem('fisquo-abierta','1');});
  const p=await ctx.newPage();
  await p.goto(`${BASE}/ajustes/plan`);
  await p.getByRole('heading',{name:'Tu plan',exact:true}).waitFor();

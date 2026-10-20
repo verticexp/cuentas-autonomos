@@ -2,15 +2,18 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { desvioApp, esApp, mensajePlan } from '../lib/app.js';
 
-const APP = 'Mozilla/5.0 (iPhone; CPU iPhone OS 27_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 NettoApp/1';
+const APP = 'Mozilla/5.0 (iPhone; CPU iPhone OS 27_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 FisquoApp/1';
 const SAFARI = 'Mozilla/5.0 (iPhone; CPU iPhone OS 27_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Mobile/15E148 Safari/604.1';
 
 test('reconoce la app solo por su marca', () => {
   assert.equal(esApp(APP), true);
+  const anterior = 'Mozilla/5.0 NettoApp/1'; // Compatibilidad con las apps ya instaladas.
+  assert.equal(esApp(anterior), true);
+  assert.equal(desvioApp({ ua: anterior, ruta: '/precios', conSesion: false }), '/login');
   assert.equal(esApp(SAFARI), false);
   assert.equal(esApp(''), false);
   assert.equal(esApp(null), false);
-  assert.equal(esApp('Mozilla/5.0 NoNettoApp/1'), false);
+  assert.equal(esApp('Mozilla/5.0 NoFisquoApp/1'), false);
 });
 
 test('en el navegador no cambia nada', () => {

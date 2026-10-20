@@ -6,7 +6,7 @@ import { llamar } from './Acciones';
 
 // Prorrata del IVA (arts. 102-106 de la Ley del IVA): quien hace operaciones exentas y otras con derecho a deducir solo
 // se deduce un porcentaje de su IVA soportado. Durante el año se usa el provisional (el definitivo del año anterior, o el
-// que se propuso a Hacienda al empezar) y en el 4T se regulariza con el definitivo (casilla 44). Netto lo calcula con
+// que se propuso a Hacienda al empezar) y en el 4T se regulariza con el definitivo (casilla 44). Fisquo lo calcula con
 // lo facturado; aquí se puede guardar el provisional de verdad si es otro.
 export default function Prorrata({ anio, guardado, provisional, definitiva, anterior }) {
   const router = useRouter();

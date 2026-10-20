@@ -772,7 +772,7 @@ console.log('Banco: extractos, conexión y emparejar');
   await par(mov(605).id, f2.id);
 
   if (process.env.ENABLE_BANKING_URL) {
-    // La conexión directa con el banco es solo del administrador de Netto; el resto sube extractos. Berta (administradora
+    // La conexión directa con el banco es solo del administrador de Fisquo; el resto sube extractos. Berta (administradora
     // de su empresa) le invita a la suya para conectarla, y al final le quita.
     const noLista = await pedir('/api/banco/conectar', { cookie: bq });
     const noConecta = await pedir('/api/banco/conectar', { metodo: 'POST', cookie: bq, cuerpo: { banco: 'Banco Simulado', tipo: 'business' } });
@@ -823,7 +823,7 @@ console.log('Banco: extractos, conexión y emparejar');
     ok('saldo real: la suma de las tres cuentas', () => assert.deepEqual([saldo.importe, saldo.cuentas], [10662.55, 3]));
     const pb3 = n(await texto('/banco', bq));
     ok('pantalla: la cuenta y la factura cobrada por el banco', () => assert.ok(pb3.includes('Cuenta Negocios') && pb3.includes('•••• 1332') && pb3.includes(`Factura ${numeroFactura(f4)}`) && pb3.includes(n(eur(10662.55)))));
-    // Solo el administrador de Netto ve la conexión; Berta ve la cuenta con su saldo y nada más (ni con ?conectado o ?error).
+    // Solo el administrador de Fisquo ve la conexión; Berta ve la cuenta con su saldo y nada más (ni con ?conectado o ?error).
     const pbAviso = n(await texto('/banco?conectado=1&error=cancelado', bq)), paAdmin = n(await texto('/banco', ad));
     const conexion = /Conectar banco|>Actualizar<|Conectada|Actualizada|permiso del banco|Cuenta conectada|cuentas conectadas/;
     const visto = [pb3, pbAviso].map((t) => { const i = t.search(conexion); return i < 0 ? null : t.slice(Math.max(0, i - 80), i + 80); }).filter(Boolean);

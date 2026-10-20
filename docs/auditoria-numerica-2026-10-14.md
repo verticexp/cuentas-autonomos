@@ -1,4 +1,4 @@
-# Auditoría numérica de Netto · 14 de octubre de 2026
+# Auditoría numérica de Fisquo · 14 de octubre de 2026
 
 ## Resultado y alcance
 

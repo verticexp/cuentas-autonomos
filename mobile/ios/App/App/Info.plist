@@ -31,9 +31,9 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>Netto usa la cámara para escanear tus tickets y facturas de gasto y leer sus importes.</string>
+	<string>Fisquo usa la cámara para escanear tus tickets y facturas de gasto y leer sus importes.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Netto accede a las fotos que elijas para adjuntar tickets y facturas a tus gastos.</string>
+	<string>Fisquo accede a las fotos que elijas para adjuntar tickets y facturas a tus gastos.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -107,6 +107,8 @@
 	<true/>
 	<key>WKAppBoundDomains</key>
 	<array>
+		<string>www.fisquo.com</string>
+		<string>fisquo.com</string>
 		<string>www.nettohq.com</string>
 		<string>nettohq.com</string>
 	</array>

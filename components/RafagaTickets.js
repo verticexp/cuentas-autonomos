@@ -107,7 +107,7 @@ export default function RafagaTickets({ hoy, actividades }) {
       try {
         let d;
         try { d = await llamar('/api/gastos/ticket', { method: 'POST', body: JSON.stringify({ imagen: it.foto }) }); }
-        finally { window.dispatchEvent(new Event('netto:escaneos')); }
+        finally { window.dispatchEvent(new Event('fisquo:escaneos')); }
         const t = d.gasto;
         const g = { fecha: t.fecha, actividad, proveedor: t.proveedor || '', proveedorNif: t.nif || '', concepto: t.concepto || t.proveedor || '', base: t.base !== '' ? aTexto(t.base) : '', ivaPct: t.ivaPct, irpfPct: t.irpfPct || 0,
           ...(!Number(t.ivaPct) && nifUE(t.nif) ? { origen: 'ue' } : {}) };

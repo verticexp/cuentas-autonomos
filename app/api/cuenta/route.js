@@ -33,7 +33,7 @@ async function comprobarForma(u, emisor, fiscalTipo) {
   const antes = normalizarNif(u.emisor?.nif), ahora = normalizarNif(emisor.nif);
   if (ahora && ahora !== antes) {
     const otra = await redis.hget('empresa-nif', ahora);
-    if (otra && otra !== u.empresa) return { error: 'Ya hay otra cuenta de Fisquo con ese NIF. Escríbenos a corporate@nettohq.com si es tuya.' };
+    if (otra && otra !== u.empresa) return { error: 'Ya hay otra cuenta de Fisquo con ese NIF. Escríbenos a corporate@fisquo.com si es tuya.' };
   }
   return r;
 }
@@ -127,7 +127,7 @@ export async function PATCH(req) {
   }
   // Datos de un año que deciden otros modelos (null los quita): el rendimiento neto de la actividad (casilla 13 del 130
   // del año siguiente) y la cuota del Impuesto sobre Sociedades (base del 202).
-  // Prorrata provisional del IVA de un año (art. 105 LIVA): un entero de 0 a 100; null la quita (Netto usa la del año anterior).
+  // Prorrata provisional del IVA de un año (art. 105 LIVA): un entero de 0 a 100; null la quita (Fisquo usa la del año anterior).
   if (b.prorrata) {
     if (sin('resumen')) return sin('resumen');
     const { anio, pct } = b.prorrata;

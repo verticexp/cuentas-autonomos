@@ -55,7 +55,7 @@ test('una factura mixta: solo la parte sin IVA cuenta como operación internacio
 });
 
 test('Verifactu: E5 entrega intracomunitaria, E2 exportación, N2 servicios, S2 inversión del sujeto pasivo, E1 exenta', () => {
-  const sistema = { nombre: 'Netto', nif: 'B12345674', version: '1', instalacion: 'x' };
+  const sistema = { nombre: 'Fisquo', nif: 'B12345674', version: '1', instalacion: 'x' };
   const xml = (x) => xmlAlta(registroAlta(x, 'B12345674', ''), { factura: x, emisorNombre: 'E', anterior: null, sistema, fiscal: { iva: 'general' } });
   assert.match(xml(f(DE, { operacion: 'intracomunitaria' })), /<sum1:OperacionExenta>E5<\/sum1:OperacionExenta>/);
   assert.match(xml(f(US, { operacion: 'exportacion' })), /<sum1:OperacionExenta>E2<\/sum1:OperacionExenta>/);

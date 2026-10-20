@@ -56,7 +56,7 @@ after(() => {
 async function alta(cambios = {}, ip = '192.0.2.1') {
   const form = new FormData();
   for (const [k, v] of Object.entries({ ...valido, ...cambios })) if (v !== undefined) form.set(k, v);
-  const res = await POST(new Request('https://netto.test/api/registro', { method: 'POST', headers: { Accept: 'application/json', 'x-real-ip': ip }, body: form }));
+  const res = await POST(new Request('https://fisquo.test/api/registro', { method: 'POST', headers: { Accept: 'application/json', 'x-real-ip': ip }, body: form }));
   return { res, datos: await res.json() };
 }
 async function rechaza(cambios, mensaje, paso = 2) {
@@ -119,7 +119,7 @@ test('registro: rechaza un NIF repetido en el índice antes de consultar el cens
   const red = simularCenso('IDENTIFICADO');
   const { res, datos } = await alta({ nif: 'es 12.345.678-z' });
   assert.equal(res.status, 400);
-  assert.equal(datos.error, 'Ya hay una cuenta con ese NIF. Entra con ella o escríbenos a corporate@nettohq.com.');
+  assert.equal(datos.error, 'Ya hay una cuenta con ese NIF. Entra con ella o escríbenos a corporate@fisquo.com.');
   assert.equal(datos.paso, 2);
   assert.equal(red.mock.callCount(), 0);
   assert.equal(await redis.hlen('empresas'), 0);
@@ -258,7 +258,7 @@ test('registro: tipo y plan indican los pasos nuevos', async () => {
 
 test('registro-email: ruta pública valida y limita a 30 intentos por IP', async () => {
   const { POST: comprobar } = await import('../app/api/registro/email/route.js');
-  const pedir = (email) => comprobar(new Request('https://netto.test/api/registro/email', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-real-ip': '192.0.2.99' }, body: JSON.stringify({ email }) }));
+  const pedir = (email) => comprobar(new Request('https://fisquo.test/api/registro/email', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-real-ip': '192.0.2.99' }, body: JSON.stringify({ email }) }));
   assert.deepEqual(await (await pedir('ana@ejemplo.es')).json(), { ok: true });
   assert.match((await (await pedir('ana@yopmail.com')).json()).error, /temporales/);
   for (let i = 2; i < 30; i++) assert.equal((await pedir('ana@ejemplo.es')).status, 200);
@@ -305,7 +305,7 @@ test('código promocional: vale el de una empresa que recomienda (60 días) y el
   assert.match(ambos.datos.error, /no los dos/);
 
   const { POST: comprobar } = await import('../app/api/registro/codigo/route.js');
-  const pedir = async (codigo) => (await comprobar(new Request('https://netto.test/api/registro/codigo', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-real-ip': '192.0.2.98' }, body: JSON.stringify({ codigo }) }))).json();
+  const pedir = async (codigo) => (await comprobar(new Request('https://fisquo.test/api/registro/codigo', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-real-ip': '192.0.2.98' }, body: JSON.stringify({ codigo }) }))).json();
   assert.deepEqual(await pedir('abcdefgh'), { ok: true, tipo: 'recomendacion', dias: 60, texto: 'Te recomienda Recomienda SL: tienes 2 meses gratis en lugar de uno.' });
   assert.deepEqual(await pedir('ASESORIA'), { ok: true, tipo: 'gestoria', dias: 90, texto: 'Código de Asesoría Sol: tienes 3 meses gratis.' });
   assert.equal((await pedir('NOEXISTE')).ok, false);

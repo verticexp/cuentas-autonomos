@@ -24,8 +24,8 @@ export default function CupoEscaneo({ inicial = null }) {
   }, []);
   useEffect(() => {
     if (!inicial) cargar();
-    window.addEventListener('netto:escaneos', cargar);
-    return () => { peticion.current.secuencia++; peticion.current.abortar?.abort(); window.removeEventListener('netto:escaneos', cargar); };
+    window.addEventListener('fisquo:escaneos', cargar);
+    return () => { peticion.current.secuencia++; peticion.current.abortar?.abort(); window.removeEventListener('fisquo:escaneos', cargar); };
   }, [cargar, inicial]);
   if (cargando && !cupo) return <p className="nota" role="status">Consultando páginas disponibles…</p>;
   if (error && !cupo) return <p className="nota" role="status">No se pudo consultar el cupo. <button type="button" className="enlace" disabled={cargando} onClick={cargar}>Reintentar</button></p>;

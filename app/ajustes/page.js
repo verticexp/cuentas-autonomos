@@ -73,7 +73,7 @@ const Grupo = ({ titulo, pie, children }) => {
 const TEMA = { claro: 'Claro', oscuro: 'Oscuro' };
 
 // Ajustes como en el iPhone: una lista corta por grupos y cada cosa en su pantalla. Solo configuración: las pantallas de
-// trabajo (nóminas, jornada, Pregunta a Netto…) están en «Más».
+// trabajo (nóminas, jornada, Pregunta a Fisquo…) están en «Más».
 export default async function Page() {
   const u = await requerir();
   const app = esApp((await headers()).get('user-agent'));

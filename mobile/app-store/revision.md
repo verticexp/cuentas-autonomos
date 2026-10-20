@@ -4,7 +4,7 @@
 
 Crear en **producción**, antes de enviar:
 
-1. Registrarse en https://www.nettohq.com/registro con un email propio de pruebas (por ejemplo `revision-apple@<dominio>`)
+1. Registrarse en https://www.fisquo.com/registro con un email propio de pruebas (por ejemplo `revision-apple@<dominio>`)
    como autónomo, con datos fiscales completos (Ajustes › Datos de la empresa).
 2. En el panel `/admin`, regalarle el plan **Fundador** (así no caduca la prueba durante la revisión).
 3. Meter unas cuantas facturas (algunas cobradas y alguna vencida) y gastos con justificante, para que vea datos.

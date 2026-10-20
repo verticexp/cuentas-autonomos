@@ -1,4 +1,4 @@
-# Copias y recuperación de Netto
+# Copias y recuperación de Fisquo
 
 Requiere Node 22 o posterior y las dependencias ya instaladas. Los comandos se ejecutan desde el proyecto. `KV_REST_API_URL` y `KV_REST_API_TOKEN` identifican la base: para copiar, apunta al origen; para restaurar, al destino. Usa credenciales separadas para los simulacros.
 
@@ -24,7 +24,7 @@ Guarda el resultado en un gestor de secretos/contraseñas, separado de las copia
 node scripts/copia.mjs
 ```
 
-Con `COPIA_CLAVE` se escribe únicamente `copia.json.enc` y `copia-resumen.json`. Se comprime el JSON con gzip y se cifra con AES-256-GCM: cabecera `NETTOCOPIA2`, IV aleatorio de 12 bytes, tag de 16 bytes y contenido cifrado. Una clave incorrecta o un byte alterado provoca un error de autenticación. Se verifica la copia antes de escribirla; un error produce código de salida distinto de cero.
+Con `COPIA_CLAVE` se escribe únicamente `copia.json.enc` y `copia-resumen.json`. Se comprime el JSON con gzip y se cifra con AES-256-GCM: cabecera `NETTOCOPIA2` (firma estable del formato para restaurar copias anteriores), IV aleatorio de 12 bytes, tag de 16 bytes y contenido cifrado. Una clave incorrecta o un byte alterado provoca un error de autenticación. Se verifica la copia antes de escribirla; un error produce código de salida distinto de cero.
 
 Sin clave, el comando falla. `node scripts/copia.mjs --sin-cifrar` autoriza explícitamente escribir `copia.json` en claro; si existe `COPIA_CLAVE`, se sigue cifrando incluso con esa opción. Usa un directorio de trabajo protegido y archiva cada ejecución con su fecha fuera de la máquina/base de origen; los nombres habituales se reutilizan. Los archivos nuevos se crean con permisos `0600`. Un JSON en claro de una ejecución anterior no se elimina automáticamente: retíralo conforme a tu procedimiento de custodia.
 
