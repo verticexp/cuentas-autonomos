@@ -10,7 +10,16 @@ import '@/app/importar.css';
 const TIPOS = [['clientes', 'Clientes'], ['facturas', 'Facturas'], ['gastos', 'Gastos'], ['productos', 'Productos'], ['saldos', 'Saldos'], ['bienes', 'Bienes']];
 const DESTINO = { facturas: '/facturas', gastos: '/gastos', productos: '/facturas/catalogo', saldos: '/contabilidad?ver=balance', bienes: '/contabilidad?ver=bienes' };
 const CONTABLE = ['saldos', 'bienes'];
-const CAMPO = { nombre: 'Nombre', nif: 'NIF', email: 'Email', direccion: 'Dirección', cp: 'CP', ciudad: 'Población', numero: 'Número', fecha: 'Fecha', cliente: 'Cliente', concepto: 'Concepto', base: 'Base', ivaPct: '% IVA', iva: 'IVA', irpfPct: '% IRPF', irpf: 'Retención', total: 'Total', estado: 'Estado', pendiente: 'Pendiente', proveedor: 'Proveedor', proveedorNif: 'NIF proveedor', precio: 'Precio', cuenta: 'Cuenta', debe: 'Debe', haber: 'Haber', deudor: 'Saldo deudor', acreedor: 'Saldo acreedor', saldo: 'Saldo', valor: 'Valor', acumulada: 'Amortizado', tipo: 'Tipo', coef: '% anual' };
+const CAMPO = { nombre: 'Nombre', nif: 'NIF', email: 'Email', direccion: 'Dirección', cp: 'CP', ciudad: 'Población', numero: 'Número', fecha: 'Fecha', cliente: 'Cliente', concepto: 'Concepto', base: 'Base', ivaPct: '% IVA', iva: 'IVA', irpfPct: '% IRPF', irpf: 'Retención', total: 'Total', estado: 'Estado', pendiente: 'Pendiente', proveedor: 'Proveedor', proveedorNif: 'NIF proveedor', precio: 'Precio', cuenta: 'Cuenta', debe: 'Debe', haber: 'Haber', deudor: 'Saldo deudor', acreedor: 'Saldo acreedor', saldo: 'Saldo', valor: 'Valor', acumulada: 'Amortizado', tipo: 'Tipo', coef: '% anual', deduciblePct: '% deducible' };
+// Instrucciones: qué columnas hacen falta (en negrita) y cuáles son opcionales, con títulos que se reconocen.
+const AYUDA = {
+  clientes: [['Nombre', 'o «Razón social», «Cliente», «Empresa»', true], ['NIF', 'o «CIF», «DNI»'], ['Email', 'o «Correo»'], ['Dirección'], ['Código postal', 'o «CP»'], ['Población', 'o «Ciudad»']],
+  facturas: [['Número', 'o «Nº factura»', true], ['Fecha', '', true], ['Cliente', '', true], ['Base imponible', 'o «Total»: al menos una de las dos', true], ['% IVA', 'o «IVA» en euros'], ['NIF'], ['Concepto'], ['% IRPF', 'o «Retención»'], ['Estado', '«Cobrada», «Pendiente»…; sin columna, se dan por cobradas'], ['Pendiente', 'lo que falta por cobrar']],
+  gastos: [['Fecha', '', true], ['Base imponible', 'o «Total»', true], ['Concepto', 'o «Proveedor»: al menos uno de los dos', true], ['NIF proveedor'], ['% IVA', 'o «IVA» en euros'], ['% IRPF'], ['Estado', '«Pagado», «Pendiente»…']],
+  productos: [['Nombre', 'o «Producto», «Servicio»', true], ['Precio', 'o «PVP»', true], ['% IVA']],
+  saldos: [['Cuenta', '', true], ['Saldo', 'o «Debe» y «Haber», o «Saldo deudor» y «Saldo acreedor»', true], ['Nombre', 'de la cuenta']],
+  bienes: [['Fecha', 'de compra', true], ['Concepto', '', true], ['Valor', 'de compra', true], ['Amortizado', 'acumulado a la fecha del cambio'], ['Tipo', 'de bien'], ['% anual', 'coeficiente de amortización']],
+};
 const ESTADO = { nuevo: 'Nuevo', duplicado: 'Ya existe', error: 'Error', agrupada: 'Suma de otras', omitida: 'Se salta' };
 
 // Una línea legible de cada fila de la vista previa.
@@ -34,10 +43,11 @@ export default function Importar() {
   const [fecha, setFecha] = useState('');
   const [pagina, setPagina] = useState(1);
   const [estado, setEstado] = useState('todos');
+  const [elegir, setElegir] = useState(null);
   const enCurso = useRef(false);
-  const reiniciar = () => { setPagina(1); setEstado('todos'); setVista(null); setMsg(''); };
+  const reiniciar = () => { setPagina(1); setEstado('todos'); setVista(null); setMsg(''); setElegir(null); };
   const filas = vistaImportacion(vista?.items || [], estado, pagina);
-  const pedir = async (guardar) => {
+  const pedir = async (guardar, cols = elegir && { fila: elegir.fila, mapa: elegir.mapa }) => {
     if (enCurso.current || !archivo) return;
     enCurso.current = true;
     setOcupado(true); setMsg(''); setPagina(1);
@@ -45,15 +55,27 @@ export default function Importar() {
     fd.set('tipo', tipo); fd.set('archivo', archivo);
     if (fecha) fd.set('fecha', fecha);
     if (guardar) fd.set('guardar', '1');
+    if (cols) fd.set('columnas', JSON.stringify(cols));
     try {
       const r = await fetch('/api/importar', { method: 'POST', body: fd });
       const d = await r.json().catch(() => ({}));
+      // Con la cabecera leída, se pueden elegir las columnas a mano aunque falte alguna obligatoria.
+      if (d.cabecera) setElegir((antes) => { const sug = d.sugeridas || antes?.sugeridas || []; return { fila: d.fila, mapa: d.mapa, campos: d.campos, requeridos: d.requeridos, cabecera: d.cabecera, ejemplos: d.ejemplos, sugeridas: sug.filter((k) => k in d.mapa) }; });
       if (!r.ok) { setVista(null); setMsg(d.error || 'No se ha podido leer el archivo. Comprueba el formato e inténtalo otra vez.'); return; }
       setVista(d); setPagina(1);
       if (!fecha && d.corte) setFecha(d.corte);
       if (guardar) setMsg(`✓ Importados ${d.guardados}`);
     } catch { setMsg('Sin conexión: inténtalo de nuevo'); } finally { enCurso.current = false; setOcupado(false); }
   };
+  // Cambiar a mano qué columna es un dato: la columna deja de usarse para cualquier otro y se rehace la vista previa.
+  const asignar = (campo, valor) => {
+    if (enCurso.current || !elegir) return;
+    const mapa = Object.fromEntries(Object.entries(elegir.mapa).filter(([k, c]) => k !== campo && String(c) !== valor));
+    if (valor !== '') mapa[campo] = Number(valor);
+    setElegir({ ...elegir, mapa, sugeridas: elegir.sugeridas.filter((k) => k !== campo) });
+    pedir(false, { fila: elegir.fila, mapa });
+  };
+  const obligatorio = (k) => elegir.requeridos.some((r) => r.split('|').includes(k));
   const cambiar = (t) => { if (enCurso.current) return; setTipo(t); reiniciar(); };
   const hecho = vista && 'guardados' in vista;
   return (
@@ -66,7 +88,12 @@ export default function Importar() {
             ? 'Para traer la contabilidad de otro programa (Holded, A3, Sage, Contasol…): exporta el balance de sumas y saldos a Excel a la fecha del cambio y súbelo. Pasa a ser el asiento de apertura; lo anterior a esa fecha no se vuelve a contabilizar. Puedes traer también las facturas sin cobrar y los gastos sin pagar: cuando se cobren o paguen, se apuntará solo el cobro o el pago.'
             : 'Exporta el libro o inventario de bienes de inversión con la fecha de compra, el valor y lo ya amortizado a la fecha del cambio. Fisquo sigue amortizándolos desde ahí, con el mismo % si lo trae el archivo.'}</p>
           <label className="asiento-campo">Fecha de los saldos (la del cambio de programa)<input className="campo" type="date" disabled={ocupado} value={fecha} onChange={(e) => { if (enCurso.current) return; setFecha(e.target.value); reiniciar(); }} /></label>
-        </> : <p className="nota">Desde Holded: exporta {TIPOS.find((t) => t[0] === tipo)[1].toLowerCase()} a Excel y súbelo tal cual. También vale un Excel o CSV tuyo con la primera fila de títulos.</p>}
+        </> : <p className="nota">Desde Holded: exporta {TIPOS.find((t) => t[0] === tipo)[1].toLowerCase()} a Excel y súbelo tal cual. También vale tu propio Excel o CSV: una fila de títulos y debajo una fila por cada {tipo === 'clientes' ? 'cliente' : tipo === 'productos' ? 'producto' : tipo === 'facturas' ? 'factura' : 'gasto'}.</p>}
+        <details className="importar-ayuda">
+          <summary>Cómo preparar el archivo</summary>
+          <ul>{AYUDA[tipo].map(([n, otros, req]) => <li key={n}>{req ? <strong>{n}</strong> : n}{otros ? ` ${otros.startsWith('o ') ? `(${otros})` : `· ${otros}`}` : ''}{req ? ' · obligatoria' : ''}</li>)}</ul>
+          <p className="nota">El orden de las columnas da igual, las que sobran se descartan y no importa si hay un título encima de la tabla. Si alguna columna se llama de otra forma, después de subir el archivo puedes indicar cuál es cuál{tipo === 'saldos' || tipo === 'bienes' ? '' : ': la IA lo intenta primero sola'}. Nada se guarda hasta que revisas la vista previa y pulsas «Importar».</p>
+        </details>
         <label className="importar-archivo">
           <input type="file" disabled={ocupado} accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" onChange={(e) => { if (enCurso.current) return; setArchivo(e.target.files?.[0] || null); reiniciar(); }} />
         </label>
@@ -74,6 +101,26 @@ export default function Importar() {
         <button className="boton" disabled={!archivo || ocupado} aria-describedby={!archivo ? `${ayudaId}-archivo` : undefined} onClick={() => pedir(false)}>{ocupado && !vista ? 'Leyendo…' : 'Ver vista previa'}</button>
         {msg && <p role="status" className={msg.startsWith('✓') ? 'nota guardado' : 'error'}>{msg}</p>}
       </section>
+
+      {elegir && !(vista && 'guardados' in vista) && (
+        <section className="importar-columnas tarjeta">
+          <h3>Qué es cada columna</h3>
+          <p className="nota">{vista ? 'Revisa que cada dato sale de la columna correcta. Si no, cámbialo y la vista previa se actualiza.' : 'No se han reconocido todas las columnas obligatorias. Indica en qué columna está cada dato.'}</p>
+          {elegir.sugeridas.length > 0 && <p className="nota">✦ Columnas sugeridas por la IA a partir de los títulos y de unos ejemplos: compruébalas.</p>}
+          <div className="importar-columnas-lista">
+            {elegir.campos.map((k) => (
+              <label key={k} className="asiento-campo">
+                <span>{CAMPO[k] || k}{obligatorio(k) ? ' *' : ''}{elegir.sugeridas.includes(k) ? ' · ✦ IA' : ''}</span>
+                <select className="campo" aria-label={`Columna de ${CAMPO[k] || k}`} disabled={ocupado} value={k in elegir.mapa ? String(elegir.mapa[k]) : ''} onChange={(e) => asignar(k, e.target.value)}>
+                  <option value="">— No está en el archivo —</option>
+                  {elegir.cabecera.map((h, c) => <option key={c} value={c}>{h || `Columna ${c + 1}`}{elegir.ejemplos[c]?.[0] ? ` (p. ej. ${elegir.ejemplos[c][0]})` : ''}</option>)}
+                </select>
+              </label>
+            ))}
+          </div>
+          <p className="nota">* Obligatoria{elegir.requeridos.some((r) => r.includes('|')) ? ' (de las alternativas, como «Base» o «Total», basta con una)' : ''}.</p>
+        </section>
+      )}
 
       {vista && (
         <section className="importar-previa">
@@ -84,7 +131,6 @@ export default function Importar() {
           </p>
           {tipo === 'saldos' && <p className={`nota${vista.descuadre ? ' rojo' : ''}`}>Saldos deudores {eur(vista.debe)} · acreedores {eur(vista.haber)}{vista.descuadre ? ` · la diferencia (${eur(Math.abs(vista.descuadre))}) irá a la cuenta 129, resultado del ejercicio${vista.conResultados ? ': revisa el archivo, porque ya trae cuentas de gastos e ingresos' : ''}` : ' · cuadra'}.</p>}
           {tipo === 'facturas' && vista.pendienteTotal !== undefined && <p className="nota">Pendiente de cobro de las facturas nuevas: <strong>{eur(vista.pendienteTotal)}</strong>{vista.parciales ? ` · ${vista.parciales} cobradas en parte (sin fecha ni método del cobro: no constan en el archivo)` : ''}. Compáralo con tu programa de origen antes de importar.</p>}
-          <p className="nota">Columnas: {Object.entries(vista.columnas).map(([k, c]) => `${CAMPO[k] || k} ← «${c}»`).join(' · ')}</p>
           <label>Filtrar por estado
             <select className="campo" value={estado} onChange={(e) => { setEstado(e.target.value); setPagina(1); }}>
               <option value="todos">Todos</option>
