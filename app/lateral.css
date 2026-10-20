@@ -26,6 +26,7 @@
   .tabs-extra a { display: flex; align-items: center; gap: 12px; height: 38px; padding: 0 12px; border-radius: 10px; font-size: 15px; color: var(--ink); text-decoration: none; cursor: pointer; transition: background-color 0.15s var(--salida); }
   .tabs-extra a svg { flex: none; width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
   .tabs-extra a.activo { color: var(--marca); background: var(--relleno); }
+  .tabs-extra a .plan-chip { margin-left: auto; }
   .tabs-grupo[data-tono] a:not(.activo) svg { color: var(--tono); }
   .tabs-extra a:not(.activo):hover { background: var(--relleno); }
   .tabs-salir button { display: flex; align-items: center; gap: 12px; width: 100%; height: 38px; margin: 0; padding: 0 12px; border: 0; border-radius: 10px; background: none; box-shadow: none; font: inherit; font-size: 15px; color: var(--muted); cursor: pointer; }
@@ -39,3 +40,6 @@
 /* Móvil: «Más» sustituye a «Ajustes» en la barra (Ajustes va dentro de «Más»). En el ordenador, al revés: sin «Más». */
 @media (max-width: 1023.98px) { .tabs a[data-href="/ajustes"] { display: none; } }
 @media (min-width: 1024px) { .tabs a[data-href="/mas"], .mas-solo-movil { display: none; } }
+
+/* Plan que incluye una pantalla que el plan de la empresa no tiene (lib/modulos.js planesQueFaltan): menú lateral y «Más». */
+.plan-chip { flex: none; font-size: 11px; font-weight: 600; letter-spacing: 0.02em; line-height: 1; padding: 4px 7px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }

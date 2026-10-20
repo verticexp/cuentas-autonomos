@@ -7,6 +7,7 @@ import { candidatosConciliacion } from '@/lib/bancoServidor';
 import { documentos, unir } from '@/lib/indices';
 import { CLASES, clasesPara, clasificar, opciones, sugerencias } from '@/lib/banco';
 import { fiscalDe } from '@/lib/empresa';
+import { esSociedad } from '@/lib/modulos';
 import { conectarVisible } from '@/lib/enableBanking';
 import { importes, numeroFactura } from '@/lib/calculos';
 import { totalDe } from '@/lib/proveedores';
@@ -45,10 +46,12 @@ export default async function PaginaBanco({ searchParams }) {
   const sug = sugerencias(lista, facturas, gastos);
   const fPorId = Object.fromEntries(unir(facturas, fEnl).map((f) => [f.id, f]));
   const gPorId = Object.fromEntries(unir(gastos, gEnl).map((g) => [g.id, g]));
+  const sociedad = esSociedad(fiscalDe(u));
   // Lo que se enseña de cada factura o gasto enlazado o sugerido.
   const destino = (tipo, id) => {
-    if (tipo === 'auto') return { tipo, id, texto: `${CLASES[id]?.t || 'Impuestos o nóminas'} · lo contabiliza Netto`, url: '/contabilidad?ver=diario' };
-    if (tipo === 'asiento') return { tipo, id, texto: 'Apuntado en la contabilidad', url: '/contabilidad?ver=diario' };
+    // El autónomo no tiene libro diario (lib/modulos.js): sus impuestos, a Impuestos; lo demás, a sus libros.
+    if (tipo === 'auto') return { tipo, id, texto: `${CLASES[id]?.t || 'Impuestos o nóminas'} · lo contabiliza Netto`, url: sociedad ? '/contabilidad?ver=diario' : '/modelos' };
+    if (tipo === 'asiento') return { tipo, id, texto: 'Apuntado en la contabilidad', url: sociedad ? '/contabilidad?ver=diario' : '/contabilidad?ver=libros' };
     if (tipo === 'factura') { const f = fPorId[id]; return f && { tipo, id, texto: `Factura ${numeroFactura(f)} · ${f.cliente?.nombre || ''}`, importe: importes(f).total, fecha: f.fecha, url: `/facturas/${encodeURIComponent(id)}` }; }
     const g = gPorId[id];
     return g && { tipo, id, texto: `${g.proveedor ? `${g.proveedor} · ` : ''}${g.concepto}`, importe: totalDe(g), fecha: g.fecha, url: `/gastos/${encodeURIComponent(id)}`, pendiente: Boolean(g.pendiente) };

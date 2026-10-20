@@ -57,7 +57,7 @@ const seccion = (path) => (path === '/' ? '/' : path.startsWith('/presupuestos')
   : ['/facturas', '/gastos'].some((h) => path.startsWith(h)) ? TABS.find((t) => t.href !== '/' && path.startsWith(t.href))?.href ?? null
   : deMas(path) ? '/mas' : null);
 
-export default function TabBar({ permisos = [], empresas = [], empresa, admin = false, inventario = false, fiscal = {} }) {
+export default function TabBar({ permisos = [], empresas = [], empresa, admin = false, inventario = false, fiscal = {}, faltan = {} }) {
   const tabs = TABS.filter((t) => !t.permiso || permisos.includes(t.permiso));
   const path = usePathname();
   const router = useRouter();
@@ -169,12 +169,13 @@ export default function TabBar({ permisos = [], empresas = [], empresa, admin = 
             <Link key={e.href} href={e.href} prefetch={false} className={extraDe(path) === e.href ? 'activo' : ''} aria-current={extraDe(path) === e.href ? 'page' : undefined}>
               <svg viewBox="0 0 24 24" aria-hidden>{e.icono}</svg>
               <span>{e.nombre}</span>
+              {e.plan && <small className="plan-chip" title={`Incluido en el plan ${e.plan}`}>{e.plan}</small>}
             </Link>
           );
           return (
             <>
-              <div className="tabs-grupo">{enlace(ASISTENTE)}</div>
-              {gruposVisibles(permisos, inventario).map((g) => (
+              <div className="tabs-grupo">{enlace({ ...ASISTENTE, plan: faltan[ASISTENTE.href] })}</div>
+              {gruposVisibles(permisos, inventario, { fiscal, faltan }).map((g) => (
                 <div key={g.titulo} className="tabs-grupo" data-tono={g.tono}>
                   <p className="tabs-grupo-t">{g.titulo}</p>
                   {g.enlaces.map(enlace)}

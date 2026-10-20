@@ -3,6 +3,7 @@
 // Agrupadas por lo que se quiere hacer (vender, cobrar y pagar, Hacienda, equipo), no por áreas contables. Cada pantalla sale
 // una sola vez: Ajustes, Usuarios e Importar viven en Ajustes; «Pregunta a Netto», en el buscador de «Más» (y en la barra lateral).
 // tono: el color del grupo (app/mas.css). detalle: la línea de debajo en «Más». palabras: lo que también la encuentra en el buscador.
+import { PARA_AUTONOMO, esSociedad } from '@/lib/modulos';
 export const EXTRA = [
   { titulo: 'Vender', tono: 'verde', enlaces: [
     { href: '/clientes', permiso: 'facturas', nombre: 'Clientes', detalle: 'Fichas, riesgo y lo que te deben', palabras: 'contactos empresas', icono: <path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21c1-4 4-6 7-6s6 2 7 6M17 3a4 4 0 0 1 0 8M22 21c-.5-2.5-2-4.5-4-5.5" /> },
@@ -38,7 +39,11 @@ const TODAS = [...EXTRA.flatMap((g) => g.enlaces), ASISTENTE];
 // La pantalla extra en la que se está (la más concreta), para marcarla.
 export const extraDe = (path) => TODAS.filter((e) => path === e.href || path.startsWith(`${e.href}/`)).sort((a, b) => b.href.length - a.href.length)[0]?.href ?? null;
 
-// Los grupos con solo lo que esta persona puede ver (permisos) y lo que esta empresa usa (inventario).
-export const gruposVisibles = (permisos = [], inventario = false) => EXTRA
-  .map((g) => ({ ...g, enlaces: g.enlaces.filter((e) => (!e.permiso || permisos.includes(e.permiso)) && (!e.inventario || inventario)) }))
+// Los grupos con solo lo que esta persona puede ver (permisos) y lo que esta empresa usa (inventario). Con la forma de la
+// empresa (fiscal), las pantallas del autónomo llevan su nombre (lib/modulos.js PARA_AUTONOMO: «Libros registro»…); faltan: { href: plan } de lib/modulos.js, el plan
+// que incluye cada pantalla que el suyo no tiene (se enseña al lado del nombre).
+export const gruposVisibles = (permisos = [], inventario = false, { fiscal, faltan = {} } = {}) => EXTRA
+  .map((g) => ({ ...g, enlaces: g.enlaces
+    .filter((e) => (!e.permiso || permisos.includes(e.permiso)) && (!e.inventario || inventario))
+    .map((e) => ({ ...e, ...(fiscal?.tipo && !esSociedad(fiscal) ? PARA_AUTONOMO[e.href] : {}), ...(faltan[e.href] ? { plan: faltan[e.href] } : {}) })) }))
   .filter((g) => g.enlaces.length > 0);
