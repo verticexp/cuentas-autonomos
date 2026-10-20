@@ -94,6 +94,18 @@ export default async function Admin() {
       </div>
     </section>
 
+    <section className="adm-caja adm-forma" aria-labelledby="adm-forma-t">
+      <h2 id="adm-forma-t">Planes que no cuadran{k.formaNoCuadra ? ` (${k.formaNoCuadra})` : ''}</h2>
+      {k.formaNoCuadra ? <>
+        <p className="adm-pie">Sociedades con un plan de Autónomos que ya estaban así antes del bloqueo. No se les ha cambiado nada ni se les ha escrito.</p>
+        <ul className="adm-lista">{r.filas.filter((f) => f.forma === 'no-cuadra').map((f) => <li key={f.id}>
+          <span><strong>{f.nombre}</strong> · {f.nif || 'sin NIF'} · {f.tipo} {f.plan}{f.periodo === 'anio' ? ' anual' : ''}</span>
+          <b><span className={`adm-estado adm-${f.estado}`}>{ESTADOS[f.estado]}</span> {f.motivoForma}</b>
+        </li>)}</ul>
+        <p className="adm-pie">Para verlas en la lista de empresas, elige «Planes que no cuadran» en el filtro de abajo.</p>
+      </> : <p className="adm-pie">Todas las empresas tienen un plan que cuadra con su forma jurídica.</p>}
+    </section>
+
     <AdminEmpresas filas={r.filas} />
     <p className="adm-pie">Para regalar una empresa a otra persona (plan Fundador), usa <a href="/usuarios">Usuarios › Dar de alta una empresa</a>.</p>
   </main>;

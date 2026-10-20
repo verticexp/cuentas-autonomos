@@ -11,14 +11,16 @@ export default function AdminEmpresas({ filas }) {
   const [busca, setBusca] = useState('');
   const [estado, setEstado] = useState('');
   const [origen, setOrigen] = useState('');
+  const [forma, setForma] = useState('');
   const [abierta, setAbierta] = useState('');
   const [msg, setMsg] = useState('');
   const [ocupado, setOcupado] = useState(false);
   const router = useRouter();
   const lista = useMemo(() => {
     const q = busca.trim().toLowerCase();
-    return filas.filter((f) => (!estado || f.estado === estado) && (!origen || f.origen === origen) && (!q || `${f.nombre} ${f.nif} ${f.id}`.toLowerCase().includes(q)));
-  }, [filas, busca, estado, origen]);
+    return filas.filter((f) => (!estado || f.estado === estado) && (!origen || f.origen === origen) && (!forma || f.forma === forma) && (!q || `${f.nombre} ${f.nif} ${f.id}`.toLowerCase().includes(q)));
+  }, [filas, busca, estado, origen, forma]);
+  const noCuadran = filas.filter((f) => f.forma === 'no-cuadra').length;
 
   async function accion(empresa, datos, pregunta) {
     if (pregunta && !window.confirm(pregunta)) return;
@@ -42,13 +44,17 @@ export default function AdminEmpresas({ filas }) {
         <option value="">Todos los orígenes</option>
         {Object.entries(ORIGENES).map(([k, t]) => <option key={k} value={k}>{t}</option>)}
       </select>
+      {noCuadran > 0 && <select className="campo" value={forma} onChange={(e) => setForma(e.target.value)} aria-label="Filtrar por forma jurídica">
+        <option value="">Todos los planes</option>
+        <option value="no-cuadra">Planes que no cuadran ({noCuadran})</option>
+      </select>}
     </div>
     {msg && <p className={msg === 'Hecho.' ? 'adm-ok' : 'adm-mal'} role="status">{msg}</p>}
     <p className="adm-pie">{lista.length} de {filas.length}</p>
     <ul className="adm-tabla">
       {lista.map((f) => <li key={f.id} className={abierta === f.id ? 'abierta' : ''}>
         <button type="button" className="adm-fila" aria-expanded={abierta === f.id} onClick={() => setAbierta(abierta === f.id ? '' : f.id)}>
-          <span className="adm-nombre"><strong>{f.nombre}</strong><small>{f.nif || f.id} · alta {f.creada || '—'}</small></span>
+          <span className="adm-nombre"><strong>{f.nombre}</strong><small>{f.nif || f.id} · alta {f.creada || '—'}{f.forma === 'no-cuadra' ? <b className="adm-mal"> · plan que no cuadra</b> : ''}</small></span>
           <span className={`adm-estado adm-${f.estado}`}>{ESTADOS[f.estado]}{f.estado === 'prueba' && f.dias !== null ? ` · ${f.dias} d` : ''}</span>
           <span className="adm-plan">{f.plan ? `${f.tipo} ${f.plan}${f.periodo === 'anio' ? ' anual' : ''}` : '—'}</span>
           <span className="adm-num">{f.mensual ? `${euros(f.mensual)}/mes` : ''}</span>
@@ -56,7 +62,7 @@ export default function AdminEmpresas({ filas }) {
           <span className="adm-num">{f.ultima ? `Activa ${f.ultima}` : 'Sin actividad'}</span>
         </button>
         {abierta === f.id && <div className="adm-acciones">
-          <p className="adm-pie">Id {f.id} · {ORIGENES[f.origen]}{f.hasta ? ` · prueba hasta ${f.hasta}` : ''}{f.gestoria ? ` · gestoría ${f.gestoria}` : ''}{f.recomendadaPor ? ` · recomendada por ${f.recomendadaPor}${f.premiada ? ` (premio dado el ${f.premiada})` : ''}` : ''}{f.cupon ? ` · cupón ${f.cupon}` : ''}{f.mesesGanados ? ` · ${f.mesesGanados} meses ganados recomendando` : ''}</p>
+          <p className="adm-pie">Id {f.id} · {ORIGENES[f.origen]}{f.hasta ? ` · prueba hasta ${f.hasta}` : ''}{f.gestoria ? ` · gestoría ${f.gestoria}` : ''}{f.recomendadaPor ? ` · recomendada por ${f.recomendadaPor}${f.premiada ? ` (premio dado el ${f.premiada})` : ''}` : ''}{f.cupon ? ` · cupón ${f.cupon}` : ''}{f.mesesGanados ? ` · ${f.mesesGanados} meses ganados recomendando` : ''}{f.motivoForma ? ` · plan de Autónomos que no cuadra: ${f.motivoForma}` : ''}</p>
           {f.estado !== 'fundador' && <button type="button" className="boton pequeno" disabled={ocupado} onClick={() => accion(f.id, { accion: 'fundador' }, `¿Dar a ${f.nombre} el plan Fundador, gratis de por vida?`)}>Regalar plan Fundador</button>}
           {f.regalo && <button type="button" className="boton pequeno sec" disabled={ocupado} onClick={() => accion(f.id, { accion: 'quitar-fundador' }, `¿Quitar el plan Fundador a ${f.nombre}? Vuelve a su plan y, si su prueba ya acabó, queda en solo lectura.`)}>Quitar plan Fundador</button>}
           {['prueba', 'caducada'].includes(f.estado) && [7, 15, 30].map((n) => <button key={n} type="button" className="boton pequeno sec" disabled={ocupado} onClick={() => accion(f.id, { accion: 'alargar', dias: n })}>+{n} días de prueba</button>)}

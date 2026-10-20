@@ -61,3 +61,30 @@ test('acciones del panel: regalar y quitar Fundador, alargar la prueba', () => {
   assert.ok(cambioDePlan(prueba, 'alargar', { dias: 200, hoy: HOY }).error);
   assert.ok(cambioDePlan(prueba, 'borrar').error);
 });
+
+test('planes que no cuadran: sociedad con plan de Autónomos por NIF, nombre o forma; Fundador y sin plan no cuentan', () => {
+  const aut = { tipo: 'aut', nombre: 'Pro', hasta: '2026-11-01' };
+  const con = (id, extra, plan = aut) => ({ ...empresa(id, plan), emisor: { nif: '12345678Z', nombre: 'Ana Pérez' }, ...extra });
+  const r = resumenAdmin({
+    hoy: HOY,
+    empresas: [
+      con('bien', {}),
+      con('nif', { emisor: { nif: 'B12345678', nombre: 'Ana Pérez' } }),
+      con('nombre', { emisor: { nif: '12345678Z', nombre: 'Talleres Pérez, S.L.' } }),
+      con('forma', { fiscal: { tipo: 'sociedad' } }),
+      con('todo', { emisor: { nif: 'ES-B12345678', nombre: 'Acme SA' }, fiscal: { tipo: 'sociedad' } }),
+      con('pyme', { emisor: { nif: 'B12345678', nombre: 'Acme SL' }, fiscal: { tipo: 'sociedad' } }, { tipo: 'pym', nombre: 'Plus', hasta: '2026-11-01' }),
+      con('regalo', { emisor: { nif: 'B12345678', nombre: 'Acme SL' } }, { ...aut, fundador: true }),
+      con('antigua', { emisor: { nif: 'B12345678', nombre: 'Acme SL' } }, null),
+    ],
+  });
+  const fila = (id) => r.filas.find((f) => f.id === id);
+  assert.equal(fila('bien').forma, '');
+  assert.equal(fila('nif').forma, 'no-cuadra');
+  assert.equal(fila('nif').motivoForma, 'NIF de sociedad');
+  assert.equal(fila('nombre').motivoForma, 'Nombre de sociedad');
+  assert.equal(fila('forma').motivoForma, 'Forma: sociedad');
+  assert.equal(fila('todo').motivoForma, 'NIF de sociedad · Nombre de sociedad · Forma: sociedad');
+  for (const id of ['pyme', 'regalo', 'antigua']) assert.equal(fila(id).forma, '', id);
+  assert.equal(r.kpis.formaNoCuadra, 4);
+});
