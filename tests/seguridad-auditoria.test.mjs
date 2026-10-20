@@ -278,3 +278,45 @@ test('S7: dentro de cuota el portal y el PDF siguen devolviendo los documentos d
   assert.equal(r.status, 200); assert.equal(r.headers.get('content-type'), 'application/pdf');
   assert.equal(await r.text(), '%PDF-prueba');
 });
+
+// lib/empresa.js va simulada en este archivo: S8 y S9 necesitan la de verdad para el cuestionario.
+async function empresaReal() {
+  const E = await import('../lib/empresa.js');
+  Object.assign(estado, { fiscalDe: E.fiscalDe, actividadesDe: E.actividadesDe, limpiarActividades: E.limpiarActividades, limpiarFiscal: E.limpiarFiscal });
+}
+
+// 8: una sociedad no puede quedarse en un plan de autónomo cambiando sus datos después del alta (lib/formaJuridica.js).
+test('S8: Ajustes no deja poner un CIF en un plan de autónomo y pasar a sociedad cambia la prueba a Pymes', async () => {
+  const plan = { tipo: 'aut', nombre: 'Pro', version: 3, periodo: 'mes', hasta: '2099-01-01' };
+  const emisor = { nombre: 'Ana López García', nif: '12345678Z' };
+  await empresaReal();
+  const u = await usuario({}, { plan, emisor, fiscal: { tipo: 'autonomo' } });
+  await R.redis.hset('empresa-nif', { '12345678Z': 'e' });
+  await sesion(u); cabeceras('/api/cuenta', 'PATCH');
+  const ruta = await cargar('app/api/cuenta/route.js');
+  let r = await ruta.PATCH(req('/api/cuenta', { ...emisor, nif: 'B12345674' }, 'PATCH'));
+  assert.equal(r.status, 400); assert.match((await r.json()).error, /NIF es de una sociedad/);
+  r = await ruta.PATCH(req('/api/cuenta', { ...emisor, nombre: 'Ana López SL' }, 'PATCH'));
+  assert.equal(r.status, 400);
+  assert.equal((await R.redis.hget('empresas', 'e')).emisor.nif, '12345678Z');
+  const sociedad = { fiscal: { tipo: 'sociedad' }, actividades: [{ nombre: 'Consultoría', ivaPct: 21, irpfPct: 0 }], emisor: { nombre: 'Ana López SL', nif: 'B12345674' } };
+  r = await ruta.PATCH(req('/api/cuenta', { configuracion: sociedad }, 'PATCH'));
+  assert.equal(r.status, 200, JSON.stringify(await r.clone().json()));
+  const e = await R.redis.hget('empresas', 'e');
+  assert.equal(e.plan.tipo, 'pym'); assert.equal(e.plan.nombre, 'Pro'); assert.equal(e.nombre, 'Ana López SL');
+  assert.equal(await R.redis.hget('empresa-nif', 'B12345674'), 'e');
+  assert.equal(await R.redis.hget('empresa-nif', '12345678Z'), null);
+});
+
+test('S9: pagando un plan de autónomo no se pasa a sociedad, y un NIF de otra cuenta no se reutiliza', async () => {
+  await empresaReal();
+  const u = await usuario({}, { plan: { tipo: 'aut', nombre: 'Plus', version: 3, periodo: 'mes', pagado: true, suscripcion: 'sub_1' }, emisor: { nombre: 'Ana', nif: '12345678Z' }, fiscal: { tipo: 'autonomo' } });
+  await R.redis.hset('empresa-nif', { '87654321X': 'otra' });
+  await sesion(u); cabeceras('/api/cuenta', 'PATCH');
+  const ruta = await cargar('app/api/cuenta/route.js');
+  let r = await ruta.PATCH(req('/api/cuenta', { configuracion: { fiscal: { tipo: 'sociedad' }, actividades: [{ nombre: 'Consultoría' }], emisor: { nombre: 'Ana SL', nif: 'B12345674' } } }, 'PATCH'));
+  assert.equal(r.status, 400); assert.match((await r.json()).error, /Tu plan es de Autónomos/);
+  r = await ruta.PATCH(req('/api/cuenta', { nombre: 'Ana', nif: '87654321X' }, 'PATCH'));
+  assert.equal(r.status, 400); assert.match((await r.json()).error, /otra cuenta de Netto/);
+  assert.equal((await R.redis.hget('empresas', 'e')).plan.tipo, 'aut');
+});

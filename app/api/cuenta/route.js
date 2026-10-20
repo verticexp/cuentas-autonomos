@@ -4,13 +4,14 @@ import { actualizarUsuario, cambiarPassword, desbloqueo, opcionesCookie, opcione
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { puede } from '@/lib/permisos';
 import { colorValido, logoValido } from '@/lib/marca';
-import { actividadesDe, limpiarActividades, limpiarFiscal } from '@/lib/empresa';
+import { actividadesDe, fiscalDe, limpiarActividades, limpiarFiscal } from '@/lib/empresa';
 import { clave, leer, redis } from '@/lib/redis';
 import { auditar } from '@/lib/auditoria';
 import { contrasenaCambiada } from '@/lib/avisosCorreo';
 import { leerImporte } from '@/lib/calculos';
 import { hoy } from '@/lib/formato';
 import { todasFichas } from '@/lib/indices';
+import { cambioDeForma, normalizarNif } from '@/lib/formaJuridica';
 
 const CAMPOS = ['nombre', 'nif', 'direccion', 'ciudad', 'iban'];
 // Más datos del emisor (Ajustes): salen en la factura y se congelan con ella como los de arriba. [campo, largo máximo]
@@ -23,6 +24,31 @@ const emailValido = (v) => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 const recortar = (b, lista) => Object.fromEntries(lista.filter(([k]) => k in b).map(([k, max]) => [k, texto(b[k], max)]));
 // En el registro de actividad: si cambia el IBAN (donde cobra la empresa), con sus 4 últimas cifras.
 const cambioIban = (antes, ahora) => (String(antes || '') !== String(ahora || '') ? ` · IBAN cambiado a ${ahora ? `…${String(ahora).replace(/\s/g, '').slice(-4)}` : 'ninguno'}` : '');
+
+// NIF, nombre y forma tienen que cuadrar con el tipo de plan (lib/formaJuridica.js). Devuelve { error } o { plan }.
+async function comprobarForma(u, emisor, fiscalTipo) {
+  const r = cambioDeForma(u.plan, { tipo: fiscalDe(u).tipo, nif: u.emisor?.nif, nombre: u.emisor?.nombre }, { tipo: fiscalTipo, nif: emisor.nif, nombre: emisor.nombre });
+  if (r.error) return r;
+  const antes = normalizarNif(u.emisor?.nif), ahora = normalizarNif(emisor.nif);
+  if (ahora && ahora !== antes) {
+    const otra = await redis.hget('empresa-nif', ahora);
+    if (otra && otra !== u.empresa) return { error: 'Ya hay otra cuenta de Netto con ese NIF. Escríbenos a corporate@nettohq.com si es tuya.' };
+  }
+  return r;
+}
+
+// Guarda lo que cambia en la empresa: el índice de NIF (el registro no deja repetirlos) y el plan si ha cambiado de tipo.
+async function guardarForma(u, emisor, plan) {
+  const antes = normalizarNif(u.emisor?.nif), ahora = normalizarNif(emisor.nif);
+  if (ahora !== antes) {
+    if (antes && (await redis.hget('empresa-nif', antes)) === u.empresa) await redis.hdel('empresa-nif', antes);
+    if (ahora) await redis.hset('empresa-nif', { [ahora]: u.empresa });
+  }
+  const emp = await redis.hget('empresas', u.empresa);
+  if (!emp) return;
+  const cambios = { ...(emisor.nombre ? { nombre: emisor.nombre } : {}), ...(plan && plan !== u.plan ? { plan } : {}) };
+  if (Object.keys(cambios).length) await redis.hset('empresas', { [u.empresa]: { ...emp, ...cambios } });
+}
 
 // Cuándo se marcó cada 303/130 como pagado: Tesorería lo resta del saldo hasta que llegue un extracto posterior.
 function marcarPagado(u, k, si) {
@@ -133,11 +159,13 @@ export async function PATCH(req) {
     if (!String(e.nombre || '').trim()) return error('Falta el nombre o la razón social');
     const emisor = { ...(u.emisor || {}), ...Object.fromEntries(CAMPOS.map((k) => [k, String(e[k] || '').trim().slice(0, 120)])) };
     emisor.plazo = Math.max(0, Math.min(365, Number(e.plazo ?? emisor.plazo) || 30));
+    const fiscal = limpiarFiscal(c.fiscal);
+    const forma = await comprobarForma(u, emisor, fiscal.tipo);
+    if (forma.error) return error(forma.error);
     await congelarInstantaneas(u); // las facturas ya emitidas conservan el emisor de antes
-    await actualizarUsuario(u, { fiscal: limpiarFiscal(c.fiscal), actividades: a.actividades, emisor, pendiente: false });
-    await auditar(u, 'Datos de la empresa cambiados', `Situación fiscal, actividades y facturación${cambioIban(u.emisor?.iban, emisor.iban)}`);
-    const emp = await redis.hget('empresas', u.empresa);
-    if (emp && emisor.nombre) await redis.hset('empresas', { [u.empresa]: { ...emp, nombre: emisor.nombre } });
+    await actualizarUsuario(u, { fiscal, actividades: a.actividades, emisor, pendiente: false });
+    await auditar(u, 'Datos de la empresa cambiados', `Situación fiscal, actividades y facturación${cambioIban(u.emisor?.iban, emisor.iban)}${forma.plan !== u.plan ? ` · plan de prueba pasado a ${forma.plan.tipo === 'pym' ? 'Pymes' : 'Autónomos'}` : ''}`);
+    await guardarForma(u, emisor, forma.plan);
     return Response.json({ ok: true, actividades: a.actividades });
   }
   if (b.drive) {
@@ -222,8 +250,11 @@ export async function PATCH(req) {
   if ('plazo' in b || !('plazo' in emisor)) emisor.plazo = Math.max(0, Math.min(365, Number(b.plazo) || 30));
   if ('limite' in b) emisor.limite = Math.max(0, Number(b.limite) || 0);
   if ('recordatorios' in b) emisor.recordatorios = Math.max(0, Math.min(60, Math.round(Number(b.recordatorios) || 0)));
+  const forma = await comprobarForma(u, emisor, fiscalDe(u).tipo);
+  if (forma.error) return error(forma.error);
   await congelarInstantaneas(u); // las facturas ya emitidas conservan el emisor de antes
   await actualizarUsuario(u, { emisor });
+  await guardarForma(u, emisor, forma.plan);
   await auditar(u, 'Datos de facturación cambiados', `${emisor.nombre}${cambioIban(u.emisor?.iban, emisor.iban)}`);
   return Response.json({ ok: true });
 }
