@@ -1,6 +1,7 @@
 'use client';
 
 import { fraseBanco } from '@/lib/textoBanco';
+import { confirmar as confirmarAccion } from './Confirmar';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -30,7 +31,7 @@ function Cargo({ x, abierto, abrir }) {
     try { await fn(); router.refresh(); } catch (e) { setAviso(e.message); } finally { setOcupado(false); }
   }
   const emparejar = (gasto) => hacer(() => llamar('/api/gastos/revision', { method: 'POST', body: JSON.stringify({ accion: 'emparejar', id: m.id, gasto }) }));
-  const apartar = () => confirm('¿Apartar este cargo? No es un gasto (un traspaso, un préstamo…) y deja de salir aquí. Puedes recuperarlo en Banco.')
+  const apartar = async () => (await confirmarAccion({ titulo: 'Apartar cargo', texto: '¿Apartar este cargo? No es un gasto (un traspaso, un préstamo…) y deja de salir aquí. Puedes recuperarlo en Banco.', aceptar: 'Apartar cargo', peligro: true }))
     && hacer(() => llamar('/api/gastos/revision', { method: 'POST', body: JSON.stringify({ accion: 'ignorar', id: m.id }) }));
   const quien = m.contraparte ? fraseBanco(m.contraparte, { nombre: true }) : fraseBanco(m.concepto);
   const elegida = otras.find((o) => o.id === elegido);
@@ -61,10 +62,10 @@ function Cargo({ x, abierto, abrir }) {
                 <option value="">Gastos de fechas cercanas…</option>
                 {otras.map((o) => <option key={o.id} value={o.id}>{o.texto} · {fechaCorta(o.fecha)} · {eur(o.importe)}{o.cuadra ? ' ✓' : ''}</option>)}
               </select>
-              {elegida && !elegida.cuadra && <small className="nota">El importe no coincide con el cargo ({eur(Math.abs(m.importe))}): corrige el gasto antes de emparejarlo.</small>}
+              {elegida && !elegida.cuadra && <small id={`rev-${m.id}-importe`} className="nota">El importe no coincide con el cargo ({eur(Math.abs(m.importe))}): corrige el gasto antes de emparejarlo.</small>}
               {elegida && (
                 <div className="rev-botones">
-                  <button type="button" className="boton pequeno" disabled={ocupado || !elegida.cuadra} onClick={() => emparejar(elegida.id)}>Emparejar</button>
+                  <button type="button" className="boton pequeno" disabled={ocupado || !elegida.cuadra} aria-describedby={!elegida.cuadra ? `rev-${m.id}-importe` : undefined} onClick={() => emparejar(elegida.id)}>Emparejar</button>
                   <Link className="boton pequeno sec" href={`/gastos/${encodeURIComponent(elegida.id)}`}>Revisar gasto</Link>
                 </div>
               )}

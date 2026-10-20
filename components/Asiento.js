@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
 import { parseImporte } from '@/lib/importe';
@@ -13,6 +13,7 @@ import { CUENTAS_PERSONAL, NOMBRES_PERSONAL, asientosPersonal, totalesPersonal }
 // cuentas: [[código, nombre]] para sugerirlas al escribir.
 export function NuevoAsiento({ hoy, cuentas }) {
   const router = useRouter();
+  const ayudaId = useId();
   const vacia = { cuenta: '', debe: '', haber: '' };
   const [abierto, setAbierto] = useState(false);
   const [a, setA] = useState({ fecha: hoy, concepto: '', lineas: [vacia, vacia] });
@@ -37,8 +38,8 @@ export function NuevoAsiento({ hoy, cuentas }) {
     <form className="formulario tarjeta asiento-form" onSubmit={enviar}>
       <h3>Asiento manual</h3>
       <div className="dos-col">
-        <input className="campo" type="date" value={a.fecha} onChange={(e) => setA({ ...a, fecha: e.target.value })} required />
-        <input className="campo" placeholder="Concepto" value={a.concepto} onChange={(e) => setA({ ...a, concepto: e.target.value })} required />
+        <label>Fecha<input className="campo" type="date" value={a.fecha} onChange={(e) => setA({ ...a, fecha: e.target.value })} required /></label>
+        <label>Concepto<input className="campo" placeholder="Concepto" value={a.concepto} onChange={(e) => setA({ ...a, concepto: e.target.value })} required /></label>
       </div>
       <datalist id="cuentas-pgc">{cuentas.map(([c, n]) => <option key={c} value={c}>{n}</option>)}</datalist>
       {a.lineas.map((l, i) => (
@@ -50,9 +51,10 @@ export function NuevoAsiento({ hoy, cuentas }) {
       ))}
       <button type="button" className="boton sec pequeno" onClick={() => setA({ ...a, lineas: [...a.lineas, vacia] })}>Añadir línea</button>
       <p className={`nota${d !== h ? ' rojo' : ''}`}>Debe {d.toLocaleString('es-ES', { minimumFractionDigits: 2 })} · Haber {h.toLocaleString('es-ES', { minimumFractionDigits: 2 })}{d !== h ? ` · descuadre de ${Math.abs(r2(d - h)).toLocaleString('es-ES', { minimumFractionDigits: 2 })}` : ' · cuadra'}</p>
-      {error && <p className="error">{error}</p>}
+      {error && <p className="error" role="alert">{error}</p>}
+      {(d !== h || !d) && <p id={ayudaId} className="nota">{!d ? 'Añade un importe al debe y al haber.' : 'El debe y el haber deben coincidir.'}</p>}
       <div className="gasto-guardar">
-        <button className="boton" disabled={enviando || d !== h || !d}>{enviando ? 'Guardando…' : 'Guardar asiento'}</button>
+        <button className="boton" disabled={enviando || d !== h || !d} aria-describedby={d !== h || !d ? ayudaId : undefined}>{enviando ? 'Guardando…' : 'Guardar asiento'}</button>
         <button type="button" className="boton sec" onClick={() => { setAbierto(false); setError(''); }}>Cancelar</button>
       </div>
     </form>
@@ -91,7 +93,7 @@ export function Apertura({ fecha, sociedad, previa }) {
       <label className="asiento-campo">{sociedad ? 'Capital social' : 'Capital aportado'}<input className="campo" inputMode="decimal" placeholder="0,00" value={x.capital} onChange={poner('capital')} /></label>
       <label className="asiento-campo">Préstamos: lo que se devuelve en más de un año<input className="campo" inputMode="decimal" placeholder="0,00" value={x.largo} onChange={poner('largo')} /></label>
       <label className="asiento-campo">Préstamos: lo que se devuelve este año<input className="campo" inputMode="decimal" placeholder="0,00" value={x.corto} onChange={poner('corto')} /></label>
-      {error && <p className="error">{error}</p>}
+      {error && <p className="error" role="alert">{error}</p>}
       <div className="gasto-guardar">
         <button className="boton" disabled={enviando}>{enviando ? 'Guardando…' : 'Guardar apertura'}</button>
         {previa && <button type="button" className="boton sec" onClick={() => setAbierto(false)}>Cancelar</button>}
@@ -104,6 +106,7 @@ export function Apertura({ fecha, sociedad, previa }) {
 // trabajador y de la empresa, resto de personal) y Fisquo monta el asiento; si ya está pagado, también los de pago.
 export function AsientoPersonal({ hoy }) {
   const router = useRouter();
+  const ayudaId = useId();
   const vacio = { fecha: hoy, concepto: '', sueldos: '', ssEmpresa: '', irpf: '', ssTrabajador: '', otros: [], pagoLiquido: '', pagoSS: '', pagoIRPF: '' };
   const [abierto, setAbierto] = useState(false);
   const [a, setA] = useState(vacio);
@@ -163,12 +166,12 @@ export function AsientoPersonal({ hoy }) {
         </table>
       )}
       {t.sueldos > 0 && <p className="nota">Gasto de personal {eur(t.gasto)} · líquido a pagar {eur(t.liquido)} · Seguridad Social a ingresar {eur(t.ss)}</p>}
-      {error && <p className="error">{error}</p>}
+      {error && <p className="error" role="alert">{error}</p>}
       <div className="gasto-guardar">
-        <button className="boton" disabled={enviando || Boolean(previa.error)}>{enviando ? 'Guardando…' : 'Guardar asiento'}</button>
+        <button className="boton" disabled={enviando || Boolean(previa.error)} aria-describedby={previa.error ? ayudaId : undefined}>{enviando ? 'Guardando…' : 'Guardar asiento'}</button>
         <button type="button" className="boton sec" onClick={() => { setAbierto(false); setError(''); }}>Cancelar</button>
       </div>
-      {previa.error && t.sueldos > 0 && <p className="nota rojo">{previa.error}</p>}
+      {previa.error && <p id={ayudaId} className="nota rojo">{previa.error}</p>}
     </form>
   );
 }

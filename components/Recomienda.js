@@ -1,12 +1,14 @@
 'use client';
 
+import { pedirTexto } from './Confirmar';
+
 import { useState } from 'react';
 
 // Ajustes › Recomienda Fisquo (lib/recomendaciones.js): el enlace de la empresa y lo que ha ganado con él.
 export default function Recomienda({ enlace, resumen }) {
   const [copiado, setCopiado] = useState(false);
   const copiar = async () => {
-    try { await navigator.clipboard.writeText(enlace); setCopiado(true); setTimeout(() => setCopiado(false), 2500); } catch { window.prompt('Copia tu enlace:', enlace); }
+    try { await navigator.clipboard.writeText(enlace); setCopiado(true); setTimeout(() => setCopiado(false), 2500); } catch { await pedirTexto({ titulo: 'Copia tu enlace', texto: 'Selecciona el enlace y cópialo para compartirlo.', etiqueta: 'Enlace de recomendación', valor: enlace, soloLectura: true, aceptar: 'Cerrar' }); }
   };
   const compartir = () => navigator.share?.({ title: 'Fisquo', text: 'Llevo las cuentas de mi negocio con Fisquo. Con mi enlace tienes 2 meses gratis:', url: enlace }).catch(() => {});
   return <div className="recomienda">

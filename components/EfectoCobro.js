@@ -6,8 +6,10 @@ import { useRouter } from 'next/navigation';
 // Forma de cobro de un efecto y, si es cheque, confirming o pagaré, si ya se ha recibido (app/cartera/page.js).
 export default function EfectoCobro({ id, forma, formas, requiere, recibido, fecha }) {
   const router = useRouter();
+  const [error, setError] = useState('');
   const [ocupado, setOcupado] = useState(false);
   const enviar = async (cambio) => {
+    setError('');
     setOcupado(true);
     try {
       const r = await fetch('/api/cartera/efecto', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, ...cambio }) });
@@ -15,7 +17,7 @@ export default function EfectoCobro({ id, forma, formas, requiere, recibido, fec
       if (r.status === 423 && d.bloqueada) window.location.replace(`/bloqueo?a=${encodeURIComponent(window.location.pathname + window.location.search)}`);
       if (!r.ok) throw new Error(d.error || 'Algo ha fallado');
       router.refresh();
-    } catch (e) { alert(e.message); } finally { setOcupado(false); }
+    } catch (e) { setError(e.message); } finally { setOcupado(false); }
   };
   return (
     <div className="car-efecto">
@@ -31,6 +33,7 @@ export default function EfectoCobro({ id, forma, formas, requiere, recibido, fec
           {recibido ? `Recibido${fecha ? ` el ${fecha}` : ''}` : 'Pendiente de recibir'}
         </button>
       ) : forma ? <span className="car-recibido">Recibido · no hace falta recibirlo</span> : null}
+      {error && <p className="error" role="alert">{error}</p>}
     </div>
   );
 }

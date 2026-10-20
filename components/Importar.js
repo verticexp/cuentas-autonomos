@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { vistaImportacion } from '@/lib/vistaImportacion';
 import Link from 'next/link';
 import { eur, fechaCorta } from '@/lib/formato';
@@ -25,6 +25,7 @@ function resumen(tipo, d) {
 
 // Importar desde Holded o Excel: se elige qué, se sube el archivo, se revisa la vista previa y se guarda.
 export default function Importar() {
+  const ayudaId = useId();
   const [tipo, setTipo] = useState('clientes');
   const [archivo, setArchivo] = useState(null);
   const [vista, setVista] = useState(null);
@@ -69,7 +70,8 @@ export default function Importar() {
         <label className="importar-archivo">
           <input type="file" disabled={ocupado} accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" onChange={(e) => { if (enCurso.current) return; setArchivo(e.target.files?.[0] || null); reiniciar(); }} />
         </label>
-        <button className="boton" disabled={!archivo || ocupado} onClick={() => pedir(false)}>{ocupado && !vista ? 'Leyendo…' : 'Ver vista previa'}</button>
+        {!archivo && <p id={`${ayudaId}-archivo`} className="nota">Elige un archivo para ver la vista previa.</p>}
+        <button className="boton" disabled={!archivo || ocupado} aria-describedby={!archivo ? `${ayudaId}-archivo` : undefined} onClick={() => pedir(false)}>{ocupado && !vista ? 'Leyendo…' : 'Ver vista previa'}</button>
         {msg && <p role="status" className={msg.startsWith('✓') ? 'nota guardado' : 'error'}>{msg}</p>}
       </section>
 
@@ -106,13 +108,14 @@ export default function Importar() {
             })}
           </ul>
           <nav aria-label="Páginas de la vista previa" className="importar-paginacion">
-            <button type="button" className="boton sec" aria-label="Página anterior de la vista previa" disabled={filas.pagina <= 1} onClick={() => setPagina(filas.pagina - 1)}>Anterior</button>
-            <span>Página {filas.pagina} de {filas.paginas}</span>
-            <button type="button" className="boton sec" aria-label="Página siguiente de la vista previa" disabled={filas.pagina >= filas.paginas} onClick={() => setPagina(filas.pagina + 1)}>Siguiente</button>
+            <button type="button" className="boton sec" aria-label="Página anterior de la vista previa" disabled={filas.pagina <= 1} aria-describedby={filas.pagina <= 1 ? `${ayudaId}-paginas` : undefined} onClick={() => setPagina(filas.pagina - 1)}>Anterior</button>
+            <span id={`${ayudaId}-paginas`}>Página {filas.pagina} de {filas.paginas}{filas.paginas === 1 ? ' · Solo hay una página' : filas.pagina <= 1 ? ' · Primera página' : filas.pagina >= filas.paginas ? ' · Última página' : ''}</span>
+            <button type="button" className="boton sec" aria-label="Página siguiente de la vista previa" disabled={filas.pagina >= filas.paginas} aria-describedby={filas.pagina >= filas.paginas ? `${ayudaId}-paginas` : undefined} onClick={() => setPagina(filas.pagina + 1)}>Siguiente</button>
           </nav>
           {hecho
             ? DESTINO[tipo] && <Link href={DESTINO[tipo]} className="boton sec">Ver {TIPOS.find((t) => t[0] === tipo)[1].toLowerCase()}</Link>
-            : <button className="boton" disabled={!vista.nuevos || ocupado || (CONTABLE.includes(tipo) && !fecha)} onClick={() => pedir(true)}>{ocupado ? 'Importando…' : !vista.nuevos ? 'No hay nada nuevo' : tipo === 'saldos' ? `Crear la apertura con ${vista.nuevos} cuentas` : `Importar ${vista.nuevos}`}</button>}
+            : <button className="boton" disabled={!vista.nuevos || ocupado || (CONTABLE.includes(tipo) && !fecha)} aria-describedby={!vista.nuevos || (CONTABLE.includes(tipo) && !fecha) ? `${ayudaId}-guardar` : undefined} onClick={() => pedir(true)}>{ocupado ? 'Importando…' : !vista.nuevos ? 'No hay nada nuevo' : tipo === 'saldos' ? `Crear la apertura con ${vista.nuevos} cuentas` : `Importar ${vista.nuevos}`}</button>}
+          {!hecho && (!vista.nuevos || (CONTABLE.includes(tipo) && !fecha)) && <p id={`${ayudaId}-guardar`} className="nota">{!vista.nuevos ? 'No hay filas nuevas para importar.' : CONTABLE.includes(tipo) && !fecha ? 'Indica la fecha de los saldos para importar.' : ''}</p>}
           {!hecho && tipo === 'saldos' && <p className="nota">Si ya había un asiento de apertura, se sustituye.</p>}
           {!hecho && vista.duplicados > 0 && <p className="nota">Lo que ya existe no se toca{tipo === 'facturas' ? ': se compara por serie y número' : tipo === 'clientes' ? ': se compara por nombre o NIF' : tipo === 'gastos' ? ': se compara por fecha, importe y concepto' : ': se compara por nombre'}.</p>}
         </section>

@@ -41,12 +41,14 @@ export const metadata = {
   other: { 'apple-mobile-web-app-capable': 'yes', 'mobile-web-app-capable': 'yes', 'apple-mobile-web-app-title': 'Fisquo' },
 };
 
-export const viewport = {
-  width: 'device-width', initialScale: 1, viewportFit: 'cover',
-  // Como una app: sin zoom por pellizco (WKWebView lo respeta; Safari, con touch-action en globals.css).
-  maximumScale: 1, userScalable: false,
-  themeColor: '#0F1F1B', // verde de la pantalla de inicio; luego lo cambia components/BarraEstado.js
-};
+export async function generateViewport() {
+  const app = esApp((await headers()).get('user-agent'));
+  return {
+    width: 'device-width', initialScale: 1, viewportFit: 'cover',
+    ...(app ? { maximumScale: 1, userScalable: false } : {}),
+    themeColor: '#0F1F1B', // Arranque; BarraEstado lo actualiza después.
+  };
+}
 
 // Se ven sin desbloquear (las demás piden desbloqueo en lib/auth.js requerir).
 const LIBRE = /^\/(bloqueo|login|registro|confirmar-email|privacidad|condiciones|declaracion-responsable|invitacion|p\/|portal\/|pagar\/|sw|manifest|favicon|icon|apple-icon)/;

@@ -57,14 +57,14 @@ export default function FormPresupuesto({ presupuesto, clientes, actividades, ho
       <label>Fecha<input className="campo" type="date" value={p.fecha} onChange={(e) => poner('fecha', e.target.value)} required /></label>
       <fieldset>
         <legend>Cliente</legend>
-        <select className="campo" value={elegido} onChange={(e) => elegirCliente(e.target.value)}>
+        <select aria-label="Elegir cliente" className="campo" value={elegido} onChange={(e) => elegirCliente(e.target.value)}>
           <option value="">+ Cliente nuevo</option>
           {[...clientes].sort((a, b) => a.nombre.localeCompare(b.nombre)).map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
-        <input className="campo" placeholder="Nombre o razón social" value={p.cliente.nombre} onChange={(e) => ponerCliente('nombre', e.target.value)} required />
-        <input className="campo" placeholder="NIF / CIF" value={p.cliente.nif} onChange={(e) => ponerCliente('nif', e.target.value)} />
-        <input className="campo" placeholder="Dirección" value={p.cliente.direccion} onChange={(e) => ponerCliente('direccion', e.target.value)} />
-        <input className="campo" placeholder="Ciudad y CP" value={p.cliente.ciudad} onChange={(e) => ponerCliente('ciudad', e.target.value)} />
+        <label>Nombre o razón social<input className="campo" placeholder="Nombre o razón social" value={p.cliente.nombre} onChange={(e) => ponerCliente('nombre', e.target.value)} required /></label>
+        <label>NIF<input spellCheck={false} autoCorrect="off" autoCapitalize="characters" className="campo" placeholder="NIF / CIF" value={p.cliente.nif} onChange={(e) => ponerCliente('nif', e.target.value)} /></label>
+        <label>Dirección<input className="campo" placeholder="Dirección" value={p.cliente.direccion} onChange={(e) => ponerCliente('direccion', e.target.value)} /></label>
+        <label>Código postal y ciudad<input className="campo" placeholder="Ciudad y CP" value={p.cliente.ciudad} onChange={(e) => ponerCliente('ciudad', e.target.value)} /></label>
       </fieldset>
       <div className="dos-col">
         <label>Fecha del evento<input className="campo" type="date" value={p.evento?.fecha || ''} onChange={(e) => poner('evento', { ...p.evento, fecha: e.target.value })} /></label>
@@ -107,7 +107,7 @@ export default function FormPresupuesto({ presupuesto, clientes, actividades, ho
       <div className="totales">
         <span>Base {eur(t.base)}</span><span>IVA {eur(t.iva)}</span>{t.irpf > 0 && <span>IRPF −{eur(t.irpf)}</span>}<strong>Total {eur(t.total)}</strong>
       </div>
-      {error && <p className="error">{error}</p>}
+      {error && <p className="error" role="alert">{error}</p>}
       <button className="boton" disabled={enviando}>{enviando ? 'Guardando…' : nuevo ? 'Crear presupuesto' : 'Guardar cambios'}</button>
     </form>
   );

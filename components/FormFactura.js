@@ -208,7 +208,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
           <div className="ff-m ff-cli">
             {eligiendo && !nuevoCli ? (
               <div className="ff-cli-busca">
-                <input type="search" className="campo" placeholder="Buscar cliente por nombre o NIF" value={buscando} onChange={(e) => setBuscando(e.target.value)} aria-label="Buscar cliente" autoComplete="off" enterKeyHint="search" />
+                <input spellCheck={false} autoCorrect="off" autoCapitalize="characters" type="search" className="campo" placeholder="Buscar cliente por nombre o NIF" value={buscando} onChange={(e) => setBuscando(e.target.value)} aria-label="Buscar cliente" autoComplete="off" enterKeyHint="search" />
                 <ul className="ff-cli-res">
                   {resultados.map((c) => <li key={c.id}><button type="button" onClick={() => elegirBuscado(c.id)}><strong>{c.nombre}</strong><small>{[c.nif || 'Sin NIF', c.ciudad].filter(Boolean).join(' · ')}</small></button></li>)}
                   <li><button type="button" className="ff-cli-nuevo" onClick={clienteNuevo}>+ Cliente nuevo{buscando.trim() ? `: «${buscando.trim()}»` : ''}</button></li>
@@ -238,18 +238,18 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
             <option value="">+ Cliente nuevo</option>
             {ordenados.map((c) => <option key={c.id} value={c.id}>{etiquetaClienteFactura(c)}</option>)}
           </select>
-          <label className="ff-etiqueta-oculta" htmlFor={idCampo('cliente.nombre')}>Razón social</label>
+          <label className="ff-etiqueta" htmlFor={idCampo('cliente.nombre')}>Nombre o razón social</label>
           <input {...atributos('cliente.nombre')} className="campo" placeholder="Ej.: Eventos SL" value={f.cliente.nombre} onChange={(e) => ponerCliente('nombre', e.target.value)} required />{mensaje('cliente.nombre')}
-          <label className="ff-etiqueta-oculta" htmlFor={idCampo('cliente.nif')}>NIF / CIF</label>
-          <input {...atributos('cliente.nif')} className="campo" placeholder="Ej.: B12345678" value={f.cliente.nif} onChange={(e) => ponerCliente('nif', e.target.value)} />{mensaje('cliente.nif')}
-          <label className="ff-etiqueta-oculta" htmlFor={idCampo('cliente.pais')}>País del identificador (si no es España)</label>
-          <input {...atributos('cliente.pais')} className="campo" placeholder="País del NIF si no es ES (US, PT, FR…)" maxLength={2} value={f.cliente.pais || ''} onChange={(e) => ponerCliente('pais', e.target.value.toUpperCase())} />{mensaje('cliente.pais')}
-          <label className="ff-etiqueta-oculta" htmlFor={idCampo('cliente.direccion')}>Dirección</label>
+          <label className="ff-etiqueta" htmlFor={idCampo('cliente.nif')}>NIF</label>
+          <input spellCheck={false} autoCorrect="off" autoCapitalize="characters" {...atributos('cliente.nif')} className="campo" placeholder="Ej.: B12345678" value={f.cliente.nif} onChange={(e) => ponerCliente('nif', e.target.value)} />{mensaje('cliente.nif')}
+          <label className="ff-etiqueta" htmlFor={idCampo('cliente.pais')}>País (si no es España)</label>
+          <input spellCheck={false} autoCorrect="off" autoCapitalize="characters" {...atributos('cliente.pais')} className="campo" placeholder="País del NIF si no es ES (US, PT, FR…)" maxLength={2} value={f.cliente.pais || ''} onChange={(e) => ponerCliente('pais', e.target.value.toUpperCase())} />{mensaje('cliente.pais')}
+          <label className="ff-etiqueta" htmlFor={idCampo('cliente.direccion')}>Dirección</label>
           <input {...atributos('cliente.direccion')} className="campo" placeholder="Ej.: Calle Mayor, 1" value={f.cliente.direccion} onChange={(e) => ponerCliente('direccion', e.target.value)} />{mensaje('cliente.direccion')}
-          <label className="ff-etiqueta-oculta" htmlFor={idCampo('cliente.ciudad')}>Ciudad y CP</label>
+          <label className="ff-etiqueta" htmlFor={idCampo('cliente.ciudad')}>Código postal y ciudad</label>
           <input {...atributos('cliente.ciudad')} className="campo" placeholder="Ej.: Barcelona, 08001" value={f.cliente.ciudad} onChange={(e) => ponerCliente('ciudad', e.target.value)} />{mensaje('cliente.ciudad')}
-          <label className="ff-etiqueta-oculta" htmlFor={idCampo('cliente.email')}>Email (para enviarle la factura)</label>
-          <input {...atributos('cliente.email')} className="campo" type="email" placeholder="Ej.: cliente@empresa.es" value={f.cliente.email || ''} onChange={(e) => ponerCliente('email', e.target.value)} />{mensaje('cliente.email')}
+          <label className="ff-etiqueta" htmlFor={idCampo('cliente.email')}>Email</label>
+          <input autoComplete="email" {...atributos('cliente.email')} className="campo" type="email" placeholder="Ej.: cliente@empresa.es" value={f.cliente.email || ''} onChange={(e) => ponerCliente('email', e.target.value)} />{mensaje('cliente.email')}
         </div>
         {(resumen || riesgo) && (
           <div className={`ff-ficha${riesgo && !riesgo.ok ? ' excede' : ''}`}>

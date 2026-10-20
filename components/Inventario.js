@@ -1,6 +1,8 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { confirmar as confirmarAccion } from './Confirmar';
+
+import { useId, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
 import { estadoPedidoProv } from '../lib/albaranes.js';
@@ -52,21 +54,25 @@ export function CopiarPedido({ texto }) {
 // Convierte una propuesta de «Qué pedir» en un pedido al proveedor (queda «en camino» hasta recibirlo).
 export function HacerPedido({ proveedor, items, hoy }) {
   const router = useRouter();
+  const ayudaId = useId();
+  const [error, setError] = useState('');
   const [ocupado, setOcupado] = useState(false);
   const hacer = async () => {
+    setError('');
     setOcupado(true);
     try {
       await llamar('/api/pedidos-proveedor', { method: 'POST', body: JSON.stringify({ proveedor, fecha: hoy, lineas: items.map((x) => ({ producto: x.id, cantidad: x.cantidad, coste: x.unitario })) }) });
       router.replace('/inventario?ver=pedidos');
       router.refresh();
-    } catch (e) { alert(e.message); setOcupado(false); }
+    } catch (e) { setError(e.message); setOcupado(false); }
   };
-  return <button type="button" className="boton pequeno" disabled={ocupado || proveedor === 'Sin proveedor'} title={proveedor === 'Sin proveedor' ? 'Pon el proveedor del producto en el catálogo' : ''} onClick={hacer}>{ocupado ? 'Creando…' : 'Hacer el pedido'}</button>;
+  return <><button type="button" className="boton pequeno" disabled={ocupado || proveedor === 'Sin proveedor'} aria-describedby={proveedor === 'Sin proveedor' ? ayudaId : undefined} onClick={hacer}>{ocupado ? 'Creando…' : 'Hacer el pedido'}</button>{proveedor === 'Sin proveedor' && <span id={ayudaId} className="nota">Pon el proveedor del producto en el catálogo.</span>}{error && <span className="error" role="alert">{error}</span>}</>;
 }
 
 // Recibir un pedido a proveedor: lo que ha llegado y a qué coste. Se apunta el gasto (pendiente de pago) con su stock.
 export function RecibirPedido({ pedido, hoy }) {
   const router = useRouter();
+  const [error, setError] = useState('');
   const estado = estadoPedidoProv(pedido);
   const idem = useRef(null);
   const [abierto, setAbierto] = useState(false);
@@ -85,12 +91,13 @@ export function RecibirPedido({ pedido, hoy }) {
     } catch (err) { setMsg(err.message); setOcupado(false); }
   };
   const cancelar = async () => {
-    if (!confirm('¿Cancelar lo pendiente de este pedido? Las compras recibidas se conservan.')) return;
-    try { await llamar('/api/pedidos-proveedor', { method: 'POST', body: JSON.stringify({ accion: 'cancelar', id: pedido.id }) }); router.refresh(); } catch (e) { alert(e.message); }
+    setError('');
+    if (!(await confirmarAccion({ titulo: 'Cancelar pedido', texto: '¿Cancelar lo pendiente de este pedido? Las compras recibidas se conservan.', aceptar: 'Cancelar pedido', peligro: true }))) return;
+    try { await llamar('/api/pedidos-proveedor', { method: 'POST', body: JSON.stringify({ accion: 'cancelar', id: pedido.id }) }); router.refresh(); } catch (e) { setError(e.message); }
   };
   if (estado.estado === 'recibido' || estado.estado === 'cancelado') return null;
   const resumen = <p className="nota">{estado.estado === 'parcial' ? 'Recibido parcialmente' : 'Pendiente de recibir'} · {estado.lineas.filter((l) => l.pendiente > 0).map((l) => `${l.concepto}: ${l.pendiente} pendientes`).join(' · ')}</p>;
-  if (!abierto) return <>{resumen}<div className="inv-acciones"><button type="button" className="boton pequeno" onClick={() => setAbierto(true)}>{estado.estado === 'parcial' ? 'Recibir el resto' : 'Recibir'}</button><button type="button" className="boton sec pequeno" onClick={cancelar}>Cancelar</button></div></>;
+  if (!abierto) return <>{resumen}{error && <p className="error" role="alert">{error}</p>}<div className="inv-acciones"><button type="button" className="boton pequeno" onClick={() => setAbierto(true)}>{estado.estado === 'parcial' ? 'Recibir el resto' : 'Recibir'}</button><button type="button" className="boton sec pequeno" onClick={cancelar}>Cancelar</button></div></>;
   return (
     <form className="formulario inv-recibir" onSubmit={recibir}>
       {resumen}
@@ -106,6 +113,7 @@ export function RecibirPedido({ pedido, hoy }) {
         <label>Fecha<input className="campo" type="date" value={x.fecha} onChange={(e) => setX({ ...x, fecha: e.target.value })} /></label>
         <label>IVA<select className="campo" value={x.ivaPct} onChange={(e) => setX({ ...x, ivaPct: Number(e.target.value) })}>{[21, 10, 4, 0].map((n) => <option key={n} value={n}>{n}%</option>)}</select></label>
       </div>
+      {error && <p className="error" role="alert">{error}</p>}
       {msg && <p className="error">{msg}</p>}
       <button className="boton" disabled={ocupado}>{ocupado ? 'Guardando…' : 'Apuntar la compra'}</button>
     </form>

@@ -1,5 +1,7 @@
 'use client';
 
+import { confirmar as confirmarAccion } from './Confirmar';
+
 import { useId, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FORMAS, valoresDe } from '@/lib/terceros';
@@ -20,7 +22,7 @@ export function FormularioFicha({ datos = {}, id, proveedor = false, editar = tr
   const enviar = async (e, eliminar = false) => {
     e.preventDefault();
     if (!editar || ocupado.current) return;
-    if (eliminar && !confirm('¿Borrar esta ficha?')) return;
+    if (eliminar && !(await confirmarAccion({ titulo: 'Borrar ficha', texto: '¿Borrar esta ficha?', aceptar: 'Borrar ficha', peligro: true }))) return;
     ocupado.current = true; setEnviando(true); setError(''); setErrores({}); setAviso('');
     try {
       const cuerpo = { ...f, ...(id ? { id } : {}) };
@@ -59,10 +61,10 @@ export function FormularioFicha({ datos = {}, id, proveedor = false, editar = tr
     {!editar && <p className="nota">Solo tienes permiso para consultar esta ficha.</p>}
     <div className="ficha-rejilla">
       {campo('nombre', 'Nombre', { required: true, maxLength: 120, readOnly: Boolean(datos.id), ayuda: datos.id ? 'El nombre se fija con el primero: las facturas lo llevan' : '' })}
-      {campo('nif', 'NIF', { maxLength: 20 })}
+      {campo('nif', 'NIF', { maxLength: 20, autoCapitalize: 'characters', autoCorrect: 'off', spellCheck: false })}
       {campo('pais', 'País', { maxLength: 2, placeholder: 'ES', ayuda: 'Dos letras, si no es ES' })}
       {campo('direccion', 'Dirección', { maxLength: 120 })}{campo('ciudad', 'Ciudad', { maxLength: 120 })}
-      {campo('email', 'Email', { tipo: 'email' })}{campo('telefono', 'Teléfono', { tipo: 'tel', maxLength: 30 })}
+      {campo('email', 'Email', { tipo: 'email', autoComplete: 'email' })}{campo('telefono', 'Teléfono', { tipo: 'tel', autoComplete: 'tel', inputMode: 'tel', maxLength: 30 })}
       {campo(proveedor ? 'formaPago' : 'formaCobro', proveedor ? 'Forma de pago' : 'Forma de cobro', { tipo: 'select' })}
       {campo('plazo', 'Plazo en días', { inputMode: 'numeric', placeholder: 'Según Ajustes' })}
       {campo('comercial', 'Comercial', { list: `${prefijo}-comerciales`, maxLength: 80 })}
@@ -72,7 +74,7 @@ export function FormularioFicha({ datos = {}, id, proveedor = false, editar = tr
     </div>
     <datalist id={`${prefijo}-comerciales`}>{comerciales.map((v) => <option key={v} value={v} />)}</datalist>
     <datalist id={`${prefijo}-zonas`}>{zonas.map((v) => <option key={v} value={v} />)}</datalist>
-    {editar && <div className="ficha-acciones"><button className="boton" disabled={enviando}>{enviando ? 'Guardando…' : datos.id ? 'Guardar cambios' : 'Crear ficha'}</button>{borrar && id && <button type="button" className="borrar" disabled={enviando} onClick={(e) => enviar(e, true)}>Borrar ficha</button>}</div>}
+    {editar && <div className="ficha-acciones"><button type="submit" className="boton" disabled={enviando}>{enviando ? 'Guardando…' : datos.id ? 'Guardar cambios' : 'Crear ficha'}</button>{borrar && id && <button type="button" className="borrar" disabled={enviando} onClick={(e) => enviar(e, true)}>Borrar ficha</button>}</div>}
   </form>;
 }
 
@@ -84,7 +86,7 @@ export function FiltrosFichas({ lista, filtros }) {
   return <form method="get" className="ficha-filtros">
     <label>Buscar<input className="campo" name="q" defaultValue={filtros.q || ''} placeholder="Nombre, NIF o email" type="search" /></label>
     {['comercial', 'zona'].map((k) => <label key={k}>{k === 'comercial' ? 'Comercial' : 'Zona'}<select className="campo" name={k} defaultValue={filtros[k] || ''}><option value="">Todos</option><option value="__sin__">{k === 'comercial' ? 'Sin comercial' : 'Sin zona'}</option>{valoresDe(lista, k).map((v) => <option key={v} value={v}>{v}</option>)}</select></label>)}
-    <button className="boton">Aplicar filtros</button>
+    <button type="submit" className="boton">Aplicar filtros</button>
   </form>;
 }
 

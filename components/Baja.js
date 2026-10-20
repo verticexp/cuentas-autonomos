@@ -1,5 +1,7 @@
 'use client';
 
+import { confirmar as confirmarAccion } from './Confirmar';
+
 import { useState } from 'react';
 import { llamar } from './Acciones';
 
@@ -10,7 +12,7 @@ export default function Baja({ empresa }) {
   const [enviando, setEnviando] = useState(false);
   const enviar = async (e) => {
     e.preventDefault();
-    if (!window.confirm(`¿Dar de baja ${empresa}? No se puede deshacer.`)) return;
+    if (!(await confirmarAccion({ titulo: 'Dar de baja la empresa', texto: `¿Dar de baja ${empresa}? No se puede deshacer.`, aceptar: 'Dar de baja', peligro: true }))) return;
     setEnviando(true);
     setMsg('');
     try {
@@ -19,10 +21,10 @@ export default function Baja({ empresa }) {
     } catch (err) { setMsg(err.message); setEnviando(false); }
   };
   return (
-    <form className="formulario tarjeta bloque" onSubmit={enviar}>
-      <input className="campo" type="password" placeholder="Tu contraseña" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-      {msg && <p className="error">{msg}</p>}
-      <button className="borrar ancho" disabled={enviando || !password}>{enviando ? 'Dando de baja…' : 'Dar de baja la empresa'}</button>
+    <form className="formulario tarjeta bloque" onSubmit={enviar} onInvalid={() => setMsg('Escribe tu contraseña para dar de baja la empresa.')}>
+      <label>Tu contraseña<input className="campo" type="password" placeholder="Tu contraseña" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required /></label>
+      {msg && <p className="error" role="alert">{msg}</p>}
+      <button type="submit" className="borrar ancho" disabled={enviando}>{enviando ? 'Dando de baja…' : 'Dar de baja la empresa'}</button>
     </form>
   );
 }

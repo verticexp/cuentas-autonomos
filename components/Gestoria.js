@@ -34,9 +34,10 @@ export default function Gestoria({ gestoria, trimestres, invitar, emailListo, ap
       <form className="formulario tarjeta" onSubmit={guardar}>
         <h3>Datos de tu gestoría</h3>
         <label>Nombre (opcional)<input className="campo" value={d.nombre} maxLength={120} onChange={(e) => setD({ ...d, nombre: e.target.value })} placeholder="Gestoría López" /></label>
-        <label>Email<input className="campo" type="email" value={d.email} maxLength={254} onChange={(e) => setD({ ...d, email: e.target.value })} placeholder="tu@gestoria.es" /></label>
-        <label className="check ges-auto"><input type="checkbox" checked={d.auto} onChange={(e) => setD({ ...d, auto: e.target.checked })} disabled={!emailListo} />
+        <label>Email<input autoComplete="email" className="campo" type="email" value={d.email} maxLength={254} onChange={(e) => setD({ ...d, email: e.target.value })} placeholder="tu@gestoria.es" /></label>
+        <label className="check ges-auto"><input type="checkbox" checked={d.auto} onChange={(e) => setD({ ...d, auto: e.target.checked })} disabled={!emailListo} aria-describedby={!emailListo ? "ges-email-ayuda" : undefined} />
           <span>Mandarle el paquete solo al acabar cada trimestre<small>El día 5 de enero, abril, julio y octubre: facturas, gastos con sus justificantes, nóminas e impuestos del trimestre.</small></span></label>
+        {!emailListo && <p id="ges-email-ayuda" className="nota">El envío automático necesita que esté configurado el correo de Fisquo.</p>}
         {msg && <p role="status" className={msg === 'Guardado' ? 'nota guardado' : msg === 'Guardando…' ? 'nota' : 'error'}>{msg === 'Guardado' ? '✓ Guardado' : msg}</p>}
         <button className="boton">Guardar</button>
       </form>
@@ -50,12 +51,12 @@ export default function Gestoria({ gestoria, trimestres, invitar, emailListo, ap
             </select>
           </label>
           <div className="ges-botones">
-            <button type="button" className="boton" onClick={mandar} disabled={!guardada || !emailListo || envio.startsWith('Preparando')}>Mandar a la gestoría</button>
+            <button type="button" className="boton" onClick={mandar} aria-describedby="ges-envio-ayuda" disabled={!guardada || !emailListo || envio.startsWith('Preparando')}>Mandar a la gestoría</button>
             <a className="boton sec" href={`/api/paquete?anio=${trimestres[sel].anio}&t=${trimestres[sel].t}`} download>Descargar</a>
           </div>
           {envio && <p role="status" className={envio.startsWith('✓') || envio.startsWith('Preparando') ? 'nota' : 'error'}>{envio}</p>}
         </div>
-        <p className="grupo-pie">{!emailListo ? 'El envío por email aún no está configurado: descárgalo y mándaselo tú.' : guardada ? `Le llega a ${gestoria.email} con tu email para responder (si lo has puesto en Datos de la empresa).` : 'Guarda antes el email de tu gestoría.'}</p>
+        <p id="ges-envio-ayuda" className="grupo-pie">{!emailListo ? 'El envío por email aún no está configurado: descárgalo y mándaselo tú.' : guardada ? `Le llega a ${gestoria.email} con tu email para responder (si lo has puesto en Datos de la empresa).` : 'Guarda antes el email de tu gestoría.'}</p>
       </section>
 
       {invitar && (

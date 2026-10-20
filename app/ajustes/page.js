@@ -158,7 +158,7 @@ export default async function Page() {
         <Celda href="/ajustes/eliminar-cuenta" ico="baja" tono="rojo" titulo="Eliminar mi cuenta" detalle="Borrar tu cuenta y tus datos personales" />
       </Grupo>}
 
-      <form method="post" action="/api/logout"><button className="borrar ancho">Cerrar sesión</button></form>
+      <form method="post" action="/api/logout"><button type="submit" className="borrar ancho">Cerrar sesión</button></form>
     </main>
   );
 }

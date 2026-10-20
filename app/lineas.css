@@ -34,3 +34,7 @@
 /* Rectificativas: lo que cambia según el motivo (periodo del IVA, año del IRPF, requisitos de un impagado) */
 .aviso-rect ul { margin: 6px 0; padding-left: 20px; }
 .aviso-rect p { margin: 4px 0; }
+
+@media (max-width: 1023.98px) {
+  .linea-quitar { width: 44px; height: 44px; }
+}

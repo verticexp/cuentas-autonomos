@@ -1,5 +1,7 @@
 'use client';
 
+import { confirmar as confirmarAccion } from './Confirmar';
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
@@ -9,7 +11,7 @@ export default function Verifactu({ modo, admin, listo, faltaEmisor, fisquo, cue
   const router = useRouter();
   const [msg, setMsg] = useState('');
   const cambiar = async (verifactu, pregunta) => {
-    if (pregunta && !window.confirm(pregunta)) return;
+    if (pregunta && !(await confirmarAccion({ titulo: 'Confirmar acción', texto: pregunta, aceptar: 'Continuar' }))) return;
     setMsg('');
     try { await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify({ verifactu }) }); router.refresh(); } catch (e) { setMsg(e.message); }
   };

@@ -174,7 +174,7 @@ export default async function Contabilidad({ searchParams }) {
             <input type="hidden" name="anio" value={anio} /><input type="hidden" name="ver" value="mayor" />
             <input id="cuenta-mayor" className="campo" name="cuenta" list="cuentas-mayor" inputMode="numeric" defaultValue={cuenta} placeholder="Cuenta (572, 430…)" aria-label="Cuenta" />
             <datalist id="cuentas-mayor">{d.sumas.filas.map((x) => <option key={x.cuenta} value={x.cuenta}>{x.nombre}</option>)}</datalist>
-            <button className="boton sec">Ver</button>
+            <button type="submit" className="boton sec">Ver</button>
           </form>
           {d.mayor ? <>
           <div className="cont-resumen">

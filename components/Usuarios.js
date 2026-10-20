@@ -1,5 +1,7 @@
 'use client';
 
+import { confirmar as confirmarAccion } from './Confirmar';
+
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
@@ -67,7 +69,7 @@ function Persona({ o, yo, soyAdmin, onCambio }) {
     catch (e) { setMsg(e.message); }
   };
   const quitar = async () => {
-    if (!confirm(`¿Quitar el acceso a ${o.nombre}? Sus facturas y gastos se quedan en la empresa.`)) return;
+    if (!(await confirmarAccion({ titulo: 'Quitar acceso', texto: `¿Quitar el acceso a ${o.nombre}? Sus facturas y gastos se quedan en la empresa.`, aceptar: 'Quitar', peligro: true }))) return;
     try { await llamar(`/api/usuarios?id=${o.id}`, { method: 'DELETE' }); onCambio(); } catch (e) { setMsg(e.message); }
   };
   const reenviar = async () => {
@@ -78,7 +80,7 @@ function Persona({ o, yo, soyAdmin, onCambio }) {
 
   return (
     <li className={abierta ? 'abierta' : ''}>
-      <button type="button" className="fila" onClick={() => !soyYo && setAbierta(!abierta)} aria-expanded={abierta} disabled={soyYo}>
+      <button type="button" className="fila" onClick={() => !soyYo && setAbierta(!abierta)} aria-expanded={abierta} disabled={soyYo} aria-describedby={soyYo ? `persona-${o.id}-propia` : undefined}>
         <Avatar nombre={o.nombre} />
         <span className="txt"><strong>{o.nombre}{soyYo ? ' (tú)' : ''}</strong><small>{o.email}</small></span>
         <span className="imp-col">
@@ -86,6 +88,7 @@ function Persona({ o, yo, soyAdmin, onCambio }) {
           {!o.activo && <span className="pastilla p-pendiente">Invitado</span>}
         </span>
       </button>
+      {soyYo && <p id={`persona-${o.id}-propia`} className="nota">No puedes cambiar tus propios permisos.</p>}
       {!o.activo && !soyYo && soyAdmin && (
         <div className="invit-pendiente">
           <span>Invitación pendiente</span>
@@ -94,7 +97,7 @@ function Persona({ o, yo, soyAdmin, onCambio }) {
       )}
       {!o.activo && !abierta && (msg || enlace) && (
         <div className="invit-resultado">
-          {msg && <p className="error">{msg}</p>}
+          {msg && <p className="error" role="alert">{msg}</p>}
           {enlace && <Enlace r={enlace} />}
         </div>
       )}
@@ -123,6 +126,7 @@ export default function Usuarios({ lista, yo, empresa, empresas, miEmpresa, soyA
   const [error, setError] = useState('');
   const [nueva, setNueva] = useState({ empresaNueva: '', nombre: '', email: '' });
   const [enlaceEmpresa, setEnlaceEmpresa] = useState(null);
+  const [errorEmpresa, setErrorEmpresa] = useState('');
 
   const invitar = async (e) => {
     e.preventDefault();
@@ -137,12 +141,12 @@ export default function Usuarios({ lista, yo, empresa, empresas, miEmpresa, soyA
   };
   const crearEmpresa = async (e) => {
     e.preventDefault();
-    setError(''); setEnlaceEmpresa(null);
+    setErrorEmpresa(''); setEnlaceEmpresa(null);
     try {
       const r = await llamar('/api/usuarios', { method: 'POST', body: JSON.stringify(nueva) });
       setEnlaceEmpresa(r); setNueva({ empresaNueva: '', nombre: '', email: '' });
       router.refresh();
-    } catch (err) { setError(err.message); }
+    } catch (err) { setErrorEmpresa(err.message); }
   };
 
   return (
@@ -156,11 +160,11 @@ export default function Usuarios({ lista, yo, empresa, empresas, miEmpresa, soyA
 
           {soyAdmin && <form id="invitar" className="formulario tarjeta bloque" onSubmit={invitar} style={{ marginTop: 16 }}>
             <h3>Invitar a alguien</h3>
-            <input className="campo" placeholder="Nombre" value={d.nombre} onChange={(e) => setD({ ...d, nombre: e.target.value })} required />
-            <input className="campo" type="email" placeholder="Email" value={d.email} onChange={(e) => setD({ ...d, email: e.target.value })} required />
+            <label>Nombre<input className="campo" placeholder="Nombre" value={d.nombre} onChange={(e) => setD({ ...d, nombre: e.target.value })} required /></label>
+            <label>Email<input autoComplete="email" className="campo" type="email" placeholder="Email" value={d.email} onChange={(e) => setD({ ...d, email: e.target.value })} required /></label>
             <p className="rotulo" style={{ margin: '4px 0 0' }}>Qué podrá hacer</p>
             <ElegirPermisos rol={d.rol} permisos={d.permisos} cambiar={(rol, permisos) => setD({ ...d, rol, permisos: rol === 'admin' ? [] : limpiarPermisos(permisos) })} />
-            {error && <p className="error">{error}</p>}
+            {error && <p className="error" role="alert">{error}</p>}
             <button className="boton">Crear y enviar invitación</button>
             {enlace && <Enlace r={enlace} />}
             {yaTiene && <p className="nota">{yaTiene}</p>}
@@ -179,18 +183,20 @@ export default function Usuarios({ lista, yo, empresa, empresas, miEmpresa, soyA
                 <span className="txt"><strong>{e.nombre}{e.id === miEmpresa ? ' (la tuya)' : ''}</strong><small>{e.personas === 1 ? '1 persona' : `${e.personas} personas`}</small></span>
                 {e.id !== miEmpresa && (
                   <button type="button" className="borrar" onClick={async () => {
-                    if (!confirm(`¿Borrar ${e.nombre} con todos sus usuarios, facturas y gastos? No se puede deshacer.`)) return;
-                    try { await llamar(`/api/usuarios?empresa=${e.id}`, { method: 'DELETE' }); router.refresh(); } catch (err) { alert(err.message); }
+                    if (!(await confirmarAccion({ titulo: 'Borrar empresa', texto: `¿Borrar ${e.nombre} con todos sus usuarios, facturas y gastos? No se puede deshacer.`, aceptar: 'Borrar empresa', peligro: true }))) return;
+                    setErrorEmpresa('');
+                    try { await llamar(`/api/usuarios?empresa=${e.id}`, { method: 'DELETE' }); router.refresh(); } catch (err) { setErrorEmpresa(err.message); }
                   }}>Borrar</button>
                 )}
               </li>
             ))}
           </ul>
+          {errorEmpresa && <p className="error" role="alert">{errorEmpresa}</p>}
           <form className="formulario tarjeta" onSubmit={crearEmpresa} style={{ marginTop: 16 }}>
             <h3>Dar de alta una empresa</h3>
-            <input className="campo" placeholder="Nombre de la empresa" value={nueva.empresaNueva} onChange={(e) => setNueva({ ...nueva, empresaNueva: e.target.value })} required />
-            <input className="campo" placeholder="Nombre de su administrador" value={nueva.nombre} onChange={(e) => setNueva({ ...nueva, nombre: e.target.value })} required />
-            <input className="campo" type="email" placeholder="Email del administrador" value={nueva.email} onChange={(e) => setNueva({ ...nueva, email: e.target.value })} required />
+            <label>Nombre de la empresa<input className="campo" placeholder="Nombre de la empresa" value={nueva.empresaNueva} onChange={(e) => setNueva({ ...nueva, empresaNueva: e.target.value })} required /></label>
+            <label>Nombre de su administrador<input className="campo" placeholder="Nombre de su administrador" value={nueva.nombre} onChange={(e) => setNueva({ ...nueva, nombre: e.target.value })} required /></label>
+            <label>Email del administrador<input autoComplete="email" className="campo" type="email" placeholder="Email del administrador" value={nueva.email} onChange={(e) => setNueva({ ...nueva, email: e.target.value })} required /></label>
             <button className="boton">Crear empresa e invitación</button>
             {enlaceEmpresa && <Enlace r={enlaceEmpresa} />}
           </form>

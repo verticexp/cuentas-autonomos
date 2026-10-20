@@ -1,5 +1,7 @@
 'use client';
 
+import { confirmar as confirmarAccion } from './Confirmar';
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -38,11 +40,14 @@ export function RepetirFactura({ factura, dia, existente }) {
 // En la lista de recurrentes: pausar/reanudar y borrar.
 export function AccionesRecurrente({ id, activa }) {
   const router = useRouter();
-  const pedir = async (url, opciones) => { try { await llamar(url, opciones); router.refresh(); } catch (e) { alert(e.message); } };
+  const [error, setError] = useState('');
+  const pedir = async (url, opciones) => {
+    setError(''); try { await llamar(url, opciones); router.refresh(); } catch (e) { setError(e.message); } };
   return (
     <span className="recurrente-acciones">
       <button type="button" className="boton sec pequeno" onClick={() => pedir('/api/recurrentes', { method: 'PATCH', body: JSON.stringify({ id, activa: !activa }) })}>{activa ? 'Pausar' : 'Reanudar'}</button>
-      <button type="button" className="borrar" onClick={() => confirm('¿Dejar de repetir esta factura? Las ya creadas no se tocan.') && pedir(`/api/recurrentes?id=${id}`, { method: 'DELETE' })}>Quitar</button>
+      <button type="button" className="borrar" onClick={async () => (await confirmarAccion({ titulo: 'Dejar de repetir', texto: '¿Dejar de repetir esta factura? Las ya creadas no se tocan.', aceptar: 'Quitar', peligro: true })) && pedir(`/api/recurrentes?id=${id}`, { method: 'DELETE' })}>Quitar</button>
+      {error && <span className="error" role="alert">{error}</span>}
     </span>
   );
 }

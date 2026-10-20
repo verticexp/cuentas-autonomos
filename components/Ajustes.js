@@ -60,10 +60,10 @@ export default function Ajustes({ seccion, emisor, drive, driveError, sociedad, 
         {(d, poner) => (
           <>
             {CAMPOS.map(([k, n]) => (
-              <label key={k}>{n}<input className="campo" value={d[k] || ''} onChange={(e) => poner(k, e.target.value)} required /></label>
+              <label key={k}>{n}<input {...(k === 'nif' ? { autoCapitalize: 'characters', autoCorrect: 'off', spellCheck: false } : {})} className="campo" value={d[k] || ''} onChange={(e) => poner(k, e.target.value)} required /></label>
             ))}
-            <label>Email de contacto (opcional)<input className="campo" type="email" value={d.email || ''} onChange={(e) => poner('email', e.target.value)} placeholder="facturas@tuempresa.es" /></label>
-            <label>Teléfono (opcional)<input className="campo" type="tel" value={d.telefono || ''} onChange={(e) => poner('telefono', e.target.value)} /></label>
+            <label>Email de contacto (opcional)<input autoComplete="email" className="campo" type="email" value={d.email || ''} onChange={(e) => poner('email', e.target.value)} placeholder="facturas@tuempresa.es" /></label>
+            <label>Teléfono (opcional)<input inputMode="tel" autoComplete="tel" className="campo" type="tel" value={d.telefono || ''} onChange={(e) => poner('telefono', e.target.value)} /></label>
             <label>Web (opcional)<input className="campo" value={d.web || ''} onChange={(e) => poner('web', e.target.value)} placeholder="tuempresa.es" /></label>
             {sociedad && <label>Datos del Registro Mercantil<input className="campo" value={d.registro || ''} onChange={(e) => poner('registro', e.target.value)} placeholder="Registro Mercantil de Madrid, tomo 1234, folio 56, hoja M-78901" /></label>}
             {sociedad && <p className="nota">Las sociedades deben ponerlos en sus facturas y documentos. Salen al pie de cada factura.</p>}
@@ -81,7 +81,7 @@ export default function Ajustes({ seccion, emisor, drive, driveError, sociedad, 
           <>
             <label>Plazo de pago (días)<input className="campo" type="number" min="0" max="365" value={d.plazo} onChange={(e) => poner('plazo', e.target.value)} /></label>
             <p className="nota">Transferencia al IBAN de tus datos de empresa{emisor.iban ? ` (…${String(emisor.iban).replace(/\s/g, '').slice(-4)})` : ''}: sale siempre en la factura.</p>
-            <label>Bizum (opcional)<input className="campo" type="tel" inputMode="tel" value={d.bizum} onChange={(e) => poner('bizum', e.target.value)} placeholder="600 000 000" /></label>
+            <label>Bizum (opcional)<input autoComplete="tel" className="campo" type="tel" inputMode="tel" value={d.bizum} onChange={(e) => poner('bizum', e.target.value)} placeholder="600 000 000" /></label>
             <label>Otra forma de pago (opcional)<input className="campo" value={d.otroPago} onChange={(e) => poner('otroPago', e.target.value)} placeholder="Efectivo, domiciliación, pagaré…" /></label>
             <label>Recordar por email las facturas vencidas cada (días)<input className="campo" type="number" min="0" max="60" placeholder="0 o vacío: no enviar recordatorios" value={d.recordatorios} onChange={(e) => poner('recordatorios', e.target.value)} /></label>
           </>
@@ -133,8 +133,8 @@ export default function Ajustes({ seccion, emisor, drive, driveError, sociedad, 
       >
         {(d, poner) => (
           <>
-            <input className="campo" type="password" placeholder="Contraseña actual" autoComplete="current-password" value={d.actual} onChange={(e) => poner('actual', e.target.value)} required />
-            <input className="campo" type="password" placeholder="Nueva (mínimo 8)" autoComplete="new-password" minLength={8} value={d.nueva} onChange={(e) => poner('nueva', e.target.value)} required />
+            <label>Contraseña actual<input className="campo" type="password" placeholder="Contraseña actual" autoComplete="current-password" value={d.actual} onChange={(e) => poner('actual', e.target.value)} required /></label>
+            <label>Nueva contraseña<input className="campo" type="password" placeholder="Nueva (mínimo 8)" autoComplete="new-password" minLength={8} value={d.nueva} onChange={(e) => poner('nueva', e.target.value)} required /></label>
           </>
         )}
       </Formulario>}

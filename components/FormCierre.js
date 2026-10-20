@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
 import { navegar } from '@/lib/transicion';
@@ -17,6 +17,7 @@ const TIPOS = [21, 10, 4, 0];
 // cuántas unidades de cada producto salieron (para el stock y el margen).
 export default function FormCierre({ hoy, actividades, productos = [], cierre = null, ivaDefecto = 21, proyectos = [] }) {
   const router = useRouter();
+  const ayudaId = useId();
   const inicial = () => {
     if (!cierre) return { fecha: hoy, actividad: actividades[0].id, porIva: [{ pct: ivaDefecto, total: '' }], efectivo: '', tarjeta: '', otros: '', desde: '', hasta: '', nota: '', unidades: [], proyecto: '' };
     return {
@@ -125,7 +126,8 @@ export default function FormCierre({ hoy, actividades, productos = [], cierre = 
 
       <div className="totales solo-pc"><strong>Total del día {eur(total)}</strong></div>
       {error && <p className="error">{error}</p>}
-      <button className="boton" disabled={enviando || !cuadra || !total}>{enviando ? 'Guardando…' : cierre ? 'Guardar cambios' : 'Apuntar el cierre'}</button>
+      {(!cuadra || !total) && <p id={ayudaId} className="nota">{!total ? 'Añade el importe vendido para guardar el cierre.' : 'Los cobros deben sumar el total vendido.'}</p>}
+      <button className="boton" disabled={enviando || !cuadra || !total} aria-describedby={!cuadra || !total ? ayudaId : undefined}>{enviando ? 'Guardando…' : cierre ? 'Guardar cambios' : 'Apuntar el cierre'}</button>
     </form>
   );
 }
