@@ -33,8 +33,10 @@ export async function POST(req) {
     if (b.reclamado !== true) return error('Para recuperar el IVA de un impagado, antes tienes que reclamar el cobro por vía judicial, con requerimiento notarial o por otro medio fehaciente');
   }
   // idem: clave de idempotencia del formulario (doble clic o reintento tras una respuesta perdida).
-  const { factura: f, error: e, riesgo } = await crearFactura(u, datos, { original, motivo: b.motivoRectificacion, idem: typeof b.idem === 'string' ? `form:${b.idem}` : undefined });
-  if (e) return riesgo ? Response.json({ error: e, riesgo }, { status: 409 }) : error(e);
+  // ordenFechas: si la fecha no sigue el orden de su serie, se avisa (409) y el formulario lo reenvía con forzarOrden
+  // cuando la persona lo confirma.
+  const { factura: f, error: e, riesgo, ordenFechas } = await crearFactura(u, datos, { original, motivo: b.motivoRectificacion, idem: typeof b.idem === 'string' ? `form:${b.idem}` : undefined, ordenFechas: b.forzarOrden !== true });
+  if (e) return riesgo ? Response.json({ error: e, riesgo }, { status: 409 }) : ordenFechas ? Response.json({ error: e, ordenFechas: true }, { status: 409 }) : error(e);
   return Response.json({ ok: true, factura: f });
 }
 
@@ -71,11 +73,11 @@ export async function PATCH(req) {
   const datos = limpiar(b, actividadesDe(u), fiscalDe(u).tipo === 'sociedad', { rectificativa: Boolean(antes.rectifica || antes.serie === 'R'), conRecargo: usa303(fiscalDe(u)) });
   if (datos.error) return Response.json({ error: datos.error, errores: datos.errores }, { status: 400 });
   if (Number(datos.fecha.slice(0, 4)) !== antes.anio) return error(`La fecha debe ser de ${antes.anio}`);
-  // Al cambiar la fecha, sigue en el orden de su serie (lib/facturas.js fechaFueraDeOrden). Si no se toca, no se mira:
-  // una factura antigua ya desordenada se puede seguir corrigiendo en lo demás.
-  if (datos.fecha !== antes.fecha) {
+  // Al cambiar la fecha, se avisa si deja de seguir el orden de su serie (lib/facturas.js fechaFueraDeOrden); con
+  // forzarOrden (confirmado en el formulario) se guarda. Si no se toca la fecha, no se mira.
+  if (datos.fecha !== antes.fecha && b.forzarOrden !== true) {
     const fuera = await fechaFueraDeOrden(u, { serie: antes.serie || '', anio: antes.anio, numero: antes.numero, fecha: datos.fecha });
-    if (fuera) return error(fuera);
+    if (fuera) return Response.json({ error: fuera, ordenFechas: true }, { status: 409 });
   }
   // Sobre la factura de ahora: lo cobrado o enviado mientras se editaba se conserva.
   // Si sube lo que queda por cobrar (o pasa a otro cliente), el cliente no puede quedar por encima de su riesgo máximo.

@@ -39,7 +39,11 @@ globalThis.fetch = async (url, op = {}) => {
 };
 const ok = (nombre, fn) => { try { fn(); console.log(`  ✓ ${nombre}`); } catch (e) { fallos += 1; console.log(`  ✗ ${nombre}\n    ${e.message.split('\n')[0]}`); } };
 
+// Las facturas de esta batería se crean con fechas salteadas en la misma serie: se confirma el aviso de orden de
+// fechas (forzarOrden) salvo que la prueba lo quite a propósito con forzarOrden: false.
 async function pedir(ruta, { metodo = 'GET', cuerpo, cookie, form } = {}) {
+  if (ruta === '/api/facturas' && ['POST', 'PATCH'].includes(metodo) && cuerpo && !('forzarOrden' in cuerpo)) cuerpo = { ...cuerpo, forzarOrden: true };
+  if (cuerpo?.forzarOrden === false) { const { forzarOrden, ...resto } = cuerpo; cuerpo = resto; }
   const r = await fetch(BASE + ruta, {
     method: metodo, redirect: 'manual',
     headers: { Origin: BASE, ...(cookie ? { Cookie: `t=${cookie}` } : {}), ...(cuerpo ? { 'Content-Type': 'application/json' } : {}) },
@@ -141,6 +145,9 @@ const a4 = n(await texto(`/facturas/${lin.factura.id}/pdf`, yo));
 ok('la factura A4 lista cada línea', () => assert.ok(a4.includes('Sesión DJ') && a4.includes('Libro') && a4.includes(n(eur(540))), 'no aparece'));
 const pdf2 = await pedir(`/api/facturas/pdf?id=${encodeURIComponent(lin.factura.id)}`, { cookie: yo });
 ok('su PDF se genera', () => assert.ok(pdf2.status === 200 && pdf2.headers.get('content-type').includes('pdf'), `status ${pdf2.status}`));
+const desordenada = await pedir('/api/facturas', { metodo: 'POST', cookie: yo, cuerpo: { forzarOrden: false, fecha: `${Y}-01-02`, actividad: ACTS[0].id, cliente: { nombre: 'Fuera de orden' }, lineas: [{ concepto: 'X', cantidad: 1, precio: '10', ivaPct: 21 }] } });
+const jd = await desordenada.json();
+ok('una fecha anterior a la de la última factura de la serie avisa (409) para que se confirme', () => assert.ok(desordenada.status === 409 && jd.ordenFechas === true && /anterior a la de la factura/.test(jd.error), JSON.stringify(jd)));
 const sinConcepto = await pedir('/api/facturas', { metodo: 'POST', cookie: yo, cuerpo: { fecha: `${Y}-11-02`, cliente: { nombre: 'X' }, lineas: [{ concepto: '', precio: '10', ivaPct: 21 }] } });
 ok('una línea sin concepto no se acepta', () => assert.equal(sinConcepto.status, 400));
 

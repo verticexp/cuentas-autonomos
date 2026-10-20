@@ -1,6 +1,7 @@
 'use client';
 
 import Termino from '@/components/Termino';
+import { confirmar } from '@/components/Confirmar';
 
 import { useEffect, useId, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -174,8 +175,16 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
     enviandoRef.current = true;
     setEnviando(true); setError(''); setErrores({});
     try {
-      const r = await fetch('/api/facturas', { headers: { 'Content-Type': 'application/json' }, method: nueva ? 'POST' : 'PATCH', body: JSON.stringify(nueva ? { ...f, idem } : f) });
-      const d = await r.json().catch(() => ({}));
+      const mandar = (extra = {}) => fetch('/api/facturas', { headers: { 'Content-Type': 'application/json' }, method: nueva ? 'POST' : 'PATCH', body: JSON.stringify({ ...(nueva ? { ...f, idem } : f), ...extra }) });
+      let r = await mandar();
+      let d = await r.json().catch(() => ({}));
+      // La fecha no sigue el orden de la serie: se avisa y, si la persona lo confirma, se guarda igualmente.
+      if (r.status === 409 && d.ordenFechas) {
+        const seguir = await confirmar({ titulo: 'La fecha no sigue el orden de la serie', texto: `${d.error} Hacienda pide que número y fecha vayan en el mismo orden. Si es un error, cambia la fecha; si no, puedes guardarla igualmente.`, aceptar: 'Guardar igualmente', cancelar: 'Cambiar la fecha' });
+        if (!seguir) { setEnviando(false); enviandoRef.current = false; setErrores({ fecha: d.error }); return; }
+        r = await mandar({ forzarOrden: true });
+        d = await r.json().catch(() => ({}));
+      }
       if (r.status === 423 && d.bloqueada) window.location.replace(`/bloqueo?a=${encodeURIComponent(window.location.pathname + window.location.search)}`);
       if (!r.ok) {
         if (r.status === 400 && d.errores) {
