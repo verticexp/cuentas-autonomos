@@ -8,7 +8,7 @@
 .importar-fila .txt strong, .importar-fila .txt small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .importar-fila .txt small { color: var(--muted); }
 .importar-estado { flex: none; font-size: 13px; color: var(--muted); }
-.importar-estado.i-nuevo { color: var(--in); font-weight: 600; }
+.importar-estado.i-nuevo, .importar-estado.i-completar { color: var(--in); font-weight: 600; }
 .importar-estado.i-error { color: var(--out); }
 .importar-fila.i-duplicado .txt { opacity: 0.6; }
 .importar .asiento-campo { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); margin-bottom: 10px; }

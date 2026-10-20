@@ -79,6 +79,17 @@ export async function POST(req) {
       return Response.json({ ...p, guardados: lineas.length });
     }
     const act = actividadesDe(u)[0]?.id;
+    // Clientes que ya existían: se rellenan sus campos vacíos sobre la versión guardada ahora mismo.
+    const completar = p.items.filter((x) => x.estado === 'completar');
+    if (completar.length) {
+      const actuales = new Map(((await leer(u, 'clientes')) || []).map((c) => [c.id, c]));
+      const cambios = Object.fromEntries(completar.filter((x) => actuales.has(x.id)).map((x) => {
+        const c = actuales.get(x.id);
+        return [x.id, { ...c, ...Object.fromEntries(Object.entries(x.completa).filter(([k]) => !String(c[k] ?? '').trim())) }];
+      }));
+      if (Object.keys(cambios).length) await redis.hset(clave(u, 'clientes'), cambios);
+      p.completados = Object.keys(cambios).length;
+    }
     const nuevos = p.items.filter((x) => x.estado === 'nuevo').map((x) => crear[tipo](x.datos, act, corte));
     if (tipo === 'facturas') {
       try { await guardarImportadas(u, nuevos); } catch (e) { if (e instanceof RiesgoSuperado) return error(e.message); console.error('[api/importar]', e); return error('No se pudieron guardar las facturas'); }
