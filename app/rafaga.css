@@ -46,3 +46,8 @@
 .rafaga-acc { display: flex; gap: 8px; flex-wrap: wrap; }
 .rafaga-pie { flex: none; display: grid; gap: 8px; padding: 10px 0 calc(env(safe-area-inset-bottom, 0px) + 14px); background: var(--paper); }
 @media (prefers-reduced-motion: reduce) { .rafaga-disparo span { transition: none; } }
+
+@media (max-width: 1023.98px) {
+  .rafaga-tiras { padding: 18px 18px 0 0; }
+  .rafaga-tiras button::after { content: ""; position: absolute; inset: -11px; }
+}

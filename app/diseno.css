@@ -206,12 +206,12 @@ fieldset.solo-ver:disabled .campo { opacity: 1; color: var(--ink); -webkit-text-
   border: 0.5px solid var(--line);
   border-radius: 999px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
   -webkit-backdrop-filter: blur(20px) saturate(1.8); backdrop-filter: blur(20px) saturate(1.8);
-  touch-action: none; user-select: none; -webkit-user-select: none;
+  touch-action: pinch-zoom; user-select: none; -webkit-user-select: none;
 }
 .tabs a {
   flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
   height: 54px; padding: 0 4px; border-radius: 999px;
-  color: var(--ink); text-decoration: none; font-size: 10px; font-weight: 500; letter-spacing: 0;
+  color: var(--ink); text-decoration: none; font-size: 11px; font-weight: 500; letter-spacing: 0;
   -webkit-touch-callout: none; transition: background-color 0.2s var(--salida), color 0.2s var(--salida);
 }
 .tabs a svg { flex: none; width: 25px; height: 25px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
@@ -464,4 +464,9 @@ html[data-arranque=visto] #arranque { display: none; }
   .pagina .portal-enlace .portal-botones { display: flex; flex-wrap: wrap; }
   .pagina .portal-enlace .portal-botones > * { width: auto; padding-left: 22px; padding-right: 22px; }
   .pagina .envios > .boton.ancho, .pagina .boton.ancho.recurrente-boton { display: inline-flex; width: auto; align-self: flex-start; justify-self: start; padding-left: 22px; padding-right: 22px; }
+}
+
+@media (max-width: 1023.98px) {
+  .colores button::after { content: ""; position: absolute; inset: -6px; }
+  .color-libre input { inset: -6px; width: 44px; height: 44px; }
 }

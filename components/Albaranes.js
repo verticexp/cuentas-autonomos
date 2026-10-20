@@ -62,8 +62,10 @@ export function FacturarAlbaranes({ grupos, hoy, actividades }) {
 // Cerrar (o reabrir) un pedido que ya no se va a servir entero.
 export function CerrarPedido({ id, cerrado }) {
   const router = useRouter();
+  const [error, setError] = useState('');
   const cambiar = async () => {
-    try { await llamar('/api/albaranes', { method: 'POST', body: JSON.stringify({ accion: 'cerrar', id, cerrado: !cerrado }) }); router.refresh(); } catch (e) { alert(e.message); }
+    setError('');
+    try { await llamar('/api/albaranes', { method: 'POST', body: JSON.stringify({ accion: 'cerrar', id, cerrado: !cerrado }) }); router.refresh(); } catch (e) { setError(e.message); }
   };
-  return <button type="button" className="boton sec" onClick={cambiar}>{cerrado ? 'Reabrir el pedido' : 'Cerrar el pedido'}</button>;
+  return <><button type="button" className="boton sec" onClick={cambiar}>{cerrado ? 'Reabrir el pedido' : 'Cerrar el pedido'}</button>{error && <span className="error" role="alert">{error}</span>}</>;
 }

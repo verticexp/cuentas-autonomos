@@ -1,5 +1,7 @@
 'use client';
 
+import { confirmar as confirmarAccion } from './Confirmar';
+
 import Vacio from '@/components/Vacio';
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -24,7 +26,7 @@ export default function AdminEmpresas({ filas }) {
   const noCuadran = filas.filter((f) => f.forma === 'no-cuadra').length;
 
   async function accion(empresa, datos, pregunta) {
-    if (pregunta && !window.confirm(pregunta)) return;
+    if (pregunta && !(await confirmarAccion({ titulo: datos.accion === 'quitar-fundador' ? 'Quitar plan Fundador' : 'Regalar plan Fundador', texto: pregunta, aceptar: datos.accion === 'quitar-fundador' ? 'Quitar plan' : 'Regalar plan', peligro: datos.accion === 'quitar-fundador' }))) return;
     setOcupado(true); setMsg('');
     const r = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ empresa, ...datos }) }).catch(() => null);
     const d = await r?.json().catch(() => ({}));

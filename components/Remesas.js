@@ -1,7 +1,7 @@
 'use client';
 
 import Vacio from '@/components/Vacio';
-import { useRef, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from '@/components/Acciones';
 import { eur, fechaCorta } from '@/lib/formato';
@@ -41,6 +41,7 @@ function Cuenta({ grupo, cuenta, cobros, hoy, bloqueado, ejecutar }) {
 }
 
 function Lote({ tipo, documentos, cuentas, fechaInicial, hoy, emisorListo, bloqueado, ejecutar, resumen }) {
+  const ayudaId = useId();
   const cobros = tipo === 'cobros';
   const [seleccion, seleccionar] = useState([]);
   const [fecha, ponerFecha] = useState(fechaInicial);
@@ -103,8 +104,8 @@ function Lote({ tipo, documentos, cuentas, fechaInicial, hoy, emisorListo, bloqu
             <label>Fecha de {cobros ? 'cobro' : 'ejecución'}<input className="campo" type="date" value={fecha} min={hoy} required onChange={(e) => ponerFecha(e.target.value)} /></label>
             <label className="check rem-check"><input type="checkbox" checked={marcar} onChange={(e) => ponerMarcar(e.target.checked)} />Marcar como {cobros ? 'cobradas' : 'pagados'}</label>
             <p className="grupo-pie">{marcar ? 'Se marcarán al generar el archivo. Activa esta opción solo si tu banco ya ha confirmado los cobros o pagos.' : 'Los documentos seguirán pendientes después de descargar el archivo. Confirma los cobros o pagos cuando tu banco los ejecute.'}</p>
-            {!emisorListo && <p className="nota">Completa tus datos de facturación en Ajustes para descargar.</p>}
-            <button className="boton" disabled={!elegidos.length || !emisorListo || bloqueado}>{bloqueado ? 'Preparando…' : 'Descargar remesa (XML)'}</button>
+            {(!elegidos.length || !emisorListo) && <p id={ayudaId} className="nota">{!emisorListo ? 'Completa tus datos de facturación en Ajustes para descargar.' : 'Selecciona al menos un documento con cuenta bancaria e importe válido.'}</p>}
+            <button className="boton" disabled={!elegidos.length || !emisorListo || bloqueado} aria-describedby={!elegidos.length || !emisorListo ? ayudaId : undefined}>{bloqueado ? 'Preparando…' : 'Descargar remesa (XML)'}</button>
           </fieldset>
         </form>
       </>}

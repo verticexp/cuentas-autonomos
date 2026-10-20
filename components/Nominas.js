@@ -33,10 +33,10 @@ export function FormEmpleado({ empleado, hoy }) {
   return (
     <form className="formulario tarjeta" onSubmit={enviar}>
       {nuevo && <h3>Nuevo empleado</h3>}
-      <input className="campo" placeholder="Nombre y apellidos" value={e.nombre} onChange={(x) => poner('nombre', x.target.value)} required />
+      <label>Nombre y apellidos<input className="campo" placeholder="Nombre y apellidos" value={e.nombre} onChange={(x) => poner('nombre', x.target.value)} required /></label>
       <div className="dos-col">
-        <input className="campo" placeholder="DNI / NIE" value={e.nif} onChange={(x) => poner('nif', x.target.value)} />
-        <input className="campo" placeholder="Puesto" value={e.puesto} onChange={(x) => poner('puesto', x.target.value)} />
+        <label>DNI / NIE<input spellCheck={false} autoCorrect="off" autoCapitalize="characters" className="campo" placeholder="DNI / NIE" value={e.nif} onChange={(x) => poner('nif', x.target.value)} /></label>
+        <label>Puesto<input className="campo" placeholder="Puesto" value={e.puesto} onChange={(x) => poner('puesto', x.target.value)} /></label>
       </div>
       <div className="dos-col">
         <label>Alta<input className="campo" type="date" value={e.alta} onChange={(x) => poner('alta', x.target.value)} required /></label>
@@ -51,7 +51,7 @@ export function FormEmpleado({ empleado, hoy }) {
       {c.bruto > 0 && <p className="nota nomina-calculo">Cobra <strong>{eur(c.neto)}</strong> netos · a la empresa le cuesta <strong>{eur(c.coste)}</strong> al mes</p>}
       <p className="nota">Los % de Seguridad Social son los generales; tu gestoría te dice el exacto (sobre todo el de la empresa, que depende de la actividad).</p>
       <p className="rotulo" style={{ margin: '6px 0 0' }}>Registro de jornada</p>
-      <label>Email con el que ficha (su cuenta de Fisquo)<input className="campo" type="email" placeholder="Opcional" value={e.email || ''} onChange={(x) => poner('email', x.target.value)} /></label>
+      <label>Email con el que ficha (su cuenta de Fisquo)<input autoComplete="email" className="campo" type="email" placeholder="Opcional" value={e.email || ''} onChange={(x) => poner('email', x.target.value)} /></label>
       <div className="dos-col">
         <label>Horas a la semana<input className="campo" inputMode="decimal" value={e.horasSemana ?? 40} onChange={(x) => poner('horasSemana', x.target.value)} /></label>
         <label>Precio hora extra (€)<input className="campo" inputMode="decimal" placeholder="Si se pagan" value={e.precioHoraExtra || ''} onChange={(x) => poner('precioHoraExtra', x.target.value)} /></label>
@@ -68,14 +68,16 @@ export function FormEmpleado({ empleado, hoy }) {
 // Crea las nóminas del mes para todos los empleados de alta.
 export function GenerarMes({ mes, texto }) {
   const router = useRouter();
+  const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
   async function generar() {
+    setError('');
     setEnviando(true);
     try { await llamar('/api/nominas', { method: 'POST', body: JSON.stringify({ mes }) }); router.refresh(); }
-    catch (e) { alert(e.message); }
+    catch (e) { setError(e.message); }
     setEnviando(false);
   }
-  return <button type="button" className="boton ancho" disabled={enviando} onClick={generar}>{enviando ? 'Haciendo nóminas…' : texto}</button>;
+  return <><button type="button" className="boton ancho" disabled={enviando} onClick={generar}>{enviando ? 'Haciendo nóminas…' : texto}</button>{error && <span className="error" role="alert">{error}</span>}</>;
 }
 
 // Detalle de una nómina: corregir importes y marcarla como pagada.

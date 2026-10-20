@@ -25,6 +25,7 @@ export default function Deslizar({ id, acciones = [], href, children }) {
   const [x, setX] = useState(0);
   const [arrastrando, setArrastrando] = useState(false);
   const [trabajando, setTrabajando] = useState(false);
+  const [error, setError] = useState('');
   const raiz = useRef(null);
   const gesto = useRef(null);
   const tragar = useRef(false);
@@ -73,24 +74,24 @@ export default function Deslizar({ id, acciones = [], href, children }) {
   const hacer = async (accion) => {
     if (trabajando) return;
     if (accion === 'enviar') { navigator.vibrate?.(6); navegar(router, href, 'adelante'); return; }
-    setTrabajando(true);
+    setError(''); setTrabajando(true);
     try {
       if (accion === 'cobrada') { await llamar('/api/facturas', { method: 'PATCH', body: JSON.stringify({ id, accion: 'cobrar' }) }); avisarCobro(id); }
       if (accion === 'pagada') await llamar('/api/gastos', { method: 'PATCH', body: JSON.stringify({ id, pagado: true }) });
       navigator.vibrate?.(8);
       setX(0);
       router.refresh();
-    } catch (err) { alert(err.message); } finally { setTrabajando(false); }
+    } catch (err) { setError(err.message); setX(0); } finally { setTrabajando(false); }
   };
 
   return (
-    <div ref={raiz} className={`desliz${abierto ? ' abierto' : ''}${x !== 0 ? ' mov' : ''}`} onPointerDown={alBajar} onPointerMove={alMover} onPointerUp={alSoltar} onPointerCancel={alSoltar} onClickCapture={alPulsar}>
+    <><div ref={raiz} className={`desliz${abierto ? ' abierto' : ''}${x !== 0 ? ' mov' : ''}`} onPointerDown={alBajar} onPointerMove={alMover} onPointerUp={alSoltar} onPointerCancel={alSoltar} onClickCapture={alPulsar}>
       <div className="desliz-acciones" style={{ width: total }} aria-hidden={!abierto}>
         {lista.map((a) => (
           <button key={a} type="button" className={`desliz-boton ${ACCIONES[a].tono}`} style={{ width: ANCHO }} tabIndex={abierto ? 0 : -1} disabled={trabajando} onClick={() => hacer(a)}>{trabajando && a !== 'enviar' ? '…' : ACCIONES[a].nombre}</button>
         ))}
       </div>
       <div className="desliz-fila" style={{ transform: `translateX(${x}px)`, transition: arrastrando ? 'none' : undefined }}>{children}</div>
-    </div>
+    </div>{error && <p className="error" role="alert">{error}</p>}</>
   );
 }

@@ -1,12 +1,13 @@
 'use client';
 
 import Vacio from '@/components/Vacio';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { permisoIA } from '@/lib/permisoIA';
 
 // Chat con el asistente: la conversación vive en la pantalla (no se guarda) y cada respuesta dice de dónde salen las cifras.
 export default function Asistente({ listo, ejemplos, inicial = '' }) {
   const [mensajes, setMensajes] = useState([]);
+  const ayudaId = useId();
   const [texto, setTexto] = useState('');
   const [pensando, setPensando] = useState(false);
   const fin = useRef(null);
@@ -57,9 +58,10 @@ export default function Asistente({ listo, ejemplos, inicial = '' }) {
         {pensando && <li className="asi-msg assistant pensando" aria-label="Pensando"><span /><span /><span /></li>}
       </ul>
       <div ref={fin} />
+      {!texto.trim() && <p id={ayudaId} className="nota">Escribe tu pregunta para enviarla.</p>}
       <form className="asi-form" onSubmit={(e) => { e.preventDefault(); enviar(texto); }}>
         <input className="campo" value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="Pregunta por tus cuentas" maxLength={500} aria-label="Tu pregunta" />
-        <button className="boton pequeno" disabled={!texto.trim() || pensando} aria-label="Enviar">Enviar</button>
+        <button className="boton pequeno" disabled={!texto.trim() || pensando} aria-describedby={!texto.trim() ? ayudaId : undefined} aria-label="Enviar">Enviar</button>
       </form>
     </div>
   );

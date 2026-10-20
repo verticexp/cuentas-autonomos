@@ -1,5 +1,7 @@
 'use client';
 
+import { confirmar as confirmarAccion } from './Confirmar';
+
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
@@ -167,7 +169,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
           <strong>{hecho ? '✓ Gasto añadido' : 'Añadir un gasto'}</strong>
           <small>Haz una foto al ticket o sube la factura: Fisquo lee proveedor, base, IVA, IRPF y fecha.</small>
         </div>
-        {error && <p className="error">{error}</p>}
+        {error && <p className="error" role="alert">{error}</p>}
         {avisoAdjunto}
         <div className="gasto-rapido-botones">
           <button type="button" id="escanear-ticket" className="boton gasto-escanear" onClick={abrirCamara}><svg viewBox="0 0 24 24" aria-hidden><path d="M4 8V6a2 2 0 012-2h2M16 4h2a2 2 0 012 2v2M20 16v2a2 2 0 01-2 2h-2M8 20H6a2 2 0 01-2-2v-2M4 12h16" /></svg>Escanear ticket</button><input ref={camaraInput} type="file" accept="image/*" capture="environment" onChange={foto} hidden />
@@ -202,14 +204,14 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
       {leyendo && <p className="nota ticket-nota" role="status">{leyendo}</p>}
       {adjunto && <div className="gasto-adjunto" role="status"><strong>{adjunto.blob.type === 'application/pdf' ? 'PDF adjunto' : 'Foto adjunta'}</strong><span>{adjunto.nombre}</span><small>Se guardará junto con este gasto al pulsar Añadir.</small></div>}
       {gasto && <Justificante gasto={gasto} />}
-      <input className="campo" placeholder="Proveedor (opcional)" value={g.proveedor || ''} onChange={(e) => poner('proveedor', e.target.value)} />
-      {g.proveedor && <input className="campo" placeholder="NIF del proveedor (opcional)" value={g.proveedorNif || ''} onChange={(e) => poner('proveedorNif', e.target.value)} />}
-      <input className="campo" placeholder="Concepto" value={g.concepto} onChange={(e) => poner('concepto', e.target.value)} required />
+      <label>Proveedor (opcional)<input className="campo" placeholder="Proveedor (opcional)" value={g.proveedor || ''} onChange={(e) => poner('proveedor', e.target.value)} /></label>
+      {g.proveedor && <label>NIF del proveedor (opcional)<input spellCheck={false} autoCorrect="off" autoCapitalize="characters" className="campo" placeholder="NIF del proveedor (opcional)" value={g.proveedorNif || ''} onChange={(e) => poner('proveedorNif', e.target.value)} /></label>}
+      <label>Concepto<input className="campo" placeholder="Concepto" value={g.concepto} onChange={(e) => poner('concepto', e.target.value)} required /></label>
       <div className="dos-col">
-        <input className="campo" inputMode="decimal" placeholder="Base sin IVA" value={g.base} onChange={(e) => poner('base', e.target.value)} required />
-        <select className="campo" value={g.ivaPct} onChange={(e) => poner('ivaPct', Number(e.target.value))}>
+        <label>Base sin IVA<input className="campo" inputMode="decimal" placeholder="Base sin IVA" value={g.base} onChange={(e) => poner('base', e.target.value)} required /></label>
+        <label>IVA<select className="campo" value={g.ivaPct} onChange={(e) => poner('ivaPct', Number(e.target.value))}>
           {[21, 10, 4, 0].map((n) => <option key={n} value={n}>IVA {n}%</option>)}
-        </select>
+        </select></label>
       </div>
       {(
         <select className="campo" value={g.irpfPct || 0} onChange={(e) => poner('irpfPct', Number(e.target.value))} aria-label="Retención de IRPF">
@@ -267,7 +269,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
         </select>
       )}
       {!Number(g.ivaPct) && ['ue', 'fuera'].includes(g.origen || (nifUE(g.proveedorNif) ? 'ue' : '')) && <p className="nota">El IVA (21 %) lo declaras tú en el 303 y te lo deduces a la vez: no pagas nada de más.{g.origen !== 'fuera' && !nifUE(g.proveedorNif) ? ' Pon su NIF-IVA (por ejemplo, IE6388047V): también va en el 349.' : ''}</p>}
-      <input className="campo" type="date" value={g.fecha} onChange={(e) => poner('fecha', e.target.value)} required />
+      <label>Fecha<input className="campo" type="date" value={g.fecha} onChange={(e) => poner('fecha', e.target.value)} required /></label>
       <label>Proyecto, obra o local (opcional)<input className="campo" list="proyectos-gasto" value={g.proyecto || ''} onChange={(e) => poner('proyecto', e.target.value)} placeholder="Ej.: Obra Calle Mayor" maxLength={60} /></label>
       <datalist id="proyectos-gasto">{proyectos.map((p) => <option key={p} value={p} />)}</datalist>
       <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.pendiente)} onChange={(e) => poner('pendiente', e.target.checked)} />Aún no lo he pagado</label>
@@ -306,7 +308,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
         </div>
       )}
       {pareceBien({ ...g, base: parseImporte(g.base) }) && <p className="nota">¿Es un equipo que vas a usar varios años? Márcalo como bien de inversión: se resta repartido en varios años, como pide Hacienda.</p>}
-      {error && <p className="error">{error}</p>}
+      {error && <p className="error" role="alert">{error}</p>}
       {avisoDuplicados && <div className="nota" role="alert">
         <strong>Puede que este gasto ya esté apuntado</strong>
         <p>Revisa los gastos coincidentes antes de guardarlo de nuevo.</p>
@@ -340,7 +342,7 @@ function Justificante({ gasto }) {
     e.target.value = '';
     if (!archivo) return;
     if (!/^image\//.test(archivo.type) && archivo.type !== 'application/pdf') { setError('Sube una foto (JPG, PNG o WebP) o un PDF'); return; }
-    if (tiene && !confirm('¿Sustituir el justificante que ya tiene este gasto?')) return;
+    if (tiene && !(await confirmarAccion({ titulo: 'Sustituir justificante', texto: '¿Sustituir el justificante que ya tiene este gasto?', aceptar: 'Sustituir', peligro: true }))) return;
     setError(''); setEstado('Guardando el justificante…');
     try {
       const j = await preparar(archivo);
@@ -361,7 +363,7 @@ function Justificante({ gasto }) {
       </div>
       <input ref={archivoInput} type="file" accept="image/*,application/pdf" onChange={elegir} hidden />
       {estado && <p className="nota" role="status">{estado}</p>}
-      {error && <p className="error">{error}</p>}
+      {error && <p className="error" role="alert">{error}</p>}
     </div>
   );
 }

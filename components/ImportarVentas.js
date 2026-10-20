@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { eur, fechaTexto } from '@/lib/formato';
 
@@ -9,6 +9,7 @@ const NOMBRES = { shopify: 'Shopify', woocommerce: 'WooCommerce', sumup: 'SumUp'
 // Importar ventas de un TPV o de una tienda online: sube el archivo, revisa los días y guarda un cierre de caja por día.
 export default function ImportarVentas({ actividades }) {
   const router = useRouter();
+  const ayudaId = useId();
   const [previa, setPrevia] = useState(null);
   const [elegidos, setElegidos] = useState(new Set());
   const [actividad, setActividad] = useState(actividades[0].id);
@@ -70,7 +71,8 @@ export default function ImportarVentas({ actividades }) {
           </div>
           {previa.sinEmparejar?.length > 0 && <p className="caja-aviso">Sin emparejar con el catálogo (no restan stock): {previa.sinEmparejar.slice(0, 12).map((x) => `${x.descripcion || x.sku} (${x.cantidad})`).join(', ')}{previa.sinEmparejar.length > 12 ? '…' : ''}. Añade su referencia en el catálogo y vuelve a importar.</p>}
           {previa.avisos?.length > 0 && <ul className="caja-aviso">{previa.avisos.slice(0, 8).map((a, i) => <li key={i}>{a}</li>)}</ul>}
-          <button type="button" className="boton" disabled={ocupado || !elegidos.size} onClick={guardar}>{ocupado ? 'Guardando…' : `Importar ${elegidos.size} ${elegidos.size === 1 ? 'día' : 'días'} (${eur(total)})`}</button>
+          {!elegidos.size && <p id={ayudaId} className="nota">Selecciona al menos un día para importarlo.</p>}
+          <button type="button" className="boton" disabled={ocupado || !elegidos.size} aria-describedby={!elegidos.size ? ayudaId : undefined} onClick={guardar}>{ocupado ? 'Guardando…' : `Importar ${elegidos.size} ${elegidos.size === 1 ? 'día' : 'días'} (${eur(total)})`}</button>
         </>
       )}
     </section>

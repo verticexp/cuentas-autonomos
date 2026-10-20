@@ -37,9 +37,9 @@ export default function Dietas({ hoy, actividades, autonomo }) {
           <button type="button" className={!titular ? 'activo' : ''} onClick={() => poner('quien', 'empleado')}>Pagadas a un trabajador</button>
         </div>
       )}
-      {actividades.length > 1 && <select className="campo" value={d.actividad} onChange={(e) => poner('actividad', e.target.value)}>{actividades.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}</select>}
-      {!titular && <input className="campo" placeholder="Trabajador (opcional)" value={d.persona} onChange={(e) => poner('persona', e.target.value)} />}
-      <input className="campo" placeholder="Motivo o destino (opcional)" value={d.motivo} onChange={(e) => poner('motivo', e.target.value)} />
+      {actividades.length > 1 && <select aria-label="Actividad" className="campo" value={d.actividad} onChange={(e) => poner('actividad', e.target.value)}>{actividades.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}</select>}
+      {!titular && <label>Trabajador (opcional)<input className="campo" placeholder="Trabajador (opcional)" value={d.persona} onChange={(e) => poner('persona', e.target.value)} /></label>}
+      <label>Motivo o destino (opcional)<input className="campo" placeholder="Motivo o destino (opcional)" value={d.motivo} onChange={(e) => poner('motivo', e.target.value)} /></label>
       {d.tipo === 'km' ? (
         <div className="dos-col">
           <label>Kilómetros<input className="campo" inputMode="decimal" placeholder="0" value={d.km} onChange={(e) => poner('km', e.target.value)} required /></label>
@@ -56,7 +56,7 @@ export default function Dietas({ hoy, actividades, autonomo }) {
           {titular && <label className="gasto-pendiente"><input type="checkbox" checked={d.electronico} onChange={(e) => poner('electronico', e.target.checked)} />Pagado con tarjeta, en restaurante u hotel</label>}
         </>
       )}
-      <input className="campo" type="date" value={d.fecha} onChange={(e) => poner('fecha', e.target.value)} required />
+      <label>Fecha<input className="campo" type="date" value={d.fecha} onChange={(e) => poner('fecha', e.target.value)} required /></label>
       {c && !c.error && (
         <p className="dieta-calculo" role="status">
           {c.tipo === 'km' ? <>Exento: {String(c.km).replace('.', ',')} km × {String(KM).replace('.', ',')} € = <strong>{eur(c.exento)}</strong></>

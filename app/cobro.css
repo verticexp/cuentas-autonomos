@@ -30,3 +30,7 @@
 @keyframes aviso-entra { from { opacity: 0; transform: translate(-50%, 12px); } }
 @media (min-width: 900px) { .aviso-deshacer { bottom: 32px; } }
 @media (prefers-reduced-motion: reduce) { .aviso-deshacer { animation: none; } }
+
+@media (max-width: 1023.98px) {
+  .cobro-enlace, .aviso-deshacer button { min-width: 44px; min-height: 44px; }
+}

@@ -1,6 +1,7 @@
 'use client';
 
 import { fraseBanco } from '@/lib/textoBanco';
+import { confirmar as confirmarAccion } from './Confirmar';
 import Vacio from '@/components/Vacio';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -110,9 +111,10 @@ function Pendiente({ m, permisos, accion }) {
             {m.opciones.map((o) => <option key={o.id} value={o.id}>{o.texto} · {fechaCorta(o.fecha)} · {o.total !== undefined && o.saldo !== undefined && Math.abs(o.total - o.saldo) > 0.005 ? `${eur(o.total)}, faltan ${eur(o.saldo)}` : eur(o.importe)}</option>)}
           </select>
           <div className="bco-botones">
-            <button className="boton pequeno" disabled={!elegidaValida} onClick={() => { if (elegidaValida) confirmar(m.importe > 0 ? 'factura' : 'gasto', elegidaValida); }}>Emparejar</button>
+            <button className="boton pequeno" disabled={!elegidaValida} aria-describedby={!elegidaValida ? `bco-${m.id}-elegir` : undefined} onClick={() => { if (elegidaValida) confirmar(m.importe > 0 ? 'factura' : 'gasto', elegidaValida); }}>Emparejar</button>
             <button className="boton pequeno sec" onClick={() => setEligiendo(false)}>Cancelar</button>
           </div>
+          {!elegidaValida && <p id={`bco-${m.id}-elegir`} className="bco-nota">Elige una factura o gasto para emparejar.</p>}
           {!m.opciones.length && <Vacio compacto tipo="resultados" icono={m.importe > 0 ? 'factura' : 'gasto'} titulo={m.importe > 0 ? 'Añade la factura de este cobro' : 'Apunta el gasto de este pago'} accion={{ href: m.importe > 0 ? '/facturas/nueva' : '/gastos#apuntar-gasto', texto: m.importe > 0 ? 'Nueva factura' : 'Añadir gasto' }} secundaria={<button type="button" className="boton sec" onClick={() => setEligiendo(false)}>Volver al movimiento</button>} />}
         </div>
       ) : !s ? (
@@ -220,7 +222,7 @@ export default function Banco({ cuentas, pendientes, emparejados, ignorados, aut
     } catch (err) { setMsg({ error: true, texto: err.message }); } finally { setOcupado(false); window.dispatchEvent(new Event('fisquo:escaneos')); }
   };
   const quitar = async (c) => {
-    if (!confirm(c.origen === 'enable' ? `¿Desconectar ${c.nombre}? Se retira el permiso del banco; los movimientos se quedan.` : `¿Quitar ${c.nombre}? Deja de contar su saldo; los movimientos se quedan.`)) return;
+    if (!(await confirmarAccion({ titulo: 'Quitar cuenta bancaria', texto: c.origen === 'enable' ? `¿Desconectar ${c.nombre}? Se retira el permiso del banco; los movimientos se quedan.` : `¿Quitar ${c.nombre}? Deja de contar su saldo; los movimientos se quedan.`, aceptar: 'Quitar cuenta', peligro: true }))) return;
     try { await llamar(`/api/banco/conectar?id=${encodeURIComponent(c.id)}`, { method: 'DELETE' }); router.refresh(); } catch (e) { setMsg({ error: true, texto: e.message }); }
   };
 
@@ -274,10 +276,11 @@ export default function Banco({ cuentas, pendientes, emparejados, ignorados, aut
             </label>
           )}
           {(permisos.facturar || permisos.gastar) && destino === 'nueva' && <input className="campo bco-destino-nombre" placeholder="Nombre de la cuenta (p. ej. Sabadell)" maxLength={40} value={nombreNueva} onChange={(e) => setNombreNueva(e.target.value)} aria-label="Nombre de la cuenta nueva" />}
-          {(permisos.facturar || permisos.gastar) && enEspera && <button className="boton pequeno" disabled={!destino || ocupado} onClick={() => subirArchivo(enEspera)}>Subir a esta cuenta</button>}
+          {(permisos.facturar || permisos.gastar) && enEspera && <button className="boton pequeno" disabled={!destino || ocupado} aria-describedby={!destino ? "bco-destino-ayuda" : undefined} onClick={() => subirArchivo(enEspera)}>Subir a esta cuenta</button>}
           {(permisos.facturar || permisos.gastar) && <button className="boton pequeno sec" onClick={() => fichero.current?.click()}>Subir extracto</button>}
           {(permisos.facturar || permisos.gastar) && <input ref={fichero} type="file" hidden accept=".csv,.xlsx,.txt,.n43,.aeb,.q43,.pdf,text/csv,text/plain,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={subir} aria-label="Extracto del banco" />}
         </div>
+        {enEspera && !destino && <p id="bco-destino-ayuda" className="bco-nota">Elige la cuenta a la que pertenece el extracto.</p>}
         {(permisos.facturar || permisos.gastar) && <CupoEscaneo />}
         {(permisos.facturar || permisos.gastar) && cuentas.length > 0 && <p className="bco-nota">Los PDF consumen una lectura IA por página de la bolsa de tu empresa (máximo 10 páginas y 3 MB por PDF). Norma 43, CSV y Excel no consumen páginas IA.</p>}
         {(permisos.facturar || permisos.gastar) && cuentas.length > 0 && <p className="bco-nota">Extracto: descárgalo de tu banca online en Norma 43 (cuaderno 43), CSV, Excel (.xlsx) o PDF. Súbelo cada mes: lo que no case con tus facturas y gastos te sale para revisar.</p>}

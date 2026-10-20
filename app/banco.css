@@ -113,3 +113,7 @@
 .bco-elegir { scroll-margin: 24px 0 120px; }
 .bco-sug-m { display: block; color: var(--muted); font-size: 13px; margin-top: 4px; }
 .bco-auto { font-style: normal; font-weight: 500; color: var(--in); font-size: 0.85em; }
+
+@media (max-width: 1023.98px) {
+  .bco-quitar { min-width: 44px; min-height: 44px; }
+}

@@ -11,6 +11,7 @@ const { transformSync } = require('next/dist/compiled/babel/core');
 const modulo = (s) => `data:text/javascript;base64,${Buffer.from(s).toString('base64')}`;
 const react = pathToFileURL(require.resolve('react')).href;
 const dobles = {
+  './Confirmar': modulo('export async function confirmar(){throw new Error("No debe haber confirmaciones durante el render");}'),
   'next/navigation': modulo('export const useRouter = () => ({refresh(){}});'),
   'next/link': modulo(`import React from ${JSON.stringify(react)}; export default function Link(p){return React.createElement('a',p);}`),
   // Estos flujos prueban remesas con documentos; el estado vacío se resuelve como dependencia de presentación.

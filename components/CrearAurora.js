@@ -18,7 +18,8 @@ export default function CrearAurora() {
   }
   return <div>
     <button type="button" disabled={ocupada} onClick={() => pedir('GET')}>Comprobar estado de Aurora</button>{' '}
-    <button type="button" disabled={ocupada || Boolean(resultado?.password)} onClick={() => pedir('POST')}>{ocupada ? 'Procesando…' : 'Crear Aurora y mostrar su acceso'}</button>
+    <button type="button" disabled={ocupada || Boolean(resultado?.password)} aria-describedby={resultado?.password ? "aurora-creada-ayuda" : undefined} onClick={() => pedir('POST')}>{ocupada ? 'Procesando…' : 'Crear Aurora y mostrar su acceso'}</button>
+    {resultado?.password && <p id="aurora-creada-ayuda">Aurora ya está creada. Guarda el acceso que aparece debajo.</p>}
     {error && <p role="alert">{error}</p>}
     {resultado && <section aria-live="polite"><h2>{resultado.password ? 'Aurora creada' : 'Estado de Aurora'}</h2><pre>{JSON.stringify(resultado, null, 2)}</pre>{resultado.password && <p>Guarda el acceso: la contraseña solo se muestra al crear la cuenta.</p>}</section>}
   </div>;

@@ -1,6 +1,8 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { confirmar as confirmarAccion } from './Confirmar';
+
+import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
@@ -20,6 +22,7 @@ const aTexto = (n) => String(n ?? '').replace('.', ',');
 
 export default function RafagaTickets({ hoy, actividades }) {
   const router = useRouter();
+  const ayudaId = useId();
   const [abierta, setAbierta] = useState(false);
   const [fase, setFase] = useState('camara'); // camara | revision
   const [fotos, setFotos] = useState([]);
@@ -37,10 +40,10 @@ export default function RafagaTickets({ hoy, actividades }) {
   const ponerG = (id, k, v) => poner(id, (x) => ({ g: { ...x.g, [k]: v }, estado: x.estado === 'duplicado' ? 'leido' : x.estado, duplicados: undefined }));
 
   const cupo = MAX - items.length; // fotos que aún caben (con las ya leídas)
-  const cerrar = () => {
+  const cerrar = async () => {
     const sinGuardar = items.filter((x) => ['leyendo', 'leido', 'duplicado', 'error'].includes(x.estado)).length;
-    if (sinGuardar > 0 && !confirm(sinGuardar === 1 ? 'Hay 1 ticket sin guardar. ¿Salir y descartarlo?' : `Hay ${sinGuardar} tickets sin guardar. ¿Salir y descartarlos?`)) return;
-    if (fase === 'camara' && fotos.length > 0 && !confirm('Tienes fotos sin leer. ¿Salir y descartarlas?')) return;
+    if (sinGuardar > 0 && !(await confirmarAccion({ titulo: 'Descartar tickets', texto: sinGuardar === 1 ? 'Hay 1 ticket sin guardar. ¿Salir y descartarlo?' : `Hay ${sinGuardar} tickets sin guardar. ¿Salir y descartarlos?`, aceptar: 'Salir y descartar', peligro: true }))) return;
+    if (fase === 'camara' && fotos.length > 0 && !(await confirmarAccion({ titulo: 'Descartar tickets', texto: 'Tienes fotos sin leer. ¿Salir y descartarlas?', aceptar: 'Salir y descartar', peligro: true }))) return;
     corrida.current += 1;
     setAbierta(false);
     if (items.some((x) => x.estado === 'guardado')) router.refresh();
@@ -178,11 +181,12 @@ export default function RafagaTickets({ hoy, actividades }) {
                     <li key={i}><img src={f} alt={`Ticket ${i + 1}`} /><button type="button" aria-label={`Quitar el ticket ${i + 1}`} onClick={() => setFotos((l) => l.filter((_, j) => j !== i))}>×</button></li>
                   ))}
                 </ul>
+                {(fotos.length === 0 || fotos.length >= cupo) && <p id={`${ayudaId}-fotos`} className="nota">{fotos.length === 0 ? 'Haz o elige una foto antes de leer el ticket.' : 'Has llegado al máximo de fotos: léelas o quita una para hacer otra.'}</p>}
                 <div className="rafaga-mandos">
                   {camara === 'lista'
-                    ? <button type="button" className="rafaga-disparo" onClick={disparar} disabled={fotos.length >= cupo} aria-label="Hacer foto"><span /></button>
+                    ? <button type="button" className="rafaga-disparo" onClick={disparar} disabled={fotos.length >= cupo} aria-describedby={fotos.length >= cupo ? `${ayudaId}-fotos` : undefined} aria-label="Hacer foto"><span /></button>
                     : null}
-                  <button type="button" className="boton" onClick={empezar} disabled={fotos.length === 0}>{fotos.length > 1 ? `Leer ${fotos.length} tickets` : 'Leer el ticket'}</button>
+                  <button type="button" className="boton" onClick={empezar} disabled={fotos.length === 0} aria-describedby={fotos.length === 0 ? `${ayudaId}-fotos` : undefined}>{fotos.length > 1 ? `Leer ${fotos.length} tickets` : 'Leer el ticket'}</button>
                 </div>
               </div>
             </>
@@ -233,10 +237,11 @@ export default function RafagaTickets({ hoy, actividades }) {
                               <ul>{it.duplicados.map((d) => <li key={d.id}>{d.motivo}</li>)}</ul>
                             </div>
                           )}
+                          {it.varios && <p id={`${ayudaId}-${it.id}-varios`} className="nota">Este ticket tiene varios tipos de IVA: añádelo desde el formulario de gastos.</p>}
                           <div className="rafaga-acc">
                             {it.estado === 'duplicado'
                               ? <button type="button" className="boton pequeno" onClick={() => guardar(it, true)}>Es otro gasto: guardarlo</button>
-                              : <button type="button" className="boton pequeno" disabled={it.estado === 'guardando' || it.varios} onClick={() => guardar(it)}>{it.estado === 'guardando' ? 'Guardando…' : 'Guardar'}</button>}
+                              : <button type="button" className="boton pequeno" disabled={it.estado === 'guardando' || it.varios} aria-describedby={it.varios ? `${ayudaId}-${it.id}-varios` : undefined} onClick={() => guardar(it)}>{it.estado === 'guardando' ? 'Guardando…' : 'Guardar'}</button>}
                             <button type="button" className="boton sec pequeno" disabled={it.estado === 'guardando'} onClick={() => poner(it.id, { estado: 'descartado' })}>Descartar</button>
                           </div>
                         </>
@@ -249,7 +254,8 @@ export default function RafagaTickets({ hoy, actividades }) {
                 {terminados
                   ? <button type="button" className="boton" onClick={cerrar}>Hecho</button>
                   : <>
-                    <button type="button" className="boton" disabled={limpios.length === 0} onClick={guardarLimpios}>{limpios.length === 0 ? 'Revisa cada ticket' : limpios.length === pendientes.length ? `Guardar los ${limpios.length}` : `Guardar los ${limpios.length} sin avisos`}</button>
+                    {limpios.length === 0 && <p id={`${ayudaId}-limpios`} className="nota">Revisa los avisos y guarda cada ticket por separado.</p>}
+                    <button type="button" className="boton" disabled={limpios.length === 0} aria-describedby={limpios.length === 0 ? `${ayudaId}-limpios` : undefined} onClick={guardarLimpios}>{limpios.length === 0 ? 'Revisa cada ticket' : limpios.length === pendientes.length ? `Guardar los ${limpios.length}` : `Guardar los ${limpios.length} sin avisos`}</button>
                     {cupo > 0 && <button type="button" className="boton sec" onClick={() => { setFotos([]); setFase('camara'); setCamara('esperando'); }}>Más fotos</button>}
                   </>}
               </div>

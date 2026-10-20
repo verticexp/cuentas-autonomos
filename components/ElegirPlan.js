@@ -1,5 +1,7 @@
 'use client';
 
+import { confirmar as confirmarAccion } from './Confirmar';
+
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { DESCUENTO, PLANES } from '@/components/web/datos';
@@ -44,7 +46,7 @@ export default function ElegirPlan({ plan, tipoEmpresa, uso, admin, app }) {
   }, [app]);
 
   async function elegir(nombre) {
-    if (paga && !window.confirm(`¿Pasar al plan ${TIPOS[tipo]} ${nombre} (${periodo === 'anio' ? 'anual' : 'mensual'})? Stripe ajusta la diferencia en tu próxima factura.`)) return;
+    if (paga && !(await confirmarAccion({ titulo: 'Confirmar acción', texto: `¿Pasar al plan ${TIPOS[tipo]} ${nombre} (${periodo === 'anio' ? 'anual' : 'mensual'})? Stripe ajusta la diferencia en tu próxima factura.`, aceptar: 'Continuar' }))) return;
     const d = await llamar({ tipo, nombre, periodo });
     if (d?.plan) { setActual(d.plan); setEstado(`Hecho: ahora tienes el plan ${d.plan.nombre}.`); router.refresh(); }
   }

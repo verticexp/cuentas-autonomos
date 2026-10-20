@@ -1,5 +1,7 @@
 'use client';
 
+import { confirmar as confirmarAccion } from './Confirmar';
+
 import { useState } from 'react';
 import { llamar } from './Acciones';
 import CampoPassword from './CampoPassword';
@@ -12,7 +14,7 @@ export default function EliminarCuenta({ email }) {
   const [enviando, setEnviando] = useState(false);
   const enviar = async (e) => {
     e.preventDefault();
-    if (!window.confirm(`¿Eliminar la cuenta ${email}? No se puede deshacer.`)) return;
+    if (!(await confirmarAccion({ titulo: 'Eliminar mi cuenta', texto: `¿Eliminar la cuenta ${email}? No se puede deshacer.`, aceptar: 'Eliminar cuenta', peligro: true }))) return;
     setEnviando(true);
     setMsg('');
     try {
@@ -22,11 +24,11 @@ export default function EliminarCuenta({ email }) {
     } catch (err) { setMsg(err.message); setEnviando(false); }
   };
   return (
-    <form className="formulario tarjeta bloque" onSubmit={enviar}>
+    <form className="formulario tarjeta bloque" onSubmit={enviar} onInvalid={() => setMsg('Escribe tu contraseña para eliminar tu cuenta.')}>
       <label htmlFor="eliminar-password">Tu contraseña</label>
       <CampoPassword id="eliminar-password" className="campo" value={password} onChange={(e) => setPassword(e.target.value)} />
       {msg && <p className="error" role="alert">{msg}</p>}
-      <button className="borrar ancho" disabled={enviando || !password}>{enviando ? 'Eliminando…' : 'Eliminar mi cuenta'}</button>
+      <button type="submit" className="borrar ancho" disabled={enviando}>{enviando ? 'Eliminando…' : 'Eliminar mi cuenta'}</button>
     </form>
   );
 }

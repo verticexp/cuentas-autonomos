@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
 import { numeroFactura } from '@/lib/calculos';
@@ -30,6 +30,7 @@ export default function Series({ actividades, anio, rectificativas, caja }) {
 
 function Serie({ a, anio }) {
   const router = useRouter();
+  const ayudaId = useId();
   const [abierto, setAbierto] = useState(false);
   const [letra, setLetra] = useState(a.serie || '');
   const [n, setN] = useState(String(a.siguiente));
@@ -66,9 +67,10 @@ function Serie({ a, anio }) {
       </label>
       <small className="nota">{cambiaLetra ? 'Guarda primero la letra; luego podrás cambiar el número.' : `Será la ${Number(n) > 0 ? numeroFactura({ serie: a.serie, anio, numero: Number(n) }) : '…'}`}</small>
       {msg && <p role="status" className={msg === 'Guardando…' ? 'nota' : 'error'}>{msg}</p>}
+      {!cambiaLetra && Number(n) === a.siguiente && <small id={ayudaId} className="nota">Cambia la letra o el número para guardar.</small>}
       <div className="linea">
         <button type="button" className="boton sec" onClick={cerrar}>Cancelar</button>
-        <button className="boton" disabled={!cambiaLetra && Number(n) === a.siguiente}>Guardar</button>
+        <button className="boton" disabled={!cambiaLetra && Number(n) === a.siguiente} aria-describedby={!cambiaLetra && Number(n) === a.siguiente ? ayudaId : undefined}>Guardar</button>
       </div>
     </form>
   );

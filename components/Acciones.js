@@ -1,5 +1,7 @@
 'use client';
 
+import { confirmar as confirmarAccion } from './Confirmar';
+
 import { useOptimistic, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { volverA } from '@/lib/transicion';
@@ -16,19 +18,21 @@ async function llamar(url, opciones) {
 
 export function Borrar({ url, pregunta, volver }) {
   const router = useRouter();
+  const [error, setError] = useState('');
   const borrar = async () => {
-    if (!confirm(pregunta)) return;
+    setError('');
+    if (!(await confirmarAccion({ titulo: 'Borrar', texto: pregunta, aceptar: 'Borrar', peligro: true }))) return;
     try {
       await llamar(url, { method: 'DELETE' });
       if (volver) volverA(router, volver);
       router.refresh();
-    } catch (e) { alert(e.message); }
+    } catch (e) { setError(e.message); }
   };
-  return <button className="borrar" onClick={borrar}>Borrar</button>;
+  return <><button type="button" className="borrar" onClick={borrar}>Borrar</button>{error && <span className="error" role="alert">{error}</span>}</>;
 }
 
 export function Imprimir() {
-  return <button className="boton" onClick={() => window.print()}>Descargar PDF</button>;
+  return <button type="button" className="boton" onClick={() => window.print()}>Descargar PDF</button>;
 }
 
 // Icono de cada estado (`situacion` = { estado: 'curso' | 'listo' | 'fuera', dias }, de situacionTrimestre en lib/calculos.js).
@@ -53,6 +57,7 @@ export function EstadoTrimestre({ hecho, situacion, plazo, nota }) {
 // devolucion: en el 303 del 4T con saldo a favor, la opción de presentarlo pidiendo la devolución (pagado === 'devolucion').
 export function Presentado({ anio, t, importe, pagado, con130 = true, situacion, plazo, modelo, devolucion = false }) {
   const router = useRouter();
+  const [error, setError] = useState('');
   const [guardando, empezar] = useTransition();
   const ocupado = useRef(false);
   const [confirmado, setConfirmado] = useState(false);
@@ -66,6 +71,7 @@ export function Presentado({ anio, t, importe, pagado, con130 = true, situacion,
   const cambiar = (e) => {
     if (ocupado.current || guardando) return;
     ocupado.current = true;
+    setError('');
     const v = e.target.value;
     const imp = v === 'pendiente' ? null : v === 'pagado' ? importe : 0;
     setConfirmado(false);
@@ -76,7 +82,7 @@ export function Presentado({ anio, t, importe, pagado, con130 = true, situacion,
         setGuardado(v);
         setConfirmado(v !== 'pendiente');
         empezar(() => router.refresh());
-      } catch (err) { alert(err.message); } finally { ocupado.current = false; }
+      } catch (err) { setError(err.message); } finally { ocupado.current = false; }
     });
   };
   const selector = (
@@ -89,7 +95,7 @@ export function Presentado({ anio, t, importe, pagado, con130 = true, situacion,
     </select>
   );
   // Sin situación (Resumen): solo el selector, como antes.
-  if (!situacion) return selector;
+  if (!situacion) return <>{selector}{error && <span className="error" role="alert">{error}</span>}</>;
   const hecho = valor !== 'pendiente';
   const clave = hecho ? 'hecho' : situacion.estado;
   const texto = guardando ? 'Guardando…' : hecho ? (confirmado ? `Hecho: ${t}T ${anio} presentado` : `${t}T ${anio} presentado`) : textoSituacion(situacion, plazo);
@@ -103,6 +109,7 @@ export function Presentado({ anio, t, importe, pagado, con130 = true, situacion,
         </span>
       </p>
       {selector}
+      {error && <p className="error" role="alert">{error}</p>}
     </div>
   );
 }
@@ -110,18 +117,20 @@ export function Presentado({ anio, t, importe, pagado, con130 = true, situacion,
 // Pago del 202 (sociedades): pendiente o presentado y pagado. Lo pagado se resta del Impuesto sobre Sociedades.
 export function Presentado202({ anio, p, importe, pagado }) {
   const router = useRouter();
+  const [error, setError] = useState('');
   const cambiar = async (e) => {
+    setError('');
     try {
       await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify({ presentado202: { anio, p, importe: e.target.value === 'pagado' ? importe : null } }) });
       router.refresh();
-    } catch (err) { alert(err.message); }
+    } catch (err) { setError(err.message); }
   };
   const hecho = pagado !== undefined && pagado !== null;
   return (
-    <select className={`estado ${hecho ? 'ok' : 'pend'}`} value={hecho ? 'pagado' : 'pendiente'} onChange={cambiar} aria-label={`Pago ${p} del 202`}>
+    <><select className={`estado ${hecho ? 'ok' : 'pend'}`} value={hecho ? 'pagado' : 'pendiente'} onChange={cambiar} aria-label={`Pago ${p} del 202`}>
       <option value="pendiente">Pendiente</option>
       <option value="pagado">Presentado y pagado</option>
-    </select>
+    </select>{error && <span className="error" role="alert">{error}</span>}</>
   );
 }
 

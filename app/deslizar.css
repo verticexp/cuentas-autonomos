@@ -1,5 +1,5 @@
 /* Filas que se deslizan en el móvil para enseñar sus acciones (components/Deslizar.js). Solo responden al dedo. */
-.desliz { position: relative; overflow: hidden; touch-action: pan-y; }
+.desliz { position: relative; overflow: hidden; touch-action: pan-y pinch-zoom; }
 .desliz-fila { position: relative; z-index: 1; background: var(--surface); transition: transform 0.28s cubic-bezier(0.23, 1, 0.32, 1); will-change: transform; }
 .desliz-acciones { position: absolute; top: 0; right: 0; bottom: 0; display: flex; visibility: hidden; }
 .desliz.mov .desliz-acciones { visibility: visible; }

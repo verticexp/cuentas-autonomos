@@ -25,7 +25,7 @@
   .ff-cli-sel { cursor: default; justify-content: space-between; }
   .ff-cli-sel .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
   .ff-cli-sel .txt strong, .ff-cli-sel .txt small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .ff-cli-enlace { align-self: flex-start; min-height: 36px; padding: 0 4px; border: 0; background: none; color: var(--marca); font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; }
+  .ff-cli-enlace { align-self: flex-start; min-width: 44px; min-height: 44px; padding: 0 4px; border: 0; background: none; color: var(--marca); font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; }
   .ff-cli-sel .ff-cli-enlace { align-self: center; flex: none; }
 
   /* Conceptos: el catálogo, arriba, a mano */
@@ -50,3 +50,5 @@
   .ff-nuevo .ff-pie .boton { min-height: 52px; padding-inline: 22px; font-size: 17px; }
   .ff-nuevo .ff-campos { padding-bottom: 8px; }
 }
+
+.ff-datos-cliente > .ff-etiqueta { color: var(--muted); font-size: 14px; margin-top: 4px; }

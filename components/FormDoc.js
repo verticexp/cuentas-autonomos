@@ -61,14 +61,14 @@ export default function FormDoc({ tipo, doc = null, plantilla = null, clientes =
       </div>
       <fieldset disabled={Boolean(x.pedido) && tipo === 'albaran'}>
         <legend>Cliente</legend>
-        {!x.pedido && <select className="campo" value={elegido} onChange={(e) => elegirCliente(e.target.value)}>
+        {!x.pedido && <select aria-label="Elegir cliente" className="campo" value={elegido} onChange={(e) => elegirCliente(e.target.value)}>
           <option value="">+ Cliente nuevo</option>
           {clientes.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>}
-        <input className="campo" placeholder="Razón social" value={x.cliente.nombre} onChange={(e) => ponerCliente('nombre', e.target.value)} required />
-        <input className="campo" placeholder="NIF / CIF" value={x.cliente.nif} onChange={(e) => ponerCliente('nif', e.target.value)} />
-        <input className="campo" placeholder="Dirección de entrega" value={x.cliente.direccion} onChange={(e) => ponerCliente('direccion', e.target.value)} />
-        <input className="campo" placeholder="Ciudad y CP" value={x.cliente.ciudad} onChange={(e) => ponerCliente('ciudad', e.target.value)} />
+        <label>Nombre o razón social<input className="campo" placeholder="Razón social" value={x.cliente.nombre} onChange={(e) => ponerCliente('nombre', e.target.value)} required /></label>
+        <label>NIF<input spellCheck={false} autoCorrect="off" autoCapitalize="characters" className="campo" placeholder="NIF / CIF" value={x.cliente.nif} onChange={(e) => ponerCliente('nif', e.target.value)} /></label>
+        <label>Dirección de entrega<input className="campo" placeholder="Dirección de entrega" value={x.cliente.direccion} onChange={(e) => ponerCliente('direccion', e.target.value)} /></label>
+        <label>Código postal y ciudad<input className="campo" placeholder="Ciudad y CP" value={x.cliente.ciudad} onChange={(e) => ponerCliente('ciudad', e.target.value)} /></label>
       </fieldset>
       <fieldset className="lineas">
         <legend>Productos</legend>
@@ -95,7 +95,7 @@ export default function FormDoc({ tipo, doc = null, plantilla = null, clientes =
       </fieldset>
       <label>Nota (opcional)<input className="campo" value={x.nota} onChange={(e) => poner('nota', e.target.value)} placeholder={tipo === 'albaran' ? 'Ej.: entregado a Marta en recepción' : 'Ej.: entregar por la mañana'} /></label>
       <div className="totales"><strong>Total sin IVA {eur(total)}</strong></div>
-      {error && <p className="error">{error}</p>}
+      {error && <p className="error" role="alert">{error}</p>}
       <button className="boton" disabled={enviando}>{enviando ? 'Guardando…' : doc ? 'Guardar cambios' : `Crear ${NOMBRE[tipo]}`}</button>
     </form>
   );
