@@ -57,3 +57,6 @@
   .adm-plan, .adm-num { grid-column: 1 / -1; }
   .adm-num:empty { display: none; }
 }
+.adm-forma { margin: 10px 0; }
+.adm-forma .adm-lista li { flex-wrap: wrap; }
+.adm-forma .adm-lista b { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; font-weight: 500; }
