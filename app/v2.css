@@ -12,10 +12,11 @@
 .fh-desglose dt, .teso-imp small, .grafica small, .grupo-pie { font-size: 13px; }
 
 /* ───── Estados en etiqueta de color ───── */
-.estado-txt { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; line-height: 1; padding: 4px 9px; border-radius: 999px; color: var(--in); background: color-mix(in srgb, var(--in) 13%, transparent); white-space: nowrap; }
+/* El texto lleva un 15 % de --ink: sobre su propio fondo tintado, el color puro se quedaba a 3,7:1 en claro (≥ 4,5 así). */
+.estado-txt { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; line-height: 1; padding: 4px 9px; border-radius: 999px; color: color-mix(in srgb, var(--in) 85%, var(--ink)); background: color-mix(in srgb, var(--in) 13%, transparent); white-space: nowrap; }
 .estado-txt::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-.estado-txt.e-pendiente { color: var(--hacienda); background: color-mix(in srgb, var(--hacienda) 13%, transparent); }
-.estado-txt.e-vencida { color: var(--out); background: color-mix(in srgb, var(--out) 13%, transparent); }
+.estado-txt.e-pendiente { color: color-mix(in srgb, var(--hacienda) 85%, var(--ink)); background: color-mix(in srgb, var(--hacienda) 13%, transparent); }
+.estado-txt.e-vencida { color: color-mix(in srgb, var(--out) 85%, var(--ink)); background: color-mix(in srgb, var(--out) 13%, transparent); }
 .imp-col { gap: 5px; }
 
 /* ───── Buscador de las listas ───── */
@@ -144,22 +145,27 @@
   .pagina:has(.ff) { max-width: 1120px; }
   .ff { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 32px; align-items: start; }
   .ff-vista { display: block; position: sticky; top: 28px; }
-  .ff-papel { background: #fff; color: #17201D; border-radius: 18px; padding: 24px; box-shadow: 0 1px 2px rgba(15, 31, 27, 0.06), 0 24px 48px -28px rgba(15, 31, 27, 0.35); display: grid; gap: 16px; border-top: 6px solid var(--marca); }
+  /* El papel lleva siempre los colores del tema claro (como .fa en app/factura.css); en oscuro, un blanco atenuado. */
+  .ff-papel { --ink: #17201D; --in: #1A7A4B; --papel: #fff; background: var(--papel); color: var(--ink); color-scheme: light; border-radius: 18px; padding: 24px; box-shadow: 0 1px 2px rgba(15, 31, 27, 0.06), 0 24px 48px -28px rgba(15, 31, 27, 0.35); display: grid; gap: 16px; border-top: 6px solid var(--marca); }
   .ff-papel-cab { display: flex; flex-direction: column; gap: 2px; }
   .ff-papel-cab b { font-family: var(--f-marca), var(--font); font-size: 20px; letter-spacing: -0.02em; }
-  .ff-papel small { color: #6B736F; font-size: 13px; }
-  .ff-para { display: flex; flex-direction: column; gap: 1px; padding: 12px 0; border-top: 1px solid #E6EAE8; border-bottom: 1px solid #E6EAE8; }
+  .ff-papel small { color: #5A615D; font-size: 13px; }
+  .ff-para { display: flex; flex-direction: column; gap: 1px; padding: 12px 0; border-top: 1px solid rgba(15, 31, 27, 0.1); border-bottom: 1px solid rgba(15, 31, 27, 0.1); }
   .ff-para b { font-size: 16px; word-break: break-word; }
   .ff-lineas { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-  .ff-lineas li { display: flex; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: 10px; background: #F4F7F5; font-size: 14px; animation: graf-dato 0.25s var(--salida); }
+  .ff-lineas li { display: flex; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: 10px; background: rgba(15, 31, 27, 0.045); font-size: 14px; animation: graf-dato 0.25s var(--salida); }
   .ff-lineas li span { display: flex; flex-direction: column; min-width: 0; word-break: break-word; }
   .ff-lineas b { font-variant-numeric: tabular-nums; white-space: nowrap; }
   .ff-tot { display: grid; gap: 5px; margin: 0; font-size: 14px; }
-  .ff-tot div { display: flex; justify-content: space-between; } .ff-tot dt { color: #6B736F; } .ff-tot dd { margin: 0; font-variant-numeric: tabular-nums; }
-  .ff-total { display: flex; justify-content: space-between; align-items: baseline; margin: 0; padding-top: 12px; border-top: 1px dashed #D5DBD8; font-weight: 700; }
+  .ff-tot div { display: flex; justify-content: space-between; } .ff-tot dt { color: #5A615D; } .ff-tot dd { margin: 0; font-variant-numeric: tabular-nums; }
+  .ff-total { display: flex; justify-content: space-between; align-items: baseline; margin: 0; padding-top: 12px; border-top: 1px dashed rgba(15, 31, 27, 0.2); font-weight: 700; }
   .ff-total b { font-family: var(--f-marca), var(--font); font-size: 28px; letter-spacing: -0.035em; font-variant-numeric: tabular-nums; animation: graf-dato 0.3s var(--salida); }
   .ff-papel .estado-txt { justify-self: start; }
 }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="claro"]) .ff-papel { --papel: #EAEDEB; }
+}
+:root[data-tema="oscuro"] .ff-papel { --papel: #EAEDEB; }
 
 /* ───── Banco: primer extracto y emparejados (components/Banco.js) ───── */
 .bco-vacio { grid-column: 1 / -1; display: grid; justify-items: center; text-align: center; gap: 8px; padding: 26px 18px 22px; border-radius: 16px; border: 2px dashed color-mix(in srgb, var(--muted) 35%, transparent); transition: border-color 0.2s var(--salida), background-color 0.2s var(--salida); }

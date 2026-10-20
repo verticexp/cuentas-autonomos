@@ -23,14 +23,9 @@ const P = {
   contabilidad: <><rect x="4" y="4" width="16" height="16" rx="2" /><path d="M4 9.5h16M4 14.5h16M10 9.5V20" /></>,
   usuarios: <><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20c1-3.5 3.5-5 6.5-5s5.5 1.5 6.5 5M16 4.5a3.5 3.5 0 0 1 0 7M18 15c2 .7 3.2 2.3 3.7 5" /></>,
 };
-export const COLOR = {
-  factura: '#34C759', gasto: '#FF3B30', beneficio: '#007AFF', hacienda: '#FF9500', plazo: '#FF2D55', cobrar: '#FFCC00',
-  limite: '#AF52DE', ritmo: '#5AC8FA', actividad: '#5856D6', cliente: '#30B0C7', excel: '#248A3D', aviso: '#FF3B30', usuarios: '#8E8E93',
-  datos: '#007AFF', marca: '#FF2D55', seguridad: '#34C759', drive: '#FF9500', conexion: '#5856D6', asistente: '#0E7C86', contabilidad: '#5856D6',
-};
-
 export default function Ico({ n, solo }) {
   const svg = <svg viewBox="0 0 24 24" aria-hidden>{P[n]}</svg>;
-  if (solo) return <span className="ico-solo" style={{ color: COLOR[n] }}>{svg}</span>;
+  // Suelto (títulos de las tarjetas del resumen), toma el color del título: cambia con el tema como el texto.
+  if (solo) return <span className="ico-solo">{svg}</span>;
   return <span className="ico-cuadro">{svg}</span>;
 }

@@ -1,18 +1,21 @@
 /* Estética de los simuladores de la web, llevada a la app. Se activa por pantalla añadiendo la clase .mk-look al <main>.
-   Señas: tarjetas que "flotan" (borde fino + sombra suave), barras con degradado verde y variaciones en pastilla. */
+   Señas: tarjetas que "flotan" (borde fino + sombra suave), barras con degradado verde y variaciones en pastilla.
+   El borde es lo que separa el blanco de --paper en claro (solos están a 1,1:1): toda tarjeta nueva va en esta lista. */
 
 .mk-look .grupo-c,
 .mk-look .grupo-lista,
 .mk-look .hcard,
 .mk-look .trim,
-.mk-look .tarjeta {
+.mk-look .tarjeta,
+.mk-look .factura-hero,
+.mk-look .aviso-plazo {
   border: 1px solid var(--line);
   box-shadow: 0 1px 2px rgba(15, 31, 27, 0.05), 0 12px 30px -22px rgba(15, 31, 27, 0.35);
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-tema="claro"]) .mk-look .grupo-c, :root:not([data-tema="claro"]) .mk-look .grupo-lista, :root:not([data-tema="claro"]) .mk-look .hcard, :root:not([data-tema="claro"]) .mk-look .trim, :root:not([data-tema="claro"]) .mk-look .tarjeta { box-shadow: none; }
+  :root:not([data-tema="claro"]) .mk-look .grupo-c, :root:not([data-tema="claro"]) .mk-look .grupo-lista, :root:not([data-tema="claro"]) .mk-look .hcard, :root:not([data-tema="claro"]) .mk-look .trim, :root:not([data-tema="claro"]) .mk-look .tarjeta, :root:not([data-tema="claro"]) .mk-look .factura-hero, :root:not([data-tema="claro"]) .mk-look .aviso-plazo { box-shadow: none; }
 }
-:root[data-tema="oscuro"] .mk-look .grupo-c, :root[data-tema="oscuro"] .mk-look .grupo-lista, :root[data-tema="oscuro"] .mk-look .hcard, :root[data-tema="oscuro"] .mk-look .trim, :root[data-tema="oscuro"] .mk-look .tarjeta { box-shadow: none; }
+:root[data-tema="oscuro"] .mk-look .grupo-c, :root[data-tema="oscuro"] .mk-look .grupo-lista, :root[data-tema="oscuro"] .mk-look .hcard, :root[data-tema="oscuro"] .mk-look .trim, :root[data-tema="oscuro"] .mk-look .tarjeta, :root[data-tema="oscuro"] .mk-look .factura-hero, :root[data-tema="oscuro"] .mk-look .aviso-plazo { box-shadow: none; }
 
 /* Barras del gráfico con el degradado verde de los simuladores */
 .mk-look .graf-b.in {

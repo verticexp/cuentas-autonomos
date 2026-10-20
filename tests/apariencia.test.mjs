@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 
 const automatico = ':root:not([data-tema="claro"])';
 const oscuro = ':root[data-tema="oscuro"]';
-const archivos = ['globals', 'diseno', 'mk', 'fichas', 'cobro', 'remesas'];
+const archivos = ['globals', 'diseno', 'mk', 'remesas', 'v2'];
 
 // Estos bloques solo contienen reglas planas; se rechaza cualquier contenido sin analizar.
 function reglas(texto) {

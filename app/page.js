@@ -171,7 +171,7 @@ export default async function Resumen({ searchParams }) {
       {facturado > 0 && (
         <div className="hcards">
           {esteAnio && (c303 || c130) && (
-            <Ir href={`/modelos?anio=${debe ? plazo.anio : anioActual}`} className={`hcard ir${urgente ? ' urgente' : ''}`} style={{ '--c': urgente ? '#FF3B30' : '#FF9500' }}>
+            <Ir href={`/modelos?anio=${debe ? plazo.anio : anioActual}`} className={`hcard ir${urgente ? ' urgente' : ''}`} style={{ '--c': urgente ? 'var(--out)' : 'var(--hacienda)' }}>
               <h2 className="hcard-t"><Ico n="hacienda" solo />Hacienda<span>{debe ? `${plazo.t}T ${plazo.anio}` : `${tHoy}T ${anioActual}`}</span></h2>
               {debe ? (
                 <>
@@ -190,7 +190,7 @@ export default async function Resumen({ searchParams }) {
           )}
 
           {porCobrar > 0 && (
-            <Ir href="/facturas?estado=pendientes" className="hcard ir" style={{ '--c': '#C69500' }}>
+            <Ir href="/facturas?estado=pendientes" className="hcard ir" style={{ '--c': 'var(--aviso)' }}>
               <h2 className="hcard-t"><Ico n="cobrar" solo />Por cobrar<span>{sinCobrar.length === 1 ? '1 factura' : `${sinCobrar.length} facturas`}</span></h2>
               <p className="hcard-v"><Cifra v={porCobrar} /><small>€</small></p>
               {vencidas.length > 0 && <p className="hcard-s rojo">{vencidas.length === 1 ? '1 vencida' : `${vencidas.length} vencidas`}: {listaNombres(vencidas)}</p>}
@@ -198,7 +198,7 @@ export default async function Resumen({ searchParams }) {
           )}
 
           {teso && (
-            <Ir href="/tesoreria" className="hcard ir" style={{ '--c': '#007AFF' }}>
+            <Ir href="/tesoreria" className="hcard ir" style={{ '--c': 'var(--info)' }}>
               <h2 className="hcard-t"><Ico n="beneficio" solo />Tesorería<span>3 meses</span></h2>
               <p className="hcard-v"><Cifra v={teso.final} /><small>€</small></p>
               <p className={`hcard-s${teso.minimo.saldo < 0 ? ' rojo' : ''}`}>{teso.minimo.saldo < 0 ? `El ${fechaTexto(teso.minimo.fecha)} te quedarías en ${eur(teso.minimo.saldo)}` : `${teso.conSaldo ? 'Saldo previsto' : 'Sin saldo del banco'} · cobras ${eur(teso.entra)} y pagas ${eur(r2(teso.sale + teso.hacienda))}`}</p>
