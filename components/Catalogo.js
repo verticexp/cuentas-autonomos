@@ -1,5 +1,6 @@
 'use client';
 
+import Vacio from '@/components/Vacio';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
@@ -25,7 +26,7 @@ export default function Catalogo({ productos, editar, inventario = false }) {
   return (
     <>
       {editar && (
-        <form className="formulario tarjeta catalogo-form" onSubmit={guardar}>
+        <form id="anadir-catalogo" className="formulario tarjeta catalogo-form" onSubmit={guardar}>
           <h3>{p.id ? 'Editar' : 'Añadir'}</h3>
           <label>Nombre<input className="campo" required placeholder="Sesión DJ 4 horas" value={p.nombre} onChange={(e) => poner('nombre', e.target.value)} /></label>
           <div className="dos-col">
@@ -72,7 +73,7 @@ export default function Catalogo({ productos, editar, inventario = false }) {
             </li>
           ))}
         </ul>
-      ) : <p className="nota">Aún no hay nada. Añade lo que facturas a menudo y luego, al hacer una factura, lo pones en un toque.</p>}
+      ) : <Vacio icono="datos" titulo="Guarda lo que vendes a menudo" accion={editar && { href: '#anadir-catalogo', texto: 'Añadir al catálogo' }}>Añade tus productos o servicios para usarlos en la próxima factura.</Vacio>}
     </>
   );
 }

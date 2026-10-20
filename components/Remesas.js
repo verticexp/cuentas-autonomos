@@ -1,5 +1,6 @@
 'use client';
 
+import Vacio from '@/components/Vacio';
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from '@/components/Acciones';
@@ -80,7 +81,7 @@ function Lote({ tipo, documentos, cuentas, fechaInicial, hoy, emisorListo, bloqu
   };
   return (
     <>
-      {!documentos.length ? <div className="vacio"><p>{cobros ? 'No hay facturas por cobrar' : 'No hay gastos pendientes'}</p></div> : <>
+      {!documentos.length ? <Vacio icono={cobros ? 'factura' : 'gasto'} titulo={cobros ? 'Ninguna factura por cobrar' : 'Ningún gasto pendiente de pago'} accion={{ href: cobros ? '/facturas/nueva' : '/gastos#apuntar-gasto', texto: cobros ? 'Nueva factura' : 'Añadir gasto' }} /> : <>
         <label className="rem-check rem-todos"><input type="checkbox" disabled={bloqueado || !elegibles.length} checked={elegibles.length > 0 && elegidos.length === elegibles.length}
           onChange={(e) => seleccionar(e.target.checked ? elegibles.map((d) => d.id) : [])} />Seleccionar todos los disponibles</label>
         {[...grupos.values()].map((grupo) => <section className="grupo" key={grupo.id}>
@@ -139,7 +140,7 @@ export default function Remesas({ puedeCobrar, puedePagar, facturas, gastos, dom
         <p className="grupo-pie">Últimas 50 remesas generadas. Comprueba su ejecución en tu banco.</p>
         {historial.length ? <ul className="grupo-lista">{historial.map((r) => <li key={r.id} className="fila">
           <span className="txt"><strong>{r.tipo === 'cobros' ? 'Cobros' : 'Pagos'} · {fechaCorta(r.fecha)}</strong><small>{r.numero} operaciones · Creada el {fechaCorta(r.creada.slice(0, 10))}</small></span><span className="imp">{eur(r.total)}</span>
-        </li>)}</ul> : <div className="vacio"><p>Aún no hay remesas</p><p>Las descargas que generes aparecerán aquí.</p></div>}
+        </li>)}</ul> : <Vacio icono="cobrar" titulo="Aún no hay remesas" accion={<button type="button" className="boton" disabled={ocupado} onClick={() => ponerTab(puedeCobrar ? 'cobros' : 'pagos')}>{puedeCobrar ? 'Elegir cobros' : 'Elegir pagos'}</button>}>Selecciona los cobros o pagos que quieres enviar al banco.</Vacio>}
       </> : <Lote key={tab} tipo={tab} documentos={tab === 'cobros' ? facturas : gastos} cuentas={tab === 'cobros' ? domiciliaciones : cuentasProv}
         fechaInicial={tab === 'cobros' ? fechaCobro : hoy} hoy={hoy} emisorListo={tab === 'cobros' ? emisorCobros : emisorPagos} bloqueado={ocupado} ejecutar={ejecutar} resumen={ponerResultado} />}
     </>

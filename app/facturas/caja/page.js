@@ -1,3 +1,4 @@
+import Vacio from '@/components/Vacio';
 import Link from 'next/link';
 import { requerir } from '@/lib/auth';
 import { leer, leerUno, redis } from '@/lib/redis';
@@ -36,15 +37,16 @@ export default async function Caja({ searchParams }) {
       {!cierre && <nav className="segmentado"><Link href="/facturas/caja" className={ver === 'cierre' ? 'activo' : ''}>Cierre del día</Link><Link href="/facturas/caja?ver=importar" className={ver === 'importar' ? 'activo' : ''}>Importar del TPV</Link></nav>}
       {ver === 'cierre' || cierre ? (
         <>
-          <FormCierre hoy={hoy()} actividades={actividades} productos={lista} cierre={cierre?.caja ? cierre : null} ivaDefecto={actividades[0].ivaPct ?? 21} proyectos={nombresProyectos(facturas)} />
+          <div id="nuevo-cierre"><FormCierre hoy={hoy()} actividades={actividades} productos={lista} cierre={cierre?.caja ? cierre : null} ivaDefecto={actividades[0].ivaPct ?? 21} proyectos={nombresProyectos(facturas)} /></div>
           <p className="grupo-pie">Para tiendas con TPV o caja registradora: cada cierre es una factura simplificada de resumen (serie Z) que cuenta en el IVA, la contabilidad (el efectivo en caja, la tarjeta en el banco) y los libros registro. No va a Verifactu: los tiques ya los registra tu TPV.</p>
         </>
       ) : (
         <ImportarVentas actividades={actividades} />
       )}
-      {!cierre && recientes.length > 0 && (
+      {!cierre && (
         <section className="bloque">
           <h2 className="grupo-t">Últimos cierres</h2>
+          {!recientes.length && <Vacio compacto icono="factura" titulo="Aún no hay cierres" accion={{ href: '/facturas/caja#nuevo-cierre', texto: 'Añadir cierre' }} />}
           <ul className="grupo-lista">
             {recientes.map((f) => <li key={f.id}><Link href={`/facturas/${f.id}`} className="fila"><span className="txt"><strong>{fechaTexto(f.fecha)}</strong><small>{numeroFactura(f)} · efectivo {eur(f.caja.efectivo)} · tarjeta {eur(f.caja.tarjeta)}{f.importado ? ` · importado de ${f.importado}` : ''}</small></span><span className="imp">{eur(totalCierre(f))}</span></Link></li>)}
           </ul>

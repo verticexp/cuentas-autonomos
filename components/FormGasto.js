@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
 import { atras, volverA } from '@/lib/transicion';
@@ -42,6 +42,17 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
   const [leyendo, setLeyendo] = useState('');
   const [abierto, setAbierto] = useState(Boolean(gasto) || !plegado);
   const [hecho, setHecho] = useState(false);
+  useEffect(() => {
+    const abrirManual = () => {
+      if (window.location.hash === '#apuntar-gasto') { setAbierto(true); setHecho(false); }
+    };
+    abrirManual();
+    window.addEventListener('hashchange', abrirManual);
+    return () => window.removeEventListener('hashchange', abrirManual);
+  }, []);
+  useEffect(() => {
+    if (abierto && window.location.hash === '#apuntar-gasto') document.getElementById('apuntar-gasto')?.focus();
+  }, [abierto]);
   const [ultimoGuardado, setUltimoGuardado] = useState(null);
   const calculo = importes({ ...g, base: parseImporte(g.base) || 0 });
   // Justificante leído (foto reducida o PDF): se sube al guardar el gasto nuevo. En la ficha, se adjunta o sustituye aparte.
@@ -156,21 +167,21 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
           <strong>{hecho ? '✓ Gasto añadido' : 'Añadir un gasto'}</strong>
           <small>Haz una foto al ticket o sube la factura: Fisquo lee proveedor, base, IVA, IRPF y fecha.</small>
         </div>
-        <CupoEscaneo inicial={cupoInicial} />
         {error && <p className="error">{error}</p>}
         {avisoAdjunto}
         <div className="gasto-rapido-botones">
-          <button type="button" className="boton gasto-escanear" onClick={abrirCamara}><svg viewBox="0 0 24 24" aria-hidden><path d="M4 8V6a2 2 0 012-2h2M16 4h2a2 2 0 012 2v2M20 16v2a2 2 0 01-2 2h-2M8 20H6a2 2 0 01-2-2v-2M4 12h16" /></svg>Escanear ticket</button><input ref={camaraInput} type="file" accept="image/*" capture="environment" onChange={foto} hidden />
+          <button type="button" id="escanear-ticket" className="boton gasto-escanear" onClick={abrirCamara}><svg viewBox="0 0 24 24" aria-hidden><path d="M4 8V6a2 2 0 012-2h2M16 4h2a2 2 0 012 2v2M20 16v2a2 2 0 01-2 2h-2M8 20H6a2 2 0 01-2-2v-2M4 12h16" /></svg>Escanear ticket</button><input ref={camaraInput} type="file" accept="image/*" capture="environment" onChange={foto} hidden />
           {!gasto && !movimiento && <RafagaTickets hoy={hoy} actividades={actividades} />}
           <button type="button" className="boton sec" onClick={() => facturaInput.current?.click()}>Subir factura</button><input ref={facturaInput} type="file" accept="image/*,application/pdf,.xml,.xsig,text/xml,application/xml" onChange={foto} hidden />
-          <button type="button" className="boton sec" onClick={() => { setAbierto(true); setHecho(false); }}>A mano</button>
+          <button id="apuntar-gasto" type="button" className="boton sec" onClick={() => { setAbierto(true); setHecho(false); }}>Apuntar a mano</button>
         </div>
+        <CupoEscaneo inicial={cupoInicial} />
       </div>
     );
   }
 
   return (
-    <form className="formulario tarjeta" onSubmit={enviar}>
+    <form id="apuntar-gasto" tabIndex={-1} className="formulario tarjeta" onSubmit={enviar}>
       <fieldset disabled={enviando || procesando || Boolean(archivoPendiente)} style={{ border: 0, padding: 0, margin: 0, minWidth: 0, gap: 12 }}>
       <h3>{gasto ? 'Editar gasto' : movimiento ? 'Gasto del banco' : 'Añadir gasto deducible'}</h3>
       {movimiento && <p className="nota">Cargo del {fechaCorta(movimiento.fecha)} por {eur(Math.abs(movimiento.importe))} ({movimiento.concepto}). Sube la factura para que Fisquo lea la base y el IVA; al guardar queda emparejado con el banco.</p>}
@@ -181,9 +192,9 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
       </Deslizable>}
       {!gasto && <div className="ticket-ia">
         <p className="ticket-ia-t">Rellénalo con IA</p>
-        <p className="ticket-ia-txt">Haz una foto del ticket o sube la factura que te han enviado (imagen o PDF de hasta 3 MB y 10 páginas). Fisquo lee también el IRPF. Cada página cuenta como una lectura; si la vuelves a enviar, cuenta otra vez, aunque no guardes el gasto.</p>
+        <p className="ticket-ia-txt">Haz una foto del ticket o sube la factura que te han enviado (imagen o PDF de hasta 3 MB y 10 páginas). Fisquo lee también el IRPF.</p>
         <div className="ticket-ia-botones">
-          <button type="button" className="boton sec ticket-foto" onClick={abrirCamara}>Hacer foto</button><input ref={camaraInput} type="file" accept="image/*" capture="environment" onChange={foto} hidden />
+          <button id="escanear-ticket" type="button" className="boton sec ticket-foto" onClick={abrirCamara}>Escanear ticket</button><input ref={camaraInput} type="file" accept="image/*" capture="environment" onChange={foto} hidden />
           <button type="button" className="boton sec ticket-foto" onClick={() => facturaInput.current?.click()}>Subir factura</button><input ref={facturaInput} type="file" accept="image/*,application/pdf,.xml,.xsig,text/xml,application/xml" onChange={foto} hidden />
         </div>
         <CupoEscaneo inicial={cupoInicial} />

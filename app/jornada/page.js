@@ -1,3 +1,4 @@
+import Vacio from '@/components/Vacio';
 import { redirect } from 'next/navigation';
 import { requerir } from '@/lib/auth';
 import { leer } from '@/lib/redis';
@@ -46,7 +47,7 @@ export default async function RegistroJornada({ searchParams }) {
       <Volver href={gestor ? '/nominas' : '/ajustes'}>{gestor ? 'Nóminas' : 'Ajustes'}</Volver>
       <h1 className="titulo">Registro de jornada</h1>
 
-      {yo && <Fichar estado={estado} desde={desde} hoyMin={hoyMin + previo} ahora={ahora} />}
+      {yo && <div id="fichar-jornada"><Fichar estado={estado} desde={desde} hoyMin={hoyMin + previo} ahora={ahora} /></div>}
 
       <nav className="jor-meses" aria-label="Mes">
         <Ir href={`/jornada?mes=${masMes(mes, -1)}`} tipo="cifras" aria-label="Mes anterior">‹</Ir>
@@ -65,13 +66,13 @@ export default async function RegistroJornada({ searchParams }) {
               </li>
             );
           })}
-          {!quienes.length && <li className="fila"><span className="txt"><small>Aún no hay empleados. Añádelos en Nóminas.</small></span></li>}
+          {!quienes.length && <li><Vacio compacto icono="usuarios" titulo="Añade a tu equipo" accion={{ href: '/nominas#anadir-empleado', texto: 'Ir a Nóminas' }} /></li>}
         </ul>
         <a className="boton sec ancho jor-exportar" href={`/api/jornada/exportar?mes=${mes}`}>Descargar el registro (Excel)</a>
         <p className="grupo-pie">Listo para la Inspección de Trabajo: cada jornada con entrada, salida, pausas y correcciones. Se guarda 4 años.</p>
       </section>
 
-      {gestor && empleados.length > 0 && <NuevaJornada empleados={empleados.filter((e) => !e.baja || e.baja >= `${mes}-01`)} hoy={mes === mesHoy ? hoy : `${mes}-01`} />}
+      {gestor && empleados.length > 0 && <div id="anadir-jornada"><NuevaJornada empleados={empleados.filter((e) => !e.baja || e.baja >= `${mes}-01`)} hoy={mes === mesHoy ? hoy : `${mes}-01`} /></div>}
 
       {dias.map((d) => (
         <section key={d} className="grupo">
@@ -101,7 +102,7 @@ export default async function RegistroJornada({ searchParams }) {
           </ul>
         </section>
       ))}
-      {!dias.length && <div className="vacio"><p>Sin fichajes en {nombreMes(mes).split(' ')[0]}</p><p>{yo ? 'Ficha la entrada al empezar y la salida al acabar.' : 'Cada empleado ficha desde su cuenta de Fisquo (pon su email en su ficha), o apúntalo tú a mano.'}</p></div>}
+      {!dias.length && <Vacio icono="plazo" titulo={yo ? 'Registra tu jornada' : 'Apunta la jornada de tu equipo'} accion={{ href: yo ? '#fichar-jornada' : empleados.length ? '#anadir-jornada' : '/nominas#anadir-empleado', texto: yo ? 'Ir al fichaje' : empleados.length ? 'Añadir jornada' : 'Ir a Nóminas' }} secundaria={mes !== mesHoy && { href: '/jornada', texto: 'Ver este mes' }}>{yo ? 'Ficha la entrada al empezar y la salida al acabar.' : 'Añade su email en Nóminas para que cada persona pueda fichar.'}</Vacio>}
     </main>
   );
 }

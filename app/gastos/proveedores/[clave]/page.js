@@ -1,3 +1,4 @@
+import Vacio from '@/components/Vacio';
 import { notFound } from 'next/navigation';
 import { requerir } from '@/lib/auth';
 import { detalleProveedor, listarProveedores } from '@/lib/tercerosServidor';
@@ -37,7 +38,7 @@ export default async function Proveedor({ params }) {
         <FichaProveedor ficha={p.ficha} clave={p.clave} nombre={p.nombre} nif={p.nif} editar={puede(u, 'gastar')} comerciales={valoresDe(fichas, 'comercial')} zonas={valoresDe(fichas, 'zona')} />
       </section>
       <h2 className="ficha-titulo">Gastos</h2>
-      {!p.gastos.length && <p className="nota">Este proveedor aún no tiene gastos.</p>}
+      {!p.gastos.length && <Vacio compacto icono="gasto" titulo="Este proveedor aún no tiene gastos" accion={puede(u, 'gastar') && { href: '/gastos#apuntar-gasto', texto: 'Añadir gasto' }} />}
       <ul className="grupo-lista">
         {p.gastos.map((g) => (
           <li key={g.id}>

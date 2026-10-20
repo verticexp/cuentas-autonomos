@@ -1,5 +1,6 @@
 'use client';
 
+import Vacio from '@/components/Vacio';
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ESTADOS, ORIGENES } from '@/lib/admin';
@@ -51,6 +52,7 @@ export default function AdminEmpresas({ filas }) {
     </div>
     {msg && <p className={msg === 'Hecho.' ? 'adm-ok' : 'adm-mal'} role="status">{msg}</p>}
     <p className="adm-pie">{lista.length} de {filas.length}</p>
+    {!lista.length && <Vacio compacto tipo="resultados" icono="cliente" titulo="Ninguna empresa con estos filtros" accion={<button type="button" className="boton sec" onClick={() => { setBusca(''); setEstado(''); setOrigen(''); setForma(''); }}>Quitar filtros</button>} />}
     <ul className="adm-tabla">
       {lista.map((f) => <li key={f.id} className={abierta === f.id ? 'abierta' : ''}>
         <button type="button" className="adm-fila" aria-expanded={abierta === f.id} onClick={() => setAbierta(abierta === f.id ? '' : f.id)}>

@@ -1,3 +1,4 @@
+import Vacio from '@/components/Vacio';
 import { sinFuncion } from '@/lib/planes';
 import SinPlan from '@/components/SinPlan';
 import Link from 'next/link';
@@ -55,7 +56,7 @@ export default async function Producto({ params }) {
       {p.bajo && <p className="cont-alerta">{p.agotado ? 'Agotado' : `Bajo mínimo (${ud(p.minimo)})`}: está en <Link href="/inventario?ver=pedir">Qué pedir</Link>.</p>}
       <p className="grupo-pie">Este año: {ud(p.ventas)} vendidas por {eur(p.ingresos)}, margen {eur(p.margen)}{p.ingresos ? ` (${p.margenPct.toLocaleString('es-ES')} %)` : ''}.{p.consumo > 0 ? ` Consumidas en servicios: ${ud(p.consumo)} (${eur(p.costeConsumo)} a coste).` : ''} Precio de venta {eur(p.precio)}.</p>
 
-      {puede(u, 'gastar') && <Ajuste producto={p.id} hoy={h} coste={p.costeMedio} consumo={p.consumo > 0} />}
+      {puede(u, 'gastar') && <div id="ajustar-stock"><Ajuste producto={p.id} hoy={h} coste={p.costeMedio} consumo={p.consumo > 0} /></div>}
 
       <section className="bloque">
         <h2 className="grupo-t">Movimientos</h2>
@@ -76,7 +77,7 @@ export default async function Producto({ params }) {
             );
           })}
         </ul>
-        {!movs.length && <div className="vacio"><p>Sin movimientos</p><p>Apunta su stock inicial arriba. Luego las facturas, los albaranes y los cierres de caja lo restan y las compras lo suman.</p></div>}
+        {!movs.length && <Vacio compacto icono="datos" titulo="Apunta el stock inicial" accion={puede(u, 'gastar') && { href: '#ajustar-stock', texto: 'Apuntar stock' }}>Indica cuántas unidades tienes para empezar a seguirlas.</Vacio>}
       </section>
     </main>
   );

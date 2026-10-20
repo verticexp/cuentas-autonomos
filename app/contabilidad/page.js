@@ -1,3 +1,4 @@
+import Vacio from '@/components/Vacio';
 import { requerir } from '@/lib/auth';
 import { DETALLE, puede } from '@/lib/permisos';
 import { clave, leer, leerUno, redis } from '@/lib/redis';
@@ -146,7 +147,7 @@ export default async function Contabilidad({ searchParams }) {
               </table>
             </article>
           ))}
-          {!d.diario.some((a) => a.fecha.slice(5, 7) === mes) && <div className="vacio"><p>Sin asientos en este mes</p><p>Cada factura, gasto, nómina, cobro y pago genera el suyo.</p></div>}
+          {!d.diario.some((a) => a.fecha.slice(5, 7) === mes) && <Vacio icono="contabilidad" tipo="resultados" titulo="Sin asientos en este mes" accion={{ href: url({ mes: null, p: null }), texto: 'Ver el último mes' }}>Cada factura, gasto, nómina, cobro y pago genera el suyo.</Vacio>}
           <p className="grupo-pie">Libro diario de {anio}: {d.diario.length} asientos. Fisquo los genera solos de tus facturas (y sus cobros), gastos (y sus pagos), nóminas, amortizaciones, liquidaciones de IVA y retenciones de los trimestres marcados como presentados, y el cierre de cada año. Los apuntados a mano se pueden borrar.</p>
         </section>
       )}
@@ -167,14 +168,15 @@ export default async function Contabilidad({ searchParams }) {
         </section>
       )}
 
-      {ver === 'mayor' && d.mayor && (
+      {ver === 'mayor' && (
         <section className="bloque">
           <form className="cont-buscar" action="/contabilidad">
             <input type="hidden" name="anio" value={anio} /><input type="hidden" name="ver" value="mayor" />
-            <input className="campo" name="cuenta" list="cuentas-mayor" inputMode="numeric" defaultValue={cuenta} placeholder="Cuenta (572, 430…)" aria-label="Cuenta" />
+            <input id="cuenta-mayor" className="campo" name="cuenta" list="cuentas-mayor" inputMode="numeric" defaultValue={cuenta} placeholder="Cuenta (572, 430…)" aria-label="Cuenta" />
             <datalist id="cuentas-mayor">{d.sumas.filas.map((x) => <option key={x.cuenta} value={x.cuenta}>{x.nombre}</option>)}</datalist>
             <button className="boton sec">Ver</button>
           </form>
+          {d.mayor ? <>
           <div className="cont-resumen">
             <div><span>Saldo inicial</span><strong>{eur(d.mayor.inicial)}</strong></div>
             <div><span>Movimientos</span><strong>{d.mayor.movs.length}</strong></div>
@@ -189,8 +191,9 @@ export default async function Contabilidad({ searchParams }) {
               </div></li>
             ))}
           </ul>
-          {!d.mayor.movs.length && <div className="vacio"><p>Sin movimientos en {anio}</p></div>}
+          {!d.mayor.movs.length && <Vacio compacto tipo="resultados" icono="contabilidad" titulo={`Sin movimientos en ${anio}`} accion={{ href: '#cuenta-mayor', texto: 'Ver otra cuenta' }} />}
           <p className="grupo-pie">Libro mayor: cada apunte de la cuenta (y sus subcuentas), del más reciente al más antiguo, con el saldo después de cada uno (debe − haber){d.mayor.movs.length > 300 ? '. Se ven los 300 últimos; el Excel los tiene todos' : ''}.</p>
+          </> : <Vacio compacto icono="contabilidad" titulo="Esa cuenta no existe en el plan contable" accion={{ href: '#cuenta-mayor', texto: 'Elegir cuenta' }} />}
         </section>
       )}
 
@@ -220,7 +223,7 @@ export default async function Contabilidad({ searchParams }) {
                 </li>
               ))}
             </ul>
-          </> : <div className="vacio"><p>Sin bienes de inversión</p><p>Cuando compres algo que vas a usar varios años (un ordenador, un equipo, un vehículo…), márcalo al apuntar el gasto como «bien de inversión».</p></div>}
+          </> : <Vacio icono="datos" titulo="Registra una compra que usarás varios años" accion={{ href: '/gastos#apuntar-gasto', texto: 'Añadir gasto' }}>Marca «bien de inversión» al apuntar el gasto, por ejemplo, de un ordenador.</Vacio>}
           <p className="grupo-pie">Libro registro de bienes de inversión. Cada bien se amortiza por días desde la compra con el coeficiente máximo de la tabla oficial ({sociedad ? 'Ley del Impuesto sobre Sociedades' : 'estimación directa simplificada'}); lo que vale 300 € o menos, entero el año de compra. Cada trimestre va un asiento de amortización al diario; el IVA de la compra se deduce entero en el 303 (casillas 30 y 31).</p>
         </section>
       )}

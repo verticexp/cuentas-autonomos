@@ -1,5 +1,6 @@
 'use client';
 
+import Vacio from '@/components/Vacio';
 import { useEffect, useRef, useState } from 'react';
 import { permisoIA } from '@/lib/permisoIA';
 
@@ -37,7 +38,7 @@ export default function Asistente({ listo, ejemplos, inicial = '' }) {
     enviar(inicial);
   }, [listo, inicial]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (!listo) return <div className="vacio"><p>Aún no está activado</p><p>Falta configurar la clave de la IA (ANTHROPIC_API_KEY) en Vercel.</p></div>;
+  if (!listo) return <Vacio icono="asistente" titulo="El asistente no está disponible ahora mismo">Vuelve a intentarlo más tarde. Puedes seguir usando el resto de la app.</Vacio>;
   return (
     <div className="asi">
       {!mensajes.length && (

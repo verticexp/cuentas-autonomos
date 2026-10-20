@@ -1,3 +1,4 @@
+import Vacio from '@/components/Vacio';
 import { usarFuncion } from '@/lib/usoPlan';
 import SinPlan from '@/components/SinPlan';
 import { requerir } from '@/lib/auth';
@@ -54,7 +55,7 @@ export default async function Cartera({ searchParams }) {
       </div>
 
       {d.efectos.length === 0 ? (
-        <div className="vacio"><p>Nada pendiente de cobro</p><p>Cuando emitas una factura y no esté cobrada, aparecerá aquí ordenada por su vencimiento.</p></div>
+        <Vacio icono="cobrar" titulo="Nada pendiente de cobro" accion={editable && { href: '/facturas/nueva', texto: 'Nueva factura' }}>Cuando emitas una factura y no esté cobrada, aparecerá aquí ordenada por su vencimiento.</Vacio>
       ) : <>
         {d.porRecibir.n > 0 && <Ir href={url({ recibir: porRecibir ? '' : '1' })} className="car-aviso">{d.porRecibir.n} {d.porRecibir.n === 1 ? 'efecto' : 'efectos'} por recibir ({eur(d.porRecibir.importe)}): {porRecibir ? 'ver todos' : 'ver cuáles'} ›</Ir>}
 
@@ -75,7 +76,7 @@ export default async function Cartera({ searchParams }) {
           <Ir href={url({ forma: '' })} tipo="fundido" className={!forma ? 'activo' : ''}>Todas</Ir>
           {d.porForma.map((x) => <Ir key={x.id || 'sin'} href={url({ forma: x.id || 'sin' })} tipo="fundido" className={(x.id || 'sin') === forma ? 'activo' : ''}>{x.nombre} · {x.n}</Ir>)}
         </Deslizable>
-        {!visibles.length && <div className="vacio"><p>Ningún efecto con este filtro</p></div>}
+        {!visibles.length && <Vacio tipo="resultados" icono="cobrar" titulo="Ningún efecto con este filtro" accion={{ href: '/cartera', texto: 'Quitar filtros' }} />}
 
         {grupos.map((g) => (
           <section key={g.mes} className="grupo">

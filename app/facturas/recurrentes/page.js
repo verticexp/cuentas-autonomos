@@ -1,3 +1,4 @@
+import Vacio from '@/components/Vacio';
 import { requerir } from '@/lib/auth';
 import { leer } from '@/lib/redis';
 import { importes } from '@/lib/calculos';
@@ -19,7 +20,7 @@ export default async function Recurrentes() {
     <main className="pagina mk-look">
       <Volver href="/facturas">Facturas</Volver>
       <h1 className="titulo">Facturas recurrentes</h1>
-      {!lista.length && <p className="nota">Ninguna todavía. Para repetir una factura cada mes, ábrela y pulsa «Repetir cada mes».</p>}
+      {!lista.length && <Vacio icono="factura" titulo="Repite una factura cada mes" accion={{ href: '/facturas', texto: 'Elegir factura' }}>Abre una factura y pulsa «Repetir cada mes».</Vacio>}
       {lista.length > 0 && (
         <ul className="recurrentes">
           {lista.map((r) => (

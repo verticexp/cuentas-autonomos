@@ -1,3 +1,4 @@
+import Vacio from '@/components/Vacio';
 import { cupoEscaneos } from '@/lib/cuotasIA';
 import { sinFuncion } from '@/lib/planes';
 import { requerir } from '@/lib/auth';
@@ -153,9 +154,9 @@ export default async function Gastos({ searchParams }) {
 
       {pag.siguiente && <p className="grupo-pie"><Link href={url({ desde: pag.siguiente })} className="boton sec">Ver más</Link></p>}
 
-      {!lista.length && (hay
-        ? <div className="vacio"><p>{buscado ? `Nada con «${q}»` : 'Nada con este filtro'}</p><p>Prueba con otra palabra o quita el filtro.</p></div>
-        : <div className="vacio"><p>Aún no hay gastos</p><p>Haz una foto al ticket o apúntalo arriba: el IVA se resta del 303 y el gasto baja tu IRPF.</p></div>)}
+      {!lista.length && (hay || buscado || estado || desde
+        ? <Vacio tipo="resultados" icono="gasto" titulo={buscado ? `Ningún gasto con «${q}»` : 'Ningún gasto con este filtro'} accion={{ href: buscado ? url({ q: null, desde: null }) : '/gastos', texto: buscado ? 'Quitar búsqueda' : 'Ver todos' }} />
+        : <Vacio icono="gasto" titulo="Añade tu primer gasto" accion={puede(u, 'gastar') && { href: '#escanear-ticket', texto: 'Escanear ticket' }} secundaria={puede(u, 'gastar') && { href: '#apuntar-gasto', texto: 'Apuntar a mano' }}>Hazle una foto al ticket o apúntalo a mano: el IVA se resta del 303 y el gasto baja tu IRPF.</Vacio>)}
 
       <section className="gastos-mas">
         <h2 className="grupo-t">Más herramientas</h2>

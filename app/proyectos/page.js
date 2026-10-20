@@ -1,3 +1,4 @@
+import Vacio from '@/components/Vacio';
 import { usarFuncion } from '@/lib/usoPlan';
 import SinPlan from '@/components/SinPlan';
 import Link from 'next/link';
@@ -72,7 +73,7 @@ export default async function Proyectos({ searchParams }) {
               ))}
               <li><div className="fila"><span className="txt"><strong>Sin proyecto (generales)</strong><small>Ingresos {eur(r.general.ingresos)} · gastos {eur(r.general.gastos)}</small></span><span className="imp">{eur(r.general.margen)}</span></div></li>
             </ul>
-          ) : <div className="vacio"><p>Aún no hay proyectos</p><p>Al hacer una factura, un cierre de caja o apuntar un gasto, escribe su proyecto, obra o local («Obra Calle Mayor», «Tienda Centro»…). Aquí verás lo que gana cada uno.</p></div>}
+          ) : <Vacio icono="cliente" tipo={todo ? 'vacio' : 'resultados'} titulo="Mira lo que gana cada proyecto" accion={{ href: '/facturas/nueva', texto: 'Nueva factura' }} secundaria={!todo && { href: '/proyectos?anio=todo', texto: 'Ver todos los años' }}>Al hacer una factura, un cierre de caja o apuntar un gasto, escribe su proyecto, obra o local («Obra Calle Mayor», «Tienda Centro»…). Aquí verás lo que gana cada uno.</Vacio>}
           <p className="grupo-pie">Ingresos y gastos sin IVA{ivaCoste ? ' (los gastos, con el IVA, porque no lo recuperas)' : ''}. No incluye nóminas ni bienes de inversión: quedan como gastos generales.</p>
         </section>
       )}

@@ -1,0 +1,16 @@
+.vacio { display: flex; flex-direction: column; align-items: center; gap: 16px; margin: 20px 0; padding: 32px 24px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); color: var(--ink); text-align: center; }
+.icono { display: flex; align-items: center; justify-content: center; flex: 0 0 auto; width: 52px; height: 52px; border-radius: 50%; color: var(--marca, var(--in)); background: color-mix(in srgb, var(--marca, var(--in)) 10%, var(--surface)); }
+.icono :global(.ico-cuadro) { display: contents; color: inherit; }
+.icono svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.contenido { min-width: 0; max-width: 55ch; }
+.titulo { margin: 0; font-size: 20px; font-weight: 650; line-height: 1.3; text-wrap: balance; overflow-wrap: anywhere; }
+.texto { margin-top: 8px; color: var(--muted); font-size: 15px; line-height: 1.5; text-wrap: pretty; }
+.acciones { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+.acciones :global(.boton) { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; max-width: 100%; text-decoration: none; white-space: normal; }
+.compacto { flex-direction: row; align-items: flex-start; gap: 12px; margin: 12px 0; padding: 16px; border: 0; border-radius: 0; background: none; text-align: left; }
+.compacto .icono { width: 36px; height: 36px; }
+.compacto .icono svg { width: 20px; height: 20px; }
+.compacto .titulo { font-size: 17px; }
+.compacto .acciones { justify-content: flex-start; margin-top: 12px; }
+.compacto .acciones :global(.boton) { font-size: 15px; padding: 10px 16px; }
+@media (max-width: 480px) { .vacio { padding: 24px 16px; } .compacto { padding: 12px 0; } .acciones { flex-direction: column; align-items: stretch; } }
