@@ -1,4 +1,5 @@
 import Termino from '@/components/Termino';
+import { GLOSARIO } from '@/lib/glosario';
 import { requerir } from '@/lib/auth';
 import { leer, redis } from '@/lib/redis';
 import { actividadesDe, ajustesIva, fiscalDe, hecho130, hecho303, modelosDe, usa130, usa303 } from '@/lib/empresa';
@@ -169,8 +170,6 @@ export default async function Modelos({ searchParams }) {
       </header>
       <p className="grupo-pie arriba">Calculados con lo que hay en Fisquo. Son orientativos: revísalos con tu gestor antes de presentarlos.</p>
 
-      <p className="grupo-pie arriba">Conceptos del IVA: <Termino id="recargo">recargo de equivalencia</Termino> e <Termino id="isp">inversión del sujeto pasivo</Termino>.</p>
-
       {ahora}
 
       {avisos.length > 0 && (
@@ -186,7 +185,7 @@ export default async function Modelos({ searchParams }) {
         nombre="Qué presentas y cuándo" detalle={`${modelosDe({ ...f, intracom: hay349 }).length} modelos y plazos según cómo trabajas`}>
         <h2 className="grupo-t">Qué presentas y cuándo</h2>
         <div className="grupo-c">
-          {modelosDe({ ...f, intracom: hay349 }).map((m) => <div key={m.id} className="celda"><span className="modelo-num">{m.num || m.id}</span><span className="txt">{m.nombre}<small>{m.cuando}</small></span></div>)}
+          {modelosDe({ ...f, intracom: hay349 }).map((m) => <div key={m.id} className="celda"><span className="modelo-num">{GLOSARIO[`m${m.id}`] ? <Termino id={`m${m.id}`}>{m.num || m.id}</Termino> : m.num || m.id}</span><span className="txt">{m.nombre}<small>{m.cuando}</small></span></div>)}
         </div>
         <p className="grupo-pie">Según cómo trabajas ({f.tipo === 'sociedad' ? 'sociedad' : 'autónomo'}). Si algo no encaja, cámbialo en Ajustes › Actividades y modelos.</p>
       </ModeloPlegable>
@@ -194,7 +193,7 @@ export default async function Modelos({ searchParams }) {
       {c303 && (() => {
         const t = tRef(p303); const c = t && casillas303(facturas, gastos, anio, t, iva); const comp = c && c['46'] < 0;
         return (
-        <ModeloPlegable id="m303" num={<Termino id="m303">303</Termino>} nombre="IVA trimestral" {...filaTrim(t, comp && 'a compensar')} favor={comp}
+        <ModeloPlegable id="m303" num="303" nombre="IVA trimestral" {...filaTrim(t, comp && 'a compensar')} favor={comp}
           dato={c && importeFila(comp ? -c['46'] : liquidaciones[t - 1].ingresar)}>
           <h2 className="grupo-t">303 · IVA trimestral</h2>
           <p className="grupo-pie arriba">El IVA de tus facturas menos el de tus gastos. Si sale negativo, se compensa en los trimestres siguientes (durante cuatro años como máximo) o, en el 4T, puedes pedir que te lo devuelvan.</p>
@@ -240,7 +239,7 @@ export default async function Modelos({ searchParams }) {
       {r130 && (() => {
         const t = tRef(p130);
         return (
-        <ModeloPlegable id="m130" num={<Termino id="m130">130</Termino>} nombre="Pago a cuenta del IRPF" {...filaTrim(t)} dato={t && importeFila(r130.trimestres[t - 1].m130)}>
+        <ModeloPlegable id="m130" num="130" nombre="Pago a cuenta del IRPF" {...filaTrim(t)} dato={t && importeFila(r130.trimestres[t - 1].m130)}>
           <h2 className="grupo-t">130 · Pago a cuenta del IRPF</h2>
           <p className="grupo-pie arriba">Acumulado desde enero: el 20 % de tu rendimiento, menos las retenciones de tus facturas y lo que ya pagaste en trimestres anteriores. Marca aquí cada trimestre cuando lo presentes: lo que no está presentado no cuenta en el siguiente.</p>
           <Rend130 anio={anio - 1} valor={rendAnterior ?? null} sugerido={sugerido} minoracion={minoracion130(rendAnterior)} />
@@ -267,7 +266,7 @@ export default async function Modelos({ searchParams }) {
       {hay111 && (() => {
         const t = tPlazo(20);
         return (
-        <ModeloPlegable id="m111" num={<Termino id="m111">111</Termino>} nombre="Retenciones de nóminas y profesionales" {...filaPlazo(t, 20, null, t && !a111(t) && 'sin nóminas ni profesionales con retención')}
+        <ModeloPlegable id="m111" num="111" nombre="Retenciones de nóminas y profesionales" {...filaPlazo(t, 20, null, t && !a111(t) && 'sin nóminas ni profesionales con retención')}
           dato={importeFila(t ? a111(t) : r2(T.reduce((s, x) => s + a111(x), 0)))}>
           <h2 className="grupo-t">111 · Retenciones de trabajadores y profesionales</h2>
           <p className="grupo-pie arriba">Lo retenido en las nóminas del trimestre y en las facturas de profesionales (los gastos con retención, por ejemplo tu gestoría).</p>
@@ -296,7 +295,7 @@ export default async function Modelos({ searchParams }) {
           : x.cuota === null ? { estado: 'listo', detalle: `${x.p}P · falta la cuota del Impuesto sobre Sociedades de ${x.de}` }
           : { detalle: `${x.p}P · hasta el 20 de ${x.mes}` };
         return (
-        <ModeloPlegable id="m202" num={<Termino id="m202">202</Termino>} nombre="Pagos a cuenta de Sociedades" {...fila} dato={x && importeFila(x.pago)}>
+        <ModeloPlegable id="m202" num="202" nombre="Pagos a cuenta de Sociedades" {...fila} dato={x && importeFila(x.pago)}>
           <h2 className="grupo-t">202 · Pagos a cuenta del Impuesto sobre Sociedades</h2>
           <p className="grupo-pie arriba">El 18 % de la cuota del último Impuesto sobre Sociedades presentado (menos deducciones, bonificaciones y retenciones; sin restar los pagos a cuenta). Si salió a cero o es el primer año, no se presenta. Si facturas más de 6 millones, se calcula de otra forma: lo hace tu gestor.</p>
           <div className="tarjetas">
@@ -320,7 +319,7 @@ export default async function Modelos({ searchParams }) {
       {hay115 && (() => {
         const t = tPlazo(20);
         return (
-        <ModeloPlegable id="m115" num={<Termino id="m115">115</Termino>} nombre="Retenciones del alquiler" {...filaPlazo(t, 20, null, t && !modelo115(gastos, anio, t).base && 'sin alquiler')}
+        <ModeloPlegable id="m115" num="115" nombre="Retenciones del alquiler" {...filaPlazo(t, 20, null, t && !modelo115(gastos, anio, t).base && 'sin alquiler')}
           dato={importeFila(t ? modelo115(gastos, anio, t).retenciones : r2(T.reduce((s, x) => s + modelo115(gastos, anio, x).retenciones, 0)))}>
           <h2 className="grupo-t">115 · Retenciones del alquiler</h2>
           <p className="grupo-pie arriba">El {RET_ALQUILER} % de la renta (sin IVA) de los gastos marcados como alquiler del local.</p>
@@ -337,7 +336,7 @@ export default async function Modelos({ searchParams }) {
         const t = tPlazo(30); const m = modelo349(facturas, anio, t, gastos);
         const fila = filaPlazo(t, 30, t && `${m.operadores.length} ${m.operadores.length === 1 ? 'empresa' : 'empresas'}`, t && !m.operadores.length && 'sin operaciones: no se presenta');
         return (
-        <ModeloPlegable id="m349" num={<Termino id="m349">349</Termino>} nombre="Empresas de la UE" {...fila} dato={importeFila(m.total)}>
+        <ModeloPlegable id="m349" num="349" nombre="Empresas de la UE" {...fila} dato={importeFila(m.total)}>
           <h2 className="grupo-t">349 · Empresas de la UE</h2>
           <p className="grupo-pie arriba">Facturas a clientes con NIF-IVA de otro país de la UE (clave S, servicios prestados) y gastos de proveedores de la UE con su NIF-IVA (clave I, servicios recibidos; si son bienes, la clave es A). Solo se presenta el trimestre en que haya alguna.</p>
           <div className="tarjetas">
@@ -352,7 +351,7 @@ export default async function Modelos({ searchParams }) {
       })()}
 
       {m390 && (
-        <ModeloPlegable id="m390" num={<Termino id="m390">390</Termino>} nombre="Resumen anual del IVA" detalle={`Del 1 al 30 de enero de ${anio + 1}`}>
+        <ModeloPlegable id="m390" num="390" nombre="Resumen anual del IVA" detalle={`Del 1 al 30 de enero de ${anio + 1}`}>
           <h2 className="grupo-t">390 · Resumen anual del IVA</h2>
           <div className="tarjeta">
             <Casillas filas={[
@@ -373,7 +372,7 @@ export default async function Modelos({ searchParams }) {
         </ModeloPlegable>
       )}
 
-      <ModeloPlegable id="m347" num={<Termino id="m347">347</Termino>} nombre="Operaciones con terceros"
+      <ModeloPlegable id="m347" num="347" nombre="Operaciones con terceros"
         estado={m347.sinNif.length ? 'fuera' : undefined}
         detalle={m347.sinNif.length ? `Falta el NIF de ${m347.sinNif.length} ${m347.sinNif.length === 1 ? 'cliente o proveedor' : 'clientes o proveedores'}`
           : m347.ventas.length + m347.compras.length ? `${m347.ventas.length + m347.compras.length} clientes y proveedores · en febrero de ${anio + 1}` : 'Nadie pasa de 3.005,06 €: no se presenta'}>
@@ -410,7 +409,7 @@ export default async function Modelos({ searchParams }) {
       )}
 
       {is && (
-        <ModeloPlegable id="m200" num={<Termino id="m200">200</Termino>} nombre={`Impuesto de Sociedades ${anio}`} favor={is.resultado < 0}
+        <ModeloPlegable id="m200" num="200" nombre={`Impuesto de Sociedades ${anio}`} favor={is.resultado < 0}
           detalle={`Borrador · ${is.resultado >= 0 ? 'saldría a pagar' : 'saldría a devolver'} · del 1 al 25 de julio de ${anio + 1}`} dato={importeFila(Math.abs(is.resultado))}>
           <h2 className="grupo-t">Borrador del Impuesto sobre Sociedades {anio}</h2>
           <p className="grupo-pie arriba">Solo con lo que hay en Fisquo, con la amortización de tus bienes de inversión y sin otros ajustes (gastos no deducibles, pérdidas de años anteriores, reservas…): tómalo como una idea de cuánto saldrá. Se presenta del 1 al 25 de julio de {anio + 1}.</p>

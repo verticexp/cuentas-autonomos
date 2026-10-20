@@ -29,7 +29,8 @@ const TIPO = { apertura: 'Apertura', manual: 'Manual', amortizacion: 'Amortizaci
 
 // Una partida con su desglose plegado; las cifras del año anterior, al lado.
 function Partida({ p, ant }) {
-  const nombre = p.id === 'amortizacion' ? <Termino id="amortizacion">{p.nombre}</Termino> : p.nombre;
+  // Dentro de un <summary> no cabe otro botón: la definición solo va cuando la partida no se despliega.
+  const nombre = p.id === 'amortizacion' && !p.detalle.length ? <Termino id="amortizacion">{p.nombre}</Termino> : p.nombre;
   const cifras = <span className="cont-cifras"><span>{eur(p.importe)}</span>{ant !== undefined && <small>{ant === null ? '—' : eur(ant)}</small>}</span>;
   if (!p.detalle.length) return <div className="cont-fila"><span className="cont-n">{nombre}</span>{cifras}</div>;
   return (
