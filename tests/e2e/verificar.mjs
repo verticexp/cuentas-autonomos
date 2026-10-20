@@ -1604,7 +1604,7 @@ console.log('Descargar todos los datos');
   const r = await pedir('/api/exportar/todo', { cookie: yo });
   const zipT = Buffer.from(await r.arrayBuffer()).toString('utf8'); // ZIP sin comprimir: los JSON se leen tal cual
   const u0 = JSON.parse(await kv(['HGET', 'cuentas:usuarios', await kv(['HGET', 'cuentas:emails', fd.get('email')])]));
-  ok('el administrador descarga un .zip', () => assert.ok(r.status === 200 && r.headers.get('content-type') === 'application/zip' && /netto-datos-\d{4}-\d{2}-\d{2}\.zip/.test(r.headers.get('content-disposition'))));
+  ok('el administrador descarga un .zip', () => assert.ok(r.status === 200 && r.headers.get('content-type') === 'application/zip' && /fisquo-datos-\d{4}-\d{2}-\d{2}\.zip/.test(r.headers.get('content-disposition'))));
   ok('con un JSON por tipo de dato', () => assert.ok(['empresa', 'personas', 'facturas', 'registros', 'gastos', 'clientes', 'productos', 'presupuestos', 'recurrentes', 'empleados', 'nominas', 'jornada', 'bancos', 'banco', 'actividad'].every((x) => zipT.includes(`${x}.json`))));
   ok('trae los datos de verdad (su email, sus clientes y su actividad)', () => assert.ok(zipT.includes(fd.get('email')) && zipT.includes('Cliente Auditado') && zipT.includes('Exportación a Excel')));
   ok('sin contraseñas ni sesiones', () => assert.ok(u0.pass && !zipT.includes(u0.pass) && !zipT.includes('"pass"') && !zipT.includes(yo)));

@@ -44,7 +44,7 @@ export async function GET() {
       ...(await justificantesParaZip(u, listas[LISTAS.indexOf('gastos')] || [])),
     ];
     const fecha = new Date().toISOString().slice(0, 10);
-    return new Response(zip(archivos), { headers: { 'Content-Type': 'application/zip', 'Content-Disposition': `attachment; filename="netto-datos-${fecha}.zip"` } });
+    return new Response(zip(archivos), { headers: { 'Content-Type': 'application/zip', 'Content-Disposition': `attachment; filename="fisquo-datos-${fecha}.zip"` } });
   });
   return resultado?.ocupado ? respuesta429(5, 'Ya hay una exportación en curso en tu empresa. Espera a que termine y prueba de nuevo.') : resultado;
 }
