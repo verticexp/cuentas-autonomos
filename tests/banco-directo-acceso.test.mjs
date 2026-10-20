@@ -6,7 +6,7 @@ import { conectarVisible } from '../lib/enableBanking.js';
 const anteriores = Object.fromEntries(['ENABLE_BANKING_APP_ID', 'ENABLE_BANKING_KEY', 'BANCO_DIRECTO'].map((k) => [k, process.env[k]]));
 after(() => { for (const [k, v] of Object.entries(anteriores)) { if (v === undefined) delete process.env[k]; else process.env[k] = v; } });
 
-test('la conexión directa es solo para el administrador de Netto, aunque haya una lista o comodín configurados', () => {
+test('la conexión directa es solo para el administrador de Kontix, aunque haya una lista o comodín configurados', () => {
   process.env.ENABLE_BANKING_APP_ID = 'pruebas';
   process.env.ENABLE_BANKING_KEY = 'pruebas';
   for (const lista of ['*', 'cliente@example.test', '']) {
@@ -64,7 +64,7 @@ test('los clientes pueden quitar cuentas de extractos, pero no operar sobre una 
   cuenta = null;
 });
 
-test('el administrador de Netto conserva el acceso a la conexión y sincronización', async () => {
+test('el administrador de Kontix conserva el acceso a la conexión y sincronización', async () => {
   usuario = { id: 'propietario', rol: 'admin', admin: true };
   llamadas = 0;
   assert.equal((await (await cargar('conectar')).GET()).status, 200);

@@ -65,7 +65,7 @@ test('suscripción: a cada administrador, una sola vez aunque Stripe repita el a
   assert.equal((await A.avisarSuscripcion('e1', antes, ahora, 'https://netto.test')).enviados, 2);
   assert.equal((await A.avisarSuscripcion('e1', antes, ahora, 'https://netto.test')).enviados, 0);
   assert.deepEqual(enviados.map((x) => x.to[0]).sort(), ['ana@ejemplo.es', 'bea@ejemplo.es']);
-  assert.equal(enviados[0].subject, 'Ya tienes el plan Pro de Netto');
+  assert.equal(enviados[0].subject, 'Ya tienes el plan Pro de Kontix');
   assert.deepEqual(enviados[0].tags, [{ name: 'correo', value: 'plan-activado' }]);
   assert.match(enviados[0].html, /https:\/\/netto\.test\/ajustes\/plan/);
   assert.match(enviados[0].text, /pago mensual/);
@@ -85,7 +85,7 @@ test('si el email falla, la marca se quita y el siguiente aviso lo vuelve a inte
   assert.equal((await A.avisarSuscripcion('e1', { estado: 'active' }, ahora)).enviados, 0);
   globalThis.fetch = f;
   assert.equal((await A.avisarSuscripcion('e1', { estado: 'active' }, ahora)).enviados, 2);
-  assert.equal(enviados[0].subject, 'No hemos podido cobrar tu plan de Netto');
+  assert.equal(enviados[0].subject, 'No hemos podido cobrar tu plan de Kontix');
 });
 
 test('bienvenida: solo a quien administra su empresa, y una vez', async () => {
@@ -93,7 +93,7 @@ test('bienvenida: solo a quien administra su empresa, y una vez', async () => {
   assert.equal((await A.bienvenida('a1', 'https://netto.test')).enviados, 1);
   assert.equal((await A.bienvenida('a1', 'https://netto.test')).enviados, 0);
   assert.equal(enviados.length, 1);
-  assert.equal(enviados[0].subject, 'Bienvenida a Netto: tus primeros pasos');
+  assert.equal(enviados[0].subject, 'Bienvenida a Kontix: tus primeros pasos');
   assert.equal(enviados[0].reply_to, 'corporate@nettohq.com');
   assert.match(enviados[0].text, /Hola, Ana:/);
 });

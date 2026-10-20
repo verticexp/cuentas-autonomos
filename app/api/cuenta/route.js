@@ -33,7 +33,7 @@ async function comprobarForma(u, emisor, fiscalTipo) {
   const antes = normalizarNif(u.emisor?.nif), ahora = normalizarNif(emisor.nif);
   if (ahora && ahora !== antes) {
     const otra = await redis.hget('empresa-nif', ahora);
-    if (otra && otra !== u.empresa) return { error: 'Ya hay otra cuenta de Netto con ese NIF. Escríbenos a corporate@nettohq.com si es tuya.' };
+    if (otra && otra !== u.empresa) return { error: 'Ya hay otra cuenta de Kontix con ese NIF. Escríbenos a corporate@nettohq.com si es tuya.' };
   }
   return r;
 }

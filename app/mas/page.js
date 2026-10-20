@@ -14,7 +14,7 @@ import '@/app/mk.css';
 import '@/app/mas.css';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Más · Netto' };
+export const metadata = { title: 'Más · Kontix' };
 
 const DIAS_AVISO = 15;
 const dias = (de, a) => Math.round((Date.parse(`${a}T12:00:00Z`) - Date.parse(`${de}T12:00:00Z`)) / 864e5);

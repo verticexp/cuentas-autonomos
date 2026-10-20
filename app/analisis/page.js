@@ -161,7 +161,7 @@ export default async function Analisis({ searchParams }) {
         </>}
       </>}
 
-      <p className="grupo-pie arriba">{esSociedad(fiscal) ? <>Todo sale de la <Ir href="/contabilidad">contabilidad</Ir> de Netto, así que cuadra con ella.</> : <>Todo sale de tus facturas y gastos, así que cuadra con tus <Ir href="/contabilidad">libros registro</Ir>.</>} Para ver lo que te deben los clientes, por fechas de vencimiento, abre la <Ir href="/cartera">cartera de cobros</Ir>.</p>
+      <p className="grupo-pie arriba">{esSociedad(fiscal) ? <>Todo sale de la <Ir href="/contabilidad">contabilidad</Ir> de Kontix, así que cuadra con ella.</> : <>Todo sale de tus facturas y gastos, así que cuadra con tus <Ir href="/contabilidad">libros registro</Ir>.</>} Para ver lo que te deben los clientes, por fechas de vencimiento, abre la <Ir href="/cartera">cartera de cobros</Ir>.</p>
     </main>
   );
 }

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 
 // Pasos para presentar; el de la Sede nombra el modelo si solo se presenta uno.
 const pasos = (nums) => [
-  'Revisa que las facturas y gastos del trimestre estén todos en Netto.',
+  'Revisa que las facturas y gastos del trimestre estén todos en Kontix.',
   'Comprueba estos importes con tu gestor.',
   nums.length === 1 ? `Presenta el modelo ${nums[0]} en la Sede de la AEAT.` : 'Presenta los modelos en la Sede de la AEAT.',
   'Vuelve aquí y marca el trimestre como presentado.',

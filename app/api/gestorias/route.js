@@ -7,14 +7,14 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   const { u, res } = await usuarioApi();
   if (res) return res;
-  if (!u.admin) return error('Solo el administrador de Netto puede gestionar gestorías', 403);
+  if (!u.admin) return error('Solo el administrador de Kontix puede gestionar gestorías', 403);
   return NextResponse.json(await listarGestorias());
 }
 
 export async function POST(req) {
   const { u, res } = await usuarioApi();
   if (res) return res;
-  if (!u.admin) return error('Solo el administrador de Netto puede gestionar gestorías', 403);
+  if (!u.admin) return error('Solo el administrador de Kontix puede gestionar gestorías', 403);
   const b = await cuerpo(req);
   if (!b || typeof b !== 'object' || Array.isArray(b)) return error('Faltan datos de la gestoría.');
   const r = b.desactivar !== undefined ? await desactivarGestoria(b.desactivar) : await crearGestoria(b);

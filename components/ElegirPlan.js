@@ -116,7 +116,7 @@ export default function ElegirPlan({ plan, tipoEmpresa, uso, admin, app }) {
         })}
       </div>
     </section>
-    <aside className={styles.business}><div><h2>¿Gestionas varias empresas?</h2><p>Netto Business adapta el alcance y la capacidad a tu equipo.</p></div><a className={styles.enlace} href="/business">Consultar Business <span aria-hidden="true">→</span></a></aside>
+    <aside className={styles.business}><div><h2>¿Gestionas varias empresas?</h2><p>Kontix Business adapta el alcance y la capacidad a tu equipo.</p></div><a className={styles.enlace} href="/business">Consultar Business <span aria-hidden="true">→</span></a></aside>
     <details className={styles.detalles}><summary>Condiciones de contratación y lecturas IA</summary>
       <p>Precios sin IVA y sin permanencia. El pago anual tiene un descuento del {DESCUENTO} % y se cobra en un solo pago al año. El importe final y las condiciones se muestran al contratar.</p>
       <p>La prueba incluye 50 páginas en total. El cobro puede comenzar al contratar si quedan menos de dos días de prueba; revisa la fecha que aparece en el pago.</p>

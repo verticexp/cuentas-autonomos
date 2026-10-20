@@ -216,27 +216,27 @@ test('registro: la primera cuenta no necesita datos fiscales, censo, plan ni ace
   // Fuera de Vercel (en local). Vercel define VERCEL_ENV también al compilar, donde corren estas pruebas.
   delete process.env.VERCEL_ENV;
   const red = simularCenso('NO IDENTIFICADO');
-  const { res } = await alta({ tipo: '', plan: '', acepto: '', nif: '', razon: '', direccion: '', cp: '', provincia: '', periodo: 'otro', empresa: 'Netto' });
+  const { res } = await alta({ tipo: '', plan: '', acepto: '', nif: '', razon: '', direccion: '', cp: '', provincia: '', periodo: 'otro', empresa: 'Kontix' });
   assert.equal(res.status, 200); assert.equal(red.mock.callCount(), 0);
   const usuario = Object.values(await redis.hgetall('usuarios'))[0];
   const empresa = await redis.hget('empresas', usuario.empresa);
-  assert.equal(usuario.admin, true); assert.equal(empresa.nombre, 'Netto');
+  assert.equal(usuario.admin, true); assert.equal(empresa.nombre, 'Kontix');
   assert.deepEqual(empresa.emisor, {}); assert.equal(empresa.censo, undefined);
   assert.equal(empresa.plan, undefined); assert.equal(await redis.hlen('empresa-nif'), 0);
 });
 
- test('registro: en Vercel, la primera cuenta solo es del administrador de Netto si es ADMIN_EMAIL (m12)', async () => {
+ test('registro: en Vercel, la primera cuenta solo es del administrador de Kontix si es ADMIN_EMAIL (m12)', async () => {
   process.env.VERCEL_ENV = 'production';
   try {
     base.run(['flushdb']);
     delete process.env.ADMIN_EMAIL;
-    await alta({ tipo: '', plan: '', acepto: '', nif: '', razon: '', empresa: 'Netto' });
+    await alta({ tipo: '', plan: '', acepto: '', nif: '', razon: '', empresa: 'Kontix' });
     assert.equal(await redis.hlen('usuarios'), 0, 'sin ADMIN_EMAIL no se crea el administrador');
     process.env.ADMIN_EMAIL = 'otra@ejemplo.es';
-    await alta({ tipo: '', plan: '', acepto: '', nif: '', razon: '', empresa: 'Netto' });
+    await alta({ tipo: '', plan: '', acepto: '', nif: '', razon: '', empresa: 'Kontix' });
     assert.equal(await redis.hlen('usuarios'), 0, 'con otro email tampoco');
     process.env.ADMIN_EMAIL = ' Ana@Ejemplo.es ';
-    const { res } = await alta({ tipo: '', plan: '', acepto: '', nif: '', razon: '', empresa: 'Netto' });
+    const { res } = await alta({ tipo: '', plan: '', acepto: '', nif: '', razon: '', empresa: 'Kontix' });
     assert.equal(res.status, 200);
     assert.equal(Object.values(await redis.hgetall('usuarios'))[0].admin, true);
   } finally {

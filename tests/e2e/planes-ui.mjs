@@ -91,7 +91,7 @@ try{
   await ctx.close();
  }
  await sembrar();const {ctx,p}=await abrir(390,'light',true);
- await p.getByText('El plan se gestiona desde la web de Netto, entrando con tu cuenta en un navegador.',{exact:true}).waitFor();
+ await p.getByText('El plan se gestiona desde la web de Kontix, entrando con tu cuenta en un navegador.',{exact:true}).waitFor();
  assert.equal(await p.getByLabel('Planes disponibles').count(),0);await ctx.close();
  console.log('OK: 6 tamaños/temas, precios anuales, cambio de plan, portal, recuperación de errores, prueba, caducidad, impago, miembro, condiciones anteriores e iOS.');
 }finally{await browser.close();}

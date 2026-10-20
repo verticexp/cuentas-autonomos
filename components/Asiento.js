@@ -85,7 +85,7 @@ export function Apertura({ fecha, sociedad, previa }) {
   return (
     <form className="formulario tarjeta asiento-form" onSubmit={enviar}>
       <h3>Saldos de apertura</h3>
-      <p className="nota">Lo que había el día que empiezas a llevar las cuentas en Netto y no sale de tus facturas ni gastos. Lo que falte para cuadrar va a {sociedad ? 'reservas (remanente)' : 'remanente'}.</p>
+      <p className="nota">Lo que había el día que empiezas a llevar las cuentas en Kontix y no sale de tus facturas ni gastos. Lo que falte para cuadrar va a {sociedad ? 'reservas (remanente)' : 'remanente'}.</p>
       <label className="asiento-campo">Fecha<input className="campo" type="date" value={x.fecha} onChange={poner('fecha')} required /></label>
       <label className="asiento-campo">Saldo en el banco<input className="campo" inputMode="decimal" placeholder="0,00" value={x.banco} onChange={poner('banco')} /></label>
       <label className="asiento-campo">{sociedad ? 'Capital social' : 'Capital aportado'}<input className="campo" inputMode="decimal" placeholder="0,00" value={x.capital} onChange={poner('capital')} /></label>

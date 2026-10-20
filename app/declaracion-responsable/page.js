@@ -1,7 +1,7 @@
 import '@/app/legal.css';
 import { VERSION } from '@/lib/verifactuEnvio';
 
-export const metadata = { title: 'Declaración responsable · Netto' };
+export const metadata = { title: 'Declaración responsable · Kontix' };
 
 // Declaración responsable del sistema informático de facturación (RD 1007/2023, art. 13; Orden HAC/1177/2024, art. 15),
 // según el ejemplo 1 de la AEAT (producto de uso solo VERI*FACTU). Los datos del productor salen de las variables
@@ -11,18 +11,18 @@ export default function Declaracion() {
   if (Object.values(d).some((v) => !v)) {
     return (
       <main className="legal">
-        <a className="legal-volver" href="/">Netto</a>
+        <a className="legal-volver" href="/">Kontix</a>
         <h1>Declaración responsable del sistema informático de facturación</h1>
-        <p>La declaración responsable de Netto se está completando. Para cualquier duda: <a href="mailto:corporate@nettohq.com">corporate@nettohq.com</a>.</p>
+        <p>La declaración responsable de Kontix se está completando. Para cualquier duda: <a href="mailto:corporate@nettohq.com">corporate@nettohq.com</a>.</p>
       </main>
     );
   }
   return (
     <main className="legal">
-      <a className="legal-volver" href="/">Netto</a>
+      <a className="legal-volver" href="/">Kontix</a>
       <h1>Declaración responsable del sistema informático de facturación</h1>
       <h2>1.a) Nombre del sistema informático</h2>
-      <p>Netto</p>
+      <p>Kontix</p>
       <h2>1.b) Código identificador del sistema informático</h2>
       <p>NT</p>
       <h2>1.c) Versión</h2>

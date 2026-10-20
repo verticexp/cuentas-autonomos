@@ -22,7 +22,7 @@ export default function Prorrata({ anio, guardado, provisional, definitiva, ante
       <p className="nota">
         {guardado !== null && guardado !== undefined ? `Durante el año se aplica el ${provisional} %, el que has guardado.`
           : anterior !== null ? `Durante el año se aplica el ${provisional} %, el definitivo de ${anio - 1}.`
-          : `En ${anio - 1} no hubo prorrata, así que Netto aplica en cada trimestre la que sale con lo facturado hasta entonces (ahora, el ${provisional} %). Si propusiste otro porcentaje a Hacienda (art. 105.Dos de la Ley del IVA), guárdalo aquí.`}
+          : `En ${anio - 1} no hubo prorrata, así que Kontix aplica en cada trimestre la que sale con lo facturado hasta entonces (ahora, el ${provisional} %). Si propusiste otro porcentaje a Hacienda (art. 105.Dos de la Ley del IVA), guárdalo aquí.`}
         {definitiva !== null && ` Con todo lo facturado en ${anio}, el definitivo sale del ${definitiva} %: en el 4T se regulariza la diferencia (casilla 44).`}
         {' '}Solo cuentan como exentas las facturas marcadas como «Exenta». Si alguna operación no debe contar (venta de un bien de inversión, operaciones financieras o inmobiliarias ocasionales), revísalo con tu gestor.
       </p>

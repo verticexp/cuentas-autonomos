@@ -14,7 +14,7 @@ export default function Asistente({ listo, ejemplos, inicial = '' }) {
   const enviar = async (pregunta) => {
     const p = pregunta.trim();
     if (!p || pensando) return;
-    if (!permisoIA()) { setMensajes((m) => [...m, { role: 'user', content: p }, { role: 'assistant', content: 'Sin tu permiso, Netto no envía tu pregunta a la IA.', error: true }]); setTexto(''); return; }
+    if (!permisoIA()) { setMensajes((m) => [...m, { role: 'user', content: p }, { role: 'assistant', content: 'Sin tu permiso, Kontix no envía tu pregunta a la IA.', error: true }]); setTexto(''); return; }
     const historial = mensajes.filter((m) => !m.error).map((m) => ({ role: m.role, content: m.content }));
     setMensajes((m) => [...m, { role: 'user', content: p }]);
     setTexto('');
@@ -50,7 +50,7 @@ export default function Asistente({ listo, ejemplos, inicial = '' }) {
         {mensajes.map((m, i) => (
           <li key={i} className={`asi-msg ${m.role}${m.error ? ' error' : ''}`}>
             <p>{m.content.replace(/\*\*/g, '')}</p>
-            {m.fuentes?.length > 0 && <small className="asi-fuentes">Datos de Netto: {m.fuentes.join(' · ')}</small>}
+            {m.fuentes?.length > 0 && <small className="asi-fuentes">Datos de Kontix: {m.fuentes.join(' · ')}</small>}
           </li>
         ))}
         {pensando && <li className="asi-msg assistant pensando" aria-label="Pensando"><span /><span /><span /></li>}

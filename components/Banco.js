@@ -44,16 +44,16 @@ const MOTIVO = {
 };
 
 const AYUDA = {
-  gasto: 'Apúntalo con su factura: Netto lee la base y el IVA y lo deja emparejado.',
+  gasto: 'Apúntalo con su factura: Kontix lee la base y el IVA y lo deja emparejado.',
   comision: 'Se apunta como gasto bancario, sin IVA (no hace falta factura).',
   cuota: 'Se apunta como gasto de Seguridad Social del titular, sin IVA.',
-  hacienda: 'Ya lo contabiliza Netto con cada liquidación: marca el trimestre como presentado en el Resumen.',
-  seguridad: 'Ya lo contabiliza Netto con las nóminas.',
-  nomina: 'Ya lo contabiliza Netto con las nóminas.',
+  hacienda: 'Ya lo contabiliza Kontix con cada liquidación: marca el trimestre como presentado en el Resumen.',
+  seguridad: 'Ya lo contabiliza Kontix con las nóminas.',
+  nomina: 'Ya lo contabiliza Kontix con las nóminas.',
   prestamo: 'Se apunta contra el préstamo: la devolución, a la deuda; los intereses, a gastos financieros.',
   socio: 'Se apunta en la cuenta corriente con los socios.',
   traspaso: 'No cambia nada en tus cuentas: se aparta.',
-  ingreso: 'Si es el cobro de una factura que no está en Netto, mejor créala; si no, se apunta como otro ingreso.',
+  ingreso: 'Si es el cobro de una factura que no está en Kontix, mejor créala; si no, se apunta como otro ingreso.',
 };
 
 // Sin factura ni gasto: qué es (Netto propone una opción por el concepto) y apuntarlo con un toque.
@@ -62,7 +62,7 @@ function QueEs({ m, accion, children }) {
   const [intereses, setIntereses] = useState('');
   return (
     <div className="bco-quees">
-      <label className="bco-quees-t">Netto cree que es
+      <label className="bco-quees-t">Kontix cree que es
         <select className="campo" value={clase} onChange={(e) => setClase(e.target.value)}>{m.clases.map(([k, t]) => <option key={k} value={k}>{t}</option>)}</select>
       </label>
       {clase === 'prestamo' && m.importe < 0 && <input className="campo" inputMode="decimal" placeholder="De esta cuota, intereses (opcional)" value={intereses} onChange={(e) => setIntereses(e.target.value.replace(',', '.'))} />}
@@ -148,7 +148,7 @@ function Conectar({ cerrar }) {
         <h2>Conectar un banco</h2>
         <button className="bco-x" onClick={cerrar} aria-label="Cerrar">×</button>
       </div>
-      <p className="bco-nota">Tu banco te pedirá permiso para que Netto vea el saldo y los movimientos (solo lectura, hasta 180 días). Lo gestiona Enable Banking, entidad autorizada.</p>
+      <p className="bco-nota">Tu banco te pedirá permiso para que Kontix vea el saldo y los movimientos (solo lectura, hasta 180 días). Lo gestiona Enable Banking, entidad autorizada.</p>
       <div className="segmentado bco-tipo">
         <button type="button" className={tipo === 'personal' ? 'activo' : ''} onClick={() => setTipo('personal')}>Cuenta personal</button>
         <button type="button" className={tipo === 'business' ? 'activo' : ''} onClick={() => setTipo('business')}>Cuenta de empresa</button>
@@ -250,7 +250,7 @@ export default function Banco({ cuentas, pendientes, emparejados, ignorados, aut
             <div className={`bco-vacio${encima ? ' encima' : ''}`} onDragOver={(e) => { e.preventDefault(); setEncima(true); }} onDragLeave={() => setEncima(false)} onDrop={soltar}>
               <span className="bco-vacio-ico" aria-hidden><svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M5 20h14" /></svg></span>
               <strong>Sube tu primer extracto</strong>
-              <p>Arrástralo aquí o elígelo con «Subir extracto». Netto empareja cada cobro con su factura y cada pago con su gasto.</p>
+              <p>Arrástralo aquí o elígelo con «Subir extracto». Kontix empareja cada cobro con su factura y cada pago con su gasto.</p>
               <ol>
                 <li><span><b>Descárgalo</b> de tu banca online en Norma 43, CSV, Excel o PDF.</span></li>
                 <li><span><b>Súbelo</b> aquí. Si lo subes dos veces, no se duplica nada.</span></li>

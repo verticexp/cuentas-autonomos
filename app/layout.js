@@ -27,12 +27,12 @@ const YA_VISTO = "try{if(sessionStorage.getItem('netto-abierta')||document.cooki
 
 export const metadata = {
   metadataBase: new URL(WEB),
-  title: 'Netto',
+  title: 'Kontix',
   description: 'Facturación, gastos, impuestos y contabilidad para autónomos y pymes.',
-  openGraph: { siteName: 'Netto', type: 'website', locale: 'es_ES' },
+  openGraph: { siteName: 'Kontix', type: 'website', locale: 'es_ES' },
   // App a pantalla completa sin estilo de barra de estado: así iOS pinta la barra con theme-color
   // (components/BarraEstado.js) y pone la hora en blanco o negro según toque.
-  other: { 'apple-mobile-web-app-capable': 'yes', 'mobile-web-app-capable': 'yes', 'apple-mobile-web-app-title': 'Netto' },
+  other: { 'apple-mobile-web-app-capable': 'yes', 'mobile-web-app-capable': 'yes', 'apple-mobile-web-app-title': 'Kontix' },
 };
 
 export const viewport = {

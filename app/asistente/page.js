@@ -31,7 +31,7 @@ export default async function PaginaAsistente({ searchParams }) {
   return (
     <main className="pagina mk-look asistente">
       <Volver href="/">Resumen</Volver>
-      <h1 className="titulo">Pregunta a Netto</h1>
+      <h1 className="titulo">Pregunta a Kontix</h1>
       <p className="asi-sub">Responde con las cifras que calcula la app, solo de {u.empresaNombre || 'tu empresa'} y de lo que tú puedes ver.</p>
       <Asistente listo={iaLista()} inicial={inicial} ejemplos={Object.keys(EJEMPLOS).filter((k) => h.includes(k)).map((k) => EJEMPLOS[k])} />
     </main>

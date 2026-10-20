@@ -33,8 +33,8 @@ export const EXTRA = [
   ] },
 ];
 
-// «Pregunta a Netto»: en el ordenador, al principio de la barra lateral; en el móvil, en el buscador de «Más».
-export const ASISTENTE = { href: '/asistente', nombre: 'Pregunta a Netto', icono: <path d="M4 5h16v11H9l-5 4zM8 10h8M8 13h5" /> };
+// «Pregunta a Kontix»: en el ordenador, al principio de la barra lateral; en el móvil, en el buscador de «Más».
+export const ASISTENTE = { href: '/asistente', nombre: 'Pregunta a Kontix', icono: <path d="M4 5h16v11H9l-5 4zM8 10h8M8 13h5" /> };
 
 const TODAS = [...EXTRA.flatMap((g) => g.enlaces), ASISTENTE];
 // La pantalla extra en la que se está (la más concreta), para marcarla.

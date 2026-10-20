@@ -2,13 +2,13 @@ import Link from 'next/link';
 import Icono from '@/components/web/Icono';
 import { Cta, Encabezado, Flecha } from '@/components/web/Bloques';
 
-export const metadata = { title: 'Seguridad · Netto', description: 'Cómo protege Netto tus datos: acceso con Face ID y llaves de acceso, permisos por área, conexión cifrada y exportaciones seguras.' };
+export const metadata = { title: 'Seguridad · Kontix', description: 'Cómo protege Kontix tus datos: acceso con Face ID y llaves de acceso, permisos por área, conexión cifrada y exportaciones seguras.' };
 
 const MEDIDAS = [
-  { i: 'candado', t: 'Face ID, huella o llave de acceso', d: 'Bloquea Netto en tu móvil y ábrelo con tu cara, tu huella o una llave de acceso (passkey), además de tu contraseña.' },
+  { i: 'candado', t: 'Face ID, huella o llave de acceso', d: 'Bloquea Kontix en tu móvil y ábrelo con tu cara, tu huella o una llave de acceso (passkey), además de tu contraseña.' },
   { i: 'equipo', t: 'Permisos por área', d: 'Cada usuario ve solo lo que necesita: resumen, facturar, gastos, nóminas o usuarios. Tu gestoría ve tus facturas y gastos sin tocarlos.' },
   { i: 'escudo', t: 'Protección contra suplantación', d: 'Todas las acciones que cambian datos se comprueban para que solo puedan venir de la propia app (protección anti-CSRF).' },
-  { i: 'llave', t: 'Conexión siempre cifrada', d: 'Netto solo funciona por HTTPS, con HSTS para que tu navegador nunca se conecte sin cifrar.' },
+  { i: 'llave', t: 'Conexión siempre cifrada', d: 'Kontix solo funciona por HTTPS, con HSTS para que tu navegador nunca se conecte sin cifrar.' },
   { i: 'documento', t: 'Archivos revisados', d: 'Los Excel que subes se revisan antes de abrirlos para frenar archivos manipulados, y los CSV que descargas no pueden ejecutar fórmulas maliciosas.' },
   { i: 'correo', t: 'Invitaciones que caducan', d: 'Las invitaciones a tu equipo caducan a los 7 días. Los enlaces no se filtran a otras webs.' },
 ];
@@ -19,7 +19,7 @@ export default function Seguridad() {
       <section className="web-hero-pag centro">
         <span className="web-fcard-ico grande web-entra"><Icono n="escudo" /></span>
         <h1 className="web-entra" style={{ '--d': '60ms' }}>Tus números son tuyos. <em>Y están a salvo.</em></h1>
-        <p className="web-sub web-entra" style={{ '--d': '120ms' }}>Tus facturas, tu equipo y tus impuestos son lo más delicado de tu negocio. Así los protege Netto.</p>
+        <p className="web-sub web-entra" style={{ '--d': '120ms' }}>Tus facturas, tu equipo y tus impuestos son lo más delicado de tu negocio. Así los protege Kontix.</p>
       </section>
 
       <section className="web-sec web-sec-pegada">
@@ -50,7 +50,7 @@ export default function Seguridad() {
       </section>
 
       <section className="web-sec">
-        <Encabezado kicker="Banco" titulo="Tu banco, sin darnos las llaves" sub="Ahora trabajas con extractos que tú descargas y subes. Netto extrae los movimientos y te ayuda a conciliarlos, sin pedirte las claves de tu banca online. La conexión directa está prevista para más adelante y será de solo lectura." />
+        <Encabezado kicker="Banco" titulo="Tu banco, sin darnos las llaves" sub="Ahora trabajas con extractos que tú descargas y subes. Kontix extrae los movimientos y te ayuda a conciliarlos, sin pedirte las claves de tu banca online. La conexión directa está prevista para más adelante y será de solo lectura." />
       </section>
 
       <Cta titulo="¿Tienes preguntas sobre seguridad?" sub="Escríbenos y te contamos con detalle cómo tratamos tus datos." />

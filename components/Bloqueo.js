@@ -114,11 +114,11 @@ export default function Bloqueo({ email, servidor = true }) {
 
   if (!bloqueada) return null;
   return (
-    <main className={`login pantalla-bloqueo${saliendo ? ' saliendo' : ''}`} role="dialog" aria-modal="true" aria-label="Iniciar sesión en Netto">
+    <main className={`login pantalla-bloqueo${saliendo ? ' saliendo' : ''}`} role="dialog" aria-modal="true" aria-label="Iniciar sesión en Kontix">
       <PanelMarca />
       {listo && <form onSubmit={entrar} className="form-entrar">
         <h1><Logo className="logo-login" /></h1>
-        <p className="login-titulo">Desbloquea Netto</p>
+        <p className="login-titulo">Desbloquea Kontix</p>
         <label htmlFor="bloqueo-email">Email</label>
         <input id="bloqueo-email" name="email" type="email" autoComplete="username webauthn" defaultValue={email} required />
         <label htmlFor="bloqueo-password">Contraseña</label>

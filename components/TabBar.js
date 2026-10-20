@@ -134,7 +134,7 @@ export default function TabBar({ permisos = [], empresas = [], empresa, admin = 
   return (
     <>
     <div className="tabbar" data-teclado={teclado || undefined}>
-      <Link href="/" className="tabbar-logo" aria-label="Netto, resumen" onClick={(e) => { e.preventDefault(); ir('/'); }}><Logo /></Link>
+      <Link href="/" className="tabbar-logo" aria-label="Kontix, resumen" onClick={(e) => { e.preventDefault(); ir('/'); }}><Logo /></Link>
       {empresa && <CambiarEmpresa empresas={empresas} actual={empresa} variante="lateral" />}
       <nav
         ref={nav}

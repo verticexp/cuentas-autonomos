@@ -214,7 +214,7 @@ test('S1: el login por llave sigue disponible con la sesión bloqueada', async (
   assert.equal(r.status, 200); assert.ok((await r.json()).challenge);
 });
 
-test('m4: en producción Face ID solo responde en los dominios de Netto', async () => {
+test('m4: en producción Face ID solo responde en los dominios de Kontix', async () => {
   const ruta = await cargar('app/api/passkey/route.js');
   const desde = (origen) => Object.assign(new Request(`${origen}/api/passkey`, { method: 'POST', headers: { 'content-type': 'application/json', origin: origen, 'x-real-ip': '9.9.9.9' }, body: JSON.stringify({ accion: 'entrar-opciones' }) }), { nextUrl: new URL(`${origen}/api/passkey`) });
   process.env.VERCEL_ENV = 'production';
@@ -330,6 +330,6 @@ test('S9: pagando un plan de autónomo no se pasa a sociedad, y un NIF de otra c
   let r = await ruta.PATCH(req('/api/cuenta', { configuracion: { fiscal: { tipo: 'sociedad' }, actividades: [{ nombre: 'Consultoría' }], emisor: { nombre: 'Ana SL', nif: 'B12345674' } } }, 'PATCH'));
   assert.equal(r.status, 400); assert.match((await r.json()).error, /Tu plan es de Autónomos/);
   r = await ruta.PATCH(req('/api/cuenta', { nombre: 'Ana', nif: '87654321X' }, 'PATCH'));
-  assert.equal(r.status, 400); assert.match((await r.json()).error, /otra cuenta de Netto/);
+  assert.equal(r.status, 400); assert.match((await r.json()).error, /otra cuenta de Kontix/);
   assert.equal((await R.redis.hget('empresas', 'e')).plan.tipo, 'aut');
 });

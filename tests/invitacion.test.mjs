@@ -5,8 +5,8 @@ import { asuntoInvitacion, enviarInvitacion, htmlInvitacion } from '../lib/invit
 const datos = { nombre: 'Laura', quien: 'Marc', empresa: 'SONORA EVENTOS', url: 'https://nettohq.com/invitacion/abc_123' };
 
 test('asunto: quién invita y a qué empresa', () => {
-  assert.equal(asuntoInvitacion(datos), 'Marc te ha invitado a SONORA EVENTOS en Netto');
-  assert.equal(asuntoInvitacion({ quien: 'A\r\nBcc: x@y.z', empresa: 'E' }), 'A Bcc: x@y.z te ha invitado a E en Netto');
+  assert.equal(asuntoInvitacion(datos), 'Marc te ha invitado a SONORA EVENTOS en Kontix');
+  assert.equal(asuntoInvitacion({ quien: 'A\r\nBcc: x@y.z', empresa: 'E' }), 'A Bcc: x@y.z te ha invitado a E en Kontix');
 });
 
 test('html: botón y enlace en texto, sin imagen de seguimiento', () => {
@@ -19,9 +19,9 @@ test('html: botón y enlace en texto, sin imagen de seguimiento', () => {
 });
 
 test('sin nombre de empresa: «te ha invitado a unirte a su empresa»', () => {
-  assert.equal(asuntoInvitacion({ quien: 'Marc', empresa: '' }), 'Marc te ha invitado a unirte a su empresa en Netto');
-  assert.equal(asuntoInvitacion({ quien: 'Marc', empresa: '  ' }), 'Marc te ha invitado a unirte a su empresa en Netto');
-  assert.ok(htmlInvitacion({ ...datos, empresa: '' }).includes('<strong>Marc</strong> te ha invitado a unirte a su empresa en Netto.'));
+  assert.equal(asuntoInvitacion({ quien: 'Marc', empresa: '' }), 'Marc te ha invitado a unirte a su empresa en Kontix');
+  assert.equal(asuntoInvitacion({ quien: 'Marc', empresa: '  ' }), 'Marc te ha invitado a unirte a su empresa en Kontix');
+  assert.ok(htmlInvitacion({ ...datos, empresa: '' }).includes('<strong>Marc</strong> te ha invitado a unirte a su empresa en Kontix.'));
 });
 
 test('html: escapa nombres y empresa', () => {
