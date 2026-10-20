@@ -3,6 +3,7 @@ import { redis } from '@/lib/redis';
 import { actividadReciente, ultimaActividad } from '@/lib/actividad';
 import { ESTADOS, ORIGENES, resumenAdmin } from '@/lib/admin';
 import { emailListo } from '@/lib/email';
+import { avisosRemitente, dkimResend, leerRemitente } from '@/lib/adminAjustes';
 import Volver from '@/components/Volver';
 import AdminEmpresas from '@/components/AdminEmpresas';
 import '@/app/admin/admin.css';
@@ -33,6 +34,10 @@ export default async function Admin() {
   const [empresas, usuarios, actividad, ultima] = await Promise.all([redis.hgetall('empresas'), redis.hgetall('usuarios'), actividadReciente(30), ultimaActividad()]);
   const r = resumenAdmin({ empresas: Object.values(empresas || {}), usuarios: Object.values(usuarios || {}), actividad, ultima });
   const k = r.kpis;
+  const remitente = process.env.RESEND_FROM || '';
+  const rem = leerRemitente(remitente || 'Fisquo <no-reply@fisquo.com>');
+  const dkim = await dkimResend(rem.dominio);
+  const avisosCorreo = avisosRemitente(remitente);
   const clave = process.env.STRIPE_SECRET_KEY || '';
   const cobros = [
     ['Clave de Stripe', clave ? (clave.startsWith('sk_live') || clave.startsWith('rk_live') ? 'Real' : 'De pruebas: todavía no se cobra de verdad') : 'Falta: nadie puede contratar', clave.includes('_live')],
@@ -44,6 +49,13 @@ export default async function Admin() {
     <Volver href="/ajustes">Ajustes</Volver>
     <h1 className="titulo">Panel de Fisquo</h1>
     <p className="adm-intro">Solo lo ves tú. Las cifras son sin IVA; las empresas Fundador no cuentan en ingresos ni en conversión.</p>
+
+    <nav className="adm-accesos" aria-label="Accesos directos">
+      <a href="/admin/correos"><strong>Correos</strong><span>Verlos y enviarte una prueba</span></a>
+      <a href="#adm-ajustes"><strong>Configuración</strong><span>Remitente, dominio y cobros</span></a>
+      <a href="#adm-empresas"><strong>Empresas</strong><span>Planes, pruebas y Fundador</span></a>
+      <a href="/usuarios"><strong>Usuarios</strong><span>Dar de alta una empresa</span></a>
+    </nav>
 
     <section className="adm-kpis" aria-label="Cifras principales">
       <div><small>Ingresos al mes</small><strong>{euros(k.mrr)}</strong><span>{euros(k.arr)} al año</span></div>
@@ -68,12 +80,6 @@ export default async function Admin() {
       <div className="adm-caja">
         <h2>Planes</h2>
         {r.planes.length ? <ul className="adm-lista">{r.planes.map((p) => <li key={p.plan}><span>{p.plan}</span><b>{p.pago} de pago · {p.prueba} en prueba</b></li>)}</ul> : <p className="adm-pie">Todavía no hay empresas registradas con plan.</p>}
-      </div>
-      <div className="adm-caja">
-        <h2>Cobros</h2>
-        <ul className="adm-lista">{cobros.map(([t, v, ok]) => <li key={t}><span>{t}</span><b className={ok ? 'adm-ok' : 'adm-mal'}>{v}</b></li>)}</ul>
-        <p className="adm-pie"><a href="/admin/correos">Ver los correos que envía Fisquo</a></p>
-        <p className="adm-pie">Las claves se ponen en Vercel › Settings › Environment Variables (Production). Los precios e IVA se crean solos en Stripe.</p>
       </div>
     </section>
 
@@ -106,6 +112,35 @@ export default async function Admin() {
       </> : <p className="adm-pie">Todas las empresas tienen un plan que cuadra con su forma jurídica.</p>}
     </section>
 
+    <section id="adm-ajustes" className="adm-dos" aria-label="Configuración">
+      <div className="adm-caja">
+        <h2>Correos automáticos</h2>
+        <ul className="adm-lista">
+          <li><span>Envío (clave de Resend)</span><b className={emailListo() ? 'adm-ok' : 'adm-mal'}>{emailListo() ? 'Configurado' : 'Falta: no sale ningún correo'}</b></li>
+          <li><span>Remitente</span><b className={avisosCorreo.length ? 'adm-mal' : 'adm-ok'}>{rem.nombre ? `${rem.nombre} <${rem.email}>` : rem.email}</b></li>
+          <li><span>Dominio {rem.dominio} en Resend</span><b className={dkim ? 'adm-ok' : 'adm-mal'}>{dkim ? 'Firma DKIM publicada' : 'Sin firma DKIM: revisa el dominio en Resend'}</b></li>
+        </ul>
+        {avisosCorreo.map((a) => <p key={a} className="adm-pie adm-mal">{a}</p>)}
+        <div className="adm-botones">
+          <a className="adm-boton" href="/admin/correos">Ver correos y enviarme una prueba</a>
+          <a className="adm-boton" href="https://resend.com/domains" target="_blank" rel="noopener noreferrer">Dominios en Resend ↗</a>
+          <a className="adm-boton" href="https://resend.com/emails" target="_blank" rel="noopener noreferrer">Correos enviados ↗</a>
+        </div>
+        <p className="adm-pie">El remitente es la variable RESEND_FROM de Vercel (Production). Si la cambias, hace falta un despliegue nuevo.</p>
+      </div>
+      <div className="adm-caja">
+        <h2>Cobros</h2>
+        <ul className="adm-lista">{cobros.map(([t, v, ok]) => <li key={t}><span>{t}</span><b className={ok ? 'adm-ok' : 'adm-mal'}>{v}</b></li>)}</ul>
+        <div className="adm-botones">
+          <a className="adm-boton" href="https://dashboard.stripe.com/settings/public" target="_blank" rel="noopener noreferrer">Nombre del negocio en Stripe ↗</a>
+          <a className="adm-boton" href="https://dashboard.stripe.com/settings/emails" target="_blank" rel="noopener noreferrer">Correos de Stripe ↗</a>
+          <a className="adm-boton" href="https://vercel.com/dashboard" target="_blank" rel="noopener noreferrer">Variables en Vercel ↗</a>
+        </div>
+        <p className="adm-pie">En Stripe: deja activados los recibos y desactiva su email de pago fallido (ya lo manda Fisquo). Las claves van en Vercel › Settings › Environment Variables (Production).</p>
+      </div>
+    </section>
+
+    <div id="adm-empresas" />
     <AdminEmpresas filas={r.filas} />
     <p className="adm-pie">Para regalar una empresa a otra persona (plan Fundador), usa <a href="/usuarios">Usuarios › Dar de alta una empresa</a>.</p>
   </main>;
