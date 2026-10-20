@@ -6,13 +6,15 @@ import { llamar } from './Acciones';
 import { limpiarFiscal, modelosDe } from '@/lib/empresa';
 
 const IVAS = [[21, '21 %'], [10, '10 %'], [4, '4 %'], [0, 'Sin IVA']];
-const RETENCIONES = [[15, '15 %'], [7, '7 % (nuevos autónomos)'], [0, 'Sin retención']];
+// El 7 % es el de los nuevos autónomos (año de alta y los dos siguientes); el detalle va en una segunda línea corta.
+const RETENCIONES = [[15, '15 %'], [7, <>7 %<small>Nuevo autónomo</small></>], [0, 'Sin retención']];
 
 function Opcion({ activo, titulo, detalle, onClick, grupo }) {
   return (
     <label className={`opcion${activo ? ' activa' : ''}`}>
-      <span><strong>{titulo}</strong>{detalle && <small>{detalle}</small>}</span>
+      {/* El círculo a la izquierda, como en el registro. */}
       <input type="radio" name={grupo} checked={activo} onChange={onClick} />
+      <span><strong>{titulo}</strong>{detalle && <small>{detalle}</small>}</span>
     </label>
   );
 }
@@ -81,6 +83,7 @@ export default function Cuestionario({ inicial, editar, conFacturas, puedeFactur
       titulo: sociedad ? 'Datos de la sociedad' : 'Tus datos',
       texto: 'Salen en cada factura.',
       listo: emisor.nombre.trim() && emisor.nif.trim(),
+      falta: 'Escribe el nombre y el NIF para seguir.',
       cuerpo: (
         <CamposEmisor emisor={emisor} sociedad={sociedad} cambiar={e} />
       ),
@@ -89,6 +92,7 @@ export default function Cuestionario({ inicial, editar, conFacturas, puedeFactur
       titulo: '¿A qué te dedicas?',
       texto: 'Cada actividad tiene su propia numeración de facturas. Puedes añadir varias.',
       listo: acts.every((x) => String(x.nombre).trim()) && Boolean(emisor.nombre.trim() && emisor.nif.trim()),
+      falta: acts.every((x) => String(x.nombre).trim()) ? 'Faltan el nombre y el NIF de tus datos.' : 'Escribe el nombre de tu actividad para seguir.',
       cuerpo: (
         <>
           {acts.map((x, i) => {
@@ -187,7 +191,7 @@ export default function Cuestionario({ inicial, editar, conFacturas, puedeFactur
 
   if (terminado) return (
     <div className="cuestionario">
-      <ProgresoAlta fase={2} paso={pasos.length} total={pasos.length} etiqueta="Configuración guardada" />
+      <ProgresoAlta paso={pasos.length} total={pasos.length} etiqueta="Negocio preparado" />
       <div className="alta-final">
         <span className="alta-exito" aria-hidden>✓</span>
         <h1 className="titulo" ref={tituloRef} tabIndex={-1}>Tu negocio ya está preparado</h1>
@@ -206,7 +210,7 @@ export default function Cuestionario({ inicial, editar, conFacturas, puedeFactur
 
   return (
     <div className="cuestionario" aria-busy={guardando}>
-      {editar ? <p className="nota" role="status">Configuración del negocio · Paso {paso + 1} de {pasos.length}</p> : <ProgresoAlta fase={2} paso={paso + 1} total={pasos.length} etiqueta={p.titulo} atras={paso > 0 ? atras : undefined} ocupado={guardando} />}
+      {editar ? <p className="nota" role="status">Configuración del negocio · Paso {paso + 1} de {pasos.length}</p> : <ProgresoAlta paso={paso + 1} total={pasos.length} etiqueta="Preparar tu negocio" />}
       {paso === 0 && !editar && <p className="hola">Tu cuenta ya está creada. Ahora preparamos tus actividades e impuestos. Podrás cambiar esta configuración en Ajustes.</p>}
       <div className="paso" key={paso}>
         <h1 className="titulo" ref={tituloRef} tabIndex={-1}>{p.titulo}</h1>
@@ -221,9 +225,10 @@ export default function Cuestionario({ inicial, editar, conFacturas, puedeFactur
         )}
       </div>
       {error && <p className="error" role="alert" ref={errorRef} tabIndex={-1}>{error}</p>}
+      {!p.listo && !guardando && p.falta && <p className="nota cuestionario-falta" id="cuestionario-falta">{p.falta}</p>}
       <div className="cuestionario-botones">
         {paso > 0 ? <button type="button" className="boton sec" disabled={guardando} onClick={atras}>Atrás</button> : editar ? <a href="/ajustes" className="boton sec">Cancelar</a> : <span />}
-        <button type="button" className="boton" disabled={!p.listo || guardando} onClick={() => (ultimo ? terminar() : avanzar())}>{ultimo ? (guardando ? 'Guardando…' : editar ? 'Guardar' : 'Guardar y continuar') : 'Siguiente'}</button>
+        <button type="button" className="boton" disabled={!p.listo || guardando} aria-describedby={!p.listo && p.falta ? 'cuestionario-falta' : undefined} onClick={() => (ultimo ? terminar() : avanzar())}>{ultimo ? (guardando ? 'Guardando…' : editar ? 'Guardar' : 'Terminar') : 'Siguiente'}</button>
       </div>
     </div>
   );

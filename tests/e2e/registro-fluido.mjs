@@ -32,31 +32,35 @@ for (const width of [320,768,1280]) {
  await p.route('**/api/registro/email',r=>r.fulfill({status:200,contentType:'application/json',body:'{"ok":true}'}));
  let enviados=0;
  await p.route('**/api/registro',async r=>{enviados++;const body=r.request().postData();assert(body.includes('Diseño Prueba'));assert(body.includes('08001'));await r.fulfill({status:400,contentType:'application/json',body:JSON.stringify({error:'Hacienda no reconoce ese NIF con ese nombre.',paso:2})});});
- await p.goto(`${BASE}/registro?tipo=aut&plan=Pro&periodo=anio`);
- await p.getByRole('radio',{name:'Autónomo',exact:false}).waitFor();
- await p.locator('form.registro[aria-busy="false"]').waitFor();
- assert.equal(await p.getByRole('button',{name:'Volver al paso anterior'}).count(),0);
- assert(await p.locator('input[name=tipo][value=aut]').isChecked());
- // Teclado nativo: ArrowDown cambia de opción y ArrowUp vuelve al autónomo.
- await p.locator('input[name=tipo][value=aut]').focus();await p.keyboard.press('ArrowDown');assert(await p.locator('input[name=tipo][value=pym]').isChecked());await p.keyboard.press('ArrowUp');
- await p.getByRole('button',{name:'Continuar',exact:true}).click();
- await p.getByRole('button',{name:'Continuar',exact:true}).click();
- await p.locator('#registro-error').waitFor();assert.equal(await p.locator('#razon').getAttribute('aria-invalid'),'true');
- await p.getByLabel('Nombre y apellidos como en Hacienda').fill('Diseño Prueba');
- await p.getByLabel('NIF/NIE',{exact:true}).fill('12345678Z');
- await p.getByLabel('Dirección fiscal (calle y número)').fill('Calle de Prueba 12');
- await p.getByLabel('Código postal').fill('08001');await p.getByLabel('Ciudad',{exact:true}).fill('Barcelona');await p.getByLabel('Provincia').selectOption('Barcelona');
- await p.getByRole('button',{name:'Continuar',exact:true}).click();
- assert(await p.locator('input[name=plan][value=Pro]').isChecked());assert(await p.locator('input[name=periodo][value=anio]').isChecked());
- assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
- await p.getByRole('button',{name:'Volver al paso anterior',exact:true}).click();assert.equal(await p.getByLabel('Código postal').inputValue(),'08001');
- await p.getByRole('button',{name:'Continuar',exact:true}).click();await p.getByRole('button',{name:'Continuar',exact:true}).click();
- await p.getByLabel('Nombre',{exact:true}).fill('Prueba');await p.getByLabel('Email',{exact:true}).fill('prueba@fisquo-local.test');await p.getByLabel('Contraseña',{exact:true}).fill('Luna!Bosque72Rio');
- await p.getByRole('button',{name:'Continuar',exact:true}).click();await p.getByRole('heading',{name:'Revisar y crear'}).waitFor();
+  await p.goto(`${BASE}/registro?tipo=aut&plan=Pro&periodo=anio`);
+  // Primero la cuenta (lo rápido); luego el negocio, los datos fiscales y revisar. Sin plan: se elige al acabar la prueba.
+  await p.getByRole('heading',{name:'Crea tu cuenta'}).waitFor();
+  await p.locator('form.registro[aria-busy="false"]').waitFor();
+  assert.equal(await p.getByRole('button',{name:'Atrás',exact:true}).count(),0);
+  assert.equal(await p.locator('#registro-seguridad').getByText('Débil').count(),0,'sin contraseña no sale «Débil»');
+  await p.getByLabel('Tu nombre',{exact:true}).fill('Diseño Prueba');await p.getByLabel('Email',{exact:true}).fill('prueba@fisquo-local.test');await p.getByLabel('Contraseña',{exact:true}).fill('Luna!Bosque72Rio');
+  await p.getByRole('button',{name:'Continuar',exact:true}).click();
+  await p.getByRole('radio',{name:'Autónomo',exact:false}).waitFor();
+  assert(await p.locator('input[name=tipo][value=aut]').isChecked());
+  // Teclado nativo: ArrowDown cambia de opción y ArrowUp vuelve al autónomo.
+  await p.locator('input[name=tipo][value=aut]').focus();await p.keyboard.press('ArrowDown');assert(await p.locator('input[name=tipo][value=pym]').isChecked());await p.keyboard.press('ArrowUp');
+  await p.getByRole('button',{name:'Continuar',exact:true}).click();
+  // El autónomo factura con su nombre: se propone el de la cuenta. Sin NIF no sigue.
+  assert.equal(await p.getByLabel('Nombre y apellidos como en Hacienda').inputValue(),'Diseño Prueba');
+  await p.getByRole('button',{name:'Continuar',exact:true}).click();
+  await p.locator('#registro-error').waitFor();assert.equal(await p.locator('#nif').getAttribute('aria-invalid'),'true');
+  await p.getByLabel('NIF/NIE',{exact:true}).fill('12345678Z');
+  await p.getByLabel('Dirección fiscal (calle y número)').fill('Calle de Prueba 12');
+  await p.getByLabel('Código postal').fill('08001');await p.getByLabel('Ciudad',{exact:true}).fill('Barcelona');
+  assert.equal(await p.getByLabel('Provincia').inputValue(),'Barcelona','la provincia sale del código postal');
+  assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+  await p.getByRole('button',{name:'Atrás',exact:true}).click();await p.getByRole('button',{name:'Continuar',exact:true}).click();assert.equal(await p.getByLabel('Código postal').inputValue(),'08001');
+  await p.getByRole('button',{name:'Continuar',exact:true}).click();await p.getByRole('heading',{name:'Revisar y crear'}).waitFor();
+  assert.match(await p.locator('.registro-resumen').innerText(),/plan Pro/,'el plan traído de Precios se conserva');
  await p.getByRole('button',{name:'Crear cuenta',exact:true}).click();await p.locator('#registro-error').waitFor();assert.equal(enviados,0);
  await p.locator('#acepto').check();await p.getByRole('button',{name:'Crear cuenta',exact:true}).click();await p.locator('#registro-error').waitFor();
  await p.getByRole('heading',{name:'Datos fiscales',exact:true}).waitFor();assert.equal(enviados,1);assert.equal(await p.getByLabel('Código postal').inputValue(),'08001');assert.equal(await p.locator('#nif').getAttribute('aria-invalid'),'true');
- assert.deepEqual(errores,[]);console.log(`${width}px: teclado, validación, plan previo, atrás, consentimiento y rechazo fiscal OK`);
+ assert.deepEqual(errores,[]);console.log(`${width}px: cuenta primero, teclado, validación, provincia por CP, plan previo, atrás, consentimiento y rechazo fiscal OK`);
  await ctx.close();
 }
 for (const [clave, viewport] of [['aut',{width:390,height:844}], ['sociedad',{width:1280,height:900}], ['vacia',{width:390,height:844}]]) {
@@ -72,7 +76,7 @@ for (const [clave, viewport] of [['aut',{width:390,height:844}], ['sociedad',{wi
     await page.getByRole('button',{name:'Siguiente'}).click();
     await page.getByLabel('Razón social (obligatorio)').fill('Empresa de pruebas');
     await page.getByLabel('CIF (obligatorio)').fill('B12345674');
-    await page.getByRole('button',{name:'Volver al paso anterior'}).click();
+    await page.getByRole('button',{name:'Atrás',exact:true}).click();
     await page.getByRole('button',{name:'Siguiente'}).click();
     assert.equal(await page.getByLabel('Razón social (obligatorio)').inputValue(),'Empresa de pruebas');
     await page.getByRole('button',{name:'Siguiente'}).click();
@@ -83,7 +87,7 @@ for (const [clave, viewport] of [['aut',{width:390,height:844}], ['sociedad',{wi
   await page.getByLabel('Nombre de tu actividad').fill('Diseño y eventos');
   await page.getByRole('button',{name:'Siguiente'}).click();
   await page.getByRole('switch',{name:'Alquilo un local u oficina'}).check();
-  await page.getByRole('button',{name:'Volver al paso anterior'}).click();
+  await page.getByRole('button',{name:'Atrás',exact:true}).click();
   assert.equal(await page.getByLabel('Nombre de tu actividad').inputValue(),'Diseño y eventos');
   await page.getByRole('button',{name:'Siguiente'}).click();
   assert(await page.getByRole('switch',{name:'Alquilo un local u oficina'}).isChecked());
@@ -94,12 +98,12 @@ for (const [clave, viewport] of [['aut',{width:390,height:844}], ['sociedad',{wi
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
   if(clave==='aut') {
     await page.route('**/api/cuenta', route=>route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'Error de prueba: vuelve a intentarlo.'})}));
-    await page.getByRole('button',{name:'Guardar y continuar'}).click();
+    await page.getByRole('button',{name:'Terminar'}).click();
     await page.getByRole('alert').waitFor();
     assert.equal(await page.locator('.alta-final').count(),0);
     await page.unroute('**/api/cuenta');
   }
-  await page.getByRole('button',{name:'Guardar y continuar'}).click();
+  await page.getByRole('button',{name:'Terminar'}).click();
   await page.getByRole('heading',{name:'Tu negocio ya está preparado'}).waitFor();
   assert.equal(await page.getByRole('link',{name:'Crear mi primera factura'}).getAttribute('href'),'/facturas/nueva');
   assert.equal(await page.getByRole('link',{name:'Importar mis datos'}).getAttribute('href'),'/ajustes/importar');
