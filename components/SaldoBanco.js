@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { fechaCorta } from '@/lib/formato';
 
 // Saldo en el banco hoy: de ahí parte la previsión.
 // editable: false para quien solo ve (la gestoría): lo ve pero no lo cambia.
@@ -21,14 +22,14 @@ export default function SaldoBanco({ saldo, fecha, banco = false, editable = tru
   if (banco || !editable) {
     return (
       <div className="teso-saldo">
-        <label>Saldo en el banco hoy<small>{banco ? `De tus cuentas · ${fecha ? `a ${fecha.split('-').reverse().join('-')}` : 'sin fecha'}` : fecha ? `Apuntado el ${fecha.split('-').reverse().join('-')}` : 'Sin apuntar'}</small></label>
+        <label>Saldo en el banco hoy<small>{banco ? `De tus cuentas · ${fecha ? `a ${fechaCorta(fecha)}` : 'sin fecha'}` : fecha ? `Apuntado el ${fechaCorta(fecha)}` : 'Sin apuntar'}</small></label>
         <strong className="teso-saldo-real">{saldo === null ? '—' : new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', useGrouping: 'always' }).format(saldo)}</strong>
       </div>
     );
   }
   return (
     <form className="teso-saldo" onSubmit={guardar}>
-      <label htmlFor="saldo">Saldo en el banco hoy<small>{fecha ? `Apuntado el ${fecha.split('-').reverse().join('-')}` : 'Escríbelo para ver cuánto tendrás'}</small></label>
+      <label htmlFor="saldo">Saldo en el banco hoy<small>{fecha ? `Apuntado el ${fechaCorta(fecha)}` : 'Escríbelo para ver cuánto tendrás'}</small></label>
       <div className="teso-saldo-fila">
         <input id="saldo" className="campo" inputMode="decimal" placeholder="0,00" value={v} onChange={(e) => setV(e.target.value)} />
         <button className="boton pequeno">Guardar</button>

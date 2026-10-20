@@ -25,10 +25,11 @@ const comandos = (pagina) => {
 const textos = (pagina) => [...comandos(pagina).matchAll(/\/[^\s]+ ([\d.]+) Tf\n[^\n]+ TL\n1 0 0 1 ([\d.-]+) ([\d.-]+) Tm\n<([A-Fa-f\d]*)> Tj/g)]
   .map(([, size, x, y, hex]) => ({ size: Number(size), x: Number(x), y: Number(y), texto: Buffer.from(hex, 'hex').toString('latin1') }));
 
-// Huellas obtenidas de los renderizadores anteriores al cambio, con esta misma factura.
+// Huellas obtenidas de los renderizadores anteriores al cambio, con esta misma factura (rehechas el 20-10-2026 al pasar
+// las fechas a 15/10/2026 y el % a «21 %»).
 const anteriores = {
-  '': { html: '506c866e7bd52f84e48b8e977d2c107febfd38e920fba7f5bf0e97b1e0e87d54', pdf: '6dd18e0e1f04cd6376f3a7728d8a03335b2ac43f4199fee7e2e8cfe488a41b78' },
-  P: { html: '07c4e572dcd384331a01f137228500ed43fd0327becbf924a4d6f39e9715f0f9', pdf: '79486d25344a3aae668f718fc805c23445644d3891405682ae0039356f23f188' },
+  '': { html: 'b758b5beae0293a40a188ff4ba63789e592dbb1b2fcabceaa219ef887fc67f78', pdf: '51808cc54d7709eddbb4600af6b41eeb8e932dd50521b58c7f3b4a06b904e894' },
+  P: { html: '062e7d2fa12f2f5ebe4e8ea1c114a1bbbbc196957f096104ee5c65b983f7012d', pdf: '2aabaf278d0b8d95e58f6aecbe865bae1fed021124fcc623f126fb7244f248cb' },
 };
 
 for (const serie of ['', 'P']) {
@@ -54,7 +55,7 @@ for (const serie of ['', 'P']) {
     assert.ok(html.includes('Aviso &lt;b&gt;legal&lt;/b&gt; &amp; condiciones\nSegunda línea &quot;legal&quot;.'));
     assert.doesNotMatch(html, /<b>legal<\/b>|cliente@example\.com|900000000|cliente\.example\.com/);
     assert.ok(html.indexOf('Aviso &lt;b&gt;') < html.indexOf(`${emisor.nombre} · NIF`));
-    assert.ok(html.includes(serie ? 'Válido hasta: 03-11-2026' : 'Vencimiento: 18-11-2026'));
+    assert.ok(html.includes(serie ? 'Válido hasta: 03/11/2026' : 'Vencimiento: 18/11/2026'));
     for (const k of Object.keys(campos)) {
       const ataque = facturaHtml(f, { ...emisor, [k]: '<script>"&</script>' });
       assert.ok(ataque.includes('&lt;script&gt;&quot;&amp;&lt;/script&gt;'), k);

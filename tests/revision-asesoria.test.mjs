@@ -60,7 +60,7 @@ test('1. Impagados (R3): aviso del modelo 952 durante el mes siguiente', () => {
   const r = fac('r1', '2026-10-01', -1000, { serie: 'R', rectifica: { id: 'f1', numero: '03-2026', fecha: '2026-03-15', motivo: 'incobrable' } });
   assert.equal(tipoFactura(r), 'R3');
   const dentro = avisosFiscales({ facturas: [r], gastos: [], anio: 2026, hoy: '2026-10-20' });
-  assert.ok(dentro.some((a) => a.id === '952-r1' && /01-11-2026/.test(a.texto)));
+  assert.ok(dentro.some((a) => a.id === '952-r1' && /01\/11\/2026/.test(a.texto)));
   assert.ok(!avisosFiscales({ facturas: [r], gastos: [], anio: 2026, hoy: '2026-11-02' }).some((a) => a.id === '952-r1'));
 });
 
@@ -145,7 +145,7 @@ test('3. Trimestre negativo: compensación, devolución en el 4T y caducidad de 
   // Caducidad: el saldo del 3T 2026 se compensa hasta el plazo de ese 303 más cuatro años.
   assert.equal(L[3].caduca, '2030-10-20');
   const viejo = liquidaciones303([...F, fac('x', '2030-02-01', 10)], G, 2030);
-  assert.ok(avisosFiscales({ facturas: [], gastos: [], anio: 2030, hoy: '2030-03-01', liquidaciones: viejo }).some((a) => a.id === 'caduca' && /20-10-2030/.test(a.texto)));
+  assert.ok(avisosFiscales({ facturas: [], gastos: [], anio: 2030, hoy: '2030-03-01', liquidaciones: viejo }).some((a) => a.id === 'caduca' && /20\/10\/2030/.test(a.texto)));
 });
 
 test('3. 130: un trimestre vencido sin marcar como presentado sale en los avisos', () => {
