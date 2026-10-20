@@ -1,11 +1,13 @@
-import { concurrencia, respuesta429 } from '@/lib/limite';
+import { concurrencia, rafaga, respuesta429 } from '@/lib/limite';
 import { randomBytes } from 'node:crypto';
 import { leer, redis, clave, borrar, guardar } from '@/lib/redis';
 import { error, usuarioApi } from '@/lib/api';
 import { puede } from '@/lib/permisos';
 import { actividadesDe } from '@/lib/empresa';
 import { leerHoja } from '@/lib/hoja';
-import { TIPOS, previa } from '@/lib/importar';
+import { TIPOS, mapaManual, previa } from '@/lib/importar';
+import { columnasSinUsar, sugerirColumnas } from '@/lib/columnasIA';
+import { iaLista } from '@/lib/ticket';
 import { auditar } from '@/lib/auditoria';
 import { guardarImportadas, RiesgoSuperado } from '@/lib/facturas';
 
@@ -44,7 +46,21 @@ export async function POST(req) {
     let filas;
     try { filas = leerHoja(Buffer.from(await archivo.arrayBuffer())); } catch { return error('No se puede leer el archivo: guárdalo como .xlsx o .csv'); }
     if (filas.length > MAX_FILAS + 10) return error(`Demasiadas filas: como máximo ${MAX_FILAS} por archivo`);
-    const p = previa(tipo, filas, await existentes(u, tipo));
+    // Columnas elegidas a mano en la vista previa (y siempre al guardar, para guardar justo lo que se ha revisado).
+    let manual = null;
+    if (form.get('columnas')) {
+      try { manual = mapaManual(tipo, filas, JSON.parse(String(form.get('columnas')))); } catch { manual = null; }
+      if (!manual) return error('Las columnas elegidas no son válidas: vuelve a ver la vista previa');
+    }
+    const ya = await existentes(u, tipo);
+    let p = previa(tipo, filas, ya, manual);
+    // Sin elección manual, si quedan títulos sin reconocer y campos sin asignar, la IA sugiere a qué corresponden.
+    const libres = p.campos.some((k) => !(k in p.mapa)) && columnasSinUsar(p.cabecera, p.mapa).length;
+    if (!manual && form.get('guardar') !== '1' && libres && iaLista() && !(await rafaga('importar-ia', u.empresa, 20, 3600))) {
+      const ia = await sugerirColumnas({ tipo, cabecera: p.cabecera, ejemplos: p.ejemplos, mapa: p.mapa });
+      const sugeridas = Object.keys(ia.campos || {});
+      if (sugeridas.length) p = { ...previa(tipo, filas, ya, { fila: p.fila, mapa: { ...p.mapa, ...ia.campos } }), sugeridas };
+    }
     if (p.error) return Response.json(p, { status: 400 });
     // Saldos y bienes van a una fecha de corte: la del cambio de programa (por defecto, la de la apertura que ya haya).
     const asientos = ['saldos', 'bienes'].includes(tipo) ? (await leer(u, 'asientos')) || [] : [];
