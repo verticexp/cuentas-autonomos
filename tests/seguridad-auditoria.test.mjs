@@ -11,7 +11,7 @@ const estado = { cookies: new Map(), headers: new Headers(), hashes: 0, pausarHa
 globalThis.__seguridadAuditoria = estado;
 const urlRedis = 'http://redis-seguridad.test';
 const fetchAnterior = globalThis.fetch;
-const env = Object.fromEntries(['KV_REST_API_URL', 'KV_REST_API_TOKEN', 'LIMITES', 'HIBP', 'BLOQUEO_SERVIDOR'].map((k) => [k, process.env[k]]));
+const env = Object.fromEntries(['KV_REST_API_URL', 'KV_REST_API_TOKEN', 'LIMITES', 'HIBP', 'BLOQUEO_SERVIDOR', 'VERCEL_ENV'].map((k) => [k, process.env[k]]));
 let A, R, API, L;
 const modulos = new Map();
 const modulo = (s) => `data:text/javascript;base64,${Buffer.from(s).toString('base64')}`;
@@ -46,6 +46,8 @@ before(async () => {
   process.env.KV_REST_API_URL = urlRedis;
   process.env.KV_REST_API_TOKEN = 'pruebas';
   process.env.HIBP = 'off';
+  // Fuera de producción: en el build de Vercel VERCEL_ENV vale «production» y Face ID solo admite los dominios de Netto.
+  delete process.env.VERCEL_ENV;
   globalThis.fetch = async (url, opciones) => {
     if (!String(url).startsWith(urlRedis)) throw new Error('Red externa no permitida en esta prueba');
     const b64 = (v) => typeof v === 'string' ? Buffer.from(v).toString('base64') : Array.isArray(v) ? v.map(b64) : v;
@@ -210,6 +212,17 @@ test('S1: el login por llave sigue disponible con la sesión bloqueada', async (
   const ruta = await cargar('app/api/passkey/route.js');
   const r = await ruta.POST(req('/api/passkey', { accion: 'entrar-opciones' }));
   assert.equal(r.status, 200); assert.ok((await r.json()).challenge);
+});
+
+test('m4: en producción Face ID solo responde en los dominios de Netto', async () => {
+  const ruta = await cargar('app/api/passkey/route.js');
+  const desde = (origen) => Object.assign(new Request(`${origen}/api/passkey`, { method: 'POST', headers: { 'content-type': 'application/json', origin: origen, 'x-real-ip': '9.9.9.9' }, body: JSON.stringify({ accion: 'entrar-opciones' }) }), { nextUrl: new URL(`${origen}/api/passkey`) });
+  process.env.VERCEL_ENV = 'production';
+  try {
+    assert.equal((await ruta.POST(desde('https://otra-web.example'))).status, 403);
+    const r = await ruta.POST(desde('https://www.nettohq.com'));
+    assert.equal(r.status, 200); assert.equal((await r.json()).rpId, 'www.nettohq.com');
+  } finally { delete process.env.VERCEL_ENV; }
 });
 
 test('S4: un acierto limpia el email y devuelve su reserva a la IP (oficinas con una IP)', async () => {
