@@ -1,3 +1,4 @@
+import Vacio from '@/components/Vacio';
 import { sinFuncion } from '@/lib/planes';
 import Link from 'next/link';
 import { requerir } from '@/lib/auth';
@@ -57,12 +58,12 @@ export default async function Albaranes({ searchParams }) {
             </Link></li>
           ))}
         </ul>
-      ) : <div className="vacio"><p>Sin pedidos de clientes</p><p>Apunta lo que te piden; al entregarlo, haz el albarán desde el pedido (el stock sale entonces) y a final de mes factura todos los albaranes juntos.</p></div>)}
+      ) : <Vacio icono="presupuesto" titulo="Apunta tu primer pedido" accion={puedeOperar && { href: '/albaranes/nuevo?tipo=pedido', texto: 'Crear pedido' }}>Apunta lo que te piden; al entregarlo, haz el albarán desde el pedido (el stock sale entonces) y a final de mes factura todos los albaranes juntos.</Vacio>)}
 
       {puedeOperar && ver === 'albaranes' && (grupos.length ? <FacturarAlbaranes grupos={grupos} hoy={hoy()} actividades={actividadesDe(u)} />
-        : <div className="vacio"><p>Ningún albarán por facturar</p><p>Los albaranes restan el stock al entregar. Elige varios del mismo cliente y haz una sola factura: no vuelve a restar el stock.</p></div>)}
+        : <Vacio icono="factura" titulo="Nada por facturar" accion={{ href: '/albaranes/nuevo?tipo=albaran', texto: 'Crear albarán' }}>Los albaranes restan el stock al entregar. Elige varios del mismo cliente y haz una sola factura: no vuelve a restar el stock.</Vacio>)}
 
-      {ver === 'facturados' && (
+      {ver === 'facturados' && (!albaranes.some((a) => a.factura) ? <Vacio icono="factura" titulo="Aún no has facturado ningún albarán" accion={{ href: '/albaranes?ver=albaranes', texto: 'Ver por facturar' }} /> :
         <ul className="grupo-lista">
           {albaranes.filter((a) => a.factura).map((a) => <li key={a.id}><Link href={`/albaranes/${a.id}`} className="fila"><span className="txt"><strong>{a.cliente.nombre}</strong><small>{numeroDoc(a)} · {fechaCorta(a.fecha)} · {resumen(a)}</small></span><span className="imp-col"><span className="imp">{eur(baseDoc(a))}</span><span className="estado-txt e-cobrada">Facturado</span></span></Link></li>)}
         </ul>

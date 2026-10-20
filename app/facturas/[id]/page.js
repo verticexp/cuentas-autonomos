@@ -1,6 +1,7 @@
 import Ir from '@/components/Ir';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
+import { normalizarIdFactura } from '@/lib/idFactura';
 import { requerir } from '@/lib/auth';
 import { leer, leerUno } from '@/lib/redis';
 import { leerRango } from '@/lib/indices';
@@ -32,6 +33,8 @@ export const dynamic = 'force-dynamic';
 export default async function Factura({ params }) {
   const u = await requerir('facturas');
   const { id } = await params;
+  const normalizado = normalizarIdFactura(id);
+  if (normalizado !== id) redirect(`/facturas/${encodeURIComponent(normalizado)}`);
   const [f, clientes, recurrentes, productos] = await Promise.all([leerUno(u, 'facturas', id), leer(u, 'clientes'), leer(u, 'recurrentes'), leer(u, 'productos')]);
   if (!f) notFound();
   const editar = puede(u, 'facturar');

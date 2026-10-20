@@ -565,7 +565,7 @@ console.log('Portal del cliente');
   const ajeno = await pedir(`/api/portal/pdf?t=${tok}&id=${encodeURIComponent(f3.id)}`);
   ok('el PDF de una factura de otro cliente no se da (404)', () => assert.equal(ajeno.status, 404));
   const malo = await (await pedir('/portal/inventado123')).text();
-  ok('un enlace inventado no enseña nada (página 404)', () => assert.ok(malo.includes('Vaya, esto no existe') && !malo.includes('could not be found') && !malo.includes('Pendiente de pago')));
+  ok('un enlace inventado no enseña nada (página 404)', () => assert.ok(malo.includes('Esta página no existe') && !malo.includes('could not be found') && !malo.includes('Pendiente de pago')));
   const fdp = new FormData(); fdp.set('t', tok); fdp.set('id', f1.id);
   const pg = await pedir('/api/portal/pagar', { metodo: 'POST', form: fdp });
   const destino = pg.headers.get('location') || '';
@@ -1693,7 +1693,7 @@ console.log('Accesos del resumen');
 console.log('Páginas de error');
 {
   const noHay = await (await pedir('/facturas/no-existe-esta', { cookie: yo })).text();
-  ok('una factura que no existe: «Vaya, esto no existe», con botón al inicio (no el 404 en inglés)', () => assert.ok(noHay.includes('Vaya, esto no existe') && noHay.includes('Ir al inicio') && !noHay.includes('could not be found')));
+  ok('una factura que no existe: «Esta página no existe», con vuelta a Facturas y al inicio (no el 404 en inglés)', () => assert.ok(noHay.includes('Esta página no existe') && noHay.includes('Volver a Facturas') && noHay.includes('Ir al inicio') && !noHay.includes('could not be found')));
   const web = await (await pedir('/funciones/inventada')).text(); // con loading.js llega dentro del HTML en streaming
   ok('también en la web pública, con su cabecera', () => assert.ok(web.includes('Puede que la página se haya movido') && !web.includes('could not be found')));
   const sinPermiso = await (await pedir('/ajustes/facturacion', { cookie: otro })).text();

@@ -1,3 +1,4 @@
+import Vacio from '@/components/Vacio';
 import { requerir } from '@/lib/auth';
 import { listarProveedores } from '@/lib/tercerosServidor';
 import { filtrarFichas, nombreForma } from '@/lib/terceros';
@@ -21,7 +22,7 @@ export default async function Proveedores({ searchParams }) {
   return (
     <main className="pagina mk-look fichas-pagina">
       <Volver href="/gastos">Gastos</Volver>
-      <div className="ficha-cabecera"><h1 className="titulo">Proveedores</h1>{puede(u, 'gastar') && <Ir className="boton" href="/gastos/proveedores/nuevo">+ Nuevo proveedor</Ir>}</div>
+      <div className="ficha-cabecera"><h1 className="titulo">Proveedores</h1>{puede(u, 'gastar') && lista.length > 0 && <Ir className="boton" href="/gastos/proveedores/nuevo">+ Nuevo proveedor</Ir>}</div>
       {lista.length > 0 && <p className="resumen-linea"><span>{lista.length === 1 ? '1 proveedor' : `${lista.length} proveedores`}</span>{debes > 0 && <span className="prov-debe">Les debes <strong>{eur(debes)}</strong></span>}</p>}
       {lista.length > 0 && <FiltrosFichas lista={lista.map((p) => p.ficha || {})} filtros={filtros} />}
       {visibles.length ? (
@@ -39,7 +40,7 @@ export default async function Proveedores({ searchParams }) {
             </li>
           ))}
         </ul>
-      ) : <div className="vacio"><p>{lista.length ? 'No hay proveedores con estos filtros' : 'Aún no hay proveedores'}</p><p>{lista.length ? 'Prueba con otro nombre o cambia los filtros.' : 'Crea una ficha o escribe el proveedor al apuntar un gasto (o haz una foto del ticket) y aparecerá aquí con todo lo que le has pagado.'}</p></div>}
+      ) : <Vacio icono="cliente" tipo={lista.length ? 'resultados' : 'vacio'} titulo={lista.length ? 'Ningún proveedor con estos filtros' : 'Guarda tu primer proveedor'} accion={lista.length ? { href: '/gastos/proveedores', texto: 'Quitar filtros' } : puede(u, 'gastar') && { href: '/gastos/proveedores/nuevo', texto: 'Crear proveedor' }} secundaria={!lista.length && puede(u, 'empresa') && { href: '/ajustes/importar', texto: 'Importar de Excel' }}>{!lista.length && 'Reúne sus datos y pagos en una ficha.'}</Vacio>}
     </main>
   );
 }

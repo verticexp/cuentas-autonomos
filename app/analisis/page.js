@@ -1,3 +1,4 @@
+import Vacio from '@/components/Vacio';
 import { usarFuncion } from '@/lib/usoPlan';
 import SinPlan from '@/components/SinPlan';
 import { requerir } from '@/lib/auth';
@@ -74,7 +75,7 @@ export default async function Analisis({ searchParams }) {
         {['', '1', '2', '3', '4'].map((x) => <Ir key={x} href={url({ p: x })} tipo="fundido" className={x === p ? 'activo' : ''}>{x ? `${x}T` : 'Año'}</Ir>)}
       </nav>
 
-      {sinDatos ? <div className="vacio"><p>Aún no hay nada que analizar</p><p>Cuando apuntes facturas y gastos, aquí verás tu margen bruto, el EBITDA y el punto de equilibrio{esSociedad(fiscal) ? ' y los ratios' : ''}.</p></div> : <>
+      {sinDatos ? <Vacio icono="beneficio" tipo={p || anio !== actual ? 'resultados' : 'vacio'} titulo="Aún no hay nada que analizar" accion={{ href: '/facturas/nueva', texto: 'Nueva factura' }} secundaria={p || anio !== actual ? { href: '/analisis', texto: 'Quitar filtros' } : { href: '/gastos#apuntar-gasto', texto: 'Añadir gasto' }}>Apunta tus ventas y gastos para comparar lo que ganas y lo que gastas.</Vacio> : <>
         <div className="teso-cifras">
           <div className="teso-cifra"><span>Margen bruto</span><strong>{eur(a.margenBruto)}</strong><small className="ana-pie">{a.margenBrutoPct === null ? '' : `${num.format(a.margenBrutoPct)} % de las ventas`}</small></div>
           <div className="teso-cifra"><span>EBITDA</span><strong className={a.ebitda < 0 ? 'teso-out' : ''}>{eur(a.ebitda)}</strong><small className="ana-pie">{a.ebitdaPct === null ? '' : `${num.format(a.ebitdaPct)} % de las ventas`}</small></div>

@@ -1,3 +1,4 @@
+import Vacio from '@/components/Vacio';
 import { Fragment } from 'react';
 import Ir from '@/components/Ir';
 import { notFound } from 'next/navigation';
@@ -73,7 +74,8 @@ export default async function Mes({ params }) {
         </div>
       )}
 
-      <p className="rotulo">{F.length ? `${F.length} ${F.length === 1 ? 'factura' : 'facturas'}` : 'Sin facturas este mes'}</p>
+      <p className="rotulo">{F.length ? `${F.length} ${F.length === 1 ? 'factura' : 'facturas'}` : 'Facturas del mes'}</p>
+      {!F.length && <Vacio compacto icono="factura" titulo="Sin facturas este mes" />}
       {F.length > 0 && (
         <ul className="grupo-lista bloque">
           {F.map((f) => (
@@ -91,7 +93,8 @@ export default async function Mes({ params }) {
         </ul>
       )}
 
-      <p className="rotulo">{G.length ? `${G.length} ${G.length === 1 ? 'gasto' : 'gastos'}` : 'Sin gastos este mes'}</p>
+      <p className="rotulo">{G.length ? `${G.length} ${G.length === 1 ? 'gasto' : 'gastos'}` : 'Gastos del mes'}</p>
+      {!G.length && <Vacio compacto icono="gasto" titulo="Sin gastos este mes" />}
       {G.length > 0 && (
         <ul className="grupo-lista bloque">
           {G.map((g) => (

@@ -1,3 +1,4 @@
+import Vacio from '@/components/Vacio';
 import Ir from '@/components/Ir';
 import { requerir } from '@/lib/auth';
 import { leer } from '@/lib/redis';
@@ -48,11 +49,7 @@ export default async function Presupuestos() {
         })}
       </ul>}
       {!lista.length && (
-        <div className="vacio">
-          <p>Aún no has hecho ningún presupuesto</p>
-          <p>Envíaselo al cliente con un enlace: lo acepta desde el móvil y lo conviertes en factura con un toque.</p>
-          {puede(u, 'facturar') && <Ir href="/presupuestos/nuevo" tipo="subir" className="boton">Crear el primero</Ir>}
-        </div>
+        <Vacio icono="presupuesto" titulo="Prepara tu primer presupuesto" accion={puede(u, 'facturar') && { href: '/presupuestos/nuevo', texto: 'Crear presupuesto' }}>Envíaselo al cliente con un enlace: lo acepta desde el móvil y lo conviertes en factura con un toque.</Vacio>
       )}
     </main>
   );

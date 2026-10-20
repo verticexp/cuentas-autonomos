@@ -1,5 +1,6 @@
 'use client';
 
+import Vacio from '@/components/Vacio';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -111,7 +112,7 @@ function Pendiente({ m, permisos, accion }) {
             <button className="boton pequeno" disabled={!elegidaValida} onClick={() => { if (elegidaValida) confirmar(m.importe > 0 ? 'factura' : 'gasto', elegidaValida); }}>Emparejar</button>
             <button className="boton pequeno sec" onClick={() => setEligiendo(false)}>Cancelar</button>
           </div>
-          {!m.opciones.length && <p className="bco-nota">{m.importe > 0 ? 'No hay facturas sin cobrar.' : 'No hay gastos de esas fechas sin emparejar. Apúntalo en Gastos y vuelve.'}</p>}
+          {!m.opciones.length && <Vacio compacto tipo="resultados" icono={m.importe > 0 ? 'factura' : 'gasto'} titulo={m.importe > 0 ? 'Añade la factura de este cobro' : 'Apunta el gasto de este pago'} accion={{ href: m.importe > 0 ? '/facturas/nueva' : '/gastos#apuntar-gasto', texto: m.importe > 0 ? 'Nueva factura' : 'Añadir gasto' }} secundaria={<button type="button" className="boton sec" onClick={() => setEligiendo(false)}>Volver al movimiento</button>} />}
         </div>
       ) : !s ? (
         <QueEs m={m} accion={accion}>
@@ -258,7 +259,7 @@ export default function Banco({ cuentas, pendientes, emparejados, ignorados, aut
               </ol>
             </div>
           )
-          : <p className="bco-nota">Aún no hay ninguna cuenta. Cuando alguien con permiso suba un extracto, verás aquí el saldo real.</p>)}
+          : <Vacio compacto icono="gasto" titulo="Aún no hay ninguna cuenta">Cuando alguien con permiso suba un extracto, verás aquí el saldo real.</Vacio>)}
         <div className="bco-botones">
           {permisos.empresa && listo && <button className="boton pequeno" onClick={() => setConectando(true)}>Conectar banco</button>}
           {listo && conectadas.length > 0 && (permisos.facturar || permisos.gastar) && <button className="boton pequeno sec" onClick={() => actualizar(true)}>Actualizar</button>}
@@ -300,7 +301,7 @@ export default function Banco({ cuentas, pendientes, emparejados, ignorados, aut
         </form>
         <p className="bco-nota">{historial.encontrados} {historial.encontrados === 1 ? 'movimiento' : 'movimientos'}{Object.values(historial.filtros).some(Boolean) ? ` de ${historial.total} con estos filtros` : ' en el historial'}.</p>
         {historial.filtros.desde && historial.filtros.hasta && historial.filtros.desde > historial.filtros.hasta && <p className="bco-nota rojo">La fecha inicial es posterior a la final. Revisa el intervalo.</p>}
-        {historial.encontrados === 0 && historial.total > 0 && <p className="bco-nota">No hay movimientos con estos filtros.</p>}
+        {historial.encontrados === 0 && historial.total > 0 && <Vacio compacto tipo="resultados" icono="gasto" titulo="Ningún movimiento con estos filtros" accion={{ href: '/banco', texto: 'Quitar filtros' }} />}
       </section>}
 
       <div id="banco-pendientes">
@@ -362,7 +363,7 @@ export default function Banco({ cuentas, pendientes, emparejados, ignorados, aut
         </details>
       )}
 
-      {!pendientes.length && !emparejados.length && !ignorados.length && cuentas.length > 0 && (!historial || historial.total === 0) && <div className="vacio"><p>Sin movimientos</p><p>Sube un extracto para revisar sus cobros y pagos.</p></div>}
+      {!pendientes.length && !emparejados.length && !ignorados.length && cuentas.length > 0 && (!historial || historial.total === 0) && <Vacio icono="gasto" titulo="Aún no hay movimientos" accion={(permisos.facturar || permisos.gastar) && <button type="button" className="boton" onClick={() => fichero.current?.click()}>Subir extracto</button>}>Sube un extracto de tu banco para empezar.</Vacio>}
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import Vacio from '@/components/Vacio';
 import { requerir } from '@/lib/auth';
 import { leer } from '@/lib/redis';
 import { r2, trimestre } from '@/lib/calculos';
@@ -82,8 +83,8 @@ export default async function Nominas({ searchParams }) {
           ))}
         </ul>
       )}
-      {!empleados.length && <p className="nota">Añade a tu equipo y Fisquo hará cada mes sus nóminas, las apuntará como gasto y te dirá cuánto ingresar en el modelo 111.</p>}
-      <FormEmpleado hoy={h} />
+      {!empleados.length && <Vacio icono="usuarios" titulo="Añade a tu equipo" accion={{ href: '#anadir-empleado', texto: 'Añadir empleado' }}>Fisquo hará cada mes sus nóminas, las apuntará como gasto y te dirá cuánto ingresar en el modelo 111.</Vacio>}
+      <div id="anadir-empleado"><FormEmpleado hoy={h} /></div>
 
       {futuras.length > 0 && (
         <>
@@ -104,7 +105,7 @@ export default async function Nominas({ searchParams }) {
         </select>{' '}
         <button type="submit" className="boton sec">Ver año</button>
       </form>
-      {!meses.length && <p className="nota">No hay nóminas en {anioHistorial}.</p>}
+      {!meses.length && <Vacio compacto tipo="resultados" icono="usuarios" titulo={`Sin nóminas en ${anioHistorial}`} />}
       {meses.map((m) => (
         <div key={m}>
           <p className="rotulo">{nombreMes(m)}</p>

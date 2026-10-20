@@ -13,6 +13,8 @@ const react = pathToFileURL(require.resolve('react')).href;
 const dobles = {
   'next/navigation': modulo('export const useRouter = () => ({refresh(){}});'),
   'next/link': modulo(`import React from ${JSON.stringify(react)}; export default function Link(p){return React.createElement('a',p);}`),
+  // Estos flujos prueban remesas con documentos; el estado vacío se resuelve como dependencia de presentación.
+  '@/components/Vacio': modulo('export default function Vacio(){return null;}'),
   '@/components/Acciones': modulo('export async function llamar(){throw new Error("No debe haber escrituras durante el render");}'),
 };
 async function componente(nombre, extra = '') {

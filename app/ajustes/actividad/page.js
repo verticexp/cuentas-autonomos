@@ -1,3 +1,4 @@
+import Vacio from '@/components/Vacio';
 import { requerir } from '@/lib/auth';
 import { leerAuditoria } from '@/lib/auditoria';
 import Volver from '@/components/Volver';
@@ -32,7 +33,7 @@ export default async function Actividad() {
           ))}
         </ul>
       ) : (
-        <div className="vacio"><p>Aún no hay actividad</p><p>Aquí aparecerán los cambios de permisos, de datos de la empresa, los borrados y las exportaciones.</p></div>
+        <Vacio icono="actividad" titulo="Aún no hay actividad">Aquí aparecerán los cambios de permisos, de datos de la empresa, los borrados y las exportaciones, con quién los hizo.</Vacio>
       )}
     </main>
   );

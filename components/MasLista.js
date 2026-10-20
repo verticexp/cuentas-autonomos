@@ -1,5 +1,6 @@
 'use client';
 
+import Vacio from '@/components/Vacio';
 import { useEffect, useMemo, useState } from 'react';
 import Ir from '@/components/Ir';
 import { buscar } from '@/lib/navegacion';
@@ -51,7 +52,7 @@ export default function MasLista({ grupos, asistente = true }) {
               </Ir>
             )}
           </div>
-          {!hallados.length && !asistente && <p className="grupo-pie">No hay ninguna pantalla con ese nombre.</p>}
+          {!hallados.length && !asistente && <Vacio compacto tipo="resultados" titulo="Ninguna pantalla con ese nombre" accion={<button type="button" className="boton sec" onClick={() => setQ('')}>Borrar búsqueda</button>} />}
         </section>
       ) : (
         <>

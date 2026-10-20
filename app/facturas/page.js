@@ -1,3 +1,4 @@
+import Vacio from '@/components/Vacio';
 import Link from 'next/link';
 import { enviarLuego } from '@/lib/verifactuEnvio';
 import Ir from '@/components/Ir';
@@ -69,7 +70,8 @@ export default async function Facturas({ searchParams }) {
       <AvisoDeshacer />
       <header className="cabecera">
         <h1 className="titulo">Facturas</h1>
-        {puede(u, 'facturar') && <Ir href="/facturas/nueva" tipo="subir" className="boton pequeno">Nueva factura</Ir>}
+        {/* Sin ninguna factura, el botón va dentro del vacío (uno solo). */}
+        {puede(u, 'facturar') && total > 0 && <Ir href="/facturas/nueva" tipo="subir" className="boton pequeno">Nueva factura</Ir>}
       </header>
 
       {total > 0 && (
@@ -180,14 +182,8 @@ export default async function Facturas({ searchParams }) {
       {pag.siguiente && <p className="grupo-pie"><Link href={url({ desde: pag.siguiente })} className="boton sec">Ver más</Link></p>}
 
       {!lista.length && (
-        <div className="vacio">
-          {total ? <><p>{buscado ? `Nada con «${q}»` : 'Nada con este filtro'}</p><p>{buscado ? 'Prueba con otra palabra o quita la búsqueda.' : 'Prueba con otra actividad o quita el filtro.'}</p></> : <>
-            <p>Aún no has hecho ninguna factura</p>
-            <p>Se numeran solas y puedes descargarlas en PDF con tu logo.</p>
-            {puede(u, 'facturar') && <Ir href="/facturas/nueva" tipo="subir" className="boton">Crear la primera</Ir>}
-            {puede(u, 'facturar') && <p><Link href="/facturas/caja">¿Vendes en tienda con TPV o caja registradora? Apunta el cierre del día</Link></p>}
-          </>}
-        </div>
+        total || buscado || estado || a || desde ? <Vacio tipo="resultados" icono="factura" titulo={buscado ? `Ninguna factura con «${q}»` : 'Ninguna factura con este filtro'} accion={{ href: buscado ? url({ q: null, desde: null }) : '/facturas', texto: buscado ? 'Quitar búsqueda' : 'Ver todas' }} />
+        : <Vacio icono="factura" titulo="Crea tu primera factura" accion={puede(u, 'facturar') && { href: '/facturas/nueva', texto: 'Crear la primera' }} secundaria={puede(u, 'facturar') && { href: '/facturas/caja', texto: 'Apuntar cierre de caja' }}>Se numeran solas, con el IVA y el IRPF calculados, y las descargas en PDF con tu logo.</Vacio>
       )}
     </main>
   );
