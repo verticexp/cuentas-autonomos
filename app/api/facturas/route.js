@@ -1,3 +1,4 @@
+import { requisitosIncobrable } from '@/lib/incobrables';
 import { leerUno } from '@/lib/redis';
 import { actualizarFactura } from '@/lib/actualizarFactura';
 import { borrarFactura, crearFactura, guardarCliente, limpiar } from '@/lib/facturas';
@@ -24,6 +25,13 @@ export async function POST(req) {
   if (datos.error) return Response.json({ error: datos.error, errores: datos.errores }, { status: 400 });
   const original = b.rectifica && (await leerUno(u, 'facturas', b.rectifica));
   if (b.rectifica && !original) return error('La factura a rectificar no existe');
+  // Crédito incobrable (art. 80.Cuatro LIVA): solo en su plazo, en negativo y con el cobro reclamado.
+  if (original && b.motivoRectificacion === 'incobrable') {
+    const r = requisitosIncobrable({ fechaOriginal: original.fecha, fechaRectificativa: datos.fecha, base: original.base });
+    if (r.errores.length) return error(r.errores[0]);
+    if (!(datos.base < 0)) return error('Por un impago, la rectificativa va en negativo: resta lo que no te han pagado');
+    if (b.reclamado !== true) return error('Para recuperar el IVA de un impagado, antes tienes que reclamar el cobro por vía judicial, con requerimiento notarial o por otro medio fehaciente');
+  }
   // idem: clave de idempotencia del formulario (doble clic o reintento tras una respuesta perdida).
   const { factura: f, error: e, riesgo } = await crearFactura(u, datos, { original, motivo: b.motivoRectificacion, idem: typeof b.idem === 'string' ? `form:${b.idem}` : undefined });
   if (e) return riesgo ? Response.json({ error: e, riesgo }, { status: 409 }) : error(e);

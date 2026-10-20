@@ -1,7 +1,9 @@
 import { requerir } from '@/lib/auth';
 import { leer, redis } from '@/lib/redis';
-import { actividadesDe, fiscalDe, hecho130, hecho303, modelosDe, usa130, usa303 } from '@/lib/empresa';
-import { casillas303, liquidaciones303, minoracion130, r2, limiteTrimestre, resumenAnual, situacionTrimestre } from '@/lib/calculos';
+import { actividadesDe, ajustesIva, fiscalDe, hecho130, hecho303, modelosDe, usa130, usa303 } from '@/lib/empresa';
+import { casillas303, liquidaciones303, minoracion130, prorrataAnio, prorrataProvisional, r2, limiteTrimestre, resumenAnual, situacionTrimestre } from '@/lib/calculos';
+import { avisosFiscales } from '@/lib/revisionFiscal';
+import Prorrata from '@/components/Prorrata';
 import Rend130 from '@/components/Rend130';
 import { modelo111 } from '@/lib/nominas';
 import { borradorRenta, borradorSociedades, modelo115, modelo180, modelo190, modelo202, modelo347, modelo349, modelo390, retencionesProfesionales, MINIMO_PERSONAL, RET_ALQUILER } from '@/lib/modelos';
@@ -57,24 +59,25 @@ export default async function Modelos({ searchParams }) {
     datosImpuestos(u, anio), leer(u, 'nominas'), leer(u, 'empleados'), leer(u, 'productos'), leer(u, 'stock'), leer(u, 'albaranes'), leer(u, 'asientos'),
   ]);
   const h = hoy();
-  const liquidaciones = liquidaciones303(facturas, gastos, anio);
+  const iva = ajustesIva(u);
+  const liquidaciones = liquidaciones303(facturas, gastos, anio, undefined, iva);
   // Se enseña cada modelo si le toca por su situación fiscal o si ya hay datos que lo piden.
   const hay115 = f.alquiler || gastos.some((g) => g.alquiler);
   const hay349 = f.intracom || modelo349(facturas, anio, undefined, gastos).total > 0;
-  const m390 = usa303(f) && modelo390(facturas, gastos, anio);
+  const m390 = usa303(f) && modelo390(facturas, gastos, anio, iva);
   const conRetencion = gastos.some((g) => Number(g.irpfPct) > 0);
   const m190 = (f.trabajadores || nominas?.length > 0 || conRetencion) && modelo190(nominas || [], empleados || [], anio, gastos);
   const is = f.tipo === 'sociedad' && borradorSociedades(facturas, gastos, anio, { pagos202: u.pagos202 || {}, ivaCoste: !usa303(f), productos: productos || [], ajustes: ajustes || [], albaranes: albaranes || [], manuales: manuales || [], hasta: h < `${anio}-12-31` ? h : `${anio}-12-31`, constitucion: f.constitucion, cuotaIS: u.cuotaIS || {} });
-  const renta = f.tipo === 'autonomo' && borradorRenta(facturas, gastos, anio, u.pagos130?.[anio], { ivaCoste: !usa303(f), personal: f.renta || {} });
+  const renta = f.tipo === 'autonomo' && borradorRenta(facturas, gastos, anio, u.pagos130?.[anio], { ivaCoste: !usa303(f), personal: f.renta || {}, iva });
   const m180 = hay115 && modelo180(gastos, anio);
   const m347 = modelo347(facturas, gastos, anio);
   const c303 = usa303(f);
   const ids = actividadesDe(u).map((a) => a.id);
   const rendAnterior = u.rend130?.[anio - 1];
-  const r130 = usa130(f) && resumenAnual(facturas, gastos, anio, u.pagos130?.[anio] || {}, ids, { ivaCoste: !c303, hasta: h < `${anio}-12-31` ? h : `${anio}-12-31`, minoracion: minoracion130(rendAnterior) });
+  const r130 = usa130(f) && resumenAnual(facturas, gastos, anio, u.pagos130?.[anio] || {}, ids, { ivaCoste: !c303, hasta: h < `${anio}-12-31` ? h : `${anio}-12-31`, minoracion: minoracion130(rendAnterior), iva });
   // Lo que Netto sabe del año anterior, como sugerencia (si ese año no está entero en Netto, no vale: lo confirma la persona).
   const conAnterior = usa130(f) && facturas.some((x) => x.fecha.startsWith(`${anio - 1}-`));
-  const sugerido = conAnterior ? resumenAnual(facturas, gastos, anio - 1, {}, ids, { ivaCoste: !c303 }).trimestres[3].rendAcum : null;
+  const sugerido = conAnterior ? resumenAnual(facturas, gastos, anio - 1, {}, ids, { ivaCoste: !c303, iva }).trimestres[3].rendAcum : null;
   // El 303 y el 130 se marcan como presentados cada uno por su cuenta; el trimestre está hecho cuando lo están los dos.
   const p303 = (t, y = anio) => hecho303(u.pres303, u.pagos130, y, t);
   const p130 = (t, y = anio) => hecho130(u.pagos130, y, t);
@@ -111,7 +114,7 @@ export default async function Modelos({ searchParams }) {
   const tAhora = (c303 || r130) ? T.find((t) => !presentado(t) && situacion(t).estado === 'listo') : undefined;
   let ahora = null;
   if (tAhora) {
-    const c = c303 && casillas303(facturas, gastos, anio, tAhora);
+    const c = c303 && casillas303(facturas, gastos, anio, tAhora, iva);
     const m303 = c && (c['46'] < 0 ? { importe: 0, compensar: -c['46'] } : { importe: liquidaciones[tAhora - 1].ingresar });
     const m130 = r130 && { importe: r130.trimestres[tAhora - 1].m130 };
     // Con el 303 y el 130, el resto de modelos que vencen a la vez (111, 115, 349 y el 202 de abril u octubre).
@@ -145,6 +148,13 @@ export default async function Modelos({ searchParams }) {
     }
   }
 
+  // Casos que Netto no resuelve solo (lib/revisionFiscal.js): presentar algo aparte o revisar antes del 4T.
+  const a111 = (t) => r2(modelo111(nominas || [], anio, t).retenciones + retencionesProfesionales(gastos, anio, t).retenciones);
+  const avisos = avisosFiscales({ facturas, gastos, anio, hoy: h, c303, c130: Boolean(r130), liquidaciones, r130, pagos130: u.pagos130?.[anio] || {}, a111: hay111 ? a111 : null });
+  // Prorrata: se enseña si hay operaciones exentas este año o el anterior, o si se ha guardado un porcentaje.
+  const prorrata = c303 && { guardado: u.prorrata?.[anio] ?? null, provisional: prorrataProvisional(facturas, anio, 4, iva), definitiva: prorrataAnio(facturas, anio), anterior: prorrataAnio(facturas, anio - 1) };
+  const verProrrata = prorrata && (prorrata.guardado !== null || prorrata.definitiva !== null || prorrata.anterior !== null);
+
   return (
     <main className="pagina mk-look modelos">
       <Volver href="/">Resumen</Volver>
@@ -160,6 +170,15 @@ export default async function Modelos({ searchParams }) {
 
       {ahora}
 
+      {avisos.length > 0 && (
+        <section className="bloque" aria-labelledby="revisar-t">
+          <h2 className="grupo-t" id="revisar-t">Para revisar</h2>
+          <ul className="tarjeta avisos-fiscales">
+            {avisos.map((a) => <li key={a.id}>{a.texto}{a.href && <> <Ir href={a.href}>Ver</Ir></>}</li>)}
+          </ul>
+        </section>
+      )}
+
       <ModeloPlegable id="calendario" num={<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M3 10h18M8 3v4M16 3v4" /></svg>}
         nombre="Qué presentas y cuándo" detalle={`${modelosDe({ ...f, intracom: hay349 }).length} modelos y plazos según cómo trabajas`}>
         <h2 className="grupo-t">Qué presentas y cuándo</h2>
@@ -170,16 +189,17 @@ export default async function Modelos({ searchParams }) {
       </ModeloPlegable>
 
       {c303 && (() => {
-        const t = tRef(p303); const c = t && casillas303(facturas, gastos, anio, t); const comp = c && c['46'] < 0;
+        const t = tRef(p303); const c = t && casillas303(facturas, gastos, anio, t, iva); const comp = c && c['46'] < 0;
         return (
         <ModeloPlegable id="m303" num="303" nombre="IVA trimestral" {...filaTrim(t, comp && 'a compensar')} favor={comp}
           dato={c && importeFila(comp ? -c['46'] : liquidaciones[t - 1].ingresar)}>
           <h2 className="grupo-t">303 · IVA trimestral</h2>
-          <p className="grupo-pie arriba">El IVA de tus facturas menos el de tus gastos. Si sale negativo, se compensa en los trimestres siguientes.</p>
+          <p className="grupo-pie arriba">El IVA de tus facturas menos el de tus gastos. Si sale negativo, se compensa en los trimestres siguientes (durante cuatro años como máximo) o, en el 4T, puedes pedir que te lo devuelvan.</p>
+          {verProrrata && <Prorrata anio={anio} {...prorrata} />}
           <div className="tarjetas">
-            {T.map((t) => { const c = casillas303(facturas, gastos, anio, t); return (
+            {T.map((t) => { const c = casillas303(facturas, gastos, anio, t, iva); return (
               <div key={t} className="tarjeta"><h3>{t}T {anio}</h3>
-                {c['46'] < 0 ? <Importe texto="A compensar" v={-c['46']} /> : <Importe texto="A ingresar" v={liquidaciones[t - 1].ingresar} />}
+                {liquidaciones[t - 1].devolucion > 0 ? <Importe texto="A devolver" v={liquidaciones[t - 1].devolucion} /> : c['46'] < 0 ? <Importe texto="A compensar" v={-c['46']} /> : <Importe texto="A ingresar" v={liquidaciones[t - 1].ingresar} />}
                 <Plegable><Casillas filas={[
                   c['01'] && ['01 · Base al 4 %', c['01']], c['03'] && ['03 · Cuota al 4 %', c['03']],
                   c['04'] && ['04 · Base al 10 %', c['04']], c['06'] && ['06 · Cuota al 10 %', c['06']],
@@ -195,13 +215,18 @@ export default async function Modelos({ searchParams }) {
                   c['30'] && ['30 · Bienes de inversión: base', c['30']], c['31'] && ['31 · Bienes de inversión: cuota', c['31']],
                   c['36'] && ['36 · Compras a la UE: base deducible', c['36']], c['37'] && ['37 · Compras a la UE: cuota deducible', c['37']],
                   c['38'] && ['38 · Bienes de inversión de la UE: base', c['38']], c['39'] && ['39 · Bienes de inversión de la UE: cuota', c['39']],
+                  c['40'] && ['40 · Abonos de proveedores: base', c['40']], c['41'] && ['41 · Abonos de proveedores: cuota', c['41']],
+                  c.prorrata && ['Prorrata aplicada', `${c.prorrata.provisional} %`],
+                  c['44'] && [`44 · Regularización de la prorrata (definitiva: ${c.prorrata.definitiva} %)`, c['44']],
                   c['59'] && ['59 · Empresas de otros países de la UE', c['59']],
                   [c['46'] < 0 ? '46 · A compensar' : '46 · Resultado', Math.abs(c['46']), true],
                   liquidaciones[t - 1].compensado > 0 && ['Cuotas anteriores compensadas', menos(liquidaciones[t - 1].compensado)],
-                  c['46'] >= 0 && ['A ingresar tras compensación', liquidaciones[t - 1].ingresar, true],
+                  c['46'] >= 0 && !liquidaciones[t - 1].devolucion && ['A ingresar tras compensación', liquidaciones[t - 1].ingresar, true],
+                  liquidaciones[t - 1].devolucion > 0 && ['A devolver (todo el saldo a tu favor)', liquidaciones[t - 1].devolucion, true],
                 ]} /></Plegable>
+                {t === 4 && liquidaciones[3].pendiente > 0 && <p className="nota">Te quedan {eur(liquidaciones[3].pendiente)} a tu favor: puedes compensarlos en {anio + 1} y siguientes o pedir que te los devuelvan (al marcarlo como presentado, elige «pido la devolución»).</p>}
                 <Fichero modelo="303" anio={anio} t={t} nif={u.emisor?.nif} aeat={AEAT.m303} aviso={c.otros.length > 0 && 'Con tipos de IVA distintos del 4, 10 y 21 % rellénalo a mano en la Sede.'} />
-                <Presentado modelo="303" anio={anio} t={t} importe={0} pagado={p303(t)} con130={false} situacion={situacion(t)} plazo={limite(t)} />
+                <Presentado modelo="303" anio={anio} t={t} importe={0} pagado={t === 4 && u.pres303?.[anio]?.[4] === 'devolucion' ? 'devolucion' : p303(t)} con130={false} situacion={situacion(t)} plazo={limite(t)} devolucion={t === 4 && (liquidaciones[3].pendiente > 0 || liquidaciones[3].devolucion > 0)} />
               </div>
             ); })}
           </div>
@@ -237,7 +262,6 @@ export default async function Modelos({ searchParams }) {
       })()}
 
       {hay111 && (() => {
-        const a111 = (t) => r2(modelo111(nominas || [], anio, t).retenciones + retencionesProfesionales(gastos, anio, t).retenciones);
         const t = tPlazo(20);
         return (
         <ModeloPlegable id="m111" num="111" nombre="Retenciones de nóminas y profesionales" {...filaPlazo(t, 20, null, t && !a111(t) && 'sin nóminas ni profesionales con retención')}
@@ -250,8 +274,9 @@ export default async function Modelos({ searchParams }) {
                 {m.perceptores || p.perceptores ? <Casillas filas={[
                   m.perceptores && ['01 · Trabajadores', String(m.perceptores)], m.perceptores && ['02 · Sueldos pagados', m.percepciones], m.perceptores && ['03 · Retenciones', m.retenciones],
                   p.perceptores && ['07 · Profesionales', String(p.perceptores)], p.perceptores && ['08 · Lo que les pagaste (base)', p.base], p.perceptores && ['09 · Retenciones', p.retenciones],
-                  ['28 · A ingresar', r2(m.retenciones + p.retenciones), true],
+                  ['28 · A ingresar', Math.max(0, r2(m.retenciones + p.retenciones)), true],
                 ]} /> : <p className="nota">Sin nóminas ni profesionales con retención este trimestre.</p>}
+                {r2(m.retenciones + p.retenciones) < 0 && <p className="nota">Sale negativo por un abono de un profesional con retención: el 111 no lo admite. Regularízalo con ese profesional.</p>}
                 <p className="nota">Hasta el {plazo(t, anio, 20)}.{presentado(t) ? ' Marcado como presentado.' : ''}</p>
               </div>
             ); })}

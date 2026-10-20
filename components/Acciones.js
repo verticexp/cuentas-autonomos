@@ -50,12 +50,13 @@ export function EstadoTrimestre({ hecho, situacion, plazo, nota }) {
 // si falla, vuelve a la de antes y se desbloquea. Se bloquea con aria-disabled y una guarda, no con `disabled`,
 // para no quitarle el foco a quien usa el teclado.
 // modelo="303": solo el 303 (pendiente o presentado), guardado aparte del 130; `pagado` es entonces true o false.
-export function Presentado({ anio, t, importe, pagado, con130 = true, situacion, plazo, modelo }) {
+// devolucion: en el 303 del 4T con saldo a favor, la opción de presentarlo pidiendo la devolución (pagado === 'devolucion').
+export function Presentado({ anio, t, importe, pagado, con130 = true, situacion, plazo, modelo, devolucion = false }) {
   const router = useRouter();
   const [guardando, empezar] = useTransition();
   const ocupado = useRef(false);
   const [confirmado, setConfirmado] = useState(false);
-  const servidor = modelo === '303' ? (pagado ? 'sinpagar' : 'pendiente') : pagado === undefined || pagado === null ? 'pendiente' : pagado > 0 && con130 ? 'pagado' : 'sinpagar';
+  const servidor = modelo === '303' ? (pagado === 'devolucion' ? 'devolucion' : pagado ? 'sinpagar' : 'pendiente') : pagado === undefined || pagado === null ? 'pendiente' : pagado > 0 && con130 ? 'pagado' : 'sinpagar';
   // Lo ya guardado manda hasta que el refresco trae ese mismo valor: así ni la franja ni el selector vuelven
   // un instante al estado anterior si la transición termina antes de que lleguen los datos nuevos.
   const [guardado, setGuardado] = useState(null);
@@ -71,7 +72,7 @@ export function Presentado({ anio, t, importe, pagado, con130 = true, situacion,
     empezar(async () => {
       elegir(v);
       try {
-        await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify(modelo === '303' ? { presentado303: { anio, t, hecho: v !== 'pendiente' } } : { presentado: { anio, t, importe: imp } }) });
+        await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify(modelo === '303' ? { presentado303: { anio, t, hecho: v !== 'pendiente', ...(v === 'devolucion' ? { devolucion: true } : {}) } } : { presentado: { anio, t, importe: imp } }) });
         setGuardado(v);
         setConfirmado(v !== 'pendiente');
         empezar(() => router.refresh());
@@ -84,7 +85,7 @@ export function Presentado({ anio, t, importe, pagado, con130 = true, situacion,
       {con130 ? <>
         <option value="pagado">Presentado y 130 pagado</option>
         <option value="sinpagar">Presentado, 130 sin pagar</option>
-      </> : <option value="sinpagar">Presentado</option>}
+      </> : <><option value="sinpagar">{devolucion ? 'Presentado, a compensar' : 'Presentado'}</option>{(devolucion || elegido === 'devolucion') && <option value="devolucion">Presentado, pido la devolución</option>}</>}
     </select>
   );
   // Sin situación (Resumen): solo el selector, como antes.

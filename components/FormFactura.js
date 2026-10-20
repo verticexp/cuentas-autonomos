@@ -4,7 +4,8 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { navegar } from '@/lib/transicion';
 import Deslizable from './Deslizable';
-import { baseLinea, desglose, importes, leerImporte, numeroFactura, pagadoDe, pendienteDe, r2 } from '@/lib/calculos';
+import { baseLinea, desglose, importes, leerImporte, numeroFactura, pagadoDe, pendienteDe, r2, trimestre } from '@/lib/calculos';
+import { requisitosIncobrable } from '@/lib/incobrables';
 import '@/app/lineas.css';
 import '@/app/catalogo.css';
 import '@/app/factura-movil.css';
@@ -313,11 +314,34 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
       {orig && <label>Motivo de la rectificación
         <select className="campo" value={f.motivoRectificacion || ''} onChange={(e) => poner('motivoRectificacion', e.target.value)}>
           <option value="">Otras causas (R4)</option>
-          <option value="error">Error, devolución, descuento o resolución (R1, art. 80 Uno, Dos y Seis)</option>
+          <option value="devolucion">Devolución, descuento, anulación o cambio de precio (R1, art. 80 Uno, Dos y Seis)</option>
+          <option value="errorFactura">Error al hacer la factura: importe, tipo de IVA o dato equivocado (R4)</option>
+          <option value="errorDerecho">Error fundado de derecho (R1)</option>
           <option value="concurso">Concurso del cliente (R2, art. 80 Tres)</option>
-          <option value="incobrable">Crédito incobrable (R3, art. 80 Cuatro)</option>
+          <option value="incobrable">Crédito incobrable: el cliente no paga (R3, art. 80 Cuatro)</option>
         </select>
       </label>}
+      {orig && (() => {
+        // Lo que cambia según el motivo (informe de la asesoría, 20-10-2026): dónde va en el 303 y en el IRPF.
+        const motivo = f.motivoRectificacion || '';
+        const cuota = r2(nums.reduce((s, l) => s + baseLinea(l) * (Number(l.ivaPct) || 0) / 100, 0));
+        const otroT = orig.fecha.slice(0, 4) !== f.fecha.slice(0, 4) || trimestre(orig.fecha) !== trimestre(f.fecha);
+        const otroAnio = orig.fecha.slice(0, 4) !== f.fecha.slice(0, 4);
+        if (motivo === 'incobrable') {
+          const r = requisitosIncobrable({ fechaOriginal: orig.fecha, fechaRectificativa: f.fecha, base: orig.base });
+          return <div className="nota aviso-rect">
+            {[...r.errores, ...r.avisos].map((t) => <p key={t}><strong>{t}</strong></p>)}
+            <p>Para recuperar el IVA de un impagado hace falta:</p>
+            <ul>{r.requisitos.map((t) => <li key={t}>{t}</li>)}</ul>
+            <p>Con esta fecha, el modelo 952 se presenta hasta el {r.limite952.split('-').reverse().join('/')}. Si facturas más de 6 millones al año, el plazo de espera es de un año, no de seis meses.</p>
+            <label className="check"><input type="checkbox" checked={Boolean(f.reclamado)} onChange={(e) => poner('reclamado', e.target.checked)} /> He reclamado el cobro por vía judicial, con requerimiento notarial o por otro medio fehaciente que admita la ley</label>
+          </div>;
+        }
+        if (motivo === 'errorFactura' && cuota > 0 && otroT) return <p className="nota aviso-rect">Sube el IVA por un error: no va en el 303 de este trimestre, sino en una autoliquidación rectificativa del {trimestre(orig.fecha)}T {orig.fecha.slice(0, 4)}, con recargo por presentarla tarde (art. 27 LGT) e intereses si procede (art. 89.Cinco de la Ley del IVA). Netto la cuenta en ese trimestre.{otroAnio ? ` En el IRPF cuenta en ${orig.fecha.slice(0, 4)}.` : ''}</p>;
+        if (['errorFactura', 'errorDerecho'].includes(motivo) && otroAnio) return <p className="nota aviso-rect">Corrige un error de una factura de {orig.fecha.slice(0, 4)}: en el IRPF cuenta en ese año (su declaración de la renta), no en el 130 de {f.fecha.slice(0, 4)}.</p>;
+        if (!motivo && cuota > 0 && otroT) return <p className="nota aviso-rect">Sube el IVA de una factura de otro trimestre: elige el motivo. Si es un error al facturar, va en una autoliquidación rectificativa de ese trimestre, no en este.</p>;
+        return null;
+      })()}
 
       <label className="ff-det">IRPF
         <select {...atributos('irpfPct')} className="campo" value={f.irpfPct} onChange={(e) => poner('irpfPct', Number(e.target.value))}>
