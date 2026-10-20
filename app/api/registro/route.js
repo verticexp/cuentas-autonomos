@@ -31,7 +31,11 @@ export async function POST(req) {
   if (await pasado('registro', ipDe(req), 5, 3600)) return fallo(MUCHOS, 429);
 
   const sesion = await usuarioActual();
-  const primera = !sesion && !(await hayUsuarios());
+  // Base vacía: la primera cuenta es la del administrador de Netto. En Vercel (producción o una vista previa con una base
+  // nueva) solo si es el email de ADMIN_EMAIL; si no, cualquiera que llegase antes se quedaría con el panel de /admin.
+  const enVercel = Boolean(process.env.VERCEL_ENV);
+  const primera = !sesion && !(await hayUsuarios())
+    && (!enVercel || (Boolean(process.env.ADMIN_EMAIL) && String(form.get('email') || '').trim().toLowerCase() === process.env.ADMIN_EMAIL.trim().toLowerCase()));
   const cuenta = { nombre: form.get('nombre'), email: form.get('email'), password: String(form.get('password') || ''), admin: primera };
   if (!sesion) {
     const seguridad = await validarContrasenaSegura(cuenta.password, cuenta);

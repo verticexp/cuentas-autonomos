@@ -1,3 +1,4 @@
+import { DETALLE } from '@/lib/permisos';
 import { concurrencia, respuesta429 } from '@/lib/limite';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { auditar } from '@/lib/auditoria';
@@ -10,7 +11,7 @@ const ocupado = () => respuesta429(5, 'Ya hay una exportación en curso en tu em
 
 // Paquete trimestral para la gestoría. ?anio=2026&t=3&formato=zip|xlsx|pdf (por defecto, un .zip con los dos).
 export async function GET(req) {
-  const { u, res } = await usuarioApi({ permiso: 'resumen' });
+  const { u, res } = await usuarioApi({ permiso: DETALLE });
   if (res) return res;
   const resultado = await concurrencia('exportar', u.empresa, 1, 300000, async () => {
     const q = req.nextUrl.searchParams;

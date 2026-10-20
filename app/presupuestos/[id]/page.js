@@ -8,7 +8,7 @@ import { actividadesDe } from '@/lib/empresa';
 import { puede } from '@/lib/permisos';
 import { ESTADOS, baseResto, baseSenal, caduca, estadoDe, numeroPresupuesto } from '@/lib/presupuestos';
 import { Borrar } from '@/components/Acciones';
-import { Compartir, Facturar, MarcarAceptado } from '@/components/AccionesPresupuesto';
+import { CambiarEnlace, Compartir, Facturar, MarcarAceptado } from '@/components/AccionesPresupuesto';
 import { enlacePortal } from '@/lib/portal';
 import '@/app/portal.css';
 import FormPresupuesto from '@/components/FormPresupuesto';
@@ -52,6 +52,7 @@ export default async function Presupuesto({ params }) {
       {editar && <div className="acciones-factura">
         {estado === 'pendiente' && <Compartir ruta={`/p/${p.token}`} texto={`Presupuesto ${numeroPresupuesto(p)}`} />}
         <Link href={`/p/${p.token}`} className="boton sec">Ver como el cliente</Link>
+        <CambiarEnlace datos={{ tipo: 'presupuesto', id: p.id }} pregunta="¿Cambiar el enlace de este presupuesto? El que tiene el cliente dejará de funcionar." />
         {estado === 'pendiente' && <MarcarAceptado id={p.id} />}
         {['pendiente', 'aceptado'].includes(estado) && p.senalPct > 0 && !senal && <Facturar id={p.id} tipo="senal">Facturar señal ({eur(baseSenal(p))})</Facturar>}
         {['pendiente', 'aceptado'].includes(estado) && <Facturar id={p.id} tipo="resto">{senal ? `Facturar el resto (${eur(baseResto(p))})` : 'Facturar todo'}</Facturar>}
@@ -59,7 +60,7 @@ export default async function Presupuesto({ params }) {
       </div>}
       {portal && <section className="portal-enlace">
         <p className="nota">Portal de {p.cliente.nombre}: ve todas sus facturas y presupuestos, los descarga en PDF y paga.</p>
-        <div className="portal-botones"><Compartir ruta={portal} texto={`Tus documentos de ${u.emisor?.nombre || ''}`.trim()} etiqueta="Enviar su portal" className="boton sec" /><Link href={portal} className="boton sec">Ver su portal</Link></div>
+        <div className="portal-botones"><Compartir ruta={portal} texto={`Tus documentos de ${u.emisor?.nombre || ''}`.trim()} etiqueta="Enviar su portal" className="boton sec" /><Link href={portal} className="boton sec">Ver su portal</Link><CambiarEnlace datos={{ tipo: 'portal', cliente: p.cliente.nombre, nif: p.cliente.nif || '' }} pregunta={`¿Cambiar el enlace del portal de ${p.cliente.nombre}? El que tiene dejará de funcionar y tendrás que enviarle el nuevo.`} /></div>
       </section>}
       {editar && p.estado === 'pendiente' && <FormPresupuesto key={JSON.stringify(p)} presupuesto={p} clientes={clientes} actividades={actividadesDe(u)} />}
     </main>

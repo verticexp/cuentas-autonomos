@@ -17,3 +17,4 @@
 .portal-enlace .nota { margin: 0 0 10px; }
 .portal-botones { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .portal-botones > * { width: 100%; text-align: center; justify-content: center; }
+.portal-botones > :nth-child(3) { grid-column: 1 / -1; }

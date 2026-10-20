@@ -1,3 +1,4 @@
+import { DETALLE } from '@/lib/permisos';
 import { borrar, guardar, leer, leerUno } from '@/lib/redis';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { asientoApertura, limpiarAsiento } from '@/lib/asientos';
@@ -11,7 +12,7 @@ export const dynamic = 'force-dynamic';
 // { apertura: { fecha, banco, capital, largo, corto } }, { personal: { fecha, sueldos, ssEmpresa, irpf, ssTrabajador, otros, pagoLiquido… } }
 // (nóminas de la gestoría: devengo y pagos) o { fecha, concepto, lineas: [{ cuenta, debe, haber }] }
 export async function POST(req) {
-  const { u, res } = await usuarioApi({ permiso: 'resumen' });
+  const { u, res } = await usuarioApi({ permiso: DETALLE });
   if (res) return res;
   const b = await cuerpo(req);
   let a;
@@ -44,7 +45,7 @@ export async function POST(req) {
 }
 
 export async function DELETE(req) {
-  const { u, res } = await usuarioApi({ permiso: 'resumen' });
+  const { u, res } = await usuarioApi({ permiso: DETALLE });
   if (res) return res;
   const id = req.nextUrl.searchParams.get('id');
   if (!id) return error('Falta id');

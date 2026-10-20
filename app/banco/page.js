@@ -11,7 +11,7 @@ import { esSociedad } from '@/lib/modulos';
 import { conectarVisible } from '@/lib/enableBanking';
 import { importes, numeroFactura } from '@/lib/calculos';
 import { totalDe } from '@/lib/proveedores';
-import { puede } from '@/lib/permisos';
+import { DETALLE, puede } from '@/lib/permisos';
 import { historialBanco } from '@/lib/historialBanco';
 import Volver from '@/components/Volver';
 import SinBD from '@/components/SinBD';
@@ -32,7 +32,7 @@ const ERRORES = {
 };
 
 export default async function PaginaBanco({ searchParams }) {
-  const u = await requerir('resumen');
+  const u = await requerir(DETALLE);
   const [movs, cuentas] = await Promise.all([leer(u, 'banco'), leer(u, 'bancos')]);
   if (!movs) return <SinBD />;
   const q = await searchParams;

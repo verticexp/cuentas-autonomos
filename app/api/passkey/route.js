@@ -13,9 +13,16 @@ import { auditar } from '@/lib/auditoria';
 export const dynamic = 'force-dynamic';
 
 const b64 = (u8) => Buffer.from(u8).toString('base64url');
+// En producción, solo los dominios de Netto (informe de seguridad m4): el sitio no lo decide la propia petición.
+// La app de iOS carga www.nettohq.com (mobile/capacitor.config.json). Fuera de producción, el de la petición (local, e2e).
+const DOMINIOS = ['www.nettohq.com', 'nettohq.com'];
+const permitidos = () => [...DOMINIOS, ...[process.env.APP_URL, process.env.VERCEL_PROJECT_PRODUCTION_URL && `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`]
+  .filter(Boolean).map((x) => URL.parse(x)?.hostname).filter(Boolean)];
 const sitio = (req) => {
   const origin = req.headers.get('origin') || new URL(req.url).origin;
-  return { origin, rpID: new URL(origin).hostname };
+  const rpID = URL.parse(origin)?.hostname;
+  if (process.env.VERCEL_ENV === 'production' && !permitidos().includes(rpID)) return null;
+  return { origin, rpID };
 };
 
 async function guardarReto(challenge) {
@@ -33,7 +40,9 @@ async function leerReto() {
 export async function POST(req) {
   if (!redis) return error('Base de datos no conectada', 503);
   const b = await cuerpo(req);
-  const { origin, rpID } = sitio(req);
+  const web = sitio(req);
+  if (!web) return error('Face ID solo funciona en www.nettohq.com', 403);
+  const { origin, rpID } = web;
   const u = await usuarioActual();
 
   // Activar Face ID en este dispositivo (con la sesión ya abierta).
@@ -57,12 +66,15 @@ export async function POST(req) {
       const v = await verifyRegistrationResponse({ response: b.respuesta, expectedChallenge: reto, expectedOrigin: origin, expectedRPID: rpID, requireUserVerification: true });
       if (!v.verified) return error('No se pudo activar Face ID');
       const c = v.registrationInfo.credential;
+      // Una llave ya asociada a otra persona no se reasigna (si no, conociendo su id se le quitaría Face ID).
+      const ya = await redis.hget('passkey-usuario', c.id);
+      if (ya && ya !== u.id) return error('No se pudo activar Face ID en este dispositivo');
       const nombre = String(b.nombre || 'Este dispositivo').slice(0, 60);
       await redis.hset(`passkeys:${u.id}`, { [c.id]: { publicKey: b64(c.publicKey), counter: c.counter, transports: c.transports || [], nombre, creada: new Date().toISOString() } });
       await redis.hset('passkey-usuario', { [c.id]: u.id });
       await auditar(u, 'Face ID activado', nombre);
       return Response.json({ ok: true, id: c.id });
-    } catch (e) { return error(`No se pudo activar Face ID: ${e.message}`); }
+    } catch (e) { console.warn('[passkey] registro:', e.message); return error('No se pudo activar Face ID. Vuelve a intentarlo.'); }
   }
 
   // Entrar (o desbloquear la app) con Face ID. Como mucho 60 llamadas (30 intentos) por IP cada 15 min.
@@ -87,7 +99,7 @@ export async function POST(req) {
       });
       if (!v.verified) return error('Face ID no válido');
       await redis.hset(`passkeys:${dueno}`, { [id]: { ...k, counter: v.authenticationInfo.newCounter, usada: new Date().toISOString() } });
-    } catch (e) { return error(`Face ID no válido: ${e.message}`); }
+    } catch (e) { console.warn('[passkey] entrar:', e.message); return error('Face ID no válido. Vuelve a intentarlo o entra con tu contraseña.'); }
     if (!(await redis.hget('usuarios', dueno))) return error('Esta cuenta ya no existe');
     // Si no había sesión, o era de otra cuenta, se entra con la de esta llave.
     const cambio = Boolean(u && u.id !== dueno);

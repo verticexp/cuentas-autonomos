@@ -4,7 +4,7 @@ import { TIPOS, diasPrueba, esFundador } from '@/lib/prueba';
 import Ir from '@/components/Ir';
 import { requerir } from '@/lib/auth';
 import { redis } from '@/lib/redis';
-import { perfilDe, puede } from '@/lib/permisos';
+import { DETALLE, perfilDe, puede } from '@/lib/permisos';
 import Avatar from '@/components/Avatar';
 import { actividadesDe, fiscalDe } from '@/lib/empresa';
 import { modoDe } from '@/lib/verifactu';
@@ -126,7 +126,7 @@ export default async function Page() {
 
       {empresa && (
         <Grupo titulo="Conexiones">
-          {puede(u, 'resumen') && <Celda href="/banco" ico="banco" tono="ambar" titulo="Bancos" detalle="Cuentas, extractos y conciliación" />}
+          {puede(u, DETALLE) && <Celda href="/banco" ico="banco" tono="ambar" titulo="Bancos" detalle="Cuentas, extractos y conciliación" />}
           <Celda href="/ajustes/drive" ico="drive" tono="ambar" titulo="Google Drive" detalle={u.drive?.url ? (u.driveError ? 'Con errores: revisa la conexión' : 'Conectado') : 'Sin conectar'} aviso={Boolean(u.drive?.url && u.driveError)} />
           {(u.admin || u.controlat) && <Celda href="/ajustes/controlat" ico="conexion" tono="ambar" titulo="Controla'T" detalle={u.controlat ? 'Enviando tu neto mensual' : 'Sin conectar'} />}
         </Grupo>
