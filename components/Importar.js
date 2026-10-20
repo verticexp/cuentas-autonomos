@@ -20,7 +20,7 @@ const AYUDA = {
   saldos: [['Cuenta', '', true], ['Saldo', 'o «Debe» y «Haber», o «Saldo deudor» y «Saldo acreedor»', true], ['Nombre', 'de la cuenta']],
   bienes: [['Fecha', 'de compra', true], ['Concepto', '', true], ['Valor', 'de compra', true], ['Amortizado', 'acumulado a la fecha del cambio'], ['Tipo', 'de bien'], ['% anual', 'coeficiente de amortización']],
 };
-const ESTADO = { nuevo: 'Nuevo', duplicado: 'Ya existe', error: 'Error', agrupada: 'Suma de otras', omitida: 'Se salta' };
+const ESTADO = { nuevo: 'Nuevo', completar: 'Se completa', duplicado: 'Ya existe', error: 'Error', agrupada: 'Suma de otras', omitida: 'Se salta' };
 
 // Una línea legible de cada fila de la vista previa.
 function resumen(tipo, d) {
@@ -64,7 +64,7 @@ export default function Importar() {
       if (!r.ok) { setVista(null); setMsg(d.error || 'No se ha podido leer el archivo. Comprueba el formato e inténtalo otra vez.'); return; }
       setVista(d); setPagina(1);
       if (!fecha && d.corte) setFecha(d.corte);
-      if (guardar) setMsg(`✓ Importados ${d.guardados}`);
+      if (guardar) setMsg(`✓ Importados ${d.guardados}${d.completados ? ` · completados ${d.completados}` : ''}`);
     } catch { setMsg('Sin conexión: inténtalo de nuevo'); } finally { enCurso.current = false; setOcupado(false); }
   };
   // Cambiar a mano qué columna es un dato: la columna deja de usarse para cualquier otro y se rehace la vista previa.
@@ -92,7 +92,7 @@ export default function Importar() {
         <details className="importar-ayuda">
           <summary>Cómo preparar el archivo</summary>
           <ul>{AYUDA[tipo].map(([n, otros, req]) => <li key={n}>{req ? <strong>{n}</strong> : n}{otros ? ` ${otros.startsWith('o ') ? `(${otros})` : `· ${otros}`}` : ''}{req ? ' · obligatoria' : ''}</li>)}</ul>
-          <p className="nota">El orden de las columnas da igual, las que sobran se descartan y no importa si hay un título encima de la tabla. Si alguna columna se llama de otra forma, después de subir el archivo puedes indicar cuál es cuál{tipo === 'saldos' || tipo === 'bienes' ? '' : ': la IA lo intenta primero sola'}. Nada se guarda hasta que revisas la vista previa y pulsas «Importar».</p>
+          <p className="nota">El orden de las columnas da igual, las que sobran se descartan y no importa si hay un título encima de la tabla. Si alguna columna se llama de otra forma, después de subir el archivo puedes indicar cuál es cuál{tipo === 'saldos' || tipo === 'bienes' ? '' : ': la IA lo intenta primero sola'}. Nada se guarda hasta que revisas la vista previa y pulsas «Importar».{tipo === 'facturas' ? ' Mejor importa antes los clientes: así las facturas los encuentran con todos sus datos.' : tipo === 'clientes' ? ' Si un cliente ya existe (por ejemplo, creado al importar facturas), solo se rellenan sus datos vacíos: lo que ya tiene no se toca.' : ''}</p>
         </details>
         <label className="importar-archivo">
           <input type="file" disabled={ocupado} accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" onChange={(e) => { if (enCurso.current) return; setArchivo(e.target.files?.[0] || null); reiniciar(); }} />
@@ -126,6 +126,7 @@ export default function Importar() {
         <section className="importar-previa">
           <p className="resumen-linea importar-cuenta">
             <span>Nuevos <strong>{vista.nuevos}</strong></span>
+            {vista.completar > 0 && <span>Se completan <strong>{vista.completar}</strong></span>}
             <span>Ya existen <strong>{vista.duplicados}</strong></span>
             {vista.errores > 0 && <span className="rojo">Con errores <strong>{vista.errores}</strong></span>}
           </p>
@@ -135,6 +136,7 @@ export default function Importar() {
             <select className="campo" value={estado} onChange={(e) => { setEstado(e.target.value); setPagina(1); }}>
               <option value="todos">Todos</option>
               <option value="nuevo">Nuevos</option>
+              {vista.completar > 0 && <option value="completar">Se completan</option>}
               <option value="duplicado">Duplicados</option>
               <option value="error">Errores</option>
               {['omitida', 'agrupada'].filter((e) => vista.items.some((x) => x.estado === e)).map((e) => <option key={e} value={e}>{e === 'omitida' ? 'Omitidas' : 'Agrupadas'}</option>)}
@@ -144,11 +146,11 @@ export default function Importar() {
           {!filas.total && <p className="nota">No hay filas con este estado.</p>}
           <ul className="grupo-lista importar-filas">
             {filas.items.map((x) => {
-              const [a, b] = x.datos ? resumen(tipo, x.datos) : [`Fila ${x.n}`, x.error];
+              const [a, b] = x.completa ? [x.datos.nombre, `Se añade: ${Object.entries(x.completa).map(([k, v]) => `${CAMPO[k] || k} ${v}`).join(' · ')}`] : x.datos ? resumen(tipo, x.datos) : [`Fila ${x.n}`, x.error];
               return (
                 <li key={x.n} className={`fila importar-fila i-${x.estado}`}>
                   <span className="txt"><strong>{a}</strong><small>{b}</small></span>
-                  <span className={`importar-estado i-${x.estado}`}>{hecho && x.estado === 'nuevo' ? 'Importado' : ESTADO[x.estado]}</span>
+                  <span className={`importar-estado i-${x.estado}`}>{hecho && x.estado === 'nuevo' ? 'Importado' : hecho && x.estado === 'completar' ? 'Completado' : ESTADO[x.estado]}</span>
                 </li>
               );
             })}
@@ -160,10 +162,10 @@ export default function Importar() {
           </nav>
           {hecho
             ? DESTINO[tipo] && <Link href={DESTINO[tipo]} className="boton sec">Ver {TIPOS.find((t) => t[0] === tipo)[1].toLowerCase()}</Link>
-            : <button className="boton" disabled={!vista.nuevos || ocupado || (CONTABLE.includes(tipo) && !fecha)} aria-describedby={!vista.nuevos || (CONTABLE.includes(tipo) && !fecha) ? `${ayudaId}-guardar` : undefined} onClick={() => pedir(true)}>{ocupado ? 'Importando…' : !vista.nuevos ? 'No hay nada nuevo' : tipo === 'saldos' ? `Crear la apertura con ${vista.nuevos} cuentas` : `Importar ${vista.nuevos}`}</button>}
-          {!hecho && (!vista.nuevos || (CONTABLE.includes(tipo) && !fecha)) && <p id={`${ayudaId}-guardar`} className="nota">{!vista.nuevos ? 'No hay filas nuevas para importar.' : CONTABLE.includes(tipo) && !fecha ? 'Indica la fecha de los saldos para importar.' : ''}</p>}
+            : <button className="boton" disabled={!(vista.nuevos || vista.completar) || ocupado || (CONTABLE.includes(tipo) && !fecha)} aria-describedby={!(vista.nuevos || vista.completar) || (CONTABLE.includes(tipo) && !fecha) ? `${ayudaId}-guardar` : undefined} onClick={() => pedir(true)}>{ocupado ? 'Importando…' : vista.completar && !vista.nuevos ? `Completar ${vista.completar}` : !vista.nuevos ? 'No hay nada nuevo' : tipo === 'saldos' ? `Crear la apertura con ${vista.nuevos} cuentas` : `Importar ${vista.nuevos}${vista.completar ? ` y completar ${vista.completar}` : ''}`}</button>}
+          {!hecho && (!(vista.nuevos || vista.completar) || (CONTABLE.includes(tipo) && !fecha)) && <p id={`${ayudaId}-guardar`} className="nota">{!(vista.nuevos || vista.completar) ? 'No hay filas nuevas para importar.' : CONTABLE.includes(tipo) && !fecha ? 'Indica la fecha de los saldos para importar.' : ''}</p>}
           {!hecho && tipo === 'saldos' && <p className="nota">Si ya había un asiento de apertura, se sustituye.</p>}
-          {!hecho && vista.duplicados > 0 && <p className="nota">Lo que ya existe no se toca{tipo === 'facturas' ? ': se compara por serie y número' : tipo === 'clientes' ? ': se compara por nombre o NIF' : tipo === 'gastos' ? ': se compara por fecha, importe y concepto' : ': se compara por nombre'}.</p>}
+          {!hecho && vista.duplicados > 0 && <p className="nota">Lo que ya existe no se toca{tipo === 'facturas' ? ': se compara por serie y número' : tipo === 'clientes' ? ': se compara por nombre o NIF, y de los que ya existen solo se rellenan los datos vacíos' : tipo === 'gastos' ? ': se compara por fecha, importe y concepto' : ': se compara por nombre'}.</p>}
         </section>
       )}
     </div>

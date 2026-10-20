@@ -45,3 +45,22 @@ test('a la IA solo van los títulos y ejemplos de las columnas sin reconocer', (
   assert.match(q, /1: «Doc\.» \(ejemplos: «B12345678»\)/);
   assert.doesNotMatch(q, /Ana/);
 });
+
+test('clientes que ya existen: solo se rellenan los datos vacíos, emparejando por NIF o por nombre', () => {
+  const ya = [
+    { id: 'BODAS PÉREZ SL', nombre: 'Bodas Pérez SL', nif: 'B12345678', direccion: '', ciudad: '' },
+    { id: 'JUAN GARCÍA', nombre: 'Juan García', nif: '', email: 'viejo@juan.es', direccion: '', ciudad: '' },
+    { id: 'COMPLETO', nombre: 'Completo', nif: 'X1', email: 'a@b.es', direccion: 'C/ 1', ciudad: 'Vic' },
+  ];
+  const filas = [['Nombre', 'NIF', 'Email', 'Dirección', 'Población'],
+    ['BODAS PEREZ', 'B-12345678', 'info@bodas.es', 'C/ Mayor 3', 'Barcelona'],
+    ['juan garcía', '12345678Z', 'nuevo@juan.es', '', ''],
+    ['Completo', 'X1', 'otro@b.es', 'C/ 2', 'Reus'],
+    ['Nueva SL', 'B87654321', '', '', '']];
+  const p = previa('clientes', filas, ya);
+  assert.deepEqual(p.items.map((x) => x.estado), ['completar', 'completar', 'duplicado', 'nuevo']);
+  assert.deepEqual(p.items[0].completa, { email: 'info@bodas.es', direccion: 'C/ Mayor 3', ciudad: 'Barcelona' });
+  assert.equal(p.items[0].id, 'BODAS PÉREZ SL');
+  assert.deepEqual(p.items[1].completa, { nif: '12345678Z' });
+  assert.equal(p.completar, 2);
+});
