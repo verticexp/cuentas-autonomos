@@ -1,3 +1,4 @@
+import { secretoCron } from '@/lib/secreto';
 import { redis } from '@/lib/redis';
 import { error } from '@/lib/api';
 import { hoy } from '@/lib/formato';
@@ -11,8 +12,7 @@ export const maxDuration = 60;
 // capacidad E04: un trabajo por empresa en la cola (lib/trabajosTareas.js), procesado en tandas encadenadas. Cada
 // recurrente es idempotente por periodo y, si el email falla, la plantilla lo recuerda y se reintenta.
 export async function GET(req) {
-  const secreto = process.env.CRON_SECRET;
-  if (!secreto || req.headers.get('authorization') !== `Bearer ${secreto}`) return error('No autorizado', 401);
+  if (!secretoCron(req)) return error('No autorizado', 401);
   if (!redis) return error('Base de datos no conectada', 503);
   const inicio = Date.now();
   const planificados = await planificarDia(hoy(), req.nextUrl.origin, ['recurrentes']);
