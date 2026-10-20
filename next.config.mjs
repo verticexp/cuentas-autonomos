@@ -13,7 +13,11 @@ const seguridad = [
 export default {
   poweredByHeader: false,
   async redirects() {
-    return [{ source: '/grandes-empresas', destination: '/business', permanent: true }];
+    return [
+      { source: '/grandes-empresas', destination: '/business', permanent: true },
+      // Dominio anterior (antes del cambio de nombre): todo a www.fisquo.com, misma ruta.
+      ...['nettohq.com', 'www.nettohq.com'].map((value) => ({ source: '/:path*', has: [{ type: 'host', value }], destination: 'https://www.fisquo.com/:path*', permanent: true })),
+    ];
   },
   async headers() {
     return [{ source: '/:path*', headers: seguridad }];
