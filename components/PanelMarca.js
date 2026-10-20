@@ -7,7 +7,7 @@ export default function PanelMarca() {
   return (
     <div className="login-marca" aria-hidden>
       <Logo className="login-marca-logo" />
-      <p className="login-lema">Facturas, gastos e impuestos, en orden.</p>
+      <p className="login-lema">Tu negocio, en orden.</p>
     </div>
   );
 }

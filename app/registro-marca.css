@@ -9,7 +9,7 @@
   .registro-marca::before { content: ''; position: absolute; inset: 0; z-index: -1; background: radial-gradient(ellipse at 100% 10%, #1f9d743d, transparent 65%), radial-gradient(ellipse at 0% 100%, #7fe3bd17, transparent 60%); }
   .registro-marca::after { content: ''; position: absolute; inset: 0; z-index: -1; background-image: linear-gradient(#fafaf80b 1px, transparent 1px), linear-gradient(90deg, #fafaf80b 1px, transparent 1px); background-size: 60px 60px; mask-image: radial-gradient(ellipse at 70% 25%, #000, transparent 75%); }
   .registro-marca-interior { width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: clamp(22px, 3.4vh, 38px); }
-  .registro-marca-logo { display: block; width: 124px; height: auto; }
+  .registro-marca-logo { display: block; width: 141px; height: auto; }
   .registro-marca-texto h2 { font-size: clamp(29px, 3vw, 42px); font-weight: 750; letter-spacing: -0.035em; line-height: 1.08; text-wrap: balance; margin: 0 0 14px; }
   .registro-marca-texto p { color: #cedbd5; font-size: 15px; line-height: 1.6; margin: 0; }
   .registro-escena { position: relative; margin: 20px 0 46px; padding: 14px 14px 22px; }
@@ -51,7 +51,7 @@
 @media (min-width: 900px) and (max-height: 760px) {
   .login-marca.registro-marca { padding-block: 24px; }
   .registro-marca-interior { gap: 18px; }
-  .registro-marca-logo { width: 100px; }
+  .registro-marca-logo { width: 114px; }
   .registro-marca-texto h2 { font-size: 29px; margin-bottom: 9px; }
   .registro-marca-texto p { font-size: 13px; }
   .registro-escena { margin-top: 14px; margin-bottom: 38px; }

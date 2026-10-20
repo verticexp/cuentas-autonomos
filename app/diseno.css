@@ -395,17 +395,21 @@ html[data-vt=cifras]::view-transition-group(root) { animation-duration: 0.24s; }
 html[data-arranque=visto] #arranque { display: none; }
 .arr-centro { transition: transform 0.35s cubic-bezier(0.55, 0, 1, 0.45), opacity 0.35s cubic-bezier(0.55, 0, 1, 0.45); }
 #arranque.fuera .arr-centro { transform: scale(0.97); opacity: 0; }
-/* Sale la N sola en el centro, se coloca como mayúscula y de detrás van saliendo «etto» */
-.arr-logo { display: block; width: min(62vw, 250px); height: auto; overflow: visible; }
-.arr-logo .logo-n { transform-box: fill-box; transform-origin: center; animation: arr-n 1.15s both; }
-.arr-logo .logo-l { animation: arr-letra 0.5s var(--salida) calc(0.78s + var(--i) * 0.07s) both; }
-@keyframes arr-n {
-  0% { opacity: 0; transform: translateX(898px) scale(0.75); animation-timing-function: var(--salida); }
-  38% { opacity: 1; transform: translateX(898px) scale(1.25); }
-  52% { opacity: 1; transform: translateX(898px) scale(1.25); animation-timing-function: var(--vt-curva); }
-  100% { opacity: 1; transform: none; }
-}
-@keyframes arr-letra { from { opacity: 0; transform: translateX(-160px); } }
+/* La F se dibuja en el centro con un trazo fino y se rellena; luego se desliza a su sitio mientras aparecen «isquo»
+   y la q acaba con su rabito menta. Mismo tamaño que el logo del panel de entrar (app/entrar.css), donde se recoge en el ordenador.
+   Las distancias van en unidades del dibujo (components/Logo.js): 1351 = del centro de la F al centro del logotipo. */
+.arr-logo { display: block; width: min(70vw, 285px); height: auto; overflow: visible; }
+.arr-logo .logo-n { animation: arr-f 0.65s var(--vt-curva) 0.78s both; }
+.arr-logo .logo-trazo { stroke-width: 9; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: arr-dibujo 0.65s cubic-bezier(0.65, 0, 0.35, 1) 0.05s forwards, arr-apaga 0.3s ease 0.7s forwards; }
+.arr-logo .logo-f { opacity: 0; animation: arr-aparece 0.4s ease 0.55s forwards; }
+.arr-logo .logo-l { opacity: 0; animation: arr-letra 0.5s var(--salida) calc(0.95s + var(--i) * 0.05s) forwards; }
+.arr-logo .logo-cola { transform-box: fill-box; transform-origin: center bottom; transform: scaleY(0); animation: arr-cola 0.4s var(--salida) 1.3s forwards; }
+@keyframes arr-f { from { transform: translateX(1351px); } }
+@keyframes arr-dibujo { to { stroke-dashoffset: 0; } }
+@keyframes arr-apaga { to { opacity: 0; } }
+@keyframes arr-aparece { to { opacity: 1; } }
+@keyframes arr-letra { from { opacity: 0; transform: translateX(-70px); } to { opacity: 1; transform: none; } }
+@keyframes arr-cola { to { transform: none; } }
 @keyframes arr-seguro { to { opacity: 0; visibility: hidden; } }
 @media (prefers-reduced-motion: reduce) { #arranque { display: none; } }
 

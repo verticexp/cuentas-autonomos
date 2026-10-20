@@ -26,7 +26,7 @@ export default function Arranque() {
   return (
     <div id="arranque" className={fase === 'dentro' ? undefined : fase} aria-hidden>
       <div className="arr-centro">
-        <Logo className="arr-logo" />
+        <Logo className="arr-logo" trazo />
       </div>
     </div>
   );
