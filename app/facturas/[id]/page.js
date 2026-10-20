@@ -151,3 +151,9 @@ export default async function Factura({ params }) {
     </main>
   );
 }
+
+export async function generateMetadata({ params }) {
+  const u = await requerir('facturas');
+  const d = await leerUno(u, 'facturas', normalizarIdFactura((await params).id));
+  return { title: d ? `Factura ${numeroFactura(d)}` : 'Factura' };
+}

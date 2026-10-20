@@ -46,3 +46,5 @@ export default async function Nueva({ searchParams }) {
     </main>
   );
 }
+
+export const metadata = { title: 'Nueva factura' };

@@ -1,3 +1,4 @@
+import Termino from '@/components/Termino';
 import { Fragment } from 'react';
 import { headers } from 'next/headers';
 import { esApp } from '@/lib/app';
@@ -30,7 +31,28 @@ import { accionesHoy } from '@/lib/hoy';
 import { proximoPlazoDe } from '@/lib/avisos';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Fisquo · Facturas, gastos e impuestos en orden', description: 'Software de gestión financiera para autónomos, pymes y empresas: facturas, gastos con IA, conciliación bancaria, impuestos y nóminas.' };
+// Solo los modelos definidos en el glosario reciben ayuda.
+function NumeroModelo({ modelo }) {
+  const texto = modelo.num || modelo.id;
+  return ({
+    303: <Termino id="m303">{texto}</Termino>,
+    130: <Termino id="m130">{texto}</Termino>,
+    111: <Termino id="m111">{texto}</Termino>,
+    115: <Termino id="m115">{texto}</Termino>,
+    349: <Termino id="m349">{texto}</Termino>,
+    347: <Termino id="m347">{texto}</Termino>,
+    390: <Termino id="m390">{texto}</Termino>,
+    202: <Termino id="m202">{texto}</Termino>,
+    200: <Termino id="m200">{texto}</Termino>,
+  })[modelo.id] || texto;
+}
+
+export async function generateMetadata() {
+  return {
+    title: { absolute: (await usuarioActual()) ? 'Resumen · Fisquo' : 'Fisquo · Facturas, gastos e impuestos en orden' },
+    description: 'Software de gestión financiera para autónomos, pymes y empresas: facturas, gastos con IA, conciliación bancaria, impuestos y nóminas.',
+  };
+}
 
 export default async function Resumen({ searchParams }) {
   // Sin sesión: la web pública. Con sesión: el panel.
@@ -220,9 +242,9 @@ export default async function Resumen({ searchParams }) {
                 <div key={q.t} className={`trim trimestre${anio === anioActual && q.t > tHoy ? ' futuro' : ''}`}>
                   <div className="trim-cab"><h3>{q.t}T {anio}</h3>{abierto && <span className="estado-txt e-curso">{q.t === tHoy ? 'En curso' : 'Aún no ha empezado'}</span>}</div>
                   <div className="trim-cifras">
-                    {c303 && <p><span>Modelo 303</span><strong>{q.ivaDevolucion > 0 ? `${eur(q.ivaDevolucion)} a devolver` : q.m303 < 0 ? `${eur(-q.m303)} a compensar` : eur(q.ivaIngresar)}</strong></p>}
+                    {c303 && <p><span>{q.t === r.trimestres[0]?.t ? <Termino id="m303">Modelo 303</Termino> : 'Modelo 303'}</span><strong>{q.ivaDevolucion > 0 ? `${eur(q.ivaDevolucion)} a devolver` : q.m303 < 0 ? `${eur(-q.m303)} a compensar` : eur(q.ivaIngresar)}</strong></p>}
                     {c303 && !abierto && <Presentado modelo="303" anio={anio} t={q.t} importe={0} pagado={q.t === 4 && u.pres303?.[anio]?.[4] === 'devolucion' ? 'devolucion' : hecho303(u.pres303, u.pagos130, anio, q.t)} con130={false} />}
-                    {c130 && <p><span>Modelo 130</span><strong>{eur(q.m130)}</strong></p>}
+                    {c130 && <p><span>{q.t === r.trimestres[0]?.t ? <Termino id="m130">Modelo 130</Termino> : 'Modelo 130'}</span><strong>{eur(q.m130)}</strong></p>}
                     {c130 && !abierto && <Presentado anio={anio} t={q.t} importe={q.m130} pagado={pagos(anio)[q.t]} />}
                     {!c303 && !c130 && <p><span>Base facturada</span><strong>{eur(q.ingresos)}</strong></p>}
                   </div>
@@ -350,8 +372,8 @@ export default async function Resumen({ searchParams }) {
             <div className="grupo-c">
               {modelosDe(fiscal).map((m) => ({ ...m, prox: proximoPlazoDe(fiscal, m.id, h, { cuotaIS: u.cuotaIS }) })).map((m) => ({ ...m, cuando: m.prox ? `${m.prox === h ? 'Hoy es el último día' : `Próximo: ${fechaTexto(m.prox)}${m.prox.slice(0, 4) !== h.slice(0, 4) ? ` de ${m.prox.slice(0, 4)}` : ''}`}` : m.cuando })).map((m) => (
                 m.calcula
-                  ? <Ir key={m.id} href={`/modelos?anio=${anio}#m${m.id}`} tipo="adelante" className="celda ir"><span className="modelo-num">{m.num || m.id}</span><span className="txt">{m.nombre}<small>{m.cuando}</small></span><span className="v">{m.id === '100' ? 'Borrador' : 'Calculado'}</span></Ir>
-                  : <div key={m.id} className="celda"><span className="modelo-num">{m.num || m.id}</span><span className="txt">{m.nombre}<small>{m.cuando}</small></span>{m.calcula && <span className="v">Calculado</span>}</div>
+                  ? <div key={m.id} className="celda ir"><span className="modelo-num"><NumeroModelo modelo={m} /></span><Ir href={`/modelos?anio=${anio}#m${m.id}`} tipo="adelante" className="txt enlace-modelo" aria-label={`Modelo ${m.id}: ${m.nombre}`}>{m.nombre}<small>{m.cuando}</small></Ir><span className="v">{m.id === '100' ? 'Borrador' : 'Calculado'}</span></div>
+                  : <div key={m.id} className="celda"><span className="modelo-num"><NumeroModelo modelo={m} /></span><span className="txt">{m.nombre}<small>{m.cuando}</small></span>{m.calcula && <span className="v">Calculado</span>}</div>
               ))}
             </div>
             <p className="grupo-pie">Según lo que respondiste al empezar ({fiscal.tipo === 'sociedad' ? 'sociedad' : 'autónomo'}). La app calcula los que pone «Calculado» (tócalos para verlos); el resto, tu gestor. Puedes cambiarlo en Ajustes.</p>

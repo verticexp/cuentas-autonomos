@@ -199,3 +199,5 @@ export default async function Facturas({ searchParams }) {
     </main>
   );
 }
+
+export const metadata = { title: 'Facturas' };

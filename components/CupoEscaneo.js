@@ -28,7 +28,7 @@ export default function CupoEscaneo({ inicial = null }) {
     return () => { peticion.current.secuencia++; peticion.current.abortar?.abort(); window.removeEventListener('fisquo:escaneos', cargar); };
   }, [cargar, inicial]);
   if (cargando && !cupo) return <p className="nota" role="status">Consultando páginas disponibles…</p>;
-  if (error && !cupo) return <p className="nota" role="status">No se pudo consultar el cupo. <button type="button" className="enlace" disabled={cargando} onClick={cargar}>Reintentar</button></p>;
+  if (error && !cupo) return <p className="nota" role="status">No se ha podido consultar el cupo. <button type="button" className="enlace" disabled={cargando} onClick={cargar}>Reintentar</button></p>;
   if (!cupo) return null;
   const renovacion = cupo.renueva ? new Date(`${cupo.renueva}T12:00:00`).toLocaleDateString('es-ES') : '';
   const urgente = cupo.agotado || cupo.porcentaje >= 80;
@@ -38,7 +38,7 @@ export default function CupoEscaneo({ inicial = null }) {
       <small>Cada página cuenta como una lectura; si la vuelves a enviar, cuenta otra vez, aunque no guardes el gasto.</small>
       <small>{cupo.prueba ? <><span className="solo-web">La prueba incluye estas páginas en total. No se renuevan durante la prueba.</span><span className="solo-app">Estas son las páginas disponibles en tu cuenta.</span></> : `Se renueva el ${renovacion}. Las páginas no utilizadas no se acumulan.`} El cupo se comparte por empresa con todo el equipo y la gestoría.</small>
       {urgente && <small>{cupo.agotado ? 'Has agotado las lecturas disponibles. Puedes seguir añadiendo gastos a mano.' : 'Te quedan pocas páginas de lectura IA.'}<span className="solo-web"> <a href="/contacto?plan=Ampliaci%C3%B3n%20de%20escaneos">Solicitar ampliación</a>, sin cargos automáticos. Si eres miembro, consulta al administrador.</span></small>}
-      {error && <small>No se pudo actualizar el cupo. <button type="button" className="enlace" disabled={cargando} onClick={cargar}>Reintentar</button></small>}
+      {error && <small>No se ha podido actualizar el cupo. <button type="button" className="enlace" disabled={cargando} onClick={cargar}>Reintentar</button></small>}
     </div>
   </details>;
 }

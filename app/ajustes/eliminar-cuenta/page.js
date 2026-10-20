@@ -29,3 +29,5 @@ export default async function Page() {
     </main>
   );
 }
+
+export const metadata = { title: 'Eliminar mi cuenta' };

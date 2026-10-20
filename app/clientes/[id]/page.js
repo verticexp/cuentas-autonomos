@@ -34,3 +34,9 @@ export default async function Cliente({ params }) {
     <section className="bloque"><h2 className="ficha-titulo">Últimas facturas</h2>{detalle.facturas.length ? facturas(detalle.facturas) : <Vacio compacto icono="factura" titulo="Aún no le has hecho ninguna factura" accion={editar && { href: '/facturas/nueva', texto: 'Nueva factura' }} />}</section>
   </main>;
 }
+
+export async function generateMetadata({ params }) {
+  const u = await requerir('facturas');
+  const d = await detalleCliente(u, decodeURIComponent((await params).id));
+  return { title: d?.cliente.nombre || 'Cliente' };
+}

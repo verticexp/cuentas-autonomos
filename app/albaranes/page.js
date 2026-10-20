@@ -71,3 +71,5 @@ export default async function Albaranes({ searchParams }) {
     </main>
   );
 }
+
+export const metadata = { title: 'Albaranes' };

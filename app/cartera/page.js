@@ -119,3 +119,5 @@ export default async function Cartera({ searchParams }) {
     </main>
   );
 }
+
+export const metadata = { title: 'Cartera de cobros' };

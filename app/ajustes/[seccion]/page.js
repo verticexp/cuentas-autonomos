@@ -120,3 +120,7 @@ export default async function Seccion({ params }) {
     </main>
   );
 }
+
+export async function generateMetadata({ params }) {
+  return { title: TITULOS[(await params).seccion] || 'Ajustes' };
+}

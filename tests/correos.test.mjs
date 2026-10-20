@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { enviarEmail } from '../lib/email.js';
 import { CORREOS, GRUPOS, componer, enviarCorreo } from '../lib/correos.js';
 
 for (const [id, c] of Object.entries(CORREOS)) {
@@ -142,4 +143,28 @@ test('factura: botón al portal del cliente, sin el enlace de respaldo; sin port
   assert.ok(texto.includes(`Ver mis facturas: ${url}`));
   const sin = componer('factura', { ...CORREOS.factura.ejemplo, urlPortal: undefined });
   assert.ok(!sin.html.includes('Ver mis facturas') && !sin.html.includes('área de cliente'));
+});
+
+test('enviarCorreo: el detalle técnico queda en el log y la respuesta explica cómo reintentar', async (t) => {
+  const log = t.mock.method(console, 'error', () => {});
+  const respuesta = await enviarCorreo('correo-inexistente');
+  assert.deepEqual(respuesta, { error: 'No se ha podido enviar el email. Inténtalo de nuevo en unos minutos.' });
+  assert.equal(log.mock.callCount(), 1);
+  assert.match(log.mock.calls[0].arguments[1].message, /No existe el correo/);
+});
+
+test('enviarEmail: un fallo del proveedor no muestra detalles técnicos', async (t) => {
+  const antes = process.env.RESEND_API_KEY;
+  const fallo = new Error('detalle técnico del proveedor');
+  const log = t.mock.method(console, 'error', () => {});
+  t.mock.method(globalThis, 'fetch', async () => { throw fallo; });
+  try {
+    process.env.RESEND_API_KEY = 'prueba';
+    const respuesta = await enviarEmail({ para: 'admin@ejemplo.es', asunto: 'Prueba', html: '<p>Prueba</p>' });
+    assert.deepEqual(respuesta, { error: 'No se ha podido enviar el email. Inténtalo de nuevo en unos minutos.' });
+    assert.equal(log.mock.calls[0].arguments[1], fallo);
+  } finally {
+    if (antes === undefined) delete process.env.RESEND_API_KEY;
+    else process.env.RESEND_API_KEY = antes;
+  }
 });

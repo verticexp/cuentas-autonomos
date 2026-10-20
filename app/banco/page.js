@@ -70,7 +70,7 @@ export default async function PaginaBanco({ searchParams }) {
   const directo = conectarVisible(u);
   const n = directo ? Number(q.conectado) || 0 : 0;
   const app = esApp((await headers()).get('user-agent'));
-  const aviso = directo && q.error ? { error: true, texto: app && q.error === 'solo-lectura' ? SOLO_LECTURA_APP : ERRORES[q.error] || 'No se pudo conectar el banco.' } : n ? { texto: n === 1 ? '✓ Cuenta conectada' : `✓ ${n} cuentas conectadas` } : null;
+  const aviso = directo && q.error ? { error: true, texto: app && q.error === 'solo-lectura' ? SOLO_LECTURA_APP : ERRORES[q.error] || 'No se ha podido conectar el banco. Inténtalo de nuevo en unos minutos.' } : n ? { texto: n === 1 ? '✓ Cuenta conectada' : `✓ ${n} cuentas conectadas` } : null;
 
   return (
     <main className="pagina mk-look banco">
@@ -86,3 +86,5 @@ export default async function PaginaBanco({ searchParams }) {
     </main>
   );
 }
+
+export const metadata = { title: 'Banco' };

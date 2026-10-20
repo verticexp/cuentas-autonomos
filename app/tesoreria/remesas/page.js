@@ -50,3 +50,5 @@ export default async function PaginaRemesas() {
     </main>
   );
 }
+
+export const metadata = { title: 'Remesas' };

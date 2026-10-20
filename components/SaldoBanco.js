@@ -15,7 +15,7 @@ export default function SaldoBanco({ saldo, fecha, banco = false, editable = tru
     setMsg('');
     const r = await fetch('/api/tesoreria', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ saldo: v.trim() || null }) });
     const d = await r.json().catch(() => ({}));
-    if (!r.ok) { setMsg(d.error || 'Algo ha fallado'); return; }
+    if (!r.ok) { setMsg(d.error || 'No se ha podido guardar el saldo. Revisa la conexión e inténtalo otra vez.'); return; }
     router.refresh();
   };
   // Con el banco conectado o un extracto subido, el saldo es el real: no se escribe a mano.

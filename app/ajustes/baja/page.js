@@ -30,3 +30,5 @@ export default async function Page() {
     </main>
   );
 }
+
+export const metadata = { title: 'Dar de baja la empresa' };

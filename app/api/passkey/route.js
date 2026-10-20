@@ -64,17 +64,17 @@ export async function POST(req) {
     if (!reto) return error('Ha tardado demasiado. Vuelve a intentarlo.');
     try {
       const v = await verifyRegistrationResponse({ response: b.respuesta, expectedChallenge: reto, expectedOrigin: origin, expectedRPID: rpID, requireUserVerification: true });
-      if (!v.verified) return error('No se pudo activar Face ID');
+      if (!v.verified) return error('No se ha podido activar Face ID');
       const c = v.registrationInfo.credential;
       // Una llave ya asociada a otra persona no se reasigna (si no, conociendo su id se le quitaría Face ID).
       const ya = await redis.hget('passkey-usuario', c.id);
-      if (ya && ya !== u.id) return error('No se pudo activar Face ID en este dispositivo');
+      if (ya && ya !== u.id) return error('No se ha podido activar Face ID en este dispositivo');
       const nombre = String(b.nombre || 'Este dispositivo').slice(0, 60);
       await redis.hset(`passkeys:${u.id}`, { [c.id]: { publicKey: b64(c.publicKey), counter: c.counter, transports: c.transports || [], nombre, creada: new Date().toISOString() } });
       await redis.hset('passkey-usuario', { [c.id]: u.id });
       await auditar(u, 'Face ID activado', nombre);
       return Response.json({ ok: true, id: c.id });
-    } catch (e) { console.warn('[passkey] registro:', e.message); return error('No se pudo activar Face ID. Vuelve a intentarlo.'); }
+    } catch (e) { console.warn('[passkey] registro:', e.message); return error('No se ha podido activar Face ID. Vuelve a intentarlo.'); }
   }
 
   // Entrar (o desbloquear la app) con Face ID. Como mucho 60 llamadas (30 intentos) por IP cada 15 min.
@@ -106,7 +106,7 @@ export async function POST(req) {
     const c = await cookies();
     const token = !u || cambio ? await crearSesion(dueno) : c.get('t')?.value;
     // Sin sesión: la cuenta ya no existe o cambió su contraseña justo ahora.
-    if (!token) return error('No se pudo entrar. Vuelve a intentarlo.', 401);
+    if (!token) return error('No se ha podido entrar. Vuelve a intentarlo.', 401);
     if (!u || cambio) c.set('t', token, opcionesCookie);
     c.set('d', await desbloqueo(token), opcionesDesbloqueo);
     return Response.json({ ok: true, cambio });

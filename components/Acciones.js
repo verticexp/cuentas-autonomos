@@ -12,7 +12,7 @@ async function llamar(url, opciones) {
   const d = await r.json().catch(() => ({}));
   // App bloqueada (el servidor ya no da datos): a la pantalla de desbloqueo, para volver aquí después.
   if (r.status === 423 && d.bloqueada) window.location.replace(`/bloqueo?a=${encodeURIComponent(window.location.pathname + window.location.search)}`);
-  if (!r.ok) throw new Error(d.error || 'Algo ha fallado');
+  if (!r.ok) throw new Error(d.error || 'No se ha podido guardar el cambio. Revisa la conexión e inténtalo otra vez.');
   return d;
 }
 

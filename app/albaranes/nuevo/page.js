@@ -37,3 +37,5 @@ export default async function Nuevo({ searchParams }) {
     </main>
   );
 }
+
+export const metadata = { title: 'Nuevo albarán' };

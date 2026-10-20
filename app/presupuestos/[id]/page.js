@@ -66,3 +66,9 @@ export default async function Presupuesto({ params }) {
     </main>
   );
 }
+
+export async function generateMetadata({ params }) {
+  const u = await requerir('facturas');
+  const d = await leerUno(u, 'presupuestos', (await params).id);
+  return { title: d ? `Presupuesto ${numeroPresupuesto(d)}` : 'Presupuesto' };
+}

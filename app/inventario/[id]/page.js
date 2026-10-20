@@ -1,3 +1,4 @@
+import { leerUno } from '@/lib/redis';
 import Vacio from '@/components/Vacio';
 import { sinFuncion } from '@/lib/planes';
 import SinPlan from '@/components/SinPlan';
@@ -81,4 +82,11 @@ export default async function Producto({ params }) {
       </section>
     </main>
   );
+}
+
+export async function generateMetadata({ params }) {
+  const u = await requerir('facturas');
+  if (u.plan?.version === 2 && sinFuncion(u.plan, 'inventario')) return { title: 'Inventario' };
+  const d = await leerUno(u, 'productos', (await params).id);
+  return { title: d?.nombre || 'Producto' };
 }

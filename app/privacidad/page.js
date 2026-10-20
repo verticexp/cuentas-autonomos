@@ -1,6 +1,6 @@
 import '@/app/legal.css';
 
-export const metadata = { title: 'Privacidad · Fisquo' };
+export const metadata = { title: 'Privacidad' };
 const RESPONSABLE = { nombre: 'Marc Ramírez Delgado', email: 'corporate@fisquo.com' };
 
 export default function Privacidad() {

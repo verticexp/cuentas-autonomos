@@ -29,3 +29,9 @@ export default async function Gasto({ params }) {
     </main>
   );
 }
+
+export async function generateMetadata({ params }) {
+  const u = await requerir('gastos');
+  const d = await leerUno(u, 'gastos', decodeURIComponent((await params).id));
+  return { title: d ? `Gasto · ${d.concepto}` : 'Gasto' };
+}

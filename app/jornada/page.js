@@ -106,3 +106,5 @@ export default async function RegistroJornada({ searchParams }) {
     </main>
   );
 }
+
+export const metadata = { title: 'Registro de jornada' };

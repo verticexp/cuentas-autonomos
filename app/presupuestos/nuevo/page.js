@@ -26,3 +26,5 @@ export default async function Nuevo() {
     </main>
   );
 }
+
+export const metadata = { title: 'Nuevo presupuesto' };

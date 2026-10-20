@@ -10,7 +10,7 @@ import { eur, fechaCorta } from '@/lib/formato';
 async function llamar(url, opciones) {
   const r = await fetch(url, { headers: { 'Content-Type': 'application/json' }, ...opciones });
   const d = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(d.error || 'Algo ha fallado');
+  if (!r.ok) throw new Error(d.error || 'No se ha podido guardar la revisión. Revisa la conexión e inténtalo otra vez.');
   return d;
 }
 

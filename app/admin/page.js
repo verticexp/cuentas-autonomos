@@ -8,7 +8,7 @@ import AdminEmpresas from '@/components/AdminEmpresas';
 import '@/app/admin/admin.css';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Panel de Fisquo' };
+export const metadata = { title: 'Administración' };
 
 const euros = (c) => (c / 100).toLocaleString('es-ES', { maximumFractionDigits: 0 }) + ' €';
 const fecha = (d) => new Date(`${d}T12:00:00Z`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });

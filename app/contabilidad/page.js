@@ -1,3 +1,4 @@
+import Termino from '@/components/Termino';
 import Vacio from '@/components/Vacio';
 import { requerir } from '@/lib/auth';
 import { DETALLE, puede } from '@/lib/permisos';
@@ -28,11 +29,12 @@ const TIPO = { apertura: 'Apertura', manual: 'Manual', amortizacion: 'Amortizaci
 
 // Una partida con su desglose plegado; las cifras del año anterior, al lado.
 function Partida({ p, ant }) {
+  const nombre = p.id === 'amortizacion' ? <Termino id="amortizacion">{p.nombre}</Termino> : p.nombre;
   const cifras = <span className="cont-cifras"><span>{eur(p.importe)}</span>{ant !== undefined && <small>{ant === null ? '—' : eur(ant)}</small>}</span>;
-  if (!p.detalle.length) return <div className="cont-fila"><span className="cont-n">{p.nombre}</span>{cifras}</div>;
+  if (!p.detalle.length) return <div className="cont-fila"><span className="cont-n">{nombre}</span>{cifras}</div>;
   return (
     <details className="cont-fila cont-det">
-      <summary><span className="cont-n">{p.nombre}</span>{cifras}</summary>
+      <summary><span className="cont-n">{nombre}</span>{cifras}</summary>
       <dl>{p.detalle.map((d) => <div key={d.id}><dt>{d.nombre}</dt><dd>{eur(d.importe)}</dd></div>)}</dl>
     </details>
   );
@@ -117,7 +119,7 @@ export default async function Contabilidad({ searchParams }) {
             ))}
           </div>
           {d.banco && Math.abs(d.banco.diferencia) >= 0.01 && <p className="cont-alerta">El banco de la contabilidad (cuenta 572) da {eur(d.banco.contable)} y en tu banco hay {eur(d.banco.real)}: faltan {eur(Math.abs(d.banco.diferencia))} por apuntar (préstamos, aportaciones, retiradas, cobros o pagos que no están en Fisquo). Apúntalos en el diario o revisa la apertura.</p>}
-          <p className="grupo-pie">A {fechaCorta(d.bal.fecha)}, modelo abreviado. Sale de la suma de todos los asientos, así que siempre cuadra. Toca cada masa para ver sus cuentas.</p>
+          <p className="grupo-pie">A {fechaCorta(d.bal.fecha)}, modelo abreviado. Sale de la suma de todos los <Termino id="asiento">asientos</Termino>, así que siempre cuadra. Toca cada masa para ver sus cuentas.</p>
         </section>
       )}
 
@@ -148,7 +150,7 @@ export default async function Contabilidad({ searchParams }) {
             </article>
           ))}
           {!d.diario.some((a) => a.fecha.slice(5, 7) === mes) && <Vacio icono="contabilidad" tipo="resultados" titulo="Sin asientos en este mes" accion={{ href: url({ mes: null, p: null }), texto: 'Ver el último mes' }}>Cada factura, gasto, nómina, cobro y pago genera el suyo.</Vacio>}
-          <p className="grupo-pie">Libro diario de {anio}: {d.diario.length} asientos. Fisquo los genera solos de tus facturas (y sus cobros), gastos (y sus pagos), nóminas, amortizaciones, liquidaciones de IVA y retenciones de los trimestres marcados como presentados, y el cierre de cada año. Los apuntados a mano se pueden borrar.</p>
+          <p className="grupo-pie">Libro diario de {anio}: {d.diario.length} <Termino id="asiento">asientos</Termino>. Fisquo los genera solos de tus facturas (y sus cobros), gastos (y sus pagos), nóminas, <Termino id="amortizacion">amortizaciones</Termino>, liquidaciones de IVA y retenciones de los trimestres marcados como presentados, y el cierre de cada año. Los apuntados a mano se pueden borrar.</p>
         </section>
       )}
 
@@ -202,7 +204,7 @@ export default async function Contabilidad({ searchParams }) {
           {d.libro.length ? <>
             <div className="cont-resumen">
               <div><span>Lo que costaron</span><strong>{eur(totalLibro('valor'))}</strong></div>
-              <div><span>Amortización de {anio}</span><strong>{eur(totalLibro('anio'))}</strong></div>
+              <div><span><Termino id="amortizacion">Amortización</Termino> de {anio}</span><strong>{eur(totalLibro('anio'))}</strong></div>
               <div><span>Pendiente</span><strong>{eur(totalLibro('pendiente'))}</strong></div>
             </div>
             <ul className="grupo-lista">
@@ -224,7 +226,7 @@ export default async function Contabilidad({ searchParams }) {
               ))}
             </ul>
           </> : <Vacio icono="datos" titulo="Registra una compra que usarás varios años" accion={{ href: '/gastos#apuntar-gasto', texto: 'Añadir gasto' }}>Marca «bien de inversión» al apuntar el gasto, por ejemplo, de un ordenador.</Vacio>}
-          <p className="grupo-pie">Libro registro de bienes de inversión. Cada bien se amortiza por días desde la compra con el coeficiente máximo de la tabla oficial ({sociedad ? 'Ley del Impuesto sobre Sociedades' : 'estimación directa simplificada'}); lo que vale 300 € o menos, entero el año de compra. Cada trimestre va un asiento de amortización al diario; el IVA de la compra se deduce entero en el 303 (casillas 30 y 31).</p>
+          <p className="grupo-pie">Libro registro de bienes de inversión. Cada bien se amortiza por días desde la compra con el coeficiente máximo de la tabla oficial ({sociedad ? 'Ley del Impuesto sobre Sociedades' : 'estimación directa simplificada'}); lo que vale 300 € o menos, entero el año de compra. Cada trimestre va un <Termino id="asiento">asiento</Termino> de amortización al diario; el IVA de la compra se deduce entero en el 303 (casillas 30 y 31).</p>
         </section>
       )}
 
@@ -306,3 +308,5 @@ export default async function Contabilidad({ searchParams }) {
     </main>
   );
 }
+
+export const metadata = { title: 'Contabilidad' };

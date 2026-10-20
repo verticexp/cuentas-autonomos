@@ -34,3 +34,9 @@ export default async function Nomina({ params }) {
     </main>
   );
 }
+
+export async function generateMetadata({ params }) {
+  const u = await requerir('nominas');
+  const d = await leerUno(u, 'nominas', (await params).id);
+  return { title: d ? `Nómina · ${nombreMes(d.mes)}` : 'Nómina' };
+}

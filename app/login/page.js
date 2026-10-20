@@ -45,3 +45,5 @@ export default async function Login({ searchParams }) {
     </main></TransicionPublica>
   );
 }
+
+export const metadata = { title: 'Iniciar sesión' };

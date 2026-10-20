@@ -20,3 +20,5 @@ export default async function PaginaCatalogo() {
     </main>
   );
 }
+
+export const metadata = { title: 'Catálogo' };

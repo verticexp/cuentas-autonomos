@@ -54,3 +54,5 @@ export default async function Presupuestos() {
     </main>
   );
 }
+
+export const metadata = { title: 'Presupuestos' };

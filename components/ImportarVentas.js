@@ -25,7 +25,7 @@ export default function ImportarVentas({ actividades }) {
     try {
       const r = await fetch('/api/caja/importar', { method: 'POST', body: fd });
       const d = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(d.error || 'No se pudo leer el archivo');
+      if (!r.ok) throw new Error(d.error || 'No se ha podido leer el archivo. Comprueba el formato e inténtalo otra vez.');
       setPrevia(d);
       setElegidos(new Set(d.dias.filter((x) => !x.repetido).map((x) => x.fecha)));
     } catch (err) { setMsg(err.message); }
@@ -38,7 +38,7 @@ export default function ImportarVentas({ actividades }) {
     try {
       const r = await fetch('/api/caja/importar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ formato: previa.formato, actividad, dias: previa.dias.filter((x) => elegidos.has(x.fecha)) }) });
       const d = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(d.error || 'Algo ha fallado');
+      if (!r.ok) throw new Error(d.error || 'No se ha podido importar las ventas. Revisa la conexión e inténtalo otra vez.');
       setMsg(`✓ ${d.guardados} ${d.guardados === 1 ? 'día importado' : 'días importados'}${d.saltados ? ` · ${d.saltados} ya estaban` : ''}${d.errores.length ? ` · con errores: ${d.errores.join('; ')}` : ''}`);
       setPrevia(null);
       router.refresh();

@@ -1,6 +1,6 @@
 import '@/app/legal.css';
 
-export const metadata = { title: 'Condiciones de uso · Fisquo' };
+export const metadata = { title: 'Condiciones de uso' };
 const EMAIL = 'corporate@fisquo.com';
 
 export default function Condiciones() {

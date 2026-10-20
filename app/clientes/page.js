@@ -26,3 +26,5 @@ export default async function Clientes({ searchParams }) {
       : <Vacio icono="cliente" tipo={lista.length ? 'resultados' : 'vacio'} titulo={lista.length ? 'Ningún cliente con estos filtros' : 'Guarda tu primer cliente'} accion={lista.length ? { href: '/clientes', texto: 'Quitar filtros' } : puede(u, 'facturar') && { href: '/clientes/nuevo', texto: 'Crear cliente' }} secundaria={!lista.length && puede(u, 'empresa') && { href: '/ajustes/importar', texto: 'Importar de Excel' }}>{!lista.length && 'Ten sus datos a mano para la próxima factura.'}</Vacio>}
   </main>;
 }
+
+export const metadata = { title: 'Clientes' };

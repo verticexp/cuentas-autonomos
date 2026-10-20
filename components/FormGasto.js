@@ -1,8 +1,10 @@
 'use client';
 
+import Termino from '@/components/Termino';
+
 import { confirmar as confirmarAccion } from './Confirmar';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
 import { atras, volverA } from '@/lib/transicion';
@@ -26,6 +28,7 @@ import '@/app/ticket.css';
 // plegado: en la lista de gastos empieza como una tarjeta con «Escanear ticket»; el formulario se abre al escanear o al pedirlo.
 export default function FormGasto({ hoy, gasto, actividades, alquiler = false, plegado = false, destacar = false, regimen = 'autonomo', cupoInicial = null, movimiento = null, productos = [], proyectos = [] }) {
   const router = useRouter();
+  const prefijo = useId();
   const camaraInput = useRef(null);
   const facturaInput = useRef(null);
   const vacio = { fecha: hoy, actividad: actividades[0].id, concepto: '', proveedor: '', base: '', ivaPct: 21 };
@@ -140,7 +143,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
           setAvisoDuplicados({ datos, duplicados: d.duplicados });
           return;
         }
-        if (!r.ok) throw new Error(d.error || 'Algo ha fallado');
+        if (!r.ok) throw new Error(d.error || 'No se ha podido guardar el gasto. Revisa la conexión e inténtalo otra vez.');
         if (!d.gasto?.id) throw new Error('No se ha podido confirmar el gasto. Revisa la lista antes de volver a guardarlo.');
         // El gasto ya está guardado: si el archivo no sube, se avisa y se puede adjuntar después desde su ficha.
         if (adjunto) fallo = await subir(d.gasto.id, adjunto.blob);
@@ -274,7 +277,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
       <datalist id="proyectos-gasto">{proyectos.map((p) => <option key={p} value={p} />)}</datalist>
       <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.pendiente)} onChange={(e) => poner('pendiente', e.target.checked)} />Aún no lo he pagado</label>
       {(alquiler || g.alquiler) && <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.alquiler)} onChange={(e) => poner('alquiler', e.target.checked)} />Es el alquiler del local (retención del 19 %)</label>}
-      <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.inversion)} onChange={(e) => poner('inversion', e.target.checked ? { tipo: 'otros' } : undefined)} />Es un bien de inversión (lo usarás varios años)</label>
+      <div className="gasto-pendiente termino-check"><input id={`${prefijo}-inversion`} aria-labelledby={`${prefijo}-inversion-etiqueta`} type="checkbox" checked={Boolean(g.inversion)} onChange={(e) => poner('inversion', e.target.checked ? { tipo: 'otros' } : undefined)} /><span id={`${prefijo}-inversion-etiqueta`}><label htmlFor={`${prefijo}-inversion`}>Es un </label><Termino id="bienInversion">bien de inversión</Termino><label htmlFor={`${prefijo}-inversion`}> (lo usarás varios años)</label></span></div>
       {g.inversion ? <>
         <select className="campo" value={g.inversion.tipo} onChange={(e) => poner('inversion', { tipo: e.target.value })} aria-label="Tipo de bien">
           {TIPOS_BIEN.map((t) => <option key={t.id} value={t.id}>{t.nombre} · {t[regimen === 'sociedad' ? 'sociedad' : 'autonomo']} % al año</option>)}

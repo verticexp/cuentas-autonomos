@@ -38,3 +38,5 @@ export default async function Recurrentes() {
     </main>
   );
 }
+
+export const metadata = { title: 'Facturas recurrentes' };

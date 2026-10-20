@@ -102,3 +102,5 @@ export default async function Tesoreria({ searchParams }) {
     </main>
   );
 }
+
+export const metadata = { title: 'Tesorería' };
