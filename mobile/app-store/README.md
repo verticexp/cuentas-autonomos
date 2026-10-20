@@ -34,10 +34,10 @@ Falta probarlo en un iPhone real (la cámara del simulador no existe).
    `https://www.fisquo.com/.well-known/apple-app-site-association`, necesario para que Face ID (llaves de acceso)
    funcione dentro de la app en una versión posterior.
 3. **Xcode** (`cd mobile && npm install && npx cap sync ios && npx cap open ios`): en *Signing & Capabilities*
-   elige el equipo de la empresa. Con *Automatically manage signing* crea solo el App ID `com.nettohq.app` con
+   elige el equipo de la empresa. Con *Automatically manage signing* crea solo el App ID `com.fisquo.app` con
    Associated Domains.
 4. **App Store Connect** › Mis apps › «+»: nombre «Fisquo: facturas e impuestos», idioma principal español,
-   bundle `com.nettohq.app`, SKU `fisquo-ios`.
+   bundle `com.fisquo.app`, SKU `fisquo-ios`.
 5. **Cuenta de demostración en producción** para el revisor (ver `revision.md`): con datos, plan Fundador (no caduca)
    y sin bloqueo de pantalla. Sin ella, Apple rechaza (2.1).
 6. En Xcode: *Product › Archive* → *Distribute App* → *App Store Connect*. Prueba en **TestFlight** en tu iPhone:

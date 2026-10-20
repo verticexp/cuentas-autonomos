@@ -59,7 +59,7 @@
 			<key>UIApplicationShortcutItemTitle</key>
 			<string>Escanear ticket</string>
 			<key>UIApplicationShortcutItemType</key>
-			<string>com.nettohq.app.ticket</string>
+			<string>com.fisquo.app.ticket</string>
 			<key>UIApplicationShortcutItemUserInfo</key>
 			<dict>
 				<key>ruta</key>
@@ -72,7 +72,7 @@
 			<key>UIApplicationShortcutItemTitle</key>
 			<string>Nueva factura</string>
 			<key>UIApplicationShortcutItemType</key>
-			<string>com.nettohq.app.factura</string>
+			<string>com.fisquo.app.factura</string>
 			<key>UIApplicationShortcutItemUserInfo</key>
 			<dict>
 				<key>ruta</key>
@@ -85,7 +85,7 @@
 			<key>UIApplicationShortcutItemTitle</key>
 			<string>Impuestos</string>
 			<key>UIApplicationShortcutItemType</key>
-			<string>com.nettohq.app.impuestos</string>
+			<string>com.fisquo.app.impuestos</string>
 			<key>UIApplicationShortcutItemUserInfo</key>
 			<dict>
 				<key>ruta</key>
