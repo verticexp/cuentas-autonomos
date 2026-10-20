@@ -68,7 +68,7 @@ export default function Cabecera() {
   return (
     <header ref={cabecera} className={`web-cab${fondo || abierto ? ' con-fondo' : ''}${movil ? ' menu-abierto' : ''}`} onMouseLeave={salir}>
       <div className="web-cab-in">
-        <Link href="/" aria-label="Netto, inicio" className="web-marca"><Logo className="web-logo" /></Link>
+        <Link href="/" aria-label="Fisquo, inicio" className="web-marca"><Logo className="web-logo" /></Link>
         <nav className="web-nav" aria-label="Principal">
           {Object.entries(MENUS).map(([k, m]) => (
             <div key={k} className="web-nav-grupo" onMouseEnter={() => entrar(k)}>

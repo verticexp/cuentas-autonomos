@@ -15,7 +15,7 @@ test('contraseña: datos personales normalizados', () => {
   assert.equal(validar('SolAnaBosque72', { nombre: 'Ana', email: 'ana@correo.es' }).ok, true);
 });
 test('contraseña: comunes, repeticiones y secuencias', () => {
-  for (const p of ['password123', 'netto2026', 'aaaaaaaaaaaaaaaa', '1234567890', 'abcdefghij', 'jihgfedcba']) assert.equal(validar(p).ok, false, p);
+  for (const p of ['password123', 'fisquo2026', 'fisquo123456', 'netto2026', 'netto123456', 'aaaaaaaaaaaaaaaa', '1234567890', 'abcdefghij', 'jihgfedcba']) assert.equal(validar(p).ok, false, p);
   assert.ok(validar('password123').faltan.length);
 });
 

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-export const metadata = { title: 'No existe · Netto' };
+export const metadata = { title: 'No existe · Fisquo' };
 
 // Lo mismo que app/not-found.js, con la cabecera oscura de la web (la de la app no se vería sobre ella).
 export default function NoExisteWeb() {

@@ -6,7 +6,7 @@ import { redis } from '@/lib/redis';
 
 export const dynamic = 'force-dynamic';
 
-// Panel /admin: el administrador de Netto regala el plan Fundador, lo quita o alarga una prueba.
+// Panel /admin: el administrador de Fisquo regala el plan Fundador, lo quita o alarga una prueba.
 // { empresa, accion: 'fundador' | 'quitar-fundador' | 'alargar', dias }
 export async function POST(req) {
   const { u, res } = await usuarioApi({ admin: true });

@@ -439,8 +439,8 @@ const FICHAS_CLIENTE = {
 };
 await r.hset(`${P}clientes:${id}`, porId(CLIENTES.map((c) => ({ id: c.nombre.toUpperCase(), ...c, ...FICHAS_CLIENTE[c.nif] }))));
 await r.hset(`${P}fichasProv:${id}`, porId(cuentasProv.map((c, i) => ({ id: c.id, nombre: c.nombre, formaPago: 'transferencia', plazo: [30, 45, 60][i % 3], comercial: 'Marta Soler', zona: 'Barcelona ciudad' }))));
-// Extracto del último mes y medio, sin emparejar: los cobros de facturas pendientes y los pagos de gastos (Netto los
-// sugiere), y algunos cargos que no están en Netto (salen en Gastos › En revisión o para decir qué son en Banco).
+// Extracto del último mes y medio, sin emparejar: los cobros de facturas pendientes y los pagos de gastos (Fisquo los
+// sugiere), y algunos cargos que no están en Fisquo (salen en Gastos › En revisión o para decir qué son en Banco).
 const desde = new Date(Date.parse(`${hoy}T12:00:00Z`) - 45 * 864e5).toISOString().slice(0, 10);
 const movs = [];
 const mov = (fecha, importe, concepto, contraparte = '') => { if (fecha <= hoy && fecha >= desde) movs.push({ fecha, importe: Math.round(importe * 100) / 100, concepto, contraparte }); };

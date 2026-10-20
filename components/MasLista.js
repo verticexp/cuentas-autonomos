@@ -5,7 +5,7 @@ import Ir from '@/components/Ir';
 import { buscar } from '@/lib/navegacion';
 
 // Lo que más abre cada persona, contado en este dispositivo (solo para ordenar los atajos; nunca sale del navegador).
-const CLAVE = 'netto-mas-usos';
+const CLAVE = 'fisquo-mas-usos';
 const leerUsos = () => { try { return JSON.parse(localStorage.getItem(CLAVE)) || {}; } catch { return {}; } };
 const contar = (href) => { try { const u = leerUsos(); u[href] = (u[href] || 0) + 1; localStorage.setItem(CLAVE, JSON.stringify(u)); } catch { /* sin almacenamiento: sin atajos */ } };
 const ATAJOS = 4;
@@ -37,7 +37,7 @@ export default function MasLista({ grupos, asistente = true }) {
     <>
       <form className="mas-buscar" role="search" action="/asistente" onSubmit={(ev) => { if (!asistente || !q.trim() || hallados?.length) ev.preventDefault(); }}>
         <svg viewBox="0 0 24 24" aria-hidden><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
-        <input type="search" name="pregunta" value={q} onChange={(ev) => setQ(ev.target.value)} placeholder={asistente ? 'Busca o pregunta a Netto' : 'Busca una pantalla'} aria-label="Buscar pantallas" autoComplete="off" enterKeyHint="search" maxLength={500} />
+        <input type="search" name="pregunta" value={q} onChange={(ev) => setQ(ev.target.value)} placeholder={asistente ? 'Busca o pregunta a Fisquo' : 'Busca una pantalla'} aria-label="Buscar pantallas" autoComplete="off" enterKeyHint="search" maxLength={500} />
       </form>
 
       {hallados ? (
@@ -47,7 +47,7 @@ export default function MasLista({ grupos, asistente = true }) {
             {asistente && (
               <Ir href={`/asistente?pregunta=${encodeURIComponent(q.trim())}`} prefetch={false} className="celda ir mas-fila">
                 <span className="mas-ico" data-tono="verde"><svg viewBox="0 0 24 24" aria-hidden><path d="M4 5h16v11H9l-5 4zM8 10h8M8 13h5" /></svg></span>
-                <span className="txt">Preguntar a Netto<small>«{q.trim()}»</small></span>
+                <span className="txt">Preguntar a Fisquo<small>«{q.trim()}»</small></span>
               </Ir>
             )}
           </div>

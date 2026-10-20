@@ -65,8 +65,8 @@ test('única administradora con más gente: no se elimina nada y se explica qué
   assert.equal((await R.redis.hget('empresas', 'e4')).baja, undefined);
 });
 
-test('la cuenta del administrador de Netto no se elimina desde aquí', async () => {
-  const r = await B.eliminarCuenta({ ...usuario('netto', { e5: { rol: 'admin' } }), admin: true });
+test('la cuenta del administrador de Fisquo no se elimina desde aquí', async () => {
+  const r = await B.eliminarCuenta({ ...usuario('fisquo', { e5: { rol: 'admin' } }), admin: true });
   assert.ok(r.error);
 });
 

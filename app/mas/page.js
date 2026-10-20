@@ -14,7 +14,7 @@ import '@/app/mk.css';
 import '@/app/mas.css';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Más · Netto' };
+export const metadata = { title: 'Más · Fisquo' };
 
 const DIAS_AVISO = 15;
 const dias = (de, a) => Math.round((Date.parse(`${a}T12:00:00Z`) - Date.parse(`${de}T12:00:00Z`)) / 864e5);
@@ -28,7 +28,7 @@ function avisoHacienda(u, hoy) {
   return { tono: d <= 3 ? 'rojo' : 'ambar', texto: d === 0 ? 'Plazo hoy' : d === 1 ? 'Plazo mañana' : `Plazo en ${d} días` };
 }
 
-// «Más»: el resto de pantallas en listas por grupos, con un buscador que también pregunta a Netto. Ajustes, en el perfil.
+// «Más»: el resto de pantallas en listas por grupos, con un buscador que también pregunta a Fisquo. Ajustes, en el perfil.
 // Lo que sale depende de los permisos de cada persona y de si la empresa lleva inventario (components/secciones.js).
 export default async function Mas() {
   const u = await requerir();

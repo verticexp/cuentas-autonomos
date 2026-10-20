@@ -9,7 +9,7 @@ import { anterior, instalarHistorial, volverA } from '@/lib/transicion';
 const NOMBRES = {
   '/': 'Resumen', '/mas': 'Más', '/facturas': 'Facturas', '/gastos': 'Gastos', '/ajustes': 'Ajustes', '/presupuestos': 'Presupuestos',
   '/tesoreria': 'Tesorería', '/banco': 'Banco', '/inventario': 'Inventario', '/albaranes': 'Pedidos y albaranes', '/nominas': 'Nóminas',
-  '/proyectos': 'Proyectos', '/cartera': 'Cartera', '/analisis': 'Análisis', '/contabilidad': 'Contabilidad', '/modelos': 'Impuestos', '/asistente': 'Netto', '/usuarios': 'Usuarios',
+  '/proyectos': 'Proyectos', '/cartera': 'Cartera', '/analisis': 'Análisis', '/contabilidad': 'Contabilidad', '/modelos': 'Impuestos', '/asistente': 'Fisquo', '/usuarios': 'Usuarios',
   '/jornada': 'Jornada', '/facturas/recurrentes': 'Recurrentes', '/facturas/caja': 'Caja', '/facturas/catalogo': 'Catálogo',
   '/gastos/proveedores': 'Proveedores', '/clientes': 'Clientes', '/ajustes/gestoria': 'Tu gestoría',
 };

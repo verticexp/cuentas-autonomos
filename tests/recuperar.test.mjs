@@ -60,9 +60,9 @@ async function usuario(id = 'u1') {
   await R.redis.hset('emails', { [u.email]: id });
   return u;
 }
-const pedir = (email, ip = '192.0.2.1') => F.solicitarRecuperacion({ email, ip, origen: 'https://netto.test' });
+const pedir = (email, ip = '192.0.2.1') => F.solicitarRecuperacion({ email, ip, origen: 'https://fisquo.test' });
 const tokenEnviado = (i = enviados.length - 1) => {
-  const enlace = enviados[i].html.match(/https:\/\/netto\.test\/recuperar\?t=([a-f0-9]{64})/);
+  const enlace = enviados[i].html.match(/https:\/\/fisquo\.test\/recuperar\?t=([a-f0-9]{64})/);
   assert.ok(enlace, 'el email contiene el enlace al origen de la app');
   return enlace[1];
 };

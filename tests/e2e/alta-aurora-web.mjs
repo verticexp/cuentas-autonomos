@@ -7,7 +7,7 @@ const BASE = process.env.BASE || 'http://localhost:3002', UPSTASH = process.env.
 for (const url of [BASE, UPSTASH]) if (!['localhost', '127.0.0.1', '[::1]'].includes(new URL(url).hostname)) throw new Error('Solo localhost');
 process.env.KV_REST_API_URL = UPSTASH; process.env.KV_REST_API_TOKEN = 'local';
 const { redis } = await import('../../lib/redis.js');
-const id = randomBytes(4).toString('hex'), email = `auditoria-${id}@netto.example`, password = 'Auditoria-Simulada-2026!';
+const id = randomBytes(4).toString('hex'), email = `auditoria-${id}@fisquo.example`, password = 'Auditoria-Simulada-2026!';
 const sal = randomBytes(16).toString('hex');
 const actividad = { id: 'x', nombre: 'Servicios', serie: '', ivaPct: 21, irpfPct: 0 };
 const fiscal = { tipo: 'sociedad', iva: 'general', trabajadores: true, inventario: true };

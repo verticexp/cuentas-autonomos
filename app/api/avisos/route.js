@@ -13,16 +13,16 @@ export async function GET() {
     const dia = fecha.replace(/-/g, '');
     return [
       'BEGIN:VEVENT',
-      `UID:netto-${dia}@nettohq.com`,
+      `UID:fisquo-${dia}@fisquo.com`,
       `DTSTAMP:${y}0101T000000Z`,
       `DTSTART;VALUE=DATE:${dia}`,
       `SUMMARY:Último día: ${texto}`,
-      'DESCRIPTION:Revisa los importes en Impuestos (Netto) y márcalo como presentado.',
+      'DESCRIPTION:Revisa los importes en Impuestos (Fisquo) y márcalo como presentado.',
       'BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:En 7 días: ${texto}`, 'TRIGGER:-P6DT15H', 'END:VALARM',
       'BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:Mañana acaba el plazo: ${texto}`, 'TRIGGER:-PT15H', 'END:VALARM',
       'END:VEVENT',
     ].join('\r\n');
   });
-  const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Netto//ES', 'CALSCALE:GREGORIAN', ...eventos, 'END:VCALENDAR'].join('\r\n');
+  const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Fisquo//ES', 'CALSCALE:GREGORIAN', ...eventos, 'END:VCALENDAR'].join('\r\n');
   return new Response(ics, { headers: { 'Content-Type': 'text/calendar; charset=utf-8', 'Content-Disposition': 'attachment; filename="plazos-hacienda.ics"' } });
 }

@@ -1,12 +1,12 @@
 # Privacidad de la app (App Store Connect)
 
-Coincide con `ios/App/App/PrivacyInfo.xcprivacy` y con https://www.nettohq.com/privacidad.
+Coincide con `ios/App/App/PrivacyInfo.xcprivacy` y con https://www.fisquo.com/privacidad.
 
 **¿Recoges datos de esta app?** Sí. **¿Se usan para rastrear (tracking)?** No, ninguno.
 
 Todos están **vinculados a la identidad** del usuario (necesitan su cuenta) y **no** se usan para rastrear.
 
-| Tipo (App Store Connect) | Ejemplo en Netto | Finalidad |
+| Tipo (App Store Connect) | Ejemplo en Fisquo | Finalidad |
 |---|---|---|
 | Información de contacto › Nombre | Nombre del usuario y de sus clientes | Funcionalidad de la app |
 | Información de contacto › Email | Email de la cuenta y de clientes | Funcionalidad de la app |

@@ -37,14 +37,14 @@ export async function GET() {
     const archivos = [
       { nombre: 'empresa.json', datos: json({ ...datosEmpresa, drive: drive?.url ? { url: drive.url } : null, saldo, ultimaHuellaVerifactu: verifactu }) },
       { nombre: 'personas.json', datos: json(personas) },
-      // Las cuentas conectadas, sin la sesión ni el identificador del banco (informe de seguridad m11): no sirven fuera de Netto.
+      // Las cuentas conectadas, sin la sesión ni el identificador del banco (informe de seguridad m11): no sirven fuera de Fisquo.
       ...LISTAS.map((n, i) => ({ nombre: `${n}.json`, datos: json(n === 'bancos' ? (listas[i] || []).map(({ sesion: _s, uid: _u, ...c }) => c) : listas[i] || []) })),
       { nombre: 'actividad.json', datos: json(actividad) },
       // Las fotos y PDF de los gastos (fuera de Redis, lib/justificantes.js), con el nombre que se ve en gastos.json.
       ...(await justificantesParaZip(u, listas[LISTAS.indexOf('gastos')] || [])),
     ];
     const fecha = new Date().toISOString().slice(0, 10);
-    return new Response(zip(archivos), { headers: { 'Content-Type': 'application/zip', 'Content-Disposition': `attachment; filename="netto-datos-${fecha}.zip"` } });
+    return new Response(zip(archivos), { headers: { 'Content-Type': 'application/zip', 'Content-Disposition': `attachment; filename="fisquo-datos-${fecha}.zip"` } });
   });
   return resultado?.ocupado ? respuesta429(5, 'Ya hay una exportación en curso en tu empresa. Espera a que termine y prueba de nuevo.') : resultado;
 }

@@ -17,7 +17,7 @@ export async function POST(req) {
   if (res) return res;
   if (u.rol !== 'admin') return error('Solo el administrador de la empresa puede cambiar el plan', 403);
   if (esApp(req.headers.get('user-agent'))) return error('El plan se contrata desde la web', 403);
-  if (!stripeListo()) return error('Los pagos no están activados todavía. Escríbenos a corporate@nettohq.com.', 503);
+  if (!stripeListo()) return error('Los pagos no están activados todavía. Escríbenos a corporate@fisquo.com.', 503);
   if (esFundador(u.plan)) return error('Tu empresa tiene el plan Fundador: es gratis de por vida y no tienes que contratar nada.', 400);
   const b = await cuerpo(req);
   const volver = new URL('/ajustes/plan', req.url).toString();

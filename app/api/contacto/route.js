@@ -6,7 +6,7 @@ import { redis } from '@/lib/redis';
 
 // Formulario «Pedir acceso» de la web pública (components/web/FormContacto.js): guarda la solicitud y avisa por email.
 // CONTACTO_EMAIL cambia el destinatario (por defecto, el email de empresa).
-const DESTINO = () => process.env.CONTACTO_EMAIL || 'corporate@nettohq.com';
+const DESTINO = () => process.env.CONTACTO_EMAIL || 'corporate@fisquo.com';
 const CAMPOS = { nombre: 80, email: 120, empresa: 120, tipo: 40, plan: 60, vengo: 60, mensaje: 1500 };
 const ETIQUETAS = { nombre: 'Nombre', email: 'Email', empresa: 'Empresa', tipo: 'Tipo de negocio', plan: 'Plan', vengo: 'Usa ahora', mensaje: 'Mensaje' };
 
@@ -31,7 +31,7 @@ export async function POST(req) {
   });
 
   // Basta con que quede en un sitio: guardada en la base de datos o enviada por email.
-  if (r.error && !guardada) return NextResponse.json({ error: 'No hemos podido enviar tu solicitud. Escríbenos a corporate@nettohq.com.' }, { status: 502 });
+  if (r.error && !guardada) return NextResponse.json({ error: 'No hemos podido enviar tu solicitud. Escríbenos a corporate@fisquo.com.' }, { status: 502 });
   if (r.error) console.warn('[contacto] solicitud guardada, pero el email no salió:', r.error);
   return NextResponse.json({ ok: true });
 }

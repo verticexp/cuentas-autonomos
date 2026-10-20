@@ -19,7 +19,7 @@ for (const [clave, datos] of Object.entries({
   sociedad: { fiscal: { tipo: 'sociedad' }, emisor: { nombre: 'Prueba Sociedad SL', nif: 'B12345674', direccion: 'Calle de Prueba 12', cp: '08001', ciudad: 'Barcelona', provincia: 'Barcelona' } },
   vacia: {},
 })) {
-  const r = await crearUsuario({ nombre: 'Prueba de registro', email: `${clave}-${sufijo}@netto-local.test`, password: randomBytes(24).toString('hex'), empresaNombre: `Prueba ${clave}`, empresaDatos: datos });
+  const r = await crearUsuario({ nombre: 'Prueba de registro', email: `${clave}-${sufijo}@fisquo-local.test`, password: randomBytes(24).toString('hex'), empresaNombre: `Prueba ${clave}`, empresaDatos: datos });
   if (r.error) throw new Error(r.error);
   sesiones[clave] = { token: await crearSesion(r.usuario.id) };
 }
@@ -27,7 +27,7 @@ const browser = await chromium.launch({ headless: true, ...(process.env.CHROME_P
 try {
 for (const width of [320,768,1280]) {
  const ctx=await browser.newContext({viewport:{width,height:900},reducedMotion:'reduce',colorScheme:width===768?'dark':'light'});
- await ctx.addInitScript(()=>{sessionStorage.setItem('netto-arranque','1');});
+ await ctx.addInitScript(()=>{sessionStorage.setItem('fisquo-arranque','1');});
  const p=await ctx.newPage();const errores=[];p.on('pageerror',e=>errores.push(e.message));
  await p.route('**/api/registro/email',r=>r.fulfill({status:200,contentType:'application/json',body:'{"ok":true}'}));
  let enviados=0;
@@ -51,7 +51,7 @@ for (const width of [320,768,1280]) {
  assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
  await p.getByRole('button',{name:'Volver al paso anterior',exact:true}).click();assert.equal(await p.getByLabel('Código postal').inputValue(),'08001');
  await p.getByRole('button',{name:'Continuar',exact:true}).click();await p.getByRole('button',{name:'Continuar',exact:true}).click();
- await p.getByLabel('Nombre',{exact:true}).fill('Prueba');await p.getByLabel('Email',{exact:true}).fill('prueba@netto-local.test');await p.getByLabel('Contraseña',{exact:true}).fill('Luna!Bosque72Rio');
+ await p.getByLabel('Nombre',{exact:true}).fill('Prueba');await p.getByLabel('Email',{exact:true}).fill('prueba@fisquo-local.test');await p.getByLabel('Contraseña',{exact:true}).fill('Luna!Bosque72Rio');
  await p.getByRole('button',{name:'Continuar',exact:true}).click();await p.getByRole('heading',{name:'Revisar y crear'}).waitFor();
  await p.getByRole('button',{name:'Crear cuenta',exact:true}).click();await p.locator('#registro-error').waitFor();assert.equal(enviados,0);
  await p.locator('#acepto').check();await p.getByRole('button',{name:'Crear cuenta',exact:true}).click();await p.locator('#registro-error').waitFor();
@@ -62,7 +62,7 @@ for (const width of [320,768,1280]) {
 for (const [clave, viewport] of [['aut',{width:390,height:844}], ['sociedad',{width:1280,height:900}], ['vacia',{width:390,height:844}]]) {
   const ctx = await browser.newContext({ viewport });
   await ctx.addCookies([{ name:'t',value:sesiones[clave].token,url:BASE }]);
-  await ctx.addInitScript(() => { sessionStorage.setItem('netto-arranque','1'); sessionStorage.setItem('netto-abierta','1'); });
+  await ctx.addInitScript(() => { sessionStorage.setItem('fisquo-arranque','1'); sessionStorage.setItem('fisquo-abierta','1'); });
   const page=await ctx.newPage(); const errores=[];
   page.on('pageerror', e=>errores.push(e.message));
   await page.goto(`${BASE}/bienvenida`);

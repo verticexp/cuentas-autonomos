@@ -4,17 +4,17 @@ import Capacitor
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     var window: UIWindow?
 
-    private var netto: NettoViewController? { window?.rootViewController as? NettoViewController }
+    private var fisquo: FisquoViewController? { window?.rootViewController as? FisquoViewController }
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         guard let windowScene = scene as? UIWindowScene else { return }
 
         window = UIWindow(windowScene: windowScene)
-        window?.rootViewController = NettoViewController()
+        window?.rootViewController = FisquoViewController()
         window?.makeKeyAndVisible()
 
         SceneDelegateProxy.shared.scene(scene, willConnectTo: session, options: connectionOptions)
-        // Acceso rápido con la app cerrada: se abre en cuanto carga Netto.
+        // Acceso rápido con la app cerrada: se abre en cuanto carga Fisquo.
         if let atajo = connectionOptions.shortcutItem { abrir(atajo) }
     }
 
@@ -26,7 +26,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     @discardableResult
     private func abrir(_ atajo: UIApplicationShortcutItem) -> Bool {
         guard let ruta = atajo.userInfo?["ruta"] as? String, ruta.hasPrefix("/") else { return false }
-        netto?.abrir(ruta: ruta)
+        fisquo?.abrir(ruta: ruta)
         return true
     }
 

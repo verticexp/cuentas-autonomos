@@ -2,11 +2,11 @@ import UIKit
 import WebKit
 import Capacitor
 
-// Controlador principal: el WebView de Capacitor que carga www.nettohq.com, con lo que una app de iOS necesita además:
+// Controlador principal: el WebView de Capacitor que carga www.fisquo.com, con lo que una app de iOS necesita además:
 // - ventanas nuevas y descargas resueltas dentro de la app (DelegadoWeb.swift), no en Safari, que no tiene la sesión;
 // - el escáner de documentos nativo para los tickets (EscanerPlugin.swift);
 // - tirar hacia abajo para recargar y los accesos rápidos del icono (SceneDelegate.swift).
-class NettoViewController: CAPBridgeViewController {
+class FisquoViewController: CAPBridgeViewController {
     private var delegado: DelegadoWeb?
     private var rutaPendiente: String?
     private var cargada = false
@@ -47,7 +47,7 @@ class NettoViewController: CAPBridgeViewController {
         }
     }
 
-    // Abre una ruta de Netto (accesos rápidos del icono). Si la web aún no ha cargado, espera a que lo haga.
+    // Abre una ruta de Fisquo (accesos rápidos del icono). Si la web aún no ha cargado, espera a que lo haga.
     @objc func abrir(ruta: String) {
         guard cargada, let base = bridge?.config.serverURL, let url = URL(string: ruta, relativeTo: base) else {
             rutaPendiente = ruta

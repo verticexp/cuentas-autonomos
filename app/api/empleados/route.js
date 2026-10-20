@@ -28,7 +28,7 @@ function limpio(b, antes = {}) {
       irpfPct: pct(b.irpfPct, 12),
       ssTrabajadorPct: pct(b.ssTrabajadorPct, SS_TRABAJADOR),
       ssEmpresaPct: pct(b.ssEmpresaPct, SS_EMPRESA),
-      // Registro de jornada: con su email ficha desde su cuenta de Netto; horas de su jornada y precio de la hora extra.
+      // Registro de jornada: con su email ficha desde su cuenta de Fisquo; horas de su jornada y precio de la hora extra.
       email: String(b.email || '').trim().toLowerCase().slice(0, 120),
       horasSemana: Math.min(60, Math.max(1, Number(String(b.horasSemana ?? '').replace(',', '.')) || 40)),
       precioHoraExtra: r2(leerImporte(b.precioHoraExtra || 0)) || 0,

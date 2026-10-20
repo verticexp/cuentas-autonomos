@@ -26,7 +26,7 @@ button.celda { width: 100%; text-align: left; font: inherit; }
 .ges-botones .boton { text-align: center; text-decoration: none; }
 textarea.campo { font: inherit; line-height: 1.4; resize: vertical; }
 
-/* Ajustes › Recomienda Netto */
+/* Ajustes › Recomienda Fisquo */
 .recomienda { display: grid; gap: 12px; max-width: 640px; }
 .recomienda h2 { font-size: 17px; margin: 0 0 8px; }
 .recomienda-como ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; }

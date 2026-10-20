@@ -2,7 +2,7 @@ import Precios from '@/components/web/Precios';
 import { Cta, Faq } from '@/components/web/Bloques';
 import { FAQ_PRECIOS } from '@/components/web/datos';
 
-export const metadata = { title: 'Precios · Netto', description: 'Planes para autónomos desde 9 € y pymes desde 25 € al mes sin IVA, por empresa. Business a medida. Prueba 30 días sin tarjeta.' };
+export const metadata = { title: 'Precios · Fisquo', description: 'Planes para autónomos desde 9 € y pymes desde 25 € al mes sin IVA, por empresa. Business a medida. Prueba 30 días sin tarjeta.' };
 
 export default function PaginaPrecios() {
   return (

@@ -1,7 +1,7 @@
 import UIKit
 import WebKit
 
-// Hoja para lo que Netto abre en una ventana nueva (un justificante, un PDF, una factura): mismo WebKit y misma sesión,
+// Hoja para lo que Fisquo abre en una ventana nueva (un justificante, un PDF, una factura): mismo WebKit y misma sesión,
 // con «Cerrar» y el botón de compartir del sistema.
 final class VisorWeb: UIViewController {
     let webView: WKWebView
@@ -37,7 +37,7 @@ final class VisorWeb: UIViewController {
 
     // Comparte lo que se está viendo como PDF (también una imagen o una página): así se puede guardar en Archivos o mandar.
     private func compartir() {
-        let nombre = (webView.title?.isEmpty == false ? webView.title! : "Netto").replacingOccurrences(of: "/", with: "-")
+        let nombre = (webView.title?.isEmpty == false ? webView.title! : "Fisquo").replacingOccurrences(of: "/", with: "-")
         webView.createPDF { [weak self] resultado in
             guard let self, case .success(let datos) = resultado else { return }
             let archivo = FileManager.default.temporaryDirectory.appendingPathComponent("\(nombre).pdf")

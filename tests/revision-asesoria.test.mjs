@@ -11,7 +11,7 @@ import { tipoFactura } from '../lib/verifactu.js';
 
 const fac = (id, fecha, base, extra = {}) => ({ id, fecha, numero: Number(id.replace(/\D/g, '')) || 1, anio: Number(fecha.slice(0, 4)), actividad: 'a', cliente: { nombre: 'Cliente', nif: '12345678Z' }, base, ivaPct: 21, irpfPct: 0, ...extra });
 const gas = (id, fecha, base, extra = {}) => ({ id, fecha, actividad: 'a', concepto: id, proveedor: 'Proveedor', proveedorNif: 'B12345678', base, ivaPct: 21, ...extra });
-const yo = { nif: '12345678Z', nombre: 'Prueba Netto' };
+const yo = { nif: '12345678Z', nombre: 'Prueba Fisquo' };
 
 test('1. Rectificativas: el ejemplo del 1T del informe (303 y 130)', () => {
   const F = [fac('f1', '2026-01-15', 5000, { irpfPct: 15 }), fac('r1', '2026-02-10', -1000, { irpfPct: 15, serie: 'R', rectifica: { id: 'f0', numero: '01-2026', fecha: '2026-01-15', motivo: 'devolucion' } })];

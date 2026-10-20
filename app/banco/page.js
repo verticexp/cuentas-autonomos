@@ -25,7 +25,7 @@ export const dynamic = 'force-dynamic';
 const ERRORES = {
   caducado: 'La conexión ha caducado. Vuelve a empezar.',
   cancelado: 'No se ha dado permiso en el banco.',
-  bloqueada: 'Netto estaba bloqueado al volver del banco. Desbloquéalo y vuelve a conectar.',
+  bloqueada: 'Fisquo estaba bloqueado al volver del banco. Desbloquéalo y vuelve a conectar.',
   'solo-lectura': 'Tu mes de prueba ha terminado: elige un plan en Ajustes › Tu plan para conectar el banco.',
   banco: 'El banco no ha respondido. Prueba otra vez en un rato.',
   sincuentas: 'El banco no ha compartido ninguna cuenta.',
@@ -50,7 +50,7 @@ export default async function PaginaBanco({ searchParams }) {
   // Lo que se enseña de cada factura o gasto enlazado o sugerido.
   const destino = (tipo, id) => {
     // El autónomo no tiene libro diario (lib/modulos.js): sus impuestos, a Impuestos; lo demás, a sus libros.
-    if (tipo === 'auto') return { tipo, id, texto: `${CLASES[id]?.t || 'Impuestos o nóminas'} · lo contabiliza Netto`, url: sociedad ? '/contabilidad?ver=diario' : '/modelos' };
+    if (tipo === 'auto') return { tipo, id, texto: `${CLASES[id]?.t || 'Impuestos o nóminas'} · lo contabiliza Fisquo`, url: sociedad ? '/contabilidad?ver=diario' : '/modelos' };
     if (tipo === 'asiento') return { tipo, id, texto: 'Apuntado en la contabilidad', url: sociedad ? '/contabilidad?ver=diario' : '/contabilidad?ver=libros' };
     if (tipo === 'factura') { const f = fPorId[id]; return f && { tipo, id, texto: `Factura ${numeroFactura(f)} · ${f.cliente?.nombre || ''}`, importe: importes(f).total, fecha: f.fecha, url: `/facturas/${encodeURIComponent(id)}` }; }
     const g = gPorId[id];
@@ -66,7 +66,7 @@ export default async function PaginaBanco({ searchParams }) {
   const ignorados = historial.grupos.ignorados.items;
   const cuentasFiltro = new Map((cuentas || []).map((c) => [c.id, c.nombre]));
   for (const m of lista) if (m.cuenta && !cuentasFiltro.has(m.cuenta)) cuentasFiltro.set(m.cuenta, `Cuenta anterior (${m.cuenta.slice(-6)})`);
-  // La conexión directa es solo del administrador de Netto: al resto ni se le habla de ella, aunque traiga ?conectado o ?error.
+  // La conexión directa es solo del administrador de Fisquo: al resto ni se le habla de ella, aunque traiga ?conectado o ?error.
   const directo = conectarVisible(u);
   const n = directo ? Number(q.conectado) || 0 : 0;
   const app = esApp((await headers()).get('user-agent'));

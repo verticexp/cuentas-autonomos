@@ -7,7 +7,7 @@ const leer = (ruta) => readFile(new URL(`../${ruta}`, import.meta.url), 'utf8');
 test('el componente de cupo consulta sin caché y permite reintentar/refrescar', async () => {
   const s = await leer('components/CupoEscaneo.js');
   assert.match(s, /cache: 'no-store'/);
-  assert.match(s, /netto:escaneos/);
+  assert.match(s, /fisquo:escaneos/);
   assert.match(s, /Reintentar/);
   assert.match(s, /Solicitar ampliación/);
   assert.match(s, /gastos a mano/);
@@ -15,8 +15,8 @@ test('el componente de cupo consulta sin caché y permite reintentar/refrescar',
 
 test('formularios de gasto actualizan el cupo tras cada intento de lectura', async () => {
   const [form, rafaga] = await Promise.all([leer('components/FormGasto.js'), leer('components/RafagaTickets.js')]);
-  assert.match(form, /finally \{ window\.dispatchEvent\(new Event\('netto:escaneos'\)\); \}/);
-  assert.match(rafaga, /finally \{ window\.dispatchEvent\(new Event\('netto:escaneos'\)\); \}/);
+  assert.match(form, /finally \{ window\.dispatchEvent\(new Event\('fisquo:escaneos'\)\); \}/);
+  assert.match(rafaga, /finally \{ window\.dispatchEvent\(new Event\('fisquo:escaneos'\)\); \}/);
   assert.match(form, /<CupoEscaneo/);
   assert.match(rafaga, /<CupoEscaneo/);
 });

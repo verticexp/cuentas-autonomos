@@ -9,7 +9,7 @@ export default function RecargarBloqueo() {
   useEffect(() => {
     if (!document.documentElement.dataset.abierta) return;
     try { sessionStorage.removeItem(ABIERTA); } catch {}
-    window.dispatchEvent(new Event('netto-bloquear'));
+    window.dispatchEvent(new Event('fisquo-bloquear'));
   }, []);
   return null;
 }

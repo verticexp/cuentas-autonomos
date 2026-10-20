@@ -115,7 +115,7 @@ export default async function Contabilidad({ searchParams }) {
               </div>
             ))}
           </div>
-          {d.banco && Math.abs(d.banco.diferencia) >= 0.01 && <p className="cont-alerta">El banco de la contabilidad (cuenta 572) da {eur(d.banco.contable)} y en tu banco hay {eur(d.banco.real)}: faltan {eur(Math.abs(d.banco.diferencia))} por apuntar (préstamos, aportaciones, retiradas, cobros o pagos que no están en Netto). Apúntalos en el diario o revisa la apertura.</p>}
+          {d.banco && Math.abs(d.banco.diferencia) >= 0.01 && <p className="cont-alerta">El banco de la contabilidad (cuenta 572) da {eur(d.banco.contable)} y en tu banco hay {eur(d.banco.real)}: faltan {eur(Math.abs(d.banco.diferencia))} por apuntar (préstamos, aportaciones, retiradas, cobros o pagos que no están en Fisquo). Apúntalos en el diario o revisa la apertura.</p>}
           <p className="grupo-pie">A {fechaCorta(d.bal.fecha)}, modelo abreviado. Sale de la suma de todos los asientos, así que siempre cuadra. Toca cada masa para ver sus cuentas.</p>
         </section>
       )}
@@ -147,7 +147,7 @@ export default async function Contabilidad({ searchParams }) {
             </article>
           ))}
           {!d.diario.some((a) => a.fecha.slice(5, 7) === mes) && <div className="vacio"><p>Sin asientos en este mes</p><p>Cada factura, gasto, nómina, cobro y pago genera el suyo.</p></div>}
-          <p className="grupo-pie">Libro diario de {anio}: {d.diario.length} asientos. Netto los genera solos de tus facturas (y sus cobros), gastos (y sus pagos), nóminas, amortizaciones, liquidaciones de IVA y retenciones de los trimestres marcados como presentados, y el cierre de cada año. Los apuntados a mano se pueden borrar.</p>
+          <p className="grupo-pie">Libro diario de {anio}: {d.diario.length} asientos. Fisquo los genera solos de tus facturas (y sus cobros), gastos (y sus pagos), nóminas, amortizaciones, liquidaciones de IVA y retenciones de los trimestres marcados como presentados, y el cierre de cada año. Los apuntados a mano se pueden borrar.</p>
         </section>
       )}
 

@@ -1,6 +1,6 @@
-# Netto para iOS
+# Fisquo para iOS
 
-App nativa con Capacitor 8 que carga `https://www.nettohq.com` desde el servidor (sin `output: 'export'`: la web,
+App nativa con Capacitor 8 que carga `https://www.fisquo.com` desde el servidor (sin `output: 'export'`: la web,
 el proxy, las cookies y la CSP siguen igual). Esta carpeta no se despliega en Vercel (`.vercelignore`).
 Para enviarla a la App Store: `app-store/README.md`.
 
@@ -14,12 +14,12 @@ npx cap open ios   # compilar, firmar y archivar desde Xcode
 ## Cómo está hecha
 
 - `capacitor.config.json`: `server.url` es la raíz del dominio con `www` (con una ruta, la primera carga se cancela;
-  `nettohq.com` redirige a `www`). Navegación limitada a los dominios de Netto (`WKAppBoundDomains`). La app añade
-  `NettoApp/1` al user agent: la web lo usa (`lib/app.js`) para no enseñar precios, planes, registro ni lo que aún
+  `fisquo.com` redirige a `www`). Navegación limitada a los dominios de Fisquo y a los anteriores durante la transición (`WKAppBoundDomains`). La app añade
+  `FisquoApp/1` al user agent: la web lo usa (`lib/app.js`) para no enseñar precios, planes, registro ni lo que aún
   no funciona dentro de la app.
 - `ios/App/App/`:
-  - `NettoViewController.swift`: el WebView de Capacitor con tirar para recargar, accesos rápidos y el escáner.
-  - `DelegadoWeb.swift`: delante del delegado de Capacitor. `target="_blank"` de Netto en un visor con la misma
+  - `FisquoViewController.swift`: el WebView de Capacitor con tirar para recargar, accesos rápidos y el escáner.
+  - `DelegadoWeb.swift`: delante del delegado de Capacitor. `target="_blank"` de Fisquo en un visor con la misma
     sesión (`VisorWeb.swift`), enlaces externos en Safari dentro de la app, descargas con la hoja de compartir y
     diálogos `alert/confirm/prompt` en español (los `prompt` internos de Capacitor siguen yendo a Capacitor).
   - `EscanerPlugin.swift`: escáner de documentos (VisionKit), desde la web con `lib/escanerNativo.js`.

@@ -63,7 +63,7 @@ export default function Importar() {
         {CONTABLE.includes(tipo) ? <>
           <p className="nota">{tipo === 'saldos'
             ? 'Para traer la contabilidad de otro programa (Holded, A3, Sage, Contasol…): exporta el balance de sumas y saldos a Excel a la fecha del cambio y súbelo. Pasa a ser el asiento de apertura; lo anterior a esa fecha no se vuelve a contabilizar. Puedes traer también las facturas sin cobrar y los gastos sin pagar: cuando se cobren o paguen, se apuntará solo el cobro o el pago.'
-            : 'Exporta el libro o inventario de bienes de inversión con la fecha de compra, el valor y lo ya amortizado a la fecha del cambio. Netto sigue amortizándolos desde ahí, con el mismo % si lo trae el archivo.'}</p>
+            : 'Exporta el libro o inventario de bienes de inversión con la fecha de compra, el valor y lo ya amortizado a la fecha del cambio. Fisquo sigue amortizándolos desde ahí, con el mismo % si lo trae el archivo.'}</p>
           <label className="asiento-campo">Fecha de los saldos (la del cambio de programa)<input className="campo" type="date" disabled={ocupado} value={fecha} onChange={(e) => { if (enCurso.current) return; setFecha(e.target.value); reiniciar(); }} /></label>
         </> : <p className="nota">Desde Holded: exporta {TIPOS.find((t) => t[0] === tipo)[1].toLowerCase()} a Excel y súbelo tal cual. También vale un Excel o CSV tuyo con la primera fila de títulos.</p>}
         <label className="importar-archivo">

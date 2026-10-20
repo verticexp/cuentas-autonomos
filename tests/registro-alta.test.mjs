@@ -56,7 +56,7 @@ after(() => {
 async function alta(cambios = {}, ip = '192.0.2.1') {
   const form = new FormData();
   for (const [k, v] of Object.entries({ ...valido, ...cambios })) if (v !== undefined) form.set(k, v);
-  const res = await POST(new Request('https://netto.test/api/registro', { method: 'POST', headers: { Accept: 'application/json', 'x-real-ip': ip }, body: form }));
+  const res = await POST(new Request('https://fisquo.test/api/registro', { method: 'POST', headers: { Accept: 'application/json', 'x-real-ip': ip }, body: form }));
   return { res, datos: await res.json() };
 }
 async function rechaza(cambios, mensaje, paso = 2) {
@@ -119,7 +119,7 @@ test('registro: rechaza un NIF repetido en el índice antes de consultar el cens
   const red = simularCenso('IDENTIFICADO');
   const { res, datos } = await alta({ nif: 'es 12.345.678-z' });
   assert.equal(res.status, 400);
-  assert.equal(datos.error, 'Ya hay una cuenta con ese NIF. Entra con ella o escríbenos a corporate@nettohq.com.');
+  assert.equal(datos.error, 'Ya hay una cuenta con ese NIF. Entra con ella o escríbenos a corporate@fisquo.com.');
   assert.equal(datos.paso, 2);
   assert.equal(red.mock.callCount(), 0);
   assert.equal(await redis.hlen('empresas'), 0);
@@ -216,27 +216,27 @@ test('registro: la primera cuenta no necesita datos fiscales, censo, plan ni ace
   // Fuera de Vercel (en local). Vercel define VERCEL_ENV también al compilar, donde corren estas pruebas.
   delete process.env.VERCEL_ENV;
   const red = simularCenso('NO IDENTIFICADO');
-  const { res } = await alta({ tipo: '', plan: '', acepto: '', nif: '', razon: '', direccion: '', cp: '', provincia: '', periodo: 'otro', empresa: 'Netto' });
+  const { res } = await alta({ tipo: '', plan: '', acepto: '', nif: '', razon: '', direccion: '', cp: '', provincia: '', periodo: 'otro', empresa: 'Fisquo' });
   assert.equal(res.status, 200); assert.equal(red.mock.callCount(), 0);
   const usuario = Object.values(await redis.hgetall('usuarios'))[0];
   const empresa = await redis.hget('empresas', usuario.empresa);
-  assert.equal(usuario.admin, true); assert.equal(empresa.nombre, 'Netto');
+  assert.equal(usuario.admin, true); assert.equal(empresa.nombre, 'Fisquo');
   assert.deepEqual(empresa.emisor, {}); assert.equal(empresa.censo, undefined);
   assert.equal(empresa.plan, undefined); assert.equal(await redis.hlen('empresa-nif'), 0);
 });
 
- test('registro: en Vercel, la primera cuenta solo es del administrador de Netto si es ADMIN_EMAIL (m12)', async () => {
+ test('registro: en Vercel, la primera cuenta solo es del administrador de Fisquo si es ADMIN_EMAIL (m12)', async () => {
   process.env.VERCEL_ENV = 'production';
   try {
     base.run(['flushdb']);
     delete process.env.ADMIN_EMAIL;
-    await alta({ tipo: '', plan: '', acepto: '', nif: '', razon: '', empresa: 'Netto' });
+    await alta({ tipo: '', plan: '', acepto: '', nif: '', razon: '', empresa: 'Fisquo' });
     assert.equal(await redis.hlen('usuarios'), 0, 'sin ADMIN_EMAIL no se crea el administrador');
     process.env.ADMIN_EMAIL = 'otra@ejemplo.es';
-    await alta({ tipo: '', plan: '', acepto: '', nif: '', razon: '', empresa: 'Netto' });
+    await alta({ tipo: '', plan: '', acepto: '', nif: '', razon: '', empresa: 'Fisquo' });
     assert.equal(await redis.hlen('usuarios'), 0, 'con otro email tampoco');
     process.env.ADMIN_EMAIL = ' Ana@Ejemplo.es ';
-    const { res } = await alta({ tipo: '', plan: '', acepto: '', nif: '', razon: '', empresa: 'Netto' });
+    const { res } = await alta({ tipo: '', plan: '', acepto: '', nif: '', razon: '', empresa: 'Fisquo' });
     assert.equal(res.status, 200);
     assert.equal(Object.values(await redis.hgetall('usuarios'))[0].admin, true);
   } finally {
@@ -258,7 +258,7 @@ test('registro: tipo y plan indican los pasos nuevos', async () => {
 
 test('registro-email: ruta pública valida y limita a 30 intentos por IP', async () => {
   const { POST: comprobar } = await import('../app/api/registro/email/route.js');
-  const pedir = (email) => comprobar(new Request('https://netto.test/api/registro/email', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-real-ip': '192.0.2.99' }, body: JSON.stringify({ email }) }));
+  const pedir = (email) => comprobar(new Request('https://fisquo.test/api/registro/email', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-real-ip': '192.0.2.99' }, body: JSON.stringify({ email }) }));
   assert.deepEqual(await (await pedir('ana@ejemplo.es')).json(), { ok: true });
   assert.match((await (await pedir('ana@yopmail.com')).json()).error, /temporales/);
   for (let i = 2; i < 30; i++) assert.equal((await pedir('ana@ejemplo.es')).status, 200);
@@ -305,7 +305,7 @@ test('código promocional: vale el de una empresa que recomienda (60 días) y el
   assert.match(ambos.datos.error, /no los dos/);
 
   const { POST: comprobar } = await import('../app/api/registro/codigo/route.js');
-  const pedir = async (codigo) => (await comprobar(new Request('https://netto.test/api/registro/codigo', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-real-ip': '192.0.2.98' }, body: JSON.stringify({ codigo }) }))).json();
+  const pedir = async (codigo) => (await comprobar(new Request('https://fisquo.test/api/registro/codigo', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-real-ip': '192.0.2.98' }, body: JSON.stringify({ codigo }) }))).json();
   assert.deepEqual(await pedir('abcdefgh'), { ok: true, tipo: 'recomendacion', dias: 60, texto: 'Te recomienda Recomienda SL: tienes 2 meses gratis en lugar de uno.' });
   assert.deepEqual(await pedir('ASESORIA'), { ok: true, tipo: 'gestoria', dias: 90, texto: 'Código de Asesoría Sol: tienes 3 meses gratis.' });
   assert.equal((await pedir('NOEXISTE')).ok, false);

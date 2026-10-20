@@ -5,7 +5,7 @@ import { textoSituacion, textoResumenModelos } from '../lib/formato.js';
 
 test('texto de resumen del trimestre a presentar', () => {
   const t = textoResumenModelos({ t: 3, anio: 2026, plazo: '20 de octubre', m303: { importe: 1234.5 }, m130: { importe: 0 } });
-  assert.match(t, /^Netto · 3T 2026 · se presenta hasta el 20 de octubre/);
+  assert.match(t, /^Fisquo · 3T 2026 · se presenta hasta el 20 de octubre/);
   assert.match(t, /303 \(IVA\): a ingresar 1\.234,50/);
   assert.match(t, /130 \(IRPF\): sin importe a ingresar/);
   assert.doesNotMatch(t, /0,00/);

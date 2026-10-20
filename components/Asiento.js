@@ -59,7 +59,7 @@ export function NuevoAsiento({ hoy, cuentas }) {
   );
 }
 
-// Asiento de apertura: lo que había al empezar a llevar la contabilidad en Netto (lo que no sale de facturas ni gastos).
+// Asiento de apertura: lo que había al empezar a llevar la contabilidad en Fisquo (lo que no sale de facturas ni gastos).
 export function Apertura({ fecha, sociedad, previa }) {
   const router = useRouter();
   const de = (c) => previa?.lineas.find((l) => l.cuenta === c);
@@ -85,7 +85,7 @@ export function Apertura({ fecha, sociedad, previa }) {
   return (
     <form className="formulario tarjeta asiento-form" onSubmit={enviar}>
       <h3>Saldos de apertura</h3>
-      <p className="nota">Lo que había el día que empiezas a llevar las cuentas en Netto y no sale de tus facturas ni gastos. Lo que falte para cuadrar va a {sociedad ? 'reservas (remanente)' : 'remanente'}.</p>
+      <p className="nota">Lo que había el día que empiezas a llevar las cuentas en Fisquo y no sale de tus facturas ni gastos. Lo que falte para cuadrar va a {sociedad ? 'reservas (remanente)' : 'remanente'}.</p>
       <label className="asiento-campo">Fecha<input className="campo" type="date" value={x.fecha} onChange={poner('fecha')} required /></label>
       <label className="asiento-campo">Saldo en el banco<input className="campo" inputMode="decimal" placeholder="0,00" value={x.banco} onChange={poner('banco')} /></label>
       <label className="asiento-campo">{sociedad ? 'Capital social' : 'Capital aportado'}<input className="campo" inputMode="decimal" placeholder="0,00" value={x.capital} onChange={poner('capital')} /></label>
@@ -101,7 +101,7 @@ export function Apertura({ fecha, sociedad, previa }) {
 }
 
 // Gastos de personal del listado de la gestoría: se piden los importes por cuentas (sueldos, IRPF, Seguridad Social del
-// trabajador y de la empresa, resto de personal) y Netto monta el asiento; si ya está pagado, también los de pago.
+// trabajador y de la empresa, resto de personal) y Fisquo monta el asiento; si ya está pagado, también los de pago.
 export function AsientoPersonal({ hoy }) {
   const router = useRouter();
   const vacio = { fecha: hoy, concepto: '', sueldos: '', ssEmpresa: '', irpf: '', ssTrabajador: '', otros: [], pagoLiquido: '', pagoSS: '', pagoIRPF: '' };

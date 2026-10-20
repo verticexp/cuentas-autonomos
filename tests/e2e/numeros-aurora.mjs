@@ -206,6 +206,6 @@ await comprobar('HTTP: Excel contable mantiene el saldo bancario del mayor', asy
   assert.ok(xml.includes(`<v>${banco / 100}</v>`), 'Saldo del banco ausente del libro de sumas y saldos');
 });
 const informe = { fecha: hoy, empresa: empresa.nombre, documentos: { facturas: datos.facturas.length, gastos: datos.gastos.length, nominas: datos.nominas.length, asientos: A.length }, resumen, saldoBancario: banco / 100, balance: { activo: bal.total, pasivo: bal.totalPasivo }, inventario: stock.valor, verificaciones: resultados.length, correctas: resultados.length - fallos, fallos, resultados };
-await writeFile('/private/tmp/netto-auditoria-numerica.json', JSON.stringify(informe, null, 2));
+await writeFile('/private/tmp/fisquo-auditoria-numerica.json', JSON.stringify(informe, null, 2));
 console.log(JSON.stringify({ ...informe, resultados: undefined }, null, 2));
 if (fallos) process.exitCode = 1;

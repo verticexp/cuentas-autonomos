@@ -15,7 +15,7 @@ test('importe: mensual el de la web y anual 12 meses con el 30 % de descuento, e
 });
 
 test('la clave del precio cambia si cambia el importe', () => {
-  assert.equal(claveDePrecio('aut', 'Pro', 'anio'), 'netto_aut_pro_anio_10080');
+  assert.equal(claveDePrecio('aut', 'Pro', 'anio'), 'fisquo_aut_pro_anio_10080');
 });
 
 test('en la prueba, lo máximo de su tipo; pagado, lo de su plan; sin plan, sin límites', () => {
@@ -85,7 +85,7 @@ test('avisos a 7, 3, el último día y al acabar; el texto dice lo que perdería
   assert.deepEqual([8, 7, 4, 3, 2, 1, 0, null].map(avisoDelDia), [null, 'semana', null, 'tres', null, 'ultimo', 'fin', null]);
   const plan = { tipo: 'aut', nombre: 'Esencial' };
   const t = textoAviso({ aviso: 'tres', plan, nombre: 'Ana López', hasta: '2026-03-20', perdidas: [{ texto: 'El asistente IA (2 preguntas)' }], recomendado: { n: 'Pro', p: 12 }, enlace: 'https://x/ajustes/plan?contratar=1' });
-  assert.equal(t.asunto, 'Tu prueba de Netto acaba dentro de 3 días');
+  assert.equal(t.asunto, 'Tu prueba de Fisquo acaba dentro de 3 días');
   assert.match(t.mensaje, /Hola, Ana:/);
   assert.match(t.mensaje, /· El asistente IA \(2 preguntas\)/);
   assert.match(t.mensaje, /plan Pro \(12 €\/mes \+ IVA\)/);

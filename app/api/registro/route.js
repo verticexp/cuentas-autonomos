@@ -13,7 +13,7 @@ import { NO_VALIDO, resolverCodigo } from '@/lib/codigoPromocional';
 import { apuntarRecomendada, empresaPorCodigo, normalizarRef, RECOMENDACION_DIAS } from '@/lib/recomendaciones';
 import { enEmpresa } from '@/lib/membresias';
 
-// Alta de una cuenta con su empresa. La primera de todas es la del administrador de Netto (formulario de app/login);
+// Alta de una cuenta con su empresa. La primera de todas es la del administrador de Fisquo (formulario de app/login);
 // las demás llegan desde /registro con tipo de negocio y plan, y empiezan el mes de prueba (lib/prueba.js).
 // Con sesión iniciada (/registro?nueva=1) da de alta otra empresa para esa cuenta, con su plan y su prueba, sin crear
 // otra cuenta: queda como administradora y pasa a trabajar con ella.
@@ -31,7 +31,7 @@ export async function POST(req) {
   if (await pasado('registro', ipDe(req), 5, 3600)) return fallo(MUCHOS, 429);
 
   const sesion = await usuarioActual();
-  // Base vacía: la primera cuenta es la del administrador de Netto. En Vercel (producción o una vista previa con una base
+  // Base vacía: la primera cuenta es la del administrador de Fisquo. En Vercel (producción o una vista previa con una base
   // nueva) solo si es el email de ADMIN_EMAIL; si no, cualquiera que llegase antes se quedaría con el panel de /admin.
   const enVercel = Boolean(process.env.VERCEL_ENV);
   const primera = !sesion && !(await hayUsuarios())
@@ -47,7 +47,7 @@ export async function POST(req) {
   if (primera) {
     r = await crearUsuario({ ...cuenta, empresaNombre: String(form.get('empresa') || '').trim() || undefined });
   } else {
-    // Código promocional (lib/codigoPromocional.js): el de una gestoría o el de una empresa que recomienda Netto.
+    // Código promocional (lib/codigoPromocional.js): el de una gestoría o el de una empresa que recomienda Fisquo.
     const codigo = String(form.get('codigo') || form.get('gestoria') || '').trim();
     const promo = codigo ? await resolverCodigo(codigo) : null;
     if (codigo && !promo) return fallo(NO_VALIDO, 400, 3);
@@ -73,7 +73,7 @@ export async function POST(req) {
     const datos = datosFiscalesRegistro({ ...Object.fromEntries(form), tipo: plan.tipo });
     if (datos.error) return fallo(datos.error, 400, 2);
     const emisor = datos.emisor;
-    const repetido = 'Ya hay una cuenta con ese NIF. Entra con ella o escríbenos a corporate@nettohq.com.';
+    const repetido = 'Ya hay una cuenta con ese NIF. Entra con ella o escríbenos a corporate@fisquo.com.';
     const cerrojo = `registro-nif:${emisor.nif}`, propietario = randomUUID();
     if (!(await redis.set(cerrojo, propietario, { nx: true, ex: 120 }))) return fallo('Ya se está creando una cuenta con ese NIF. Espera un momento e inténtalo de nuevo.', 409, 2);
     try {

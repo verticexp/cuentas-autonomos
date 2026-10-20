@@ -6,7 +6,7 @@ import { llamar } from './Acciones';
 
 // Prorrata del IVA (arts. 102-106 de la Ley del IVA): quien hace operaciones exentas y otras con derecho a deducir solo
 // se deduce un porcentaje de su IVA soportado. Durante el año se usa el provisional (el definitivo del año anterior, o el
-// que se propuso a Hacienda al empezar) y en el 4T se regulariza con el definitivo (casilla 44). Netto lo calcula con
+// que se propuso a Hacienda al empezar) y en el 4T se regulariza con el definitivo (casilla 44). Fisquo lo calcula con
 // lo facturado; aquí se puede guardar el provisional de verdad si es otro.
 export default function Prorrata({ anio, guardado, provisional, definitiva, anterior }) {
   const router = useRouter();
@@ -22,7 +22,7 @@ export default function Prorrata({ anio, guardado, provisional, definitiva, ante
       <p className="nota">
         {guardado !== null && guardado !== undefined ? `Durante el año se aplica el ${provisional} %, el que has guardado.`
           : anterior !== null ? `Durante el año se aplica el ${provisional} %, el definitivo de ${anio - 1}.`
-          : `En ${anio - 1} no hubo prorrata, así que Netto aplica en cada trimestre la que sale con lo facturado hasta entonces (ahora, el ${provisional} %). Si propusiste otro porcentaje a Hacienda (art. 105.Dos de la Ley del IVA), guárdalo aquí.`}
+          : `En ${anio - 1} no hubo prorrata, así que Fisquo aplica en cada trimestre la que sale con lo facturado hasta entonces (ahora, el ${provisional} %). Si propusiste otro porcentaje a Hacienda (art. 105.Dos de la Ley del IVA), guárdalo aquí.`}
         {definitiva !== null && ` Con todo lo facturado en ${anio}, el definitivo sale del ${definitiva} %: en el 4T se regulariza la diferencia (casilla 44).`}
         {' '}Solo cuentan como exentas las facturas marcadas como «Exenta». Si alguna operación no debe contar (venta de un bien de inversión, operaciones financieras o inmobiliarias ocasionales), revísalo con tu gestor.
       </p>

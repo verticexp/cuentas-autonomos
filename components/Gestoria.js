@@ -6,7 +6,7 @@ import Ir from '@/components/Ir';
 import { llamar } from './Acciones';
 
 // Ajustes › Tu gestoría. gestoria: { nombre, email, auto } o null. trimestres: [{ anio, t }] del más reciente al más
-// antiguo (el primero, el último cerrado). invitar: si puede dar acceso a Netto (Usuarios). emailListo: si hay correo.
+// antiguo (el primero, el último cerrado). invitar: si puede dar acceso a Fisquo (Usuarios). emailListo: si hay correo.
 export default function Gestoria({ gestoria, trimestres, invitar, emailListo, app = false }) {
   const router = useRouter();
   const [d, setD] = useState({ nombre: gestoria?.nombre || '', email: gestoria?.email || '', auto: Boolean(gestoria?.auto) });
@@ -60,7 +60,7 @@ export default function Gestoria({ gestoria, trimestres, invitar, emailListo, ap
 
       {invitar && (
         <section className="grupo">
-          <h2 className="grupo-t">Acceso a Netto</h2>
+          <h2 className="grupo-t">Acceso a Fisquo</h2>
           <div className="grupo-c">
             <Ir href="/usuarios?invitar=gestoria" className="celda ir"><span className="txt">Invitar a tu gestoría<small>Entra con su propio usuario y ve facturas, gastos, nóminas e impuestos.{!app && ' Una gestoría no cuenta como usuario de tu plan.'}</small></span></Ir>
           </div>

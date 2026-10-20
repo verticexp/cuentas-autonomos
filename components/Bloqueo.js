@@ -13,8 +13,8 @@ import { enfocar, useTrasArranque } from '@/lib/arranque';
 // o llave de acceso (Face ID, huella, Windows Hello o el móvil).
 // Sale ya pintado desde el servidor, así nunca se ve nada de la app antes de desbloquear. El formulario (y la llave de
 // acceso, que se lanza sola donde ya se usó) espera a que acabe la animación de inicio.
-export const ABIERTA = 'netto-abierta';
-const OCULTA = 'netto-oculta';
+export const ABIERTA = 'fisquo-abierta';
+const OCULTA = 'fisquo-oculta';
 const GRACIA = 10000; // menos de 10 s fuera (compartir un PDF, elegir una foto) no cuenta como cerrar la app
 
 const marcarAbierta = () => { try { sessionStorage.setItem(ABIERTA, '1'); } catch {} };
@@ -61,9 +61,9 @@ export default function Bloqueo({ email, servidor = true }) {
     };
     document.addEventListener('visibilitychange', cambio);
     // components/RecargarBloqueo.js: se ha llegado a /bloqueo navegando dentro de la app → bloqueo encima.
-    window.addEventListener('netto-bloquear', bloquear);
+    window.addEventListener('fisquo-bloquear', bloquear);
     const seguir = setInterval(() => { if (document.visibilityState === 'visible' && sessionStorage.getItem(ABIERTA)) avisar('seguir'); }, SEGUIR);
-    return () => { document.removeEventListener('visibilitychange', cambio); window.removeEventListener('netto-bloquear', bloquear); clearInterval(seguir); };
+    return () => { document.removeEventListener('visibilitychange', cambio); window.removeEventListener('fisquo-bloquear', bloquear); clearInterval(seguir); };
   }, [abrir, bloquear]); // servidor: solo cuenta al abrir (si se vuelve a evaluar tras desbloquear, bloquearía otra vez)
 
   useEffect(() => { if (bloqueada && listo) enfocar(pass.current); }, [bloqueada, listo]);
@@ -114,11 +114,11 @@ export default function Bloqueo({ email, servidor = true }) {
 
   if (!bloqueada) return null;
   return (
-    <main className={`login pantalla-bloqueo${saliendo ? ' saliendo' : ''}`} role="dialog" aria-modal="true" aria-label="Iniciar sesión en Netto">
+    <main className={`login pantalla-bloqueo${saliendo ? ' saliendo' : ''}`} role="dialog" aria-modal="true" aria-label="Iniciar sesión en Fisquo">
       <PanelMarca />
       {listo && <form onSubmit={entrar} className="form-entrar">
         <h1><Logo className="logo-login" /></h1>
-        <p className="login-titulo">Desbloquea Netto</p>
+        <p className="login-titulo">Desbloquea Fisquo</p>
         <label htmlFor="bloqueo-email">Email</label>
         <input id="bloqueo-email" name="email" type="email" autoComplete="username webauthn" defaultValue={email} required />
         <label htmlFor="bloqueo-password">Contraseña</label>

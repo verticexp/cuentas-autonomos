@@ -20,22 +20,22 @@ for (const [id, c] of Object.entries(CORREOS)) {
   test(`${id}: cabecera y pie según la marca`, () => {
     const { html, texto } = componer(id, c.ejemplo);
     const cabecera = html.match(/<p class="c-tinta" style="margin:0;font-size:26px[^>]*>(.*?)<\/p>/)?.[1];
-    const logo = /<td class="c-cab"[^>]*>\s*<a [^>]*><img src="[^"]*\/correo\/netto-icono\.png"[^>]*><span[^>]*>&nbsp;&nbsp;Netto<\/span>/.test(html);
+    const logo = /<td class="c-cab"[^>]*>\s*<a [^>]*><img src="[^"]*\/correo\/fisquo-icono\.png"[^>]*><span[^>]*>&nbsp;&nbsp;Fisquo<\/span>/.test(html);
     assert.doesNotMatch(html, /background:#0F1F1B/i, 'sin fondos oscuros: Gmail los aclara en modo oscuro');
-    assert.match(html, /\/correo\/netto-icono\.png/, 'el icono de Netto va en el pie');
+    assert.match(html, /\/correo\/fisquo-icono\.png/, 'el icono de Fisquo va en el pie');
     if (c.marca === 'empresa') {
       assert.equal(cabecera, c.ejemplo.empresa);
-      assert.ok(!logo, 'en nombre de la empresa no lleva la cabecera de Netto');
-      assert.match(html, /Enviado con <strong[^>]*>Netto<\/strong>/);
-      assert.ok(!html.includes('corporate@nettohq.com'));
-      assert.ok(!texto.includes('corporate@nettohq.com'));
+      assert.ok(!logo, 'en nombre de la empresa no lleva la cabecera de Fisquo');
+      assert.match(html, /Enviado con <strong[^>]*>Fisquo<\/strong>/);
+      assert.ok(!html.includes('corporate@fisquo.com'));
+      assert.ok(!texto.includes('corporate@fisquo.com'));
       assert.ok(!html.includes('Si tienes cualquier duda, responde a este email'));
     } else {
       assert.equal(cabecera, undefined);
-      assert.ok(logo, 'cabecera con el logo de Netto');
+      assert.ok(logo, 'cabecera con el logo de Fisquo');
       if (!c.interno) {
-        assert.match(html, /Si tienes cualquier duda, responde a este email o escríbenos a corporate@nettohq\.com/);
-        assert.match(texto, /corporate@nettohq\.com/);
+        assert.match(html, /Si tienes cualquier duda, responde a este email o escríbenos a corporate@fisquo\.com/);
+        assert.match(texto, /corporate@fisquo\.com/);
       }
     }
   });
@@ -83,6 +83,7 @@ test('avisos de prueba: distingue el fin del aviso previo de cobro', () => {
 test('enviarCorreo: falta de configuración y cuerpo enviado a Resend', async () => {
   const antes = process.env.RESEND_API_KEY;
   const contactoAntes = process.env.CONTACTO_EMAIL;
+  const remitenteAntes = process.env.RESEND_FROM;
   const fetchAntes = globalThis.fetch;
   try {
     delete process.env.RESEND_API_KEY;
@@ -91,6 +92,7 @@ test('enviarCorreo: falta de configuración y cuerpo enviado a Resend', async ()
 
     process.env.RESEND_API_KEY = 'x';
     delete process.env.CONTACTO_EMAIL;
+    delete process.env.RESEND_FROM;
     const enviados = [];
     globalThis.fetch = async (_url, opciones) => {
       enviados.push(JSON.parse(opciones.body));
@@ -100,15 +102,18 @@ test('enviarCorreo: falta de configuración y cuerpo enviado a Resend', async ()
       const r = await enviarCorreo(id, { para: 'admin@ejemplo.es', datos: CORREOS[id].ejemplo });
       assert.deepEqual(r, { id: 'correo-prueba' });
       const cuerpo = enviados.at(-1);
+      assert.equal(cuerpo.from, 'Fisquo <no-reply@fisquo.com>');
       assert.equal(cuerpo.text, componer(id, CORREOS[id].ejemplo).texto);
       assert.deepEqual(cuerpo.tags, [{ name: 'correo', value: id }]);
       assert.deepEqual(cuerpo.to, ['admin@ejemplo.es']);
-      if (id === 'bienvenida') assert.equal(cuerpo.reply_to, 'corporate@nettohq.com');
+      if (id === 'bienvenida') assert.equal(cuerpo.reply_to, 'corporate@fisquo.com');
       else assert.ok(!Object.hasOwn(cuerpo, 'reply_to'));
     }
     assert.equal(enviados.length, 2);
   } finally {
     globalThis.fetch = fetchAntes;
+    if (remitenteAntes === undefined) delete process.env.RESEND_FROM;
+    else process.env.RESEND_FROM = remitenteAntes;
     if (antes === undefined) delete process.env.RESEND_API_KEY;
     else process.env.RESEND_API_KEY = antes;
     if (contactoAntes === undefined) delete process.env.CONTACTO_EMAIL;

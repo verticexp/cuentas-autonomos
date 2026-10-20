@@ -13,9 +13,9 @@ import { auditar } from '@/lib/auditoria';
 export const dynamic = 'force-dynamic';
 
 const b64 = (u8) => Buffer.from(u8).toString('base64url');
-// En producción, solo los dominios de Netto (informe de seguridad m4): el sitio no lo decide la propia petición.
-// La app de iOS carga www.nettohq.com (mobile/capacitor.config.json). Fuera de producción, el de la petición (local, e2e).
-const DOMINIOS = ['www.nettohq.com', 'nettohq.com'];
+// En producción, solo los dominios de Fisquo (informe de seguridad m4): el sitio no lo decide la propia petición.
+// La app de iOS carga www.fisquo.com (mobile/capacitor.config.json). Fuera de producción, el de la petición (local, e2e).
+const DOMINIOS = ['www.fisquo.com', 'fisquo.com'];
 const permitidos = () => [...DOMINIOS, ...[process.env.APP_URL, process.env.VERCEL_PROJECT_PRODUCTION_URL && `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`]
   .filter(Boolean).map((x) => URL.parse(x)?.hostname).filter(Boolean)];
 const sitio = (req) => {
@@ -41,7 +41,7 @@ export async function POST(req) {
   if (!redis) return error('Base de datos no conectada', 503);
   const b = await cuerpo(req);
   const web = sitio(req);
-  if (!web) return error('Face ID solo funciona en www.nettohq.com', 403);
+  if (!web) return error('Face ID solo funciona en www.fisquo.com', 403);
   const { origin, rpID } = web;
   const u = await usuarioActual();
 
@@ -52,7 +52,7 @@ export async function POST(req) {
     const mias = (await redis.hgetall(`passkeys:${u.id}`)) || {};
     if (b.accion === 'registro-opciones') {
       const opciones = await generateRegistrationOptions({
-        rpName: 'Netto', rpID, userName: u.email, userDisplayName: u.nombre, userID: new TextEncoder().encode(u.id),
+        rpName: 'Fisquo', rpID, userName: u.email, userDisplayName: u.nombre, userID: new TextEncoder().encode(u.id),
         attestationType: 'none',
         excludeCredentials: Object.entries(mias).map(([id, k]) => ({ id, transports: k.transports })),
         authenticatorSelection: { residentKey: 'required', userVerification: 'required' },

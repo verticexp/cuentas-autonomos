@@ -6,7 +6,7 @@ export default function CintaFunciones({ items }) {
   const [pausa, setPausa] = useState(false);
   return (
     <div className="web-cinta-contenedor">
-      <div className="web-cinta" aria-label="Qué incluye Netto">
+      <div className="web-cinta" aria-label="Qué incluye Fisquo">
         <div className="web-cinta-pista" style={{ animationPlayState: pausa ? 'paused' : undefined }}>
           {[...items, ...items].map((x, i) => <span key={i} aria-hidden={i >= items.length}>{x}</span>)}
         </div>

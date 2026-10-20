@@ -26,8 +26,8 @@ export default function Pie() {
           </nav>
         </details>
         <details className="web-pie-grupo" open>
-          <summary>Netto</summary>
-          <nav aria-label="Netto">
+          <summary>Fisquo</summary>
+          <nav aria-label="Fisquo">
             <Link href="/seguridad">Seguridad</Link>
             <Link href="/verificado">Cálculos verificados</Link>
             <Link href="/contacto">Contacto</Link>
@@ -39,7 +39,7 @@ export default function Pie() {
         </details>
       </div>
       <div className="web-pie-base">
-        <span>© {new Date().getFullYear()} Netto · nettohq.com</span>
+        <span>© {new Date().getFullYear()} Fisquo · fisquo.com</span>
         <a href={`mailto:${CONTACTO}`}>{CONTACTO}</a>
       </div>
       <Logo className="web-pie-gigante" />

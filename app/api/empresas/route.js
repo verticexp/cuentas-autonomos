@@ -12,7 +12,7 @@ export async function POST(req) {
   const b = await cuerpo(req);
   let id = String(b.id || '');
   if (b.nueva !== undefined) {
-    if (!u.admin) return error('Solo el administrador de Netto puede dar de alta empresas', 403);
+    if (!u.admin) return error('Solo el administrador de Fisquo puede dar de alta empresas', 403);
     const r = await nuevaEmpresa(u.id, b.nueva);
     if (r.error) return error(r.error);
     id = r.id;

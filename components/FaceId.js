@@ -39,7 +39,7 @@ export default function FaceId({ lista, bloqueo = false, app = false }) {
       {!app && <p className="nota">Con Face ID (o la huella) entras sin escribir la contraseña. Tu cara nunca sale del dispositivo.</p>}
       <label className="check">
         <input type="checkbox" checked={bloquear} onChange={cambiarBloqueo} />
-        {app ? 'Pedir la contraseña cada vez que abra Netto' : 'Pedir Face ID o contraseña cada vez que abra Netto'}
+        {app ? 'Pedir la contraseña cada vez que abra Fisquo' : 'Pedir Face ID o contraseña cada vez que abra Fisquo'}
       </label>
       {!app && lista.length > 0 && (
         <ul className="dispositivos">

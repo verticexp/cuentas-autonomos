@@ -10,7 +10,7 @@ const BASE = process.env.BASE || 'http://localhost:3002', UPSTASH = process.env.
 for (const url of [BASE, UPSTASH]) if (!['localhost', '127.0.0.1', '[::1]'].includes(new URL(url).hostname)) throw new Error('Solo localhost');
 process.env.KV_REST_API_URL = UPSTASH; process.env.KV_REST_API_TOKEN = 'local';
 const { redis } = await import('../../lib/redis.js');
-const id = randomBytes(4).toString('hex'), email = `auditoria-${id}@netto.example`, password = 'Auditoria-Simulada-2026!';
+const id = randomBytes(4).toString('hex'), email = `auditoria-${id}@fisquo.example`, password = 'Auditoria-Simulada-2026!';
 const sal = randomBytes(16).toString('hex'), producto = 'aaaaaaaaaaaa';
 const actividad = { id: 'x', nombre: 'Servicios', serie: '', ivaPct: 21, irpfPct: 0 };
 const fiscal = { tipo: 'sociedad', iva: 'general', trabajadores: true, inventario: true };
@@ -57,7 +57,7 @@ await comprobar('Existencias: Impuestos calcula base IS 50 € y cuota 10,50 €
 });
 await comprobar('Albaranes: el PDF de cuentas anuales conserva las existencias y resultado', async () => {
   const r = await pedir('/api/cuentas-anuales?anio=2025'); assert.equal(r.status, 200);
-  const path = `/private/tmp/netto-circuitos-${id}.pdf`;
+  const path = `/private/tmp/fisquo-circuitos-${id}.pdf`;
   await writeFile(path, Buffer.from(await r.arrayBuffer()));
   const { stdout } = await promisify(execFile)('pdftotext', ['-layout', path, '-']);
   assert.match(stdout, /Existencias\s+50,00/);
@@ -70,6 +70,6 @@ await comprobar('Nóminas: marcar pagada guarda la fecha efectiva y vuelve a gua
   assert.equal((await patch()).status, 200);
   assert.equal((await redis.hget(`nominas:${id}`, n.id)).pagado, hoy());
 });
-await writeFile('/private/tmp/netto-auditoria-circuitos.json', JSON.stringify({ correctas, fallos, resultados }, null, 2));
+await writeFile('/private/tmp/fisquo-auditoria-circuitos.json', JSON.stringify({ correctas, fallos, resultados }, null, 2));
 console.log(JSON.stringify({ correctas, fallos }));
 if (fallos) process.exitCode = 1;

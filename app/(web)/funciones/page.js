@@ -4,7 +4,7 @@ import Pantalla from '@/components/web/demos/Pantallas';
 import { Cta, Encabezado, Flecha } from '@/components/web/Bloques';
 import { EXTRAS, FUNCIONES, PROXIMAMENTE } from '@/components/web/datos';
 
-export const metadata = { title: 'Funciones · Netto', description: 'Facturación con Verifactu, gastos con IA, impuestos, contabilidad y cuentas anuales, inventario, conciliación de extractos, previsión de caja, nóminas y asistente IA.' };
+export const metadata = { title: 'Funciones · Fisquo', description: 'Facturación con Verifactu, gastos con IA, impuestos, contabilidad y cuentas anuales, inventario, conciliación de extractos, previsión de caja, nóminas y asistente IA.' };
 
 const VISUAL = { facturacion: 'factura', gastos: 'gasto', impuestos: 'impuestos', contabilidad: 'contabilidad', inventario: 'inventario', banco: 'conciliacion', tesoreria: 'prevision', equipo: 'equipo', asistente: null };
 
@@ -52,7 +52,7 @@ export default function Funciones() {
       </section>
 
       <section className="web-sec web-oscura">
-        <Encabezado kicker="Próximamente" titulo="En lo que estamos trabajando" sub="Netto mejora cada semana. Esto es lo próximo que llega." claro />
+        <Encabezado kicker="Próximamente" titulo="En lo que estamos trabajando" sub="Fisquo mejora cada semana. Esto es lo próximo que llega." claro />
         <ol className="web-hoja">
           {PROXIMAMENTE.map((x, i) => (
             <li key={x.t} data-r style={{ '--d': `${i * 70}ms` }}><span className="web-hoja-punto" /><b>{x.t}</b><p>{x.d}</p></li>

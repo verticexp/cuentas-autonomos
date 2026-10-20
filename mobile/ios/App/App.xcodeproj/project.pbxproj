@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		EAA03D65538004A9F00E51EE /* NettoViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67F007CA9B4BDDEA0BC526F5 /* NettoViewController.swift */; };
+		EAA03D65538004A9F00E51EE /* FisquoViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67F007CA9B4BDDEA0BC526F5 /* FisquoViewController.swift */; };
 		BE30F154C5E8AE45790CD397 /* DelegadoWeb.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D1A8A91BB052D33AC515876 /* DelegadoWeb.swift */; };
 		40F5802323D50EBF093FB0EB /* VisorWeb.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6674664CB3F660366394C11D /* VisorWeb.swift */; };
 		2948E4A40034FB9CC633D311 /* EscanerPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EF50F239EFD060987FE5B9F /* EscanerPlugin.swift */; };
@@ -24,7 +24,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		67F007CA9B4BDDEA0BC526F5 /* NettoViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NettoViewController.swift; sourceTree = "<group>"; };
+		67F007CA9B4BDDEA0BC526F5 /* FisquoViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FisquoViewController.swift; sourceTree = "<group>"; };
 		3D1A8A91BB052D33AC515876 /* DelegadoWeb.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DelegadoWeb.swift; sourceTree = "<group>"; };
 		6674664CB3F660366394C11D /* VisorWeb.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisorWeb.swift; sourceTree = "<group>"; };
 		3EF50F239EFD060987FE5B9F /* EscanerPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EscanerPlugin.swift; sourceTree = "<group>"; };
@@ -78,7 +78,7 @@
 				9582B6822FE993A50072D4E8 /* SceneDelegate.swift */,
 				50379B222058CBB4000EE86E /* capacitor.config.json */,
 				504EC3071FED79650016851F /* AppDelegate.swift */,
-				67F007CA9B4BDDEA0BC526F5 /* NettoViewController.swift */,
+				67F007CA9B4BDDEA0BC526F5 /* FisquoViewController.swift */,
 				3D1A8A91BB052D33AC515876 /* DelegadoWeb.swift */,
 				6674664CB3F660366394C11D /* VisorWeb.swift */,
 				3EF50F239EFD060987FE5B9F /* EscanerPlugin.swift */,
@@ -177,7 +177,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
-				EAA03D65538004A9F00E51EE /* NettoViewController.swift in Sources */,
+				EAA03D65538004A9F00E51EE /* FisquoViewController.swift in Sources */,
 				BE30F154C5E8AE45790CD397 /* DelegadoWeb.swift in Sources */,
 				40F5802323D50EBF093FB0EB /* VisorWeb.swift in Sources */,
 				2948E4A40034FB9CC633D311 /* EscanerPlugin.swift in Sources */,
@@ -331,7 +331,7 @@
 				);
 				MARKETING_VERSION = 1.0;
 				OTHER_SWIFT_FLAGS = "$(inherited) \"-D\" \"COCOAPODS\" \"-DDEBUG\"";
-				PRODUCT_BUNDLE_IDENTIFIER = com.nettohq.app;
+				PRODUCT_BUNDLE_IDENTIFIER = com.fisquo.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_VERSION = 5.0;
@@ -353,7 +353,7 @@
 				);
 				MARKETING_VERSION = 1.0;
 				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
-				PRODUCT_BUNDLE_IDENTIFIER = com.nettohq.app;
+				PRODUCT_BUNDLE_IDENTIFIER = com.fisquo.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
 				SWIFT_VERSION = 5.0;

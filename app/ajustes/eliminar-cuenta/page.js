@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 // Eliminar la propia cuenta (app/api/baja/cuenta, lib/baja.js eliminarCuenta).
 export default async function Page() {
   const u = await requerir();
-  if (u.admin) return <SinAcceso texto="La cuenta del administrador de Netto no se puede eliminar desde aquí." />;
+  if (u.admin) return <SinAcceso texto="La cuenta del administrador de Fisquo no se puede eliminar desde aquí." />;
   return (
     <main className="pagina mk-look">
       <Volver href="/ajustes">Ajustes</Volver>

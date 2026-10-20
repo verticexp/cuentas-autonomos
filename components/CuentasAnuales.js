@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
 
-// Lo que Netto no puede saber de las cuentas anuales: administradores, datos registrales, fechas y retoques de la memoria.
-// memoria: { n: texto actual }; borrador: { n: texto que propone Netto }; secciones: [[n, título]]
+// Lo que Fisquo no puede saber de las cuentas anuales: administradores, datos registrales, fechas y retoques de la memoria.
+// memoria: { n: texto actual }; borrador: { n: texto que propone Fisquo }; secciones: [[n, título]]
 export default function CuentasAnuales({ anio, datos, memoria, borrador, secciones }) {
   const router = useRouter();
   const [x, setX] = useState({ ...datos, memoria: { ...memoria } });
@@ -37,12 +37,12 @@ export default function CuentasAnuales({ anio, datos, memoria, borrador, seccion
         <label className="asiento-campo">Junta de socios<input className="campo" type="date" value={x.junta} onChange={poner('junta')} /></label>
       </div>
       <h3 className="ca-memoria-t">Memoria</h3>
-      <p className="nota">Netto la rellena con tus cifras. Revisa lo que está entre corchetes y cambia lo que quieras; si borras una sección, vuelve la de Netto.</p>
+      <p className="nota">Fisquo la rellena con tus cifras. Revisa lo que está entre corchetes y cambia lo que quieras; si borras una sección, vuelve la de Fisquo.</p>
       {secciones.map(([n, t]) => (
         <details key={n} className="ca-seccion">
           <summary>{n}. {t}{x.memoria[n].includes('[') ? <span className="ca-falta"> · por revisar</span> : ''}</summary>
           <textarea className="campo" rows={6} value={x.memoria[n]} onChange={(e) => ponerMem(n, e.target.value)} />
-          {x.memoria[n].trim() !== String(borrador[n]).trim() && <button type="button" className="boton sec pequeno" onClick={() => ponerMem(n, borrador[n])}>Volver al texto de Netto</button>}
+          {x.memoria[n].trim() !== String(borrador[n]).trim() && <button type="button" className="boton sec pequeno" onClick={() => ponerMem(n, borrador[n])}>Volver al texto de Fisquo</button>}
         </details>
       ))}
       <div className="gasto-guardar">

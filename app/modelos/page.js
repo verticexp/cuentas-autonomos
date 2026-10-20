@@ -75,7 +75,7 @@ export default async function Modelos({ searchParams }) {
   const ids = actividadesDe(u).map((a) => a.id);
   const rendAnterior = u.rend130?.[anio - 1];
   const r130 = usa130(f) && resumenAnual(facturas, gastos, anio, u.pagos130?.[anio] || {}, ids, { ivaCoste: !c303, hasta: h < `${anio}-12-31` ? h : `${anio}-12-31`, minoracion: minoracion130(rendAnterior), iva });
-  // Lo que Netto sabe del año anterior, como sugerencia (si ese año no está entero en Netto, no vale: lo confirma la persona).
+  // Lo que Fisquo sabe del año anterior, como sugerencia (si ese año no está entero en Fisquo, no vale: lo confirma la persona).
   const conAnterior = usa130(f) && facturas.some((x) => x.fecha.startsWith(`${anio - 1}-`));
   const sugerido = conAnterior ? resumenAnual(facturas, gastos, anio - 1, {}, ids, { ivaCoste: !c303, iva }).trimestres[3].rendAcum : null;
   // El 303 y el 130 se marcan como presentados cada uno por su cuenta; el trimestre está hecho cuando lo están los dos.
@@ -148,7 +148,7 @@ export default async function Modelos({ searchParams }) {
     }
   }
 
-  // Casos que Netto no resuelve solo (lib/revisionFiscal.js): presentar algo aparte o revisar antes del 4T.
+  // Casos que Fisquo no resuelve solo (lib/revisionFiscal.js): presentar algo aparte o revisar antes del 4T.
   const a111 = (t) => r2(modelo111(nominas || [], anio, t).retenciones + retencionesProfesionales(gastos, anio, t).retenciones);
   const avisos = avisosFiscales({ facturas, gastos, anio, hoy: h, c303, c130: Boolean(r130), liquidaciones, r130, pagos130: u.pagos130?.[anio] || {}, a111: hay111 ? a111 : null });
   // Prorrata: se enseña si hay operaciones exentas este año o el anterior, o si se ha guardado un porcentaje.
@@ -166,7 +166,7 @@ export default async function Modelos({ searchParams }) {
           {anio < actual ? <Ir href={`/modelos?anio=${anio + 1}`} tipo="cifras" aria-label="Año siguiente">›</Ir> : <span className="off">›</span>}
         </nav>
       </header>
-      <p className="grupo-pie arriba">Calculados con lo que hay en Netto. Son orientativos: revísalos con tu gestor antes de presentarlos.</p>
+      <p className="grupo-pie arriba">Calculados con lo que hay en Fisquo. Son orientativos: revísalos con tu gestor antes de presentarlos.</p>
 
       {ahora}
 
@@ -410,7 +410,7 @@ export default async function Modelos({ searchParams }) {
         <ModeloPlegable id="m200" num="200" nombre={`Impuesto de Sociedades ${anio}`} favor={is.resultado < 0}
           detalle={`Borrador · ${is.resultado >= 0 ? 'saldría a pagar' : 'saldría a devolver'} · del 1 al 25 de julio de ${anio + 1}`} dato={importeFila(Math.abs(is.resultado))}>
           <h2 className="grupo-t">Borrador del Impuesto sobre Sociedades {anio}</h2>
-          <p className="grupo-pie arriba">Solo con lo que hay en Netto, con la amortización de tus bienes de inversión y sin otros ajustes (gastos no deducibles, pérdidas de años anteriores, reservas…): tómalo como una idea de cuánto saldrá. Se presenta del 1 al 25 de julio de {anio + 1}.</p>
+          <p className="grupo-pie arriba">Solo con lo que hay en Fisquo, con la amortización de tus bienes de inversión y sin otros ajustes (gastos no deducibles, pérdidas de años anteriores, reservas…): tómalo como una idea de cuánto saldrá. Se presenta del 1 al 25 de julio de {anio + 1}.</p>
           <div className="tarjeta">
             <Casillas filas={[
               ['Ingresos', is.ingresos], ['Gastos', menos(is.gastos)], is.amortizacion && ['de ellos, amortizaciones', menos(is.amortizacion)], is.ajustesContables && ['Ingresos y gastos de asientos manuales', is.ajustesContables], ['Base imponible (beneficio)', is.base, true],
@@ -421,7 +421,7 @@ export default async function Modelos({ searchParams }) {
             <p className="nota">Tipo de {is.tamano === 'micro' ? 'microempresa (facturación de menos de 1 millón)' : is.tamano === 'reducida' ? 'empresa de reducida dimensión (menos de 10 millones)' : 'general'}{is.conAnterior ? ` según lo facturado en ${anio - 1}` : ', con lo facturado este año (no hay datos del anterior)'}.{' '}
               {is.nuevaCreacion?.aplica ? `Sociedad de nueva creación: tributa al 15 % (primer año con beneficio, ${is.nuevaCreacion.primero}, y el siguiente). No vale si la actividad ya la hacía antes otra persona o sociedad vinculada, si es del mismo grupo o si es patrimonial: confírmalo con tu gestor.`
                 : !f.constitucion ? 'Si la sociedad es de nueva creación, añade su fecha de constitución en Ajustes › Actividades y modelos: el primer año con beneficio y el siguiente tributa al 15 %.'
-                : is.nuevaCreacion?.falta ? `No hay datos de ${is.nuevaCreacion.falta} en Netto para saber si aún toca el 15 % de nueva creación: confírmalo con tu gestor.`
+                : is.nuevaCreacion?.falta ? `No hay datos de ${is.nuevaCreacion.falta} en Fisquo para saber si aún toca el 15 % de nueva creación: confírmalo con tu gestor.`
                 : is.nuevaCreacion?.primero && is.nuevaCreacion.primero < anio - 1 ? `El 15 % de nueva creación ya se aplicó en ${is.nuevaCreacion.primero} y ${is.nuevaCreacion.primero + 1}.` : ''}</p>
           </div>
         </ModeloPlegable>

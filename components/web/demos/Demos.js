@@ -60,7 +60,7 @@ export function Calculadora() {
           <i className="r-ok" style={{ width: parte(queda) }} />
         </div>
         <div className="dm-leyenda"><span><i className="r-gas" />Gastos</span><span><i className="r-imp" />IRPF</span><span><i className="r-ok" />Te queda {eur(queda, 0)}</span></div>
-        <p className="dm-nota">Estimación orientativa de un trimestre en estimación directa, con IVA general del 21 %. Netto lo calcula con tus facturas reales, actividades y pagos anteriores.</p>
+        <p className="dm-nota">Estimación orientativa de un trimestre en estimación directa, con IVA general del 21 %. Fisquo lo calcula con tus facturas reales, actividades y pagos anteriores.</p>
       </div>
     </div>
   );
@@ -280,7 +280,7 @@ export function AsistenteDemo() {
   };
   return (
     <div className="dm dm-chat">
-      <div className="dm-chat-cab"><span className="dm-chat-ava"><Icono n="asistente" /></span><div><b>Asistente de Netto</b><small>Responde con tus cifras</small></div></div>
+      <div className="dm-chat-cab"><span className="dm-chat-ava"><Icono n="asistente" /></span><div><b>Asistente de Fisquo</b><small>Responde con tus cifras</small></div></div>
       <div className="dm-chat-msgs" ref={fin}>
         {chat.map((m, i) => <p key={i} className={m.yo ? 'yo' : undefined}>{m.t}</p>)}
         {escribiendo && <p className="dm-chat-esc" aria-label="Escribiendo"><i /><i /><i /></p>}

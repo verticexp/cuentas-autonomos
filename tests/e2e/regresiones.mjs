@@ -24,7 +24,7 @@ const json = async (ruta, op) => { const r = await pedir(ruta, op); return { sta
 const html = async (ruta, cookie) => (await (await pedir(ruta, { cookie })).text());
 const form = (o) => { const f = new FormData(); for (const [k, v] of Object.entries(o)) f.set(k, v); return f; };
 
-// Cuenta del administrador de Netto y, con ella, una empresa de prueba (Bruno) que sí puede darse de baja.
+// Cuenta del administrador de Fisquo y, con ella, una empresa de prueba (Bruno) que sí puede darse de baja.
 const alta = await pedir('/api/registro', { metodo: 'POST', form: form({ nombre: 'Prueba', email: `reg${Date.now()}@test.es`, password: 'Clave-Local-01-2026' }) });
 const yo = /t=([^;]+)/.exec(alta.headers.get('set-cookie') || '')?.[1];
 if (!yo) throw new Error('No se pudo crear la cuenta de prueba: ¿la base de datos está vacía?');

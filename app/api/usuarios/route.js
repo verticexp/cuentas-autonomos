@@ -69,7 +69,7 @@ export async function POST(req) {
     const personas = Object.values((await redis.hgetall('usuarios')) || {}).filter((x) => enEmpresa(x, u.empresa)).map((x) => ({ id: x.id, ...membresias(x)[u.empresa] }));
     const sinPlan = sinPlaza(u.plan, personas, papel(u, b));
     if (sinPlan) return error(mensajePlan(sinPlan, req.headers.get('user-agent')), 403);
-    // Si ya tiene cuenta en Netto no se le añade sin más: recibe un enlace y entra en la empresa cuando lo acepta
+    // Si ya tiene cuenta en Fisquo no se le añade sin más: recibe un enlace y entra en la empresa cuando lo acepta
     // con su sesión (api/invitacion/unirse). La respuesta no da su nombre ni ningún otro dato de su cuenta.
     const yaId = await redis.hget('emails', limpiarEmail(b.email));
     const ya = yaId && (await redis.hget('usuarios', yaId));

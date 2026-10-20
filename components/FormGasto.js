@@ -98,7 +98,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
       let d;
       if (!permisoIA()) throw new Error(NO_IA);
       try { d = await llamar('/api/gastos/ticket', { method: 'POST', body: JSON.stringify({ imagen }) }); }
-      finally { window.dispatchEvent(new Event('netto:escaneos')); }
+      finally { window.dispatchEvent(new Event('fisquo:escaneos')); }
       const t = d.gasto;
       // Con inventario: las líneas de la factura que son productos del catálogo entran al almacén.
       const stock = productos.length ? emparejarLineas(t.lineas, productos).map((l) => ({ ...l, cantidad: String(l.cantidad).replace('.', ','), coste: String(l.coste).replace('.', ',') })) : [];
@@ -154,7 +154,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
       <div className={`gasto-rapido${destacar ? ' destacado' : ''}`}>
         <div className="gasto-rapido-txt">
           <strong>{hecho ? '✓ Gasto añadido' : 'Añadir un gasto'}</strong>
-          <small>Haz una foto al ticket o sube la factura: Netto lee proveedor, base, IVA, IRPF y fecha.</small>
+          <small>Haz una foto al ticket o sube la factura: Fisquo lee proveedor, base, IVA, IRPF y fecha.</small>
         </div>
         <CupoEscaneo inicial={cupoInicial} />
         {error && <p className="error">{error}</p>}
@@ -173,7 +173,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
     <form className="formulario tarjeta" onSubmit={enviar}>
       <fieldset disabled={enviando || procesando || Boolean(archivoPendiente)} style={{ border: 0, padding: 0, margin: 0, minWidth: 0, gap: 12 }}>
       <h3>{gasto ? 'Editar gasto' : movimiento ? 'Gasto del banco' : 'Añadir gasto deducible'}</h3>
-      {movimiento && <p className="nota">Cargo del {movimiento.fecha.split('-').reverse().join('-')} por {Math.abs(movimiento.importe).toLocaleString('es-ES', { minimumFractionDigits: 2 })} € ({movimiento.concepto}). Sube la factura para que Netto lea la base y el IVA; al guardar queda emparejado con el banco.</p>}
+      {movimiento && <p className="nota">Cargo del {movimiento.fecha.split('-').reverse().join('-')} por {Math.abs(movimiento.importe).toLocaleString('es-ES', { minimumFractionDigits: 2 })} € ({movimiento.concepto}). Sube la factura para que Fisquo lea la base y el IVA; al guardar queda emparejado con el banco.</p>}
       {actividades.length > 1 && <Deslizable className={`tipo ${actividades.length === 2 ? 'dos' : 'varias'}`}>
         {actividades.map(({ id, nombre }) => (
           <button type="button" key={id} className={g.actividad === id ? 'activo' : ''} onClick={() => poner('actividad', id)}>{nombre}</button>
@@ -181,7 +181,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
       </Deslizable>}
       {!gasto && <div className="ticket-ia">
         <p className="ticket-ia-t">Rellénalo con IA</p>
-        <p className="ticket-ia-txt">Haz una foto del ticket o sube la factura que te han enviado (imagen o PDF de hasta 3 MB y 10 páginas). Netto lee también el IRPF. Cada página cuenta como una lectura; si la vuelves a enviar, cuenta otra vez, aunque no guardes el gasto.</p>
+        <p className="ticket-ia-txt">Haz una foto del ticket o sube la factura que te han enviado (imagen o PDF de hasta 3 MB y 10 páginas). Fisquo lee también el IRPF. Cada página cuenta como una lectura; si la vuelves a enviar, cuenta otra vez, aunque no guardes el gasto.</p>
         <div className="ticket-ia-botones">
           <button type="button" className="boton sec ticket-foto" onClick={abrirCamara}>Hacer foto</button><input ref={camaraInput} type="file" accept="image/*" capture="environment" onChange={foto} hidden />
           <button type="button" className="boton sec ticket-foto" onClick={() => facturaInput.current?.click()}>Subir factura</button><input ref={facturaInput} type="file" accept="image/*,application/pdf,.xml,.xsig,text/xml,application/xml" onChange={foto} hidden />

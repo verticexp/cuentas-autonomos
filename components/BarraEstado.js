@@ -33,11 +33,11 @@ export default function BarraEstado() {
     o.observe(document.head, { childList: true }); // por si Next vuelve a poner su theme-color al cambiar de pantalla
     const oscuro = matchMedia('(prefers-color-scheme: dark)');
     oscuro.addEventListener('change', poner);
-    window.addEventListener('netto-tema', poner);
+    window.addEventListener('fisquo-tema', poner);
     return () => {
       o.disconnect();
       oscuro.removeEventListener('change', poner);
-      window.removeEventListener('netto-tema', poner);
+      window.removeEventListener('fisquo-tema', poner);
     };
   }, [path]);
   return null;

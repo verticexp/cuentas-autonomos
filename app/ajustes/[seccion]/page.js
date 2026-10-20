@@ -48,7 +48,7 @@ export const dynamic = 'force-dynamic';
 const TITULOS = {
   perfil: 'Tu perfil', facturacion: 'Datos de la empresa', marca: 'Diseño de factura', series: 'Series y numeración', cobros: 'Cobros', envio: 'Email de envío', gestoria: 'Tu gestoría',
   seguridad: 'Face ID y contraseña', drive: 'Google Drive', controlat: "Controla'T", avisos: 'Avisos en el móvil', importar: 'Importar datos',
-  verifactu: 'Verifactu', plan: 'Tu plan', apariencia: 'Apariencia', ayuda: 'Ayuda y contacto', recomienda: 'Recomienda Netto',
+  verifactu: 'Verifactu', plan: 'Tu plan', apariencia: 'Apariencia', ayuda: 'Ayuda y contacto', recomienda: 'Recomienda Fisquo',
 };
 const DE_EMPRESA = ['plan', 'facturacion', 'marca', 'series', 'cobros', 'envio', 'gestoria', 'drive', 'controlat', 'importar', 'verifactu'];
 
@@ -73,7 +73,7 @@ export default async function Seccion({ params }) {
   const u = await requerir();
   const app = esApp((await headers()).get('user-agent'));
   if (DE_EMPRESA.includes(seccion) && !puede(u, 'empresa')) return <SinAcceso texto="Para cambiar esto necesitas el permiso «Datos de la empresa». Pídeselo al administrador." />;
-  if (seccion === 'recomienda' && u.rol !== 'admin') return <SinAcceso texto="Solo el administrador de la empresa puede recomendar Netto con el enlace de la empresa." />;
+  if (seccion === 'recomienda' && u.rol !== 'admin') return <SinAcceso texto="Solo el administrador de la empresa puede recomendar Fisquo con el enlace de la empresa." />;
   const llaves = seccion === 'seguridad'
     ? Object.entries((await redis.hgetall(`passkeys:${u.id}`)) || {}).map(([id, k]) => ({ id, nombre: k.nombre, creada: k.creada, usada: k.usada || null }))
     : [];
@@ -104,7 +104,7 @@ export default async function Seccion({ params }) {
         const regs = await leer(u, 'registros');
         const facturas = await documentos(u, 'facturas', [...new Set((regs || []).map((r) => r.factura))]);
         const cuentas = estadoVerifactu(regs || [], { modo: u.verifactu || undefined, facturas: Object.fromEntries((facturas || []).map((f) => [f.id, f])) });
-        return <Verifactu modo={u.verifactu || null} admin={u.rol === 'admin'} listo={certificadoListo()} faltaEmisor={!u.emisor?.nif || !u.emisor?.nombre} netto={{ razon: process.env.NETTO_RAZON || '', nif: process.env.NETTO_NIF || '' }} cuentas={cuentas} />;
+        return <Verifactu modo={u.verifactu || null} admin={u.rol === 'admin'} listo={certificadoListo()} faltaEmisor={!u.emisor?.nif || !u.emisor?.nombre} fisquo={{ razon: process.env.FISQUO_RAZON || '', nif: process.env.FISQUO_NIF || '' }} cuentas={cuentas} />;
       })()}
       {['facturacion', 'cobros', 'marca', 'perfil', 'drive', 'seguridad'].includes(seccion) && <Ajustes seccion={seccion} emisor={u.emisor || {}} drive={u.drive} driveError={u.driveError} sociedad={fiscalDe(u).tipo === 'sociedad'} nombre={u.nombre} />}
       {seccion === 'perfil' && (

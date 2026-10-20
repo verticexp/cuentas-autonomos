@@ -6,7 +6,7 @@ import { eurSin } from '@/lib/formato';
 
 // Cifra grande del resumen que cuenta hasta su valor, solo la primera vez que se abre la app en la sesión
 // (si se viera en cada visita al resumen, cansaría). Sin JavaScript o con movimiento reducido, la cifra tal cual.
-const VISTO = 'netto-cifras';
+const VISTO = 'fisquo-cifras';
 let decidido = null; // { animar, desde } compartido por todas las cifras de la pantalla
 
 export default function Cifra({ v }) {

@@ -18,13 +18,13 @@ const CIFRAS = [
   { n: 12, suf: ' modelos', t: 'fiscales calculados', d: '303, 130, 111, 390, 347, Sociedades…' },
 ];
 
-// Web pública de nettohq.com: lo que ve en / quien aún no ha entrado.
+// Web pública de fisquo.com: lo que ve en / quien aún no ha entrado.
 export default function Landing() {
   return (
     <Marco>
       <section className="web-hero">
         <div className="web-hero-txt">
-          <Link href="/funciones/facturacion" className="web-aviso"><span>2027</span>Verifactu: tus facturas ya cumplen<i className="web-solo-ancho"> con Netto</i><Icono n="flecha" className="ico web-flecha" /></Link>
+          <Link href="/funciones/facturacion" className="web-aviso"><span>2027</span>Verifactu: tus facturas ya cumplen<i className="web-solo-ancho"> con Fisquo</i><Icono n="flecha" className="ico web-flecha" /></Link>
           <h1>Las cuentas de tu negocio, <em>por fin en orden</em>.</h1>
           <p className="web-sub">Facturas, gastos con IA, impuestos<span className="web-solo-ancho">, contabilidad, stock, caja y equipo</span><span className="web-solo-movil"> y contabilidad</span> en una sola app. La alternativa a Holded más sencilla y más barata<span className="web-solo-ancho">, para autónomos, pymes y grandes empresas</span>.</p>
           <div className="web-cta">
@@ -55,7 +55,7 @@ export default function Landing() {
       </section>
 
       <section className="web-sec">
-        <Encabezado kicker="El producto" titulo="Todo tu negocio, en una sola app" sub="Deja de saltar entre Excel, el correo y la web del banco. Netto junta lo que mueve tu dinero y lo pone en orden." centro />
+        <Encabezado kicker="El producto" titulo="Todo tu negocio, en una sola app" sub="Deja de saltar entre Excel, el correo y la web del banco. Fisquo junta lo que mueve tu dinero y lo pone en orden." centro />
         <div data-r><Tour /></div>
       </section>
 
@@ -79,12 +79,12 @@ export default function Landing() {
       </section>
 
       <section className="web-sec web-oscura">
-        <Encabezado kicker="Pruébalo ahora" titulo="¿Cuánto tienes que apartar este trimestre?" sub="Mueve los importes y mira tu IVA y tu IRPF al momento. En Netto se calcula solo con tus facturas y gastos reales." centro claro />
+        <Encabezado kicker="Pruébalo ahora" titulo="¿Cuánto tienes que apartar este trimestre?" sub="Mueve los importes y mira tu IVA y tu IRPF al momento. En Fisquo se calcula solo con tus facturas y gastos reales." centro claro />
         <div data-r><Calculadora /></div>
       </section>
 
       <section className="web-sec">
-        <Encabezado kicker="Para quién" titulo="Crece sin cambiar de herramienta" sub="Empieza como autónomo y sigue con Netto cuando contrates a tu primer empleado o abras tu segunda empresa." />
+        <Encabezado kicker="Para quién" titulo="Crece sin cambiar de herramienta" sub="Empieza como autónomo y sigue con Fisquo cuando contrates a tu primer empleado o abras tu segunda empresa." />
         <div className="web-segs web-carrusel">
           {SEGMENTOS.map((s, i) => (
             <Link key={s.id} href={s.ruta} data-foco data-r className="web-segcard" style={{ '--d': `${i * 80}ms` }}>
@@ -93,7 +93,7 @@ export default function Landing() {
               <h3>{s.n}</h3>
               <p>{s.sub}</p>
               <ul>{s.dolores.slice(0, 3).map(([, sol]) => <li key={sol}><Icono n="tic" />{sol}</li>)}</ul>
-              <span className="web-enlace">{s.id === 'business' ? 'Conoce Netto Business' : `Netto para ${s.n.toLowerCase()}`}<Flecha /></span>
+              <span className="web-enlace">{s.id === 'business' ? 'Conoce Fisquo Business' : `Fisquo para ${s.n.toLowerCase()}`}<Flecha /></span>
             </Link>
           ))}
         </div>
@@ -109,7 +109,7 @@ export default function Landing() {
           </div>
           <ol>
             <li><b>Exporta</b><span>Descarga tus datos desde tu programa actual.</span></li>
-            <li><b>Importa</b><span>Súbelos a Netto: reconoce clientes, facturas, saldos y bienes solo.</span></li>
+            <li><b>Importa</b><span>Súbelos a Fisquo: reconoce clientes, facturas, saldos y bienes solo.</span></li>
             <li><b>Sigue donde lo dejaste</b><span>Con tu numeración, tu historial y la contabilidad abierta.</span></li>
           </ol>
         </div>

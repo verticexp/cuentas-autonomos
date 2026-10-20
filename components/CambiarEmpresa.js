@@ -5,7 +5,7 @@ import { useState } from 'react';
 // Cambio rápido de empresa. Al cambiar se vuelve a cargar todo con la nueva empresa.
 // variante: «lista» (Ajustes), «lateral» (barra del ordenador) o «chip» (resumen, solo si hay varias).
 // Otra empresa se da de alta como cualquier cliente: /registro?nueva=1, con su plan y su prueba, sin repetir la cuenta.
-// Las empresas gratis (Fundador) solo las da de alta el administrador de Netto desde /admin.
+// Las empresas gratis (Fundador) solo las da de alta el administrador de Fisquo desde /admin.
 export default function CambiarEmpresa({ empresas = [], actual, variante = 'lista' }) {
   const [abierto, setAbierto] = useState(variante === 'lista');
   const [msg, setMsg] = useState('');
@@ -16,7 +16,7 @@ export default function CambiarEmpresa({ empresas = [], actual, variante = 'list
       const r = await fetch('/api/empresas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo) });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.error || 'No se pudo cambiar de empresa');
-      try { sessionStorage.removeItem('netto-arranque'); } catch {}
+      try { sessionStorage.removeItem('fisquo-arranque'); } catch {}
       window.location.replace(destino);
     } catch (e) { setMsg(e.message); setOcupado(false); }
   };

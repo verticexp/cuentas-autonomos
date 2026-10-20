@@ -8,7 +8,7 @@ const MENSAJES = {
   analisis: ['Análisis financiero', 'Consulta la evolución de tu negocio y compara sus resultados con Pro.'],
   inventario: ['Inventario', 'Controla las existencias y los movimientos de tus productos con Pro.'],
   tesoreria: ['Previsión de caja', 'Anticipa tus cobros y pagos para conocer el dinero disponible con Pro.'],
-  asistente: ['Pregunta a Netto', 'Resuelve dudas sobre tus cuentas con el asistente IA incluido en Pro.'],
+  asistente: ['Pregunta a Fisquo', 'Resuelve dudas sobre tus cuentas con el asistente IA incluido en Pro.'],
   albaranes: ['Pedidos y albaranes', 'Prepara tus pedidos y albaranes y conviértelos en facturas con Pro.'],
   cartera: ['Cartera de cobros', 'Organiza tus vencimientos y haz seguimiento de los cobros pendientes con Pro.'],
   remesas: ['Remesas SEPA', 'Agrupa tus recibos en remesas para enviarlas al banco con Pro.'],

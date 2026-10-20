@@ -1,4 +1,4 @@
-/* Panel del administrador de Netto (/admin) */
+/* Panel del administrador de Fisquo (/admin) */
 .adm { max-width: 1100px; }
 .adm .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .adm-intro, .adm-pie { color: var(--muted); font-size: 14px; margin: 4px 0 12px; }

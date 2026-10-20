@@ -41,7 +41,7 @@ test('E08: todos los fetch tienen señal y 15 s; asistente 40 s y banca conserva
     return String(url).includes('anthropic') ? ok({ content: [{ type: 'text', text: '{}' }] }) : ok({ id: 'enviado', aspsps: [] });
   };
   await T.leerTicket('YQ==', 'image/png'); await T.leerExtracto('YQ==');
-  await S.leerPago('cs_1'); await S.crearPago({ importe: 1, concepto: 'Prueba', volver: 'https://netto.test', datos: {} });
+  await S.leerPago('cs_1'); await S.crearPago({ importe: 1, concepto: 'Prueba', volver: 'https://fisquo.test', datos: {} });
   await E.enviarEmail({ para: 'a@b.test', asunto: 'Prueba', html: 'Hola' });
   assert.deepEqual(tiempos, [15000, 15000, 15000, 15000, 15000]);
   await preguntar();
@@ -78,7 +78,7 @@ test('E08: Stripe reintenta GET como máximo dos veces; POST y email solo una ve
   assert.deepEqual(metodos, ['GET', 'GET', 'GET']);
   metodos.length = 0;
   globalThis.fetch = async (_, op) => { metodos.push(op.method); return fallo(); };
-  assert.ok((await S.crearPago({ importe: 1, concepto: 'Prueba', volver: 'https://netto.test', datos: {} })).error);
+  assert.ok((await S.crearPago({ importe: 1, concepto: 'Prueba', volver: 'https://fisquo.test', datos: {} })).error);
   assert.deepEqual(metodos, ['POST']);
   metodos.length = 0;
   assert.ok((await E.enviarEmail({ para: 'a@b.test', asunto: 'Prueba', html: '' })).error);

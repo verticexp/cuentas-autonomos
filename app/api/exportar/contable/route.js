@@ -24,7 +24,7 @@ export async function GET(req) {
   const nombre = formato === 'a3' ? 'SUENLACE.DAT' : formato === 'contaplus' ? `XDiario-${anio}.txt` : `asientos-${anio}.csv`;
   let contenido;
   try {
-    // Código en la gestoría: ?empresa=123; no es el identificador interno de Netto.
+    // Código en la gestoría: ?empresa=123; no es el identificador interno de Fisquo.
     contenido = formato === 'a3' ? diarioA3(asientos, { anio, empresa: q.get('empresa') ?? 1 }) : formato === 'contaplus' ? diarioContaplus(asientos, { anio }) : diarioContasol(asientos, { anio });
   } catch (e) {
     return error(e.message);

@@ -28,7 +28,7 @@ const origenDe = (b, ivaPct) => {
 // Retención que le haces a un profesional (por ejemplo, la gestoría): 15 % o 7 % (los que empiezan). Va en el 111.
 const retencionDe = (b) => ([7, 15].includes(Number(b.irpfPct)) ? Number(b.irpfPct) : undefined);
 
-// Categoría del plan contable (si no se elige, Netto la deduce del concepto) y bien de inversión (se amortiza en años).
+// Categoría del plan contable (si no se elige, Fisquo la deduce del concepto) y bien de inversión (se amortiza en años).
 const categoriaDe = (b) => (CATEGORIAS.some((c) => c.id === b.categoria) ? b.categoria : undefined);
 const inversionDe = (b) => (b.inversion && TIPOS_BIEN.some((t) => t.id === b.inversion.tipo) ? { tipo: b.inversion.tipo } : undefined);
 // Productos que entran al almacén con este gasto (inventario): [{ producto, cantidad, coste unitario sin IVA }].

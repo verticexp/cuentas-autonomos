@@ -1,5 +1,5 @@
-// Contenido de la web pública. Solo lo que Netto hace hoy; lo que viene va en PROXIMAMENTE.
-export const CONTACTO = 'corporate@nettohq.com';
+// Contenido de la web pública. Solo lo que Fisquo hace hoy; lo que viene va en PROXIMAMENTE.
+export const CONTACTO = 'corporate@fisquo.com';
 export const DESCUENTO = 30;
 
 export const FUNCIONES = [
@@ -9,7 +9,7 @@ export const FUNCIONES = [
     sub: 'Numeración correlativa, IVA e IRPF por actividad, tu logo y tu color. Envía, cobra y olvídate de las plantillas de Word.',
     demo: 'factura',
     puntos: [
-      { t: 'Lista en segundos', d: 'Elige cliente y conceptos de tu catálogo. Netto calcula IVA, IRPF y total al momento.' },
+      { t: 'Lista en segundos', d: 'Elige cliente y conceptos de tu catálogo. Fisquo calcula IVA, IRPF y total al momento.' },
       { t: 'Preparada para Verifactu', d: 'Cada factura lleva su huella encadenada y su código QR, como pide la AEAT.' },
       { t: 'Cobros bajo control', d: 'Estado cobrada o pendiente, plazo de cobro configurable y aviso de las vencidas.' },
     ],
@@ -20,22 +20,22 @@ export const FUNCIONES = [
     ],
     faqs: [
       ['¿Puedo poner mi logo?', 'Sí. Subes tu logo y eliges tu color: se aplican a tus facturas y presupuestos.'],
-      ['¿Qué es Verifactu?', 'Es el sistema de la AEAT que obliga a que cada factura lleve una huella encadenada con la anterior y un código QR. Netto los genera en cada factura.'],
+      ['¿Qué es Verifactu?', 'Es el sistema de la AEAT que obliga a que cada factura lleve una huella encadenada con la anterior y un código QR. Fisquo los genera en cada factura.'],
       ['¿Puedo facturar con varias actividades?', 'Sí. Cada actividad (por ejemplo, consultoría y formación) tiene su propio IVA e IRPF por defecto.'],
     ],
   },
   {
     slug: 'gastos', icono: 'gasto', nombre: 'Gastos con IA', corto: 'Foto al ticket y listo',
-    titulo: 'Haz una foto al ticket. Netto hace el resto',
+    titulo: 'Haz una foto al ticket. Fisquo hace el resto',
     sub: 'La IA lee tus tickets y facturas de proveedor, en foto o PDF, y rellena proveedor, fecha, base e IVA. Tú solo confirmas.',
     demo: 'ticket',
     puntos: [
-      { t: 'Foto o PDF', d: 'Desde el móvil o arrastrando el archivo. Netto lee los datos en segundos.' },
+      { t: 'Foto o PDF', d: 'Desde el móvil o arrastrando el archivo. Fisquo lee los datos en segundos.' },
       { t: 'Proveedores ordenados', d: 'Cada gasto queda en la ficha de su proveedor, con su historial y lo pendiente de pagar.' },
       { t: 'Nada se te escapa', d: 'Un repaso de los gastos deducibles habituales te avisa de lo que aún no has apuntado.' },
     ],
     secciones: [
-      { t: 'Dietas y kilometraje sin calculadora', d: 'Apunta tus desplazamientos y Netto aplica los límites exentos de manutención y el importe por kilómetro.', l: ['Manutención en España y en el extranjero', 'Con o sin pernocta', 'Kilometraje calculado'], visual: 'dietas' },
+      { t: 'Dietas y kilometraje sin calculadora', d: 'Apunta tus desplazamientos y Fisquo aplica los límites exentos de manutención y el importe por kilómetro.', l: ['Manutención en España y en el extranjero', 'Con o sin pernocta', 'Kilometraje calculado'], visual: 'dietas' },
       { t: 'Pendiente o pagado, siempre claro', d: 'Cada gasto tiene su estado. Ves de un vistazo lo que debes a cada proveedor y cuándo vence.', l: ['Estado pendiente o pagado', 'Ficha de proveedor', 'Gastos recurrentes automáticos'], visual: 'proveedores' },
     ],
     faqs: [
@@ -46,7 +46,7 @@ export const FUNCIONES = [
   {
     slug: 'impuestos', icono: 'impuestos', nombre: 'Impuestos y modelos', corto: '303, 130, 111, 390, 347, Sociedades…',
     titulo: 'Tus impuestos, calculados antes de que te los pidan',
-    sub: 'Netto calcula tus modelos a partir de tus facturas y gastos. Sabes cuánto apartar cada trimestre, sin sustos en abril.',
+    sub: 'Fisquo calcula tus modelos a partir de tus facturas y gastos. Sabes cuánto apartar cada trimestre, sin sustos en abril.',
     demo: 'calculadora',
     puntos: [
       { t: 'Modelos al día', d: 'IVA (303 y 390), pago fraccionado (130), retenciones (111, 115, 180 y 190), 347, 349, Sociedades (200 y 202) y la renta (100), calculados con tus datos.' },
@@ -55,10 +55,10 @@ export const FUNCIONES = [
     ],
     secciones: [
       { t: 'El paquete para tu gestoría, en un clic', d: 'Descarga el trimestre entero (facturas, gastos e impuestos) en Excel o PDF y envíaselo a tu gestoría. O dale acceso directo con el perfil de gestoría.', l: ['Paquete trimestral en Excel y PDF', 'Acceso de gestoría con permisos', 'Exportación a CSV'], visual: 'paquete' },
-      { t: 'Pago fraccionado sin errores', d: 'Netto lleva la cuenta de lo que ya has pagado en cada 130 y lo descuenta del siguiente.', l: ['Histórico de pagos fraccionados', 'Retenciones descontadas', 'Resumen anual para la renta'], visual: 'fraccionado' },
+      { t: 'Pago fraccionado sin errores', d: 'Fisquo lleva la cuenta de lo que ya has pagado en cada 130 y lo descuenta del siguiente.', l: ['Histórico de pagos fraccionados', 'Retenciones descontadas', 'Resumen anual para la renta'], visual: 'fraccionado' },
     ],
     faqs: [
-      ['¿Netto presenta los modelos por mí?', 'Netto los calcula y te da las casillas. La presentación la haces tú o tu gestoría en la sede de la AEAT.'],
+      ['¿Fisquo presenta los modelos por mí?', 'Fisquo los calcula y te da las casillas. La presentación la haces tú o tu gestoría en la sede de la AEAT.'],
       ['¿Sustituye a mi gestor?', 'No. Le ahorra horas de trabajo y te ahorra a ti sorpresas, pero revisar y presentar sigue siendo cosa vuestra.'],
     ],
   },
@@ -70,25 +70,25 @@ export const FUNCIONES = [
     puntos: [
       { t: 'Libros registro para autónomos', d: 'Ingresos, gastos y bienes de inversión con el formato electrónico de la AEAT: lo que te piden en estimación directa.' },
       { t: 'Partida doble para sociedades', d: 'Libro diario, mayor y sumas y saldos a partir de lo que ya apuntas. Sin teclear asientos.' },
-      { t: 'Amortizaciones solas', d: 'Marca un gasto como bien de inversión y Netto lo amortiza con la tabla oficial, también en tus impuestos.' },
+      { t: 'Amortizaciones solas', d: 'Marca un gasto como bien de inversión y Fisquo lo amortiza con la tabla oficial, también en tus impuestos.' },
     ],
     secciones: [
-      { t: 'Autónomo: tus libros registro, listos para Hacienda', d: 'En estimación directa la ley te pide los libros de ingresos, gastos y bienes de inversión, y los del IVA. Netto los saca unificados con el formato electrónico de la AEAT, con tus amortizaciones y retenciones, para un requerimiento o para el Pre303.', l: ['Formato electrónico común de la AEAT', 'Un Excel por libro, con el nombre oficial', 'Resultados y balance de regalo, para ti o tu banco'], visual: 'libros' },
-      { t: 'Cuentas anuales listas para el Registro', d: 'Balance, pérdidas y ganancias, cambios en el patrimonio neto y memoria con los modelos oficiales de pymes. Netto te dice qué modelo te toca y te recuerda los plazos.', l: ['Memoria rellenada con tus cifras', 'Certificado de aprobación de la junta', 'PDF para firmar y depositar'], visual: 'anuales' },
+      { t: 'Autónomo: tus libros registro, listos para Hacienda', d: 'En estimación directa la ley te pide los libros de ingresos, gastos y bienes de inversión, y los del IVA. Fisquo los saca unificados con el formato electrónico de la AEAT, con tus amortizaciones y retenciones, para un requerimiento o para el Pre303.', l: ['Formato electrónico común de la AEAT', 'Un Excel por libro, con el nombre oficial', 'Resultados y balance de regalo, para ti o tu banco'], visual: 'libros' },
+      { t: 'Cuentas anuales listas para el Registro', d: 'Balance, pérdidas y ganancias, cambios en el patrimonio neto y memoria con los modelos oficiales de pymes. Fisquo te dice qué modelo te toca y te recuerda los plazos.', l: ['Memoria rellenada con tus cifras', 'Certificado de aprobación de la junta', 'PDF para firmar y depositar'], visual: 'anuales' },
       { t: 'Bienes de inversión sin hojas de cálculo', d: 'El ordenador, la furgoneta o la maquinaria se amortizan por días con el coeficiente oficial. El IVA se deduce entero y en el 130 o en Sociedades solo cuenta la amortización.', l: ['Libro registro de bienes de inversión', 'Tablas de autónomos y de sociedades', 'Hasta 300 €, gasto del año'], visual: 'amortizaciones' },
-      { t: 'Cámbiate desde cualquier programa', d: 'Sube el balance de sumas y saldos y el inventario de bienes de Holded, A3, Sage o Contasol. Netto crea la apertura y sigue donde lo dejaste, sin contar nada dos veces.', l: ['Saldos de apertura desde Excel', 'Amortizaciones que continúan', 'Facturas y gastos pendientes incluidos'], visual: 'migracion' },
+      { t: 'Cámbiate desde cualquier programa', d: 'Sube el balance de sumas y saldos y el inventario de bienes de Holded, A3, Sage o Contasol. Fisquo crea la apertura y sigue donde lo dejaste, sin contar nada dos veces.', l: ['Saldos de apertura desde Excel', 'Amortizaciones que continúan', 'Facturas y gastos pendientes incluidos'], visual: 'migracion' },
     ],
     faqs: [
-      ['¿Necesito saber contabilidad?', 'No. Netto genera los asientos con lo que ya haces: facturar, apuntar gastos y conciliar el banco. Tu gestor puede añadir asientos de ajuste si los necesita.'],
-      ['¿Puedo depositar las cuentas anuales con Netto?', 'Netto prepara las cuentas con los epígrafes oficiales, la memoria y el certificado. El depósito se hace en el Registro Mercantil con sus modelos (o tu gestor): solo tienes que copiar las cifras.'],
+      ['¿Necesito saber contabilidad?', 'No. Fisquo genera los asientos con lo que ya haces: facturar, apuntar gastos y conciliar el banco. Tu gestor puede añadir asientos de ajuste si los necesita.'],
+      ['¿Puedo depositar las cuentas anuales con Fisquo?', 'Fisquo prepara las cuentas con los epígrafes oficiales, la memoria y el certificado. El depósito se hace en el Registro Mercantil con sus modelos (o tu gestor): solo tienes que copiar las cifras.'],
       ['¿Qué se descarga para mi gestor?', 'Un Excel con libro diario, mayor, sumas y saldos, pérdidas y ganancias, balance y bienes de inversión.'],
-      ['Soy autónomo, ¿necesito balance?', 'No, salvo que tengas una actividad mercantil en estimación directa normal. En estimación directa simplificada solo te piden los libros registro del IVA y del IRPF y el de bienes de inversión, y Netto te los da con el formato de Hacienda. Resultados y balance te enseñan tu beneficio real y te los puede pedir el banco. Las cuentas anuales solo las depositan las sociedades.'],
+      ['Soy autónomo, ¿necesito balance?', 'No, salvo que tengas una actividad mercantil en estimación directa normal. En estimación directa simplificada solo te piden los libros registro del IVA y del IRPF y el de bienes de inversión, y Fisquo te los da con el formato de Hacienda. Resultados y balance te enseñan tu beneficio real y te los puede pedir el banco. Las cuentas anuales solo las depositan las sociedades.'],
     ],
   },
   {
     slug: 'inventario', icono: 'inventario', nombre: 'Inventario', corto: 'Stock, mínimos y qué pedir',
     titulo: 'Tu almacén, al día sin contar a mano',
-    sub: 'Cada factura resta del stock y cada compra lo suma. Netto te avisa cuando algo llega al mínimo, te prepara el pedido y valora tu almacén a coste medio.',
+    sub: 'Cada factura resta del stock y cada compra lo suma. Fisquo te avisa cuando algo llega al mínimo, te prepara el pedido y valora tu almacén a coste medio.',
     demo: 'inventario',
     puntos: [
       { t: 'Stock que se mueve solo', d: 'Al facturar un producto del catálogo baja su stock; una rectificativa lo devuelve; una compra con sus líneas lo sube. La IA lee las líneas de la factura del proveedor.' },
@@ -97,7 +97,7 @@ export const FUNCIONES = [
     ],
     secciones: [
       { t: 'Qué pedir, por proveedor', d: 'Lo que está en su mínimo, agrupado por proveedor y con la cantidad para llegar a tu stock ideal. Lo copias y lo mandas por correo o WhatsApp.', l: ['Stock mínimo y «pedir hasta»', 'Agrupado por proveedor', 'Aviso los lunes en el móvil'], visual: 'pedido' },
-      { t: 'Recuentos, roturas y stock inicial', d: 'Cuenta lo que hay y Netto apunta la diferencia. Las roturas y pérdidas salen a su coste. Cada movimiento enlaza con su factura o su compra.', l: ['Recuento en un paso', 'Historial de cada producto', 'Excel del inventario a cualquier fecha'], visual: 'margen' },
+      { t: 'Recuentos, roturas y stock inicial', d: 'Cuenta lo que hay y Fisquo apunta la diferencia. Las roturas y pérdidas salen a su coste. Cada movimiento enlaza con su factura o su compra.', l: ['Recuento en un paso', 'Historial de cada producto', 'Excel del inventario a cualquier fecha'], visual: 'margen' },
     ],
     faqs: [
       ['¿Lo necesito si vendo servicios?', 'No. El inventario se activa en Ajustes solo si vendes productos; los servicios del catálogo no llevan stock.'],
@@ -106,30 +106,30 @@ export const FUNCIONES = [
     ],
   },
   {
-    slug: 'banco', icono: 'banco', nombre: 'Banco y conciliación', corto: 'Sube el extracto, Netto concilia',
-    titulo: 'Sube tu extracto. Netto lo cuadra todo',
-    sub: 'Sube el extracto de tu banco en Norma 43, CSV, Excel o PDF. Netto empareja cada cobro con su factura y cada pago con su gasto, y lo que falta te sale para revisar.',
+    slug: 'banco', icono: 'banco', nombre: 'Banco y conciliación', corto: 'Sube el extracto, Fisquo concilia',
+    titulo: 'Sube tu extracto. Fisquo lo cuadra todo',
+    sub: 'Sube el extracto de tu banco en Norma 43, CSV, Excel o PDF. Fisquo empareja cada cobro con su factura y cada pago con su gasto, y lo que falta te sale para revisar.',
     demo: 'conciliacion',
     puntos: [
-      { t: 'Cualquier banco', d: 'Norma 43, CSV, Excel o el PDF del banco, que lee la IA. Netto nunca duplica movimientos.' },
+      { t: 'Cualquier banco', d: 'Norma 43, CSV, Excel o el PDF del banco, que lee la IA. Fisquo nunca duplica movimientos.' },
       { t: 'Emparejado automático', d: 'Por importe, número de factura o nombre del cliente o proveedor. Confirmas uno a uno o todos los seguros de golpe.' },
       { t: 'Nada se queda fuera', d: 'Los cargos sin gasto salen en revisión para añadirlos con su factura; comisiones, préstamos o pagos a Hacienda se apuntan con un toque.' },
     ],
     secciones: [
       { t: 'Cada cobro, en su factura', d: 'Al confirmar un emparejamiento, la factura queda cobrada y el gasto pagado, con la fecha del banco. ¿Te equivocaste? Se deshace con un toque.', l: ['Factura cobrada con fecha del banco', 'Deshacer en cualquier momento', 'Saldo real de todas tus cuentas'], visual: 'emparejado' },
-      { t: 'Lo que está en el banco y no en Netto, en revisión', d: 'Ese cargo de Amazon que nadie apuntó aparece en Gastos para añadirlo con su factura. Y Netto reconoce comisiones, cuotas de autónomos, préstamos, nóminas o pagos a Hacienda y te propone qué hacer con cada uno.', l: ['Gastos sin factura, en revisión', 'Comisiones y cuotas apuntadas solas', 'Aviso cada mes para subir el extracto'], visual: 'revision' },
+      { t: 'Lo que está en el banco y no en Fisquo, en revisión', d: 'Ese cargo de Amazon que nadie apuntó aparece en Gastos para añadirlo con su factura. Y Fisquo reconoce comisiones, cuotas de autónomos, préstamos, nóminas o pagos a Hacienda y te propone qué hacer con cada uno.', l: ['Gastos sin factura, en revisión', 'Comisiones y cuotas apuntadas solas', 'Aviso cada mes para subir el extracto'], visual: 'revision' },
     ],
     proximamente: 'Conexión directa con tu banco: estamos trabajando en ello. Mientras tanto, subir el extracto lleva menos de un minuto.',
     faqs: [
       ['¿Qué formatos acepta?', 'Norma 43 (el formato estándar de la banca española), CSV, Excel y PDF. Todos los bancos permiten descargar al menos uno.'],
-      ['¿Y si subo el mismo extracto dos veces?', 'No pasa nada: Netto detecta los movimientos repetidos y no los duplica.'],
-      ['¿Se puede conectar el banco directamente?', 'La conexión directa está prevista para más adelante. Ahora subes los extractos de tu banco y Netto extrae los movimientos para conciliarlos con tus facturas y gastos.'],
+      ['¿Y si subo el mismo extracto dos veces?', 'No pasa nada: Fisquo detecta los movimientos repetidos y no los duplica.'],
+      ['¿Se puede conectar el banco directamente?', 'La conexión directa está prevista para más adelante. Ahora subes los extractos de tu banco y Fisquo extrae los movimientos para conciliarlos con tus facturas y gastos.'],
     ],
   },
   {
     slug: 'tesoreria', icono: 'tesoreria', nombre: 'Tesorería', corto: 'Previsión de caja a 12 meses',
     titulo: 'Sabe hoy cuánto dinero tendrás en seis meses',
-    sub: 'La previsión de caja de Netto suma tus cobros pendientes, pagos, impuestos y nóminas, y te enseña mes a mes con cuánto cuentas.',
+    sub: 'La previsión de caja de Fisquo suma tus cobros pendientes, pagos, impuestos y nóminas, y te enseña mes a mes con cuánto cuentas.',
     demo: 'prevision',
     puntos: [
       { t: '3, 6 o 12 meses', d: 'Elige el horizonte y mira tu saldo previsto al final de cada mes.' },
@@ -152,7 +152,7 @@ export const FUNCIONES = [
       { t: 'Permisos por área', d: 'Resumen, facturar, gastos, nóminas, usuarios… Activa solo lo que cada uno necesita.' },
     ],
     secciones: [
-      { t: 'Invita a tu equipo y a tu gestoría', d: 'Envía invitaciones por email desde Netto. Caducan a los 7 días y se pueden reenviar. Tu gestoría entra con su propio perfil: ve tus facturas y gastos sin tocarlos.', l: ['Roles de administrador y miembro', 'Perfil de gestoría sin poder marcar cobros', 'Invitaciones que caducan'], visual: 'invitaciones' },
+      { t: 'Invita a tu equipo y a tu gestoría', d: 'Envía invitaciones por email desde Fisquo. Caducan a los 7 días y se pueden reenviar. Tu gestoría entra con su propio perfil: ve tus facturas y gastos sin tocarlos.', l: ['Roles de administrador y miembro', 'Perfil de gestoría sin poder marcar cobros', 'Invitaciones que caducan'], visual: 'invitaciones' },
       { t: 'Una suscripción por empresa', d: 'Los planes de Autónomos y Pymes incluyen una empresa. Para varias sociedades o equipos, Business permite acordar el alcance y un precio cerrado por contacto.', l: ['Datos separados por empresa', 'Equipos y accesos según acuerdo', 'Propuesta Business a medida'], visual: 'empresas' },
     ],
     faqs: [['¿Cuántos usuarios puedo tener?', 'Autónomos incluye 1 usuario interno en Esencial y Pro, y 3 en Plus. Pymes incluye 3, 8 o 15. Todos incluyen 1 acceso separado de gestoría sin consumir usuarios internos. Para otros equipos, consulta Business.']],
@@ -160,12 +160,12 @@ export const FUNCIONES = [
   {
     slug: 'asistente', icono: 'asistente', nombre: 'Asistente IA', corto: 'Pregunta a tus cuentas',
     titulo: 'Pregúntale a tus cuentas como a una persona',
-    sub: 'El asistente de Netto responde con tus propias cifras: cuánto has facturado, quién te debe, cuánto IVA toca este trimestre.',
+    sub: 'El asistente de Fisquo responde con tus propias cifras: cuánto has facturado, quién te debe, cuánto IVA toca este trimestre.',
     demo: 'asistente',
     puntos: [
       { t: 'Con tus datos', d: 'Responde a partir de tus facturas, gastos e impuestos, no con generalidades.' },
       { t: 'En lenguaje normal', d: 'Pregunta como hablas: «¿quién me debe más?» o «¿cómo voy este trimestre?».' },
-      { t: 'Siempre a mano', d: 'Desde cualquier pantalla de Netto, en el móvil o en el ordenador.' },
+      { t: 'Siempre a mano', d: 'Desde cualquier pantalla de Fisquo, en el móvil o en el ordenador.' },
     ],
     secciones: [],
     faqs: [['¿El asistente sustituye a un asesor?', 'No. Te da respuestas rápidas con tus cifras, pero las decisiones fiscales importantes conviene revisarlas con tu gestor.']],
@@ -176,8 +176,8 @@ export const funcion = (slug) => FUNCIONES.find((f) => f.slug === slug);
 
 export const EXTRAS = [
   { icono: 'importar', t: 'Cámbiate desde otro programa', d: 'Clientes, facturas, saldos contables y bienes de inversión desde Holded, A3, Sage o Contasol.' },
-  { icono: 'nube', t: 'Copia en Google Drive', d: 'Conecta tu Drive y Netto guarda ahí una copia de cada factura.' },
-  { icono: 'candado', t: 'Face ID y llaves de acceso', d: 'Abre Netto con tu cara o tu huella.' },
+  { icono: 'nube', t: 'Copia en Google Drive', d: 'Conecta tu Drive y Fisquo guarda ahí una copia de cada factura.' },
+  { icono: 'candado', t: 'Face ID y llaves de acceso', d: 'Abre Fisquo con tu cara o tu huella.' },
   { icono: 'campana', t: 'Avisos push', d: 'Cobros, vencimientos y plazos fiscales.' },
   { icono: 'movil', t: 'Se instala como app', d: 'En el móvil y en el ordenador.' },
   { icono: 'documento', t: 'Portal del cliente', d: 'Tus clientes descargan sus facturas.' },
@@ -209,12 +209,12 @@ export const SEGMENTOS = [
     titulo: 'Facturas, contabilidad, equipo y caja de tu pyme en un solo sitio',
     sub: 'Facturación, contabilidad y cuentas anuales, conciliación, nóminas y jornada desde 25 € al mes sin IVA. Añade operaciones y previsión de caja con Pro.',
     dolores: [
-      ['Cada uno con su Excel', 'Un solo Netto con permisos por área para cada persona.'],
+      ['Cada uno con su Excel', 'Un solo Fisquo con permisos por área para cada persona.'],
       ['No sabes cuánta caja tendrás', 'Previsión a 3, 6 y 12 meses desde tu saldo real.'],
-      ['Conciliar a mano cada mes', 'Sube el extracto y Netto empareja cobros y pagos.'],
-      ['Nóminas y fichajes aparte', 'Nóminas y registro de jornada dentro de Netto.'],
+      ['Conciliar a mano cada mes', 'Sube el extracto y Fisquo empareja cobros y pagos.'],
+      ['Nóminas y fichajes aparte', 'Nóminas y registro de jornada dentro de Fisquo.'],
       ['La contabilidad, en otro programa', 'Diario, balance y cuentas anuales salen solos de tus facturas.'],
-      ['El stock en una hoja de cálculo', 'Cada venta y cada compra mueven el stock; Netto te dice qué pedir.'],
+      ['El stock en una hoja de cálculo', 'Cada venta y cada compra mueven el stock; Fisquo te dice qué pedir.'],
     ],
     funciones: ['contabilidad', 'banco', 'tesoreria', 'equipo'],
   },
@@ -336,23 +336,23 @@ export const COMPARATIVA = {
 export const PERSONALIZADO = ['Alcance para varias sociedades o equipos', 'Usuarios y empleados según acuerdo', 'Implantación y servicios definidos contigo', 'Precio cerrado por contacto'];
 
 export const FAQ_GENERAL = [
-  ['¿Puedo traer mis datos de otro programa?', 'Sí. Netto importa clientes, facturas y gastos desde Holded o cualquier Excel, y para la contabilidad, el balance de sumas y saldos y los bienes de inversión de Holded, A3, Sage o Contasol. Sigues donde lo dejaste.'],
+  ['¿Puedo traer mis datos de otro programa?', 'Sí. Fisquo importa clientes, facturas y gastos desde Holded o cualquier Excel, y para la contabilidad, el balance de sumas y saldos y los bienes de inversión de Holded, A3, Sage o Contasol. Sigues donde lo dejaste.'],
   ['¿Controla el stock?', 'Sí, si vendes productos: cada factura resta y cada compra suma, con stock mínimo, qué pedir a cada proveedor, margen por producto y el valor del almacén a coste medio.'],
-  ['¿Netto lleva la contabilidad?', 'Sí, por partida doble y con el plan contable de pymes: libro diario, mayor, pérdidas y ganancias, balance, amortizaciones y cuentas anuales, generados con lo que ya apuntas.'],
+  ['¿Fisquo lleva la contabilidad?', 'Sí, por partida doble y con el plan contable de pymes: libro diario, mayor, pérdidas y ganancias, balance, amortizaciones y cuentas anuales, generados con lo que ya apuntas.'],
   ['¿Qué pasa cuando acaba la prueba?', 'Nada se borra. Eliges plan o te llevas tus datos: puedes exportar tus facturas y registros en cualquier momento.'],
   ['¿Puede mi gestoría entrar?', 'Sí. La invitas por email con el perfil de gestoría: ve tus facturas, gastos e impuestos sin poder marcar cobros ni crear facturas, y lleva las nóminas de tu equipo si se las dejas.'],
   ['¿Funciona en el móvil?', 'Se instala como app desde el navegador, con barra de pestañas en el móvil y panel lateral en el ordenador. La app para iPhone está en preparación.'],
-  ['¿Se conecta con mi banco?', 'Ahora subes el extracto de tu banco (Norma 43, CSV, Excel o PDF) y Netto extrae los movimientos para conciliarlos con tus facturas y gastos. Lo que no coincide queda para revisar. La conexión directa está prevista para más adelante.'],
+  ['¿Se conecta con mi banco?', 'Ahora subes el extracto de tu banco (Norma 43, CSV, Excel o PDF) y Fisquo extrae los movimientos para conciliarlos con tus facturas y gastos. Lo que no coincide queda para revisar. La conexión directa está prevista para más adelante.'],
 ];
 
 export const FAQ_PRECIOS = [
   ['¿Los precios llevan IVA y son por empresa?', 'Los precios no incluyen IVA y corresponden a una empresa por suscripción. Para varias sociedades, Business ofrece alcance y precio cerrado por contacto.'],
-  ['¿Necesito tarjeta para la prueba?', 'No. Puedes probar Netto durante 30 días sin tarjeta.'],
+  ['¿Necesito tarjeta para la prueba?', 'No. Puedes probar Fisquo durante 30 días sin tarjeta.'],
   ['¿Mi gestoría consume un usuario?', 'No. Los seis planes incluyen 1 acceso separado para tu gestoría, además de los usuarios internos del plan.'],
   ['¿Qué diferencia hay entre Pro, Plus y Business?', 'Pro añade operaciones, previsión y análisis a Esencial. Plus conserva las funciones de Pro y amplía el equipo; en Autónomos añade nóminas, jornada y rentabilidad por proyecto, y en Pymes incorporación guiada. Business es una oferta a medida para varias sociedades o equipos, con alcance y precio acordados por contacto.'],
   ['¿Cuántas páginas de lectura IA incluye cada plan?', 'Autónomos: 50 en Esencial, 200 en Pro y 500 en Plus. Pymes: 200 en Esencial, 600 en Pro y 1.500 en Plus. La cuota se comparte por empresa con la gestoría, se renueva cada mes natural también en pago anual y no se acumula. La prueba incluye 50 páginas en total; la cuota mensual del plan empieza con el periodo de pago. Una imagen cuenta una página y cada página del PDF una lectura, hasta 10 páginas y 3 MB por PDF. Volver a enviar una lectura consume otra página. Cuentan las lecturas enviadas a la IA aunque no guardes el gasto.'],
   ['¿Qué pasa al agotar las páginas?', 'Puedes seguir registrando gastos a mano y subiendo extractos en CSV, Excel o Norma 43. Puedes cambiar de plan o solicitar una ampliación por contacto: te confirmamos el precio y las condiciones antes de contratar, sin cargos automáticos. Los PDF bancarios comparten la bolsa de páginas con las facturas y tickets.'],
   ['¿Puedo cambiar de plan?', 'Puedes elegir otro plan desde tu suscripción. Antes de confirmar verás las condiciones y el importe del cambio.'],
   ['¿Cómo funciona el pago anual?', 'Ahorras un 30 % sobre las mensualidades. Mostramos el equivalente mensual y el importe total que se cobra al año, sin IVA.'],
-  ['¿Presentáis los impuestos automáticamente?', 'No. Netto calcula los modelos aplicables a tu situación; tú o tu gestoría los revisáis y presentáis.'],
+  ['¿Presentáis los impuestos automáticamente?', 'No. Fisquo calcula los modelos aplicables a tu situación; tú o tu gestoría los revisáis y presentáis.'],
 ];

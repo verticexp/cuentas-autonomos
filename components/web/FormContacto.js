@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Icono from '@/components/web/Icono';
 import { CONTACTO, SEGMENTOS } from '@/components/web/datos';
 
-// Envía la solicitud a /api/contacto, que la guarda y avisa por email al equipo de Netto.
+// Envía la solicitud a /api/contacto, que la guarda y avisa por email al equipo de Fisquo.
 export default function FormContacto({ plan = '', gestoria = false }) {
   const inicial = SEGMENTOS.find((s) => plan.startsWith(s.n))?.n || '';
   const [tipo, setTipo] = useState(inicial);

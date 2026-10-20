@@ -8,7 +8,7 @@ import { diasPrueba } from '@/lib/prueba';
 
 const POR_DIA = 200; // tope de envíos por empresa y día: frena el abuso del correo sin estorbar al uso normal
 // En el mes de prueba, menos envíos, el asunto de la plantilla y un mensaje más corto (informe de seguridad m1): una cuenta
-// recién creada no puede usar el correo de Netto para mandar lo que quiera a quien quiera.
+// recién creada no puede usar el correo de Fisquo para mandar lo que quiera a quien quiera.
 const POR_DIA_PRUEBA = 30;
 const MENSAJE_PRUEBA = 1500;
 

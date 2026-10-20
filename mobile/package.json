@@ -1,5 +1,5 @@
 {
-  "name": "netto-movil",
+  "name": "fisquo-movil",
   "private": true,
   "scripts": {
     "sync": "cap sync ios",

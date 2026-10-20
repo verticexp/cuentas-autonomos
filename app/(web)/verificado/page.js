@@ -1,11 +1,11 @@
 import Icono from '@/components/web/Icono';
 import { Cta, Encabezado } from '@/components/web/Bloques';
 
-export const metadata = { title: 'Cálculos verificados · Netto', description: 'Cómo se comprueban los cálculos fiscales de Netto: 1.000 empresas simuladas, recalculadas por otro camino y comparadas céntimo a céntimo antes de cada versión.' };
+export const metadata = { title: 'Cálculos verificados · Fisquo', description: 'Cómo se comprueban los cálculos fiscales de Fisquo: 1.000 empresas simuladas, recalculadas por otro camino y comparadas céntimo a céntimo antes de cada versión.' };
 
 const CIFRAS = [
   { n: 1000, t: 'empresas simuladas', d: 'Autónomos y sociedades ficticias' },
-  { pre: 'más de', n: 470000, t: 'comprobaciones', d: 'En cada versión de Netto' },
+  { pre: 'más de', n: 470000, t: 'comprobaciones', d: 'En cada versión de Fisquo' },
   { n: 0, t: 'diferencias', d: 'Si hay una sola, no se publica' },
   { pre: 'más de', n: 870, t: 'pruebas automáticas', d: 'Además de la batería de empresas' },
 ];
@@ -23,7 +23,7 @@ const SIMULA = [
 ];
 
 const COMPARA = [
-  { i: 'impuestos', t: 'Modelos fiscales', d: 'Los modelos 303, 390, 130, 115, 347 y 349 se recalculan y se comparan con los de Netto.' },
+  { i: 'impuestos', t: 'Modelos fiscales', d: 'Los modelos 303, 390, 130, 115, 347 y 349 se recalculan y se comparan con los de Fisquo.' },
   { i: 'tesoreria', t: 'Compensación de IVA', d: 'Si te sale IVA a devolver, se comprueba que la compensación entre periodos es la correcta.' },
   { i: 'contabilidad', t: 'Asientos y balance', d: 'Los asientos tienen que cuadrar y el balance también. Si no, la prueba falla.' },
   { i: 'inventario', t: 'Amortizaciones', d: 'Cada bien de inversión se amortiza por otro camino y las cuotas tienen que coincidir.' },
@@ -37,7 +37,7 @@ export default function Verificado() {
       <section className="web-hero-pag centro">
         <span className="web-fcard-ico grande web-entra"><Icono n="tic" /></span>
         <h1 className="web-entra" style={{ '--d': '60ms' }}>Tus números se comprueban <em>en cada versión.</em></h1>
-        <p className="web-sub web-entra" style={{ '--d': '120ms' }}>Antes de publicar cualquier cambio, Netto recalcula miles de operaciones por otro camino y las compara con las suyas. Así sabemos que los cálculos no se han roto.</p>
+        <p className="web-sub web-entra" style={{ '--d': '120ms' }}>Antes de publicar cualquier cambio, Fisquo recalcula miles de operaciones por otro camino y las compara con las suyas. Así sabemos que los cálculos no se han roto.</p>
       </section>
 
       <section className="web-sec web-sec-pegada">
@@ -56,7 +56,7 @@ export default function Verificado() {
           <div>
             <p className="web-kicker">Cómo se comprueba</p>
             <h2>1.000 empresas que no existen, con casos que sí pasan</h2>
-            <p>Una batería de pruebas simula 1.000 empresas ficticias, autónomos y sociedades. Cada una se recalcula por otro camino, en céntimos enteros, y se compara con lo que calcula Netto.</p>
+            <p>Una batería de pruebas simula 1.000 empresas ficticias, autónomos y sociedades. Cada una se recalcula por otro camino, en céntimos enteros, y se compara con lo que calcula Fisquo.</p>
           </div>
           <ol>
             {SIMULA.map((s) => <li key={s}><b>{s}</b></li>)}
@@ -81,10 +81,10 @@ export default function Verificado() {
       </section>
 
       <section className="web-sec">
-        <Encabezado kicker="Con honestidad" titulo="Lo que Netto no hace por ti" sub="Los modelos son borradores y conviene revisarlos con tu gestor antes de presentarlos. Y hay casos que Netto todavía no cubre: Canarias (IGIC), País Vasco y Navarra, y la ventanilla única (OSS)." />
+        <Encabezado kicker="Con honestidad" titulo="Lo que Fisquo no hace por ti" sub="Los modelos son borradores y conviene revisarlos con tu gestor antes de presentarlos. Y hay casos que Fisquo todavía no cubre: Canarias (IGIC), País Vasco y Navarra, y la ventanilla única (OSS)." />
       </section>
 
-      <Cta titulo="¿Quieres ver cómo calcula Netto?" sub="Pruébalo gratis y compara los modelos con los tuyos. Si tienes dudas, escríbenos." otro={['/contacto', 'Hablar con nosotros']} />
+      <Cta titulo="¿Quieres ver cómo calcula Fisquo?" sub="Pruébalo gratis y compara los modelos con los tuyos. Si tienes dudas, escríbenos." otro={['/contacto', 'Hablar con nosotros']} />
     </>
   );
 }

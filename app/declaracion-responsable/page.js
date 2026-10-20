@@ -1,28 +1,28 @@
 import '@/app/legal.css';
 import { VERSION } from '@/lib/verifactuEnvio';
 
-export const metadata = { title: 'Declaración responsable · Netto' };
+export const metadata = { title: 'Declaración responsable · Fisquo' };
 
 // Declaración responsable del sistema informático de facturación (RD 1007/2023, art. 13; Orden HAC/1177/2024, art. 15),
 // según el ejemplo 1 de la AEAT (producto de uso solo VERI*FACTU). Los datos del productor salen de las variables
-// NETTO_RAZON, NETTO_NIF, NETTO_DIRECCION, NETTO_DECLARACION_FECHA y NETTO_DECLARACION_LUGAR: sin ellas, no se publica.
+// FISQUO_RAZON, FISQUO_NIF, FISQUO_DIRECCION, FISQUO_DECLARACION_FECHA y FISQUO_DECLARACION_LUGAR: sin ellas, no se publica.
 export default function Declaracion() {
-  const d = { razon: process.env.NETTO_RAZON, nif: process.env.NETTO_NIF, direccion: process.env.NETTO_DIRECCION, fecha: process.env.NETTO_DECLARACION_FECHA, lugar: process.env.NETTO_DECLARACION_LUGAR };
+  const d = { razon: process.env.FISQUO_RAZON, nif: process.env.FISQUO_NIF, direccion: process.env.FISQUO_DIRECCION, fecha: process.env.FISQUO_DECLARACION_FECHA, lugar: process.env.FISQUO_DECLARACION_LUGAR };
   if (Object.values(d).some((v) => !v)) {
     return (
       <main className="legal">
-        <a className="legal-volver" href="/">Netto</a>
+        <a className="legal-volver" href="/">Fisquo</a>
         <h1>Declaración responsable del sistema informático de facturación</h1>
-        <p>La declaración responsable de Netto se está completando. Para cualquier duda: <a href="mailto:corporate@nettohq.com">corporate@nettohq.com</a>.</p>
+        <p>La declaración responsable de Fisquo se está completando. Para cualquier duda: <a href="mailto:corporate@fisquo.com">corporate@fisquo.com</a>.</p>
       </main>
     );
   }
   return (
     <main className="legal">
-      <a className="legal-volver" href="/">Netto</a>
+      <a className="legal-volver" href="/">Fisquo</a>
       <h1>Declaración responsable del sistema informático de facturación</h1>
       <h2>1.a) Nombre del sistema informático</h2>
-      <p>Netto</p>
+      <p>Fisquo</p>
       <h2>1.b) Código identificador del sistema informático</h2>
       <p>NT</p>
       <h2>1.c) Versión</h2>
@@ -47,7 +47,7 @@ export default function Declaracion() {
       <h2>1.l) Fecha y lugar de suscripción</h2>
       <p>{d.fecha}, en {d.lugar}.</p>
       <h2>Anexo · Otras formas de contacto</h2>
-      <p><a href="mailto:corporate@nettohq.com">corporate@nettohq.com</a></p>
+      <p><a href="mailto:corporate@fisquo.com">corporate@fisquo.com</a></p>
     </main>
   );
 }

@@ -1,17 +1,17 @@
 {
-  "appId": "com.nettohq.app",
-  "appName": "Netto",
+  "appId": "com.fisquo.app",
+  "appName": "Fisquo",
   "webDir": "www",
   "server": {
-    "url": "https://www.nettohq.com",
+    "url": "https://www.fisquo.com",
     "allowNavigation": [
-      "www.nettohq.com",
-      "nettohq.com"
+      "www.fisquo.com",
+      "fisquo.com"
     ],
     "errorPath": "sin-conexion.html"
   },
   "ios": {
-    "appendUserAgent": "NettoApp/1",
+    "appendUserAgent": "FisquoApp/1",
     "contentInset": "never",
     "limitsNavigationsToAppBoundDomains": true,
     "backgroundColor": "#F4F4F1",

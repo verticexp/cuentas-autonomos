@@ -6,7 +6,7 @@ import '@/app/alta.css';
 export default function ProgresoAlta({ fase, paso, total, etiqueta, atras, ocupado = false }) {
   return (
     <div className="alta-progreso">
-      <ol className="alta-fases" aria-label="Preparar Netto">
+      <ol className="alta-fases" aria-label="Preparar Fisquo">
         <li className={fase === 1 ? 'actual' : 'completa'} aria-current={fase === 1 ? 'step' : undefined}>
           <span aria-hidden>{fase === 2 ? '✓' : '1'}</span>Crear tu cuenta
         </li>
