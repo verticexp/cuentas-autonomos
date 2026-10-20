@@ -7,7 +7,7 @@ import { atras, volverA } from '@/lib/transicion';
 import Deslizable from './Deslizable';
 import { eur } from '@/lib/formato';
 import { importes, nifUE, origenGasto } from '@/lib/calculos';
-import { partirIva, pctDeducible } from '@/lib/ivaDeducible';
+import { costeAfecto, partirIva, pctAfecto, pctDeducible } from '@/lib/ivaDeducible';
 import { parseImporte } from '@/lib/importe';
 import { CATEGORIAS, categoria, categoriaDe, pareceBien } from '@/lib/categorias';
 import { LIMITE_LIBERTAD, TIPOS_BIEN, coeficiente } from '@/lib/amortizaciones';
@@ -33,6 +33,9 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
   const [error, setError] = useState('');
   // IVA deducible en parte (lib/ivaDeducible.js): 100, 50 y 0 en el desplegable; cualquier otro, escrito a mano.
   const [pctOtro, setPctOtro] = useState(() => ![undefined, null, '', 100, 50, 0].includes(gasto?.deduciblePct));
+  // Parte que cuenta en el IRPF (afectoPct, lib/ivaDeducible.js), aparte de la del IVA: solo para autónomos.
+  const [verAfecto, setVerAfecto] = useState(() => gasto?.afectoPct !== undefined && gasto?.afectoPct !== null);
+  const [afectoOtro, setAfectoOtro] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [avisoDuplicados, setAvisoDuplicados] = useState(null);
   const poner = (k, v) => { setAvisoDuplicados(null); setG((x) => ({ ...x, [k]: v })); };
@@ -207,7 +210,11 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
       {Number(g.irpfPct) > 0 && <p className="nota">Le pagas la factura menos la retención, y esa retención la ingresas tú en el 111.</p>}
       {(Number(g.ivaPct) > 0 || origenGasto(g)) && <>
         <select className="campo" value={pctOtro ? 'otro' : String(pctDeducible(g))} aria-label="IVA que te deduces"
-          onChange={(e) => { const v = e.target.value; setPctOtro(v === 'otro'); poner('deduciblePct', v === 'otro' ? '' : v === '100' ? undefined : Number(v)); }}>
+          onChange={(e) => {
+            const v = e.target.value; setPctOtro(v === 'otro'); poner('deduciblePct', v === 'otro' ? '' : v === '100' ? undefined : Number(v));
+            // Un turismo de uso mixto deduce el 50 % del IVA, pero en el IRPF, para la AEAT, nada: así sale por defecto.
+            if (regimen !== 'sociedad' && !gasto && v === '50') { poner('afectoPct', 0); setVerAfecto(true); setAfectoOtro(false); }
+          }}>
           <option value="100">Me deduzco todo el IVA</option>
           <option value="50">Me deduzco el 50 % (coche, uso mixto)</option>
           <option value="0">No me deduzco el IVA</option>
@@ -215,8 +222,25 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
         </select>
         {pctOtro && <label>% del IVA que te deduces<input className="campo" inputMode="decimal" value={g.deduciblePct ?? ''} onChange={(e) => poner('deduciblePct', e.target.value)} placeholder="Ej.: 30" /></label>}
         {pctDeducible(g) === 100 && Number(g.ivaPct) > 0 && !g.proveedorNif && <p className="nota">¿Es un ticket sin tu NIF? Su IVA no se deduce (art. 97 de la Ley del IVA): pide factura con tu NIF o elige «No me deduzco el IVA».</p>}
-        {pctDeducible(g) < 100 && <p className="nota">Solo se deduce el IVA de la parte que usas para tu actividad (un turismo se presume al 50 %). El IVA que no te deduces cuenta como gasto{g.inversion ? ' y se amortiza con el bien' : ''}.</p>}
+        {pctDeducible(g) < 100 && <p className="nota">Solo se deduce el IVA de la parte que usas para tu actividad (un turismo se presume al 50 %). El IVA que no te deduces cuenta como gasto{g.inversion ? ' y se amortiza con el bien' : ''} en la parte que uses para la actividad.</p>}
       </>}
+      {regimen !== 'sociedad' && (verAfecto || pctDeducible(g) < 100 ? (() => {
+        const p = pctDeducible(g), a = g.afectoPct === undefined || g.afectoPct === null || g.afectoPct === '' ? null : pctAfecto(g);
+        const vivienda = Math.round(p * 30) / 100;
+        const valor = afectoOtro ? 'otro' : a === null ? '100' : a === 0 ? '0' : p < 100 && a === p ? 'iva' : p < 100 && a === vivienda ? 'vivienda' : a === 100 ? '100' : 'otro';
+        return <>
+          <select className="campo" value={valor} aria-label="Parte que cuenta como gasto en el IRPF"
+            onChange={(e) => { const v = e.target.value; setAfectoOtro(v === 'otro'); poner('afectoPct', v === '100' ? undefined : v === 'iva' ? p : v === 'vivienda' ? vivienda : v === 'otro' ? (a ?? '') : Number(v)); }}>
+            <option value="100">En el IRPF cuenta entero (solo lo uso para la actividad)</option>
+            {p < 100 && <option value="iva">En el IRPF, la misma parte que en el IVA ({String(p).replace('.', ',')} %)</option>}
+            {p < 100 && <option value="vivienda">Suministros de casa con despacho: el 30 % de esa parte ({String(vivienda).replace('.', ',')} %)</option>}
+            <option value="0">En el IRPF no cuenta (turismo sin uso exclusivo, gasto personal)</option>
+            <option value="otro">En el IRPF cuenta otro porcentaje…</option>
+          </select>
+          {valor === 'otro' && <label>% que cuenta en el IRPF<input className="campo" inputMode="decimal" value={g.afectoPct ?? ''} onChange={(e) => poner('afectoPct', e.target.value)} placeholder="Ej.: 30" /></label>}
+          <p className="nota">El 130 y la renta solo restan la parte del gasto que es de tu actividad. Un coche que también usas para lo tuyo, para Hacienda no cuenta en el IRPF aunque te deduzcas la mitad del IVA; los suministros de casa con despacho, el 30 % de la parte del despacho.{parseImporte(g.base) > 0 ? ` En el IRPF restas ${eur(costeAfecto({ ...g, base: parseImporte(g.base) }))}.` : ''}</p>
+        </>;
+      })() : <button type="button" className="enlace" onClick={() => setVerAfecto(true)}>¿Lo usas también para lo tuyo? Indica la parte que es de tu actividad</button>)}
       {parseImporte(g.base) > 0 && <dl className="gasto-importes" aria-label="Importes del gasto">
         <div><dt>Base imponible</dt><dd>{eur(calculo.base)}</dd></div>
         <div><dt>IVA</dt><dd>{eur(calculo.iva)}</dd></div>

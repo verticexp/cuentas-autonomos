@@ -16,7 +16,7 @@ import VerifactuFactura from '@/components/VerifactuFactura';
 import { RepetirFactura } from '@/components/Recurrente';
 import { asuntoFactura, mensajeFactura } from '@/lib/envio';
 import { puede } from '@/lib/permisos';
-import { actividadesDe, fiscalDe, nombresActividad, usa130, usa303 } from '@/lib/empresa';
+import { actividadesDe, fiscalDe, nombresActividad, usa130, usa303, ajustesIva } from '@/lib/empresa';
 import { enlacePortal } from '@/lib/portal';
 import { Compartir } from '@/components/AccionesPresupuesto';
 import { proyectosDe } from '@/lib/stockServidor';
@@ -119,7 +119,7 @@ export default async function Factura({ params }) {
         if (usa130(fiscal)) {
           const anio = Number(f.fecha.slice(0, 4)), hasta = `${anio}-12-31`;
           const [fs, gs] = await Promise.all([leerRango(u, 'facturas', `${anio}-01-01`, hasta), leerRango(u, 'gastos', `${anio}-01-01`, hasta)]);
-          margen = margenIrpf(resumenAnual(fs, gs, anio, {}, actividadesDe(u).map((x) => x.id), { ivaCoste: !usa303(fiscal) }), trimestre(f.fecha)) ?? undefined;
+          margen = margenIrpf(resumenAnual(fs, gs, anio, {}, actividadesDe(u).map((x) => x.id), { ivaCoste: !usa303(fiscal), iva: ajustesIva(u) }), trimestre(f.fecha)) ?? undefined;
         }
         const a = apartar(f, { margen });
         const iva = usa303(fiscal) ? a.iva : 0;

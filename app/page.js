@@ -181,8 +181,8 @@ export default async function Resumen({ searchParams }) {
                 <div key={q.t} className="trim trimestre">
                   <div className="trim-cab"><h3>{q.t}T {anio}</h3></div>
                   <div className="trim-cifras">
-                    {c303 && <p><span>Modelo 303</span><strong>{q.m303 < 0 ? `${eur(-q.m303)} a compensar` : eur(q.ivaIngresar)}</strong></p>}
-                    {c303 && <Presentado modelo="303" anio={anio} t={q.t} importe={0} pagado={hecho303(u.pres303, u.pagos130, anio, q.t)} con130={false} />}
+                    {c303 && <p><span>Modelo 303</span><strong>{q.ivaDevolucion > 0 ? `${eur(q.ivaDevolucion)} a devolver` : q.m303 < 0 ? `${eur(-q.m303)} a compensar` : eur(q.ivaIngresar)}</strong></p>}
+                    {c303 && <Presentado modelo="303" anio={anio} t={q.t} importe={0} pagado={q.t === 4 && u.pres303?.[anio]?.[4] === 'devolucion' ? 'devolucion' : hecho303(u.pres303, u.pagos130, anio, q.t)} con130={false} />}
                     {c130 && <p><span>Modelo 130</span><strong>{eur(q.m130)}</strong></p>}
                     {c130 && <Presentado anio={anio} t={q.t} importe={q.m130} pagado={pagos(anio)[q.t]} />}
                     {!c303 && !c130 && <p><span>Base facturada</span><strong>{eur(q.ingresos)}</strong></p>}
@@ -196,7 +196,7 @@ export default async function Resumen({ searchParams }) {
                     <dt>IVA repercutido</dt><dd>{eur(q.ivaRep)}</dd>
                     <dt>IVA deducible</dt><dd>−{eur(q.ivaDed)}</dd>
                     {q.ivaCompensado > 0 && <><dt>Cuotas anteriores compensadas</dt><dd>−{eur(q.ivaCompensado)}</dd></>}
-                    <dt><strong>Modelo 303</strong></dt><dd><strong>{q.m303 < 0 ? `${eur(-q.m303)} a compensar` : eur(q.ivaIngresar)}</strong></dd>
+                    <dt><strong>Modelo 303</strong></dt><dd><strong>{q.ivaDevolucion > 0 ? `${eur(q.ivaDevolucion)} a devolver` : q.m303 < 0 ? `${eur(-q.m303)} a compensar` : eur(q.ivaIngresar)}</strong></dd>
                     </>}
                     {c130 && <>
                     <dt>5 % gastos difícil justificación</dt><dd>−{eur(q.difJust)}</dd>

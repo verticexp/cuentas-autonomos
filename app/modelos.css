@@ -93,3 +93,8 @@
   .pres, .pres-estado, .pres .estado, .casillas-plegable > summary::after, .modelo-plegable > summary, .modelo-plegable > summary::after { transition: none; }
   .pres-txt { animation: none; }
 }
+
+/* Avisos fiscales (lib/revisionFiscal.js): lo que hay que presentar aparte o revisar antes del 4T */
+.modelos .avisos-fiscales { margin: 0; padding: 4px 16px 4px 32px; }
+.modelos .avisos-fiscales li { padding: 8px 0; font-size: 15px; line-height: 1.45; overflow-wrap: anywhere; }
+.modelos .avisos-fiscales li + li { border-top: 0.5px solid var(--line); }

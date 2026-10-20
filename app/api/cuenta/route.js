@@ -91,10 +91,12 @@ export async function PATCH(req) {
   }
   if (b.presentado303) {
     if (sin('resumen')) return sin('resumen');
-    const { anio, t, hecho } = b.presentado303;
+    const { anio, t, hecho, devolucion } = b.presentado303;
     if (!Number.isInteger(anio) || anio < 2000 || anio > 2100 || ![1, 2, 3, 4].includes(t)) return error('Trimestre no válido');
+    // En el 4T, el saldo a favor se puede pedir en devolución (art. 115 LIVA): ya no se compensa el año siguiente.
+    if (devolucion && t !== 4) return error('La devolución solo se pide en el 303 del 4T');
     const pres = { ...(u.pres303 || {}) };
-    pres[anio] = { ...(pres[anio] || {}), [t]: Boolean(hecho) };
+    pres[anio] = { ...(pres[anio] || {}), [t]: hecho && devolucion ? 'devolucion' : Boolean(hecho) };
     await actualizarUsuario(u, { pres303: pres, pagadosHacienda: marcarPagado(u, `${anio}-${t}-303`, Boolean(hecho)) });
     return Response.json({ ok: true });
   }
@@ -124,6 +126,19 @@ export async function PATCH(req) {
   }
   // Datos de un año que deciden otros modelos (null los quita): el rendimiento neto de la actividad (casilla 13 del 130
   // del año siguiente) y la cuota del Impuesto sobre Sociedades (base del 202).
+  // Prorrata provisional del IVA de un año (art. 105 LIVA): un entero de 0 a 100; null la quita (Netto usa la del año anterior).
+  if (b.prorrata) {
+    if (sin('resumen')) return sin('resumen');
+    const { anio, pct } = b.prorrata;
+    if (!Number.isInteger(anio) || anio < 2000 || anio > 2100) return error('Año no válido');
+    const valor = pct === null || pct === '' ? null : Number(String(pct).replace(',', '.').replace('%', '').trim());
+    if (valor !== null && !(Number.isInteger(valor) && valor >= 0 && valor <= 100)) return error('La prorrata es un porcentaje entero entre 0 y 100');
+    const datos = { ...(u.prorrata || {}) };
+    if (valor === null) delete datos[anio]; else datos[anio] = valor;
+    await actualizarUsuario(u, { prorrata: datos });
+    await auditar(u, `Prorrata provisional del IVA de ${anio}`, valor === null ? 'quitada' : `${valor} %`);
+    return Response.json({ ok: true });
+  }
   const porAnio = ['rend130', 'cuotaIS'].find((k) => b[k]);
   if (porAnio) {
     if (sin('resumen')) return sin('resumen');
