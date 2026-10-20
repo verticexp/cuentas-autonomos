@@ -1,36 +1,35 @@
 .cabecera { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
 .cabecera .titulo { margin-bottom: 0; }
 .anios { display: flex; align-items: center; gap: 12px; }
-.anios a, .anios .off { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--surface); text-decoration: none; font-size: 1.3rem; }
+.anios a, .anios .off { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--surface); text-decoration: none; font-size: 20px; }
 /* Un enlace de texto junto a las flechas («Todo», «Por años») no va dentro de un círculo */
 .anios a.nota { width: auto; height: 36px; padding: 0 14px; border-radius: 18px; margin: 0; font-size: 15px; white-space: nowrap; }
 .anios .off { opacity: 0.3; }
 .tarjetas.dos { grid-template-columns: 1fr 1fr; }
-.grande { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.03em; }
+.grande { font-size: 26px; font-weight: 800; letter-spacing: -0.03em; }
 .pendiente { background: var(--surface); border-radius: 16px; padding: 14px 16px; margin: -20px 0 28px; }
-.trimestre dl { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; font-size: 0.9375rem; }
+.trimestre dl { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; font-size: 15px; }
 .trimestre dt { color: var(--muted); }
 .trimestre dd { margin: 0; text-align: right; }
 
 .boton { display: inline-block; text-align: center; text-decoration: none; padding: 14px 20px; border-radius: 14px; font-weight: 700; background: var(--ink); color: var(--paper); }
 .boton:disabled { opacity: 0.6; }
 .boton.pequeno { padding: 10px 16px; }
-.vacio .boton { margin-top: 14px; }
 
-.chips a { padding: 8px 14px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); text-decoration: none; font-size: 0.9375rem; }
+.chips a { padding: 8px 14px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); text-decoration: none; font-size: 15px; }
 .chips a.activo { background: var(--ink); color: var(--paper); border-color: var(--ink); }
 .grupo-lista { list-style: none; padding: 0; margin-top: 16px; background: var(--surface); border-radius: 20px; overflow: hidden; }
 .grupo-lista li + li { border-top: 1px solid var(--line); }
 .grupo-lista a.fila { text-decoration: none; }
-.num { flex: none; font-weight: 700; color: var(--muted); font-size: 0.875rem; width: 64px; }
+.num { flex: none; font-weight: 700; color: var(--muted); font-size: 14px; width: 64px; }
 .imp.pend { color: var(--out); }
 
 .formulario { display: flex; flex-direction: column; gap: 12px; }
-.formulario label { display: flex; flex-direction: column; gap: 6px; color: var(--muted); font-size: 0.875rem; }
-.formulario .campo { color: var(--ink); font-size: 1rem; }
+.formulario label { display: flex; flex-direction: column; gap: 6px; color: var(--muted); font-size: 14px; }
+.formulario .campo { color: var(--ink); font-size: 16px; }
 .formulario fieldset { border: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-.formulario legend { color: var(--muted); font-size: 0.875rem; margin-bottom: 6px; }
-.formulario .check { flex-direction: row; align-items: center; gap: 10px; color: var(--ink); font-size: 1rem; }
+.formulario legend { color: var(--muted); font-size: 14px; margin-bottom: 6px; }
+.formulario .check { flex-direction: row; align-items: center; gap: 10px; color: var(--ink); font-size: 16px; }
 /* Una casilla va siempre a la izquierda de su texto, aunque la etiqueta no lleve .check */
 .formulario label:not(.sino):has(> input[type="checkbox"]:first-child), .formulario label:not(.sino):has(> input[type="radio"]:first-child) { flex-direction: row; align-items: center; gap: 10px; color: var(--ink); font-size: 15px; cursor: pointer; }
 .formulario label:not(.sino) > input[type="checkbox"]:first-child, .formulario label:not(.sino) > input[type="radio"]:first-child { flex: none; width: 20px; height: 20px; margin: 0; accent-color: var(--marca, var(--ink)); }
@@ -86,14 +85,14 @@
 .login .nota { margin: 0 0 6px; }
 
 .aviso-plazo { display: flex; flex-direction: column; gap: 2px; background: color-mix(in srgb, #E9A23B 18%, var(--surface)); border-radius: 16px; padding: 14px 16px; margin-bottom: 14px; text-decoration: none; }
-.aviso-plazo span { color: var(--muted); font-size: 0.9375rem; }
+.aviso-plazo span { color: var(--muted); font-size: 15px; }
 .aviso-plazo.rojo { background: color-mix(in srgb, var(--out) 14%, var(--surface)); }
 .barra-limite { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; margin-top: 10px; }
 .barra-limite span { display: block; height: 100%; background: var(--in); border-radius: 4px; }
 .barra-limite span.cerca { background: #E9A23B; }
 .barra-limite span.pasado { background: var(--out); }
-.grande small { font-size: 0.9375rem; font-weight: 500; letter-spacing: 0; }
-.descargas { color: var(--muted); font-size: 0.875rem; margin: 10px 0 0; }
+.grande small { font-size: 15px; font-weight: 500; letter-spacing: 0; }
+.descargas { color: var(--muted); font-size: 14px; margin: 10px 0 0; }
 .descargas a { color: var(--ink); font-weight: 600; }
 .acciones-factura { flex-wrap: wrap; }
-.trimestre .cabecera { margin-bottom: 10px; } .trimestre .cabecera h3 { margin: 0; } .trimestre .estado { padding: 6px 12px; font-size: 0.8125rem; }
+.trimestre .cabecera { margin-bottom: 10px; } .trimestre .cabecera h3 { margin: 0; } .trimestre .estado { padding: 6px 12px; font-size: 13px; }

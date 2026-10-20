@@ -86,7 +86,7 @@ export function FiltrosFichas({ lista, filtros }) {
   return <form method="get" className="ficha-filtros">
     <label>Buscar<input className="campo" name="q" defaultValue={filtros.q || ''} placeholder="Nombre, NIF o email" type="search" /></label>
     {['comercial', 'zona'].map((k) => <label key={k}>{k === 'comercial' ? 'Comercial' : 'Zona'}<select className="campo" name={k} defaultValue={filtros[k] || ''}><option value="">Todos</option><option value="__sin__">{k === 'comercial' ? 'Sin comercial' : 'Sin zona'}</option>{valoresDe(lista, k).map((v) => <option key={v} value={v}>{v}</option>)}</select></label>)}
-    <button type="submit" className="boton">Aplicar filtros</button>
+    <button type="submit" className="boton sec">Aplicar filtros</button>
   </form>;
 }
 

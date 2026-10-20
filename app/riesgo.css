@@ -1,5 +1,5 @@
 /* Ficha del cliente y riesgo máximo en el formulario de factura */
-.ff-ficha { margin: 10px 0 4px; padding: 12px 14px; border-radius: 14px; background: color-mix(in srgb, var(--ink) 5%, var(--surface)); display: grid; gap: 6px; font-size: 0.9375rem; }
+.ff-ficha { margin: 10px 0 4px; padding: 12px 14px; border-radius: 14px; background: color-mix(in srgb, var(--ink) 5%, var(--surface)); display: grid; gap: 6px; font-size: 15px; }
 .ff-ficha p { margin: 0; }
 .ff-ficha-resumen { color: var(--muted); }
 .ff-riesgo-cifras { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px; font-variant-numeric: tabular-nums; }

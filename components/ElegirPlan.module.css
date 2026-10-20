@@ -41,7 +41,7 @@
 .recomendado { padding: 4px 7px; border-radius: 5px; background: var(--ink); color: var(--surface); font-size: 11px; font-weight: 600; }
 .para { min-height: 44px; margin: 10px 0 24px; color: var(--muted); font-size: 14px; line-height: 1.5; }
 .precio { display: flex; align-items: baseline; gap: 6px; margin: 0; }
-.precio strong { font-size: 38px; font-weight: 650; letter-spacing: -0.035em; line-height: 1.2; }
+.precio strong { font-size: 40px; font-weight: 650; letter-spacing: -0.035em; line-height: 1.2; }
 .precio > span { font-size: 14px; color: var(--muted); }
 .facturacion { min-height: 36px; margin: 8px 0 20px; color: var(--muted); font-size: 12px; line-height: 1.5; }
 .botonPlan, .planElegido, .soloAdmin { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 46px; margin: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--ink); font: inherit; font-size: 14px; font-weight: 600; text-align: center; }
