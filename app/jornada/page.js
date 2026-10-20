@@ -101,7 +101,7 @@ export default async function RegistroJornada({ searchParams }) {
           </ul>
         </section>
       ))}
-      {!dias.length && <div className="vacio"><p>Sin fichajes en {nombreMes(mes).split(' ')[0]}</p><p>{yo ? 'Ficha la entrada al empezar y la salida al acabar.' : 'Cada empleado ficha desde su cuenta de Kontix (pon su email en su ficha), o apúntalo tú a mano.'}</p></div>}
+      {!dias.length && <div className="vacio"><p>Sin fichajes en {nombreMes(mes).split(' ')[0]}</p><p>{yo ? 'Ficha la entrada al empezar y la salida al acabar.' : 'Cada empleado ficha desde su cuenta de Fisquo (pon su email en su ficha), o apúntalo tú a mano.'}</p></div>}
     </main>
   );
 }

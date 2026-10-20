@@ -13,7 +13,7 @@ import { avisarBaja } from '@/lib/avisosCorreo';
 export async function POST(req) {
   const { u, res } = await usuarioApi();
   if (res) return res;
-  if (u.admin) return error('La cuenta del administrador de Kontix no se puede eliminar desde aquí', 403);
+  if (u.admin) return error('La cuenta del administrador de Fisquo no se puede eliminar desde aquí', 403);
   if (await pasado('eliminar-cuenta', u.id, 5, 3600)) return error(MUCHOS, 429);
   const { password } = await cuerpo(req);
   if (!(await comprobar(String(password || ''), u.pass))) return error('La contraseña no es correcta');

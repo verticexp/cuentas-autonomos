@@ -100,12 +100,12 @@ export default async function Page() {
         <span className="mas-perfil-ir">›</span>
       </Ir>
 
-      {!app && u.admin && <Grupo titulo="Kontix"><Celda href="/admin" ico="panel" tono="azul" titulo="Panel de Kontix" detalle="Empresas, ingresos, pruebas y actividad" /></Grupo>}
+      {!app && u.admin && <Grupo titulo="Fisquo"><Celda href="/admin" ico="panel" tono="azul" titulo="Panel de Fisquo" detalle="Empresas, ingresos, pruebas y actividad" /></Grupo>}
 
       {empresa && (
         <Grupo titulo="Tu empresa">
           {!app && <Celda href="/ajustes/plan" ico="plan" tono="azul" titulo="Tu plan" detalle={esFundador(u.plan) ? 'Fundador · gratis de por vida' : `${TIPOS[u.plan.tipo]} ${u.plan.nombre}${dias !== null ? ` · prueba: ${dias} días` : ''}`} aviso={dias !== null && dias <= 7} />}
-          {!app && u.rol === 'admin' && <Celda href="/ajustes/recomienda" ico="regalo" tono="azul" titulo="Recomienda Kontix" detalle="Un mes gratis para ti y para quien invites" />}
+          {!app && u.rol === 'admin' && <Celda href="/ajustes/recomienda" ico="regalo" tono="azul" titulo="Recomienda Fisquo" detalle="Un mes gratis para ti y para quien invites" />}
           <Celda href="/ajustes/facturacion" ico="empresa" tono="azul" titulo="Datos de la empresa" detalle={datosCompletos ? `${e.nombre} · ${e.nif}` : 'Faltan datos: rellénalos antes de facturar'} aviso={!datosCompletos} />
           <Celda href="/bienvenida?editar=1" ico="actividad" tono="azul" titulo="Actividades e impuestos" detalle={`${fiscalDe(u).tipo === 'sociedad' ? 'Sociedad' : 'Autónomo'} · ${actividadesDe(u).map((x) => x.nombre).join(', ')}`} />
           {(puede(u, 'usuarios') || u.admin) && <Celda href="/usuarios" ico="usuarios" tono="azul" titulo="Usuarios y permisos" detalle="Quién entra y qué puede hacer" />}

@@ -10,7 +10,7 @@ import { empresaPorCodigo, normalizarRef } from '@/lib/recomendaciones';
 import '@/app/legal.css';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Crear cuenta · Kontix' };
+export const metadata = { title: 'Crear cuenta · Fisquo' };
 
 // El plan y el periodo elegidos en Precios se conservan durante el alta. Con sesión, solo ?nueva=1: otra empresa
 // para la misma cuenta (Ajustes › Tus empresas), sin el paso de la cuenta.

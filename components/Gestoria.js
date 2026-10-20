@@ -60,7 +60,7 @@ export default function Gestoria({ gestoria, trimestres, invitar, emailListo, ap
 
       {invitar && (
         <section className="grupo">
-          <h2 className="grupo-t">Acceso a Kontix</h2>
+          <h2 className="grupo-t">Acceso a Fisquo</h2>
           <div className="grupo-c">
             <Ir href="/usuarios?invitar=gestoria" className="celda ir"><span className="txt">Invitar a tu gestoría<small>Entra con su propio usuario y ve facturas, gastos, nóminas e impuestos.{!app && ' Una gestoría no cuenta como usuario de tu plan.'}</small></span></Ir>
           </div>

@@ -1,6 +1,6 @@
 import Ir from '@/components/Ir';
 
-export const metadata = { title: 'No existe · Kontix' };
+export const metadata = { title: 'No existe · Fisquo' };
 
 // Lo que no existe (o ya no): una factura borrada, un enlace caducado o una dirección mal escrita.
 export default function NoExiste() {

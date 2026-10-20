@@ -82,7 +82,7 @@ export default async function Nominas({ searchParams }) {
           ))}
         </ul>
       )}
-      {!empleados.length && <p className="nota">Añade a tu equipo y Kontix hará cada mes sus nóminas, las apuntará como gasto y te dirá cuánto ingresar en el modelo 111.</p>}
+      {!empleados.length && <p className="nota">Añade a tu equipo y Fisquo hará cada mes sus nóminas, las apuntará como gasto y te dirá cuánto ingresar en el modelo 111.</p>}
       <FormEmpleado hoy={h} />
 
       {futuras.length > 0 && (

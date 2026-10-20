@@ -10,7 +10,7 @@ const PASOS = [
   { p: 'gasto', icono: 'gasto', t: 'Gastos con una foto', d: 'La IA lee el ticket y rellena proveedor, base e IVA.', href: '/funciones/gastos' },
   { p: 'impuestos', icono: 'impuestos', t: 'Impuestos sin sustos', d: 'Tus modelos calculados y lo que debes apartar.', href: '/funciones/impuestos' },
   { p: 'contabilidad', icono: 'contabilidad', t: 'Contabilidad que se hace sola', d: 'Libros registro, balance y cuentas anuales.', href: '/funciones/contabilidad' },
-  { p: 'conciliacion', icono: 'banco', t: 'Extractos que se cuadran solos', d: 'Kontix empareja cobros y pagos; lo que falta, a revisar.', href: '/funciones/banco' },
+  { p: 'conciliacion', icono: 'banco', t: 'Extractos que se cuadran solos', d: 'Fisquo empareja cobros y pagos; lo que falta, a revisar.', href: '/funciones/banco' },
   { p: 'prevision', icono: 'tesoreria', t: 'Caja a 12 meses vista', d: 'Cobros, pagos, impuestos y nóminas, mes a mes.', href: '/funciones/tesoreria' },
   { p: 'equipo', icono: 'equipo', t: 'Tu equipo, con permisos', d: 'Nóminas, jornada y cada uno viendo lo suyo.', href: '/funciones/equipo' },
 ];
@@ -61,7 +61,7 @@ export default function Tour() {
   }
   return (
     <div className="web-tour" ref={caja} onFocusCapture={() => setFoco(true)} onBlurCapture={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setFoco(false); }} onMouseEnter={() => { if (matchMedia('(hover: hover) and (pointer: fine)').matches) setHover(true); }} onMouseLeave={() => setHover(false)}>
-      <div className="web-tour-lista" role="tablist" aria-label="Recorrido por Kontix">
+      <div className="web-tour-lista" role="tablist" aria-label="Recorrido por Fisquo">
         {PASOS.map((p, k) => (
           <button key={p.p} id={`tour-${p.p}`} aria-controls="tour-pantalla" tabIndex={k === i ? 0 : -1} ref={(el) => { botones.current[k] = el; }} onKeyDown={(e) => teclas(e, k)} role="tab" aria-selected={k === i} className={k === i ? 'on' : undefined} onClick={() => elegir(k)}>
             <span className="web-tour-ico"><Icono n={p.icono} /></span>

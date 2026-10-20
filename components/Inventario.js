@@ -19,7 +19,7 @@ export function Ajuste({ producto, hoy, coste, consumo = false }) {
     setEnviando(true); setMsg('');
     try {
       const d = await llamar('/api/inventario', { method: 'POST', body: JSON.stringify({ ...x, producto }) });
-      setMsg(d.sinCambios ? 'Coincide con lo que dice Kontix: no hace falta ajustar.' : '✓ Apuntado');
+      setMsg(d.sinCambios ? 'Coincide con lo que dice Fisquo: no hace falta ajustar.' : '✓ Apuntado');
       setX({ ...x, cantidad: '', nota: '' });
       router.refresh();
     } catch (err) { setMsg(err.message); }

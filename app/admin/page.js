@@ -8,7 +8,7 @@ import AdminEmpresas from '@/components/AdminEmpresas';
 import '@/app/admin/admin.css';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Panel de Kontix' };
+export const metadata = { title: 'Panel de Fisquo' };
 
 const euros = (c) => (c / 100).toLocaleString('es-ES', { maximumFractionDigits: 0 }) + ' €';
 const fecha = (d) => new Date(`${d}T12:00:00Z`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
@@ -42,7 +42,7 @@ export default async function Admin() {
 
   return <main className="pagina mk-look adm">
     <Volver href="/ajustes">Ajustes</Volver>
-    <h1 className="titulo">Panel de Kontix</h1>
+    <h1 className="titulo">Panel de Fisquo</h1>
     <p className="adm-intro">Solo lo ves tú. Las cifras son sin IVA; las empresas Fundador no cuentan en ingresos ni en conversión.</p>
 
     <section className="adm-kpis" aria-label="Cifras principales">
@@ -72,7 +72,7 @@ export default async function Admin() {
       <div className="adm-caja">
         <h2>Cobros</h2>
         <ul className="adm-lista">{cobros.map(([t, v, ok]) => <li key={t}><span>{t}</span><b className={ok ? 'adm-ok' : 'adm-mal'}>{v}</b></li>)}</ul>
-        <p className="adm-pie"><a href="/admin/correos">Ver los correos que envía Kontix</a></p>
+        <p className="adm-pie"><a href="/admin/correos">Ver los correos que envía Fisquo</a></p>
         <p className="adm-pie">Las claves se ponen en Vercel › Settings › Environment Variables (Production). Los precios e IVA se crean solos en Stripe.</p>
       </div>
     </section>

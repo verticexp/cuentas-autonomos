@@ -44,7 +44,7 @@ export default function PanelRegistro() {
             <span><b>Tus impuestos, en orden</b><small>Todo en el mismo sitio</small></span>
           </div>
         </div>
-        <p className="registro-marca-pie">{PRUEBA_DIAS} días gratis. Sin tarjeta.<span>Vista de ejemplo de Kontix</span></p>
+        <p className="registro-marca-pie">{PRUEBA_DIAS} días gratis. Sin tarjeta.<span>Vista de ejemplo de Fisquo</span></p>
       </div>
     </div>
   );

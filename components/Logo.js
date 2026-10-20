@@ -14,7 +14,7 @@ const DESPLAZA = 'translate(-1171 0)';
 
 export default function Logo({ className = 'logo-netto' }) {
   return (
-    <svg viewBox="0 130 2440 615" className={className} role="img" aria-label="Kontix">
+    <svg viewBox="0 130 2440 615" className={className} role="img" aria-label="Fisquo">
       {LETRAS.map((d, i) => (
         <g key={i} className="logo-l" style={{ '--i': i }}><g transform={`${DESPLAZA} ${G}`} fill="currentColor"><path d={d} /></g></g>
       ))}

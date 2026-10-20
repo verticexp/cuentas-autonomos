@@ -28,7 +28,7 @@ import '@/app/hoy.css';
 import CambiarEmpresa from '@/components/CambiarEmpresa';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Kontix · Facturas, gastos e impuestos en orden', description: 'Software de gestión financiera para autónomos, pymes y empresas: facturas, gastos con IA, conciliación bancaria, impuestos y nóminas.' };
+export const metadata = { title: 'Fisquo · Facturas, gastos e impuestos en orden', description: 'Software de gestión financiera para autónomos, pymes y empresas: facturas, gastos con IA, conciliación bancaria, impuestos y nóminas.' };
 
 export default async function Resumen({ searchParams }) {
   // Sin sesión: la web pública. Con sesión: el panel.
@@ -277,7 +277,7 @@ export default async function Resumen({ searchParams }) {
                   <div className="barra-limite"><span className={rendSS > limite ? 'pasado' : rendSS > limite * 0.8 ? 'cerca' : ''} style={{ width: `${Math.min(100, Math.max(0, (rendSS / limite) * 100))}%` }} /></div>
                 </div>
               </div>
-              <p className="grupo-pie">{rendSS > limite ? `Te pasas en ${eur(rendSS - limite)}.` : `Te quedan ${eur(limite - rendSS)} de margen.`}{esteAnio && prevRendSS > limite ? ` A este ritmo acabarías el año en ${eur(prevRendSS)}: ${eur(prevRendSS - limite)} por encima, y perderías la tarifa plana.` : ''} Es lo que mira la Seguridad Social: facturas menos gastos ({eur(beneficio)}), más tus cuotas de autónomos ({eur(cuotasSS)}), menos un 7 % de gastos genéricos. Si tienes gastos que no están en Kontix, el número real será menor.</p>
+              <p className="grupo-pie">{rendSS > limite ? `Te pasas en ${eur(rendSS - limite)}.` : `Te quedan ${eur(limite - rendSS)} de margen.`}{esteAnio && prevRendSS > limite ? ` A este ritmo acabarías el año en ${eur(prevRendSS)}: ${eur(prevRendSS - limite)} por encima, y perderías la tarifa plana.` : ''} Es lo que mira la Seguridad Social: facturas menos gastos ({eur(beneficio)}), más tus cuotas de autónomos ({eur(cuotasSS)}), menos un 7 % de gastos genéricos. Si tienes gastos que no están en Fisquo, el número real será menor.</p>
             </section>
           )}
 

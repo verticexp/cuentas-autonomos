@@ -777,12 +777,12 @@ console.log('Banco: extractos, conexión y emparejar');
     const noLista = await pedir('/api/banco/conectar', { cookie: bq });
     const noConecta = await pedir('/api/banco/conectar', { metodo: 'POST', cookie: bq, cuerpo: { banco: 'Banco Simulado', tipo: 'business' } });
     const noActualiza = await pedir('/api/banco/sincronizar', { metodo: 'POST', cookie: bq, cuerpo: { forzar: true } });
-    ok('quien no es el administrador de Kontix no lista, conecta ni actualiza bancos (403)', () => assert.deepEqual([noLista.status, noConecta.status, noActualiza.status], [403, 403, 403]));
+    ok('quien no es el administrador de Fisquo no lista, conecta ni actualiza bancos (403)', () => assert.deepEqual([noLista.status, noConecta.status, noActualiza.status], [403, 403, 403]));
     // Ya tiene cuenta: la invitación queda pendiente hasta que él la acepta con su sesión (enlace /api/invitacion/unirse).
     const invitaAdmin = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: bq, cuerpo: { nombre: 'Prueba', email: fd.get('email'), rol: 'admin' } })).json();
     const acepta = await pedir(new URL(invitaAdmin.enlace).pathname + new URL(invitaAdmin.enlace).search, { cookie: yo });
     const ad = `${yo}; e=${/(?:^|,\s*)e=([^;]+)/.exec(acepta.headers.get('set-cookie') || '')?.[1]}`;
-    ok('el administrador de Kontix acepta la invitación y entra en la empresa que va a conectar', () => assert.ok(invitaAdmin.pendiente && ad.endsWith(`e=${empresa}`), JSON.stringify(invitaAdmin)));
+    ok('el administrador de Fisquo acepta la invitación y entra en la empresa que va a conectar', () => assert.ok(invitaAdmin.pendiente && ad.endsWith(`e=${empresa}`), JSON.stringify(invitaAdmin)));
     const sim = (ruta, cuerpo) => fetch(`${process.env.ENABLE_BANKING_URL}${ruta}`, cuerpo ? { method: 'POST', body: JSON.stringify(cuerpo) } : {}).then((r) => r.json());
     const f4 = await fac(masD(-4), 'Agencia Brisa Incentivos S.L.', 2000);
     const tx = (d, imp, info, nombre, ref) => ({ entry_reference: ref, transaction_amount: { amount: String(Math.abs(imp)), currency: 'EUR' }, credit_debit_indicator: imp < 0 ? 'DBIT' : 'CRDT', status: 'BOOK', booking_date: masD(d), remittance_information: [info], ...(imp < 0 ? { creditor: { name: nombre } } : { debtor: { name: nombre } }) });
@@ -829,7 +829,7 @@ console.log('Banco: extractos, conexión y emparejar');
     const visto = [pb3, pbAviso].map((t) => { const i = t.search(conexion); return i < 0 ? null : t.slice(Math.max(0, i - 80), i + 80); }).filter(Boolean);
     ok('Berta no ve nada de la conexión: ni «Conectar banco», ni «Actualizar», ni su estado', () => assert.ok(
       !visto.length && pb3.includes('Saldo a ') && pbAviso.includes('Cuenta Negocios'), visto.join(' | ') || pb3.slice(0, 400)));
-    ok('el administrador de Kontix sí: «Conectar banco», «Actualizar» y el estado de la cuenta', () => assert.ok(paAdmin.includes('Conectar banco') && paAdmin.includes('Actualizar') && /Actualizada|Conectada/.test(paAdmin)));
+    ok('el administrador de Fisquo sí: «Conectar banco», «Actualizar» y el estado de la cuenta', () => assert.ok(paAdmin.includes('Conectar banco') && paAdmin.includes('Actualizar') && /Actualizada|Conectada/.test(paAdmin)));
     const antes = (await sim('/_prueba')).llamadas;
     const s1 = await (await pedir('/api/banco/sincronizar', { metodo: 'POST', cookie: ad, cuerpo: {} })).json();
     const medio = (await sim('/_prueba')).llamadas;
@@ -889,12 +889,12 @@ if (process.env.ANTHROPIC_URL) {
   ok('sin sesión no (401)', () => assert.equal(anon.status, 401));
   const pa = n(await texto('/asistente', yo));
   const po = n(await texto('/asistente', otro));
-  ok('pantalla con preguntas de ejemplo según los permisos', () => assert.ok(pa.includes('Pregunta a Kontix') && pa.includes('¿Cuánto IVA llevo este trimestre?') && po.includes('¿Cuánto he gastado este mes?') && !po.includes('IVA llevo')));
+  ok('pantalla con preguntas de ejemplo según los permisos', () => assert.ok(pa.includes('Pregunta a Fisquo') && pa.includes('¿Cuánto IVA llevo este trimestre?') && po.includes('¿Cuánto he gastado este mes?') && !po.includes('IVA llevo')));
   const res = n(await texto('/', yo));
   const aj = await (await pedir('/ajustes', { cookie: otro })).text();
   const mas = await (await pedir('/mas', { cookie: otro })).text();
-  // Desde el 19-10-2026, en el móvil se llega por el buscador de «Más» (pregunta a Kontix) y no desde Ajustes.
-  ok('se llega desde el resumen, desde el buscador de «Más» y desde la barra lateral', () => assert.ok(res.includes('Pregunta por tus cuentas') && mas.includes('Busca o pregunta a Kontix') && /<nav class="tabs-extra"[\s\S]*?href="\/asistente"/.test(aj)));
+  // Desde el 19-10-2026, en el móvil se llega por el buscador de «Más» (pregunta a Fisquo) y no desde Ajustes.
+  ok('se llega desde el resumen, desde el buscador de «Más» y desde la barra lateral', () => assert.ok(res.includes('Pregunta por tus cuentas') && mas.includes('Busca o pregunta a Fisquo') && /<nav class="tabs-extra"[\s\S]*?href="\/asistente"/.test(aj)));
 } else console.log('  (sin ANTHROPIC_URL: se salta)');
 
 console.log('Varias empresas en la misma cuenta');
@@ -1050,7 +1050,7 @@ console.log('\nSeguridad');
   const csrfLogin = await ajeno('/api/login', { method: 'POST', body: form({ email: 'x@test.es', password: 'x' }) });
   const csrfReg = await ajeno('/api/invitacion', { method: 'POST', body: form({ codigo: 'x', password: 'xxxxxxxxx' }) });
   const csrfApi = await ajeno('/api/facturas', { method: 'POST', headers: { Cookie: `t=${yo}`, 'Content-Type': 'application/json' }, body: '{}' });
-  ok('otra web no puede enviar formularios a Kontix (login, invitación ni API)', () => assert.deepEqual([csrfLogin.status, csrfReg.status, csrfApi.status], [403, 403, 403]));
+  ok('otra web no puede enviar formularios a Fisquo (login, invitación ni API)', () => assert.deepEqual([csrfLogin.status, csrfReg.status, csrfApi.status], [403, 403, 403]));
   const stripeSinOrigen = await fetch(`${BASE}/api/stripe`, { method: 'POST', body: '{}' });
   ok('los avisos de Stripe (sin Origin) siguen llegando y se rechazan solo por firma', () => assert.equal(stripeSinOrigen.status, 400));
   const lgFalso = await texto('/login?error=Llama%20al%20600%20000%20000');
@@ -1092,8 +1092,8 @@ console.log('\nSeguridad');
   const act = await (await pedir('/api/controlat', { metodo: 'POST', cookie: yo, cuerpo: { activar: true } })).json();
   const mesC = (await kvA(C, ['KEYS', 'movs:*'])).find((k) => /^movs:\d{4}-\d{2}$/.test(k));
   const nomina = mesC ? JSON.parse((await kvA(C, ['HGET', mesC, `autonomo-${mesC.slice(5)}`])) || '{}') : {};
-  ok(`Controla'T: el administrador lo activa y el neto llega a ${URL_C ? 'su base de datos aparte' : 'la base de datos compartida'}`, () => assert.ok(act.ok && act.meses > 0 && nomina.comercio === 'Kontix', JSON.stringify(act)));
-  if (URL_C) { const fuga = await kvA(process.env.KV_REST_API_URL, ['KEYS', 'movs:*']); ok("Controla'T aparte: nada se escribe en la base de datos de Kontix", () => assert.equal(fuga.length, 0)); }
+  ok(`Controla'T: el administrador lo activa y el neto llega a ${URL_C ? 'su base de datos aparte' : 'la base de datos compartida'}`, () => assert.ok(act.ok && act.meses > 0 && nomina.comercio === 'Fisquo', JSON.stringify(act)));
+  if (URL_C) { const fuga = await kvA(process.env.KV_REST_API_URL, ['KEYS', 'movs:*']); ok("Controla'T aparte: nada se escribe en la base de datos de Fisquo", () => assert.equal(fuga.length, 0)); }
   await pedir('/api/controlat', { metodo: 'POST', cookie: yo, cuerpo: { activar: false } });
 }
 
@@ -1150,7 +1150,7 @@ if (process.env.RESEND_URL) {
   ok('al crear el usuario se le envía la invitación', () => assert.ok(iv.ok && iv.enviado && !iv.aviso && m1?.to?.[0] === emailL, JSON.stringify(iv)));
   const eA = JSON.parse(await kv(['HGET', 'cuentas:empresas', await kv(['HGET', 'cuentas:emails', fd.get('email')])]));
   const empA = eA.emisor?.nombre || eA.nombre;
-  ok('el asunto dice quién invita y a qué empresa', () => assert.equal(m1?.subject, `Prueba te ha invitado a ${empA} en Kontix`));
+  ok('el asunto dice quién invita y a qué empresa', () => assert.equal(m1?.subject, `Prueba te ha invitado a ${empA} en Fisquo`));
   const urlM1 = /href="([^"]+)"/.exec(m1?.html || '')?.[1] || '';
   ok('botón y enlace en texto con el enlace que ve el administrador más el token de confirmar el email', () => assert.ok(urlM1.startsWith(`${iv.enlace}?v=`) && m1.html.split(`href="${urlM1}"`).length === 3 && m1.html.includes(`>${urlM1}</a>`) && m1.html.includes('Aceptar la invitación'), urlM1));
   ok('sin imagen de seguimiento', () => assert.ok(!/<img/i.test(m1.html) && !m1.html.includes('/api/abierta')));
@@ -1178,7 +1178,7 @@ if (process.env.RESEND_URL) {
   // Administrador de otra empresa: no puede reenviar invitaciones de esta.
   const altaAj = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva: 'Ajena Eventos SL', nombre: 'Álex', email: `aj${Date.now()}@test.es` } })).json();
   const mAj = correos().pop();
-  ok('dar de alta una empresa también envía la invitación a su administrador', () => assert.ok(altaAj.enviado && mAj?.subject === 'Prueba te ha invitado a Ajena Eventos SL en Kontix'));
+  ok('dar de alta una empresa también envía la invitación a su administrador', () => assert.ok(altaAj.enviado && mAj?.subject === 'Prueba te ha invitado a Ajena Eventos SL en Fisquo'));
   const fA = new FormData(); fA.set('codigo', codigoDe(altaAj.enlace)); fA.set('password', 'Clave-Local-12-2026');
   const aj = /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: fA })).headers.get('set-cookie') || '')?.[1];
   rmSync('/tmp/resend.json', { force: true });
@@ -1187,14 +1187,14 @@ if (process.env.RESEND_URL) {
   const sigue = await valida(re.enlace);
   rmSync('/tmp/resend.json', { force: true });
   await pedir('/api/usuarios', { metodo: 'POST', cookie: aj, cuerpo: { nombre: 'Técnico', email: `tec${Date.now()}@test.es`, rol: 'miembro', permisos: ['gastos'] } });
-  ok('cada empresa con su nombre y quien la envía', () => assert.equal(correos()[0]?.subject, 'Álex te ha invitado a Ajena Eventos SL en Kontix'));
+  ok('cada empresa con su nombre y quien la envía', () => assert.equal(correos()[0]?.subject, 'Álex te ha invitado a Ajena Eventos SL en Fisquo'));
   const altaX = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva: 'Xavi Soler', nombre: 'Xavi Soler', email: `xs${Date.now()}@test.es` } })).json();
   const fX = new FormData(); fX.set('codigo', codigoDe(altaX.enlace)); fX.set('password', 'Clave-Local-13-2026');
   const xs = /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: fX })).headers.get('set-cookie') || '')?.[1];
   rmSync('/tmp/resend.json', { force: true });
   await pedir('/api/usuarios', { metodo: 'POST', cookie: xs, cuerpo: { nombre: 'Ayuda', email: `ayx${Date.now()}@test.es`, rol: 'miembro', permisos: ['gastos'] } });
   const mX = correos()[0];
-  ok('si la empresa solo tiene el nombre de quien invita: «te ha invitado a unirte a su empresa»', () => assert.ok(mX?.subject === 'Xavi Soler te ha invitado a unirte a su empresa en Kontix' && mX.html.includes('te ha invitado a unirte a su empresa en Kontix.'), mX?.subject));
+  ok('si la empresa solo tiene el nombre de quien invita: «te ha invitado a unirte a su empresa»', () => assert.ok(mX?.subject === 'Xavi Soler te ha invitado a unirte a su empresa en Fisquo' && mX.html.includes('te ha invitado a unirte a su empresa en Fisquo.'), mX?.subject));
   ok('el intento ajeno no cambia el enlace', () => assert.ok(sigue));
 
   // Quien ya aceptó no tiene invitación que reenviar.
@@ -1222,7 +1222,7 @@ if (process.env.RESEND_URL) {
   ok('al reenviarla vuelve a valer 7 días y se puede entrar', () => assert.ok(re2.enviado && /t=/.test(entra.headers.get('set-cookie') || ''), `${entra.status}`));
 } else console.log('  (sin RESEND_URL: se salta)');
 
-console.log('\nSolo el administrador de Kontix da de alta empresas');
+console.log('\nSolo el administrador de Fisquo da de alta empresas');
 {
   const entrar = async (alta, pass) => { const f = new FormData(); f.set('codigo', alta.enlace.split('/').pop()); f.set('password', pass); return /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: f })).headers.get('set-cookie') || '')?.[1]; };
   const jefa = await entrar(await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva: 'Cliente Pagando SL', nombre: 'Julia', email: `ju${Date.now()}@test.es` } })).json(), 'Clave-Local-22-2026');
@@ -1241,7 +1241,7 @@ console.log('\nSolo el administrador de Kontix da de alta empresas');
   ok('pero sí invita a su gente (es la administradora de su empresa)', () => assert.ok(invJ.ok && invJ.enlace, JSON.stringify(invJ)));
   ok('y le sale el formulario de invitar', () => assert.ok(usJ.includes('Invitar a alguien')));
   const ajYo = await (await pedir('/ajustes', { cookie: yo })).text();
-  ok('al administrador de Kontix sí le sale «Añadir empresa»', () => assert.ok(ajYo.includes('Añadir empresa')));
+  ok('al administrador de Fisquo sí le sale «Añadir empresa»', () => assert.ok(ajYo.includes('Añadir empresa')));
 }
 
 console.log('\nAislamiento entre empresas (todas las rutas /api)');
@@ -1476,7 +1476,7 @@ if (process.env.RESEND_URL) {
   const beaU = await usuario(bea.id);
   const conf = correos().find((m) => m.to?.[0] === bea.email);
   ok('con el enlace del administrador (o el token de otra persona) queda sin confirmar', () => assert.equal(beaU.emailVerificado, false));
-  ok('y le llega un email para confirmarlo', () => assert.ok(conf?.subject === 'Confirma tu email en Kontix' && /\/api\/confirmar\?t=/.test(conf.html)));
+  ok('y le llega un email para confirmarlo', () => assert.ok(conf?.subject === 'Confirma tu email en Fisquo' && /\/api\/confirmar\?t=/.test(conf.html)));
   const pag = await con('/facturas', ckB);
   const aPag = await destino(pag.clone());
   const api = await con('/api/exportar?tipo=facturas', ckB);
@@ -1642,7 +1642,7 @@ console.log('Baja de una empresa');
   const noBerta = await pedir('/api/baja', { metodo: 'POST', cookie: berta, cuerpo: { password: 'Clave-Local-16-2026' } });
   const noYo = await pedir('/api/baja', { metodo: 'POST', cookie: yo, cuerpo: { password: 'Clave-Local-01-2026' } });
   const malPass = await pedir('/api/baja', { metodo: 'POST', cookie: bruno, cuerpo: { password: 'otra-cosa' } });
-  ok('quien no es administrador no puede (403), ni la empresa del administrador de Kontix (403), ni con otra contraseña (400)', () => assert.deepEqual([noBerta.status, noYo.status, malPass.status], [403, 403, 400]));
+  ok('quien no es administrador no puede (403), ni la empresa del administrador de Fisquo (403), ni con otra contraseña (400)', () => assert.deepEqual([noBerta.status, noYo.status, malPass.status], [403, 403, 400]));
   const sigue = JSON.parse(await kv(['HGET', 'cuentas:empresas', E]));
   ok('con la contraseña mal no cambia nada', () => assert.ok(!sigue.baja && sigue.drive));
 
@@ -1676,7 +1676,7 @@ console.log('Color de la marca');
   const kv = (cmd) => fetch(process.env.KV_REST_API_URL, { method: 'POST', headers: { Authorization: 'Bearer local' }, body: JSON.stringify(cmd) }).then((r) => r.json()).then((d) => d.result);
   const color = await pedir('/api/cuenta', { metodo: 'PATCH', cookie: yo, cuerpo: { marca: { color: '#C4452C' } } });
   const app = await (await pedir('/gastos', { cookie: yo })).text();
-  ok('con un color propio, la app sigue con el de Kontix (no se tiñe)', () => assert.ok(color.ok && /<body[^>]*--acento:#0F1F1B/i.test(app) && !/C4452C/i.test(app)));
+  ok('con un color propio, la app sigue con el de Fisquo (no se tiñe)', () => assert.ok(color.ok && /<body[^>]*--acento:#0F1F1B/i.test(app) && !/C4452C/i.test(app)));
   const emp = await kv(['HGET', 'cuentas:emails', fd.get('email')]);
   const fid = (await kv(['HKEYS', `cuentas:facturas:${emp}`]))[0];
   const pdf = await (await pedir(`/facturas/${encodeURIComponent(fid)}/pdf`, { cookie: yo })).text();
@@ -1699,7 +1699,7 @@ console.log('Páginas de error');
   const sinPermiso = await (await pedir('/ajustes/facturacion', { cookie: otro })).text();
   ok('sin el permiso de datos de la empresa: «No tienes acceso» y cómo pedirlo', () => assert.ok(sinPermiso.includes('No tienes acceso') && sinPermiso.includes('Datos de la empresa') && !sinPermiso.includes('could not be found')));
   const bajaYo = await (await pedir('/ajustes/baja', { cookie: yo })).text();
-  ok('el administrador de Kontix en «Dar de baja»: le explica por qué no', () => assert.ok(bajaYo.includes('No tienes acceso') && bajaYo.includes('no se puede dar de baja desde aquí')));
+  ok('el administrador de Fisquo en «Dar de baja»: le explica por qué no', () => assert.ok(bajaYo.includes('No tienes acceso') && bajaYo.includes('no se puede dar de baja desde aquí')));
 }
 
 console.log('Verifactu: envío a la AEAT (simulador)');
@@ -1722,7 +1722,7 @@ if (process.env.VERIFACTU_URL) {
   const det = n(await texto(`/facturas/${encodeURIComponent(f1.id)}`, soc));
   ok('la ficha de la factura dice que está registrada en la AEAT', () => assert.ok(det.includes('Verifactu (pruebas): registrada en la AEAT (CSV A-'), det.slice(-400)));
   const aj = n(await texto('/ajustes/verifactu', soc));
-  ok('Ajustes › Verifactu: en pruebas, con lo registrado y cómo autorizar a Kontix en la AEAT', () => assert.ok(aj.includes('Verifactu en pruebas') && aj.includes('Registradas: 2') && aj.includes('Apodera a Empresa de Kontix SL (NIF B12345674)'), aj.slice(-600)));
+  ok('Ajustes › Verifactu: en pruebas, con lo registrado y cómo autorizar a Fisquo en la AEAT', () => assert.ok(aj.includes('Verifactu en pruebas') && aj.includes('Registradas: 2') && aj.includes('Apodera a Empresa de Fisquo SL (NIF B12345674)'), aj.slice(-600)));
   const noAdmin = await pedir('/api/cuenta', { metodo: 'PATCH', cookie: otro, cuerpo: { verifactu: 'real' } });
   const real = await pedir('/api/cuenta', { metodo: 'PATCH', cookie: soc, cuerpo: { verifactu: 'real' } });
   const quitar = await pedir('/api/cuenta', { metodo: 'PATCH', cookie: soc, cuerpo: { verifactu: null } });
@@ -1733,7 +1733,7 @@ if (process.env.VERIFACTU_URL) {
   const ultimo = readFileSync('/tmp/aeat.json', 'utf8').trim().split('\n').map((l) => JSON.parse(l)).at(-1);
   ok('en real empieza una cadena nueva (primer registro) y el QR ya es el de la AEAT de verdad', () => assert.ok(v3?.estado === 'Correcto' && v3.modo === 'real' && ultimo.envio.includes('Ya en real') && ultimo.envio.includes('<sum1:PrimerRegistro>S</sum1:PrimerRegistro>'), JSON.stringify(v3)));
   const decl = n(await texto('/declaracion-responsable'));
-  ok('declaración responsable pública, con los datos de la entidad productora', () => assert.ok(decl.includes('Declaración responsable del sistema informático de facturación') && decl.includes('Empresa de Kontix SL') && decl.includes('B12345674') && decl.includes('S - Sí') && decl.includes('Real Decreto 1007/2023')));
+  ok('declaración responsable pública, con los datos de la entidad productora', () => assert.ok(decl.includes('Declaración responsable del sistema informático de facturación') && decl.includes('Empresa de Fisquo SL') && decl.includes('B12345674') && decl.includes('S - Sí') && decl.includes('Real Decreto 1007/2023')));
 } else console.log('  (sin VERIFACTU_URL: se salta)');
 
 console.log('Ajustes nuevos: perfil, empresa, cobros, diseño, email de envío, series y gestoría');

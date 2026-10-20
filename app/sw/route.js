@@ -2,7 +2,7 @@
 const SW = `self.addEventListener('push', (e) => {
   let d = {};
   try { d = e.data.json(); } catch {}
-  e.waitUntil(self.registration.showNotification(d.titulo || 'Kontix', { body: d.cuerpo || '', icon: '/apple-icon', badge: '/apple-icon', data: { url: d.url || '/' }, tag: d.tipo }));
+  e.waitUntil(self.registration.showNotification(d.titulo || 'Fisquo', { body: d.cuerpo || '', icon: '/apple-icon', badge: '/apple-icon', data: { url: d.url || '/' }, tag: d.tipo }));
 });
 self.addEventListener('notificationclick', (e) => {
   e.notification.close();

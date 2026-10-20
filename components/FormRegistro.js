@@ -241,7 +241,7 @@ export default function FormRegistro({ inicial = {}, sesion = null, recomendacio
         {!recomendacion && (verCodigo ? <div className="registro-codigo">
           <label htmlFor="codigo">Código promocional</label>
           <input id="codigo" name="codigo" autoCapitalize="characters" autoComplete="off" autoCorrect="off" spellCheck={false} value={codigo} onChange={(e) => { setCodigo(e.target.value); setPromo(null); }} onBlur={(e) => comprobarCodigo(e.target.value)} {...accesibilidad('codigo', 'registro-codigo-ayuda')} />
-          <p id="registro-codigo-ayuda" className={promo ? 'nota registro-recomendacion' : 'nota'} role="status">{promo ? promo.texto : 'El de tu gestoría te da 3 meses gratis; el de otro cliente de Kontix, 2.'}</p>
+          <p id="registro-codigo-ayuda" className={promo ? 'nota registro-recomendacion' : 'nota'} role="status">{promo ? promo.texto : 'El de tu gestoría te da 3 meses gratis; el de otro cliente de Fisquo, 2.'}</p>
         </div> : <button type="button" className="registro-corregir registro-ver-codigo" aria-expanded="false" onClick={() => { setVerCodigo(true); requestAnimationFrame(() => document.getElementById('codigo')?.focus()); }}>¿Tienes un código promocional?</button>)}
         <p className="nota">Precios sin IVA. Puedes ver todo lo que incluye cada plan en <a href="/precios" target="_blank" rel="noopener">Precios</a>.</p>
         <p className="nota">La prueba tiene 50 páginas de lectura IA en total. Al empezar el periodo de pago se activa la cuota mensual indicada, también si eliges pago anual; se comparte por empresa con la gestoría, se renueva cada mes natural y no se acumula.</p>
@@ -295,8 +295,8 @@ export default function FormRegistro({ inicial = {}, sesion = null, recomendacio
         {comprobando ? 'Comprobando email…' : paso < 5 ? 'Continuar' : enviando ? 'Creando…' : sesion ? 'Crear empresa' : 'Crear cuenta'}
       </button>
       {paso > 1 && <button type="button" className="registro-atras" disabled={enviando || comprobando} onClick={atras}>Atrás</button>}
-      {paso === 1 && <p className="nota">¿Llevas varias sociedades o un equipo mayor? <Link href="/business">Consulta Kontix Business</Link>.</p>}
-      {paso === 1 && (sesion ? <p className="nota login-cambiar"><a href="/ajustes">Volver a Kontix</a></p> : <p className="nota login-cambiar">¿Ya tienes cuenta? <Link href="/login">Inicia sesión</Link></p>)}
+      {paso === 1 && <p className="nota">¿Llevas varias sociedades o un equipo mayor? <Link href="/business">Consulta Fisquo Business</Link>.</p>}
+      {paso === 1 && (sesion ? <p className="nota login-cambiar"><a href="/ajustes">Volver a Fisquo</a></p> : <p className="nota login-cambiar">¿Ya tienes cuenta? <Link href="/login">Inicia sesión</Link></p>)}
     </form>
   );
 }

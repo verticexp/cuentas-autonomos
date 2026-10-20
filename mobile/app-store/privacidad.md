@@ -6,7 +6,7 @@ Coincide con `ios/App/App/PrivacyInfo.xcprivacy` y con https://www.nettohq.com/p
 
 Todos están **vinculados a la identidad** del usuario (necesitan su cuenta) y **no** se usan para rastrear.
 
-| Tipo (App Store Connect) | Ejemplo en Kontix | Finalidad |
+| Tipo (App Store Connect) | Ejemplo en Fisquo | Finalidad |
 |---|---|---|
 | Información de contacto › Nombre | Nombre del usuario y de sus clientes | Funcionalidad de la app |
 | Información de contacto › Email | Email de la cuenta y de clientes | Funcionalidad de la app |

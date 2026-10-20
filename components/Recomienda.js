@@ -8,7 +8,7 @@ export default function Recomienda({ enlace, resumen }) {
   const copiar = async () => {
     try { await navigator.clipboard.writeText(enlace); setCopiado(true); setTimeout(() => setCopiado(false), 2500); } catch { window.prompt('Copia tu enlace:', enlace); }
   };
-  const compartir = () => navigator.share?.({ title: 'Kontix', text: 'Llevo las cuentas de mi negocio con Kontix. Con mi enlace tienes 2 meses gratis:', url: enlace }).catch(() => {});
+  const compartir = () => navigator.share?.({ title: 'Fisquo', text: 'Llevo las cuentas de mi negocio con Fisquo. Con mi enlace tienes 2 meses gratis:', url: enlace }).catch(() => {});
   return <div className="recomienda">
     <section className="tarjeta recomienda-como">
       <h2>Un mes gratis para cada uno</h2>

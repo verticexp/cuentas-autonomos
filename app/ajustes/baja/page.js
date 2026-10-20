@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic';
 export default async function Page() {
   const u = await requerir();
   if (u.rol !== 'admin') return <SinAcceso />;
-  if (u.admin) return <SinAcceso texto="La empresa del administrador de Kontix no se puede dar de baja desde aquí." />;
+  if (u.admin) return <SinAcceso texto="La empresa del administrador de Fisquo no se puede dar de baja desde aquí." />;
   return (
     <main className="pagina mk-look">
       <Volver href="/ajustes">Ajustes</Volver>

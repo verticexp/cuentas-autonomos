@@ -11,7 +11,7 @@ export const generateStaticParams = () => FUNCIONES.map((f) => ({ slug: f.slug }
 
 export async function generateMetadata({ params }) {
   const f = funcion((await params).slug);
-  return f ? { title: `${f.nombre} · Kontix`, description: f.sub } : {};
+  return f ? { title: `${f.nombre} · Fisquo`, description: f.sub } : {};
 }
 
 export default async function PaginaFuncion({ params }) {

@@ -164,7 +164,7 @@ export default function RafagaTickets({ hoy, actividades }) {
                 )}
                 {(camara === 'denegada' || camara === 'no') && (
                   <div className="rafaga-aviso">
-                    <p>{camara === 'denegada' ? 'Kontix no tiene permiso para usar la cámara. Puedes darlo en los ajustes del navegador o elegir las fotos de tu galería.' : 'No se ha podido abrir la cámara. Elige las fotos de tu galería.'}</p>
+                    <p>{camara === 'denegada' ? 'Fisquo no tiene permiso para usar la cámara. Puedes darlo en los ajustes del navegador o elegir las fotos de tu galería.' : 'No se ha podido abrir la cámara. Elige las fotos de tu galería.'}</p>
                     <label className="boton">Elegir fotos<input type="file" accept="image/*" multiple hidden onChange={delArchivo} /></label>
                   </div>
                 )}

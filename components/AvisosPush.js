@@ -50,9 +50,9 @@ export default function AvisosPush({ listo }) {
       <h3>Avisos</h3>
       <p className="nota">Te avisamos en este dispositivo una semana antes, el día antes y el último día de los plazos de Hacienda, y cuando una factura vence sin cobrar.</p>
       {!listo ? <p className="nota">Los avisos aún no están configurados en el servidor.</p>
-        : estado === 'ios' ? <p className="nota">En iPhone, primero añade Kontix a la pantalla de inicio (Compartir → Añadir a pantalla de inicio) y ábrela desde ahí.</p>
+        : estado === 'ios' ? <p className="nota">En iPhone, primero añade Fisquo a la pantalla de inicio (Compartir → Añadir a pantalla de inicio) y ábrela desde ahí.</p>
           : estado === 'no' ? <p className="nota">Este navegador no admite avisos.</p>
-            : estado === 'bloqueado' ? <p className="nota">Has bloqueado los avisos de Kontix: actívalos en los ajustes del navegador o del móvil.</p>
+            : estado === 'bloqueado' ? <p className="nota">Has bloqueado los avisos de Fisquo: actívalos en los ajustes del navegador o del móvil.</p>
               : estado === 'on' ? <><p className="nota">Activados en este dispositivo.</p><button type="button" className="borrar" onClick={desactivar}>Desactivar en este dispositivo</button></>
                 : estado === 'off' ? <button type="button" className="boton" onClick={activar}>Activar avisos en este dispositivo</button> : null}
       {msg && <p className="error">{msg}</p>}
