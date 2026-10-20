@@ -238,12 +238,12 @@ export const segmento = (id) => SEGMENTOS.find((s) => s.id === id);
 export const PLANES = {
   aut: [
     { n: 'Esencial', p: 9, para: 'Facturar y declarar sin sustos', l: ['Facturas, presupuestos y recurrentes', 'Gastos y escaneo IA · 50 páginas/mes', 'Modelos aplicables y libros registro', 'Bienes de inversión y amortizaciones', 'Extractos, saldo y resumen', '1 empresa · 1 usuario interno + gestoría'] },
-    { n: 'Pro', p: 12, para: 'Más control por 3 € más al mes', fuerte: true, herencia: 'Esencial', l: ['Conciliación, revisión del banco y previsión', 'Inventario, pedidos y albaranes', 'Cartera de cobros', 'Análisis de ventas, gastos y margen', 'Asistente IA con tus cifras', 'Escaneo IA · 200 páginas/mes'] },
+    { n: 'Pro', p: 12, para: 'Banco, inventario, cartera y asistente IA', fuerte: true, herencia: 'Esencial', l: ['Conciliación, revisión del banco y previsión', 'Inventario, pedidos y albaranes', 'Cartera de cobros', 'Análisis de ventas, gastos y margen', 'Asistente IA con tus cifras', 'Escaneo IA · 200 páginas/mes'] },
     { n: 'Plus', p: 20, para: 'Para crecer con un pequeño equipo', herencia: 'Pro', l: ['Rentabilidad por proyecto', '1 empresa · 2 usuarios internos + gestoría', 'Nóminas y jornada para 1 empleado', 'Atención prioritaria', 'Escaneo IA · 500 páginas/mes'] },
   ],
   pym: [
     { n: 'Esencial', p: 25, para: 'Lo que una sociedad necesita', l: ['Facturación, presupuestos y recurrentes', 'Gastos y lectura IA · 200 páginas/mes', 'Contabilidad, cuentas anuales e Impuesto sobre Sociedades', 'Extractos, conciliación y revisión del banco', '1 empresa · 2 usuarios internos + gestoría', 'Nóminas y jornada para 3 empleados'] },
-    { n: 'Pro', p: 32, para: 'Todo el control por 7 € más al mes', fuerte: true, herencia: 'Esencial', l: ['Cartera de cobros y previsión de caja', 'Pedidos, albaranes e inventario', 'Remesas SEPA y análisis financiero con ratios', 'Rentabilidad por proyecto y asistente IA', '8 usuarios internos · 15 empleados', 'Escaneo IA · 600 páginas/mes · soporte prioritario'] },
+    { n: 'Pro', p: 32, para: 'Cartera, remesas, inventario y análisis', fuerte: true, herencia: 'Esencial', l: ['Cartera de cobros y previsión de caja', 'Pedidos, albaranes e inventario', 'Remesas SEPA y análisis financiero con ratios', 'Rentabilidad por proyecto y asistente IA', '8 usuarios internos · 15 empleados', 'Escaneo IA · 600 páginas/mes · soporte prioritario'] },
     { n: 'Plus', p: 55, para: 'Más capacidad con las funciones de Pro', herencia: 'Pro', l: ['1 empresa · 15 usuarios internos + gestoría', 'Nóminas y jornada para 30 empleados', 'Incorporación guiada', 'Escaneo IA · 1.500 páginas/mes'] },
   ],
   gra: [
