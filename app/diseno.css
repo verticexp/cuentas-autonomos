@@ -410,7 +410,7 @@ html[data-arranque=visto] #arranque { display: none; }
 @media (prefers-reduced-motion: reduce) { #arranque { display: none; } }
 
 /* Resumen: cabecera verde de marca con el saludo, beneficio que monta sobre ella y accesos directos */
-.logo-netto { display: block; height: 24px; width: auto; }
+.logo-netto { display: block; height: 24px; width: auto; --logo-acento: #7cc4a4; }
 .inicio { --cima: calc(env(safe-area-inset-top, 0px) + 20px); margin: calc(-1 * var(--cima)) -16px 0; padding: var(--cima) 20px 76px; --fondo-logo: var(--verde); background: var(--fondo-logo); color: var(--crema); border-radius: 0 0 28px 28px; }
 @media (min-width: 640px) { .inicio { margin-left: 0; margin-right: 0; } }
 @media (min-width: 900px) { .inicio { --cima: 40px; margin-top: 0; padding-top: 24px; border-radius: 28px; } }
