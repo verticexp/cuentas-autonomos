@@ -88,3 +88,16 @@ test('planes que no cuadran: sociedad con plan de Autónomos por NIF, nombre o f
   for (const id of ['pyme', 'regalo', 'antigua']) assert.equal(fila(id).forma, '', id);
   assert.equal(r.kpis.formaNoCuadra, 4);
 });
+
+test('admin: cambiar el plan solo sin Stripe y con un plan que exista', async () => {
+  const { cambioDePlan } = await import('../lib/admin.js');
+  const prueba = { plan: { tipo: 'aut', nombre: 'Esencial', hasta: '2026-11-01' } };
+  assert.deepEqual(cambioDePlan(prueba, 'plan', { tipo: 'aut', nombre: 'Pro' }).plan, { tipo: 'aut', nombre: 'Pro', hasta: '2026-11-01' });
+  assert.equal(cambioDePlan(prueba, 'plan', { tipo: 'pym', nombre: 'Plus' }).plan.tipo, 'pym');
+  assert.match(cambioDePlan(prueba, 'plan', { tipo: 'aut', nombre: 'Esencial' }).error, /Ya tiene/);
+  assert.match(cambioDePlan(prueba, 'plan', { tipo: 'aut', nombre: 'Oro' }).error, /no existe/);
+  assert.match(cambioDePlan(prueba, 'plan', { tipo: 'gra', nombre: 'Esencial' }).error, /no existe/);
+  assert.match(cambioDePlan({ plan: { ...prueba.plan, pagado: true, suscripcion: 'sub_1' } }, 'plan', { tipo: 'aut', nombre: 'Pro' }).error, /Stripe/);
+  assert.match(cambioDePlan({ plan: { ...prueba.plan, fundador: true } }, 'plan', { tipo: 'aut', nombre: 'Pro' }).error, /Fundador/);
+  assert.match(cambioDePlan({ plan: { tipo: 'pym', nombre: 'Esencial' }, emisor: { nif: 'B12345674' } }, 'plan', { tipo: 'aut', nombre: 'Pro' }).error, /sociedad/);
+});

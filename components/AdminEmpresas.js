@@ -6,6 +6,8 @@ import Vacio from '@/components/Vacio';
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ESTADOS, ORIGENES } from '@/lib/admin';
+import { PLANES } from '@/components/web/datos';
+import { TIPOS_ALTA } from '@/lib/prueba';
 
 const euros = (c) => (c / 100).toLocaleString('es-ES', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + ' €';
 
@@ -26,7 +28,7 @@ export default function AdminEmpresas({ filas }) {
   const noCuadran = filas.filter((f) => f.forma === 'no-cuadra').length;
 
   async function accion(empresa, datos, pregunta) {
-    if (pregunta && !(await confirmarAccion({ titulo: datos.accion === 'quitar-fundador' ? 'Quitar plan Fundador' : 'Regalar plan Fundador', texto: pregunta, aceptar: datos.accion === 'quitar-fundador' ? 'Quitar plan' : 'Regalar plan', peligro: datos.accion === 'quitar-fundador' }))) return;
+    if (pregunta && !(await confirmarAccion({ titulo: datos.accion === 'quitar-fundador' ? 'Quitar plan Fundador' : datos.accion === 'plan' ? 'Cambiar plan' : 'Regalar plan Fundador', texto: pregunta, aceptar: datos.accion === 'quitar-fundador' ? 'Quitar plan' : datos.accion === 'plan' ? 'Cambiar plan' : 'Regalar plan', peligro: datos.accion === 'quitar-fundador' }))) return;
     setOcupado(true); setMsg('');
     const r = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ empresa, ...datos }) }).catch(() => null);
     const d = await r?.json().catch(() => ({}));
@@ -66,9 +68,19 @@ export default function AdminEmpresas({ filas }) {
           <span className="adm-num">{f.ultima ? `Activa ${f.ultima}` : 'Sin actividad'}</span>
         </button>
         {abierta === f.id && <div className="adm-acciones">
-          <p className="adm-pie">Id {f.id} · {ORIGENES[f.origen]}{f.hasta ? ` · prueba hasta ${f.hasta}` : ''}{f.gestoria ? ` · gestoría ${f.gestoria}` : ''}{f.recomendadaPor ? ` · recomendada por ${f.recomendadaPor}${f.premiada ? ` (premio dado el ${f.premiada})` : ''}` : ''}{f.cupon ? ` · cupón ${f.cupon}` : ''}{f.mesesGanados ? ` · ${f.mesesGanados} meses ganados recomendando` : ''}{f.motivoForma ? ` · plan de Autónomos que no cuadra: ${f.motivoForma}` : ''}</p>
-          {f.estado !== 'fundador' && <button type="button" className="boton pequeno" disabled={ocupado} onClick={() => accion(f.id, { accion: 'fundador' }, `¿Dar a ${f.nombre} el plan Fundador, gratis de por vida?`)}>Regalar plan Fundador</button>}
+          <p className="adm-pie">Id {f.id} · {ORIGENES[f.origen]}{f.hasta && !f.suscripcion ? ` · prueba hasta ${f.hasta}` : ''}{f.gestoria ? ` · gestoría ${f.gestoria}` : ''}{f.recomendadaPor ? ` · recomendada por ${f.recomendadaPor}${f.premiada ? ` (premio dado el ${f.premiada})` : ''}` : ''}{f.cupon ? ` · cupón ${f.cupon}` : ''}{f.mesesGanados ? ` · ${f.mesesGanados} meses ganados recomendando` : ''}{f.motivoForma ? ` · plan de Autónomos que no cuadra: ${f.motivoForma}` : ''}</p>
+          {!f.registrada && <p className="adm-pie">Cuenta anterior a los planes (o tuya): es gratis, no tiene límites ni caduca. No hay nada que cambiar.</p>}
+          {f.estado !== 'fundador' && !f.suscripcion && <button type="button" className="boton pequeno" disabled={ocupado} onClick={() => accion(f.id, { accion: 'fundador' }, `¿Dar a ${f.nombre} el plan Fundador, gratis de por vida?`)}>Regalar plan Fundador</button>}
           {f.regalo && <button type="button" className="boton pequeno sec" disabled={ocupado} onClick={() => accion(f.id, { accion: 'quitar-fundador' }, `¿Quitar el plan Fundador a ${f.nombre}? Vuelve a su plan y, si su prueba ya acabó, queda en solo lectura.`)}>Quitar plan Fundador</button>}
+          {!f.suscripcion && f.estado !== 'fundador' && f.registrada && <label className="adm-cambiar">Cambiar plan
+            <select className="campo" disabled={ocupado} value="" onChange={(e) => { const [tipo, nombre] = e.target.value.split('|'); if (tipo) accion(f.id, { accion: 'plan', tipo, nombre }, `¿Pasar ${f.nombre} a ${TIPOS_ALTA[tipo]} ${nombre}? No se le cobra nada: solo cambia lo que puede usar mientras dure su prueba.`); }}>
+              <option value="">Elige un plan…</option>
+              {Object.entries(TIPOS_ALTA).map(([t, tt]) => <optgroup key={t} label={tt}>{PLANES[t].map((p) => <option key={p.n} value={`${t}|${p.n}`} disabled={f.tipoId === t && f.plan === p.n}>{tt} {p.n} · {p.p} €/mes</option>)}</optgroup>)}
+            </select>
+          </label>}
+          {f.suscripcion && <a className="boton pequeno sec" href={`https://dashboard.stripe.com/subscriptions/${f.suscripcion}`} target="_blank" rel="noopener noreferrer">Abrir su suscripción en Stripe ↗</a>}
+          {!f.suscripcion && f.clienteStripe && <a className="boton pequeno sec" href={`https://dashboard.stripe.com/customers/${f.clienteStripe}`} target="_blank" rel="noopener noreferrer">Abrir cliente en Stripe ↗</a>}
+          {f.suscripcion && <p className="adm-pie">Paga con Stripe: el plan y el precio se cambian en Stripe y Fisquo se pone al día solo.</p>}
           {['prueba', 'caducada'].includes(f.estado) && [7, 15, 30].map((n) => <button key={n} type="button" className="boton pequeno sec" disabled={ocupado} onClick={() => accion(f.id, { accion: 'alargar', dias: n })}>+{n} días de prueba</button>)}
         </div>}
       </li>)}
