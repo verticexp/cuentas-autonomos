@@ -27,6 +27,7 @@ import { tieneLimite } from '@/lib/riesgo';
 import '@/app/portal.css';
 
 import '@/app/mk.css';
+import '@/app/factura-detalle.css';
 
 export const dynamic = 'force-dynamic';
 
@@ -97,26 +98,32 @@ export default async function Factura({ params }) {
         </dl>
         <div className="fh-pie">
           <span className={`fh-estado e-${estado.toLowerCase()}`}>{estado}{!f.cobrada && ` · vence el ${fechaTexto(vencimiento(f, u.emisor?.plazo))}`}</span>
-          <span>{fechaTexto(f.fecha)}</span>
+          <span>Emitida el {fechaTexto(f.fecha)}</span>
         </div>
         {editar && <div className="fh-cobrada"><Cobro id={f.id} cobrada={Boolean(f.cobrada)} total={i.total} pagado={pagadoDe(f)} pendiente={Math.max(0, pendienteDe(f))} cobro={f.cobro ? { fecha: f.cobro.fecha, metodo: f.cobro.metodo } : null} deshacer={deshacerDe(f)} hoy={hoy()} desde={f.fecha} /></div>}
       </section>
+      {/* Lo de cada día arriba (PDF, enviar, duplicar); lo de vez en cuando, en «Más opciones», con Borrar al final. */}
       <div className="acciones-factura">
         <Ir href={`/facturas/${f.id}/pdf`} className="boton">Ver / descargar PDF</Ir>
         {editar && <>
         <Ir href={`/facturas/nueva?duplica=${f.id}`} tipo="subir" className="boton sec">Duplicar</Ir>
         {!f.serie && <Ir href={`/facturas/nueva?rectifica=${f.id}`} tipo="subir" className="boton sec">Rectificar</Ir>}
-        <Borrar url={`/api/facturas?id=${f.id}`} pregunta={`¿Borrar la factura ${numeroFactura(f)}? Hacienda exige numeración correlativa: si ya la has enviado, mejor haz una rectificativa.`} volver="/facturas" />
         </>}
       </div>
-      {String(f.cliente?.nif || '').trim() && <p className="nota efactura">Factura electrónica: <a href={`/api/facturas/efactura?id=${encodeURIComponent(f.id)}&formato=facturae`} download>Facturae 3.2.2</a> · <a href={`/api/facturas/efactura?id=${encodeURIComponent(f.id)}&formato=ubl`} download>UBL (Peppol)</a>{f.cobrada ? ` · cobrada${f.cobro?.fecha ? ` el ${fechaTexto(f.cobro.fecha.slice(0, 10))}` : ''}` : ''}</p>}
       {(editar || f.envios?.length > 0) && <EnviarFactura id={f.id} email={f.cliente.email} envios={f.envios} editar={editar}
         asunto={asuntoFactura(f, emisorDe(f, u), u.envio)} mensaje={mensajeFactura(f, emisorDe(f, u), u.envio)} asuntoFijo={diasPrueba(u.plan) > 0} />}
-      {portal && <section className="portal-enlace">
-        <p className="nota">Portal de {f.cliente.nombre}: ve todas sus facturas y presupuestos, los descarga en PDF y paga.</p>
-        <div className="portal-botones"><Compartir ruta={portal} texto={`Tus documentos de ${u.emisor?.nombre || ''}`.trim()} etiqueta="Enviar su portal" className="boton sec" /><Link href={portal} className="boton sec">Ver su portal</Link><CambiarEnlace datos={{ tipo: 'portal', cliente: f.cliente.nombre, nif: f.cliente.nif || '' }} pregunta={`¿Cambiar el enlace del portal de ${f.cliente.nombre}? El que tiene dejará de funcionar y tendrás que enviarle el nuevo.`} /></div>
-      </section>}
-      {editar && f.serie !== 'R' && <RepetirFactura factura={f.id} dia={Math.min(28, Number(f.fecha.slice(8, 10)))} existente={recurrentes.find((r) => r.origen === f.id)} />}
+      {(String(f.cliente?.nif || '').trim() || portal || editar) && <details className="mas-opciones">
+        <summary>Más opciones</summary>
+        <div className="mas-opciones-c">
+          {String(f.cliente?.nif || '').trim() && <p className="nota efactura">Factura electrónica: <a href={`/api/facturas/efactura?id=${encodeURIComponent(f.id)}&formato=facturae`} download>Facturae 3.2.2</a> · <a href={`/api/facturas/efactura?id=${encodeURIComponent(f.id)}&formato=ubl`} download>UBL (Peppol)</a>{f.cobrada ? ` · cobrada${f.cobro?.fecha ? ` el ${fechaTexto(f.cobro.fecha.slice(0, 10))}` : ''}` : ''}</p>}
+          {portal && <section className="portal-enlace">
+            <p className="nota">Portal de {f.cliente.nombre}: ve todas sus facturas y presupuestos, los descarga en PDF y paga.</p>
+            <div className="portal-botones"><Compartir ruta={portal} texto={`Tus documentos de ${u.emisor?.nombre || ''}`.trim()} etiqueta="Enviar su portal" className="boton sec" /><Link href={portal} className="boton sec">Ver su portal</Link><CambiarEnlace datos={{ tipo: 'portal', cliente: f.cliente.nombre, nif: f.cliente.nif || '' }} pregunta={`¿Cambiar el enlace del portal de ${f.cliente.nombre}? El que tiene dejará de funcionar y tendrás que enviarle el nuevo.`} /></div>
+          </section>}
+          {editar && f.serie !== 'R' && <RepetirFactura factura={f.id} dia={Math.min(28, Number(f.fecha.slice(8, 10)))} existente={recurrentes.find((r) => r.origen === f.id)} />}
+          {editar && <div className="mas-opciones-borrar"><Borrar url={`/api/facturas?id=${f.id}`} pregunta={`¿Borrar la factura ${numeroFactura(f)}? Hacienda exige numeración correlativa: si ya la has enviado, mejor haz una rectificativa.`} volver="/facturas" /></div>}
+        </div>
+      </details>}
       {f.base > 0 && (usa303(fiscal) || usa130(fiscal)) && await (async () => {
         // El IRPF, con el beneficio real del año hasta el trimestre de la factura (sus gastos restan), no con el 95 %.
         let margen;
@@ -136,7 +143,11 @@ export default async function Factura({ params }) {
         { Correcto: `registrada en la AEAT${f.verifactu.csv ? ` (CSV ${f.verifactu.csv})` : ''}.`, AceptadoConErrores: `registrada en la AEAT con avisos: ${f.verifactu.error}`, Incorrecto: `la AEAT la ha rechazado: ${f.verifactu.error}` }[f.verifactu.estado]
         || `pendiente de enviar a la AEAT${f.verifactu.error ? ` (último intento: ${f.verifactu.error})` : ''}. Se envía sola.`}`}</p>}
       {f.verifactu && editar && <VerifactuFactura factura={f} admin={u.rol === 'admin'} />}
+      {/* Los datos completos (líneas, cliente, notas) se ven y se editan plegados: la pantalla es para consultarla. */}
+      <details className="editar-factura">
+        <summary>{editar && !f.verifactu ? 'Ver y editar los datos' : 'Ver los datos de la factura'}</summary>
       <fieldset className="solo-ver" disabled={!editar}><FormFactura key={JSON.stringify(f)} recargo={usa303(fiscal)} factura={f} clientes={clientes} actividades={actividades} productos={(productos || []).sort((a, b) => a.nombre.localeCompare(b.nombre))} riesgos={riesgos} proyectos={editar ? await proyectosDe(u) : []} /></fieldset>
+      </details>
     </main>
   );
 }

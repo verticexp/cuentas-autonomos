@@ -19,6 +19,7 @@ import AvisoDeshacer from '@/components/AvisoDeshacer';
 import '@/app/recurrentes.css';
 import '@/app/filtros.css';
 import '@/app/mk.css';
+import '@/app/tabla-facturas.css';
 
 export const dynamic = 'force-dynamic';
 const diaMes = (f) => new Date(`${f}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
@@ -66,24 +67,22 @@ export default async function Facturas({ searchParams }) {
   };
 
   return (
-    <main className="pagina mk-look">
+    <main className="pagina mk-look ancha">
       <AvisoDeshacer />
       <header className="cabecera">
         <h1 className="titulo">Facturas</h1>
         {/* Sin ninguna factura, el botón va dentro del vacío (uno solo). */}
-        {puede(u, 'facturar') && total > 0 && <Ir href="/facturas/nueva" tipo="subir" className="boton pequeno">Nueva factura</Ir>}
+        {/* En el móvil ya está el «+» de la barra: aquí solo en el ordenador. */}
+        {puede(u, 'facturar') && total > 0 && <Ir href="/facturas/nueva" tipo="subir" className="boton pequeno solo-pc">Nueva factura</Ir>}
       </header>
 
       {total > 0 && (
         <p className="resumen-linea solo-pc">
           <span>Por cobrar <strong>{eur(porCobrar)}</strong></span>
-          {vencidas.length > 0 && <span className="rojo">{vencidas.length === 1 ? '1 vencida' : `${vencidas.length} vencidas`}</span>}
+          {vencidas.length > 0 && <Link href={url({ estado: estado === 'vencidas' ? null : 'vencidas' })} className="rojo">{vencidas.length === 1 ? '1 vencida' : `${vencidas.length} vencidas`}</Link>}
+          {/* Catálogo, Inventario, Pedidos y Caja ya están en la barra lateral: aquí solo lo propio de las facturas. */}
           {recurrentes?.length > 0 && <Link href="/facturas/recurrentes" className="rec-enlace">{recurrentes.length === 1 ? '1 recurrente' : `${recurrentes.length} recurrentes`} ›</Link>}
-          {puede(u, 'facturar') && <Link href="/facturas/catalogo" className="rec-enlace">Catálogo ›</Link>}
-          {u.fiscal?.inventario && <Link href="/inventario" className="rec-enlace">Inventario ›</Link>}
-          {u.fiscal?.inventario && puede(u, 'facturar') && <Link href="/albaranes" className="rec-enlace">Pedidos y albaranes ›</Link>}
-          {puede(u, 'facturar') && <Link href="/facturas/caja" className="rec-enlace">Caja ›</Link>}
-          {puede(u, 'resumen') && <a href={`/api/efactura?anio=${h.slice(0, 4)}`} className="rec-enlace" download>Estado de pagos ›</a>}
+          {puede(u, 'resumen') && <a href={`/api/efactura?anio=${h.slice(0, 4)}`} className="rec-enlace" download>Estado de pagos (Excel) ›</a>}
         </p>
       )}
 
@@ -134,21 +133,31 @@ export default async function Facturas({ searchParams }) {
         </>
       )}
 
-      {total > 5 && <Buscar action="/facturas" q={q} ocultos={{ a, estado }} placeholder="Buscar cliente, número o concepto" />}
+      {total > 5 && <Buscar action="/facturas" q={q} ocultos={{ a, estado }} placeholder="Buscar facturas" etiqueta="Buscar por cliente, número o concepto" />}
 
+      {/* Dos grupos de filtros: la actividad (si hay varias) y el estado, separados. */}
       <Deslizable className="chips solo-pc">
-        <Link href={url({ a: null })} className={!ACTIVIDADES[a] ? 'activo' : ''}>Todas</Link>
-        {Object.entries(ACTIVIDADES).map(([id, n]) => <Link key={id} href={url({ a: id })} className={a === id ? 'activo' : ''}>{n}</Link>)}
+        {Object.keys(ACTIVIDADES).length > 1 && <>
+          <Link href={url({ a: null })} className={!ACTIVIDADES[a] ? 'activo' : ''}>Todas las actividades</Link>
+          {Object.entries(ACTIVIDADES).map(([id, n]) => <Link key={id} href={url({ a: id })} className={a === id ? 'activo' : ''}>{n}</Link>)}
+          <span className="chips-sep" aria-hidden />
+        </>}
+        <Link href={url({ estado: null })} className={!['pendientes', 'vencidas'].includes(estado) ? 'activo' : ''}>Todas</Link>
         <Link href={url({ estado: estado === 'pendientes' ? null : 'pendientes' })} className={estado === 'pendientes' ? 'activo' : ''}>Sin cobrar</Link>
         {vencidas.length > 0 && <Link href={url({ estado: estado === 'vencidas' ? null : 'vencidas' })} className={estado === 'vencidas' ? 'activo' : ''}>Vencidas</Link>}
       </Deslizable>
 
+      {grupos.length > 0 && (
+        <div className={`tf-cab solo-pc${!a && Object.keys(ACTIVIDADES).length > 1 ? ' con-act' : ''}`} aria-hidden>
+          <span>Cliente</span><span>Número</span><span>Fecha</span>{!a && Object.keys(ACTIVIDADES).length > 1 && <span>Actividad</span>}<span className="tf-n">Base</span><span className="tf-n">Total</span><span>Estado</span>
+        </div>
+      )}
       {grupos.map((g) => {
         const [y, m] = g.m.split('-');
         return (
           <section key={g.m} className="grupo-mes">
-            <h2><span>{MESES[m - 1]} {y !== h.slice(0, 4) ? y : ''}</span><small>{eur(r2(totalMes[g.m] || 0))} sin IVA</small></h2>
-            <ul className="grupo-lista">
+            <h2><span>{MESES[m - 1]} {y !== h.slice(0, 4) ? y : ''}</span><small>Base {eur(r2(totalMes[g.m] || 0))}</small></h2>
+            <ul className={`grupo-lista tf-lista${!a && Object.keys(ACTIVIDADES).length > 1 ? ' con-act' : ''}`}>
               {g.facturas.map((f) => {
                 const e = estadoDe(f);
                 return (
@@ -156,10 +165,12 @@ export default async function Facturas({ searchParams }) {
                     {(() => {
                       const fila = (
                         <FilaFactura href={`/facturas/${f.id}`}>
+                          {/* En el móvil, el número, la fecha y la actividad van en una línea; en el ordenador, en columnas. */}
                           <span className="txt">
                             <strong data-vt="cliente">{f.cliente.nombre}</strong>
-                            <small>{f.caja ? 'Cierre de caja · ' : ''}{numeroFactura(f)} · {diaMes(f.fecha)}{!a && Object.keys(ACTIVIDADES).length > 1 ? ` · ${ACTIVIDADES[f.actividad]}` : ''}</small>
+                            <small className="tf-meta"><span className="tf-num">{f.caja ? 'Cierre de caja · ' : ''}{numeroFactura(f)}</span><span className="tf-fecha">{diaMes(f.fecha)}</span>{!a && Object.keys(ACTIVIDADES).length > 1 && <span className="tf-act">{ACTIVIDADES[f.actividad]}</span>}</small>
                           </span>
+                          <span className="tf-base solo-pc">{eur(importes(f).base)}</span>
                           <span className="imp-col">
                             <span className="imp" data-vt="total">{eur(importes(f).total)}</span>
                             <span className={`estado-txt e-${e}`}>{e === 'cobrada' ? 'Cobrada' : e === 'vencida' ? 'Vencida' : 'Pendiente'}</span>

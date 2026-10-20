@@ -1,0 +1,23 @@
+/* Lista de facturas (app/facturas/page.js). En el móvil, cada fila es cliente + «número · fecha · actividad» y el
+   total con su estado. En el ordenador, una tabla: cliente, número, fecha, actividad, base, total y estado, con la
+   misma fila (las columnas salen de los mismos elementos con display: contents). */
+.tf-meta > span + span::before { content: ' · '; }
+.chips-sep { flex: none; align-self: stretch; width: 1px; margin: 6px 4px; background: var(--line); }
+
+@media (min-width: 1024px) {
+  /* La tabla necesita más ancho que el resto de pantallas. */
+  .pagina.ancha { max-width: 1120px; }
+  .tf-lista, .tf-cab { --tf-cols: minmax(0, 2.2fr) 112px 64px 112px 112px 96px; }
+  .tf-lista.con-act, .tf-cab.con-act { --tf-cols: minmax(0, 2fr) 112px 64px minmax(0, 1.2fr) 112px 112px 96px; }
+  .tf-cab { display: grid; grid-template-columns: var(--tf-cols); column-gap: 16px; padding: 0 16px; margin: 14px 0 -4px; font-size: 12px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; color: var(--muted); }
+  .tf-cab .tf-n { text-align: right; }
+  .tf-lista .fila { display: grid; grid-template-columns: var(--tf-cols); align-items: center; column-gap: 16px; }
+  .tf-lista .fila .txt, .tf-lista .tf-meta, .tf-lista .imp-col { display: contents; }
+  .tf-lista .tf-meta > span::before { content: none; }
+  .tf-lista .fila strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tf-lista .tf-num, .tf-lista .tf-fecha, .tf-lista .tf-act { min-width: 0; font-size: 14px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tf-lista .tf-fecha { font-variant-numeric: tabular-nums; }
+  .tf-lista .tf-base, .tf-lista .imp { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .tf-lista .tf-base { font-size: 15px; color: var(--muted); }
+  .tf-lista .estado-txt { justify-self: start; }
+}

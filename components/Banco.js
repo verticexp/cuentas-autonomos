@@ -1,5 +1,6 @@
 'use client';
 
+import { fraseBanco } from '@/lib/textoBanco';
 import Vacio from '@/components/Vacio';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -92,7 +93,7 @@ function Pendiente({ m, permisos, accion }) {
     <li className="bco-mov">
       <div className="bco-mov-fila">
         <span className="bco-fecha">{fechaCorta(m.fecha).slice(0, 5)}</span>
-        <span className="bco-txt"><strong>{m.contraparte || m.concepto}</strong>{m.contraparte && <small>{m.concepto}</small>}</span>
+        <span className="bco-txt"><strong>{m.contraparte ? fraseBanco(m.contraparte, { nombre: true }) : fraseBanco(m.concepto)}</strong>{m.contraparte && <small>{fraseBanco(m.concepto)}</small>}</span>
         <Importe v={m.importe} />
       </div>
       {s && (
@@ -333,7 +334,7 @@ export default function Banco({ cuentas, pendientes, emparejados, ignorados, aut
               <li key={m.id} className="bco-mov hecho">
                 <div className="bco-mov-fila">
                   <span className="bco-fecha">{fechaCorta(m.fecha).slice(0, 5)}</span>
-                  <span className="bco-txt"><strong>{m.contraparte || m.concepto}{m.auto && <em className="bco-auto"> · automático</em>}</strong><small>{m.destino ? <Link href={m.destino.url} prefetch={false}>{m.destino.texto}</Link> : 'Ya no existe'}</small></span>
+                  <span className="bco-txt"><strong>{m.contraparte ? fraseBanco(m.contraparte, { nombre: true }) : fraseBanco(m.concepto)}{m.auto && <em className="bco-auto"> · automático</em>}</strong><small>{m.destino ? <Link href={m.destino.url} prefetch={false}>{m.destino.texto}</Link> : 'Ya no existe'}</small></span>
                   <Importe v={m.importe} />
                 </div>
                 {(m.importe > 0 ? permisos.facturar : permisos.gastar) && <button className="bco-deshacer" onClick={() => accion({ accion: 'deshacer', id: m.id })}>Deshacer</button>}
@@ -352,7 +353,7 @@ export default function Banco({ cuentas, pendientes, emparejados, ignorados, aut
               <li key={m.id} className="bco-mov hecho">
                 <div className="bco-mov-fila">
                   <span className="bco-fecha">{fechaCorta(m.fecha).slice(0, 5)}</span>
-                  <span className="bco-txt"><strong>{m.contraparte || m.concepto}</strong></span>
+                  <span className="bco-txt"><strong>{m.contraparte ? fraseBanco(m.contraparte, { nombre: true }) : fraseBanco(m.concepto)}</strong></span>
                   <Importe v={m.importe} />
                 </div>
                 {(m.importe > 0 ? permisos.facturar : permisos.gastar) && <button className="bco-deshacer" onClick={() => accion({ accion: 'deshacer', id: m.id })}>Recuperar</button>}
