@@ -11,6 +11,18 @@ class FisquoViewController: CAPBridgeViewController {
     private var rutaPendiente: String?
     private var cargada = false
 
+    // Verde de marca: el de la pantalla de lanzamiento, la ventana y el fondo de la web mientras carga (capacitor.config.json),
+    // igual que el de la animación de inicio de la web: del icono a la app no hay ningún cambio de color.
+    static let verde = UIColor(red: 0x0F / 255, green: 0x1F / 255, blue: 0x1B / 255, alpha: 1)
+    // Ya con la app abierta, el fondo pasa al de la app (--paper de app/diseno.css), para que recargar no destelle en verde.
+    // Se cambia unos segundos después de la primera carga: el fin de carga llega antes de que la página se vea en pantalla,
+    // y cambiarlo en ese momento dejaba ver el fondo claro un instante antes de la animación.
+    private static let fondoApp = UIColor { rasgos in
+        rasgos.userInterfaceStyle == .dark
+            ? UIColor(red: 0x11 / 255, green: 0x12 / 255, blue: 0x14 / 255, alpha: 1)
+            : UIColor(red: 0xF3 / 255, green: 0xF4 / 255, blue: 0xF1 / 255, alpha: 1)
+    }
+
     override func webView(with frame: CGRect, configuration: WKWebViewConfiguration) -> WKWebView {
         let webView = super.webView(with: frame, configuration: configuration)
         // Sin vista previa al mantener pulsado un enlace: en una app no tiene sentido abrir la página «en Safari».
@@ -41,6 +53,10 @@ class FisquoViewController: CAPBridgeViewController {
         webView?.scrollView.refreshControl?.endRefreshing()
         guard !cargada else { return }
         cargada = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
+            self?.webView?.backgroundColor = Self.fondoApp
+            self?.webView?.scrollView.backgroundColor = Self.fondoApp
+        }
         if let ruta = rutaPendiente {
             rutaPendiente = nil
             abrir(ruta: ruta)

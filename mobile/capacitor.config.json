@@ -14,14 +14,14 @@
     "appendUserAgent": "FisquoApp/1",
     "contentInset": "never",
     "limitsNavigationsToAppBoundDomains": true,
-    "backgroundColor": "#F4F4F1",
+    "backgroundColor": "#0F1F1B",
     "scrollEnabled": true,
     "preferredContentMode": "mobile"
   },
   "plugins": {
     "SplashScreen": {
-      "launchShowDuration": 2000,
-      "launchFadeOutDuration": 300,
+      "launchShowDuration": 0,
+      "launchFadeOutDuration": 0,
       "backgroundColor": "#0F1F1B",
       "showSpinner": false
     }
