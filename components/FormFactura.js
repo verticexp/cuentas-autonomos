@@ -249,7 +249,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
           <label className="ff-etiqueta" htmlFor={idCampo('cliente.direccion')}>Dirección</label>
           <input {...atributos('cliente.direccion')} className="campo" placeholder="Ej.: Calle Mayor, 1" value={f.cliente.direccion} onChange={(e) => ponerCliente('direccion', e.target.value)} />{mensaje('cliente.direccion')}
           <label className="ff-etiqueta" htmlFor={idCampo('cliente.ciudad')}>Código postal y ciudad</label>
-          <input {...atributos('cliente.ciudad')} className="campo" placeholder="Ej.: Barcelona, 08001" value={f.cliente.ciudad} onChange={(e) => ponerCliente('ciudad', e.target.value)} />{mensaje('cliente.ciudad')}
+          <input {...atributos('cliente.ciudad')} className="campo" placeholder="Ej.: 08001 Barcelona" value={f.cliente.ciudad} onChange={(e) => ponerCliente('ciudad', e.target.value)} />{mensaje('cliente.ciudad')}
           <label className="ff-etiqueta" htmlFor={idCampo('cliente.email')}>Email</label>
           <input autoComplete="email" {...atributos('cliente.email')} className="campo" type="email" placeholder="Ej.: cliente@empresa.es" value={f.cliente.email || ''} onChange={(e) => ponerCliente('email', e.target.value)} />{mensaje('cliente.email')}
         </div>
@@ -366,7 +366,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
 
       <div className="ff-pie">
         <div className="totales">
-          <span>Base {eur(t.base)}</span>{tipos.length > 1 ? tipos.map((x) => <span key={x.pct}>IVA {x.pct}% {eur(x.iva)}</span>) : <span>IVA {eur(t.iva)}</span>}<span>IRPF −{eur(t.irpf)}</span><strong>Total {eur(t.total)}</strong>
+          <span>Base {eur(t.base)}</span>{tipos.length > 1 ? tipos.map((x) => <span key={x.pct}>IVA {x.pct} % {eur(x.iva)}</span>) : <span>IVA {eur(t.iva)}</span>}{t.irpf > 0 && <span>IRPF −{eur(t.irpf)}</span>}<strong>Total {eur(t.total)}</strong>
         </div>
 
         {error && <p className="error" role="alert">{error}</p>}
