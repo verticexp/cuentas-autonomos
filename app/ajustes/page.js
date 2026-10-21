@@ -109,7 +109,7 @@ export default async function Page() {
           <Celda href="/ajustes/facturacion" ico="empresa" tono="azul" titulo="Datos de la empresa" detalle={datosCompletos ? `${e.nombre} · ${e.nif}` : 'Faltan datos: rellénalos antes de facturar'} aviso={!datosCompletos} />
           <Celda href="/bienvenida?editar=1" ico="actividad" tono="azul" titulo="Actividades e impuestos" detalle={`${fiscalDe(u).tipo === 'sociedad' ? 'Sociedad' : 'Autónomo'} · ${actividadesDe(u).map((x) => x.nombre).join(', ')}`} />
           {(puede(u, 'usuarios') || u.admin) && <Celda href="/usuarios" ico="usuarios" tono="azul" titulo="Usuarios y permisos" detalle="Quién entra y qué puede hacer" />}
-          <Celda href="/ajustes/gestoria" ico="gestoria" tono="azul" titulo="Tu gestoría" detalle={u.gestoria?.email ? `${u.gestoria.nombre || u.gestoria.email}${u.gestoria.auto ? ' · paquete automático' : ''}` : 'Invítala y mándale el paquete de cada trimestre'} />
+          {puede(u, DETALLE) && <Celda href="/ajustes/gestoria" ico="gestoria" tono="azul" titulo="Tu gestoría" detalle={u.gestoria?.email ? `${u.gestoria.nombre || u.gestoria.email}${u.gestoria.auto ? ' · paquete automático' : ''}` : 'Invítala y mándale el paquete de cada trimestre'} />}
         </Grupo>
       )}
       {!empresa && puede(u, 'usuarios') && <Grupo titulo="Tu empresa"><Celda href="/usuarios" ico="usuarios" tono="azul" titulo="Usuarios y permisos" detalle="Quién entra y qué puede hacer" /></Grupo>}
@@ -124,10 +124,10 @@ export default async function Page() {
         </Grupo>
       )}
 
-      {empresa && (
+      {empresa && (puede(u, DETALLE) || u.admin || u.controlat) && (
         <Grupo titulo="Conexiones">
           {puede(u, DETALLE) && <Celda href="/banco" ico="banco" tono="ambar" titulo="Bancos" detalle="Cuentas, extractos y conciliación" />}
-          <Celda href="/ajustes/drive" ico="drive" tono="ambar" titulo="Google Drive" detalle={u.drive?.url ? (u.driveError ? 'Con errores: revisa la conexión' : 'Conectado') : 'Sin conectar'} aviso={Boolean(u.drive?.url && u.driveError)} />
+          {puede(u, DETALLE) && <Celda href="/ajustes/drive" ico="drive" tono="ambar" titulo="Google Drive" detalle={u.drive?.url ? (u.driveError ? 'Con errores: revisa la conexión' : 'Conectado') : 'Sin conectar'} aviso={Boolean(u.drive?.url && u.driveError)} />}
           {(u.admin || u.controlat) && <Celda href="/ajustes/controlat" ico="conexion" tono="ambar" titulo="Controla'T" detalle={u.controlat ? 'Enviando tu neto mensual' : 'Sin conectar'} />}
         </Grupo>
       )}

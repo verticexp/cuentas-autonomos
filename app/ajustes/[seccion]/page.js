@@ -6,7 +6,7 @@ import { genteDe, usoDe } from '@/lib/usoPlan';
 import { estadoVerifactu } from '@/lib/verifactuEstado';
 import { requerir } from '@/lib/auth';
 import { redis } from '@/lib/redis';
-import { puede } from '@/lib/permisos';
+import { DETALLE, puede } from '@/lib/permisos';
 import Ajustes from '@/components/Ajustes';
 import Controlat from '@/components/Controlat';
 import Marca from '@/components/Marca';
@@ -73,6 +73,8 @@ export default async function Seccion({ params }) {
   const u = await requerir();
   const app = esApp((await headers()).get('user-agent'));
   if (DE_EMPRESA.includes(seccion) && !puede(u, 'empresa')) return <SinAcceso texto="Para cambiar esto necesitas el permiso «Datos de la empresa». Pídeselo al administrador." />;
+  // Drive y la gestoría reciben cada factura y gasto (app/api/cuenta): elegir adónde van exige poder verlos.
+  if (['gestoria', 'drive'].includes(seccion) && !puede(u, DETALLE)) return <SinAcceso texto="Para elegir adónde se envían las facturas y los gastos necesitas poder ver el resumen, las facturas y los gastos. Pídeselo al administrador." />;
   if (seccion === 'recomienda' && u.rol !== 'admin') return <SinAcceso texto="Solo el administrador de la empresa puede recomendar Fisquo con el enlace de la empresa." />;
   const llaves = seccion === 'seguridad'
     ? Object.entries((await redis.hgetall(`passkeys:${u.id}`)) || {}).map(([id, k]) => ({ id, nombre: k.nombre, creada: k.creada, usada: k.usada || null }))

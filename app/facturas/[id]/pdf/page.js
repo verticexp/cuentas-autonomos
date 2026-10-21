@@ -3,6 +3,7 @@ import { identidadDoc } from '@/lib/documento';
 import { requerir } from '@/lib/auth';
 import { leerUno } from '@/lib/redis';
 import { numeroFactura } from '@/lib/calculos';
+import { nombreArchivoDoc } from '@/lib/formato';
 import Volver from '@/components/Volver';
 import VistaA4 from '@/components/VistaA4';
 import DescargarPdf from '@/components/DescargarPdf';
@@ -14,7 +15,7 @@ export const dynamic = 'force-dynamic';
 export async function generateMetadata({ params }) {
   const u = await requerir('facturas');
   const f = u && (await leerUno(u, 'facturas', (await params).id));
-  return { title: f ? `${numeroFactura(f)}-${f.cliente.nombre.toUpperCase().replace(/[^A-Z0-9]+/g, '-')}` : 'Factura' };
+  return { title: f ? nombreArchivoDoc(numeroFactura(f), f.cliente.nombre).replace(/ /g, '-') : 'Factura' };
 }
 
 export default async function PDF({ params }) {
@@ -27,7 +28,7 @@ export default async function PDF({ params }) {
     return <main className="aviso"><h1>Faltan tus datos de facturación</h1><p>Rellena tu nombre, NIF, dirección e IBAN en <a href="/ajustes">Ajustes</a> para generar el PDF.</p></main>;
   }
 
-  const nombre = `${numeroFactura(f)} ${c.nombre.toUpperCase().replace(/[^A-Z0-9ÀÈÉÍÒÓÚÇÑ ]+/g, '').trim()}.pdf`;
+  const nombre = `${nombreArchivoDoc(numeroFactura(f), c.nombre)}.pdf`;
   return (
     <div className="pdf-fondo" style={{ paddingTop: 0 }}>
       <div style={{ position: 'sticky', top: 0, zIndex: 5, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: 'calc(env(safe-area-inset-top, 0px) + 10px) 16px 10px', background: 'var(--paper)', borderBottom: '1px solid var(--line)', marginBottom: 12 }}>

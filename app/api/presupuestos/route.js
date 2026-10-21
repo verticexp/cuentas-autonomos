@@ -21,14 +21,24 @@ export async function POST(req) {
   const d = datosDe(u, await cuerpo(req));
   if (d.error) return error(d.error);
   const anio = Number(d.fecha.slice(0, 4));
-  const numero = siguienteNumero(await leer(u, 'presupuestos'), anio, 'P');
-  // El enlace público lleva un código imposible de adivinar que apunta a la empresa y al presupuesto.
-  const token = randomBytes(18).toString('base64url');
-  const p = { id: `P${anio}-${numero}`, numero, anio, serie: 'P', ...d, estado: 'pendiente', token, facturas: [] };
-  await guardar(u, 'presupuestos', p);
-  await redis.hset('presupuesto-enlaces', { [token]: { empresa: u.empresa || u.id, id: p.id } });
-  await guardarCliente(u, p.cliente);
-  return Response.json({ ok: true, presupuesto: p });
+  // El número se lee y se guarda bajo cerrojo de la empresa: dos presupuestos a la vez tomaban el mismo id y el segundo
+  // pisaba al primero.
+  try {
+    return await conCerrojo(`presupuestos:${u.empresa || u.id}`, async ({ quedaMs }) => {
+      const numero = siguienteNumero(await leer(u, 'presupuestos'), anio, 'P');
+      // El enlace público lleva un código imposible de adivinar que apunta a la empresa y al presupuesto.
+      const token = randomBytes(18).toString('base64url');
+      const p = { id: `P${anio}-${numero}`, numero, anio, serie: 'P', ...d, estado: 'pendiente', token, facturas: [] };
+      if (quedaMs() <= 0) throw new Ocupado('La operación ha tardado demasiado: inténtalo de nuevo.');
+      await guardar(u, 'presupuestos', p);
+      await redis.hset('presupuesto-enlaces', { [token]: { empresa: u.empresa || u.id, id: p.id } });
+      await guardarCliente(u, p.cliente);
+      return Response.json({ ok: true, presupuesto: p });
+    });
+  } catch (e) {
+    if (e instanceof Ocupado) return error(e.message, 409);
+    throw e;
+  }
 }
 
 // Solo se puede cambiar mientras está pendiente; «aceptado» a mano es para cuando el cliente dice que sí por teléfono.
@@ -63,10 +73,19 @@ export async function DELETE(req) {
   const { u, res } = await usuarioApi({ permiso: 'facturar' });
   if (res) return res;
   const id = req.nextUrl.searchParams.get('id');
-  const p = id && (await leerUno(u, 'presupuestos', id));
-  if (!p) return error('Ese presupuesto ya no existe', 404);
-  if (p.facturas?.length) return error('Tiene facturas: no se puede borrar');
-  await borrar(u, 'presupuestos', id);
-  await redis.hdel('presupuesto-enlaces', p.token);
-  return Response.json({ ok: true });
+  if (!id) return error('Ese presupuesto ya no existe', 404);
+  // Mismo cerrojo que facturarlo o responderlo: no se borra uno que se está facturando en ese momento.
+  try {
+    return await conCerrojo(`presupuesto:${u.empresa || u.id}:${id}`, async () => {
+      const p = await leerUno(u, 'presupuestos', id);
+      if (!p) return error('Ese presupuesto ya no existe', 404);
+      if (p.facturas?.length) return error('Tiene facturas: no se puede borrar');
+      await borrar(u, 'presupuestos', id);
+      await redis.hdel('presupuesto-enlaces', p.token);
+      return Response.json({ ok: true });
+    });
+  } catch (e) {
+    if (e instanceof Ocupado) return error(e.message, 409);
+    throw e;
+  }
 }

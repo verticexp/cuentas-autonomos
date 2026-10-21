@@ -2,11 +2,15 @@
 
 import { pedirTexto } from './Confirmar';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 // Ajustes › Recomienda Fisquo (lib/recomendaciones.js): el enlace de la empresa y lo que ha ganado con él.
 export default function Recomienda({ enlace, resumen }) {
   const [copiado, setCopiado] = useState(false);
+  // «Compartir» solo donde el navegador sabe compartir. Se mira tras montar: el servidor no tiene navigator.share y, si el
+  // primer render del navegador lo pintaba, React no casaba el HTML (error #418) y repintaba la página entera.
+  const [puedeCompartir, setPuedeCompartir] = useState(false);
+  useEffect(() => { setPuedeCompartir(Boolean(navigator.share)); }, []);
   const copiar = async () => {
     try { await navigator.clipboard.writeText(enlace); setCopiado(true); setTimeout(() => setCopiado(false), 2500); } catch { await pedirTexto({ titulo: 'Copia tu enlace', texto: 'Selecciona el enlace y cópialo para compartirlo.', etiqueta: 'Enlace de recomendación', valor: enlace, soloLectura: true, aceptar: 'Cerrar' }); }
   };
@@ -26,7 +30,7 @@ export default function Recomienda({ enlace, resumen }) {
       <p className="recomienda-enlace"><code>{enlace}</code></p>
       <div className="recomienda-botones">
         <button type="button" className="boton pequeno" onClick={copiar}>{copiado ? 'Copiado' : 'Copiar enlace'}</button>
-        {typeof navigator !== 'undefined' && navigator.share && <button type="button" className="boton pequeno sec" onClick={compartir}>Compartir</button>}
+        {puedeCompartir && <button type="button" className="boton pequeno sec" onClick={compartir}>Compartir</button>}
       </div>
       {resumen.codigo && <p className="nota">También puede escribir tu código <strong>{resumen.codigo}</strong> en «Código promocional» al registrarse.</p>}
       <p className="nota" role="status" aria-live="polite">{copiado ? 'Enlace copiado.' : ''}</p>
