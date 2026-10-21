@@ -36,7 +36,7 @@ export default async function Nominas({ searchParams }) {
 
   return (
     <main className="pagina mk-look">
-      <Volver href="/ajustes">Ajustes</Volver>
+      <Volver href="/mas">Más</Volver>
       <header className="cabecera"><h1 className="titulo">Equipo y nóminas</h1></header>
 
       {activos.length > 0 && (
@@ -136,4 +136,4 @@ export default async function Nominas({ searchParams }) {
   );
 }
 
-export const metadata = { title: 'Nóminas' };
+export const metadata = { title: 'Equipo y nóminas' };

@@ -59,7 +59,7 @@ export default function Dietas({ hoy, actividades, autonomo }) {
       <label>Fecha<input className="campo" type="date" value={d.fecha} onChange={(e) => poner('fecha', e.target.value)} required /></label>
       {c && !c.error && (
         <p className="dieta-calculo" role="status">
-          {c.tipo === 'km' ? <>Exento: {String(c.km).replace('.', ',')} km × {String(KM).replace('.', ',')} € = <strong>{eur(c.exento)}</strong></>
+          {c.tipo === 'km' ? <>Límite exento: {String(c.km).replace('.', ',')} km × {String(KM).replace('.', ',')} € = <strong>{eur(c.limite)}</strong>{c.exento < c.limite ? <> · exento {eur(c.exento)}</> : null}</>
             : <>Límite: {eur(limiteDia(d))} al día × {c.dias} = <strong>{eur(Math.round(c.limiteDia * c.dias * 100) / 100)}</strong></>}
           {titular ? <> · Deducible <strong>{eur(c.deducible)}</strong> (base {eur(c.base)} + IVA {c.ivaPct} %)</> : <> · Gasto {eur(c.base)}</>}
           {c.exceso > 0 && <span className="rojo"> · {titular ? `${eur(c.exceso)} no deducible` : `${eur(c.exceso)} de más: va en su nómina con retención`}</span>}

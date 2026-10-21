@@ -192,39 +192,44 @@ if (process.env.RESEND_URL && process.env.STRIPE_URL) {
   const r2 = await cron();
   ok('al día siguiente no se repite', () => assert.equal(r2.enviados, 0));
   const enlace = /href="([^"]+\/pagar\/[a-f0-9]+)"/.exec(rec.html)?.[1];
-  ok('lleva el enlace de pago', () => assert.ok(enlace));
-  const pub = n(await (await fetch(enlace)).text().then((h) => h.replace(/<[^>]+>/g, ' ')));
-  ok('la página de pago se abre sin cuenta y enseña el total', () => assert.ok(pub.includes('con tarjeta o Bizum') && pub.includes(n(eur(importes(venc).total)))));
-  const token = enlace.split('/').pop();
-  const fd3 = new FormData(); fd3.set('token', token);
-  const ir = await fetch(`${BASE}/api/pagar`, { method: 'POST', body: fd3, redirect: 'manual', headers: { Origin: BASE } });
-  const ses = await (await fetch(ir.headers.get('location').replace('/pagina/', '/v1/checkout/sessions/'))).json();
-  ok('lleva a Stripe con el importe exacto de la factura', () => assert.ok(ir.status === 303 && ses.amount_total === Math.round(importes(venc).total * 100), `${ir.status} ${ses.amount_total}`));
-  const vuelta = n(await (await fetch(`${enlace}?sesion=${ses.id}`)).text());
-  ok('al volver pagada, lo dice', () => assert.ok(vuelta.includes('ya está pagada')));
-  const det2 = n(await texto(`/facturas/${venc.id}`, yo));
-  ok('y la factura queda cobrada', () => assert.ok(det2.includes('Pagada con tarjeta o Bizum') && det2.includes('Cobrada')));
-  const r3 = await cron();
-  ok('una cobrada ya no recibe recordatorios', () => assert.equal(r3.enviados, 0));
-  // Aviso de Stripe (webhook) firmado, para otra factura: la marca cobrada aunque el cliente no vuelva.
-  const otra = (await (await pedir('/api/facturas', { metodo: 'POST', cookie: yo, cuerpo: { fecha: hace(5), actividad: ACTS[0].id, cliente: { nombre: 'Webhook' }, irpfPct: 0, lineas: [{ concepto: 'X', cantidad: 1, precio: '10', ivaPct: 21 }] } })).json()).factura;
-  await pedir('/api/facturas/enviar', { metodo: 'POST', cookie: yo, cuerpo: { id: otra.id, para: 'w@ejemplo.es', mensaje: 'Hola' } });
-  const tok2 = /\/pagar\/([a-f0-9]+)/.exec(ultimoEmail().html)?.[1];
-  ok('el email normal también lleva el enlace de pago', () => assert.ok(tok2));
-  // El aviso sale de una sesión real del simulador (creada por /api/pagar, con su moneda y su metadata de factura y empresa),
-  // como lo manda Stripe: un aviso a medias ya no vale (el cobro exige moneda y referencias, auditoría F04).
-  const fdw = new FormData(); fdw.set('token', tok2);
-  const irw = await fetch(`${BASE}/api/pagar`, { method: 'POST', body: fdw, redirect: 'manual', headers: { Origin: BASE } });
-  const sesW = await (await fetch(irw.headers.get('location').replace('/pagina/', '/v1/checkout/sessions/'))).json();
-  ok('la sesión del simulador trae moneda, importe y referencias', () => assert.ok(sesW.currency === 'eur' && sesW.amount_total === 1210 && sesW.metadata.token === tok2 && sesW.metadata.factura === otra.id && sesW.metadata.empresa, JSON.stringify(sesW)));
-  const evento = JSON.stringify({ type: 'checkout.session.completed', data: { object: { id: sesW.id, payment_status: sesW.payment_status, currency: sesW.currency, amount_total: sesW.amount_total, metadata: sesW.metadata } } });
-  const t = Math.floor(Date.now() / 1000);
-  const firma = `t=${t},v1=${createHmac('sha256', process.env.STRIPE_WEBHOOK_SECRET).update(`${t}.${evento}`).digest('hex')}`;
-  const falso = await fetch(`${BASE}/api/stripe`, { method: 'POST', body: evento, headers: { 'stripe-signature': 't=1,v1=00' } });
-  ok('un aviso sin firma buena se rechaza', () => assert.equal(falso.status, 400));
-  const wh = await fetch(`${BASE}/api/stripe`, { method: 'POST', body: evento, headers: { 'stripe-signature': firma } });
-  const det3 = n(await texto(`/facturas/${otra.id}`, yo));
-  ok('el aviso firmado de Stripe la marca cobrada', () => assert.ok(wh.status === 200 && det3.includes('Pagada con tarjeta o Bizum')));
+  // El cobro con tarjeta está desactivado hasta Stripe Connect (lib/stripe.js): sin él, ni el recordatorio ni el email
+  // llevan enlace de pago, y lo demás de esta sección (pagar, aviso de Stripe) no aplica.
+  if (!cobroFacturasListo()) ok('sin cobro con tarjeta, el recordatorio no lleva enlace de pago', () => assert.ok(!enlace && !rec.html.includes('/pagar/')));
+  else {
+    ok('lleva el enlace de pago', () => assert.ok(enlace));
+    const pub = n(await (await fetch(enlace)).text().then((h) => h.replace(/<[^>]+>/g, ' ')));
+    ok('la página de pago se abre sin cuenta y enseña el total', () => assert.ok(pub.includes('con tarjeta o Bizum') && pub.includes(n(eur(importes(venc).total)))));
+    const token = enlace.split('/').pop();
+    const fd3 = new FormData(); fd3.set('token', token);
+    const ir = await fetch(`${BASE}/api/pagar`, { method: 'POST', body: fd3, redirect: 'manual', headers: { Origin: BASE } });
+    const ses = await (await fetch(ir.headers.get('location').replace('/pagina/', '/v1/checkout/sessions/'))).json();
+    ok('lleva a Stripe con el importe exacto de la factura', () => assert.ok(ir.status === 303 && ses.amount_total === Math.round(importes(venc).total * 100), `${ir.status} ${ses.amount_total}`));
+    const vuelta = n(await (await fetch(`${enlace}?sesion=${ses.id}`)).text());
+    ok('al volver pagada, lo dice', () => assert.ok(vuelta.includes('ya está pagada')));
+    const det2 = n(await texto(`/facturas/${venc.id}`, yo));
+    ok('y la factura queda cobrada', () => assert.ok(det2.includes('Pagada con tarjeta o Bizum') && det2.includes('Cobrada')));
+    const r3 = await cron();
+    ok('una cobrada ya no recibe recordatorios', () => assert.equal(r3.enviados, 0));
+    // Aviso de Stripe (webhook) firmado, para otra factura: la marca cobrada aunque el cliente no vuelva.
+    const otra = (await (await pedir('/api/facturas', { metodo: 'POST', cookie: yo, cuerpo: { fecha: hace(5), actividad: ACTS[0].id, cliente: { nombre: 'Webhook' }, irpfPct: 0, lineas: [{ concepto: 'X', cantidad: 1, precio: '10', ivaPct: 21 }] } })).json()).factura;
+    await pedir('/api/facturas/enviar', { metodo: 'POST', cookie: yo, cuerpo: { id: otra.id, para: 'w@ejemplo.es', mensaje: 'Hola' } });
+    const tok2 = /\/pagar\/([a-f0-9]+)/.exec(ultimoEmail().html)?.[1];
+    ok('el email normal también lleva el enlace de pago', () => assert.ok(tok2));
+    // El aviso sale de una sesión real del simulador (creada por /api/pagar, con su moneda y su metadata de factura y empresa),
+    // como lo manda Stripe: un aviso a medias ya no vale (el cobro exige moneda y referencias, auditoría F04).
+    const fdw = new FormData(); fdw.set('token', tok2);
+    const irw = await fetch(`${BASE}/api/pagar`, { method: 'POST', body: fdw, redirect: 'manual', headers: { Origin: BASE } });
+    const sesW = await (await fetch(irw.headers.get('location').replace('/pagina/', '/v1/checkout/sessions/'))).json();
+    ok('la sesión del simulador trae moneda, importe y referencias', () => assert.ok(sesW.currency === 'eur' && sesW.amount_total === 1210 && sesW.metadata.token === tok2 && sesW.metadata.factura === otra.id && sesW.metadata.empresa, JSON.stringify(sesW)));
+    const evento = JSON.stringify({ type: 'checkout.session.completed', data: { object: { id: sesW.id, payment_status: sesW.payment_status, currency: sesW.currency, amount_total: sesW.amount_total, metadata: sesW.metadata } } });
+    const t = Math.floor(Date.now() / 1000);
+    const firma = `t=${t},v1=${createHmac('sha256', process.env.STRIPE_WEBHOOK_SECRET).update(`${t}.${evento}`).digest('hex')}`;
+    const falso = await fetch(`${BASE}/api/stripe`, { method: 'POST', body: evento, headers: { 'stripe-signature': 't=1,v1=00' } });
+    ok('un aviso sin firma buena se rechaza', () => assert.equal(falso.status, 400));
+    const wh = await fetch(`${BASE}/api/stripe`, { method: 'POST', body: evento, headers: { 'stripe-signature': firma } });
+    const det3 = n(await texto(`/facturas/${otra.id}`, yo));
+    ok('el aviso firmado de Stripe la marca cobrada', () => assert.ok(wh.status === 200 && det3.includes('Pagada con tarjeta o Bizum')));
+  }
 } else console.log('  (sin RESEND_URL y STRIPE_URL: se salta)');
 
 console.log('Facturas recurrentes');
@@ -270,13 +275,22 @@ console.log('Foto del ticket');
   const png = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
   const t = await pedir('/api/gastos/ticket', { metodo: 'POST', cookie: yo, cuerpo: { imagen: png } });
   const tj = await t.json();
-  if (t.status === 503) console.log('  (sin ANTHROPIC_API_KEY: se salta)');
+  // Sin clave de IA, la app contesta 503 y se salta; con ella (y la IA simulada), un 503 es un fallo de verdad.
+  if (t.status === 503 && !process.env.ANTHROPIC_API_KEY) console.log('  (sin ANTHROPIC_API_KEY: se salta)');
   else {
+    ok('con la IA configurada, lee la foto', () => assert.equal(t.status, 200, JSON.stringify(tj)));
     ok('rellena proveedor, fecha y base (sacada del total)', () => assert.deepEqual([tj.gasto?.proveedor, tj.gasto?.fecha, tj.gasto?.base, tj.gasto?.ivaPct], ['Ferretería Sol', '2026-09-12', 50, 21]));
     const malo = await pedir('/api/gastos/ticket', { metodo: 'POST', cookie: yo, cuerpo: { imagen: 'data:text/plain;base64,aG9sYQ==' } });
     ok('solo acepta imágenes y PDF', () => assert.equal(malo.status, 400));
-    const pdf = await (await pedir('/api/gastos/ticket', { metodo: 'POST', cookie: yo, cuerpo: { imagen: 'data:application/pdf;base64,JVBERi0xLjQK' } })).json();
-    ok('también lee facturas en PDF', () => assert.equal(pdf.gasto?.proveedor, 'Ferretería Sol'));
+    // Un PDF de verdad, de una página (antes de leerlo se cuentan sus páginas); uno roto no llega a la IA.
+    const { PDFDocument } = await import('pdf-lib');
+    const doc = await PDFDocument.create(); doc.addPage();
+    const pdfB64 = Buffer.from(await doc.save()).toString('base64');
+    const pdf = await (await pedir('/api/gastos/ticket', { metodo: 'POST', cookie: yo, cuerpo: { imagen: `data:application/pdf;base64,${pdfB64}` } })).json();
+    ok('también lee facturas en PDF', () => assert.equal(pdf.gasto?.proveedor, 'Ferretería Sol', JSON.stringify(pdf)));
+    const roto = await pedir('/api/gastos/ticket', { metodo: 'POST', cookie: yo, cuerpo: { imagen: 'data:application/pdf;base64,JVBERi0xLjQK' } });
+    const rotoJ = await roto.json();
+    ok('un PDF roto se rechaza antes de mandarlo a la IA', () => assert.ok(roto.status === 400 && /PDF/.test(rotoJ.error), JSON.stringify(rotoJ)));
   }
   const gp = await (await pedir('/api/gastos', { metodo: 'POST', cookie: yo, cuerpo: { fecha: `${Y}-09-12`, concepto: 'Cables XLR', base: '50', ivaPct: 21, proveedor: 'Ferretería Sol', proveedorNif: 'b11111119' } })).json();
   ok('el gasto guarda su proveedor', () => assert.ok(gp.gasto.proveedor === 'Ferretería Sol' && gp.gasto.proveedorNif === 'B11111119'));

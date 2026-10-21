@@ -99,6 +99,15 @@ test('facturas recurrentes: una al mes, el día elegido', async () => {
   assert.equal(tocaRecurrente(r, '2026-10-20'), true); // si un día falló, sale después
   assert.equal(tocaRecurrente({ ...r, ultima: '2026-10' }, '2026-10-20'), false);
   assert.equal(tocaRecurrente({ ...r, activa: false }, '2026-10-20'), false);
+  // El mes anterior sin crear (falló o el cron no pasó su día) toca ya, aunque aún no sea el día de este mes.
+  const { mesesPendientes } = await import('../lib/recurrentes.js');
+  assert.deepEqual(mesesPendientes({ activa: true, dia: 28, ultima: '2026-01' }, '2026-03-01'), ['2026-02']);
+  assert.deepEqual(mesesPendientes({ activa: true, dia: 28, ultima: '2026-01' }, '2026-03-28'), ['2026-02', '2026-03']);
+  assert.deepEqual(mesesPendientes({ activa: true, dia: 5, ultima: '2025-12' }, '2026-01-05'), ['2026-01']);
+  assert.deepEqual(mesesPendientes({ activa: true, dia: 5, ultima: '2025-11' }, '2026-01-05'), ['2025-12', '2026-01']);
+  assert.deepEqual(mesesPendientes({ activa: true, dia: 5 }, '2026-01-05'), ['2026-01']);
+  // Con más de un mes sin crear no se rellena: solo el actual (nada de varias facturas de golpe).
+  assert.deepEqual(mesesPendientes({ activa: true, dia: 1, ultima: '2000-01' }, '2026-10-01'), ['2026-10']);
   assert.equal(diaValido(31), 28); assert.equal(diaValido(0), 1);
   assert.deepEqual(Object.keys(plantillaDe({ id: 'x', numero: 3, fecha: '2026-01-01', cliente: {}, base: 1, ivaPct: 21, irpfPct: 0, cobrada: true, envios: [] })), ['cliente', 'base', 'ivaPct', 'irpfPct']);
 });

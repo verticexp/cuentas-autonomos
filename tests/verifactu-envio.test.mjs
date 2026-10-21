@@ -144,3 +144,18 @@ test('subsanar un rechazo corrigiendo el NIF del cliente y anular una factura ex
   // Y el número de la anulada no se vuelve a usar.
   assert.equal((await F.crearFactura(u, datos(3))).factura.numero, 3);
 });
+
+// Auditoría completa (21-10-2026): Upstash devuelve «0» como el número 0, así que la marca de «nada pendiente» no se veía
+// y cada pasada del cron leía (y reenviaba) todos los registros de cada empresa con Verifactu.
+test('con la marca de «nada pendiente», el envío no lee los registros', async () => {
+  const u = empresa({ verifactu: 'pruebas' });
+  await F.crearFactura(u, datos(1));
+  assert.equal((await E.enviarPendientes(u, { post: aeat().post })).enviados, 1);
+  await R.redis.del(`verifactu-espera:${u.empresa}`);
+  // Un registro pendiente que la marca no conoce: con la marca a «0» no se mira.
+  const [reg] = await R.leer(u, 'registros');
+  await R.guardar(u, 'registros', { ...reg, envio: undefined });
+  const sim = aeat();
+  assert.deepEqual(await E.enviarPendientes(u, { post: sim.post }), { enviados: 0 });
+  assert.equal(sim.enviados.length, 0);
+});

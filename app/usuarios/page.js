@@ -36,4 +36,4 @@ export default async function Page({ searchParams }) {
   );
 }
 
-export const metadata = { title: 'Equipo' };
+export const metadata = { title: 'Usuarios' };

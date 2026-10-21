@@ -1,7 +1,7 @@
 import { randomBytes } from 'crypto';
 import { cookies } from 'next/headers';
 import { generateAuthenticationOptions, generateRegistrationOptions, verifyAuthenticationResponse, verifyRegistrationResponse } from '@simplewebauthn/server';
-import { redis } from '@/lib/redis';
+import { mismoId, redis } from '@/lib/redis';
 import { crearSesion, desbloqueo, opcionesCookie, opcionesDesbloqueo, usuarioActual } from '@/lib/auth';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { MUCHOS, ipDe, pasado } from '@/lib/limite';
@@ -68,7 +68,7 @@ export async function POST(req) {
       const c = v.registrationInfo.credential;
       // Una llave ya asociada a otra persona no se reasigna (si no, conociendo su id se le quitaría Face ID).
       const ya = await redis.hget('passkey-usuario', c.id);
-      if (ya && ya !== u.id) return error('No se ha podido activar Face ID en este dispositivo');
+      if (ya && !mismoId(ya, u.id)) return error('No se ha podido activar Face ID en este dispositivo');
       const nombre = String(b.nombre || 'Este dispositivo').slice(0, 60);
       await redis.hset(`passkeys:${u.id}`, { [c.id]: { publicKey: b64(c.publicKey), counter: c.counter, transports: c.transports || [], nombre, creada: new Date().toISOString() } });
       await redis.hset('passkey-usuario', { [c.id]: u.id });
@@ -120,7 +120,7 @@ export async function DELETE(req) {
   if (res) return res;
   const id = req.nextUrl.searchParams.get('id') || '';
   await redis.hdel(`passkeys:${u.id}`, id);
-  if ((await redis.hget('passkey-usuario', id)) === u.id) await redis.hdel('passkey-usuario', id);
+  if (mismoId(await redis.hget('passkey-usuario', id), u.id)) await redis.hdel('passkey-usuario', id);
   await auditar(u, 'Face ID desactivado en un dispositivo');
   return Response.json({ ok: true });
 }

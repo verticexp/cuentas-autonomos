@@ -14,6 +14,10 @@ class H(BaseHTTPRequestHandler):
         self.send_response(200); self.send_header('Content-Type', 'application/json'); self.end_headers(); self.wfile.write(out)
     def do_POST(self):
         body = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
+        # Conteo de tokens previo a leer un ticket o un extracto (lib/ticket.js, validarEntradaIA).
+        if self.path.endswith('/count_tokens'):
+            out = json.dumps({'input_tokens': 1500}).encode()
+            self.send_response(200); self.send_header('Content-Type', 'application/json'); self.end_headers(); self.wfile.write(out); return
         if 'tools' not in body:
             tiene_foto = body['messages'][0]['content'][0]['type'] in ('image', 'document')
             texto = 'Aquí está: {"proveedor": "Ferretería Sol", "nif": "B11111111", "fecha": "2026-09-12", "concepto": "Cables XLR", "base": null, "ivaPct": 21, "total": "60,50"}' if tiene_foto else 'nada'

@@ -56,4 +56,4 @@ export default async function Caja({ searchParams }) {
   );
 }
 
-export const metadata = { title: 'Cierre de caja' };
+export const metadata = { title: 'Caja' };

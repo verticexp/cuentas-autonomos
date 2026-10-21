@@ -52,6 +52,12 @@ test('categorías: a mano, nóminas y por el concepto', () => {
   assert.equal(categoriaDe({ concepto: 'Nómina Ana', nomina: 'n1' }), '640');
   assert.equal(categoriaDe({ concepto: 'Cosa rara' }), '629');
   assert.equal(categoriaDe({ concepto: 'Gestoría', categoria: '627' }), '627');
+  // Auditoría completa (21-10-2026): «oficina» y «diseñ» mandaban el material de oficina a alquileres y el software a profesionales.
+  assert.equal(categoriaDe({ concepto: 'Material de oficina', proveedor: 'Papelería Ruiz' }), '629');
+  assert.equal(categoriaDe({ concepto: 'Licencias de software de diseño', proveedor: 'Adobe Systems' }), '629');
+  assert.equal(categoriaDe({ concepto: 'Diseño del logotipo', proveedor: 'Marta Soler' }), '623');
+  assert.equal(categoriaDe({ concepto: 'Octubre', proveedor: 'Inmobiliaria Gràcia S.L.' }), '621');
+  assert.equal(categoriaDe({ concepto: 'Envío de muestras', proveedor: 'Oficina de Correos' }), '624');
   assert.ok(pareceBien({ concepto: 'Equipo de sonido nuevo (altavoces)', base: 3000 }));
   assert.ok(!pareceBien({ concepto: 'Cables', base: 3000 }));
 });

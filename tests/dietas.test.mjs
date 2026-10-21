@@ -13,6 +13,9 @@ test('kilometraje de un trabajador: exento a 0,26 €/km y el exceso aparte', ()
   const b = calcularDieta({ tipo: 'km', quien: 'empleado', km: '100', pagado: '30' });
   assert.deepEqual([b.exento, b.exceso, b.base], [26, 4, 30]);
   assert.equal(conceptoDieta(b), 'Kilometraje: 100 km');
+  // Pagar menos que el límite: exento solo lo pagado (auditoría del 21-10-2026).
+  const c = calcularDieta({ tipo: 'km', quien: 'empleado', km: '100', pagado: '10' });
+  assert.deepEqual([c.limite, c.exento, c.exceso, c.base], [26, 10, 0, 10]);
   assert.ok(calcularDieta({ tipo: 'km', quien: 'titular', km: '10' }).error);
   assert.ok(calcularDieta({ tipo: 'km', quien: 'empleado', km: '' }).error);
 });
