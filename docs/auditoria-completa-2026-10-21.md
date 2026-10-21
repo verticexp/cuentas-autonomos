@@ -2,17 +2,18 @@
 
 Revisión de toda la app y la web sobre `main` (`8f26cc9`): seguridad, código, lógica, visual, contenido y errores en
 producción. Todo en local (Redis, Stripe, correo e IA simulados) salvo la lectura de los registros de Vercel y dos
-comprobaciones sin efectos en producción tras desplegar. Arreglos en los PR #245 y siguientes.
+comprobaciones sin efectos en producción tras desplegar. Arreglos en los PR #245 y #246.
 
 ## Cómo se ha revisado
 
 | Qué | Cómo | Resultado |
 |---|---|---|
-| Pruebas unitarias | `npm test` (también con `VERCEL_ENV=production` y `preview`) | 1.076 → **1.101** en verde |
-| Baterías de punta a punta | `verificar.mjs`, `regresiones.mjs`, `integridad.mjs` | Estaban **rotas** (ver E01); ahora las tres en verde y en la CI |
+| Pruebas unitarias | `npm test` (también con `VERCEL_ENV=production` y `preview`) | 1.076 → **1.117** en verde |
+| Baterías de punta a punta | `verificar.mjs`, `regresiones.mjs`, `integridad.mjs` | Estaban **rotas** (ver E01); ahora las tres en verde y en la CI, también cobro, IA y avisos push (E02) |
 | Pantallas | Chrome sin cabeza (CDP) por 145 rutas: web pública (34 × 4 vistas), app de una S.L. (83 × 4) y de una autónoma (28 × 3). Vistas: ordenador y móvil, claro y oscuro | 552 páginas: 1 error de JavaScript (arreglado), 0 peticiones fallidas, 0 desbordes horizontales |
 | Recorridos a mano | Alta completa de una autónoma (4 pasos + cuestionario), factura de principio a fin con su PDF, hoja del «+», diálogos | Funcionan; detalles abajo |
-| Seguridad de la API | Revisión de solo lectura de los 88 endpoints (Codex) + endpoints públicos a mano (Claude) | 11 hallazgos, todos comprobados en el código; 8 arreglados |
+| Seguridad de la API | Revisión de solo lectura de los 88 endpoints (Codex) + endpoints públicos a mano (Claude) | 11 hallazgos, todos comprobados en el código; 9 arreglados |
+| Lógica no fiscal | Revisión de solo lectura (Codex): recurrentes, jornada, inventario, tesorería, incobrables, dietas, duplicados, avisos | 17 hallazgos comprobados: 14 arreglados, 3 decisiones |
 | Producción | Errores y avisos de Vercel de 7 días, cabeceras, variables (solo nombres) | 12 errores 500 en `/api/login` (arreglado); resto limpio |
 | Cifras | Año completo de una autónoma calculado a mano | 303 de los cuatro trimestres, 130 acumulado, 115 y 390: **cuadran al céntimo** |
 | Normativa | Verifactu, registro horario digital, factura electrónica | Ver «Plazos» |
@@ -33,10 +34,24 @@ comprobaciones sin efectos en producción tras desplegar. Arreglos en los PR #24
 | U03 | Media | PDF y adjuntos | Según desde dónde, «FUNDACIÓ MÚSICA VIVA» salía «FUNDACI MSICA VIVA» y «PEÑA», «PEA» | Un solo ayudante para todos los nombres de archivo | #245 |
 | U04 | Media | Ajustes › Recomienda | Error de hidratación de React (#418) en las 4 vistas: el servidor no pintaba «Compartir» y el navegador sí | Se decide tras montar | #245 |
 | U05 | Baja | Varias | Título «No existe · Fisquo · Fisquo»; 3 campos sin etiqueta; Ayuda prometía el pago con tarjeta (desactivado) | Corregido | #245 |
-| C01 | Media | Categorías de gasto | «Material de oficina» iba a alquileres (621) y «Licencias de software de diseño» a profesionales (623) | Reglas corregidas; solo afecta a gastos sin categoría guardada | 2.º PR |
-| C02 | Baja | Títulos | Pestaña distinta de la pantalla: Libros registro (autónomo), Usuarios, Caja, Equipo y nóminas, Nuevo pedido | Iguales; Nóminas vuelve a «Más» | 2.º PR |
-| C03 | Baja | Pedidos | Fecha de cierre o cancelación en UTC (entre las 00:00 y las 02:00, la de ayer) | Hora de Madrid | 2.º PR |
-| E01 | Media | Pruebas | `verificar.mjs` se cortaba en «Banco» desde el 20-10 (NIF repetido tras el NIF único #221): ~40 % sin ejecutarse. `regresiones` e `integridad` rotas por el bloqueo de forma jurídica (#218). Nadie lo vio porque la CI no las pasaba | Puestas al día y **nuevo workflow E2E** con las tres | #245 y 2.º PR |
+| C01 | Media | Categorías de gasto | «Material de oficina» iba a alquileres (621) y «Licencias de software de diseño» a profesionales (623) | Reglas corregidas; solo afecta a gastos sin categoría guardada | #246 |
+| C02 | Baja | Títulos | Pestaña distinta de la pantalla: Libros registro (autónomo), Usuarios, Caja, Equipo y nóminas, Nuevo pedido | Iguales; Nóminas vuelve a «Más» | #246 |
+| C03 | Baja | Pedidos | Fecha de cierre o cancelación en UTC (entre las 00:00 y las 02:00, la de ayer) | Hora de Madrid | #246 |
+| S08 | Media | Cuentas con id solo de cifras (≈2 %) | Upstash devuelve «52361640» como número y `===` fallaba: reenviar una invitación no anulaba la anterior, cambiar el NIF no liberaba el antiguo (y volver a él daba «Ya hay otra cuenta con ese NIF»), quitar Face ID dejaba la llave apuntada. La marca «nada pendiente» de Verifactu («0») tampoco se veía: cada pasada leía todos los registros | Ids leídos de Redis comparados como texto (`mismoId`) | #246 |
+| S09 | Media | Personas en varias empresas | Cambiar los permisos de alguien en una empresa a la vez que otra le quitaba el acceso le devolvía ese acceso (Codex H7); un reenvío de invitación a la vez que la aceptaba dejaba un código válido para una cuenta activa | Su ficha se relee y se guarda bajo un cerrojo por persona (`cambiarUsuario`), en permisos, bajas, invitaciones, contraseñas y email; una invitación no cambia la contraseña de una cuenta activa | #246 |
+| L01 | Alta | Facturas recurrentes | Si la emisión fallaba hasta acabar el mes (o el cron no pasaba su día), ese mes se perdía sin aviso; el email pendiente de un mes lo pisaba el del siguiente | Se recupera el mes anterior si es el único que falta; un email pendiente por factura; la lista enseña lo que no salió | #246 |
+| L02 | Alta | Inventario | La devolución de una venta hecha con albarán volvía al coste de hoy: margen y valor del stock ficticios | Vuelve a su coste de entonces | #246 |
+| L03 | Media | Inventario | Emparejar compras por código con «contiene»: «Producto 1234» iba al producto «12» | Palabras enteras y el nombre más concreto | #246 |
+| L04 | Media | Registro de jornada | Con el cambio de hora, de 01:30 a 03:30 contaba 120 min (eran 60 en marzo y 180 en octubre) | Desfase real de Madrid | #246 |
+| L05 | Media | Registro de jornada | Los festivos nacionales contaban como jornada y se comían las horas extra (enero de 2026: 176 h teóricas en vez de 160) | Fuera los festivos nacionales | #246 |
+| L06 | Media | Registro de jornada | A mano se aceptaban fechas que no existen (30 de febrero) y se tiraban sin avisar las pausas a partir de la 11.ª | Rechazadas con mensaje | #246 |
+| L07 | Media | Incobrables (art. 80.Cuatro LIVA) | Una pyme que opta por esperar un año no podía emitir la rectificativa a partir del mes 12 | Para pymes, de los 6 a los 18 meses | #246 |
+| L08 | Media | Tesorería | Plazos de Hacienda en sábado o domingo (2T de 2025: domingo 20 de julio) y el 111/115 del 4T al 30 de enero | Día hábil, como en Impuestos; retenciones del 4T, el 20 de enero | #246 |
+| L09 | Media | Dietas | Kilometraje exento mayor que lo pagado (100 km con 10 € pagados: 26 € exentos) | Exento: lo pagado hasta el límite | #246 |
+| L10 | Baja | «Qué hacer hoy» | «Te quedarías sin saldo el 25» daba la fecha del punto más bajo como si fuera la de entrar en negativo | «El 25 te quedarías en −150 €», el saldo más bajo previsto | #246 |
+| L11 | Baja | Duplicados | «1-23» y «12-3» del mismo proveedor salían como «misma factura» segura | Se comparan los tramos; si solo se parecen, «probable» | #246 |
+| E01 | Media | Pruebas | `verificar.mjs` se cortaba en «Banco» desde el 20-10 (NIF repetido tras el NIF único #221): ~40 % sin ejecutarse. `regresiones` e `integridad` rotas por el bloqueo de forma jurídica (#218). Nadie lo vio porque la CI no las pasaba | Puestas al día y **nuevo workflow E2E** con las tres | #245 y #246 |
+| E02 | Baja | Pruebas | En la CI no se probaban el cobro con Stripe, la IA (asistente y tickets) ni los avisos push; el simulador de IA no tenía el conteo de tokens (la lectura de tickets daba 503 y se saltaba como si no hubiera clave) | Las tres partes en la CI; mientras el cobro con tarjeta esté desactivado se comprueba que no sale el enlace | #246 |
 
 ## Lo que está bien (comprobado)
 
@@ -73,7 +88,17 @@ comprobaciones sin efectos en producción tras desplegar. Arreglos en los PR #24
    1619/2012 lo pide). Ya estaba en la lista para la asesoría (F06b).
 6. **Configuración**: `APP_URL` no está en producción (los enlaces de algunos correos salen del dominio de la petición);
    las alertas de Dependabot están desactivadas en GitHub (solo hay actualizaciones de versión); el nuevo check «E2E»
-   puede marcarse como obligatorio para fusionar.
+   puede marcarse como obligatorio para fusionar. La lectura de tickets y la importación usan Claude Haiku 4.5 si
+   `ANTHROPIC_MODEL` no dice otro: vale la pena probar uno más reciente (calidad y coste) y añadir su tarifa en
+   `lib/cuotasIA.js`.
+7. **Tesorería cuando pasa el plazo** (Codex). Si llega el día 20 sin marcar el modelo como presentado, su salida
+   desaparece de la previsión. Dejarla como «vencida, prevista hoy» haría ver pagos fantasma a quien presenta con su
+   gestoría y no lo marca en Fisquo. Propuesta: al vencer, preguntar «¿Ya lo has presentado?».
+8. **111 y 115 por separado** (Codex). Se dan por presentados cuando lo está el 303 o el 130 del trimestre (se suelen
+   presentar juntos). Propuesta: poder marcarlos aparte en Impuestos.
+9. **Aviso «Sube el extracto»** (Codex). Sale el día 3 si el último movimiento del banco es anterior al 25 del mes
+   anterior, aunque el extracto esté completo (un mes tranquilo). Propuesta: guardar qué periodo cubre cada extracto
+   importado y avisar solo si falta.
 
 ## Plazos que vienen
 
@@ -104,6 +129,7 @@ comprobaciones sin efectos en producción tras desplegar. Arreglos en los PR #24
 ## Quién hizo qué
 
 - **Claude**: plan, recorridos y capturas, revisión de seguridad de lo público, verificación de cada hallazgo de Codex,
-  arreglos de permisos, carreras, cámara, correos, PDF, interfaz, categorías, e2e y CI, cálculo a mano, informe.
-- **Codex**: revisión de solo lectura de los 88 endpoints y de la lógica no fiscal; endurecimiento mecánico de la API
-  (17 archivos y 16 pruebas), revisado y ajustado por Claude.
+  arreglos de permisos, carreras (también H7), cámara, correos, PDF, interfaz, categorías, lógica (L01–L11), ids
+  numéricos (S08), e2e y CI, cálculo a mano, informe.
+- **Codex**: revisión de solo lectura de los 88 endpoints y de la lógica no fiscal (17 hallazgos); endurecimiento
+  mecánico de la API (17 archivos y 16 pruebas), revisado y ajustado por Claude.
