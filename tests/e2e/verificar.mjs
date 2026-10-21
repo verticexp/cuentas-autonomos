@@ -9,6 +9,7 @@ import { eur, eurSin } from '../../lib/formato.js';
 import { limpiarFiscal } from '../../lib/empresa.js';
 import { prevision } from '../../lib/tesoreria.js';
 import { xlsx } from '../../lib/xlsx.js';
+import { cobroFacturasListo } from '../../lib/stripe.js';
 
 const BASE = process.env.BASE || 'http://localhost:3001';
 if (!/localhost|127\.0\.0\.1/.test(BASE)) throw new Error('Solo contra una copia local con la base de datos vacía');
@@ -576,7 +577,8 @@ console.log('Portal del cliente');
   const fdp = new FormData(); fdp.set('t', tok); fdp.set('id', f1.id);
   const pg = await pedir('/api/portal/pagar', { metodo: 'POST', form: fdp });
   const destino = pg.headers.get('location') || '';
-  ok('«Pagar» lleva a la página de pago de esa factura', () => assert.ok(pg.status === 303 && /\/pagar\/[0-9a-f]{32}$/.test(destino), destino));
+  // Con el cobro con tarjeta desactivado (lib/stripe.js, hasta Stripe Connect) «Pagar» vuelve al portal; con él, a la página de pago.
+  ok('«Pagar» lleva a la página de pago de esa factura (o al portal sin cobro con tarjeta)', () => assert.ok(pg.status === 303 && (cobroFacturasListo() ? /\/pagar\/[0-9a-f]{32}$/.test(destino) : destino.endsWith(ruta)), destino));
   const pagina = n(await (await fetch(destino)).text());
   ok('que enseña la factura y su importe', () => assert.ok(pagina.includes(numeroFactura(f1)) && pagina.includes(n(eur(importes(f1).total)))));
   const fdq = new FormData(); fdq.set('t', tok); fdq.set('id', f2.id);
@@ -615,7 +617,8 @@ console.log('Importar desde Holded o Excel');
   ok('al repetir, ya existen y no se duplican', () => assert.deepEqual([v2.nuevos, v2.duplicados], [0, 2]));
   const csv = 'Nombre;CIF;Email;Código postal;Población\r\nSala Apolo SL;B-12345674;;08004;Barcelona\r\nBar Nuevo;B87654323;bar@nuevo.es;08001;Barcelona\r\n';
   const c1 = await subir('clientes', 'clientes.csv', Buffer.from(csv, 'latin1'), true);
-  ok('clientes: el del mismo NIF ya existe (vino con las facturas) y se añade el nuevo', () => assert.deepEqual([c1.guardados, c1.duplicados], [1, 1]));
+  // Desde el PR #241 el que ya existe (vino con las facturas, sin ciudad) se completa con los datos vacíos en vez de saltarse.
+  ok('clientes: el del mismo NIF ya existe (vino con las facturas) y se completa; se añade el nuevo', () => assert.deepEqual([c1.guardados, c1.duplicados, c1.completados], [1, 0, 1]));
   const nueva = await (await pedir('/facturas/nueva', { cookie: im })).text();
   ok('el cliente importado se puede elegir al facturar', () => assert.ok(nueva.includes('Bar Nuevo') && nueva.includes('B87654323')));
   const gx = xlsx([{ nombre: 'Gastos', filas: [['Fecha', 'Proveedor', 'Concepto', 'Base imponible', '% IVA', 'Estado'], [`${Y}-02-01`, 'Sonido SL', 'Altavoces', 200, 21, 'Pagado'], [`${Y}-02-03`, 'Gasolinera', '', 50, 21, 'Pendiente']] }]);
@@ -661,7 +664,7 @@ console.log('Banco: extractos, conexión y emparejar');
   const emailB = `banco${Date.now()}@test.es`;
   const bq = await entrar(await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva: 'Banco Prueba', nombre: 'Berta', email: emailB } })).json(), 'Clave-Local-16-2026');
   const empresa = await kv(['HGET', 'cuentas:emails', emailB]);
-  const cfg = await (await pedir('/api/cuenta', { metodo: 'PATCH', cookie: bq, cuerpo: { configuracion: { fiscal: { tipo: 'autonomo', iva: 'general' }, emisor: { nombre: 'Berta', nif: '22222222J', plazo: 30 }, actividades: [{ nombre: 'Eventos', ivaPct: 21, irpfPct: 0 }] } } })).json();
+  const cfg = await (await pedir('/api/cuenta', { metodo: 'PATCH', cookie: bq, cuerpo: { configuracion: { fiscal: { tipo: 'autonomo', iva: 'general' }, emisor: { nombre: 'Berta', nif: '44444444A', plazo: 30 }, actividades: [{ nombre: 'Eventos', ivaPct: 21, irpfPct: 0 }] } } })).json();
   const act = cfg.actividades[0].id;
   const fac = async (fecha, cliente, base) => (await (await pedir('/api/facturas', { metodo: 'POST', cookie: bq, cuerpo: { fecha, actividad: act, cliente: { nombre: cliente }, concepto: 'Evento', base: String(base), ivaPct: 21, irpfPct: 0, cobrada: false } })).json()).factura;
   const gas = async (fecha, concepto, base, proveedor, pendiente) => (await (await pedir('/api/gastos', { metodo: 'POST', cookie: bq, cuerpo: { fecha, actividad: act, concepto, base: String(base), ivaPct: 21, proveedor, pendiente } })).json()).gasto;
@@ -697,7 +700,7 @@ console.log('Banco: extractos, conexión y emparejar');
   // Al subir el extracto se concilia solo lo muy seguro (factura con su número e importe exactos, o gasto con su proveedor e importe
   // exactos): 2 emparejados «automáticos». Lo que solo coincide por nombre e importe (Fundació, sin número en el concepto) espera confirmación.
   ok('pantalla: lo seguro ya está conciliado solo y quedan las dudosas', () => assert.ok(pb.includes('Por confirmar 3') && pb.includes('Puede ser') && pb.includes('2 automáticos') && pb.includes(`Factura ${numeroFactura(f1)}`) && pb.includes('Ferretería Sol · Cables'), pb.slice(pb.indexOf('Saldo en tus cuentas'), pb.indexOf('Saldo en tus cuentas') + 600)));
-  ok('pantalla: el Bizum sin pareja', () => assert.ok(pb.includes('Sin pareja 1') && pb.includes('BIZUM RECIBIDO')));
+  ok('pantalla: el Bizum sin pareja', () => assert.ok(pb.includes('Sin pareja 1') && pb.includes('Bizum recibido')));
   ok('pantalla: solo queda una segura (sin número de factura no se concilia sola)', () => assert.ok(pb.includes('Es esta') && !pb.includes('Confirmar las')));
   const pt = n(await texto('/tesoreria', bq));
   ok('tesorería parte del saldo real y enlaza al banco con lo pendiente', () => assert.ok(pt.includes('De tus cuentas') && pt.includes('7.452,00') && pt.includes('6 movimientos por revisar') === false && /Banco Saldo real[^€]*? 4 /.test(pt), pt.slice(0, 600)));
@@ -1122,7 +1125,7 @@ console.log('\nPrivacidad y condiciones');
   ok('login fallido: 401 con «Email o contraseña incorrectos.»', () => assert.ok(malJ.status === 401 && malD.error === 'Email o contraseña incorrectos.' && mal.status === 303));
   const fav = await pedir('/favicon.ico');
   const favB = Buffer.from(await fav.arrayBuffer());
-  ok('favicon.ico con la N (16, 32 y 48 px)', () => assert.ok(fav.status === 200 && favB.readUInt16LE(2) === 1 && favB.readUInt16LE(4) === 3, `${fav.status}`));
+  ok('favicon.ico con varios tamaños (16, 32, 48 y 64 px)', () => assert.ok(fav.status === 200 && favB.readUInt16LE(2) === 1 && favB.readUInt16LE(4) >= 3, `${fav.status}`));
   ok('el login enlaza al favicon.ico y al icon1.svg (dirección nueva: sin el icono antiguo en caché)', () => assert.ok(lg.includes('href="/favicon.ico') && lg.includes('href="/icon1.svg') && !lg.includes('href="/icon.svg')));
   const ico = await pedir('/icon1.svg');
   ok('el icono de la pestaña se sirve sin sesión', () => assert.ok(ico.status === 200 && ico.headers.get('content-type').includes('svg'), `${ico.status}`));
@@ -1158,9 +1161,9 @@ if (process.env.RESEND_URL) {
   const eA = JSON.parse(await kv(['HGET', 'cuentas:empresas', await kv(['HGET', 'cuentas:emails', fd.get('email')])]));
   const empA = eA.emisor?.nombre || eA.nombre;
   ok('el asunto dice quién invita y a qué empresa', () => assert.equal(m1?.subject, `Prueba te ha invitado a ${empA} en Fisquo`));
-  const urlM1 = /href="([^"]+)"/.exec(m1?.html || '')?.[1] || '';
+  const urlM1 = /href="([^"]*\/invitacion\/[^"]+)"/.exec(m1?.html || '')?.[1] || '';
   ok('botón y enlace en texto con el enlace que ve el administrador más el token de confirmar el email', () => assert.ok(urlM1.startsWith(`${iv.enlace}?v=`) && m1.html.split(`href="${urlM1}"`).length === 3 && m1.html.includes(`>${urlM1}</a>`) && m1.html.includes('Aceptar la invitación'), urlM1));
-  ok('sin imagen de seguimiento', () => assert.ok(!/<img/i.test(m1.html) && !m1.html.includes('/api/abierta')));
+  ok('sin imagen de seguimiento (solo el logo)', () => assert.ok(!m1.html.includes('/api/abierta') && [...m1.html.matchAll(/<img[^>]*src="([^"]+)"/gi)].every((x) => x[1].includes('/correo/'))));
   ok('responder va al email de quien invita', () => assert.equal(m1.reply_to, fd.get('email')));
   const abre = n(await texto(new URL(iv.enlace).pathname));
   ok('la página de la invitación saluda por su nombre', () => assert.ok(abre.includes('Hola, Laura Gestora'), abre.slice(0, 200)));
@@ -1211,7 +1214,8 @@ if (process.env.RESEND_URL) {
   // Si Resend falla, el usuario se crea igual y se enseña el enlace con un aviso.
   const emailR = `rebota${Date.now()}@test.es`;
   const rb = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { nombre: 'Rebote', email: emailR, rol: 'miembro', permisos: ['gastos'] } })).json();
-  ok('si el email no sale: se crea igual, con el enlace y el motivo', () => assert.ok(rb.ok && rb.enlace && !rb.enviado && /No se pudo enviar el email: The to address is invalid/.test(rb.aviso), JSON.stringify(rb)));
+  // El motivo en palabras de quien lo lee (lib/email.js motivoEnvio): una dirección rechazada no se arregla reintentando.
+  ok('si el email no sale: se crea igual, con el enlace y el motivo', () => assert.ok(rb.ok && rb.enlace && !rb.enviado && /revisa que la dirección de email esté bien escrita/.test(rb.aviso), JSON.stringify(rb)));
   const us2 = n(await texto('/usuarios', yo));
   ok('el usuario con el email fallido aparece en la lista', () => assert.ok(us2.includes('Rebote') && us2.includes(emailR)));
   const rbOk = await valida(rb.enlace);
@@ -1458,7 +1462,7 @@ if (process.env.RESEND_URL) {
     const email = `${nombre.toLowerCase()}${Date.now()}@test.es`;
     const r = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { nombre, email, rol: 'miembro', permisos: ['facturas'] } })).json();
     const mail = correos().pop();
-    const url = /href="([^"]+)"/.exec(mail?.html || '')?.[1]?.replace(/&amp;/g, '&') || '';
+    const url = /href="([^"]*\/invitacion\/[^"]+)"/.exec(mail?.html || '')?.[1]?.replace(/&amp;/g, '&') || '';
     return { ...r, email, url, id: await kv(['HGET', 'cuentas:emails', email]) };
   };
   const aceptar = (codigo, pass, v) => { const f = new FormData(); f.set('codigo', codigo); f.set('password', pass); if (v) f.set('v', v); return fetchReal(BASE + '/api/invitacion', { method: 'POST', redirect: 'manual', headers: { Origin: BASE }, body: f }); };

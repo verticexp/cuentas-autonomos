@@ -59,7 +59,7 @@ export default async function Inventario({ searchParams }) {
 
       {ver === 'stock' && (
         <section className="bloque">
-          <form action="/inventario" className="cont-buscar"><input className="campo" name="q" defaultValue={q} placeholder="Buscar por nombre, referencia o proveedor" /></form>
+          <form action="/inventario" className="cont-buscar"><input className="campo" name="q" type="search" aria-label="Buscar productos" defaultValue={q} placeholder="Buscar por nombre, referencia o proveedor" /></form>
           {lista.length ? (
             <ul className="grupo-lista">
               {lista.map((p) => (

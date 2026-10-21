@@ -8,7 +8,10 @@ export const dynamic = 'force-dynamic';
 
 // Público: desde /pagar/<token>, lleva al cliente a la página de pago de Stripe.
 export async function POST(req) {
-  const token = String((await req.formData()).get('token') || '');
+  // Un formulario que no se puede leer no viene de la página de pago: 400 (sin token no hay página a la que volver).
+  const form = await req.formData().catch(() => null);
+  if (!form) return NextResponse.json({ error: 'No se ha podido leer el formulario. Abre de nuevo el enlace de pago e inténtalo otra vez.' }, { status: 400 });
+  const token = String(form.get('token') || '');
   const volver = `${req.nextUrl.origin}/pagar/${token}`;
   const atras = (msg) => NextResponse.redirect(`${volver}?error=${encodeURIComponent(msg)}`, 303);
   if (await pasado('pagar-ip', ipDe(req), 20, 600)) return atras(MUCHOS);

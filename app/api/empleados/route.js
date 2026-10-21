@@ -1,19 +1,25 @@
 import { mensajePlan } from '@/lib/app';
 import { guardar, borrar, leer, leerUno } from '@/lib/redis';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
-import { leerImporte, r2 } from '@/lib/calculos';
+import { r2 } from '@/lib/calculos';
+import { importeEscrito } from '@/lib/validacion';
 import { SS_EMPRESA, SS_TRABAJADOR } from '@/lib/nominas';
 import { sinHueco } from '@/lib/planes';
 
 export const dynamic = 'force-dynamic';
+const MAX_SUELDO = 1000000;
+const MAX_PRECIO_HORA_EXTRA = 1000000;
 const pct = (v, def) => Math.min(100, Math.max(0, v === '' || v === undefined ? def : Number(String(v).replace(',', '.')) || 0));
 
 // Datos de un empleado a partir del formulario (components/FormEmpleado.js).
 function limpio(b, antes = {}) {
   const nombre = String(b.nombre || '').trim().slice(0, 80);
-  const bruto = r2(leerImporte(b.bruto));
+  const sueldo = importeEscrito(b.bruto);
+  const bruto = r2(sueldo);
+  const horaExtra = importeEscrito(b.precioHoraExtra, 0);
   if (!nombre) return { error: 'Falta el nombre' };
-  if (!bruto) return { error: 'Sueldo bruto no válido' };
+  if (!Number.isFinite(sueldo) || sueldo <= 0 || sueldo > MAX_SUELDO || !bruto) return { error: 'Escribe un sueldo bruto mayor que 0 y de hasta 1.000.000 € (por ejemplo, 1.500,50).' };
+  if (!Number.isFinite(horaExtra) || horaExtra < 0 || horaExtra > MAX_PRECIO_HORA_EXTRA) return { error: 'Escribe un precio por hora extra entre 0 y 1.000.000 € (por ejemplo, 15,50).' };
   if (!/^\d{4}-\d{2}-\d{2}$/.test(b.alta || '')) return { error: 'Fecha de alta no válida' };
   if (b.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(b.email).trim())) return { error: 'Email no válido' };
   return {
@@ -31,7 +37,7 @@ function limpio(b, antes = {}) {
       // Registro de jornada: con su email ficha desde su cuenta de Fisquo; horas de su jornada y precio de la hora extra.
       email: String(b.email || '').trim().toLowerCase().slice(0, 120),
       horasSemana: Math.min(60, Math.max(1, Number(String(b.horasSemana ?? '').replace(',', '.')) || 40)),
-      precioHoraExtra: r2(leerImporte(b.precioHoraExtra || 0)) || 0,
+      precioHoraExtra: r2(horaExtra),
     },
   };
 }

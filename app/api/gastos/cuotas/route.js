@@ -2,8 +2,11 @@ import { redis, clave, leerUno } from '@/lib/redis';
 import { leerRango } from '@/lib/indices';
 import { actividadesDe } from '@/lib/empresa';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
-import { leerImporte, r2 } from '@/lib/calculos';
+import { r2 } from '@/lib/calculos';
+import { importeEscrito } from '@/lib/validacion';
 import { fusionarCuotas, idCuota, mesesEntre } from '@/lib/cuotas';
+
+const MAX_CUOTA = 1000000;
 
 // Crea la cuota de autónomos de cada mes (sin IVA) desde el mes indicado hasta el actual, siempre con el id del mes
 // (lib/cuotas.js): si un mes ya estaba (del formulario o del banco), se actualiza en vez de duplicarlo, y las cuotas
@@ -12,8 +15,9 @@ export async function POST(req) {
   const { u, res } = await usuarioApi({ permiso: 'gastar' });
   if (res) return res;
   const b = await cuerpo(req);
-  const importe = r2(leerImporte(b.importe));
-  if (!importe) return error('Importe no válido');
+  const n = importeEscrito(b.importe);
+  const importe = r2(n);
+  if (!Number.isFinite(n) || n <= 0 || n > MAX_CUOTA || !importe) return error('Escribe una cuota mayor que 0 y de hasta 1.000.000 € (por ejemplo, 300,50).');
   if (!/^(20\d{2})-(0[1-9]|1[0-2])$/.test(b.desde || '')) return error('Mes de inicio no válido');
   const hoy = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' }).slice(0, 7);
   const meses = mesesEntre(b.desde, hoy);

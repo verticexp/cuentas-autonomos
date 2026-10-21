@@ -1,7 +1,8 @@
 import { headers } from 'next/headers';
 import Vacio from '@/components/Vacio';
 
-export const metadata = { title: 'No existe · Fisquo' };
+// absolute: sin la plantilla «%s · Fisquo» del layout (salía «No existe · Fisquo · Fisquo»).
+export const metadata = { title: { absolute: 'No existe · Fisquo' } };
 
 const SECCIONES = [
   ['/gastos/proveedores', 'Proveedores'], ['/facturas', 'Facturas'], ['/gastos', 'Gastos'],

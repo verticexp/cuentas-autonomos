@@ -38,7 +38,7 @@ export function Ajuste({ producto, hoy, coste, consumo = false }) {
       </div>
       {x.motivo === 'recuento' && <label className="check"><input type="checkbox" checked={x.como === 'consumo'} onChange={(e) => setX({ ...x, como: e.target.checked ? 'consumo' : '' })} /> Si falta, es material gastado en servicios (consumo, no pérdida)</label>}
       {entra && <input className="campo" inputMode="decimal" placeholder="Coste por unidad sin IVA" value={x.coste} onChange={poner('coste')} aria-label="Coste por unidad" />}
-      <input className="campo" placeholder="Nota (opcional)" value={x.nota} onChange={poner('nota')} />
+      <input className="campo" aria-label="Nota del movimiento (opcional)" placeholder="Nota (opcional)" value={x.nota} onChange={poner('nota')} />
       {msg && <p className={msg.startsWith('✓') ? 'nota' : 'error'}>{msg}</p>}
       <button className="boton" disabled={enviando}>{enviando ? 'Guardando…' : 'Apuntar'}</button>
     </form>

@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { congelarInstantaneas, saltarNumeracion } from '@/lib/facturas';
 import { actualizarUsuario, cambiarPassword, desbloqueo, opcionesCookie, opcionesDesbloqueo } from '@/lib/auth';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
-import { puede } from '@/lib/permisos';
+import { DETALLE, puede } from '@/lib/permisos';
 import { colorValido, logoValido } from '@/lib/marca';
 import { actividadesDe, fiscalDe, limpiarActividades, limpiarFiscal } from '@/lib/empresa';
 import { clave, leer, redis } from '@/lib/redis';
@@ -184,8 +184,12 @@ export async function PATCH(req) {
     await guardarForma(u, emisor, forma.plan);
     return Response.json({ ok: true, actividades: a.actividades });
   }
+  // Drive y la gestoría reciben cada factura y gasto: elegir adónde van exige poder verlos (si no, «Datos de la empresa»
+  // bastaría para mandárselos a uno mismo).
+  const sinDetalle = () => DETALLE.some((p) => !puede(u, p)) && error('Para elegir adónde se envían las facturas y los gastos necesitas poder verlos. Pídeselo al administrador.', 403);
   if (b.drive) {
     if (sin('empresa')) return sin('empresa');
+    if (sinDetalle()) return sinDetalle();
     const url = String(b.drive.url || '').trim();
     if (url && !/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(url)) return error('La URL debe ser la de la aplicación web de Apps Script (acaba en /exec)');
     await actualizarUsuario(u, { drive: url ? { url, token: String(b.drive.token || '').trim().slice(0, 100) } : null });
@@ -253,6 +257,7 @@ export async function PATCH(req) {
   }
   // Tu gestoría: a quién se manda el paquete trimestral y si se manda solo al acabar cada trimestre.
   if (b.gestoria) {
+    if (sinDetalle()) return sinDetalle();
     const g = b.gestoria;
     const email = texto(g.email, 254).toLowerCase();
     if (!emailValido(email)) return error('El email de la gestoría no es válido');
