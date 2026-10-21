@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
-import { buscarCliente, cuerpoFactura, firmaValida, mensajesDe, resumenBorrador, siNo, telefonosAutorizados } from '../lib/whatsapp.js';
+import { accionDe } from '../lib/whatsappIA.js';
+import { aplicarCambios, buscarCliente, cuerpoFactura, firmaValida, mensajesDe, resumenBorrador, siNo, telefonosAutorizados } from '../lib/whatsapp.js';
 import { limpiar } from '../lib/facturas.js';
 
 test('firma de Meta: vale la buena, no la manipulada ni sin secreto', () => {
@@ -28,9 +29,10 @@ test('teléfonos autorizados y mensajes de texto del aviso', () => {
 });
 
 test('sí / no al confirmar', () => {
-  for (const t of ['SÍ', 'si', 'Sí, emítela', 'vale', 'ok!']) assert.equal(siNo(t), 'si', t);
-  for (const t of ['No', 'cancela', 'no gracias']) assert.equal(siNo(t), 'no', t);
-  for (const t of ['Factura a Bar Pepe de 300', 'sinfonía', 'nota']) assert.equal(siNo(t), null, t);
+  for (const t of ['SÍ', 'si', 'Sí, emítela', 'vale', 'ok!', 'siii 👍']) assert.equal(siNo(t), 'si', t);
+  for (const t of ['No', 'cancela', 'déjalo']) assert.equal(siNo(t), 'no', t);
+  // Con cambios o dudas decide la IA: un «sí, pero…» no puede emitir sin el cambio.
+  for (const t of ['Factura a Bar Pepe de 300', 'sí pero cambia el NIF', 'si, aunque el importe es 350', 'no sé', 'nota']) assert.equal(siNo(t), null, t);
 });
 
 test('busca el cliente sin acentos ni forma jurídica y avisa si hay dudas', () => {
@@ -59,7 +61,7 @@ test('del pedido de la IA a una factura válida con los tipos de la actividad', 
   assert.match(txt, /Para:[\s\S]*sin dirección/); // al cliente le falta la dirección: se avisa
   assert.match(txt, /318/); // 300 + 63 − 45
   assert.match(txt, /pepe@bar\.es/);
-  assert.match(txt, /SÍ/);
+  assert.match(txt, /¿La emito así\?/);
 });
 
 test('fecha inventada o mal escrita: se usa la de hoy; IVA raro: el de la actividad', () => {
@@ -67,4 +69,39 @@ test('fecha inventada o mal escrita: se usa la de hoy; IVA raro: el de la activi
   assert.equal(b.fecha, '2026-10-20');
   assert.equal(b.lineas[0].ivaPct, 21);
   assert.equal(b.cliente.nombre, 'X');
+});
+
+test('corregir el borrador por el chat: solo cambia lo pedido', () => {
+  const actividad = { id: 'dj', ivaPct: 21, irpfPct: 15 };
+  const cuerpo = cuerpoFactura({ cliente: 'pepe', lineas: [{ concepto: 'Sesión', precio: 300 }] }, { ficha: { nombre: 'Bar Pepe S.L.', nif: '12345678Z', ciudad: 'Girona' }, actividad, hoy: '2026-10-21' });
+  const b = { cuerpo, email: 'pepe@bar.es' };
+  const r = aplicarCambios(b, { cliente: { nif: '87654321X', direccion: 'C/ Sol 3' } }, { actividad });
+  assert.equal(r.cuerpo.cliente.nif, '87654321X');
+  assert.equal(r.cuerpo.cliente.direccion, 'C/ Sol 3');
+  assert.equal(r.cuerpo.cliente.ciudad, 'Girona');
+  assert.equal(r.cuerpo.lineas[0].precio, 300);
+  assert.equal(r.email, 'pepe@bar.es');
+  assert.equal(cuerpo.cliente.nif, '12345678Z'); // el original no se toca
+  const r2 = aplicarCambios(b, { lineas: [{ concepto: 'Sesión', precio: 350 }], fecha: '2026-10-18', email: '' }, { actividad });
+  assert.equal(r2.cuerpo.lineas[0].precio, 350);
+  assert.equal(r2.cuerpo.lineas[0].ivaPct, 21);
+  assert.equal(r2.cuerpo.fecha, '2026-10-18');
+  assert.equal(r2.email, '');
+  const r3 = aplicarCambios(b, { otroCliente: 'Sala Apolo' }, { ficha: { nombre: 'Sala Apolo', nif: '11111111H', email: 'a@apolo.es' }, actividad });
+  assert.equal(r3.cuerpo.cliente.nombre, 'Sala Apolo');
+  assert.equal(r3.email, 'a@apolo.es');
+  const r4 = aplicarCambios(b, { otroCliente: 'Nuevo' }, { actividad });
+  assert.deepEqual([r4.cuerpo.cliente.nombre, r4.cuerpo.cliente.nif, r4.email], ['Nuevo', '', '']);
+});
+
+test('la respuesta de la IA se convierte en una acción segura', () => {
+  const uso = (name, input) => [{ type: 'text', text: 'x' }, { type: 'tool_use', name, input }];
+  assert.equal(accionDe(uso('emitir', { mensaje: '¡Allá va!' })).accion, 'emitir');
+  assert.equal(accionDe(uso('cambiar_borrador', { cliente: { nif: 'X' } })).accion, 'cambiar');
+  assert.equal(accionDe(uso('preparar_factura', { cliente: 'Pepe', lineas: [{ concepto: 'a', precio: 1 }] })).accion, 'preparar');
+  // Sin cliente o sin líneas no es una factura: se responde.
+  assert.equal(accionDe(uso('preparar_factura', { cliente: 'Pepe', lineas: [] })).accion, 'responder');
+  assert.equal(accionDe(uso('responder', { texto: '¡Hola! ¿Qué factura hacemos?' })).mensaje, '¡Hola! ¿Qué factura hacemos?');
+  assert.equal(accionDe(uso('borrar_todo', {})).accion, 'responder');
+  assert.equal(accionDe([]).accion, 'responder');
 });
