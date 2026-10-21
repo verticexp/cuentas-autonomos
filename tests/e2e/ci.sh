@@ -17,10 +17,14 @@ esperar() { for _ in $(seq 1 60); do curl -s -o /dev/null "$1" && return 0; slee
 parar() { for p in ${pids[@]+"${pids[@]}"}; do kill "$p" 2>/dev/null; done; for p in ${pids[@]+"${pids[@]}"}; do wait "$p" 2>/dev/null; done; pids=(); }
 trap 'parar; kill $(jobs -p) 2>/dev/null' EXIT
 
-# Stripe (8077), correo (8078) e IA (8076) simulados: si ya están en marcha (otra sesión local), se reutilizan.
+# Stripe (8077), correo (8078), IA (8076) y avisos push (8075, HTTPS con certificado propio) simulados: si ya están en
+# marcha (otra sesión local), se reutilizan.
 for s in stripe:8077 resend:8078 ia:8076; do
   curl -s -o /dev/null "http://127.0.0.1:${s#*:}" || { python3 "tests/e2e/${s%%:*}-local.py" & }
 done
+curl -sk -o /dev/null https://127.0.0.1:8075 || { python3 tests/e2e/push-local.py & }
+# Claves VAPID de usar y tirar para los avisos push de esta ejecución (no son secretos de nada).
+read -r VAPID_PUB VAPID_PRIV < <(node -e "const k = require('web-push').generateVAPIDKeys(); console.log(k.publicKey, k.privateKey)")
 
 # Una batería: base vacía, la app con el entorno que pide y el script con el suyo.
 bateria() {
@@ -40,7 +44,8 @@ bateria() {
 }
 
 COMUN="RESEND_API_KEY=x RESEND_URL=http://127.0.0.1:8078/emails STRIPE_SECRET_KEY=sk_test_local STRIPE_URL=http://127.0.0.1:8077 STRIPE_WEBHOOK_SECRET=whsec_pruebas_local CRON_SECRET=cron-pruebas ANTHROPIC_API_KEY=x ANTHROPIC_URL=http://127.0.0.1:8076/v1/messages"
-bateria verificar "${COMUN}" "CRON_SECRET=cron-pruebas RESEND_URL=http://127.0.0.1:8078/emails STRIPE_WEBHOOK_SECRET=whsec_pruebas_local" tests/e2e/verificar.mjs
+PUSH="VAPID_PUBLIC_KEY=${VAPID_PUB} VAPID_PRIVATE_KEY=${VAPID_PRIV} PUSH_PRUEBAS=1 NODE_TLS_REJECT_UNAUTHORIZED=0"
+bateria verificar "${COMUN} ${PUSH}" "CRON_SECRET=cron-pruebas RESEND_URL=http://127.0.0.1:8078/emails STRIPE_URL=http://127.0.0.1:8077 STRIPE_WEBHOOK_SECRET=whsec_pruebas_local ANTHROPIC_API_KEY=x ANTHROPIC_URL=http://127.0.0.1:8076/v1/messages PUSH_PRUEBAS=1 VAPID_PUBLIC_KEY=${VAPID_PUB}" tests/e2e/verificar.mjs
 bateria regresiones "${COMUN}" "STRIPE_WEBHOOK_SECRET=whsec_pruebas_local" tests/e2e/regresiones.mjs
 bateria integridad "${COMUN} VERIFICAR_EMAIL=off BLOQUEO_SERVIDOR=activo" "STRIPE_WEBHOOK_SECRET=whsec_pruebas_local" tests/e2e/integridad.mjs
 
