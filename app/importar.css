@@ -20,3 +20,13 @@
 .importar-ayuda ul { margin: 8px 0; padding-left: 20px; }
 .importar-columnas { margin-top: 16px; }
 .importar-columnas-lista { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0 12px; }
+.importar-fila { flex-direction: column; align-items: stretch; }
+.importar-fila-linea { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.importar-abrir { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; text-align: left; background: none; border: 0; padding: 0; color: inherit; font: inherit; cursor: pointer; }
+.importar-abrir strong, .importar-abrir small { max-width: 100%; }
+.importar-accion { flex: none; padding: 4px 10px; font-size: 13px; min-height: 0; }
+.importar-fila.i-quitada .txt, .importar-fila.i-omitida .txt { opacity: 0.6; }
+.importar-detalle { margin: 8px 0 2px; display: grid; gap: 4px; font-size: 13px; }
+.importar-detalle div { display: flex; gap: 8px; justify-content: space-between; border-top: 1px solid var(--line); padding-top: 4px; }
+.importar-detalle dt { color: var(--muted); }
+.importar-detalle dd { margin: 0; text-align: right; overflow-wrap: anywhere; }

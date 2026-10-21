@@ -20,7 +20,7 @@ const AYUDA = {
   saldos: [['Cuenta', '', true], ['Saldo', 'o «Debe» y «Haber», o «Saldo deudor» y «Saldo acreedor»', true], ['Nombre', 'de la cuenta']],
   bienes: [['Fecha', 'de compra', true], ['Concepto', '', true], ['Valor', 'de compra', true], ['Amortizado', 'acumulado a la fecha del cambio'], ['Tipo', 'de bien'], ['% anual', 'coeficiente de amortización']],
 };
-const ESTADO = { nuevo: 'Nuevo', completar: 'Se completa', duplicado: 'Ya existe', error: 'Error', agrupada: 'Suma de otras', omitida: 'Se salta' };
+const ESTADO = { nuevo: 'Nuevo', completar: 'Se completa', quitada: 'Quitada', duplicado: 'Ya existe', error: 'Error', agrupada: 'Suma de otras', omitida: 'Se salta' };
 
 // Una línea legible de cada fila de la vista previa.
 function resumen(tipo, d) {
@@ -44,28 +44,46 @@ export default function Importar() {
   const [pagina, setPagina] = useState(1);
   const [estado, setEstado] = useState('todos');
   const [elegir, setElegir] = useState(null);
+  const [abierta, setAbierta] = useState(null);
   const enCurso = useRef(false);
-  const reiniciar = () => { setPagina(1); setEstado('todos'); setVista(null); setMsg(''); setElegir(null); };
+  // Revisión a mano: filas quitadas y filas saltadas que se importan igualmente (números de fila del archivo).
+  const revision = useRef({ quitar: [], incluir: [] });
+  const columnasElegidas = useRef(null);
+  const repetir = useRef(false);
+  const reiniciar = () => { setPagina(1); setEstado('todos'); setVista(null); setMsg(''); setElegir(null); setAbierta(null); revision.current = { quitar: [], incluir: [] }; columnasElegidas.current = null; };
   const filas = vistaImportacion(vista?.items || [], estado, pagina);
-  const pedir = async (guardar, cols = elegir && { fila: elegir.fila, mapa: elegir.mapa }) => {
+  const pedir = async (guardar, cols = columnasElegidas.current, mantenerPagina = false) => {
     if (enCurso.current || !archivo) return;
     enCurso.current = true;
-    setOcupado(true); setMsg(''); setPagina(1);
+    setOcupado(true); setMsg(''); if (!mantenerPagina) setPagina(1);
     const fd = new FormData();
     fd.set('tipo', tipo); fd.set('archivo', archivo);
     if (fecha) fd.set('fecha', fecha);
     if (guardar) fd.set('guardar', '1');
     if (cols) fd.set('columnas', JSON.stringify(cols));
+    fd.set('quitar', JSON.stringify(revision.current.quitar)); fd.set('incluir', JSON.stringify(revision.current.incluir));
     try {
       const r = await fetch('/api/importar', { method: 'POST', body: fd });
       const d = await r.json().catch(() => ({}));
       // Con la cabecera leída, se pueden elegir las columnas a mano aunque falte alguna obligatoria.
+      if (d.cabecera) columnasElegidas.current = { fila: d.fila, mapa: d.mapa };
       if (d.cabecera) setElegir((antes) => { const sug = d.sugeridas || antes?.sugeridas || []; return { fila: d.fila, mapa: d.mapa, campos: d.campos, requeridos: d.requeridos, cabecera: d.cabecera, ejemplos: d.ejemplos, sugeridas: sug.filter((k) => k in d.mapa) }; });
       if (!r.ok) { setVista(null); setMsg(d.error || 'No se ha podido leer el archivo. Comprueba el formato e inténtalo otra vez.'); return; }
-      setVista(d); setPagina(1);
+      setVista(d); if (!mantenerPagina) setPagina(1);
       if (!fecha && d.corte) setFecha(d.corte);
       if (guardar) setMsg(`✓ Importados ${d.guardados}${d.completados ? ` · completados ${d.completados}` : ''}`);
-    } catch { setMsg('Sin conexión: inténtalo de nuevo'); } finally { enCurso.current = false; setOcupado(false); }
+    } catch { setMsg('Sin conexión: inténtalo de nuevo'); } finally {
+      enCurso.current = false; setOcupado(false);
+      // Si se quitó o añadió otra fila mientras tanto, se rehace la vista previa con lo último.
+      if (repetir.current && !guardar) { repetir.current = false; pedir(false, undefined, true); }
+    }
+  };
+  // Quitar una fila o recuperar una saltada: se rehace la vista previa (los repetidos pueden cambiar) sin cambiar de página.
+  const revisar = (lista, n) => {
+    const l = revision.current[lista];
+    revision.current = { ...revision.current, [lista]: l.includes(n) ? l.filter((x) => x !== n) : [...l, n] };
+    if (enCurso.current) { repetir.current = true; return; }
+    pedir(false, undefined, true);
   };
   // Cambiar a mano qué columna es un dato: la columna deja de usarse para cualquier otro y se rehace la vista previa.
   const asignar = (campo, valor) => {
@@ -73,6 +91,7 @@ export default function Importar() {
     const mapa = Object.fromEntries(Object.entries(elegir.mapa).filter(([k, c]) => k !== campo && String(c) !== valor));
     if (valor !== '') mapa[campo] = Number(valor);
     setElegir({ ...elegir, mapa, sugeridas: elegir.sugeridas.filter((k) => k !== campo) });
+    columnasElegidas.current = { fila: elegir.fila, mapa };
     pedir(false, { fila: elegir.fila, mapa });
   };
   const obligatorio = (k) => elegir.requeridos.some((r) => r.split('|').includes(k));
@@ -92,7 +111,7 @@ export default function Importar() {
         <details className="importar-ayuda">
           <summary>Cómo preparar el archivo</summary>
           <ul>{AYUDA[tipo].map(([n, otros, req]) => <li key={n}>{req ? <strong>{n}</strong> : n}{otros ? ` ${otros.startsWith('o ') ? `(${otros})` : `· ${otros}`}` : ''}{req ? ' · obligatoria' : ''}</li>)}</ul>
-          <p className="nota">El orden de las columnas da igual, las que sobran se descartan y no importa si hay un título encima de la tabla. Si alguna columna se llama de otra forma, después de subir el archivo puedes indicar cuál es cuál{tipo === 'saldos' || tipo === 'bienes' ? '' : ': la IA lo intenta primero sola'}. Las filas de totales y cualquier otra tabla debajo de la lista (un resumen, por ejemplo) se saltan solas. Nada se guarda hasta que revisas la vista previa y pulsas «Importar».{tipo === 'facturas' ? ' Mejor importa antes los clientes: así las facturas los encuentran con todos sus datos.' : tipo === 'clientes' ? ' Si un cliente ya existe (por ejemplo, creado al importar facturas), solo se rellenan sus datos vacíos: lo que ya tiene no se toca.' : ''}</p>
+          <p className="nota">El orden de las columnas da igual, las que sobran se descartan y no importa si hay un título encima de la tabla. Si alguna columna se llama de otra forma, después de subir el archivo puedes indicar cuál es cuál{tipo === 'saldos' || tipo === 'bienes' ? '' : ': la IA lo intenta primero sola'}. Las filas de totales y cualquier otra tabla debajo de la lista (un resumen, por ejemplo) se saltan solas. En la vista previa puedes tocar cada fila para ver de dónde sale cada dato, quitar las que no quieras o importar una que se haya saltado. Nada se guarda hasta que revisas la vista previa y pulsas «Importar».{tipo === 'facturas' ? ' Mejor importa antes los clientes: así las facturas los encuentran con todos sus datos.' : tipo === 'clientes' ? ' Si un cliente ya existe (por ejemplo, creado al importar facturas), solo se rellenan sus datos vacíos: lo que ya tiene no se toca.' : ''}</p>
         </details>
         <label className="importar-archivo">
           <input type="file" disabled={ocupado} accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" onChange={(e) => { if (enCurso.current) return; setArchivo(e.target.files?.[0] || null); reiniciar(); }} />
@@ -129,6 +148,7 @@ export default function Importar() {
             {vista.completar > 0 && <span>Se completan <strong>{vista.completar}</strong></span>}
             <span>Ya existen <strong>{vista.duplicados}</strong></span>
             {vista.errores > 0 && <span className="rojo">Con errores <strong>{vista.errores}</strong></span>}
+            {vista.quitadas > 0 && <span>Quitadas <strong>{vista.quitadas}</strong></span>}
             {tipo !== 'saldos' && vista.items.some((x) => x.estado === 'omitida') && <span>Se saltan <strong>{vista.items.filter((x) => x.estado === 'omitida').length}</strong></span>}
           </p>
           {tipo === 'saldos' && <p className={`nota${vista.descuadre ? ' rojo' : ''}`}>Saldos deudores {eur(vista.debe)} · acreedores {eur(vista.haber)}{vista.descuadre ? ` · la diferencia (${eur(Math.abs(vista.descuadre))}) irá a la cuenta 129, resultado del ejercicio${vista.conResultados ? ': revisa el archivo, porque ya trae cuentas de gastos e ingresos' : ''}` : ' · cuadra'}.</p>}
@@ -140,18 +160,38 @@ export default function Importar() {
               {vista.completar > 0 && <option value="completar">Se completan</option>}
               <option value="duplicado">Duplicados</option>
               <option value="error">Errores</option>
-              {['omitida', 'agrupada'].filter((e) => vista.items.some((x) => x.estado === e)).map((e) => <option key={e} value={e}>{e === 'omitida' ? 'Omitidas' : 'Agrupadas'}</option>)}
+              {['omitida', 'agrupada', 'quitada'].filter((e) => vista.items.some((x) => x.estado === e)).map((e) => <option key={e} value={e}>{{ omitida: 'Omitidas', agrupada: 'Agrupadas', quitada: 'Quitadas' }[e]}</option>)}
             </select>
           </label>
           <p className="nota" role="status">Filas {filas.desde}–{filas.hasta} de {filas.total}</p>
           {!filas.total && <p className="nota">No hay filas con este estado.</p>}
           <ul className="grupo-lista importar-filas">
             {filas.items.map((x) => {
-              const [a, b] = x.completa ? [x.datos.nombre, `Se añade: ${Object.entries(x.completa).map(([k, v]) => `${CAMPO[k] || k} ${v}`).join(' · ')}`] : x.datos ? resumen(tipo, x.datos) : [`Fila ${x.n}`, x.error];
+              const [a, b] = x.completa ? [x.datos.nombre, `Se añade: ${Object.entries(x.completa).map(([k, v]) => `${CAMPO[k] || k} ${v}`).join(' · ')}`] : x.datos ? resumen(tipo, x.datos) : [x.original?.find(Boolean) || `Fila ${x.n}`, `Fila ${x.n} · ${x.estado === 'quitada' ? 'no se importará' : x.error}`];
+              // Qué columna del archivo va a cada dato, para revisar la fila contra el Excel.
+              const campoDe = Object.fromEntries(Object.entries(vista.mapa || {}).map(([k, c]) => [c, k]));
+              const accion = hecho || tipo === 'saldos' ? null
+                : ['nuevo', 'completar'].includes(x.estado) && !x.incluida ? ['Quitar', () => revisar('quitar', x.n)]
+                  : x.estado === 'quitada' ? ['Volver a añadir', () => revisar('quitar', x.n)]
+                    : x.estado === 'omitida' ? ['Importar igualmente', () => revisar('incluir', x.n)]
+                      : x.incluida ? ['Saltar', () => revisar('incluir', x.n)] : null;
               return (
                 <li key={x.n} className={`fila importar-fila i-${x.estado}`}>
-                  <span className="txt"><strong>{a}</strong><small>{b}</small></span>
-                  <span className={`importar-estado i-${x.estado}`}>{hecho && x.estado === 'nuevo' ? 'Importado' : hecho && x.estado === 'completar' ? 'Completado' : ESTADO[x.estado]}</span>
+                  <div className="importar-fila-linea">
+                    <button type="button" className="txt importar-abrir" aria-expanded={abierta === x.n} onClick={() => setAbierta(abierta === x.n ? null : x.n)}>
+                      <strong>{a}</strong><small>{b}</small>
+                    </button>
+                    <span className={`importar-estado i-${x.estado}`}>{hecho && x.estado === 'nuevo' ? 'Importado' : hecho && x.estado === 'completar' ? 'Completado' : x.incluida ? 'Se importa igualmente' : ESTADO[x.estado]}</span>
+                    {accion && <button type="button" className="boton sec importar-accion" onClick={accion[1]}>{accion[0]}</button>}
+                  </div>
+                  {abierta === x.n && x.original && (
+                    <dl className="importar-detalle">
+                      <div><dt>Fila del archivo</dt><dd>{x.n}</dd></div>
+                      {x.original.map((v, c) => (v || campoDe[c] !== undefined) && (
+                        <div key={c}><dt>{vista.cabecera?.[c] || `Columna ${c + 1}`}{campoDe[c] ? ` → ${CAMPO[campoDe[c]] || campoDe[c]}` : ' (no se usa)'}</dt><dd>{v || '—'}</dd></div>
+                      ))}
+                    </dl>
+                  )}
                 </li>
               );
             })}
