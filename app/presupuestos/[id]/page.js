@@ -14,6 +14,9 @@ import '@/app/portal.css';
 import FormPresupuesto from '@/components/FormPresupuesto';
 import Volver from '@/components/Volver';
 import Conceptos from '@/components/Conceptos';
+import EnviarFactura from '@/components/EnviarFactura';
+import { asuntoPresupuesto, mensajePresupuesto } from '@/lib/envio';
+import { diasPrueba } from '@/lib/prueba';
 
 import '@/app/mk.css';
 
@@ -50,7 +53,7 @@ export default async function Presupuesto({ params }) {
       {p.respuesta && <p className="nota">{p.estado === 'rechazado' ? 'Rechazado' : 'Aceptado'} por {p.respuesta.nombre} el {fechaTexto(p.respuesta.fecha.slice(0, 10))}.</p>}
       {p.facturas.length > 0 && <p className="nota">Facturas: {p.facturas.map((f, n) => <span key={f.id}>{n ? ', ' : ''}<Link href={`/facturas/${f.id}`}>{f.numero}</Link> ({f.tipo === 'senal' ? 'señal' : senal ? 'resto' : 'total'})</span>)}</p>}
       {editar && <div className="acciones-factura">
-        {estado === 'pendiente' && <Compartir ruta={`/p/${p.token}`} texto={`Presupuesto ${numeroPresupuesto(p)}`} />}
+        {estado === 'pendiente' && <Compartir ruta={`/p/${p.token}`} texto={`Presupuesto ${numeroPresupuesto(p)}`} etiqueta="Compartir enlace" />}
         <Link href={`/p/${p.token}`} className="boton sec">Ver como el cliente</Link>
         <CambiarEnlace datos={{ tipo: 'presupuesto', id: p.id }} pregunta="¿Cambiar el enlace de este presupuesto? El que tiene el cliente dejará de funcionar." />
         {estado === 'pendiente' && <MarcarAceptado id={p.id} />}
@@ -58,6 +61,9 @@ export default async function Presupuesto({ params }) {
         {['pendiente', 'aceptado'].includes(estado) && <Facturar id={p.id} tipo="resto">{senal ? `Facturar el resto (${eur(baseResto(p))})` : 'Facturar todo'}</Facturar>}
         {!p.facturas.length && <Borrar url={`/api/presupuestos?id=${p.id}`} pregunta={`¿Borrar el presupuesto ${numeroPresupuesto(p)}? El enlace del cliente dejará de funcionar.`} volver="/presupuestos" />}
       </div>}
+      {((editar && estado === 'pendiente') || p.envios?.length > 0) && <EnviarFactura id={p.id} email={p.cliente.email} envios={p.envios} editar={editar && estado === 'pendiente'}
+        ruta="/api/presupuestos/enviar" doc="presupuesto" seguimiento={false}
+        asunto={asuntoPresupuesto(p, u)} mensaje={mensajePresupuesto(p, u)} asuntoFijo={diasPrueba(u.plan) > 0} />}
       {portal && <section className="portal-enlace">
         <p className="nota">Portal de {p.cliente.nombre}: ve todas sus facturas y presupuestos, los descarga en PDF y paga.</p>
         <div className="portal-botones"><Compartir ruta={portal} texto={`Tus documentos de ${u.emisor?.nombre || ''}`.trim()} etiqueta="Enviar su portal" className="boton sec" /><Link href={portal} className="boton sec">Ver su portal</Link><CambiarEnlace datos={{ tipo: 'portal', cliente: p.cliente.nombre, nif: p.cliente.nif || '' }} pregunta={`¿Cambiar el enlace del portal de ${p.cliente.nombre}? El que tiene dejará de funcionar y tendrás que enviarle el nuevo.`} /></div>
