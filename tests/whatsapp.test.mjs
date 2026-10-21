@@ -52,8 +52,11 @@ test('del pedido de la IA a una factura válida con los tipos de la actividad', 
   const datos = limpiar(b, [{ id: 'dj', nombre: 'DJ', serie: '', ivaPct: 21, irpfPct: 15 }]);
   assert.ok(!datos.error, datos.error);
   assert.equal(datos.base, 300);
-  const txt = resumenBorrador(datos, 'pepe@bar.es');
+  const txt = resumenBorrador(datos, 'pepe@bar.es', { nombre: 'Marc DJ', nif: '87654321X', direccion: 'C/ Mayor 1', ciudad: 'Barcelona' });
   assert.match(txt, /Bar Pepe S\.L\./);
+  assert.match(txt, /De:\* Marc DJ\nNIF: 87654321X\nDirección: C\/ Mayor 1, Barcelona/);
+  assert.match(txt, /NIF: 12345678Z/);
+  assert.match(txt, /Para:[\s\S]*sin dirección/); // al cliente le falta la dirección: se avisa
   assert.match(txt, /318/); // 300 + 63 − 45
   assert.match(txt, /pepe@bar\.es/);
   assert.match(txt, /SÍ/);
