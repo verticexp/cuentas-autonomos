@@ -14,6 +14,11 @@ test('normalizarNumero: ignora mayúsculas, separadores y ceros iniciales de cad
   for (const n of [undefined, null, '', ' - / ']) assert.equal(normalizarNumero(n), '');
 });
 
+test('números que solo coinciden sin separadores («1-23» y «12-3»): probable, no segura', () => {
+  const r = posiblesDuplicados(nuevo({ proveedor: 'Endesa', numero: '1-23', base: 999 }), [gasto({ numero: '12-3', base: 20, fecha: '2026-01-01' })]);
+  assert.deepEqual(r, [{ id: 'guardado', motivo: 'Número parecido de Endesa (nº 12-3) del 01/01/2026', certeza: 'probable' }]);
+});
+
 test('mismo archivo: coincidencia segura incluso con otro proveedor, fecha e importe', () => {
   const huella = 'a'.repeat(64);
   const resultado = posiblesDuplicados(nuevo({ archivo: { huella } }), [

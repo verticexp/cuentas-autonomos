@@ -8,6 +8,7 @@
 .recurrentes li + li { border-top: 0.5px solid var(--line); }
 .recurrentes li.pausa { opacity: 0.6; }
 .rec-info { display: flex; flex-direction: column; min-width: 0; }
+.rec-fallo { color: var(--out); }
 .rec-info small { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
 .rec-total { font-weight: 600; font-variant-numeric: tabular-nums; }
 .recurrente-acciones { grid-column: 1 / -1; display: flex; gap: 12px; align-items: center; }

@@ -62,14 +62,21 @@ test('recurrentes: el mes que aún no se ha creado entra a su vencimiento; el sa
   assert.deepEqual(p.minimo, { saldo: -500, fecha: '2026-10-10' });
 });
 
-test('Hacienda: el 115 del 4T se paga el 20 de enero; el 303 y el 130, el 30', () => {
+test('Hacienda: el 115 del 4T se paga el 20 de enero; el 303 y el 130, el 30 (el lunes 1 de febrero en 2027: el 30 es sábado)', () => {
   const G = [gas('a', '2026-11-05', 1000, { alquiler: true, concepto: 'Alquiler local' })];
   const F = [fac('1', '2026-11-10', 3000)];
   const p = prevision({ facturas: F, gastos: G, fiscal, hoy: '2026-12-15', meses: 2, actividades: [] });
   const h = Object.fromEntries(p.movimientos.filter((m) => m.tipo === 'hacienda').map((m) => [m.concepto.split(' ')[0], m.fecha]));
   assert.equal(h.Alquiler, '2027-01-20');
-  assert.equal(h.IVA, '2027-01-30');
+  assert.equal(h.IVA, '2027-02-01');
 });
+
+// Auditoría completa (21-10-2026, revisión de Codex): los plazos en fin de semana pasan al lunes, como en Impuestos.
+test('Hacienda: un plazo en domingo pasa al lunes (2T de 2025: 21 de julio)', () => {
+  const p = prevision({ facturas: [fac('1', '2025-05-10', 3000)], gastos: [], fiscal, hoy: '2025-07-01', meses: 1, actividades: [] });
+  assert.ok(p.movimientos.some((m) => m.concepto.startsWith('IVA (303) del 2T') && m.fecha === '2025-07-21'), JSON.stringify(p.movimientos.map((m) => [m.concepto, m.fecha])));
+});
+
 
 test('Hacienda: el 202 de una sociedad, el 20 de octubre y de diciembre', () => {
   const p = prevision({ facturas: [], gastos: [], fiscal: { tipo: 'sociedad', iva: 'general' }, cuotaIS: { 2025: 1000 }, hoy: '2026-10-08', meses: 3, actividades: [] });

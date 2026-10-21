@@ -6,6 +6,8 @@ import { eur } from '@/lib/formato';
 import { puede } from '@/lib/permisos';
 import Volver from '@/components/Volver';
 import { AccionesRecurrente } from '@/components/Recurrente';
+import { enviosPendientes } from '@/lib/recurrentes';
+import { nombreMes } from '@/lib/nominas';
 import '@/app/recurrentes.css';
 
 import '@/app/mk.css';
@@ -28,6 +30,9 @@ export default async function Recurrentes() {
               <span className="rec-info">
                 <strong>{r.plantilla.cliente.nombre}</strong>
                 <small>{r.plantilla.concepto} · día {r.dia} de cada mes{r.enviar ? ' · se envía por email' : ''}{r.activa ? '' : ' · en pausa'}</small>
+                {/* Lo que no salió (lib/recurrentesServidor.js): se reintenta solo cada día; aquí se ve para poder arreglarlo. */}
+                {r.activa && r.fallo && <small className="rec-fallo" role="status">No se ha podido crear la de {nombreMes(r.fallo.periodo)}: {r.fallo.error}. Se vuelve a intentar cada día.</small>}
+                {enviosPendientes(r).some((x) => x.error) && <small className="rec-fallo" role="status">El email de {enviosPendientes(r).filter((x) => x.error).map((x) => nombreMes(x.periodo)).join(' y ')} no ha salido: {enviosPendientes(r).find((x) => x.error).error}</small>}
               </span>
               <span className="rec-total">{eur(importes(r.plantilla).total)}</span>
               {editar && <AccionesRecurrente id={r.id} activa={r.activa} />}

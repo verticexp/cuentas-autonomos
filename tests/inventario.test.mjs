@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { emparejarLineas, inventario, quePedir, valorInventario } from '../lib/inventario.js';
+import { r2 } from '../lib/redondeo.js';
 import { generarAsientos, balanceContable } from '../lib/asientos.js';
 import { librosRegistro } from '../lib/librosRegistro.js';
 import { avisosDelDia } from '../lib/avisos.js';
@@ -48,6 +49,32 @@ test('el valor del almacén entra en la contabilidad y en los libros registro', 
   const l = librosRegistro({ ...datos, fiscal: { tipo: 'autonomo', iva: 'general' }, actividades: [{ id: 'x' }], empresa: { nif: '1Z' } }, 2025, '2026-02-01');
   const i06 = l.hojas[0].filas.find((f) => f[6] === 'I06');
   assert.equal(i06[7], '62,50'); // las existencias suben de 0 a 62,50 €
+});
+
+// Auditoría completa (21-10-2026, revisión de Codex).
+test('devolver una venta que salió con albarán vuelve a su coste de entonces (sin margen ficticio)', () => {
+  const p = [{ id: 'cccccccccccc', nombre: 'Foco', precio: 30, ivaPct: 21, coste: 10 }];
+  const d = {
+    productos: p,
+    ajustes: [{ id: 'a1', producto: 'cccccccccccc', fecha: '2026-01-01', cantidad: 10, motivo: 'inicial', coste: 10 }],
+    albaranes: [{ id: 'alb1', tipo: 'albaran', fecha: '2026-02-01', lineas: [{ concepto: 'Foco', cantidad: 5, precio: 30, ivaPct: 21, producto: 'cccccccccccc' }] }],
+    facturas: [
+      { id: 'f1', fecha: '2026-02-05', base: 150, ivaPct: 21, irpfPct: 0, cliente: { nombre: 'X' }, lineas: [{ concepto: 'Foco', cantidad: 5, precio: 30, ivaPct: 21, producto: 'cccccccccccc', albaran: 'alb1' }] },
+      { id: 'r1', serie: 'R', fecha: '2026-04-01', base: -150, ivaPct: 21, irpfPct: 0, cliente: { nombre: 'X' }, rectifica: { id: 'f1' }, lineas: [{ concepto: 'Foco', cantidad: -5, precio: 30, ivaPct: 21, producto: 'cccccccccccc', albaran: 'alb1' }] },
+    ],
+    gastos: [{ id: 'g1', fecha: '2026-03-01', concepto: 'Focos', base: 100, ivaPct: 21, categoria: '600', stock: [{ producto: 'cccccccccccc', cantidad: 5, coste: 20 }] }],
+  };
+  const x = inventario(d, { hoy: '2026-12-31', desde: '2026-01-01' }).productos[0];
+  assert.equal(x.stock, 15);
+  assert.equal(x.valor, 200);
+  assert.equal(r2(x.ingresos - x.costeVentas), 0);
+});
+
+test('emparejar líneas: el código entero y el nombre más concreto', () => {
+  const p = [{ id: 'dddddddddddd', nombre: 'Cable', codigo: '12', precio: 1, ivaPct: 21 }, { id: 'eeeeeeeeeeee', nombre: 'Cable XLR', codigo: '1234', precio: 1, ivaPct: 21 }];
+  assert.deepEqual(emparejarLineas([{ descripcion: 'Producto 1234', cantidad: 1, precio: 5 }], p).map((x) => x.producto), ['eeeeeeeeeeee']);
+  assert.deepEqual(emparejarLineas([{ descripcion: 'Cable XLR negro', cantidad: 1, precio: 5 }], p).map((x) => x.producto), ['eeeeeeeeeeee']);
+  assert.deepEqual(emparejarLineas([{ descripcion: 'Cableado eléctrico', cantidad: 1, precio: 5 }], p), []);
 });
 
 test('aviso de stock bajo los lunes', () => {
