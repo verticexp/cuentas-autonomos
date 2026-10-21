@@ -2,12 +2,14 @@ import { leerUno } from '@/lib/redis';
 import { error, usuarioApi } from '@/lib/api';
 import { albaranPdf, nombreArchivo } from '@/lib/pdfAlbaran';
 import { identidadDoc } from '@/lib/documento';
+import { pasado, respuesta429 } from '@/lib/limite';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req) {
   const { u, res } = await usuarioApi({ permiso: 'facturar' });
   if (res) return res;
+  if (await pasado('pdf', u.id, 120, 600)) return respuesta429(600, 'Has descargado demasiados PDF. Espera 10 minutos antes de descargar más.');
   const q = req.nextUrl.searchParams;
   const d = await leerUno(u, 'albaranes', q.get('id') || '');
   if (!d || !['albaran', 'pedido'].includes(d.tipo)) return error('Ese documento no existe', 404);

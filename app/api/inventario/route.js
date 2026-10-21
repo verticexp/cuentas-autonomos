@@ -1,7 +1,8 @@
 import { mensajePlan } from '@/lib/app';
 import { borrar, guardar, leerUno } from '@/lib/redis';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
-import { leerImporte, r2 } from '@/lib/calculos';
+import { r2 } from '@/lib/calculos';
+import { numeroLocal } from '@/lib/validacion';
 import { MOTIVOS, SALEN, inventario } from '@/lib/inventario';
 import { datosStock } from '@/lib/stockServidor';
 import { xlsx } from '@/lib/xlsx';
@@ -10,6 +11,8 @@ import { auditar } from '@/lib/auditoria';
 import { usarFuncion } from '@/lib/usoPlan';
 
 export const dynamic = 'force-dynamic';
+const MAX_CANTIDAD = 1000000;
+const MAX_COSTE = 1000000000;
 
 // Ajuste de stock a mano: stock inicial, recuento, rotura, consumo… { producto, fecha, cantidad (+ entra, − sale) o recuento, motivo, coste }.
 // Con «recuento», se apunta la diferencia entre lo contado y lo que dice Fisquo (con como: 'consumo', si falta, como consumo).
@@ -19,22 +22,27 @@ export async function POST(req) {
   const sinPlan = await usarFuncion(u, 'inventario');
   if (sinPlan) return error(mensajePlan(sinPlan, req.headers.get('user-agent')), 403);
   const b = await cuerpo(req);
+  let motivo = MOTIVOS[b.motivo] ? b.motivo : 'otro';
+  const n = numeroLocal(b.cantidad), coste = numeroLocal(b.coste, 0);
+  if (!Number.isFinite(n) || Math.abs(n) > MAX_CANTIDAD) return error('Escribe una cantidad entre -1.000.000 y 1.000.000 (por ejemplo, 10,5).');
+  if (['inicial', 'recuento'].includes(motivo) && n < 0) return error('Escribe una cantidad entre 0 y 1.000.000 para el stock inicial o el recuento.');
+  if (!Number.isFinite(coste) || coste < 0 || coste > MAX_COSTE) return error('Escribe un coste entre 0 y 1.000.000.000 € (por ejemplo, 12,50).');
   const datos = await datosStock(u);
   const p = datos.productos.find((x) => x.id === b.producto);
   if (!p) return error('Ese producto ya no existe', 404);
   const fecha = /^\d{4}-\d{2}-\d{2}$/.test(b.fecha || '') ? b.fecha : hoy();
-  let motivo = MOTIVOS[b.motivo] ? b.motivo : 'otro';
-  let cantidad = Math.round((leerImporte(b.cantidad) || 0) * 1000) / 1000;
+  let cantidad = Math.round(n * 1000) / 1000;
   if (motivo === 'recuento') {
     const actual = inventario(datos, { hoy: fecha }).productos.find((x) => x.id === p.id)?.stock || 0;
-    cantidad = Math.round((Math.abs(cantidad) - actual) * 1000) / 1000;
+    cantidad = Math.round((cantidad - actual) * 1000) / 1000;
+    if (!Number.isFinite(cantidad) || Math.abs(cantidad) > MAX_CANTIDAD) return error('El ajuste supera 1.000.000 de unidades. Revisa el stock y haz ajustes más pequeños.');
     if (!cantidad) return Response.json({ ok: true, sinCambios: true });
     // En talleres, peluquerías o restaurantes lo que falta suele ser material gastado en los servicios: consumo, no pérdida.
     if (b.como === 'consumo' && cantidad < 0) motivo = 'consumo';
   } else if (SALEN.includes(motivo)) cantidad = -Math.abs(cantidad);
   else if (motivo === 'inicial') cantidad = Math.abs(cantidad);
   if (!cantidad) return error('Pon una cantidad');
-  const a = { id: crypto.randomUUID(), producto: p.id, fecha, cantidad, motivo, ...(cantidad > 0 && r2(leerImporte(b.coste) || 0) ? { coste: r2(leerImporte(b.coste)) } : {}), nota: String(b.nota || '').trim().slice(0, 120), por: u.id };
+  const a = { id: crypto.randomUUID(), producto: p.id, fecha, cantidad, motivo, ...(cantidad > 0 && r2(coste) ? { coste: r2(coste) } : {}), nota: String(b.nota || '').trim().slice(0, 120), por: u.id };
   await guardar(u, 'stock', a);
   await auditar(u, 'Inventario', `${MOTIVOS[motivo]} · ${p.nombre} · ${cantidad > 0 ? '+' : ''}${cantidad}`);
   return Response.json({ ok: true, ajuste: a });
