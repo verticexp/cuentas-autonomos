@@ -22,9 +22,14 @@ test('teléfonos autorizados y mensajes de texto del aviso', () => {
   assert.equal(m.size, 2);
   const aviso = { entry: [{ changes: [{ value: { messages: [
     { id: 'w1', from: '34600111222', type: 'text', text: { body: 'Factura a Pepe' } },
-    { id: 'w2', from: '34600111222', type: 'image', image: {} },
+    { id: 'w2', from: '34600111222', type: 'audio', audio: { id: 'm9', mime_type: 'audio/ogg; codecs=opus' } },
+    { id: 'w3', from: '34600111222', type: 'image', image: {} },
   ], statuses: [{ id: 'x' }] } }] }] };
-  assert.deepEqual(mensajesDe(aviso), [{ id: 'w1', de: '34600111222', texto: 'Factura a Pepe' }]);
+  assert.deepEqual(mensajesDe(aviso), [
+    { id: 'w1', de: '34600111222', texto: 'Factura a Pepe' },
+    { id: 'w2', de: '34600111222', audio: 'm9' },
+    { id: 'w3', de: '34600111222', otro: true },
+  ]);
   assert.deepEqual(mensajesDe({}), []);
 });
 
@@ -104,4 +109,22 @@ test('la respuesta de la IA se convierte en una acción segura', () => {
   assert.equal(accionDe(uso('responder', { texto: '¡Hola! ¿Qué factura hacemos?' })).mensaje, '¡Hola! ¿Qué factura hacemos?');
   assert.equal(accionDe(uso('borrar_todo', {})).accion, 'responder');
   assert.equal(accionDe([]).accion, 'responder');
+});
+
+test('presupuestos: la IA los marca y el resumen habla de presupuesto, validez y enlace', () => {
+  const uso = (input) => [{ type: 'tool_use', name: 'preparar_factura', input }];
+  const lineas = [{ concepto: 'Boda', precio: 900 }];
+  assert.equal(accionDe(uso({ tipo: 'presupuesto', cliente: 'Ana', lineas })).datos.tipo, 'presupuesto');
+  assert.equal(accionDe(uso({ cliente: 'Ana', lineas })).datos.tipo, 'factura');
+  assert.equal(accionDe(uso({ tipo: 'cosa', cliente: 'Ana', lineas })).datos.tipo, 'factura');
+  const actividad = { id: 'dj', ivaPct: 21, irpfPct: 15 };
+  const b = cuerpoFactura({ cliente: 'Ana', lineas, validez: 30 }, { actividad, hoy: '2026-10-21' });
+  assert.equal(b.validez, 30);
+  const datos = { ...limpiar(b, [{ id: 'dj', nombre: 'DJ', serie: '', ivaPct: 21, irpfPct: 15 }]), validez: 30 };
+  const txt = resumenBorrador(datos, 'ana@x.es', { nombre: 'Marc' }, 'presupuesto');
+  assert.match(txt, /^Presupuesto con fecha 21\/10\/2026, válido 30 días/);
+  assert.match(txt, /enlace/);
+  assert.match(txt, /¿Lo creo así\?/);
+  assert.doesNotMatch(txt, /Email:/);
+  assert.equal(aplicarCambios({ cuerpo: b, email: '' }, { validez: 45 }, { actividad }).cuerpo.validez, 45);
 });
