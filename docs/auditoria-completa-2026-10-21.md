@@ -1,0 +1,109 @@
+# Auditoría completa · 21 de octubre de 2026
+
+Revisión de toda la app y la web sobre `main` (`8f26cc9`): seguridad, código, lógica, visual, contenido y errores en
+producción. Todo en local (Redis, Stripe, correo e IA simulados) salvo la lectura de los registros de Vercel y dos
+comprobaciones sin efectos en producción tras desplegar. Arreglos en los PR #245 y siguientes.
+
+## Cómo se ha revisado
+
+| Qué | Cómo | Resultado |
+|---|---|---|
+| Pruebas unitarias | `npm test` (también con `VERCEL_ENV=production` y `preview`) | 1.076 → **1.101** en verde |
+| Baterías de punta a punta | `verificar.mjs`, `regresiones.mjs`, `integridad.mjs` | Estaban **rotas** (ver E01); ahora las tres en verde y en la CI |
+| Pantallas | Chrome sin cabeza (CDP) por 145 rutas: web pública (34 × 4 vistas), app de una S.L. (83 × 4) y de una autónoma (28 × 3). Vistas: ordenador y móvil, claro y oscuro | 552 páginas: 1 error de JavaScript (arreglado), 0 peticiones fallidas, 0 desbordes horizontales |
+| Recorridos a mano | Alta completa de una autónoma (4 pasos + cuestionario), factura de principio a fin con su PDF, hoja del «+», diálogos | Funcionan; detalles abajo |
+| Seguridad de la API | Revisión de solo lectura de los 88 endpoints (Codex) + endpoints públicos a mano (Claude) | 11 hallazgos, todos comprobados en el código; 8 arreglados |
+| Producción | Errores y avisos de Vercel de 7 días, cabeceras, variables (solo nombres) | 12 errores 500 en `/api/login` (arreglado); resto limpio |
+| Cifras | Año completo de una autónoma calculado a mano | 303 de los cuatro trimestres, 130 acumulado, 115 y 390: **cuadran al céntimo** |
+| Normativa | Verifactu, registro horario digital, factura electrónica | Ver «Plazos» |
+
+## Fallos encontrados y corregidos
+
+| Id | Gravedad | Dónde | Fallo | Corrección | PR |
+|---|---|---|---|---|---|
+| S01 | Alta | Paquete de la gestoría | Mandarlo (POST) solo pedía «Datos de la empresa», que también fija el email de la gestoría: con ese permiso alguien podía mandarse todas las facturas, gastos, nóminas y justificantes (y el envío automático del día 5) | Mandar el paquete y elegir adónde van los datos (gestoría, Google Drive) exige además ver resumen, facturas y gastos | #245 |
+| S02 | Media | Presupuestos | Dos creados a la vez tomaban el mismo número: 3 simultáneos → 1 guardado | Numerar y guardar bajo cerrojo de la empresa | #245 |
+| S03 | Media | Presupuestos | Facturar señal y resto a la vez: 30 + 100 € de un presupuesto de 100 € | Todo bajo el cerrojo del presupuesto (también borrar) | #245 |
+| S04 | Media | Nóminas | Dos «Generar» a la vez duplicaban nóminas y gastos | Cerrojo de la empresa | #245 |
+| S05 | Media | Empleados, nóminas, cuota, productos, inventario | Sueldo negativo, `1e309` (llegaba como `Infinity`) o cifras absurdas se guardaban | Importes finitos, con signo y con tope; admiten «1 800 €» | #245 |
+| S06 | Baja | API | Cuerpos inesperados (`null`, arrays, formularios ilegibles) daban 500 (12 en producción el 20-10 en `/api/login`) | 400 con mensaje | #245 |
+| S07 | Baja | API | Sin tope: líneas de un asiento, documentos de una remesa, dispositivos con avisos; sin límite: reenviar invitaciones, avisos de prueba, PDF | 200 líneas, 1.000 documentos, 10 dispositivos; límites por persona o empresa | #245 |
+| U01 | Alta | «Varios tickets» | `Permissions-Policy: camera=()` bloqueaba la cámara en vivo en Chrome y Android (salía «denegada») | `camera=(self)`; comprobado en un Chrome real y en producción | #245 |
+| U02 | Media | Correos | Una dirección mal escrita decía «inténtalo de nuevo en unos minutos» | El motivo dice qué hacer (dirección, configuración o reintentar) | #245 |
+| U03 | Media | PDF y adjuntos | Según desde dónde, «FUNDACIÓ MÚSICA VIVA» salía «FUNDACI MSICA VIVA» y «PEÑA», «PEA» | Un solo ayudante para todos los nombres de archivo | #245 |
+| U04 | Media | Ajustes › Recomienda | Error de hidratación de React (#418) en las 4 vistas: el servidor no pintaba «Compartir» y el navegador sí | Se decide tras montar | #245 |
+| U05 | Baja | Varias | Título «No existe · Fisquo · Fisquo»; 3 campos sin etiqueta; Ayuda prometía el pago con tarjeta (desactivado) | Corregido | #245 |
+| C01 | Media | Categorías de gasto | «Material de oficina» iba a alquileres (621) y «Licencias de software de diseño» a profesionales (623) | Reglas corregidas; solo afecta a gastos sin categoría guardada | 2.º PR |
+| C02 | Baja | Títulos | Pestaña distinta de la pantalla: Libros registro (autónomo), Usuarios, Caja, Equipo y nóminas, Nuevo pedido | Iguales; Nóminas vuelve a «Más» | 2.º PR |
+| C03 | Baja | Pedidos | Fecha de cierre o cancelación en UTC (entre las 00:00 y las 02:00, la de ayer) | Hora de Madrid | 2.º PR |
+| E01 | Media | Pruebas | `verificar.mjs` se cortaba en «Banco» desde el 20-10 (NIF repetido tras el NIF único #221): ~40 % sin ejecutarse. `regresiones` e `integridad` rotas por el bloqueo de forma jurídica (#218). Nadie lo vio porque la CI no las pasaba | Puestas al día y **nuevo workflow E2E** con las tres | #245 y 2.º PR |
+
+## Lo que está bien (comprobado)
+
+- **Núcleo fiscal**: además de la batería de 1.000 empresas, un año de autónoma calculado a mano cuadra: 303 (100,25 /
+  591,11 / 774,90 / 430,50 €), 130 con el 5 % de difícil justificación, retenciones y pagos anteriores, 115 (342 €) y
+  390 (1.896,76 €). Plazos de 2026 y 2027 con fines de semana bien movidos.
+- **Seguridad**: CSP con nonce aplicada, HSTS, `frame-ancestors 'none'`, cookies `httpOnly`/`secure`, anti-CSRF por
+  origen, contraseñas con scrypt y comprobación de filtradas, llaves de acceso, bloqueo de servidor y verificación de
+  email activos en producción, límites por IP/email, webhooks y crons con firma o secreto en tiempo constante,
+  aislamiento entre empresas (revisado endpoint por endpoint).
+- **Asistente de IA**: solo lee, con herramientas según los permisos de cada persona, comprueba que cada cifra salga de
+  los datos y tiene límites por minuto, día y empresa.
+- **Diseño**: 552 páginas sin desbordes ni roturas en ordenador y móvil, claro y oscuro; estados vacíos, diálogos con el
+  foco en «Cancelar», etiquetas asociadas en los formularios.
+- **Producción**: sin errores de ejecución en 7 días (aparte de S06); copias nocturnas en verde; dependencias al día y
+  `npm audit` sin vulnerabilidades.
+
+## Decisiones que necesitan al usuario
+
+1. **Sueldos visibles sin el permiso de nóminas** (Codex H2). Cada nómina crea un gasto «Nómina Ana · octubre» con su
+   coste: lo ve quien tiene «Ver gastos» (lista, detalle, Excel, asistente), y el diario, los libros y el paquete
+   muestran nombre, bruto, IRPF y neto a quien tiene resumen + facturas + gastos. Propuesta: a quien no tenga
+   «Nóminas», un solo gasto «Nóminas de octubre (3 personas)» por mes y la contabilidad agregada. ¿Lo hacemos?
+2. **Permiso para contabilizar** (Codex H3). Con resumen + facturas + gastos (pensado para ver) se pueden crear y borrar
+   asientos; con «Resumen», cambiar la memoria de las cuentas anuales y marcar modelos presentados. Propuesta: un permiso
+   «Contabilidad» (incluido en Administrador y Gestoría).
+3. **Textos legales** (en espera por decisión tuya, no tocados): la política de privacidad (5-10-2026) no menciona la IA
+   para emparejar columnas al importar, el envío a la AEAT con Verifactu, la comprobación del NIF en el censo, Stripe para
+   la suscripción, Google Drive ni los avisos push; las cookies listadas son solo dos de seis. **No hay aviso legal**
+   (LSSI art. 10: titular, NIF, domicilio, contacto).
+4. **Botones «Continuar con Google / Apple»** del alta y del login: solo dicen «llegará pronto». Mejor ocultarlos hasta que
+   funcionen.
+5. **Domicilio del destinatario**: se puede emitir una factura completa a una empresa sin su domicilio (art. 6.1.e del RD
+   1619/2012 lo pide). Ya estaba en la lista para la asesoría (F06b).
+6. **Configuración**: `APP_URL` no está en producción (los enlaces de algunos correos salen del dominio de la petición);
+   las alertas de Dependabot están desactivadas en GitHub (solo hay actualizaciones de versión); el nuevo check «E2E»
+   puede marcarse como obligatorio para fusionar.
+
+## Plazos que vienen
+
+| Cuándo | Qué | Estado en Fisquo |
+|---|---|---|
+| **1-1-2027** | Verifactu obligatorio para sociedades (RD-ley 15/2025) | Código listo y validado con los XSD; **falta el certificado en producción** (`VERIFACTU_P12…`) y la prueba en el entorno de pruebas de la AEAT |
+| 1-7-2027 | Verifactu para autónomos | Igual |
+| Sin fecha | Registro horario digital (el real decreto sigue sin publicarse en el BOE en octubre de 2026) | El registro de jornada actual cumple el art. 34.9 ET |
+| ~10-2028 | Factura electrónica B2B para empresas de menos de 8 M€ (RD 238/2026) | Facturae/UBL listos; falta el intercambio con la solución pública de la AEAT |
+
+## Funciones y modelos que faltan (por prioridad)
+
+| Prioridad | Qué | Para quién |
+|---|---|---|
+| Alta | Verifactu en real (certificado + prueba en preproducción) | Todas las sociedades desde el 1-1-2027 |
+| Alta | Cobro de facturas con tarjeta (Stripe Connect: cada empresa su cuenta) | Todos; hoy desactivado |
+| Media | Modelos 123 y 193 (retenciones de dividendos e intereses a socios) | S.L. que reparten dividendos o pagan intereses a socios |
+| Media | Criterio de caja (RECC) | Autónomos y pymes acogidos |
+| Media | Nóminas completas: bases de cotización, modelo 145, ficheros RED/SILTRA | Quien tiene empleados (hoy las nóminas son simplificadas) |
+| Media | Conexión bancaria directa para todos (hoy solo el administrador de Fisquo) | Todos |
+| Media | IGIC (Canarias), TicketBAI/Batuz (País Vasco) y Navarra | Empresas de esos territorios: hoy no pueden usar Fisquo bien |
+| Baja | Modelo 131 (estimación objetiva / módulos) | Autónomos en módulos |
+| Baja | OSS (modelo 369) | Venta a distancia B2C en la UE |
+| Baja | REBU, agencias de viajes, agricultura (regímenes especiales de IVA) | Sectores concretos |
+| Baja | Factura en otro idioma y en otra moneda | Clientes extranjeros |
+| Baja | Entrar con Google/Apple, app de iPhone en la App Store, API o integraciones (tiendas, Zapier) | Crecimiento |
+
+## Quién hizo qué
+
+- **Claude**: plan, recorridos y capturas, revisión de seguridad de lo público, verificación de cada hallazgo de Codex,
+  arreglos de permisos, carreras, cámara, correos, PDF, interfaz, categorías, e2e y CI, cálculo a mano, informe.
+- **Codex**: revisión de solo lectura de los 88 endpoints y de la lógica no fiscal; endurecimiento mecánico de la API
+  (17 archivos y 16 pruebas), revisado y ajustado por Claude.
