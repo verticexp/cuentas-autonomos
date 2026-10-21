@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
 import { accionDe } from '../lib/whatsappIA.js';
-import { aplicarCambios, buscarCliente, cuerpoFactura, firmaValida, mensajesDe, resumenBorrador, siNo, telefonosAutorizados } from '../lib/whatsapp.js';
+import { aplicarCambios, buscarCliente, cuerpoFactura, entregaDe, firmaValida, mensajesDe, resumenBorrador, siNo, telefonosAutorizados } from '../lib/whatsapp.js';
 import { limpiar } from '../lib/facturas.js';
 
 test('firma de Meta: vale la buena, no la manipulada ni sin secreto', () => {
@@ -123,8 +123,20 @@ test('presupuestos: la IA los marca y el resumen habla de presupuesto, validez y
   const datos = { ...limpiar(b, [{ id: 'dj', nombre: 'DJ', serie: '', ivaPct: 21, irpfPct: 15 }]), validez: 30 };
   const txt = resumenBorrador(datos, 'ana@x.es', { nombre: 'Marc' }, 'presupuesto');
   assert.match(txt, /^Presupuesto con fecha 21\/10\/2026, válido 30 días/);
-  assert.match(txt, /enlace/);
+  assert.match(txt, /se lo mando a ana@x\.es/);
   assert.match(txt, /¿Lo creo así\?/);
-  assert.doesNotMatch(txt, /Email:/);
+  assert.match(resumenBorrador(datos, 'ana@x.es', {}, 'presupuesto', 'whatsapp'), /te paso el PDF por aquí para que lo reenvíes tú\./);
+  assert.match(resumenBorrador(datos, 'ana@x.es', {}, 'factura', 'ambos'), /se la mando a ana@x\.es y a ti te paso el PDF/);
+  assert.match(resumenBorrador(datos, '', {}, 'factura', 'whatsapp'), /(no tengo su email)/);
   assert.equal(aplicarCambios({ cuerpo: b, email: '' }, { validez: 45 }, { actividad }).cuerpo.validez, 45);
+});
+
+test('entrega: por correo si hay email, PDF por WhatsApp si lo piden o no hay email', () => {
+  assert.equal(entregaDe(undefined, 'a@b.es'), 'correo');
+  assert.equal(entregaDe(undefined, ''), 'whatsapp');
+  assert.equal(entregaDe('whatsapp', 'a@b.es'), 'whatsapp');
+  assert.equal(entregaDe('ambos', 'a@b.es'), 'ambos');
+  assert.equal(entregaDe('correo', ''), 'whatsapp'); // sin email no se puede mandar por correo
+  assert.equal(entregaDe('ambos', ''), 'whatsapp');
+  assert.equal(entregaDe('fax', 'a@b.es'), 'correo');
 });
