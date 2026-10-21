@@ -8,7 +8,13 @@ export const dynamic = 'force-dynamic';
 
 // Público: desde el portal, lleva a la página de pago de la factura (/pagar/<token>), creándola si hace falta.
 export async function POST(req) {
-  const form = await req.formData();
+  let form;
+  try { form = await req.formData(); }
+  catch {
+    const error = 'No se ha podido leer el formulario. Abre de nuevo el portal del cliente e inténtalo otra vez.';
+    if (req.headers.get('accept')?.includes('application/json')) return NextResponse.json({ error }, { status: 400 });
+    return NextResponse.redirect(new URL(`/portal/?error=${encodeURIComponent(error)}`, req.url), 303);
+  }
   const t = String(form.get('t') || '');
   const d = await portalDe(t, req);
   if (d instanceof Response) return d;

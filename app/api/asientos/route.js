@@ -7,6 +7,7 @@ import { asientosPersonal } from '@/lib/personal';
 import { auditar } from '@/lib/auditoria';
 
 export const dynamic = 'force-dynamic';
+const MAX_LINEAS = 200;
 
 // Asientos apuntados a mano (ajustes, regularizaciones de la gestoría…) y el de apertura (solo uno por empresa).
 // { apertura: { fecha, banco, capital, largo, corto } }, { personal: { fecha, sueldos, ssEmpresa, irpf, ssTrabajador, otros, pagoLiquido… } }
@@ -15,12 +16,14 @@ export async function POST(req) {
   const { u, res } = await usuarioApi({ permiso: DETALLE });
   if (res) return res;
   const b = await cuerpo(req);
+  if ((Array.isArray(b.lineas) && b.lineas.length > MAX_LINEAS) || (Array.isArray(b.personal?.otros) && b.personal.otros.length > MAX_LINEAS)) return error('Un asiento admite como mucho 200 líneas. Divídelo en varios asientos.');
   let a;
   if (b.personal) {
     const p = asientosPersonal(b.personal);
     if (p.error) return error(p.error);
     const hechos = [];
     for (const x of p.asientos) {
+      if (x.lineas.length > MAX_LINEAS) return error('Un asiento admite como mucho 200 líneas. Divídelo en varios asientos.');
       const l = limpiarAsiento(x);
       if (l.error) return error(l.error);
       hechos.push({ id: crypto.randomUUID(), ...l, personal: true });

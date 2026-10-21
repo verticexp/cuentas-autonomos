@@ -10,6 +10,7 @@ import { enviarInvitacion } from '@/lib/invitacion';
 import { auditar } from '@/lib/auditoria';
 import { sinPlaza } from '@/lib/planes';
 import { conCerrojo } from '@/lib/cerrojo';
+import { pasado, respuesta429 } from '@/lib/limite';
 
 const enlace = (req, codigo) => new URL(`/invitacion/${codigo}`, req.url).toString();
 // Crea la respuesta con el enlace (que el administrador ve siempre) y le manda la invitación por email.
@@ -43,6 +44,7 @@ export async function POST(req) {
     const { u, res } = await usuarioApi({ admin: true });
     if (res) return res;
     if (!String(b.empresaNueva).trim()) return error('Falta el nombre de la empresa');
+    if (await pasado('usuarios-invitar', u.empresa || u.id, 30, 3600)) return respuesta429(3600, 'Has enviado demasiadas invitaciones. Espera una hora antes de invitar a más personas.');
     const r = await crearUsuario({ nombre: b.nombre, email: b.email, empresaNombre: b.empresaNueva, rol: 'admin' });
     if (r.error) return error(r.error);
     return invitar(req, u, r.usuario, String(b.empresaNueva).trim(), r.codigo);
@@ -52,6 +54,7 @@ export async function POST(req) {
   // Invitar o reenviar invitaciones: solo el administrador de la empresa (no quien solo tiene el permiso de usuarios).
   if (u.rol !== 'admin') return error('Solo el administrador de la empresa puede invitar a personas', 403);
   if (b.reenviar) {
+    if (await pasado('usuarios-reenviar', u.empresa, 10, 3600)) return respuesta429(3600, 'Has reenviado demasiadas invitaciones. Espera una hora antes de reenviar otra.');
     const o = await deMiEmpresa(u, b.reenviar);
     if (!o || o.pass) return error('Esa persona ya tiene acceso');
     if (esAdminDe(o, u.empresa) && u.rol !== 'admin') return error('Solo un administrador de la empresa puede dar o quitar el acceso de administrador', 403);
@@ -64,6 +67,7 @@ export async function POST(req) {
     await auditar(u, 'Invitación reenviada', o.email);
     return invitar(req, u, o, nombreEmpresa(u), codigo);
   }
+  if (await pasado('usuarios-invitar', u.empresa, 30, 3600)) return respuesta429(3600, 'Has enviado demasiadas invitaciones. Espera una hora antes de invitar a más personas.');
   // Las invitaciones pendientes ya reservan plaza. El cerrojo evita rebasar el cupo con dos altas simultáneas.
   return conCerrojo(`usuarios:${u.empresa}`, async () => {
     const personas = Object.values((await redis.hgetall('usuarios')) || {}).filter((x) => enEmpresa(x, u.empresa)).map((x) => ({ id: x.id, ...membresias(x)[u.empresa] }));

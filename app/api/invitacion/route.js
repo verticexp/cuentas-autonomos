@@ -4,11 +4,17 @@ import { enviarConfirmacion } from '@/lib/invitacion';
 import { MUCHOS, ipDe, pasado } from '@/lib/limite';
 
 export async function POST(req) {
-  const form = await req.formData();
+  if (await pasado('invitacion', ipDe(req), 30, 900)) return NextResponse.redirect(new URL(`/invitacion/?error=${encodeURIComponent(MUCHOS)}`, req.url), 303);
+  let form;
+  try { form = await req.formData(); }
+  catch {
+    const error = 'No se ha podido leer el formulario. Abre de nuevo el enlace de invitación e inténtalo otra vez.';
+    if (req.headers.get('accept')?.includes('application/json')) return NextResponse.json({ error }, { status: 400 });
+    return NextResponse.redirect(new URL(`/invitacion/?error=${encodeURIComponent(error)}`, req.url), 303);
+  }
   const codigo = String(form.get('codigo') || '');
-  if (await pasado('invitacion', ipDe(req), 30, 900)) return NextResponse.redirect(new URL(`/invitacion/${encodeURIComponent(codigo)}?error=${encodeURIComponent(MUCHOS)}`, req.url), 303);
   const r = await aceptarInvitacion(codigo, form.get('password'), form.get('v'));
-  if (r.error) return NextResponse.redirect(new URL(`/invitacion/${codigo}?error=${encodeURIComponent(r.error)}`, req.url), 303);
+  if (r.error) return NextResponse.redirect(new URL(`/invitacion/${encodeURIComponent(codigo)}?error=${encodeURIComponent(r.error)}`, req.url), 303);
   // Sin el enlace del email: se le manda uno para confirmarlo.
   if (!r.verificado) await enviarConfirmacion({ para: r.usuario.email, nombre: r.usuario.nombre, url: new URL(`/api/confirmar?t=${await tokenEmail(r.usuario.id)}`, req.url).toString() });
   const res = NextResponse.redirect(new URL('/ajustes', req.url), 303);

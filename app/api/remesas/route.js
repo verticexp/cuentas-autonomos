@@ -10,6 +10,8 @@ import { aplicarCobroRemesa, clienteId, fechaValida, prepararCuenta, prepararDom
 
 export const dynamic = 'force-dynamic';
 const PERMISO = { domiciliacion: 'facturar', borrarDomiciliacion: 'facturar', cuentaProveedor: 'gastar', cobros: 'facturar', pagos: 'gastar' };
+const MAX_IDS = 1000;
+const MAX_ID = 80;
 
 export async function POST(req) {
   const b = await cuerpo(req);
@@ -49,7 +51,10 @@ export async function POST(req) {
     const cobros = accion === 'cobros';
     // Los preparadores distinguen «ya pagado/cobrado» de «ya no existe»: leer también los seleccionados pagados.
     const seleccion = cobros ? b.facturas : b.gastos;
-    const ids = Array.isArray(seleccion) ? [...new Set(seleccion.filter((id) => typeof id === 'string' && id.trim()))] : [];
+    if (!Array.isArray(seleccion) || !seleccion.length) return error('Selecciona al menos un documento para la remesa.');
+    if (seleccion.length > MAX_IDS) return error('Una remesa admite como mucho 1.000 documentos. Divide la selección en varias remesas.');
+    if (seleccion.some((id) => typeof id !== 'string' || !id.trim() || id.length > MAX_ID)) return error('Cada identificador debe ser texto de entre 1 y 80 caracteres. Vuelve a seleccionar los documentos.');
+    const ids = [...new Set(seleccion)];
     const [docs, cuentas] = await Promise.all([documentos(u, cobros ? 'facturas' : 'gastos', ids), leer(u, cobros ? 'domiciliaciones' : 'cuentasProv')]);
     const id = randomUUID().replaceAll('-', '');
     const creada = new Date().toISOString();
