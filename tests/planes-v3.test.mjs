@@ -6,7 +6,7 @@ import { PLANES } from '../components/web/datos.js';
 
 const pagado = (tipo, nombre) => ({ ...nuevoPlan(tipo, nombre), pagado: true });
 const todas = Object.keys(FUNCIONES);
-const AUT_PRO = ['conciliacion', 'revision', 'cartera', 'tesoreria', 'asistente', 'inventario', 'albaranes', 'analisis'];
+const AUT_PRO = ['conciliacion', 'revision', 'cartera', 'tesoreria', 'asistente', 'whatsapp', 'inventario', 'albaranes', 'analisis'];
 
 test('versión 3: reparto de módulos y capacidad de los seis planes', () => {
   const matriz = {

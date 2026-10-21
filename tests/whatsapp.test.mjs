@@ -140,3 +140,21 @@ test('entrega: por correo si hay email, PDF por WhatsApp si lo piden o no hay em
   assert.equal(entregaDe('ambos', ''), 'whatsapp');
   assert.equal(entregaDe('fax', 'a@b.es'), 'correo');
 });
+
+test('planes: WhatsApp no va en Esencial; tope de documentos al mes según el plan', async () => {
+  const { planConFuncion, sinFuncion, topeWhatsapp, TOPE_WHATSAPP_LIBRE } = await import('../lib/planes.js');
+  const pagado = (tipo, nombre) => ({ tipo, nombre, pagado: true, version: 3 });
+  assert.match(sinFuncion(pagado('aut', 'Esencial'), 'whatsapp'), /Fisquo por WhatsApp no va en el plan Esencial/);
+  assert.equal(sinFuncion(pagado('aut', 'Pro'), 'whatsapp'), null);
+  assert.equal(sinFuncion(pagado('pym', 'Plus'), 'whatsapp'), null);
+  assert.ok(sinFuncion(pagado('pym', 'Esencial'), 'whatsapp'));
+  assert.equal(planConFuncion(pagado('aut', 'Esencial'), 'whatsapp').n, 'Pro');
+  assert.equal(planConFuncion(pagado('pym', 'Esencial'), 'whatsapp').n, 'Pro');
+  assert.equal(topeWhatsapp(pagado('aut', 'Esencial')), 0);
+  assert.equal(topeWhatsapp(pagado('aut', 'Pro')), 100);
+  assert.equal(topeWhatsapp(pagado('aut', 'Plus')), 300);
+  assert.equal(topeWhatsapp(pagado('pym', 'Pro')), 300);
+  assert.equal(topeWhatsapp({ fundador: true }), TOPE_WHATSAPP_LIBRE);
+  // Las suscripciones de antes no pierden nada y ganan WhatsApp donde tenían el asistente.
+  assert.equal(sinFuncion({ tipo: 'aut', nombre: 'Pro', pagado: true }, 'whatsapp'), null);
+});
