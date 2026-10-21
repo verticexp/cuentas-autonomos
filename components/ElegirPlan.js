@@ -65,8 +65,8 @@ export default function ElegirPlan({ plan, tipoEmpresa, uso, admin, app }) {
         <div className={styles.cabeceraActual}><h2 id="plan-actual">Tu suscripción</h2><span className={styles.estado}>{estadoPlan}</span></div>
         <p className={styles.nombreActual}>{fundador ? 'Plan Fundador' : `${TIPOS[actual.tipo]} ${actual.nombre}`}</p>
         <p className={styles.detalleActual}>{fundador ? 'Todas las funciones, sin límites de usuarios ni cuotas. Abajo tienes los planes que ven los clientes nuevos.' : paga ? `Facturación ${actual.periodo === 'anio' ? 'anual' : 'mensual'} · una empresa por suscripción`
-          : dias === 0 ? 'Tus datos siguen disponibles para consultar y exportar. Elige un plan para volver a crear y editar.'
-          : dias > 0 ? 'Prueba sin compromiso. Revisa los planes antes de activar tu suscripción.'
+          : dias === 0 ? 'Tu cuenta está en solo lectura: puedes consultar y exportar todos tus datos. Elige un plan y vuelves a crear y editar al momento, sin perder nada.'
+          : dias > 0 ? 'Prueba sin tarjeta: no se cobra nada si no activas un plan. Si al acabar no has elegido, tu cuenta pasa a solo lectura: ves y exportas todo, pero no puedes crear ni editar.'
           : 'Consulta las opciones disponibles para tu empresa.'}</p>
         {paga && actual.estado === 'past_due' && <p className={styles.alerta}>El último cobro ha fallado. Revisa tu método de pago.</p>}
         {admin && !fundador && <div className={styles.gestion}>
@@ -120,8 +120,9 @@ export default function ElegirPlan({ plan, tipoEmpresa, uso, admin, app }) {
     </section>
     <aside className={styles.business}><div><h2>¿Gestionas varias empresas?</h2><p>Fisquo Business adapta el alcance y la capacidad a tu equipo.</p></div><a className={styles.enlace} href="/business">Consultar Business <span aria-hidden="true">→</span></a></aside>
     <details className={styles.detalles}><summary>Condiciones de contratación y lecturas IA</summary>
-      <p>Precios sin IVA y sin permanencia. El pago anual tiene un descuento del {DESCUENTO} % y se cobra en un solo pago al año. El importe final y las condiciones se muestran al contratar.</p>
-      <p>La prueba incluye 50 páginas en total. El cobro puede comenzar al contratar si quedan menos de dos días de prueba; revisa la fecha que aparece en el pago.</p>
+      <p>Los precios que ves son sin IVA y sin permanencia; al contratar se añade el IVA y ves el importe final antes de pagar. El pago anual tiene un descuento del {DESCUENTO} % y se cobra en un solo pago al año.</p>
+      <p>La prueba no pide tarjeta e incluye 50 páginas en total de lectura IA. Si contratas cuando quedan menos de dos días, el primer cobro es al contratar; la fecha aparece en el pago.</p>
+      <p>Si la prueba termina sin plan, la cuenta pasa a solo lectura: tus datos no se borran, puedes consultarlos y exportarlos, y todo se reactiva al elegir un plan.</p>
       <p>La cuota de lectura IA se comparte por empresa con el equipo y la gestoría. Se renueva cada mes natural, también con pago anual, y no se acumula. Las páginas enviadas a la IA cuentan aunque no guardes el gasto. Al agotarlas, puedes seguir introduciendo gastos a mano o solicitar una ampliación sin cargos automáticos.</p>
       {paga && <p>Los cambios de plan ajustan la diferencia en tu próxima factura.</p>}
     </details>
