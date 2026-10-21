@@ -38,4 +38,8 @@ export default async function Nuevo({ searchParams }) {
   );
 }
 
-export const metadata = { title: 'Nuevo albarán' };
+// La pestaña dice lo mismo que el título: la entrega de un pedido o un albarán (?tipo=albaran); si no, un pedido.
+export async function generateMetadata({ searchParams }) {
+  const sp = await searchParams;
+  return { title: sp.pedido ? 'Entrega de un pedido' : sp.tipo === 'albaran' ? 'Nuevo albarán' : 'Nuevo pedido' };
+}

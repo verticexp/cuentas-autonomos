@@ -310,4 +310,8 @@ export default async function Contabilidad({ searchParams }) {
   );
 }
 
-export const metadata = { title: 'Contabilidad' };
+// Un autónomo la ve como «Libros registro» (lib/modulos.js PARA_AUTONOMO): la pestaña dice lo mismo que la pantalla.
+export async function generateMetadata() {
+  const u = await requerir(DETALLE);
+  return { title: vistasContabilidad(fiscalDe(u))[0][0] === 'libros' ? 'Libros registro' : 'Contabilidad' };
+}
