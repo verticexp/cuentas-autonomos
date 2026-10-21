@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto';
 import { guardar, borrar } from '@/lib/redis';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { r2 } from '@/lib/calculos';
-import { numeroLocal } from '@/lib/validacion';
+import { importeEscrito } from '@/lib/validacion';
 
 export const dynamic = 'force-dynamic';
 const MAX_IMPORTE = 1000000000;
@@ -15,13 +15,13 @@ export async function POST(req) {
   const b = await cuerpo(req);
   const nombre = String(b.nombre || '').trim().slice(0, 200);
   if (!nombre) return error('Falta el nombre');
-  const n = numeroLocal(b.precio);
+  const n = importeEscrito(b.precio);
   const precio = r2(n);
   if (!Number.isFinite(n) || n <= 0 || n > MAX_IMPORTE || !precio) return error('Escribe un precio mayor que 0 y de hasta 1.000.000.000 € (por ejemplo, 25,50).');
-  const coste = numeroLocal(b.coste, 0), minimo = numeroLocal(b.minimo, 0), maximo = numeroLocal(b.maximo, 0);
+  const coste = importeEscrito(b.coste, 0), minimo = importeEscrito(b.minimo, 0), maximo = importeEscrito(b.maximo, 0);
   if (!Number.isFinite(coste) || coste < 0 || coste > MAX_IMPORTE) return error('Escribe un coste entre 0 y 1.000.000.000 € (por ejemplo, 12,50).');
   if (![minimo, maximo].every((v) => Number.isFinite(v) && v >= 0 && v <= MAX_CANTIDAD)) return error('Escribe cantidades mínimas y máximas entre 0 y 1.000.000 (por ejemplo, 10).');
-  const ivaPct = numeroLocal(b.ivaPct, 0);
+  const ivaPct = importeEscrito(b.ivaPct, 0);
   if (!Number.isFinite(ivaPct) || ivaPct < 0 || ivaPct > 100) return error('Escribe un porcentaje de IVA entre 0 y 100 (por ejemplo, 21).');
   // Inventario (opcional): referencia, código de barras, coste, mínimo y máximo, proveedor habitual; o servicio (sin stock).
   const txt = (v, n) => String(v || '').trim().slice(0, n);

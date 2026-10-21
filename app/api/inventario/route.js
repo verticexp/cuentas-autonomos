@@ -2,7 +2,7 @@ import { mensajePlan } from '@/lib/app';
 import { borrar, guardar, leerUno } from '@/lib/redis';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { r2 } from '@/lib/calculos';
-import { numeroLocal } from '@/lib/validacion';
+import { importeEscrito } from '@/lib/validacion';
 import { MOTIVOS, SALEN, inventario } from '@/lib/inventario';
 import { datosStock } from '@/lib/stockServidor';
 import { xlsx } from '@/lib/xlsx';
@@ -23,7 +23,7 @@ export async function POST(req) {
   if (sinPlan) return error(mensajePlan(sinPlan, req.headers.get('user-agent')), 403);
   const b = await cuerpo(req);
   let motivo = MOTIVOS[b.motivo] ? b.motivo : 'otro';
-  const n = numeroLocal(b.cantidad), coste = numeroLocal(b.coste, 0);
+  const n = importeEscrito(b.cantidad), coste = importeEscrito(b.coste, 0);
   if (!Number.isFinite(n) || Math.abs(n) > MAX_CANTIDAD) return error('Escribe una cantidad entre -1.000.000 y 1.000.000 (por ejemplo, 10,5).');
   if (['inicial', 'recuento'].includes(motivo) && n < 0) return error('Escribe una cantidad entre 0 y 1.000.000 para el stock inicial o el recuento.');
   if (!Number.isFinite(coste) || coste < 0 || coste > MAX_COSTE) return error('Escribe un coste entre 0 y 1.000.000.000 € (por ejemplo, 12,50).');

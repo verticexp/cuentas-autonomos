@@ -4,6 +4,7 @@ import { numeroFactura } from '@/lib/calculos';
 import { facturaPdf } from '@/lib/pdf';
 import { identidadDoc } from '@/lib/documento';
 import { pasado, respuesta429 } from '@/lib/limite';
+import { nombreArchivoDoc } from '@/lib/formato';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +16,7 @@ export async function GET(req) {
   if (!f) return error('Esa factura no existe', 404);
   const { emisor: e, marca } = await identidadDoc(u, f);
   if (!e.nif || !e.iban) return error('Rellena tus datos de facturación en Ajustes', 400);
-  const nombre = `${numeroFactura(f)} ${f.cliente.nombre.toUpperCase().replace(/[^A-Z0-9 ]+/g, '')}.pdf`;
+  const nombre = `${nombreArchivoDoc(numeroFactura(f), f.cliente.nombre)}.pdf`;
   return new Response(await facturaPdf(f, e, marca), {
     headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': `inline; filename="${encodeURIComponent(nombre)}"; filename*=UTF-8''${encodeURIComponent(nombre)}` },
   });

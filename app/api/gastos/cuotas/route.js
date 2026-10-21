@@ -3,7 +3,7 @@ import { leerRango } from '@/lib/indices';
 import { actividadesDe } from '@/lib/empresa';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { r2 } from '@/lib/calculos';
-import { numeroLocal } from '@/lib/validacion';
+import { importeEscrito } from '@/lib/validacion';
 import { fusionarCuotas, idCuota, mesesEntre } from '@/lib/cuotas';
 
 const MAX_CUOTA = 1000000;
@@ -15,7 +15,7 @@ export async function POST(req) {
   const { u, res } = await usuarioApi({ permiso: 'gastar' });
   if (res) return res;
   const b = await cuerpo(req);
-  const n = numeroLocal(b.importe);
+  const n = importeEscrito(b.importe);
   const importe = r2(n);
   if (!Number.isFinite(n) || n <= 0 || n > MAX_CUOTA || !importe) return error('Escribe una cuota mayor que 0 y de hasta 1.000.000 € (por ejemplo, 300,50).');
   if (!/^(20\d{2})-(0[1-9]|1[0-2])$/.test(b.desde || '')) return error('Mes de inicio no válido');

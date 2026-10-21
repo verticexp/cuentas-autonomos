@@ -109,25 +109,29 @@ test('cuerpo: null, array, número, texto y JSON inválido se convierten en un o
   assert.deepEqual(await API.cuerpo({ json: async () => new Date() }), {});
 });
 
-test('formularios ilegibles: JSON 400 y redirección de error para navegador, incluido login', async () => {
+test('formularios ilegibles: 400 (el login de un navegador vuelve a su pantalla con el error)', async () => {
   for (const ruta of ['login', 'invitacion', 'pagar', 'portal/pagar']) {
     const { POST } = await cargar(`app/api/${ruta}/route.js`);
     for (const json of [true, false]) {
       const r = await POST(new Request(`http://fisquo.test/api/${ruta}`, { method: 'POST',
         headers: { 'content-type': 'multipart/form-data; boundary=roto', accept: json ? 'application/json, */*' : 'text/html' }, body: 'formulario roto' }));
-      if (json) await rechaza(r, /formulario/);
-      else { assert.equal(r.status, 303); assert.match(r.headers.get('location'), /error=/); }
+      if (json || ruta !== 'login') await rechaza(r, /formulario/);
+      else { assert.equal(r.status, 303); assert.match(r.headers.get('location'), /\/login\?error=/); }
     }
   }
   assert.equal(estado.emails, 0);
 });
 
-test('invitación: aplica el límite por IP antes de leer el formulario y codifica el código', async () => {
+test('invitación: el límite por IP va antes de comprobar el código, vuelve a la misma invitación y la codifica', async () => {
   const { POST } = await cargar('app/api/invitacion/route.js');
   await R.redis.set('limite:invitacion:1.2.3.4', 30);
-  const r = await POST({ url: 'http://fisquo.test/api/invitacion', headers: new Headers({ 'x-real-ip': '1.2.3.4' }),
-    formData: async () => { throw new Error('No debe leerse'); } });
-  assert.equal(r.status, 303); assert.match(r.headers.get('location'), /Demasiados/);
+  const conLimite = new FormData(); conLimite.set('codigo', 'abc/def'); conLimite.set('password', 'Clave!Segura987');
+  estado.aceptarInvitacion = () => { throw new Error('Con el límite superado no se comprueba el código'); };
+  const r = await POST(Object.assign(new Request('http://fisquo.test/api/invitacion', { method: 'POST', headers: { 'x-real-ip': '1.2.3.4' }, body: conLimite })));
+  assert.equal(r.status, 303); assert.match(decodeURIComponent(r.headers.get('location')), /Demasiados/);
+  assert.equal(new URL(r.headers.get('location')).pathname, `/invitacion/${encodeURIComponent('abc/def')}`);
+  delete estado.aceptarInvitacion;
+  await R.redis.del('limite:invitacion:1.2.3.4');
   const codigo = 'no/existe?otro=1#fragmento';
   const form = new FormData(); form.set('codigo', codigo); form.set('password', 'Clave!Segura987');
   const fallo = await POST(new Request('http://fisquo.test/api/invitacion', { method: 'POST', body: form }));

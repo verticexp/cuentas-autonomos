@@ -2,7 +2,7 @@ import { mensajePlan } from '@/lib/app';
 import { guardar, borrar, leer, leerUno } from '@/lib/redis';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { r2 } from '@/lib/calculos';
-import { numeroLocal } from '@/lib/validacion';
+import { importeEscrito } from '@/lib/validacion';
 import { SS_EMPRESA, SS_TRABAJADOR } from '@/lib/nominas';
 import { sinHueco } from '@/lib/planes';
 
@@ -14,9 +14,9 @@ const pct = (v, def) => Math.min(100, Math.max(0, v === '' || v === undefined ? 
 // Datos de un empleado a partir del formulario (components/FormEmpleado.js).
 function limpio(b, antes = {}) {
   const nombre = String(b.nombre || '').trim().slice(0, 80);
-  const sueldo = numeroLocal(b.bruto);
+  const sueldo = importeEscrito(b.bruto);
   const bruto = r2(sueldo);
-  const horaExtra = numeroLocal(b.precioHoraExtra, 0);
+  const horaExtra = importeEscrito(b.precioHoraExtra, 0);
   if (!nombre) return { error: 'Falta el nombre' };
   if (!Number.isFinite(sueldo) || sueldo <= 0 || sueldo > MAX_SUELDO || !bruto) return { error: 'Escribe un sueldo bruto mayor que 0 y de hasta 1.000.000 € (por ejemplo, 1.500,50).' };
   if (!Number.isFinite(horaExtra) || horaExtra < 0 || horaExtra > MAX_PRECIO_HORA_EXTRA) return { error: 'Escribe un precio por hora extra entre 0 y 1.000.000 € (por ejemplo, 15,50).' };
