@@ -5,6 +5,7 @@
 //     STRIPE_WEBHOOK_SECRET=whsec_pruebas_local npx next start -p 3001      (y python3 tests/e2e/stripe-local.py)
 //   BASE=http://localhost:3001 KV_REST_API_URL=http://127.0.0.1:8079 STRIPE_WEBHOOK_SECRET=whsec_pruebas_local node tests/e2e/regresiones.mjs
 import assert from 'node:assert/strict';
+import { cobroFacturasListo } from '../../lib/stripe.js';
 import { createHmac } from 'node:crypto';
 import { pendienteDe, r2, saldoDe } from '../../lib/calculos.js';
 import { eur } from '../../lib/formato.js';
@@ -34,7 +35,8 @@ if (!bruno) throw new Error('No se pudo crear la empresa de prueba');
 const E = JSON.parse(await kv(['HGET', 'cuentas:usuarios', await kv(['GET', `cuentas:sesion:${bruno}`])])).empresa;
 const conf = await json('/api/cuenta', { metodo: 'PATCH', cookie: bruno, cuerpo: { configuracion: {
   fiscal: { tipo: 'autonomo', iva: 'general' },
-  emisor: { nombre: 'Regresiones SL', nif: '12345678Z', direccion: 'C/ Uno 1', ciudad: '08001 Barcelona', iban: 'ES9121000418450200051332', plazo: 30 },
+  // Autónomo con nombre de persona: desde el PR #218 un nombre de sociedad («… SL») no vale con NIF de persona física.
+  emisor: { nombre: 'Bruno Regresiones', nif: '12345678Z', direccion: 'C/ Uno 1', ciudad: '08001 Barcelona', iban: 'ES9121000418450200051332', plazo: 30 },
   actividades: [{ nombre: 'Servicios', ivaPct: 21, irpfPct: 0 }],
 } } });
 const act = conf.actividades[0].id;
@@ -112,7 +114,9 @@ let tokenPortal = '';
 }
 
 console.log('P01–P03 · cobros parciales por Stripe');
-{
+// El cobro de facturas con tarjeta está desactivado hasta Stripe Connect (lib/stripe.js): sin enlace de pago no hay nada que probar.
+if (!cobroFacturasListo()) console.log('  (cobro con tarjeta desactivado: se salta)');
+else {
   const f = (await factura({ cliente: { nombre: 'Cliente Parcial', nif: '12345678Z', email: 'p@test.es' }, lineas: linea(100) })).factura; // 121 €
   await pedir('/api/facturas/enviar', { metodo: 'POST', cookie: bruno, cuerpo: { id: f.id, para: 'p@test.es', mensaje: 'Hola' } });
   const conEnlace = JSON.parse(await kv(['HGET', `cuentas:facturas:${E}`, f.id]));
@@ -145,10 +149,12 @@ console.log('N02 · baja de la empresa');
   // Un enlace desconocido responde con la página de «no encontrado» (Next envía 200 en las rutas ya en streaming): lo que
   // importa es que ya no salgan los documentos.
   const portal = (await (await fetch(`${BASE}/portal/${tokenPortal}`)).text()).replace(/<script[\s\S]*?<\/script>/g, ' ').replace(/<[^>]+>/g, ' ');
-  ok('el portal anterior ya no enseña los documentos', () => assert.ok(!/Pagar|Descargar|Regresiones SL|€/.test(portal), portal.replace(/\s+/g, ' ').slice(0, 200)));
+  ok('el portal anterior ya no enseña los documentos', () => assert.ok(!/Pagar|Descargar|Bruno Regresiones|€/.test(portal), portal.replace(/\s+/g, ' ').slice(0, 200)));
   const conEnlace = (await kv(['HGETALL', `cuentas:facturas:${E}`])).filter((_, i) => i % 2 === 1).map((x) => JSON.parse(x)).find((x) => x.pago);
-  const pag = (await (await fetch(`${BASE}/pagar/${conEnlace.pago}`)).text()).replace(/<script[\s\S]*?<\/script>/g, ' ').replace(/<[^>]+>/g, ' ');
-  ok('el enlace de pago anterior tampoco', () => assert.ok(!/€|Pagar con tarjeta/.test(pag), pag.replace(/\s+/g, ' ').slice(0, 200)));
+  if (conEnlace) {
+    const pag = (await (await fetch(`${BASE}/pagar/${conEnlace.pago}`)).text()).replace(/<script[\s\S]*?<\/script>/g, ' ').replace(/<[^>]+>/g, ' ');
+    ok('el enlace de pago anterior tampoco', () => assert.ok(!/€|Pagar con tarjeta/.test(pag), pag.replace(/\s+/g, ' ').slice(0, 200)));
+  }
   const quedan = await kv(['HLEN', `cuentas:facturas:${E}`]);
   ok('pero las facturas se conservan', () => assert.ok(quedan > 0));
 }

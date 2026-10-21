@@ -31,8 +31,9 @@ const ck = alta.headers.getSetCookie();
 t = /^t=([^;]+)/.exec(ck.find((c) => c.startsWith('t=')) || '')?.[1];
 d = /^d=([^;]+)/.exec(ck.find((c) => c.startsWith('d=')) || '')?.[1];
 if (!t) throw new Error('No se pudo crear la cuenta de prueba: ¿la base de datos está vacía?');
+// Sociedad: desde el PR #218 una S.L. con CIF no se puede configurar como autónomo.
 const conf = await json('/api/cuenta', { metodo: 'PATCH', cuerpo: { configuracion: {
-  fiscal: { tipo: 'autonomo', iva: 'general' },
+  fiscal: { tipo: 'sociedad', iva: 'general' },
   emisor: { nombre: 'Integridad S.L.', nif: 'B12345674', direccion: 'C/ Mayor 1', ciudad: '28013 Madrid', iban: 'ES9121000418450200051332', plazo: 30 },
   actividades: [{ nombre: 'Servicios', ivaPct: 21, irpfPct: 0 }],
 } } });
@@ -88,7 +89,8 @@ await ok('cambiar la razón social no cambia el PDF de una factura emitida', asy
   const antes = (await hash(`facturas:${empresa}`))['2026-1'];
   assert.equal(antes.emisor.nombre, 'Integridad S.L.');
   await json('/api/cuenta', { metodo: 'PATCH', cuerpo: { nombre: 'Nombre Nuevo S.L.', nif: 'B12345674', direccion: 'C/ Otra 2', ciudad: '08001 Barcelona', iban: 'ES9121000418450200051332', plazo: 60 } });
-  const html = await (await pedir('/facturas/2026-1/pdf')).text();
+  // Solo lo que se ve: los datos de la página (en <script>) llevan el nombre de hoy para el selector de empresas.
+  const html = (await (await pedir('/facturas/2026-1/pdf')).text()).replace(/<script[\s\S]*?<\/script>/g, '');
   assert.ok(html.includes('Integridad S.L.') && !html.includes('Nombre Nuevo S.L.'), 'el PDF usa el emisor de entonces');
   assert.equal((await hash(`facturas:${empresa}`))['2026-1'].vence, '2026-04-09');
   const nueva = await json('/api/facturas', { metodo: 'POST', cuerpo: factura(70) });
