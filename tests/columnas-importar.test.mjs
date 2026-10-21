@@ -84,3 +84,17 @@ test('facturas y gastos: un concepto que coincide con un título no corta la tab
   const p = previa('gastos', [['Fecha', 'Concepto', 'Base', '% IVA'], ['01/02/2026', 'Concepto', 100, 21], ['02/02/2026', 'Luz', 50, 21], ['', 'Total', 150, '']], []);
   assert.deepEqual(p.items.map((x) => x.estado), ['nuevo', 'nuevo', 'omitida']);
 });
+
+test('revisión a mano: quitar filas, recuperar una saltada y los repetidos se recalculan', () => {
+  const filas = [['Nombre', 'NIF'], ['Alfa SL', 'B1'], ['Alfa SL', 'B1'], ['Beta SL', 'B2'], ['Total', '']];
+  const p = previa('clientes', filas, []);
+  assert.deepEqual(p.items.map((x) => x.estado), ['nuevo', 'duplicado', 'nuevo', 'omitida']);
+  assert.deepEqual(p.items[0].original, ['Alfa SL', 'B1']);
+  // Quitar la primera Alfa: la segunda pasa a ser la nueva. Recuperar «Total» (si de verdad fuera un cliente).
+  const r = previa('clientes', filas, [], null, { quitar: [2], incluir: [5] });
+  assert.deepEqual(r.items.map((x) => x.estado), ['quitada', 'nuevo', 'nuevo', 'nuevo']);
+  assert.equal(r.items[3].datos.nombre, 'Total');
+  assert.equal(r.items[3].incluida, true);
+  assert.equal(r.quitadas, 1);
+  assert.equal(r.nuevos, 3);
+});

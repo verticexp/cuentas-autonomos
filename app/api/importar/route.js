@@ -52,14 +52,17 @@ export async function POST(req) {
       try { manual = mapaManual(tipo, filas, JSON.parse(String(form.get('columnas')))); } catch { manual = null; }
       if (!manual) return error('Las columnas elegidas no son válidas: vuelve a ver la vista previa');
     }
+    // Filas quitadas a mano o saltadas que se quieren importar igualmente (números de fila, como en Excel).
+    const numeros = (k) => { try { const l = JSON.parse(String(form.get(k) || '[]')); return Array.isArray(l) ? l.filter(Number.isInteger).slice(0, MAX_FILAS + 10) : []; } catch { return []; } };
+    const revision = { quitar: numeros('quitar'), incluir: numeros('incluir') };
     const ya = await existentes(u, tipo);
-    let p = previa(tipo, filas, ya, manual);
+    let p = previa(tipo, filas, ya, manual, revision);
     // Sin elección manual, si quedan títulos sin reconocer y campos sin asignar, la IA sugiere a qué corresponden.
     const libres = p.campos.some((k) => !(k in p.mapa)) && columnasSinUsar(p.cabecera, p.mapa).length;
     if (!manual && form.get('guardar') !== '1' && libres && iaLista() && !(await rafaga('importar-ia', u.empresa, 20, 3600))) {
       const ia = await sugerirColumnas({ tipo, cabecera: p.cabecera, ejemplos: p.ejemplos, mapa: p.mapa });
       const sugeridas = Object.keys(ia.campos || {});
-      if (sugeridas.length) p = { ...previa(tipo, filas, ya, { fila: p.fila, mapa: { ...p.mapa, ...ia.campos } }), sugeridas };
+      if (sugeridas.length) p = { ...previa(tipo, filas, ya, { fila: p.fila, mapa: { ...p.mapa, ...ia.campos } }, revision), sugeridas };
     }
     if (p.error) return Response.json(p, { status: 400 });
     // Saldos y bienes van a una fecha de corte: la del cambio de programa (por defecto, la de la apertura que ya haya).
