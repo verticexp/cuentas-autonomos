@@ -1,7 +1,7 @@
 import { mensajePlan } from '@/lib/app';
 import { randomBytes } from 'crypto';
-import { borrarEmpresa, borrarUsuario, crearUsuario } from '@/lib/auth';
-import { redis } from '@/lib/redis';
+import { borrarEmpresa, cambiarUsuario, crearUsuario, quitarDeEmpresa } from '@/lib/auth';
+import { mismoId, redis } from '@/lib/redis';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { limpiarPermisos, perfilDe, puede } from '@/lib/permisos';
 import { conMembresia, enEmpresa, membresias } from '@/lib/membresias';
@@ -58,12 +58,17 @@ export async function POST(req) {
     const o = await deMiEmpresa(u, b.reenviar);
     if (!o || o.pass) return error('Esa persona ya tiene acceso');
     if (esAdminDe(o, u.empresa) && u.rol !== 'admin') return error('Solo un administrador de la empresa puede dar o quitar el acceso de administrador', 403);
-    const todas = (await redis.hgetall('invitaciones')) || {};
-    const viejas = Object.keys(todas).filter((c) => todas[c] === o.id);
-    if (viejas.length) await redis.hdel('invitaciones', ...viejas);
+    // Bajo el cerrojo de la persona: si la acepta a la vez, no queda un código nuevo para una cuenta ya activa.
     const codigo = randomBytes(18).toString('base64url');
-    await redis.hset('invitaciones', { [codigo]: o.id });
-    await redis.hset('usuarios', { [o.id]: { ...o, creado: new Date().toISOString() } });
+    const sigue = await cambiarUsuario(o.id, async (x) => {
+      if (x.pass) return null;
+      const todas = (await redis.hgetall('invitaciones')) || {};
+      const viejas = Object.keys(todas).filter((c) => mismoId(todas[c], o.id));
+      if (viejas.length) await redis.hdel('invitaciones', ...viejas);
+      await redis.hset('invitaciones', { [codigo]: o.id });
+      return { ...x, creado: new Date().toISOString() };
+    });
+    if (!sigue) return error('Esa persona ya tiene acceso');
     await auditar(u, 'Invitación reenviada', o.email);
     return invitar(req, u, o, nombreEmpresa(u), codigo);
   }
@@ -106,10 +111,9 @@ export async function PATCH(req) {
     const personas = Object.values((await redis.hgetall('usuarios')) || {}).filter((x) => enEmpresa(x, u.empresa)).map((x) => ({ id: x.id, ...membresias(x)[u.empresa] }));
     const sinPlan = sinPlaza(u.plan, personas, papel(u, b), o.id);
     if (sinPlan) return error(mensajePlan(sinPlan, req.headers.get('user-agent')), 403);
-    // Leer de nuevo bajo el cerrojo para conservar otras membresías y evitar sobrescribir un cambio concurrente.
-    const actual = await deMiEmpresa(u, o.id);
-    if (!actual) return error('Esa persona no está en tu empresa', 404);
-    await redis.hset('usuarios', { [o.id]: conMembresia(actual, u.empresa, papel(u, b)) });
+    // Su ficha se vuelve a leer bajo su cerrojo: se conservan sus otras empresas tal como estén en ese momento.
+    const hecho = await cambiarUsuario(o.id, (x) => (enEmpresa(x, u.empresa) ? conMembresia(x, u.empresa, papel(u, b)) : null));
+    if (!hecho) return error('Esa persona no está en tu empresa', 404);
     await auditar(u, 'Permisos cambiados', `${o.email} · ${quePapel(papel(u, b))}`);
     return Response.json({ ok: true });
   });
@@ -131,8 +135,7 @@ export async function DELETE(req) {
   if (!o || o.id === u.id) return error('No se puede quitar');
   if (esAdminDe(o, u.empresa) && u.rol !== 'admin') return error('Solo un administrador de la empresa puede dar o quitar el acceso de administrador', 403);
   // Si tiene otras empresas, solo pierde el acceso a esta; si no, se borra su cuenta.
-  if (Object.keys(membresias(o)).length > 1) await redis.hset('usuarios', { [o.id]: conMembresia(o, u.empresa, null) });
-  else await borrarUsuario(o.id);
+  await quitarDeEmpresa(o.id, u.empresa);
   await auditar(u, 'Acceso quitado', o.email);
   return Response.json({ ok: true });
 }

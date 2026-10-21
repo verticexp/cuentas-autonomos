@@ -4,6 +4,7 @@
 import test, { before, beforeEach, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { AsyncLocalStorage } from 'node:async_hooks';
 import './apoyo/cargador.mjs';
 import { crearBase } from './apoyo/upstash-mem.mjs';
 import { motivoEnvio } from '../lib/email.js';
@@ -11,7 +12,8 @@ import { nombreArchivoDoc } from '../lib/formato.js';
 import config from '../next.config.mjs';
 
 const base = crearBase();
-const estado = { cookies: new Map(), headers: new Headers() };
+// peticion: cookies y cabeceras propias de una petición (dos personas a la vez); sin ella, las de `estado`.
+const estado = { cookies: new Map(), headers: new Headers(), peticion: new AsyncLocalStorage() };
 globalThis.__auditoriaCompleta = estado;
 const urlRedis = 'http://redis-auditoria-completa.test';
 const fetchAnterior = globalThis.fetch;
@@ -31,7 +33,7 @@ async function cargar(archivo) {
     if (lib === 'auth') destino = modulos.get('lib/auth.js');
     else if (lib === 'api') destino = modulos.get('lib/api.js');
     else if (origen === 'react') destino = modulo('export const cache = (fn) => fn;');
-    else if (['next/headers', 'next/headers.js'].includes(origen)) destino = modulo('const s=globalThis.__auditoriaCompleta; export const cookies=async()=>({get:(k)=>s.cookies.has(k)?{value:s.cookies.get(k)}:undefined,set:(k,v)=>s.cookies.set(k,v)}); export const headers=async()=>s.headers;');
+    else if (['next/headers', 'next/headers.js'].includes(origen)) destino = modulo('const s=globalThis.__auditoriaCompleta; const p=()=>s.peticion.getStore()||s; export const cookies=async()=>{const c=p().cookies; return {get:(k)=>c.has(k)?{value:c.get(k)}:undefined,set:(k,v)=>c.set(k,v)};}; export const headers=async()=>p().headers;');
     else if (origen === 'next/server') destino = modulo('export const NextResponse = { redirect:(url,status=307)=>new Response(null,{status,headers:{location:url}}),json:Response.json }; export const after = () => {};');
     else if (lib && DOBLES.includes(lib)) destino = modulo(nombres.split(',').map((x) => `export const ${x.trim()}=(...a)=>globalThis.__auditoriaCompleta[${JSON.stringify(x.trim())}](...a);`).join('\n'));
     else if (lib) destino = new URL(`../lib/${lib}.js`, import.meta.url).href;
@@ -181,4 +183,95 @@ test('la cámara se permite a la propia web (la usa «Varios tickets»); micróf
   assert.match(pp, /camera=\(self\)/);
   assert.match(pp, /microphone=\(\)/);
   assert.match(pp, /geolocation=\(\)/);
+});
+
+// Upstash devuelve como número un valor suelto que parece un número: el id «52361640» (8 cifras hexadecimales sin
+// letras, un 2 % de las cuentas) llegaba como 52361640 y las comparaciones con `===` fallaban (lib/redis.js mismoId).
+const CIFRAS = '52361640';
+async function entrarConCifras() {
+  const u = { id: CIFRAS, empresa: CIFRAS, rol: 'admin', nombre: 'Cifras', email: 'cifras@example.test', creado: new Date().toISOString() };
+  await R.redis.hset('usuarios', { [CIFRAS]: u }); await R.redis.hset('emails', { [u.email]: CIFRAS });
+  await R.redis.hset('empresas', { [CIFRAS]: { id: CIFRAS, nombre: 'Empresa', emisor: { nombre: 'EMPRESA SL', nif: 'B12345674' }, actividades: ACT, fiscal: { tipo: 'sociedad', iva: 'general' } } });
+  await R.redis.hset('empresa-nif', { B12345674: CIFRAS });
+  estado.cookies.set('t', await A.crearSesion(CIFRAS));
+  return u;
+}
+
+test('ids solo con cifras: reenviar la invitación anula la anterior y borrar a la persona quita las suyas', async () => {
+  const r = await cargar('app/api/usuarios/route.js');
+  await entrar(); ruta('/api/usuarios', 'POST');
+  await R.redis.hset('usuarios', { [CIFRAS]: { id: CIFRAS, empresa: 'e', rol: 'miembro', permisos: ['facturas'], nombre: 'Laura', email: 'laura@example.test', creado: new Date().toISOString() } });
+  await R.redis.hset('invitaciones', { vieja: CIFRAS });
+  assert.equal(await R.redis.hget('invitaciones', 'vieja'), Number(CIFRAS)); // lo que devuelve el cliente de Upstash
+  const res = await r.POST(req('/api/usuarios', { reenviar: CIFRAS }));
+  assert.equal(res.status, 200, await res.clone().text());
+  const inv = await R.redis.hgetall('invitaciones');
+  assert.deepEqual([Object.keys(inv).length, 'vieja' in inv], [1, false]);
+  await A.borrarUsuario(CIFRAS);
+  assert.equal(await R.redis.hgetall('invitaciones'), null);
+  assert.equal(await A.confirmarEmail(await A.tokenEmail(CIFRAS), CIFRAS), null); // ya no existe
+});
+
+test('ids solo con cifras: cambiar el NIF libera el anterior y se puede volver a él', async () => {
+  const c = await cargar('app/api/cuenta/route.js');
+  estado.congelarInstantaneas = async () => {};
+  await entrarConCifras(); ruta('/api/cuenta', 'PATCH');
+  const datos = (nif) => ({ nombre: 'EMPRESA SL', nif, direccion: 'C/ Uno 1', ciudad: '08001 Barcelona', iban: '' });
+  assert.equal((await c.PATCH(req('/api/cuenta', datos('B76543214'), 'PATCH'))).status, 200);
+  assert.equal(await R.redis.hget('empresa-nif', 'B12345674'), null);
+  const vuelta = await c.PATCH(req('/api/cuenta', datos('B12345674'), 'PATCH'));
+  assert.equal(vuelta.status, 200, await vuelta.clone().text());
+  assert.equal(String(await R.redis.hget('empresa-nif', 'B12345674')), CIFRAS);
+});
+
+test('ids solo con cifras: quitar Face ID de un dispositivo borra también su llave; el email se confirma', async () => {
+  const p = await cargar('app/api/passkey/route.js');
+  await entrarConCifras(); ruta('/api/passkey', 'DELETE');
+  await R.redis.hset(`passkeys:${CIFRAS}`, { llave1: { publicKey: 'x', counter: 0, transports: [], nombre: 'Móvil' } });
+  await R.redis.hset('passkey-usuario', { llave1: CIFRAS });
+  assert.equal((await p.DELETE(req('/api/passkey?id=llave1', undefined, 'DELETE'))).status, 200);
+  assert.equal(await R.redis.hget('passkey-usuario', 'llave1'), null);
+  assert.equal(await A.confirmarEmail(await A.tokenEmail(CIFRAS), CIFRAS), CIFRAS);
+  assert.equal((await R.redis.hget('usuarios', CIFRAS)).emailVerificado, true);
+});
+
+test('una persona en dos empresas: cambiar sus permisos en una mientras la otra le quita el acceso no se lo devuelve (Codex H7)', async () => {
+  const r = await cargar('app/api/usuarios/route.js');
+  const ahora = new Date().toISOString();
+  await R.redis.hset('empresas', { e: { id: 'e', nombre: 'A', emisor: {}, fiscal: { tipo: 'sociedad' } }, b: { id: 'b', nombre: 'B', emisor: {}, fiscal: { tipo: 'sociedad' } } });
+  await R.redis.hset('usuarios', {
+    a: { id: 'a', empresa: 'e', rol: 'admin', nombre: 'Admin A', email: 'a@example.test', creado: ahora },
+    b: { id: 'b', empresa: 'b', rol: 'admin', nombre: 'Admin B', email: 'b@example.test', creado: ahora },
+    v: { id: 'v', empresa: 'e', nombre: 'V', email: 'v@example.test', creado: ahora, pass: 'x', empresas: { e: { rol: 'miembro', permisos: ['facturas'] }, b: { rol: 'miembro', permisos: ['gastos'] } } },
+  });
+  const sesion = async (id, metodo) => ({ cookies: new Map([['t', await A.crearSesion(id)]]), headers: new Headers({ 'x-ruta': '/api/usuarios', 'x-metodo': metodo }) });
+  const [sa, sb] = [await sesion('a', 'PATCH'), await sesion('b', 'DELETE')];
+  // Justo cuando A va a guardar la ficha de V, B le quita el acceso (y A tarda un poco más en guardar).
+  const fetchHarness = globalThis.fetch;
+  let quitar;
+  globalThis.fetch = async (url, op) => {
+    const j = JSON.parse(op.body);
+    const ordenes = Array.isArray(j[0]) ? j : [j];
+    if (!quitar && ordenes.some((o) => String(o[0]).toLowerCase() === 'hset' && o[1] === 'cuentas:usuarios' && o[2] === 'v')) {
+      quitar = estado.peticion.run(sb, () => r.DELETE(req('/api/usuarios?id=v', undefined, 'DELETE')));
+      await new Promise((ok) => setTimeout(ok, 100));
+    }
+    return fetchHarness(url, op);
+  };
+  try {
+    const cambio = await estado.peticion.run(sa, () => r.PATCH(req('/api/usuarios', { id: 'v', rol: 'miembro', permisos: ['facturas', 'gastos'] }, 'PATCH')));
+    assert.equal(cambio.status, 200, await cambio.clone().text());
+    assert.ok(quitar, 'B no llegó a quitar el acceso');
+    assert.equal((await quitar).status, 200);
+  } finally { globalThis.fetch = fetchHarness; }
+  const v = await R.redis.hget('usuarios', 'v');
+  assert.deepEqual(v.empresas, { e: { rol: 'miembro', permisos: ['facturas', 'gastos'] } });
+});
+
+test('una invitación no cambia la contraseña de una cuenta que ya está activa', async () => {
+  await R.redis.hset('usuarios', { w: { id: 'w', empresa: 'e', rol: 'miembro', permisos: [], nombre: 'W', email: 'w@example.test', creado: new Date().toISOString(), pass: 'guardada' } });
+  await R.redis.hset('invitaciones', { cod: 'w' });
+  const r = await A.aceptarInvitacion('cod', 'Pino-azul-Verde-2026!');
+  assert.equal(r.error, 'Esta invitación ya no es válida');
+  assert.equal((await R.redis.hget('usuarios', 'w')).pass, 'guardada');
 });

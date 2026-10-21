@@ -6,7 +6,7 @@ import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { DETALLE, puede } from '@/lib/permisos';
 import { colorValido, logoValido } from '@/lib/marca';
 import { actividadesDe, fiscalDe, limpiarActividades, limpiarFiscal } from '@/lib/empresa';
-import { clave, leer, redis } from '@/lib/redis';
+import { clave, leer, mismoId, redis } from '@/lib/redis';
 import { auditar } from '@/lib/auditoria';
 import { contrasenaCambiada } from '@/lib/avisosCorreo';
 import { leerImporte } from '@/lib/calculos';
@@ -33,7 +33,7 @@ async function comprobarForma(u, emisor, fiscalTipo) {
   const antes = normalizarNif(u.emisor?.nif), ahora = normalizarNif(emisor.nif);
   if (ahora && ahora !== antes) {
     const otra = await redis.hget('empresa-nif', ahora);
-    if (otra && otra !== u.empresa) return { error: 'Ya hay otra cuenta de Fisquo con ese NIF. Escríbenos a corporate@fisquo.com si es tuya.' };
+    if (otra && !mismoId(otra, u.empresa)) return { error: 'Ya hay otra cuenta de Fisquo con ese NIF. Escríbenos a corporate@fisquo.com si es tuya.' };
   }
   return r;
 }
@@ -42,7 +42,7 @@ async function comprobarForma(u, emisor, fiscalTipo) {
 async function guardarForma(u, emisor, plan) {
   const antes = normalizarNif(u.emisor?.nif), ahora = normalizarNif(emisor.nif);
   if (ahora !== antes) {
-    if (antes && (await redis.hget('empresa-nif', antes)) === u.empresa) await redis.hdel('empresa-nif', antes);
+    if (antes && mismoId(await redis.hget('empresa-nif', antes), u.empresa)) await redis.hdel('empresa-nif', antes);
     if (ahora) await redis.hset('empresa-nif', { [ahora]: u.empresa });
   }
   const emp = await redis.hget('empresas', u.empresa);
