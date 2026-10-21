@@ -127,6 +127,8 @@ html[data-entrada] .tabbar { animation: entrada-barra 0.5s var(--vt-curva) 0.15s
 }
 /* Mes de prueba (components/AvisoPrueba.js) y Ajustes › Tu plan (components/ElegirPlan.js) */
 .aviso-prueba { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 0 0 12px; padding: 10px 14px; border-radius: 12px; background: var(--relleno); font-size: 14px; color: var(--ink); }
+.aviso-prueba { line-height: 1.45; }
+.aviso-prueba span { flex: 1 1 260px; }
 .aviso-prueba.pronto { background: color-mix(in srgb, #E8A33D 18%, var(--surface)); }
 .aviso-prueba a { font-weight: 600; color: var(--ink); white-space: nowrap; }
 .elegir-plan .segmentado button { flex: 1; margin: 0; padding: 6px 4px; border: 0; border-radius: 7px; background: none; box-shadow: none; font-size: 13px; font-weight: 500; color: var(--ink); }
