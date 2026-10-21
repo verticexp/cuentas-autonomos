@@ -37,6 +37,13 @@ test('lee un Excel comprimido con textos compartidos, celdas vacías, fechas y l
     'xl/worksheets/hoja.xml': '<worksheet><sheetData><row r="1"><c r="A1" t="s"><v>0</v></c><c r="C1" t="s"><v>1</v></c></row><row r="2"/><row r="3"><c r="A3" t="s"><v>2</v></c><c r="B3" t="inlineStr"><is><t>x</t></is></c><c r="C3"><v>45658</v></c></row></sheetData></worksheet>',
   });
   assert.deepEqual(leerHoja(b), [['Num', '', 'Fecha'], ['Café & Co', 'x', 45658]]);
+  // Con vacias: la fila 2 (vacía) se conserva, y las que faltan en el XML también (r salta de 3 a 6).
+  assert.deepEqual(leerHoja(b, { vacias: true }), [['Num', '', 'Fecha'], [], ['Café & Co', 'x', 45658]]);
+  const hueco = zipDeflate({ 'xl/worksheets/sheet1.xml': '<worksheet><sheetData><row r="1"><c r="A1" t="inlineStr"><is><t>a</t></is></c></row><row r="4"><c r="A4" t="inlineStr"><is><t>b</t></is></c></row><row r="99999999"><c r="A99999999" t="inlineStr"><is><t>c</t></is></c></row></sheetData></worksheet>' });
+  const h = leerHoja(hueco, { vacias: true });
+  assert.deepEqual(h.slice(0, 4), [['a'], [], [], ['b']]);
+  assert.ok(h.length < 60);
+  assert.deepEqual(leerHoja(hueco), [['a'], ['b'], ['c']]);
   assert.equal(leerFecha(45658), '2025-01-01');
 });
 

@@ -44,7 +44,7 @@ export async function POST(req) {
     if (!archivo || typeof archivo === 'string' || !archivo.size) return error('Elige un archivo .xlsx o .csv');
     if (archivo.size > MAX_MB * 1024 * 1024) return error(`El archivo pasa de ${MAX_MB} MB`);
     let filas;
-    try { filas = leerHoja(Buffer.from(await archivo.arrayBuffer())); } catch { return error('No se puede leer el archivo: guárdalo como .xlsx o .csv'); }
+    try { filas = leerHoja(Buffer.from(await archivo.arrayBuffer()), { vacias: true }); } catch { return error('No se puede leer el archivo: guárdalo como .xlsx o .csv'); }
     if (filas.length > MAX_FILAS + 10) return error(`Demasiadas filas: como máximo ${MAX_FILAS} por archivo`);
     // Columnas elegidas a mano en la vista previa (y siempre al guardar, para guardar justo lo que se ha revisado).
     let manual = null;

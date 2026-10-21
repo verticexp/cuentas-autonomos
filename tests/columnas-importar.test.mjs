@@ -64,3 +64,23 @@ test('clientes que ya existen: solo se rellenan los datos vacíos, emparejando p
   assert.deepEqual(p.items[1].completa, { nif: '12345678Z' });
   assert.equal(p.completar, 2);
 });
+
+test('lista de clientes con un resumen de facturación debajo: ni los títulos ni el total ni la otra tabla son clientes', () => {
+  const filas = [['Nombre', 'NIF', 'Email'], ['Alfa SL', 'B11111111', 'a@alfa.es'], ['Beta SL', 'B22222222', ''], [],
+    ['Resumen de facturación 2025'], ['Razón social', 'Facturado'], ['Alfa SL', 1000], ['Gamma SL', 500], ['Total', 1500]];
+  const p = previa('clientes', filas, []);
+  assert.deepEqual(p.items.filter((x) => x.estado === 'nuevo').map((x) => x.datos.nombre), ['Alfa SL', 'Beta SL']);
+  assert.equal(p.items.filter((x) => x.estado === 'omitida').length, 5);
+  assert.equal(p.items.find((x) => x.datos?.nombre === 'Alfa SL').n, 2);
+});
+
+test('sin fila vacía entre medias, la otra tabla empieza en sus títulos; los totales sueltos y los títulos repetidos se saltan', () => {
+  const p = previa('clientes', [['Cliente', 'CIF'], ['Alfa SL', 'B1'], ['Cliente', 'CIF'], ['Total Energies SL', 'A2'], ['TOTAL:', ''], ['Razón social', 'Ventas'], ['Gamma SL', '300']], []);
+  assert.deepEqual(p.items.map((x) => x.estado), ['nuevo', 'omitida', 'nuevo', 'omitida', 'omitida', 'omitida']);
+  assert.equal(p.items[2].datos.nombre, 'Total Energies SL');
+});
+
+test('facturas y gastos: un concepto que coincide con un título no corta la tabla (lleva importes)', () => {
+  const p = previa('gastos', [['Fecha', 'Concepto', 'Base', '% IVA'], ['01/02/2026', 'Concepto', 100, 21], ['02/02/2026', 'Luz', 50, 21], ['', 'Total', 150, '']], []);
+  assert.deepEqual(p.items.map((x) => x.estado), ['nuevo', 'nuevo', 'omitida']);
+});
