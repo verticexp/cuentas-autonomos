@@ -1959,7 +1959,7 @@ console.log('Canarias (IGIC)');
   const alta = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva: 'Canarias Prueba SL', nombre: 'Celia', email: `igic${Date.now()}@test.es` } })).json();
   const fd = new FormData(); fd.set('codigo', alta.enlace.split('/').pop()); fd.set('password', 'Clave-Local-05-2026');
   const can = /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: fd })).headers.get('set-cookie') || '')?.[1];
-  const cfgR = await pedir('/api/cuenta', { metodo: 'PATCH', cookie: can, cuerpo: { configuracion: { fiscal: { tipo: 'sociedad', iva: 'general', territorio: 'canarias', intracom: true, oss: true, rebu: true, reav: true, recc: { desde: `${Y}-01-01` } }, emisor: { nombre: 'Canarias Prueba SL', nif: 'B76543214', direccion: 'Calle Mayor 1', ciudad: '35001 Las Palmas' }, actividades: [{ nombre: 'Servicios', ivaPct: 7, irpfPct: 0 }] } } });
+  const cfgR = await pedir('/api/cuenta', { metodo: 'PATCH', cookie: can, cuerpo: { configuracion: { fiscal: { tipo: 'sociedad', iva: 'general', territorio: 'canarias', intracom: true, oss: true, rebu: true, reav: true, recc: { desde: `${Y}-01-01` } }, emisor: { nombre: 'Canarias Prueba SL', nif: 'B38812459', direccion: 'Calle Mayor 1', ciudad: '35001 Las Palmas' }, actividades: [{ nombre: 'Servicios', ivaPct: 7, irpfPct: 0 }] } } });
   const cfg = await cfgR.json();
   ok('configura una empresa de Canarias con actividad al 7 %', () => assert.equal(cfgR.status, 200, JSON.stringify(cfg)));
   const act = cfg.actividades?.[0]?.id;
