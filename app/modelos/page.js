@@ -3,7 +3,10 @@ import { GLOSARIO } from '@/lib/glosario';
 import { requerir } from '@/lib/auth';
 import { leer, redis } from '@/lib/redis';
 import { actividadesDe, ajustesIva, fiscalDe, hecho130, hecho303, marcaRet, modelosDe, usa130, usa303 } from '@/lib/empresa';
-import { casillas303, liquidaciones303, minoracion130, prorrataAnio, prorrataProvisional, r2, limiteTrimestre, resumenAnual, situacionTrimestre } from '@/lib/calculos';
+import { casillas303, liquidaciones303, minoracion130, pendienteCaja, prorrataAnio, prorrataProvisional, r2, limiteTrimestre, resumenAnual, situacionTrimestre } from '@/lib/calculos';
+import { NOMBRES_UE, modelo369, plazo369 } from '@/lib/oss';
+import { TIPOS_RENDIMIENTO, modelo123, modelo193 } from '@/lib/capitalMobiliario';
+import PagosCapital from '@/components/PagosCapital';
 import { avisosFiscales } from '@/lib/revisionFiscal';
 import Prorrata from '@/components/Prorrata';
 import Rend130 from '@/components/Rend130';
@@ -60,15 +63,21 @@ export default async function Modelos({ searchParams }) {
   const f = fiscalDe(u);
   // La valoración del almacén requiere el histórico completo; las retenciones se imputan al pago,
   // que puede pertenecer a otro año que la factura de proveedor.
-  const [{ facturas, gastos }, nominas, empleados, productos, ajustes, albaranes, manuales] = await Promise.all([
-    datosImpuestos(u, anio), leer(u, 'nominas'), leer(u, 'empleados'), leer(u, 'productos'), leer(u, 'stock'), leer(u, 'albaranes'), leer(u, 'asientos'),
+  const [{ facturas, gastos }, nominas, empleados, productos, ajustes, albaranes, manuales, capitalLeido] = await Promise.all([
+    datosImpuestos(u, anio), leer(u, 'nominas'), leer(u, 'empleados'), leer(u, 'productos'), leer(u, 'stock'), leer(u, 'albaranes'), leer(u, 'asientos'), leer(u, 'capital'),
   ]);
+  const capital = capitalLeido || [];
   const h = hoy();
   const iva = ajustesIva(u);
   const liquidaciones = liquidaciones303(facturas, gastos, anio, undefined, iva);
   // Se enseña cada modelo si le toca por su situación fiscal o si ya hay datos que lo piden.
   const hay115 = f.alquiler || gastos.some((g) => g.alquiler);
   const hay349 = f.intracom || modelo349(facturas, anio, undefined, gastos).total > 0;
+  // Ventanilla única (369) y dividendos e intereses (123 y 193): si la empresa los tiene marcados o ya hay datos del año.
+  const hay369 = (usa303(f) && f.oss) || facturas.some((x) => x.oss && x.fecha.startsWith(`${anio}-`));
+  const capitalAnio = capital.filter((p) => p.fecha.startsWith(`${anio}-`)).sort((a, b) => a.fecha.localeCompare(b.fecha));
+  const hay123 = Boolean(f.capital) || capitalAnio.length > 0;
+  const m193 = hay123 && modelo193(capital, anio);
   const m390 = usa303(f) && modelo390(facturas, gastos, anio, iva);
   const conRetencion = gastos.some((g) => Number(g.irpfPct) > 0);
   const m190 = (f.trabajadores || nominas?.length > 0 || conRetencion) && modelo190(nominas || [], empleados || [], anio, gastos);
@@ -133,6 +142,7 @@ export default async function Modelos({ searchParams }) {
       m303, m130,
       m111: hay111 && !marcaRet(u.pres111, anio, tAhora) ? r2(modelo111(nominas || [], anio, tAhora).retenciones + retencionesProfesionales(gastos, anio, tAhora).retenciones) : null,
       m115: hay115 && !marcaRet(u.pres115, anio, tAhora) ? modelo115(gastos, anio, tAhora).retenciones : null,
+      m123: hay123 && !u.pres123?.[anio]?.[tAhora] ? modelo123(capital, anio, tAhora).retenciones : null,
       m349: hay349 ? modelo349(facturas, anio, tAhora, gastos) : null,
       pagos202: f.tipo === 'sociedad' ? modelo202(u.cuotaIS, anio) : null, pagados202: u.pagos202?.[anio], constitucion: f.constitucion,
     }).map((m) => ({ ...m, aeat: AEAT[`m${m.num}`], ...(m.dia ? { plazo: plazo(tAhora, anio, m.dia) } : {}) }));
@@ -207,6 +217,11 @@ export default async function Modelos({ searchParams }) {
           <h2 className="grupo-t">303 · IVA trimestral</h2>
           <p className="grupo-pie arriba">El IVA de tus facturas menos el de tus gastos. Si sale negativo, se compensa en los trimestres siguientes (durante cuatro años como máximo) o, en el 4T, puedes pedir que te lo devuelvan.</p>
           {verProrrata && <Prorrata soloLectura={soloLectura} anio={anio} {...prorrata} titulo={<Termino id="prorrata">Prorrata del IVA</Termino>} />}
+          {iva.recc && (() => {
+            const corte = anio < actual ? `${anio}-12-31` : h;
+            const pendiente = pendienteCaja(facturas, iva.recc, corte);
+            return <p className="nota bloque">Estás en el <strong>criterio de caja</strong> desde el {fechaTexto(iva.recc.desde)}{iva.recc.hasta ? ` hasta el ${fechaTexto(iva.recc.hasta)}` : ''}: el IVA de tus facturas cuenta en el trimestre en que las cobras y el de tus gastos, en el que los pagas (o el 31 de diciembre del año siguiente, si para entonces no se ha cobrado o pagado). {pendiente > 0 ? `IVA de facturas aún sin cobrar: ${eur(pendiente)}.` : ''} Las casillas 62-63 y 74-75 recogen lo facturado y comprado en el trimestre, se cobre o no.</p>;
+          })()}
           <div className="tarjetas">
             {T.map((t) => { const c = casillas303(facturas, gastos, anio, t, iva); return (
               <div key={t} className="tarjeta"><h3>{t}T {anio}</h3>
@@ -230,6 +245,9 @@ export default async function Modelos({ searchParams }) {
                   c.prorrata && ['Prorrata aplicada', `${c.prorrata.provisional} %`],
                   c['44'] && [`44 · Regularización de la prorrata (definitiva: ${c.prorrata.definitiva} %)`, c['44']],
                   c['59'] && ['59 · Empresas de otros países de la UE', c['59']],
+                  c['123'] && ['123 · Ventas de la ventanilla única (van en el 369)', c['123']],
+                  c['62'] && ['62 · Criterio de caja: base de lo facturado', c['62']], c['63'] && ['63 · Criterio de caja: cuota de lo facturado', c['63']],
+                  c['74'] && ['74 · Criterio de caja: base de lo comprado', c['74']], c['75'] && ['75 · Criterio de caja: cuota de lo comprado', c['75']],
                   [c['46'] < 0 ? '46 · A compensar' : '46 · Resultado', Math.abs(c['46']), true],
                   liquidaciones[t - 1].compensado > 0 && ['Cuotas anteriores compensadas', menos(liquidaciones[t - 1].compensado)],
                   c['46'] >= 0 && !liquidaciones[t - 1].devolucion && ['A ingresar tras compensación', liquidaciones[t - 1].ingresar, true],
@@ -341,6 +359,57 @@ export default async function Modelos({ searchParams }) {
         </ModeloPlegable>
         );
       })()}
+
+      {hay369 && (() => {
+        const t = T.find((x) => plazo369(anio, x) >= h);
+        const m = t && modelo369(facturas, anio, t);
+        return (
+        <ModeloPlegable id="m369" num="369" nombre="IVA de la ventanilla única" detalle={t ? `${t}T · hasta el ${fechaTexto(plazo369(anio, t))}${plazo369(anio, t).slice(0, 4) !== String(actual) ? ` de ${plazo369(anio, t).slice(0, 4)}` : ''}` : 'Total del año'}
+          dato={importeFila(m ? m.cuota : r2(T.reduce((s, x) => s + modelo369(facturas, anio, x).cuota, 0)))}>
+          <h2 className="grupo-t">369 · Ventanilla única (OSS)</h2>
+          <p className="grupo-pie arriba">El IVA de tus ventas a particulares de otros países de la UE, con el tipo de cada país. No va en el 303 (allí solo su base, en la casilla 123): se declara aquí cada trimestre, por país y tipo, hasta el último día del mes siguiente (ese día, aunque caiga en fin de semana).</p>
+          <div className="tarjetas">
+            {T.map((t) => { const m = modelo369(facturas, anio, t); return (
+              <div key={t} className="tarjeta"><h3>{t}T {anio}</h3>
+                <Importe texto="A ingresar" v={m.cuota} />
+                {m.paises.length ? <Plegable><Casillas filas={[...m.paises.flatMap((p) => p.tipos.map((x) => [`${NOMBRES_UE[p.pais] || p.pais} · ${String(x.pct).replace('.', ',')} %`, `${eur(x.base)} · IVA ${eur(x.cuota)}`])), ['Total a ingresar', m.cuota, true]]} /></Plegable> : <p className="nota">Sin ventas de la ventanilla única.</p>}
+                <p className="nota">Plazo: hasta el {fechaTexto(plazo369(anio, t))}{t === 4 ? ` de ${anio + 1}` : ''}.</p>
+                {(m.cuota > 0 || u.pres369?.[anio]?.[t]) && <PresentadoRet modelo="369" anio={anio} t={t} hecho={Boolean(u.pres369?.[anio]?.[t])} soloLectura={soloLectura} />}
+              </div>
+            ); })}
+          </div>
+        </ModeloPlegable>
+        );
+      })()}
+
+      {hay123 && (() => {
+        const t = tPlazo(20);
+        const m = t && modelo123(capital, anio, t);
+        return (
+        <ModeloPlegable id="m123" num="123" nombre="Retenciones de dividendos e intereses" {...filaPlazo(t, 20, null, t && !m.base && 'sin pagos')}
+          dato={importeFila(t ? m.retenciones : r2(T.reduce((s, x) => s + modelo123(capital, anio, x).retenciones, 0)))}>
+          <h2 className="grupo-t">123 · Dividendos e intereses</h2>
+          <p className="grupo-pie arriba">Cuando pagas dividendos a los socios o intereses de un préstamo a una persona o a una empresa, le retienes el 19 % y lo ingresas cada trimestre con el 123 (el del 4T, hasta el 20 de enero). En enero, el 193 resume el año por perceptor.</p>
+          <PagosCapital anio={anio} hoy={h} pagos={capitalAnio} sociedad={f.tipo === 'sociedad'} soloLectura={soloLectura} />
+          <div className="tarjetas">
+            {T.map((t) => { const m = modelo123(capital, anio, t); return (
+              <div key={t} className="tarjeta"><h3>{t}T {anio}</h3>
+                <Importe texto="A ingresar" v={m.retenciones} />
+                {m.base ? <Plegable><Casillas filas={[['01 · Perceptores', String(m.perceptores)], ['02 · Base de las retenciones', m.base], ['03 · Retenciones', m.retenciones, true]]} /></Plegable> : <p className="nota">Sin pagos en este trimestre: no se presenta.</p>}
+                {m.base > 0 && <PresentadoRet modelo="123" anio={anio} t={t} hecho={Boolean(u.pres123?.[anio]?.[t])} soloLectura={soloLectura} />}
+              </div>
+            ); })}
+          </div>
+        </ModeloPlegable>
+        );
+      })()}
+
+      {m193 && (
+        <ModeloPlegable id="m193" num="193" nombre="Resumen anual de dividendos e intereses" detalle={m193.perceptores.length ? `Del 1 al 31 de enero de ${anio + 1}` : 'Sin pagos este año'} dato={importeFila(m193.retenciones)}>
+          <h2 className="grupo-t">193 · Resumen anual</h2>
+          {m193.perceptores.length ? <Casillas filas={[...m193.perceptores.map((p) => [`${p.nif ? `${p.nif} · ` : ''}${p.nombre} · ${TIPOS_RENDIMIENTO[p.tipo]}`, `${eur(p.base)} · ret. ${eur(p.retenciones)}`]), ['Retenciones del año', m193.retenciones, true]]} /> : <p className="nota">Sin pagos de dividendos ni intereses en {anio}.</p>}
+        </ModeloPlegable>
+      )}
 
       {hay349 && (() => {
         const t = tPlazo(30); const m = modelo349(facturas, anio, t, gastos);

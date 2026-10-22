@@ -136,7 +136,18 @@ export default function Cuestionario({ inicial, editar, conFacturas, puedeFactur
             <SiNo valor={fiscal.alquiler} cambiar={(v) => f('alquiler', v)} titulo="Alquilo un local u oficina" />
             <SiNo valor={fiscal.intracom} cambiar={(v) => f('intracom', v)} titulo="Compro o vendo a empresas de otros países de la UE" />
             <SiNo valor={fiscal.inventario} cambiar={(v) => f('inventario', v)} titulo="Vendo productos y quiero controlar el stock" detalle="Inventario: entradas, salidas, stock mínimo y su valor" />
+            <SiNo valor={Boolean(fiscal.capital)} cambiar={(v) => f('capital', v)} titulo="Pago dividendos o intereses a socios o a quien me prestó dinero" detalle="Retención del 19 %: modelos 123 y 193" />
+            {fiscal.iva === 'general' && <SiNo valor={Boolean(fiscal.oss)} cambiar={(v) => f('oss', v)} titulo="Vendo a particulares de otros países de la UE con el IVA de su país" detalle="Ventanilla única (OSS): ese IVA va en el modelo 369" />}
+            {fiscal.iva === 'general' && <SiNo valor={Boolean(fiscal.recc)} cambiar={(v) => f('recc', v ? { desde: `${new Date().getFullYear()}-01-01` } : undefined)} titulo="Estoy en el criterio de caja (RECC)" detalle="El IVA de tus facturas se paga al cobrarlas y el de tus gastos se deduce al pagarlos" />}
           </div>
+          {fiscal.iva === 'general' && fiscal.recc && (
+            <div className="alta-campos">
+              <label className="alta-campo"><span>En el criterio de caja desde</span><small>La fecha de la opción en el 036 (normalmente, el 1 de enero).</small>
+                <input className="campo" type="date" min="2014-01-01" value={fiscal.recc.desde || ''} onChange={(v) => f('recc', { ...fiscal.recc, desde: v.target.value })} /></label>
+              <label className="alta-campo"><span>Hasta (solo si has renunciado o te han excluido)</span><small>El último día en que lo aplicaste: lo facturado hasta entonces sigue devengando el IVA al cobrarse.</small>
+                <input className="campo" type="date" min="2014-01-01" value={fiscal.recc.hasta || ''} onChange={(v) => f('recc', { ...fiscal.recc, hasta: v.target.value || undefined })} /></label>
+            </div>
+          )}
           {!sociedad && (
             <details className="alta-renta">
               <summary>Para el borrador de la renta (opcional)</summary>

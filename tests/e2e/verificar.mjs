@@ -1844,5 +1844,33 @@ console.log('Factura en otro idioma y moneda');
   ok('el tipo de cambio solo lo consulta quien factura (403)', () => assert.equal(cambio.status, 403));
 }
 
+console.log('Criterio de caja, ventanilla única y dividendos (123)');
+{
+  // Una sociedad aparte en el criterio de caja, con la ventanilla única y pagos a socios.
+  const alta = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva: 'Caja Prueba SL', nombre: 'Carla', email: `caja${Date.now()}@test.es` } })).json();
+  const fd = new FormData(); fd.set('codigo', alta.enlace.split('/').pop()); fd.set('password', 'Clave-Local-05-2026');
+  const cj = /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: fd })).headers.get('set-cookie') || '')?.[1];
+  const desde = `${Y}-01-01`;
+  const cfg = await (await pedir('/api/cuenta', { metodo: 'PATCH', cookie: cj, cuerpo: { configuracion: { fiscal: { tipo: 'sociedad', iva: 'general', recc: { desde }, oss: true, capital: true }, emisor: { nombre: 'Caja Prueba SL', nif: 'B76543214', direccion: 'Calle Mayor 1', ciudad: '28001 Madrid', iban: 'ES91 2100 0418 4502 0005 1332', plazo: 30 }, actividades: [{ nombre: 'Tienda', ivaPct: 21, irpfPct: 0 }] } } })).json();
+  const act = cfg.actividades?.[0]?.id;
+  const fr = await pedir('/api/facturas', { metodo: 'POST', cookie: cj, cuerpo: { fecha: hoy, actividad: act, cliente: { nombre: 'Cliente Caja SA', nif: 'A58818501', direccion: 'Calle 1', ciudad: 'Madrid' }, concepto: 'Venta', base: '1000', ivaPct: 21, irpfPct: 0 } });
+  const fc = (await fr.json()).factura;
+  ok('la factura del criterio de caja lleva su marca (y la mención en el PDF)', () => assert.ok(fr.status === 200 && fc.recc === true, JSON.stringify(fc).slice(0, 300)));
+  const pdf = n(await texto(`/facturas/${encodeURIComponent(fc.id)}/pdf`, cj));
+  ok('«Régimen especial del criterio de caja» en la factura', () => assert.ok(pdf.includes('Régimen especial del criterio de caja'), pdf.slice(0, 300)));
+  const fo = await pedir('/api/facturas', { metodo: 'POST', cookie: cj, cuerpo: { fecha: hoy, actividad: act, cliente: { nombre: 'Jean Dupont', pais: 'FR' }, oss: { pais: 'FR' }, lineas: [{ concepto: 'Lámpara', cantidad: '1', precio: '100', ivaPct: 20 }], irpfPct: 0 } });
+  const fos = (await fo.json()).factura;
+  ok('una venta de la ventanilla única se guarda con el IVA francés', () => assert.ok(fo.status === 200 && fos.oss?.pais === 'FR' && fos.lineas[0].ivaPct === 20, JSON.stringify(fos).slice(0, 300)));
+  const mal = await pedir('/api/facturas', { metodo: 'POST', cookie: cj, cuerpo: { fecha: hoy, actividad: act, cliente: { nombre: 'Jean Dupont', pais: 'FR' }, oss: { pais: 'FR' }, lineas: [{ concepto: 'Lámpara', cantidad: '1', precio: '100', ivaPct: 21 }], irpfPct: 0 } });
+  ok('con un tipo que Francia no tiene, no se emite (400)', () => assert.equal(mal.status, 400));
+  const pago = await pedir('/api/capital', { metodo: 'POST', cookie: cj, cuerpo: { fecha: hoy, tipo: 'dividendos', perceptor: { nombre: 'Socia Uno', nif: '12345678Z' }, bruto: '1000' } });
+  const pj = await pago.json();
+  ok('un dividendo se apunta con su retención del 19 %', () => assert.ok(pago.status === 200 && pj.pago.retencion === 190 && pj.pago.liquido === 810, JSON.stringify(pj)));
+  const imp = n(await texto(`/modelos?anio=${Y}`, cj));
+  ok('Impuestos enseña el criterio de caja, el 369 y el 123', () => assert.ok(imp.includes('criterio de caja') && imp.includes('369 · Ventanilla única') && imp.includes('Francia') && imp.includes('123 · Dividendos e intereses') && imp.includes('Socia Uno'), imp.slice(0, 400)));
+  const sinPermiso = await pedir('/api/capital', { metodo: 'POST', cookie: otro, cuerpo: { fecha: hoy, tipo: 'intereses', perceptor: { nombre: 'X', nif: '12345678Z' }, bruto: '10' } });
+  ok('apuntar dividendos pide el permiso de contabilidad (403)', () => assert.equal(sinPermiso.status, 403));
+}
+
 console.log(fallos ? `\n${fallos} comprobaciones fallidas: NO publicar.` : '\nTodo cuadra.');
 process.exit(fallos ? 1 : 0);

@@ -98,3 +98,9 @@
 .modelos .avisos-fiscales { margin: 0; padding: 4px 16px 4px 32px; }
 .modelos .avisos-fiscales li { padding: 8px 0; font-size: 15px; line-height: 1.45; overflow-wrap: anywhere; }
 .modelos .avisos-fiscales li + li { border-top: 0.5px solid var(--line); }
+
+/* Dividendos e intereses pagados (123 y 193): la lista de pagos del año. */
+.lista-pagos { list-style: none; padding: 0; margin: 0 0 12px; }
+.lista-pagos li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
+.lista-pagos li span:last-child { color: var(--muted); }
+.pagos-capital form label { display: flex; flex-direction: column; gap: 4px; }

@@ -2,7 +2,7 @@ import { Fragment } from 'react';
 import QRCode from 'qrcode';
 import { baseLinea, columnasLineas, desglose, importes, numeroFactura, vencimiento } from '@/lib/calculos';
 import '@/app/factura.css';
-import { enDivisa, formatoDoc } from '@/lib/idiomas';
+import { enDivisa, formatoDoc, menciones } from '@/lib/idiomas';
 import { aclarar, colorValido } from '@/lib/marca';
 import { COLOR_FACTURA, anchoResumen, tamanoNumero, tamanoTotal } from '@/lib/pdf';
 import { urlQr } from '@/lib/verifactu';
@@ -69,10 +69,11 @@ export default async function FacturaA4({ f: fOriginal, e, marca, presupuesto = 
           {f.irpfPct > 0 && <><dt>{L.t.retencion} {L.pct(f.irpfPct)}</dt><dd>{L.dinero(t.irpf ? -t.irpf : 0)}</dd></>}
           <div className="fa-total-fila"><dt className="fa-total">{L.t.total}</dt><dd className="fa-total">{L.dinero(t.total)}</dd></div>
         </dl>
-        {(f.rectifica || f.nota || f.divisa) && (
+        {(f.rectifica || f.nota || f.divisa || f.recc || f.oss) && (
           <div className="fa-notas">
             <p className="fa-et">{L.t.notas}</p>
             {f.rectifica && <p>{L.t.rectifica(f.rectifica.numero, L.fecha(f.rectifica.fecha))}</p>}
+            {menciones(f, L).map((m) => <p key={m}>{m}</p>)}
             {f.divisa && L.moneda !== 'EUR' && <p>{L.t.contravalor}: {L.t.base} {L.euros(tEur.base)} · {L.t.iva} {L.euros(tEur.iva)}{tEur.irpf ? ` · ${L.t.retencion} ${L.euros(-tEur.irpf)}` : ''} · {L.t.total} {L.euros(tEur.total)}. {L.cambio(f.divisa)}.</p>}
             {f.nota && <p>{f.nota}</p>}
           </div>
