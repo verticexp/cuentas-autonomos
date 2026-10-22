@@ -1851,7 +1851,7 @@ console.log('Criterio de caja, ventanilla única y dividendos (123)');
   const fd = new FormData(); fd.set('codigo', alta.enlace.split('/').pop()); fd.set('password', 'Clave-Local-05-2026');
   const cj = /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: fd })).headers.get('set-cookie') || '')?.[1];
   const desde = `${Y}-01-01`;
-  const cfg = await (await pedir('/api/cuenta', { metodo: 'PATCH', cookie: cj, cuerpo: { configuracion: { fiscal: { tipo: 'sociedad', iva: 'general', recc: { desde }, oss: true, capital: true }, emisor: { nombre: 'Caja Prueba SL', nif: 'B76543214', plazo: 30 }, actividades: [{ nombre: 'Tienda', ivaPct: 21, irpfPct: 0 }] } } })).json();
+  const cfg = await (await pedir('/api/cuenta', { metodo: 'PATCH', cookie: cj, cuerpo: { configuracion: { fiscal: { tipo: 'sociedad', iva: 'general', recc: { desde }, oss: true, capital: true }, emisor: { nombre: 'Caja Prueba SL', nif: 'B76543214', direccion: 'Calle Mayor 1', ciudad: '28001 Madrid', iban: 'ES91 2100 0418 4502 0005 1332', plazo: 30 }, actividades: [{ nombre: 'Tienda', ivaPct: 21, irpfPct: 0 }] } } })).json();
   const act = cfg.actividades?.[0]?.id;
   const fr = await pedir('/api/facturas', { metodo: 'POST', cookie: cj, cuerpo: { fecha: hoy, actividad: act, cliente: { nombre: 'Cliente Caja SA', nif: 'A58818501', direccion: 'Calle 1', ciudad: 'Madrid' }, concepto: 'Venta', base: '1000', ivaPct: 21, irpfPct: 0 } });
   const fc = (await fr.json()).factura;
