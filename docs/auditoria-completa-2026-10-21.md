@@ -100,6 +100,41 @@ comprobaciones sin efectos en producción tras desplegar. Arreglos en los PR #24
    anterior, aunque el extracto esté completo (un mes tranquilo). Propuesta: guardar qué periodo cubre cada extracto
    importado y avisar solo si falta.
 
+## Aplicado el 22 de octubre de 2026
+
+Todo lo propuesto, salvo lo que el usuario dejó aparte (Verifactu, «Continuar con Google / Apple» y los textos legales,
+que esperan a la sociedad). Cada punto, con su PR fusionado en `main` y desplegado.
+
+| Qué | PR | Notas |
+|---|---|---|
+| Permiso «Contabilidad» y sueldos solo para quien lleva las nóminas (decisiones 1 y 2) | #247 | También `APP_URL`, Dependabot y e2e obligatorio (decisión 6) |
+| Tesorería que pregunta si ya se presentó, 111/115 aparte, periodo de cada extracto y domicilio del cliente (decisiones 5, 7, 8 y 9) | #248 | |
+| IA de tickets, extractos e importación con Claude Haiku 5.5 (decisión 6) | #249 | `ANTHROPIC_MODEL` vuelve al anterior sin desplegar |
+| Factura en otro idioma y en otra moneda (tipo del BCE) | #250 | |
+| Criterio de caja (RECC), ventanilla única (369) y dividendos e intereses (123 y 193) | #251 | |
+| Módulos (131), IVA simplificado, REBU, REAV y REAGP | #252 | |
+| API pública v1 con claves, webhooks firmados y eventos | #253 | |
+| Nóminas completas: cotización 2026, IRPF con el 145 y datos para RED | #254 | RED/SILTRA: Excel con bases y conceptos (el fichero XML necesita la autorización RED) |
+| Recibo de salarios en PDF | #256 | |
+| Cobro de facturas con tarjeta en la cuenta de Stripe de cada empresa (Connect) y banco directo para todas | #255 | Falta activar Connect y su webhook en Stripe, y `BANCO_DIRECTO=todos` cuando Enable Banking lo permita |
+| Arreglo del despliegue: desde la #250 producción no se actualizaba | #257 | Las pruebas de la compilación ya no ven el Redis de producción |
+| Integraciones: Zapier, Make y n8n con los webhooks y la API | #259 | Una app propia en sus directorios necesita cuenta de desarrollador de la empresa |
+| IGIC (Canarias): 420, 425, tipos y documentos | #258, #260 | |
+| Pulido de lo nuevo: ejemplo de la guía de integraciones y cobro con tarjeta junto a Cobros | #261 | |
+| Navarra y País Vasco: modelos, plazos, pago fraccionado del IRPF e Impuesto sobre Sociedades de cada Hacienda foral; aviso de TicketBAI | #262 | Reglas y fuentes en `docs/territorios-forales.md` |
+
+**Quién hizo qué en esta fase.** Codex: el cálculo de la cotización de 2026 y de la retención del IRPF con el 145, la
+primera versión del recibo de nómina, `lib/igic.js` y la integración del IGIC (con su extensión a recepciones,
+importación, dietas, caja, catálogo e inventario) y los plazos forales en tesorería, avisos y Resumen (se quedó sin cuota
+antes de terminarlos). Claude: el resto, la investigación de las normas, la revisión de todo lo de Codex, los arreglos,
+las pruebas e2e y la integración.
+
+**Queda pendiente (no depende del código):**
+- Lo que espera a la sociedad: Verifactu (certificado y prueba en la AEAT), «Continuar con Google / Apple», textos legales y aviso legal, el alta de Fisquo en el registro de software TicketBAI y la cuenta de Apple Developer para la App Store.
+- Activar en Stripe el cobro de facturas (Connect con cuentas de panel completo y el destino de webhook de las cuentas conectadas, con `STRIPE_WEBHOOK_SECRET_CONNECT`); las claves de Stripe de Producción siguen pendientes.
+- `BANCO_DIRECTO=todos` en Vercel cuando Enable Banking permita el uso sin restricciones.
+- En territorio foral, Fisquo da los importes por concepto, no las casillas exactas de cada modelo, ni la renta foral (109/F-90) ni los módulos forales.
+
 ## Plazos que vienen
 
 | Cuándo | Qué | Estado en Fisquo |
