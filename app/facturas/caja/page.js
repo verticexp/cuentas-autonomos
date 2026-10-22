@@ -1,5 +1,6 @@
 import Vacio from '@/components/Vacio';
 import Link from 'next/link';
+import Ir from '@/components/Ir';
 import { requerir } from '@/lib/auth';
 import { leer, leerUno, redis } from '@/lib/redis';
 import { numeroFactura } from '@/lib/calculos';
@@ -35,7 +36,7 @@ export default async function Caja({ searchParams }) {
     <main className="pagina mk-look caja">
       <Volver href={cierre ? `/facturas/${cierre.id}` : '/facturas'}>{cierre ? 'Cierre' : 'Facturas'}</Volver>
       <h1 className="titulo">{cierre?.caja ? `Corregir el cierre ${numeroFactura(cierre)}` : 'Caja'}</h1>
-      {!cierre && <nav className="segmentado"><Link href="/facturas/caja" className={ver === 'cierre' ? 'activo' : ''}>Cierre del día</Link><Link href="/facturas/caja?ver=importar" className={ver === 'importar' ? 'activo' : ''}>Importar del TPV</Link></nav>}
+      {!cierre && <nav className="segmentado"><Ir href="/facturas/caja" tipo="fundido" className={ver === 'cierre' ? 'activo' : ''}>Cierre del día</Ir><Ir href="/facturas/caja?ver=importar" tipo="fundido" className={ver === 'importar' ? 'activo' : ''}>Importar del TPV</Ir></nav>}
       {ver === 'cierre' || cierre ? (
         <>
           <div id="nuevo-cierre"><FormCierre igic={igic} hoy={hoy()} actividades={actividades} productos={lista} cierre={cierre?.caja ? cierre : null} ivaDefecto={actividades[0].ivaPct ?? (igic ? 7 : 21)} proyectos={nombresProyectos(facturas)} /></div>

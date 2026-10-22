@@ -1,10 +1,17 @@
 /* Pestañas de Gastos y Facturas (components/Pestanas.js): un control segmentado, del ancho de la pantalla en el móvil.
-   Solo variables del tema: claro y oscuro salen solos. */
+   Solo variables del tema: claro y oscuro salen solos. La pastilla de la activa va aparte, en su misma celda y debajo del
+   texto: así puede viajar de una pestaña a otra al cambiar (app/diseno.css). */
 .pestanas { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px; padding: 4px; margin: 0 0 16px; border-radius: var(--r-pastilla); background: var(--relleno); }
-.pestana { display: flex; align-items: center; justify-content: center; gap: 5px; min-width: 0; min-height: 40px; padding: 8px 6px; border-radius: var(--r-pastilla); color: var(--muted); font-weight: 600; font-size: 14px; text-decoration: none; text-align: center; line-height: 1.15; white-space: nowrap; }
+/* El tono de la pastilla, como el de .segmentado (app/diseno.css): en oscuro, más clara que el carril para que se vea. Va en
+   :root porque también la pinta la transición, que no hereda de .pestanas. */
+:root { --pastilla: var(--surface); }
+@media (prefers-color-scheme: dark) { :root:not([data-tema="claro"]) { --pastilla: #303236; } }
+:root[data-tema="oscuro"] { --pastilla: #303236; }
+.pestanas-indicador { grid-row: 1; border-radius: var(--r-pastilla); background: var(--pastilla); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); }
+.pestana { grid-row: 1; display: flex; align-items: center; justify-content: center; gap: 5px; min-width: 0; min-height: 40px; padding: 8px 6px; border-radius: var(--r-pastilla); color: var(--muted); font-weight: 600; font-size: 14px; text-decoration: none; text-align: center; line-height: 1.15; white-space: nowrap; }
 @media (min-width: 400px) { .pestana { font-size: 15px; padding: 8px 10px; } }
 .pestana:hover { color: var(--ink); }
-.pestana.activa { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); }
+.pestana.activa { color: var(--ink); }
 .pestana-n { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; font-size: 12px; font-weight: 700; background: var(--ink); color: var(--surface); }
 .pestana-n.tono-aviso { background: var(--in-boton); color: #fff; }
 .pestana-n.tono-rojo { background: var(--out-boton); color: #fff; }

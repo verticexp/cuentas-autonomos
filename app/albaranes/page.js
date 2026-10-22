@@ -47,7 +47,7 @@ export default async function Albaranes({ searchParams }) {
         {puedeOperar && <Ir href={`/albaranes/nuevo?tipo=${ver === 'pedidos' ? 'pedido' : 'albaran'}`} tipo="subir" className="boton pequeno">{ver === 'pedidos' ? 'Nuevo pedido' : 'Nuevo albarán'}</Ir>}
       </header>
       <p className="resumen-linea"><span>Pedidos abiertos <strong>{abiertos.length}</strong></span><span>Por facturar <strong>{eur(sinFacturar.reduce((s, a) => s + baseDoc(a), 0))}</strong></span></p>
-      <nav className="segmentado">{VISTAS.map(([v, n]) => <Link key={v} href={`/albaranes?ver=${v}`} className={v === ver ? 'activo' : ''}>{n}{v === 'albaranes' && sinFacturar.length ? ` (${sinFacturar.length})` : ''}</Link>)}</nav>
+      <nav className="segmentado">{VISTAS.map(([v, n]) => <Ir key={v} href={`/albaranes?ver=${v}`} tipo="fundido" className={v === ver ? 'activo' : ''}>{n}{v === 'albaranes' && sinFacturar.length ? ` (${sinFacturar.length})` : ''}</Ir>)}</nav>
 
       {ver === 'pedidos' && (pedidos.length ? (
         <ul className="grupo-lista">

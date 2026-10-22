@@ -87,7 +87,7 @@ export default async function Facturas({ searchParams }) {
       {total > 0 && (
         <p className="resumen-linea solo-pc">
           <span>Por cobrar <strong>{eur(porCobrar)}</strong></span>
-          {vencidas.length > 0 && <Link href={url({ estado: estado === 'vencidas' ? null : 'vencidas' })} className="rojo">{vencidas.length === 1 ? '1 vencida' : `${vencidas.length} vencidas`}</Link>}
+          {vencidas.length > 0 && <Ir href={url({ estado: estado === 'vencidas' ? null : 'vencidas' })} tipo={estado === 'vencidas' ? 'pestana-izq' : 'pestana-der'} scroll={false} className="rojo">{vencidas.length === 1 ? '1 vencida' : `${vencidas.length} vencidas`}</Ir>}
           {/* Catálogo, Inventario, Pedidos y Caja ya están en la barra lateral: aquí solo lo propio de las facturas. */}
           {recurrentes?.length > 0 && <Link href="/facturas/recurrentes" className="rec-enlace">{recurrentes.length === 1 ? '1 recurrente' : `${recurrentes.length} recurrentes`} ›</Link>}
           {puede(u, 'resumen') && <a href={`/api/efactura?anio=${h.slice(0, 4)}`} className="rec-enlace" download>Estado de pagos (Excel) ›</a>}
@@ -100,7 +100,7 @@ export default async function Facturas({ searchParams }) {
           <div className="resumen-fijo solo-movil">
             <p className="resumen-fijo-t">
               <span>Por cobrar <strong>{eur(porCobrar)}</strong></span>
-              {vencidas.length > 0 && <Link href={url({ estado: estado === 'vencidas' ? null : 'vencidas' })} className="rojo">{vencidas.length === 1 ? '1 vencida' : `${vencidas.length} vencidas`}</Link>}
+              {vencidas.length > 0 && <Ir href={url({ estado: estado === 'vencidas' ? null : 'vencidas' })} tipo={estado === 'vencidas' ? 'pestana-izq' : 'pestana-der'} scroll={false} className="rojo">{vencidas.length === 1 ? '1 vencida' : `${vencidas.length} vencidas`}</Ir>}
             </p>
             <HojaFiltro titulo="Filtrar facturas" activos={ACTIVIDADES[a] ? 1 : 0}>
               {Object.keys(ACTIVIDADES).length > 1 && (
@@ -141,55 +141,58 @@ export default async function Facturas({ searchParams }) {
         </Deslizable>
       )}
 
-      {grupos.length > 0 && (
-        <div className={`tf-cab solo-pc${!a && Object.keys(ACTIVIDADES).length > 1 ? ' con-act' : ''}`} aria-hidden>
-          <span>Cliente</span><span>Número</span><span>Fecha</span>{!a && Object.keys(ACTIVIDADES).length > 1 && <span>Actividad</span>}<span className="tf-n">Base</span><span className="tf-n">Total</span><span>Estado</span>
-        </div>
-      )}
-      {grupos.map((g) => {
-        const [y, m] = g.m.split('-');
-        return (
-          <section key={g.m} className="grupo-mes">
-            <h2><span>{MESES[m - 1]} {y !== h.slice(0, 4) ? y : ''}</span><small>Base {eur(r2(totalMes[g.m] || 0))}</small></h2>
-            <ul className={`grupo-lista tf-lista${!a && Object.keys(ACTIVIDADES).length > 1 ? ' con-act' : ''}`}>
-              {g.facturas.map((f) => {
-                const e = estadoDe(f);
-                return (
-                  <li key={f.id}>
-                    {(() => {
-                      const fila = (
-                        <FilaFactura href={`/facturas/${f.id}`}>
-                          {/* En el móvil, el número, la fecha y la actividad van en una línea; en el ordenador, en columnas. */}
-                          <span className="txt">
-                            <strong data-vt="cliente">{f.cliente.nombre}</strong>
-                            <small className="tf-meta"><span className="tf-num">{f.caja ? 'Cierre de caja · ' : ''}{numeroFactura(f)}</span><span className="tf-fecha">{diaMes(f.fecha)}</span>{!a && Object.keys(ACTIVIDADES).length > 1 && <span className="tf-act">{ACTIVIDADES[f.actividad]}</span>}</small>
-                          </span>
-                          <span className="tf-base solo-pc">{eur(importes(f).base)}</span>
-                          <span className="imp-col">
-                            <span className="imp" data-vt="total">{eur(importes(f).total)}</span>
-                            <span className={`estado-txt e-${e}`}>{e === 'cobrada' ? 'Cobrada' : e === 'vencida' ? 'Vencida' : 'Pendiente'}</span>
-                          </span>
-                        </FilaFactura>
-                      );
-                      // Móvil: deslizar la fila deja marcarla cobrada o ir a enviarla (los cierres de caja no se cobran ni se envían)
-                      return puede(u, 'facturar') && !f.caja
-                        ? <Deslizar id={f.id} href={`/facturas/${f.id}`} acciones={e === 'cobrada' ? ['enviar'] : ['cobrada', 'enviar']}>{fila}</Deslizar>
-                        : fila;
-                    })()}
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-        );
-      })}
+      {/* Lo que cambia con cada pestaña: al pasar de una a otra, solo se mueve la lista (components/Pestanas.js). */}
+      <div className="pestanas-panel">
+        {grupos.length > 0 && (
+          <div className={`tf-cab solo-pc${!a && Object.keys(ACTIVIDADES).length > 1 ? ' con-act' : ''}`} aria-hidden>
+            <span>Cliente</span><span>Número</span><span>Fecha</span>{!a && Object.keys(ACTIVIDADES).length > 1 && <span>Actividad</span>}<span className="tf-n">Base</span><span className="tf-n">Total</span><span>Estado</span>
+          </div>
+        )}
+        {grupos.map((g) => {
+          const [y, m] = g.m.split('-');
+          return (
+            <section key={g.m} className="grupo-mes">
+              <h2><span>{MESES[m - 1]} {y !== h.slice(0, 4) ? y : ''}</span><small>Base {eur(r2(totalMes[g.m] || 0))}</small></h2>
+              <ul className={`grupo-lista tf-lista${!a && Object.keys(ACTIVIDADES).length > 1 ? ' con-act' : ''}`}>
+                {g.facturas.map((f) => {
+                  const e = estadoDe(f);
+                  return (
+                    <li key={f.id}>
+                      {(() => {
+                        const fila = (
+                          <FilaFactura href={`/facturas/${f.id}`}>
+                            {/* En el móvil, el número, la fecha y la actividad van en una línea; en el ordenador, en columnas. */}
+                            <span className="txt">
+                              <strong data-vt="cliente">{f.cliente.nombre}</strong>
+                              <small className="tf-meta"><span className="tf-num">{f.caja ? 'Cierre de caja · ' : ''}{numeroFactura(f)}</span><span className="tf-fecha">{diaMes(f.fecha)}</span>{!a && Object.keys(ACTIVIDADES).length > 1 && <span className="tf-act">{ACTIVIDADES[f.actividad]}</span>}</small>
+                            </span>
+                            <span className="tf-base solo-pc">{eur(importes(f).base)}</span>
+                            <span className="imp-col">
+                              <span className="imp" data-vt="total">{eur(importes(f).total)}</span>
+                              <span className={`estado-txt e-${e}`}>{e === 'cobrada' ? 'Cobrada' : e === 'vencida' ? 'Vencida' : 'Pendiente'}</span>
+                            </span>
+                          </FilaFactura>
+                        );
+                        // Móvil: deslizar la fila deja marcarla cobrada o ir a enviarla (los cierres de caja no se cobran ni se envían)
+                        return puede(u, 'facturar') && !f.caja
+                          ? <Deslizar id={f.id} href={`/facturas/${f.id}`} acciones={e === 'cobrada' ? ['enviar'] : ['cobrada', 'enviar']}>{fila}</Deslizar>
+                          : fila;
+                      })()}
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          );
+        })}
 
-      {pag.siguiente && <p className="grupo-pie"><Link href={url({ desde: pag.siguiente })} className="boton sec">Ver más</Link></p>}
+        {pag.siguiente && <p className="grupo-pie"><Link href={url({ desde: pag.siguiente })} className="boton sec">Ver más</Link></p>}
 
-      {!lista.length && (
-        total || buscado || estado || a || desde ? <Vacio tipo="resultados" icono="factura" titulo={buscado ? `Ninguna factura con «${q}»` : 'Ninguna factura con este filtro'} accion={{ href: buscado ? url({ q: null, desde: null }) : '/facturas', texto: buscado ? 'Quitar búsqueda' : 'Ver todas' }} />
-        : <Vacio icono="factura" titulo="Crea tu primera factura" accion={puede(u, 'facturar') && { href: '/facturas/nueva', texto: 'Crear la primera' }} secundaria={puede(u, 'facturar') && { href: '/facturas/caja', texto: 'Apuntar cierre de caja' }}>Se numeran solas, con el IVA y el IRPF calculados, y las descargas en PDF con tu logo.</Vacio>
-      )}
+        {!lista.length && (
+          total || buscado || estado || a || desde ? <Vacio tipo="resultados" icono="factura" titulo={buscado ? `Ninguna factura con «${q}»` : 'Ninguna factura con este filtro'} accion={{ href: buscado ? url({ q: null, desde: null }) : '/facturas', texto: buscado ? 'Quitar búsqueda' : 'Ver todas' }} />
+          : <Vacio icono="factura" titulo="Crea tu primera factura" accion={puede(u, 'facturar') && { href: '/facturas/nueva', texto: 'Crear la primera' }} secundaria={puede(u, 'facturar') && { href: '/facturas/caja', texto: 'Apuntar cierre de caja' }}>Se numeran solas, con el IVA y el IRPF calculados, y las descargas en PDF con tu logo.</Vacio>
+        )}
+      </div>
     </main>
   );
 }
