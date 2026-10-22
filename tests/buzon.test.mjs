@@ -70,14 +70,17 @@ function correo({ para, de, asunto = 'Factura octubre', texto = '', html = '', a
   return { type: 'email.received', created_at: new Date().toISOString(), data: { email_id: id, created_at: new Date().toISOString(), from: de, to: [para], cc: [], bcc: [], received_for: [], message_id: '<x@y>', subject: asunto, attachments: [] } };
 }
 const avisoDe = (c) => CE.leerAviso(JSON.stringify(c));
-// Aquí la empresa existe: la cola de trabajos lee en segundo plano (como en producción). Se espera a que termine.
-async function leida(u, id) {
-  for (let i = 0; i < 100; i++) {
-    const d = await R.leerUno(u, 'bandeja', id);
-    if (d?.estado !== 'leyendo') return d;
-    await new Promise((r) => setTimeout(r, 30));
+// Aquí la empresa existe: la cola de trabajos lee en segundo plano (como en producción). Se espera a que el documento
+// llegue al estado esperado: uno de confianza pasa un momento por «revisar» antes de quedar «aprobado», y en la máquina
+// del build de Vercel ese momento dura más (allí falló el despliegue del PR #266). Holgado: hasta 15 s.
+async function leida(u, id, estado = 'revisar') {
+  let d;
+  for (let i = 0; i < 300; i++) {
+    d = await R.leerUno(u, 'bandeja', id);
+    if (d?.estado === estado) return d;
+    await new Promise((r) => setTimeout(r, 50));
   }
-  assert.fail('la lectura no ha terminado');
+  assert.fail(`el documento no ha llegado a «${estado}» (está en «${d?.estado}»)`);
 }
 
 test('la dirección: una por empresa, con su índice; cambiarla deja la anterior sin efecto', async () => {
@@ -160,8 +163,7 @@ test('proveedor de confianza: lo que cuadra se aprueba solo, se ve como aprobado
   await E.ponerConfianza(u, { clave: 'A82018474', proveedor: 'Movistar', proveedorNif: 'A82018474' }, true);
   await Z.recibirCorreo(avisoDe(correo({ para: direccion, de: u.email, archivos: [{ nombre: 'f.pdf', tipo: 'application/pdf', bytes: await pdf('confianza') }] })));
   const [d] = await R.leer(u, 'bandeja');
-  const ap = await leida(u, d.id);
-  assert.equal(ap.estado, 'aprobado', 'aprobada sola');
+  const ap = await leida(u, d.id, 'aprobado');
   const r = { aprobado: ap.gasto };
   const g = await R.leerUno(u, 'gastos', r.aprobado);
   assert.equal(g.archivo.clave, d.archivo.clave);
