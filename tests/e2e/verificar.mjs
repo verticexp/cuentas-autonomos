@@ -1947,6 +1947,11 @@ console.log('Nóminas completas (cotización 2026 y modelo 145) y datos para RED
   ok('los datos para RED del mes se descargan en Excel', () => assert.ok(red.status === 200 && (red.headers.get('content-type') || '').includes('spreadsheetml'), String(red.status)));
   const sinRed = await pedir(`/api/nominas/red?mes=${mesActual}`, { cookie: otro });
   ok('y solo quien lleva las nóminas (403)', () => assert.equal(sinRed.status, 403));
+  const recibo = await pedir(`/api/nominas/recibo?id=${id}`, { cookie: nu });
+  const pdf = Buffer.from(await recibo.arrayBuffer()).subarray(0, 5).toString();
+  ok('el recibo de salarios de la nómina se descarga en PDF', () => assert.ok(recibo.status === 200 && (recibo.headers.get('content-type') || '').includes('application/pdf') && pdf === '%PDF-', `${recibo.status} ${pdf}`));
+  const ajeno = await pedir(`/api/nominas/recibo?id=${id}`, { cookie: otro });
+  ok('y el de otra empresa no se ve (403)', () => assert.equal(ajeno.status, 403));
 }
 
 console.log(fallos ? `\n${fallos} comprobaciones fallidas: NO publicar.` : '\nTodo cuadra.');

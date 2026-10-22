@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { PDFDocument } from 'pdf-lib';
 import { filasRecibo, reciboNominaPdf } from '../lib/reciboNomina.js';
-import { nominaCompleta, calculoNomina } from '../lib/nominas.js';
+import { nominaCompleta, calculoNomina, conceptosRed } from '../lib/nominas.js';
 
 const empleado = { nombre: 'María López', nif: '12345678Z', naf: '281234567890', puesto: 'Administrativa', alta: '2024-01-10', bruto: 2000, irpfPct: 12, cotizacion: { grupo: 7, temporal: false, pagas: 2, prorrateadas: true, atPct: 1.5 } };
 const empresa = { nombre: 'Empresa SL', nif: 'B12345678', direccion: 'Calle Mayor 1', ciudad: 'Madrid', ccc: '28123456789' };
@@ -10,9 +10,14 @@ const completa = (e = empleado, opciones = { bruto: 2000 }) => ({ mes: '2026-02'
 
 test('recibo completo: identidad, periodo, cuotas e importes guardados', () => {
   const n = completa(), r = filasRecibo(n, empleado, empresa);
-  assert.deepEqual(r.aportacionTrabajador.map((f) => f.importe), [94, 31, 2, 3, 0, 0]);
+  // Sin cotización de solidaridad (el sueldo no pasa de la base máxima), no sale su fila.
+  assert.deepEqual(r.aportacionTrabajador.map((f) => f.importe), [94, 31, 2, 3, 0]);
   assert.deepEqual(r.aportacionTrabajador.slice(0, 4).map((f) => f.porcentaje), [4.7, 1.55, .1, .15]);
-  assert.deepEqual(r.aportacionEmpresa.map((f) => f.importe), [472, 110, 12, 15, 0, 4, 30, 0]);
+  assert.deepEqual(r.aportacionEmpresa.map((f) => f.importe), [472, 110, 12, 15, 0, 4, 30]);
+  // Pagas prorrateadas: de los 2.000 €, 2/14 son la prorrata de las dos pagas extra (como el concepto 0004 de RED).
+  assert.deepEqual(r.devengos.map((f) => f.importe), [1714.29, 0, 285.71]);
+  assert.equal(conceptosRed(n, empleado).find(([c]) => c === '0004')[2], 285.71);
+  assert.deepEqual([r.bases.remuneracionMensual, r.bases.prorrata], [1714.29, 285.71]);
   assert.equal(r.totalEmpresa, 643);
   assert.equal(r.totalDevengado, 2000);
   assert.equal(r.totalDeducir, 370);
