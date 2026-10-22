@@ -38,7 +38,7 @@ export default async function DocumentoBandeja({ params }) {
           : <a className="boton sec" href={archivo} target="_blank" rel="noopener">{doc.tipo === 'application/xml' ? 'Descargar el XML' : 'Abrir la factura (PDF)'}</a>}
         {doc.tipo === 'application/xml' && <p className="nota">Factura electrónica: sus datos son exactos, leídos del propio archivo.</p>}
         {doc.duplicados?.length > 0 && <div className="nota" role="alert"><strong>Puede que ya esté apuntada</strong><ul>{doc.duplicados.map((x) => <li key={x.id}><a href={`/gastos/${encodeURIComponent(x.id)}`} target="_blank" rel="noopener noreferrer">{x.motivo}</a></li>)}</ul></div>}
-        {gastar && <AccionesDocumento id={id} estado={doc.estado} />}
+        {gastar && <AccionesDocumento id={id} estado={doc.estado} remitente={doc.correo?.de || ''} />}
       </section>
       {doc.estado === 'leyendo' && <EsperarLectura id={id} />}
       {doc.estado === 'aprobado' && <p className="nota">Aprobada sola el {fechaCorta(String(d.recibido).slice(0, 10))}: es de un proveedor de confianza y cuadraba. <a href={`/gastos/${encodeURIComponent(d.gasto)}`}>Ver el gasto</a>.</p>}

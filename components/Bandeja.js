@@ -7,6 +7,7 @@ import { confirmar } from './Confirmar';
 import { eur, fechaCorta } from '@/lib/formato';
 import { reducir } from '@/lib/reducirImagen';
 import { deDataUrl, MAX_BYTES } from '@/lib/justificanteCliente';
+import { leerCompartidos } from '@/lib/compartidoCliente';
 import '@/app/bandeja.css';
 
 // Bandeja de facturas (lib/bandeja.js): subir muchas a la vez, ver cómo se leen y aprobar las que cuadran.
@@ -71,7 +72,7 @@ export default function Bandeja({ inicial, resumenInicial, puedeGastar }) {
     return () => clearInterval(t);
   }, [resumen.leyendo, subiendo, recargar]);
 
-  const subir = async (lista) => {
+  const subir = async (lista, origen) => {
     const archivos = [...lista].slice(0, 100);
     if (!archivos.length) return;
     setErrores([]); setAviso(''); setSubiendo({ hechos: 0, total: archivos.length });
@@ -80,7 +81,7 @@ export default function Bandeja({ inicial, resumenInicial, puedeGastar }) {
     const hilo = async () => {
       while (i < archivos.length) {
         const f = archivos[i++];
-        const e = await subirABandeja(f);
+        const e = await subirABandeja(f, origen);
         if (e) fallos.push(e);
         setSubiendo((s) => ({ ...s, hechos: s.hechos + 1 }));
       }
@@ -91,6 +92,15 @@ export default function Bandeja({ inicial, resumenInicial, puedeGastar }) {
     await recargar();
     router.refresh();
   };
+
+  // Lo compartido desde el móvil (app/sw lo deja en la caché y vuelve aquí con ?compartido=N): se sube una vez.
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get('compartido');
+    if (q === null) return;
+    window.history.replaceState(null, '', '/gastos/bandeja');
+    if (q === 'sinsw') { setAviso('Fisquo aún se estaba preparando en este móvil: vuelve a compartir la factura.'); return; }
+    leerCompartidos().then((l) => (l.length ? subir(l, 'compartido') : setAviso('No ha llegado ningún archivo que se pueda leer (PDF, foto o XML de hasta 5 MB).')));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const aprobarCuadran = async () => {
     const ids = docs.filter((d) => d.cuadra).map((d) => d.id);
@@ -191,6 +201,7 @@ function Fila({ d, puedeGastar, ocupado, accion }) {
       <Link href={`/gastos/bandeja/${d.id}`} className="fila">{contenido}</Link>
       {puedeGastar && d.estado === 'cuarentena' && <div className="bandeja-acciones">
         <button type="button" className="boton sec pequeno" disabled={ocupado} onClick={() => accion(d.id, 'releer')}>Leerla</button>
+        {d.correo && <button type="button" className="boton sec pequeno" disabled={ocupado} onClick={() => accion(d.id, 'permitir')}>Permitir siempre a {d.correo.de}</button>}
         <button type="button" className="boton sec pequeno" disabled={ocupado} onClick={() => accion(d.id, 'descartar')}>Descartar</button>
       </div>}
       {puedeGastar && d.estado === 'error' && <div className="bandeja-acciones">

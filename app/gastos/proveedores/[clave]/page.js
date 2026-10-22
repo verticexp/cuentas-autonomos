@@ -11,6 +11,8 @@ import { puede } from '@/lib/permisos';
 import Volver from '@/components/Volver';
 import Ir from '@/components/Ir';
 import PagarProveedor from '@/components/PagarProveedor';
+import { ConfianzaProveedor } from '@/components/AccionesBandeja';
+import { deConfianza } from '@/lib/bandejaServidor';
 import '@/app/proveedores.css';
 
 import '@/app/mk.css';
@@ -23,6 +25,7 @@ export default async function Proveedor({ params }) {
   const p = await detalleProveedor(u, clave);
   if (!p) notFound();
   const fichas = (await listarProveedores(u)).map((p) => p.ficha);
+  const confianza = Boolean(await deConfianza(u, { proveedor: p.nombre, proveedorNif: p.nif }));
   return (
     <main className="pagina mk-look fichas-pagina">
       <Volver href="/gastos/proveedores">Proveedores</Volver>
@@ -37,6 +40,7 @@ export default async function Proveedor({ params }) {
       <section className="bloque"><h2 className="ficha-titulo">{p.ficha ? 'Datos del proveedor' : 'Crear ficha'}</h2>
         <FichaProveedor ficha={p.ficha} clave={p.clave} nombre={p.nombre} nif={p.nif} editar={puede(u, 'gastar')} comerciales={valoresDe(fichas, 'comercial')} zonas={valoresDe(fichas, 'zona')} />
       </section>
+      {puede(u, 'gastar') && <ConfianzaProveedor clave={p.clave} proveedor={p.nombre} proveedorNif={p.nif} inicial={confianza} />}
       <h2 className="ficha-titulo">Gastos</h2>
       {!p.gastos.length && <Vacio compacto icono="gasto" titulo="Este proveedor aún no tiene gastos" accion={puede(u, 'gastar') && { href: '/gastos#apuntar-gasto', texto: 'Añadir gasto' }} />}
       <ul className="grupo-lista">
