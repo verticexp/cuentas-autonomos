@@ -21,6 +21,7 @@ import { vistasContabilidad } from '@/lib/modulos';
 import '@/app/contabilidad.css';
 
 import '@/app/mk.css';
+import { gastosQueVe, nominasQueVe, veSueldos } from '@/lib/nominas';
 
 export const dynamic = 'force-dynamic';
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
@@ -45,7 +46,9 @@ const imp = (v) => (v ? eur(v) : '');
 
 export default async function Contabilidad({ searchParams }) {
   const u = await requerir(DETALLE);
-  const [facturas, gastos, nominas, manuales, saldo, productos, ajustes, albaranes] = await Promise.all([leer(u, 'facturas'), leer(u, 'gastos'), leer(u, 'nominas'), leer(u, 'asientos'), redis?.get(clave(u, 'saldo')), leer(u, 'productos'), leer(u, 'stock'), leer(u, 'albaranes')]);
+  const [facturas, gastosLeidos, nominasLeidas, manuales, saldo, productos, ajustes, albaranes] = await Promise.all([leer(u, 'facturas'), leer(u, 'gastos'), leer(u, 'nominas'), leer(u, 'asientos'), redis?.get(clave(u, 'saldo')), leer(u, 'productos'), leer(u, 'stock'), leer(u, 'albaranes')]);
+  // Sin el permiso «Nóminas», las de cada persona van juntas por mes (lib/nominas.js, Codex H2).
+  const gastos = gastosQueVe(u, gastosLeidos), nominas = nominasQueVe(u, nominasLeidas);
   if (!facturas) return <SinBD />;
   const sp = await searchParams;
   const h = hoy();
@@ -68,7 +71,7 @@ export default async function Contabilidad({ searchParams }) {
   const antDe = (fn) => (B ? fn(B) : undefined);
   const visibles = (ids) => A.partidas.filter((x) => ids.includes(x.id) && (x.importe || ant(x.id) || x.id === 'cifra'));
   const totalLibro = (k) => d.libro.reduce((s, b) => s + b[k], 0);
-  const escribe = puede(u, DETALLE);
+  const escribe = puede(u, 'contabilidad');
   const ca = ver === 'anuales' && sociedad && cuentasAnuales({ asientos: d.asientos, gastos, nominas: nominas || [], empresa: u, anio, guardado: (await leerUno(u, 'cuentasAnuales', String(anio))) || {} });
   const cerrado = anio < actual;
   // Filas del balance oficial con importe en alguno de los dos años (las masas, siempre).
@@ -139,7 +142,7 @@ export default async function Contabilidad({ searchParams }) {
               <header>
                 <span className="cont-num">{a.n}</span>
                 <span className="cont-n"><strong>{a.concepto}</strong><small>{fechaCorta(a.fecha)} · {TIPO[a.origen?.tipo] || 'Automático'}</small></span>
-                {a.origen && ORIGEN[a.origen.tipo] && <Ir href={ORIGEN[a.origen.tipo](a.origen.id)} className="cont-ver">Ver</Ir>}
+                {a.origen && ORIGEN[a.origen.tipo] && (a.origen.tipo !== 'nomina' || veSueldos(u)) && <Ir href={ORIGEN[a.origen.tipo](a.origen.id)} className="cont-ver">Ver</Ir>}
                 {escribe && a.origen && ['manual', 'apertura'].includes(a.origen.tipo) && <Borrar url={`/api/asientos?id=${encodeURIComponent(a.origen.id)}`} pregunta={`¿Borrar el asiento «${a.concepto}»?`} />}
               </header>
               <table className="cont-lineas">

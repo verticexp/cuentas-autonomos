@@ -5,6 +5,7 @@ import { actividadesDe, nombresActividad } from '@/lib/empresa';
 import { fechaCorta } from '@/lib/formato';
 import { auditar } from '@/lib/auditoria';
 import { leerRango } from '@/lib/indices';
+import { gastosQueVe } from '@/lib/nominas';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,9 +24,11 @@ export async function GET(req) {
   const ACTIVIDADES = nombresActividad(actividadesDe(u));
   const anio = Number(q.get('anio')) || new Date().getFullYear();
   const t = Number(q.get('t')) || 0;
-  const lista = (await leerRango(u, tipo, `${anio}-01-01`, `${anio}-12-31`))
+  const leidos = (await leerRango(u, tipo, `${anio}-01-01`, `${anio}-12-31`))
     .filter((x) => x.fecha.startsWith(`${anio}-`) && (!t || trimestre(x.fecha) === t))
     .sort((a, b) => a.fecha.localeCompare(b.fecha));
+  // Sin el permiso «Nóminas», las nóminas van juntas por mes (Codex H2).
+  const lista = tipo === 'gastos' ? gastosQueVe(u, leidos) : leidos;
 
   const filas = tipo === 'facturas'
     ? [['Número', 'Fecha', 'Cliente', 'NIF', 'Actividad', 'Concepto', 'Base', 'IVA %', 'Cuota IVA', 'IRPF %', 'Retención', 'Total', 'Cobrada', 'Rectifica'],

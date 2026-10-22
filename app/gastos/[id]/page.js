@@ -9,6 +9,7 @@ import { Borrar } from '@/components/Acciones';
 import { puede } from '@/lib/permisos';
 import { actividadesDe, fiscalDe } from '@/lib/empresa';
 import { eur } from '@/lib/formato';
+import { veSueldos } from '@/lib/nominas';
 
 import '@/app/mk.css';
 
@@ -19,7 +20,8 @@ export default async function Gasto({ params }) {
   const id = decodeURIComponent((await params).id);
   const [g, productos] = await Promise.all([leerUno(u, 'gastos', id), leer(u, 'productos')]);
   const stockProductos = fiscalDe(u).inventario ? (productos || []).filter((p) => !p.servicio).sort((a, b) => a.nombre.localeCompare(b.nombre)) : [];
-  if (!g) notFound();
+  // La nómina de una persona, solo con el permiso «Nóminas» (Codex H2).
+  if (!g || (g.nomina && !veSueldos(u))) notFound();
   return (
     <main className="pagina mk-look gastos-formulario">
       <Volver href="/gastos">Gastos</Volver>
@@ -33,5 +35,5 @@ export default async function Gasto({ params }) {
 export async function generateMetadata({ params }) {
   const u = await requerir('gastos');
   const d = await leerUno(u, 'gastos', decodeURIComponent((await params).id));
-  return { title: d ? `Gasto · ${d.concepto}` : 'Gasto' };
+  return { title: d && !(d.nomina && !veSueldos(u)) ? `Gasto · ${d.concepto}` : 'Gasto' };
 }

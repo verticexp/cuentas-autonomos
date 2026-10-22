@@ -243,9 +243,9 @@ export default async function Resumen({ searchParams }) {
                   <div className="trim-cab"><h3>{q.t}T {anio}</h3>{abierto && <span className="estado-txt e-curso">{q.t === tHoy ? 'En curso' : 'Aún no ha empezado'}</span>}</div>
                   <div className="trim-cifras">
                     {c303 && <p><span>{q.t === r.trimestres[0]?.t ? <Termino id="m303">Modelo 303</Termino> : 'Modelo 303'}</span><strong>{q.ivaDevolucion > 0 ? `${eur(q.ivaDevolucion)} a devolver` : q.m303 < 0 ? `${eur(-q.m303)} a compensar` : eur(q.ivaIngresar)}</strong></p>}
-                    {c303 && !abierto && <Presentado modelo="303" anio={anio} t={q.t} importe={0} pagado={q.t === 4 && u.pres303?.[anio]?.[4] === 'devolucion' ? 'devolucion' : hecho303(u.pres303, u.pagos130, anio, q.t)} con130={false} />}
+                    {c303 && !abierto && <Presentado soloLectura={!puede(u, 'contabilidad')} modelo="303" anio={anio} t={q.t} importe={0} pagado={q.t === 4 && u.pres303?.[anio]?.[4] === 'devolucion' ? 'devolucion' : hecho303(u.pres303, u.pagos130, anio, q.t)} con130={false} />}
                     {c130 && <p><span>{q.t === r.trimestres[0]?.t ? <Termino id="m130">Modelo 130</Termino> : 'Modelo 130'}</span><strong>{eur(q.m130)}</strong></p>}
-                    {c130 && !abierto && <Presentado anio={anio} t={q.t} importe={q.m130} pagado={pagos(anio)[q.t]} />}
+                    {c130 && !abierto && <Presentado soloLectura={!puede(u, 'contabilidad')} anio={anio} t={q.t} importe={q.m130} pagado={pagos(anio)[q.t]} />}
                     {!c303 && !c130 && <p><span>Base facturada</span><strong>{eur(q.ingresos)}</strong></p>}
                   </div>
                   <details className="trim-mas">

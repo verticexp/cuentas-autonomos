@@ -6,6 +6,7 @@ import { generarAsientos } from '@/lib/asientos';
 import { diarioA3, diarioContaplus, diarioContasol } from '@/lib/exportarContable';
 import { hoy } from '@/lib/formato';
 import { auditar } from '@/lib/auditoria';
+import { gastosQueVe, nominasQueVe } from '@/lib/nominas';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,7 +19,9 @@ export async function GET(req) {
   const formato = q.get('formato');
   if (!Number.isInteger(anio) || anio < 2000 || anio > 2100) return error('Año no válido');
   if (!['a3', 'contaplus', 'contasol'].includes(formato)) return error('Formato no válido: a3, contaplus o contasol');
-  const [facturas, gastos, nominas, manuales, productos, ajustes, albaranes] = await Promise.all([leer(u, 'facturas'), leer(u, 'gastos'), leer(u, 'nominas'), leer(u, 'asientos'), leer(u, 'productos'), leer(u, 'stock'), leer(u, 'albaranes')]);
+  const [facturas, gastosLeidos, nominasLeidas, manuales, productos, ajustes, albaranes] = await Promise.all([leer(u, 'facturas'), leer(u, 'gastos'), leer(u, 'nominas'), leer(u, 'asientos'), leer(u, 'productos'), leer(u, 'stock'), leer(u, 'albaranes')]);
+  // Sin el permiso «Nóminas», las de cada persona van juntas por mes (lib/nominas.js, Codex H2).
+  const gastos = gastosQueVe(u, gastosLeidos), nominas = nominasQueVe(u, nominasLeidas);
   if (!facturas || !gastos) return error('No se han podido cargar los datos contables');
   const asientos = generarAsientos({ facturas, gastos, nominas: nominas || [], manuales: manuales || [], fiscal: fiscalDe(u), pagos130: u.pagos130 || {}, pres303: u.pres303 || {}, pagos202: u.pagos202 || {}, cuotaIS: u.cuotaIS || {}, productos: productos || [], ajustes: ajustes || [], albaranes: albaranes || [] }, fecha);
   const nombre = formato === 'a3' ? 'SUENLACE.DAT' : formato === 'contaplus' ? `XDiario-${anio}.txt` : `asientos-${anio}.csv`;

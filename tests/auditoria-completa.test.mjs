@@ -80,8 +80,8 @@ const req = (ruta, b, method = 'POST') => Object.assign(new Request(`http://fisq
   method, headers: { 'content-type': 'application/json', 'x-real-ip': '1.2.3.4' }, ...(b === undefined ? {} : { body: JSON.stringify(b) }),
 }), { nextUrl: new URL(`http://fisquo.test${ruta}`) });
 const ACT = [{ id: 'eventos', nombre: 'Eventos', serie: '', ivaPct: 21, irpfPct: 0 }];
-async function entrar({ rol = 'admin', permisos } = {}) {
-  const u = { id: 'u', empresa: 'e', rol, ...(permisos ? { permisos } : {}), nombre: 'Prueba', email: 'prueba@example.test', creado: new Date().toISOString() };
+async function entrar({ rol = 'admin', permisos, pv } = {}) {
+  const u = { id: 'u', empresa: 'e', rol, ...(permisos ? { permisos } : {}), ...(pv ? { pv } : {}), nombre: 'Prueba', email: 'prueba@example.test', creado: new Date().toISOString() };
   await R.redis.hset('usuarios', { u }); await R.redis.hset('emails', { [u.email]: u.id });
   await R.redis.hset('empresas', { e: { id: 'e', nombre: 'Empresa', emisor: { nombre: 'EMPRESA SL', nif: 'B12345674' }, actividades: ACT, fiscal: { tipo: 'sociedad', iva: 'general' } } });
   estado.cookies.set('t', await A.crearSesion(u.id));
@@ -265,7 +265,7 @@ test('una persona en dos empresas: cambiar sus permisos en una mientras la otra 
     assert.equal((await quitar).status, 200);
   } finally { globalThis.fetch = fetchHarness; }
   const v = await R.redis.hget('usuarios', 'v');
-  assert.deepEqual(v.empresas, { e: { rol: 'miembro', permisos: ['facturas', 'gastos'] } });
+  assert.deepEqual(v.empresas, { e: { rol: 'miembro', permisos: ['facturas', 'gastos'], pv: 2 } });
 });
 
 test('una invitación no cambia la contraseña de una cuenta que ya está activa', async () => {
@@ -275,3 +275,36 @@ test('una invitación no cambia la contraseña de una cuenta que ya está activa
   assert.equal(r.error, 'Esta invitación ya no es válida');
   assert.equal((await R.redis.hget('usuarios', 'w')).pass, 'guardada');
 });
+
+// Decisiones de la auditoría aplicadas (22-10-2026): permiso «Contabilidad» (Codex H3) y sueldos (H2).
+test('Contabilidad: apuntar asientos, la memoria y marcar modelos exige el permiso; ver no basta', async () => {
+  const [a, c, ca] = await Promise.all([cargar('app/api/asientos/route.js'), cargar('app/api/cuenta/route.js'), cargar('app/api/cuentas-anuales/route.js')]);
+  const asiento = { fecha: '2026-10-01', concepto: 'Ajuste', lineas: [{ cuenta: '629', debe: 10, haber: 0 }, { cuenta: '572', debe: 0, haber: 10 }] };
+  const marca = { presentado303: { anio: 2026, t: 3, hecho: true } };
+  const memoria = { anio: 2025, administradores: 'Ana' };
+  const intento = async () => [
+    (ruta('/api/asientos', 'POST'), (await a.POST(req('/api/asientos', asiento))).status),
+    (ruta('/api/cuenta', 'PATCH'), (await c.PATCH(req('/api/cuenta', marca, 'PATCH'))).status),
+    (ruta('/api/cuentas-anuales', 'POST'), (await ca.POST(req('/api/cuentas-anuales', memoria))).status),
+  ];
+  await entrar({ rol: 'miembro', permisos: ['resumen', 'facturas', 'gastos'], pv: 2 });
+  assert.deepEqual(await intento(), [403, 403, 403]);
+  await entrar({ rol: 'miembro', permisos: ['contabilidad'], pv: 2 });
+  assert.deepEqual(await intento(), [200, 200, 200]);
+  // La gestoría de antes (sin versión) conserva lo que hacía.
+  await entrar({ rol: 'miembro', permisos: ['resumen', 'facturas', 'gastos', 'nominas'] });
+  assert.deepEqual(await intento(), [200, 200, 200]);
+});
+
+test('sueldos: sin el permiso «Nóminas», el Excel de gastos lleva las nóminas juntas por mes', async () => {
+  const x = await cargar('app/api/exportar/route.js');
+  const gn = (id, nombre, base) => ({ id: `nomina-${id}`, fecha: '2026-10-31', actividad: 'eventos', concepto: `Nómina ${nombre} · octubre 2026`, base, ivaPct: 0, nomina: id });
+  await R.redis.hset('gastos:e', { 'nomina-n1': gn('n1', 'Ana', 2369.7), 'nomina-n2': gn('n2', 'Luis', 3094.43), g1: { id: 'g1', fecha: '2026-10-05', actividad: 'eventos', concepto: 'Gestoría', base: 100, ivaPct: 21 } });
+  const csv = async () => (await (await x.GET(req('/api/exportar?tipo=gastos&anio=2026', undefined, 'GET'))).text());
+  await entrar({ rol: 'miembro', permisos: ['gastos'], pv: 2 }); ruta('/api/exportar', 'GET');
+  const sin = await csv();
+  assert.ok(!/Ana|Luis/.test(sin) && sin.includes('Nóminas de octubre 2026 · 2 personas') && sin.includes('5464,13'), sin);
+  await entrar({ rol: 'miembro', permisos: ['gastos', 'nominas'], pv: 2 });
+  assert.ok((await csv()).includes('Nómina Ana'));
+});
+

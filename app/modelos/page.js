@@ -22,6 +22,7 @@ import '@/app/modelos.css';
 
 import '@/app/mk.css';
 import { datosImpuestos } from '@/lib/datosImpuestos';
+import { puede } from '@/lib/permisos';
 
 export const dynamic = 'force-dynamic';
 const T = [1, 2, 3, 4];
@@ -50,6 +51,8 @@ const Casillas = ({ filas }) => <dl>{filas.filter(Boolean).map(([t, v, b]) => <d
 
 export default async function Modelos({ searchParams }) {
   const u = await requerir('resumen');
+  // Sin «Contabilidad», los estados y los datos de los impuestos se ven pero no se cambian (Codex H3).
+  const soloLectura = !puede(u, 'contabilidad');
   if (!redis) return <SinBD />;
   const actual = Number(hoy().slice(0, 4));
   const anio = Number((await searchParams).anio) || actual;
@@ -69,6 +72,12 @@ export default async function Modelos({ searchParams }) {
   const m390 = usa303(f) && modelo390(facturas, gastos, anio, iva);
   const conRetencion = gastos.some((g) => Number(g.irpfPct) > 0);
   const m190 = (f.trabajadores || nominas?.length > 0 || conRetencion) && modelo190(nominas || [], empleados || [], anio, gastos);
+  // Sin el permiso «Nóminas», lo de cada trabajador no se ve: una línea con todos (los profesionales sí, son facturas).
+  if (m190 && !puede(u, 'nominas')) {
+    const trab = m190.perceptores.filter((p) => p.clave === 'A');
+    const suma = (k) => r2(trab.reduce((s, p) => s + p[k], 0));
+    m190.perceptores = [...(trab.length ? [{ nombre: `${trab.length} ${trab.length === 1 ? 'trabajador' : 'trabajadores'}`, nif: '', clave: 'A', percepciones: suma('percepciones'), retenciones: suma('retenciones') }] : []), ...m190.perceptores.filter((p) => p.clave !== 'A')];
+  }
   const is = f.tipo === 'sociedad' && borradorSociedades(facturas, gastos, anio, { pagos202: u.pagos202 || {}, ivaCoste: !usa303(f), productos: productos || [], ajustes: ajustes || [], albaranes: albaranes || [], manuales: manuales || [], hasta: h < `${anio}-12-31` ? h : `${anio}-12-31`, constitucion: f.constitucion, cuotaIS: u.cuotaIS || {} });
   const renta = f.tipo === 'autonomo' && borradorRenta(facturas, gastos, anio, u.pagos130?.[anio], { ivaCoste: !usa303(f), personal: f.renta || {}, iva });
   const m180 = hay115 && modelo180(gastos, anio);
@@ -197,7 +206,7 @@ export default async function Modelos({ searchParams }) {
           dato={c && importeFila(comp ? -c['46'] : liquidaciones[t - 1].ingresar)}>
           <h2 className="grupo-t">303 · IVA trimestral</h2>
           <p className="grupo-pie arriba">El IVA de tus facturas menos el de tus gastos. Si sale negativo, se compensa en los trimestres siguientes (durante cuatro años como máximo) o, en el 4T, puedes pedir que te lo devuelvan.</p>
-          {verProrrata && <Prorrata anio={anio} {...prorrata} titulo={<Termino id="prorrata">Prorrata del IVA</Termino>} />}
+          {verProrrata && <Prorrata soloLectura={soloLectura} anio={anio} {...prorrata} titulo={<Termino id="prorrata">Prorrata del IVA</Termino>} />}
           <div className="tarjetas">
             {T.map((t) => { const c = casillas303(facturas, gastos, anio, t, iva); return (
               <div key={t} className="tarjeta"><h3>{t}T {anio}</h3>
@@ -228,7 +237,7 @@ export default async function Modelos({ searchParams }) {
                 ]} /></Plegable>
                 {t === 4 && liquidaciones[3].pendiente > 0 && <p className="nota">Te quedan {eur(liquidaciones[3].pendiente)} a tu favor: puedes compensarlos en {anio + 1} y siguientes o pedir que te los devuelvan (al marcarlo como presentado, elige «pido la devolución»).</p>}
                 <Fichero modelo="303" anio={anio} t={t} nif={u.emisor?.nif} aeat={AEAT.m303} aviso={c.otros.length > 0 && 'Con tipos de IVA distintos del 4, 10 y 21 % rellénalo a mano en la Sede.'} />
-                <Presentado modelo="303" anio={anio} t={t} importe={0} pagado={t === 4 && u.pres303?.[anio]?.[4] === 'devolucion' ? 'devolucion' : p303(t)} con130={false} situacion={situacion(t)} plazo={limite(t)} devolucion={t === 4 && (liquidaciones[3].pendiente > 0 || liquidaciones[3].devolucion > 0)} />
+                <Presentado soloLectura={soloLectura} modelo="303" anio={anio} t={t} importe={0} pagado={t === 4 && u.pres303?.[anio]?.[4] === 'devolucion' ? 'devolucion' : p303(t)} con130={false} situacion={situacion(t)} plazo={limite(t)} devolucion={t === 4 && (liquidaciones[3].pendiente > 0 || liquidaciones[3].devolucion > 0)} />
               </div>
             ); })}
           </div>
@@ -242,7 +251,7 @@ export default async function Modelos({ searchParams }) {
         <ModeloPlegable id="m130" num="130" nombre="Pago a cuenta del IRPF" {...filaTrim(t)} dato={t && importeFila(r130.trimestres[t - 1].m130)}>
           <h2 className="grupo-t">130 · Pago a cuenta del IRPF</h2>
           <p className="grupo-pie arriba">Acumulado desde enero: el 20 % de tu rendimiento, menos las retenciones de tus facturas y lo que ya pagaste en trimestres anteriores. Marca aquí cada trimestre cuando lo presentes: lo que no está presentado no cuenta en el siguiente.</p>
-          <Rend130 anio={anio - 1} valor={rendAnterior ?? null} sugerido={sugerido} minoracion={minoracion130(rendAnterior)} />
+          <Rend130 soloLectura={soloLectura} anio={anio - 1} valor={rendAnterior ?? null} sugerido={sugerido} minoracion={minoracion130(rendAnterior)} />
           <div className="tarjetas">
             {r130.trimestres.map((q) => (
               <div key={q.t} className="tarjeta"><h3>{q.t}T {anio}</h3>
@@ -255,7 +264,7 @@ export default async function Modelos({ searchParams }) {
                   ['19 · A ingresar', q.m130, true],
                 ]} /></Plegable>
                 <Fichero modelo="130" anio={anio} t={q.t} nif={u.emisor?.nif} aeat={AEAT.m130} />
-                <Presentado anio={anio} t={q.t} importe={q.m130} pagado={u.pagos130?.[anio]?.[q.t]} situacion={situacion(q.t)} plazo={limite(q.t)} />
+                <Presentado soloLectura={soloLectura} anio={anio} t={q.t} importe={q.m130} pagado={u.pagos130?.[anio]?.[q.t]} situacion={situacion(q.t)} plazo={limite(q.t)} />
               </div>
             ))}
           </div>
@@ -299,12 +308,12 @@ export default async function Modelos({ searchParams }) {
           <h2 className="grupo-t">202 · Pagos a cuenta del Impuesto sobre Sociedades</h2>
           <p className="grupo-pie arriba">El 18 % de la cuota del último Impuesto sobre Sociedades presentado (menos deducciones, bonificaciones y retenciones; sin restar los pagos a cuenta). Si salió a cero o es el primer año, no se presenta. Si facturas más de 6 millones, se calcula de otra forma: lo hace tu gestor.</p>
           <div className="tarjetas">
-            <CuotaIS anio={anio - 2} valor={u.cuotaIS?.[anio - 2] ?? null} uso="el pago de abril" />
-            <CuotaIS anio={anio - 1} valor={u.cuotaIS?.[anio - 1] ?? null} uso="los pagos de octubre y diciembre" />
+            <CuotaIS soloLectura={soloLectura} anio={anio - 2} valor={u.cuotaIS?.[anio - 2] ?? null} uso="el pago de abril" />
+            <CuotaIS soloLectura={soloLectura} anio={anio - 1} valor={u.cuotaIS?.[anio - 1] ?? null} uso="los pagos de octubre y diciembre" />
           </div>
           <div className="tarjetas">
             {pagos.map((x) => (
-              <div key={x.p} className="tarjeta"><div className="trim-cab"><h3>{x.p}P {anio} · {x.mes}</h3>{x.pago > 0 && <Presentado202 anio={anio} p={x.p} importe={x.pago} pagado={u.pagos202?.[anio]?.[x.p]} />}</div>
+              <div key={x.p} className="tarjeta"><div className="trim-cab"><h3>{x.p}P {anio} · {x.mes}</h3>{x.pago > 0 && <Presentado202 soloLectura={soloLectura} anio={anio} p={x.p} importe={x.pago} pagado={u.pagos202?.[anio]?.[x.p]} />}</div>
                 {x.cuota === null ? <p className="nota">Falta la cuota del Impuesto sobre Sociedades de {x.de}.</p>
                   : x.pago ? <Casillas filas={[[`Cuota de ${x.de}`, x.cuota], ['18 % · A ingresar', x.pago, true]]} />
                   : <p className="nota">La cuota de {x.de} fue cero: no se presenta.</p>}

@@ -6,7 +6,7 @@ import { llamar } from './Acciones';
 import { eur } from '@/lib/formato';
 
 // Cuota del Impuesto sobre Sociedades de un año (la base del 202 del año siguiente o del otro).
-export default function CuotaIS({ anio, valor, uso }) {
+export default function CuotaIS({ anio, valor, uso, soloLectura = false }) {
   const router = useRouter();
   const [v, setV] = useState(valor === null ? '' : String(valor).replace('.', ','));
   const [msg, setMsg] = useState('');
@@ -14,15 +14,16 @@ export default function CuotaIS({ anio, valor, uso }) {
     setMsg('');
     try { await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify({ cuotaIS: { anio, importe } }) }); router.refresh(); } catch (e) { setMsg(e.message); }
   };
+  const Caja = soloLectura ? 'div' : 'form';
   return (
-    <form className="formulario tarjeta" onSubmit={(e) => { e.preventDefault(); guardar(v.trim() === '' ? null : v); }}>
+    <Caja className="formulario tarjeta" onSubmit={soloLectura ? undefined : (e) => { e.preventDefault(); guardar(v.trim() === '' ? null : v); }}>
       <p><strong>Cuota del Impuesto sobre Sociedades de {anio}</strong></p>
       <p className="nota">Para {uso}. {valor !== null ? `Guardada: ${eur(valor)}.` : 'Está en tu declaración (modelo 200) o te la da tu gestor.'}</p>
-      <div className="fila-act">
+      {soloLectura ? <p className="nota">Lo cambia quien tiene el permiso «Contabilidad».</p> : <div className="fila-act">
         <input className="campo" inputMode="decimal" placeholder="Cuota" value={v} onChange={(e) => setV(e.target.value)} aria-label={`Cuota del Impuesto sobre Sociedades de ${anio}`} />
         <button className="boton sec">Guardar</button>
-      </div>
+      </div>}
       {msg && <p className="error">{msg}</p>}
-    </form>
+    </Caja>
   );
 }

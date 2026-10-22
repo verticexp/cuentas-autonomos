@@ -1045,6 +1045,13 @@ console.log('Registro de jornada');
   ok('Impuestos: el 111 del trimestre con los trabajadores y sus retenciones', () => assert.ok(/111 · Retenciones de trabajadores y profesionales[\s\S]*?01 · Trabajadores \d[\s\S]*?03 · Retenciones [\d.,]+ €/.test(m111)));
   const pn = n(await texto(`/nominas/${nE.id}`, yo));
   ok('la nómina enseña las horas del registro', () => assert.ok(pn.includes('Registro de jornada') && pn.includes('24:00 h trabajadas') && pn.includes('h extra pagadas'), pn.slice(0, 400)));
+  // Sin el permiso «Nóminas» (Codex H2): ni la nómina de cada uno ni lo que cuesta; las del mes, juntas.
+  const { nombreMes } = await import('../../lib/nominas.js');
+  const csvOtro = await (await pedir(`/api/exportar?tipo=gastos&anio=${mesPrev.slice(0, 4)}`, { cookie: otro })).text();
+  const csvYo = await (await pedir(`/api/exportar?tipo=gastos&anio=${mesPrev.slice(0, 4)}`, { cookie: yo })).text();
+  const listaOtro = await (await pedir('/gastos', { cookie: otro })).text();
+  const fichaOtro = await pedir(`/gastos/nomina-${nE.id}`, { cookie: otro });
+  ok('sin el permiso de nóminas no se ve lo de cada persona: el Excel las junta, la lista no las nombra y la ficha no se abre', () => assert.ok(!csvOtro.includes('Eva Fichadora') && csvOtro.includes(`Nóminas de ${nombreMes(mesPrev)} · 2 personas`) && csvYo.includes('Nómina Eva Fichadora') && !listaOtro.includes('Nómina Eva') && fichaOtro.status === 404, `${fichaOtro.status} ${csvOtro.slice(0, 300)}`));
 
   const ex = await pedir(`/api/jornada/exportar?mes=${mesPrev}`, { cookie: yo });
   const z = leerZip(Buffer.from(await ex.arrayBuffer()));

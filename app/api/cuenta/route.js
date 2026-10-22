@@ -66,6 +66,7 @@ export async function PATCH(req) {
     && Object.keys(b).every((k) => ['bloqueoPantalla', 'actual', 'nueva', 'perfil'].includes(k));
   const { u, res } = await usuarioApi({ cuentaPersonal });
   if (res) return res;
+  // Marcar modelos como presentados y los datos que deciden los impuestos piden «Contabilidad» (Codex H3).
   const sin = (p) => !puede(u, p) && error('No tienes permiso para esto. Pídeselo al administrador de tu empresa.', 403);
   // Bloqueo de pantalla opcional (Ajustes › Face ID y contraseña): personal, no de la empresa.
   if ('bloqueoPantalla' in b) {
@@ -80,7 +81,7 @@ export async function PATCH(req) {
     return Response.json({ ok: true });
   }
   if (b.presentado) {
-    if (sin('resumen')) return sin('resumen');
+    if (sin('contabilidad')) return sin('contabilidad');
     const { anio, t, importe } = b.presentado;
     if (!Number.isInteger(anio) || anio < 2000 || anio > 2100 || ![1, 2, 3, 4].includes(t)) return error('Trimestre no válido');
     const pagos = { ...(u.pagos130 || {}) };
@@ -91,7 +92,7 @@ export async function PATCH(req) {
     return Response.json({ ok: true });
   }
   if (b.presentado303) {
-    if (sin('resumen')) return sin('resumen');
+    if (sin('contabilidad')) return sin('contabilidad');
     const { anio, t, hecho, devolucion } = b.presentado303;
     if (!Number.isInteger(anio) || anio < 2000 || anio > 2100 || ![1, 2, 3, 4].includes(t)) return error('Trimestre no válido');
     // En el 4T, el saldo a favor se puede pedir en devolución (art. 115 LIVA): ya no se compensa el año siguiente.
@@ -116,7 +117,7 @@ export async function PATCH(req) {
   }
   // Pago del 202 de un periodo (1, 2 o 3) presentado y pagado; null lo vuelve a pendiente.
   if (b.presentado202) {
-    if (sin('resumen')) return sin('resumen');
+    if (sin('contabilidad')) return sin('contabilidad');
     const { anio, p, importe } = b.presentado202;
     if (!Number.isInteger(anio) || anio < 2000 || anio > 2100 || ![1, 2, 3].includes(p)) return error('Periodo no válido');
     const pagos = { ...(u.pagos202 || {}) };
@@ -129,7 +130,7 @@ export async function PATCH(req) {
   // del año siguiente) y la cuota del Impuesto sobre Sociedades (base del 202).
   // Prorrata provisional del IVA de un año (art. 105 LIVA): un entero de 0 a 100; null la quita (Fisquo usa la del año anterior).
   if (b.prorrata) {
-    if (sin('resumen')) return sin('resumen');
+    if (sin('contabilidad')) return sin('contabilidad');
     const { anio, pct } = b.prorrata;
     if (!Number.isInteger(anio) || anio < 2000 || anio > 2100) return error('Año no válido');
     const valor = pct === null || pct === '' ? null : Number(String(pct).replace(',', '.').replace('%', '').trim());
@@ -142,7 +143,7 @@ export async function PATCH(req) {
   }
   const porAnio = ['rend130', 'cuotaIS'].find((k) => b[k]);
   if (porAnio) {
-    if (sin('resumen')) return sin('resumen');
+    if (sin('contabilidad')) return sin('contabilidad');
     const { anio, importe } = b[porAnio];
     if (!Number.isInteger(anio) || anio < 2000 || anio > 2100) return error('Año no válido');
     const valor = importe === null || importe === '' ? null : leerImporte(String(importe));
@@ -262,7 +263,8 @@ export async function PATCH(req) {
     const email = texto(g.email, 254).toLowerCase();
     if (!emailValido(email)) return error('El email de la gestoría no es válido');
     if (g.auto && !email) return error('Para mandar el paquete solo hace falta el email de la gestoría');
-    await actualizarUsuario(u, { gestoria: email ? { nombre: texto(g.nombre, 120), email, auto: Boolean(g.auto) } : null });
+    // sueldos: si quien la pone ve las nóminas; si no, el envío automático las lleva juntas por mes (lib/gestoriaEnvio.js).
+    await actualizarUsuario(u, { gestoria: email ? { nombre: texto(g.nombre, 120), email, auto: Boolean(g.auto), sueldos: puede(u, 'nominas') } : null });
     await auditar(u, email ? 'Gestoría cambiada' : 'Gestoría quitada', email || '');
     return Response.json({ ok: true });
   }

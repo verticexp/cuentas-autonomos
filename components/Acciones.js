@@ -55,7 +55,8 @@ export function EstadoTrimestre({ hecho, situacion, plazo, nota }) {
 // para no quitarle el foco a quien usa el teclado.
 // modelo="303": solo el 303 (pendiente o presentado), guardado aparte del 130; `pagado` es entonces true o false.
 // devolucion: en el 303 del 4T con saldo a favor, la opción de presentarlo pidiendo la devolución (pagado === 'devolucion').
-export function Presentado({ anio, t, importe, pagado, con130 = true, situacion, plazo, modelo, devolucion = false }) {
+// soloLectura: sin el permiso «Contabilidad», el estado sin selector.
+export function Presentado({ anio, t, importe, pagado, con130 = true, situacion, plazo, modelo, devolucion = false, soloLectura = false }) {
   const router = useRouter();
   const [error, setError] = useState('');
   const [guardando, empezar] = useTransition();
@@ -94,6 +95,10 @@ export function Presentado({ anio, t, importe, pagado, con130 = true, situacion,
       </> : <><option value="sinpagar">{devolucion ? 'Presentado, a compensar' : 'Presentado'}</option>{(devolucion || elegido === 'devolucion') && <option value="devolucion">Presentado, pido la devolución</option>}</>}
     </select>
   );
+  if (soloLectura) {
+    const texto = { pendiente: 'Pendiente', pagado: 'Presentado y 130 pagado', sinpagar: con130 ? 'Presentado, 130 sin pagar' : 'Presentado', devolucion: 'Presentado, con devolución' }[valor];
+    return situacion ? <EstadoTrimestre hecho={valor !== 'pendiente'} situacion={situacion} plazo={plazo} /> : <span className={`estado-txt ${valor === 'pendiente' ? 'e-pendiente' : 'e-ok'}`}>{texto}</span>;
+  }
   // Sin situación (Resumen): solo el selector, como antes.
   if (!situacion) return <>{selector}{error && <span className="error" role="alert">{error}</span>}</>;
   const hecho = valor !== 'pendiente';
@@ -115,7 +120,7 @@ export function Presentado({ anio, t, importe, pagado, con130 = true, situacion,
 }
 
 // Pago del 202 (sociedades): pendiente o presentado y pagado. Lo pagado se resta del Impuesto sobre Sociedades.
-export function Presentado202({ anio, p, importe, pagado }) {
+export function Presentado202({ anio, p, importe, pagado, soloLectura = false }) {
   const router = useRouter();
   const [error, setError] = useState('');
   const cambiar = async (e) => {
@@ -126,6 +131,7 @@ export function Presentado202({ anio, p, importe, pagado }) {
     } catch (err) { setError(err.message); }
   };
   const hecho = pagado !== undefined && pagado !== null;
+  if (soloLectura) return <span className={`estado-txt ${hecho ? 'e-ok' : 'e-pendiente'}`}>{hecho ? 'Presentado y pagado' : 'Pendiente'}</span>;
   return (
     <><select className={`estado ${hecho ? 'ok' : 'pend'}`} value={hecho ? 'pagado' : 'pendiente'} onChange={cambiar} aria-label={`Pago ${p} del 202`}>
       <option value="pendiente">Pendiente</option>
