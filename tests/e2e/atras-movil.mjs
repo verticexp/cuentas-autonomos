@@ -2,7 +2,8 @@
 // BASE=http://localhost:13017 UPSTASH=http://127.0.0.1:18079 PLAYWRIGHT_MODULE=/ruta/playwright/index.mjs CHROME_PATH=/ruta/chrome node tests/e2e/atras-movil.mjs
 // Cubre: el gesto de volver de la web guardada en el iPhone (components/GestoAtras.js, toques de verdad por CDP), el atrás
 // de Android con una hoja abierta (CloseWatcher), los pasos del registro en el historial, el diálogo de confirmación al
-// salir de la pantalla y adónde lleva «atrás» tras crear o borrar una ficha y tras aprobar o descartar en «Por revisar».
+// salir de la pantalla, adónde lleva «atrás» tras crear o borrar una ficha y tras aprobar o descartar en «Por revisar», y
+// «¿Salir sin guardar?» en los formularios con cambios (lib/sinGuardar.js).
 import assert from 'node:assert/strict';
 import { randomBytes } from 'node:crypto';
 import '../apoyo/cargador.mjs';
@@ -28,9 +29,9 @@ if (r.error) throw new Error(r.error);
 const token = await crearSesion(r.usuario.id);
 const u = await conEmpresa(r.usuario);
 const hoy = new Date().toISOString().slice(0, 10);
-const porRevisar = async (n) => {
+const porRevisar = async (n, desde = 0) => {
   const ids = [];
-  for (let i = 0; i < n; i++) {
+  for (let i = desde; i < desde + n; i++) {
     const id = `b${randomBytes(8).toString('hex')}`;
     await guardar(u, 'bandeja', { id, recibido: new Date(Date.now() - i * 1000).toISOString(), origen: 'subida', nombre: `factura-${i}.pdf`, estado: 'revisar',
       propuesta: { proveedor: `Proveedor ${i} ${sufijo}`, proveedorNif: '', concepto: `Material ${i}`, base: 10 + i, ivaPct: 21, irpfPct: 0, fecha: hoy, cuadra: true, avisos: [] } });
@@ -230,6 +231,170 @@ try {
     await p.waitForFunction(() => !document.querySelector('a[href^="/gastos/bandeja/"]'), null, { timeout: 5000 }); // ya no queda nada por revisar
     assert.deepEqual(errores, []);
     console.log('Por revisar: aprobar pasa a la siguiente en su lugar y la última y descartar vuelven a la lista OK');
+    await ctx.close();
+  }
+
+  // 6. «¿Salir sin guardar?» (lib/sinGuardar.js): con cambios, el atrás del sistema, «‹ Atrás» y el gesto del iPhone preguntan
+  // antes de salir; seguir editando no deja rastro en el historial y, tras guardar, ni se pregunta ni «atrás» vuelve al formulario.
+  const pregunta = (p) => p.getByRole('alertdialog', { name: '¿Salir sin guardar?' });
+  const conAviso = (p) => p.waitForFunction(() => Boolean(history.state?.__sinGuardar));
+  const concepto = (p) => p.getByPlaceholder('Ej.: Bolo DJ boda');
+  // Como una persona: un toque en el campo antes de escribir (fill solo no cuenta como gesto para el navegador).
+  const escribir = async (campo, texto) => { await campo.click(); await campo.fill(texto); };
+  const facturaNueva = async (p) => {
+    await p.locator('.tabbar .mas').click();
+    await p.locator('.hoja-panel a[href="/facturas/nueva"]').click();
+    await p.waitForURL('**/facturas/nueva');
+    await concepto(p).waitFor();
+  };
+  {
+    const { ctx, p, errores } = await movil();
+    await p.goto(`${BASE}/facturas`);
+    await facturaNueva(p);
+    // Sin cambios, atrás sale sin preguntar.
+    await p.goBack();
+    await p.waitForURL((x) => x.pathname === '/facturas');
+    await facturaNueva(p);
+    await escribir(concepto(p), 'Diseño de logotipo');
+    await conAviso(p);
+    const largo = await p.evaluate(() => history.length);
+    // Más abajo en el formulario: al preguntar, la pantalla no salta a donde estaba al apilar la entrada.
+    await p.getByRole('button', { name: /Detalles: IRPF/ }).click();
+    await p.evaluate(() => scrollTo(0, document.documentElement.scrollHeight));
+    await p.waitForTimeout(200);
+    const altura = await p.evaluate(() => Math.round(scrollY));
+    assert(altura > 100);
+    await p.goBack();
+    await pregunta(p).waitFor();
+    assert.equal(ruta(p), '/facturas/nueva');
+    await p.waitForTimeout(300);
+    assert.equal(await p.evaluate(() => Math.round(scrollY)), altura, 'la pantalla se queda donde estaba al preguntar');
+    await pregunta(p).getByRole('button', { name: 'Seguir editando' }).click();
+    await pregunta(p).waitFor({ state: 'detached' });
+    await conAviso(p);
+    assert.equal(await concepto(p).inputValue(), 'Diseño de logotipo');
+    assert.equal(await p.evaluate(() => history.length), largo, 'seguir editando no apila otra entrada');
+    assert.equal(await p.evaluate(() => Math.round(scrollY)), altura);
+    // Android: el botón atrás con la pregunta abierta la cierra, y se sigue editando.
+    await p.goBack();
+    await pregunta(p).waitFor();
+    await p.evaluate(() => window.__vigilantes.at(-1).requestClose());
+    await pregunta(p).waitFor({ state: 'detached' });
+    await conAviso(p);
+    assert.equal(ruta(p), '/facturas/nueva');
+    // Salir sin guardar: a la lista, de la que se venía.
+    await p.goBack();
+    await pregunta(p).getByRole('button', { name: 'Salir sin guardar' }).click();
+    await p.waitForURL((x) => x.pathname === '/facturas');
+    assert.deepEqual(errores, []);
+    console.log('Salir sin guardar (atrás del sistema y de Android): pregunta, seguir editando conserva lo escrito y salir vuelve OK');
+    await ctx.close();
+  }
+  {
+    const { ctx, p, errores } = await movil();
+    await p.goto(`${BASE}/facturas`);
+    await facturaNueva(p);
+    await escribir(concepto(p), 'Mantenimiento web');
+    await conAviso(p);
+    // Abierto con «‹ Atrás» desde abajo: la página no sube (el diálogo bloqueaba el desplazamiento en body y saltaba arriba).
+    await p.getByRole('button', { name: /Detalles: IRPF/ }).click();
+    await p.evaluate(() => scrollTo(0, document.documentElement.scrollHeight));
+    await p.waitForTimeout(200);
+    const altura = await p.evaluate(() => Math.round(scrollY));
+    await p.evaluate(() => document.querySelector('a.volver').click());
+    await pregunta(p).waitFor();
+    assert.equal(await p.evaluate(() => Math.round(scrollY)), altura);
+    await pregunta(p).getByRole('button', { name: 'Seguir editando' }).click();
+    await pregunta(p).waitFor({ state: 'detached' });
+    assert.equal(ruta(p), '/facturas/nueva');
+    assert.equal(await p.evaluate(() => Math.round(scrollY)), altura);
+    // Crear: la factura sustituye al formulario sin preguntar; atrás vuelve a la lista.
+    await p.getByRole('button', { name: /\+ Cliente nuevo/ }).click();
+    await escribir(p.getByLabel('Nombre o razón social'), `Cliente Aviso ${sufijo}`);
+    await escribir(p.getByLabel('Precio').first(), '120');
+    await p.getByRole('button', { name: 'Crear factura' }).click();
+    await p.waitForURL((x) => /^\/facturas\/(?!nueva)/.test(x.pathname));
+    await p.waitForTimeout(400);
+    assert.equal(await p.getByRole('alertdialog').count(), 0, 'tras guardar no se pregunta');
+    await p.goBack();
+    await p.waitForURL((x) => x.pathname === '/facturas');
+    await p.waitForTimeout(400);
+    assert.equal(await p.getByRole('alertdialog').count(), 0);
+    // «‹ Atrás» y salir sin guardar.
+    await facturaNueva(p);
+    await escribir(concepto(p), 'Otra cosa');
+    await conAviso(p);
+    await p.locator('a.volver').click();
+    await pregunta(p).getByRole('button', { name: 'Salir sin guardar' }).click();
+    await p.waitForURL((x) => x.pathname === '/facturas');
+    // Cerrar la pestaña o recargar con cambios: avisa el navegador.
+    await facturaNueva(p);
+    await escribir(concepto(p), 'Sin terminar');
+    await conAviso(p);
+    let dialogo = '';
+    p.once('dialog', (d) => { dialogo = d.type(); d.dismiss(); });
+    await p.close({ runBeforeUnload: true });
+    await p.waitForTimeout(500);
+    assert.equal(dialogo, 'beforeunload');
+    assert.equal(p.isClosed(), false);
+    assert.equal(await concepto(p).inputValue(), 'Sin terminar');
+    assert.deepEqual(errores, []);
+    console.log('Salir sin guardar («‹ Atrás»): pregunta; crear no pregunta ni deja el formulario detrás; cerrar avisa OK');
+    await ctx.close();
+  }
+  {
+    const { ctx, p, errores } = await movil({ standalone: true });
+    await p.goto(`${BASE}/facturas`);
+    await facturaNueva(p);
+    await escribir(concepto(p), 'Fotografía de producto');
+    await conAviso(p);
+    await deslizar(p);
+    await pregunta(p).waitFor();
+    await p.waitForTimeout(400);
+    assert(await sinRastro(p), 'la pantalla vuelve a su sitio antes de preguntar');
+    await pregunta(p).getByRole('button', { name: 'Seguir editando' }).click();
+    await pregunta(p).waitFor({ state: 'detached' });
+    assert.equal(ruta(p), '/facturas/nueva');
+    assert.equal(await concepto(p).inputValue(), 'Fotografía de producto');
+    await deslizar(p);
+    await pregunta(p).getByRole('button', { name: 'Salir sin guardar' }).click();
+    await p.waitForURL((x) => x.pathname === '/facturas');
+    await p.waitForTimeout(600);
+    assert(await sinRastro(p));
+    assert.deepEqual(errores, []);
+    console.log('Salir sin guardar (gesto del iPhone): la pantalla vuelve a su sitio y pregunta OK');
+    await ctx.close();
+  }
+  {
+    // Editar un gasto y guardarlo vuelve a la lista (atrás de verdad), sin preguntar; aprobar tras corregir, igual.
+    const id = `g${randomBytes(6).toString('hex')}`;
+    await guardar(u, 'gastos', { id, fecha: hoy, actividad: 'diseno', concepto: `Papel ${sufijo}`, proveedor: 'Papelería', base: 40, ivaPct: 21 });
+    const [a] = await porRevisar(2, 10); // otras que las de arriba: si no, saldrían como posibles duplicados
+    const { ctx, p, errores } = await movil();
+    await p.goto(`${BASE}/gastos`);
+    const posicionLista = await p.evaluate(() => history.state?.__idx);
+    await p.locator(`a[href="/gastos/${id}"]`).first().click();
+    await p.waitForURL(`**/gastos/${id}`);
+    await escribir(p.getByLabel('Concepto', { exact: true }), `Papel y sobres ${sufijo}`);
+    await conAviso(p);
+    await p.getByRole('button', { name: 'Guardar cambios' }).click();
+    await p.waitForURL((x) => x.pathname === '/gastos');
+    assert.equal(await p.evaluate(() => history.state?.__idx), posicionLista, 'vuelve a la lista de antes');
+    await p.waitForFunction((t) => document.body.innerText.includes(t), `Papel y sobres ${sufijo}`, { timeout: 5000 });
+    assert.equal(await p.getByRole('alertdialog').count(), 0);
+    await p.goto(`${BASE}/gastos?ver=revisar`);
+    await p.locator(`a[href="/gastos/bandeja/${a}"]`).first().click();
+    await p.waitForURL(`**/gastos/bandeja/${a}`);
+    await escribir(p.getByLabel('Concepto', { exact: true }), `Material corregido ${sufijo}`);
+    await conAviso(p);
+    await p.getByRole('button', { name: 'Aprobar y guardar el gasto' }).click();
+    await p.waitForURL((x) => x.pathname.startsWith('/gastos/bandeja/') && !x.pathname.endsWith(a));
+    await p.goBack();
+    await p.waitForURL((x) => x.pathname === '/gastos' && x.searchParams.get('ver') === 'revisar');
+    await p.waitForTimeout(400);
+    assert.equal(await p.getByRole('alertdialog').count(), 0, 'ni se pregunta ni se vuelve a la ya aprobada');
+    assert.deepEqual(errores, []);
+    console.log('Salir sin guardar: guardar un gasto o aprobar tras corregir no pregunta ni deja el formulario detrás OK');
     await ctx.close();
   }
 } finally {

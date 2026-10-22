@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
+import useCambiosSinGuardar from './useCambiosSinGuardar';
 import Deslizable from './Deslizable';
 import { baseLinea, importes, leerImporte, r2 } from '@/lib/calculos';
 import '@/app/lineas.css';
@@ -25,6 +26,7 @@ export default function FormPresupuesto({ presupuesto, clientes, actividades, ho
     : { actividad: actividades[0].id, fecha: hoy, cliente: VACIO, lineas: [lineaVacia()], nota: '', evento: { fecha: '', lugar: '' }, senalPct: 30, validez: 15, ...defecto(actividades[0].id) });
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
+  const sinGuardar = useCambiosSinGuardar(p);
   const poner = (k, v) => setP((x) => ({ ...x, [k]: v }));
   const ponerCliente = (k, v) => poner('cliente', { ...p.cliente, [k]: v });
   const elegido = clientes.find((x) => x.nombre.toUpperCase() === p.cliente.nombre.trim().toUpperCase())?.id || '';
@@ -41,6 +43,7 @@ export default function FormPresupuesto({ presupuesto, clientes, actividades, ho
     setEnviando(true); setError('');
     try {
       const d = await llamar('/api/presupuestos', { method: nuevo ? 'POST' : 'PATCH', body: JSON.stringify({ ...p, lineas: p.lineas.map((l) => ({ ...l, ivaPct: p.ivaPct })) }) });
+      await sinGuardar.guardado();
       router.replace(`/presupuestos/${nuevo ? d.presupuesto.id : p.id}`);
       router.refresh();
     } catch (err) { setError(err.message); setEnviando(false); }

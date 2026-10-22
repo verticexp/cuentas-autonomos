@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
+import useCambiosSinGuardar from './useCambiosSinGuardar';
 import { navegar } from '@/lib/transicion';
 import { baseLinea, leerImporte, r2 } from '@/lib/calculos';
 import { eur } from '@/lib/formato';
@@ -29,6 +30,7 @@ export default function FormDoc({ tipo, doc = null, plantilla = null, clientes =
   }));
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
+  const sinGuardar = useCambiosSinGuardar(x);
   const poner = (k, v) => setX((y) => ({ ...y, [k]: v }));
   const ponerCliente = (k, v) => poner('cliente', { ...x.cliente, [k]: v });
   const ponerLinea = (i, k, v) => setX((y) => ({ ...y, lineas: y.lineas.map((l, j) => (j === i ? { ...l, [k]: v } : l)) }));
@@ -47,6 +49,7 @@ export default function FormDoc({ tipo, doc = null, plantilla = null, clientes =
     setEnviando(true); setError('');
     try {
       const d = await llamar('/api/albaranes', { method: 'POST', body: JSON.stringify({ ...x, tipo, id: doc?.id }) });
+      await sinGuardar.guardado();
       navegar(router, `/albaranes/${d.doc.id}`, 'fundido', undefined, true);
       router.refresh();
     } catch (err) { setError(err.message); setEnviando(false); }

@@ -33,8 +33,10 @@
 .hoja.confirmar-hoja { display: flex; z-index: 60; }
 .confirmar-hoja .hoja-panel { display: flex; flex-direction: column; gap: 12px; margin: 0; }
 .confirmar-texto { margin: 0 4px; white-space: pre-line; overflow-wrap: anywhere; }
-.confirmar-botones { display: flex; flex-wrap: wrap; gap: 12px; }
-.confirmar-botones .boton { flex: 1; min-width: 120px; min-height: 44px; }
+/* Cada botón en una sola línea: si dos no caben así, van uno encima del otro a todo el ancho («Seguir editando», a 375 px), y
+   cancelar queda abajo, a mano del pulgar, como en las hojas de iOS. */
+.confirmar-botones { display: flex; flex-wrap: wrap-reverse; gap: 12px; }
+.confirmar-botones .boton { flex: 1 1 0; min-width: max-content; min-height: 44px; white-space: nowrap; }
 /* --out-boton: rojo de relleno con texto blanco a ≥ 4,5:1 en los dos temas (--out en oscuro es claro, para texto). */
 .confirmar-hoja .confirmar-peligro { background: var(--out-boton); color: #fff; }
 @media (min-width: 1024px) {
