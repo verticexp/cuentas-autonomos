@@ -355,12 +355,13 @@ console.log('Proveedores');
   const lista = n(await texto('/gastos/proveedores', yo));
   ok('sale el proveedor una vez, con lo que se le debe', () => assert.ok(lista.includes('AUDIO PRO S.L.') && !lista.includes('Audio Pro ') && lista.includes(`debes ${n(eur(1210))}`), lista.slice(0, 300)));
   const ficha = n(await texto('/gastos/proveedores/B22222228', yo));
-  ok('su ficha tiene el historial y el total pagado', () => assert.ok(ficha.includes('Altavoces') && ficha.includes('Cables') && ficha.includes(n(eur(1331))) && ficha.includes('Sin pagar')));
+  ok('su ficha tiene el historial y el total pagado', () => assert.ok(ficha.includes('Altavoces') && ficha.includes('Cables') && ficha.includes(n(eur(1331))) && /Venc/.test(ficha), ficha.slice(0, 400)));
   const pg = n(await texto('/gastos', yo));
-  ok('el enlace está en Gastos con la deuda', () => assert.ok(pg.includes(`Proveedores · debes ${n(eur(1210))}`) && pg.includes('Sin pagar')));
+  // Sin pagar, cada gasto dice cuándo vence o desde cuándo está vencido (lib/pagos.js); en Gastos, el filtro «Por pagar».
+  ok('el enlace está en Gastos con la deuda', () => assert.ok(pg.includes(`Proveedores · debes ${n(eur(1210))}`) && pg.includes('Por pagar')));
   const pago = await (await pedir('/api/proveedores', { metodo: 'POST', cookie: yo, cuerpo: { clave: 'B22222228' } })).json();
   const ficha2 = n(await texto('/gastos/proveedores/B22222228', yo));
-  ok('al marcarlo pagado ya no se le debe nada', () => assert.ok(pago.pagados === 1 && !ficha2.includes('Sin pagar') && !ficha2.includes('Le debes')));
+  ok('al marcarlo pagado ya no se le debe nada', () => assert.ok(pago.pagados === 1 && !/Venc/.test(ficha2) && !ficha2.includes('Le debes')));
   const otra = await pedir('/api/proveedores', { metodo: 'POST', cookie: yo, cuerpo: { clave: 'B22222228' } });
   ok('si no hay nada pendiente, lo dice', () => assert.equal(otra.status, 404));
 }
