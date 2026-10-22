@@ -18,6 +18,7 @@ import { permisosDe } from '@/lib/permisos';
 import Bloqueo from '@/components/Bloqueo';
 import Llegada from '@/components/Llegada';
 import Arranque from '@/components/Arranque';
+import RegistrarSw from '@/components/RegistrarSw';
 import BarraEstado from '@/components/BarraEstado';
 import { WEB } from '@/lib/web';
 
@@ -86,6 +87,7 @@ export default async function RootLayout({ children }) {
       </head>
       <body className={fuente.variable} style={{ '--acento': COLOR_BASE }} data-marca="base">
         <Arranque />
+        <RegistrarSw />
         <script nonce={nonce} suppressHydrationWarning dangerouslySetInnerHTML={{ __html: 'window.__arranque=performance.now()' }} />
         {u && soloLectura(u.plan) && !ruta.startsWith('/ajustes/plan') && (
           <p className="aviso-lectura" role="status"><span>{app ? SOLO_LECTURA_APP : 'Tu prueba ha terminado: puedes ver y exportar todo, pero no crear ni editar.'}</span>{!app && <a href="/ajustes/plan">Elegir plan</a>}</p>
