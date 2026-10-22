@@ -2,7 +2,9 @@ import Termino from '@/components/Termino';
 import { GLOSARIO } from '@/lib/glosario';
 import { requerir } from '@/lib/auth';
 import { leer, redis } from '@/lib/redis';
-import { actividadesDe, ajustesIva, fiscalDe, hecho130, hecho303, marcaRet, modelosDe, usa130, usa303 } from '@/lib/empresa';
+import { actividadesDe, ajustesIva, fiscalDe, hecho130, hecho303, marcaRet, modelosDe, usa130, usa131, usa303, usaSimplificado } from '@/lib/empresa';
+import { modelos131, simplificado } from '@/lib/estimacionObjetiva';
+import ModulosActividad from '@/components/ModulosActividad';
 import { casillas303, liquidaciones303, minoracion130, pendienteCaja, prorrataAnio, prorrataProvisional, r2, limiteTrimestre, resumenAnual, situacionTrimestre } from '@/lib/calculos';
 import { NOMBRES_UE, modelo369, plazo369 } from '@/lib/oss';
 import { TIPOS_RENDIMIENTO, modelo123, modelo193 } from '@/lib/capitalMobiliario';
@@ -47,6 +49,7 @@ const Importe = ({ texto, v }) => <p className={`resumen-importe${v ? '' : ' cer
 const AEAT = {
   m303: 'https://sede.agenciatributaria.gob.es/Sede/procedimientoini/G414.shtml',
   m130: 'https://sede.agenciatributaria.gob.es/Sede/procedimientoini/G601.shtml',
+  m131: 'https://sede.agenciatributaria.gob.es/Sede/procedimientoini/G602.shtml',
 };
 // Desglose por casillas plegado en el móvil (el importe ya se ve arriba); en el ordenador, siempre abierto.
 const Plegable = ({ children }) => <details className="casillas-plegable"><summary>Ver las casillas</summary>{children}</details>;
@@ -98,10 +101,16 @@ export default async function Modelos({ searchParams }) {
   // Lo que Fisquo sabe del año anterior, como sugerencia (si ese año no está entero en Fisquo, no vale: lo confirma la persona).
   const conAnterior = usa130(f) && facturas.some((x) => x.fecha.startsWith(`${anio - 1}-`));
   const sugerido = conAnterior ? resumenAnual(facturas, gastos, anio - 1, {}, ids, { ivaCoste: !c303, iva }).trimestres[3].rendAcum : null;
+  // Módulos (lib/estimacionObjetiva.js): el 131 y, en el régimen simplificado, el 303 salen de los datos de cada actividad.
+  const c131 = usa131(f), cSimp = usaSimplificado(f);
+  const modAnio = u.modulos?.[anio] || {};
+  const r131 = c131 && modelos131({ modulos: modAnio, facturas, rendAnterior }, anio);
+  const simp = cSimp && T.map((t) => simplificado({ modulos: modAnio, gastos, anio, t }));
   // El 303 y el 130 se marcan como presentados cada uno por su cuenta; el trimestre está hecho cuando lo están los dos.
   const p303 = (t, y = anio) => hecho303(u.pres303, u.pagos130, y, t);
   const p130 = (t, y = anio) => hecho130(u.pagos130, y, t);
-  const presentado = (t, y = anio) => (!c303 || p303(t, y)) && (!r130 || p130(t, y));
+  const p131 = (t, y = anio) => u.pagos131?.[y]?.[t] !== undefined && u.pagos131?.[y]?.[t] !== null;
+  const presentado = (t, y = anio) => (!(c303 || cSimp) || p303(t, y)) && (!r130 || p130(t, y)) && (!c131 || p131(t, y));
   const hay111 = f.trabajadores || nominas?.length > 0 || conRetencion;
   // Estado de cada trimestre del 303/130 según la fecha de hoy (en curso, listo para presentar o fuera de plazo).
   const situacion = (t) => situacionTrimestre(t, anio, h);
@@ -131,15 +140,17 @@ export default async function Modelos({ searchParams }) {
   const importeFila = (v) => (v ? eur(v) : undefined);
 
   // Trimestre que toca presentar ya: el primero listo (cerrado y dentro de plazo) que aún no está marcado como presentado.
-  const tAhora = (c303 || r130) ? T.find((t) => !presentado(t) && situacion(t).estado === 'listo') : undefined;
+  const tAhora = (c303 || r130 || c131 || cSimp) ? T.find((t) => !presentado(t) && situacion(t).estado === 'listo') : undefined;
   let ahora = null;
   if (tAhora) {
     const c = c303 && casillas303(facturas, gastos, anio, tAhora, iva);
-    const m303 = c && (c['46'] < 0 ? { importe: 0, compensar: -c['46'] } : { importe: liquidaciones[tAhora - 1].ingresar });
+    const m303 = c ? (c['46'] < 0 ? { importe: 0, compensar: -c['46'] } : { importe: liquidaciones[tAhora - 1].ingresar })
+      : simp ? (simp[tAhora - 1].resultado < 0 ? { importe: 0, compensar: -simp[tAhora - 1].resultado } : { importe: simp[tAhora - 1].resultado }) : null;
     const m130 = r130 && { importe: r130.trimestres[tAhora - 1].m130 };
+    const m131 = r131 && { importe: Math.max(0, r131[tAhora - 1]['15']) };
     // Con el 303 y el 130, el resto de modelos que vencen a la vez (111, 115, 349 y el 202 de abril u octubre).
     const importes = modelosAPresentar(tAhora, {
-      m303, m130,
+      m303, m130, m131,
       m111: hay111 && !marcaRet(u.pres111, anio, tAhora) ? r2(modelo111(nominas || [], anio, tAhora).retenciones + retencionesProfesionales(gastos, anio, tAhora).retenciones) : null,
       m115: hay115 && !marcaRet(u.pres115, anio, tAhora) ? modelo115(gastos, anio, tAhora).retenciones : null,
       m123: hay123 && !u.pres123?.[anio]?.[tAhora] ? modelo123(capital, anio, tAhora).retenciones : null,
@@ -152,7 +163,7 @@ export default async function Modelos({ searchParams }) {
         importes={importes}
         texto={textoResumenModelos({ t: tAhora, anio, plazo: limite(tAhora), m303, m130, otros: importes.filter((m) => !['303', '130'].includes(m.num)) })} />
     );
-  } else if ((c303 || r130) && anio === actual) {
+  } else if ((c303 || r130 || c131 || cSimp) && anio === actual) {
     // En enero toca el 4T del año anterior, que no sale en la vista del año en curso: aviso con enlace a ese año.
     const s4 = situacionTrimestre(4, anio - 1, h);
     const l4 = limiteTrimestre(4, anio - 1);
@@ -283,6 +294,58 @@ export default async function Modelos({ searchParams }) {
                 ]} /></Plegable>
                 <Fichero modelo="130" anio={anio} t={q.t} nif={u.emisor?.nif} aeat={AEAT.m130} />
                 <Presentado soloLectura={soloLectura} anio={anio} t={q.t} importe={q.m130} pagado={u.pagos130?.[anio]?.[q.t]} situacion={situacion(q.t)} plazo={limite(q.t)} />
+              </div>
+            ))}
+          </div>
+        </ModeloPlegable>
+        );
+      })()}
+
+      {c131 && (() => {
+        const t = tRef(p131);
+        return (
+        <ModeloPlegable id="m131" num="131" nombre="Pago a cuenta del IRPF (módulos)" {...filaTrim(t)} dato={t && importeFila(Math.max(0, r131[t - 1]['15']))}>
+          <h2 className="grupo-t">131 · Pago a cuenta en módulos</h2>
+          <p className="grupo-pie arriba">Cada trimestre, el 4 % del rendimiento neto de tus módulos (el 3 % si tienes como mucho una persona asalariada y el 2 % si no tienes ninguna) y el 2 % de lo que ingresas en las actividades agrícolas o sin datos-base, menos las retenciones de tus facturas. Pon de cada actividad lo que sale de la Orden de módulos de {anio} con tus datos a 1 de enero.</p>
+          {actividadesDe(u).map((a) => <ModulosActividad key={`${a.id}-${anio}`} anio={anio} actividad={a.id} nombre={a.nombre} datos={modAnio[a.id]} simplificado={cSimp} soloLectura={soloLectura} />)}
+          <Rend130 soloLectura={soloLectura} modelo="131" anio={anio - 1} valor={rendAnterior ?? null} sugerido={null} minoracion={minoracion130(rendAnterior)} />
+          <div className="tarjetas">
+            {r131.map((c, i) => { const q = i + 1; return (
+              <div key={q} className="tarjeta"><h3>{q}T {anio}</h3>
+                {c['15'] < 0 ? <Importe texto="A deducir en los siguientes" v={-c['15']} /> : <Importe texto="A ingresar" v={c['15']} />}
+                <Plegable><Casillas filas={[
+                  c['01'] && ['01 · Rendimiento neto de los módulos', c['01']], c['02'] && ['02 · Pago fraccionado (4, 3 o 2 %)', c['02']],
+                  c['03'] && ['03 · Ingresos sin datos-base', c['03']], c['04'] && ['04 · 2 % de la 03', c['04']],
+                  c['05'] && ['05 · Ingresos agrícolas, ganaderos o forestales', c['05']], c['06'] && ['06 · 2 % de la 05', c['06']],
+                  ['07 · Suma', c['07']], ['08 · Retenciones de tus facturas', c['08']], c['09'] && [`09 · Minoración por el rendimiento de ${anio - 1}`, c['09']],
+                  ['10 · Resultado', c['10']], c['11'] && ['11 · Negativos de trimestres anteriores', c['11']], c['12'] && ['12 · Deducción por la vivienda', c['12']],
+                  ['15 · Resultado', c['15'], true],
+                ]} /></Plegable>
+                <Presentado soloLectura={soloLectura} modelo="131" anio={anio} t={q} importe={Math.max(0, c['15'])} pagado={u.pagos131?.[anio]?.[q]} situacion={situacion(q)} plazo={limite(q)} />
+              </div>
+            ); })}
+          </div>
+        </ModeloPlegable>
+        );
+      })()}
+
+      {cSimp && (() => {
+        const t = tRef(p303);
+        const sinDatos = actividadesDe(u).filter((a) => !modAnio[a.id]?.iva);
+        return (
+        <ModeloPlegable id="m303" num="303" nombre="IVA trimestral (régimen simplificado)" {...filaTrim(t)} dato={t && importeFila(Math.max(0, simp[t - 1].resultado))}>
+          <h2 className="grupo-t">303 · IVA en el régimen simplificado</h2>
+          <p className="grupo-pie arriba">En los tres primeros trimestres ingresas el porcentaje de la Orden sobre la cuota anual de tus módulos. En el 4T se liquida el año: la cuota de cada actividad menos el IVA de sus gastos corrientes y un 1 % por gastos de difícil justificación (nunca menos que la cuota mínima), menos lo ya ingresado, más el IVA de las compras a otros países y menos el de los bienes de inversión.{sinDatos.length ? ` Falta la cuota de ${sinDatos.map((a) => a.nombre).join(', ')}: ponla arriba, en el 131.` : ''}</p>
+          <div className="tarjetas">
+            {simp.map((x) => (
+              <div key={x.t} className="tarjeta"><h3>{x.t}T {anio}</h3>
+                {x.resultado < 0 ? <Importe texto="A compensar" v={-x.resultado} /> : <Importe texto="A ingresar" v={x.resultado} />}
+                <Plegable><Casillas filas={x.t < 4 ? [...x.actividades.map((a) => [`${actividadesDe(u).find((b) => b.id === a.id)?.nombre || a.id} · ingreso a cuenta`, a.ingreso]), ['Total', x.ingreso, true]] : [
+                  ...x.actividades.flatMap((a) => [[`${actividadesDe(u).find((b) => b.id === a.id)?.nombre || a.id} · cuota devengada`, a.cuota], ['IVA soportado de gastos corrientes', a.corrientes], ['1 % de difícil justificación', a.dificil], ['Cuota mínima', a.minima], ['Cuota del régimen simplificado', a.derivada, true]]),
+                  ['Ingresado en el 1T-3T', x.ingresado], x.autoDevengado && ['IVA de compras a otros países (devengado)', x.autoDevengado], x.autoDeducible && ['IVA de compras a otros países (deducible)', x.autoDeducible],
+                  x.activosFijos && ['IVA de los bienes de inversión', x.activosFijos], ['Resultado', x.resultado, true],
+                ]} /></Plegable>
+                <Presentado soloLectura={soloLectura} modelo="303" anio={anio} t={x.t} importe={0} pagado={p303(x.t)} con130={false} situacion={situacion(x.t)} plazo={limite(x.t)} />
               </div>
             ))}
           </div>

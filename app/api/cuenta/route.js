@@ -10,6 +10,7 @@ import { clave, leer, mismoId, redis } from '@/lib/redis';
 import { auditar } from '@/lib/auditoria';
 import { contrasenaCambiada } from '@/lib/avisosCorreo';
 import { leerImporte } from '@/lib/calculos';
+import { limpiarModulos } from '@/lib/estimacionObjetiva';
 import { hoy } from '@/lib/formato';
 import { todasFichas } from '@/lib/indices';
 import { cambioDeForma, normalizarNif } from '@/lib/formaJuridica';
@@ -89,6 +90,32 @@ export async function PATCH(req) {
     if (importe === null) delete pagos[anio][t];
     else pagos[anio][t] = Math.max(0, Number(importe) || 0);
     await actualizarUsuario(u, { pagos130: pagos, pagadosHacienda: marcarPagado(u, `${anio}-${t}-130`, importe !== null && Number(importe) > 0) });
+    return Response.json({ ok: true });
+  }
+  // 131 (módulos): lo ingresado en cada trimestre, como el 130 (negativo si sale «a deducir»).
+  if (b.presentado131) {
+    if (sin('contabilidad')) return sin('contabilidad');
+    const { anio, t, importe } = b.presentado131;
+    if (!Number.isInteger(anio) || anio < 2000 || anio > 2100 || ![1, 2, 3, 4].includes(t)) return error('Trimestre no válido');
+    const pagos = { ...(u.pagos131 || {}) };
+    pagos[anio] = { ...(pagos[anio] || {}) };
+    if (importe === null) delete pagos[anio][t];
+    else pagos[anio][t] = Math.round((Number(importe) || 0) * 100) / 100;
+    await actualizarUsuario(u, { pagos131: pagos, pagadosHacienda: marcarPagado(u, `${anio}-${t}-131`, importe !== null && Number(importe) > 0) });
+    return Response.json({ ok: true });
+  }
+  // Datos de módulos de una actividad en un año (lib/estimacionObjetiva.js); datos null los quita.
+  if (b.modulos) {
+    if (sin('contabilidad')) return sin('contabilidad');
+    const { anio, actividad, datos } = b.modulos;
+    if (!Number.isInteger(anio) || anio < 2000 || anio > 2100) return error('Año no válido');
+    if (!actividadesDe(u).some((a) => a.id === actividad)) return error('Esa actividad no existe');
+    const limpio = datos === null ? null : limpiarModulos(datos);
+    if (limpio?.error) return error(limpio.error);
+    const todos = { ...(u.modulos || {}) };
+    todos[anio] = { ...(todos[anio] || {}) };
+    if (limpio === null) delete todos[anio][actividad]; else todos[anio][actividad] = limpio;
+    await actualizarUsuario(u, { modulos: todos });
     return Response.json({ ok: true });
   }
   if (b.presentado303) {

@@ -2,7 +2,7 @@ import { Fragment } from 'react';
 import QRCode from 'qrcode';
 import { baseLinea, columnasLineas, desglose, importes, numeroFactura, vencimiento } from '@/lib/calculos';
 import '@/app/factura.css';
-import { enDivisa, formatoDoc, menciones } from '@/lib/idiomas';
+import { enDivisa, filasTotales, formatoDoc, menciones } from '@/lib/idiomas';
 import { aclarar, colorValido } from '@/lib/marca';
 import { COLOR_FACTURA, anchoResumen, tamanoNumero, tamanoTotal } from '@/lib/pdf';
 import { urlQr } from '@/lib/verifactu';
@@ -64,12 +64,10 @@ export default async function FacturaA4({ f: fOriginal, e, marca, presupuesto = 
         </table>
         )}
         <dl className="fa-totales">
-          <dt>{L.t.base}</dt><dd>{L.dinero(t.base)}</dd>
-          {desglose(f).map((d, i, l) => <Fragment key={i}><dt>{L.t.iva} {L.pct(d.pct)}{l.length > 1 ? ` ${L.t.sobre} ${L.dinero(d.base)}` : ''}</dt><dd>{L.dinero(d.iva)}</dd>{d.re ? <><dt>{L.t.recargo} {L.pct(d.re)}</dt><dd>{L.dinero(d.recargo)}</dd></> : null}</Fragment>)}
-          {f.irpfPct > 0 && <><dt>{L.t.retencion} {L.pct(f.irpfPct)}</dt><dd>{L.dinero(t.irpf ? -t.irpf : 0)}</dd></>}
+          {filasTotales(f, L, t).map(([a, b]) => <Fragment key={a}><dt>{a}</dt><dd>{b}</dd></Fragment>)}
           <div className="fa-total-fila"><dt className="fa-total">{L.t.total}</dt><dd className="fa-total">{L.dinero(t.total)}</dd></div>
         </dl>
-        {(f.rectifica || f.nota || f.divisa || f.recc || f.oss) && (
+        {(f.rectifica || f.nota || f.divisa || f.recc || f.oss || f.margen) && (
           <div className="fa-notas">
             <p className="fa-et">{L.t.notas}</p>
             {f.rectifica && <p>{L.t.rectifica(f.rectifica.numero, L.fecha(f.rectifica.fecha))}</p>}

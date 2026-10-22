@@ -25,12 +25,12 @@ const aTexto = (n) => String(n ?? '').replace('.', ',');
 const lineaVacia = (ivaPct) => ({ concepto: '', cantidad: '1', precio: '', dto: '', ivaPct });
 // Las facturas antiguas (una base, un IVA) se abren como una sola línea. En otra moneda, con los precios en esa moneda.
 const lineasDe = (x) => (x.lineas?.length
-  ? x.lineas.map((l) => ({ concepto: l.concepto, cantidad: aTexto(l.cantidad), precio: aTexto(l.precioDivisa ?? l.precio), dto: l.dto ? aTexto(l.dto) : '', ivaPct: l.ivaPct, ...(l.producto ? { producto: l.producto } : {}), ...(l.albaran ? { albaran: l.albaran } : {}) }))
+  ? x.lineas.map((l) => ({ concepto: l.concepto, cantidad: aTexto(l.cantidad), precio: aTexto(l.precioDivisa ?? l.precio), dto: l.dto ? aTexto(l.dto) : '', ivaPct: l.ivaPct, ...(l.coste !== undefined ? { coste: aTexto(l.coste) } : {}), ...(l.producto ? { producto: l.producto } : {}), ...(l.albaran ? { albaran: l.albaran } : {}) }))
   : [{ concepto: x.concepto || '', cantidad: '1', precio: aTexto(x.baseDivisa ?? x.base), dto: '', ivaPct: x.ivaPct }]);
 const numero = (v) => leerImporte(v) || 0;
 
 // riesgos: lo que debe ahora cada cliente con riesgo máximo ({ id: euros }); el límite lo comprueba el servidor.
-export default function FormFactura({ factura, clientes, numeros, hoy, rectifica: orig, plantilla, notaDefecto = '', actividades, productos = [], stock = null, proyectos = [], riesgos = {}, recargo = false, oss = false }) {
+export default function FormFactura({ factura, clientes, numeros, hoy, rectifica: orig, plantilla, notaDefecto = '', actividades, productos = [], stock = null, proyectos = [], riesgos = {}, recargo = false, oss = false, margenes = [], reagp = false }) {
   // IVA y retención de cada actividad, para rellenar la factura nueva.
   const defecto = (id) => { const a = actividades.find((x) => x.id === id) || actividades[0]; return { ivaPct: a.ivaPct, irpfPct: a.irpfPct }; };
   const router = useRouter();
@@ -161,10 +161,11 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
   };
   const anadirLinea = () => { limpiarErrores('lineas', 'base'); setF((x) => ({ ...x, lineas: [...x.lineas, lineaVacia(x.lineas.at(-1)?.ivaPct ?? defecto(x.actividad).ivaPct)] })); };
 
-  const nums = f.lineas.map((l) => ({ cantidad: numero(l.cantidad), precio: numero(l.precio), dto: Number(String(l.dto).replace(',', '.')) || 0, ivaPct: Number(l.ivaPct) }));
-  const base = r2(nums.reduce((s, l) => s + baseLinea(l), 0));
-  const t = importes({ base, lineas: nums, irpfPct: Number(f.irpfPct), recargo: Boolean(f.recargo) });
-  const tipos = desglose({ lineas: nums, recargo: Boolean(f.recargo) });
+  const nums = f.lineas.map((l) => ({ cantidad: numero(l.cantidad), precio: numero(l.precio), dto: Number(String(l.dto).replace(',', '.')) || 0, ivaPct: Number(l.ivaPct), ...(f.margen ? { coste: numero(l.coste) } : {}) }));
+  // Régimen de margen (REBU, REAV): el precio lleva el IVA de su margen dentro; la base es la venta sin ese IVA.
+  const tipos = desglose({ lineas: nums, recargo: Boolean(f.recargo), margen: f.margen });
+  const base = r2(f.margen ? tipos.reduce((s, d) => s + d.base, 0) : nums.reduce((s, l) => s + baseLinea(l), 0));
+  const t = importes({ base, lineas: nums, irpfPct: Number(f.irpfPct), recargo: Boolean(f.recargo), margen: f.margen, compensacion: f.compensacion });
   // En otra moneda, los importes se escriben y se ven en esa moneda; el contravalor en euros, debajo del total.
   const enOtra = Boolean(f.divisa?.moneda && f.divisa.moneda !== 'EUR');
   const dinero = enOtra ? formatoDoc({ divisa: f.divisa }).dinero : eur;
@@ -317,6 +318,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
               <label>Cantidad<input {...atributos(`lineas.${i}.cantidad`)} className="campo" inputMode="decimal" value={l.cantidad} onChange={(e) => ponerLinea(i, 'cantidad', e.target.value)} />{mensaje(`lineas.${i}.cantidad`)}</label>
               <label>Precio<input {...atributos(`lineas.${i}.precio`, i === 0 ? ['base'] : [])} className="campo" inputMode="decimal" placeholder="0,00" value={l.precio} onChange={(e) => ponerLinea(i, 'precio', e.target.value)} />{mensaje(`lineas.${i}.precio`, i === 0 ? ['base'] : [])}</label>
               <label>Dto. %<input {...atributos(`lineas.${i}.dto`)} className="campo" inputMode="decimal" placeholder="0" value={l.dto} onChange={(e) => ponerLinea(i, 'dto', e.target.value)} />{mensaje(`lineas.${i}.dto`)}</label>
+              {f.margen && <label>Coste<input className="campo" inputMode="decimal" placeholder="0,00" value={l.coste ?? ''} onChange={(e) => ponerLinea(i, 'coste', e.target.value)} aria-describedby={idCampo('margen-nota')} /></label>}
               <label>IVA
                 <select {...atributos(`lineas.${i}.ivaPct`, i === 0 ? ['ivaPct'] : [])} className="campo" value={l.ivaPct} onChange={(e) => ponerLinea(i, 'ivaPct', Number(e.target.value))}>
                   {[...new Set(f.oss?.pais ? tiposPais(f.oss.pais) : [21, 10, 4, 0, Number(l.ivaPct)])].map((n) => <option key={n} value={n}>{String(n).replace('.', ',')}%</option>)}
@@ -385,6 +387,29 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
 
       {(recargo || f.recargo) && <div className="check ff-det termino-check"><input id={idCampo('recargo')} aria-labelledby={idCampo('recargo-etiqueta')} type="checkbox" checked={Boolean(f.recargo)} onChange={(e) => poner('recargo', e.target.checked)} /><span id={idCampo('recargo-etiqueta')}><label htmlFor={idCampo('recargo')}>Cliente en </label><Termino id="recargo">recargo de equivalencia</Termino><label htmlFor={idCampo('recargo')}> (comercio minorista: 5,2 % con el 21 %, 1,4 % con el 10 %, 0,5 % con el 4 %)</label></span></div>}
 
+      {(margenes.length > 0 || f.margen) && (
+        <div className="ff-det">
+          <label>Régimen de la factura
+            <select className="campo" value={f.margen || ''} onChange={(e) => setF((x) => ({ ...x, margen: e.target.value || undefined, ...(e.target.value ? { recargo: false, oss: undefined, divisa: undefined } : { cuotasIncluidas: undefined }) }))}>
+              <option value="">General: IVA sobre el precio</option>
+              {(margenes.includes('rebu') || f.margen === 'rebu') && <option value="rebu">Bienes usados, arte o antigüedades (REBU): IVA sobre el margen</option>}
+              {(margenes.includes('reav') || f.margen === 'reav') && <option value="reav">Agencia de viajes (REAV): IVA sobre el margen</option>}
+            </select>
+          </label>
+          {f.margen && <p className="nota" id={idCampo('margen-nota')}>Pon en cada línea el precio final y lo que te costó{f.margen === 'reav' ? ' (los servicios del viaje que compraste para el cliente)' : ''}. La factura no desglosa el IVA: va dentro del margen y lleva la mención del régimen.</p>}
+          {f.margen === 'reav' && <label className="check"><input type="checkbox" checked={Boolean(f.cuotasIncluidas)} onChange={(e) => poner('cuotasIncluidas', e.target.checked || undefined)} /> El cliente es una empresa y pide las «cuotas de IVA incluidas en el precio» (6 % del total)</label>}
+        </div>
+      )}
+      {(reagp || f.compensacion) && (
+        <label className="ff-det">Compensación del régimen de la agricultura (REAGP)
+          <select className="campo" value={f.compensacion || ''} onChange={(e) => { const c = Number(e.target.value) || undefined; setF((x) => ({ ...x, compensacion: c, ...(c ? { lineas: x.lineas.map((l) => ({ ...l, ivaPct: 0 })) } : {}) })); }}>
+            <option value="">Sin compensación (venta a un particular)</option>
+            <option value="12">12 %: agricultura o forestal</option>
+            <option value="10.5">10,5 %: ganadería o pesca</option>
+          </select>
+          {mensaje('compensacion')}
+        </label>
+      )}
       {(oss || f.oss) && (
         <label className="ff-det">Venta a un particular de otro país de la UE
           <select className="campo" value={f.oss?.pais || ''} onChange={(e) => {
@@ -453,8 +478,11 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
             ))}
           </ul>
           <dl className="ff-tot">
-            <div><dt>Base</dt><dd>{dinero(t.base)}</dd></div>
-            {tipos.length > 1 ? tipos.map((x) => <div key={x.pct}><dt>IVA {x.pct} %</dt><dd>{dinero(x.iva)}</dd></div>) : <div><dt>IVA</dt><dd>{dinero(t.iva)}</dd></div>}
+            {f.margen ? <div><dt>IVA del margen (no sale en la factura)</dt><dd>{dinero(t.iva)}</dd></div> : <>
+              <div><dt>Base</dt><dd>{dinero(t.base)}</dd></div>
+              {t.compensacion ? <div><dt>Compensación {aTexto(f.compensacion)} %</dt><dd>{dinero(t.compensacion)}</dd></div>
+                : tipos.length > 1 ? tipos.map((x) => <div key={x.pct}><dt>IVA {x.pct} %</dt><dd>{dinero(x.iva)}</dd></div>) : <div><dt>IVA</dt><dd>{dinero(t.iva)}</dd></div>}
+            </>}
             {t.recargo > 0 && <div><dt>Recargo de equivalencia</dt><dd>{dinero(t.recargo)}</dd></div>}
             {Number(f.irpfPct) > 0 && <div><dt>IRPF {f.irpfPct} %</dt><dd>−{dinero(t.irpf)}</dd></div>}
           </dl>

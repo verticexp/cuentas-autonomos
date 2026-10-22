@@ -1872,5 +1872,25 @@ console.log('Criterio de caja, ventanilla única y dividendos (123)');
   ok('apuntar dividendos pide el permiso de contabilidad (403)', () => assert.equal(sinPermiso.status, 403));
 }
 
+console.log('Módulos (131), IVA simplificado y bienes usados (REBU)');
+{
+  const alta = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva: 'Módulos Prueba', nombre: 'Mónica', email: `mod${Date.now()}@test.es` } })).json();
+  const fd = new FormData(); fd.set('codigo', alta.enlace.split('/').pop()); fd.set('password', 'Clave-Local-05-2026');
+  const md = /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: fd })).headers.get('set-cookie') || '')?.[1];
+  const cfg = await (await pedir('/api/cuenta', { metodo: 'PATCH', cookie: md, cuerpo: { configuracion: { fiscal: { tipo: 'autonomo', iva: 'simplificado', irpf: 'modulos', rebu: true }, emisor: { nombre: 'Mónica Módulos', nif: '55555555K', direccion: 'Calle Mayor 2', ciudad: '28001 Madrid', iban: 'ES91 2100 0418 4502 0005 1332', plazo: 30 }, actividades: [{ nombre: 'Bar', ivaPct: 10, irpfPct: 0 }] } } })).json();
+  const act = cfg.actividades?.[0]?.id;
+  const guarda = await pedir('/api/cuenta', { metodo: 'PATCH', cookie: md, cuerpo: { modulos: { anio: Y, actividad: act, datos: { tipo: 'datos', rendimiento: '20.000', asalariados: '2', iva: { cuota: '4000', ingreso: '6', minima: '20' } } } } });
+  ok('se guardan los datos de módulos de la actividad', () => assert.equal(guarda.status, 200));
+  const mal = await pedir('/api/cuenta', { metodo: 'PATCH', cookie: md, cuerpo: { modulos: { anio: Y, actividad: 'no-existe', datos: { tipo: 'datos', rendimiento: '1' } } } });
+  ok('y no para una actividad que no existe (400)', () => assert.equal(mal.status, 400));
+  const imp = n(await texto(`/modelos?anio=${Y}`, md));
+  ok('Impuestos enseña el 131 (4 % de 20.000 €) y el 303 del régimen simplificado (6 % de 4.000 €)', () => assert.ok(imp.includes('131 · Pago a cuenta en módulos') && imp.includes('800,00') && imp.includes('303 · IVA en el régimen simplificado') && imp.includes('240,00') && !imp.includes('130 · Pago a cuenta del IRPF'), imp.slice(0, 400)));
+  const fr = await pedir('/api/facturas', { metodo: 'POST', cookie: md, cuerpo: { fecha: hoy, actividad: act, cliente: { nombre: 'Coleccionista' }, margen: 'rebu', lineas: [{ concepto: 'Lámpara antigua', cantidad: '1', precio: '1210', coste: '1000', ivaPct: 21 }], irpfPct: 0 } });
+  const fv = (await fr.json()).factura;
+  ok('una venta de bienes usados lleva el IVA dentro del margen', () => assert.ok(fr.status === 200 && fv.margen === 'rebu' && fv.base === 1173.55, JSON.stringify(fv).slice(0, 300)));
+  const pdf = n(await texto(`/facturas/${encodeURIComponent(fv.id)}/pdf`, md));
+  ok('la factura sale con la mención del régimen y sin desglosar el IVA', () => assert.ok(pdf.includes('Régimen especial de los bienes usados') && pdf.includes('1.210,00') && !pdf.includes('36,45'), pdf.slice(0, 400)));
+}
+
 console.log(fallos ? `\n${fallos} comprobaciones fallidas: NO publicar.` : '\nTodo cuadra.');
 process.exit(fallos ? 1 : 0);

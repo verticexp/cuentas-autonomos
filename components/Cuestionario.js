@@ -129,13 +129,18 @@ export default function Cuestionario({ inicial, editar, conFacturas, puedeFactur
             <Opcion grupo="regimen-iva" activo={fiscal.iva === 'general'} titulo="Sí, cobro IVA" onClick={() => f('iva', 'general')} />
             <Opcion grupo="regimen-iva" activo={fiscal.iva === 'exento'} titulo="No, mi actividad está exenta" detalle="Sanidad, enseñanza, seguros, alquiler de vivienda…" onClick={() => f('iva', 'exento')} />
             {!sociedad && <Opcion grupo="regimen-iva" activo={fiscal.iva === 'recargo'} titulo="Tienda con recargo de equivalencia" detalle="Comercio minorista: el IVA lo paga tu proveedor" onClick={() => f('iva', 'recargo')} />}
+            {!sociedad && <Opcion grupo="regimen-iva" activo={fiscal.iva === 'simplificado'} titulo="Régimen simplificado (módulos)" detalle="El IVA trimestral sale de los módulos de tu actividad" onClick={() => setFiscal((x) => ({ ...x, iva: 'simplificado', irpf: 'modulos' }))} />}
+            {!sociedad && <Opcion grupo="regimen-iva" activo={fiscal.iva === 'reagp'} titulo="Agricultura, ganadería o pesca (REAGP)" detalle="No cobras IVA: cobras la compensación del 12 % o del 10,5 %" onClick={() => f('iva', 'reagp')} />}
           </div>
           <div className="grupo-c">
-            {!sociedad && <SiNo valor={fiscal.retenidas} cambiar={(v) => f('retenidas', v)} titulo="Más del 70 % de lo que facturas lleva retención" detalle="Si es así, no tienes que presentar el 130" />}
+            {!sociedad && <SiNo valor={fiscal.irpf === 'modulos'} cambiar={(v) => setFiscal((x) => ({ ...x, irpf: v ? 'modulos' : undefined, ...(!v && x.iva === 'simplificado' ? { iva: 'general' } : {}) }))} titulo="Estoy en módulos (estimación objetiva)" detalle="Presentas el 131 en vez del 130" />}
+            {!sociedad && fiscal.irpf !== 'modulos' && <SiNo valor={fiscal.retenidas} cambiar={(v) => f('retenidas', v)} titulo="Más del 70 % de lo que facturas lleva retención" detalle="Si es así, no tienes que presentar el 130" />}
             <SiNo valor={fiscal.trabajadores} cambiar={(v) => f('trabajadores', v)} titulo="Tengo trabajadores o pago a profesionales con retención" />
             <SiNo valor={fiscal.alquiler} cambiar={(v) => f('alquiler', v)} titulo="Alquilo un local u oficina" />
             <SiNo valor={fiscal.intracom} cambiar={(v) => f('intracom', v)} titulo="Compro o vendo a empresas de otros países de la UE" />
             <SiNo valor={fiscal.inventario} cambiar={(v) => f('inventario', v)} titulo="Vendo productos y quiero controlar el stock" detalle="Inventario: entradas, salidas, stock mínimo y su valor" />
+            {['general', 'simplificado'].includes(fiscal.iva) && <SiNo valor={Boolean(fiscal.rebu)} cambiar={(v) => f('rebu', v)} titulo="Vendo bienes usados, arte o antigüedades con el IVA sobre el margen" detalle="Régimen especial de los bienes usados (REBU)" />}
+            {['general', 'simplificado'].includes(fiscal.iva) && <SiNo valor={Boolean(fiscal.reav)} cambiar={(v) => f('reav', v)} titulo="Soy una agencia de viajes" detalle="Régimen especial de las agencias de viajes (REAV): IVA sobre el margen" />}
             <SiNo valor={Boolean(fiscal.capital)} cambiar={(v) => f('capital', v)} titulo="Pago dividendos o intereses a socios o a quien me prestó dinero" detalle="Retención del 19 %: modelos 123 y 193" />
             {fiscal.iva === 'general' && <SiNo valor={Boolean(fiscal.oss)} cambiar={(v) => f('oss', v)} titulo="Vendo a particulares de otros países de la UE con el IVA de su país" detalle="Ventanilla única (OSS): ese IVA va en el modelo 369" />}
             {fiscal.iva === 'general' && <SiNo valor={Boolean(fiscal.recc)} cambiar={(v) => f('recc', v ? { desde: `${new Date().getFullYear()}-01-01` } : undefined)} titulo="Estoy en el criterio de caja (RECC)" detalle="El IVA de tus facturas se paga al cobrarlas y el de tus gastos se deduce al pagarlos" />}
