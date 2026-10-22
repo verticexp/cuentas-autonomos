@@ -9,7 +9,7 @@ import { agruparGastosNomina, veSueldos } from '@/lib/nominas';
 import { candidatosConciliacion } from '@/lib/bancoServidor';
 import { importes, origenGasto, r2 } from '@/lib/calculos';
 import { partirIva } from '@/lib/ivaDeducible';
-import { actividadesDe, fiscalDe, nombresActividad } from '@/lib/empresa';
+import { usaIgic, actividadesDe, fiscalDe, nombresActividad } from '@/lib/empresa';
 import { DEDUCCIONES_GENERALES } from '@/lib/empresa';
 import { DEDUCCIONES, cubierta } from '@/lib/deducciones';
 import { eur, fechaCorta, hoy } from '@/lib/formato';
@@ -105,7 +105,7 @@ export default async function Gastos({ searchParams }) {
         <h1 className="titulo">Gastos</h1>
       </header>
       {/* Primero lo que más se hace: escanear el ticket. El formulario entero se abre al escanear o al pedirlo. */}
-      {puede(u, 'gastar') && !movimiento && <FormGasto cupoInicial={cupoIA} hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} productos={stockProductos} plegado={hay} destacar={Boolean(escanear)} proyectos={proyectos} />}
+      {puede(u, 'gastar') && !movimiento && <FormGasto igic={usaIgic(fiscalDe(u))} cupoInicial={cupoIA} hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} productos={stockProductos} plegado={hay} destacar={Boolean(escanear)} proyectos={proyectos} />}
 
       {(delAnio.length > 0 || hayProveedores) && (
         <p className="resumen-linea">
@@ -118,7 +118,7 @@ export default async function Gastos({ searchParams }) {
         </p>
       )}
 
-      {puede(u, 'gastar') && movimiento && <FormGasto cupoInicial={cupoIA} key={movimiento.id} hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} productos={stockProductos} movimiento={movimiento} proyectos={proyectos} />}
+      {puede(u, 'gastar') && movimiento && <FormGasto igic={usaIgic(fiscalDe(u))} cupoInicial={cupoIA} key={movimiento.id} hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} productos={stockProductos} movimiento={movimiento} proyectos={proyectos} />}
 
       {!sinFuncion(u.plan, 'revision') && puede(u, 'gastar') && !movimiento && revision.total > 0 && <RevisionGastos items={revision.items} total={revision.total} />}
 

@@ -14,6 +14,7 @@ import '@/app/catalogo.css';
 import '@/app/factura-movil.css';
 import { eur } from '@/lib/formato';
 import { IDIOMAS_FACTURA, MONEDAS, formatoDoc } from '@/lib/idiomas';
+import { TIPOS_IGIC } from '@/lib/igic';
 import { NOMBRES_UE, TIPOS_UE, tiposPais } from '@/lib/oss';
 import { TIPOS_OPERACION } from '@/lib/operaciones';
 import { evaluarRiesgo, tieneLimite } from '@/lib/riesgo';
@@ -30,7 +31,9 @@ const lineasDe = (x) => (x.lineas?.length
 const numero = (v) => leerImporte(v) || 0;
 
 // riesgos: lo que debe ahora cada cliente con riesgo máximo ({ id: euros }); el límite lo comprueba el servidor.
-export default function FormFactura({ factura, clientes, numeros, hoy, rectifica: orig, plantilla, notaDefecto = '', actividades, productos = [], stock = null, proyectos = [], riesgos = {}, recargo = false, oss = false, margenes = [], reagp = false }) {
+export default function FormFactura({ factura, clientes, numeros, hoy, rectifica: orig, plantilla, notaDefecto = '', actividades, productos = [], stock = null, proyectos = [], riesgos = {}, recargo = false, oss = false, margenes = [], reagp = false, igic = false }) {
+  const impuesto = igic ? 'IGIC' : 'IVA';
+  const operaciones = igic ? { exenta: { nombre: 'Exenta de IGIC' }, exportacion: { nombre: 'Exportación de bienes' }, 'servicios-fuera': { nombre: 'No sujeta por localización' }, isp: { nombre: 'Inversión del sujeto pasivo (lo declara el cliente)' } } : TIPOS_OPERACION;
   // IVA y retención de cada actividad, para rellenar la factura nueva.
   const defecto = (id) => { const a = actividades.find((x) => x.id === id) || actividades[0]; return { ivaPct: a.ivaPct, irpfPct: a.irpfPct }; };
   const router = useRouter();
@@ -319,9 +322,9 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
               <label>Precio<input {...atributos(`lineas.${i}.precio`, i === 0 ? ['base'] : [])} className="campo" inputMode="decimal" placeholder="0,00" value={l.precio} onChange={(e) => ponerLinea(i, 'precio', e.target.value)} />{mensaje(`lineas.${i}.precio`, i === 0 ? ['base'] : [])}</label>
               <label>Dto. %<input {...atributos(`lineas.${i}.dto`)} className="campo" inputMode="decimal" placeholder="0" value={l.dto} onChange={(e) => ponerLinea(i, 'dto', e.target.value)} />{mensaje(`lineas.${i}.dto`)}</label>
               {f.margen && <label>Coste<input className="campo" inputMode="decimal" placeholder="0,00" value={l.coste ?? ''} onChange={(e) => ponerLinea(i, 'coste', e.target.value)} aria-describedby={idCampo('margen-nota')} /></label>}
-              <label>IVA
+              <label>{impuesto}
                 <select {...atributos(`lineas.${i}.ivaPct`, i === 0 ? ['ivaPct'] : [])} className="campo" value={l.ivaPct} onChange={(e) => ponerLinea(i, 'ivaPct', Number(e.target.value))}>
-                  {[...new Set(f.oss?.pais ? tiposPais(f.oss.pais) : [21, 10, 4, 0, Number(l.ivaPct)])].map((n) => <option key={n} value={n}>{String(n).replace('.', ',')}%</option>)}
+                  {[...new Set(igic ? TIPOS_IGIC : f.oss?.pais ? tiposPais(f.oss.pais) : [21, 10, 4, 0, Number(l.ivaPct)])].map((n) => <option key={n} value={n}>{String(n).replace('.', ',')}%</option>)}
                 </select>{mensaje(`lineas.${i}.ivaPct`, i === 0 ? ['ivaPct'] : [])}
               </label>
             </div>
@@ -338,10 +341,10 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
       </label>
       <datalist id="proyectos-factura">{proyectos.map((p) => <option key={p} value={p} />)}</datalist>
 
-      {(nums.some((l) => l.ivaPct === 0) || errores.operacion) && <label>¿Por qué va sin IVA?
+      {(nums.some((l) => l.ivaPct === 0) || errores.operacion) && <label>¿Por qué va sin {impuesto}?
         <select {...atributos('operacion')} className="campo" value={f.operacion || ''} onChange={(e) => poner('operacion', e.target.value || undefined)}>
-          <option value="">Según el cliente (UE: servicios intracomunitarios · fuera de la UE: no sujeta · España: exenta)</option>
-          {Object.entries(TIPOS_OPERACION).map(([k, t]) => <option key={k} value={k}>{t.nombre}</option>)}
+          <option value="">{igic ? 'Tipo cero (sin otra operación)' : 'Según el cliente (UE: servicios intracomunitarios · fuera de la UE: no sujeta · España: exenta)'}</option>
+          {Object.entries(operaciones).map(([k, t]) => <option key={k} value={k}>{t.nombre}</option>)}
         </select>{mensaje('operacion')}
       </label>}
 
@@ -349,7 +352,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
         <select className="campo" value={f.motivoRectificacion || ''} onChange={(e) => poner('motivoRectificacion', e.target.value)}>
           <option value="">Otras causas (R4)</option>
           <option value="devolucion">Devolución, descuento, anulación o cambio de precio (R1, art. 80 Uno, Dos y Seis)</option>
-          <option value="errorFactura">Error al hacer la factura: importe, tipo de IVA o dato equivocado (R4)</option>
+          <option value="errorFactura">Error al hacer la factura: importe, tipo de {impuesto} o dato equivocado (R4)</option>
           <option value="errorDerecho">Error fundado de derecho (R1)</option>
           <option value="concurso">Concurso del cliente (R2, art. 80 Tres)</option>
           <option value="incobrable">Crédito incobrable: el cliente no paga (R3, art. 80 Cuatro)</option>
@@ -361,7 +364,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
         const cuota = r2(nums.reduce((s, l) => s + baseLinea(l) * (Number(l.ivaPct) || 0) / 100, 0));
         const otroT = orig.fecha.slice(0, 4) !== f.fecha.slice(0, 4) || trimestre(orig.fecha) !== trimestre(f.fecha);
         const otroAnio = orig.fecha.slice(0, 4) !== f.fecha.slice(0, 4);
-        if (motivo === 'incobrable') {
+        if (!igic && motivo === 'incobrable') {
           const r = requisitosIncobrable({ fechaOriginal: orig.fecha, fechaRectificativa: f.fecha, base: orig.base });
           return <div className="nota aviso-rect">
             {[...r.errores, ...r.avisos].map((t) => <p key={t}><strong>{t}</strong></p>)}
@@ -372,9 +375,9 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
             <label className="check"><input type="checkbox" checked={Boolean(f.reclamado)} onChange={(e) => poner('reclamado', e.target.checked)} /> He reclamado el cobro por vía judicial, con requerimiento notarial o por otro medio fehaciente que admita la ley</label>
           </div>;
         }
-        if (motivo === 'errorFactura' && cuota > 0 && otroT) return <p className="nota aviso-rect">Sube el IVA por un error: no va en el 303 de este trimestre, sino en una autoliquidación rectificativa del {trimestre(orig.fecha)}T {orig.fecha.slice(0, 4)}, con recargo por presentarla tarde (art. 27 LGT) e intereses si procede (art. 89.Cinco de la Ley del IVA). Fisquo la cuenta en ese trimestre.{otroAnio ? ` En el IRPF cuenta en ${orig.fecha.slice(0, 4)}.` : ''}</p>;
+        if (!igic && motivo === 'errorFactura' && cuota > 0 && otroT) return <p className="nota aviso-rect">Sube el IVA por un error: no va en el 303 de este trimestre, sino en una autoliquidación rectificativa del {trimestre(orig.fecha)}T {orig.fecha.slice(0, 4)}, con recargo por presentarla tarde (art. 27 LGT) e intereses si procede (art. 89.Cinco de la Ley del IVA). Fisquo la cuenta en ese trimestre.{otroAnio ? ` En el IRPF cuenta en ${orig.fecha.slice(0, 4)}.` : ''}</p>;
         if (['errorFactura', 'errorDerecho'].includes(motivo) && otroAnio) return <p className="nota aviso-rect">Corrige un error de una factura de {orig.fecha.slice(0, 4)}: en el IRPF cuenta en ese año (su declaración de la renta), no en el 130 de {f.fecha.slice(0, 4)}.</p>;
-        if (!motivo && cuota > 0 && otroT) return <p className="nota aviso-rect">Sube el IVA de una factura de otro trimestre: elige el motivo. Si es un error al facturar, va en una autoliquidación rectificativa de ese trimestre, no en este.</p>;
+        if (!igic && !motivo && cuota > 0 && otroT) return <p className="nota aviso-rect">Sube el IVA de una factura de otro trimestre: elige el motivo. Si es un error al facturar, va en una autoliquidación rectificativa de ese trimestre, no en este.</p>;
         return null;
       })()}
 
@@ -385,9 +388,9 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
         </select>{mensaje('irpfPct')}
       </div>
 
-      {(recargo || f.recargo) && <div className="check ff-det termino-check"><input id={idCampo('recargo')} aria-labelledby={idCampo('recargo-etiqueta')} type="checkbox" checked={Boolean(f.recargo)} onChange={(e) => poner('recargo', e.target.checked)} /><span id={idCampo('recargo-etiqueta')}><label htmlFor={idCampo('recargo')}>Cliente en </label><Termino id="recargo">recargo de equivalencia</Termino><label htmlFor={idCampo('recargo')}> (comercio minorista: 5,2 % con el 21 %, 1,4 % con el 10 %, 0,5 % con el 4 %)</label></span></div>}
+      {!igic && (recargo || f.recargo) && <div className="check ff-det termino-check"><input id={idCampo('recargo')} aria-labelledby={idCampo('recargo-etiqueta')} type="checkbox" checked={Boolean(f.recargo)} onChange={(e) => poner('recargo', e.target.checked)} /><span id={idCampo('recargo-etiqueta')}><label htmlFor={idCampo('recargo')}>Cliente en </label><Termino id="recargo">recargo de equivalencia</Termino><label htmlFor={idCampo('recargo')}> (comercio minorista: 5,2 % con el 21 %, 1,4 % con el 10 %, 0,5 % con el 4 %)</label></span></div>}
 
-      {(margenes.length > 0 || f.margen) && (
+      {!igic && (margenes.length > 0 || f.margen) && (
         <div className="ff-det">
           <label>Régimen de la factura
             <select className="campo" value={f.margen || ''} onChange={(e) => setF((x) => ({ ...x, margen: e.target.value || undefined, ...(e.target.value ? { recargo: false, oss: undefined, divisa: undefined } : { cuotasIncluidas: undefined }) }))}>
@@ -410,7 +413,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
           {mensaje('compensacion')}
         </label>
       )}
-      {(oss || f.oss) && (
+      {!igic && (oss || f.oss) && (
         <label className="ff-det">Venta a un particular de otro país de la UE
           <select className="campo" value={f.oss?.pais || ''} onChange={(e) => {
             const pais = e.target.value;
@@ -428,7 +431,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
       )}
 
       <label className="ff-det">Nota en la factura (opcional)
-        <input className="campo" placeholder="Ej.: operación exenta de IVA, inversión del sujeto pasivo" value={f.nota || ''} onChange={(e) => poner('nota', e.target.value)} />
+        <input className="campo" placeholder={`Ej.: operación exenta de ${impuesto}, inversión del sujeto pasivo`} value={f.nota || ''} onChange={(e) => poner('nota', e.target.value)} />
       </label>
 
       <div className="dos-col ff-det">
@@ -448,7 +451,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
           <label htmlFor={idCampo('divisa.cambio')}>Tipo de cambio: 1 € = … {f.divisa.moneda}</label>
           <input {...atributos('divisa.cambio')} className="campo" inputMode="decimal" value={aTexto(f.divisa.cambio ?? '')} onChange={(e) => ponerDivisa({ cambio: e.target.value, fuente: 'manual', fecha: undefined, pedido: undefined })} placeholder="Ej.: 1,0812" />
           {mensaje('divisa.cambio')}
-          <p className="nota">{f.divisa.fuente === 'BCE' ? `El del Banco Central Europeo del ${f.divisa.fecha?.split('-').reverse().join('/')}, el oficial para el IVA.` : 'Escrito a mano.'} {f.divisa.fuente === 'manual' && <button type="button" className="enlace" onClick={() => ponerDivisa({ fuente: undefined, pedido: undefined })}>Usar el del BCE</button>} Los precios van en {f.divisa.moneda}; Fisquo guarda también su valor en euros para el IVA y la contabilidad.</p>
+          <p className="nota">{f.divisa.fuente === 'BCE' ? `El del Banco Central Europeo del ${f.divisa.fecha?.split('-').reverse().join('/')}, el oficial para el ${impuesto}.` : 'Escrito a mano.'} {f.divisa.fuente === 'manual' && <button type="button" className="enlace" onClick={() => ponerDivisa({ fuente: undefined, pedido: undefined })}>Usar el del BCE</button>} Los precios van en {f.divisa.moneda}; Fisquo guarda también su valor en euros para el {impuesto} y la contabilidad.</p>
         </div>
       )}
 
@@ -459,7 +462,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
 
       <div className="ff-pie">
         <div className="totales">
-          <span>Base {dinero(t.base)}</span>{tipos.length > 1 ? tipos.map((x) => <span key={x.pct}>IVA {x.pct} % {dinero(x.iva)}</span>) : <span>IVA {dinero(t.iva)}</span>}{t.irpf > 0 && <span>IRPF −{dinero(t.irpf)}</span>}<strong>Total {dinero(t.total)}</strong>{enEuros !== null && <span>En euros {eur(enEuros)}</span>}
+          <span>Base {dinero(t.base)}</span>{tipos.length > 1 ? tipos.map((x) => <span key={x.pct}>{impuesto} {x.pct} % {dinero(x.iva)}</span>) : <span>{impuesto} {dinero(t.iva)}</span>}{t.irpf > 0 && <span>IRPF −{dinero(t.irpf)}</span>}<strong>Total {dinero(t.total)}</strong>{enEuros !== null && <span>En euros {eur(enEuros)}</span>}
         </div>
 
         {error && <p className="error" role="alert">{error}</p>}
@@ -481,7 +484,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
             {f.margen ? <div><dt>IVA del margen (no sale en la factura)</dt><dd>{dinero(t.iva)}</dd></div> : <>
               <div><dt>Base</dt><dd>{dinero(t.base)}</dd></div>
               {t.compensacion ? <div><dt>Compensación {aTexto(f.compensacion)} %</dt><dd>{dinero(t.compensacion)}</dd></div>
-                : tipos.length > 1 ? tipos.map((x) => <div key={x.pct}><dt>IVA {x.pct} %</dt><dd>{dinero(x.iva)}</dd></div>) : <div><dt>IVA</dt><dd>{dinero(t.iva)}</dd></div>}
+                : tipos.length > 1 ? tipos.map((x) => <div key={x.pct}><dt>{impuesto} {x.pct} %</dt><dd>{dinero(x.iva)}</dd></div>) : <div><dt>{impuesto}</dt><dd>{dinero(t.iva)}</dd></div>}
             </>}
             {t.recargo > 0 && <div><dt>Recargo de equivalencia</dt><dd>{dinero(t.recargo)}</dd></div>}
             {Number(f.irpfPct) > 0 && <div><dt>IRPF {f.irpfPct} %</dt><dd>−{dinero(t.irpf)}</dd></div>}

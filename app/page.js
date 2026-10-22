@@ -70,8 +70,10 @@ export default async function Resumen({ searchParams }) {
   const actividades = actividadesDe(u);
   const fiscal = fiscalDe(u);
   const ACTIVIDADES = nombresActividad(actividades);
-  const { anio, anioActual, esteAnio, r, c303, c130, facturado, gastado, beneficio, plazo, debe, tHoy, qAhora, apartado, aPagar, mesPago,
+  const { anio, anioActual, esteAnio, r, c303, c130, igic, facturado, gastado, beneficio, plazo, debe, tHoy, qAhora, apartado, aPagar, mesPago,
     sinCobrar, porCobrar, vencidas, prevFact, prevBeneficio, meses, cambio, ultimoMes, top, limite, cuotasSS, rendSS, prevRendSS } = P;
+  const impuesto = igic ? 'IGIC' : 'IVA';
+  const modeloIndirecto = igic ? 'IGIC (420)' : 'Modelo 303';
   const pagos = (y) => u.pagos130?.[y] || {};
   const exportar = (tipo, t) => `/api/exportar?tipo=${tipo}&anio=${anio}${t ? `&t=${t}` : ''}`;
   // Curva del beneficio acumulado mes a mes, hasta el último mes con movimiento.
@@ -195,13 +197,13 @@ export default async function Resumen({ searchParams }) {
                 <>
                   <p className="hcard-v"><Cifra v={aPagar} /><small>€ a pagar</small></p>
                   <p className={`hcard-s${urgente ? ' rojo' : ''}`}>{plazo.dias === 0 ? <strong>Hoy es el último día para presentarlo</strong> : plazo.dias === 1 ? <strong>Mañana acaba el plazo</strong> : `Hasta el ${fechaTexto(plazo.fecha)} · quedan ${plazo.dias} días`}</p>
-                  <p className="hcard-s">{[debe.pend303 ? `Modelo 303: ${debe.m303 < 0 ? `${eur(-debe.m303)} a compensar` : eur(debe.ivaIngresar)}` : c303 && 'Modelo 303 presentado', debe.pend130 ? `Modelo 130: ${eur(debe.m130)}` : c130 && 'Modelo 130 presentado'].filter(Boolean).join(' · ')}</p>
+                  <p className="hcard-s">{[debe.pend303 ? `${modeloIndirecto}: ${debe.m303 < 0 ? `${eur(-debe.m303)} a compensar` : eur(debe.ivaIngresar)}` : c303 && `${modeloIndirecto} presentado`, debe.pend130 ? `Modelo 130: ${eur(debe.m130)}${igic && plazo.t === 4 ? ' · hasta el 30 de enero' : ''}` : c130 && 'Modelo 130 presentado'].filter(Boolean).join(' · ')}</p>
                   <p className="hcard-s">Del {tHoy}T llevas {eur(apartado)} para apartar.</p>
                 </>
               ) : (
                 <>
                   <p className="hcard-v"><Cifra v={apartado} /><small>€ para apartar</small></p>
-                  <p className="hcard-s">{[c303 && `IVA ${eur(qAhora.ivaIngresar)}`, c130 && `IRPF ${eur(qAhora.m130)}`].filter(Boolean).join(' + ')} · se paga del 1 al {tHoy === 4 ? 30 : 20} de {mesPago}</p>
+                  <p className="hcard-s">{[c303 && `${impuesto}${igic ? ' (420)' : ''} ${eur(qAhora.ivaIngresar)}`, c130 && `IRPF ${eur(qAhora.m130)}`].filter(Boolean).join(' + ')} · {igic && tHoy === 4 ? [c303 && '420: hasta el 31 de enero', c130 && '130: hasta el 30 de enero'].filter(Boolean).join('; ') : <>se paga del 1 al {tHoy === 4 ? 30 : 20} de {mesPago}</>}</p>
                 </>
               )}
             </Ir>
@@ -251,7 +253,7 @@ export default async function Resumen({ searchParams }) {
 
           <section className="grupo res-trim">
             <h2 className="grupo-t">Hacienda por trimestre</h2>
-            <p className="grupo-pie arriba">Orientativo; confírmalo con tu gestor.{c130 ? ' Marca el 303 y el 130 de cada trimestre por separado. Si no pagaste el 130, se suma al siguiente.' : ' Marca cada trimestre cuando lo presentes.'}</p>
+            <p className="grupo-pie arriba">Orientativo; confírmalo con tu gestor.{c130 ? ` Marca el ${igic ? '420' : '303'} y el 130 de cada trimestre por separado. Si no pagaste el 130, se suma al siguiente.` : ' Marca cada trimestre cuando lo presentes.'}</p>
             <div className="trims">
               {r.trimestres.map((q) => {
                 // El trimestre en curso (y los que faltan) aún no se pueden presentar: «En curso», sin selector.
@@ -260,8 +262,8 @@ export default async function Resumen({ searchParams }) {
                 <div key={q.t} className={`trim trimestre${anio === anioActual && q.t > tHoy ? ' futuro' : ''}`}>
                   <div className="trim-cab"><h3>{q.t}T {anio}</h3>{abierto && <span className="estado-txt e-curso">{q.t === tHoy ? 'En curso' : 'Aún no ha empezado'}</span>}</div>
                   <div className="trim-cifras">
-                    {c303 && <p><span>{q.t === r.trimestres[0]?.t ? <Termino id="m303">Modelo 303</Termino> : 'Modelo 303'}</span><strong>{q.ivaDevolucion > 0 ? `${eur(q.ivaDevolucion)} a devolver` : q.m303 < 0 ? `${eur(-q.m303)} a compensar` : eur(q.ivaIngresar)}</strong></p>}
-                    {c303 && !abierto && <Presentado soloLectura={!puede(u, 'contabilidad')} modelo="303" anio={anio} t={q.t} importe={0} pagado={q.t === 4 && u.pres303?.[anio]?.[4] === 'devolucion' ? 'devolucion' : hecho303(u.pres303, u.pagos130, anio, q.t)} con130={false} />}
+                    {c303 && <p><span>{igic ? modeloIndirecto : q.t === r.trimestres[0]?.t ? <Termino id="m303">Modelo 303</Termino> : 'Modelo 303'}</span><strong>{q.ivaDevolucion > 0 ? `${eur(q.ivaDevolucion)} a devolver` : q.m303 < 0 ? `${eur(-q.m303)} a compensar` : eur(q.ivaIngresar)}</strong></p>}
+                    {c303 && !abierto && <Presentado soloLectura={!puede(u, 'contabilidad')} modelo={igic ? '420' : '303'} anio={anio} t={q.t} importe={0} pagado={q.t === 4 && u.pres303?.[anio]?.[4] === 'devolucion' ? 'devolucion' : hecho303(u.pres303, u.pagos130, anio, q.t)} con130={false} />}
                     {c130 && <p><span>{q.t === r.trimestres[0]?.t ? <Termino id="m130">Modelo 130</Termino> : 'Modelo 130'}</span><strong>{eur(q.m130)}</strong></p>}
                     {c130 && !abierto && <Presentado soloLectura={!puede(u, 'contabilidad')} anio={anio} t={q.t} importe={q.m130} pagado={pagos(anio)[q.t]} />}
                     {!c303 && !c130 && <p><span>Base facturada</span><strong>{eur(q.ingresos)}</strong></p>}
@@ -272,10 +274,10 @@ export default async function Resumen({ searchParams }) {
                     <dt>Base facturada</dt><dd>{eur(q.ingresos)}</dd>
                     <dt>Gastos</dt><dd>{eur(q.gastos)}</dd>
                     {c303 && <>
-                    <dt>IVA repercutido</dt><dd>{eur(q.ivaRep)}</dd>
-                    <dt>IVA deducible</dt><dd>−{eur(q.ivaDed)}</dd>
+                    <dt>{impuesto} repercutido</dt><dd>{eur(q.ivaRep)}</dd>
+                    <dt>{impuesto} deducible</dt><dd>−{eur(q.ivaDed)}</dd>
                     {q.ivaCompensado > 0 && <><dt>Cuotas anteriores compensadas</dt><dd>−{eur(q.ivaCompensado)}</dd></>}
-                    <dt><strong>Modelo 303</strong></dt><dd><strong>{q.ivaDevolucion > 0 ? `${eur(q.ivaDevolucion)} a devolver` : q.m303 < 0 ? `${eur(-q.m303)} a compensar` : eur(q.ivaIngresar)}</strong></dd>
+                    <dt><strong>{modeloIndirecto}</strong></dt><dd><strong>{q.ivaDevolucion > 0 ? `${eur(q.ivaDevolucion)} a devolver` : q.m303 < 0 ? `${eur(-q.m303)} a compensar` : eur(q.ivaIngresar)}</strong></dd>
                     </>}
                     {c130 && <>
                     <dt>5 % gastos difícil justificación</dt><dd>−{eur(q.difJust)}</dd>
@@ -292,7 +294,11 @@ export default async function Resumen({ searchParams }) {
                     return (
                       <details style={{ marginTop: 12 }}>
                         <summary style={{ cursor: 'pointer', fontWeight: 600, fontSize: '0.9375rem' }}>Casillas para Hacienda</summary>
-                        {c303 && <>
+                        {c303 && igic && <>
+                          <p className="nota"><strong>IGIC (420)</strong></p>
+                          <dl>{Array.from({ length: 47 }, (_, i) => String(i + 1).padStart(2, '0')).filter((k) => c[k] !== 0).map((k) => fila(k, 'IGIC', c[k]))}</dl>
+                        </>}
+                        {c303 && !igic && <>
                         <p className="nota" style={{ margin: '10px 0 6px' }}><strong>Modelo 303</strong></p>
                         <dl>
                           {c['04'] > 0 && <>{fila('04', 'Base al 10 %', c['04'])}{fila('06', 'Cuota al 10 %', c['06'])}</>}

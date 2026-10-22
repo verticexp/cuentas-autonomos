@@ -62,7 +62,7 @@ export function Presentado({ anio, t, importe, pagado, con130 = true, situacion,
   const [guardando, empezar] = useTransition();
   const ocupado = useRef(false);
   const [confirmado, setConfirmado] = useState(false);
-  const servidor = modelo === '303' ? (pagado === 'devolucion' ? 'devolucion' : pagado ? 'sinpagar' : 'pendiente') : pagado === undefined || pagado === null ? 'pendiente' : pagado > 0 && con130 ? 'pagado' : 'sinpagar';
+  const servidor = ['303', '420'].includes(modelo) ? (pagado === 'devolucion' ? 'devolucion' : pagado ? 'sinpagar' : 'pendiente') : pagado === undefined || pagado === null ? 'pendiente' : pagado > 0 && con130 ? 'pagado' : 'sinpagar';
   // Lo ya guardado manda hasta que el refresco trae ese mismo valor: así ni la franja ni el selector vuelven
   // un instante al estado anterior si la transición termina antes de que lleguen los datos nuevos.
   const [guardado, setGuardado] = useState(null);
@@ -79,7 +79,7 @@ export function Presentado({ anio, t, importe, pagado, con130 = true, situacion,
     empezar(async () => {
       elegir(v);
       try {
-        await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify(modelo === '303' ? { presentado303: { anio, t, hecho: v !== 'pendiente', ...(v === 'devolucion' ? { devolucion: true } : {}) } } : modelo === '131' ? { presentado131: { anio, t, importe: imp } } : { presentado: { anio, t, importe: imp } }) });
+        await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify(['303', '420'].includes(modelo) ? { presentado303: { anio, t, hecho: v !== 'pendiente', ...(v === 'devolucion' ? { devolucion: true } : {}) } } : modelo === '131' ? { presentado131: { anio, t, importe: imp } } : { presentado: { anio, t, importe: imp } }) });
         setGuardado(v);
         setConfirmado(v !== 'pendiente');
         empezar(() => router.refresh());

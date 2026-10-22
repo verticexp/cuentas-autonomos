@@ -2,9 +2,10 @@ import Termino from '@/components/Termino';
 import { GLOSARIO } from '@/lib/glosario';
 import { requerir } from '@/lib/auth';
 import { leer, redis } from '@/lib/redis';
-import { actividadesDe, ajustesIva, fiscalDe, hecho130, hecho303, marcaRet, modelosDe, usa130, usa131, usa303, usaSimplificado } from '@/lib/empresa';
+import { actividadesDe, ajustesIva, fiscalDe, hecho130, hecho303, marcaRet, modelosDe, usa130, usa131, usa303, usaSimplificado, usaIgic } from '@/lib/empresa';
 import { modelos131, simplificado } from '@/lib/estimacionObjetiva';
 import ModulosActividad from '@/components/ModulosActividad';
+import { liquidaciones420, modelo425, plazo420 } from '@/lib/igic';
 import { casillas303, liquidaciones303, minoracion130, pendienteCaja, prorrataAnio, prorrataProvisional, r2, limiteTrimestre, resumenAnual, situacionTrimestre } from '@/lib/calculos';
 import { NOMBRES_UE, modelo369, plazo369 } from '@/lib/oss';
 import { TIPOS_RENDIMIENTO, modelo123, modelo193 } from '@/lib/capitalMobiliario';
@@ -31,6 +32,56 @@ import { puede } from '@/lib/permisos';
 
 export const dynamic = 'force-dynamic';
 const T = [1, 2, 3, 4];
+const ETIQUETAS420 = {
+  "01": "Base imponible",
+  "02": "Tipo de IGIC",
+  "03": "Cuota devengada",
+  "04": "Base imponible",
+  "05": "Tipo de IGIC",
+  "06": "Cuota devengada",
+  "07": "Base imponible",
+  "08": "Tipo de IGIC",
+  "09": "Cuota devengada",
+  "10": "Base imponible",
+  "11": "Tipo de IGIC",
+  "12": "Cuota devengada",
+  "13": "Base imponible",
+  "14": "Tipo de IGIC",
+  "15": "Cuota devengada",
+  "16": "Base imponible",
+  "17": "Tipo de IGIC",
+  "18": "Cuota devengada",
+  "19": "ISP: base",
+  "20": "ISP: cuota",
+  "21": "Rectificaciones: base",
+  "22": "Rectificaciones: cuota",
+  "23": "Viajeros: base",
+  "24": "Viajeros: cuota",
+  "25": "Total IGIC devengado",
+  "26": "Adquisiciones corrientes: base",
+  "27": "Adquisiciones corrientes: cuota deducible",
+  "28": "Bienes de inversión: base",
+  "29": "Bienes de inversión: cuota deducible",
+  "30": "Importaciones corrientes: base",
+  "31": "Importaciones corrientes: cuota deducible",
+  "32": "Importaciones de inversión: base",
+  "33": "Importaciones de inversión: cuota deducible",
+  "34": "Rectificaciones de deducciones: base",
+  "35": "Rectificaciones de deducciones: cuota",
+  "36": "Compensaciones agrarias",
+  "37": "Regularización de bienes de inversión",
+  "38": "Regularización previa al inicio",
+  "39": "Regularización de deducciones",
+  "40": "Total IGIC deducible",
+  "41": "Diferencia",
+  "42": "Cuotas no deducidas por modificación de base",
+  "43": "Cuotas anteriores a compensar",
+  "44": "Resultado de la anterior autoliquidación",
+  "45": "Resultado",
+  "46": "Exportaciones y exentas con derecho a deducción",
+  "47": "No sujetas con derecho a deducción e ISP"
+};
+const DEDUCCIONES425 = { corrientes: 'adquisiciones corrientes', bienesInversion: 'bienes de inversión', importacionesCorrientes: 'importaciones corrientes', importacionesInversion: 'importaciones de inversión', rectificaciones: 'rectificaciones', compensaciones: 'compensaciones agrarias', total: 'total' };
 // Hasta cuándo se presenta cada trimestre: el 4T, en enero (303, 130 y 349 hasta el 30; las retenciones, 111 y 115, hasta el 20).
 // Último día del plazo; si cae en sábado o domingo, el lunes siguiente (como el 303 y el 130, auditoría 10-2026).
 const plazo = (t, anio, dia = 30) => { const l = limiteTrimestre(t, anio, dia); return fechaTexto(l) + (t === 4 ? ` de ${l.slice(0, 4)}` : ''); };
@@ -64,6 +115,8 @@ export default async function Modelos({ searchParams }) {
   const anio = Number((await searchParams).anio) || actual;
   // Informe de capacidad E01: el año, el anterior (tipo del IS, rendimiento previo del 130) y los bienes de inversión.
   const f = fiscalDe(u);
+  const igic = usaIgic(f);
+  const c420 = igic && usa303(f);
   // La valoración del almacén requiere el histórico completo; las retenciones se imputan al pago,
   // que puede pertenecer a otro año que la factura de proveedor.
   const [{ facturas, gastos }, nominas, empleados, productos, ajustes, albaranes, manuales, capitalLeido] = await Promise.all([
@@ -72,16 +125,17 @@ export default async function Modelos({ searchParams }) {
   const capital = capitalLeido || [];
   const h = hoy();
   const iva = ajustesIva(u);
-  const liquidaciones = liquidaciones303(facturas, gastos, anio, undefined, iva);
+  const liquidaciones = c420 ? liquidaciones420(facturas, gastos, anio, iva) : liquidaciones303(facturas, gastos, anio, undefined, iva);
+  const m425 = c420 && modelo425(facturas, gastos, anio, iva);
   // Se enseña cada modelo si le toca por su situación fiscal o si ya hay datos que lo piden.
   const hay115 = f.alquiler || gastos.some((g) => g.alquiler);
-  const hay349 = f.intracom || modelo349(facturas, anio, undefined, gastos).total > 0;
+  const hay349 = !igic && (f.intracom || modelo349(facturas, anio, undefined, gastos).total > 0);
   // Ventanilla única (369) y dividendos e intereses (123 y 193): si la empresa los tiene marcados o ya hay datos del año.
-  const hay369 = (usa303(f) && f.oss) || facturas.some((x) => x.oss && x.fecha.startsWith(`${anio}-`));
+  const hay369 = !igic && ((usa303(f) && f.oss) || facturas.some((x) => x.oss && x.fecha.startsWith(`${anio}-`)));
   const capitalAnio = capital.filter((p) => p.fecha.startsWith(`${anio}-`)).sort((a, b) => a.fecha.localeCompare(b.fecha));
   const hay123 = Boolean(f.capital) || capitalAnio.length > 0;
   const m193 = hay123 && modelo193(capital, anio);
-  const m390 = usa303(f) && modelo390(facturas, gastos, anio, iva);
+  const m390 = !igic && usa303(f) && modelo390(facturas, gastos, anio, iva);
   const conRetencion = gastos.some((g) => Number(g.irpfPct) > 0);
   const m190 = (f.trabajadores || nominas?.length > 0 || conRetencion) && modelo190(nominas || [], empleados || [], anio, gastos);
   // Sin el permiso «Nóminas», lo de cada trabajador no se ve: una línea con todos (los profesionales sí, son facturas).
@@ -94,13 +148,13 @@ export default async function Modelos({ searchParams }) {
   const renta = f.tipo === 'autonomo' && borradorRenta(facturas, gastos, anio, u.pagos130?.[anio], { ivaCoste: !usa303(f), personal: f.renta || {}, iva });
   const m180 = hay115 && modelo180(gastos, anio);
   const m347 = modelo347(facturas, gastos, anio);
-  const c303 = usa303(f);
+  const c303 = !igic && usa303(f);
   const ids = actividadesDe(u).map((a) => a.id);
   const rendAnterior = u.rend130?.[anio - 1];
-  const r130 = usa130(f) && resumenAnual(facturas, gastos, anio, u.pagos130?.[anio] || {}, ids, { ivaCoste: !c303, hasta: h < `${anio}-12-31` ? h : `${anio}-12-31`, minoracion: minoracion130(rendAnterior), iva });
+  const r130 = usa130(f) && resumenAnual(facturas, gastos, anio, u.pagos130?.[anio] || {}, ids, { ivaCoste: !usa303(f), hasta: h < `${anio}-12-31` ? h : `${anio}-12-31`, minoracion: minoracion130(rendAnterior), iva });
   // Lo que Fisquo sabe del año anterior, como sugerencia (si ese año no está entero en Fisquo, no vale: lo confirma la persona).
   const conAnterior = usa130(f) && facturas.some((x) => x.fecha.startsWith(`${anio - 1}-`));
-  const sugerido = conAnterior ? resumenAnual(facturas, gastos, anio - 1, {}, ids, { ivaCoste: !c303, iva }).trimestres[3].rendAcum : null;
+  const sugerido = conAnterior ? resumenAnual(facturas, gastos, anio - 1, {}, ids, { ivaCoste: !usa303(f), iva }).trimestres[3].rendAcum : null;
   // Módulos (lib/estimacionObjetiva.js): el 131 y, en el régimen simplificado, el 303 salen de los datos de cada actividad.
   const c131 = usa131(f), cSimp = usaSimplificado(f);
   const modAnio = u.modulos?.[anio] || {};
@@ -110,7 +164,7 @@ export default async function Modelos({ searchParams }) {
   const p303 = (t, y = anio) => hecho303(u.pres303, u.pagos130, y, t);
   const p130 = (t, y = anio) => hecho130(u.pagos130, y, t);
   const p131 = (t, y = anio) => u.pagos131?.[y]?.[t] !== undefined && u.pagos131?.[y]?.[t] !== null;
-  const presentado = (t, y = anio) => (!(c303 || cSimp) || p303(t, y)) && (!r130 || p130(t, y)) && (!c131 || p131(t, y));
+  const presentado = (t, y = anio) => (!(c303 || c420 || cSimp) || p303(t, y)) && (!r130 || p130(t, y)) && (!c131 || p131(t, y));
   const hay111 = f.trabajadores || nominas?.length > 0 || conRetencion;
   // Estado de cada trimestre del 303/130 según la fecha de hoy (en curso, listo para presentar o fuera de plazo).
   const situacion = (t) => situacionTrimestre(t, anio, h);
@@ -140,12 +194,13 @@ export default async function Modelos({ searchParams }) {
   const importeFila = (v) => (v ? eur(v) : undefined);
 
   // Trimestre que toca presentar ya: el primero listo (cerrado y dentro de plazo) que aún no está marcado como presentado.
-  const tAhora = (c303 || r130 || c131 || cSimp) ? T.find((t) => !presentado(t) && situacion(t).estado === 'listo') : undefined;
+  const tAhora = (c303 || c420 || r130 || c131 || cSimp) ? T.find((t) => !presentado(t) && (situacion(t).estado === 'listo' || (c420 && !p303(t) && situacionTrimestre(t, anio, h, 31).estado === 'listo'))) : undefined;
   let ahora = null;
   if (tAhora) {
     const c = c303 && casillas303(facturas, gastos, anio, tAhora, iva);
     const m303 = c ? (c['46'] < 0 ? { importe: 0, compensar: -c['46'] } : { importe: liquidaciones[tAhora - 1].ingresar })
       : simp ? (simp[tAhora - 1].resultado < 0 ? { importe: 0, compensar: -simp[tAhora - 1].resultado } : { importe: simp[tAhora - 1].resultado }) : null;
+    const l420 = c420 && !p303(tAhora) && liquidaciones[tAhora - 1];
     const m130 = r130 && { importe: r130.trimestres[tAhora - 1].m130 };
     const m131 = r131 && { importe: Math.max(0, r131[tAhora - 1]['15']) };
     // Con el 303 y el 130, el resto de modelos que vencen a la vez (111, 115, 349 y el 202 de abril u octubre).
@@ -157,16 +212,17 @@ export default async function Modelos({ searchParams }) {
       m349: hay349 ? modelo349(facturas, anio, tAhora, gastos) : null,
       pagos202: f.tipo === 'sociedad' ? modelo202(u.cuotaIS, anio) : null, pagados202: u.pagos202?.[anio], constitucion: f.constitucion,
     }).map((m) => ({ ...m, aeat: AEAT[`m${m.num}`], ...(m.dia ? { plazo: plazo(tAhora, anio, m.dia) } : {}) }));
+    if (l420) importes.unshift({ num: '420', modelo: '420 · IGIC', href: '#m420', texto: l420['45'] < 0 ? `A compensar ${eur(-l420['45'])}` : `A ingresar ${eur(l420.ingresar)}`, importe: l420.ingresar, aeat: 'https://sede.gobiernodecanarias.org/tributos/ow/', sede: 'ATC', plazo: fechaTexto(plazo420(anio, tAhora)) });
     ahora = (
       <PresentarAhora t={tAhora} anio={anio}
         aviso={textoSituacion(situacion(tAhora), limite(tAhora))}
         importes={importes}
-        texto={textoResumenModelos({ t: tAhora, anio, plazo: limite(tAhora), m303, m130, otros: importes.filter((m) => !['303', '130'].includes(m.num)) })} />
+        texto={igic ? [`${tAhora}T ${anio}`, ...importes.map((m) => `${m.modelo}: ${m.texto}${m.plazo ? ` · hasta el ${m.plazo}` : ''}`)].join('\n') : textoResumenModelos({ t: tAhora, anio, plazo: limite(tAhora), m303, m130, otros: importes.filter((m) => !['303', '130'].includes(m.num)) })} />
     );
-  } else if ((c303 || r130 || c131 || cSimp) && anio === actual) {
+  } else if ((c303 || c420 || r130 || c131 || cSimp) && anio === actual) {
     // En enero toca el 4T del año anterior, que no sale en la vista del año en curso: aviso con enlace a ese año.
-    const s4 = situacionTrimestre(4, anio - 1, h);
-    const l4 = limiteTrimestre(4, anio - 1);
+    const s4 = situacionTrimestre(4, anio - 1, h, c420 ? 31 : 30);
+    const l4 = limiteTrimestre(4, anio - 1, c420 ? 31 : 30);
     if (!presentado(4, anio - 1) && s4.estado === 'listo') {
       ahora = (
         <section className="bloque presentar-ahora" aria-labelledby="presentar-t">
@@ -219,6 +275,26 @@ export default async function Modelos({ searchParams }) {
         </div>
         <p className="grupo-pie">Según cómo trabajas ({f.tipo === 'sociedad' ? 'sociedad' : 'autónomo'}). Si algo no encaja, cámbialo en Ajustes › Actividades y modelos.</p>
       </ModeloPlegable>
+
+      {c420 && (
+        <ModeloPlegable id="m420" num="420" nombre="IGIC trimestral" detalle="Cuatro autoliquidaciones del año">
+          <h2 className="grupo-t">420 · IGIC trimestral</h2>
+          <p className="grupo-pie arriba">El IGIC de tus facturas menos el deducible de tus gastos, con las cuotas pendientes de compensar. En el 4T puedes pedir la devolución del saldo a tu favor.</p>
+          <div className="tarjetas">
+            {liquidaciones.map((c) => {
+              const t = c.t;
+              return <div key={t} className="tarjeta"><h3>{t}T {anio}</h3>
+                <Importe texto={c.devolucion ? 'A devolver' : c['45'] < 0 ? 'A compensar' : 'A ingresar'} v={c.devolucion || (c['45'] < 0 ? -c['45'] : c.ingresar)} />
+                <Plegable><Casillas filas={Array.from({ length: 47 }, (_, i) => String(i + 1).padStart(2, '0')).filter((k) => c[k] !== 0).map((k) => [`${k} · ${ETIQUETAS420[k]}`, [2, 5, 8, 11, 14, 17].includes(Number(k)) ? `${String(c[k]).replace('.', ',')} %` : c[k], ['25', '40', '45'].includes(k)])} /></Plegable>
+                {c.demasiadosTipos && <p className="nota">Hay más de seis tipos. Revisa cómo declarar los tipos restantes con tu gestor: {c.otros.map((d) => `${d.pct} %: base ${eur(d.base)}, cuota ${eur(d.cuota)}`).join('; ')}.</p>}
+                <p className="nota">Hasta el {fechaTexto(plazo420(anio, t))}{t === 4 ? ` de ${anio + 1}` : ''}.</p>
+                <p className="descargas"><a href="https://sede.gobiernodecanarias.org/tributos/ow/" target="_blank" rel="noopener noreferrer">Abrir la Sede de la Agencia Tributaria Canaria</a></p>
+                <Presentado soloLectura={soloLectura} modelo="420" anio={anio} t={t} importe={0} pagado={t === 4 && u.pres303?.[anio]?.[4] === 'devolucion' ? 'devolucion' : p303(t)} con130={false} situacion={situacionTrimestre(t, anio, h, 31)} plazo={fechaTexto(plazo420(anio, t))} devolucion={t === 4 && (c.pendiente > 0 || c.devolucion > 0)} />
+              </div>;
+            })}
+          </div>
+        </ModeloPlegable>
+      )}
 
       {c303 && (() => {
         const t = tRef(p303); const c = t && casillas303(facturas, gastos, anio, t, iva); const comp = c && c['46'] < 0;
@@ -491,6 +567,19 @@ export default async function Modelos({ searchParams }) {
         </ModeloPlegable>
         );
       })()}
+
+      {m425 && (
+        <ModeloPlegable id="m425" num="425" nombre="Resumen anual del IGIC" detalle={`Hasta el ${fechaTexto(plazo420(anio, 4))} de ${anio + 1}`}>
+          <h2 className="grupo-t">425 · Resumen anual del IGIC</h2>
+          <div className="tarjeta"><Casillas filas={[
+            ...m425.devengadoPorTipo.flatMap((d) => [[`Base al ${d.pct} %`, d.base], [`Cuota al ${d.pct} %`, d.cuota]]),
+            ['Total IGIC devengado', m425.totalDevengado, true],
+            ...Object.entries(m425.deducciones).map(([k, v]) => [`IGIC deducible · ${DEDUCCIONES425[k]}`, v, k === 'total']),
+            ...m425.resultadosTrimestrales.map((v, i) => [`420 del ${i + 1}T`, v]),
+          ]} /><p className="nota">Resumen de las operaciones registradas. Revisa los ajustes y operaciones especiales con tu gestor antes de presentarlo.</p>
+          <p className="descargas"><a href="https://sede.gobiernodecanarias.org/tributos/ow/" target="_blank" rel="noopener noreferrer">Abrir la Sede de la Agencia Tributaria Canaria</a></p></div>
+        </ModeloPlegable>
+      )}
 
       {m390 && (
         <ModeloPlegable id="m390" num="390" nombre="Resumen anual del IVA" detalle={`Del 1 al 30 de enero de ${anio + 1}`}>

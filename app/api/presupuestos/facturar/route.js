@@ -30,7 +30,7 @@ export async function POST(req) {
       const concepto = tipo === 'senal'
         ? `Señal del ${p.senalPct} % según presupuesto ${n}: ${p.concepto}`
         : `${p.concepto}${senal ? ` (descontada la señal de la factura ${senal.numero})` : ''} · Presupuesto ${n}`;
-      const datos = { fecha: hoy(), actividad: p.actividad, cliente: p.cliente, concepto: concepto.slice(0, 200), base, ivaPct: p.ivaPct, irpfPct: p.irpfPct, nota: p.nota, cobrada: false, ...(p.evento ? { evento: p.evento } : {}) };
+      const datos = { ...(p.impuesto === 'igic' ? { impuesto: 'igic' } : {}), fecha: hoy(), actividad: p.actividad, cliente: p.cliente, concepto: concepto.slice(0, 200), base, ivaPct: p.ivaPct, irpfPct: p.irpfPct, nota: p.nota, cobrada: false, ...(p.evento ? { evento: p.evento } : {}) };
       // Con varios conceptos, la factura del total (o del resto) los lleva todos; la señal ya facturada resta en una línea.
       if (tipo !== 'senal' && p.lineas?.length) {
         datos.lineas = [...p.lineas, ...(senal ? [{ concepto: `Señal ya facturada (factura ${senal.numero})`, cantidad: 1, precio: -senal.base, dto: 0, ivaPct: p.ivaPct }] : [])];

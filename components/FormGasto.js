@@ -10,6 +10,7 @@ import { llamar } from './Acciones';
 import { atras, volverA } from '@/lib/transicion';
 import Deslizable from './Deslizable';
 import { eur, fechaCorta } from '@/lib/formato';
+import { TIPOS_IGIC } from '@/lib/igic';
 import { importes, nifUE, origenGasto } from '@/lib/calculos';
 import { costeAfecto, partirIva, pctAfecto, pctDeducible } from '@/lib/ivaDeducible';
 import { parseImporte } from '@/lib/importe';
@@ -26,14 +27,15 @@ import { NO_IA, permisoIA } from '@/lib/permisoIA';
 import '@/app/ticket.css';
 
 // plegado: en la lista de gastos empieza como una tarjeta con «Escanear ticket»; el formulario se abre al escanear o al pedirlo.
-export default function FormGasto({ hoy, gasto, actividades, alquiler = false, plegado = false, destacar = false, regimen = 'autonomo', cupoInicial = null, movimiento = null, productos = [], proyectos = [] }) {
+export default function FormGasto({ hoy, gasto, actividades, alquiler = false, plegado = false, destacar = false, regimen = 'autonomo', cupoInicial = null, movimiento = null, productos = [], proyectos = [], igic = false }) {
+  const impuesto = igic ? 'IGIC' : 'IVA';
   const router = useRouter();
   const prefijo = useId();
   const camaraInput = useRef(null);
   const facturaInput = useRef(null);
-  const vacio = { fecha: hoy, actividad: actividades[0].id, concepto: '', proveedor: '', base: '', ivaPct: 21 };
+  const vacio = { fecha: hoy, actividad: actividades[0].id, concepto: '', proveedor: '', base: '', ivaPct: igic ? 7 : 21 };
   // Desde un cargo del banco sin gasto: fecha, proveedor e importe del banco (base estimada al 21 %, hasta leer la factura).
-  const delBanco = movimiento && { ...vacio, fecha: movimiento.fecha, concepto: movimiento.contraparte || movimiento.concepto, proveedor: movimiento.contraparte || '', base: String(Math.round((Math.abs(movimiento.importe) / 1.21) * 100) / 100).replace('.', ','), banco: movimiento.id };
+  const delBanco = movimiento && { ...vacio, fecha: movimiento.fecha, concepto: movimiento.contraparte || movimiento.concepto, proveedor: movimiento.contraparte || '', base: String(Math.round((Math.abs(movimiento.importe) / (igic ? 1.07 : 1.21)) * 100) / 100).replace('.', ','), banco: movimiento.id };
   const [g, setG] = useState(gasto ? { ...gasto, base: String(gasto.base).replace('.', ',') } : delBanco || vacio);
   const [error, setError] = useState('');
   // IVA deducible en parte (lib/ivaDeducible.js): 100, 50 y 0 en el desplegable; cualquier otro, escrito a mano.
@@ -99,7 +101,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
       setG((x) => ({ ...x, ...(stock.length ? { stock } : {}), proveedor: t.proveedor?.nombre || x.proveedor, proveedorNif: t.proveedor?.nif || x.proveedorNif, concepto: t.concepto || t.proveedor?.nombre || x.concepto,
         base: String(t.base).replace('.', ','), ivaPct: t.ivaPct, fecha: t.fecha || x.fecha, numero: t.numero || '', ...([7, 15].includes(Number(t.irpfPct)) ? { irpfPct: Number(t.irpfPct) } : {}),
         ...(t.vencimiento && t.vencimiento > (t.fecha || '') ? { pendiente: true } : {}), efactura: t.formato, ...(!Number(t.ivaPct) && nifUE(t.proveedor?.nif) ? { origen: 'ue' } : {}) }));
-      setLeyendo(`Factura electrónica ${t.numero || ''} leída${varios ? ': tiene varios tipos de IVA, revisa la base' : ''}. Revisa los datos antes de guardar.`);
+      setLeyendo(`Factura electrónica ${t.numero || ''} leída${varios ? `: tiene varios tipos de ${impuesto}, revisa la base` : ''}. Revisa los datos antes de guardar.`);
       return;
     }
     const pdf = archivo.type === 'application/pdf';
@@ -120,7 +122,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
       const stock = productos.length ? emparejarLineas(t.lineas, productos).map((l) => ({ ...l, cantidad: String(l.cantidad).replace('.', ','), coste: String(l.coste).replace('.', ',') })) : [];
       setG((x) => ({ ...x, ...(stock.length ? { stock } : {}), proveedor: t.proveedor || x.proveedor, proveedorNif: t.nif || x.proveedorNif, concepto: t.concepto || t.proveedor || x.concepto, base: t.base !== '' ? String(t.base).replace('.', ',') : x.base, ivaPct: t.ivaPct, irpfPct: t.irpfPct || 0, fecha: t.fecha, ...(!Number(t.ivaPct) && nifUE(t.nif) ? { origen: 'ue' } : {}) }));
       const avisos = Array.isArray(t.avisos) ? t.avisos : [];
-      const detalle = t.varios ? `Tiene varios tipos de IVA: ver desglose. ${t.desglose.map((l) => `${l.ivaPct} %: base ${Number(l.base).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`).join('; ')}.` : '';
+      const detalle = t.varios ? `Tiene varios tipos de ${impuesto}: ver desglose. ${t.desglose.map((l) => `${l.ivaPct} %: base ${Number(l.base).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`).join('; ')}.` : '';
       setLeyendo(['Revisa los datos antes de guardar.', ...avisos, detalle].filter(Boolean).join(' '));
     } catch (err) { setLeyendo('Revisa o rellena los datos antes de guardar.'); setError(err.message); }
     finally { setProcesando(false); }
@@ -170,7 +172,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
       <div className={`gasto-rapido${destacar ? ' destacado' : ''}`}>
         <div className="gasto-rapido-txt">
           <strong>{hecho ? '✓ Gasto añadido' : 'Añadir un gasto'}</strong>
-          <small>Haz una foto al ticket o sube la factura: Fisquo lee proveedor, base, IVA, IRPF y fecha.</small>
+          <small>Haz una foto al ticket o sube la factura: Fisquo lee proveedor, base, {impuesto}, IRPF y fecha.</small>
         </div>
         {error && <p className="error" role="alert">{error}</p>}
         {avisoAdjunto}
@@ -189,7 +191,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
     <form id="apuntar-gasto" tabIndex={-1} className="formulario tarjeta" onSubmit={enviar}>
       <fieldset disabled={enviando || procesando || Boolean(archivoPendiente)} style={{ border: 0, padding: 0, margin: 0, minWidth: 0, gap: 12 }}>
       <h3>{gasto ? 'Editar gasto' : movimiento ? 'Gasto del banco' : 'Añadir gasto deducible'}</h3>
-      {movimiento && <p className="nota">Cargo del {fechaCorta(movimiento.fecha)} por {eur(Math.abs(movimiento.importe))} ({movimiento.concepto}). Sube la factura para que Fisquo lea la base y el IVA; al guardar queda emparejado con el banco.</p>}
+      {movimiento && <p className="nota">Cargo del {fechaCorta(movimiento.fecha)} por {eur(Math.abs(movimiento.importe))} ({movimiento.concepto}). Sube la factura para que Fisquo lea la base y el {impuesto}; al guardar queda emparejado con el banco.</p>}
       {actividades.length > 1 && <Deslizable className={`tipo ${actividades.length === 2 ? 'dos' : 'varias'}`}>
         {actividades.map(({ id, nombre }) => (
           <button type="button" key={id} className={g.actividad === id ? 'activo' : ''} onClick={() => poner('actividad', id)}>{nombre}</button>
@@ -211,9 +213,9 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
       {g.proveedor && <label>NIF del proveedor (opcional)<input spellCheck={false} autoCorrect="off" autoCapitalize="characters" className="campo" placeholder="NIF del proveedor (opcional)" value={g.proveedorNif || ''} onChange={(e) => poner('proveedorNif', e.target.value)} /></label>}
       <label>Concepto<input className="campo" placeholder="Concepto" value={g.concepto} onChange={(e) => poner('concepto', e.target.value)} required /></label>
       <div className="dos-col">
-        <label>Base sin IVA<input className="campo" inputMode="decimal" placeholder="Base sin IVA" value={g.base} onChange={(e) => poner('base', e.target.value)} required /></label>
-        <label>IVA<select className="campo" value={g.ivaPct} onChange={(e) => poner('ivaPct', Number(e.target.value))}>
-          {[21, 10, 4, 0].map((n) => <option key={n} value={n}>IVA {n}%</option>)}
+        <label>Base sin {impuesto}<input className="campo" inputMode="decimal" placeholder={`Base sin ${impuesto}`} value={g.base} onChange={(e) => poner('base', e.target.value)} required /></label>
+        <label>{impuesto}<select className="campo" value={g.ivaPct} onChange={(e) => poner('ivaPct', Number(e.target.value))}>
+          {(igic ? TIPOS_IGIC : [21, 10, 4, 0]).map((n) => <option key={n} value={n}>{impuesto} {n}%</option>)}
         </select></label>
       </div>
       {(
@@ -225,20 +227,20 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
       )}
       {Number(g.irpfPct) > 0 && <p className="nota">Le pagas la factura menos la retención, y esa retención la ingresas tú en el 111.</p>}
       {(Number(g.ivaPct) > 0 || origenGasto(g)) && <>
-        <select className="campo" value={pctOtro ? 'otro' : String(pctDeducible(g))} aria-label="IVA que te deduces"
+        <select className="campo" value={pctOtro ? 'otro' : String(pctDeducible(g))} aria-label={`${impuesto} que te deduces`}
           onChange={(e) => {
             const v = e.target.value; setPctOtro(v === 'otro'); poner('deduciblePct', v === 'otro' ? '' : v === '100' ? undefined : Number(v));
             // Un turismo de uso mixto deduce el 50 % del IVA, pero en el IRPF, para la AEAT, nada: así sale por defecto.
             if (regimen !== 'sociedad' && !gasto && v === '50') { poner('afectoPct', 0); setVerAfecto(true); setAfectoOtro(false); }
           }}>
-          <option value="100">Me deduzco todo el IVA</option>
+          <option value="100">Me deduzco todo el {impuesto}</option>
           <option value="50">Me deduzco el 50 % (coche, uso mixto)</option>
-          <option value="0">No me deduzco el IVA</option>
+          <option value="0">No me deduzco el {impuesto}</option>
           <option value="otro">Me deduzco otro porcentaje…</option>
         </select>
-        {pctOtro && <label>% del IVA que te deduces<input className="campo" inputMode="decimal" value={g.deduciblePct ?? ''} onChange={(e) => poner('deduciblePct', e.target.value)} placeholder="Ej.: 30" /></label>}
-        {pctDeducible(g) === 100 && Number(g.ivaPct) > 0 && !g.proveedorNif && <p className="nota">¿Es un ticket sin tu NIF? Su IVA no se deduce (art. 97 de la Ley del IVA): pide factura con tu NIF o elige «No me deduzco el IVA».</p>}
-        {pctDeducible(g) < 100 && <p className="nota">Solo se deduce el IVA de la parte que usas para tu actividad (un turismo se presume al 50 %). El IVA que no te deduces cuenta como gasto{g.inversion ? ' y se amortiza con el bien' : ''} en la parte que uses para la actividad.</p>}
+        {pctOtro && <label>% del {impuesto} que te deduces<input className="campo" inputMode="decimal" value={g.deduciblePct ?? ''} onChange={(e) => poner('deduciblePct', e.target.value)} placeholder="Ej.: 30" /></label>}
+        {pctDeducible(g) === 100 && Number(g.ivaPct) > 0 && !g.proveedorNif && <p className="nota">¿Es un ticket sin tu NIF? Su {impuesto} no se deduce sin factura con tu NIF: pide factura con tu NIF o elige «No me deduzco el {impuesto}».</p>}
+        {pctDeducible(g) < 100 && <p className="nota">Solo se deduce el {impuesto} de la parte que usas para tu actividad (un turismo se presume al 50 %). El {impuesto} que no te deduces cuenta como gasto{g.inversion ? ' y se amortiza con el bien' : ''} en la parte que uses para la actividad.</p>}
       </>}
       {regimen !== 'sociedad' && (verAfecto || pctDeducible(g) < 100 ? (() => {
         const p = pctDeducible(g), a = g.afectoPct === undefined || g.afectoPct === null || g.afectoPct === '' ? null : pctAfecto(g);
@@ -248,36 +250,40 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
           <select className="campo" value={valor} aria-label="Parte que cuenta como gasto en el IRPF"
             onChange={(e) => { const v = e.target.value; setAfectoOtro(v === 'otro'); poner('afectoPct', v === '100' ? undefined : v === 'iva' ? p : v === 'vivienda' ? vivienda : v === 'otro' ? (a ?? '') : Number(v)); }}>
             <option value="100">En el IRPF cuenta entero (solo lo uso para la actividad)</option>
-            {p < 100 && <option value="iva">En el IRPF, la misma parte que en el IVA ({String(p).replace('.', ',')} %)</option>}
+            {p < 100 && <option value="iva">En el IRPF, la misma parte que en el {impuesto} ({String(p).replace('.', ',')} %)</option>}
             {p < 100 && <option value="vivienda">Suministros de casa con despacho: el 30 % de esa parte ({String(vivienda).replace('.', ',')} %)</option>}
             <option value="0">En el IRPF no cuenta (turismo sin uso exclusivo, gasto personal)</option>
             <option value="otro">En el IRPF cuenta otro porcentaje…</option>
           </select>
           {valor === 'otro' && <label>% que cuenta en el IRPF<input className="campo" inputMode="decimal" value={g.afectoPct ?? ''} onChange={(e) => poner('afectoPct', e.target.value)} placeholder="Ej.: 30" /></label>}
-          <p className="nota">El 130 y la renta solo restan la parte del gasto que es de tu actividad. Un coche que también usas para lo tuyo, para Hacienda no cuenta en el IRPF aunque te deduzcas la mitad del IVA; los suministros de casa con despacho, el 30 % de la parte del despacho.{parseImporte(g.base) > 0 ? ` En el IRPF restas ${eur(costeAfecto({ ...g, base: parseImporte(g.base) }))}.` : ''}</p>
+          <p className="nota">El 130 y la renta solo restan la parte del gasto que es de tu actividad. Un coche que también usas para lo tuyo, para Hacienda no cuenta en el IRPF aunque te deduzcas la mitad del {impuesto}; los suministros de casa con despacho, el 30 % de la parte del despacho.{parseImporte(g.base) > 0 ? ` En el IRPF restas ${eur(costeAfecto({ ...g, base: parseImporte(g.base) }))}.` : ''}</p>
         </>;
       })() : <button type="button" className="enlace" onClick={() => setVerAfecto(true)}>¿Lo usas también para lo tuyo? Indica la parte que es de tu actividad</button>)}
       {parseImporte(g.base) > 0 && <dl className="gasto-importes" aria-label="Importes del gasto">
         <div><dt>Base imponible</dt><dd>{eur(calculo.base)}</dd></div>
-        <div><dt>IVA</dt><dd>{eur(calculo.iva)}</dd></div>
-        {pctDeducible(g) < 100 && Number(g.ivaPct) > 0 && <div><dt>IVA que te deduces</dt><dd>{eur(partirIva(g, calculo.iva).deducible)}</dd></div>}
+        <div><dt>{impuesto}</dt><dd>{eur(calculo.iva)}</dd></div>
+        {pctDeducible(g) < 100 && Number(g.ivaPct) > 0 && <div><dt>{impuesto} que te deduces</dt><dd>{eur(partirIva(g, calculo.iva).deducible)}</dd></div>}
         <div><dt>Retención de IRPF</dt><dd>{calculo.irpf ? '−' : ''}{eur(calculo.irpf)}</dd></div>
         <div className="gasto-total"><dt>Total a pagar</dt><dd>{eur(calculo.total)}</dd></div>
       </dl>}
-      {!Number(g.ivaPct) && (
+      {igic && <>
+        <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.isp)} onChange={(e) => poner('isp', e.target.checked)} />Inversión del sujeto pasivo (lo autoliquido)</label>
+        <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.importacion)} onChange={(e) => poner('importacion', e.target.checked)} />Importación (IGIC pagado en aduana, con el DUA)</label>
+      </>}
+      {!igic && !Number(g.ivaPct) && (
         <select className="campo" value={g.origen || (nifUE(g.proveedorNif) ? 'ue' : 'es')} onChange={(e) => poner('origen', e.target.value)} aria-label="De dónde es el proveedor">
           <option value="es">Proveedor de España</option>
           <option value="ue">Proveedor de otro país de la UE</option>
           <option value="fuera">Proveedor de fuera de la UE</option>
         </select>
       )}
-      {!Number(g.ivaPct) && ['ue', 'fuera'].includes(g.origen || (nifUE(g.proveedorNif) ? 'ue' : '')) && <p className="nota">El IVA (21 %) lo declaras tú en el 303 y te lo deduces a la vez: no pagas nada de más.{g.origen !== 'fuera' && !nifUE(g.proveedorNif) ? ' Pon su NIF-IVA (por ejemplo, IE6388047V): también va en el 349.' : ''}</p>}
+      {!igic && !Number(g.ivaPct) && ['ue', 'fuera'].includes(g.origen || (nifUE(g.proveedorNif) ? 'ue' : '')) && <p className="nota">El IVA (21 %) lo declaras tú en el 303 y te lo deduces a la vez: no pagas nada de más.{g.origen !== 'fuera' && !nifUE(g.proveedorNif) ? ' Pon su NIF-IVA (por ejemplo, IE6388047V): también va en el 349.' : ''}</p>}
       <label>Fecha<input className="campo" type="date" value={g.fecha} onChange={(e) => poner('fecha', e.target.value)} required /></label>
       <label>Proyecto, obra o local (opcional)<input className="campo" list="proyectos-gasto" value={g.proyecto || ''} onChange={(e) => poner('proyecto', e.target.value)} placeholder="Ej.: Obra Calle Mayor" maxLength={60} /></label>
       <datalist id="proyectos-gasto">{proyectos.map((p) => <option key={p} value={p} />)}</datalist>
       <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.pendiente)} onChange={(e) => poner('pendiente', e.target.checked)} />Aún no lo he pagado</label>
       {(alquiler || g.alquiler) && <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.alquiler)} onChange={(e) => poner('alquiler', e.target.checked)} />Es el alquiler del local (retención del 19 %)</label>}
-      {(Number(g.ivaPct) > 0 || g.recc) && <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.recc)} onChange={(e) => poner('recc', e.target.checked)} />Su factura dice «Régimen especial del criterio de caja» (el IVA se deduce al pagarla)</label>}
+      {!igic && (Number(g.ivaPct) > 0 || g.recc) && <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.recc)} onChange={(e) => poner('recc', e.target.checked)} />Su factura dice «Régimen especial del criterio de caja» (el IVA se deduce al pagarla)</label>}
       {(Number(g.ivaPct) === 0 || g.compensacion) && (
         <label className="gasto-pendiente">Compra a un agricultor, ganadero o pescador del régimen especial (REAGP)
           <select className="campo" value={g.compensacion || ''} onChange={(e) => poner('compensacion', Number(e.target.value) || undefined)}>
@@ -294,7 +300,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
         </select>
         <p className="nota">{parseImporte(g.base) > 0 && parseImporte(g.base) <= LIMITE_LIBERTAD
           ? 'Como no pasa de 300 €, se resta entero este año.'
-          : `No se resta entero: se amortiza un ${coeficiente(g, regimen)} % al año desde la fecha de compra.`} {pctDeducible(g) < 100 ? 'La parte deducible del IVA' : 'El IVA'} sí la deduces entera en el 303 de este trimestre.</p>
+          : `No se resta entero: se amortiza un ${coeficiente(g, regimen)} % al año desde la fecha de compra.`} {pctDeducible(g) < 100 ? `La parte deducible del ${impuesto}` : `El ${impuesto}`} sí la deduces entera en el {igic ? '420' : '303'} de este trimestre.</p>
       </> : (
         <select className="campo" value={g.categoria || ''} onChange={(e) => poner('categoria', e.target.value || undefined)} aria-label="Categoría">
           <option value="">{categoria(categoriaDe({ ...g, categoria: undefined })).nombre} (automática)</option>
@@ -313,7 +319,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
                 {productos.map((p) => <option key={p.id} value={p.id}>{p.nombre}{p.sku ? ` · ${p.sku}` : ''}</option>)}
               </select>
               <input className="campo" inputMode="decimal" placeholder="Unidades" value={l.cantidad} onChange={(e) => poner('stock', g.stock.map((x, j) => (j === i ? { ...x, cantidad: e.target.value } : x)))} aria-label="Unidades" />
-              <input className="campo" inputMode="decimal" placeholder="Coste/ud" value={l.coste} onChange={(e) => poner('stock', g.stock.map((x, j) => (j === i ? { ...x, coste: e.target.value } : x)))} aria-label="Coste por unidad sin IVA" />
+              <input className="campo" inputMode="decimal" placeholder="Coste/ud" value={l.coste} onChange={(e) => poner('stock', g.stock.map((x, j) => (j === i ? { ...x, coste: e.target.value } : x)))} aria-label={`Coste por unidad sin ${impuesto}`} />
               <button type="button" className="linea-quitar" aria-label="Quitar" onClick={() => poner('stock', g.stock.filter((_, j) => j !== i))}>×</button>
             </div>
           ))}

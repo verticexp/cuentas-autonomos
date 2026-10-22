@@ -10,7 +10,7 @@ import { cobrarFactura, deshacerCobro, estadoCobro } from '@/lib/cobroManual';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { auditar } from '@/lib/auditoria';
 import { hoy } from '@/lib/formato';
-import { actividadesDe, fiscalDe, usa303 } from '@/lib/empresa';
+import { actividadesDe, fiscalDe, usaIgic, usa303 } from '@/lib/empresa';
 import { soltarAlbaranes } from '@/lib/albaranesServidor';
 import { secundarios } from '@/lib/trabajos';
 
@@ -21,7 +21,7 @@ export async function POST(req) {
   const { u, res } = await usuarioApi({ permiso: 'facturar' });
   if (res) return res;
   const b = await cuerpo(req);
-  const datos = limpiar(b, actividadesDe(u), fiscalDe(u).tipo === 'sociedad', { rectificativa: Boolean(b.rectifica), conRecargo: usa303(fiscalDe(u)), reagp: fiscalDe(u).iva === 'reagp' });
+  const datos = limpiar(b, actividadesDe(u), fiscalDe(u).tipo === 'sociedad', { rectificativa: Boolean(b.rectifica), igic: usaIgic(fiscalDe(u)), conRecargo: usa303(fiscalDe(u)) && !usaIgic(fiscalDe(u)), reagp: fiscalDe(u).iva === 'reagp' });
   if (datos.error) return Response.json({ error: datos.error, errores: datos.errores }, { status: 400 });
   const original = b.rectifica && (await leerUno(u, 'facturas', b.rectifica));
   if (b.rectifica && !original) return error('La factura a rectificar no existe');
@@ -70,7 +70,7 @@ export async function PATCH(req) {
     return Response.json({ ok: true });
   }
   if (antes.verifactu) return error('Esta factura ya está registrada en Verifactu: para corregirla, haz una rectificativa');
-  const datos = limpiar(b, actividadesDe(u), fiscalDe(u).tipo === 'sociedad', { rectificativa: Boolean(antes.rectifica || antes.serie === 'R'), conRecargo: usa303(fiscalDe(u)), reagp: fiscalDe(u).iva === 'reagp' });
+  const datos = limpiar(b, actividadesDe(u), fiscalDe(u).tipo === 'sociedad', { rectificativa: Boolean(antes.rectifica || antes.serie === 'R'), igic: usaIgic(fiscalDe(u)), conRecargo: usa303(fiscalDe(u)) && !usaIgic(fiscalDe(u)), reagp: fiscalDe(u).iva === 'reagp' });
   if (datos.error) return Response.json({ error: datos.error, errores: datos.errores }, { status: 400 });
   if (Number(datos.fecha.slice(0, 4)) !== antes.anio) return error(`La fecha debe ser de ${antes.anio}`);
   // Al cambiar la fecha, se avisa si deja de seguir el orden de su serie (lib/facturas.js fechaFueraDeOrden); con

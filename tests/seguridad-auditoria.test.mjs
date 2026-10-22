@@ -299,7 +299,7 @@ test('S7: dentro de cuota el portal y el PDF siguen devolviendo los documentos d
 // lib/empresa.js va simulada en este archivo: S8 y S9 necesitan la de verdad para el cuestionario.
 async function empresaReal() {
   const E = await import('../lib/empresa.js');
-  Object.assign(estado, { fiscalDe: E.fiscalDe, actividadesDe: E.actividadesDe, limpiarActividades: E.limpiarActividades, limpiarFiscal: E.limpiarFiscal });
+  Object.assign(estado, { fiscalDe: E.fiscalDe, actividadesDe: E.actividadesDe, limpiarActividades: E.limpiarActividades, limpiarFiscal: E.limpiarFiscal, usaIgic: E.usaIgic });
 }
 
 // 8: una sociedad no puede quedarse en un plan de autónomo cambiando sus datos después del alta (lib/formaJuridica.js).
@@ -336,4 +336,29 @@ test('S9: pagando un plan de autónomo no se pasa a sociedad, y un NIF de otra c
   r = await ruta.PATCH(req('/api/cuenta', { nombre: 'Ana', nif: '87654321X' }, 'PATCH'));
   assert.equal(r.status, 400); assert.match((await r.json()).error, /otra cuenta de Fisquo/);
   assert.equal((await R.redis.hget('empresas', 'e')).plan.tipo, 'aut');
+});
+
+test('Canarias: configuración real valida actividades IGIC y el 420 usa pres303 con pago identificado como 420', async () => {
+  await empresaReal();
+  const emisor = { nombre: 'Canarias SL', nif: 'B12345674' };
+  const u = await usuario({}, { plan: { tipo: 'pym', nombre: 'Pro', version: 3, periodo: 'mes', hasta: '2099-01-01' }, emisor, fiscal: { tipo: 'sociedad', iva: 'general' } });
+  await sesion(u); cabeceras('/api/cuenta', 'PATCH');
+  const ruta = await cargar('app/api/cuenta/route.js');
+  const configuracion = { fiscal: { tipo: 'sociedad', territorio: 'canarias', iva: 'general', intracom: true, oss: true }, emisor, actividades: [{ nombre: 'Servicios', ivaPct: 7, irpfPct: 0 }] };
+  let r = await ruta.PATCH(req('/api/cuenta', { configuracion }, 'PATCH'));
+  assert.equal(r.status, 200, JSON.stringify(await r.clone().json()));
+  const empresa = await R.redis.hget('empresas', 'e');
+  assert.equal(empresa.fiscal.territorio, 'canarias');
+  assert.equal(empresa.fiscal.intracom, false);
+  assert.equal(empresa.fiscal.oss, undefined);
+  assert.equal(empresa.actividades[0].ivaPct, 7);
+  r = await ruta.PATCH(req('/api/cuenta', { configuracion: { ...configuracion, actividades: [{ nombre: 'Servicios', ivaPct: 21 }] } }, 'PATCH'));
+  assert.equal(r.status, 400);
+  assert.match((await r.json()).error, /IGIC/);
+  r = await ruta.PATCH(req('/api/cuenta', { presentado303: { anio: 2026, t: 1, hecho: true } }, 'PATCH'));
+  assert.equal(r.status, 200);
+  const presentada = await R.redis.hget('empresas', 'e');
+  assert.equal(presentada.pres303[2026][1], true);
+  assert.ok(presentada.pagadosHacienda['2026-1-420']);
+  assert.equal(presentada.pagadosHacienda['2026-1-303'], undefined);
 });
