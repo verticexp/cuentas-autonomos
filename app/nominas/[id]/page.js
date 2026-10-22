@@ -29,6 +29,7 @@ export default async function Nomina({ params }) {
           {n.extras ? ` · ${hhmm(n.horas.extra)} h extra pagadas (${eur(n.extras.importe)}, incluidas en el bruto)` : n.horas.extra > 0 ? ` · ${hhmm(n.horas.extra)} h por encima de su jornada` : ''}
         </p>
       )}
+      {!n.agrupada && <p><a className="boton sec" href={`/api/nominas/recibo?id=${encodeURIComponent(n.id)}`}>Descargar el recibo (PDF)</a></p>}
       <FormNomina nomina={n} />
       <div className="acciones-factura"><Borrar url={`/api/nominas?id=${n.id}`} pregunta="¿Borrar esta nómina? También se quita su gasto." volver="/nominas" /></div>
     </main>
