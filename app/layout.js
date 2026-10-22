@@ -14,7 +14,9 @@ import { SOLO_LECTURA_APP, soloLectura } from '@/lib/planes';
 import { esApp } from '@/lib/app';
 import { COLOR_BASE } from '@/lib/marca';
 import { fuente } from '@/components/fuente';
-import { permisosDe } from '@/lib/permisos';
+import { permisosDe, puede } from '@/lib/permisos';
+import { leer } from '@/lib/redis';
+import { resumen as resumenBandeja } from '@/lib/bandeja';
 import Bloqueo from '@/components/Bloqueo';
 import Llegada from '@/components/Llegada';
 import Arranque from '@/components/Arranque';
@@ -65,6 +67,8 @@ export default async function RootLayout({ children }) {
   // La app va siempre con el color de Fisquo: el de cada empresa solo sale en sus facturas, presupuestos y páginas
   // de cobro (con algunos colores, en modo oscuro los botones parecían desactivados).
   const u = await usuarioActual().catch(() => null);
+  // Facturas por revisar (lib/bandeja.js): su número va en la pestaña Gastos, para que se vean desde cualquier pantalla.
+  const porRevisar = u && puede(u, 'gastos') ? resumenBandeja((await leer(u, 'bandeja').catch(() => [])) || []).pendientes : 0;
   // Con el bloqueo del servidor activo y sin desbloquear, la pantalla de bloqueo sale aunque el navegador la diera por abierta.
   const abierta = !u || bloqueoDe(u) !== 'activo' || (await desbloqueada().catch(() => false));
   // Al abrir una página de la app sin desbloquear: redirección de verdad (307) antes de pintar nada. Desde la página, la
@@ -93,7 +97,7 @@ export default async function RootLayout({ children }) {
           <p className="aviso-lectura" role="status"><span>{app ? SOLO_LECTURA_APP : 'Tu prueba ha terminado: puedes ver y exportar todo, pero no crear ni editar.'}</span>{!app && <a href="/ajustes/plan">Elegir plan</a>}</p>
         )}
         {children}
-        <Suspense>{u && <TabBar permisos={permisosDe(u)} empresas={u.misEmpresas} empresa={u.empresa} admin={Boolean(u.admin)} inventario={Boolean(u.fiscal?.inventario)} fiscal={{ tipo: u.fiscal?.tipo, iva: u.fiscal?.iva }} faltan={planesQueFaltan(u.plan)} />}<Llegada /><BarraEstado /></Suspense>
+        <Suspense>{u && <TabBar porRevisar={porRevisar} permisos={permisosDe(u)} empresas={u.misEmpresas} empresa={u.empresa} admin={Boolean(u.admin)} inventario={Boolean(u.fiscal?.inventario)} fiscal={{ tipo: u.fiscal?.tipo, iva: u.fiscal?.iva }} faltan={planesQueFaltan(u.plan)} />}<Llegada /><BarraEstado /></Suspense>
         {u?.bloqueoPantalla && <Bloqueo email={u.email} servidor={abierta} />}
       </body>
     </html>

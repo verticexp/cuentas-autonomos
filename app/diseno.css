@@ -202,6 +202,10 @@ fieldset.solo-ver:disabled .campo { opacity: 1; color: var(--ink); -webkit-text-
   -webkit-touch-callout: none; transition: background-color 0.2s var(--salida), color 0.2s var(--salida);
 }
 .tabs a svg { flex: none; width: 25px; height: 25px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+/* Número de facturas por revisar sobre la pestaña Gastos (components/TabBar.js); en la barra lateral, al final. */
+.tabs a { position: relative; }
+.tabs a .tab-n { position: absolute; top: 3px; left: calc(50% + 5px); min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--in-boton); color: #fff; font-size: 11px; font-weight: 700; line-height: 18px; text-align: center; }
+@media (min-width: 1024px) { .tabs a .tab-n { position: static; margin-left: auto; } }
 .tabs a span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .tabs a.activo { color: var(--marca); background: var(--relleno); }
 .tabs a:active { transform: none; }

@@ -22,7 +22,7 @@ export function AccionesDocumento({ id, estado, remitente = '' }) {
     setOcupado(true); setError('');
     try {
       await llamar(accion, id);
-      if (accion === 'descartar') router.push('/gastos/bandeja');
+      if (accion === 'descartar') router.push('/gastos?ver=revisar');
       router.refresh();
     } catch (e) { setError(e.message); }
     setOcupado(false);
