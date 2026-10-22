@@ -152,104 +152,107 @@ export default async function Gastos({ searchParams }) {
         { href: '/gastos?estado=sinpagar', texto: 'Por pagar', n: agenda.n, tono: agenda.vencidos ? 'rojo' : undefined, activo: vista === 'pagar' },
       ]} />}
 
-      {/* Por revisar: las facturas subidas, reenviadas por correo o compartidas, hasta que se aprueban (lib/bandeja.js). */}
-      {vista === 'revisar' && <>
-        {aviso === 'banco' && <p className="nota" role="status">Gasto guardado, pero el cargo del banco ya no casaba: emparéjalo desde Gastos › Cargos del banco sin gasto.</p>}
-        <p className="nota">Aquí llegan las facturas que subes o reenvías por correo. Fisquo las lee y esperan a que las revises: nada se guarda como gasto hasta que lo apruebas.</p>
-        <Bandeja inicial={porRevisar.docs} resumenInicial={porRevisar.resumen} puedeGastar={puede(u, 'gastar')} />
-        {!porRevisar.docs.length && <Vacio icono="gasto" titulo="No tienes facturas por revisar">Sube arriba las facturas que te llegan (PDF, fotos o facturas electrónicas, todas a la vez) {correo.listo ? 'o reenvíalas a tu dirección de correo' : ''} y aparecerán aquí.</Vacio>}
-        <BuzonCorreo inicial={{ listo: correo.listo, direccion: correo.direccion, remitentes: buzon?.remitentes || [], confirmacion: confirmacionVigente(buzon) }} admin={Boolean(u.admin)} puedeGastar={puede(u, 'gastar')} />
-      </>}
+      {/* Lo de cada pestaña: al cambiar de una a otra, solo se mueve esto (components/Pestanas.js). */}
+      <div className="pestanas-panel">
+        {/* Por revisar: las facturas subidas, reenviadas por correo o compartidas, hasta que se aprueban (lib/bandeja.js). */}
+        {vista === 'revisar' && <>
+          {aviso === 'banco' && <p className="nota" role="status">Gasto guardado, pero el cargo del banco ya no casaba: emparéjalo desde Gastos › Cargos del banco sin gasto.</p>}
+          <p className="nota">Aquí llegan las facturas que subes o reenvías por correo. Fisquo las lee y esperan a que las revises: nada se guarda como gasto hasta que lo apruebas.</p>
+          <Bandeja inicial={porRevisar.docs} resumenInicial={porRevisar.resumen} puedeGastar={puede(u, 'gastar')} />
+          {!porRevisar.docs.length && <Vacio icono="gasto" titulo="No tienes facturas por revisar">Sube arriba las facturas que te llegan (PDF, fotos o facturas electrónicas, todas a la vez) {correo.listo ? 'o reenvíalas a tu dirección de correo' : ''} y aparecerán aquí.</Vacio>}
+          <BuzonCorreo inicial={{ listo: correo.listo, direccion: correo.direccion, remitentes: buzon?.remitentes || [], confirmacion: confirmacionVigente(buzon) }} admin={Boolean(u.admin)} puedeGastar={puede(u, 'gastar')} />
+        </>}
 
-      {/* Por pagar: como una agenda de pagos, de lo vencido a lo que vence más tarde, con el total de cada grupo. */}
-      {vista === 'pagar' && <>
-        {agenda.vencidos > 0 && (
-          <Deslizable className="chips">
-            <Link href="/gastos?estado=sinpagar" className={estado !== 'vencidos' ? 'activo' : ''}>Todo lo pendiente · {agenda.n}</Link>
-            <Link href="/gastos?estado=vencidos" className={`${estado === 'vencidos' ? 'activo ' : ''}rojo`}>Vencidos · {agenda.vencidos}</Link>
-          </Deslizable>
-        )}
-        {agenda.n > 0 && <p className="resumen-linea"><span>Por pagar <strong>{eur(agenda.total)}</strong></span>{agenda.totalVencido > 0 && <span className="prov-debe">Vencido <strong>{eur(agenda.totalVencido)}</strong></span>}</p>}
-        {agenda.grupos.filter((gr) => estado !== 'vencidos' || gr.id === 'vencido').map((gr) => (
-          <section key={gr.id} className="grupo-mes">
-            <h2><span className={gr.id === 'vencido' ? 'rojo' : ''}>{gr.titulo}</span><small>{eur(gr.total)}</small></h2>
-            <ul className="grupo-lista">{gr.gastos.map((g) => <li key={g.id}>{fila(g, { agenda: true })}</li>)}</ul>
-          </section>
-        ))}
-        {!agenda.n && <Vacio tipo="resultados" icono="gasto" titulo="No tienes nada por pagar" accion={{ href: '/gastos', texto: 'Ver los gastos' }}>Los gastos que marques como «Aún no lo he pagado» salen aquí, ordenados por su vencimiento.</Vacio>}
-      </>}
-
-      {vista === 'gastos' && <>
-        {/* Primero lo que más se hace: escanear el ticket o subir las facturas. El formulario entero se abre al escanear o al pedirlo. */}
-        {puede(u, 'gastar') && !movimiento && <FormGasto igic={usaIgic(fiscalDe(u))} cupoInicial={cupoIA} hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} productos={stockProductos} plegado={hay} destacar={Boolean(escanear || subir)} proyectos={proyectos} correo={correo} />}
-
-        {/* Si hay facturas esperando, se dice aquí también, bien a la vista. */}
-        {!movimiento && porRevisar.resumen.pendientes > 0 && (
-          <Link href="/gastos?ver=revisar" className="aviso-revisar">
-            <span><strong>{porRevisar.resumen.pendientes === 1 ? 'Tienes 1 factura por revisar' : `Tienes ${porRevisar.resumen.pendientes} facturas por revisar`}</strong>
-              <small>{porRevisar.resumen.cuadran ? (porRevisar.resumen.cuadran === 1 ? '1 cuadra y se puede aprobar con un toque' : `${porRevisar.resumen.cuadran} cuadran y se pueden aprobar de golpe`) : 'Ábrelas para revisarlas y guardarlas como gasto'}</small></span>
-            <span className="aviso-revisar-ir">Revisar ›</span>
-          </Link>
-        )}
-
-        {(delAnio.length > 0 || hayProveedores) && (
-          <p className="resumen-linea">
-            {delAnio.length > 0 && <>
-            <span>Este año, sin IVA <strong>{eur(r2(delAnio.reduce((s, g) => s + g.base, 0)))}</strong></span>
-            <span>IVA que recuperas <strong>{eur(r2(delAnio.reduce((s, g) => s + importes(g).iva - (origenGasto(g) ? 0 : partirIva(g, importes(g).iva).noDeducible), 0)))}</strong></span>
-            </>}
-            {puede(u, DETALLE) && nBienes > 0 && <Link href="/contabilidad?ver=bienes" className="prov-enlace">Bienes de inversión ›</Link>}
-            {hayProveedores && <Link href="/gastos/proveedores" className="prov-enlace">Proveedores{debes > 0 ? ` · debes ${eur(r2(debes))}` : ''} ›</Link>}
-          </p>
-        )}
-
-        {puede(u, 'gastar') && movimiento && <FormGasto igic={usaIgic(fiscalDe(u))} cupoInicial={cupoIA} key={movimiento.id} hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} productos={stockProductos} movimiento={movimiento} proyectos={proyectos} />}
-
-        {!sinFuncion(u.plan, 'revision') && puede(u, 'gastar') && !movimiento && revision.total > 0 && <RevisionGastos items={revision.items} total={revision.total} />}
-
-        {total > 5 && <Buscar action="/gastos" q={q} placeholder="Buscar gastos" etiqueta="Buscar por proveedor o concepto" />}
-
-        {grupos.map((gr) => {
-          const [y, m] = gr.m.split('-');
-          return (
-            <section key={gr.m} className="grupo-mes">
-              <h2><span>{MESES[m - 1]} {y !== h.slice(0, 4) ? y : ''}</span><small>{eur(r2(totalMes[gr.m] || 0))} sin IVA</small></h2>
-              <ul className="grupo-lista">
-                {gr.gastos.map((g) => <li key={g.id}>{fila(g)}</li>)}
-              </ul>
+        {/* Por pagar: como una agenda de pagos, de lo vencido a lo que vence más tarde, con el total de cada grupo. */}
+        {vista === 'pagar' && <>
+          {agenda.vencidos > 0 && (
+            <Deslizable className="chips">
+              <Link href="/gastos?estado=sinpagar" className={estado !== 'vencidos' ? 'activo' : ''}>Todo lo pendiente · {agenda.n}</Link>
+              <Link href="/gastos?estado=vencidos" className={`${estado === 'vencidos' ? 'activo ' : ''}rojo`}>Vencidos · {agenda.vencidos}</Link>
+            </Deslizable>
+          )}
+          {agenda.n > 0 && <p className="resumen-linea"><span>Por pagar <strong>{eur(agenda.total)}</strong></span>{agenda.totalVencido > 0 && <span className="prov-debe">Vencido <strong>{eur(agenda.totalVencido)}</strong></span>}</p>}
+          {agenda.grupos.filter((gr) => estado !== 'vencidos' || gr.id === 'vencido').map((gr) => (
+            <section key={gr.id} className="grupo-mes">
+              <h2><span className={gr.id === 'vencido' ? 'rojo' : ''}>{gr.titulo}</span><small>{eur(gr.total)}</small></h2>
+              <ul className="grupo-lista">{gr.gastos.map((g) => <li key={g.id}>{fila(g, { agenda: true })}</li>)}</ul>
             </section>
-          );
-        })}
+          ))}
+          {!agenda.n && <Vacio tipo="resultados" icono="gasto" titulo="No tienes nada por pagar" accion={{ href: '/gastos', texto: 'Ver los gastos' }}>Los gastos que marques como «Aún no lo he pagado» salen aquí, ordenados por su vencimiento.</Vacio>}
+        </>}
 
-        {pag.siguiente && <p className="grupo-pie"><Link href={url({ desde: pag.siguiente })} className="boton sec">Ver más</Link></p>}
+        {vista === 'gastos' && <>
+          {/* Primero lo que más se hace: escanear el ticket o subir las facturas. El formulario entero se abre al escanear o al pedirlo. */}
+          {puede(u, 'gastar') && !movimiento && <FormGasto igic={usaIgic(fiscalDe(u))} cupoInicial={cupoIA} hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} productos={stockProductos} plegado={hay} destacar={Boolean(escanear || subir)} proyectos={proyectos} correo={correo} />}
 
-        {!lista.length && (hay || buscado || desde
-          ? <Vacio tipo="resultados" icono="gasto" titulo={buscado ? `Ningún gasto con «${q}»` : 'Ningún gasto con este filtro'} accion={{ href: buscado ? url({ q: null, desde: null }) : '/gastos', texto: buscado ? 'Quitar búsqueda' : 'Ver todos' }} />
-          : <Vacio icono="gasto" titulo="Añade tu primer gasto" accion={puede(u, 'gastar') && { href: '#escanear-ticket', texto: 'Escanear ticket' }} secundaria={puede(u, 'gastar') && { href: '#apuntar-gasto', texto: 'Apuntar a mano' }}>Hazle una foto al ticket o apúntalo a mano: el IVA se resta del 303 y el gasto baja tu IRPF.</Vacio>)}
+          {/* Si hay facturas esperando, se dice aquí también, bien a la vista. */}
+          {!movimiento && porRevisar.resumen.pendientes > 0 && (
+            <Ir href="/gastos?ver=revisar" tipo="pestana-der" scroll={false} className="aviso-revisar">
+              <span><strong>{porRevisar.resumen.pendientes === 1 ? 'Tienes 1 factura por revisar' : `Tienes ${porRevisar.resumen.pendientes} facturas por revisar`}</strong>
+                <small>{porRevisar.resumen.cuadran ? (porRevisar.resumen.cuadran === 1 ? '1 cuadra y se puede aprobar con un toque' : `${porRevisar.resumen.cuadran} cuadran y se pueden aprobar de golpe`) : 'Ábrelas para revisarlas y guardarlas como gasto'}</small></span>
+              <span className="aviso-revisar-ir">Revisar ›</span>
+            </Ir>
+          )}
 
-        <section className="gastos-mas">
-          <h2 className="grupo-t">Más herramientas</h2>
-          <details className="tarjeta bloque" open={pendientes > 0 && !hay}>
-            <summary><strong>Deducciones que no deberías olvidar</strong> <span className="nota">· {pendientes ? `${pendientes} sin ningún gasto este año` : 'todas cubiertas'}</span></summary>
-            <div style={{ marginTop: 12 }}>
-              {LISTA.map((d) => {
-                const ok = cubierta(d, delAnio);
-                return (
-                  <div key={d.t} className="deduccion">
-                    <span className={ok ? 'ok' : 'no'}>{ok ? '✓' : '○'}</span>
-                    <div><strong>{d.t}</strong><p>{d.d}</p></div>
-                  </div>
-                );
-              })}
-              <p className="nota">Solo cuenta lo que tenga factura a tu nombre y esté ligado a tu actividad. Ante la duda, confírmalo con tu gestor.</p>
-            </div>
-          </details>
-          {puede(u, 'gastar') && <>
-            {fiscalDe(u).tipo === 'autonomo' && <Cuotas desde={`${h.slice(0, 4)}-01`} />}
-            <Dietas hoy={h} actividades={actividades} autonomo={fiscalDe(u).tipo === 'autonomo'} />
-          </>}
-        </section>
-      </>}
+          {(delAnio.length > 0 || hayProveedores) && (
+            <p className="resumen-linea">
+              {delAnio.length > 0 && <>
+              <span>Este año, sin IVA <strong>{eur(r2(delAnio.reduce((s, g) => s + g.base, 0)))}</strong></span>
+              <span>IVA que recuperas <strong>{eur(r2(delAnio.reduce((s, g) => s + importes(g).iva - (origenGasto(g) ? 0 : partirIva(g, importes(g).iva).noDeducible), 0)))}</strong></span>
+              </>}
+              {puede(u, DETALLE) && nBienes > 0 && <Link href="/contabilidad?ver=bienes" className="prov-enlace">Bienes de inversión ›</Link>}
+              {hayProveedores && <Link href="/gastos/proveedores" className="prov-enlace">Proveedores{debes > 0 ? ` · debes ${eur(r2(debes))}` : ''} ›</Link>}
+            </p>
+          )}
+
+          {puede(u, 'gastar') && movimiento && <FormGasto igic={usaIgic(fiscalDe(u))} cupoInicial={cupoIA} key={movimiento.id} hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} productos={stockProductos} movimiento={movimiento} proyectos={proyectos} />}
+
+          {!sinFuncion(u.plan, 'revision') && puede(u, 'gastar') && !movimiento && revision.total > 0 && <RevisionGastos items={revision.items} total={revision.total} />}
+
+          {total > 5 && <Buscar action="/gastos" q={q} placeholder="Buscar gastos" etiqueta="Buscar por proveedor o concepto" />}
+
+          {grupos.map((gr) => {
+            const [y, m] = gr.m.split('-');
+            return (
+              <section key={gr.m} className="grupo-mes">
+                <h2><span>{MESES[m - 1]} {y !== h.slice(0, 4) ? y : ''}</span><small>{eur(r2(totalMes[gr.m] || 0))} sin IVA</small></h2>
+                <ul className="grupo-lista">
+                  {gr.gastos.map((g) => <li key={g.id}>{fila(g)}</li>)}
+                </ul>
+              </section>
+            );
+          })}
+
+          {pag.siguiente && <p className="grupo-pie"><Link href={url({ desde: pag.siguiente })} className="boton sec">Ver más</Link></p>}
+
+          {!lista.length && (hay || buscado || desde
+            ? <Vacio tipo="resultados" icono="gasto" titulo={buscado ? `Ningún gasto con «${q}»` : 'Ningún gasto con este filtro'} accion={{ href: buscado ? url({ q: null, desde: null }) : '/gastos', texto: buscado ? 'Quitar búsqueda' : 'Ver todos' }} />
+            : <Vacio icono="gasto" titulo="Añade tu primer gasto" accion={puede(u, 'gastar') && { href: '#escanear-ticket', texto: 'Escanear ticket' }} secundaria={puede(u, 'gastar') && { href: '#apuntar-gasto', texto: 'Apuntar a mano' }}>Hazle una foto al ticket o apúntalo a mano: el IVA se resta del 303 y el gasto baja tu IRPF.</Vacio>)}
+
+          <section className="gastos-mas">
+            <h2 className="grupo-t">Más herramientas</h2>
+            <details className="tarjeta bloque" open={pendientes > 0 && !hay}>
+              <summary><strong>Deducciones que no deberías olvidar</strong> <span className="nota">· {pendientes ? `${pendientes} sin ningún gasto este año` : 'todas cubiertas'}</span></summary>
+              <div style={{ marginTop: 12 }}>
+                {LISTA.map((d) => {
+                  const ok = cubierta(d, delAnio);
+                  return (
+                    <div key={d.t} className="deduccion">
+                      <span className={ok ? 'ok' : 'no'}>{ok ? '✓' : '○'}</span>
+                      <div><strong>{d.t}</strong><p>{d.d}</p></div>
+                    </div>
+                  );
+                })}
+                <p className="nota">Solo cuenta lo que tenga factura a tu nombre y esté ligado a tu actividad. Ante la duda, confírmalo con tu gestor.</p>
+              </div>
+            </details>
+            {puede(u, 'gastar') && <>
+              {fiscalDe(u).tipo === 'autonomo' && <Cuotas desde={`${h.slice(0, 4)}-01`} />}
+              <Dietas hoy={h} actividades={actividades} autonomo={fiscalDe(u).tipo === 'autonomo'} />
+            </>}
+          </section>
+        </>}
+      </div>
     </main>
   );
 }

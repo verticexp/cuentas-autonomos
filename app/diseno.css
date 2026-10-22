@@ -363,6 +363,20 @@ html[data-vt=tab-der]::view-transition-old(root) { animation: 0.24s var(--vt-cur
 html[data-vt=tab-der]::view-transition-new(root) { animation: 0.3s var(--vt-curva) both vt-tab-desde-der; }
 html[data-vt=tab-izq]::view-transition-old(root) { animation: 0.24s var(--vt-curva) both vt-tab-a-der; }
 html[data-vt=tab-izq]::view-transition-new(root) { animation: 0.3s var(--vt-curva) both vt-tab-desde-izq; }
+/* Pestañas de una pantalla (components/Pestanas.js): la cabecera y las pestañas se quedan quietas, la pastilla viaja hasta la
+   tocada (la pinta la caja de la transición: no se deforma aunque las pestañas no midan igual), el texto cambia de color y lo de
+   debajo se desliza un poco hacia ese lado, como con la barra */
+html[data-vt^=pestana] .pestanas-indicador { view-transition-name: pestanas-indicador; }
+html[data-vt^=pestana] .pestana { view-transition-name: var(--pestana); }
+html[data-vt^=pestana] .pestanas-panel { view-transition-name: pestanas-panel; }
+html[data-vt^=pestana]::view-transition-old(root), html[data-vt^=pestana]::view-transition-new(root) { animation: none; }
+::view-transition-group(pestanas-indicador) { animation-duration: 0.3s; animation-timing-function: var(--vt-curva); border-radius: var(--r-pastilla); background: var(--pastilla, var(--surface)); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); }
+::view-transition-old(pestanas-indicador), ::view-transition-new(pestanas-indicador) { display: none; }
+::view-transition-group(pestanas-panel) { animation-duration: 0.3s; animation-timing-function: var(--vt-curva); }
+html[data-vt=pestana-der]::view-transition-old(pestanas-panel) { animation: 0.24s var(--vt-curva) both vt-tab-a-izq; }
+html[data-vt=pestana-der]::view-transition-new(pestanas-panel) { animation: 0.3s var(--vt-curva) both vt-tab-desde-der; }
+html[data-vt=pestana-izq]::view-transition-old(pestanas-panel) { animation: 0.24s var(--vt-curva) both vt-tab-a-der; }
+html[data-vt=pestana-izq]::view-transition-new(pestanas-panel) { animation: 0.3s var(--vt-curva) both vt-tab-desde-izq; }
 html[data-vt=fundido]::view-transition-old(root) { animation: 0.16s var(--salida) both vt-fuera; }
 html[data-vt=fundido]::view-transition-new(root) { animation: 0.22s var(--salida) both vt-dentro; }
 /* Cambiar de año: no se mueve nada, solo cambian las cifras */
