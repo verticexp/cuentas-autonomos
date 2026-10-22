@@ -2,7 +2,7 @@ import { error, usuarioApi } from '@/lib/api';
 import { leerUno } from '@/lib/redis';
 import { rafaga, respuesta429 } from '@/lib/limite';
 import { editarGasto } from '@/lib/gastosServidor';
-import { borrarJustificantes, leerJustificante, MAX_BYTES, nombreJustificante, subirJustificante } from '@/lib/justificantes';
+import { borrarJustificantes, esXml, leerJustificante, MAX_BYTES, nombreJustificante, subirJustificante } from '@/lib/justificantes';
 import { auditar } from '@/lib/auditoria';
 
 export const dynamic = 'force-dynamic';
@@ -24,9 +24,10 @@ export async function GET(req) {
     headers: {
       'Content-Type': g.archivo.tipo,
       'Content-Length': String(datos.length),
-      'Content-Disposition': `${q.get('descargar') ? 'attachment' : 'inline'}; filename="${nombre}"`,
+      // La factura electrónica (XML), siempre como descarga (lib/justificantes.js TIPOS).
+      'Content-Disposition': `${q.get('descargar') || esXml(g.archivo) ? 'attachment' : 'inline'}; filename="${nombre}"`,
       'Cache-Control': 'private, no-store',
-      // Solo se sirven JPG, PNG, WebP o PDF comprobados por sus primeros bytes (lib/justificantes.js tipoReal).
+      // Solo se sirven JPG, PNG, WebP, PDF o XML comprobados por sus primeros bytes (lib/justificantes.js tipoReal).
       'X-Content-Type-Options': 'nosniff',
     },
   });
