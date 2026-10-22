@@ -33,8 +33,9 @@
 @media (min-width: 1024px) {
   .teso-cifras { grid-template-columns: repeat(4, 1fr); }
   .hcards:has(> :nth-child(3)) { grid-template-columns: repeat(3, 1fr); }
-  .hcards:has(> :nth-child(3)) .hcard-v { font-size: 28px; white-space: nowrap; }
-  .hcards:has(> :nth-child(3)) .hcard-v small { font-size: 15px; }
+  .hcards:has(> :nth-child(3)) .hcard-v { font-size: 28px; }
+  /* La etiqueta («€ para apartar») baja entera de línea si no cabe al lado del importe: antes se cortaba con tres tarjetas. */
+  .hcards:has(> :nth-child(3)) .hcard-v small { font-size: 15px; display: inline-block; white-space: nowrap; }
   .teso-barra { width: 160px; }
   .teso-saldo { display: flex; align-items: center; gap: 24px; }
   .teso-saldo label { margin: 0; flex: 1; }
