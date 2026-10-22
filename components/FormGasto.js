@@ -284,7 +284,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
       <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.pendiente)} onChange={(e) => poner('pendiente', e.target.checked)} />Aún no lo he pagado</label>
       {(alquiler || g.alquiler) && <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.alquiler)} onChange={(e) => poner('alquiler', e.target.checked)} />Es el alquiler del local (retención del 19 %)</label>}
       {!igic && (Number(g.ivaPct) > 0 || g.recc) && <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.recc)} onChange={(e) => poner('recc', e.target.checked)} />Su factura dice «Régimen especial del criterio de caja» (el IVA se deduce al pagarla)</label>}
-      {(Number(g.ivaPct) === 0 || g.compensacion) && (
+      {!igic && (Number(g.ivaPct) === 0 || g.compensacion) && (
         <label className="gasto-pendiente">Compra a un agricultor, ganadero o pescador del régimen especial (REAGP)
           <select className="campo" value={g.compensacion || ''} onChange={(e) => poner('compensacion', Number(e.target.value) || undefined)}>
             <option value="">No</option>

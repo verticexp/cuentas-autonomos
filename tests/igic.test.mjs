@@ -85,7 +85,7 @@ const actividad = { id: 'servicios', nombre: 'Servicios', ivaPct: 7, irpfPct: 0,
 const documento = (extra = {}) => ({ id: '2026-1', numero: 1, anio: 2026, fecha: '2026-01-10', actividad: 'servicios', cliente: { nombre: 'Cliente' }, concepto: 'Servicios', base: 1000, ivaPct: 7, irpfPct: 0, ...extra });
 
 test('420: solo las líneas al cero de una operación mixta van a 46/47', () => {
-  for (const [operacion, casilla] of [['exportacion', '46'], ['exenta', '46'], ['isp', '47'], ['servicios-fuera', '47']]) {
+  for (const [operacion, casilla] of [['exportacion', '46'], ['isp', '47'], ['servicios-fuera', '47']]) {
     const c = casillas420([documento({ operacion, lineas: [{ concepto: 'Gravada', cantidad: 1, precio: 100, ivaPct: 7 }, { concepto: 'Cero', cantidad: 1, precio: 200, ivaPct: 0 }] })], [], 2026, 1);
     assert.deepEqual([c['01'], c['02'], c['03'], c['25'], c[casilla]], [100, 7, 7, 7, 200], operacion);
     assert.equal(c[casilla === '46' ? '47' : '46'], 0);
@@ -196,4 +196,24 @@ test('Tesorería Canarias: 4T en febrero por el 31 de enero inhábil; el 130 con
   assert.deepEqual(p.movimientos.map((m) => [m.fecha, m.concepto, m.importe]), [['2026-02-02', 'IGIC (420) del 4T', -70]]);
   const soloEnero = prevision({ fiscal: fiscalCanarias, facturas: [documento({ fecha: '2025-12-01', cobrada: true })], hoy: '2026-01-01', meses: 0 });
   assert.equal(soloEnero.hacienda, 0);
+});
+
+test('420: una exenta sin derecho a deducción no va en la 46 (solo las exportaciones)', () => {
+  const c = casillas420([fac('2026-05-02', 300, 0, { operacion: 'exenta' }), fac('2026-05-03', 200, 0, { operacion: 'exportacion' })], [], 2026, 2);
+  assert.equal(c['46'], 200);
+  assert.deepEqual([c['01'], c['47']], [0, 0]);
+});
+
+test('Canarias: una venta a la UE no es intracomunitaria; Verifactu declara el IGIC con el impuesto 03', async () => {
+  const { validarFactura } = await import('../lib/validacion.js');
+  const { registroAlta } = await import('../lib/verifactu.js');
+  const { xmlAlta } = await import('../lib/verifactuXml.js');
+  const b = { fecha: '2026-05-02', cliente: { nombre: 'Client SARL', nif: 'FR12345678901' }, concepto: 'Diseño', base: 100, ivaPct: 0, irpfPct: 0 };
+  assert.match(validarFactura({ ...b, operacion: 'servicios-ue' }, { igic: true }).errores.operacion, /exportación o una operación no sujeta/);
+  assert.equal(validarFactura({ ...b, operacion: 'servicios-fuera' }, { igic: true }).ok, true);
+  const sistema = { nombre: 'Empresa de Fisquo SL', nif: 'B12345674', version: '1.0', instalacion: 'emp1' };
+  const f = { id: 'c1', numero: 1, anio: 2026, fecha: '2026-05-02', base: 100, ivaPct: 7, irpfPct: 0, concepto: 'Diseño', impuesto: 'igic', cliente: { nombre: 'Cliente SL', nif: 'B87654321' } };
+  const xml = xmlAlta(registroAlta(f, 'B11111111', '', '2026-05-02T10:00:00+01:00'), { factura: f, emisorNombre: 'Canarias SL', anterior: null, sistema, fiscal: { iva: 'general', territorio: 'canarias' } });
+  assert.match(xml, /<sum1:Impuesto>03<\/sum1:Impuesto>/);
+  assert.ok(!xml.includes('<sum1:Impuesto>01</sum1:Impuesto>'));
 });
