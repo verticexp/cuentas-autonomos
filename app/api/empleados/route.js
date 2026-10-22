@@ -3,7 +3,7 @@ import { guardar, borrar, leer, leerUno } from '@/lib/redis';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { r2 } from '@/lib/calculos';
 import { importeEscrito } from '@/lib/validacion';
-import { SS_EMPRESA, SS_TRABAJADOR } from '@/lib/nominas';
+import { SS_EMPRESA, SS_TRABAJADOR, limpiarCotizacion, limpiarDatos145 } from '@/lib/nominas';
 import { sinHueco } from '@/lib/planes';
 
 export const dynamic = 'force-dynamic';
@@ -22,11 +22,17 @@ function limpio(b, antes = {}) {
   if (!Number.isFinite(horaExtra) || horaExtra < 0 || horaExtra > MAX_PRECIO_HORA_EXTRA) return { error: 'Escribe un precio por hora extra entre 0 y 1.000.000 € (por ejemplo, 15,50).' };
   if (!/^\d{4}-\d{2}-\d{2}$/.test(b.alta || '')) return { error: 'Fecha de alta no válida' };
   if (b.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(b.email).trim())) return { error: 'Email no válido' };
+  // Nómina completa (lib/nominas.js): datos de cotización y, para el IRPF automático, los del modelo 145.
+  const nif = String(b.nif || '').trim().toUpperCase().slice(0, 15);
+  const cotizacion = b.cotizacion ? limpiarCotizacion(b.cotizacion) : null;
+  if (cotizacion?.error) return { error: cotizacion.error };
+  const datos145 = b.datos145 ? limpiarDatos145(b.datos145, nif) : null;
+  if (datos145?.error) return { error: datos145.error };
   return {
     e: {
       ...antes,
       nombre,
-      nif: String(b.nif || '').trim().toUpperCase().slice(0, 15),
+      nif,
       puesto: String(b.puesto || '').trim().slice(0, 60),
       alta: b.alta,
       baja: /^\d{4}-\d{2}-\d{2}$/.test(b.baja || '') ? b.baja : '',
@@ -38,6 +44,10 @@ function limpio(b, antes = {}) {
       email: String(b.email || '').trim().toLowerCase().slice(0, 120),
       horasSemana: Math.min(60, Math.max(1, Number(String(b.horasSemana ?? '').replace(',', '.')) || 40)),
       precioHoraExtra: r2(horaExtra),
+      cotizacion: cotizacion || undefined,
+      datos145: datos145 || undefined,
+      // Número de afiliación a la Seguridad Social (para RED).
+      naf: String(b.naf || '').replace(/\D/g, '').slice(0, 12),
     },
   };
 }

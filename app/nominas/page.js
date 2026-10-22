@@ -28,6 +28,7 @@ export default async function Nominas({ searchParams }) {
   const N = (nominas || []).sort((a, b) => b.mes.localeCompare(a.mes) || a.empleadoNombre.localeCompare(b.empleadoNombre));
   const delMes = N.filter((n) => n.mes === mes).map(calculoNomina);
   const faltan = activos.filter((e) => !N.some((n) => n.mes === mes && n.empleado === e.id)).length;
+  const completas = N.filter((n) => n.mes === mes && n.detalle).length;
   const t = trimestre(h);
   const m111 = modelo111(N, anio, t);
   // Plazo del 111: del 1 al 20 del mes siguiente al trimestre (el 4T, hasta el 20 de enero).
@@ -49,6 +50,7 @@ export default async function Nominas({ searchParams }) {
           {faltan > 0
             ? <GenerarMes mes={mes} texto={delMes.length ? `Hacer las ${faltan} que faltan` : `Hacer las nóminas de ${nombreMes(mes).split(' ')[0]}`} />
             : <p className="nota">✓ {delMes.length === 1 ? 'Hecha la nómina' : `Hechas las ${delMes.length} nóminas`} de este mes. Se apuntan solas como gasto.</p>}
+          {completas > 0 && <p className="nota"><a className="enlace-claro" href={`/api/nominas/red?mes=${mes}`} download>Datos para RED del mes (Excel)</a>: bases de cotización y conceptos de la Tabla 84 para la liquidación y el CRA. El envío por SILTRA lo hace quien tiene la autorización RED (tú o tu gestoría).</p>}
         </section>
       )}
 
