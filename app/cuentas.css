@@ -96,3 +96,6 @@
 .descargas a { color: var(--ink); font-weight: 600; }
 .acciones-factura { flex-wrap: wrap; }
 .trimestre .cabecera { margin-bottom: 10px; } .trimestre .cabecera h3 { margin: 0; } .trimestre .estado { padding: 6px 12px; font-size: 13px; }
+/* «¿Ya lo has presentado?»: el botón con el mismo margen que la fila, y el plazo entero en dos líneas si no cabe. */
+.grupo-lista .ya-presentado { padding: 0 16px 12px; flex-wrap: wrap; }
+.grupo-lista li:has(.ya-presentado) .txt small { white-space: normal; }

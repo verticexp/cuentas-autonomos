@@ -30,7 +30,7 @@ export default function YaPresentado({ pregunta, importe, puede }) {
     } catch (e) { setError(e.message); }
   });
   return (
-    <div className="fila-act">
+    <div className="fila-act ya-presentado">
       <button type="button" className="boton sec" onClick={marcar} disabled={ocupado}>{ocupado ? 'Guardando…' : 'Sí, ya está presentado'}</button>
       {error && <span className="error" role="alert">{error}</span>}
     </div>
