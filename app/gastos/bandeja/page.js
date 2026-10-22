@@ -2,8 +2,7 @@ import { requerir } from '@/lib/auth';
 import { redis } from '@/lib/redis';
 import { puede } from '@/lib/permisos';
 import { ordenar, paraPantalla, resumen } from '@/lib/bandeja';
-import { documentosBandeja } from '@/lib/bandejaServidor';
-import { procesarLuego } from '@/lib/trabajos';
+import { adelantarLecturas, documentosBandeja } from '@/lib/bandejaServidor';
 import SinBD from '@/components/SinBD';
 import Volver from '@/components/Volver';
 import Vacio from '@/components/Vacio';
@@ -18,7 +17,7 @@ export default async function BandejaPagina({ searchParams }) {
   if (!redis) return <SinBD />;
   const { aviso } = (await searchParams) || {};
   const docs = await documentosBandeja(u);
-  if (docs.some((d) => d.estado === 'leyendo')) procesarLuego(u);
+  await adelantarLecturas(u, docs);
   const r = resumen(docs);
   return (
     <main className="pagina mk-look gastos">

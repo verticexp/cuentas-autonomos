@@ -2,8 +2,7 @@ import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { rafaga, respuesta429 } from '@/lib/limite';
 import { MAX_BYTES } from '@/lib/justificantes';
 import { ordenar, paraPantalla, resumen } from '@/lib/bandeja';
-import { aprobar, aprobarVarias, descartar, documentosBandeja, recibirArchivo, releer } from '@/lib/bandejaServidor';
-import { procesarLuego } from '@/lib/trabajos';
+import { adelantarLecturas, aprobar, aprobarVarias, descartar, documentosBandeja, recibirArchivo, releer } from '@/lib/bandejaServidor';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -14,7 +13,7 @@ export async function GET() {
   const { u, res } = await usuarioApi({ permiso: 'gastos' });
   if (res) return res;
   const docs = await documentosBandeja(u);
-  if (docs.some((d) => d.estado === 'leyendo')) procesarLuego(u);
+  await adelantarLecturas(u, docs);
   return Response.json({ ok: true, documentos: ordenar(docs).map(paraPantalla), resumen: resumen(docs) }, { headers: { 'Cache-Control': 'no-store' } });
 }
 
