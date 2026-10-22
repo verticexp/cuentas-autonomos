@@ -106,7 +106,7 @@ export async function PATCH(req) {
   if (b.presentadoRet) {
     if (sin('contabilidad')) return sin('contabilidad');
     const { modelo, anio, t, hecho } = b.presentadoRet;
-    if (!['111', '115'].includes(modelo)) return error('Modelo no válido');
+    if (!['111', '115', '123', '369'].includes(modelo)) return error('Modelo no válido');
     if (!Number.isInteger(anio) || anio < 2000 || anio > 2100 || ![1, 2, 3, 4].includes(t)) return error('Trimestre no válido');
     const k = `pres${modelo}`;
     const datos = { ...(u[k] || {}) };

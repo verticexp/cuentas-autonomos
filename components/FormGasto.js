@@ -277,6 +277,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
       <datalist id="proyectos-gasto">{proyectos.map((p) => <option key={p} value={p} />)}</datalist>
       <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.pendiente)} onChange={(e) => poner('pendiente', e.target.checked)} />Aún no lo he pagado</label>
       {(alquiler || g.alquiler) && <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.alquiler)} onChange={(e) => poner('alquiler', e.target.checked)} />Es el alquiler del local (retención del 19 %)</label>}
+      {(Number(g.ivaPct) > 0 || g.recc) && <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.recc)} onChange={(e) => poner('recc', e.target.checked)} />Su factura dice «Régimen especial del criterio de caja» (el IVA se deduce al pagarla)</label>}
       <div className="gasto-pendiente termino-check"><input id={`${prefijo}-inversion`} aria-labelledby={`${prefijo}-inversion-etiqueta`} type="checkbox" checked={Boolean(g.inversion)} onChange={(e) => poner('inversion', e.target.checked ? { tipo: 'otros' } : undefined)} /><span id={`${prefijo}-inversion-etiqueta`}><label htmlFor={`${prefijo}-inversion`}>Es un </label><Termino id="bienInversion">bien de inversión</Termino><label htmlFor={`${prefijo}-inversion`}> (lo usarás varios años)</label></span></div>
       {g.inversion ? <>
         <select className="campo" value={g.inversion.tipo} onChange={(e) => poner('inversion', { tipo: e.target.value })} aria-label="Tipo de bien">

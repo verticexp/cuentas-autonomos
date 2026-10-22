@@ -11,6 +11,8 @@ const CUERPO = {
   130: ({ anio, t }, importe) => ({ presentado: { anio, t, importe } }),
   111: ({ anio, t }) => ({ presentadoRet: { modelo: '111', anio, t, hecho: true } }),
   115: ({ anio, t }) => ({ presentadoRet: { modelo: '115', anio, t, hecho: true } }),
+  123: ({ anio, t }) => ({ presentadoRet: { modelo: '123', anio, t, hecho: true } }),
+  369: ({ anio, t }) => ({ presentadoRet: { modelo: '369', anio, t, hecho: true } }),
 };
 
 export default function YaPresentado({ pregunta, importe, puede }) {

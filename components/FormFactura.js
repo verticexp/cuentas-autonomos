@@ -14,6 +14,7 @@ import '@/app/catalogo.css';
 import '@/app/factura-movil.css';
 import { eur } from '@/lib/formato';
 import { IDIOMAS_FACTURA, MONEDAS, formatoDoc } from '@/lib/idiomas';
+import { NOMBRES_UE, TIPOS_UE, tiposPais } from '@/lib/oss';
 import { TIPOS_OPERACION } from '@/lib/operaciones';
 import { evaluarRiesgo, tieneLimite } from '@/lib/riesgo';
 import { mismoCliente, nombreForma } from '@/lib/terceros';
@@ -29,7 +30,7 @@ const lineasDe = (x) => (x.lineas?.length
 const numero = (v) => leerImporte(v) || 0;
 
 // riesgos: lo que debe ahora cada cliente con riesgo máximo ({ id: euros }); el límite lo comprueba el servidor.
-export default function FormFactura({ factura, clientes, numeros, hoy, rectifica: orig, plantilla, notaDefecto = '', actividades, productos = [], stock = null, proyectos = [], riesgos = {}, recargo = false }) {
+export default function FormFactura({ factura, clientes, numeros, hoy, rectifica: orig, plantilla, notaDefecto = '', actividades, productos = [], stock = null, proyectos = [], riesgos = {}, recargo = false, oss = false }) {
   // IVA y retención de cada actividad, para rellenar la factura nueva.
   const defecto = (id) => { const a = actividades.find((x) => x.id === id) || actividades[0]; return { ivaPct: a.ivaPct, irpfPct: a.irpfPct }; };
   const router = useRouter();
@@ -39,12 +40,12 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
     : orig
       ? { actividad: orig.actividad, fecha: hoy, cliente: orig.cliente, irpfPct: orig.irpfPct, nota: '', cobrada: false, rectifica: orig.id, proyecto: orig.proyecto || '', ...(orig.recargo ? { recargo: true } : {}),
         // Mismo idioma y misma moneda y tipo de cambio que la factura que rectifica.
-        ...(orig.idioma ? { idioma: orig.idioma } : {}), ...(orig.divisa ? { divisa: orig.divisa } : {}),
+        ...(orig.idioma ? { idioma: orig.idioma } : {}), ...(orig.divisa ? { divisa: orig.divisa } : {}), ...(orig.oss ? { oss: orig.oss } : {}),
         lineas: orig.lineas?.length
           ? lineasDe(orig).map((l) => ({ ...l, precio: aTexto(-numero(l.precio)) }))
           : [{ concepto: `Anulación de la factura ${numeroFactura(orig)}`, cantidad: '1', precio: aTexto(-(orig.baseDivisa ?? orig.base)), dto: '', ivaPct: orig.ivaPct }] }
       : plantilla
-        ? { actividad: plantilla.actividad, fecha: hoy, cliente: plantilla.cliente, lineas: lineasDe(plantilla), irpfPct: plantilla.irpfPct, nota: plantilla.nota || '', cobrada: false, proyecto: plantilla.proyecto || '', ...(plantilla.recargo ? { recargo: true } : {}), ...(plantilla.idioma ? { idioma: plantilla.idioma } : {}) }
+        ? { actividad: plantilla.actividad, fecha: hoy, cliente: plantilla.cliente, lineas: lineasDe(plantilla), irpfPct: plantilla.irpfPct, nota: plantilla.nota || '', cobrada: false, proyecto: plantilla.proyecto || '', ...(plantilla.recargo ? { recargo: true } : {}), ...(plantilla.idioma ? { idioma: plantilla.idioma } : {}), ...(plantilla.oss ? { oss: plantilla.oss } : {}) }
       : { actividad: actividades[0].id, fecha: hoy, cliente: { nombre: '', nif: '', direccion: '', ciudad: '' }, lineas: [lineaVacia(defecto(actividades[0].id).ivaPct)], nota: notaDefecto, cobrada: false, irpfPct: defecto(actividades[0].id).irpfPct });
   // La selección vive solo en el formulario; el cuerpo de la API conserva el cliente histórico completo.
   const [clienteSeleccionado, setClienteSeleccionado] = useState(() => resolverClienteFactura(clientes, f.cliente)?.id || '');
@@ -318,7 +319,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
               <label>Dto. %<input {...atributos(`lineas.${i}.dto`)} className="campo" inputMode="decimal" placeholder="0" value={l.dto} onChange={(e) => ponerLinea(i, 'dto', e.target.value)} />{mensaje(`lineas.${i}.dto`)}</label>
               <label>IVA
                 <select {...atributos(`lineas.${i}.ivaPct`, i === 0 ? ['ivaPct'] : [])} className="campo" value={l.ivaPct} onChange={(e) => ponerLinea(i, 'ivaPct', Number(e.target.value))}>
-                  {[...new Set([21, 10, 4, 0, Number(l.ivaPct)])].map((n) => <option key={n} value={n}>{n}%</option>)}
+                  {[...new Set(f.oss?.pais ? tiposPais(f.oss.pais) : [21, 10, 4, 0, Number(l.ivaPct)])].map((n) => <option key={n} value={n}>{String(n).replace('.', ',')}%</option>)}
                 </select>{mensaje(`lineas.${i}.ivaPct`, i === 0 ? ['ivaPct'] : [])}
               </label>
             </div>
@@ -383,6 +384,23 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
       </div>
 
       {(recargo || f.recargo) && <div className="check ff-det termino-check"><input id={idCampo('recargo')} aria-labelledby={idCampo('recargo-etiqueta')} type="checkbox" checked={Boolean(f.recargo)} onChange={(e) => poner('recargo', e.target.checked)} /><span id={idCampo('recargo-etiqueta')}><label htmlFor={idCampo('recargo')}>Cliente en </label><Termino id="recargo">recargo de equivalencia</Termino><label htmlFor={idCampo('recargo')}> (comercio minorista: 5,2 % con el 21 %, 1,4 % con el 10 %, 0,5 % con el 4 %)</label></span></div>}
+
+      {(oss || f.oss) && (
+        <label className="ff-det">Venta a un particular de otro país de la UE
+          <select className="campo" value={f.oss?.pais || ''} onChange={(e) => {
+            const pais = e.target.value;
+            limpiarErrores('oss.pais');
+            // Con el IVA de su país (el general, si el tipo de la línea no existe allí), sin retención ni recargo.
+            setF((x) => ({ ...x, oss: pais ? { pais } : undefined, ...(pais ? { irpfPct: 0, recargo: false } : {}),
+              lineas: x.lineas.map((l) => (pais && !tiposPais(pais).includes(Number(l.ivaPct)) ? { ...l, ivaPct: TIPOS_UE[pais].general } : !pais && ![21, 10, 4, 0].includes(Number(l.ivaPct)) ? { ...l, ivaPct: defecto(x.actividad).ivaPct } : l)) }));
+          }}>
+            <option value="">No: IVA español</option>
+            {Object.entries(NOMBRES_UE).sort((a, b) => a[1].localeCompare(b[1], 'es')).map(([k, n]) => <option key={k} value={k}>{n}: IVA de allí (ventanilla única)</option>)}
+          </select>
+          {mensaje('oss.pais')}
+          {f.oss?.pais && <span className="nota">Con el IVA de {NOMBRES_UE[f.oss.pais]}: no va en el 303, sino en el modelo 369.</span>}
+        </label>
+      )}
 
       <label className="ff-det">Nota en la factura (opcional)
         <input className="campo" placeholder="Ej.: operación exenta de IVA, inversión del sujeto pasivo" value={f.nota || ''} onChange={(e) => poner('nota', e.target.value)} />

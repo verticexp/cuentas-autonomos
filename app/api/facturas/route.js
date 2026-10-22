@@ -1,7 +1,7 @@
 import { requisitosIncobrable } from '@/lib/incobrables';
 import { leerUno } from '@/lib/redis';
 import { actualizarFactura } from '@/lib/actualizarFactura';
-import { borrarFactura, crearFactura, fechaFueraDeOrden, guardarCliente, limpiar } from '@/lib/facturas';
+import { borrarFactura, crearFactura, fechaFueraDeOrden, guardarCliente, limpiar, marcaRecc } from '@/lib/facturas';
 import { numeroFactura, pendienteDe } from '@/lib/calculos';
 import { conLimiteDe, revisarRiesgo } from '@/lib/tercerosServidor';
 import { mismoCliente } from '@/lib/terceros';
@@ -83,7 +83,10 @@ export async function PATCH(req) {
   // Si sube lo que queda por cobrar (o pasa a otro cliente), el cliente no puede quedar por encima de su riesgo máximo.
   const r = await conLimiteDe(u, datos.cliente, () => actualizarFactura(u, antes.id, async (actual) => {
     if (actual.verifactu) return { error: 'Esta factura ya está registrada en Verifactu: para corregirla, haz una rectificativa' };
-    const nueva = { ...actual, evento: undefined, proyecto: undefined, operacion: undefined, ...datos };
+    // Lo opcional que el formulario ya no manda se quita (volver al español, a euros, quitar el recargo…).
+    const nueva = { ...actual, evento: undefined, proyecto: undefined, operacion: undefined, idioma: undefined, divisa: undefined, baseDivisa: undefined, oss: undefined, recargo: undefined, recc: undefined, ...datos };
+    // Criterio de caja: se recalcula con la nueva fecha; una rectificativa conserva el de su original.
+    Object.assign(nueva, nueva.rectifica ? (actual.recc ? { recc: true } : {}) : marcaRecc(u, nueva));
     const mas = pendienteDe(nueva) - (mismoCliente(actual.cliente, nueva.cliente) ? pendienteDe(actual) : 0);
     const { bloqueo } = await revisarRiesgo(u, nueva.cliente, mas);
     return bloqueo ? { error: bloqueo.error, status: 409 } : { nueva };
