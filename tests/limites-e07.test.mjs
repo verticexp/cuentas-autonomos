@@ -157,6 +157,7 @@ function preparar() {
     registrarConsumoIA: async () => {}, respuestaCupo: () => Response.json({ error: 'Sin cupo' }, { status: 429 }),
     puede: () => true, TIPOS: { clientes: { permiso: 'empresa' } },
     marcarPagada: async () => {},
+    fiscalDe: () => ({}), usaIgic: () => false,
   };
 }
 const peticion = (b) => new Request('https://fisquo.test/api', { method: 'POST', headers: { 'content-type': 'application/json', 'x-real-ip': '1.2.3.4' }, body: JSON.stringify(b) });
