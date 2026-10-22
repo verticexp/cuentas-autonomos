@@ -1,7 +1,7 @@
-import { usuarioClave, respuestaPublica, jsonPublico, errorPublico } from '../../../../../lib/apiPublica.js';
-import { gastoPublico, gastosVisibles } from '../../../../../lib/apiPublicaDatos.js';
-import { leerUno } from '../../../../../lib/redis.js';
-import { puede } from '../../../../../lib/permisos.js';
+import { usuarioClave, respuestaPublica, jsonPublico, errorPublico } from '@/lib/apiPublica';
+import { gastoPublico, gastosVisibles } from '@/lib/apiPublicaDatos';
+import { leerUno } from '@/lib/redis';
+import { puede } from '@/lib/permisos';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

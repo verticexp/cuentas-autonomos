@@ -89,7 +89,6 @@ export default function AjustesApi({ inicial, alcances, eventos }) {
         {eventos.map((e) => <label className="check" key={e}><input type="checkbox" checked={suscritos.includes(e)} onChange={() => setSuscritos(alternar(suscritos, e))} />{EVENTOS[e]}</label>)}
       </fieldset>
       <button className="boton" disabled={ocupado || !url.trim() || !suscritos.length || datos.webhooks.length >= 5 || Boolean(secreto)}>Crear webhook</button>
-      <p className="nota">La entrega de eventos se activará cuando se conecte con los flujos de facturas y gastos.</p>
     </form>
   </>;
 }

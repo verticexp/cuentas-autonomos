@@ -1,6 +1,6 @@
-import { usuarioClave, respuestaPublica, jsonPublico } from '../../../../lib/apiPublica.js';
-import { clientePublico, paginaLista, parametrosPagina } from '../../../../lib/apiPublicaDatos.js';
-import { leer } from '../../../../lib/redis.js';
+import { usuarioClave, respuestaPublica, jsonPublico } from '@/lib/apiPublica';
+import { clientePublico, paginaLista, parametrosPagina } from '@/lib/apiPublicaDatos';
+import { leer } from '@/lib/redis';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

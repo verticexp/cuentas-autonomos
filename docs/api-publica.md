@@ -29,7 +29,7 @@ Sin permiso de nóminas, los gastos salariales se agrupan por fecha y actividad 
 
 ## Webhooks
 
-Hasta cinco por empresa. Solo destinos HTTPS públicos, puerto 443 y sin credenciales. Cada entrega vuelve a resolver todas las direcciones y fija las direcciones verificadas a la conexión, manteniendo la validación TLS del hostname. No sigue redirecciones. El límite de cinco segundos incluye DNS y HTTP. Referencias del transporte: [DNS de Node](https://nodejs.org/api/dns.html#dnslookuphostname-options-callback) y [dispatcher de fetch de Undici](https://github.com/nodejs/undici/blob/main/docs/docs/api/Fetch.md).
+Hasta cinco por empresa. Solo destinos HTTPS públicos, puerto 443 y sin credenciales. Cada entrega vuelve a resolver todas las direcciones y fija las direcciones verificadas a la conexión, manteniendo la validación TLS del hostname. No sigue redirecciones. El límite de cinco segundos incluye DNS y HTTP. El envío usa `node:https` con un `lookup` que solo devuelve esas direcciones ([DNS de Node](https://nodejs.org/api/dns.html#dnslookuphostname-options-callback)).
 
 El secreto `whsec_…` solo se entrega al crear el webhook. Se conserva en Redis porque es necesario para firmar. Los eventos disponibles son `factura.creada`, `factura.cobrada` y `gasto.creado`. Crear una suscripción exige poder leer sus datos; para gastos también exige `nominas`, pues un evento podría contener un gasto salarial individual.
 
@@ -45,6 +45,6 @@ La entrada del HMAC es `<t>.<cuerpo JSON exacto>` y la clave es el secreto compl
 
 `emitirEvento(u, tipo, datos)` crea el evento y encola sus destinos. Admite un cuarto argumento `{ id, creado }` para reencolar un evento conocido conservando su identidad. La entrega es al menos una vez: el receptor tiene que deduplicar.
 
-**La emisión todavía no está conectada a ningún flujo de la app.** Quien la conecte debe pasar únicamente datos públicos, conservar la identidad del evento en reintentos de la operación y decidir la atomicidad entre el cambio de negocio y el encolado. La publicación mediante el cron de la cola debe verificarse con un receptor real antes de activar integraciones.
+Los eventos salen de `lib/eventos.js`: `factura.creada` al emitir una factura (y `factura.cobrada` si nace cobrada), `factura.cobrada` cuando una factura pasa a cobrada por cualquier camino (a mano, banco, remesa o Stripe: todos pasan por `actualizarFactura`) y `gasto.creado` al apuntar un gasto. Llevan solo la factura o el gasto públicos, con un id fijo por documento y evento, y se encolan después de guardar: si el encolado falla, la operación sigue hecha (se registra en el log).
 
 La gestión de estas conexiones sigue las restricciones de `usuarioApi`, incluido el bloqueo de escrituras por plan caducado. Los webhooks son configuración de empresa; no se desactivan al retirar permisos a quien configuró su destino. Revisa y elimina los destinos si cambia la autorización de esa integración.

@@ -1892,5 +1892,40 @@ console.log('Módulos (131), IVA simplificado y bienes usados (REBU)');
   ok('la factura sale con la mención del régimen y sin desglosar el IVA', () => assert.ok(pdf.includes('Régimen especial de los bienes usados') && pdf.includes('1.210,00') && !pdf.includes('36,45'), pdf.slice(0, 400)));
 }
 
+console.log('API pública v1 y webhooks');
+{
+  const api = (ruta, { clave, metodo = 'GET', cuerpo, cabeceras = {} } = {}) => fetch(`${BASE}/api/v1${ruta}`, { method: metodo, headers: { ...(clave ? { Authorization: `Bearer ${clave}` } : {}), ...(cuerpo ? { 'Content-Type': 'application/json' } : {}), ...cabeceras }, body: cuerpo ? JSON.stringify(cuerpo) : undefined });
+  const nueva = await pedir('/api/ajustes/api', { metodo: 'POST', cookie: yo, cuerpo: { accion: 'clave', nombre: 'Tienda', alcances: ['facturas:leer', 'facturas:escribir'] } });
+  const k = await nueva.json();
+  ok('se crea una clave y solo se ve entera al crearla', () => assert.ok(nueva.status === 201 && /^fsq_[\w-]{43}$/.test(k.clave), JSON.stringify(k).slice(0, 120)));
+  const lista = await (await pedir('/api/ajustes/api', { cookie: yo })).json();
+  ok('la lista guarda el prefijo, no la clave', () => assert.ok(lista.claves.some((x) => x.id === k.id && x.prefijo === k.clave.slice(0, 12)) && !JSON.stringify(lista).includes(k.clave)));
+  const sin = await api('/facturas');
+  ok('sin clave: 401 con WWW-Authenticate', () => assert.ok(sin.status === 401 && sin.headers.get('www-authenticate') === 'Bearer'));
+  const conCookie = await fetch(`${BASE}/api/v1/facturas`, { headers: { Cookie: `t=${yo}` } });
+  ok('la sesión de la app no vale como clave (401)', () => assert.equal(conCookie.status, 401));
+  const l = await api('/facturas?limite=2', { clave: k.clave });
+  const lj = await l.json();
+  ok('lista facturas paginadas, en euros y sin campos internos', () => assert.ok(l.status === 200 && lj.datos.length === 2 && lj.siguiente && lj.datos.every((f) => f.moneda === 'EUR' && !('emisor' in f) && !('verifactu' in f)), JSON.stringify(lj).slice(0, 300)));
+  const alta = (idem) => api('/facturas', { clave: k.clave, metodo: 'POST', cabeceras: { 'Idempotency-Key': idem }, cuerpo: { fecha: hoy, actividad: ACTS[0].id, cliente: { nombre: 'Cliente API' }, concepto: 'Pedido web 1001', base: '50', ivaPct: 21, irpfPct: 0 } });
+  const a1 = await alta('pedido-1001'), f1 = await a1.json();
+  const a2 = await alta('pedido-1001'), f2 = await a2.json();
+  ok('crea una factura (201) y repetirla con la misma Idempotency-Key no crea otra', () => assert.ok(a1.status === 201 && f1.total === 60.5 && f2.id === f1.id, JSON.stringify([f1, f2]).slice(0, 300)));
+  const gastos = await api('/gastos', { clave: k.clave });
+  ok('sin el alcance de gastos: 403', () => assert.equal(gastos.status, 403));
+  const malo = await pedir('/api/ajustes/api', { metodo: 'POST', cookie: yo, cuerpo: { accion: 'webhook', url: 'https://127.0.0.1/hook', eventos: ['factura.creada'] } });
+  ok('un webhook a una dirección privada no se admite (400)', () => assert.equal(malo.status, 400));
+  // Un dominio .invalid nunca resuelve: la prueba no manda nada fuera.
+  const hook = await pedir('/api/ajustes/api', { metodo: 'POST', cookie: yo, cuerpo: { accion: 'webhook', url: 'https://fisquo-prueba.invalid/hook', eventos: ['factura.creada'] } });
+  const hj = await hook.json();
+  ok('un webhook HTTPS público se crea con su secreto', () => assert.ok(hook.status === 201 && /^whsec_/.test(hj.secreto || ''), JSON.stringify(hj).slice(0, 120)));
+  await pedir(`/api/ajustes/api?webhook=${hj.id}`, { metodo: 'DELETE', cookie: yo });
+  const quita = await pedir(`/api/ajustes/api?clave=${k.id}`, { metodo: 'DELETE', cookie: yo });
+  const tras = await api('/facturas', { clave: k.clave });
+  ok('al revocar la clave deja de servir (401)', () => assert.ok(quita.status === 200 && tras.status === 401));
+  const ajeno = await pedir('/api/ajustes/api', { cookie: otro });
+  ok('quien no gestiona la empresa no ve las claves (403)', () => assert.equal(ajeno.status, 403));
+}
+
 console.log(fallos ? `\n${fallos} comprobaciones fallidas: NO publicar.` : '\nTodo cuadra.');
 process.exit(fallos ? 1 : 0);

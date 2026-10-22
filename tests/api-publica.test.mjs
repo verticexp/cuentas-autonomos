@@ -196,7 +196,7 @@ test('cola: trabajos por evento y destino, firma de cuerpo exacto, estados HTTP,
   let llamadas = 0;
   const enviar = (status) => async (url, opciones) => {
     llamadas++;
-    assert.equal(url, w.url); assert.equal(opciones.redirect, 'manual'); assert.ok(opciones.signal); assert.ok(opciones.dispatcher);
+    assert.equal(url, w.url); assert.equal(opciones.redirect, 'manual'); assert.ok(opciones.signal); assert.deepEqual(opciones.direcciones, [{ address: '8.8.8.8', family: 4 }]);
     assert.deepEqual(JSON.parse(opciones.body), evento);
     assert.equal(W.verificarFirma(w.secreto, opciones.body, opciones.headers['Fisquo-Firma']), true);
     return new Response(null, { status });
@@ -279,6 +279,8 @@ test('gestión con sesión: exige empresa en todos los métodos, entrega secreto
   let fuente = await readFile(archivo, 'utf8');
   fuente = fuente.replace(/from '([^']+)'/g, (_todo, origen) => {
     let destino;
+    // Las rutas importan con el alias «@/» (jsconfig): aquí se resuelve a mano porque el módulo se carga como data:.
+    if (origen.startsWith('@/')) origen = new URL(`../${origen.slice(2)}${/\.m?js$/.test(origen) ? '' : '.js'}`, import.meta.url).href;
     if (origen.endsWith('/lib/api.js')) destino = modulo("export const usuarioApi = async (opciones) => { const e=globalThis.__gestionApiPublica; e.permisos.push(opciones); return e.negar ? {res:Response.json({error:'Sin permiso'},{status:403})} : {u:e.u}; };");
     else if (origen.endsWith('/lib/auditoria.js')) destino = modulo('export const auditar = async (...args) => globalThis.__gestionApiPublica.auditoria.push(args);');
     else destino = new URL(origen, archivo).href;
@@ -335,4 +337,21 @@ test('proxy: solo api/v1/ es pública, no api/v10 ni la gestión con sesión', a
   const { PUBLICO } = await import('../lib/rutasPublicas.js');
   assert.equal(PUBLICO.test('/api/v1/facturas'), true);
   for (const ruta of ['/api/v1', '/api/v10/facturas', '/api/v1x/facturas', '/api/ajustes/api']) assert.equal(PUBLICO.test(ruta), false);
+});
+
+test('eventos: emitir, cobrar y apuntar encolan la entrega a los webhooks suscritos, una vez por documento', async () => {
+  const { avisarEvento } = await import('../lib/eventos.js');
+  const u = await empresa();
+  const w = await W.crearWebhook(u, { url: 'https://example.org/hook', eventos: ['factura.creada', 'factura.cobrada'] });
+  const f = { id: 'F2026-9', numero: 9, anio: 2026, fecha: '2026-10-01', base: 100, ivaPct: 21, irpfPct: 0, cliente: { nombre: 'C' }, cobrada: false };
+  await avisarEvento(u, 'factura.creada', f);
+  await avisarEvento(u, 'factura.creada', f); // repetido: el mismo trabajo
+  await avisarEvento(u, 'gasto.creado', { id: 'g1', fecha: '2026-10-01', base: 10, ivaPct: 21 }); // sin suscripción
+  const trabajos = Object.values((await R.redis.hgetall(`trabajos:${u.empresa}`)) || {}).filter((x) => x.tipo === 'webhook');
+  assert.equal(trabajos.length, 1);
+  assert.equal(trabajos[0].datos.webhook, w.id);
+  assert.equal(trabajos[0].datos.evento.tipo, 'factura.creada');
+  assert.equal(trabajos[0].datos.evento.datos.numero, '09-2026');
+  // Un fallo al encolar nunca rompe la operación.
+  await assert.doesNotReject(avisarEvento({}, 'factura.creada', f));
 });

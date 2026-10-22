@@ -1,7 +1,7 @@
-import { usuarioClave, respuestaPublica, jsonPublico, errorPublico, cuerpoPublico } from '../../../../lib/apiPublica.js';
-import { facturaPublica, paginaPublica, parametrosPagina } from '../../../../lib/apiPublicaDatos.js';
-import { limpiar, crearFactura } from '../../../../lib/facturas.js';
-import { actividadesDe, fiscalDe, usa303 } from '../../../../lib/empresa.js';
+import { usuarioClave, respuestaPublica, jsonPublico, errorPublico, cuerpoPublico } from '@/lib/apiPublica';
+import { facturaPublica, paginaPublica, parametrosPagina } from '@/lib/apiPublicaDatos';
+import { limpiar, crearFactura } from '@/lib/facturas';
+import { actividadesDe, fiscalDe, usa303 } from '@/lib/empresa';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

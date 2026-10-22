@@ -1,5 +1,5 @@
-import { usuarioClave, respuestaPublica, jsonPublico } from '../../../../lib/apiPublica.js';
-import { paginaGastos, parametrosPagina } from '../../../../lib/apiPublicaDatos.js';
+import { usuarioClave, respuestaPublica, jsonPublico } from '@/lib/apiPublica';
+import { paginaGastos, parametrosPagina } from '@/lib/apiPublicaDatos';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

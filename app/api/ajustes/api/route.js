@@ -1,8 +1,8 @@
-import { usuarioApi } from '../../../../lib/api.js';
-import { auditar } from '../../../../lib/auditoria.js';
-import { pasado, respuesta429 } from '../../../../lib/limite.js';
-import { alcancesDe, clavesDe, crearClave, revocarClave, cuerpoPublico, respuestaPublica, errorPublico, jsonPublico } from '../../../../lib/apiPublica.js';
-import { crearWebhook, revocarWebhook, webhooksDe } from '../../../../lib/webhooks.js';
+import { usuarioApi } from '@/lib/api';
+import { auditar } from '@/lib/auditoria';
+import { pasado, respuesta429 } from '@/lib/limite';
+import { alcancesDe, clavesDe, crearClave, revocarClave, cuerpoPublico, respuestaPublica, errorPublico, jsonPublico } from '@/lib/apiPublica';
+import { crearWebhook, revocarWebhook, webhooksDe } from '@/lib/webhooks';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
