@@ -20,6 +20,7 @@ import '@/app/banco.css';
 import '@/app/mk.css';
 import { delosAnios } from '@/lib/indices';
 import { veSueldos } from '@/lib/nominas';
+import YaPresentado from '@/components/YaPresentado';
 
 export const dynamic = 'force-dynamic';
 const HORIZONTES = [3, 6, 12];
@@ -34,7 +35,7 @@ export default async function Tesoreria({ searchParams }) {
   const [{ facturas, gastos }, recurrentes, nominas, saldo, movs, empleados] = await Promise.all([delosAnios(u, Array.from({ length: 5 }, (_, i) => y - i), { pendientes: true }), leer(u, 'recurrentes'), leer(u, 'nominas'), redis.get(clave(u, 'saldo')), leer(u, 'banco'), leer(u, 'empleados')]);
   const sinRevisar = (movs || []).filter((m) => m.estado === 'pendiente').length;
   const n = HORIZONTES.includes(Number((await searchParams).meses)) ? Number((await searchParams).meses) : 3;
-  const p = prevision({ facturas, gastos, recurrentes: recurrentes || [], nominas: nominas || [], empleados: empleados || [], agruparSueldos: !veSueldos(u), fiscal: fiscalDe(u), pagos130: u.pagos130 || {}, pres303: u.pres303 || {}, prorrata: u.prorrata || {}, rend130: u.rend130 || {}, cuotaIS: u.cuotaIS || {}, pagos202: u.pagos202 || {}, pagadosHacienda: u.pagadosHacienda || {}, plazo: u.emisor?.plazo, saldo,
+  const p = prevision({ facturas, gastos, recurrentes: recurrentes || [], nominas: nominas || [], empleados: empleados || [], agruparSueldos: !veSueldos(u), fiscal: fiscalDe(u), pagos130: u.pagos130 || {}, pres303: u.pres303 || {}, pres111: u.pres111 || {}, pres115: u.pres115 || {}, prorrata: u.prorrata || {}, rend130: u.rend130 || {}, cuotaIS: u.cuotaIS || {}, pagos202: u.pagos202 || {}, pagadosHacienda: u.pagadosHacienda || {}, plazo: u.emisor?.plazo, saldo,
     actividades: actividadesDe(u).map((a) => a.id), hoy: hoy(), meses: n });
   const alto = Math.max(1, ...p.meses.map((m) => Math.abs(m.saldo)), Math.abs(p.inicial));
 
@@ -91,6 +92,7 @@ export default async function Tesoreria({ searchParams }) {
                   <span className="teso-imp"><span className={x.importe > 0 ? 'teso-in' : x.tipo === 'hacienda' ? 'teso-hac' : 'teso-out'}>{x.importe > 0 ? '+' : '−'}{eur(Math.abs(x.importe))}</span><small>{eur(x.saldo)}</small></span>
                 </>
               );
+              if (x.pregunta) return <li key={i}><div className="fila">{fila}</div><YaPresentado pregunta={x.pregunta} importe={-x.importe} puede={puede(u, 'contabilidad')} /></li>;
               return <li key={i}>{x.url ? <Ir href={x.url} className="fila">{fila}</Ir> : <div className="fila">{fila}</div>}</li>;
             })}
           </ul>

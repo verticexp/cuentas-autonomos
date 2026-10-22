@@ -308,3 +308,18 @@ test('sueldos: sin el permiso «Nóminas», el Excel de gastos lleva las nómina
   assert.ok((await csv()).includes('Nómina Ana'));
 });
 
+
+test('111 y 115: se marcan como presentados aparte, con el permiso «Contabilidad»', async () => {
+  const c = await cargar('app/api/cuenta/route.js');
+  const marca = (cuerpo) => c.PATCH(req('/api/cuenta', { presentadoRet: cuerpo }, 'PATCH'));
+  await entrar({ rol: 'miembro', permisos: ['resumen', 'facturas', 'gastos'], pv: 2 }); ruta('/api/cuenta', 'PATCH');
+  assert.equal((await marca({ modelo: '111', anio: 2026, t: 3, hecho: true })).status, 403);
+  await entrar({ rol: 'miembro', permisos: ['contabilidad'], pv: 2 });
+  assert.equal((await marca({ modelo: '111', anio: 2026, t: 3, hecho: true })).status, 200);
+  assert.equal((await marca({ modelo: '115', anio: 2026, t: 3, hecho: false })).status, 200);
+  const e = await R.redis.hget('empresas', 'e');
+  assert.deepEqual([e.pres111, e.pres115, Boolean(e.pagadosHacienda?.['2026-3-111'])], [{ 2026: { 3: true } }, { 2026: { 3: false } }, true]);
+  assert.equal((await marca({ modelo: '111', anio: 2026, t: 3, hecho: null })).status, 200);
+  assert.deepEqual((await R.redis.hget('empresas', 'e')).pres111, { 2026: {} });
+  assert.equal((await marca({ modelo: '303', anio: 2026, t: 3, hecho: true })).status, 400);
+});

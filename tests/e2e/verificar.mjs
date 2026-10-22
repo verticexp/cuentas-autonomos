@@ -42,7 +42,11 @@ const ok = (nombre, fn) => { try { fn(); console.log(`  ✓ ${nombre}`); } catch
 
 // Las facturas de esta batería se crean con fechas salteadas en la misma serie: se confirma el aviso de orden de
 // fechas (forzarOrden) salvo que la prueba lo quite a propósito con forzarOrden: false.
-async function pedir(ruta, { metodo = 'GET', cuerpo, cookie, form } = {}) {
+// Los clientes empresa llevan domicilio (art. 6.1.e del Reglamento de facturación): si la prueba no lo pone, uno de prueba
+// (la sección «Domicilio del cliente» lo comprueba sin él, con domicilioReal: true).
+const EMPRESA = /^(ES)?[ABCDEFGHJNPQRSUVW]/i;
+async function pedir(ruta, { metodo = 'GET', cuerpo, cookie, form, domicilioReal = false } = {}) {
+  if (!domicilioReal && /^\/api\/(facturas|presupuestos|albaranes)$/.test(ruta) && ['POST', 'PATCH'].includes(metodo) && cuerpo?.cliente && EMPRESA.test(String(cuerpo.cliente.nif || '').replace(/\s/g, '')) && !cuerpo.cliente.direccion) cuerpo = { ...cuerpo, cliente: { ...cuerpo.cliente, direccion: 'Calle de Prueba, 1' } };
   if (ruta === '/api/facturas' && ['POST', 'PATCH'].includes(metodo) && cuerpo && !('forzarOrden' in cuerpo)) cuerpo = { ...cuerpo, forzarOrden: true };
   if (cuerpo?.forzarOrden === false) { const { forzarOrden, ...resto } = cuerpo; cuerpo = resto; }
   const r = await fetch(BASE + ruta, {
@@ -135,6 +139,13 @@ ok(`IVA que recuperas ${eur(r2(delAnio.reduce((s, g) => s + importes(g).iva, 0))
 console.log('PDF');
 const pdf = await pedir(`/api/facturas/pdf?id=${encodeURIComponent(facturas[0].id)}`, { cookie: yo });
 ok('se genera', () => assert.ok(pdf.status === 200 && pdf.headers.get('content-type').includes('pdf'), `status ${pdf.status}`));
+
+console.log('Domicilio del cliente');
+{
+  const sinDomicilio = await pedir('/api/facturas', { metodo: 'POST', cookie: yo, domicilioReal: true, cuerpo: { fecha: hoy, actividad: ACTS[0].id, cliente: { nombre: 'Empresa Sin Domicilio SL', nif: 'B76543214' }, base: '100', ivaPct: 21, irpfPct: 0 } });
+  const j = await sinDomicilio.json();
+  ok('a una empresa no se le factura sin su domicilio (art. 6.1.e)', () => assert.ok(sinDomicilio.status === 400 && /domicilio/.test(j.errores?.['cliente.direccion'] || j.error), JSON.stringify(j)));
+}
 
 console.log('Facturas con varias líneas');
 const lin = await (await pedir('/api/facturas', { metodo: 'POST', cookie: yo, cuerpo: { fecha: `${Y}-11-02`, actividad: ACTS[0].id, cliente: { nombre: 'Varias líneas' }, irpfPct: 15, lineas: [

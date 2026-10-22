@@ -102,6 +102,19 @@ export async function PATCH(req) {
     await actualizarUsuario(u, { pres303: pres, pagadosHacienda: marcarPagado(u, `${anio}-${t}-303`, Boolean(hecho)) });
     return Response.json({ ok: true });
   }
+  // 111 y 115 marcados aparte; hecho null quita la marca (vuelven a contar como presentados con el 303 y el 130).
+  if (b.presentadoRet) {
+    if (sin('contabilidad')) return sin('contabilidad');
+    const { modelo, anio, t, hecho } = b.presentadoRet;
+    if (!['111', '115'].includes(modelo)) return error('Modelo no válido');
+    if (!Number.isInteger(anio) || anio < 2000 || anio > 2100 || ![1, 2, 3, 4].includes(t)) return error('Trimestre no válido');
+    const k = `pres${modelo}`;
+    const datos = { ...(u[k] || {}) };
+    datos[anio] = { ...(datos[anio] || {}) };
+    if (hecho === null || hecho === undefined) delete datos[anio][t]; else datos[anio][t] = Boolean(hecho);
+    await actualizarUsuario(u, { [k]: datos, pagadosHacienda: marcarPagado(u, `${anio}-${t}-${modelo}`, Boolean(hecho)) });
+    return Response.json({ ok: true });
+  }
   // Verifactu: 'pruebas', 'real' o null (sin activar). Solo el administrador. En real se mantiene todo el año natural.
   if ('verifactu' in b) {
     if (sin('empresa')) return sin('empresa');

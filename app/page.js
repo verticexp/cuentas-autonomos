@@ -29,6 +29,7 @@ import '@/app/hoy.css';
 import CambiarEmpresa from '@/components/CambiarEmpresa';
 import { accionesHoy } from '@/lib/hoy';
 import { proximoPlazoDe } from '@/lib/avisos';
+import YaPresentado from '@/components/YaPresentado';
 
 export const dynamic = 'force-dynamic';
 // Solo los modelos definidos en el glosario reciben ayuda.
@@ -94,6 +95,8 @@ export default async function Resumen({ searchParams }) {
   // Hacienda: el último tramo del plazo (3 días o menos) se avisa en rojo (lib/hoy.js).
   const avisoHacienda = esteAnio && debe ? accionesHoy({ hacienda: { dias: plazo.dias, importe: aPagar } })[0] : null;
   const urgente = avisoHacienda?.tono === 'rojo';
+  // Plazos que pasaron sin marcar el modelo como presentado (lib/tesoreria.js VENCIDOS_DIAS).
+  const preguntas = (teso?.movimientos || []).filter((m) => m.pregunta);
   const menos = (t) => t.replace(/^-/, '\u2212');
   const listaNombres = (v) => {
     const extra = Math.max(0, (v.clientes ?? v.nombres.length) - v.nombres.length);
@@ -140,6 +143,21 @@ export default async function Resumen({ searchParams }) {
           {/* El porcentaje es de lo facturado (sin IVA) en el mismo periodo: así lo dice, para no leerlo como beneficio. */}
           {cambio !== null && <p className={`saldo-cambio ${cambio >= 0 ? 'sube' : 'baja'}`}>{cambio >= 0 ? '↑' : '↓'} {Math.abs(cambio).toFixed(0)} % {cambio >= 0 ? 'más' : 'menos'} facturado que {esteAnio ? 'hace un año' : `en ${anio - 1}`}</p>}
           <p className="saldo-s">Facturado {eur(facturado)} · Gastos {eur(gastado)}</p>
+        </section>
+      )}
+
+      {preguntas.length > 0 && (
+        <section className="grupo" aria-labelledby="presentado-t">
+          <h2 className="grupo-t" id="presentado-t">¿Ya lo has presentado?</h2>
+          <ul className="grupo-lista">
+            {preguntas.map((m) => (
+              <li key={`${m.pregunta.modelo}-${m.pregunta.anio}-${m.pregunta.t}`}>
+                <div className="fila"><span className="txt"><strong>{m.concepto} {m.pregunta.anio}</strong><small>{m.detalle}</small></span><span className="imp">{eur(-m.importe)}</span></div>
+                <YaPresentado pregunta={m.pregunta} importe={-m.importe} puede={puede(u, 'contabilidad')} />
+              </li>
+            ))}
+          </ul>
+          <p className="grupo-pie">Mientras no lo marques, Tesorería lo cuenta como un pago de hoy.</p>
         </section>
       )}
 
