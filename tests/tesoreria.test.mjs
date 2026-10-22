@@ -21,7 +21,8 @@ test('previsión: cobros a su vencimiento, pagos, Hacienda y saldo', () => {
     fac('3', '2026-09-25', 200, { cobrada: true }),
     fac('4', '2026-07-10', 2000, { cobrada: true }),
   ];
-  const G = [gas('p', '2026-09-30', 100, { proveedor: 'Imprenta', pendiente: true })];
+  // Vencido el 30-09 (lib/pagos.js): se cuenta hoy.
+  const G = [gas('p', '2026-09-30', 100, { proveedor: 'Imprenta', pendiente: true, vence: '2026-09-30' })];
   const R = [{ id: 'r', activa: true, dia: 15, ultima: '2026-10', plantilla: { cliente: { nombre: 'Fijo' }, concepto: 'Cuota', base: 100, ivaPct: 21, irpfPct: 0 } }];
   const p = prevision({ facturas: F, gastos: G, recurrentes: R, fiscal, plazo: 30, saldo: { importe: 1000 }, hoy: '2026-10-05', meses: 1 });
   assert.equal(p.hasta, '2026-11-30');
@@ -56,7 +57,7 @@ test('Hacienda: un trimestre marcado como presentado no se vuelve a contar; el 1
 
 test('recurrentes: el mes que aún no se ha creado entra a su vencimiento; el saldo mínimo', () => {
   const R = [{ id: 'r', activa: true, dia: 1, ultima: '2026-10', plantilla: { cliente: { nombre: 'Fijo' }, concepto: 'Cuota', base: 100, ivaPct: 21, irpfPct: 0 } }, { id: 'x', activa: false, dia: 1, plantilla: { base: 999, ivaPct: 0 } }];
-  const G = [gas('p', '2026-10-10', 1000, { proveedor: 'Grande', pendiente: true, ivaPct: 0 })];
+  const G = [gas('p', '2026-10-10', 1000, { proveedor: 'Grande', pendiente: true, ivaPct: 0, vence: '2026-10-10' })];
   const p = prevision({ recurrentes: R, gastos: G, fiscal: { tipo: 'sociedad', iva: 'exento' }, plazo: 0, saldo: { importe: 500 }, hoy: '2026-10-05', meses: 2 });
   assert.deepEqual(p.movimientos.map((m) => [m.fecha, m.importe, m.saldo]), [['2026-10-10', -1000, -500], ['2026-11-01', 121, -379], ['2026-12-01', 121, -258]]);
   assert.deepEqual(p.minimo, { saldo: -500, fecha: '2026-10-10' });

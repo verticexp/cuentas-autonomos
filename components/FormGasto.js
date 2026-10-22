@@ -131,7 +131,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
       const varios = (t.desglose || []).filter((d) => d.base).length > 1;
       setG((x) => ({ ...x, ...(stock.length ? { stock } : {}), proveedor: t.proveedor?.nombre || x.proveedor, proveedorNif: t.proveedor?.nif || x.proveedorNif, concepto: t.concepto || t.proveedor?.nombre || x.concepto,
         base: String(t.base).replace('.', ','), ivaPct: t.ivaPct, fecha: t.fecha || x.fecha, numero: t.numero || '', ...([7, 15].includes(Number(t.irpfPct)) ? { irpfPct: Number(t.irpfPct) } : {}),
-        ...(t.vencimiento && t.vencimiento > (t.fecha || '') ? { pendiente: true } : {}), efactura: t.formato, ...(!Number(t.ivaPct) && nifUE(t.proveedor?.nif) ? { origen: 'ue' } : {}),
+        ...(t.vencimiento && t.vencimiento >= (t.fecha || '') ? { vence: t.vencimiento, ...(t.vencimiento >= hoy ? { pendiente: true } : {}) } : {}), efactura: t.formato, ...(!Number(t.ivaPct) && nifUE(t.proveedor?.nif) ? { origen: 'ue' } : {}),
         porTipo: varios ? aFormulario(t.desglose.filter((d) => d.base)) : undefined }));
       setLeyendo(`Factura electrónica ${t.numero || ''} leída${varios ? `, con varios tipos de ${impuesto} por separado` : ''}. Revisa los datos antes de guardar.`);
       return;
@@ -152,7 +152,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
       const t = d.gasto;
       // Con inventario: las líneas de la factura que son productos del catálogo entran al almacén.
       const stock = productos.length ? emparejarLineas(t.lineas, productos).map((l) => ({ ...l, cantidad: String(l.cantidad).replace('.', ','), coste: String(l.coste).replace('.', ',') })) : [];
-      setG((x) => ({ ...x, ...(stock.length ? { stock } : {}), proveedor: t.proveedor || x.proveedor, proveedorNif: t.nif || x.proveedorNif, ...(t.numero ? { numero: t.numero } : {}), concepto: t.concepto || t.proveedor || x.concepto, base: t.base !== '' ? String(t.base).replace('.', ',') : x.base, ivaPct: t.ivaPct, irpfPct: t.irpfPct || 0, fecha: t.fecha, ...(!Number(t.ivaPct) && nifUE(t.nif) ? { origen: 'ue' } : {}),
+      setG((x) => ({ ...x, ...(stock.length ? { stock } : {}), proveedor: t.proveedor || x.proveedor, proveedorNif: t.nif || x.proveedorNif, ...(t.numero ? { numero: t.numero } : {}), ...(t.vence ? { vence: t.vence, ...(t.vence >= hoy ? { pendiente: true } : {}) } : {}), concepto: t.concepto || t.proveedor || x.concepto, base: t.base !== '' ? String(t.base).replace('.', ',') : x.base, ivaPct: t.ivaPct, irpfPct: t.irpfPct || 0, fecha: t.fecha, ...(!Number(t.ivaPct) && nifUE(t.nif) ? { origen: 'ue' } : {}),
         porTipo: t.varios ? aFormulario(t.desglose) : undefined,
         // Lo que se eligió en el último gasto de este proveedor, en lo que aún no se ha tocado.
         ...Object.fromEntries(CAMPOS_HABITUALES.filter((c) => d.habitual?.[c] !== undefined && (x[c] === undefined || x[c] === '' || (c === 'actividad' && x[c] === vacio.actividad))).map((c) => [c, d.habitual[c]])),
@@ -360,6 +360,10 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
       <datalist id="proyectos-gasto">{proyectos.map((p) => <option key={p} value={p} />)}</datalist>
       {documento?.banco && <label className="gasto-pendiente"><input type="checkbox" checked={conBanco} onChange={(e) => setConBanco(e.target.checked)} />Es el cargo del banco del {fechaCorta(documento.banco.fecha)} por {eur(Math.abs(documento.banco.importe))}{documento.banco.concepto ? ` (${documento.banco.concepto})` : ''}: emparejarlo</label>}
       {!(documento?.banco && conBanco) && <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.pendiente)} onChange={(e) => poner('pendiente', e.target.checked)} />Aún no lo he pagado</label>}
+      {g.pendiente && !(documento?.banco && conBanco) && <>
+        <label>Vence el<input className="campo" type="date" value={g.vence || ''} min={g.fecha} onChange={(e) => poner('vence', e.target.value)} /></label>
+        {!g.vence && <p className="nota">Si no lo pones, vence en el plazo de pago de la ficha del proveedor o, sin él, a los 30 días (el plazo legal).</p>}
+      </>}
       {(alquiler || g.alquiler) && <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.alquiler)} onChange={(e) => poner('alquiler', e.target.checked)} />Es el alquiler del local (retención del 19 %)</label>}
       {!igic && (conIva(gn) || g.recc) && <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.recc)} onChange={(e) => poner('recc', e.target.checked)} />Su factura dice «Régimen especial del criterio de caja» (el IVA se deduce al pagarla)</label>}
       {!igic && ((Number(g.ivaPct) === 0 && !g.porTipo) || g.compensacion) && (

@@ -119,7 +119,7 @@ test('AUX02 alta: la rectificativa pendiente incluye el reembolso restante tras 
 });
 
 test('AUX03 alta: el pago al profesional y su media habitual deben descontar la retención', () => {
-  const gasto = { id: 'g', fecha: '2026-11-05', concepto: 'Servicio', proveedor: 'Profesional', base: 1000, ivaPct: 21, irpfPct: 15, pendiente: true };
+  const gasto = { id: 'g', fecha: '2026-11-05', concepto: 'Servicio', proveedor: 'Profesional', base: 1000, ivaPct: 21, irpfPct: 15, pendiente: true, vence: '2026-11-05' };
   const p = prevision({ gastos: [gasto], fiscal, hoy: '2026-11-01', meses: 0 });
   const historico = ['07', '08', '09'].map((m) => ({ ...gasto, fecha: `2026-${m}-05`, pendiente: false }));
   const habituales = gastosHabituales(historico, '2026-10-01');

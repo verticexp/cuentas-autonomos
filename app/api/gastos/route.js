@@ -5,6 +5,7 @@ import { emparejar } from '@/lib/bancoServidor';
 import { auditar } from '@/lib/auditoria';
 import { borrarGasto, crearGasto, editarGasto, pagarGasto } from '@/lib/gastosServidor';
 import { gastoEditado, nuevoGasto } from '@/lib/gastoCuerpo';
+import { conVencimiento } from '@/lib/pagosServidor';
 import { hoy } from '@/lib/formato';
 import { secundarios } from '@/lib/trabajos';
 import { borrarJustificantes } from '@/lib/justificantes';
@@ -19,7 +20,7 @@ export async function POST(req) {
     const no = sinFuncion(u.plan, 'revision');
     if (no) return error(mensajePlan(no, req.headers.get('user-agent')), 403);
   }
-  const v = nuevoGasto(u, b);
+  const v = await conVencimiento(u, nuevoGasto(u, b));
   if (v.error) return Response.json({ error: v.error, errores: v.errores }, { status: 400 });
   const g = v.gasto;
   const alta = await crearGasto(u, g, { duplicadoConfirmado: b.duplicadoConfirmado });
@@ -45,7 +46,7 @@ export async function PATCH(req) {
     return Response.json({ ok: true });
   }
   // Se valida y se construye sobre el gasto releído dentro del cerrojo de su pedido (informe R04), si es de una recepción.
-  const r = await editarGasto(u, String(b.id), (antes) => gastoEditado(u, b, antes));
+  const r = await editarGasto(u, String(b.id), (antes) => conVencimiento(u, gastoEditado(u, b, antes)));
   if (r.errores) return Response.json({ error: r.error, errores: r.errores }, { status: 400 });
   if (r.error) return error(r.error, r.status || 400);
   const { antes, gasto: g } = r;

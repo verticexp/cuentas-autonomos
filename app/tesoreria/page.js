@@ -101,7 +101,7 @@ export default async function Tesoreria({ searchParams }) {
 
       {!p.movimientos.length && <Vacio icono="cobrar" titulo="Aún no hay nada previsto" accion={{ href: '/facturas/nueva', texto: 'Nueva factura' }} secundaria={{ href: '/gastos#apuntar-gasto', texto: 'Añadir gasto' }}>Aquí verás las facturas por cobrar, los gastos pendientes y habituales y lo que toca pagar a Hacienda.</Vacio>}
 
-      <p className="grupo-pie arriba">Cobros: facturas sin cobrar a su vencimiento (las vencidas, hoy) y las recurrentes. Pagos: gastos pendientes y los que se repiten cada uno de los 3 últimos meses. Hacienda: {usaIgic(fiscalDe(u)) ? 'IGIC (420)' : '303'}, 130, 115 y 111 de los trimestres sin marcar como presentados. Es una previsión: revísala de vez en cuando.</p>
+      <p className="grupo-pie arriba">Cobros: facturas sin cobrar a su vencimiento (las vencidas, hoy) y las recurrentes. Pagos: gastos pendientes a su vencimiento (los vencidos, hoy) y los que se repiten cada uno de los 3 últimos meses. Hacienda: {usaIgic(fiscalDe(u)) ? 'IGIC (420)' : '303'}, 130, 115 y 111 de los trimestres sin marcar como presentados. Es una previsión: revísala de vez en cuando.</p>
     </main>
   );
 }
