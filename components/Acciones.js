@@ -140,4 +140,25 @@ export function Presentado202({ anio, p, importe, pagado, soloLectura = false })
   );
 }
 
+// 111 y 115: presentado o pendiente con su propia marca (lib/empresa.js marcaRet; sin ella, como el trimestre).
+// soloLectura: sin el permiso «Contabilidad», el estado sin selector.
+export function PresentadoRet({ modelo, anio, t, hecho, soloLectura = false }) {
+  const router = useRouter();
+  const [error, setError] = useState('');
+  if (soloLectura) return <span className={`estado-txt ${hecho ? 'e-ok' : 'e-pendiente'}`}>{hecho ? 'Presentado' : 'Pendiente'}</span>;
+  const cambiar = async (e) => {
+    setError('');
+    try {
+      await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify({ presentadoRet: { modelo, anio, t, hecho: e.target.value === 'hecho' } }) });
+      router.refresh();
+    } catch (err) { setError(err.message); }
+  };
+  return (
+    <><select className={`estado ${hecho ? 'ok' : 'pend'}`} value={hecho ? 'hecho' : 'pendiente'} onChange={cambiar} aria-label={`Estado del ${modelo} del ${t}T ${anio}`}>
+      <option value="pendiente">Pendiente</option>
+      <option value="hecho">Presentado</option>
+    </select>{error && <span className="error" role="alert">{error}</span>}</>
+  );
+}
+
 export { llamar };
