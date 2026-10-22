@@ -124,8 +124,9 @@ export default async function Page() {
         </Grupo>
       )}
 
-      {empresa && (puede(u, DETALLE) || u.admin || u.controlat) && (
+      {empresa && (
         <Grupo titulo="Conexiones">
+          <Celda href="/ajustes/api" ico="conexion" tono="ambar" titulo="API y webhooks" detalle="Claves de acceso y avisos para tus programas" />
           {puede(u, DETALLE) && <Celda href="/banco" ico="banco" tono="ambar" titulo="Bancos" detalle="Cuentas, extractos y conciliación" />}
           {puede(u, DETALLE) && <Celda href="/ajustes/drive" ico="drive" tono="ambar" titulo="Google Drive" detalle={u.drive?.url ? (u.driveError ? 'Con errores: revisa la conexión' : 'Conectado') : 'Sin conectar'} aviso={Boolean(u.drive?.url && u.driveError)} />}
           {(u.admin || u.controlat) && <Celda href="/ajustes/controlat" ico="conexion" tono="ambar" titulo="Controla'T" detalle={u.controlat ? 'Enviando tu neto mensual' : 'Sin conectar'} />}
