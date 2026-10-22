@@ -71,7 +71,7 @@ export default async function Resumen({ searchParams }) {
   const fiscal = fiscalDe(u);
   const ACTIVIDADES = nombresActividad(actividades);
   const { anio, anioActual, esteAnio, r, c303, c130, igic, foral, facturado, gastado, beneficio, plazo, debe, tHoy, qAhora, apartado, aPagar, mesPago,
-    sinCobrar, porCobrar, vencidas, prevFact, prevBeneficio, meses, cambio, ultimoMes, top, limite, cuotasSS, rendSS, prevRendSS } = P;
+    sinCobrar, porCobrar, vencidas, sinPagar = { length: 0 }, porPagar = 0, pagosVencidos = { length: 0, nombres: [] }, prevFact, prevBeneficio, meses, cambio, ultimoMes, top, limite, cuotasSS, rendSS, prevRendSS } = P;
   const impuesto = igic ? 'IGIC' : 'IVA';
   const modeloIndirecto = igic ? 'IGIC (420)' : 'Modelo 303';
   const nombreIndirecto = (q) => q.modeloIva || modeloIndirecto;
@@ -219,6 +219,14 @@ export default async function Resumen({ searchParams }) {
               <h2 className="hcard-t"><Ico n="cobrar" solo />Por cobrar<span>{sinCobrar.length === 1 ? '1 factura' : `${sinCobrar.length} facturas`}</span></h2>
               <p className="hcard-v"><Cifra v={porCobrar} /><small>€</small></p>
               {vencidas.length > 0 && <p className="hcard-s rojo">{vencidas.length === 1 ? '1 vencida' : `${vencidas.length} vencidas`}: {listaNombres(vencidas)}</p>}
+            </Ir>
+          )}
+
+          {porPagar > 0 && puede(u, 'gastos') && (
+            <Ir href={pagosVencidos.length ? '/gastos?estado=vencidos' : '/gastos?estado=sinpagar'} className="hcard ir" style={{ '--c': 'var(--out)' }}>
+              <h2 className="hcard-t"><Ico n="gasto" solo />Por pagar<span>{sinPagar.length === 1 ? '1 factura' : `${sinPagar.length} facturas`}</span></h2>
+              <p className="hcard-v"><Cifra v={porPagar} /><small>€</small></p>
+              {pagosVencidos.length > 0 && <p className="hcard-s rojo">{pagosVencidos.length === 1 ? '1 vencida' : `${pagosVencidos.length} vencidas`}: {listaNombres({ nombres: pagosVencidos.nombres || [], clientes: pagosVencidos.proveedores })}</p>}
             </Ir>
           )}
 

@@ -6,7 +6,8 @@ import { valoresDe } from '@/lib/terceros';
 import FichaProveedor from '@/components/FichaProveedor';
 import '@/app/fichas.css';
 import { totalDe } from '@/lib/proveedores';
-import { eur, fechaCorta } from '@/lib/formato';
+import { eur, fechaCorta, hoy } from '@/lib/formato';
+import { textoVence } from '@/lib/pagos';
 import { puede } from '@/lib/permisos';
 import Volver from '@/components/Volver';
 import Ir from '@/components/Ir';
@@ -47,7 +48,7 @@ export default async function Proveedor({ params }) {
         {p.gastos.map((g) => (
           <li key={g.id}>
             <Ir href={`/gastos/${encodeURIComponent(g.id)}`} className="fila">
-              <span className="txt"><strong>{g.concepto}</strong><small>{fechaCorta(g.fecha)}{g.pendiente ? <span className="prov-debe"> · Sin pagar</span> : ''}</small></span>
+              <span className="txt"><strong>{g.concepto}</strong><small>{fechaCorta(g.fecha)}{g.pendiente ? <span className="prov-debe"> · {textoVence(g, hoy(), fechaCorta)}</span> : ''}</small></span>
               <span className="imp">{eur(totalDe(g))}</span>
             </Ir>
           </li>

@@ -4,7 +4,8 @@ import { sinFuncion } from '@/lib/planes';
 import { requerir } from '@/lib/auth';
 import { nombresProyectos } from '@/lib/proyectos';
 import { leer, redis } from '@/lib/redis';
-import { contar, contarMarcados, documentos, fechaCursor, fichasRango, leerRango, pagina, totales } from '@/lib/indices';
+import { contar, contarMarcados, documentos, fechaCursor, fichasRango, leerMarcados, leerRango, pagina, totales } from '@/lib/indices';
+import { agendaPagos, aPagar, estadoPago, textoVence } from '@/lib/pagos';
 import { agruparGastosNomina, veSueldos } from '@/lib/nominas';
 import { candidatosConciliacion } from '@/lib/bancoServidor';
 import { importes, origenGasto, r2 } from '@/lib/calculos';
@@ -43,7 +44,7 @@ export default async function Gastos({ searchParams }) {
   const h = hoy();
   const anio = h.slice(0, 4);
   // E06: lo que se debe y lo que queda sin pagar salen de los totales precalculados.
-  const [movs, productos, total, delAnioTodos, agr, nBienes, cupoIA, bandeja] = await Promise.all([leer(u, 'banco'), leer(u, 'productos'), contar(u, 'gastos'), leerRango(u, 'gastos', `${anio}-01-01`, `${anio}-12-31`), totales(u, 'gastos', ['dc', 'sn']), contarMarcados(u, 'gastos', 'i'), puede(u, 'gastar') ? cupoEscaneos(u).catch(() => null) : null, leer(u, 'bandeja')]);
+  const [movs, productos, total, delAnioTodos, agr, nBienes, cupoIA, bandeja, sinPagarDocs] = await Promise.all([leer(u, 'banco'), leer(u, 'productos'), contar(u, 'gastos'), leerRango(u, 'gastos', `${anio}-01-01`, `${anio}-12-31`), totales(u, 'gastos', ['dc', 'sn']), contarMarcados(u, 'gastos', 'i'), puede(u, 'gastar') ? cupoEscaneos(u).catch(() => null) : null, leer(u, 'bandeja'), leerMarcados(u, 'gastos', 'p')]);
   // Bandeja de facturas (lib/bandeja.js): lo que espera revisión, o la entrada para subir varias a la vez.
   const enBandeja = resumenBandeja(bandeja || []).pendientes;
   // Con inventario: los productos que llevan stock, para apuntar lo que entra con cada compra.
@@ -60,9 +61,12 @@ export default async function Gastos({ searchParams }) {
   // Sin el permiso «Nóminas», la de cada persona no sale (Codex H2): en su lugar, una fila por mes con las de todo el equipo.
   const privado = !veSueldos(u);
   const filtro = (f, id) => !f.mi && !(privado && String(id).startsWith('nomina-'));
-  const pag = await pagina(u, 'gastos', { cursor: desde, marca: estado === 'sinpagar' ? 'p' : undefined, filtro, buscar: buscado });
+  // Pagos a proveedores (lib/pagos.js): lo que queda por pagar, por vencimiento. Solo los gastos sin pagar (pocos).
+  const agenda = agendaPagos((sinPagarDocs || []).filter((g) => !g.migrado && !(privado && String(g.id).startsWith('nomina-'))), h);
+  const verAgenda = ['sinpagar', 'vencidos'].includes(estado) && !buscado;
+  const pag = await pagina(u, 'gastos', { cursor: desde, marca: ['sinpagar', 'vencidos'].includes(estado) ? 'p' : undefined, filtro, buscar: buscado });
   const lista = await documentos(u, 'gastos', pag.ids);
-  if (privado && !buscado && estado !== 'sinpagar') {
+  if (privado && !buscado && !['sinpagar', 'vencidos'].includes(estado)) {
     // Las de las fechas de esta página: hasta la del cursor (incluida) y, si hay más páginas, desde la última (sin incluir).
     const techo = (desde && fechaCursor(desde)) || '9999-12-31';
     const suelo = pag.siguiente && lista.length ? lista.at(-1).fecha : '';
@@ -102,6 +106,29 @@ export default async function Gastos({ searchParams }) {
     return [g.m, fichas.filter((f) => filtro(f) && (!buscado || f.x.includes(buscado)) && (estado !== 'sinpagar' || f.pe)).reduce((s, f) => s + f.b, 0)];
   })));
 
+  // Una fila de la lista: en la agenda de pagos, con su vencimiento y lo que se paga (con IVA y sin la retención).
+  const fila = (g, { agenda: enAgenda = false } = {}) => {
+    const e = estadoPago(g, h);
+    const contenido = (
+      <Ir href={`/gastos/${encodeURIComponent(g.id)}`} className="fila">
+        <span className="txt">
+          <strong>{enAgenda && g.proveedor ? g.proveedor : g.concepto}</strong>
+          <small>{enAgenda ? `${g.proveedor && g.proveedor !== g.concepto ? `${g.concepto} · ` : ''}factura del ${diaMes(g.fecha)}${g.numero ? ` · nº ${g.numero}` : ''}` : <>{g.proveedor && g.proveedor !== g.concepto ? `${g.proveedor} · ` : ''}{diaMes(g.fecha)}{actividades.length > 1 ? ` · ${NOMBRES[g.actividad] || g.actividad}` : ''}{importes(g).iva ? ` · IVA ${eur(importes(g).iva)}` : ''}</>}</small>
+        </span>
+        <span className="imp-col">
+          <span className="imp">{eur(enAgenda ? aPagar(g) : g.base)}</span>
+          {!enAgenda && g.archivo?.clave && <span className="estado-txt">{g.archivo.tipo === 'application/pdf' ? 'PDF adjunto' : g.archivo.tipo === 'application/xml' ? 'Factura electrónica' : 'Foto adjunta'}</span>}
+          {g.pendiente && <span className={`estado-txt ${e === 'vencido' ? 'e-vencida' : 'e-pendiente'}`}>{textoVence(g, h, fechaCorta)}</span>}
+          {g.inversion && <span className="estado-txt">Bien de inversión</span>}
+        </span>
+      </Ir>
+    );
+    // Las nóminas agrupadas no tienen ficha propia: la fila no lleva a ningún sitio.
+    if (g.agrupado) return <div className="fila">{contenido.props.children}</div>;
+    // Móvil: deslizar un gasto sin pagar deja marcarlo como pagado
+    return g.pendiente && puede(u, 'gastar') ? <Deslizar id={g.id} acciones={['pagada']}>{contenido}</Deslizar> : contenido;
+  };
+
   return (
     <main className="pagina mk-look gastos gastos-formulario">
       <header className="cabecera">
@@ -130,51 +157,41 @@ export default async function Gastos({ searchParams }) {
       {!sinFuncion(u.plan, 'revision') && puede(u, 'gastar') && !movimiento && revision.total > 0 && <RevisionGastos items={revision.items} total={revision.total} />}
 
       {total > 5 && <Buscar action="/gastos" q={q} ocultos={{ estado }} placeholder="Buscar gastos" etiqueta="Buscar por proveedor o concepto" />}
-      {sinPagar > 0 && (
+      {(sinPagar > 0 || agenda.n > 0) && (
         <Deslizable className="chips">
-          <Link href={url({ estado: null })} className={estado !== 'sinpagar' ? 'activo' : ''}>Todos</Link>
-          <Link href={url({ estado: estado === 'sinpagar' ? null : 'sinpagar' })} className={estado === 'sinpagar' ? 'activo' : ''}>Sin pagar · {sinPagar}</Link>
+          <Link href={url({ estado: null })} className={!['sinpagar', 'vencidos'].includes(estado) ? 'activo' : ''}>Todos</Link>
+          <Link href={url({ estado: estado === 'sinpagar' ? null : 'sinpagar' })} className={estado === 'sinpagar' ? 'activo' : ''}>Por pagar · {agenda.n || sinPagar}</Link>
+          {agenda.vencidos > 0 && <Link href={url({ estado: estado === 'vencidos' ? null : 'vencidos' })} className={`${estado === 'vencidos' ? 'activo ' : ''}rojo`}>Vencidos · {agenda.vencidos}</Link>}
         </Deslizable>
       )}
 
-      {grupos.map((gr) => {
+      {/* Por pagar: como una agenda de pagos, de lo vencido a lo que vence más tarde, con el total de cada grupo. */}
+      {verAgenda && <>
+        <p className="resumen-linea"><span>Por pagar <strong>{eur(agenda.total)}</strong></span>{agenda.totalVencido > 0 && <span className="prov-debe">Vencido <strong>{eur(agenda.totalVencido)}</strong></span>}</p>
+        {agenda.grupos.filter((gr) => estado !== 'vencidos' || gr.id === 'vencido').map((gr) => (
+          <section key={gr.id} className="grupo-mes">
+            <h2><span className={gr.id === 'vencido' ? 'rojo' : ''}>{gr.titulo}</span><small>{eur(gr.total)}</small></h2>
+            <ul className="grupo-lista">{gr.gastos.map((g) => <li key={g.id}>{fila(g, { agenda: true })}</li>)}</ul>
+          </section>
+        ))}
+        {!agenda.n && <Vacio tipo="resultados" icono="gasto" titulo="No tienes nada por pagar" accion={{ href: url({ estado: null }), texto: 'Ver todos' }}>Los gastos que marques como «Aún no lo he pagado» salen aquí, ordenados por su vencimiento.</Vacio>}
+      </>}
+
+      {!verAgenda && grupos.map((gr) => {
         const [y, m] = gr.m.split('-');
         return (
           <section key={gr.m} className="grupo-mes">
             <h2><span>{MESES[m - 1]} {y !== h.slice(0, 4) ? y : ''}</span><small>{eur(r2(totalMes[gr.m] || 0))} sin IVA</small></h2>
             <ul className="grupo-lista">
-              {gr.gastos.map((g) => (
-                <li key={g.id}>
-                  {(() => {
-                    const fila = (
-                      <Ir href={`/gastos/${encodeURIComponent(g.id)}`} className="fila">
-                        <span className="txt">
-                          <strong>{g.concepto}</strong>
-                          <small>{g.proveedor && g.proveedor !== g.concepto ? `${g.proveedor} · ` : ''}{diaMes(g.fecha)}{actividades.length > 1 ? ` · ${NOMBRES[g.actividad] || g.actividad}` : ''}{importes(g).iva ? ` · IVA ${eur(importes(g).iva)}` : ''}</small>
-                        </span>
-                        <span className="imp-col">
-                          <span className="imp">{eur(g.base)}</span>
-                          {g.archivo?.clave && <span className="estado-txt">{g.archivo.tipo === 'application/pdf' ? 'PDF adjunto' : g.archivo.tipo === 'application/xml' ? 'Factura electrónica' : 'Foto adjunta'}</span>}
-                          {g.pendiente && <span className="estado-txt e-pendiente">Sin pagar</span>}
-                          {g.inversion && <span className="estado-txt">Bien de inversión</span>}
-                        </span>
-                      </Ir>
-                    );
-                    // Las nóminas agrupadas no tienen ficha propia: la fila no lleva a ningún sitio.
-                    if (g.agrupado) return <div className="fila">{fila.props.children}</div>;
-                    // Móvil: deslizar un gasto sin pagar deja marcarlo como pagado
-                    return g.pendiente && puede(u, 'gastar') ? <Deslizar id={g.id} acciones={['pagada']}>{fila}</Deslizar> : fila;
-                  })()}
-                </li>
-              ))}
+              {gr.gastos.map((g) => <li key={g.id}>{fila(g)}</li>)}
             </ul>
           </section>
         );
       })}
 
-      {pag.siguiente && <p className="grupo-pie"><Link href={url({ desde: pag.siguiente })} className="boton sec">Ver más</Link></p>}
+      {!verAgenda && pag.siguiente && <p className="grupo-pie"><Link href={url({ desde: pag.siguiente })} className="boton sec">Ver más</Link></p>}
 
-      {!lista.length && (hay || buscado || estado || desde
+      {!verAgenda && !lista.length && (hay || buscado || estado || desde
         ? <Vacio tipo="resultados" icono="gasto" titulo={buscado ? `Ningún gasto con «${q}»` : 'Ningún gasto con este filtro'} accion={{ href: buscado ? url({ q: null, desde: null }) : '/gastos', texto: buscado ? 'Quitar búsqueda' : 'Ver todos' }} />
         : <Vacio icono="gasto" titulo="Añade tu primer gasto" accion={puede(u, 'gastar') && { href: '#escanear-ticket', texto: 'Escanear ticket' }} secundaria={puede(u, 'gastar') && { href: '#apuntar-gasto', texto: 'Apuntar a mano' }}>Hazle una foto al ticket o apúntalo a mano: el IVA se resta del 303 y el gasto baja tu IRPF.</Vacio>)}
 

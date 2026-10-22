@@ -4,6 +4,7 @@ import { importes, numeroFactura, r2, vencimiento } from '@/lib/calculos';
 import { xlsx } from '@/lib/xlsx';
 import { hoy } from '@/lib/formato';
 import { delosAnios } from '@/lib/indices';
+import { venceGasto } from '@/lib/pagos';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,8 +28,9 @@ export async function GET(req) {
     return [numeroFactura(f), f.fecha, f.cliente.nif, f.cliente.nombre, importes(f).total, vence, estado(f.cobrada, vence), pago, dias(f.fecha, pago)];
   });
   const recibidas = (gastos || []).filter((g) => delAnio(g) && g.proveedorNif && !g.nomina).sort((a, b) => a.fecha.localeCompare(b.fecha)).map((g) => {
-    const i = importes(g), pago = g.pendiente ? '' : g.pagado || g.fecha;
-    return [g.numero || '', g.fecha, g.proveedorNif, g.proveedor || '', r2(i.base + i.iva - i.irpf), '', estado(!g.pendiente, ''), pago, dias(g.fecha, pago), g.efactura ? g.efactura.toUpperCase() : ''];
+    // Vencimiento de la factura recibida (lib/pagos.js): el suyo o, en las de antes, el plazo legal.
+    const i = importes(g), pago = g.pendiente ? '' : g.pagado || g.fecha, vence = venceGasto(g);
+    return [g.numero || '', g.fecha, g.proveedorNif, g.proveedor || '', r2(i.base + i.iva - i.irpf), vence, estado(!g.pendiente, vence), pago, dias(g.fecha, pago), g.efactura ? g.efactura.toUpperCase() : ''];
   });
   const medio = (filas, col) => { const xs = filas.map((f) => f[col]?.n).filter((n) => n !== undefined); return xs.length ? r2(xs.reduce((s, n) => s + n, 0) / xs.length) : ''; };
   const hojas = [];
