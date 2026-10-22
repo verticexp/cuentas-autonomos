@@ -30,14 +30,14 @@ test('la factura electrónica cuadra siempre y queda sin pagar si vence más tar
   assert.equal(propuestaDeEfactura({ ...t, vencimiento: '2026-10-10' }, '2026-10-22').pendiente, undefined);
 });
 
-test('solo cuadra lo leído, con importes que casan, fecha clara, un tipo de IVA, sin avisos ni duplicados', () => {
+test('solo cuadra lo leído, con importes que casan, fecha clara, sin avisos ni duplicados', () => {
   const d = { estado: 'revisar', propuesta: propuestaDeTicket(leido()) };
   assert.equal(cuadra(d), true);
   assert.equal(cuadra({ ...d, estado: 'error' }), false);
   assert.equal(cuadra({ ...d, duplicados: [{ id: 'g1', motivo: 'Mismo archivo' }] }), false);
   assert.equal(cuadra({ ...d, propuesta: { ...d.propuesta, fechaDudosa: true } }), false);
   assert.equal(cuadra({ ...d, propuesta: { ...d.propuesta, avisos: ['Los importes leídos no cuadran'] } }), false);
-  assert.equal(cuadra({ ...d, propuesta: { ...d.propuesta, desglose: [{ ivaPct: 21, base: 40 }, { ivaPct: 10, base: 10 }] } }), false);
+  assert.equal(cuadra({ ...d, propuesta: { ...d.propuesta, desglose: [{ ivaPct: 21, base: 40 }, { ivaPct: 10, base: 10 }] } }), true, 'con varios tipos también');
   assert.equal(cuadra({ ...d, propuesta: propuestaDeTicket(leido({ total: 70 })) }), false, 'el total no casa con base e IVA');
 });
 
