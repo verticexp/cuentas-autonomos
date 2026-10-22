@@ -2,7 +2,7 @@ import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { rafaga, respuesta429 } from '@/lib/limite';
 import { MAX_BYTES } from '@/lib/justificantes';
 import { ordenar, paraPantalla, resumen } from '@/lib/bandeja';
-import { adelantarLecturas, aprobar, aprobarVarias, descartar, documentosBandeja, recibirArchivo, releer } from '@/lib/bandejaServidor';
+import { adelantarLecturas, aprobar, aprobarVarias, descartar, deshacer, documentosBandeja, permitir, ponerConfianza, recibirArchivo, releer } from '@/lib/bandejaServidor';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -33,7 +33,8 @@ export async function PUT(req) {
 }
 
 // POST { accion: 'aprobar', id, datos, duplicadoConfirmado? } · { accion: 'aprobarVarias', ids } ·
-// { accion: 'descartar', id } · { accion: 'releer', id }
+// { accion: 'descartar' | 'releer' | 'permitir' (su remitente, para siempre) | 'deshacer' (una aprobada sola), id } ·
+// { accion: 'confianza', clave, proveedor, proveedorNif, activo } (proveedor cuyas facturas que cuadran se aprueban solas)
 export async function POST(req) {
   const { u, res } = await usuarioApi({ permiso: 'gastar' });
   if (res) return res;
@@ -50,8 +51,12 @@ export async function POST(req) {
     if (!Array.isArray(b.ids) || !b.ids.length) return error('No hay facturas que aprobar');
     return Response.json({ ok: true, ...(await aprobarVarias(u, b.ids.map(String))) });
   }
-  if (b.accion === 'descartar' || b.accion === 'releer') {
-    const r = b.accion === 'descartar' ? await descartar(u, id) : await releer(u, id);
+  if (b.accion === 'confianza') {
+    const r = await ponerConfianza(u, { clave: b.clave, proveedor: b.proveedor, proveedorNif: b.proveedorNif }, b.activo === true);
+    return r.error ? error(r.error) : Response.json({ ok: true });
+  }
+  if (['descartar', 'releer', 'permitir', 'deshacer'].includes(b.accion)) {
+    const r = await { descartar, releer, permitir, deshacer }[b.accion](u, id);
     if (r.error) return error(r.error, r.status || 400);
     return Response.json({ ok: true });
   }
