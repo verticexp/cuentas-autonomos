@@ -93,7 +93,9 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
     const r = await subirVarias(lista, { progreso: (hechos, total) => setSubida({ hechos, total }) });
     // Una sola: se abre para revisarla en cuanto se lea. Varias: se leen en «Por revisar», aquí debajo.
     if (lista.length === 1 && r.ids.length === 1) { router.push(`/gastos/bandeja/${encodeURIComponent(r.ids[0])}`); return; }
-    setSubida({ texto: r.ids.length ? `${r.ids.length === 1 ? '1 factura subida' : `${r.ids.length} facturas subidas`}: se están leyendo en «Por revisar», aquí debajo.` : '', errores: r.errores });
+    // Varias: a la pestaña «Por revisar», donde se ven leerse. Si alguna falló, se queda aquí con el porqué.
+    if (r.ids.length && !r.errores.length) { router.push('/gastos?ver=revisar'); router.refresh(); return; }
+    setSubida({ texto: r.ids.length ? `${r.ids.length === 1 ? '1 factura subida' : `${r.ids.length} facturas subidas`}: se están leyendo en «Por revisar».` : '', errores: r.errores });
     router.refresh();
   };
   useEffect(() => {
@@ -200,7 +202,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
         if (r.status === 409 && Array.isArray(d.duplicados) && d.duplicados.length) { setAvisoDuplicados({ datos, duplicados: d.duplicados }); return; }
         if (!r.ok) throw new Error(d.error || 'No se ha podido aprobar la factura. Revisa la conexión e inténtalo otra vez.');
         // A la siguiente por revisar (o a la bandeja), con el aviso si el banco no ha casado.
-        router.push(`${siguiente ? `/gastos/bandeja/${encodeURIComponent(siguiente)}` : '/gastos/bandeja'}${d.aviso ? '?aviso=banco' : ''}`);
+        router.push(siguiente ? `/gastos/bandeja/${encodeURIComponent(siguiente)}${d.aviso ? '?aviso=banco' : ''}` : `/gastos?ver=revisar${d.aviso ? '&aviso=banco' : ''}`);
         router.refresh();
         return;
       } else if (gasto) {
@@ -247,7 +249,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
         </div>
         {error && <p className="error" role="alert">{error}</p>}
         {avisoAdjunto}
-        {subida?.texto && <p className="gasto-confirmacion" role="status">{subida.texto} <a href="#por-revisar">Ver ›</a></p>}
+        {subida?.texto && <p className="gasto-confirmacion" role="status">{subida.texto} <Link href="/gastos?ver=revisar">Ver ›</Link></p>}
         {subida?.errores?.length > 0 && <div className="nota" role="alert"><strong>No se han podido subir:</strong><ul>{subida.errores.map((x) => <li key={x}>{x}</li>)}</ul></div>}
         <div className="gasto-rapido-botones">
           <button type="button" id="escanear-ticket" className="boton gasto-escanear" onClick={abrirCamara}><svg viewBox="0 0 24 24" aria-hidden><path d="M4 8V6a2 2 0 012-2h2M16 4h2a2 2 0 012 2v2M20 16v2a2 2 0 01-2 2h-2M8 20H6a2 2 0 01-2-2v-2M4 12h16" /></svg>Escanear ticket</button><input ref={camaraInput} type="file" accept="image/*" capture="environment" onChange={foto} hidden />
@@ -259,10 +261,10 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
           <p className="gasto-correo">
             <span>O reenvíalas por correo a</span> <code>{correo.direccion}</code>
             <button type="button" className="enlace" onClick={async () => { try { await navigator.clipboard.writeText(correo.direccion); setCopiado(true); setTimeout(() => setCopiado(false), 2000); } catch { /* se ve en pantalla */ } }}>{copiado ? 'Copiada' : 'Copiar'}</button>
-            <Link href="/gastos/bandeja#correo">Que lleguen solas ›</Link>
+            <Link href="/gastos?ver=revisar#correo">Que lleguen solas ›</Link>
           </p>
         )}
-        {correo?.listo && !correo.direccion && <p className="gasto-correo"><Link href="/gastos/bandeja#correo">Recíbelas también por correo, sin descargarlas ›</Link></p>}
+        {correo?.listo && !correo.direccion && <p className="gasto-correo"><Link href="/gastos?ver=revisar#correo">Recíbelas también por correo, sin descargarlas ›</Link></p>}
         <CupoEscaneo inicial={cupoInicial} />
       </div>
     );

@@ -234,7 +234,7 @@ export default async function Resumen({ searchParams }) {
           )}
 
           {porRevisar.pendientes > 0 && (
-            <Ir href="/gastos#por-revisar" className="hcard ir" style={{ '--c': 'var(--info)' }}>
+            <Ir href="/gastos?ver=revisar" className="hcard ir" style={{ '--c': 'var(--info)' }}>
               <h2 className="hcard-t"><Ico n="gasto" solo />Por revisar</h2>
               <p className="hcard-v">{porRevisar.pendientes}<small>{porRevisar.pendientes === 1 ? 'factura' : 'facturas'}</small></p>
               <p className="hcard-s">{[porRevisar.cuadran && (porRevisar.cuadran === 1 ? '1 cuadra: apruébala con un toque' : `${porRevisar.cuadran} cuadran: apruébalas de golpe`), porRevisar.leyendo && `${porRevisar.leyendo} leyéndose`, porRevisar.cuarentena && `${porRevisar.cuarentena} de remitentes que no conoces`].filter(Boolean).join(' · ') || 'Ábrelas para revisarlas y guardarlas como gasto'}</p>

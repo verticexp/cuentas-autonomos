@@ -9,10 +9,9 @@ import { ACEPTA, EVENTO, subirVarias } from '@/lib/bandejaCliente';
 import { leerCompartidos } from '@/lib/compartidoCliente';
 import '@/app/bandeja.css';
 
-// «Por revisar» (lib/bandeja.js): las facturas subidas, reenviadas por correo o compartidas, mientras se leen y hasta que
-// se aprueban. compacto: dentro de Gastos, las primeras `limite` y el botón de aprobar las que cuadran (se sube desde la
-// tarjeta de añadir, components/FormGasto.js); sin él, la pantalla entera, con su zona para subir.
-// Mientras quede alguna leyéndose, la lista se pide otra vez cada pocos segundos.
+// «Por revisar» (lib/bandeja.js), la pestaña de Gastos: las facturas subidas, reenviadas por correo o compartidas,
+// mientras se leen y hasta que se aprueban, con su zona para subir más. Mientras quede alguna leyéndose, la lista se pide
+// otra vez cada pocos segundos.
 const GRUPOS = [
   ['revisar', 'Listas para revisar'],
   ['error', 'No se han podido leer'],
@@ -21,7 +20,7 @@ const GRUPOS = [
   ['aprobado', 'Aprobadas solas (proveedores de confianza)'],
 ];
 
-export default function Bandeja({ inicial, resumenInicial, puedeGastar, compacto = false, limite = 5 }) {
+export default function Bandeja({ inicial, resumenInicial, puedeGastar }) {
   const router = useRouter();
   const input = useRef(null);
   const [docs, setDocs] = useState(inicial);
@@ -43,7 +42,7 @@ export default function Bandeja({ inicial, resumenInicial, puedeGastar, compacto
     } catch { /* sin conexión: se reintenta en la siguiente vuelta */ }
   }, []);
 
-  // Facturas subidas desde otro sitio de la pantalla (la tarjeta de añadir): se piden enseguida.
+  // Facturas subidas desde otro sitio (la tarjeta de añadir de Gastos): se piden enseguida.
   useEffect(() => {
     window.addEventListener(EVENTO, recargar);
     return () => window.removeEventListener(EVENTO, recargar);
@@ -68,10 +67,9 @@ export default function Bandeja({ inicial, resumenInicial, puedeGastar, compacto
 
   // Lo compartido desde el móvil (app/sw lo deja en la caché y vuelve aquí con ?compartido=N): se sube una vez.
   useEffect(() => {
-    if (compacto) return;
     const q = new URLSearchParams(window.location.search).get('compartido');
     if (q === null) return;
-    window.history.replaceState(null, '', '/gastos/bandeja');
+    window.history.replaceState(null, '', '/gastos?ver=revisar');
     if (q === 'sinsw') { setAviso('Fisquo aún se estaba preparando en este móvil: vuelve a compartir la factura.'); return; }
     leerCompartidos().then((l) => (l.length ? subir(l, 'compartido') : setAviso('No ha llegado ningún archivo que se pueda leer (PDF, foto o XML de hasta 5 MB).')));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -113,36 +111,23 @@ export default function Bandeja({ inicial, resumenInicial, puedeGastar, compacto
     </div>
   );
 
-  // Dentro de Gastos: una sola lista con lo más urgente (lib/bandeja.js ordenar) y el enlace a todas.
-  if (compacto) {
-    const vivas = docs.filter((d) => d.estado !== 'aprobado');
-    if (!vivas.length && !aviso) return null;
-    return (
-      <section className="grupo bandeja bandeja-compacta" id="por-revisar">
-        <h2 className="grupo-t">Por revisar · {vivas.length}</h2>
-        <p className="grupo-pie arriba">Las facturas que has subido o reenviado por correo. Ábrelas para revisarlas o aprueba de golpe las que cuadran.</p>
-        {avisos}
-        {cuadran}
-        {vivas.length > 0 && <ul className="grupo-lista">{vivas.slice(0, limite).map((d) => <Fila key={d.id} d={d} puedeGastar={puedeGastar} ocupado={ocupado} accion={accion} />)}</ul>}
-        {(vivas.length > limite || docs.length > vivas.length) && <p className="grupo-pie"><Link href="/gastos/bandeja">{vivas.length > limite ? `Ver las ${vivas.length} ›` : 'Ver también las aprobadas solas ›'}</Link></p>}
-      </section>
-    );
-  }
+  // Zona para subir: arriba si no hay nada; con facturas esperando, debajo de ellas (lo pendiente, primero).
+  const zona = puedeGastar && (
+    <div className={`bandeja-subir${encima ? ' encima' : ''}`}
+      onDragOver={(e) => { e.preventDefault(); setEncima(true); }} onDragLeave={() => setEncima(false)}
+      onDrop={(e) => { e.preventDefault(); setEncima(false); subir([...e.dataTransfer.files]); }}>
+      <div>
+        <strong>Sube tus facturas de gasto</strong>
+        <small>Elige o arrastra aquí los PDF, las fotos o las facturas electrónicas (XML), todos los que quieras a la vez. Fisquo los lee y te los deja listos para revisar.</small>
+      </div>
+      <button type="button" className="boton" disabled={Boolean(subiendo)} onClick={() => input.current?.click()}>{subiendo ? `Subiendo ${subiendo.hechos} de ${subiendo.total}…` : 'Elegir archivos'}</button>
+      <input ref={input} type="file" multiple accept={ACEPTA} hidden onChange={(e) => { const l = [...e.target.files]; e.target.value = ''; subir(l); }} />
+    </div>
+  );
 
   return (
     <div className="bandeja">
-      {puedeGastar && (
-        <div className={`bandeja-subir${encima ? ' encima' : ''}`}
-          onDragOver={(e) => { e.preventDefault(); setEncima(true); }} onDragLeave={() => setEncima(false)}
-          onDrop={(e) => { e.preventDefault(); setEncima(false); subir([...e.dataTransfer.files]); }}>
-          <div>
-            <strong>Sube tus facturas de gasto</strong>
-            <small>Elige o arrastra aquí los PDF, las fotos o las facturas electrónicas (XML), todos los que quieras a la vez. Fisquo los lee y te los deja listos para revisar.</small>
-          </div>
-          <button type="button" className="boton" disabled={Boolean(subiendo)} onClick={() => input.current?.click()}>{subiendo ? `Subiendo ${subiendo.hechos} de ${subiendo.total}…` : 'Elegir archivos'}</button>
-          <input ref={input} type="file" multiple accept={ACEPTA} hidden onChange={(e) => { const l = [...e.target.files]; e.target.value = ''; subir(l); }} />
-        </div>
-      )}
+      {!docs.length && zona}
       {avisos}
       {cuadran}
 
@@ -158,6 +143,7 @@ export default function Bandeja({ inicial, resumenInicial, puedeGastar, compacto
           </section>
         );
       })}
+      {docs.length > 0 && zona}
     </div>
   );
 }

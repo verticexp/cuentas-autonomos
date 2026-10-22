@@ -4,7 +4,8 @@ import { enviarLuego } from '@/lib/verifactuEnvio';
 import Ir from '@/components/Ir';
 import { requerir } from '@/lib/auth';
 import { leer, redis } from '@/lib/redis';
-import { contar, documentos, fichasRango, pagina, totales, vencidaFicha, vencidas as vencidasHoy } from '@/lib/indices';
+import { contar, contarMarcados, documentos, fichasRango, pagina, totales, vencidaFicha, vencidas as vencidasHoy } from '@/lib/indices';
+import Pestanas from '@/components/Pestanas';
 import { importes, numeroFactura, r2, vencida } from '@/lib/calculos';
 import { actividadesDe, nombresActividad } from '@/lib/empresa';
 import FilaFactura from '@/components/FilaFactura';
@@ -37,7 +38,7 @@ export default async function Facturas({ searchParams }) {
   const h = hoy();
   const plazo = u.emisor?.plazo;
   // E06: «Por cobrar» sale del total precalculado y las vencidas, del índice por vencimiento (no de todas las pendientes).
-  const [total, { pc }, vencidas, recurrentes] = await Promise.all([contar(u, 'facturas'), totales(u, 'facturas', ['pc']), vencidasHoy(u, plazo, h), leer(u, 'recurrentes')]);
+  const [total, { pc }, vencidas, recurrentes, nSinCobrar] = await Promise.all([contar(u, 'facturas'), totales(u, 'facturas', ['pc']), vencidasHoy(u, plazo, h), leer(u, 'recurrentes'), contarMarcados(u, 'facturas', 'p')]);
   const estadoDe = (f) => (f.cobrada ? 'cobrada' : vencida(f, plazo, h) ? 'vencida' : 'pendiente');
   const porCobrar = r2(pc);
   // La búsqueda va por el índice de texto (todos los conceptos, revisión S06); el resto, por la ficha.
@@ -76,6 +77,13 @@ export default async function Facturas({ searchParams }) {
         {puede(u, 'facturar') && total > 0 && <Ir href="/facturas/nueva" tipo="subir" className="boton pequeno solo-pc">Nueva factura</Ir>}
       </header>
 
+      {/* Lo emitido y lo pendiente, como en Gastos: siempre a la vista, también en el móvil. */}
+      {total > 0 && <Pestanas etiqueta="Facturas" items={[
+        { href: url({ estado: null, desde: null }), texto: 'Facturas', activo: !['pendientes', 'vencidas'].includes(estado) },
+        { href: url({ estado: 'pendientes', desde: null }), texto: 'Sin cobrar', n: nSinCobrar, activo: estado === 'pendientes' },
+        { href: url({ estado: 'vencidas', desde: null }), texto: 'Vencidas', n: vencidas.length, tono: 'rojo', activo: estado === 'vencidas' },
+      ]} />}
+
       {total > 0 && (
         <p className="resumen-linea solo-pc">
           <span>Por cobrar <strong>{eur(porCobrar)}</strong></span>
@@ -94,7 +102,7 @@ export default async function Facturas({ searchParams }) {
               <span>Por cobrar <strong>{eur(porCobrar)}</strong></span>
               {vencidas.length > 0 && <Link href={url({ estado: estado === 'vencidas' ? null : 'vencidas' })} className="rojo">{vencidas.length === 1 ? '1 vencida' : `${vencidas.length} vencidas`}</Link>}
             </p>
-            <HojaFiltro titulo="Filtrar facturas" activos={(ACTIVIDADES[a] ? 1 : 0) + (['pendientes', 'vencidas'].includes(estado) ? 1 : 0)}>
+            <HojaFiltro titulo="Filtrar facturas" activos={ACTIVIDADES[a] ? 1 : 0}>
               {Object.keys(ACTIVIDADES).length > 1 && (
                 <section className="filtro-grupo">
                   <h3>Actividad</h3>
@@ -104,14 +112,6 @@ export default async function Facturas({ searchParams }) {
                   </ul>
                 </section>
               )}
-              <section className="filtro-grupo">
-                <h3>Estado</h3>
-                <ul className="filtro-ops">
-                  <li><Link href={url({ estado: null })} className="filtro-op" aria-current={!['pendientes', 'vencidas'].includes(estado) ? 'true' : undefined}>Todas</Link></li>
-                  <li><Link href={url({ estado: 'pendientes' })} className="filtro-op" aria-current={estado === 'pendientes' ? 'true' : undefined}>Sin cobrar<small>{eur(porCobrar)}</small></Link></li>
-                  {vencidas.length > 0 && <li><Link href={url({ estado: 'vencidas' })} className="filtro-op" aria-current={estado === 'vencidas' ? 'true' : undefined}>Vencidas<small>{vencidas.length}</small></Link></li>}
-                </ul>
-              </section>
               {(recurrentes?.length > 0 || puede(u, 'resumen')) && (
                 <section className="filtro-grupo">
                   <h3>Más</h3>
@@ -123,11 +123,9 @@ export default async function Facturas({ searchParams }) {
               )}
             </HojaFiltro>
           </div>
-          {(ACTIVIDADES[a] || ['pendientes', 'vencidas'].includes(estado)) && (
+          {ACTIVIDADES[a] && (
             <div className="filtros-activos solo-movil" aria-label="Filtros activos">
-              {ACTIVIDADES[a] && <Link href={url({ a: null })} aria-label={`Quitar el filtro ${ACTIVIDADES[a]}`}>{ACTIVIDADES[a]}</Link>}
-              {estado === 'pendientes' && <Link href={url({ estado: null })} aria-label="Quitar el filtro Sin cobrar">Sin cobrar</Link>}
-              {estado === 'vencidas' && <Link href={url({ estado: null })} aria-label="Quitar el filtro Vencidas">Vencidas</Link>}
+              <Link href={url({ a: null })} aria-label={`Quitar el filtro ${ACTIVIDADES[a]}`}>{ACTIVIDADES[a]}</Link>
             </div>
           )}
         </>
@@ -135,17 +133,13 @@ export default async function Facturas({ searchParams }) {
 
       {total > 5 && <Buscar action="/facturas" q={q} ocultos={{ a, estado }} placeholder="Buscar facturas" etiqueta="Buscar por cliente, número o concepto" />}
 
-      {/* Dos grupos de filtros: la actividad (si hay varias) y el estado, separados. */}
-      <Deslizable className="chips solo-pc">
-        {Object.keys(ACTIVIDADES).length > 1 && <>
+      {/* La actividad (si hay varias); el estado va en las pestañas de arriba. */}
+      {Object.keys(ACTIVIDADES).length > 1 && (
+        <Deslizable className="chips solo-pc">
           <Link href={url({ a: null })} className={!ACTIVIDADES[a] ? 'activo' : ''}>Todas las actividades</Link>
           {Object.entries(ACTIVIDADES).map(([id, n]) => <Link key={id} href={url({ a: id })} className={a === id ? 'activo' : ''}>{n}</Link>)}
-          <span className="chips-sep" aria-hidden />
-        </>}
-        <Link href={url({ estado: null })} className={!['pendientes', 'vencidas'].includes(estado) ? 'activo' : ''}>Todas</Link>
-        <Link href={url({ estado: estado === 'pendientes' ? null : 'pendientes' })} className={estado === 'pendientes' ? 'activo' : ''}>Sin cobrar</Link>
-        {vencidas.length > 0 && <Link href={url({ estado: estado === 'vencidas' ? null : 'vencidas' })} className={estado === 'vencidas' ? 'activo' : ''}>Vencidas</Link>}
-      </Deslizable>
+        </Deslizable>
+      )}
 
       {grupos.length > 0 && (
         <div className={`tf-cab solo-pc${!a && Object.keys(ACTIVIDADES).length > 1 ? ' con-act' : ''}`} aria-hidden>

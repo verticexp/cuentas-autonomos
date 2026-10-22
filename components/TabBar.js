@@ -57,7 +57,8 @@ const seccion = (path) => (path === '/' ? '/' : path.startsWith('/presupuestos')
   : ['/facturas', '/gastos'].some((h) => path.startsWith(h)) ? TABS.find((t) => t.href !== '/' && path.startsWith(t.href))?.href ?? null
   : deMas(path) ? '/mas' : null);
 
-export default function TabBar({ permisos = [], empresas = [], empresa, admin = false, inventario = false, fiscal = {}, faltan = {} }) {
+// porRevisar: facturas que esperan en Gastos › Por revisar (lib/bandeja.js): su número va sobre la pestaña Gastos.
+export default function TabBar({ permisos = [], empresas = [], empresa, admin = false, inventario = false, fiscal = {}, faltan = {}, porRevisar = 0 }) {
   const tabs = TABS.filter((t) => !t.permiso || permisos.includes(t.permiso));
   const path = usePathname();
   const router = useRouter();
@@ -156,10 +157,11 @@ export default function TabBar({ permisos = [], empresas = [], empresa, admin = 
       >
         {tabs.map((t) => (
           <Link key={t.href} href={t.href} prefetch draggable={false} data-href={t.href}
-            className={marcado === t.href ? 'activo' : ''} aria-current={activo === t.href ? 'page' : undefined} aria-label={t.nombre}
+            className={marcado === t.href ? 'activo' : ''} aria-current={activo === t.href ? 'page' : undefined} aria-label={t.href === '/gastos' && porRevisar > 0 ? `${t.nombre}, ${porRevisar} por revisar` : t.nombre}
             onClick={(e) => { e.preventDefault(); if (e.detail === 0) ir(t.href); }}>
             <svg viewBox="0 0 24 24" aria-hidden>{t.icono}</svg>
             <span>{t.nombre}</span>
+            {t.href === '/gastos' && porRevisar > 0 && <b className="tab-n" aria-hidden>{porRevisar > 99 ? '99+' : porRevisar}</b>}
           </Link>
         ))}
       </nav>
