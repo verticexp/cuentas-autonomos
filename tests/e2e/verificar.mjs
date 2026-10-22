@@ -1956,5 +1956,57 @@ console.log('Nóminas completas (cotización 2026 y modelo 145) y datos para RED
   ok('y el de otra empresa no se ve (403)', () => assert.equal(ajeno.status, 403));
 }
 
+console.log('Canarias (IGIC)');
+{
+  const alta = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva: 'Canarias Prueba SL', nombre: 'Celia', email: `igic${Date.now()}@test.es` } })).json();
+  const fd = new FormData(); fd.set('codigo', alta.enlace.split('/').pop()); fd.set('password', 'Clave-Local-05-2026');
+  const can = /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: fd })).headers.get('set-cookie') || '')?.[1];
+  const cfgR = await pedir('/api/cuenta', { metodo: 'PATCH', cookie: can, cuerpo: { configuracion: { fiscal: { tipo: 'sociedad', iva: 'general', territorio: 'canarias', intracom: true, oss: true, rebu: true, reav: true, recc: { desde: `${Y}-01-01` } }, emisor: { nombre: 'Canarias Prueba SL', nif: 'B38812459', direccion: 'Calle Mayor 1', ciudad: '35001 Las Palmas', iban: 'ES00' }, actividades: [{ nombre: 'Servicios', ivaPct: 7, irpfPct: 0 }] } } });
+  const cfg = await cfgR.json();
+  ok('configura una empresa de Canarias con actividad al 7 %', () => assert.equal(cfgR.status, 200, JSON.stringify(cfg)));
+  const act = cfg.actividades?.[0]?.id;
+  const datos = { fecha: hoy, actividad: act, cliente: { nombre: 'Cliente Canarias', nif: 'A58818501', direccion: 'Calle 1', ciudad: 'Las Palmas' }, concepto: 'Servicio IGIC', base: '1000', ivaPct: 7, irpfPct: 0 };
+  const r = await pedir('/api/facturas', { metodo: 'POST', cookie: can, cuerpo: datos });
+  const f = (await r.json()).factura;
+  ok('emite al 7 % y guarda impuesto igic (total 1.070 €)', () => assert.ok(r.status === 200 && f?.impuesto === 'igic' && importes(f).total === 1070, JSON.stringify(f)));
+  const mal = await pedir('/api/facturas', { metodo: 'POST', cookie: can, cuerpo: { ...datos, ivaPct: 21 } });
+  ok('rechaza el 21 % en una factura canaria (400)', () => assert.equal(mal.status, 400));
+  const malLinea = await pedir('/api/facturas', { metodo: 'POST', cookie: can, cuerpo: { ...datos, lineas: [{ concepto: 'Línea', cantidad: 1, precio: 100, ivaPct: 21 }] } });
+  ok('también rechaza el 21 % en las líneas (400)', () => assert.equal(malLinea.status, 400));
+  const pre = await (await pedir('/api/presupuestos', { metodo: 'POST', cookie: can, cuerpo: datos })).json();
+  ok('el presupuesto conserva IGIC', () => assert.equal(pre.presupuesto?.impuesto, 'igic'));
+  const conversion = await (await pedir('/api/presupuestos/facturar', { metodo: 'POST', cookie: can, cuerpo: { id: pre.presupuesto?.id, tipo: 'resto' } })).json();
+  ok('la factura creada desde el presupuesto conserva IGIC', () => assert.equal(conversion.factura?.impuesto, 'igic'));
+  const gastoR = await pedir('/api/gastos', { metodo: 'POST', cookie: can, cuerpo: { fecha: hoy, actividad: act, concepto: 'Compra ISP', base: '100', ivaPct: 7, isp: true, importacion: true } });
+  const gasto = (await gastoR.json()).gasto;
+  ok('guarda las casillas ISP e importación del gasto', () => assert.ok(gastoR.status === 200 && gasto?.isp === true && gasto?.importacion === true && gasto?.impuesto === 'igic'));
+  const malGasto = await pedir('/api/gastos', { metodo: 'POST', cookie: can, cuerpo: { fecha: hoy, actividad: act, concepto: 'Compra', base: '100', ivaPct: 21 } });
+  ok('rechaza un gasto nuevo al 21 %', () => assert.equal(malGasto.status, 400));
+  if (f) {
+    const papel = n(await texto(`/facturas/${encodeURIComponent(f.id)}/pdf`, can));
+    ok('la pantalla imprimible muestra IGIC', () => assert.ok(papel.includes('IGIC')));
+    const pdfR = await pedir(`/api/facturas/pdf?id=${encodeURIComponent(f.id)}`, { cookie: can });
+    const bytes = await pdfR.arrayBuffer();
+    const { PDFDocument, PDFRawStream, decodePDFRawStream } = await import('pdf-lib');
+    // Sin un PDF de verdad no se analiza: la comprobación falla y la batería sigue.
+    const pdf = pdfR.status === 200 ? await PDFDocument.load(bytes) : { context: { enumerateIndirectObjects: () => [] } };
+    const contenido = [...pdf.context.enumerateIndirectObjects()].filter(([, o]) => o instanceof PDFRawStream).map(([, o]) => Buffer.from(decodePDFRawStream(o).decode()).toString()).join('\n');
+    ok('el PDF descargado contiene IGIC', () => assert.ok(pdfR.status === 200 && pdfR.headers.get('content-type') === 'application/pdf' && contenido.includes('49474943')));
+  }
+  const imp = n(await texto(`/modelos?anio=${Y}`, can));
+  // texto() quita las etiquetas: el enlace a la Sede se busca en el HTML.
+  const impHtml = await (await pedir(`/modelos?anio=${Y}`, { cookie: can })).text();
+  ok('Impuestos muestra 420 y 425 con la Sede canaria', () => assert.ok(imp.includes('420 · IGIC trimestral') && imp.includes('425 · Resumen anual del IGIC') && impHtml.includes('sede.gobiernodecanarias.org/tributos/ow/')));
+  ok('Canarias no ofrece 303, 390, 349 ni 369', () => assert.ok(!imp.includes('303 · IVA trimestral') && !imp.includes('390 · Resumen anual del IVA') && !imp.includes('349 ·') && !imp.includes('369 ·')));
+  const formulario = n(await texto('/facturas/nueva', can));
+  // Con gastos, el formulario de la lista sale plegado: se mira la ficha del gasto, que lo trae abierto.
+  const formGasto = n(await texto(`/gastos/${encodeURIComponent(gasto?.id || '')}`, can));
+  ok('formularios usan IGIC y el gasto ofrece ISP e importación', () => assert.ok(formulario.includes('IGIC') && formGasto.includes('Inversión del sujeto pasivo (lo autoliquido)') && formGasto.includes('IGIC pagado en aduana')));
+  const presentado = await pedir('/api/cuenta', { metodo: 'PATCH', cookie: can, cuerpo: { presentado303: { anio: Y, t: 1, hecho: true } } });
+  ok('el 420 se marca presentado con pres303', () => assert.equal(presentado.status, 200));
+  const resumen = n(await texto('/', can));
+  ok('Resumen identifica el IGIC (420)', () => assert.ok(resumen.includes('IGIC (420)')));
+}
+
 console.log(fallos ? `\n${fallos} comprobaciones fallidas: NO publicar.` : '\nTodo cuadra.');
 process.exit(fallos ? 1 : 0);

@@ -7,7 +7,7 @@ import { puede } from '@/lib/permisos';
 import { leer } from '@/lib/redis';
 import { datosStock } from '@/lib/stockServidor';
 import { enCamino, numeroDoc, totalPedidoProv } from '@/lib/albaranes';
-import { fiscalDe } from '@/lib/empresa';
+import { fiscalDe, usaIgic } from '@/lib/empresa';
 import { inventario, quePedir } from '@/lib/inventario';
 import { eur, fechaCorta, hoy } from '@/lib/formato';
 import Volver from '@/components/Volver';
@@ -99,7 +99,7 @@ export default async function Inventario({ searchParams }) {
               <div className="inv-pedido-cab"><strong>{p.proveedor}</strong><span>{eur(totalPedidoProv(p))}</span></div>
               <p className="nota">{numeroDoc({ ...p, tipo: 'proveedor' })} · {fechaCorta(p.fecha)} · {p.recibido ? <>recibido el {fechaCorta(p.recibido)}{p.gasto && <> · <Link href={`/gastos/${p.gasto}`}>ver la compra</Link></>}</> : p.cancelado ? (p.recepciones?.length ? 'resto cancelado' : 'cancelado') : p.recepciones?.length ? <>recibido en parte · {p.recepciones.map((r) => <Link key={r.id} href={`/gastos/${r.gasto}`}>ver la compra del {fechaCorta(r.fecha)}</Link>).reduce((a, x) => (a.length ? [...a, ' · ', x] : [x]), [])}</> : 'en camino'}</p>
               <ul>{p.lineas.map((x, i) => <li key={i}><span>{x.concepto}{x.sku ? ` (${x.sku})` : ''}<small>{eur(x.coste)}/ud.</small></span><b>{ud(x.cantidad)} ud.</b></li>)}</ul>
-              {!p.recibido && !p.cancelado && puede(u, 'gastar') && <RecibirPedido pedido={p} hoy={h} />}
+              {!p.recibido && !p.cancelado && puede(u, 'gastar') && <RecibirPedido igic={usaIgic(fiscalDe(u))} pedido={p} hoy={h} />}
               {!p.recibido && <CopiarPedido texto={`Hola, os quería pedir:\n${p.lineas.map((x) => `- ${ud(x.cantidad)} × ${x.concepto}${x.sku ? ` (${x.sku})` : ''}`).join('\n')}\nGracias.`} />}
             </div>
           )) : <Vacio icono="gasto" titulo="Sin pedidos a proveedores" accion={{ href: '/inventario?ver=pedir', texto: 'Ver qué pedir' }}>Hazlos desde «Qué pedir». Al recibirlos, se apunta la compra con su stock.</Vacio>}

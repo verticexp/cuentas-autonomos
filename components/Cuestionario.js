@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import ProgresoAlta from './ProgresoAlta';
 import { llamar } from './Acciones';
-import { limpiarFiscal, modelosDe } from '@/lib/empresa';
+import { TIPOS_IGIC } from '@/lib/igic';
+import { limpiarFiscal, modelosDe, usaIgic } from '@/lib/empresa';
 
 const IVAS = [[21, '21 %'], [10, '10 %'], [4, '4 %'], [0, 'Sin IVA']];
 // El 7 % es el de los nuevos autónomos (año de alta y los dos siguientes); el detalle va en una segunda línea corta.
@@ -58,11 +59,14 @@ export default function Cuestionario({ inicial, editar, conFacturas, puedeFactur
   }, [paso, terminado]);
   const [fiscal, setFiscal] = useState(inicial.fiscal);
   const [emisor, setEmisor] = useState(inicial.emisor);
-  const [acts, setActs] = useState(inicial.actividades.length ? inicial.actividades : [{ nombre: '', ivaPct: 21, irpfPct: inicial.fiscal.tipo === 'sociedad' ? 0 : 15 }]);
+  const [acts, setActs] = useState(inicial.actividades.length ? inicial.actividades : [{ nombre: '', ivaPct: usaIgic(inicial.fiscal) ? 7 : 21, irpfPct: inicial.fiscal.tipo === 'sociedad' ? 0 : 15 }]);
   const [error, setError] = useState('');
   useEffect(() => { if (error) errorRef.current?.focus(); }, [error]);
   const [guardando, setGuardando] = useState(false);
   const sociedad = fiscal.tipo === 'sociedad';
+  const igic = usaIgic(fiscal);
+  const impuesto = igic ? 'IGIC' : 'IVA';
+  const tipos = igic ? TIPOS_IGIC.map((p) => [p, `${String(p).replace('.', ',')} %`]) : IVAS;
   const f = (k, v) => setFiscal((x) => ({ ...x, [k]: v }));
   const e = (k, v) => setEmisor((x) => ({ ...x, [k]: v }));
   const a = (i, k, v) => setActs((l) => l.map((x, j) => (j === i ? { ...x, [k]: v } : x)));
@@ -95,6 +99,10 @@ export default function Cuestionario({ inicial, editar, conFacturas, puedeFactur
       falta: acts.every((x) => String(x.nombre).trim()) ? 'Faltan el nombre y el NIF de tus datos.' : 'Escribe el nombre de tu actividad para seguir.',
       cuerpo: (
         <>
+          <div className="grupo-c"><SiNo valor={igic} titulo="Mi empresa está en Canarias (IGIC)" cambiar={(v) => {
+            setFiscal((x) => limpiarFiscal({ ...x, territorio: v ? 'canarias' : undefined }));
+            setActs((l) => l.map((x) => ({ ...x, ivaPct: (v ? TIPOS_IGIC : [21, 10, 4, 0]).includes(Number(x.ivaPct)) ? x.ivaPct : v ? 7 : 21 })));
+          }} /></div>
           {acts.map((x, i) => {
             const fija = x.id && conFacturas.includes(x.id);
             return (
@@ -103,8 +111,9 @@ export default function Cuestionario({ inicial, editar, conFacturas, puedeFactur
                   <label className="alta-campo"><span>{i === 0 ? 'Nombre de tu actividad' : `Actividad ${i + 1}`}</span><input className="campo" placeholder="Por ejemplo: Diseño gráfico" value={x.nombre} onChange={(v) => a(i, 'nombre', v.target.value)} /></label>
                   {acts.length > 1 && !fija && <button type="button" className="quitar" aria-label="Quitar" onClick={() => setActs((l) => l.filter((_, j) => j !== i))}>Quitar</button>}
                 </div>
-                <p className="mini-t">IVA de tus facturas</p>
-                <div className="segmentado">{IVAS.map(([v, n]) => <button key={v} type="button" aria-pressed={Number(x.ivaPct) === v} className={Number(x.ivaPct) === v ? 'activo' : ''} onClick={() => a(i, 'ivaPct', v)}>{n}</button>)}</div>
+                <p className="mini-t">{impuesto} de tus facturas</p>
+                {igic ? <select className="campo" aria-label={`IGIC de ${x.nombre || 'tu actividad'}`} value={x.ivaPct} onChange={(ev) => a(i, 'ivaPct', Number(ev.target.value))}>{tipos.map(([v, n]) => <option key={v} value={v}>{n}</option>)}</select>
+                  : <div className="segmentado">{tipos.map(([v, n]) => <button key={v} type="button" aria-pressed={Number(x.ivaPct) === v} className={Number(x.ivaPct) === v ? 'activo' : ''} onClick={() => a(i, 'ivaPct', v)}>{n}</button>)}</div>}
                 {!sociedad && <>
                   <p className="mini-t">Retención de IRPF <small>(si facturas a empresas o autónomos como profesional)</small></p>
                   <div className="segmentado">{RETENCIONES.map(([v, n]) => <button key={v} type="button" aria-pressed={Number(x.irpfPct) === v} className={Number(x.irpfPct) === v ? 'activo' : ''} onClick={() => a(i, 'irpfPct', v)}>{n}</button>)}</div>
@@ -124,28 +133,28 @@ export default function Cuestionario({ inicial, editar, conFacturas, puedeFactur
       listo: true,
       cuerpo: (
         <>
-          <p className="mini-t fuera">¿Cobras IVA?</p>
+          <p className="mini-t fuera">¿Cobras {impuesto}?</p>
           <div className="opciones">
-            <Opcion grupo="regimen-iva" activo={fiscal.iva === 'general'} titulo="Sí, cobro IVA" onClick={() => f('iva', 'general')} />
+            <Opcion grupo="regimen-iva" activo={fiscal.iva === 'general'} titulo={`Sí, cobro ${impuesto}`} onClick={() => f('iva', 'general')} />
             <Opcion grupo="regimen-iva" activo={fiscal.iva === 'exento'} titulo="No, mi actividad está exenta" detalle="Sanidad, enseñanza, seguros, alquiler de vivienda…" onClick={() => f('iva', 'exento')} />
-            {!sociedad && <Opcion grupo="regimen-iva" activo={fiscal.iva === 'recargo'} titulo="Tienda con recargo de equivalencia" detalle="Comercio minorista: el IVA lo paga tu proveedor" onClick={() => f('iva', 'recargo')} />}
-            {!sociedad && <Opcion grupo="regimen-iva" activo={fiscal.iva === 'simplificado'} titulo="Régimen simplificado (módulos)" detalle="El IVA trimestral sale de los módulos de tu actividad" onClick={() => setFiscal((x) => ({ ...x, iva: 'simplificado', irpf: 'modulos' }))} />}
-            {!sociedad && <Opcion grupo="regimen-iva" activo={fiscal.iva === 'reagp'} titulo="Agricultura, ganadería o pesca (REAGP)" detalle="No cobras IVA: cobras la compensación del 12 % o del 10,5 %" onClick={() => f('iva', 'reagp')} />}
+            {!igic && !sociedad && <Opcion grupo="regimen-iva" activo={fiscal.iva === 'recargo'} titulo="Tienda con recargo de equivalencia" detalle="Comercio minorista: el IVA lo paga tu proveedor" onClick={() => f('iva', 'recargo')} />}
+            {!igic && !sociedad && <Opcion grupo="regimen-iva" activo={fiscal.iva === 'simplificado'} titulo="Régimen simplificado (módulos)" detalle="El IVA trimestral sale de los módulos de tu actividad" onClick={() => setFiscal((x) => ({ ...x, iva: 'simplificado', irpf: 'modulos' }))} />}
+            {!igic && !sociedad && <Opcion grupo="regimen-iva" activo={fiscal.iva === 'reagp'} titulo="Agricultura, ganadería o pesca (REAGP)" detalle="No cobras IVA: cobras la compensación del 12 % o del 10,5 %" onClick={() => f('iva', 'reagp')} />}
           </div>
           <div className="grupo-c">
             {!sociedad && <SiNo valor={fiscal.irpf === 'modulos'} cambiar={(v) => setFiscal((x) => ({ ...x, irpf: v ? 'modulos' : undefined, ...(!v && x.iva === 'simplificado' ? { iva: 'general' } : {}) }))} titulo="Estoy en módulos (estimación objetiva)" detalle="Presentas el 131 en vez del 130" />}
             {!sociedad && fiscal.irpf !== 'modulos' && <SiNo valor={fiscal.retenidas} cambiar={(v) => f('retenidas', v)} titulo="Más del 70 % de lo que facturas lleva retención" detalle="Si es así, no tienes que presentar el 130" />}
             <SiNo valor={fiscal.trabajadores} cambiar={(v) => f('trabajadores', v)} titulo="Tengo trabajadores o pago a profesionales con retención" />
             <SiNo valor={fiscal.alquiler} cambiar={(v) => f('alquiler', v)} titulo="Alquilo un local u oficina" />
-            <SiNo valor={fiscal.intracom} cambiar={(v) => f('intracom', v)} titulo="Compro o vendo a empresas de otros países de la UE" />
+            {!igic && <SiNo valor={fiscal.intracom} cambiar={(v) => f('intracom', v)} titulo="Compro o vendo a empresas de otros países de la UE" />}
             <SiNo valor={fiscal.inventario} cambiar={(v) => f('inventario', v)} titulo="Vendo productos y quiero controlar el stock" detalle="Inventario: entradas, salidas, stock mínimo y su valor" />
-            {['general', 'simplificado'].includes(fiscal.iva) && <SiNo valor={Boolean(fiscal.rebu)} cambiar={(v) => f('rebu', v)} titulo="Vendo bienes usados, arte o antigüedades con el IVA sobre el margen" detalle="Régimen especial de los bienes usados (REBU)" />}
-            {['general', 'simplificado'].includes(fiscal.iva) && <SiNo valor={Boolean(fiscal.reav)} cambiar={(v) => f('reav', v)} titulo="Soy una agencia de viajes" detalle="Régimen especial de las agencias de viajes (REAV): IVA sobre el margen" />}
+            {!igic && ['general', 'simplificado'].includes(fiscal.iva) && <SiNo valor={Boolean(fiscal.rebu)} cambiar={(v) => f('rebu', v)} titulo="Vendo bienes usados, arte o antigüedades con el IVA sobre el margen" detalle="Régimen especial de los bienes usados (REBU)" />}
+            {!igic && ['general', 'simplificado'].includes(fiscal.iva) && <SiNo valor={Boolean(fiscal.reav)} cambiar={(v) => f('reav', v)} titulo="Soy una agencia de viajes" detalle="Régimen especial de las agencias de viajes (REAV): IVA sobre el margen" />}
             <SiNo valor={Boolean(fiscal.capital)} cambiar={(v) => f('capital', v)} titulo="Pago dividendos o intereses a socios o a quien me prestó dinero" detalle="Retención del 19 %: modelos 123 y 193" />
-            {fiscal.iva === 'general' && <SiNo valor={Boolean(fiscal.oss)} cambiar={(v) => f('oss', v)} titulo="Vendo a particulares de otros países de la UE con el IVA de su país" detalle="Ventanilla única (OSS): ese IVA va en el modelo 369" />}
-            {fiscal.iva === 'general' && <SiNo valor={Boolean(fiscal.recc)} cambiar={(v) => f('recc', v ? { desde: `${new Date().getFullYear()}-01-01` } : undefined)} titulo="Estoy en el criterio de caja (RECC)" detalle="El IVA de tus facturas se paga al cobrarlas y el de tus gastos se deduce al pagarlos" />}
+            {!igic && fiscal.iva === 'general' && <SiNo valor={Boolean(fiscal.oss)} cambiar={(v) => f('oss', v)} titulo="Vendo a particulares de otros países de la UE con el IVA de su país" detalle="Ventanilla única (OSS): ese IVA va en el modelo 369" />}
+            {!igic && fiscal.iva === 'general' && <SiNo valor={Boolean(fiscal.recc)} cambiar={(v) => f('recc', v ? { desde: `${new Date().getFullYear()}-01-01` } : undefined)} titulo="Estoy en el criterio de caja (RECC)" detalle="El IVA de tus facturas se paga al cobrarlas y el de tus gastos se deduce al pagarlos" />}
           </div>
-          {fiscal.iva === 'general' && fiscal.recc && (
+          {!igic && fiscal.iva === 'general' && fiscal.recc && (
             <div className="alta-campos">
               <label className="alta-campo"><span>En el criterio de caja desde</span><small>La fecha de la opción en el 036 (normalmente, el 1 de enero).</small>
                 <input className="campo" type="date" min="2014-01-01" value={fiscal.recc.desde || ''} onChange={(v) => f('recc', { ...fiscal.recc, desde: v.target.value })} /></label>

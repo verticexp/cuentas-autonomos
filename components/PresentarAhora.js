@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 const pasos = (nums) => [
   'Revisa que las facturas y gastos del trimestre estén todos en Fisquo.',
   'Comprueba estos importes con tu gestor.',
-  nums.length === 1 ? `Presenta el modelo ${nums[0]} en la Sede de la AEAT.` : 'Presenta los modelos en la Sede de la AEAT.',
+  nums.includes('420') ? 'Presenta el 420 en la Sede de la Agencia Tributaria Canaria y los demás modelos en la AEAT.' : nums.length === 1 ? `Presenta el modelo ${nums[0]} en la Sede de la AEAT.` : 'Presenta los modelos en la Sede de la AEAT.',
   'Vuelve aquí y marca el trimestre como presentado.',
 ];
 
@@ -46,7 +46,7 @@ export default function PresentarAhora({ t, anio, aviso, importes, texto }) {
         <div className="presentar-acc">
           <button type="button" className="boton" onClick={compartir}>Compartir resumen</button>
           {importes.filter((m) => m.aeat).map((m) => (
-            <a key={m.num} className="boton secundario" href={m.aeat} target="_blank" rel="noopener noreferrer">Presentar el {m.num} en la AEAT</a>
+            <a key={m.num} className="boton secundario" href={m.aeat} target="_blank" rel="noopener noreferrer">Presentar el {m.num} en la {m.sede || 'AEAT'}</a>
           ))}
         </div>
         <p className="nota" role="status" aria-live="polite">{msg}</p>

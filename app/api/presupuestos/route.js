@@ -4,12 +4,12 @@ import { leer, guardar, borrar, leerUno, redis } from '@/lib/redis';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { limpiar, guardarCliente } from '@/lib/facturas';
 import { siguienteNumero } from '@/lib/calculos';
-import { actividadesDe, fiscalDe } from '@/lib/empresa';
+import { actividadesDe, fiscalDe, usaIgic } from '@/lib/empresa';
 
 export const dynamic = 'force-dynamic';
 
 const datosDe = (u, b) => {
-  const d = limpiar(b, actividadesDe(u), fiscalDe(u).tipo === 'sociedad');
+  const d = limpiar(b, actividadesDe(u), fiscalDe(u).tipo === 'sociedad', { igic: usaIgic(fiscalDe(u)) });
   if (d.error) return d;
   delete d.cobrada;
   return { ...d, senalPct: [0, 20, 30, 50].includes(Number(b.senalPct)) ? Number(b.senalPct) : 0, validez: Math.min(90, Math.max(1, Number(b.validez) || 15)) };

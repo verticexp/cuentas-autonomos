@@ -5,7 +5,7 @@ import { actualizarUsuario, cambiarPassword, desbloqueo, opcionesCookie, opcione
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { DETALLE, puede } from '@/lib/permisos';
 import { colorValido, logoValido } from '@/lib/marca';
-import { actividadesDe, fiscalDe, limpiarActividades, limpiarFiscal } from '@/lib/empresa';
+import { actividadesDe, fiscalDe, limpiarActividades, limpiarFiscal, usaIgic } from '@/lib/empresa';
 import { clave, leer, mismoId, redis } from '@/lib/redis';
 import { auditar } from '@/lib/auditoria';
 import { contrasenaCambiada } from '@/lib/avisosCorreo';
@@ -124,10 +124,10 @@ export async function PATCH(req) {
     const { anio, t, hecho, devolucion } = b.presentado303;
     if (!Number.isInteger(anio) || anio < 2000 || anio > 2100 || ![1, 2, 3, 4].includes(t)) return error('Trimestre no válido');
     // En el 4T, el saldo a favor se puede pedir en devolución (art. 115 LIVA): ya no se compensa el año siguiente.
-    if (devolucion && t !== 4) return error('La devolución solo se pide en el 303 del 4T');
+    if (devolucion && t !== 4) return error('La devolución solo se pide en el 4T');
     const pres = { ...(u.pres303 || {}) };
     pres[anio] = { ...(pres[anio] || {}), [t]: hecho && devolucion ? 'devolucion' : Boolean(hecho) };
-    await actualizarUsuario(u, { pres303: pres, pagadosHacienda: marcarPagado(u, `${anio}-${t}-303`, Boolean(hecho)) });
+    await actualizarUsuario(u, { pres303: pres, pagadosHacienda: marcarPagado(u, `${anio}-${t}-${usaIgic(fiscalDe(u)) ? '420' : '303'}`, Boolean(hecho)) });
     return Response.json({ ok: true });
   }
   // 111 y 115 marcados aparte; hecho null quita la marca (vuelven a contar como presentados con el 303 y el 130).
@@ -211,7 +211,7 @@ export async function PATCH(req) {
     const c = b.configuracion;
     const conFacturas = new Set((await todasFichas(u, 'facturas')).map((f) => f.a));
     const antes = Array.isArray(u.actividades) && u.actividades.length ? u.actividades : (u.pendiente ? [] : actividadesDe(u));
-    const a = limpiarActividades(c.actividades, antes, conFacturas);
+    const a = limpiarActividades(c.actividades, antes, conFacturas, { igic: usaIgic(limpiarFiscal(c.fiscal)) });
     if (a.error) return error(a.error);
     const e = c.emisor || {};
     if (!String(e.nombre || '').trim()) return error('Falta el nombre o la razón social');
@@ -254,7 +254,7 @@ export async function PATCH(req) {
     const antes = actividadesDe(u);
     const conFacturas = new Set((await todasFichas(u, 'facturas')).map((f) => f.a));
     const lista = antes.map((a) => (typeof b.series[a.id] === 'string' ? { ...a, serie: b.series[a.id] } : a));
-    const r = limpiarActividades(lista, antes, conFacturas);
+    const r = limpiarActividades(lista, antes, conFacturas, { igic: usaIgic(fiscalDe(u)) });
     if (r.error) return error(r.error);
     await actualizarUsuario(u, { actividades: r.actividades });
     await auditar(u, 'Series cambiadas', r.actividades.map((a) => `${a.nombre}: ${a.serie || 'sin letra'}`).join(' · '));

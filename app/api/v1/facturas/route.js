@@ -1,7 +1,7 @@
 import { usuarioClave, respuestaPublica, jsonPublico, errorPublico, cuerpoPublico } from '@/lib/apiPublica';
 import { facturaPublica, paginaPublica, parametrosPagina } from '@/lib/apiPublicaDatos';
 import { limpiar, crearFactura } from '@/lib/facturas';
-import { actividadesDe, fiscalDe, usa303 } from '@/lib/empresa';
+import { actividadesDe, fiscalDe, usa303, usaIgic } from '@/lib/empresa';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -20,7 +20,8 @@ export const POST = (req) => respuestaPublica(async () => {
   if (idem !== null && !/^[\w:.-]{6,80}$/.test(idem)) return errorPublico('Idempotency-Key debe tener de 6 a 80 caracteres: letras, números, _, :, . o -');
   const b = await cuerpoPublico(req);
   if (Object.hasOwn(b, 'rectifica') || Object.hasOwn(b, 'motivoRectificacion')) return errorPublico('La API todavía no admite rectificativas');
-  const datos = limpiar(b, actividadesDe(u), fiscalDe(u).tipo === 'sociedad', { rectificativa: false, conRecargo: usa303(fiscalDe(u)) });
+  const fiscal = fiscalDe(u);
+  const datos = limpiar(b, actividadesDe(u), fiscal.tipo === 'sociedad', { rectificativa: false, igic: usaIgic(fiscal), conRecargo: usa303(fiscal) && !usaIgic(fiscal), reagp: fiscal.iva === 'reagp' });
   if (datos.error) return errorPublico(datos.error);
   const r = await crearFactura(u, datos, { idem: idem === null ? undefined : `api:${apiClave.id}:${idem}`, ordenFechas: true });
   if (r.error) return errorPublico(r.error, r.riesgo || r.ordenFechas ? 409 : 400);

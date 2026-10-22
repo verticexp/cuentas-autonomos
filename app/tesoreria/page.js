@@ -4,7 +4,7 @@ import SinPlan from '@/components/SinPlan';
 import { requerir } from '@/lib/auth';
 import { DETALLE, puede } from '@/lib/permisos';
 import { clave, leer, redis } from '@/lib/redis';
-import { actividadesDe, fiscalDe } from '@/lib/empresa';
+import { actividadesDe, fiscalDe, usaIgic } from '@/lib/empresa';
 import { esSociedad } from '@/lib/modulos';
 import { prevision } from '@/lib/tesoreria';
 import { eur, fechaCorta, fechaTexto, hoy } from '@/lib/formato';
@@ -32,7 +32,7 @@ export default async function Tesoreria({ searchParams }) {
   if (!redis) return <SinBD />;
   // Informe de capacidad E01: lo pendiente, este año y el anterior (impuestos y gastos habituales) y los bienes; como el Resumen.
   const y = Number(hoy().slice(0, 4));
-  const [{ facturas, gastos }, recurrentes, nominas, saldo, movs, empleados, capital] = await Promise.all([delosAnios(u, Array.from({ length: 5 }, (_, i) => y - i), { pendientes: true }), leer(u, 'recurrentes'), leer(u, 'nominas'), redis.get(clave(u, 'saldo')), leer(u, 'banco'), leer(u, 'empleados'), leer(u, 'capital')]);
+  const [{ facturas, gastos }, recurrentes, nominas, saldo, movs, empleados, capital] = await Promise.all([usaIgic(fiscalDe(u)) ? Promise.all([leer(u, 'facturas'), leer(u, 'gastos')]).then(([facturas, gastos]) => ({ facturas: facturas || [], gastos: gastos || [] })) : delosAnios(u, Array.from({ length: 5 }, (_, i) => y - i), { pendientes: true }), leer(u, 'recurrentes'), leer(u, 'nominas'), redis.get(clave(u, 'saldo')), leer(u, 'banco'), leer(u, 'empleados'), leer(u, 'capital')]);
   const sinRevisar = (movs || []).filter((m) => m.estado === 'pendiente').length;
   const n = HORIZONTES.includes(Number((await searchParams).meses)) ? Number((await searchParams).meses) : 3;
   const p = prevision({ facturas, gastos, recurrentes: recurrentes || [], nominas: nominas || [], empleados: empleados || [], agruparSueldos: !veSueldos(u), fiscal: fiscalDe(u), pagos130: u.pagos130 || {}, pres303: u.pres303 || {}, pres111: u.pres111 || {}, pres115: u.pres115 || {}, pres123: u.pres123 || {}, pres369: u.pres369 || {}, capital: capital || [], pagos131: u.pagos131 || {}, modulos: u.modulos || {}, prorrata: u.prorrata || {}, rend130: u.rend130 || {}, cuotaIS: u.cuotaIS || {}, pagos202: u.pagos202 || {}, pagadosHacienda: u.pagadosHacienda || {}, plazo: u.emisor?.plazo, saldo,
@@ -101,7 +101,7 @@ export default async function Tesoreria({ searchParams }) {
 
       {!p.movimientos.length && <Vacio icono="cobrar" titulo="Aún no hay nada previsto" accion={{ href: '/facturas/nueva', texto: 'Nueva factura' }} secundaria={{ href: '/gastos#apuntar-gasto', texto: 'Añadir gasto' }}>Aquí verás las facturas por cobrar, los gastos pendientes y habituales y lo que toca pagar a Hacienda.</Vacio>}
 
-      <p className="grupo-pie arriba">Cobros: facturas sin cobrar a su vencimiento (las vencidas, hoy) y las recurrentes. Pagos: gastos pendientes y los que se repiten cada uno de los 3 últimos meses. Hacienda: 303, 130, 115 y 111 de los trimestres sin marcar como presentados. Es una previsión: revísala de vez en cuando.</p>
+      <p className="grupo-pie arriba">Cobros: facturas sin cobrar a su vencimiento (las vencidas, hoy) y las recurrentes. Pagos: gastos pendientes y los que se repiten cada uno de los 3 últimos meses. Hacienda: {usaIgic(fiscalDe(u)) ? 'IGIC (420)' : '303'}, 130, 115 y 111 de los trimestres sin marcar como presentados. Es una previsión: revísala de vez en cuando.</p>
     </main>
   );
 }

@@ -1,5 +1,7 @@
 'use client';
 
+import { TIPOS_IGIC } from '@/lib/igic';
+
 import { confirmar as confirmarAccion } from './Confirmar';
 
 import Vacio from '@/components/Vacio';
@@ -10,9 +12,9 @@ import { eur } from '@/lib/formato';
 import '@/app/catalogo.css';
 
 // Página del catálogo: añadir, editar y quitar productos o servicios.
-export default function Catalogo({ productos, editar, inventario = false }) {
+export default function Catalogo({ productos, editar, inventario = false, igic = false }) {
   const router = useRouter();
-  const vacio = { nombre: '', precio: '', ivaPct: 21 };
+  const vacio = { nombre: '', precio: '', ivaPct: igic ? 7 : 21 };
   const [p, setP] = useState(vacio);
   const [error, setError] = useState('');
   const poner = (k, v) => setP((x) => ({ ...x, [k]: v }));
@@ -32,10 +34,10 @@ export default function Catalogo({ productos, editar, inventario = false }) {
           <h3>{p.id ? 'Editar' : 'Añadir'}</h3>
           <label>Nombre<input className="campo" required placeholder="Sesión DJ 4 horas" value={p.nombre} onChange={(e) => poner('nombre', e.target.value)} /></label>
           <div className="dos-col">
-            <label>Precio sin IVA<input className="campo" inputMode="decimal" required placeholder="0,00" value={p.precio} onChange={(e) => poner('precio', e.target.value)} /></label>
-            <label>IVA
+            <label>Precio sin {igic ? 'IGIC' : 'IVA'}<input className="campo" inputMode="decimal" required placeholder="0,00" value={p.precio} onChange={(e) => poner('precio', e.target.value)} /></label>
+            <label>{igic ? 'IGIC' : 'IVA'}
               <select className="campo" value={p.ivaPct} onChange={(e) => poner('ivaPct', Number(e.target.value))}>
-                {[21, 10, 4, 0].map((n) => <option key={n} value={n}>{n}%</option>)}
+                {(igic ? TIPOS_IGIC : [21, 10, 4, 0]).map((n) => <option key={n} value={n}>{n}%</option>)}
               </select>
             </label>
           </div>
@@ -44,7 +46,7 @@ export default function Catalogo({ productos, editar, inventario = false }) {
             {!p.servicio && <>
               <div className="dos-col">
                 <label>Referencia<input className="campo" placeholder="CAB-XLR-10" value={p.sku || ''} onChange={(e) => poner('sku', e.target.value)} /></label>
-                <label>Coste sin IVA<input className="campo" inputMode="decimal" placeholder="0,00" value={p.coste ?? ''} onChange={(e) => poner('coste', e.target.value)} /></label>
+                <label>Coste sin {igic ? 'IGIC' : 'IVA'}<input className="campo" inputMode="decimal" placeholder="0,00" value={p.coste ?? ''} onChange={(e) => poner('coste', e.target.value)} /></label>
               </div>
               <div className="dos-col">
                 <label>Stock mínimo<input className="campo" inputMode="decimal" placeholder="Avisa al llegar aquí" value={p.minimo ?? ''} onChange={(e) => poner('minimo', e.target.value)} /></label>
@@ -69,7 +71,7 @@ export default function Catalogo({ productos, editar, inventario = false }) {
           {productos.map((x) => (
             <li key={x.id}>
               <button type="button" className="cat-info" disabled={!editar} aria-describedby={!editar ? "cat-permisos-ayuda" : undefined} onClick={() => editar && setP({ ...x, precio: String(x.precio).replace('.', ',') })}>
-                <strong>{x.nombre}</strong><small>{inventario && !x.servicio && x.sku ? `${x.sku} · ` : ''}IVA {x.ivaPct}%{inventario && x.servicio ? ' · servicio' : ''}</small>
+                <strong>{x.nombre}</strong><small>{inventario && !x.servicio && x.sku ? `${x.sku} · ` : ''}{igic ? 'IGIC' : 'IVA'} {x.ivaPct}%{inventario && x.servicio ? ' · servicio' : ''}</small>
               </button>
               <span className="cat-precio">{eur(x.precio)}</span>
               {editar && <button type="button" className="cat-quitar" aria-label={`Quitar ${x.nombre}`} onClick={() => quitar(x.id)}>×</button>}

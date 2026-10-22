@@ -7,6 +7,7 @@ import { llamar } from './Acciones';
 // «¿Ya lo has presentado?» de un modelo cuyo plazo pasó sin marcarlo (lib/tesoreria.js): lo marca como presentado (el 130,
 // también como pagado por su importe) y la tesorería deja de contarlo. Sin el permiso «Contabilidad», solo lo dice.
 const CUERPO = {
+  420: ({ anio, t }) => ({ presentado303: { anio, t, hecho: true } }),
   303: ({ anio, t }) => ({ presentado303: { anio, t, hecho: true } }),
   130: ({ anio, t }, importe) => ({ presentado: { anio, t, importe } }),
   131: ({ anio, t }, importe) => ({ presentado131: { anio, t, importe } }),
