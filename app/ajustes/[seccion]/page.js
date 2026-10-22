@@ -31,6 +31,8 @@ import { ahoraMadrid } from '@/lib/jornada';
 import { CONTACTO } from '@/components/web/datos';
 import Series from '@/components/Series';
 import Gestoria from '@/components/Gestoria';
+import StripeConnect from '@/components/StripeConnect';
+import { stripeListo } from '@/lib/stripe';
 import AjustesApi from '@/components/AjustesApi';
 import { alcancesDe, clavesDe } from '@/lib/apiPublica';
 import { webhooksDe } from '@/lib/webhooks';
@@ -70,7 +72,7 @@ function ultimosTrimestres(hoy) {
   return lista;
 }
 
-export default async function Seccion({ params }) {
+export default async function Seccion({ params, searchParams }) {
   const { seccion } = await params;
   if (!TITULOS[seccion]) notFound();
   const u = await requerir();
@@ -113,6 +115,7 @@ export default async function Seccion({ params }) {
         return <Verifactu modo={u.verifactu || null} admin={u.rol === 'admin'} listo={certificadoListo()} faltaEmisor={!u.emisor?.nif || !u.emisor?.nombre} fisquo={{ razon: process.env.FISQUO_RAZON || '', nif: process.env.FISQUO_NIF || '' }} cuentas={cuentas} />;
       })()}
       {['facturacion', 'cobros', 'marca', 'perfil', 'drive', 'seguridad'].includes(seccion) && <Ajustes seccion={seccion} emisor={u.emisor || {}} drive={u.drive} driveError={u.driveError} sociedad={fiscalDe(u).tipo === 'sociedad'} nombre={u.nombre} />}
+      {seccion === 'cobros' && <StripeConnect estado={u.stripeConnect?.estado || null} admin={u.rol === 'admin'} listo={stripeListo()} aviso={(await searchParams)?.stripe} />}
       {seccion === 'perfil' && (
         <section className="grupo">
           <div className="grupo-c">

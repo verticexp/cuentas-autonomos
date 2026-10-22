@@ -39,7 +39,7 @@ export default async function Portal({ params }) {
       {facturas.length ? <ul className="grupo-lista portal-lista">
         {facturas.map((f) => {
           const est = f.cobrada ? 'cobrada' : vencida(f, e.plazo, h) ? 'vencida' : 'pendiente';
-          const pagar = cobroFacturasListo() && !f.cobrada && importes(f).total > 0;
+          const pagar = cobroFacturasListo(empresa) && !f.cobrada && importes(f).total > 0;
           return (
             <li key={f.id} className="portal-doc">
               <span className="txt">

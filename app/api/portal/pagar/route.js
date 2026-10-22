@@ -16,7 +16,7 @@ export async function POST(req) {
   if (d instanceof Response) return d;
   const f = d?.facturas.find((x) => x.id === String(form.get('id') || ''));
   if (!f) return NextResponse.json({ error: 'Ese documento no existe' }, { status: 404 });
-  if (!cobroFacturasListo() || f.cobrada || importes(f).total <= 0) return NextResponse.redirect(`${req.nextUrl.origin}/portal/${t}`, 303);
+  if (!cobroFacturasListo(d.empresa) || f.cobrada || importes(f).total <= 0) return NextResponse.redirect(`${req.nextUrl.origin}/portal/${t}`, 303);
   const { ruta } = await enlacePago(d.e, f);
   return NextResponse.redirect(`${req.nextUrl.origin}${ruta}`, 303);
 }

@@ -5,7 +5,6 @@
 //     STRIPE_WEBHOOK_SECRET=whsec_pruebas_local npx next start -p 3001      (y python3 tests/e2e/stripe-local.py)
 //   BASE=http://localhost:3001 KV_REST_API_URL=http://127.0.0.1:8079 STRIPE_WEBHOOK_SECRET=whsec_pruebas_local node tests/e2e/regresiones.mjs
 import assert from 'node:assert/strict';
-import { cobroFacturasListo } from '../../lib/stripe.js';
 import { createHmac } from 'node:crypto';
 import { pendienteDe, r2, saldoDe } from '../../lib/calculos.js';
 import { eur } from '../../lib/formato.js';
@@ -113,20 +112,30 @@ let tokenPortal = '';
   ok('el portal del cliente A solo muestra su factura', () => assert.ok(portal.includes(num(a)) && !portal.includes(num(b)), `A=${num(a)} B=${num(b)}`));
 }
 
-console.log('P01–P03 · cobros parciales por Stripe');
-// El cobro de facturas con tarjeta está desactivado hasta Stripe Connect (lib/stripe.js): sin enlace de pago no hay nada que probar.
-if (!cobroFacturasListo()) console.log('  (cobro con tarjeta desactivado: se salta)');
-else {
+console.log('P01–P03 · cobros parciales por Stripe, en la cuenta de la empresa (Stripe Connect)');
+{
+  // Antes de cobrar con tarjeta, la empresa conecta su propia cuenta de Stripe (lib/stripeConnect.js).
+  const con = await json('/api/stripe/connect', { metodo: 'POST', cookie: bruno });
+  ok('la empresa conecta su cuenta de Stripe y recibe el enlace del alta', () => assert.ok(con.status === 200 && /\/alta\/acct_/.test(con.url || ''), JSON.stringify(con)));
+  await pedir('/api/stripe/connect?vuelta=1', { cookie: bruno });
+  const emp = JSON.parse(await kv(['HGET', 'cuentas:empresas', E]));
+  const cuenta = emp.stripeConnect?.cuenta;
+  ok('al volver del alta, su cuenta queda lista para cobrar', () => assert.ok(emp.stripeConnect?.estado === 'activa' && /^acct_/.test(cuenta || ''), JSON.stringify(emp.stripeConnect)));
   const f = (await factura({ cliente: { nombre: 'Cliente Parcial', nif: '12345678Z', email: 'p@test.es' }, lineas: linea(100) })).factura; // 121 €
   await pedir('/api/facturas/enviar', { metodo: 'POST', cookie: bruno, cuerpo: { id: f.id, para: 'p@test.es', mensaje: 'Hola' } });
   const conEnlace = JSON.parse(await kv(['HGET', `cuentas:facturas:${E}`, f.id]));
   const token = conEnlace.pago;
   ok('el envío dejó el enlace de pago y el registro del envío', () => assert.ok(token && conEnlace.envios?.length === 1, JSON.stringify(conEnlace.envios)));
-  const evento = (id, centimos) => {
-    const cuerpo = JSON.stringify({ type: 'checkout.session.completed', data: { object: { id, payment_status: 'paid', currency: 'eur', amount_total: centimos, metadata: { token, factura: f.id, empresa: E, importe: String(centimos) } } } });
+  const evento = (id, centimos, desde = cuenta) => {
+    const cuerpo = JSON.stringify({ type: 'checkout.session.completed', ...(desde ? { account: desde } : {}), data: { object: { id, payment_status: 'paid', currency: 'eur', amount_total: centimos, metadata: { token, factura: f.id, empresa: E, importe: String(centimos) } } } });
     const t = Math.floor(Date.now() / 1000);
     return fetch(`${BASE}/api/stripe`, { method: 'POST', body: cuerpo, headers: { 'stripe-signature': `t=${t},v1=${createHmac('sha256', process.env.STRIPE_WEBHOOK_SECRET).update(`${t}.${cuerpo}`).digest('hex')}` } });
   };
+  // Un aviso de otra cuenta conectada (o de la de Fisquo) no marca nada.
+  await evento('cs_otra_cuenta', 5000, 'acct_otra');
+  await evento('cs_plataforma', 5000, null);
+  const intacta = JSON.parse(await kv(['HGET', `cuentas:facturas:${E}`, f.id]));
+  ok('un pago de otra cuenta de Stripe no se aplica a la factura', () => assert.ok(!intacta.pagos?.length, JSON.stringify(intacta.pagos)));
   await evento('cs_parcial_1', 5000);
   // Otra operación con la copia antigua (sin pagos): ya no puede borrar el cobro.
   const r = await pedir('/api/facturas/enviar', { metodo: 'POST', cookie: bruno, cuerpo: { id: f.id, para: 'p@test.es', mensaje: 'Otra vez' } });
@@ -140,6 +149,19 @@ else {
   await evento('cs_parcial_2', 7100);
   const fin = JSON.parse(await kv(['HGET', `cuentas:facturas:${E}`, f.id]));
   ok('el segundo pago de 71 € deja la factura cobrada con los dos pagos', () => assert.ok(fin.cobrada && fin.pagos.length === 2, JSON.stringify(fin.pagos)));
+  // Pago completo desde la página pública: Checkout se crea en la cuenta de la empresa y la vuelta lo aplica.
+  const g = (await factura({ cliente: { nombre: 'Cliente Tarjeta', nif: '12345678Z', email: 't@test.es' }, lineas: linea(50) })).factura;
+  await pedir('/api/facturas/enviar', { metodo: 'POST', cookie: bruno, cuerpo: { id: g.id, para: 't@test.es', mensaje: 'Hola' } });
+  const tok = JSON.parse(await kv(['HGET', `cuentas:facturas:${E}`, g.id])).pago;
+  const pagina = await (await fetch(`${BASE}/pagar/${tok}`)).text();
+  ok('la página de pago ofrece pagar con tarjeta', () => assert.ok(pagina.includes('con tarjeta'), pagina.slice(0, 200)));
+  const fd = new FormData(); fd.set('token', tok);
+  const ir = await fetch(`${BASE}/api/pagar`, { method: 'POST', body: fd, redirect: 'manual' });
+  const sesion = /\/pagina\/(cs_test_\d+)/.exec(ir.headers.get('location') || '')?.[1];
+  ok('«Pagar» abre Checkout de Stripe', () => assert.ok(ir.status === 303 && sesion, `${ir.status} ${ir.headers.get('location')}`));
+  await fetch(`${BASE}/pagar/${tok}?sesion=${sesion}`);
+  const pagada = JSON.parse(await kv(['HGET', `cuentas:facturas:${E}`, g.id]));
+  ok('a la vuelta, la factura queda cobrada con el pago de su cuenta de Stripe', () => assert.ok(pagada.cobrada && pagada.pagos?.[0]?.ref === sesion, JSON.stringify(pagada.pagos)));
 }
 
 console.log('N02 · baja de la empresa');
