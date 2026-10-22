@@ -1832,5 +1832,17 @@ console.log('Formulario de contacto de la web');
   ok('llega el aviso por email, con «responder a» la persona', () => assert.ok(aviso.subject?.includes('Ana Contacto') && JSON.stringify(aviso.reply_to || '').includes(emailC), JSON.stringify(aviso).slice(0, 200)));
 }
 
+console.log('Factura en otro idioma y moneda');
+{
+  // Al final de la batería: una factura más no cambia las cifras que se comprueban antes.
+  const r = await pedir('/api/facturas', { metodo: 'POST', cookie: yo, cuerpo: { fecha: hoy, actividad: ACTS[0].id, cliente: { nombre: 'Client Ltd', nif: 'GB123456789', pais: 'GB' }, operacion: 'servicios-fuera', idioma: 'en', divisa: { moneda: 'USD', cambio: '1,1' }, irpfPct: 0, lineas: [{ concepto: 'Consulting', cantidad: 2, precio: '55', ivaPct: 0 }] } });
+  const fx = (await r.json()).factura;
+  ok('se guarda en euros al tipo de cambio, con los precios en dólares', () => assert.ok(r.status === 200 && fx.base === 100 && fx.lineas[0].precioDivisa === 55 && fx.divisa.moneda === 'USD' && fx.idioma === 'en', JSON.stringify(fx)));
+  const vista = n(await texto(`/facturas/${encodeURIComponent(fx.id)}/pdf`, yo));
+  ok('la factura sale en inglés y en dólares, con su contravalor en euros', () => assert.ok(vista.includes('Invoice') && vista.includes('USD') && vista.includes('110.00') && vista.includes('Equivalent in euros') && vista.includes('€100.00'), vista.slice(0, 400)));
+  const cambio = await pedir('/api/cambio?moneda=USD&fecha=2026-10-21', { cookie: otro });
+  ok('el tipo de cambio solo lo consulta quien factura (403)', () => assert.equal(cambio.status, 403));
+}
+
 console.log(fallos ? `\n${fallos} comprobaciones fallidas: NO publicar.` : '\nTodo cuadra.');
 process.exit(fallos ? 1 : 0);

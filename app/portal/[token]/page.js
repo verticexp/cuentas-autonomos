@@ -5,6 +5,7 @@ import { eur, fechaTexto, hoy } from '@/lib/formato';
 import { ESTADOS, estadoDe, numeroPresupuesto } from '@/lib/presupuestos';
 import { portalDe } from '@/lib/portal';
 import '@/app/portal.css';
+import { enDivisa, formatoDoc } from '@/lib/idiomas';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Tus documentos', robots: { index: false } };
@@ -46,7 +47,8 @@ export default async function Portal({ params }) {
                 <small>{fechaTexto(f.fecha)}{f.concepto ? ` · ${f.concepto}` : ''}</small>
               </span>
               <span className="imp-col">
-                <span className="imp">{eur(importes(f).total)}</span>
+                {/* En la moneda en que se facturó (lib/idiomas.js). */}
+                <span className="imp">{formatoDoc(f).dinero(importes(enDivisa(f)).total)}</span>
                 <span className={`estado-txt e-${est}`}>{est === 'cobrada' ? 'Pagada' : est === 'vencida' ? 'Vencida' : 'Pendiente'}</span>
               </span>
               <span className="portal-acc">
