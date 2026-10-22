@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { confirmar } from './Confirmar';
+import { volverA } from '@/lib/transicion';
 
 const llamar = async (accion, id) => {
   const r = await fetch('/api/bandeja', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accion, id }) });
@@ -22,8 +23,9 @@ export function AccionesDocumento({ id, estado, remitente = '' }) {
     setOcupado(true); setError('');
     try {
       await llamar(accion, id);
-      if (accion === 'descartar') router.push('/gastos?ver=revisar');
-      router.refresh();
+      // Descartada: de vuelta a la lista (atrás, no la lista encima de una factura que ya no está).
+      if (accion === 'descartar') volverA(router, '/gastos?ver=revisar', 'atras', true);
+      else router.refresh();
     } catch (e) { setError(e.message); }
     setOcupado(false);
   };

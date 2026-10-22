@@ -64,11 +64,16 @@ function Hoja({ titulo, texto, aceptar, cancelar, peligro, entrada, etiqueta, va
       else if (!e.shiftKey && (document.activeElement === ultimo || !panel.current.contains(document.activeElement))) { e.preventDefault(); primero?.focus(); }
     };
     const enfocar = (e) => { if (!panel.current.contains(e.target)) controles()[0]?.focus(); };
+    // Si se sale de la pantalla con el diálogo abierto (gesto de volver de Safari, botón atrás), se cancela: vive fuera de
+    // la página y, si no, se quedaría encima de la siguiente con lo de debajo inerte.
+    const salir = () => cerrar(entrada ? null : false);
     document.addEventListener('keydown', teclas, true);
     document.addEventListener('focusin', enfocar);
+    window.addEventListener('popstate', salir);
     return () => {
       document.removeEventListener('keydown', teclas, true);
       document.removeEventListener('focusin', enfocar);
+      window.removeEventListener('popstate', salir);
       previos.forEach(([el, inert]) => { el.inert = inert; });
       document.body.style.overflow = overflow;
     };

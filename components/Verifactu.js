@@ -5,6 +5,7 @@ import { confirmar as confirmarAccion } from './Confirmar';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
+import Ir from './Ir';
 
 // Ajustes › Verifactu: activarlo en pruebas o de verdad y ver cómo van los envíos a la AEAT.
 export default function Verifactu({ modo, admin, listo, faltaEmisor, fisquo, cuentas }) {
@@ -50,7 +51,7 @@ export default function Verifactu({ modo, admin, listo, faltaEmisor, fisquo, cue
           <li>Apodera a {fisquo.razon || 'la entidad productora de Fisquo'}{fisquo.nif ? ` (NIF ${fisquo.nif})` : ''} para la remisión de los registros de facturación (VERI*FACTU).</li>
           <li>Con eso, Fisquo puede enviar tus facturas a la AEAT en tu nombre. Lo puedes revocar cuando quieras.</li>
         </ol>
-        <p className="nota">Tu gestor puede ayudarte con el apoderamiento. Lee la <a href="/declaracion-responsable">declaración responsable</a> del programa.</p>
+        <p className="nota">Tu gestor puede ayudarte con el apoderamiento. Lee la <Ir href="/declaracion-responsable">declaración responsable</Ir> del programa.</p>
       </details>
       {admin && !faltaEmisor && (
         <div className="fila-act">

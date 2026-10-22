@@ -24,8 +24,8 @@ export function Borrar({ url, pregunta, volver }) {
     if (!(await confirmarAccion({ titulo: 'Borrar', texto: pregunta, aceptar: 'Borrar', peligro: true }))) return;
     try {
       await llamar(url, { method: 'DELETE' });
-      if (volver) volverA(router, volver);
-      router.refresh();
+      if (volver) volverA(router, volver, 'atras', true);
+      else router.refresh();
     } catch (e) { setError(e.message); }
   };
   return <><button type="button" className="borrar" onClick={borrar}>Borrar</button>{error && <span className="error" role="alert">{error}</span>}</>;

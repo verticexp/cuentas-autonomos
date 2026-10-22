@@ -355,6 +355,9 @@ html[data-vt=adelante]::view-transition-old(root) { animation: 0.42s var(--vt-cu
 html[data-vt=adelante]::view-transition-new(root) { animation: 0.42s var(--vt-curva) both vt-llegar; }
 html[data-vt=atras]::view-transition-old(root) { animation: 0.36s var(--vt-curva) both vt-irse; z-index: 1; }
 html[data-vt=atras]::view-transition-new(root) { animation: 0.36s var(--vt-curva) both vt-volver; }
+/* Deslizar desde el borde para volver (components/GestoAtras.js): sigue desde donde se soltó el dedo (--vt-x) */
+html[data-vt=gesto]::view-transition-old(root) { animation: 0.28s var(--vt-curva) both vt-irse-gesto; z-index: 1; }
+html[data-vt=gesto]::view-transition-new(root) { animation: 0.28s var(--vt-curva) both vt-volver-gesto; }
 /* Nueva factura o presupuesto: sube como una hoja */
 html[data-vt=subir]::view-transition-old(root) { animation: 0.46s var(--vt-curva) both vt-al-fondo; }
 html[data-vt=subir]::view-transition-new(root) { animation: 0.46s var(--vt-curva) both vt-hoja; }
@@ -371,6 +374,8 @@ html[data-vt=cifras]::view-transition-group(root) { animation-duration: 0.24s; }
 @keyframes vt-llegar { from { transform: translateX(100%); box-shadow: -10px 0 30px rgba(0, 0, 0, 0.12); } }
 @keyframes vt-irse { to { transform: translateX(100%); box-shadow: -10px 0 30px rgba(0, 0, 0, 0.12); } }
 @keyframes vt-volver { from { transform: translateX(-30%); filter: brightness(0.9); } }
+@keyframes vt-irse-gesto { from { transform: translateX(var(--vt-x, 0px)); box-shadow: -10px 0 30px rgba(0, 0, 0, 0.12); } to { transform: translateX(100%); box-shadow: -10px 0 30px rgba(0, 0, 0, 0.12); } }
+@keyframes vt-volver-gesto { from { transform: translateX(calc((var(--vt-x, 0px) - 100vw) * 0.3)); filter: brightness(0.9); } }
 @keyframes vt-al-fondo { to { transform: scale(0.93); filter: brightness(0.75); border-radius: 18px; } }
 @keyframes vt-hoja { from { transform: translateY(100%); } }
 @keyframes vt-tab-a-izq { to { transform: translateX(-24px); opacity: 0; } }

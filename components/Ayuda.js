@@ -60,9 +60,10 @@ export default function Ayuda({ contacto, app = false }) {
 
       <section className="grupo">
         <div className="grupo-c">
-          <a href="/condiciones" className="celda ir"><span className="txt">Condiciones de uso</span></a>
-          <a href="/privacidad" className="celda ir"><span className="txt">Privacidad</span></a>
-          <a href="/seguridad" className="celda ir"><span className="txt">Seguridad de tus datos</span></a>
+          <Ir href="/condiciones" className="celda ir"><span className="txt">Condiciones de uso</span></Ir>
+          <Ir href="/privacidad" className="celda ir"><span className="txt">Privacidad</span></Ir>
+          {/* Es de la web pública: dentro de la app de iOS lleva al resumen (lib/app.js) */}
+          <a href="/seguridad" className="celda ir solo-web"><span className="txt">Seguridad de tus datos</span></a>
         </div>
       </section>
     </>

@@ -1,4 +1,6 @@
 .volver { display: inline-flex; align-items: center; gap: 4px; padding: 6px 0; margin-bottom: 8px; color: var(--muted); font-weight: 600; font-size: 15px; text-decoration: none; }
+/* Con el dedo, «‹ Atrás» se toca en 44 px de alto y algo más de ancho, sin mover el texto de su sitio */
+@media (pointer: coarse) { .volver { min-height: 44px; padding: 0 12px 0 10px; margin: -5px 0 3px -10px; } }
 /* iOS: los campos de fecha tienen un ancho mínimo propio que se sale de la pantalla */
 .campo, .formulario label, .dos-col > * { min-width: 0; max-width: 100%; }
 input[type="date"].campo, input[type="month"].campo { -webkit-appearance: none; appearance: none; display: block; width: 100%; min-height: 50px; text-align: left; }
