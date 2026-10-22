@@ -48,3 +48,14 @@ La entrada del HMAC es `<t>.<cuerpo JSON exacto>` y la clave es el secreto compl
 Los eventos salen de `lib/eventos.js`: `factura.creada` al emitir una factura (y `factura.cobrada` si nace cobrada), `factura.cobrada` cuando una factura pasa a cobrada por cualquier camino (a mano, banco, remesa o Stripe: todos pasan por `actualizarFactura`) y `gasto.creado` al apuntar un gasto. Llevan solo la factura o el gasto públicos, con un id fijo por documento y evento, y se encolan después de guardar: si el encolado falla, la operación sigue hecha (se registra en el log).
 
 La gestión de estas conexiones sigue las restricciones de `usuarioApi`, incluido el bloqueo de escrituras por plan caducado. Los webhooks son configuración de empresa; no se desactivan al retirar permisos a quien configuró su destino. Revisa y elimina los destinos si cambia la autorización de esa integración.
+
+## Integraciones sin programar (Zapier, Make, n8n)
+
+Ajustes → API y webhooks explica tres recetas (componente `Conectar` de `components/AjustesApi.js`):
+
+- **Aviso de Fisquo → otra aplicación**: el disparador de webhook de la herramienta («Webhooks by Zapier › Catch Hook», «Custom webhook» de Make o el nodo «Webhook» de n8n) da una URL HTTPS pública que se registra como webhook. Se recomienda verificar `Fisquo-Firma` con un paso de código y deduplicar por `id`.
+- **Otra aplicación → factura en Fisquo**: su paso HTTP (Custom Request, «HTTP › Make a request», «HTTP Request») hace `POST /api/v1/facturas` con `Authorization: Bearer <clave>`, `Content-Type: application/json` e `Idempotency-Key` con un valor único del origen (el número del pedido).
+- **Lectura**: `GET /api/v1/facturas|gastos|clientes` con `desde`, `hasta` y `cursor`.
+
+No hay app propia publicada en Zapier ni en Make: para eso hace falta una cuenta de desarrollador a nombre de la empresa. Con los webhooks y el paso HTTP genérico no se necesita.
+

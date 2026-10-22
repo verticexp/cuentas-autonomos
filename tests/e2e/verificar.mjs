@@ -1899,6 +1899,8 @@ console.log('API pública v1 y webhooks');
   const k = await nueva.json();
   ok('se crea una clave y solo se ve entera al crearla', () => assert.ok(nueva.status === 201 && /^fsq_[\w-]{43}$/.test(k.clave), JSON.stringify(k).slice(0, 120)));
   const lista = await (await pedir('/api/ajustes/api', { cookie: yo })).json();
+  const guia = n(await texto('/ajustes/api', yo));
+  ok('Ajustes › API explica cómo conectar Zapier, Make o n8n', () => assert.ok(guia.includes('Conectar con Zapier, Make o n8n') && guia.includes('/api/v1/facturas'), guia.slice(0, 300)));
   ok('la lista guarda el prefijo, no la clave', () => assert.ok(lista.claves.some((x) => x.id === k.id && x.prefijo === k.clave.slice(0, 12)) && !JSON.stringify(lista).includes(k.clave)));
   const sin = await api('/facturas');
   ok('sin clave: 401 con WWW-Authenticate', () => assert.ok(sin.status === 401 && sin.headers.get('www-authenticate') === 'Bearer'));
