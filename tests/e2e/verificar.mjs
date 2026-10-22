@@ -1992,10 +1992,13 @@ console.log('Canarias (IGIC)');
     ok('el PDF descargado contiene IGIC', () => assert.ok(pdfR.status === 200 && pdfR.headers.get('content-type') === 'application/pdf' && contenido.includes('49474943')));
   }
   const imp = n(await texto(`/modelos?anio=${Y}`, can));
-  ok('Impuestos muestra 420 y 425 con la Sede canaria', () => assert.ok(imp.includes('420 · IGIC trimestral') && imp.includes('425 · Resumen anual del IGIC') && imp.includes('sede.gobiernodecanarias.org/tributos/ow/')));
+  // texto() quita las etiquetas: el enlace a la Sede se busca en el HTML.
+  const impHtml = await (await pedir(`/modelos?anio=${Y}`, { cookie: can })).text();
+  ok('Impuestos muestra 420 y 425 con la Sede canaria', () => assert.ok(imp.includes('420 · IGIC trimestral') && imp.includes('425 · Resumen anual del IGIC') && impHtml.includes('sede.gobiernodecanarias.org/tributos/ow/')));
   ok('Canarias no ofrece 303, 390, 349 ni 369', () => assert.ok(!imp.includes('303 · IVA trimestral') && !imp.includes('390 · Resumen anual del IVA') && !imp.includes('349 ·') && !imp.includes('369 ·')));
   const formulario = n(await texto('/facturas/nueva', can));
-  const formGasto = n(await texto('/gastos#apuntar-gasto', can));
+  // Con gastos, el formulario de la lista sale plegado: se mira la ficha del gasto, que lo trae abierto.
+  const formGasto = n(await texto(`/gastos/${encodeURIComponent(gasto?.id || '')}`, can));
   ok('formularios usan IGIC y el gasto ofrece ISP e importación', () => assert.ok(formulario.includes('IGIC') && formGasto.includes('Inversión del sujeto pasivo (lo autoliquido)') && formGasto.includes('IGIC pagado en aduana')));
   const presentado = await pedir('/api/cuenta', { metodo: 'PATCH', cookie: can, cuerpo: { presentado303: { anio: Y, t: 1, hecho: true } } });
   ok('el 420 se marca presentado con pres303', () => assert.equal(presentado.status, 200));
