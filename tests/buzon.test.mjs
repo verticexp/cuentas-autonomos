@@ -82,7 +82,8 @@ async function leida(u, id) {
 
 test('la dirección: una por empresa, con su índice; cambiarla deja la anterior sin efecto', async () => {
   const { u, buzon, direccion } = await empresa();
-  assert.match(direccion, /^sonora-eventos-sl-[a-z0-9]{10}@fisqal\.com$/);
+  assert.match(direccion, /^sonora-eventos-[a-z0-9]{10}@fisqal\.com$/, 'sin la forma jurídica');
+  for (const [nombre, limpio] of [['Sonora Eventos, S.L.', 'Sonora Eventos'], ['Talleres López SLU', 'Talleres López'], ['Marc Ramírez', 'Marc Ramírez'], ['Construcciones SA', 'Construcciones']]) assert.equal(B.nombreParaAlias(nombre), limpio);
   assert.equal((await B.empresaDeAlias(buzon.alias)).empresa, u.empresa);
   assert.equal((await B.crearBuzon(u)).buzon.alias, buzon.alias, 'crear dos veces no cambia nada');
   const { buzon: otro } = await B.crearBuzon(u, { nueva: true });
