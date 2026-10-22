@@ -17,7 +17,8 @@ import { cambioDeForma, normalizarNif } from '@/lib/formaJuridica';
 
 const CAMPOS = ['nombre', 'nif', 'direccion', 'ciudad', 'iban'];
 // Más datos del emisor (Ajustes): salen en la factura y se congelan con ella como los de arriba. [campo, largo máximo]
-const CONTACTO = [['email', 120], ['telefono', 30], ['web', 120], ['registro', 200]];
+// ccc: código de cuenta de cotización a la Seguridad Social (lo usan los datos para RED de las nóminas).
+const CONTACTO = [['email', 120], ['telefono', 30], ['web', 120], ['registro', 200], ['ccc', 20]];
 const COBROS = [['bizum', 20], ['otroPago', 120]];
 const DISENO = [['pie', 500], ['notaDefecto', 500]];
 const texto = (v, max) => String(v ?? '').trim().slice(0, max);

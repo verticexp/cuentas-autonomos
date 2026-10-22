@@ -65,6 +65,7 @@ export default function Ajustes({ seccion, emisor, drive, driveError, sociedad, 
             <label>Email de contacto (opcional)<input autoComplete="email" className="campo" type="email" value={d.email || ''} onChange={(e) => poner('email', e.target.value)} placeholder="facturas@tuempresa.es" /></label>
             <label>Teléfono (opcional)<input inputMode="tel" autoComplete="tel" className="campo" type="tel" value={d.telefono || ''} onChange={(e) => poner('telefono', e.target.value)} /></label>
             <label>Web (opcional)<input className="campo" value={d.web || ''} onChange={(e) => poner('web', e.target.value)} placeholder="tuempresa.es" /></label>
+            <label>Código de cuenta de cotización (opcional, si tienes trabajadores)<input className="campo" inputMode="numeric" value={d.ccc || ''} onChange={(e) => poner('ccc', e.target.value)} placeholder="0111 28 123456789" /></label>
             {sociedad && <label>Datos del Registro Mercantil<input className="campo" value={d.registro || ''} onChange={(e) => poner('registro', e.target.value)} placeholder="Registro Mercantil de Madrid, tomo 1234, folio 56, hoja M-78901" /></label>}
             {sociedad && <p className="nota">Las sociedades deben ponerlos en sus facturas y documentos. Salen al pie de cada factura.</p>}
             {!sociedad && <label>Límite de rendimiento neto anual (tarifa plana; SMI 2026: 17094)<input className="campo" type="number" min="0" placeholder="Vacío si no tienes tarifa plana" value={d.limite || ''} onChange={(e) => poner('limite', e.target.value)} /></label>}

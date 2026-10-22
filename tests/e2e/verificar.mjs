@@ -1927,5 +1927,27 @@ console.log('API pública v1 y webhooks');
   ok('quien no gestiona la empresa no ve las claves (403)', () => assert.equal(ajeno.status, 403));
 }
 
+console.log('Nóminas completas (cotización 2026 y modelo 145) y datos para RED');
+{
+  const alta = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva: 'Nóminas Prueba SL', nombre: 'Nuria', email: `nom${Date.now()}@test.es` } })).json();
+  const fd = new FormData(); fd.set('codigo', alta.enlace.split('/').pop()); fd.set('password', 'Clave-Local-05-2026');
+  const nu = /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: fd })).headers.get('set-cookie') || '')?.[1];
+  await pedir('/api/cuenta', { metodo: 'PATCH', cookie: nu, cuerpo: { configuracion: { fiscal: { tipo: 'sociedad', iva: 'general', trabajadores: true }, emisor: { nombre: 'Nóminas Prueba SL', nif: 'B43215672', plazo: 30 }, actividades: [{ nombre: 'Oficina', ivaPct: 21, irpfPct: 0 }] } } });
+  const mesActual = hoy.slice(0, 7);
+  const e = await pedir('/api/empleados', { metodo: 'POST', cookie: nu, cuerpo: { nombre: 'Ana Completa', nif: '12345678Z', naf: '281234567890', puesto: 'Administrativa', alta: `${mesActual}-01`, baja: '', bruto: '2000', horasSemana: 40, irpfPct: 10, cotizacion: { grupo: 7, pagas: 2, prorrateadas: true, atPct: 1.5 }, datos145: { nacimiento: 1990, situacionFamiliar: 3, discapacidad: 'no', contrato: 'general', descendientes: [], ascendientes: [] } } });
+  ok('el empleado se guarda con su cotización y su 145', () => assert.equal(e.status, 200));
+  const malo = await pedir('/api/empleados', { metodo: 'POST', cookie: nu, cuerpo: { nombre: 'Sin cónyuge', nif: '87654321X', alta: `${mesActual}-01`, bruto: '1500', cotizacion: { grupo: 7 }, datos145: { nacimiento: 1985, situacionFamiliar: 2 } } });
+  ok('un 145 incompleto (situación 2 sin el NIF del cónyuge) no se guarda (400)', () => assert.equal(malo.status, 400));
+  await pedir('/api/nominas', { metodo: 'POST', cookie: nu, cuerpo: { mes: mesActual } });
+  const pagina = n(await texto('/nominas', nu));
+  const id = /href="\/nominas\/([0-9a-f-]{36})"/.exec(pagina)?.[1];
+  const detalle = n(await texto(`/nominas/${id}`, nu));
+  ok('la nómina tiene sus bases, sus cuotas por concepto y el IRPF calculado (13,51 %)', () => assert.ok(id && detalle.includes('Bases de cotización') && detalle.includes('Contingencias comunes') && detalle.includes('643,00') && detalle.includes('13,51'), detalle.slice(0, 500)));
+  const red = await pedir(`/api/nominas/red?mes=${mesActual}`, { cookie: nu });
+  ok('los datos para RED del mes se descargan en Excel', () => assert.ok(red.status === 200 && (red.headers.get('content-type') || '').includes('spreadsheetml'), String(red.status)));
+  const sinRed = await pedir(`/api/nominas/red?mes=${mesActual}`, { cookie: otro });
+  ok('y solo quien lleva las nóminas (403)', () => assert.equal(sinRed.status, 403));
+}
+
 console.log(fallos ? `\n${fallos} comprobaciones fallidas: NO publicar.` : '\nTodo cuadra.');
 process.exit(fallos ? 1 : 0);
