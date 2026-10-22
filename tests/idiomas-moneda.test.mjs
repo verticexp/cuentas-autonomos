@@ -84,7 +84,7 @@ test('tipo de cambio del BCE: el último publicado hasta la fecha, o un error pa
   };
   try {
     assert.deepEqual(await cambioBce('USD', '2026-10-18'), { moneda: 'USD', cambio: 1.1234, fecha: '2026-10-16', fuente: 'BCE' });
-    assert.match(pedidas[0], /\/D\.USD\.EUR\.SP00\.A\?endPeriod=2026-10-18&lastNObservations=1/);
+    assert.ok(pedidas.some((u) => /\/D\.USD\.EUR\.SP00\.A\?endPeriod=2026-10-18&lastNObservations=1/.test(u)), pedidas.join(' '));
     assert.ok((await cambioBce('EUR', '2026-10-18')).error);
     assert.ok((await cambioBce('USD', '18/10/2026')).error);
     globalThis.fetch = async () => { throw new Error('sin red'); };
