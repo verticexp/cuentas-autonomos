@@ -159,7 +159,8 @@ console.log('P01–P03 · cobros parciales por Stripe, en la cuenta de la empres
   const ir = await fetch(`${BASE}/api/pagar`, { method: 'POST', body: fd, redirect: 'manual' });
   const sesion = /\/pagina\/(cs_test_\d+)/.exec(ir.headers.get('location') || '')?.[1];
   ok('«Pagar» abre Checkout de Stripe', () => assert.ok(ir.status === 303 && sesion, `${ir.status} ${ir.headers.get('location')}`));
-  await fetch(`${BASE}/pagar/${tok}?sesion=${sesion}`);
+  // Se lee la página entera: con app/loading.js llega por partes y el pago se aplica antes de terminar.
+  await (await fetch(`${BASE}/pagar/${tok}?sesion=${sesion}`)).text();
   const pagada = JSON.parse(await kv(['HGET', `cuentas:facturas:${E}`, g.id]));
   ok('a la vuelta, la factura queda cobrada con el pago de su cuenta de Stripe', () => assert.ok(pagada.cobrada && pagada.pagos?.[0]?.ref === sesion, JSON.stringify(pagada.pagos)));
 }
