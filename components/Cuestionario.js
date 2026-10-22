@@ -5,7 +5,7 @@ import ProgresoAlta from './ProgresoAlta';
 import { llamar } from './Acciones';
 import { TIPOS_IGIC } from '@/lib/igic';
 import { limpiarFiscal, modelosDe, usaIgic } from '@/lib/empresa';
-import { OPCIONES_TERRITORIO, territorioDe } from '@/lib/territorios';
+import { OPCIONES_TERRITORIO, esForal, territorioDe } from '@/lib/territorios';
 
 const IVAS = [[21, '21 %'], [10, '10 %'], [4, '4 %'], [0, 'Sin IVA']];
 // El 7 % es el de los nuevos autónomos (año de alta y los dos siguientes); el detalle va en una segunda línea corta.
@@ -66,6 +66,11 @@ export default function Cuestionario({ inicial, editar, conFacturas, puedeFactur
   const [guardando, setGuardando] = useState(false);
   const sociedad = fiscal.tipo === 'sociedad';
   const igic = usaIgic(fiscal);
+  // Navarra y País Vasco (lib/territorios.js): sin módulos ni simplificado en Fisquo; en Navarra no hay el 7 % de los nuevos
+  // autónomos; la exención del pago fraccionado por retenciones es del 70 % (del 50 % en Gipuzkoa) y no existe en Navarra ni Álava.
+  const territorio = territorioDe(fiscal), foral = esForal(fiscal);
+  const pctRetenidas = territorio === 'gipuzkoa' ? 50 : 70;
+  const retenciones = territorio === 'navarra' ? RETENCIONES.filter(([v]) => v !== 7) : RETENCIONES;
   const impuesto = igic ? 'IGIC' : 'IVA';
   const tipos = igic ? TIPOS_IGIC.map((p) => [p, `${String(p).replace('.', ',')} %`]) : IVAS;
   const f = (k, v) => setFiscal((x) => ({ ...x, [k]: v }));
@@ -120,7 +125,7 @@ export default function Cuestionario({ inicial, editar, conFacturas, puedeFactur
                   : <div className="segmentado">{tipos.map(([v, n]) => <button key={v} type="button" aria-pressed={Number(x.ivaPct) === v} className={Number(x.ivaPct) === v ? 'activo' : ''} onClick={() => a(i, 'ivaPct', v)}>{n}</button>)}</div>}
                 {!sociedad && <>
                   <p className="mini-t">Retención de IRPF <small>(si facturas a empresas o autónomos como profesional)</small></p>
-                  <div className="segmentado">{RETENCIONES.map(([v, n]) => <button key={v} type="button" aria-pressed={Number(x.irpfPct) === v} className={Number(x.irpfPct) === v ? 'activo' : ''} onClick={() => a(i, 'irpfPct', v)}>{n}</button>)}</div>
+                  <div className="segmentado">{retenciones.map(([v, n]) => <button key={v} type="button" aria-pressed={Number(x.irpfPct) === v} className={Number(x.irpfPct) === v ? 'activo' : ''} onClick={() => a(i, 'irpfPct', v)}>{n}</button>)}</div>
                   <label className="alta-campo"><span>Epígrafe del IAE (opcional)</span><small>Está en tu alta de autónomo; va en los libros registro.</small><input className="campo" inputMode="numeric" placeholder="Por ejemplo: 844" value={x.iae || ''} onChange={(v) => a(i, 'iae', v.target.value)} /></label>
                 </>}
                 {fija && <p className="mini-t">Ya tiene facturas: su numeración no cambia.</p>}
@@ -142,12 +147,12 @@ export default function Cuestionario({ inicial, editar, conFacturas, puedeFactur
             <Opcion grupo="regimen-iva" activo={fiscal.iva === 'general'} titulo={`Sí, cobro ${impuesto}`} onClick={() => f('iva', 'general')} />
             <Opcion grupo="regimen-iva" activo={fiscal.iva === 'exento'} titulo="No, mi actividad está exenta" detalle="Sanidad, enseñanza, seguros, alquiler de vivienda…" onClick={() => f('iva', 'exento')} />
             {!igic && !sociedad && <Opcion grupo="regimen-iva" activo={fiscal.iva === 'recargo'} titulo="Tienda con recargo de equivalencia" detalle="Comercio minorista: el IVA lo paga tu proveedor" onClick={() => f('iva', 'recargo')} />}
-            {!igic && !sociedad && <Opcion grupo="regimen-iva" activo={fiscal.iva === 'simplificado'} titulo="Régimen simplificado (módulos)" detalle="El IVA trimestral sale de los módulos de tu actividad" onClick={() => setFiscal((x) => ({ ...x, iva: 'simplificado', irpf: 'modulos' }))} />}
+            {!igic && !foral && !sociedad && <Opcion grupo="regimen-iva" activo={fiscal.iva === 'simplificado'} titulo="Régimen simplificado (módulos)" detalle="El IVA trimestral sale de los módulos de tu actividad" onClick={() => setFiscal((x) => ({ ...x, iva: 'simplificado', irpf: 'modulos' }))} />}
             {!igic && !sociedad && <Opcion grupo="regimen-iva" activo={fiscal.iva === 'reagp'} titulo="Agricultura, ganadería o pesca (REAGP)" detalle="No cobras IVA: cobras la compensación del 12 % o del 10,5 %" onClick={() => f('iva', 'reagp')} />}
           </div>
           <div className="grupo-c">
-            {!sociedad && <SiNo valor={fiscal.irpf === 'modulos'} cambiar={(v) => setFiscal((x) => ({ ...x, irpf: v ? 'modulos' : undefined, ...(!v && x.iva === 'simplificado' ? { iva: 'general' } : {}) }))} titulo="Estoy en módulos (estimación objetiva)" detalle="Presentas el 131 en vez del 130" />}
-            {!sociedad && fiscal.irpf !== 'modulos' && <SiNo valor={fiscal.retenidas} cambiar={(v) => f('retenidas', v)} titulo="Más del 70 % de lo que facturas lleva retención" detalle="Si es así, no tienes que presentar el 130" />}
+            {!sociedad && !foral && <SiNo valor={fiscal.irpf === 'modulos'} cambiar={(v) => setFiscal((x) => ({ ...x, irpf: v ? 'modulos' : undefined, ...(!v && x.iva === 'simplificado' ? { iva: 'general' } : {}) }))} titulo="Estoy en módulos (estimación objetiva)" detalle="Presentas el 131 en vez del 130" />}
+            {!sociedad && fiscal.irpf !== 'modulos' && !['navarra', 'alava'].includes(territorio) && <SiNo valor={fiscal.retenidas} cambiar={(v) => f('retenidas', v)} titulo={`Más del ${pctRetenidas} % de lo que facturas lleva retención`} detalle="Si es así, no tienes que presentar el 130" />}
             <SiNo valor={fiscal.trabajadores} cambiar={(v) => f('trabajadores', v)} titulo="Tengo trabajadores o pago a profesionales con retención" />
             <SiNo valor={fiscal.alquiler} cambiar={(v) => f('alquiler', v)} titulo="Alquilo un local u oficina" />
             {!igic && <SiNo valor={fiscal.intracom} cambiar={(v) => f('intracom', v)} titulo="Compro o vendo a empresas de otros países de la UE" />}
@@ -198,7 +203,7 @@ export default function Cuestionario({ inicial, editar, conFacturas, puedeFactur
       cuerpo: (
         <div className="grupo-c">
           {modelosDe(limpiarFiscal(fiscal)).map((m) => (
-            <div key={m.id} className="celda"><span className="modelo-num">{m.id}</span><span className="txt">{m.nombre}<small>{m.cuando}</small></span>{m.calcula && <span className="v">Calculado</span>}</div>
+            <div key={m.id} className="celda"><span className="modelo-num">{m.num || m.id}</span><span className="txt">{m.nombre}<small>{m.cuando}</small></span>{m.calcula && <span className="v">Calculado</span>}</div>
           ))}
         </div>
       ),

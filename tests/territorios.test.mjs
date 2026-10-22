@@ -64,3 +64,19 @@ test('tipo foral del Impuesto sobre Sociedades según la cifra de negocios', asy
   assert.deepEqual([2e6, 10e6, 10000001].map((c) => tipoISForal('bizkaia', c)), [20, 20, 24]);
   assert.equal(tipoISForal('comun', 1), null);
 });
+
+test('1T de 2026 exonerado en el País Vasco (normas forales de urgencia de abril de 2026), no en Navarra', async () => {
+  const { pagosIrpfForal } = await import('../lib/territorios.js');
+  const fac = (fecha, base, irpfPct = 0) => ({ id: fecha, fecha, base, ivaPct: 21, irpfPct, cliente: { nombre: 'C' }, actividad: 'a' });
+  const facturas = [fac('2024-03-01', 40000)];
+  for (const t of ['bizkaia', 'gipuzkoa']) {
+    const r = pagosIrpfForal({ territorio: t, tipo: 'autonomo' }, { facturas, gastos: [], anio: 2026, actividades: ['a'] });
+    assert.equal(r.origen, 'fisquo');
+    assert.equal(r.pagos[0], 0);
+    assert.ok(r.pagos[1] > 0);
+    assert.deepEqual(r.exonerados, [1]);
+  }
+  const n = pagosIrpfForal({ territorio: 'navarra', tipo: 'autonomo' }, { facturas, gastos: [], anio: 2026, actividades: ['a'] });
+  assert.ok(n.pagos[0] > 0);
+  assert.equal(pagosIrpfForal({ territorio: 'gipuzkoa', tipo: 'autonomo' }, { facturas, gastos: [], anio: 2027, actividades: ['a'] }).exonerados.length, 0);
+});
