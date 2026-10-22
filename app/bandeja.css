@@ -1,5 +1,6 @@
 /* «Por revisar» (components/Bandeja.js, en Gastos › Por revisar, y la revisión de cada factura en app/gastos/bandeja/[id]). Solo variables del tema: claro y oscuro salen solos. */
-.bandeja { display: grid; gap: 14px; }
+/* Una columna que puede encoger: un texto de una línea (el error de lectura, un nombre largo) se corta con «…» en vez de ensanchar la lista */
+.bandeja { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
 .bandeja-subir { display: grid; gap: 12px; padding: 18px; border: 2px dashed var(--line); border-radius: var(--r-m); background: var(--surface); }
 .bandeja-subir.encima { border-color: var(--acento); background: var(--surface-2); }
 .bandeja-subir strong { display: block; font-size: 16px; }

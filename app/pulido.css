@@ -66,6 +66,11 @@ html[data-vt=abrir] .fh-total { view-transition-name: factura-total; }
   /* Sin la fila que se convierte en la cabecera de la factura: en pantalla ancha cruzaba media pantalla */
   html[data-vt=abrir] .factura-hero, html[data-vt=abrir] .fh-cliente, html[data-vt=abrir] .fh-total { view-transition-name: none; }
   html[data-vt] .pagina [style*="view-transition-name"] { view-transition-name: none !important; }
+  /* Pestañas de una pantalla: la cabecera y las pestañas se quedan (la pastilla sí viaja, dentro de su carril) y lo de debajo
+     cambia con el mismo fundido que las pantallas */
+  html[data-vt^=pestana]::view-transition-old(root), html[data-vt^=pestana]::view-transition-new(root) { animation: none; }
+  html[data-vt^=pestana]::view-transition-old(pestanas-panel) { animation: 0.12s var(--salida) both vt-fuera; }
+  html[data-vt^=pestana]::view-transition-new(pestanas-panel) { animation: 0.24s var(--salida) both vt-escritorio; }
 }
 @keyframes vt-escritorio { from { opacity: 0; transform: translateY(6px); } }
 
