@@ -5,6 +5,7 @@ import ProgresoAlta from './ProgresoAlta';
 import { llamar } from './Acciones';
 import { TIPOS_IGIC } from '@/lib/igic';
 import { limpiarFiscal, modelosDe, usaIgic } from '@/lib/empresa';
+import { OPCIONES_TERRITORIO, territorioDe } from '@/lib/territorios';
 
 const IVAS = [[21, '21 %'], [10, '10 %'], [4, '4 %'], [0, 'Sin IVA']];
 // El 7 % es el de los nuevos autónomos (año de alta y los dos siguientes); el detalle va en una segunda línea corta.
@@ -99,10 +100,13 @@ export default function Cuestionario({ inicial, editar, conFacturas, puedeFactur
       falta: acts.every((x) => String(x.nombre).trim()) ? 'Faltan el nombre y el NIF de tus datos.' : 'Escribe el nombre de tu actividad para seguir.',
       cuerpo: (
         <>
-          <div className="grupo-c"><SiNo valor={igic} titulo="Mi empresa está en Canarias (IGIC)" cambiar={(v) => {
-            setFiscal((x) => limpiarFiscal({ ...x, territorio: v ? 'canarias' : undefined }));
-            setActs((l) => l.map((x) => ({ ...x, ivaPct: (v ? TIPOS_IGIC : [21, 10, 4, 0]).includes(Number(x.ivaPct)) ? x.ivaPct : v ? 7 : 21 })));
-          }} /></div>
+          <label className="alta-campo"><span>¿Dónde presentas tus impuestos?</span>
+            <select className="campo" value={territorioDe(fiscal)} onChange={(ev) => {
+              const t = ev.target.value, canarias = t === 'canarias';
+              setFiscal((x) => limpiarFiscal({ ...x, territorio: t }));
+              setActs((l) => l.map((x) => ({ ...x, ivaPct: (canarias ? TIPOS_IGIC : [21, 10, 4, 0]).includes(Number(x.ivaPct)) ? x.ivaPct : canarias ? 7 : 21 })));
+            }}>{OPCIONES_TERRITORIO.map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select>
+          </label>
           {acts.map((x, i) => {
             const fija = x.id && conFacturas.includes(x.id);
             return (
