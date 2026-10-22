@@ -32,6 +32,8 @@ import { puede } from '@/lib/permisos';
 
 export const dynamic = 'force-dynamic';
 const T = [1, 2, 3, 4];
+// Sede de la Agencia Tributaria Canaria (420 y 425).
+const SEDE_ATC = 'https://sede.gobiernodecanarias.org/tributos/';
 // Casillas del 420 (instrucciones de la Agencia Tributaria Canaria).
 const ETIQUETAS420 = {
   '01': 'Base imponible', '02': 'Tipo de IGIC', '03': 'Cuota devengada',
@@ -182,7 +184,7 @@ export default async function Modelos({ searchParams }) {
       m349: hay349 ? modelo349(facturas, anio, tAhora, gastos) : null,
       pagos202: f.tipo === 'sociedad' ? modelo202(u.cuotaIS, anio) : null, pagados202: u.pagos202?.[anio], constitucion: f.constitucion,
     }).map((m) => ({ ...m, aeat: AEAT[`m${m.num}`], ...(m.dia ? { plazo: plazo(tAhora, anio, m.dia) } : {}) }));
-    if (l420) importes.unshift({ num: '420', modelo: '420 · IGIC', href: '#m420', texto: l420['45'] < 0 ? `A compensar ${eur(-l420['45'])}` : `A ingresar ${eur(l420.ingresar)}`, importe: l420.ingresar, aeat: 'https://sede.gobiernodecanarias.org/tributos/ow/', sede: 'ATC', plazo: fechaTexto(plazo420(anio, tAhora)) });
+    if (l420) importes.unshift({ num: '420', modelo: '420 · IGIC', href: '#m420', texto: l420['45'] < 0 ? `A compensar ${eur(-l420['45'])}` : `A ingresar ${eur(l420.ingresar)}`, importe: l420.ingresar, aeat: SEDE_ATC, sede: 'ATC', plazo: fechaTexto(plazo420(anio, tAhora)) });
     ahora = (
       <PresentarAhora t={tAhora} anio={anio}
         aviso={textoSituacion(situacion(tAhora), limite(tAhora))}
@@ -258,7 +260,7 @@ export default async function Modelos({ searchParams }) {
                 <Plegable><Casillas filas={Array.from({ length: 47 }, (_, i) => String(i + 1).padStart(2, '0')).filter((k) => c[k] !== 0).map((k) => [`${k} · ${ETIQUETAS420[k]}`, [2, 5, 8, 11, 14, 17].includes(Number(k)) ? `${String(c[k]).replace('.', ',')} %` : c[k], ['25', '40', '45'].includes(k)])} /></Plegable>
                 {c.demasiadosTipos && <p className="nota">Hay más de seis tipos. Revisa cómo declarar los tipos restantes con tu gestor: {c.otros.map((d) => `${d.pct} %: base ${eur(d.base)}, cuota ${eur(d.cuota)}`).join('; ')}.</p>}
                 <p className="nota">Hasta el {fechaTexto(plazo420(anio, t))}{t === 4 ? ` de ${anio + 1}` : ''}.</p>
-                <p className="descargas"><a href="https://sede.gobiernodecanarias.org/tributos/ow/" target="_blank" rel="noopener noreferrer">Abrir la Sede de la Agencia Tributaria Canaria</a></p>
+                <p className="descargas"><a href={SEDE_ATC} target="_blank" rel="noopener noreferrer">Abrir la Sede de la Agencia Tributaria Canaria</a></p>
                 <Presentado soloLectura={soloLectura} modelo="420" anio={anio} t={t} importe={0} pagado={t === 4 && u.pres303?.[anio]?.[4] === 'devolucion' ? 'devolucion' : p303(t)} con130={false} situacion={situacionTrimestre(t, anio, h, 31)} plazo={fechaTexto(plazo420(anio, t))} devolucion={t === 4 && (c.pendiente > 0 || c.devolucion > 0)} />
               </div>;
             })}
@@ -547,7 +549,7 @@ export default async function Modelos({ searchParams }) {
             ...Object.entries(m425.deducciones).map(([k, v]) => [`IGIC deducible · ${DEDUCCIONES425[k]}`, v, k === 'total']),
             ...m425.resultadosTrimestrales.map((v, i) => [`420 del ${i + 1}T`, v]),
           ]} /><p className="nota">Resumen de las operaciones registradas. Revisa los ajustes y operaciones especiales con tu gestor antes de presentarlo.</p>
-          <p className="descargas"><a href="https://sede.gobiernodecanarias.org/tributos/ow/" target="_blank" rel="noopener noreferrer">Abrir la Sede de la Agencia Tributaria Canaria</a></p></div>
+          <p className="descargas"><a href={SEDE_ATC} target="_blank" rel="noopener noreferrer">Abrir la Sede de la Agencia Tributaria Canaria</a></p></div>
         </ModeloPlegable>
       )}
 

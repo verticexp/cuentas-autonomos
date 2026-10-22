@@ -1996,7 +1996,7 @@ console.log('Canarias (IGIC)');
   const imp = n(await texto(`/modelos?anio=${Y}`, can));
   // texto() quita las etiquetas: el enlace a la Sede se busca en el HTML.
   const impHtml = await (await pedir(`/modelos?anio=${Y}`, { cookie: can })).text();
-  ok('Impuestos muestra 420 y 425 con la Sede canaria', () => assert.ok(imp.includes('420 · IGIC trimestral') && imp.includes('425 · Resumen anual del IGIC') && impHtml.includes('sede.gobiernodecanarias.org/tributos/ow/')));
+  ok('Impuestos muestra 420 y 425 con la Sede canaria', () => assert.ok(imp.includes('420 · IGIC trimestral') && imp.includes('425 · Resumen anual del IGIC') && impHtml.includes('https://sede.gobiernodecanarias.org/tributos/')));
   ok('Canarias no ofrece 303, 390, 349 ni 369', () => assert.ok(!imp.includes('303 · IVA trimestral') && !imp.includes('390 · Resumen anual del IVA') && !imp.includes('349 ·') && !imp.includes('369 ·')));
   const formulario = n(await texto('/facturas/nueva', can));
   // Con gastos, el formulario de la lista sale plegado: se mira la ficha del gasto, que lo trae abierto.
