@@ -1939,8 +1939,8 @@ console.log('Nóminas completas (cotización 2026 y modelo 145) y datos para RED
   const malo = await pedir('/api/empleados', { metodo: 'POST', cookie: nu, cuerpo: { nombre: 'Sin cónyuge', nif: '87654321X', alta: `${mesActual}-01`, bruto: '1500', cotizacion: { grupo: 7 }, datos145: { nacimiento: 1985, situacionFamiliar: 2 } } });
   ok('un 145 incompleto (situación 2 sin el NIF del cónyuge) no se guarda (400)', () => assert.equal(malo.status, 400));
   await pedir('/api/nominas', { metodo: 'POST', cookie: nu, cuerpo: { mes: mesActual } });
-  const pagina = n(await texto('/nominas', nu));
-  const id = /href="\/nominas\/([0-9a-f-]{36})"/.exec(pagina)?.[1];
+  const html = await (await pedir('/nominas', { cookie: nu })).text();
+  const id = /href="\/nominas\/([0-9a-f-]{36})"/.exec(html)?.[1];
   const detalle = n(await texto(`/nominas/${id}`, nu));
   ok('la nómina tiene sus bases, sus cuotas por concepto y el IRPF calculado (13,51 %)', () => assert.ok(id && detalle.includes('Bases de cotización') && detalle.includes('Contingencias comunes') && detalle.includes('643,00') && detalle.includes('13,51'), detalle.slice(0, 500)));
   const red = await pedir(`/api/nominas/red?mes=${mesActual}`, { cookie: nu });
