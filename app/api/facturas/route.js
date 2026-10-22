@@ -21,7 +21,7 @@ export async function POST(req) {
   const { u, res } = await usuarioApi({ permiso: 'facturar' });
   if (res) return res;
   const b = await cuerpo(req);
-  const datos = limpiar(b, actividadesDe(u), fiscalDe(u).tipo === 'sociedad', { rectificativa: Boolean(b.rectifica), conRecargo: usa303(fiscalDe(u)) });
+  const datos = limpiar(b, actividadesDe(u), fiscalDe(u).tipo === 'sociedad', { rectificativa: Boolean(b.rectifica), conRecargo: usa303(fiscalDe(u)), reagp: fiscalDe(u).iva === 'reagp' });
   if (datos.error) return Response.json({ error: datos.error, errores: datos.errores }, { status: 400 });
   const original = b.rectifica && (await leerUno(u, 'facturas', b.rectifica));
   if (b.rectifica && !original) return error('La factura a rectificar no existe');
@@ -70,7 +70,7 @@ export async function PATCH(req) {
     return Response.json({ ok: true });
   }
   if (antes.verifactu) return error('Esta factura ya está registrada en Verifactu: para corregirla, haz una rectificativa');
-  const datos = limpiar(b, actividadesDe(u), fiscalDe(u).tipo === 'sociedad', { rectificativa: Boolean(antes.rectifica || antes.serie === 'R'), conRecargo: usa303(fiscalDe(u)) });
+  const datos = limpiar(b, actividadesDe(u), fiscalDe(u).tipo === 'sociedad', { rectificativa: Boolean(antes.rectifica || antes.serie === 'R'), conRecargo: usa303(fiscalDe(u)), reagp: fiscalDe(u).iva === 'reagp' });
   if (datos.error) return Response.json({ error: datos.error, errores: datos.errores }, { status: 400 });
   if (Number(datos.fecha.slice(0, 4)) !== antes.anio) return error(`La fecha debe ser de ${antes.anio}`);
   // Al cambiar la fecha, se avisa si deja de seguir el orden de su serie (lib/facturas.js fechaFueraDeOrden); con
@@ -84,7 +84,7 @@ export async function PATCH(req) {
   const r = await conLimiteDe(u, datos.cliente, () => actualizarFactura(u, antes.id, async (actual) => {
     if (actual.verifactu) return { error: 'Esta factura ya está registrada en Verifactu: para corregirla, haz una rectificativa' };
     // Lo opcional que el formulario ya no manda se quita (volver al español, a euros, quitar el recargo…).
-    const nueva = { ...actual, evento: undefined, proyecto: undefined, operacion: undefined, idioma: undefined, divisa: undefined, baseDivisa: undefined, oss: undefined, recargo: undefined, recc: undefined, ...datos };
+    const nueva = { ...actual, evento: undefined, proyecto: undefined, operacion: undefined, idioma: undefined, divisa: undefined, baseDivisa: undefined, oss: undefined, recargo: undefined, recc: undefined, margen: undefined, cuotasIncluidas: undefined, compensacion: undefined, ...datos };
     // Criterio de caja: se recalcula con la nueva fecha; una rectificativa conserva el de su original.
     Object.assign(nueva, nueva.rectifica ? (actual.recc ? { recc: true } : {}) : marcaRecc(u, nueva));
     const mas = pendienteDe(nueva) - (mismoCliente(actual.cliente, nueva.cliente) ? pendienteDe(actual) : 0);

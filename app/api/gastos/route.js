@@ -3,7 +3,7 @@ import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { sinFuncion } from '@/lib/planes';
 import { emparejar } from '@/lib/bancoServidor';
 import { auditar } from '@/lib/auditoria';
-import { leerImporte, nifUE, r2 } from '@/lib/calculos';
+import { leerImporte, nifUE, r2, COMPENSACION } from '@/lib/calculos';
 import { validarGasto } from '@/lib/validacion';
 import { afectoPctDe, deduciblePctDe } from '@/lib/ivaDeducible';
 import { actividadesDe, actividadValida } from '@/lib/empresa';
@@ -76,6 +76,8 @@ export async function POST(req) {
     ...(b.alquiler ? { alquiler: true } : {}),
     // Proveedor en el criterio de caja (lo dice su factura): su IVA se deduce al pagarlo (lib/calculos.js).
     ...(b.recc ? { recc: true } : {}),
+    // Compra a quien está en el régimen de la agricultura: sin IVA, con la compensación del 12 o el 10,5 % (casilla 42).
+    ...(COMPENSACION.includes(Number(b.compensacion)) && !(Number(b.ivaPct) > 0) ? { compensacion: Number(b.compensacion) } : {}),
     ...(deduciblePctDe(b.deduciblePct) !== undefined ? { deduciblePct: deduciblePctDe(b.deduciblePct) } : {}),
     ...(afectoPctDe(b.afectoPct) !== undefined ? { afectoPct: afectoPctDe(b.afectoPct) } : {}),
     ...(categoriaDe(b) ? { categoria: categoriaDe(b) } : {}),
@@ -114,7 +116,7 @@ export async function PATCH(req) {
     const v = validarGasto(b, { antes });
     if (!v.ok) return { error: v.error, errores: v.errores, status: 400 };
     const base = r2(leerImporte(b.base));
-    const g = { ...antes, fecha: b.fecha, actividad: actividadValida(actividadesDe(u), b.actividad), concepto: String(b.concepto).trim().slice(0, 140), base, ivaPct: Math.min(100, Math.max(0, Number(b.ivaPct) || 0)), proveedor: undefined, proveedorNif: undefined, ...proveedorDe(b), numero: undefined, efactura: antes.efactura, ...facturaDe(b), proyecto: limpiarProyecto(b.proyecto) || undefined, pendiente: b.pendiente ? true : undefined, alquiler: b.alquiler ? true : undefined, recc: b.recc ? true : undefined, deduciblePct: deduciblePctDe(b.deduciblePct), afectoPct: afectoPctDe(b.afectoPct), categoria: stockDe(b) ? categoriaDe(b) || '600' : categoriaDe(b), inversion: inversionEditada(inversionDe(b), antes.inversion), stock: stockDe(b) };
+    const g = { ...antes, fecha: b.fecha, actividad: actividadValida(actividadesDe(u), b.actividad), concepto: String(b.concepto).trim().slice(0, 140), base, ivaPct: Math.min(100, Math.max(0, Number(b.ivaPct) || 0)), proveedor: undefined, proveedorNif: undefined, ...proveedorDe(b), numero: undefined, efactura: antes.efactura, ...facturaDe(b), proyecto: limpiarProyecto(b.proyecto) || undefined, pendiente: b.pendiente ? true : undefined, alquiler: b.alquiler ? true : undefined, recc: b.recc ? true : undefined, compensacion: COMPENSACION.includes(Number(b.compensacion)) && !(Number(b.ivaPct) > 0) ? Number(b.compensacion) : undefined, deduciblePct: deduciblePctDe(b.deduciblePct), afectoPct: afectoPctDe(b.afectoPct), categoria: stockDe(b) ? categoriaDe(b) || '600' : categoriaDe(b), inversion: inversionEditada(inversionDe(b), antes.inversion), stock: stockDe(b) };
     g.origen = origenDe(b, g.ivaPct);
     g.irpfPct = retencionDe(b);
     if (antes.inversion?.acumulada !== undefined && !g.inversion) return { error: 'Este bien trae su amortización de otro programa: no se puede dejar de amortizar desde aquí' };

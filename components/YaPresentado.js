@@ -9,6 +9,7 @@ import { llamar } from './Acciones';
 const CUERPO = {
   303: ({ anio, t }) => ({ presentado303: { anio, t, hecho: true } }),
   130: ({ anio, t }, importe) => ({ presentado: { anio, t, importe } }),
+  131: ({ anio, t }, importe) => ({ presentado131: { anio, t, importe } }),
   111: ({ anio, t }) => ({ presentadoRet: { modelo: '111', anio, t, hecho: true } }),
   115: ({ anio, t }) => ({ presentadoRet: { modelo: '115', anio, t, hecho: true } }),
   123: ({ anio, t }) => ({ presentadoRet: { modelo: '123', anio, t, hecho: true } }),

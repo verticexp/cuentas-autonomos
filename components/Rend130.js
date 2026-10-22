@@ -7,7 +7,8 @@ import { eur } from '@/lib/formato';
 
 // Rendimiento neto de la actividad del año anterior: si fue de 12.000 € o menos, el 130 resta hasta 100 € cada trimestre
 // (casilla 13). Fisquo sugiere el suyo, pero solo vale si ese año está entero en Fisquo: lo confirma la persona.
-export default function Rend130({ anio, valor, sugerido, minoracion, soloLectura = false }) {
+// modelo: '130' o '131' (en módulos la misma minoración va en la casilla 09).
+export default function Rend130({ anio, valor, sugerido, minoracion, soloLectura = false, modelo = '130' }) {
   const router = useRouter();
   const [v, setV] = useState(valor === null ? '' : String(valor).replace('.', ','));
   const [msg, setMsg] = useState('');
@@ -18,7 +19,7 @@ export default function Rend130({ anio, valor, sugerido, minoracion, soloLectura
   const Caja = soloLectura ? 'div' : 'form';
   return (
     <Caja className="formulario tarjeta bloque" onSubmit={soloLectura ? undefined : (e) => { e.preventDefault(); guardar(v.trim() === '' ? null : v); }}>
-      <p><strong>¿Cuánto ganaste con tu actividad en {anio}?</strong> Si fueron 12.000 € o menos, cada trimestre restas hasta 100 € del 130 (casilla 13).</p>
+      <p><strong>¿Cuánto ganaste con tu actividad en {anio}?</strong> Si fueron 12.000 € o menos, cada trimestre restas hasta 100 € del {modelo} (casilla {modelo === '131' ? '09' : '13'}).</p>
       {valor !== null
         ? <p className="nota">Guardado: {eur(valor)}. {minoracion ? `Restas ${eur(minoracion)} cada trimestre.` : 'Pasa de 12.000 €: no hay minoración.'}</p>
         : sugerido !== null && <p className="nota">Con lo que hay en Fisquo de {anio} sale {eur(sugerido)}. Si ese año no está entero aquí, pon el rendimiento neto de tu declaración de la renta.</p>}

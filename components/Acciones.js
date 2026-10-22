@@ -79,7 +79,7 @@ export function Presentado({ anio, t, importe, pagado, con130 = true, situacion,
     empezar(async () => {
       elegir(v);
       try {
-        await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify(modelo === '303' ? { presentado303: { anio, t, hecho: v !== 'pendiente', ...(v === 'devolucion' ? { devolucion: true } : {}) } } : { presentado: { anio, t, importe: imp } }) });
+        await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify(modelo === '303' ? { presentado303: { anio, t, hecho: v !== 'pendiente', ...(v === 'devolucion' ? { devolucion: true } : {}) } } : modelo === '131' ? { presentado131: { anio, t, importe: imp } } : { presentado: { anio, t, importe: imp } }) });
         setGuardado(v);
         setConfirmado(v !== 'pendiente');
         empezar(() => router.refresh());
