@@ -56,3 +56,10 @@
 .gasto-tipos { display: grid; gap: 8px; }
 .gasto-tipo { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: end; }
 .gasto-tipos-botones { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+/* La tarjeta de añadir gastos acepta facturas arrastradas (van a «Por revisar»); debajo, la dirección para reenviarlas. */
+.gasto-rapido.encima { outline: 2px dashed var(--acento); outline-offset: -2px; background: var(--surface-2); }
+.gasto-correo { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin: 0; font-size: 14px; color: var(--muted); line-height: 1.5; overflow-wrap: anywhere; }
+.gasto-correo code { font-size: 13px; padding: 2px 6px; border-radius: var(--r-s); background: var(--relleno); color: var(--ink); }
+.gasto-rapido > .gasto-correo, .gasto-rapido > .gasto-confirmacion { grid-column: 1 / -1; }
+/* «También arrastrándolas aquí» solo tiene sentido en el ordenador. */
+@media (max-width: 1023.98px) { .gasto-rapido .solo-pc { display: none; } }

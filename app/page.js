@@ -28,6 +28,7 @@ import '@/app/mk.css';
 import '@/app/hoy.css';
 import CambiarEmpresa from '@/components/CambiarEmpresa';
 import { accionesHoy } from '@/lib/hoy';
+import { resumen as resumenBandeja } from '@/lib/bandeja';
 import { proximoPlazoDe } from '@/lib/avisos';
 import YaPresentado from '@/components/YaPresentado';
 
@@ -65,7 +66,9 @@ export default async function Resumen({ searchParams }) {
   // Informe de capacidad E01/E06: el panel se calcula con los años que enseña y lo pendiente, y se guarda por versión de
   // los datos (lib/panelCache.js): mientras nada cambie, no se vuelven a leer los documentos.
   const anioPedido = Number((await searchParams).anio) || Number(h.slice(0, 4));
-  const [nFacturas, nGastos, recurrentes, nominas, saldo] = await Promise.all([contar(u, 'facturas'), contar(u, 'gastos'), leer(u, 'recurrentes'), leer(u, 'nominas'), redis.get(clave(u, 'saldo'))]);
+  const [nFacturas, nGastos, recurrentes, nominas, saldo, bandeja] = await Promise.all([contar(u, 'facturas'), contar(u, 'gastos'), leer(u, 'recurrentes'), leer(u, 'nominas'), redis.get(clave(u, 'saldo')), puede(u, 'gastos') ? leer(u, 'bandeja') : []]);
+  // Facturas subidas o reenviadas que esperan a que alguien las revise (lib/bandeja.js): cuántas y cuántas cuadran.
+  const porRevisar = resumenBandeja(bandeja || []);
   const { P, teso, casillas } = await panelDe(u, { anio: anioPedido, hoy: h, recurrentes: recurrentes || [], nominas: nominas || [], saldo });
   const actividades = actividadesDe(u);
   const fiscal = fiscalDe(u);
@@ -227,6 +230,14 @@ export default async function Resumen({ searchParams }) {
               <h2 className="hcard-t"><Ico n="gasto" solo />Por pagar<span>{sinPagar.length === 1 ? '1 factura' : `${sinPagar.length} facturas`}</span></h2>
               <p className="hcard-v"><Cifra v={porPagar} /><small>€</small></p>
               {pagosVencidos.length > 0 && <p className="hcard-s rojo">{pagosVencidos.length === 1 ? '1 vencida' : `${pagosVencidos.length} vencidas`}: {listaNombres({ nombres: pagosVencidos.nombres || [], clientes: pagosVencidos.proveedores })}</p>}
+            </Ir>
+          )}
+
+          {porRevisar.pendientes > 0 && (
+            <Ir href="/gastos#por-revisar" className="hcard ir" style={{ '--c': 'var(--info)' }}>
+              <h2 className="hcard-t"><Ico n="gasto" solo />Por revisar</h2>
+              <p className="hcard-v">{porRevisar.pendientes}<small>{porRevisar.pendientes === 1 ? 'factura' : 'facturas'}</small></p>
+              <p className="hcard-s">{[porRevisar.cuadran && (porRevisar.cuadran === 1 ? '1 cuadra: apruébala con un toque' : `${porRevisar.cuadran} cuadran: apruébalas de golpe`), porRevisar.leyendo && `${porRevisar.leyendo} leyéndose`, porRevisar.cuarentena && `${porRevisar.cuarentena} de remitentes que no conoces`].filter(Boolean).join(' · ') || 'Ábrelas para revisarlas y guardarlas como gasto'}</p>
             </Ir>
           )}
 

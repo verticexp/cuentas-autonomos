@@ -86,7 +86,7 @@ export default function RevisionGastos({ items, total }) {
   const [abierto, setAbierto] = useState(null);
   return (
     <section className="grupo gastos-revision">
-      <h2 className="grupo-t">En revisión · {total}</h2>
+      <h2 className="grupo-t">Cargos del banco sin gasto · {total}</h2>
       <p className="grupo-pie arriba">Cargos de tu banco sin su gasto en Fisquo. Toca uno para revisar la coincidencia, elegir otro gasto o añadirlo con su factura.</p>
       <ul className="grupo-lista">
         {items.map((x) => <Cargo key={x.m.id} x={x} abierto={abierto === x.m.id} abrir={() => setAbierto(abierto === x.m.id ? null : x.m.id)} />)}

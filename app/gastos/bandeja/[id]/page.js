@@ -30,7 +30,7 @@ export default async function DocumentoBandeja({ params }) {
   const gastar = puede(u, 'gastar');
   return (
     <main className="pagina mk-look gastos-formulario bandeja-revisar">
-      <Volver href="/gastos/bandeja">Bandeja</Volver>
+      <Volver href="/gastos/bandeja">Por revisar</Volver>
       <section className="bandeja-archivo tarjeta">
         <p className="mini-t">{doc.correo ? `De ${doc.correo.deNombre ? `${doc.correo.deNombre} (${doc.correo.de})` : doc.correo.de}` : doc.nombre}</p>
         {doc.correo?.asunto && <p className="nota">«{doc.correo.asunto}»</p>}
