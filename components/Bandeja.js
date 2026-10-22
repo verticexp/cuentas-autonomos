@@ -186,7 +186,7 @@ function Fila({ d, puedeGastar, ocupado, accion }) {
         {d.duplicados?.length > 0 && <span className="chip-aviso">¿Ya apuntada?</span>}
         {d.banco && <span className="chip-info">Casa con el banco</span>}
         {d.habitual && <span className="chip-info">Como la anterior</span>}
-        {p?.desglose && <span className="chip-aviso">Varios tipos de IVA</span>}
+        {p?.desglose && <span className="chip-info">Varios tipos de IVA</span>}
         {p?.avisos?.length > 0 && !d.cuadra && <span className="chip-aviso">Revisar importes</span>}
       </span>
     </span>

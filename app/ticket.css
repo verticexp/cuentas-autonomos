@@ -52,3 +52,7 @@
 @media (max-width: 380px) {
   .gastos-formulario .formulario .gasto-guardar:has(> :nth-child(2)) { grid-template-columns: minmax(0, 1fr); }
 }
+/* Varios tipos de IVA en un gasto (components/FormGasto.js): base y tipo por línea. */
+.gasto-tipos { display: grid; gap: 8px; }
+.gasto-tipo { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: end; }
+.gasto-tipos-botones { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }

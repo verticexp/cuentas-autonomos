@@ -12,7 +12,7 @@ import Deslizable from './Deslizable';
 import { eur, fechaCorta } from '@/lib/formato';
 import { TIPOS_IGIC } from '@/lib/igic';
 import { importes, nifUE, origenGasto } from '@/lib/calculos';
-import { costeAfecto, partirIva, pctAfecto, pctDeducible } from '@/lib/ivaDeducible';
+import { conIva, costeAfecto, partirIva, pctAfecto, pctDeducible } from '@/lib/ivaDeducible';
 import { parseImporte } from '@/lib/importe';
 import { CATEGORIAS, categoria, categoriaDe, pareceBien } from '@/lib/categorias';
 import { LIMITE_LIBERTAD, TIPOS_BIEN, coeficiente } from '@/lib/amortizaciones';
@@ -26,10 +26,26 @@ import { escanearNativo } from '@/lib/escanerNativo';
 import { NO_IA, permisoIA } from '@/lib/permisoIA';
 import '@/app/ticket.css';
 
+// Varios tipos de IVA en la misma factura (lib/calculos.js porTipo): en el formulario, cada base como se escribe.
+const aFormulario = (l) => (l?.length > 1 ? l.map((t) => ({ ivaPct: Number(t.ivaPct ?? t.pct), base: String(t.base).replace('.', ',') })) : undefined);
+const porTipoNum = (g) => (g.porTipo?.length ? g.porTipo.map((t) => ({ ivaPct: Number(t.ivaPct), base: parseImporte(t.base) || 0 })) : undefined);
+const sumaBases = (l) => Math.round(l.reduce((s, t) => s + t.base, 0) * 100) / 100;
+// El gasto con números, para calcular: con varios tipos, la base es su suma y el tipo, el de más base.
+const numerico = (g) => {
+  const l = porTipoNum(g);
+  if (!l) return { ...g, base: parseImporte(g.base) || 0, porTipo: undefined };
+  return { ...g, base: sumaBases(l), ivaPct: [...l].sort((a, b) => Math.abs(b.base) - Math.abs(a.base))[0].ivaPct, porTipo: l };
+};
+// Lo que se manda al servidor: lo mismo, con la base como se escribe.
+const paraEnviar = (g) => {
+  const n = numerico(g);
+  return { ...g, ...(n.porTipo ? { base: String(n.base).replace('.', ','), ivaPct: n.ivaPct, porTipo: n.porTipo } : { porTipo: undefined }) };
+};
+
 // Lo que la bandeja propone (lib/bandeja.js) en el formato del formulario: los importes como se escriben.
 const desdePropuesta = (p, vacio) => {
   const { cuadra, avisos, fechaDudosa, desglose, ...resto } = p || {};
-  return { ...vacio, ...resto, base: resto.base > 0 ? String(resto.base).replace('.', ',') : '', irpfPct: resto.irpfPct || 0, actividad: resto.actividad || vacio.actividad };
+  return { ...vacio, ...resto, base: resto.base > 0 ? String(resto.base).replace('.', ',') : '', irpfPct: resto.irpfPct || 0, actividad: resto.actividad || vacio.actividad, porTipo: aFormulario(desglose) };
 };
 
 // Lo habitual del proveedor (lib/proveedorHabitual.js) en lo que aún no se ha tocado.
@@ -46,7 +62,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
   const vacio = { fecha: hoy, actividad: actividades[0].id, concepto: '', proveedor: '', base: '', ivaPct: igic ? 7 : 21 };
   // Desde un cargo del banco sin gasto: fecha, proveedor e importe del banco (base estimada al 21 %, hasta leer la factura).
   const delBanco = movimiento && { ...vacio, fecha: movimiento.fecha, concepto: movimiento.contraparte || movimiento.concepto, proveedor: movimiento.contraparte || '', base: String(Math.round((Math.abs(movimiento.importe) / (igic ? 1.07 : 1.21)) * 100) / 100).replace('.', ','), banco: movimiento.id };
-  const [g, setG] = useState(gasto ? { ...gasto, base: String(gasto.base).replace('.', ',') } : documento ? desdePropuesta(documento.propuesta, vacio) : delBanco || vacio);
+  const [g, setG] = useState(gasto ? { ...gasto, base: String(gasto.base).replace('.', ','), porTipo: aFormulario(gasto.porTipo) } : documento ? desdePropuesta(documento.propuesta, vacio) : delBanco || vacio);
   // Factura de la bandeja que casa con un cargo del banco: se empareja al aprobarla, salvo que se quite.
   const [conBanco, setConBanco] = useState(Boolean(documento?.banco));
   const [habitualAplicado, setHabitualAplicado] = useState(documento?.habitual || null);
@@ -74,7 +90,9 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
     if (abierto && window.location.hash === '#apuntar-gasto') document.getElementById('apuntar-gasto')?.focus();
   }, [abierto]);
   const [ultimoGuardado, setUltimoGuardado] = useState(null);
-  const calculo = importes({ ...g, base: parseImporte(g.base) || 0 });
+  const gn = numerico(g);
+  const calculo = importes(gn);
+  const tiposImpuesto = igic ? TIPOS_IGIC : [21, 10, 4, 0];
   // Justificante leído (foto reducida o PDF): se sube al guardar el gasto nuevo. En la ficha, se adjunta o sustituye aparte.
   const [adjunto, setAdjunto] = useState(null);
   const [avisoArchivo, setAvisoArchivo] = useState('');
@@ -113,8 +131,9 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
       const varios = (t.desglose || []).filter((d) => d.base).length > 1;
       setG((x) => ({ ...x, ...(stock.length ? { stock } : {}), proveedor: t.proveedor?.nombre || x.proveedor, proveedorNif: t.proveedor?.nif || x.proveedorNif, concepto: t.concepto || t.proveedor?.nombre || x.concepto,
         base: String(t.base).replace('.', ','), ivaPct: t.ivaPct, fecha: t.fecha || x.fecha, numero: t.numero || '', ...([7, 15].includes(Number(t.irpfPct)) ? { irpfPct: Number(t.irpfPct) } : {}),
-        ...(t.vencimiento && t.vencimiento > (t.fecha || '') ? { pendiente: true } : {}), efactura: t.formato, ...(!Number(t.ivaPct) && nifUE(t.proveedor?.nif) ? { origen: 'ue' } : {}) }));
-      setLeyendo(`Factura electrónica ${t.numero || ''} leída${varios ? `: tiene varios tipos de ${impuesto}, revisa la base` : ''}. Revisa los datos antes de guardar.`);
+        ...(t.vencimiento && t.vencimiento > (t.fecha || '') ? { pendiente: true } : {}), efactura: t.formato, ...(!Number(t.ivaPct) && nifUE(t.proveedor?.nif) ? { origen: 'ue' } : {}),
+        porTipo: varios ? aFormulario(t.desglose.filter((d) => d.base)) : undefined }));
+      setLeyendo(`Factura electrónica ${t.numero || ''} leída${varios ? `, con varios tipos de ${impuesto} por separado` : ''}. Revisa los datos antes de guardar.`);
       return;
     }
     const pdf = archivo.type === 'application/pdf';
@@ -134,6 +153,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
       // Con inventario: las líneas de la factura que son productos del catálogo entran al almacén.
       const stock = productos.length ? emparejarLineas(t.lineas, productos).map((l) => ({ ...l, cantidad: String(l.cantidad).replace('.', ','), coste: String(l.coste).replace('.', ',') })) : [];
       setG((x) => ({ ...x, ...(stock.length ? { stock } : {}), proveedor: t.proveedor || x.proveedor, proveedorNif: t.nif || x.proveedorNif, ...(t.numero ? { numero: t.numero } : {}), concepto: t.concepto || t.proveedor || x.concepto, base: t.base !== '' ? String(t.base).replace('.', ',') : x.base, ivaPct: t.ivaPct, irpfPct: t.irpfPct || 0, fecha: t.fecha, ...(!Number(t.ivaPct) && nifUE(t.nif) ? { origen: 'ue' } : {}),
+        porTipo: t.varios ? aFormulario(t.desglose) : undefined,
         // Lo que se eligió en el último gasto de este proveedor, en lo que aún no se ha tocado.
         ...Object.fromEntries(CAMPOS_HABITUALES.filter((c) => d.habitual?.[c] !== undefined && (x[c] === undefined || x[c] === '' || (c === 'actividad' && x[c] === vacio.actividad))).map((c) => [c, d.habitual[c]])),
         ...(d.habitual?.concepto ? { concepto: d.habitual.concepto } : {}),
@@ -142,7 +162,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
       if (d.habitual?.deduciblePct !== undefined && ![100, 50, 0].includes(d.habitual.deduciblePct)) setPctOtro(true);
       setHabitualAplicado(d.habitual || null);
       const avisos = Array.isArray(t.avisos) ? t.avisos : [];
-      const detalle = t.varios ? `Tiene varios tipos de ${impuesto}: ver desglose. ${t.desglose.map((l) => `${l.ivaPct} %: base ${Number(l.base).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`).join('; ')}.` : '';
+      const detalle = t.varios ? `Tiene varios tipos de ${impuesto}: están por separado, con la base de cada uno.` : '';
       setLeyendo(['Revisa los datos antes de guardar.', ...avisos, detalle].filter(Boolean).join(' '));
     } catch (err) { setLeyendo('Revisa o rellena los datos antes de guardar.'); setError(err.message); }
     finally { setProcesando(false); }
@@ -155,7 +175,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
     let fallo = '';
     try {
       if (documento) {
-        const datos = confirmacion || g;
+        const datos = confirmacion || paraEnviar(g);
         const r = await fetch('/api/bandeja', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accion: 'aprobar', id: documento.id, datos: { ...datos, ...(conBanco && documento.banco ? { banco: documento.banco.id } : {}) }, ...(confirmacion ? { duplicadoConfirmado: true } : {}) }) });
         const d = await r.json().catch(() => ({}));
         if (r.status === 423 && d.bloqueada) window.location.replace(`/bloqueo?a=${encodeURIComponent(window.location.pathname + window.location.search)}`);
@@ -166,9 +186,9 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
         router.refresh();
         return;
       } else if (gasto) {
-        await llamar('/api/gastos', { method: 'PATCH', body: JSON.stringify(g) });
+        await llamar('/api/gastos', { method: 'PATCH', body: JSON.stringify(paraEnviar(g)) });
       } else {
-        const datos = confirmacion || g;
+        const datos = confirmacion || paraEnviar(g);
         const r = await fetch('/api/gastos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...datos, ...(adjunto ? { huella: adjunto.huella } : {}), ...(confirmacion ? { duplicadoConfirmado: true } : {}) }) });
         const d = await r.json().catch(() => ({}));
         if (r.status === 423 && d.bloqueada) window.location.replace(`/bloqueo?a=${encodeURIComponent(window.location.pathname + window.location.search)}`);
@@ -238,7 +258,6 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
         <CupoEscaneo inicial={cupoInicial} />
       </div>}
       {leyendo && <p className="nota ticket-nota" role="status">{leyendo}</p>}
-      {documento?.propuesta?.desglose && <p className="nota ticket-nota" role="status">Tiene varios tipos de {impuesto}: {documento.propuesta.desglose.map((l) => `${l.ivaPct} % sobre ${eur(l.base)}`).join(' y ')}. Revisa la base antes de aprobarla.</p>}
       {documento?.propuesta?.avisos?.length > 0 && <p className="nota ticket-nota" role="status">{documento.propuesta.avisos.join(' ')}</p>}
       {habitualAplicado?.proveedor && <p className="nota" role="status">Categoría, {impuesto} deducible y actividad como en el último gasto de {habitualAplicado.proveedor}{habitualAplicado.fecha ? ` (${fechaCorta(habitualAplicado.fecha)})` : ''}. Cámbialos si esta vez es distinto.</p>}
       {adjunto && <div className="gasto-adjunto" role="status"><strong>{adjunto.blob.type === 'application/pdf' ? 'PDF adjunto' : 'Foto adjunta'}</strong><span>{adjunto.nombre}</span><small>Se guardará junto con este gasto al pulsar Añadir.</small></div>}
@@ -247,12 +266,35 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
       {g.proveedor && <label>NIF del proveedor (opcional)<input spellCheck={false} autoCorrect="off" autoCapitalize="characters" className="campo" placeholder="NIF del proveedor (opcional)" value={g.proveedorNif || ''} onChange={(e) => poner('proveedorNif', e.target.value)} /></label>}
       {(g.proveedor || g.numero) && <label>Nº de factura (opcional)<input spellCheck={false} autoCorrect="off" className="campo" placeholder="Nº de factura (opcional)" value={g.numero || ''} onChange={(e) => poner('numero', e.target.value)} maxLength={40} /></label>}
       <label>Concepto<input className="campo" placeholder="Concepto" value={g.concepto} onChange={(e) => poner('concepto', e.target.value)} required /></label>
-      <div className="dos-col">
-        <label>Base sin {impuesto}<input className="campo" inputMode="decimal" placeholder={`Base sin ${impuesto}`} value={g.base} onChange={(e) => poner('base', e.target.value)} required /></label>
-        <label>{impuesto}<select className="campo" value={g.ivaPct} onChange={(e) => poner('ivaPct', Number(e.target.value))}>
-          {(igic ? TIPOS_IGIC : [21, 10, 4, 0]).map((n) => <option key={n} value={n}>{impuesto} {n}%</option>)}
-        </select></label>
-      </div>
+      {g.porTipo ? (
+        // Una factura con varios tipos (comida al 10 % y bebida al 21 %): la base de cada tipo; la del gasto es su suma.
+        <div className="gasto-tipos">
+          <p className="mini-t">Base de cada tipo de {impuesto} <small>(en total {eur(gn.base)})</small></p>
+          {g.porTipo.map((t, i) => (
+            <div key={i} className="gasto-tipo">
+              <label>Base sin {impuesto}<input className="campo" inputMode="decimal" placeholder={`Base sin ${impuesto}`} value={t.base} onChange={(e) => poner('porTipo', g.porTipo.map((x, j) => (j === i ? { ...x, base: e.target.value } : x)))} required /></label>
+              <label>{impuesto}<select className="campo" value={t.ivaPct} onChange={(e) => poner('porTipo', g.porTipo.map((x, j) => (j === i ? { ...x, ivaPct: Number(e.target.value) } : x)))}>
+                {[...new Set([...tiposImpuesto, t.ivaPct])].map((n) => <option key={n} value={n}>{impuesto} {String(n).replace('.', ',')}%</option>)}
+              </select></label>
+              {g.porTipo.length > 2 && <button type="button" className="linea-quitar" aria-label="Quitar este tipo" onClick={() => poner('porTipo', g.porTipo.filter((_, j) => j !== i))}>×</button>}
+            </div>
+          ))}
+          <div className="gasto-tipos-botones">
+            {g.porTipo.length < 6 && tiposImpuesto.some((n) => !g.porTipo.some((t) => t.ivaPct === n)) && <button type="button" className="boton sec pequeno" onClick={() => poner('porTipo', [...g.porTipo, { ivaPct: tiposImpuesto.find((n) => !g.porTipo.some((t) => t.ivaPct === n)), base: '' }])}>+ Otro tipo</button>}
+            <button type="button" className="enlace" onClick={() => setG((x) => { const n = numerico(x); return { ...x, porTipo: undefined, base: String(n.base || '').replace('.', ','), ivaPct: n.ivaPct }; })}>Un solo tipo de {impuesto}</button>
+          </div>
+        </div>
+      ) : <>
+        <div className="dos-col">
+          <label>Base sin {impuesto}<input className="campo" inputMode="decimal" placeholder={`Base sin ${impuesto}`} value={g.base} onChange={(e) => poner('base', e.target.value)} required /></label>
+          <label>{impuesto}<select className="campo" value={g.ivaPct} onChange={(e) => poner('ivaPct', Number(e.target.value))}>
+            {tiposImpuesto.map((n) => <option key={n} value={n}>{impuesto} {n}%</option>)}
+          </select></label>
+        </div>
+        {!g.inversion && !g.isp && !g.importacion && !g.compensacion && !['ue', 'fuera'].includes(g.origen) && !gasto?.pedidoProv && (
+          <button type="button" className="enlace" onClick={() => poner('porTipo', [{ ivaPct: Number(g.ivaPct), base: g.base }, { ivaPct: tiposImpuesto.find((n) => n !== Number(g.ivaPct)), base: '' }])}>La factura lleva varios tipos de {impuesto}</button>
+        )}
+      </>}
       {(
         <select className="campo" value={g.irpfPct || 0} onChange={(e) => poner('irpfPct', Number(e.target.value))} aria-label="Retención de IRPF">
           <option value={0}>Sin retención</option>
@@ -261,7 +303,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
         </select>
       )}
       {Number(g.irpfPct) > 0 && <p className="nota">Le pagas la factura menos la retención, y esa retención la ingresas tú en el 111.</p>}
-      {(Number(g.ivaPct) > 0 || origenGasto(g)) && <>
+      {(conIva(gn) || origenGasto(gn)) && <>
         <select className="campo" value={pctOtro ? 'otro' : String(pctDeducible(g))} aria-label={`${impuesto} que te deduces`}
           onChange={(e) => {
             const v = e.target.value; setPctOtro(v === 'otro'); poner('deduciblePct', v === 'otro' ? '' : v === '100' ? undefined : Number(v));
@@ -291,13 +333,13 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
             <option value="otro">En el IRPF cuenta otro porcentaje…</option>
           </select>
           {valor === 'otro' && <label>% que cuenta en el IRPF<input className="campo" inputMode="decimal" value={g.afectoPct ?? ''} onChange={(e) => poner('afectoPct', e.target.value)} placeholder="Ej.: 30" /></label>}
-          <p className="nota">El 130 y la renta solo restan la parte del gasto que es de tu actividad. Un coche que también usas para lo tuyo, para Hacienda no cuenta en el IRPF aunque te deduzcas la mitad del {impuesto}; los suministros de casa con despacho, el 30 % de la parte del despacho.{parseImporte(g.base) > 0 ? ` En el IRPF restas ${eur(costeAfecto({ ...g, base: parseImporte(g.base) }))}.` : ''}</p>
+          <p className="nota">El 130 y la renta solo restan la parte del gasto que es de tu actividad. Un coche que también usas para lo tuyo, para Hacienda no cuenta en el IRPF aunque te deduzcas la mitad del {impuesto}; los suministros de casa con despacho, el 30 % de la parte del despacho.{gn.base > 0 ? ` En el IRPF restas ${eur(costeAfecto(gn))}.` : ''}</p>
         </>;
       })() : <button type="button" className="enlace" onClick={() => setVerAfecto(true)}>¿Lo usas también para lo tuyo? Indica la parte que es de tu actividad</button>)}
-      {parseImporte(g.base) > 0 && <dl className="gasto-importes" aria-label="Importes del gasto">
+      {gn.base > 0 && <dl className="gasto-importes" aria-label="Importes del gasto">
         <div><dt>Base imponible</dt><dd>{eur(calculo.base)}</dd></div>
         <div><dt>{impuesto}</dt><dd>{eur(calculo.iva)}</dd></div>
-        {pctDeducible(g) < 100 && Number(g.ivaPct) > 0 && <div><dt>{impuesto} que te deduces</dt><dd>{eur(partirIva(g, calculo.iva).deducible)}</dd></div>}
+        {pctDeducible(g) < 100 && conIva(gn) && <div><dt>{impuesto} que te deduces</dt><dd>{eur(partirIva(g, calculo.iva).deducible)}</dd></div>}
         <div><dt>Retención de IRPF</dt><dd>{calculo.irpf ? '−' : ''}{eur(calculo.irpf)}</dd></div>
         <div className="gasto-total"><dt>Total a pagar</dt><dd>{eur(calculo.total)}</dd></div>
       </dl>}
@@ -305,22 +347,22 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
         <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.isp)} onChange={(e) => poner('isp', e.target.checked)} />Inversión del sujeto pasivo (lo autoliquido)</label>
         <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.importacion)} onChange={(e) => poner('importacion', e.target.checked)} />Importación (IGIC pagado en aduana, con el DUA)</label>
       </>}
-      {!igic && !Number(g.ivaPct) && (
+      {!igic && !Number(g.ivaPct) && !g.porTipo && (
         <select className="campo" value={g.origen || (nifUE(g.proveedorNif) ? 'ue' : 'es')} onChange={(e) => poner('origen', e.target.value)} aria-label="De dónde es el proveedor">
           <option value="es">Proveedor de España</option>
           <option value="ue">Proveedor de otro país de la UE</option>
           <option value="fuera">Proveedor de fuera de la UE</option>
         </select>
       )}
-      {!igic && !Number(g.ivaPct) && ['ue', 'fuera'].includes(g.origen || (nifUE(g.proveedorNif) ? 'ue' : '')) && <p className="nota">El IVA (21 %) lo declaras tú en el 303 y te lo deduces a la vez: no pagas nada de más.{g.origen !== 'fuera' && !nifUE(g.proveedorNif) ? ' Pon su NIF-IVA (por ejemplo, IE6388047V): también va en el 349.' : ''}</p>}
+      {!igic && !Number(g.ivaPct) && !g.porTipo && ['ue', 'fuera'].includes(g.origen || (nifUE(g.proveedorNif) ? 'ue' : '')) && <p className="nota">El IVA (21 %) lo declaras tú en el 303 y te lo deduces a la vez: no pagas nada de más.{g.origen !== 'fuera' && !nifUE(g.proveedorNif) ? ' Pon su NIF-IVA (por ejemplo, IE6388047V): también va en el 349.' : ''}</p>}
       <label>Fecha<input className="campo" type="date" value={g.fecha} onChange={(e) => poner('fecha', e.target.value)} required /></label>
       <label>Proyecto, obra o local (opcional)<input className="campo" list="proyectos-gasto" value={g.proyecto || ''} onChange={(e) => poner('proyecto', e.target.value)} placeholder="Ej.: Obra Calle Mayor" maxLength={60} /></label>
       <datalist id="proyectos-gasto">{proyectos.map((p) => <option key={p} value={p} />)}</datalist>
       {documento?.banco && <label className="gasto-pendiente"><input type="checkbox" checked={conBanco} onChange={(e) => setConBanco(e.target.checked)} />Es el cargo del banco del {fechaCorta(documento.banco.fecha)} por {eur(Math.abs(documento.banco.importe))}{documento.banco.concepto ? ` (${documento.banco.concepto})` : ''}: emparejarlo</label>}
       {!(documento?.banco && conBanco) && <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.pendiente)} onChange={(e) => poner('pendiente', e.target.checked)} />Aún no lo he pagado</label>}
       {(alquiler || g.alquiler) && <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.alquiler)} onChange={(e) => poner('alquiler', e.target.checked)} />Es el alquiler del local (retención del 19 %)</label>}
-      {!igic && (Number(g.ivaPct) > 0 || g.recc) && <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.recc)} onChange={(e) => poner('recc', e.target.checked)} />Su factura dice «Régimen especial del criterio de caja» (el IVA se deduce al pagarla)</label>}
-      {!igic && (Number(g.ivaPct) === 0 || g.compensacion) && (
+      {!igic && (conIva(gn) || g.recc) && <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.recc)} onChange={(e) => poner('recc', e.target.checked)} />Su factura dice «Régimen especial del criterio de caja» (el IVA se deduce al pagarla)</label>}
+      {!igic && ((Number(g.ivaPct) === 0 && !g.porTipo) || g.compensacion) && (
         <label className="gasto-pendiente">Compra a un agricultor, ganadero o pescador del régimen especial (REAGP)
           <select className="campo" value={g.compensacion || ''} onChange={(e) => poner('compensacion', Number(e.target.value) || undefined)}>
             <option value="">No</option>
@@ -329,7 +371,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
           </select>
         </label>
       )}
-      <div className="gasto-pendiente termino-check"><input id={`${prefijo}-inversion`} aria-labelledby={`${prefijo}-inversion-etiqueta`} type="checkbox" checked={Boolean(g.inversion)} onChange={(e) => poner('inversion', e.target.checked ? { tipo: 'otros' } : undefined)} /><span id={`${prefijo}-inversion-etiqueta`}><label htmlFor={`${prefijo}-inversion`}>Es un </label><Termino id="bienInversion">bien de inversión</Termino><label htmlFor={`${prefijo}-inversion`}> (lo usarás varios años)</label></span></div>
+      {!g.porTipo && <div className="gasto-pendiente termino-check"><input id={`${prefijo}-inversion`} aria-labelledby={`${prefijo}-inversion-etiqueta`} type="checkbox" checked={Boolean(g.inversion)} onChange={(e) => poner('inversion', e.target.checked ? { tipo: 'otros' } : undefined)} /><span id={`${prefijo}-inversion-etiqueta`}><label htmlFor={`${prefijo}-inversion`}>Es un </label><Termino id="bienInversion">bien de inversión</Termino><label htmlFor={`${prefijo}-inversion`}> (lo usarás varios años)</label></span></div>}
       {g.inversion ? <>
         <select className="campo" value={g.inversion.tipo} onChange={(e) => poner('inversion', { tipo: e.target.value })} aria-label="Tipo de bien">
           {TIPOS_BIEN.map((t) => <option key={t.id} value={t.id}>{t.nombre} · {t[regimen === 'sociedad' ? 'sociedad' : 'autonomo']} % al año</option>)}
@@ -362,7 +404,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
           <button type="button" className="boton sec pequeno" onClick={() => poner('stock', [...(g.stock || []), { producto: productos[0].id, cantidad: '1', coste: String(productos[0].coste || '').replace('.', ',') }])}>+ Producto</button>
         </div>
       )}
-      {pareceBien({ ...g, base: parseImporte(g.base) }) && <p className="nota">¿Es un equipo que vas a usar varios años? Márcalo como bien de inversión: se resta repartido en varios años, como pide Hacienda.</p>}
+      {!g.porTipo && pareceBien(gn) && <p className="nota">¿Es un equipo que vas a usar varios años? Márcalo como bien de inversión: se resta repartido en varios años, como pide Hacienda.</p>}
       {error && <p className="error" role="alert">{error}</p>}
       {avisoDuplicados && <div className="nota" role="alert">
         <strong>Puede que este gasto ya esté apuntado</strong>
