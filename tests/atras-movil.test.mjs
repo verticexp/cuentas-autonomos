@@ -1,11 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 
 // «Atrás» en el móvil (los recorridos de verdad están en tests/e2e/atras-movil.mjs): lo que no debe volver a romperse.
 const leer = (ruta) => readFile(new URL(`../${ruta}`, import.meta.url), 'utf8');
+// mobile/ no se sube a Vercel (.vercelignore), y su compilación también pasa estas pruebas.
+const sinApp = !existsSync(new URL('../mobile/ios/App/App/FisquoViewController.swift', import.meta.url)) && 'sin mobile/ (despliegue de Vercel)';
 
-test('la app de iOS vuelve atrás deslizando desde el borde y la web la avisa con el mismo nombre', async () => {
+test('la app de iOS vuelve atrás deslizando desde el borde y la web la avisa con el mismo nombre', { skip: sinApp }, async () => {
   const swift = await leer('mobile/ios/App/App/FisquoViewController.swift');
   const web = await leer('components/GestoAtras.js');
   assert.match(swift, /allowsBackForwardNavigationGestures = true/);
