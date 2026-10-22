@@ -14,7 +14,8 @@ import '@/app/mk.css';
 
 export const dynamic = 'force-dynamic';
 
-// Bandeja de facturas recibidas (lib/bandeja.js): lo subido o reenviado que espera a convertirse en gasto.
+// «Facturas por revisar» (lib/bandeja.js): lo subido o reenviado que espera a convertirse en gasto. En Gastos se ven
+// las primeras (components/Bandeja.js compacto); aquí, todas, la dirección de correo y las aprobadas solas.
 export default async function BandejaPagina({ searchParams }) {
   const u = await requerir('gastos');
   if (!redis) return <SinBD />;
@@ -26,7 +27,7 @@ export default async function BandejaPagina({ searchParams }) {
   return (
     <main className="pagina mk-look gastos">
       <Volver href="/gastos">Gastos</Volver>
-      <header className="cabecera"><h1 className="titulo">Bandeja de facturas</h1></header>
+      <header className="cabecera"><h1 className="titulo">Facturas por revisar</h1></header>
       {aviso === 'banco' && <p className="nota" role="status">Gasto guardado, pero el cargo del banco ya no casaba: emparéjalo desde Gastos › En revisión.</p>}
       <BuzonCorreo inicial={{ listo: correoEntranteListo(), direccion: direccionDe(b), remitentes: b?.remitentes || [], confirmacion: confirmacionVigente(b) }} admin={Boolean(u.admin)} puedeGastar={puede(u, 'gastar')} />
       <Bandeja inicial={ordenar(docs).map(paraPantalla)} resumenInicial={r} puedeGastar={puede(u, 'gastar')} />
@@ -35,4 +36,4 @@ export default async function BandejaPagina({ searchParams }) {
   );
 }
 
-export const metadata = { title: 'Bandeja de facturas' };
+export const metadata = { title: 'Facturas por revisar' };

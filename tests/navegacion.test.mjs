@@ -28,7 +28,8 @@ test('el albarán solo sale con inventario', () => {
 
 test('cada atajo pide su permiso', () => {
   assert.deepEqual(ids({ permisos: ['facturas', 'facturar'], fiscal: {} }), ['factura', 'presupuesto', 'cierre']);
-  assert.deepEqual(ids({ permisos: ['gastos', 'gastar'], fiscal: {} }), ['ticket']);
+  // Con permiso de apuntar gastos: hacer la foto del ticket o subir las facturas que ya están en el móvil.
+  assert.deepEqual(ids({ permisos: ['gastos', 'gastar'], fiscal: {} }), ['ticket', 'facturas']);
   assert.deepEqual(ids({ permisos: ['resumen', 'facturas', 'gastos'], fiscal: {} }), []);
   assert.deepEqual(ids({}), []);
 });

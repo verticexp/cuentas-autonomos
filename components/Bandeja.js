@@ -5,47 +5,23 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { confirmar } from './Confirmar';
 import { eur, fechaCorta } from '@/lib/formato';
-import { reducir } from '@/lib/reducirImagen';
-import { deDataUrl, MAX_BYTES } from '@/lib/justificanteCliente';
+import { ACEPTA, EVENTO, subirVarias } from '@/lib/bandejaCliente';
 import { leerCompartidos } from '@/lib/compartidoCliente';
 import '@/app/bandeja.css';
 
-// Bandeja de facturas (lib/bandeja.js): subir muchas a la vez, ver cómo se leen y aprobar las que cuadran.
-// Se sube de dos en dos (la lectura va después, en el servidor); mientras quede alguna leyéndose, la lista se pide otra
-// vez cada pocos segundos.
-const ACEPTA = 'image/*,application/pdf,.pdf,.xml,.xsig,text/xml,application/xml';
-const esXml = (f) => /xml/.test(f.type) || /\.(xml|xsig)$/i.test(f.name);
-const esPdf = (f) => f.type === 'application/pdf' || /\.pdf$/i.test(f.name);
+// «Por revisar» (lib/bandeja.js): las facturas subidas, reenviadas por correo o compartidas, mientras se leen y hasta que
+// se aprueban. compacto: dentro de Gastos, las primeras `limite` y el botón de aprobar las que cuadran (se sube desde la
+// tarjeta de añadir, components/FormGasto.js); sin él, la pantalla entera, con su zona para subir.
+// Mientras quede alguna leyéndose, la lista se pide otra vez cada pocos segundos.
 const GRUPOS = [
-  ['revisar', 'Por revisar'],
+  ['revisar', 'Listas para revisar'],
   ['error', 'No se han podido leer'],
   ['cuarentena', 'De remitentes que no conoces'],
   ['leyendo', 'Leyendo…'],
   ['aprobado', 'Aprobadas solas (proveedores de confianza)'],
 ];
 
-// Archivo elegido → lo que se sube: las fotos, reducidas como en el escáner; PDF y XML, tal cual.
-async function preparar(f) {
-  if (esXml(f) || esPdf(f)) return f.size > MAX_BYTES ? { error: 'pasa de 5 MB' } : { blob: f, tipo: esXml(f) ? 'application/xml' : 'application/pdf' };
-  if (!/^image\//.test(f.type)) return { error: 'no es una foto, un PDF ni una factura electrónica' };
-  try {
-    const blob = deDataUrl(await reducir(f));
-    return blob.size > MAX_BYTES ? { error: 'pasa de 5 MB' } : { blob, tipo: blob.type };
-  } catch { return { error: 'no se ha podido abrir la foto' }; }
-}
-
-export async function subirABandeja(f, origen) {
-  const p = await preparar(f);
-  if (p.error) return `${f.name}: ${p.error}`;
-  try {
-    const r = await fetch(`/api/bandeja?nombre=${encodeURIComponent(f.name)}${origen ? `&origen=${origen}` : ''}`, { method: 'PUT', headers: { 'Content-Type': p.tipo }, body: p.blob });
-    const d = await r.json().catch(() => ({}));
-    if (r.status === 423 && d.bloqueada) window.location.replace(`/bloqueo?a=${encodeURIComponent(window.location.pathname)}`);
-    return r.ok ? '' : `${f.name}: ${d.error || 'no se ha podido subir'}`;
-  } catch { return `${f.name}: sin conexión`; }
-}
-
-export default function Bandeja({ inicial, resumenInicial, puedeGastar }) {
+export default function Bandeja({ inicial, resumenInicial, puedeGastar, compacto = false, limite = 5 }) {
   const router = useRouter();
   const input = useRef(null);
   const [docs, setDocs] = useState(inicial);
@@ -55,6 +31,8 @@ export default function Bandeja({ inicial, resumenInicial, puedeGastar }) {
   const [aviso, setAviso] = useState('');
   const [encima, setEncima] = useState(false);
   const [ocupado, setOcupado] = useState(false);
+  // Lo que traiga la página al refrescarse manda (otra pestaña, una aprobación…).
+  useEffect(() => { setDocs(inicial); setResumen(resumenInicial); }, [inicial, resumenInicial]);
 
   const recargar = useCallback(async () => {
     try {
@@ -65,6 +43,12 @@ export default function Bandeja({ inicial, resumenInicial, puedeGastar }) {
     } catch { /* sin conexión: se reintenta en la siguiente vuelta */ }
   }, []);
 
+  // Facturas subidas desde otro sitio de la pantalla (la tarjeta de añadir): se piden enseguida.
+  useEffect(() => {
+    window.addEventListener(EVENTO, recargar);
+    return () => window.removeEventListener(EVENTO, recargar);
+  }, [recargar]);
+
   // Mientras se lea algo, la lista se actualiza sola.
   useEffect(() => {
     if (!resumen.leyendo && !subiendo) return undefined;
@@ -73,21 +57,10 @@ export default function Bandeja({ inicial, resumenInicial, puedeGastar }) {
   }, [resumen.leyendo, subiendo, recargar]);
 
   const subir = async (lista, origen) => {
-    const archivos = [...lista].slice(0, 100);
-    if (!archivos.length) return;
-    setErrores([]); setAviso(''); setSubiendo({ hechos: 0, total: archivos.length });
-    const fallos = [];
-    let i = 0;
-    const hilo = async () => {
-      while (i < archivos.length) {
-        const f = archivos[i++];
-        const e = await subirABandeja(f, origen);
-        if (e) fallos.push(e);
-        setSubiendo((s) => ({ ...s, hechos: s.hechos + 1 }));
-      }
-    };
-    await Promise.all([hilo(), hilo()]);
-    setErrores(fallos);
+    if (!lista.length) return;
+    setErrores([]); setAviso('');
+    const r = await subirVarias(lista, { origen, progreso: (hechos, total) => setSubiendo({ hechos, total }) });
+    setErrores(r.errores);
     setSubiendo(null);
     await recargar();
     router.refresh();
@@ -95,6 +68,7 @@ export default function Bandeja({ inicial, resumenInicial, puedeGastar }) {
 
   // Lo compartido desde el móvil (app/sw lo deja en la caché y vuelve aquí con ?compartido=N): se sube una vez.
   useEffect(() => {
+    if (compacto) return;
     const q = new URLSearchParams(window.location.search).get('compartido');
     if (q === null) return;
     window.history.replaceState(null, '', '/gastos/bandeja');
@@ -119,7 +93,7 @@ export default function Bandeja({ inicial, resumenInicial, puedeGastar }) {
   };
 
   const accion = async (id, que) => {
-    if (que === 'descartar' && !(await confirmar({ titulo: 'Descartar factura', texto: 'Se quita de la bandeja y se borra su archivo.', aceptar: 'Descartar', peligro: true }))) return;
+    if (que === 'descartar' && !(await confirmar({ titulo: 'Descartar factura', texto: 'Se quita de «Por revisar» y se borra su archivo.', aceptar: 'Descartar', peligro: true }))) return;
     setOcupado(true);
     try {
       const r = await fetch('/api/bandeja', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accion: que, id }) });
@@ -128,12 +102,39 @@ export default function Bandeja({ inicial, resumenInicial, puedeGastar }) {
     await recargar();
   };
 
+  const avisos = <>
+    {errores.length > 0 && <div className="nota" role="alert"><strong>No se han podido subir:</strong><ul>{errores.map((e) => <li key={e}>{e}</li>)}</ul></div>}
+    {aviso && <p className="nota" role="status">{aviso}</p>}
+  </>;
+  const cuadran = puedeGastar && resumen.cuadran > 0 && (
+    <div className="bandeja-cuadran">
+      <span><strong>{resumen.cuadran === 1 ? '1 factura cuadra' : `${resumen.cuadran} facturas cuadran`}</strong>: base, IVA y total coinciden, con fecha clara y sin posibles duplicados.</span>
+      <button type="button" className="boton" disabled={ocupado} onClick={aprobarCuadran}>{resumen.cuadran === 1 ? 'Aprobarla' : `Aprobar las ${resumen.cuadran}`}</button>
+    </div>
+  );
+
+  // Dentro de Gastos: una sola lista con lo más urgente (lib/bandeja.js ordenar) y el enlace a todas.
+  if (compacto) {
+    const vivas = docs.filter((d) => d.estado !== 'aprobado');
+    if (!vivas.length && !aviso) return null;
+    return (
+      <section className="grupo bandeja bandeja-compacta" id="por-revisar">
+        <h2 className="grupo-t">Por revisar · {vivas.length}</h2>
+        <p className="grupo-pie arriba">Las facturas que has subido o reenviado por correo. Ábrelas para revisarlas o aprueba de golpe las que cuadran.</p>
+        {avisos}
+        {cuadran}
+        {vivas.length > 0 && <ul className="grupo-lista">{vivas.slice(0, limite).map((d) => <Fila key={d.id} d={d} puedeGastar={puedeGastar} ocupado={ocupado} accion={accion} />)}</ul>}
+        {(vivas.length > limite || docs.length > vivas.length) && <p className="grupo-pie"><Link href="/gastos/bandeja">{vivas.length > limite ? `Ver las ${vivas.length} ›` : 'Ver también las aprobadas solas ›'}</Link></p>}
+      </section>
+    );
+  }
+
   return (
     <div className="bandeja">
       {puedeGastar && (
         <div className={`bandeja-subir${encima ? ' encima' : ''}`}
           onDragOver={(e) => { e.preventDefault(); setEncima(true); }} onDragLeave={() => setEncima(false)}
-          onDrop={(e) => { e.preventDefault(); setEncima(false); subir(e.dataTransfer.files); }}>
+          onDrop={(e) => { e.preventDefault(); setEncima(false); subir([...e.dataTransfer.files]); }}>
           <div>
             <strong>Sube tus facturas de gasto</strong>
             <small>Elige o arrastra aquí los PDF, las fotos o las facturas electrónicas (XML), todos los que quieras a la vez. Fisquo los lee y te los deja listos para revisar.</small>
@@ -142,15 +143,8 @@ export default function Bandeja({ inicial, resumenInicial, puedeGastar }) {
           <input ref={input} type="file" multiple accept={ACEPTA} hidden onChange={(e) => { const l = [...e.target.files]; e.target.value = ''; subir(l); }} />
         </div>
       )}
-      {errores.length > 0 && <div className="nota" role="alert"><strong>No se han podido subir:</strong><ul>{errores.map((e) => <li key={e}>{e}</li>)}</ul></div>}
-      {aviso && <p className="nota" role="status">{aviso}</p>}
-
-      {puedeGastar && resumen.cuadran > 0 && (
-        <div className="bandeja-cuadran">
-          <span><strong>{resumen.cuadran === 1 ? '1 factura cuadra' : `${resumen.cuadran} facturas cuadran`}</strong>: base, IVA y total coinciden, con fecha clara y sin posibles duplicados.</span>
-          <button type="button" className="boton" disabled={ocupado} onClick={aprobarCuadran}>{resumen.cuadran === 1 ? 'Aprobarla' : `Aprobar las ${resumen.cuadran}`}</button>
-        </div>
-      )}
+      {avisos}
+      {cuadran}
 
       {GRUPOS.map(([estado, titulo]) => {
         const lista = docs.filter((d) => d.estado === estado);

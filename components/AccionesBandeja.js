@@ -18,7 +18,7 @@ export function AccionesDocumento({ id, estado, remitente = '' }) {
   const [error, setError] = useState('');
   const hacer = async (accion) => {
     if (accion === 'deshacer' && !(await confirmar({ titulo: 'Deshacer', texto: 'Se borra el gasto que se guardó solo y la factura vuelve a «Por revisar».', aceptar: 'Deshacer', peligro: true }))) return;
-    if (accion === 'descartar' && !(await confirmar({ titulo: 'Descartar factura', texto: estado === 'aprobado' ? 'Se quita de la bandeja; el gasto ya guardado no se toca.' : 'Se quita de la bandeja y se borra su archivo.', aceptar: 'Descartar', peligro: true }))) return;
+    if (accion === 'descartar' && !(await confirmar({ titulo: 'Descartar factura', texto: estado === 'aprobado' ? 'Se quita de «Por revisar»; el gasto ya guardado no se toca.' : 'Se quita de «Por revisar» y se borra su archivo.', aceptar: 'Descartar', peligro: true }))) return;
     setOcupado(true); setError('');
     try {
       await llamar(accion, id);
@@ -32,7 +32,7 @@ export function AccionesDocumento({ id, estado, remitente = '' }) {
       {['error', 'revisar', 'cuarentena'].includes(estado) && <button type="button" className="boton sec" disabled={ocupado} onClick={() => hacer('releer')}>{estado === 'cuarentena' ? 'Leerla con IA' : 'Leer otra vez'}</button>}
       {estado === 'aprobado' && <button type="button" className="boton sec" disabled={ocupado} onClick={() => hacer('deshacer')}>Deshacer: borrar el gasto y revisarla</button>}
       {estado === 'cuarentena' && remitente && <button type="button" className="boton sec" disabled={ocupado} onClick={() => hacer('permitir')}>Permitir siempre a {remitente}</button>}
-      {estado !== 'leyendo' && <button type="button" className="boton sec" disabled={ocupado} onClick={() => hacer('descartar')}>{estado === 'aprobado' ? 'Quitar de la bandeja' : 'Descartar'}</button>}
+      {estado !== 'leyendo' && <button type="button" className="boton sec" disabled={ocupado} onClick={() => hacer('descartar')}>{estado === 'aprobado' ? 'Quitar de la lista' : 'Descartar'}</button>}
       {error && <p className="error" role="alert">{error}</p>}
     </div>
   );
@@ -71,8 +71,8 @@ export function ConfianzaProveedor({ clave, proveedor, proveedorNif, inicial = f
   };
   return (
     <div className="bloque">
-      <label className="gasto-pendiente"><input type="checkbox" checked={activo} disabled={ocupado} onChange={(e) => cambiar(e.target.checked)} />Aprobar solas sus facturas de la bandeja cuando cuadren</label>
-      <p className="nota">Solo las que cuadran (base, IVA y total coinciden, fecha clara, un tipo de IVA y sin posibles duplicados), con la clasificación de su último gasto. Se ven un mes en la bandeja por si quieres deshacerlo.</p>
+      <label className="gasto-pendiente"><input type="checkbox" checked={activo} disabled={ocupado} onChange={(e) => cambiar(e.target.checked)} />Aprobar solas sus facturas que lleguen a «Por revisar» cuando cuadren</label>
+      <p className="nota">Solo las que cuadran (base, IVA y total coinciden, con fecha clara y sin posibles duplicados), con la clasificación de su último gasto. Se ven un mes en «Por revisar» por si quieres deshacerlo.</p>
       {error && <p className="error" role="alert">{error}</p>}
     </div>
   );

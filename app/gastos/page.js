@@ -26,7 +26,11 @@ import { DETALLE, puede } from '@/lib/permisos';
 import Link from 'next/link';
 import { revisionGastos } from '@/lib/revisionGastos';
 import RevisionGastos from '@/components/RevisionGastos';
-import { resumen as resumenBandeja } from '@/lib/bandeja';
+import { ordenar, paraPantalla, resumen as resumenBandeja } from '@/lib/bandeja';
+import { adelantarLecturas, documentosBandeja } from '@/lib/bandejaServidor';
+import { correoEntranteListo } from '@/lib/correoEntrante';
+import { buzonDe, direccionDe } from '@/lib/buzon';
+import Bandeja from '@/components/Bandeja';
 import '@/app/proveedores.css';
 
 import '@/app/mk.css';
@@ -40,13 +44,15 @@ export default async function Gastos({ searchParams }) {
   // Informe de capacidad E01: la lista va por páginas sobre el índice; el año, lo pendiente y los bienes de inversión se
   // leen aparte (lib/indices.js), y la conciliación solo con lo que puede casar (candidatosConciliacion).
   if (!redis) return <SinBD />;
-  const { q, estado, banco, desde, escanear } = await searchParams;
+  const { q, estado, banco, desde, escanear, subir } = await searchParams;
   const h = hoy();
   const anio = h.slice(0, 4);
   // E06: lo que se debe y lo que queda sin pagar salen de los totales precalculados.
-  const [movs, productos, total, delAnioTodos, agr, nBienes, cupoIA, bandeja, sinPagarDocs] = await Promise.all([leer(u, 'banco'), leer(u, 'productos'), contar(u, 'gastos'), leerRango(u, 'gastos', `${anio}-01-01`, `${anio}-12-31`), totales(u, 'gastos', ['dc', 'sn']), contarMarcados(u, 'gastos', 'i'), puede(u, 'gastar') ? cupoEscaneos(u).catch(() => null) : null, leer(u, 'bandeja'), leerMarcados(u, 'gastos', 'p')]);
-  // Bandeja de facturas (lib/bandeja.js): lo que espera revisión, o la entrada para subir varias a la vez.
-  const enBandeja = resumenBandeja(bandeja || []).pendientes;
+  const [movs, productos, total, delAnioTodos, agr, nBienes, cupoIA, bandeja, sinPagarDocs] = await Promise.all([leer(u, 'banco'), leer(u, 'productos'), contar(u, 'gastos'), leerRango(u, 'gastos', `${anio}-01-01`, `${anio}-12-31`), totales(u, 'gastos', ['dc', 'sn']), contarMarcados(u, 'gastos', 'i'), puede(u, 'gastar') ? cupoEscaneos(u).catch(() => null) : null, documentosBandeja(u), leerMarcados(u, 'gastos', 'p')]);
+  // «Por revisar» (lib/bandeja.js): las facturas subidas o reenviadas que esperan, en esta misma pantalla.
+  await adelantarLecturas(u, bandeja || []);
+  const porRevisar = { docs: ordenar(bandeja || []).map(paraPantalla), resumen: resumenBandeja(bandeja || []) };
+  const correo = { listo: correoEntranteListo(), direccion: direccionDe(buzonDe(u)) };
   // Con inventario: los productos que llevan stock, para apuntar lo que entra con cada compra.
   const stockProductos = fiscalDe(u).inventario ? (productos || []).filter((p) => !p.servicio).sort((a, b) => a.nombre.localeCompare(b.nombre)) : [];
   // En revisión (lib/revisionGastos.js): cargos del banco sin gasto que parecen un gasto (no impuestos, nóminas, préstamos…).
@@ -135,11 +141,10 @@ export default async function Gastos({ searchParams }) {
         <h1 className="titulo">Gastos</h1>
       </header>
       {/* Primero lo que más se hace: escanear el ticket. El formulario entero se abre al escanear o al pedirlo. */}
-      {puede(u, 'gastar') && !movimiento && <FormGasto igic={usaIgic(fiscalDe(u))} cupoInicial={cupoIA} hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} productos={stockProductos} plegado={hay} destacar={Boolean(escanear)} proyectos={proyectos} />}
+      {puede(u, 'gastar') && !movimiento && <FormGasto igic={usaIgic(fiscalDe(u))} cupoInicial={cupoIA} hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} productos={stockProductos} plegado={hay} destacar={Boolean(escanear || subir)} proyectos={proyectos} correo={correo} />}
 
-      {(puede(u, 'gastar') || enBandeja > 0) && !movimiento && (
-        <p className="resumen-linea"><Link href="/gastos/bandeja" className="prov-enlace">{enBandeja ? `Bandeja de facturas · ${enBandeja === 1 ? '1 por revisar' : `${enBandeja} por revisar`} ›` : 'Subir varias facturas a la vez ›'}</Link></p>
-      )}
+      {/* Lo que espera revisión, justo debajo de donde se sube: siempre montado, para enterarse de lo que se acaba de subir. */}
+      {!movimiento && <Bandeja compacto inicial={porRevisar.docs} resumenInicial={porRevisar.resumen} puedeGastar={puede(u, 'gastar')} />}
 
       {(delAnio.length > 0 || hayProveedores) && (
         <p className="resumen-linea">

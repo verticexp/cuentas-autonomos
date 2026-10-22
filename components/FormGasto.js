@@ -24,6 +24,8 @@ import CupoEscaneo from './CupoEscaneo';
 import { preparar, subir } from '@/lib/justificanteCliente';
 import { escanearNativo } from '@/lib/escanerNativo';
 import { NO_IA, permisoIA } from '@/lib/permisoIA';
+import { ACEPTA, subirVarias } from '@/lib/bandejaCliente';
+import Link from 'next/link';
 import '@/app/ticket.css';
 
 // Varios tipos de IVA en la misma factura (lib/calculos.js porTipo): en el formulario, cada base como se escribe.
@@ -51,9 +53,11 @@ const desdePropuesta = (p, vacio) => {
 // Lo habitual del proveedor (lib/proveedorHabitual.js) en lo que aún no se ha tocado.
 const CAMPOS_HABITUALES = ['categoria', 'deduciblePct', 'afectoPct', 'actividad', 'proyecto', 'alquiler', 'recc'];
 
-// plegado: en la lista de gastos empieza como una tarjeta con «Escanear ticket»; el formulario se abre al escanear o al pedirlo.
+// plegado: en la lista de gastos empieza como una tarjeta con «Escanear ticket», «Subir facturas» y «Apuntar a mano»; el
+// formulario se abre al escanear o al pedirlo. Las facturas subidas van a «Por revisar» (lib/bandeja.js), en la misma
+// pantalla; correo: { listo, direccion } de la dirección para reenviárselas (lib/buzon.js).
 // documento: una factura de la bandeja (lib/bandeja.js) para revisar y aprobar; siguiente: la que va después.
-export default function FormGasto({ hoy, gasto, actividades, alquiler = false, plegado = false, destacar = false, regimen = 'autonomo', cupoInicial = null, movimiento = null, productos = [], proyectos = [], igic = false, documento = null, siguiente = null }) {
+export default function FormGasto({ hoy, gasto, actividades, alquiler = false, plegado = false, destacar = false, regimen = 'autonomo', cupoInicial = null, movimiento = null, productos = [], proyectos = [], igic = false, documento = null, siguiente = null , correo = null }) {
   const impuesto = igic ? 'IGIC' : 'IVA';
   const router = useRouter();
   const prefijo = useId();
@@ -78,6 +82,20 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
   const [leyendo, setLeyendo] = useState('');
   const [abierto, setAbierto] = useState(Boolean(gasto) || !plegado);
   const [hecho, setHecho] = useState(false);
+  // Subir facturas a «Por revisar» desde la tarjeta (una o varias, también arrastrándolas).
+  const facturasInput = useRef(null);
+  const [subida, setSubida] = useState(null); // { hechos, total } mientras sube; { texto, errores } al acabar
+  const [encima, setEncima] = useState(false);
+  const [copiado, setCopiado] = useState(false);
+  const subirFacturas = async (lista) => {
+    if (!lista.length || subida?.total) return;
+    setSubida({ hechos: 0, total: lista.length });
+    const r = await subirVarias(lista, { progreso: (hechos, total) => setSubida({ hechos, total }) });
+    // Una sola: se abre para revisarla en cuanto se lea. Varias: se leen en «Por revisar», aquí debajo.
+    if (lista.length === 1 && r.ids.length === 1) { router.push(`/gastos/bandeja/${encodeURIComponent(r.ids[0])}`); return; }
+    setSubida({ texto: r.ids.length ? `${r.ids.length === 1 ? '1 factura subida' : `${r.ids.length} facturas subidas`}: se están leyendo en «Por revisar», aquí debajo.` : '', errores: r.errores });
+    router.refresh();
+  };
   useEffect(() => {
     const abrirManual = () => {
       if (window.location.hash === '#apuntar-gasto') { setAbierto(true); setHecho(false); }
@@ -220,19 +238,31 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
 
   if (!abierto) {
     return (
-      <div className={`gasto-rapido${destacar ? ' destacado' : ''}`}>
+      <div className={`gasto-rapido${destacar ? ' destacado' : ''}${encima ? ' encima' : ''}`}
+        onDragOver={(e) => { if (e.dataTransfer?.types?.includes('Files')) { e.preventDefault(); setEncima(true); } }} onDragLeave={() => setEncima(false)}
+        onDrop={(e) => { if (!e.dataTransfer?.files?.length) return; e.preventDefault(); setEncima(false); subirFacturas([...e.dataTransfer.files]); }}>
         <div className="gasto-rapido-txt">
-          <strong>{hecho ? '✓ Gasto añadido' : 'Añadir un gasto'}</strong>
-          <small>Haz una foto al ticket o sube la factura: Fisquo lee proveedor, base, {impuesto}, IRPF y fecha.</small>
+          <strong>{hecho ? '✓ Gasto añadido' : encima ? 'Suelta aquí tus facturas' : 'Añadir gastos'}</strong>
+          <small>Haz una foto al ticket o sube tus facturas, una o varias<span className="solo-pc"> (también arrastrándolas aquí)</span>. Fisquo las lee por ti.</small>
         </div>
         {error && <p className="error" role="alert">{error}</p>}
         {avisoAdjunto}
+        {subida?.texto && <p className="gasto-confirmacion" role="status">{subida.texto} <a href="#por-revisar">Ver ›</a></p>}
+        {subida?.errores?.length > 0 && <div className="nota" role="alert"><strong>No se han podido subir:</strong><ul>{subida.errores.map((x) => <li key={x}>{x}</li>)}</ul></div>}
         <div className="gasto-rapido-botones">
           <button type="button" id="escanear-ticket" className="boton gasto-escanear" onClick={abrirCamara}><svg viewBox="0 0 24 24" aria-hidden><path d="M4 8V6a2 2 0 012-2h2M16 4h2a2 2 0 012 2v2M20 16v2a2 2 0 01-2 2h-2M8 20H6a2 2 0 01-2-2v-2M4 12h16" /></svg>Escanear ticket</button><input ref={camaraInput} type="file" accept="image/*" capture="environment" onChange={foto} hidden />
           {!gasto && !movimiento && <RafagaTickets igic={igic} hoy={hoy} actividades={actividades} />}
-          <button type="button" className="boton sec" onClick={() => facturaInput.current?.click()}>Subir factura</button><input ref={facturaInput} type="file" accept="image/*,application/pdf,.xml,.xsig,text/xml,application/xml" onChange={foto} hidden />
+          <button type="button" className="boton sec" disabled={Boolean(subida?.total)} onClick={() => facturasInput.current?.click()}>{subida?.total ? `Subiendo ${subida.hechos} de ${subida.total}…` : 'Subir facturas'}</button><input ref={facturasInput} type="file" multiple accept={ACEPTA} onChange={(e) => { const l = [...e.target.files]; e.target.value = ''; subirFacturas(l); }} hidden />
           <button id="apuntar-gasto" type="button" className="boton sec" onClick={() => { setAbierto(true); setHecho(false); }}>Apuntar a mano</button>
         </div>
+        {correo?.direccion && (
+          <p className="gasto-correo">
+            <span>O reenvíalas por correo a</span> <code>{correo.direccion}</code>
+            <button type="button" className="enlace" onClick={async () => { try { await navigator.clipboard.writeText(correo.direccion); setCopiado(true); setTimeout(() => setCopiado(false), 2000); } catch { /* se ve en pantalla */ } }}>{copiado ? 'Copiada' : 'Copiar'}</button>
+            <Link href="/gastos/bandeja#correo">Que lleguen solas ›</Link>
+          </p>
+        )}
+        {correo?.listo && !correo.direccion && <p className="gasto-correo"><Link href="/gastos/bandeja#correo">Recíbelas también por correo, sin descargarlas ›</Link></p>}
         <CupoEscaneo inicial={cupoInicial} />
       </div>
     );

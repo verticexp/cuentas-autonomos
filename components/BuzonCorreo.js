@@ -32,7 +32,7 @@ export default function BuzonCorreo({ inicial, admin = false, puedeGastar = fals
 
   if (!b.direccion) {
     return (
-      <div className="tarjeta bloque buzon">
+      <div className="tarjeta bloque buzon" id="correo">
         <strong>Recíbelas por correo</strong>
         <p className="nota">Te damos una dirección propia: reenvíale las facturas que te llegan (o haz que tu correo lo haga solo) y entran aquí sin que tengas que descargarlas.</p>
         {puedeGastar && <button type="button" className="boton" disabled={ocupado} onClick={() => hacer('crear')}>Crear mi dirección</button>}
@@ -42,7 +42,7 @@ export default function BuzonCorreo({ inicial, admin = false, puedeGastar = fals
   }
 
   return (
-    <div className="tarjeta bloque buzon">
+    <div className="tarjeta bloque buzon" id="correo">
       <strong>Reenvía tus facturas a</strong>
       <div className="buzon-direccion">
         <code>{b.direccion}</code>

@@ -12,7 +12,7 @@ export async function GET(req) {
   if (res) return res;
   const id = String(req.nextUrl.searchParams.get('id') || '');
   const d = idValido(id) && (await leerUno(u, 'bandeja', id));
-  if (!d?.archivo?.clave) return error('Esta factura ya no está en la bandeja', 404);
+  if (!d?.archivo?.clave) return error('Esta factura ya no está en «Por revisar»', 404);
   const datos = await leerJustificante(u, d.archivo);
   if (!datos) return error('No se encuentra el archivo', 404);
   const nombre = `factura-${id.slice(1, 9)}.${TIPOS[d.archivo.tipo] || 'bin'}`;
