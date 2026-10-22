@@ -11,6 +11,9 @@ const gastos = [
   { id: 'profesional', fecha: '2026-03-10', base: 1000, ivaPct: 21, irpfPct: 15, actividad: 'otra', proveedor: 'Profesional' },
   { id: 'alquiler', fecha: '2026-03-11', base: 1000, ivaPct: 21, irpfPct: 19, actividad: 'otra', proveedor: 'Arrendador', alquiler: true },
 ];
+// El 2T de 2026: en el País Vasco el pago fraccionado del IRPF del 1T está exonerado (normas forales de abril de 2026).
+const gastos2T = gastos.map((g) => ({ ...g, fecha: g.fecha.replace('-03-', '-06-') }));
+const datos2T = (territorio, mas = {}) => datos(territorio, { facturas: [factura('2026-06-10')], gastos: gastos2T, hoy: '2026-07-10', ...mas });
 const datos = (territorio, mas = {}) => ({ fiscal: fiscalDe(territorio), facturas: [factura()], gastos, rend130: { 2024: 20000 }, anio: 2026, hoy: '2026-04-10', meses: 2, ...mas });
 const hacienda = (d) => prevision(d).movimientos.filter((m) => m.tipo === 'hacienda');
 const movimiento = (d, concepto) => {
@@ -20,23 +23,28 @@ const movimiento = (d, concepto) => {
 };
 const aviso = (fiscal, anio, fecha) => plazosFiscales(fiscal, anio).find((p) => p.fecha === fecha)?.texto || '';
 
-test('Bizkaia: IVA, IRPF, retenciones y alquiler vencen el 27 de abril de 2026', () => {
-  const d = datos('bizkaia');
-  for (const [concepto, importe] of [['IVA (303) del 1T', -1680], ['IRPF (130) del 1T', -1000], ['Retenciones (110) del 1T', -150], ['Alquiler (115) del 1T', -190]]) {
+test('Bizkaia: IVA, IRPF, retenciones y alquiler del 2T vencen el 27 de julio de 2026; el IRPF del 1T, exonerado', () => {
+  const d = datos2T('bizkaia');
+  for (const [concepto, importe] of [['IVA (303) del 2T', -1680], ['IRPF (130) del 2T', -1000], ['Retenciones (110) del 2T', -150], ['Alquiler (115) del 2T', -190]]) {
     const m = movimiento(d, concepto);
-    assert.equal(m.fecha, '2026-04-27');
+    assert.equal(m.fecha, '2026-07-27');
     assert.equal(m.importe, importe);
   }
-  const texto = aviso(d.fiscal, 2026, '2026-04-27');
-  for (const modelo of ['303', '130', '110', '115']) assert.match(texto, new RegExp(`${modelo}.*del 1T`));
+  const texto = aviso(d.fiscal, 2026, '2026-07-27');
+  for (const modelo of ['303', '130', '110', '115']) assert.match(texto, new RegExp(`${modelo}.*del 2T`));
   assert.doesNotMatch(texto, /111/);
   const p = panelResumen(d);
-  assert.equal(p.plazo.fecha, '2026-04-27');
+  assert.equal(p.plazo.fecha, '2026-07-27');
   assert.equal(p.debe.m130, 1000);
   assert.equal(p.aPagar, 2680);
   assert.equal(p.r.trimestres[0].modeloIva, 'Modelo 303');
   assert.equal(p.qAhora.m130, 1000);
-  assert.equal(proximoPlazoDe(d.fiscal, '111', d.hoy), '2026-04-27');
+  assert.equal(proximoPlazoDe(d.fiscal, '111', d.hoy), '2026-07-27');
+  // 1T de 2026: sin pago fraccionado del IRPF ni aviso del 130; el resto, el 27 de abril.
+  const t1 = datos('bizkaia');
+  assert.ok(hacienda(t1).every((m) => m.concepto !== 'IRPF (130) del 1T'));
+  assert.equal(movimiento(t1, 'IVA (303) del 1T').fecha, '2026-04-27');
+  assert.doesNotMatch(aviso(t1.fiscal, 2026, '2026-04-27'), /130/);
 });
 
 test('Bizkaia: el IVA del 4T es el 390 y vence el 1 de febrero de 2027', () => {
@@ -55,40 +63,40 @@ test('Bizkaia: el IVA del 4T es el 390 y vence el 1 de febrero de 2027', () => {
   assert.equal(proximoPlazoDe(d.fiscal, '303', d.hoy), '2027-02-01');
 });
 
-test('Gipuzkoa: IVA 300 el 27 de abril e IRPF el 11 de mayo de 2026', () => {
-  const d = datos('gipuzkoa');
-  assert.equal(movimiento(d, 'IVA (300) del 1T').fecha, '2026-04-27');
-  assert.equal(movimiento(d, 'IRPF (130) del 1T').fecha, '2026-05-11');
-  assert.equal(movimiento(d, 'IRPF (130) del 1T').importe, -1000);
-  assert.match(aviso(d.fiscal, 2026, '2026-04-27'), /300 del 1T/);
-  assert.doesNotMatch(aviso(d.fiscal, 2026, '2026-04-27'), /130/);
-  assert.match(aviso(d.fiscal, 2026, '2026-05-11'), /130 del 1T/);
-  const abril = panelResumen(d);
-  assert.equal(abril.plazo.fecha, '2026-04-27');
-  assert.equal(abril.aPagar, 1680);
-  assert.equal(abril.debe.pend130, false);
-  assert.equal(abril.debe.plazoIrpf, '2026-05-11');
-  assert.equal(abril.debe.modeloIva, 'Modelo 300');
-  const mayo = panelResumen({ ...d, hoy: '2026-05-01' });
-  assert.equal(mayo.plazo.fecha, '2026-05-11');
-  assert.equal(mayo.debe.pend303, false);
-  assert.equal(mayo.debe.m130, 1000);
-  assert.equal(mayo.aPagar, 1000);
+test('Gipuzkoa: IVA 300 del 2T el 27 de julio e IRPF el 10 de agosto de 2026', () => {
+  const d = datos2T('gipuzkoa');
+  assert.equal(movimiento(d, 'IVA (300) del 2T').fecha, '2026-07-27');
+  assert.equal(movimiento(d, 'IRPF (130) del 2T').fecha, '2026-08-10');
+  assert.equal(movimiento(d, 'IRPF (130) del 2T').importe, -1000);
+  assert.match(aviso(d.fiscal, 2026, '2026-07-27'), /300 del 2T/);
+  assert.doesNotMatch(aviso(d.fiscal, 2026, '2026-07-27'), /130/);
+  assert.match(aviso(d.fiscal, 2026, '2026-08-10'), /130 del 2T/);
+  const julio = panelResumen(d);
+  assert.equal(julio.plazo.fecha, '2026-07-27');
+  assert.equal(julio.aPagar, 1680);
+  assert.equal(julio.debe.pend130, false);
+  assert.equal(julio.debe.plazoIrpf, '2026-08-10');
+  assert.equal(julio.debe.modeloIva, 'Modelo 300');
+  const agosto = panelResumen({ ...d, hoy: '2026-08-01' });
+  assert.equal(agosto.plazo.fecha, '2026-08-10');
+  assert.equal(agosto.debe.pend303, false);
+  assert.equal(agosto.debe.m130, 1000);
+  assert.equal(agosto.aPagar, 1000);
   // Presentar el IVA antes de su vencimiento permite ver ya el siguiente pago.
-  assert.equal(panelResumen({ ...d, pres303: { 2026: { 1: true } } }).plazo.fecha, '2026-05-11');
+  assert.equal(panelResumen({ ...d, pres303: { 2026: { 2: true } } }).plazo.fecha, '2026-08-10');
 });
 
-test('Álava: IRPF de oficio el 11 de mayo, sin aviso de presentar el 130', () => {
-  const d = datos('alava');
-  const m = movimiento(d, 'IRPF (pago de oficio) del 1T');
-  assert.equal(m.fecha, '2026-05-11');
+test('Álava: IRPF de oficio del 2T el 10 de agosto, sin aviso de presentar el 130', () => {
+  const d = datos2T('alava');
+  const m = movimiento(d, 'IRPF (pago de oficio) del 2T');
+  assert.equal(m.fecha, '2026-08-10');
   assert.equal(m.importe, -1000);
-  assert.equal(movimiento(d, 'Alquiler (115-A) del 1T').fecha, '2026-04-27');
+  assert.equal(movimiento(d, 'Alquiler (115-A) del 2T').fecha, '2026-07-27');
   assert.ok(plazosFiscales(d.fiscal, 2026).every((p) => !p.texto.includes('130')));
-  assert.ok(avisosDelDia({ fiscal: d.fiscal }, '2026-05-10').every((a) => !a.titulo.includes('130')));
+  assert.ok(avisosDelDia({ fiscal: d.fiscal }, '2026-08-09').every((a) => !a.titulo.includes('130')));
   assert.equal(proximoPlazoDe(d.fiscal, '130', d.hoy), null);
-  const p = panelResumen({ ...d, hoy: '2026-05-01' });
-  assert.equal(p.plazo.fecha, '2026-05-11');
+  const p = panelResumen({ ...d, hoy: '2026-08-01' });
+  assert.equal(p.plazo.fecha, '2026-08-10');
   assert.equal(p.debe.modeloIrpf, 'IRPF (pago de oficio)');
   assert.equal(p.debe.m130, 1000);
   assert.equal(p.aPagar, 1000);
@@ -164,9 +172,9 @@ test('Forales: si el pago es desconocido no se prevé ni se sustituye por el 130
 });
 
 test('Forales: el rendimiento del penúltimo año en las facturas prevalece sobre el escrito', () => {
-  const d = datos('bizkaia', { facturas: [factura('2024-03-10', { base: 20000 }), factura()], gastos: [] });
+  const d = datos2T('bizkaia', { facturas: [factura('2024-03-10', { base: 20000 }), factura('2026-06-10')], gastos: [] });
   // Rendimiento neto de 2024: 20.000 menos 1.000 de difícil justificación; 5 % = 950 por trimestre.
-  assert.equal(movimiento(d, 'IRPF (130) del 1T').importe, -950);
+  assert.equal(movimiento(d, 'IRPF (130) del 2T').importe, -950);
   const p = panelResumen(d);
   assert.equal(p.debe.m130, 950);
   assert.equal(p.debe.irpfForal.origen, 'fisquo');
@@ -178,7 +186,7 @@ test('Forales: los primeros años usan el cálculo territorial de cada trimestre
   assert.equal(movimiento(d, 'IRPF (130) del 2T').importe, -400);
   const p = panelResumen(d);
   assert.equal(p.debe.m130, 400);
-  assert.equal(p.r.trimestres[0].m130, 2000);
+  assert.equal(p.r.trimestres[0].m130, 0); // 1T de 2026 exonerado (sin él serían 2.000: el 20 % de 10.000)
   assert.equal(p.r.trimestres[1].m130, 400);
 });
 
