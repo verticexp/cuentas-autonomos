@@ -1050,8 +1050,11 @@ console.log('Registro de jornada');
   const csvOtro = await (await pedir(`/api/exportar?tipo=gastos&anio=${mesPrev.slice(0, 4)}`, { cookie: otro })).text();
   const csvYo = await (await pedir(`/api/exportar?tipo=gastos&anio=${mesPrev.slice(0, 4)}`, { cookie: yo })).text();
   const listaOtro = await (await pedir('/gastos', { cookie: otro })).text();
-  const fichaOtro = await pedir(`/gastos/nomina-${nE.id}`, { cookie: otro });
-  ok('sin el permiso de nóminas no se ve lo de cada persona: el Excel las junta, la lista no las nombra y la ficha no se abre', () => assert.ok(!csvOtro.includes('Eva Fichadora') && csvOtro.includes(`Nóminas de ${nombreMes(mesPrev)} · 2 personas`) && csvYo.includes('Nómina Eva Fichadora') && !listaOtro.includes('Nómina Eva') && fichaOtro.status === 404, `${fichaOtro.status} ${csvOtro.slice(0, 300)}`));
+  // La ficha que no se puede ver es la página de «no existe» (con el streaming de Next, con estado 200).
+  const fichaOtro = n(await texto(`/gastos/nomina-${nE.id}`, otro));
+  ok('sin el permiso de nóminas, el Excel de gastos las junta por mes', () => assert.ok(!csvOtro.includes('Eva Fichadora') && csvOtro.includes(`Nóminas de ${nombreMes(mesPrev)} · 2 personas`), csvOtro.split('\n').slice(-4).join(' | ')));
+  ok('con el permiso, una a una', () => assert.ok(csvYo.includes('Nómina Eva Fichadora')));
+  ok('sin el permiso, la lista de gastos no las nombra y la ficha de una no se abre', () => assert.ok(!listaOtro.includes('Nómina Eva') && !fichaOtro.includes('Eva Fichadora'), fichaOtro.slice(0, 200)));
 
   const ex = await pedir(`/api/jornada/exportar?mes=${mesPrev}`, { cookie: yo });
   const z = leerZip(Buffer.from(await ex.arrayBuffer()));
