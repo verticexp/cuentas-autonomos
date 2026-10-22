@@ -84,3 +84,5 @@ fieldset { min-width: 0; }
 .aviso h1 { font-size: 24px; margin-bottom: 8px; }
 .aviso p { color: var(--muted); }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+/* Avisos del territorio fiscal (components/AvisoTerritorio.js): TicketBAI, Hacienda foral. */
+.aviso-territorio { margin: 0 0 14px; padding: 12px 14px; border-left: 3px solid var(--aviso); border-radius: 12px; background: color-mix(in srgb, var(--aviso) 10%, var(--surface)); color: var(--ink); font-size: 15px; line-height: 1.45; }

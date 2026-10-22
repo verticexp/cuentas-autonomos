@@ -2008,5 +2008,21 @@ console.log('Canarias (IGIC)');
   ok('Resumen identifica el IGIC (420)', () => assert.ok(resumen.includes('IGIC (420)')));
 }
 
+console.log('Navarra y País Vasco (Haciendas forales)');
+{
+  const alta = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva: 'Bizkaia Prueba SL', nombre: 'Miren', email: `foral${Date.now()}@test.es` } })).json();
+  const fd = new FormData(); fd.set('codigo', alta.enlace.split('/').pop()); fd.set('password', 'Clave-Local-05-2026');
+  const bi = /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: fd })).headers.get('set-cookie') || '')?.[1];
+  const cfgR = await pedir('/api/cuenta', { metodo: 'PATCH', cookie: bi, cuerpo: { configuracion: { fiscal: { tipo: 'sociedad', iva: 'general', territorio: 'bizkaia', trabajadores: true }, emisor: { nombre: 'Bizkaia Prueba SL', nif: 'B48812341', direccion: 'Gran Vía 1', ciudad: '48001 Bilbao', iban: 'ES00' }, actividades: [{ nombre: 'Consultoría', ivaPct: 21, irpfPct: 0 }] } } });
+  ok('configura una sociedad de Bizkaia', () => assert.equal(cfgR.status, 200));
+  const imp = n(await texto(`/modelos?anio=${Y}`, bi));
+  const impHtml = await (await pedir(`/modelos?anio=${Y}`, { cookie: bi })).text();
+  ok('Impuestos dice que se presenta en la Hacienda Foral de Bizkaia, con su sede', () => assert.ok(imp.includes('Hacienda Foral de Bizkaia') && impHtml.includes('https://www.bizkaia.eus/es/hacienda'), imp.slice(0, 300)));
+  ok('con el 390 como autoliquidación final, el 110 de retenciones y el 203 de Sociedades', () => assert.ok(imp.includes('390 · Autoliquidación final del IVA') && imp.includes('110 · Retenciones') && imp.includes('203 · Pago fraccionado'), imp.slice(0, 600)));
+  ok('sin el fichero de importación de la Sede de la AEAT', () => assert.ok(!imp.includes('Descargar fichero para la Sede')));
+  const nueva = n(await texto('/facturas/nueva', bi));
+  ok('al facturar avisa de TicketBAI', () => assert.ok(nueva.includes('TicketBAI') && nueva.includes('Hacienda Foral de Bizkaia')));
+}
+
 console.log(fallos ? `\n${fallos} comprobaciones fallidas: NO publicar.` : '\nTodo cuadra.');
 process.exit(fallos ? 1 : 0);
