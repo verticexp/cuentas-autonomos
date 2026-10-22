@@ -13,6 +13,7 @@ import '@/app/lineas.css';
 import '@/app/catalogo.css';
 import '@/app/factura-movil.css';
 import { eur } from '@/lib/formato';
+import { IDIOMAS_FACTURA, MONEDAS, formatoDoc } from '@/lib/idiomas';
 import { TIPOS_OPERACION } from '@/lib/operaciones';
 import { evaluarRiesgo, tieneLimite } from '@/lib/riesgo';
 import { mismoCliente, nombreForma } from '@/lib/terceros';
@@ -21,10 +22,10 @@ import '@/app/riesgo.css';
 
 const aTexto = (n) => String(n ?? '').replace('.', ',');
 const lineaVacia = (ivaPct) => ({ concepto: '', cantidad: '1', precio: '', dto: '', ivaPct });
-// Las facturas antiguas (una base, un IVA) se abren como una sola línea.
+// Las facturas antiguas (una base, un IVA) se abren como una sola línea. En otra moneda, con los precios en esa moneda.
 const lineasDe = (x) => (x.lineas?.length
-  ? x.lineas.map((l) => ({ concepto: l.concepto, cantidad: aTexto(l.cantidad), precio: aTexto(l.precio), dto: l.dto ? aTexto(l.dto) : '', ivaPct: l.ivaPct, ...(l.producto ? { producto: l.producto } : {}), ...(l.albaran ? { albaran: l.albaran } : {}) }))
-  : [{ concepto: x.concepto || '', cantidad: '1', precio: aTexto(x.base), dto: '', ivaPct: x.ivaPct }]);
+  ? x.lineas.map((l) => ({ concepto: l.concepto, cantidad: aTexto(l.cantidad), precio: aTexto(l.precioDivisa ?? l.precio), dto: l.dto ? aTexto(l.dto) : '', ivaPct: l.ivaPct, ...(l.producto ? { producto: l.producto } : {}), ...(l.albaran ? { albaran: l.albaran } : {}) }))
+  : [{ concepto: x.concepto || '', cantidad: '1', precio: aTexto(x.baseDivisa ?? x.base), dto: '', ivaPct: x.ivaPct }]);
 const numero = (v) => leerImporte(v) || 0;
 
 // riesgos: lo que debe ahora cada cliente con riesgo máximo ({ id: euros }); el límite lo comprueba el servidor.
@@ -37,11 +38,13 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
     ? { ...factura, lineas: lineasDe(factura) }
     : orig
       ? { actividad: orig.actividad, fecha: hoy, cliente: orig.cliente, irpfPct: orig.irpfPct, nota: '', cobrada: false, rectifica: orig.id, proyecto: orig.proyecto || '', ...(orig.recargo ? { recargo: true } : {}),
+        // Mismo idioma y misma moneda y tipo de cambio que la factura que rectifica.
+        ...(orig.idioma ? { idioma: orig.idioma } : {}), ...(orig.divisa ? { divisa: orig.divisa } : {}),
         lineas: orig.lineas?.length
           ? lineasDe(orig).map((l) => ({ ...l, precio: aTexto(-numero(l.precio)) }))
-          : [{ concepto: `Anulación de la factura ${numeroFactura(orig)}`, cantidad: '1', precio: aTexto(-orig.base), dto: '', ivaPct: orig.ivaPct }] }
+          : [{ concepto: `Anulación de la factura ${numeroFactura(orig)}`, cantidad: '1', precio: aTexto(-(orig.baseDivisa ?? orig.base)), dto: '', ivaPct: orig.ivaPct }] }
       : plantilla
-        ? { actividad: plantilla.actividad, fecha: hoy, cliente: plantilla.cliente, lineas: lineasDe(plantilla), irpfPct: plantilla.irpfPct, nota: plantilla.nota || '', cobrada: false, proyecto: plantilla.proyecto || '', ...(plantilla.recargo ? { recargo: true } : {}) }
+        ? { actividad: plantilla.actividad, fecha: hoy, cliente: plantilla.cliente, lineas: lineasDe(plantilla), irpfPct: plantilla.irpfPct, nota: plantilla.nota || '', cobrada: false, proyecto: plantilla.proyecto || '', ...(plantilla.recargo ? { recargo: true } : {}), ...(plantilla.idioma ? { idioma: plantilla.idioma } : {}) }
       : { actividad: actividades[0].id, fecha: hoy, cliente: { nombre: '', nif: '', direccion: '', ciudad: '' }, lineas: [lineaVacia(defecto(actividades[0].id).ivaPct)], nota: notaDefecto, cobrada: false, irpfPct: defecto(actividades[0].id).irpfPct });
   // La selección vive solo en el formulario; el cuerpo de la API conserva el cliente histórico completo.
   const [clienteSeleccionado, setClienteSeleccionado] = useState(() => resolverClienteFactura(clientes, f.cliente)?.id || '');
@@ -161,11 +164,28 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
   const base = r2(nums.reduce((s, l) => s + baseLinea(l), 0));
   const t = importes({ base, lineas: nums, irpfPct: Number(f.irpfPct), recargo: Boolean(f.recargo) });
   const tipos = desglose({ lineas: nums, recargo: Boolean(f.recargo) });
+  // En otra moneda, los importes se escriben y se ven en esa moneda; el contravalor en euros, debajo del total.
+  const enOtra = Boolean(f.divisa?.moneda && f.divisa.moneda !== 'EUR');
+  const dinero = enOtra ? formatoDoc({ divisa: f.divisa }).dinero : eur;
+  const cambio = Number(String(f.divisa?.cambio ?? '').replace(',', '.'));
+  const enEuros = enOtra && cambio > 0 ? r2(t.total / cambio) : null;
+  const ponerDivisa = (cambios) => { limpiarErrores('divisa.cambio'); setF((x) => ({ ...x, divisa: { ...(x.divisa || {}), ...cambios } })); };
+  // El tipo del BCE del día de la factura (o del último publicado antes), salvo que se haya escrito a mano.
+  useEffect(() => {
+    if (!enOtra || f.divisa?.fuente === 'manual' || !f.fecha) return;
+    if (f.divisa?.fuente === 'BCE' && f.divisa?.pedido === `${f.divisa.moneda}:${f.fecha}`) return;
+    let vivo = true;
+    fetch(`/api/cambio?moneda=${encodeURIComponent(f.divisa.moneda)}&fecha=${encodeURIComponent(f.fecha)}`).then((r) => r.json()).then((d) => {
+      if (vivo && d.ok) ponerDivisa({ cambio: d.cambio, fecha: d.fecha, fuente: 'BCE', pedido: `${d.moneda}:${f.fecha}` });
+    }).catch(() => {});
+    return () => { vivo = false; };
+  }, [enOtra, f.divisa?.moneda, f.divisa?.fuente, f.divisa?.pedido, f.fecha]);
   // Ficha del cliente elegido: cómo y cuándo cobra, y su riesgo máximo con esta factura. Lo que ya debe incluye esta misma
   // factura si se está editando (propio), y lo cobrado no cuenta; si no suma riesgo, nunca se avisa.
   const resumen = ficha && [ficha.formaCobro && nombreForma(ficha.formaCobro), Number.isInteger(ficha.plazo) && (ficha.plazo ? `${ficha.plazo} días` : 'al contado'),
     ficha.comercial && `Comercial: ${ficha.comercial}`, ficha.zona && `Zona: ${ficha.zona}`].filter(Boolean).join(' · ');
-  const pendiente = f.cobrada ? 0 : r2(t.total - (factura ? pagadoDe(factura) : 0));
+  // El riesgo del cliente va en euros.
+  const pendiente = f.cobrada ? 0 : r2((enEuros ?? t.total) - (factura ? pagadoDe(factura) : 0));
   const propio = factura && mismoCliente(factura.cliente, f.cliente) ? pendienteDe(factura) : 0;
   const riesgo = tieneLimite(ficha) ? evaluarRiesgo({ limite: ficha.riesgoMax, riesgo: Number(riesgos[ficha.id]) || 0, incremento: r2(pendiente - propio), cliente: ficha.nombre }) : null;
 
@@ -302,7 +322,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
                 </select>{mensaje(`lineas.${i}.ivaPct`, i === 0 ? ['ivaPct'] : [])}
               </label>
             </div>
-            <p className="linea-total">{stock && nueva && !orig && l.producto && stock[l.producto] !== undefined && <span className={`linea-stock${stock[l.producto] < nums[i].cantidad ? ' falta' : ''}`}>{stock[l.producto] < nums[i].cantidad ? `Solo quedan ${stock[l.producto]}` : `Quedan ${stock[l.producto]}`}</span>}{eur(baseLinea(nums[i]))}</p>
+            <p className="linea-total">{stock && nueva && !orig && l.producto && stock[l.producto] !== undefined && <span className={`linea-stock${stock[l.producto] < nums[i].cantidad ? ' falta' : ''}`}>{stock[l.producto] < nums[i].cantidad ? `Solo quedan ${stock[l.producto]}` : `Quedan ${stock[l.producto]}`}</span>}{dinero(baseLinea(nums[i]))}</p>
           </div>
         ))}
         {productos.length > 0 && <div className="catalogo-chips" aria-label="Añadir del catálogo">{productos.map((p) => <button type="button" key={p.id} onClick={() => delCatalogo(p)}>+ {p.nombre}</button>)}</div>}
@@ -368,14 +388,35 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
         <input className="campo" placeholder="Ej.: operación exenta de IVA, inversión del sujeto pasivo" value={f.nota || ''} onChange={(e) => poner('nota', e.target.value)} />
       </label>
 
-      {nueva && <button type="button" className="ff-m ff-det-boton" aria-expanded={detalles} onClick={() => setDetalles((v) => !v)}>{detalles ? 'Ocultar detalles' : 'Detalles: IRPF, nota y proyecto'}</button>}
+      <div className="dos-col ff-det">
+        <label>Idioma de la factura
+          <select className="campo" value={f.idioma || 'es'} onChange={(e) => poner('idioma', e.target.value === 'es' ? undefined : e.target.value)}>
+            {IDIOMAS_FACTURA.map((x) => <option key={x.id} value={x.id}>{x.nombre}</option>)}
+          </select>
+        </label>
+        <label>Moneda
+          <select className="campo" value={f.divisa?.moneda || 'EUR'} onChange={(e) => (e.target.value === 'EUR' ? poner('divisa', undefined) : poner('divisa', { moneda: e.target.value }))}>
+            {MONEDAS.map((m) => <option key={m} value={m}>{m === 'EUR' ? 'Euros (EUR)' : m}</option>)}
+          </select>
+        </label>
+      </div>
+      {enOtra && (
+        <div className="ff-det">
+          <label htmlFor={idCampo('divisa.cambio')}>Tipo de cambio: 1 € = … {f.divisa.moneda}</label>
+          <input {...atributos('divisa.cambio')} className="campo" inputMode="decimal" value={aTexto(f.divisa.cambio ?? '')} onChange={(e) => ponerDivisa({ cambio: e.target.value, fuente: 'manual', fecha: undefined, pedido: undefined })} placeholder="Ej.: 1,0812" />
+          {mensaje('divisa.cambio')}
+          <p className="nota">{f.divisa.fuente === 'BCE' ? `El del Banco Central Europeo del ${f.divisa.fecha?.split('-').reverse().join('/')}, el oficial para el IVA.` : 'Escrito a mano.'} {f.divisa.fuente === 'manual' && <button type="button" className="enlace" onClick={() => ponerDivisa({ fuente: undefined, pedido: undefined })}>Usar el del BCE</button>} Los precios van en {f.divisa.moneda}; Fisquo guarda también su valor en euros para el IVA y la contabilidad.</p>
+        </div>
+      )}
+
+      {nueva && <button type="button" className="ff-m ff-det-boton" aria-expanded={detalles} onClick={() => setDetalles((v) => !v)}>{detalles ? 'Ocultar detalles' : 'Detalles: IRPF, nota, proyecto, idioma y moneda'}</button>}
       {nueva && detalles && !verEvento && !f.evento?.fecha && !f.evento?.lugar && <button type="button" className="ff-m ff-evento-boton" onClick={() => setVerEvento(true)}>+ Fecha y lugar del evento</button>}
 
       <label className="check"><input type="checkbox" checked={f.cobrada} onChange={(e) => poner('cobrada', e.target.checked)} /> Ya está cobrada</label>
 
       <div className="ff-pie">
         <div className="totales">
-          <span>Base {eur(t.base)}</span>{tipos.length > 1 ? tipos.map((x) => <span key={x.pct}>IVA {x.pct} % {eur(x.iva)}</span>) : <span>IVA {eur(t.iva)}</span>}{t.irpf > 0 && <span>IRPF −{eur(t.irpf)}</span>}<strong>Total {eur(t.total)}</strong>
+          <span>Base {dinero(t.base)}</span>{tipos.length > 1 ? tipos.map((x) => <span key={x.pct}>IVA {x.pct} % {dinero(x.iva)}</span>) : <span>IVA {dinero(t.iva)}</span>}{t.irpf > 0 && <span>IRPF −{dinero(t.irpf)}</span>}<strong>Total {dinero(t.total)}</strong>{enEuros !== null && <span>En euros {eur(enEuros)}</span>}
         </div>
 
         {error && <p className="error" role="alert">{error}</p>}
@@ -390,16 +431,17 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
           <div className="ff-para"><small>Para</small><b>{f.cliente.nombre || 'Tu cliente'}</b>{f.cliente.nif && <small>{f.cliente.nif}</small>}</div>
           <ul className="ff-lineas">
             {f.lineas.map((l, i) => (
-              <li key={i}><span>{l.concepto || 'Concepto'}<small>{aTexto(nums[i].cantidad)} × {eur(nums[i].precio)}{nums[i].dto ? ` · −${aTexto(nums[i].dto)} %` : ''}</small></span><b>{eur(baseLinea(nums[i]))}</b></li>
+              <li key={i}><span>{l.concepto || 'Concepto'}<small>{aTexto(nums[i].cantidad)} × {dinero(nums[i].precio)}{nums[i].dto ? ` · −${aTexto(nums[i].dto)} %` : ''}</small></span><b>{dinero(baseLinea(nums[i]))}</b></li>
             ))}
           </ul>
           <dl className="ff-tot">
-            <div><dt>Base</dt><dd>{eur(t.base)}</dd></div>
-            {tipos.length > 1 ? tipos.map((x) => <div key={x.pct}><dt>IVA {x.pct} %</dt><dd>{eur(x.iva)}</dd></div>) : <div><dt>IVA</dt><dd>{eur(t.iva)}</dd></div>}
-            {t.recargo > 0 && <div><dt>Recargo de equivalencia</dt><dd>{eur(t.recargo)}</dd></div>}
-            {Number(f.irpfPct) > 0 && <div><dt>IRPF {f.irpfPct} %</dt><dd>−{eur(t.irpf)}</dd></div>}
+            <div><dt>Base</dt><dd>{dinero(t.base)}</dd></div>
+            {tipos.length > 1 ? tipos.map((x) => <div key={x.pct}><dt>IVA {x.pct} %</dt><dd>{dinero(x.iva)}</dd></div>) : <div><dt>IVA</dt><dd>{dinero(t.iva)}</dd></div>}
+            {t.recargo > 0 && <div><dt>Recargo de equivalencia</dt><dd>{dinero(t.recargo)}</dd></div>}
+            {Number(f.irpfPct) > 0 && <div><dt>IRPF {f.irpfPct} %</dt><dd>−{dinero(t.irpf)}</dd></div>}
           </dl>
-          <p className="ff-total"><span>Total</span><b key={t.total}>{eur(t.total)}</b></p>
+          <p className="ff-total"><span>Total</span><b key={t.total}>{dinero(t.total)}</b></p>
+          {enEuros !== null && <p className="nota">En euros: {eur(enEuros)}</p>}
           {f.cobrada && <span className="estado-txt e-cobrada">Cobrada</span>}
         </div>
       </aside>
