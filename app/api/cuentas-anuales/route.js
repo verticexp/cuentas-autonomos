@@ -7,6 +7,7 @@ import { cuentasAnualesPdf } from '@/lib/cuentasAnualesPdf';
 import { hoy } from '@/lib/formato';
 import { auditar } from '@/lib/auditoria';
 import { pasado, respuesta429 } from '@/lib/limite';
+import { gastosQueVe, nominasQueVe } from '@/lib/nominas';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,7 +18,9 @@ export async function GET(req) {
   if (res) return res;
   if (await pasado('pdf', u.id, 120, 600)) return respuesta429(600, 'Has descargado demasiados PDF. Espera 10 minutos antes de descargar más.');
   const anio = Number(req.nextUrl.searchParams.get('anio')) || Number(hoy().slice(0, 4)) - 1;
-  const [facturas, gastos, nominas, manuales, guardado, productos, ajustes, albaranes] = await Promise.all([leer(u, 'facturas'), leer(u, 'gastos'), leer(u, 'nominas'), leer(u, 'asientos'), leerUno(u, 'cuentasAnuales', String(anio)), leer(u, 'productos'), leer(u, 'stock'), leer(u, 'albaranes')]);
+  const [facturas, gastosLeidos, nominasLeidas, manuales, guardado, productos, ajustes, albaranes] = await Promise.all([leer(u, 'facturas'), leer(u, 'gastos'), leer(u, 'nominas'), leer(u, 'asientos'), leerUno(u, 'cuentasAnuales', String(anio)), leer(u, 'productos'), leer(u, 'stock'), leer(u, 'albaranes')]);
+  // Sin el permiso «Nóminas», las de cada persona van juntas por mes (lib/nominas.js, Codex H2).
+  const gastos = gastosQueVe(u, gastosLeidos), nominas = nominasQueVe(u, nominasLeidas);
   const asientos = generarAsientos({ facturas, gastos, nominas: nominas || [], manuales: manuales || [], fiscal: fiscalDe(u), pagos130: u.pagos130 || {}, pres303: u.pres303 || {}, pagos202: u.pagos202 || {}, cuotaIS: u.cuotaIS || {}, productos: productos || [], ajustes: ajustes || [], albaranes: albaranes || [] }, hoy());
   const c = cuentasAnuales({ asientos, gastos, nominas: nominas || [], empresa: u, anio, guardado: guardado || {} });
   const nombre = `cuentas-anuales-${anio}.pdf`;
@@ -26,8 +29,9 @@ export async function GET(req) {
 }
 
 // Guarda lo que pone la empresa: administradores, datos registrales, fechas y la memoria retocada (vacía = el borrador).
+// Solo con el permiso «Contabilidad».
 export async function POST(req) {
-  const { u, res } = await usuarioApi({ permiso: 'resumen' });
+  const { u, res } = await usuarioApi({ permiso: 'contabilidad' });
   if (res) return res;
   const b = await cuerpo(req);
   const anio = Number(b.anio);

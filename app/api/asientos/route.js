@@ -9,11 +9,12 @@ import { auditar } from '@/lib/auditoria';
 export const dynamic = 'force-dynamic';
 const MAX_LINEAS = 200;
 
-// Asientos apuntados a mano (ajustes, regularizaciones de la gestoría…) y el de apertura (solo uno por empresa).
+// Asientos apuntados a mano (ajustes, regularizaciones de la gestoría…) y el de apertura (solo uno por empresa). Apuntarlos
+// y borrarlos exige el permiso «Contabilidad» (ver no basta: auditoría de octubre de 2026, Codex H3).
 // { apertura: { fecha, banco, capital, largo, corto } }, { personal: { fecha, sueldos, ssEmpresa, irpf, ssTrabajador, otros, pagoLiquido… } }
 // (nóminas de la gestoría: devengo y pagos) o { fecha, concepto, lineas: [{ cuenta, debe, haber }] }
 export async function POST(req) {
-  const { u, res } = await usuarioApi({ permiso: DETALLE });
+  const { u, res } = await usuarioApi({ permiso: [...DETALLE, 'contabilidad'] });
   if (res) return res;
   const b = await cuerpo(req);
   if ((Array.isArray(b.lineas) && b.lineas.length > MAX_LINEAS) || (Array.isArray(b.personal?.otros) && b.personal.otros.length > MAX_LINEAS)) return error('Un asiento admite como mucho 200 líneas. Divídelo en varios asientos.');
@@ -48,7 +49,7 @@ export async function POST(req) {
 }
 
 export async function DELETE(req) {
-  const { u, res } = await usuarioApi({ permiso: DETALLE });
+  const { u, res } = await usuarioApi({ permiso: [...DETALLE, 'contabilidad'] });
   if (res) return res;
   const id = req.nextUrl.searchParams.get('id');
   if (!id) return error('Falta id');

@@ -17,6 +17,7 @@ import '@/app/modelos.css';
 import '@/app/contabilidad.css';
 import '@/app/analisis.css';
 import '@/app/mk.css';
+import { gastosQueVe, nominasQueVe } from '@/lib/nominas';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,7 +41,9 @@ const Fila = ({ n, v, ant, fuerte, sub }) => (
 export default async function Analisis({ searchParams }) {
   const u = await requerir('resumen');
   if (await usarFuncion(u, 'analisis')) return <SinPlan usuario={u} funcion="analisis" />;
-  const [facturas, gastos, nominas, manuales, saldo, productos, ajustes, albaranes] = await Promise.all([leer(u, 'facturas'), leer(u, 'gastos'), leer(u, 'nominas'), leer(u, 'asientos'), redis?.get(clave(u, 'saldo')), leer(u, 'productos'), leer(u, 'stock'), leer(u, 'albaranes')]);
+  const [facturas, gastosLeidos, nominasLeidas, manuales, saldo, productos, ajustes, albaranes] = await Promise.all([leer(u, 'facturas'), leer(u, 'gastos'), leer(u, 'nominas'), leer(u, 'asientos'), redis?.get(clave(u, 'saldo')), leer(u, 'productos'), leer(u, 'stock'), leer(u, 'albaranes')]);
+  // Sin el permiso «Nóminas», las de cada persona van juntas por mes (lib/nominas.js, Codex H2).
+  const gastos = gastosQueVe(u, gastosLeidos), nominas = nominasQueVe(u, nominasLeidas);
   if (!facturas) return <SinBD />;
   const sp = await searchParams;
   const h = hoy();

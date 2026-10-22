@@ -4,7 +4,8 @@ import { sinFuncion } from '@/lib/planes';
 import { requerir } from '@/lib/auth';
 import { nombresProyectos } from '@/lib/proyectos';
 import { leer, redis } from '@/lib/redis';
-import { contar, contarMarcados, documentos, fichasRango, leerRango, pagina, totales } from '@/lib/indices';
+import { contar, contarMarcados, documentos, fechaCursor, fichasRango, leerRango, pagina, totales } from '@/lib/indices';
+import { agruparGastosNomina, veSueldos } from '@/lib/nominas';
 import { candidatosConciliacion } from '@/lib/bancoServidor';
 import { importes, origenGasto, r2 } from '@/lib/calculos';
 import { partirIva } from '@/lib/ivaDeducible';
@@ -53,10 +54,20 @@ export default async function Gastos({ searchParams }) {
   const buscado = String(q || '').trim().toLowerCase();
   // Los bienes traídos de otro programa no son gastos de aquí: se ven en Contabilidad › Amortizaciones.
   // La búsqueda va por el índice de texto (revisión S06); el resto, por la ficha.
-  const filtro = (f) => !f.mi;
+  // Sin el permiso «Nóminas», la de cada persona no sale (Codex H2): en su lugar, una fila por mes con las de todo el equipo.
+  const privado = !veSueldos(u);
+  const filtro = (f, id) => !f.mi && !(privado && String(id).startsWith('nomina-'));
   const pag = await pagina(u, 'gastos', { cursor: desde, marca: estado === 'sinpagar' ? 'p' : undefined, filtro, buscar: buscado });
   const lista = await documentos(u, 'gastos', pag.ids);
-  const hay = total > 0 && (lista.length > 0 || Boolean(desde) || Boolean(buscado) || estado === 'sinpagar' || (await pagina(u, 'gastos', { limite: 1, filtro: (f) => !f.mi })).ids.length > 0);
+  if (privado && !buscado && estado !== 'sinpagar') {
+    // Las de las fechas de esta página: hasta la del cursor (incluida) y, si hay más páginas, desde la última (sin incluir).
+    const techo = (desde && fechaCursor(desde)) || '9999-12-31';
+    const suelo = pag.siguiente && lista.length ? lista.at(-1).fecha : '';
+    const nominas = (await leerRango(u, 'gastos', suelo || '2000-01-01', techo)).filter((g) => g.nomina && g.fecha > suelo && g.fecha <= techo);
+    lista.push(...agruparGastosNomina(nominas));
+    lista.sort((a, b) => b.fecha.localeCompare(a.fecha));
+  }
+  const hay = total > 0 && (lista.length > 0 || Boolean(desde) || Boolean(buscado) || estado === 'sinpagar' || (await pagina(u, 'gastos', { limite: 1, filtro })).ids.length > 0);
   const actividades = actividadesDe(u);
   const NOMBRES = nombresActividad(actividades);
   // Lista de deducciones: la de DJ para las cuentas de antes; la general para el resto (sin la cuota si es sociedad).
@@ -142,6 +153,8 @@ export default async function Gastos({ searchParams }) {
                         </span>
                       </Ir>
                     );
+                    // Las nóminas agrupadas no tienen ficha propia: la fila no lleva a ningún sitio.
+                    if (g.agrupado) return <div className="fila">{fila.props.children}</div>;
                     // Móvil: deslizar un gasto sin pagar deja marcarlo como pagado
                     return g.pendiente && puede(u, 'gastar') ? <Deslizar id={g.id} acciones={['pagada']}>{fila}</Deslizar> : fila;
                   })()}
