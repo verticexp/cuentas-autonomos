@@ -132,15 +132,24 @@ test('E07: 429 uniforme, con Retry-After y mensaje castellano', async () => {
 });
 
 // Se ejecutan las rutas reales con autorización y proveedores simulados. Solo se leen las rutas autorizadas.
-async function ruta(archivo) {
-  let fuente = await readFile(new URL(`../${archivo}`, import.meta.url), 'utf8');
-  fuente = fuente.replace(/import \{([^}]+)\} from '(@\/[^']+|next\/server)';/g, (_, nombres, origen) => {
-    if (origen === '@/lib/limite') return `import {${nombres}} from '${new URL('../lib/limite.js', import.meta.url)}';`;
-    if (origen === '@/lib/stripe') return `import {${nombres}} from '${new URL('../lib/stripe.js', import.meta.url)}';`;
+// lib/lecturaIA.js (la lectura con cupo que comparten el escáner y la bandeja) va real, con sus semáforos de
+// lib/limite.js, y el resto de lo suyo simulado.
+const LIMITE = new URL('../lib/limite.js', import.meta.url).href;
+function conSimulados(fuente, reales) {
+  return fuente.replace(/import \{([^}]+)\} from '((?:@\/|\.\/)[^']+|next\/server)';/g, (_, nombres, origen) => {
+    if (reales[origen]) return `import {${nombres}} from '${reales[origen]}';`;
     const mock = nombres.split(',').map((x) => x.trim()).map((x) => `export const ${x} = globalThis.__limitesE07.${x};`).join('\n');
     return `import {${nombres}} from 'data:text/javascript,${encodeURIComponent(mock)}';`;
   });
-  return import(`data:text/javascript,${encodeURIComponent(fuente)}`);
+}
+async function ruta(archivo) {
+  const fuente = await readFile(new URL(`../${archivo}`, import.meta.url), 'utf8');
+  const lectura = conSimulados(await readFile(new URL('../lib/lecturaIA.js', import.meta.url), 'utf8'), { './limite.js': LIMITE });
+  return import(`data:text/javascript,${encodeURIComponent(conSimulados(fuente, {
+    '@/lib/limite': LIMITE, '@/lib/stripe': new URL('../lib/stripe.js', import.meta.url).href,
+    // encodeURIComponent deja las comillas simples: dentro de otra cadena entre comillas romperían el import.
+    '@/lib/lecturaIA': `data:text/javascript,${encodeURIComponent(lectura).replace(/'/g, '%27')}`,
+  }))}`);
 }
 function preparar() {
   globalThis.__limitesE07 = {
@@ -158,6 +167,7 @@ function preparar() {
     puede: () => true, TIPOS: { clientes: { permiso: 'empresa' } },
     marcarPagada: async () => {},
     fiscalDe: () => ({}), usaIgic: () => false,
+    conHabitual: async () => ({}),
   };
 }
 const peticion = (b) => new Request('https://fisquo.test/api', { method: 'POST', headers: { 'content-type': 'application/json', 'x-real-ip': '1.2.3.4' }, body: JSON.stringify(b) });
