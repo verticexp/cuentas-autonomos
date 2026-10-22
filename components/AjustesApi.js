@@ -3,13 +3,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { llamar } from './Acciones';
 import { confirmar } from './Confirmar';
+import { FACTURA_EJEMPLO } from '@/lib/apiEjemplo';
 
 const NOMBRES = { 'facturas:leer': 'Ver facturas', 'facturas:escribir': 'Crear facturas', 'gastos:leer': 'Ver gastos', 'clientes:leer': 'Ver clientes' };
 const EVENTOS = { 'factura.creada': 'Factura creada', 'factura.cobrada': 'Factura cobrada', 'gasto.creado': 'Gasto creado' };
 const fecha = (v) => v ? new Date(v).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) : 'Sin uso';
 const alternar = (lista, valor) => lista.includes(valor) ? lista.filter((x) => x !== valor) : [...lista, valor];
 // Factura de ejemplo para crearla desde Zapier, Make o n8n (los mismos campos que el formulario; la actividad es opcional).
-const EJEMPLO = JSON.stringify({ fecha: '2026-10-22', cliente: { nombre: 'Cliente SL', nif: 'B12345678', email: 'cliente@ejemplo.es' }, lineas: [{ concepto: 'Pedido 1001', cantidad: 1, precio: 50, ivaPct: 21 }], irpfPct: 0 }, null, 2);
+const EJEMPLO = JSON.stringify(FACTURA_EJEMPLO, null, 2);
 
 export default function AjustesApi({ inicial, alcances, eventos }) {
   const [datos, setDatos] = useState(inicial);

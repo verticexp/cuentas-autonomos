@@ -48,7 +48,8 @@ function ProbarDrive({ error }) {
   );
 }
 
-export default function Ajustes({ seccion, emisor, drive, driveError, sociedad, nombre }) {
+// extra: otra tarjeta de la sección en la misma rejilla (el cobro con tarjeta en Cobros).
+export default function Ajustes({ seccion, emisor, drive, driveError, sociedad, nombre, extra = null }) {
   const router = useRouter();
   return (
     <div className="tarjetas bloque">
@@ -139,6 +140,7 @@ export default function Ajustes({ seccion, emisor, drive, driveError, sociedad, 
           </>
         )}
       </Formulario>}
+      {extra}
     </div>
   );
 }
