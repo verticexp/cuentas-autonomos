@@ -3,7 +3,7 @@ import { leer } from '@/lib/redis';
 import { puede } from '@/lib/permisos';
 import Volver from '@/components/Volver';
 import Catalogo from '@/components/Catalogo';
-import { fiscalDe } from '@/lib/empresa';
+import { fiscalDe, usaIgic } from '@/lib/empresa';
 
 import '@/app/mk.css';
 
@@ -16,7 +16,7 @@ export default async function PaginaCatalogo() {
     <main className="pagina mk-look">
       <Volver href="/facturas">Facturas</Volver>
       <h1 className="titulo">Catálogo</h1>
-      <Catalogo productos={productos} editar={puede(u, 'facturar')} inventario={Boolean(fiscalDe(u).inventario)} />
+      <Catalogo igic={usaIgic(fiscalDe(u))} productos={productos} editar={puede(u, 'facturar')} inventario={Boolean(fiscalDe(u).inventario)} />
     </main>
   );
 }

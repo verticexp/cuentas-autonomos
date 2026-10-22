@@ -1,5 +1,7 @@
 'use client';
 
+import { TIPOS_IGIC } from '@/lib/igic';
+
 import { useId, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
@@ -15,11 +17,11 @@ const TIPOS = [21, 10, 4, 0];
 
 // Cierre de caja: lo vendido en el día por tipo de IVA (con IVA, como lo da el TPV), cómo se cobró y, si se quiere,
 // cuántas unidades de cada producto salieron (para el stock y el margen).
-export default function FormCierre({ hoy, actividades, productos = [], cierre = null, ivaDefecto = 21, proyectos = [] }) {
+export default function FormCierre({ hoy, actividades, productos = [], cierre = null, ivaDefecto = 21, proyectos = [], igic = false }) {
   const router = useRouter();
   const ayudaId = useId();
   const inicial = () => {
-    if (!cierre) return { fecha: hoy, actividad: actividades[0].id, porIva: [{ pct: ivaDefecto, total: '' }], efectivo: '', tarjeta: '', otros: '', desde: '', hasta: '', nota: '', unidades: [], proyecto: '' };
+    if (!cierre) return { fecha: hoy, actividad: actividades[0].id, porIva: [{ pct: igic && !TIPOS_IGIC.includes(Number(ivaDefecto)) ? 7 : ivaDefecto, total: '' }], efectivo: '', tarjeta: '', otros: '', desde: '', hasta: '', nota: '', unidades: [], proyecto: '' };
     return {
       fecha: cierre.fecha, actividad: cierre.actividad,
       porIva: cierre.lineas.map((l) => ({ pct: l.ivaPct, total: aTexto(r2(l.precio + r2((l.precio * l.ivaPct) / 100))) })),
@@ -40,7 +42,7 @@ export default function FormCierre({ hoy, actividades, productos = [], cierre = 
   const total = r2(x.porIva.reduce((s, t) => s + num(t.total), 0));
   const tarjeta = tarjetaAuto ? r2(total - num(x.efectivo) - num(x.otros)) : num(x.tarjeta);
   const cuadra = Math.abs(r2(num(x.efectivo) + tarjeta + num(x.otros)) - total) < 0.01;
-  const libres = TIPOS.filter((t) => !x.porIva.some((y) => Number(y.pct) === t));
+  const libres = (igic ? TIPOS_IGIC : TIPOS).filter((t) => !x.porIva.some((y) => Number(y.pct) === t));
   const conStock = productos.filter((p) => !p.servicio);
 
   const enviar = async (e) => {
@@ -69,18 +71,18 @@ export default function FormCierre({ hoy, actividades, productos = [], cierre = 
       </div>
 
       <fieldset>
-        <legend>Vendido (con IVA)</legend>
+        <legend>Vendido (con {igic ? 'IGIC' : 'IVA'})</legend>
         {x.porIva.map((t, i) => (
           <div className="caja-iva" key={i}>
-            <select className="campo" value={t.pct} onChange={(e) => ponerIva(i, 'pct', Number(e.target.value))} aria-label="Tipo de IVA">
-              {[Number(t.pct), ...libres].map((n) => <option key={n} value={n}>IVA {n} %</option>)}
+            <select className="campo" value={t.pct} onChange={(e) => ponerIva(i, 'pct', Number(e.target.value))} aria-label={`Tipo de ${igic ? 'IGIC' : 'IVA'}`}>
+              {[Number(t.pct), ...libres].map((n) => <option key={n} value={n}>{igic ? 'IGIC' : 'IVA'} {n} %</option>)}
             </select>
             <input className="campo" inputMode="decimal" placeholder="0,00" value={t.total} onChange={(e) => ponerIva(i, 'total', e.target.value)} aria-label={`Total al ${t.pct} %`} required={i === 0} />
             {x.porIva.length > 1 && <button type="button" className="linea-quitar" aria-label="Quitar" onClick={() => poner('porIva', x.porIva.filter((_, j) => j !== i))}>×</button>}
           </div>
         ))}
-        {libres.length > 0 && <button type="button" className="boton sec pequeno" onClick={() => poner('porIva', [...x.porIva, { pct: libres[0], total: '' }])}>+ Otro tipo de IVA</button>}
-        <p className="nota">Del informe Z o del cierre del TPV: el total de cada tipo de IVA, impuestos incluidos.</p>
+        {libres.length > 0 && <button type="button" className="boton sec pequeno" onClick={() => poner('porIva', [...x.porIva, { pct: libres[0], total: '' }])}>+ Otro tipo de {igic ? 'IGIC' : 'IVA'}</button>}
+        <p className="nota">Del informe Z o del cierre del TPV: el total de cada tipo de {igic ? 'IGIC' : 'IVA'}, impuestos incluidos.</p>
       </fieldset>
 
       <fieldset>
@@ -116,7 +118,7 @@ export default function FormCierre({ hoy, actividades, productos = [], cierre = 
             </div>
           ))}
           <button type="button" className="boton sec pequeno" onClick={() => poner('unidades', [...x.unidades, { producto: conStock[0].id, cantidad: '1' }])}>+ Producto vendido</button>
-          <p className="nota">Restan del stock y cuentan en «Más vendidos» y en el margen (valoradas a su precio sin IVA).</p>
+          <p className="nota">Restan del stock y cuentan en «Más vendidos» y en el margen (valoradas a su precio sin {igic ? 'IGIC' : 'IVA'}).</p>
         </fieldset>
       )}
 

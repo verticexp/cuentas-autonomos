@@ -1,3 +1,4 @@
+import { fiscalDe, usaIgic } from '@/lib/empresa';
 import { randomBytes } from 'node:crypto';
 import { guardar, borrar } from '@/lib/redis';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
@@ -22,7 +23,7 @@ export async function POST(req) {
   if (!Number.isFinite(coste) || coste < 0 || coste > MAX_IMPORTE) return error('Escribe un coste entre 0 y 1.000.000.000 € (por ejemplo, 12,50).');
   if (![minimo, maximo].every((v) => Number.isFinite(v) && v >= 0 && v <= MAX_CANTIDAD)) return error('Escribe cantidades mínimas y máximas entre 0 y 1.000.000 (por ejemplo, 10).');
   const ivaPct = importeEscrito(b.ivaPct, 0);
-  if (!Number.isFinite(ivaPct) || ivaPct < 0 || ivaPct > 100) return error('Escribe un porcentaje de IVA entre 0 y 100 (por ejemplo, 21).');
+  if (!Number.isFinite(ivaPct) || ivaPct < 0 || ivaPct > 100) return error(`Escribe un porcentaje de ${usaIgic(fiscalDe(u)) ? 'IGIC' : 'IVA'} entre 0 y 100 (por ejemplo, ${usaIgic(fiscalDe(u)) ? 7 : 21}).`);
   // Inventario (opcional): referencia, código de barras, coste, mínimo y máximo, proveedor habitual; o servicio (sin stock).
   const txt = (v, n) => String(v || '').trim().slice(0, n);
   const num = (v) => { const n = r2(v); return n > 0 ? n : undefined; };

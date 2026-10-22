@@ -178,7 +178,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
         {avisoAdjunto}
         <div className="gasto-rapido-botones">
           <button type="button" id="escanear-ticket" className="boton gasto-escanear" onClick={abrirCamara}><svg viewBox="0 0 24 24" aria-hidden><path d="M4 8V6a2 2 0 012-2h2M16 4h2a2 2 0 012 2v2M20 16v2a2 2 0 01-2 2h-2M8 20H6a2 2 0 01-2-2v-2M4 12h16" /></svg>Escanear ticket</button><input ref={camaraInput} type="file" accept="image/*" capture="environment" onChange={foto} hidden />
-          {!gasto && !movimiento && <RafagaTickets hoy={hoy} actividades={actividades} />}
+          {!gasto && !movimiento && <RafagaTickets igic={igic} hoy={hoy} actividades={actividades} />}
           <button type="button" className="boton sec" onClick={() => facturaInput.current?.click()}>Subir factura</button><input ref={facturaInput} type="file" accept="image/*,application/pdf,.xml,.xsig,text/xml,application/xml" onChange={foto} hidden />
           <button id="apuntar-gasto" type="button" className="boton sec" onClick={() => { setAbierto(true); setHecho(false); }}>Apuntar a mano</button>
         </div>

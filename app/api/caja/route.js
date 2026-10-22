@@ -3,7 +3,7 @@ import { guardarCierre } from '@/lib/facturas';
 import { limpiarCierre } from '@/lib/caja';
 import { numeroFactura } from '@/lib/calculos';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
-import { actividadesDe, actividadValida } from '@/lib/empresa';
+import { actividadesDe, actividadValida, fiscalDe, usaIgic } from '@/lib/empresa';
 import { auditar } from '@/lib/auditoria';
 import { eur } from '@/lib/formato';
 
@@ -14,10 +14,11 @@ export const dynamic = 'force-dynamic';
 export async function POST(req) {
   const { u, res } = await usuarioApi({ permiso: 'facturar' });
   if (res) return res;
+  const igic = usaIgic(fiscalDe(u));
   const b = await cuerpo(req);
   const antes = b.id ? await leerUno(u, 'facturas', String(b.id)) : null;
   if (b.id && !antes?.caja) return error('Ese cierre ya no existe', 404);
-  const datos = limpiarCierre(b, (await leer(u, 'productos')) || []);
+  const datos = limpiarCierre(b, (await leer(u, 'productos')) || [], { igic });
   if (datos.error) return error(datos.error);
   datos.actividad = actividadValida(actividadesDe(u), b.actividad || antes?.actividad);
   const { factura: f, error: e } = await guardarCierre(u, datos, antes, { idem: typeof b.idem === 'string' ? `caja:${b.idem}` : undefined });

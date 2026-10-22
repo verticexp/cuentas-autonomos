@@ -1,3 +1,4 @@
+import { fiscalDe, usaIgic } from '@/lib/empresa';
 import { leerUno } from '@/lib/redis';
 import Vacio from '@/components/Vacio';
 import { sinFuncion } from '@/lib/planes';
@@ -57,7 +58,7 @@ export default async function Producto({ params }) {
       {p.bajo && <p className="cont-alerta">{p.agotado ? 'Agotado' : `Bajo mínimo (${ud(p.minimo)})`}: está en <Link href="/inventario?ver=pedir">Qué pedir</Link>.</p>}
       <p className="grupo-pie">Este año: {ud(p.ventas)} vendidas por {eur(p.ingresos)}, margen {eur(p.margen)}{p.ingresos ? ` (${p.margenPct.toLocaleString('es-ES')} %)` : ''}.{p.consumo > 0 ? ` Consumidas en servicios: ${ud(p.consumo)} (${eur(p.costeConsumo)} a coste).` : ''} Precio de venta {eur(p.precio)}.</p>
 
-      {puede(u, 'gastar') && <div id="ajustar-stock"><Ajuste producto={p.id} hoy={h} coste={p.costeMedio} consumo={p.consumo > 0} /></div>}
+      {puede(u, 'gastar') && <div id="ajustar-stock"><Ajuste igic={usaIgic(fiscalDe(u))} producto={p.id} hoy={h} coste={p.costeMedio} consumo={p.consumo > 0} /></div>}
 
       <section className="bloque">
         <h2 className="grupo-t">Movimientos</h2>
