@@ -20,6 +20,7 @@ button.celda { width: 100%; text-align: left; font: inherit; }
 .ayuda-p summary::after { content: ''; flex: none; width: 7px; height: 7px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(45deg); opacity: 0.55; transition: transform 0.2s; }
 .ayuda-p[open] summary::after { transform: rotate(225deg); }
 .ayuda-p p { color: var(--muted); font-size: 15px; line-height: 1.45; margin: -4px 0 10px; }
+.api-ejemplo { margin: 0 0 12px; padding: 10px 12px; overflow-x: auto; border-radius: 10px; background: var(--paper); color: var(--ink); font-size: 13px; line-height: 1.4; }
 .ayuda-ir { display: inline-block; margin-bottom: 14px; font-size: 15px; font-weight: 600; text-decoration: none; }
 .grupo-c.relleno .linea { display: flex; gap: 10px; }
 .ges-botones { display: grid; gap: 8px; }

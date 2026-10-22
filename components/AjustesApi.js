@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { llamar } from './Acciones';
 import { confirmar } from './Confirmar';
 
@@ -8,6 +8,8 @@ const NOMBRES = { 'facturas:leer': 'Ver facturas', 'facturas:escribir': 'Crear f
 const EVENTOS = { 'factura.creada': 'Factura creada', 'factura.cobrada': 'Factura cobrada', 'gasto.creado': 'Gasto creado' };
 const fecha = (v) => v ? new Date(v).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) : 'Sin uso';
 const alternar = (lista, valor) => lista.includes(valor) ? lista.filter((x) => x !== valor) : [...lista, valor];
+// Factura de ejemplo para crearla desde Zapier, Make o n8n (los mismos campos que el formulario; la actividad es opcional).
+const EJEMPLO = JSON.stringify({ fecha: '2026-10-22', cliente: { nombre: 'Cliente SL', nif: 'B12345678', email: 'cliente@ejemplo.es' }, lineas: [{ concepto: 'Pedido 1001', cantidad: 1, precio: 50, ivaPct: 21 }], irpfPct: 0 }, null, 2);
 
 export default function AjustesApi({ inicial, alcances, eventos }) {
   const [datos, setDatos] = useState(inicial);
@@ -90,5 +92,38 @@ export default function AjustesApi({ inicial, alcances, eventos }) {
       </fieldset>
       <button className="boton" disabled={ocupado || !url.trim() || !suscritos.length || datos.webhooks.length >= 5 || Boolean(secreto)}>Crear webhook</button>
     </form>
+    <Conectar />
   </>;
+}
+
+// Recetas para conectar Fisquo sin programar: Zapier, Make y n8n reciben los webhooks y llaman a la API con su paso HTTP.
+function Conectar() {
+  const [origen, setOrigen] = useState('https://www.fisquo.com');
+  useEffect(() => { setOrigen(window.location.origin); }, []);
+  return (
+    <section className="grupo" aria-labelledby="api-conectar">
+      <h2 className="grupo-t" id="api-conectar">Conectar con Zapier, Make o n8n</h2>
+      <div className="grupo-c ayuda-lista">
+        <details className="ayuda-p">
+          <summary>Hacer algo cuando se crea o se cobra una factura</summary>
+          <p>1. Crea el disparador: en Zapier, «Webhooks by Zapier» › «Catch Hook»; en Make, «Webhooks» › «Custom webhook»; en n8n, el nodo «Webhook» con el método POST. Copia la dirección que te dan.</p>
+          <p>2. Pégala arriba, en «Crear webhook», elige los eventos y guarda el secreto.</p>
+          <p>3. Cada aviso llega con id, tipo, creado y datos (la factura o el gasto): úsalos en los pasos siguientes, como un correo, una hoja de cálculo o tu CRM. Puede llegar dos veces: filtra por el id.</p>
+          <p>Para comprobar que el aviso es de Fisquo, verifica la cabecera Fisquo-Firma con el secreto (HMAC-SHA256 de «t.cuerpo»), con un paso de código.</p>
+        </details>
+        <details className="ayuda-p">
+          <summary>Crear facturas en Fisquo desde otra aplicación</summary>
+          <p>1. Crea una clave con el permiso «Crear facturas».</p>
+          <p>2. Añade un paso HTTP: en Zapier, «Webhooks by Zapier» › «Custom Request»; en Make, «HTTP» › «Make a request»; en n8n, «HTTP Request». Método POST a {origen}/api/v1/facturas.</p>
+          <p>3. Cabeceras: Authorization con «Bearer » y tu clave, Content-Type con application/json e Idempotency-Key con un valor único (el número del pedido, por ejemplo): si el paso se repite, no se duplica la factura.</p>
+          <p>4. Cuerpo en JSON, como este:</p>
+          <pre className="api-ejemplo">{EJEMPLO}</pre>
+        </details>
+        <details className="ayuda-p">
+          <summary>Leer facturas, gastos o clientes</summary>
+          <p>Con una clave que pueda verlos: GET a {origen}/api/v1/facturas (o /gastos, /clientes) con la cabecera Authorization. Puedes filtrar con ?desde=2026-01-01&amp;hasta=2026-03-31. Llegan de 50 en 50: repite añadiendo ?cursor= con el valor de «siguiente» hasta que sea null.</p>
+        </details>
+      </div>
+    </section>
+  );
 }
