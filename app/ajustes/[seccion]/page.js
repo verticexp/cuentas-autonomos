@@ -31,6 +31,9 @@ import { ahoraMadrid } from '@/lib/jornada';
 import { CONTACTO } from '@/components/web/datos';
 import Series from '@/components/Series';
 import Gestoria from '@/components/Gestoria';
+import AjustesApi from '@/components/AjustesApi';
+import { alcancesDe, clavesDe } from '@/lib/apiPublica';
+import { webhooksDe } from '@/lib/webhooks';
 import Apariencia from '@/components/Apariencia';
 import Ayuda from '@/components/Ayuda';
 import EmailEnvio from '@/components/EmailEnvio';
@@ -48,9 +51,9 @@ export const dynamic = 'force-dynamic';
 const TITULOS = {
   perfil: 'Tu perfil', facturacion: 'Datos de la empresa', marca: 'Diseño de factura', series: 'Series y numeración', cobros: 'Cobros', envio: 'Email de envío', gestoria: 'Tu gestoría',
   seguridad: 'Face ID y contraseña', drive: 'Google Drive', controlat: "Controla'T", avisos: 'Avisos en el móvil', importar: 'Importar datos',
-  verifactu: 'Verifactu', plan: 'Tu plan', apariencia: 'Apariencia', ayuda: 'Ayuda y contacto', recomienda: 'Recomienda Fisquo',
+  verifactu: 'Verifactu', plan: 'Tu plan', apariencia: 'Apariencia', ayuda: 'Ayuda y contacto', recomienda: 'Recomienda Fisquo', api: 'API y webhooks',
 };
-const DE_EMPRESA = ['plan', 'facturacion', 'marca', 'series', 'cobros', 'envio', 'gestoria', 'drive', 'controlat', 'importar', 'verifactu'];
+const DE_EMPRESA = ['plan', 'facturacion', 'marca', 'series', 'cobros', 'envio', 'gestoria', 'drive', 'controlat', 'importar', 'verifactu', 'api'];
 
 // Series y numeración: cada actividad con su serie, si ya tiene facturas (entonces no se cambia) y el siguiente número.
 async function datosSeries(u, anio) {
@@ -90,6 +93,7 @@ export default async function Seccion({ params }) {
       {seccion === 'marca' && <Marca marca={u.marca} nombre={u.emisor?.nombre} />}
       {seccion === 'series' && <Series {...await datosSeries(u, Number(ahoraMadrid().slice(0, 4)))} />}
       {seccion === 'gestoria' && <Gestoria gestoria={u.gestoria || null} trimestres={ultimosTrimestres(ahoraMadrid().slice(0, 10))} invitar={u.rol === 'admin'} emailListo={emailListo()} app={app} />}
+      {seccion === 'api' && <AjustesApi key={u.empresa} inicial={{ claves: await clavesDe(u), webhooks: await webhooksDe(u) }} alcances={alcancesDe(u)} eventos={[...(puede(u, 'facturas') ? ['factura.creada', 'factura.cobrada'] : []), ...(puede(u, ['gastos', 'nominas']) ? ['gasto.creado'] : [])]} />}
       {seccion === 'apariencia' && <Apariencia inicial={(await cookies()).get('tema')?.value} />}
       {seccion === 'ayuda' && <Ayuda contacto={CONTACTO} app={app} />}
       {seccion === 'envio' && <EmailEnvio inicial={u.envio || {}} empresa={u.emisor || {}} />}
