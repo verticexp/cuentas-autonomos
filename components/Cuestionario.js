@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import ProgresoAlta from './ProgresoAlta';
+import usePasosEnHistorial from './usePasosEnHistorial';
 import { llamar } from './Acciones';
 import { TIPOS_IGIC } from '@/lib/igic';
 import { limpiarFiscal, modelosDe, usaIgic } from '@/lib/empresa';
@@ -212,6 +213,10 @@ export default function Cuestionario({ inicial, editar, conFacturas, puedeFactur
   const pasos = datosCompletos ? todosPasos.slice(2) : todosPasos;
   const p = pasos[paso];
   const ultimo = paso === pasos.length - 1;
+  const historial = usePasosEnHistorial({
+    paso, base: 0, total: pasos.length, bloqueado: guardando,
+    cambiarPaso: (n) => { setError(''); setTerminado(false); setPaso(n); },
+  });
 
   async function terminar() {
     if (guardando) return;
@@ -219,7 +224,8 @@ export default function Cuestionario({ inicial, editar, conFacturas, puedeFactur
     try {
       await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify({ configuracion: { fiscal: limpiarFiscal(fiscal), emisor, actividades: acts } }) });
       if (editar) location.replace('/ajustes');
-      else { setGuardando(false); setTerminado(true); }
+      // La pantalla final deja el último paso detrás para poder revisarlo.
+      else { historial.avanzar(paso); setGuardando(false); setTerminado(true); }
     } catch (err) { setError(err.message); setGuardando(false); }
   }
 
@@ -239,8 +245,8 @@ export default function Cuestionario({ inicial, editar, conFacturas, puedeFactur
     </div>
   );
 
-  function atras() { if (guardando) return; setError(''); setPaso(paso - 1); }
-  function avanzar() { setError(''); setPaso(paso + 1); }
+  function atras() { if (guardando) return; historial.atras(); }
+  function avanzar() { historial.avanzar(paso + 1); }
 
   return (
     <div className="cuestionario" aria-busy={guardando}>
