@@ -26,24 +26,23 @@ export default function StripeConnect({ estado, admin, listo, aviso }) {
     try { await llamar('/api/stripe/connect', { method: 'DELETE' }); router.refresh(); } catch (e) { setError(e.message); }
   };
   return (
-    <section className="grupo" aria-labelledby="stripe-t">
-      <h2 className="grupo-t" id="stripe-t">Cobro con tarjeta</h2>
-      <div className="grupo-c relleno formulario">
-        {!listo ? <p className="nota">El cobro con tarjeta aún no está disponible en Fisquo.</p> : (
-          <>
-            <p className="nota">{estado ? ESTADOS[estado] : 'Conecta tu cuenta de Stripe (o crea una en el momento) para que tus clientes paguen tus facturas con tarjeta. El dinero va directo a tu cuenta; Fisquo no cobra comisión.'}</p>
-            {aviso === 'error' && <p className="error" role="alert">No se ha podido comprobar tu cuenta de Stripe. Inténtalo de nuevo.</p>}
-            {admin ? (
-              <div className="fila-act">
-                {estado !== 'activa' && <button type="button" className="boton pequeno" disabled={ocupado} onClick={conectar}>{ocupado ? 'Abriendo Stripe…' : estado ? 'Completar mis datos en Stripe' : 'Conectar con Stripe'}</button>}
-                {estado === 'activa' && <a className="boton sec pequeno" href="https://dashboard.stripe.com" target="_blank" rel="noreferrer">Abrir mi panel de Stripe</a>}
-                {estado && <button type="button" className="boton sec pequeno" onClick={desconectar}>Desconectar</button>}
-              </div>
-            ) : <p className="nota">Lo conecta la administración de la empresa.</p>}
-            {error && <p className="error" role="alert">{error}</p>}
-          </>
-        )}
-      </div>
+    // Una tarjeta más de Ajustes › Cobros (components/Ajustes.js, prop extra): al lado del formulario en el ordenador.
+    <section className="formulario tarjeta" aria-labelledby="stripe-t">
+      <h3 id="stripe-t">Cobro con tarjeta</h3>
+      {!listo ? <p className="nota">El cobro con tarjeta aún no está disponible en Fisquo.</p> : (
+        <>
+          <p className="nota">{estado ? ESTADOS[estado] : 'Conecta tu cuenta de Stripe (o crea una en el momento) para que tus clientes paguen tus facturas con tarjeta. El dinero va directo a tu cuenta; Fisquo no cobra comisión.'}</p>
+          {aviso === 'error' && <p className="error" role="alert">No se ha podido comprobar tu cuenta de Stripe. Inténtalo de nuevo.</p>}
+          {admin ? (
+            <div className="fila-act">
+              {estado !== 'activa' && <button type="button" className="boton pequeno" disabled={ocupado} onClick={conectar}>{ocupado ? 'Abriendo Stripe…' : estado ? 'Completar mis datos en Stripe' : 'Conectar con Stripe'}</button>}
+              {estado === 'activa' && <a className="boton sec pequeno" href="https://dashboard.stripe.com" target="_blank" rel="noreferrer">Abrir mi panel de Stripe</a>}
+              {estado && <button type="button" className="boton sec pequeno" onClick={desconectar}>Desconectar</button>}
+            </div>
+          ) : <p className="nota">Lo conecta la administración de la empresa.</p>}
+          {error && <p className="error" role="alert">{error}</p>}
+        </>
+      )}
     </section>
   );
 }
