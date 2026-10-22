@@ -29,7 +29,7 @@ export function FormEmpleado({ empleado, hoy }) {
     try {
       await llamar('/api/empleados', { method: nuevo ? 'POST' : 'PATCH', body: JSON.stringify(e) });
       if (nuevo) { setAbierto(false); setE({ ...e, nombre: '', nif: '', puesto: '', bruto: '', email: '' }); router.refresh(); }
-      else { volverA(router, '/nominas'); router.refresh(); }
+      else volverA(router, '/nominas', 'atras', true);
     } catch (err) { setError(err.message); }
     setEnviando(false);
   }

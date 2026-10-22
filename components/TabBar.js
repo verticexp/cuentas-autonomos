@@ -26,6 +26,7 @@ const TABS = [
 // Iconos de la hoja del «+» (móvil).
 const ICONO_ATAJO = {
   ticket: <path d="M4 8V6a2 2 0 012-2h2M16 4h2a2 2 0 012 2v2M20 16v2a2 2 0 01-2 2h-2M8 20H6a2 2 0 01-2-2v-2M4 12h16" />,
+  facturas: <path d="M12 15V4M8 8l4-4 4 4M5 14v4a2 2 0 002 2h10a2 2 0 002-2v-4" />,
   factura: <path d="M7 3h7l4 4v14H7zM14 3v4h4M10 12h5M10 16h5" />,
   cierre: <><rect x="3" y="9" width="18" height="11" rx="2" /><path d="M7 9V5h10v4M7 14h4M15 14h2" /></>,
   albaran: <path d="M7 3h10l3 3v15H4V3zM8 9h8M8 13h8M8 17h5" />,

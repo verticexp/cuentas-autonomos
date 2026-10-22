@@ -1,4 +1,5 @@
 import '@/app/legal.css';
+import VolverLegal from '@/components/VolverLegal';
 import { VERSION } from '@/lib/verifactuEnvio';
 
 export const metadata = { title: 'Declaración responsable' };
@@ -11,7 +12,7 @@ export default function Declaracion() {
   if (Object.values(d).some((v) => !v)) {
     return (
       <main className="legal">
-        <a className="legal-volver" href="/">Fisquo</a>
+        <VolverLegal />
         <h1>Declaración responsable del sistema informático de facturación</h1>
         <p>La declaración responsable de Fisquo se está completando. Para cualquier duda: <a href="mailto:corporate@fisquo.com">corporate@fisquo.com</a>.</p>
       </main>
@@ -19,7 +20,7 @@ export default function Declaracion() {
   }
   return (
     <main className="legal">
-      <a className="legal-volver" href="/">Fisquo</a>
+      <VolverLegal />
       <h1>Declaración responsable del sistema informático de facturación</h1>
       <h2>1.a) Nombre del sistema informático</h2>
       <p>Fisquo</p>

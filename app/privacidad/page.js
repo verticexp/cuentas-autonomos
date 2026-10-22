@@ -1,4 +1,5 @@
 import '@/app/legal.css';
+import VolverLegal from '@/components/VolverLegal';
 
 export const metadata = { title: 'Privacidad' };
 const RESPONSABLE = { nombre: 'Marc Ramírez Delgado', email: 'corporate@fisquo.com' };
@@ -6,7 +7,7 @@ const RESPONSABLE = { nombre: 'Marc Ramírez Delgado', email: 'corporate@fisquo.
 export default function Privacidad() {
   return (
     <main className="legal">
-      <a className="legal-volver" href="/">Fisquo</a>
+      <VolverLegal />
       <h1>Política de privacidad</h1>
       <p className="legal-fecha">Última actualización: 5 de octubre de 2026</p>
 

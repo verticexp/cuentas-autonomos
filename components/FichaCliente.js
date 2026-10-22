@@ -4,6 +4,7 @@ import { confirmar as confirmarAccion } from './Confirmar';
 
 import { useId, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { volverA } from '@/lib/transicion';
 import { FORMAS, valoresDe } from '@/lib/terceros';
 import { eur } from '@/lib/formato';
 
@@ -37,8 +38,9 @@ export function FormularioFicha({ datos = {}, id, proveedor = false, editar = tr
         return;
       }
       if (!r.ok) { setErrores(d.errores || {}); throw new Error(d.error || 'No se ha podido guardar la ficha'); }
-      if (eliminar) router.push(lista);
-      else if (!id) router.push(`${lista}/${encodeURIComponent((proveedor ? d.ficha : d.cliente).id)}`);
+      // Borrada: de vuelta a la lista; creada: su ficha en lugar del formulario vacío. Así «atrás» no lleva a ninguno de los dos.
+      if (eliminar) { volverA(router, lista, 'atras', true); return; }
+      if (!id) router.replace(`${lista}/${encodeURIComponent((proveedor ? d.ficha : d.cliente).id)}`);
       else setAviso('Guardado');
       router.refresh();
     } catch (err) { setError(err.message); }

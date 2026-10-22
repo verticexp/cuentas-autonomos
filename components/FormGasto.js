@@ -7,7 +7,7 @@ import { confirmar as confirmarAccion } from './Confirmar';
 import { useEffect, useId, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
-import { atras, volverA } from '@/lib/transicion';
+import { anterior, atras, volverA } from '@/lib/transicion';
 import Deslizable from './Deslizable';
 import { eur, fechaCorta } from '@/lib/formato';
 import { TIPOS_IGIC } from '@/lib/igic';
@@ -201,9 +201,15 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
         if (r.status === 423 && d.bloqueada) window.location.replace(`/bloqueo?a=${encodeURIComponent(window.location.pathname + window.location.search)}`);
         if (r.status === 409 && Array.isArray(d.duplicados) && d.duplicados.length) { setAvisoDuplicados({ datos, duplicados: d.duplicados }); return; }
         if (!r.ok) throw new Error(d.error || 'No se ha podido aprobar la factura. Revisa la conexión e inténtalo otra vez.');
-        // A la siguiente por revisar (o a la bandeja), con el aviso si el banco no ha casado.
-        router.push(siguiente ? `/gastos/bandeja/${encodeURIComponent(siguiente)}${d.aviso ? '?aviso=banco' : ''}` : `/gastos?ver=revisar${d.aviso ? '&aviso=banco' : ''}`);
-        router.refresh();
+        // A la siguiente por revisar en lugar de esta, o de vuelta a la lista: así «atrás» no pasa por las ya aprobadas.
+        // Con el aviso si el banco no ha casado.
+        if (siguiente) {
+          router.replace(`/gastos/bandeja/${encodeURIComponent(siguiente)}${d.aviso ? '?aviso=banco' : ''}`);
+          router.refresh();
+          return;
+        }
+        if (d.aviso && anterior()) addEventListener('popstate', () => router.replace('/gastos?ver=revisar&aviso=banco'), { once: true });
+        volverA(router, `/gastos?ver=revisar${d.aviso ? '&aviso=banco' : ''}`, 'atras', true);
         return;
       } else if (gasto) {
         await llamar('/api/gastos', { method: 'PATCH', body: JSON.stringify(paraEnviar(g)) });
@@ -228,7 +234,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
         }
       }
       setAvisoDuplicados(null);
-      if (gasto || (movimiento && !fallo)) { volverA(router, '/gastos'); router.refresh(); return; }
+      if (gasto || (movimiento && !fallo)) { volverA(router, '/gastos', 'atras', true); return; }
       setAvisoArchivo(fallo);
       setG(vacio);
       setLeyendo('');

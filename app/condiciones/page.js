@@ -1,4 +1,5 @@
 import '@/app/legal.css';
+import VolverLegal from '@/components/VolverLegal';
 
 export const metadata = { title: 'Condiciones de uso' };
 const EMAIL = 'corporate@fisquo.com';
@@ -6,7 +7,7 @@ const EMAIL = 'corporate@fisquo.com';
 export default function Condiciones() {
   return (
     <main className="legal">
-      <a className="legal-volver" href="/">Fisquo</a>
+      <VolverLegal />
       <h1>Condiciones de uso</h1>
       <p className="legal-fecha">Última actualización: 5 de octubre de 2026</p>
 
