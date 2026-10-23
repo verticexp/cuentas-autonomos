@@ -17,13 +17,13 @@ export const metadata = { title: 'Mensajes · Mi despacho' };
 // La conversación con un cliente. Al abrirla, lo suyo queda leído (lo marca el chat al verse, no esta página). ?doc=gasto:id abre la pregunta sobre ese documento.
 export default async function Conversacion({ params, searchParams }) {
   const { empresa } = await params;
-  const { e, ctx } = await requerirCliente(empresa);
+  const { e, d, ctx } = await requerirCliente(empresa);
   const q = (await searchParams) || {};
   // Para preguntar por un documento: los del último trimestre terminado y los del que está en curso.
   const dia = hoy();
   const { anio, t } = periodoDe(undefined, undefined, dia);
   const [desde] = rangoTrimestre(anio, t);
-  const [hilos, leido, facturas, gastos] = await Promise.all([comentariosDe(e.id), leidoDe(e.id), leerRango(ctx, 'facturas', desde, dia), leerRango(ctx, 'gastos', desde, dia)]);
+  const [hilos, leido, facturas, gastos] = await Promise.all([comentariosDe(e.id, { despacho: d.id }), leidoDe(e.id), leerRango(ctx, 'facturas', desde, dia), leerRango(ctx, 'gastos', desde, dia)]);
   const recientes = (l) => [...l].sort((a, b) => b.fecha.localeCompare(a.fecha)).slice(0, 150);
   const docs = {
     facturas: recientes(facturas.filter((f) => !f.caja)).map((f) => ({ id: f.id, texto: `${numeroFactura(f)} · ${f.cliente?.nombre || ''}`, fecha: f.fecha, total: importes(f).total })),
@@ -38,7 +38,7 @@ export default async function Conversacion({ params, searchParams }) {
       <Ir className="boton sec desp-mini" href={`/despacho/${encodeURIComponent(e.id)}`}>Ver su ficha</Ir>
     </div>
     <Chat key={docInicial} mensajes={mensajesDe(hilos)} lado="despacho" leidoAntes={leido.despacho || ''} nombreOtro={nombre} docs={docs} docInicial={docInicial}
-      enviar={{ url: '/api/despacho/comentarios', metodo: 'POST', extra: { empresa: e.id } }} leer={{ url: `/api/despacho/comentarios?empresa=${encodeURIComponent(e.id)}&leer=1`, metodo: 'GET' }}
+      enviar={{ url: '/api/despacho/comentarios', metodo: 'POST', extra: { empresa: e.id } }} leer={{ url: '/api/despacho/comentarios', metodo: 'PATCH', cuerpo: { empresa: e.id, leer: true } }}
       vacio={`Escribe a ${nombre}: le llega a su Fisquo y te contesta aquí. Para preguntar por una factura o un gasto, elígelo antes de escribir.`} />
   </main>;
 }

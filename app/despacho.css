@@ -82,10 +82,10 @@
 /* Estado del trimestre de cada cliente: una pastilla de color suave, como el estado de las facturas. */
 .desp-estado { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; background: var(--relleno); color: var(--muted); font-size: 13px; font-weight: 600; white-space: nowrap; }
 .desp-estado::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-.desp-estado.e-listo { color: var(--hacienda); background: color-mix(in srgb, var(--hacienda) 12%, transparent); }
-.desp-estado.e-revisado { color: var(--info); background: color-mix(in srgb, var(--info) 12%, transparent); }
-.desp-estado.e-cambios { color: var(--out); background: color-mix(in srgb, var(--out) 12%, transparent); }
-.desp-estado.e-presentado { color: var(--in); background: color-mix(in srgb, var(--in) 12%, transparent); }
+.desp-estado.e-listo { color: var(--hacienda); background: color-mix(in srgb, var(--hacienda) 7%, transparent); }
+.desp-estado.e-revisado { color: var(--info); background: color-mix(in srgb, var(--info) 7%, transparent); }
+.desp-estado.e-cambios { color: var(--out); background: color-mix(in srgb, var(--out) 7%, transparent); }
+.desp-estado.e-presentado { color: var(--in); background: color-mix(in srgb, var(--in) 7%, transparent); }
 
 /* Ficha de un cliente. */
 .desp-trimestre { flex-wrap: wrap; padding-top: 14px; padding-bottom: 14px; }

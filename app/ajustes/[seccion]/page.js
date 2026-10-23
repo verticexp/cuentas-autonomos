@@ -70,7 +70,7 @@ async function datosSeries(u, anio) {
 // Tu gestoría en Fisquo (lib/despachos.js): su vínculo, lo que ha hecho y la conversación (la marca leída el chat al verse).
 async function datosTuDespacho(u) {
   if (!u.despachoCliente || u.viaDespacho) return { despacho: null };
-  const [accesos, hilos, leido] = await Promise.all([leerAccesos(u.empresa, 60), comentariosDe(u.empresa), leidoDe(u.empresa)]);
+  const [accesos, hilos, leido] = await Promise.all([leerAccesos(u.empresa, 60), comentariosDe(u.empresa, { despacho: u.despachoCliente.id }), leidoDe(u.empresa)]);
   return { despacho: u.despachoCliente, accesos, mensajes: mensajesDe(hilos), leidoAntes: leido.cliente || '' };
 }
 // Los 8 últimos trimestres cerrados, del más reciente al más antiguo.

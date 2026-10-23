@@ -1,3 +1,4 @@
+import { comprobarCierre } from '@/lib/cierres';
 import { guardar } from '@/lib/redis';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { actividadesDe, actividadValida, fiscalDe, usaIgic } from '@/lib/empresa';
@@ -24,6 +25,8 @@ export async function POST(req) {
     concepto: [conceptoDieta(c), persona, motivo].filter(Boolean).join(' · ').slice(0, 140), base, ivaPct, ...(impuesto ? { impuesto } : {}),
     dieta: { ...dieta, ...(persona ? { persona } : {}), ...(motivo ? { motivo } : {}) },
   };
+  const cerrado = await comprobarCierre(u, g.fecha);
+  if (cerrado) return error(cerrado, 409);
   await guardar(u, 'gastos', g);
   await secundarios(u, { gastos: [g.id], meses: [g.fecha] });
   return Response.json({ ok: true, gasto: g });

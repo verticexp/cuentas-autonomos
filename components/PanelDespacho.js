@@ -90,10 +90,11 @@ export default function PanelDespacho({ filas, equipo = [], anio, t, hoy }) {
         </select>
       </label>
     </div>
-    {filtros.length > 0 && <div className="chips desp-chips" role="radiogroup" aria-label="Gestor">
-      {filtros.map(([id, nombre]) => <button key={id || 'todos'} type="button" role="radio" aria-checked={gestor === id} className={gestor === id ? 'activo' : ''} onClick={() => setGestor(id)}>{nombre}</button>)}
+    {filtros.length > 0 && <div className="chips desp-chips" role="group" aria-label="Filtrar por gestor">
+      {filtros.map(([id, nombre]) => <button key={id || 'todos'} type="button" aria-pressed={gestor === id} className={gestor === id ? 'activo' : ''} onClick={() => setGestor(id)}>{nombre}</button>)}
     </div>}
 
+    <p className="sr" role="status">{visibles.length === filas.length ? '' : `${visibles.length} de ${filas.length} clientes`}</p>
     {visibles.length ? <>
       <div className="desp-cols" aria-hidden><span>Cliente</span><span>Estado</span><span>IVA</span><span>IRPF</span></div>
       <ul className="grupo-lista desp-lista">{visibles.map((f) => {
@@ -108,7 +109,7 @@ export default function PanelDespacho({ filas, equipo = [], anio, t, hoy }) {
               <small className={`desp-avisos${r ? ' listo' : ''}`}><Avisos r={r} /></small>
             </span>
             <span className="desp-col-estado"><span className={`desp-estado e-${estado}`}>{ESTADOS_TEXTO[estado]}</span></span>
-            <span className={`desp-num${r ? ' listo' : ''}`} data-t="IVA">{r && !r.error ? <Cifra v={r.iva} /> : <span className="desp-hueco" aria-label="Calculando" />}</span>
+            <span className={`desp-num${r ? ' listo' : ''}`} data-t="IVA">{r && !r.error ? <Cifra v={r.iva} /> : <><span className="desp-hueco" aria-hidden /><span className="sr">Calculando</span></>}</span>
             <span className={`desp-num${r ? ' listo' : ''}`} data-t="IRPF">{r && !r.error ? <Cifra v={r.irpf} /> : <span className="desp-hueco" aria-hidden />}</span>
           </Ir>
         </li>;

@@ -1,3 +1,4 @@
+import { cierresDe, fechaEnCierre } from '@/lib/cierres';
 import { redis, clave, leerUno } from '@/lib/redis';
 import { leerRango } from '@/lib/indices';
 import { actividadesDe } from '@/lib/empresa';
@@ -23,12 +24,17 @@ export async function POST(req) {
   const hoy = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' }).slice(0, 7);
   const meses = mesesEntre(b.desde, hoy);
   if (!meses.length) return error('El mes de inicio es posterior al actual');
-  const { guardar, borrar } = fusionarCuotas(await leerRango(u, 'gastos', `${b.desde}-01`, `${hoy}-31`));
+  // Los meses de un trimestre cerrado por la gestoría (lib/cierres.js) se quedan como están.
+  const cierres = await cierresDe(u);
+  const abierto = (fecha) => !fechaEnCierre(cierres, fecha);
+  const fusion = fusionarCuotas((await leerRango(u, 'gastos', `${b.desde}-01`, `${hoy}-31`)).filter((g) => abierto(g.fecha)));
+  const guardar = fusion.guardar, borrar = fusion.borrar;
   const existentes = new Map(guardar.map((g) => [g.id, g]));
   const nuevos = {};
   for (const g of guardar) nuevos[g.id] = g;
   for (const mes of meses) {
     const [y, m] = mes.split('-').map(Number);
+    if (!abierto(new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10))) continue;
     const antes = existentes.get(idCuota(mes)) || (await leerUno(u, 'gastos', idCuota(mes)));
     nuevos[idCuota(mes)] = { ...(antes || { fecha: new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10), actividad: actividadesDe(u)[0].id, concepto: 'Cuota de autónomos', ivaPct: 0 }), id: idCuota(mes), base: importe };
   }

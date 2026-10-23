@@ -5,7 +5,7 @@ import '@/app/despacho.css';
 // En el Resumen del cliente: si su gestoría (lib/despachos.js) le ha escrito y no lo ha leído, un aviso que lleva al chat.
 export default async function AvisoMensajes({ u }) {
   if (!u?.despachoCliente || u.viaDespacho) return null;
-  const [hilos, leido] = await Promise.all([comentariosDe(u.empresa), leidoDe(u.empresa)]);
+  const [hilos, leido] = await Promise.all([comentariosDe(u.empresa, { despacho: u.despachoCliente.id }), leidoDe(u.empresa)]);
   const n = noLeidos(hilos, leido, 'cliente');
   if (!n) return null;
   return <Ir href="/ajustes/gestoria" className="aviso-mensajes">

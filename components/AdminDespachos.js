@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { llamar } from './Acciones';
+import { confirmar } from './Confirmar';
 
 const euros = (c) => (c / 100).toLocaleString('es-ES', { maximumFractionDigits: 0 }) + ' €';
 
@@ -20,10 +21,15 @@ export default function AdminDespachos() {
       setD({ nombre: '', nif: '', titular: '', email: '', codigo: '' }); cargar();
     } catch (err) { setMsg(err.message); }
   };
+  const baja = async (x) => {
+    if (!(await confirmar({ titulo: `¿Dar de baja «${x.nombre}»?`, texto: `Sus ${x.clientes} clientes dejarán de estar en el despacho (los que tenía incluidos en su cuota tendrán un mes para elegir su plan) y su equipo perderá el acceso al panel. Sus cuentas siguen.`, aceptar: 'Dar de baja', peligro: true }))) return;
+    try { await llamar(`/api/admin/despachos?id=${encodeURIComponent(x.id)}`, { method: 'DELETE' }); setMsg(`✓ ${x.nombre} dado de baja`); cargar(); } catch (err) { setMsg(err.message); }
+  };
   return <>
     {lista === null ? <p className="nota">Cargando…</p> : lista.length ? <ul className="adm-lista">{lista.map((x) => <li key={x.id}>
       <span>{x.nombre} · {x.codigo} · {x.personas} {x.personas === 1 ? 'persona' : 'personas'}</span>
-      <b>{x.clientes} clientes · {x.licencias.aut.total + x.licencias.pym.total} licencias · {euros(x.licencias.importe)}/mes{x.cobro?.activo ? ' · cobro activo' : x.licencias.importe ? ' · sin cobro activo' : ''}</b>
+      <b>{x.clientes} clientes · {x.licencias.aut.total + x.licencias.pym.total} licencias · {euros(x.licencias.importe)}/mes{x.cobro?.activo ? ' · cobro activo' : x.licencias.importe ? ' · sin cobro activo' : ''}{x.personas === 0 ? ' · sin titular' : ''}</b>
+      <button type="button" className="boton sec" onClick={() => baja(x)}>Dar de baja</button>
     </li>)}</ul> : <p className="nota">Aún no hay despachos.</p>}
     <form className="formulario" onSubmit={crear}>
       <label>Nombre del despacho<input className="campo" value={d.nombre} maxLength={120} onChange={(e) => setD({ ...d, nombre: e.target.value })} required /></label>

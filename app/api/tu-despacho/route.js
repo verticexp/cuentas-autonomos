@@ -1,3 +1,4 @@
+import { invalidarNoLeidos } from '@/lib/mensajesDespacho';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { hoy } from '@/lib/formato';
 import { auditar } from '@/lib/auditoria';
@@ -27,7 +28,7 @@ export async function GET(req) {
     const d = await despachoPorCodigo(codigo);
     return d ? Response.json({ nombre: d.nombre }) : error('No hay ningún despacho con ese código', 404);
   }
-  const [accesos, comentarios] = await Promise.all([leerAccesos(u.empresa), comentariosDe(u.empresa)]);
+  const [accesos, comentarios] = await Promise.all([leerAccesos(u.empresa), u.despachoCliente ? comentariosDe(u.empresa, { despacho: u.despachoCliente.id }) : []]);
   return Response.json({ despacho: u.despachoCliente || null, accesos, comentarios });
 }
 
@@ -64,7 +65,7 @@ export async function PATCH(req) {
   const b = await cuerpo(req);
   // { leer: true }: el cliente ha abierto la conversación.
   if (b.leer === true) { await marcarLeido(u.empresa, 'cliente'); return Response.json({ ok: true }); }
-  const r = await responder(u.empresa, String(b.id || ''), u, 'cliente', { texto: b.texto, resuelto: b.resuelto });
+  const r = await responder(u.empresa, String(b.id || ''), u, 'cliente', { texto: b.texto, resuelto: b.resuelto, despacho: u.despachoCliente.id });
   return r.error ? error(r.error, r.status || 400) : Response.json(r);
 }
 
@@ -73,9 +74,12 @@ export async function PUT(req) {
   const { u, res } = await cliente({ permiso: 'resumen' });
   if (res) return res;
   if (!u.despachoCliente) return error('No tienes ninguna gestoría con acceso', 404);
+  if (await pasado('mensajes', `${u.empresa}:${u.id}`, 120, 3600)) return respuesta429(600, 'Has enviado muchos mensajes seguidos. Espera un poco.');
   const b = await cuerpo(req);
-  const r = await escribir(u.empresa, u, 'cliente', { texto: b.texto, hilo: b.hilo ? String(b.hilo) : undefined });
+  const r = await escribir(u.empresa, u, 'cliente', { texto: b.texto, hilo: b.hilo ? String(b.hilo) : undefined, despacho: u.despachoCliente.id });
   if (r.error) return error(r.error, r.status || 400);
   await marcarLeido(u.empresa, 'cliente');
+  // El número de «Mensajes» del despacho se pone al día.
+  await invalidarNoLeidos(u.despachoCliente.id);
   return Response.json(r);
 }

@@ -1,3 +1,4 @@
+import { comprobarCierre } from '@/lib/cierres';
 import { mensajePlan } from '@/lib/app';
 import { guardar, leer, leerUno, redis, clave } from '@/lib/redis';
 import { soltarEnlaces } from '@/lib/enlacesBanco';
@@ -14,14 +15,19 @@ import { conCerrojo, Ocupado } from '@/lib/cerrojo';
 export const dynamic = 'force-dynamic';
 // Un sueldo bruto mensual: más de 0 y sin cifras absurdas (un 1e309 llegaba como Infinity).
 const MAX_BRUTO = 1000000;
+class TrimestreCerrado extends Error {}
 const brutoValido = (x) => Number.isFinite(x) && x > 0 && x <= MAX_BRUTO;
 // Meses en que se pagan las pagas extra que no van prorrateadas: una en diciembre, dos en junio y diciembre…
 const MESES_PAGAS = { 1: [12], 2: [6, 12], 3: [3, 6, 12], 4: [3, 6, 9, 12] };
 
 // Cada nómina guarda también su gasto (bruto + Seguridad Social de la empresa), con id nomina-<id>.
-async function guardarConGasto(u, n) {
-  await guardar(u, 'nominas', n);
+// fiscal: cambia el importe (nueva o corregida). Un trimestre cerrado por la gestoría (lib/cierres.js) no admite gastos
+// nuevos ni cambiados, tampoco los de nómina; marcarla como pagada, sí.
+async function guardarConGasto(u, n, { fiscal = true } = {}) {
   const g = gastoDeNomina(n, actividadValida(actividadesDe(u)));
+  const cerrado = fiscal && (await comprobarCierre(u, g.fecha));
+  if (cerrado) throw new TrimestreCerrado(cerrado);
+  await guardar(u, 'nominas', n);
   await guardar(u, 'gastos', g);
   await secundarios(u, { meses: [g.fecha] });
 }
@@ -56,6 +62,8 @@ export async function POST(req) {
           nuevas.push({ ...base, bruto: c.importes.bruto, ...c, completa: true });
         } else nuevas.push({ ...base, bruto: r2(e.bruto + (x?.importe || 0)), irpfPct: e.irpfPct, ssTrabajadorPct: e.ssTrabajadorPct, ssEmpresaPct: e.ssEmpresaPct });
       }
+      const cerrado = await comprobarCierre(u, ...nuevas.map((n) => gastoDeNomina(n, '').fecha));
+      if (cerrado) return error(cerrado, 409);
       for (const n of nuevas) await guardarConGasto(u, n);
       return Response.json({ ok: true, creadas: nuevas.length });
     }, { caduca: 60000 });
@@ -95,7 +103,7 @@ export async function PATCH(req) {
       for (const k of ['irpfPct', 'ssTrabajadorPct', 'ssEmpresaPct']) if (k in b) n[k] = Math.min(100, Math.max(0, Number(String(b[k]).replace(',', '.')) || 0));
     }
   }
-  await guardarConGasto(u, n);
+  try { await guardarConGasto(u, n, { fiscal: 'bruto' in b }); } catch (e) { if (e instanceof TrimestreCerrado) return error(e.message, 409); throw e; }
   return Response.json({ ok: true });
 }
 
@@ -105,6 +113,8 @@ export async function DELETE(req) {
   const id = req.nextUrl.searchParams.get('id');
   const antes = id && (await leerUno(u, 'nominas', id));
   if (!antes) return error('Esa nómina ya no existe', 404);
+  const cerrado = await comprobarCierre(u, gastoDeNomina(antes, '').fecha);
+  if (cerrado) return error(cerrado, 409);
   // El gasto de la nómina se va con ella; si su pago estaba emparejado con el banco, el cargo vuelve a pendiente.
   const tx = redis.multi().hdel(clave(u, 'nominas'), id).hdel(clave(u, 'gastos'), `nomina-${id}`);
   await soltarEnlaces(u, tx, 'gasto', `nomina-${id}`);

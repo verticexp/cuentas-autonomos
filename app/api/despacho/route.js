@@ -16,7 +16,9 @@ export async function GET(req) {
   const { anio, t } = periodoDe(q.get('anio'), q.get('t'), dia);
   const clientes = await clientesVisibles(d, u.id);
   const [filas, equipo, licencias] = await Promise.all([filasClientes(clientes, anio, t, dia), equipoDe(d), rol === 'titular' ? licenciasDe(d, dia) : null]);
-  const { miembros: _, ...ficha } = d;
+  // Lo del cobro (Stripe) solo lo ve el titular.
+  const { miembros: _, cobro, ...resto } = d;
+  const ficha = rol === 'titular' ? { ...resto, cobro } : resto;
   return Response.json({ despacho: ficha, rol, equipo, anio, t, filas, licencias });
 }
 
