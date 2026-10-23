@@ -40,7 +40,7 @@ export default function Solucion({ id }) {
       </section>
 
       <section className="web-sec">
-        <Encabezado kicker="Funciones clave" titulo={id === 'business' ? 'Funciones para definir tu propuesta' : `Lo que más usan los ${s.n.toLowerCase()}`} />
+        <Encabezado kicker="Funciones clave" titulo={id === 'business' ? 'Qué incluye tu propuesta' : `Lo que más usan los ${s.n.toLowerCase()}`} />
         <div className="web-relacionadas cuatro">
           {s.funciones.map((slug, k) => {
             const f = funcion(slug);

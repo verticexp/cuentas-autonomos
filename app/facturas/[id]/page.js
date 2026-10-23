@@ -39,6 +39,8 @@ export default async function Factura({ params }) {
   const [f, clientes, recurrentes, productos] = await Promise.all([leerUno(u, 'facturas', id), leer(u, 'clientes'), leer(u, 'recurrentes'), leer(u, 'productos')]);
   if (!f) notFound();
   const editar = puede(u, 'facturar');
+  // Factura aún sin enviar (y que no es un cierre de caja): «Enviar al cliente» pasa a ser el botón principal.
+  const sinEnviar = editar && !f.envios?.length && !f.caja;
   const portal = editar ? await enlacePortal(u, f.cliente.nombre, f.cliente.nif || '') : null;
   const fiscal = fiscalDe(u);
   const actividades = actividadesDe(u);
@@ -102,15 +104,18 @@ export default async function Factura({ params }) {
         </div>
         {editar && <div className="fh-cobrada"><Cobro id={f.id} cobrada={Boolean(f.cobrada)} total={i.total} pagado={pagadoDe(f)} pendiente={Math.max(0, pendienteDe(f))} cobro={f.cobro ? { fecha: f.cobro.fecha, metodo: f.cobro.metodo } : null} deshacer={deshacerDe(f)} hoy={hoy()} desde={f.fecha} /></div>}
       </section>
-      {/* Lo de cada día arriba (PDF, enviar, duplicar); lo de vez en cuando, en «Más opciones», con Borrar al final. */}
+      {/* Lo de cada día arriba (PDF, enviar, duplicar); lo de vez en cuando, en «Más opciones», con Borrar al final. Sin
+          enviar todavía, lo principal es mandársela al cliente (auditoría U-10); después, el PDF. */}
+      {sinEnviar && <EnviarFactura principal id={f.id} email={f.cliente.email} envios={f.envios} editar={editar}
+        asunto={asuntoFactura(f, emisorDe(f, u), u.envio)} mensaje={mensajeFactura(f, emisorDe(f, u), u.envio)} asuntoFijo={diasPrueba(u.plan) > 0} />}
       <div className="acciones-factura">
-        <Ir href={`/facturas/${f.id}/pdf`} className="boton">Ver / descargar PDF</Ir>
+        <Ir href={`/facturas/${f.id}/pdf`} className={sinEnviar ? 'boton sec' : 'boton'}>Ver / descargar PDF</Ir>
         {editar && <>
         <Ir href={`/facturas/nueva?duplica=${f.id}`} tipo="subir" className="boton sec">Duplicar</Ir>
         {f.serie !== 'R' && !f.caja && <Ir href={`/facturas/nueva?rectifica=${f.id}`} tipo="subir" className="boton sec">Rectificar</Ir>}
         </>}
       </div>
-      {(editar || f.envios?.length > 0) && <EnviarFactura id={f.id} email={f.cliente.email} envios={f.envios} editar={editar}
+      {!sinEnviar && (editar || f.envios?.length > 0) && <EnviarFactura id={f.id} email={f.cliente.email} envios={f.envios} editar={editar}
         asunto={asuntoFactura(f, emisorDe(f, u), u.envio)} mensaje={mensajeFactura(f, emisorDe(f, u), u.envio)} asuntoFijo={diasPrueba(u.plan) > 0} />}
       {(String(f.cliente?.nif || '').trim() || portal || editar) && <details className="mas-opciones">
         <summary>Más opciones</summary>

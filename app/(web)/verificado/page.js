@@ -5,9 +5,9 @@ export const metadata = { title: 'Cálculos verificados · Fisquo', description:
 
 const CIFRAS = [
   { n: 1000, t: 'empresas simuladas', d: 'Autónomos y sociedades ficticias' },
-  { pre: 'más de', n: 470000, t: 'comprobaciones', d: 'En cada versión de Fisquo' },
+  { pre: '+', n: 470000, t: 'comprobaciones', d: 'En cada versión de Fisquo' },
   { n: 0, t: 'diferencias', d: 'Si hay una sola, no se publica' },
-  { pre: 'más de', n: 870, t: 'pruebas automáticas', d: 'Además de la batería de empresas' },
+  { pre: '+', n: 1500, t: 'pruebas automáticas', d: 'Además de la batería de empresas' },
 ];
 
 const SIMULA = [
@@ -36,7 +36,7 @@ export default function Verificado() {
     <>
       <section className="web-hero-pag centro">
         <span className="web-fcard-ico grande web-entra"><Icono n="tic" /></span>
-        <h1 className="web-entra" style={{ '--d': '60ms' }}>Tus números se comprueban <em>en cada versión.</em></h1>
+        <h1 className="web-entra" style={{ '--d': '60ms' }}>Cada versión de Fisquo se comprueba <em>antes de publicarse.</em></h1>
         <p className="web-sub web-entra" style={{ '--d': '120ms' }}>Antes de publicar cualquier cambio, Fisquo recalcula miles de operaciones por otro camino y las compara con las suyas. Así sabemos que los cálculos no se han roto.</p>
       </section>
 

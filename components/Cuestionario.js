@@ -35,13 +35,14 @@ function CamposEmisor({ emisor, sociedad, cambiar }) {
   const campos = [
     ['nombre', sociedad ? 'Razón social' : 'Nombre y apellidos', 'organization', false],
     ['nif', sociedad ? 'CIF' : 'NIF/NIE', 'off', false],
-    ['direccion', 'Dirección fiscal', 'street-address', true],
+    // La dirección no bloquea el paso, pero sin ella no se puede emitir una factura (lib/empresa.js faltanDatosFactura).
+    ['direccion', 'Dirección fiscal', 'street-address', 'necesaria para facturar'],
     ['ciudad', 'Ciudad', 'address-level2', true],
     ['iban', 'IBAN para cobrar', 'off', true],
   ];
   return <div className="grupo-c alta-campos">{campos.map(([clave, titulo, completar, opcional]) => (
     <label className="alta-campo" key={clave}>
-      <span>{titulo}{opcional ? ' (opcional)' : ' (obligatorio)'}</span>
+      <span>{titulo}{typeof opcional === 'string' ? ` (${opcional})` : opcional ? ' (opcional)' : ' (obligatorio)'}</span>
       <input className="campo" value={emisor[clave]} autoComplete={clave === 'nombre' && !sociedad ? 'name' : completar} required={!opcional} onChange={(ev) => cambiar(clave, ['nif', 'iban'].includes(clave) ? ev.target.value.toUpperCase() : ev.target.value)} />
     </label>
   ))}</div>;
@@ -145,27 +146,40 @@ export default function Cuestionario({ inicial, editar, conFacturas, puedeFactur
       listo: true,
       cuerpo: (
         <>
-          <p className="mini-t fuera">¿Cobras {impuesto}?</p>
+          {/* Lo que casi todos contestan, arriba; los regímenes especiales, plegados (auditoría D8-06): quien está en ellos los conoce. */}
+          <p className="mini-t fuera">¿Cobras {impuesto} en tus facturas?</p>
           <div className="opciones">
-            <Opcion grupo="regimen-iva" activo={fiscal.iva === 'general'} titulo={`Sí, cobro ${impuesto}`} onClick={() => f('iva', 'general')} />
+            <Opcion grupo="regimen-iva" activo={fiscal.iva === 'general'} titulo={`Sí, el ${impuesto} normal`} onClick={() => f('iva', 'general')} />
             <Opcion grupo="regimen-iva" activo={fiscal.iva === 'exento'} titulo="No, mi actividad está exenta" detalle="Sanidad, enseñanza, seguros, alquiler de vivienda…" onClick={() => f('iva', 'exento')} />
-            {!igic && !sociedad && <Opcion grupo="regimen-iva" activo={fiscal.iva === 'recargo'} titulo="Tienda con recargo de equivalencia" detalle="Comercio minorista: el IVA lo paga tu proveedor" onClick={() => f('iva', 'recargo')} />}
-            {!igic && !foral && !sociedad && <Opcion grupo="regimen-iva" activo={fiscal.iva === 'simplificado'} titulo="Régimen simplificado (módulos)" detalle="El IVA trimestral sale de los módulos de tu actividad" onClick={() => setFiscal((x) => ({ ...x, iva: 'simplificado', irpf: 'modulos' }))} />}
-            {!igic && !sociedad && <Opcion grupo="regimen-iva" activo={fiscal.iva === 'reagp'} titulo="Agricultura, ganadería o pesca (REAGP)" detalle="No cobras IVA: cobras la compensación del 12 % o del 10,5 %" onClick={() => f('iva', 'reagp')} />}
           </div>
+          {!igic && !sociedad && (
+            <details className="alta-especiales" open={['recargo', 'simplificado', 'reagp'].includes(fiscal.iva) || undefined}>
+              <summary>Tengo un régimen especial de IVA</summary>
+              <div className="opciones">
+                <Opcion grupo="regimen-iva" activo={fiscal.iva === 'recargo'} titulo="Tienda con recargo de equivalencia" detalle="Comercio minorista: tu proveedor te cobra un recargo además del IVA y tú no presentas el 303" onClick={() => f('iva', 'recargo')} />
+                {!foral && <Opcion grupo="regimen-iva" activo={fiscal.iva === 'simplificado'} titulo="Régimen simplificado (módulos)" detalle="El IVA trimestral sale de los módulos de tu actividad" onClick={() => setFiscal((x) => ({ ...x, iva: 'simplificado', irpf: 'modulos' }))} />}
+                <Opcion grupo="regimen-iva" activo={fiscal.iva === 'reagp'} titulo="Agricultura, ganadería o pesca (REAGP)" detalle="No cobras IVA: cobras la compensación del 12 % o del 10,5 %" onClick={() => f('iva', 'reagp')} />
+              </div>
+            </details>
+          )}
           <div className="grupo-c">
             {!sociedad && !foral && <SiNo valor={fiscal.irpf === 'modulos'} cambiar={(v) => setFiscal((x) => ({ ...x, irpf: v ? 'modulos' : undefined, ...(!v && x.iva === 'simplificado' ? { iva: 'general' } : {}) }))} titulo="Estoy en módulos (estimación objetiva)" detalle="Presentas el 131 en vez del 130" />}
             {!sociedad && fiscal.irpf !== 'modulos' && !['navarra', 'alava'].includes(territorio) && <SiNo valor={fiscal.retenidas} cambiar={(v) => f('retenidas', v)} titulo={`Más del ${pctRetenidas} % de lo que facturas lleva retención`} detalle="Si es así, no tienes que presentar el 130" />}
-            <SiNo valor={fiscal.trabajadores} cambiar={(v) => f('trabajadores', v)} titulo="Tengo trabajadores o pago a profesionales con retención" />
+            <SiNo valor={fiscal.trabajadores} cambiar={(v) => f('trabajadores', v)} titulo="Tengo trabajadores o pago a profesionales con retención" detalle="Sus retenciones van en el 111 cada trimestre" />
             <SiNo valor={fiscal.alquiler} cambiar={(v) => f('alquiler', v)} titulo="Alquilo un local u oficina" />
             {!igic && <SiNo valor={fiscal.intracom} cambiar={(v) => f('intracom', v)} titulo="Compro o vendo a empresas de otros países de la UE" />}
             <SiNo valor={fiscal.inventario} cambiar={(v) => f('inventario', v)} titulo="Vendo productos y quiero controlar el stock" detalle="Inventario: entradas, salidas, stock mínimo y su valor" />
+          </div>
+          <details className="alta-especiales" open={Boolean(fiscal.rebu || fiscal.reav || fiscal.capital || fiscal.oss || fiscal.recc) || undefined}>
+            <summary>Situaciones especiales (opcional)</summary>
+            <div className="grupo-c">
             {!igic && ['general', 'simplificado'].includes(fiscal.iva) && <SiNo valor={Boolean(fiscal.rebu)} cambiar={(v) => f('rebu', v)} titulo="Vendo bienes usados, arte o antigüedades con el IVA sobre el margen" detalle="Régimen especial de los bienes usados (REBU)" />}
             {!igic && ['general', 'simplificado'].includes(fiscal.iva) && <SiNo valor={Boolean(fiscal.reav)} cambiar={(v) => f('reav', v)} titulo="Soy una agencia de viajes" detalle="Régimen especial de las agencias de viajes (REAV): IVA sobre el margen" />}
             <SiNo valor={Boolean(fiscal.capital)} cambiar={(v) => f('capital', v)} titulo="Pago dividendos o intereses a socios o a quien me prestó dinero" detalle="Retención del 19 %: modelos 123 y 193" />
             {!igic && fiscal.iva === 'general' && <SiNo valor={Boolean(fiscal.oss)} cambiar={(v) => f('oss', v)} titulo="Vendo a particulares de otros países de la UE con el IVA de su país" detalle="Ventanilla única (OSS): ese IVA va en el modelo 369" />}
             {!igic && fiscal.iva === 'general' && <SiNo valor={Boolean(fiscal.recc)} cambiar={(v) => f('recc', v ? { desde: `${new Date().getFullYear()}-01-01` } : undefined)} titulo="Estoy en el criterio de caja (RECC)" detalle="El IVA de tus facturas se paga al cobrarlas y el de tus gastos se deduce al pagarlos" />}
-          </div>
+            </div>
+          </details>
           {!igic && fiscal.iva === 'general' && fiscal.recc && (
             <div className="alta-campos">
               <label className="alta-campo"><span>En el criterio de caja desde</span><small>La fecha de la opción en el 036 (normalmente, el 1 de enero).</small>

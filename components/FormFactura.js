@@ -8,7 +8,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { navegar } from '@/lib/transicion';
 import Deslizable from './Deslizable';
-import { baseLinea, desglose, importes, leerImporte, numeroFactura, pagadoDe, pendienteDe, r2, trimestre } from '@/lib/calculos';
+import { baseLinea, desglose, importes, leerImporte, nifUE, numeroFactura, pagadoDe, pendienteDe, r2, trimestre } from '@/lib/calculos';
 import { requisitosIncobrable } from '@/lib/incobrables';
 import '@/app/lineas.css';
 import '@/app/catalogo.css';
@@ -358,8 +358,10 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
       <datalist id="proyectos-factura">{proyectos.map((p) => <option key={p} value={p} />)}</datalist>
 
       {(nums.some((l) => l.ivaPct === 0) || errores.operacion) && <label>¿Por qué va sin {impuesto}?
-        <select {...atributos('operacion')} className="campo" value={f.operacion || ''} onChange={(e) => poner('operacion', e.target.value || undefined)}>
-          <option value="">{igic ? 'Tipo cero (sin otra operación)' : 'Según el cliente (UE: servicios intracomunitarios · fuera de la UE: no sujeta · España: exenta)'}</option>
+        {/* A un cliente de España sin IVA hay que decir el motivo (auditoría U-17): exenta, inversión del sujeto pasivo… cambian
+            la prorrata y el 303. De la UE o de fuera, el de su NIF sirve por defecto. */}
+        <select {...atributos('operacion')} className="campo" value={f.operacion || ''} required={!igic && !clienteExtranjero} onChange={(e) => poner('operacion', e.target.value || undefined)}>
+          <option value="">{igic ? 'Tipo cero (sin otra operación)' : clienteExtranjero ? `Según el cliente: ${operaciones[nifUE(nifCli) ? 'servicios-ue' : 'servicios-fuera']?.nombre}` : 'Elige el motivo'}</option>
           {Object.entries(operaciones).map(([k, t]) => <option key={k} value={k}>{t.nombre}</option>)}
         </select>{mensaje('operacion')}
       </label>}

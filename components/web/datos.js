@@ -220,8 +220,10 @@ export const SEGMENTOS = [
   },
   {
     id: 'business', ruta: '/business', icono: 'edificio', n: 'Business',
-    titulo: 'Control financiero para grupos y equipos grandes',
-    sub: 'Una propuesta a medida para varias sociedades o equipos: acordamos contigo el alcance, los accesos y un precio cerrado antes de empezar.',
+    // Para quien lleva varias sociedades (un grupo familiar, una pequeña holding, varias tiendas), no para grandes empresas:
+    // Fisquo no envía al SII, obligatorio por encima de 6 millones (auditoría D1-27).
+    titulo: 'Varias empresas, un solo Fisquo',
+    sub: 'Para quien lleva varias sociedades —un grupo familiar, una pequeña holding, varias tiendas— o un equipo grande: datos separados por empresa, accesos a medida y un precio cerrado antes de empezar.',
     dolores: [
       ['Varias sociedades, varias herramientas', 'Un alcance acordado para tus sociedades, con datos separados y accesos definidos.'],
       ['Accesos que nadie controla', 'Roles y permisos por área, e invitaciones que caducan.'],

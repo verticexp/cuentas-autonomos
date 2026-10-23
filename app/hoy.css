@@ -8,6 +8,9 @@
 .pp-paso .txt small { white-space: normal; }
 .pp-paso.pp-primero { background: color-mix(in srgb, var(--marca) 7%, var(--surface)); }
 .pp-accion { flex: none; padding: 8px 14px; border-radius: 999px; background: var(--marca); color: var(--sobre); font-size: 15px; font-weight: 600; white-space: nowrap; }
+/* Con el botón, la flecha sobra; en el móvil, el botón más compacto para que el título no se parta en tres líneas. */
+.celda.ir.pp-primero::after { display: none; }
+@media (max-width: 599px) { .pp-accion { padding: 7px 12px; font-size: 14px; } }
 .ver-todos { color: var(--marca); font-weight: 600; }
 .pp-paso.hecho .txt { text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--muted) 55%, transparent); }
 .pp-paso.hecho .txt small { text-decoration: none; }

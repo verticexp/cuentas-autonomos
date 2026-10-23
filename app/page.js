@@ -115,6 +115,8 @@ export default async function Resumen({ searchParams }) {
   const verPorPagar = porPagar > 0 && puede(u, 'gastos');
   // La previsión de caja es del plan Pro (planes v2 y v3): con uno que no la incluye no se enseña la tarjeta.
   const verTeso = Boolean(teso) && !(u.plan?.version >= 2 && sinFuncion(u.plan, 'tesoreria'));
+  // Por qué baja la previsión (auditoría U-16): el pago más grande hasta el día en que el saldo toca fondo.
+  const causaMinimo = teso?.minimo?.saldo < 0 ? (teso.movimientos || []).filter((m) => m.importe < 0 && m.fecha <= teso.minimo.fecha).sort((a, b) => a.importe - b.importe)[0] : null;
   const hayTarjetas = !sinDatos && (verHacienda || porCobrar > 0 || verPorPagar || porRevisar.pendientes > 0 || verTeso);
   // Lo demás que viene para Hacienda en los próximos meses (retenciones, Sociedades, dividendos…), de la previsión de
   // Tesorería: la tarjeta enseña el IVA y el IRPF y, sin esto, parecía que era todo lo que había que apartar.
@@ -266,7 +268,7 @@ export default async function Resumen({ searchParams }) {
             <Ir href="/tesoreria" className="hcard ir" style={{ '--c': 'var(--info)' }}>
               <h2 className="hcard-t"><Ico n="beneficio" solo />Tesorería<span>3 meses</span></h2>
               <p className="hcard-v"><Cifra v={teso.final} /><small>€</small></p>
-              <p className={`hcard-s${teso.minimo.saldo < 0 ? ' rojo' : ''}`}>{teso.minimo.saldo < 0 ? `El ${fechaTexto(teso.minimo.fecha)} te quedarías en ${eur(teso.minimo.saldo)}` : `${teso.conSaldo ? 'Saldo previsto' : 'Sin saldo del banco'} · cobras ${eur(teso.entra)} y pagas ${eur(r2(teso.sale + teso.hacienda))}`}</p>
+              <p className={`hcard-s${teso.minimo.saldo < 0 ? ' rojo' : ''}`}>{teso.minimo.saldo < 0 ? `El ${fechaTexto(teso.minimo.fecha)} te quedarías en ${eur(teso.minimo.saldo)}${causaMinimo ? `: incluye ${causaMinimo.concepto}` : ''}` : `${teso.conSaldo ? 'Saldo previsto' : 'Sin saldo del banco'} · cobras ${eur(teso.entra)} y pagas ${eur(r2(teso.sale + teso.hacienda))}`}</p>
             </Ir>
           )}
         </div>
