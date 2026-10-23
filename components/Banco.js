@@ -231,7 +231,7 @@ export default function Banco({ cuentas, pendientes, emparejados, ignorados, aut
       {msg && <p className={`bco-aviso${msg.error ? ' error' : ''}`} role="status">{msg.texto}</p>}
 
       <section className="bco-cuentas">
-        {cuentas.length > 0 && <div className="bco-total"><span>Saldo en tus cuentas</span><strong>{conSaldo ? eur(total) : '—'}</strong></div>}
+        {cuentas.length > 0 && <div className="bco-total"><span>Saldo en tus cuentas</span><strong className={conSaldo && total < 0 ? 'teso-out' : undefined}>{conSaldo ? eur(total) : '—'}</strong>{conSaldo && total < 0 && <small className="nota">En descubierto. ¿No cuadra con tu banco? Sube el último extracto.</small>}</div>}
         {cuentas.map((c) => (
           <div key={c.id} className="bco-cuenta">
             <span className="bco-txt">

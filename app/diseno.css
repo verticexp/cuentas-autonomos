@@ -484,3 +484,7 @@ html[data-arranque=visto] #arranque { display: none; }
   .colores button::after { content: ""; position: absolute; inset: -6px; }
   .color-libre input { inset: -6px; width: 44px; height: 44px; }
 }
+
+/* Entradas, salidas y pagos a Hacienda con su color en Banco, Tesorería y el Resumen (antes solo en tesoreria.css: en Banco
+   salían en negro según por dónde se llegara, auditoría D4-16). El signo sigue delante: el color no va solo. */
+.teso-in { color: var(--in); } .teso-out { color: var(--out); } .teso-hac { color: var(--hacienda); }
