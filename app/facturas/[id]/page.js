@@ -107,7 +107,7 @@ export default async function Factura({ params }) {
         <Ir href={`/facturas/${f.id}/pdf`} className="boton">Ver / descargar PDF</Ir>
         {editar && <>
         <Ir href={`/facturas/nueva?duplica=${f.id}`} tipo="subir" className="boton sec">Duplicar</Ir>
-        {!f.serie && <Ir href={`/facturas/nueva?rectifica=${f.id}`} tipo="subir" className="boton sec">Rectificar</Ir>}
+        {f.serie !== 'R' && !f.caja && <Ir href={`/facturas/nueva?rectifica=${f.id}`} tipo="subir" className="boton sec">Rectificar</Ir>}
         </>}
       </div>
       {(editar || f.envios?.length > 0) && <EnviarFactura id={f.id} email={f.cliente.email} envios={f.envios} editar={editar}

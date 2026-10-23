@@ -26,7 +26,7 @@ const ud = (n) => new Intl.NumberFormat('es-ES', { maximumFractionDigits: 3 }).f
 
 export default async function Inventario({ searchParams }) {
   const u = await requerir('facturas');
-  if (u.plan?.version === 2 && sinFuncion(u.plan, 'inventario')) return <SinPlan usuario={u} funcion="inventario" />;
+  if (u.plan?.version >= 2 && sinFuncion(u.plan, 'inventario')) return <SinPlan usuario={u} funcion="inventario" />;
   const [datos, pedidosProv] = await Promise.all([datosStock(u), leer(u, 'pedidosProv')]);
   if (datos.sinBD) return <SinBD />;
   const sp = await searchParams;

@@ -9,7 +9,6 @@ const CAMPOS = [
   ['nif', 'NIF'],
   ['direccion', 'Dirección'],
   ['ciudad', 'Ciudad y CP'],
-  ['iban', 'IBAN'],
 ];
 
 function Formulario({ titulo, inicial, enviar, children }) {
@@ -63,6 +62,7 @@ export default function Ajustes({ seccion, emisor, drive, driveError, sociedad, 
             {CAMPOS.map(([k, n]) => (
               <label key={k}>{n}<input {...(k === 'nif' ? { autoCapitalize: 'characters', autoCorrect: 'off', spellCheck: false } : {})} className="campo" value={d[k] || ''} onChange={(e) => poner(k, e.target.value)} required /></label>
             ))}
+            <label>IBAN (opcional: sale en tus facturas para que te paguen por transferencia)<input autoCapitalize="characters" autoCorrect="off" spellCheck={false} className="campo" value={d.iban || ''} onChange={(e) => poner('iban', e.target.value)} placeholder="ES00 0000 0000 0000 0000 0000" /></label>
             <label>Email de contacto (opcional)<input autoComplete="email" className="campo" type="email" value={d.email || ''} onChange={(e) => poner('email', e.target.value)} placeholder="facturas@tuempresa.es" /></label>
             <label>Teléfono (opcional)<input inputMode="tel" autoComplete="tel" className="campo" type="tel" value={d.telefono || ''} onChange={(e) => poner('telefono', e.target.value)} /></label>
             <label>Web (opcional)<input className="campo" value={d.web || ''} onChange={(e) => poner('web', e.target.value)} placeholder="tuempresa.es" /></label>

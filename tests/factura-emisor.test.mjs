@@ -111,3 +111,25 @@ test('PDF válido con todos los campos, pie de 500 caracteres y varias páginas,
     }
   }
 });
+
+// Auditoría 23-10-2026 (P-02): el IBAN es opcional. Sin él, la factura sale sin «Transferencia» y con los demás pagos;
+// lo que sí necesita toda factura es nombre, NIF y dirección (art. 6.1 del Reglamento de facturación).
+test('sin IBAN: ni «Transferencia» ni hueco vacío, y se generan HTML y PDF', async () => {
+  const { iban, ...sinIban } = emisor;
+  for (const e of [sinIban, { ...sinIban, bizum: '611222333' }]) {
+    const html = facturaHtml(factura, e);
+    assert.doesNotMatch(html, /Transferencia/);
+    assert.ok(html.includes('Vencimiento: 18/11/2026'));
+    const pdf = await PDFDocument.load(await facturaPdf(factura, e));
+    assert.ok(!textos(pdf.getPage(0)).some((t) => /Transferencia/.test(t.texto)));
+  }
+  assert.ok(facturaHtml(factura, { ...sinIban, bizum: '611222333' }).includes('Bizum: 611222333'));
+});
+
+test('datos de factura: faltan nombre, NIF o dirección; el IBAN no cuenta', async () => {
+  const { faltanDatosFactura } = await import('../lib/empresa.js');
+  assert.deepEqual(faltanDatosFactura(emisor), []);
+  assert.deepEqual(faltanDatosFactura({ ...emisor, iban: '' }), []);
+  assert.deepEqual(faltanDatosFactura({ nombre: ' ', nif: 'B12345678' }), ['nombre', 'dirección']);
+  assert.deepEqual(faltanDatosFactura(), ['nombre', 'NIF', 'dirección']);
+});

@@ -11,7 +11,9 @@ import { clave, leer, redis } from '@/lib/redis';
 import { contar } from '@/lib/indices';
 import { panelDe } from '@/lib/panelCache';
 import '@/app/tesoreria.css';
-import { importes, r2 } from '@/lib/calculos';
+import { importes, limiteTrimestre, r2 } from '@/lib/calculos';
+import { plazo420 } from '@/lib/igic';
+import { sinFuncion } from '@/lib/planes';
 import { actividadesDe, fiscalDe, hecho303, modelosDe, nombresActividad } from '@/lib/empresa';
 import { eur, fechaCorta, fechaTexto, hoy } from '@/lib/formato';
 import SinBD from '@/components/SinBD';
@@ -73,7 +75,7 @@ export default async function Resumen({ searchParams }) {
   const actividades = actividadesDe(u);
   const fiscal = fiscalDe(u);
   const ACTIVIDADES = nombresActividad(actividades);
-  const { anio, anioActual, esteAnio, r, c303, c130, igic, foral, facturado, gastado, beneficio, plazo, debe, tHoy, qAhora, apartado, aPagar, mesPago,
+  const { anio, anioActual, esteAnio, r, c303, c130, igic, foral, facturado, gastado, beneficio, plazo, debe, tHoy, qAhora, apartado, aPagar,
     sinCobrar, porCobrar, vencidas, sinPagar = { length: 0 }, porPagar = 0, pagosVencidos = { length: 0, nombres: [] }, prevFact, prevBeneficio, meses, cambio, ultimoMes, top, limite, cuotasSS, rendSS, prevRendSS } = P;
   const impuesto = igic ? 'IGIC' : 'IVA';
   const modeloIndirecto = igic ? 'IGIC (420)' : 'Modelo 303';
@@ -104,6 +106,15 @@ export default async function Resumen({ searchParams }) {
   // Hacienda: el último tramo del plazo (3 días o menos) se avisa en rojo (lib/hoy.js).
   const avisoHacienda = esteAnio && debe ? accionesHoy({ hacienda: { dias: plazo.dias, importe: aPagar } })[0] : null;
   const urgente = avisoHacienda?.tono === 'rojo';
+  // Las tarjetas no dependen de lo facturado en el año: en enero, antes de la primera factura, siguen el 4T por pagar,
+  // lo que queda por cobrar de diciembre o los gastos por revisar.
+  const verHacienda = esteAnio && (c303 || c130) && (facturado > 0 || Boolean(debe));
+  const verPorPagar = porPagar > 0 && puede(u, 'gastos');
+  // La previsión de caja es del plan Pro (planes v2 y v3): con uno que no la incluye no se enseña la tarjeta.
+  const verTeso = Boolean(teso) && !(u.plan?.version >= 2 && sinFuncion(u.plan, 'tesoreria'));
+  const hayTarjetas = !sinDatos && (verHacienda || porCobrar > 0 || verPorPagar || porRevisar.pendientes > 0 || verTeso);
+  // Último día para pagar un trimestre, ya pasado al día hábil (el 4T, con el año siguiente).
+  const hastaT = (t, y) => `${fechaTexto(limiteTrimestre(t, y))}${t === 4 ? ` de ${y + 1}` : ''}`;
   // Plazos que pasaron sin marcar el modelo como presentado (lib/tesoreria.js VENCIDOS_DIAS).
   const preguntas = (teso?.movimientos || []).filter((m) => m.pregunta);
   const menos = (t) => t.replace(/^-/, '\u2212');
@@ -195,23 +206,23 @@ export default async function Resumen({ searchParams }) {
         </section>
       )}
 
-      {facturado > 0 && (
+      {hayTarjetas && (
         <div className="hcards">
-          {esteAnio && (c303 || c130) && (
+          {verHacienda && (
             <Ir href={`/modelos?anio=${debe ? plazo.anio : anioActual}`} className={`hcard ir${urgente ? ' urgente' : ''}`} style={{ '--c': urgente ? 'var(--out)' : 'var(--hacienda)' }}>
               <h2 className="hcard-t"><Ico n="hacienda" solo />Hacienda<span>{debe ? `${plazo.t}T ${plazo.anio}` : `${tHoy}T ${anioActual}`}</span></h2>
               {debe ? (
                 <>
                   <p className="hcard-v"><Cifra v={aPagar} /><small>€ a pagar</small></p>
                   <p className={`hcard-s${urgente ? ' rojo' : ''}`}>{plazo.dias === 0 ? <strong>{debe.irpfForal?.deOficio && !debe.pend303 ? 'Hoy es el día del pago de oficio' : 'Hoy es el último día para presentarlo'}</strong> : plazo.dias === 1 ? <strong>Mañana acaba el plazo</strong> : `Hasta el ${fechaTexto(plazo.fecha)} · quedan ${plazo.dias} días`}</p>
-                  <p className="hcard-s">{[debe.pend303 ? `${nombreIndirecto(debe)}: ${debe.m303 < 0 ? `${eur(-debe.m303)} a compensar` : eur(debe.ivaIngresar)}` : !foral && c303 && `${modeloIndirecto} presentado`, debe.pend130 ? `${nombreIrpf(debe)}: ${importeIrpf(debe)}${igic && plazo.t === 4 ? ' · hasta el 30 de enero' : ''}` : !foral && c130 && 'Modelo 130 presentado'].filter(Boolean).join(' · ')}</p>
+                  <p className="hcard-s">{[debe.pend303 ? `${nombreIndirecto(debe)}: ${debe.m303 < 0 ? `${eur(-debe.m303)} a compensar` : eur(debe.ivaIngresar)}` : !foral && c303 && `${modeloIndirecto} presentado`, debe.pend130 ? `${nombreIrpf(debe)}: ${importeIrpf(debe)}${igic && plazo.t === 4 ? ` · hasta el ${hastaT(4, plazo.anio)}` : ''}` : !foral && c130 && 'Modelo 130 presentado'].filter(Boolean).join(' · ')}</p>
                   {foral && <p className="hcard-s">{plazosPago(debe)}</p>}
                   <p className="hcard-s">Del {tHoy}T llevas {eur(apartado)} para apartar.</p>
                 </>
               ) : (
                 <>
                   <p className="hcard-v"><Cifra v={apartado} /><small>€ para apartar</small></p>
-                  <p className="hcard-s">{[c303 && `${impuesto}${igic ? ' (420)' : ''} ${eur(qAhora.ivaIngresar)}`, c130 && `IRPF ${importeIrpf(qAhora)}`].filter(Boolean).join(' + ')} · {foral ? plazosPago(qAhora) : igic && tHoy === 4 ? [c303 && '420: hasta el 31 de enero', c130 && '130: hasta el 30 de enero'].filter(Boolean).join('; ') : <>se paga del 1 al {tHoy === 4 ? 30 : 20} de {mesPago}</>}</p>
+                  <p className="hcard-s">{[c303 && `${impuesto}${igic ? ' (420)' : ''} ${eur(qAhora.ivaIngresar)}`, c130 && `IRPF ${importeIrpf(qAhora)}`].filter(Boolean).join(' + ')} · {foral ? plazosPago(qAhora) : igic && tHoy === 4 ? [c303 && `420: hasta el ${fechaTexto(plazo420(anioActual, 4))} de ${anioActual + 1}`, c130 && `130: hasta el ${hastaT(4, anioActual)}`].filter(Boolean).join('; ') : <>se paga hasta el {hastaT(tHoy, anioActual)}</>}</p>
                 </>
               )}
             </Ir>
@@ -225,7 +236,7 @@ export default async function Resumen({ searchParams }) {
             </Ir>
           )}
 
-          {porPagar > 0 && puede(u, 'gastos') && (
+          {verPorPagar && (
             <Ir href={pagosVencidos.length ? '/gastos?estado=vencidos' : '/gastos?estado=sinpagar'} className="hcard ir" style={{ '--c': 'var(--out)' }}>
               <h2 className="hcard-t"><Ico n="gasto" solo />Por pagar<span>{sinPagar.length === 1 ? '1 factura' : `${sinPagar.length} facturas`}</span></h2>
               <p className="hcard-v"><Cifra v={porPagar} /><small>€</small></p>
@@ -241,7 +252,7 @@ export default async function Resumen({ searchParams }) {
             </Ir>
           )}
 
-          {teso && (
+          {verTeso && (
             <Ir href="/tesoreria" className="hcard ir" style={{ '--c': 'var(--info)' }}>
               <h2 className="hcard-t"><Ico n="beneficio" solo />Tesorería<span>3 meses</span></h2>
               <p className="hcard-v"><Cifra v={teso.final} /><small>€</small></p>

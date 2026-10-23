@@ -28,7 +28,7 @@ const TIPO = { cobro: 'Cobro', pago: 'Pago', hacienda: 'Hacienda' };
 
 export default async function Tesoreria({ searchParams }) {
   const u = await requerir('resumen');
-  if (u.plan?.version === 2 && sinFuncion(u.plan, 'tesoreria')) return <SinPlan usuario={u} funcion="tesoreria" />;
+  if (u.plan?.version >= 2 && sinFuncion(u.plan, 'tesoreria')) return <SinPlan usuario={u} funcion="tesoreria" />;
   if (!redis) return <SinBD />;
   // Informe de capacidad E01: lo pendiente, este año y el anterior (impuestos y gastos habituales) y los bienes; como el Resumen.
   const y = Number(hoy().slice(0, 4));

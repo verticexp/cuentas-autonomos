@@ -41,7 +41,7 @@ export default async function Mas() {
   if (!permisos.includes('nominas') && (await miEmpleado(u, hoy)).yo) {
     grupos.push({ titulo: 'Equipo', tono: 'violeta', enlaces: [{ href: '/jornada', nombre: 'Fichar', detalle: 'Entrada, salida, pausas y tus horas del mes', icono: <><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></> }] });
   }
-  const asistente = !(u.plan?.version === 2 && sinFuncion(u.plan, 'asistente'));
+  const asistente = !(u.plan?.version >= 2 && sinFuncion(u.plan, 'asistente'));
   return (
     <main className="pagina mk-look mas-pagina">
       <h1 className="titulo">Más</h1>

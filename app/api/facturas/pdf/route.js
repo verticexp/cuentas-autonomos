@@ -5,6 +5,7 @@ import { facturaPdf } from '@/lib/pdf';
 import { identidadDoc } from '@/lib/documento';
 import { pasado, respuesta429 } from '@/lib/limite';
 import { nombreArchivoDoc } from '@/lib/formato';
+import { AVISO_DATOS_FACTURA, faltanDatosFactura } from '@/lib/empresa';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +16,7 @@ export async function GET(req) {
   const f = await leerUno(u, 'facturas', req.nextUrl.searchParams.get('id') || '');
   if (!f) return error('Esa factura no existe', 404);
   const { emisor: e, marca } = await identidadDoc(u, f);
-  if (!e.nif || !e.iban) return error('Rellena tus datos de facturación en Ajustes', 400);
+  if (faltanDatosFactura(e).length) return error(AVISO_DATOS_FACTURA, 400);
   const nombre = `${nombreArchivoDoc(numeroFactura(f), f.cliente.nombre)}.pdf`;
   return new Response(await facturaPdf(f, e, marca), {
     headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': `inline; filename="${encodeURIComponent(nombre)}"; filename*=UTF-8''${encodeURIComponent(nombre)}` },

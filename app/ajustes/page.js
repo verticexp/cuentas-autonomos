@@ -81,10 +81,10 @@ export default async function Page() {
   const empresa = puede(u, 'empresa');
   const admin = u.rol === 'admin';
   const e = u.emisor || {};
-  const datosCompletos = e.nombre && e.nif && e.direccion && e.iban;
+  const datosCompletos = e.nombre && e.nif && e.direccion;
   const modo = modoDe(u);
   const series = actividadesDe(u).map((a) => a.serie || 'sin letra');
-  const formas = ['Transferencia', e.bizum && 'Bizum', e.otroPago].filter(Boolean);
+  const formas = [e.iban && 'Transferencia', e.bizum && 'Bizum', e.otroPago].filter(Boolean);
   const tema = TEMA[(await cookies()).get('tema')?.value] || 'Automático';
   const dias = diasPrueba(u.plan);
   // Quien ficha sin llevar las nóminas no tiene el registro de jornada en la barra lateral del ordenador: aquí, su «Fichar».

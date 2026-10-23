@@ -24,14 +24,14 @@ export default function Landing() {
     <Marco>
       <section className="web-hero">
         <div className="web-hero-txt">
-          <Link href="/funciones/facturacion" className="web-aviso"><span>2027</span>Verifactu: tus facturas ya cumplen<i className="web-solo-ancho"> con Fisquo</i><Icono n="flecha" className="ico web-flecha" /></Link>
+          <Link href="/funciones/facturacion" className="web-aviso"><span>Verifactu</span>Tus facturas, preparadas<i className="web-solo-ancho"> para la nueva normativa</i><Icono n="flecha" className="ico web-flecha" /></Link>
           <h1>Las cuentas de tu negocio, <em>por fin en orden</em>.</h1>
-          <p className="web-sub">Facturas, gastos con IA, impuestos<span className="web-solo-ancho">, contabilidad, stock, caja y equipo</span><span className="web-solo-movil"> y contabilidad</span> en una sola app. La alternativa a Holded más sencilla y más barata<span className="web-solo-ancho">, para autónomos, pymes y grandes empresas</span>.</p>
+          <p className="web-sub">Facturas, gastos con IA, impuestos<span className="web-solo-ancho">, contabilidad, stock, caja y equipo</span><span className="web-solo-movil"> y contabilidad</span> en una sola app. La alternativa a Holded más sencilla y más barata<span className="web-solo-ancho">, para autónomos y pymes</span>.</p>
           <div className="web-cta">
-            <Link className="web-btn web-btn-grande" href="/contacto">Empieza gratis<Flecha /></Link>
+            <Link className="web-btn web-btn-grande" href="/registro">Empieza gratis<Flecha /></Link>
             <Link className="web-btn web-btn-claro web-btn-grande" href="/funciones"><span><span className="web-solo-ancho">Ver cómo</span><span className="web-solo-movil">Cómo</span> funciona</span></Link>
           </div>
-          <ul className="web-micro"><li><Icono n="tic" />1 mes gratis sin tarjeta</li><li><Icono n="tic" />Importa desde Holded</li><li><Icono n="tic" />Preparada para Verifactu</li></ul>
+          <ul className="web-micro"><li><Icono n="tic" />30 días gratis sin tarjeta</li><li><Icono n="tic" />Importa desde Holded</li><li><Icono n="tic" />Preparada para Verifactu</li></ul>
         </div>
         <div className="web-hero-vis">
           <VentanaApp />
