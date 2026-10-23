@@ -5,6 +5,7 @@ import { enviarInvitacion } from '@/lib/invitacion';
 import { crearGestoria, normalizarCodigo } from '@/lib/gestorias';
 import { clientesDe, crearDespacho, listarDespachos } from '@/lib/despachos';
 import { licenciasDe } from '@/lib/licencias';
+import { disolverDespacho } from '@/lib/bajaDespacho';
 import { hoy } from '@/lib/formato';
 
 export const dynamic = 'force-dynamic';
@@ -61,4 +62,13 @@ export async function POST(req) {
     envio = { enlace: url, ...(await enviarInvitacion({ para: email, nombre: invitacion.usuario.nombre, quien: u.nombre, empresa: nombre, url: `${url}?v=${await tokenEmail(titular)}`, responderA: u.email, dias: INVITACION_DIAS })) };
   }
   return Response.json({ ok: true, despacho: d.despacho, ...envio });
+}
+
+// Dar de baja un despacho (?id=): sus clientes quedan sin despacho (con margen para elegir su plan si se lo pagaba) y su
+// gente, sin acceso al panel. Las cuentas y la empresa propia del despacho siguen.
+export async function DELETE(req) {
+  const { res } = await usuarioApi({ admin: true });
+  if (res) return res;
+  const r = await disolverDespacho(String(req.nextUrl.searchParams.get('id') || ''));
+  return r.error ? error(r.error, r.status || 400) : Response.json({ ok: true });
 }

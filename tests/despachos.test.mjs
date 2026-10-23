@@ -47,6 +47,7 @@ const C = await import('../lib/cierres.js');
 const L = await import('../lib/licencias.js');
 const G = await import('../lib/gastosServidor.js');
 const M = await import('../lib/comentariosDespacho.js');
+const B = await import('../lib/bajaDespacho.js');
 
 const u = { id: 'u1', empresa: 'e1', rol: 'admin' };
 const quien = { id: 'titular', nombre: 'Ana', despachoNombre: 'Asesoría Norte' };
@@ -473,7 +474,7 @@ test('licencias: incluir y quitar actualizan vínculo y plan, son idempotentes y
 });
 
 test('comentarios: valida texto, periodo, lado y documento sin guardar los rechazos', async () => {
-  const datos = { anio: 2026, t: 1, texto: 'Falta el ticket' };
+  const datos = { anio: 2026, t: 1, despacho: 'd1', texto: 'Falta el ticket' };
   for (const [lado, cambios, patron] of [
     ['despacho', { texto: '   ' }, /Escribe el comentario/],
     ['despacho', { t: 5 }, /Trimestre no válido/],
@@ -483,7 +484,7 @@ test('comentarios: valida texto, periodo, lado y documento sin guardar los recha
     ['despacho', { doc: { tipo: 'gasto', id: '' } }, /Documento no válido/],
   ]) error(await M.comentar('e1', quien, lado, { ...datos, ...cambios }), patron);
   assert.deepEqual(await M.comentariosDe('e1'), []);
-  const { comentario: c } = await M.comentar('e1', quien, 'despacho', { ...datos, texto: '  Falta el ticket  ', doc: { tipo: 'gasto', id: 'g1', texto: 'Material' } });
+  const { comentario: c } = await M.comentar('e1', quien, 'despacho', { despacho: 'd1',  ...datos, texto: '  Falta el ticket  ', doc: { tipo: 'gasto', id: 'g1', texto: 'Material' } });
   assert.equal(c.resuelto, false);
   assert.equal(c.anio, 2026);
   assert.equal(c.t, 1);
@@ -499,7 +500,7 @@ test('comentarios: valida texto, periodo, lado y documento sin guardar los recha
 });
 
 test('comentarios: resolver conserva hilo y responder lo amplía y reabre', async () => {
-  const { comentario: c } = await M.comentar('e1', quien, 'despacho', { anio: 2026, t: 1, texto: '¿Ticket?' });
+  const { comentario: c } = await M.comentar('e1', quien, 'despacho', { despacho: 'd1',  anio: 2026, t: 1, texto: '¿Ticket?' });
   const resuelto = (await M.responder('e1', c.id, quien, 'despacho', { resuelto: true })).comentario;
   assert.equal(resuelto.resuelto, true);
   assert.deepEqual(resuelto.hilo, c.hilo);
@@ -521,7 +522,7 @@ test('comentarios: resolver conserva hilo y responder lo amplía y reabre', asyn
 });
 
 test('comentarios: respuestas inválidas y ajenas no alteran el hilo', async () => {
-  const { comentario: c } = await M.comentar('e1', quien, 'despacho', { anio: 2026, t: 1, texto: 'Consulta' });
+  const { comentario: c } = await M.comentar('e1', quien, 'despacho', { despacho: 'd1',  anio: 2026, t: 1, texto: 'Consulta' });
   error(await M.responder('e1', c.id, u, 'cliente', { texto: ' ' }), /Escribe la respuesta/);
   error(await M.responder('e1', c.id, u, 'intruso', { texto: 'No' }), /Quién comenta no es válido/);
   error(await M.responder('e1', 'ausente', u, 'cliente', { texto: 'No' }), /ya no existe/, 404);
@@ -530,8 +531,8 @@ test('comentarios: respuestas inválidas y ajenas no alteran el hilo', async () 
 });
 
 test('comentarios: pendientesDe cuenta solo abiertos cuyo último mensaje viene del otro lado', async () => {
-  const { comentario: despacho } = await M.comentar('e1', quien, 'despacho', { anio: 2026, t: 1, texto: 'Consulta' });
-  const { comentario: cliente } = await M.comentar('e1', u, 'cliente', { anio: 2026, t: 1, texto: 'Pregunta' });
+  const { comentario: despacho } = await M.comentar('e1', quien, 'despacho', { despacho: 'd1',  anio: 2026, t: 1, texto: 'Consulta' });
+  const { comentario: cliente } = await M.comentar('e1', u, 'cliente', { despacho: 'd1',  anio: 2026, t: 1, texto: 'Pregunta' });
   assert.equal(M.pendientesDe(await M.comentariosDe('e1'), 'cliente'), 1);
   assert.equal(M.pendientesDe(await M.comentariosDe('e1'), 'despacho'), 1);
   await M.responder('e1', despacho.id, u, 'cliente', { texto: 'Respuesta' });
@@ -565,21 +566,21 @@ test('despachos: el despacho de demostración no admite clientes de verdad', asy
 });
 
 test('mensajes: la conversación general se crea una vez, las preguntas sobre documentos van aparte y se cuentan los no leídos', async () => {
-  error(await M.escribir('e1', quien, 'despacho', { texto: '   ' }), /Escribe el mensaje/);
+  error(await M.escribir('e1', quien, 'despacho', { despacho: 'd1',  texto: '   ' }), /Escribe el mensaje/);
   // Cada mensaje en su milisegundo: el orden del chat es el de la hora (dos en el mismo instante empatarían).
   const pausa = () => new Promise((ok) => setTimeout(ok, 3));
-  const a = await M.escribir('e1', quien, 'despacho', { texto: 'Hola, ¿todo bien?' });
+  const a = await M.escribir('e1', quien, 'despacho', { despacho: 'd1',  texto: 'Hola, ¿todo bien?' });
   await pausa();
-  assert.equal(a.comentario.id, M.GENERAL);
-  const b = await M.escribir('e1', u, 'cliente', { texto: 'Sí, gracias' });
+  assert.equal(a.comentario.id, M.general('d1'));
+  const b = await M.escribir('e1', u, 'cliente', { despacho: 'd1',  texto: 'Sí, gracias' });
   await pausa();
-  assert.equal(b.comentario.id, M.GENERAL);
+  assert.equal(b.comentario.id, M.general('d1'));
   assert.equal(b.comentario.hilo.length, 2);
-  const doc = await M.escribir('e1', quien, 'despacho', { texto: '¿Y este ticket?', doc: { tipo: 'gasto', id: 'g1', texto: 'Gasto del 03/02/2026 · Bar', fecha: '2026-02-03' } });
-  assert.notEqual(doc.comentario.id, M.GENERAL);
+  const doc = await M.escribir('e1', quien, 'despacho', { despacho: 'd1',  texto: '¿Y este ticket?', doc: { tipo: 'gasto', id: 'g1', texto: 'Gasto del 03/02/2026 · Bar', fecha: '2026-02-03' } });
+  assert.notEqual(doc.comentario.id, M.general('d1'));
   assert.deepEqual([doc.comentario.anio, doc.comentario.t], [2026, 1]);
   await pausa();
-  const r = await M.escribir('e1', u, 'cliente', { texto: 'Lo subo hoy', hilo: doc.comentario.id });
+  const r = await M.escribir('e1', u, 'cliente', { despacho: 'd1',  texto: 'Lo subo hoy', hilo: doc.comentario.id });
   assert.equal(r.comentario.hilo.length, 2);
   const hilos = await M.comentariosDe('e1');
   const mensajes = M.mensajesDe(hilos);
@@ -591,4 +592,94 @@ test('mensajes: la conversación general se crea una vez, las preguntas sobre do
   await M.marcarLeido('e1', 'despacho');
   assert.equal(M.noLeidos(hilos, await M.leidoDe('e1'), 'despacho'), 0);
   assert.equal(M.noLeidos(hilos, await M.leidoDe('e1'), 'cliente'), 2);
+});
+
+test('bajas: el cliente que se da de baja sale del despacho y deja de contar como licencia', async () => {
+  const d = await cliente({ plan: { tipo: 'aut', nombre: 'Pro', hasta: '2099-01-01' } });
+  await L.incluirLicencia('e1', d, HOY);
+  await B.clienteDeBaja('e1');
+  const e = await redis.hget('empresas', 'e1');
+  assert.equal(e.despachoCliente, undefined);
+  assert.equal(e.plan.porDespacho, undefined);
+  assert.deepEqual(await D.clientesDe(d.id), []);
+  // Y una empresa de baja que siguiera enlazada no se cobra.
+  await empresa('e2', { baja: { fecha: HOY }, despachoCliente: { id: d.id, licencia: { desde: '2025-01-01' } } });
+  await redis.sadd(`despacho-clientes:${d.id}`, 'e2');
+  assert.equal((await L.licenciasDe(d, HOY)).aut.total, 0);
+});
+
+test('bajas: el último titular no puede irse si quedan gestores; la última persona disuelve el despacho', async () => {
+  const d = await cliente();
+  await D.cambiarDespacho(d.id, (x) => ({ despacho: { ...x, miembros: { ...x.miembros, gestor: { rol: 'gestor' } } } }));
+  await redis.hset('usuarios', { titular: { id: 'titular', despacho: d.id }, gestor: { id: 'gestor', despacho: d.id } });
+  error(await B.salirDelDespacho({ id: 'titular', despacho: d.id }), /único titular/);
+  // El gestor sí sale (y el despacho sigue).
+  await B.salirDelDespacho({ id: 'gestor', despacho: d.id });
+  assert.deepEqual(Object.keys((await D.despachoDe(d.id)).miembros), ['titular']);
+  // Ahora el titular es la última persona: el despacho se disuelve y su cliente queda libre.
+  await B.salirDelDespacho({ id: 'titular', despacho: d.id });
+  assert.equal(await D.despachoDe(d.id), null);
+  assert.equal(await D.despachoPorCodigo('NORTE'), null);
+  assert.equal((await redis.hget('empresas', 'e1')).despachoCliente, undefined);
+  assert.equal((await redis.hget('usuarios', 'titular')).despacho, undefined);
+});
+
+test('mensajes: cada conversación es de su despacho; la gestoría nueva no ve lo hablado con la anterior', async () => {
+  await M.escribir('e1', quien, 'despacho', { despacho: 'd1', texto: 'Hola desde la gestoría de antes' });
+  const pregunta = await M.escribir('e1', quien, 'despacho', { despacho: 'd1', texto: '¿Y esto?', doc: { tipo: 'gasto', id: 'g1', texto: 'Gasto', fecha: '2026-02-03' } });
+  await M.escribir('e1', { id: 'otra', nombre: 'Berta' }, 'despacho', { despacho: 'd2', texto: 'Hola, somos la gestoría nueva' });
+  assert.deepEqual(M.mensajesDe(await M.comentariosDe('e1', { despacho: 'd2' })).map((m) => m.texto), ['Hola, somos la gestoría nueva']);
+  assert.equal((await M.comentariosDe('e1', { despacho: 'd1' })).length, 2);
+  // La nueva no puede responder ni resolver un hilo de la anterior.
+  error(await M.responder('e1', pregunta.comentario.id, { id: 'otra' }, 'despacho', { texto: 'Hola', despacho: 'd2' }), /ya no existe/, 404);
+  error(await M.escribir('e1', { id: 'otra' }, 'despacho', { despacho: 'd2', texto: 'Hola', hilo: pregunta.comentario.id }), /ya no existe/, 404);
+  error(await M.escribir('e1', quien, 'despacho', { texto: 'Sin despacho' }), /Falta el despacho/);
+});
+
+test('seguridad: solo vale la última invitación; quitar a alguien anula la suya y aceptar la gasta', async () => {
+  const d = await despacho();
+  await redis.hset('usuarios', { ana: { id: 'ana' } });
+  const cambiarUsuario = async (id, fn) => { const x = await redis.hget('usuarios', id); const n = await fn(x); if (n) await redis.hset('usuarios', { [id]: n }); return n; };
+  const vieja = await D.crearInvitacionDespacho(d.id, 'ana', 'titular', 600);
+  const nueva = await D.crearInvitacionDespacho(d.id, 'ana', 'gestor', 600);
+  assert.equal(await D.invitacionDespacho(vieja, 'ana'), null);
+  assert.equal(await D.invitacionDespacho(nueva, 'otra'), null);
+  error(await D.aceptarInvitacionDespacho(vieja, 'ana', cambiarUsuario), /ya no es válida/);
+  // La expulsión anula la pendiente.
+  await D.anularInvitacionDespacho(d.id, 'ana');
+  error(await D.aceptarInvitacionDespacho(nueva, 'ana', cambiarUsuario), /ya no es válida/);
+  // Una vigente se acepta una sola vez, con su rol.
+  const buena = await D.crearInvitacionDespacho(d.id, 'ana', 'gestor', 600);
+  assert.ok((await D.aceptarInvitacionDespacho(buena, 'ana', cambiarUsuario)).despacho);
+  assert.equal((await D.despachoDe(d.id)).miembros.ana.rol, 'gestor');
+  error(await D.aceptarInvitacionDespacho(buena, 'ana', cambiarUsuario), /ya no es válida/);
+});
+
+test('seguridad: los días gratis cuentan desde la primera vez y sin cobro no se incluye a quien ya los gastó', async () => {
+  const d = await cliente({ plan: { tipo: 'aut', nombre: 'Pro', hasta: '2099-01-01' } });
+  await L.incluirLicencia('e1', d, '2026-01-01');
+  await L.quitarLicencia('e1', d.id, '2026-02-01');
+  // Volver a incluirlo no reinicia los 90 días…
+  error(await L.incluirLicencia('e1', d, '2026-06-01'), /días gratis ya pasaron/, 409);
+  // …salvo que el despacho tenga el cobro activo: entonces cuenta desde la primera vez (ya facturable).
+  await L.incluirLicencia('e1', { ...d, cobro: { activo: true } }, '2026-06-01');
+  const e = await redis.hget('empresas', 'e1');
+  assert.equal(e.despachoCliente.licencia.desde, '2026-01-01');
+  assert.equal(L.cuentaLicencias([e], '2026-06-01').aut.facturables, 1);
+});
+
+test('seguridad: sin cobro, las licencias se retiran pasados sus días gratis y 15 más', async () => {
+  const d = await cliente({ plan: { tipo: 'aut', nombre: 'Pro', hasta: '2099-01-01' } });
+  await L.incluirLicencia('e1', d, '2026-01-01');
+  assert.equal(await L.retirarSinCobro(d, '2026-04-10'), 0);
+  assert.equal(await L.retirarSinCobro(d, '2026-04-20'), 1);
+  const e = await redis.hget('empresas', 'e1');
+  assert.equal(e.despachoCliente.licencia, undefined);
+  assert.equal(e.plan.porDespacho, undefined);
+});
+
+test('seguridad: una empresa de la demo no puede unirse a un despacho de verdad', async () => {
+  const d = await despacho();
+  await empresa('e1', { demo: true });
+  error(await D.unirCliente('e1', d), /demostración/, 409);
 });

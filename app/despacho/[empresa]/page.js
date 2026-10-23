@@ -25,7 +25,7 @@ export default async function ClienteDelDespacho({ params, searchParams }) {
   const { anio, t } = periodoDe(q.anio, q.t, dia);
   const [desde, hasta] = rangoTrimestre(anio, t);
   const [resumen, cierres, comentarios, leido, accesos, equipo, facturas, gastos] = await Promise.all([
-    resumenCliente(ctx, anio, t, dia).catch(() => null), cierresDe(ctx), comentariosDe(e.id), leidoDe(e.id), leerAccesos(e.id, 40), equipoDe(d),
+    resumenCliente(ctx, anio, t, dia).catch(() => null), cierresDe(ctx), comentariosDe(e.id, { despacho: d.id }), leidoDe(e.id), leerAccesos(e.id, 40, { despacho: d.id }), equipoDe(d),
     leerRango(ctx, 'facturas', desde, hasta), leerRango(ctx, 'gastos', desde, hasta),
   ]);
   const fila = filaCliente(e, cierres, anio, t, dia);

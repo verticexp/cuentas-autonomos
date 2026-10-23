@@ -322,7 +322,7 @@ for (const [i, c] of CLIENTES.entries()) {
   const pres303 = {};
   for (const { anio, t } of trimestres) if (plazoDe(anio, t) < hoy) (pres303[anio] ||= {})[t] = true;
   // Sin plan (como la demo de siempre): todo incluido. La gestoría que lleva sus cuentas, para el email del paquete.
-  await r.hset(`${P}empresas`, { [sonora.id]: { ...sonora, pres303: { ...(sonora.pres303 || {}), ...pres303 }, gestoria: { nombre: 'Gestoría Ferrer (demo)', email: TITULAR, auto: false }, despachoCliente: { id: idDespacho, nombre: 'Gestoría Ferrer (demo)', desde: fechaHora(inicio, 9), por: 'cliente' } } });
+  await r.hset(`${P}empresas`, { [sonora.id]: { ...sonora, demo: true, pres303: { ...(sonora.pres303 || {}), ...pres303 }, gestoria: { nombre: 'Gestoría Ferrer (demo)', email: TITULAR, auto: false }, despachoCliente: { id: idDespacho, nombre: 'Gestoría Ferrer (demo)', desde: fechaHora(inicio, 9), por: 'cliente' } } });
   CLIENTES.unshift({ id: sonora.id, nombre: sonora.nombre, contacto: usuarioDemo.nombre || 'Demo', gestor: 'titular', datos: { facturas, gastos } });
 }
 
@@ -364,7 +364,7 @@ for (const c of CLIENTES) {
   const quien = persona(c.gestor);
   const hilos = (HILOS[c.id] || []).map((h, j) => {
     const doc = h.doc(c.datos);
-    return { id: doc ? `dcom${String(j + 1).padStart(4, '0')}` : 'general', anio: ultimo.anio, t: ultimo.t, ...(doc ? { doc } : {}), hilo: h.hilo.map(([lado, texto, d], k) => msg(lado, quien, c.contacto, texto, fechaHora(mas(hoy, -d), 10 + k))), resuelto: Boolean(h.resuelto) };
+    return { id: doc ? `dcom${String(j + 1).padStart(4, '0')}` : `general-${idDespacho}`, despacho: idDespacho, anio: ultimo.anio, t: ultimo.t, ...(doc ? { doc } : {}), hilo: h.hilo.map(([lado, texto, d], k) => msg(lado, quien, c.contacto, texto, fechaHora(mas(hoy, -d), 10 + k))), resuelto: Boolean(h.resuelto) };
   });
   if (hilos.length) await r.hset(`${P}despacho-comentarios:${c.id}`, porId(hilos));
   const leido = LEIDO[c.id] || { despacho: 0, cliente: 0 };
@@ -372,7 +372,7 @@ for (const c of CLIENTES) {
   await r.hset(`${P}despacho-leido:${c.id}`, { despacho: leido.despacho ? fechaHora(mas(hoy, -leido.despacho), 8) : ahora, cliente: leido.cliente ? fechaHora(mas(hoy, -leido.cliente), 8) : ahora });
   // Registro (lo más reciente primero): entradas, cierres, descargas y exportaciones de los últimos trimestres.
   const registro = [];
-  const apunta = (fecha, accion, detalle = '') => registro.push({ fecha, quien: quien.id, nombre: quien.nombre, despacho: 'Gestoría Ferrer (demo)', accion, detalle });
+  const apunta = (fecha, accion, detalle = '') => registro.push({ fecha, quien: quien.id, nombre: quien.nombre, despacho: 'Gestoría Ferrer (demo)', despachoId: idDespacho, accion, detalle });
   for (const { anio, t } of trimestres.slice(-4)) {
     const base = mas(plazoDe(anio, t), -8);
     apunta(fechaHora(base, 9), 'Entró en tus cuentas');

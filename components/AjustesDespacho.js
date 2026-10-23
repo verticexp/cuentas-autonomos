@@ -66,7 +66,7 @@ export default function AjustesDespacho({ despacho, titular, licencias, tarifa, 
           : licencias.importe > 0 && !despacho.demo && <button type="button" className="celda ir desp-celda-boton" disabled={!stripe} onClick={() => pagar(false)}><span className="txt">Activar el cobro con tarjeta<small>{stripe ? 'Se te cobra cada mes lo que salga' : 'Aún no está disponible: te escribiremos para hacerlo a mano'}</small></span></button>}
         <details className="celda desp-plegable">
           <summary>Cómo funciona y cuánto cuesta</summary>
-          <p>Si incluyes Fisquo en lo que cobras a un cliente, tu despacho paga su licencia y el cliente no paga nada a Fisquo. Cada cliente nuevo tiene {diasGratis} días gratis. Precio al mes por cliente, sin IVA:</p>
+          <p>Si incluyes Fisquo en lo que cobras a un cliente, tu despacho paga su licencia y el cliente no paga nada a Fisquo. Cada cliente tiene {diasGratis} días gratis la primera vez. Sin el cobro con tarjeta activo, al acabar esos días tienes 15 más para activarlo; después la licencia se retira y el cliente tiene un mes para elegir su plan. Precio al mes por cliente, sin IVA:</p>
           <ul>{['aut', 'pym'].map((tipo) => <li key={tipo}><b>{nombres[tipo]}</b>: {tramos(tipo)}</li>)}</ul>
         </details>
       </div>
@@ -103,7 +103,7 @@ export default function AjustesDespacho({ despacho, titular, licencias, tarifa, 
 
     <section className="grupo desp-solo-movil" aria-label="Sesión">
       <div className="grupo-c">
-        <form method="post" action="/api/despacho/salir?a=empresa"><button className="celda ir desp-celda-boton"><span className="txt">Mi empresa en Fisquo<small>La contabilidad de tu propio despacho</small></span></button></form>
+        {titular && <form method="post" action="/api/despacho/salir?a=empresa"><button className="celda ir desp-celda-boton"><span className="txt">Mi empresa en Fisquo<small>La contabilidad de tu propio despacho</small></span></button></form>}
         <form method="post" action="/api/logout"><button className="celda desp-celda-boton rojo"><span className="txt">Cerrar sesión</span></button></form>
       </div>
     </section>

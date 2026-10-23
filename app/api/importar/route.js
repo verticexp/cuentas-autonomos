@@ -1,3 +1,4 @@
+import { cierresDe, fechaEnCierre } from '@/lib/cierres';
 import { concurrencia, rafaga, respuesta429 } from '@/lib/limite';
 import { randomBytes } from 'node:crypto';
 import { leer, redis, clave, borrar, guardar } from '@/lib/redis';
@@ -96,7 +97,12 @@ export async function POST(req) {
     const nuevos = p.items.filter((x) => x.estado === 'nuevo').map((x) => crear[tipo](x.datos, act, corte));
     if (tipo === 'facturas') {
       try { await guardarImportadas(u, nuevos); } catch (e) { if (e instanceof RiesgoSuperado) return error(e.message); console.error('[api/importar]', e); return error('No se pudieron guardar las facturas'); }
-    } else for (let i = 0; i < nuevos.length; i += 200) {
+    } else {
+      // Un trimestre cerrado por la gestoría (lib/cierres.js) no recibe gastos importados.
+      const cerrado = (HASH[tipo] || tipo) === 'gastos' && fechaEnCierre(await cierresDe(u), ...nuevos.map((x) => x.fecha));
+      if (cerrado) return error(cerrado, 409);
+    }
+    if (tipo !== 'facturas') for (let i = 0; i < nuevos.length; i += 200) {
       await redis.hset(clave(u, HASH[tipo] || tipo), Object.fromEntries(nuevos.slice(i, i + 200).map((x) => [x.id, x])));
     }
     // Los clientes de las facturas importadas quedan en la agenda (sin pisar los que ya hay).

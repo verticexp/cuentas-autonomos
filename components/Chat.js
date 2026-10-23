@@ -40,6 +40,11 @@ export default function Chat({ mensajes, lado, leidoAntes = '', enviar, leer, do
 
   // Lo último a la vista, dentro de la caja de mensajes (sin mover la página).
   useEffect(() => { const l = lista.current; if (l) l.scrollTop = l.scrollHeight; }, [mensajes.length]);
+  // Lo nuevo llega solo: cada 30 segundos, si la pantalla está a la vista y no se está escribiendo.
+  useEffect(() => {
+    const t = setInterval(() => { if (document.visibilityState === 'visible' && !caja.current?.value) router.refresh(); }, 30000);
+    return () => clearInterval(t);
+  }, [router]);
   // Abierto: lo del otro lado queda leído (y el número de «Mensajes» se pone al día).
   const sinLeer = mensajes.some((m) => m.lado !== lado && m.fecha > leidoAntes);
   useEffect(() => {
@@ -71,7 +76,7 @@ export default function Chat({ mensajes, lado, leidoAntes = '', enviar, leer, do
 
   let diaAnterior = '';
   return <div className="chat">
-    <div ref={lista} className="chat-mensajes" role="log" aria-label={`Mensajes con ${nombreOtro}`}>
+    <div ref={lista} className="chat-mensajes" role="log" aria-label={`Mensajes con ${nombreOtro}`} tabIndex={0}>
       {mensajes.length === 0 && <p className="chat-vacio">{vacio}</p>}
       {mensajes.map((m, i) => {
         const mio = m.lado === lado;
@@ -84,11 +89,11 @@ export default function Chat({ mensajes, lado, leidoAntes = '', enviar, leer, do
           <div className={`chat-burbuja${mio ? ' mia' : ''}${m.resuelto && m.doc ? ' resuelta' : ''}`}>
             {m.doc && m.primero && <span className="chat-sobre"><svg viewBox="0 0 24 24" aria-hidden><path d="M7 3h7l4 4v14H7zM14 3v4h4" /></svg>{m.doc.texto}</span>}
             {m.doc && !m.primero && <span className="chat-sobre respuesta">Sobre {m.doc.texto}</span>}
-            {!mio && <b className="chat-autor">{m.nombre || nombreOtro}</b>}
+            {mio ? <span className="sr">Tú:</span> : <b className="chat-autor">{m.nombre || nombreOtro}</b>}
             <p>{m.texto}</p>
             <span className="chat-pie">
-              {m.doc && m.primero && !m.resuelto && <button type="button" onClick={() => { setRespondiendo(m); setDoc(''); caja.current?.focus(); }}>Responder aquí</button>}
-              {m.doc && m.primero && lado === 'despacho' && <button type="button" onClick={() => resolver(m, !m.resuelto)}>{m.resuelto ? 'Reabrir' : 'Marcar resuelta'}</button>}
+              {m.doc && m.primero && !m.resuelto && <button type="button" aria-label={`Responder sobre ${m.doc.texto}`} onClick={() => { setRespondiendo(m); setDoc(''); caja.current?.focus(); }}>Responder aquí</button>}
+              {m.doc && m.primero && lado === 'despacho' && <button type="button" aria-label={`${m.resuelto ? 'Reabrir' : 'Marcar como resuelta'} la pregunta sobre ${m.doc.texto}`} onClick={() => resolver(m, !m.resuelto)}>{m.resuelto ? 'Reabrir' : 'Marcar resuelta'}</button>}
               {m.doc && m.primero && m.resuelto && <span>Resuelta</span>}
               <time dateTime={m.fecha}>{hora(m.fecha)}</time>
             </span>
@@ -97,7 +102,7 @@ export default function Chat({ mensajes, lado, leidoAntes = '', enviar, leer, do
       })}
     </div>
     <form className="chat-escribir" onSubmit={mandar}>
-      {sobre && <p className="chat-contexto"><span>{respondiendo ? 'Respondiendo a' : 'Preguntas por'}: <b>{sobre}</b></span><button type="button" aria-label="Quitar" onClick={() => { setRespondiendo(null); setDoc(''); }}>×</button></p>}
+      {sobre && <p className="chat-contexto"><span>{respondiendo ? 'Respondiendo a' : 'Preguntas por'}: <b>{sobre}</b></span><button type="button" aria-label="Quitar el documento" onClick={() => { setRespondiendo(null); setDoc(''); }}>×</button></p>}
       {docs && !respondiendo && !doc && opciones.length > 0 && <label className="chat-adjuntar">
         <span className="sr">Preguntar por una factura o un gasto</span>
         <select value="" onChange={(e) => setDoc(e.target.value)}>

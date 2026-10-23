@@ -11,14 +11,15 @@
 .chat-nuevos::before, .chat-nuevos::after { background: color-mix(in srgb, var(--out) 45%, transparent); }
 .chat-burbuja { align-self: flex-start; max-width: min(78%, 560px); padding: 8px 12px 6px; border-radius: 18px 18px 18px 6px; background: var(--relleno); color: var(--ink); animation: chat-entra 0.25s ease-out; }
 .chat-burbuja.mia { align-self: flex-end; border-radius: 18px 18px 6px 18px; background: var(--marca); color: var(--sobre); }
-.chat-burbuja.resuelta { opacity: 0.65; }
+.chat-burbuja.resuelta { opacity: 0.85; }
 .chat-burbuja p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.35; }
 .chat-autor { display: block; margin-bottom: 2px; font-size: 13px; font-weight: 600; color: var(--muted); }
 .chat-sobre { display: flex; align-items: center; gap: 6px; margin: 0 0 6px; padding: 6px 8px; border-radius: 10px; background: color-mix(in srgb, currentColor 9%, transparent); font-size: 13px; font-weight: 600; }
 .chat-sobre svg { flex: none; width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
 .chat-sobre.respuesta { padding: 0; background: none; font-weight: 400; opacity: 0.75; }
-.chat-pie { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 4px 10px; margin-top: 3px; font-size: 12px; opacity: 0.75; }
-.chat-pie button { margin: 0; padding: 0; border: 0; background: none; box-shadow: none; color: inherit; font: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; }
+.chat-pie { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 2px 12px; margin-top: 3px; font-size: 12px; }
+.chat-pie time, .chat-pie > span { opacity: 0.8; }
+.chat-pie button { min-height: 28px; margin: 0; padding: 0 2px; border: 0; background: none; box-shadow: none; color: inherit; font: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; }
 .chat-pie time { font-variant-numeric: tabular-nums; }
 @keyframes chat-entra { from { opacity: 0; transform: translateY(6px); } }
 @media (prefers-reduced-motion: reduce) { .chat-burbuja { animation: none; } }
@@ -33,3 +34,4 @@
 .chat-enviar { flex: none; display: grid; place-items: center; width: 42px; height: 42px; margin: 0; padding: 0; border: 0; border-radius: 50%; background: var(--marca); color: var(--sobre); box-shadow: none; cursor: pointer; }
 .chat-enviar:disabled { opacity: 0.4; cursor: default; }
 .chat-enviar svg { width: 20px; height: 20px; fill: currentColor; }
+.chat-mensajes:focus-visible { outline: 2px solid var(--marca); outline-offset: 2px; }

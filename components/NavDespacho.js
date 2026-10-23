@@ -18,7 +18,8 @@ const TABS = [
 const activa = (path, href) => (href === '/despacho' ? path === '/despacho' || /^\/despacho\/(?!plazos|equipo|ajustes|mensajes)[^/]+$/.test(path) : path.startsWith(href));
 
 // noLeidos: mensajes de clientes sin leer (su número va sobre «Mensajes»).
-export default function NavDespacho({ nombre, noLeidos = 0 }) {
+// titular: la única con acceso a la empresa propia del despacho («Mi empresa en Fisquo»).
+export default function NavDespacho({ nombre, noLeidos = 0, titular = false }) {
   const path = usePathname();
   const router = useRouter();
   return (
@@ -36,12 +37,12 @@ export default function NavDespacho({ nombre, noLeidos = 0 }) {
       <nav className="tabs-extra" aria-label="Más">
         <div className="tabs-grupo">
           <p className="tabs-grupo-t">{nombre}</p>
-          <form method="post" action="/api/despacho/salir?a=empresa" className="tabs-salir">
+          {titular && <form method="post" action="/api/despacho/salir?a=empresa" className="tabs-salir">
             <button type="submit">
               <svg viewBox="0 0 24 24" aria-hidden><path d="M5 20V11M10 20V5M15 20v-7M20 20V9" /></svg>
               <span>Mi empresa en Fisquo</span>
             </button>
-          </form>
+          </form>}
         </div>
         <form method="post" action="/api/logout" className="tabs-salir">
           <button type="submit">
