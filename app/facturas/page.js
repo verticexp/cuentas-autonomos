@@ -169,7 +169,7 @@ export default async function Facturas({ searchParams }) {
                             <span className="tf-base solo-pc">{eur(importes(f).base)}</span>
                             <span className="imp-col">
                               <span className="imp" data-vt="total">{eur(importes(f).total)}</span>
-                              <span className={`estado-txt e-${e}`}>{e === 'cobrada' ? 'Cobrada' : e === 'vencida' ? 'Vencida' : 'Pendiente'}</span>
+                              <span className={`estado-txt e-${e}`}>{e === 'cobrada' ? (importes(f).total < 0 ? 'Devuelta' : 'Cobrada') : importes(f).total < 0 ? 'A devolver' : e === 'vencida' ? 'Vencida' : 'Pendiente'}</span>
                             </span>
                           </FilaFactura>
                         );

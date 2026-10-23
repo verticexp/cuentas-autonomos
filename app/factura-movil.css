@@ -9,6 +9,7 @@
 @media (max-width: 1023.98px) {
   /* Sin la barra de pestañas mientras se crea: el total y «Crear» ocupan su sitio */
   body:has(.ff-nuevo) .tabbar { display: none; }
+  .pagina:has(.ff-nuevo) { padding-bottom: env(safe-area-inset-bottom, 0px); }
 
   /* Cliente */
   .ff-nuevo .ff-m { display: flex; flex-direction: column; gap: 8px; }

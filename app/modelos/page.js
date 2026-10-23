@@ -163,7 +163,10 @@ export default async function Modelos({ searchParams }) {
 
   // Fila plegada de cada modelo en el móvil: el trimestre que toca, cómo va y su importe.
   // 303 y 130: el primer trimestre cerrado sin presentar (listo o fuera de plazo); si no hay, el que está en curso.
-  const tRef = (hecho) => T.find((t) => !hecho(t) && situacion(t).estado !== 'curso') ?? T.find((t) => !hecho(t) && situacion(t).estado === 'curso');
+  // Un trimestre ya vencido sin nada apuntado en Fisquo (por ejemplo, anterior a empezar a usarlo) no se señala como
+  // «fuera de plazo»: no hay con qué calcularlo y una cuenta nueva lo veía en rojo (auditoría 23-10-2026).
+  const conDatos = (t) => [...facturas, ...gastos].some((d) => String(d.fecha || '').startsWith(`${anio}-`) && Math.ceil(Number(d.fecha.slice(5, 7)) / 3) === t);
+  const tRef = (hecho) => T.find((t) => !hecho(t) && situacion(t).estado !== 'curso' && (situacion(t).estado !== 'fuera' || conDatos(t))) ?? T.find((t) => !hecho(t) && situacion(t).estado === 'curso');
   // Estado corto para la fila (la tarjeta del trimestre ya lleva el texto entero).
   const corto = ({ estado, dias }, fecha) => (estado === 'fuera' ? `fuera de plazo · venció el ${fecha}`
     : `${estado === 'curso' ? 'en curso' : 'toca presentarlo'} · ${estado === 'listo' && dias === 0 ? 'hasta hoy' : estado === 'listo' && dias === 1 ? 'hasta mañana' : `hasta el ${fecha}`}`);

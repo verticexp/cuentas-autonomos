@@ -38,7 +38,7 @@
 .totales { display: flex; flex-wrap: wrap; gap: 6px 16px; justify-content: space-between; background: var(--surface); border-radius: 14px; padding: 14px 16px; }
 .tarjeta.formulario { margin-bottom: 8px; }
 .tarjeta.formulario h3 { margin-bottom: 0; }
-.tarjeta.formulario .campo, .tarjeta.formulario .tipo { background: var(--paper); }
+.tarjeta.formulario .campo, .tarjeta.formulario .tipo { background-color: var(--paper); }
 
 .acciones-factura { display: flex; gap: 10px; align-items: center; margin-bottom: 24px; }
 .borrar { color: var(--out); font-weight: 600; padding: 8px 14px; border-radius: 999px; background: color-mix(in srgb, var(--out) 12%, transparent); }
