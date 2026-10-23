@@ -360,7 +360,7 @@ export default async function Resumen({ searchParams }) {
                           {[['16', '18', '0,5'], ['19', '21', '1,4'], ['22', '24', '5,2']].filter(([b]) => c[b]).flatMap(([b, q, r]) => [fila(b, `Recargo ${r} %: base`, c[b]), fila(q, `Recargo ${r} %: cuota`, c[q])])}
                           {(c['25'] || c['26']) ? <>{fila('25', 'Recargo de rectificativas: base', c['25'])}{fila('26', 'Recargo de rectificativas: cuota', c['26'])}</> : null}
                           {c['10'] > 0 && <>{fila('10', 'Compras a la UE: base', c['10'])}{fila('11', 'Compras a la UE: cuota', c['11'])}</>}
-                          {c['12'] > 0 && <>{fila('12', 'Compras de fuera de la UE: base', c['12'])}{fila('13', 'Compras de fuera de la UE: cuota', c['13'])}</>}
+                          {c['12'] > 0 && <>{fila('12', 'Inversión del sujeto pasivo: base', c['12'])}{fila('13', 'Inversión del sujeto pasivo: cuota', c['13'])}</>}
                           {fila('27', 'Total cuota devengada', c['27'])}
                           {fila('28', 'Base IVA soportado', c['28'])}
                           {fila('29', 'Cuota IVA soportado', c['29'])}
@@ -370,7 +370,7 @@ export default async function Resumen({ searchParams }) {
                           {fila('46', 'Resultado', c['46'])}
                         </dl>
                         {(c['59'] || c['60'] || c['120'] || c['122']) ? <dl>
-                          {c['59'] !== 0 && fila('59', 'Empresas de otros países de la UE', c['59'])}
+                          {c['59'] !== 0 && fila('59', 'Ventas y servicios a empresas de la UE (intracomunitarias)', c['59'])}
                           {c['60'] !== 0 && fila('60', 'Exportaciones', c['60'])}
                           {c['120'] !== 0 && fila('120', 'No sujetas por localización (clientes de fuera de la UE)', c['120'])}
                           {c['122'] !== 0 && fila('122', 'Inversión del sujeto pasivo', c['122'])}
