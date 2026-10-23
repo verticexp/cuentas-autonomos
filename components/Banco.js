@@ -288,7 +288,7 @@ export default function Banco({ cuentas, pendientes, emparejados, ignorados, aut
 
       {conectando && <Conectar cerrar={() => setConectando(false)} />}
 
-      {historial && <section className="grupo bco-historial" aria-label="Historial de movimientos">
+      {historial && historial.total > 0 && <section className="grupo bco-historial" aria-label="Historial de movimientos">
         <h2 className="grupo-t">Movimientos</h2>
         <form action="/banco" className="bco-filtros" key={JSON.stringify(historial.filtros)}>
           <label>Buscar movimiento<input className="campo" type="search" name="q" placeholder="Concepto, contraparte o referencia" defaultValue={historial.filtros.q} maxLength={200} /></label>
