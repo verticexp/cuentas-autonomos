@@ -25,6 +25,7 @@ import { limpiarPago, plazo123 } from '../lib/capitalMobiliario.js';
 import { plantillaDe } from '../lib/recurrentes.js';
 import { baseSenal, numeroPresupuesto } from '../lib/presupuestos.js';
 import { VERSION_PERMISOS } from '../lib/permisos.js';
+import { escribirIndices } from './indicesDemo.mjs';
 
 const { KV_REST_API_URL: url, KV_REST_API_TOKEN: token, DEMO_PASSWORD: password } = process.env;
 if (!url || !token) throw new Error('Faltan KV_REST_API_URL y KV_REST_API_TOKEN');
@@ -625,6 +626,8 @@ await r.hset(`${P}presupuestos:${id}`, porId(presupuestos));
 await r.hset(`${P}presupuesto-enlaces`, Object.fromEntries(presupuestos.map((p) => [p.token, { empresa: id, id: p.id }])));
 await r.hset(`${P}recurrentes:${id}`, porId(recurrentes));
 await r.hset(`${P}capital:${id}`, porId(capital));
+// Los índices, ya hechos: así la app no los reconstruye documento a documento (scripts/indicesDemo.mjs).
+for (const [col, docs] of [['facturas', facturas], ['gastos', gastos], ['presupuestos', presupuestos]]) await escribirIndices(r, P, id, col, docs);
 // Trimestres ya presentados (los que tienen el plazo pasado), el Impuesto sobre Sociedades de los años cerrados y sus 202.
 const Y = Number(hoy.slice(0, 4));
 const pagos130 = {}, pagos202 = {}, cuotaIS = {};
