@@ -5,6 +5,7 @@ import { confirmar as confirmarAccion } from './Confirmar';
 import { useId, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { volverA } from '@/lib/transicion';
+import useCambiosSinGuardar from './useCambiosSinGuardar';
 import { FORMAS, valoresDe } from '@/lib/terceros';
 import { eur } from '@/lib/formato';
 
@@ -18,6 +19,7 @@ export function FormularioFicha({ datos = {}, id, proveedor = false, editar = tr
   const [errores, setErrores] = useState({});
   const [aviso, setAviso] = useState('');
   const [enviando, setEnviando] = useState(false);
+  const sinGuardar = useCambiosSinGuardar(f);
   const url = proveedor ? '/api/proveedores/ficha' : '/api/clientes';
   const lista = proveedor ? '/gastos/proveedores' : '/clientes';
   const enviar = async (e, eliminar = false) => {
@@ -38,6 +40,7 @@ export function FormularioFicha({ datos = {}, id, proveedor = false, editar = tr
         return;
       }
       if (!r.ok) { setErrores(d.errores || {}); throw new Error(d.error || 'No se ha podido guardar la ficha'); }
+      await sinGuardar.guardado();
       // Borrada: de vuelta a la lista; creada: su ficha en lugar del formulario vacío. Así «atrás» no lleva a ninguno de los dos.
       if (eliminar) { volverA(router, lista, 'atras', true); return; }
       if (!id) router.replace(`${lista}/${encodeURIComponent((proveedor ? d.ficha : d.cliente).id)}`);

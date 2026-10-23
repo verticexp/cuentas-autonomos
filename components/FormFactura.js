@@ -2,6 +2,7 @@
 
 import Termino from '@/components/Termino';
 import { confirmar } from '@/components/Confirmar';
+import useCambiosSinGuardar from '@/components/useCambiosSinGuardar';
 
 import { useEffect, useId, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -50,6 +51,8 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
       : plantilla
         ? { actividad: plantilla.actividad, fecha: hoy, cliente: plantilla.cliente, lineas: lineasDe(plantilla), irpfPct: plantilla.irpfPct, nota: plantilla.nota || '', cobrada: false, proyecto: plantilla.proyecto || '', ...(plantilla.recargo ? { recargo: true } : {}), ...(plantilla.idioma ? { idioma: plantilla.idioma } : {}), ...(plantilla.oss ? { oss: plantilla.oss } : {}) }
       : { actividad: actividades[0].id, fecha: hoy, cliente: { nombre: '', nif: '', direccion: '', ciudad: '' }, lineas: [lineaVacia(defecto(actividades[0].id).ivaPct)], nota: notaDefecto, cobrada: false, irpfPct: defecto(actividades[0].id).irpfPct });
+  // «¿Salir sin guardar?» con cambios. El tipo de cambio que se pide solo al abrir una factura en otra moneda (pedido) no cuenta.
+  const sinGuardar = useCambiosSinGuardar({ ...f, divisa: f.divisa && { ...f.divisa, pedido: undefined } });
   // La selección vive solo en el formulario; el cuerpo de la API conserva el cliente histórico completo.
   const [clienteSeleccionado, setClienteSeleccionado] = useState(() => resolverClienteFactura(clientes, f.cliente)?.id || '');
   // La retención de una plantilla ya está elegida. Un cambio manual cuenta incluso si coincide con el defecto.
@@ -221,6 +224,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
         }
         throw new Error(d.error || 'No se ha podido guardar la factura. Revisa la conexión e inténtalo otra vez.');
       }
+      await sinGuardar.guardado();
       if (nueva) navegar(router, `/facturas/${d.factura.id}`, 'fundido', undefined, true);
       router.refresh();
     } catch (err) { setError(err.message); setEnviando(false); enviandoRef.current = false; }

@@ -47,8 +47,11 @@ function Hoja({ titulo, texto, aceptar, cancelar, peligro, entrada, etiqueta, va
   const [contenido, setContenido] = useState(valor || '');
   const cancelarHoja = () => cerrar(entrada ? null : false);
   useEffect(() => {
-    const overflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    // Lo de debajo no se desplaza ni se mueve de sitio. En html y no en body: con el overflow-x de html (app/globals.css), el
+    // de body no pasa a la ventana, y la página subía arriba del todo (y ahí se quedaba al seguir editando un formulario largo).
+    const raiz = document.documentElement;
+    const overflow = raiz.style.overflow;
+    raiz.style.overflow = 'hidden';
     const hermanos = [...document.body.children].filter((el) => el !== capa.current);
     const previos = hermanos.map((el) => [el, el.inert]);
     hermanos.forEach((el) => { el.inert = true; });
@@ -75,7 +78,7 @@ function Hoja({ titulo, texto, aceptar, cancelar, peligro, entrada, etiqueta, va
       document.removeEventListener('focusin', enfocar);
       window.removeEventListener('popstate', salir);
       previos.forEach(([el, inert]) => { el.inert = inert; });
-      document.body.style.overflow = overflow;
+      raiz.style.overflow = overflow;
     };
   }, [cerrar, entrada, peligro, soloLectura]);
   return createPortal(

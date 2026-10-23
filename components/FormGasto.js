@@ -25,8 +25,12 @@ import { preparar, subir } from '@/lib/justificanteCliente';
 import { escanearNativo } from '@/lib/escanerNativo';
 import { NO_IA, permisoIA } from '@/lib/permisoIA';
 import { ACEPTA, subirVarias } from '@/lib/bandejaCliente';
+import useCambiosSinGuardar, { salirSinGuardar } from './useCambiosSinGuardar';
 import Link from 'next/link';
 import '@/app/ticket.css';
+
+// «Cancelar» el gasto a medio apuntar (en la lista de gastos, el formulario se pliega): no es salir, es descartarlo.
+const DESCARTAR = { titulo: '¿Descartar el gasto?', texto: 'Se perderá lo que has rellenado.', aceptar: 'Descartar' };
 
 // Varios tipos de IVA en la misma factura (lib/calculos.js porTipo): en el formulario, cada base como se escribe.
 const aFormulario = (l) => (l?.length > 1 ? l.map((t) => ({ ivaPct: Number(t.ivaPct ?? t.pct), base: String(t.base).replace('.', ',') })) : undefined);
@@ -115,6 +119,8 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
   const tiposImpuesto = igic ? TIPOS_IGIC : [21, 10, 4, 0];
   // Justificante leído (foto reducida o PDF): se sube al guardar el gasto nuevo. En la ficha, se adjunta o sustituye aparte.
   const [adjunto, setAdjunto] = useState(null);
+  // «¿Salir sin guardar?» con lo escrito, el justificante leído o el emparejamiento con el banco cambiados.
+  const sinGuardar = useCambiosSinGuardar({ g, adjunto: Boolean(adjunto), conBanco });
   const [avisoArchivo, setAvisoArchivo] = useState('');
   const [archivoPendiente, setArchivoPendiente] = useState(null);
   const [procesando, setProcesando] = useState(false);
@@ -201,6 +207,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
         if (r.status === 423 && d.bloqueada) window.location.replace(`/bloqueo?a=${encodeURIComponent(window.location.pathname + window.location.search)}`);
         if (r.status === 409 && Array.isArray(d.duplicados) && d.duplicados.length) { setAvisoDuplicados({ datos, duplicados: d.duplicados }); return; }
         if (!r.ok) throw new Error(d.error || 'No se ha podido aprobar la factura. Revisa la conexión e inténtalo otra vez.');
+        await sinGuardar.guardado();
         // A la siguiente por revisar en lugar de esta, o de vuelta a la lista: así «atrás» no pasa por las ya aprobadas.
         // Con el aviso si el banco no ha casado.
         if (siguiente) {
@@ -233,6 +240,8 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
           fallo = `Gasto guardado sin el justificante: ${fallo}. Reintenta guardar el archivo sin volver a crear el gasto.`;
         }
       }
+      // Guardado: se vuelve a la lista o el formulario se vacía para el siguiente.
+      await sinGuardar.soltar();
       setAvisoDuplicados(null);
       if (gasto || (movimiento && !fallo)) { volverA(router, '/gastos', 'atras', true); return; }
       setAvisoArchivo(fallo);
@@ -459,8 +468,8 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
       </div>}
       {!avisoDuplicados && <div className="gasto-guardar">
         <button className="boton" disabled={enviando}>{enviando ? 'Guardando…' : gasto ? 'Guardar cambios' : documento ? 'Aprobar y guardar el gasto' : 'Añadir'}</button>
-        {plegado && !gasto && <button type="button" className="boton sec" onClick={() => { setAbierto(false); setG(vacio); setLeyendo(''); setError(''); setAdjunto(null); }}>Cancelar</button>}
-        {movimiento && <button type="button" className="boton sec" onClick={() => atras(router, '/gastos')}>Cancelar</button>}
+        {plegado && !gasto && <button type="button" className="boton sec" onClick={() => salirSinGuardar(() => { setAbierto(false); setG(vacio); setLeyendo(''); setError(''); setAdjunto(null); }, DESCARTAR)}>Cancelar</button>}
+        {movimiento && <button type="button" className="boton sec" onClick={() => salirSinGuardar(() => atras(router, '/gastos'))}>Cancelar</button>}
       </div>}
       </fieldset>
       {avisoAdjunto}

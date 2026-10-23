@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { anterior, instalarHistorial, volverA } from '@/lib/transicion';
+import { salirSinGuardar } from './useCambiosSinGuardar';
 
 // Cómo se llama cada pantalla a la que se puede volver (para el botón: «‹ Más», «‹ Facturas»…).
 const NOMBRES = {
@@ -15,7 +16,7 @@ const NOMBRES = {
 };
 
 // «Atrás»: vuelve a la pantalla de la que se viene (el botón dice su nombre); si se abrió esta directamente, va al destino de siempre.
-// Sin JavaScript sigue siendo un enlace a ese destino.
+// Sin JavaScript sigue siendo un enlace a ese destino. Desde un formulario con cambios sin guardar, pregunta antes.
 export default function Volver({ href, children = 'Atrás' }) {
   const router = useRouter();
   const [etiqueta, setEtiqueta] = useState(children);
@@ -28,7 +29,7 @@ export default function Volver({ href, children = 'Atrás' }) {
   const alPulsar = (e) => {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.button > 0) return;
     e.preventDefault();
-    volverA(router, href);
+    salirSinGuardar(() => volverA(router, href));
   };
   return <Link href={href} className="volver" onClick={alPulsar}>‹ {etiqueta}</Link>;
 }

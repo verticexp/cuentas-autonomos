@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { anterior, instalarHistorial, volverA } from '@/lib/transicion';
+import { hayAvisoEncima, hayCambiosSinGuardar, instalarSinGuardar, salirSinGuardar, soltarCambios } from './useCambiosSinGuardar';
 
 // «Atrás» del móvil en toda la app (va en el layout):
 // - Con una hoja o un diálogo abiertos ([aria-modal]): en Android, el botón o el gesto de atrás los cierra (como Escape) en
@@ -25,6 +26,9 @@ function destino() {
 
 export default function GestoAtras() {
   const router = useRouter();
+
+  // «¿Salir sin guardar?» (components/useCambiosSinGuardar.js): el atrás del sistema desde un formulario con cambios pregunta.
+  useEffect(() => { instalarSinGuardar(router); }, [router]);
 
   // Hojas y diálogos: Android los cierra con atrás; la app de iOS deja sin gesto de volver la pantalla que tapan.
   useEffect(() => {
@@ -128,33 +132,47 @@ export default function GestoAtras() {
       quitar();
       if (!arrastre) return;
       if (e.type === 'touchend' && (dx > innerWidth * 0.35 || (vel > 0.35 && dx > 30))) {
-        // Sigue desde donde se soltó: la transición «gesto» (app/diseno.css) parte de --vt-x. Las páginas públicas (entrar,
-        // registro) ya animan solas al volver (lib/transicionPublica.js): ahí, y sin transiciones, se aparta y se vuelve.
-        const publica = document.querySelector('.web-main, main.login:not(.pantalla-bloqueo)');
-        if (document.startViewTransition && !publica && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-          document.documentElement.style.setProperty('--vt-x', `${dx}px`);
-          limpiar(pagina);
-          volverA(router, href, 'gesto');
+        // Un formulario con cambios sin guardar: la pantalla vuelve a su sitio y se pregunta, como con «‹ Atrás».
+        if (hayCambiosSinGuardar()) {
+          devolver(pagina);
+          salirSinGuardar(() => volverA(router, href, 'atras'));
           return;
         }
-        if (pagina) {
-          pagina.style.transition = 'transform 0.2s cubic-bezier(0.32, 0.72, 0, 1)';
-          pagina.style.transform = 'translate3d(100%, 0, 0)';
-        }
-        setTimeout(() => {
-          if (pagina) pagina.style.visibility = 'hidden';
-          // Un paso anterior del mismo formulario reaparece en cuanto cambia; otra pantalla, cuando llega.
-          const mismaPantalla = anterior() === `${location.pathname}${location.search}`;
-          if (mismaPantalla) addEventListener('popstate', () => setTimeout(() => limpiar(pagina), 0), { once: true });
-          if (anterior()) history.back(); else router.replace(href);
-          if (!mismaPantalla) setTimeout(() => limpiar(pagina), 350);
-        }, 200);
+        // La entrada de «¿Salir sin guardar?» encima, ya sin nada que guardar: se quita antes, con la pantalla donde la dejó el dedo.
+        if (hayAvisoEncima()) { soltarCambios().then(() => completar(pagina, href, dx)); return; }
+        completar(pagina, href, dx);
         return;
       }
+      devolver(pagina);
+    };
+    const devolver = (pagina) => {
       if (!pagina) { limpiar(); return; }
       pagina.style.transition = 'transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)';
       pagina.style.transform = 'translate3d(0, 0, 0)';
       setTimeout(() => limpiar(pagina), 320);
+    };
+    const completar = (pagina, href, dx) => {
+      // Sigue desde donde se soltó: la transición «gesto» (app/diseno.css) parte de --vt-x. Las páginas públicas (entrar,
+      // registro) ya animan solas al volver (lib/transicionPublica.js): ahí, y sin transiciones, se aparta y se vuelve.
+      const publica = document.querySelector('.web-main, main.login:not(.pantalla-bloqueo)');
+      if (document.startViewTransition && !publica && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        document.documentElement.style.setProperty('--vt-x', `${dx}px`);
+        limpiar(pagina);
+        volverA(router, href, 'gesto');
+        return;
+      }
+      if (pagina) {
+        pagina.style.transition = 'transform 0.2s cubic-bezier(0.32, 0.72, 0, 1)';
+        pagina.style.transform = 'translate3d(100%, 0, 0)';
+      }
+      setTimeout(() => {
+        if (pagina) pagina.style.visibility = 'hidden';
+        // Un paso anterior del mismo formulario reaparece en cuanto cambia; otra pantalla, cuando llega.
+        const mismaPantalla = anterior() === `${location.pathname}${location.search}`;
+        if (mismaPantalla) addEventListener('popstate', () => setTimeout(() => limpiar(pagina), 0), { once: true });
+        if (anterior()) history.back(); else router.replace(href);
+        if (!mismaPantalla) setTimeout(() => limpiar(pagina), 350);
+      }, 200);
     };
     document.addEventListener('touchstart', empezar, { passive: true, capture: true });
     return () => { document.removeEventListener('touchstart', empezar, { capture: true }); quitar(); };
