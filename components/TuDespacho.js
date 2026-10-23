@@ -5,32 +5,14 @@ import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
 import { confirmar } from './Confirmar';
 import { fechaCorta } from '@/lib/formato';
+import Chat from './Chat';
 import '@/app/despacho.css';
 
 const horaDe = (iso) => new Date(iso).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
-// Una pregunta de la gestoría con su hilo y el formulario para responder.
-function Pregunta({ c, alCambiar }) {
-  const [texto, setTexto] = useState('');
-  const [msg, setMsg] = useState('');
-  const enviar = async (cuerpo) => {
-    setMsg('');
-    try { await llamar('/api/tu-despacho', { method: 'PATCH', body: JSON.stringify({ id: c.id, ...cuerpo }) }); setTexto(''); alCambiar(); } catch (e) { setMsg(e.message); }
-  };
-  return <li className={c.resuelto ? 'resuelto' : ''}>
-    <span className="doc">{c.doc ? c.doc.texto : `${c.t}T ${c.anio}`}{c.resuelto ? ' · Resuelta' : ''}</span>
-    {c.hilo.map((m, i) => <p key={i} className="msg"><b>{m.lado === 'despacho' ? `${m.nombre || 'Tu gestoría'} (gestoría)` : m.nombre || 'Tú'}</b> <small>{horaDe(m.fecha)}</small><br />{m.texto}</p>)}
-    {!c.resuelto && <form onSubmit={(e) => { e.preventDefault(); if (texto.trim()) enviar({ texto }); }}>
-      <textarea className="campo" rows={1} maxLength={2000} value={texto} placeholder="Tu respuesta" aria-label="Tu respuesta" onChange={(e) => setTexto(e.target.value)} />
-      <button className="boton" disabled={!texto.trim()}>Responder</button>
-    </form>}
-    {msg && <p className="error" role="alert">{msg}</p>}
-  </li>;
-}
-
 // Ajustes › Tu gestoría: el despacho que lleva tus cuentas en Fisquo (lib/despachos.js). Le das acceso con su código,
 // ves lo que hace y le respondes; puedes quitárselo cuando quieras.
-export default function TuDespacho({ despacho, accesos = [], comentarios = [], codigo: codigoInicial = '' }) {
+export default function TuDespacho({ despacho, accesos = [], mensajes = [], leidoAntes = '', codigo: codigoInicial = '' }) {
   const router = useRouter();
   const [codigo, setCodigo] = useState(codigoInicial);
   const [nombre, setNombre] = useState('');
@@ -47,7 +29,6 @@ export default function TuDespacho({ despacho, accesos = [], comentarios = [], c
     if (!(await confirmar({ titulo: `¿Quitar el acceso a ${despacho.nombre}?`, texto: `Dejará de ver tus cuentas al momento.${despacho.licencia ? ' Como tu gestoría pagaba tu plan, tendrás un mes de prueba para elegir el tuyo.' : ''}`, aceptar: 'Quitar el acceso', peligro: true }))) return;
     try { await llamar('/api/tu-despacho', { method: 'DELETE' }); router.refresh(); } catch (err) { setMsg(err.message); }
   };
-  const abiertas = comentarios.filter((c) => !c.resuelto);
 
   if (!despacho) return <section className="grupo" aria-labelledby="td-t">
     <h2 className="grupo-t" id="td-t">Tu gestoría en Fisquo</h2>
@@ -63,6 +44,12 @@ export default function TuDespacho({ despacho, accesos = [], comentarios = [], c
   </section>;
 
   return <>
+    <section className="grupo" aria-labelledby="td-p">
+      <h2 className="grupo-t" id="td-p">Mensajes con {despacho.nombre}</h2>
+      <Chat mensajes={mensajes} lado="cliente" leidoAntes={leidoAntes} nombreOtro={despacho.nombre}
+        enviar={{ url: '/api/tu-despacho', metodo: 'PUT', extra: {} }} leer={{ url: '/api/tu-despacho', metodo: 'PATCH', cuerpo: { leer: true } }}
+        vacio={`Escribe a ${despacho.nombre} cuando quieras: le llega a su Fisquo. Si te pregunta por una factura o un gasto, lo verás aquí.`} />
+    </section>
     <section className="grupo" aria-labelledby="td-t">
       <h2 className="grupo-t" id="td-t">Tu gestoría en Fisquo</h2>
       <div className="grupo-c relleno">
@@ -70,12 +57,6 @@ export default function TuDespacho({ despacho, accesos = [], comentarios = [], c
         <p className="nota">Entra con el perfil Gestoría: ve tus facturas, gastos, nóminas, contabilidad e impuestos. Cuando revisa un trimestre lo cierra: ya no se pueden cambiar sus facturas ni sus gastos hasta que lo reabra.</p>
         <button type="button" className="boton sec desp-mini" onClick={quitar}>Quitar el acceso</button>
         {msg && <p className="error" role="alert">{msg}</p>}
-      </div>
-    </section>
-    <section className="grupo" aria-labelledby="td-p">
-      <h2 className="grupo-t" id="td-p">Preguntas de tu gestoría{abiertas.length ? ` (${abiertas.length})` : ''}</h2>
-      <div className="grupo-c relleno">
-        {comentarios.length ? <ul className="desp-hilo">{comentarios.map((c) => <Pregunta key={c.id} c={c} alCambiar={() => router.refresh()} />)}</ul> : <p className="nota">No te ha preguntado nada todavía.</p>}
       </div>
     </section>
     <section className="grupo" aria-labelledby="td-a">

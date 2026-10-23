@@ -3,7 +3,7 @@ import { periodoDe } from '@/lib/despachoApi';
 import { equipoDe, leerAccesos } from '@/lib/despachos';
 import { filaCliente, resumenCliente } from '@/lib/panelDespacho';
 import { cierresDe, estadoCierre, rangoTrimestre } from '@/lib/cierres';
-import { comentariosDe } from '@/lib/comentariosDespacho';
+import { comentariosDe, leidoDe, mensajesDe, noLeidos } from '@/lib/comentariosDespacho';
 import { leerRango } from '@/lib/indices';
 import { importes, numeroFactura } from '@/lib/calculos';
 import { pagaSuPlan, NOMBRES_LICENCIA, tipoLicencia } from '@/lib/licencias';
@@ -24,8 +24,8 @@ export default async function ClienteDelDespacho({ params, searchParams }) {
   const dia = hoy();
   const { anio, t } = periodoDe(q.anio, q.t, dia);
   const [desde, hasta] = rangoTrimestre(anio, t);
-  const [resumen, cierres, comentarios, accesos, equipo, facturas, gastos] = await Promise.all([
-    resumenCliente(ctx, anio, t, dia).catch(() => null), cierresDe(ctx), comentariosDe(e.id), leerAccesos(e.id, 40), equipoDe(d),
+  const [resumen, cierres, comentarios, leido, accesos, equipo, facturas, gastos] = await Promise.all([
+    resumenCliente(ctx, anio, t, dia).catch(() => null), cierresDe(ctx), comentariosDe(e.id), leidoDe(e.id), leerAccesos(e.id, 40), equipoDe(d),
     leerRango(ctx, 'facturas', desde, hasta), leerRango(ctx, 'gastos', desde, hasta),
   ]);
   const fila = filaCliente(e, cierres, anio, t, dia);
@@ -42,6 +42,6 @@ export default async function ClienteDelDespacho({ params, searchParams }) {
       cliente={{ id: e.id, nombre: fila.nombre, nif: fila.nif, tipo: fila.tipo, territorio: fila.territorio, plan: fila.plan, desde: v.desde || null, gestor: v.gestor || null, licencia: v.licencia || null, pagaSuPlan: pagaSuPlan(e.plan), licenciaNombre: NOMBRES_LICENCIA[tipoLicencia(e)] }}
       anio={anio} t={t} hoy={dia} rol={rol} yo={u.id} estado={cierre?.cambios ? 'cambios' : fila.estado} limite={fila.limite} presentados={fila.presentados}
       cierre={cierre ? { fecha: cierre.fecha, por: cierre.por?.nombre || '', despacho: cierre.despacho, cambios: cierre.cambios } : null}
-      resumen={resumen} docs={docs} comentarios={comentarios} accesos={accesos} equipo={equipo.map((x) => ({ id: x.id, nombre: x.nombre || x.email }))} />
+      resumen={resumen} docs={docs} mensajes={{ ultimo: mensajesDe(comentarios).at(-1) || null, noLeidos: noLeidos(comentarios, leido, 'despacho'), preguntas: comentarios.filter((c) => c.doc && !c.resuelto).length }} accesos={accesos} equipo={equipo.map((x) => ({ id: x.id, nombre: x.nombre || x.email }))} />
   </main>;
 }

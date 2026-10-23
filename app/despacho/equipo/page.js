@@ -14,7 +14,7 @@ export default async function Equipo() {
   const cartera = (id) => clientes.filter((c) => c.empresa.despachoCliente?.gestor === id).length;
   return <main className="pagina mk-look despacho">
     <h1 className="titulo">Equipo</h1>
-    <p className="desp-sub">{d.soloAsignados ? 'Cada gestor ve solo los clientes que tiene asignados; el titular, todos.' : 'Todo el equipo ve a todos los clientes. Puedes limitarlo en Despacho.'}</p>
+    <p className="desp-sub">{d.soloAsignados ? 'Cada gestor ve solo los clientes que tiene asignados; el titular, todos.' : 'Todo el equipo ve a todos los clientes. Puedes limitarlo en Ajustes.'}</p>
     <EquipoDespacho equipo={equipo.map((x) => ({ ...x, rolTexto: ROLES_DESPACHO[x.rol], clientes: cartera(x.id) }))} titular={rol === 'titular'} yo={u.id} />
   </main>;
 }

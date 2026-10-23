@@ -7,88 +7,104 @@ import { eur } from '@/lib/formato';
 
 const euros = (c) => eur(c / 100);
 
-// Ajustes de Mi despacho: datos, cómo traer a los clientes, licencias y cobro, y el reparto de responsabilidades.
-export default function AjustesDespacho({ despacho, titular, licencias, tarifa, nombres, diasGratis, stripe, sesion, enlaces }) {
+// Ajustes de Mi despacho, como los Ajustes de la app: invitar a clientes (un solo enlace), Fisquo en tu cuota, los datos
+// del despacho y lo que hace cada uno. Lo largo va plegado.
+export default function AjustesDespacho({ despacho, titular, licencias, tarifa, nombres, diasGratis, stripe, sesion, enlace }) {
   const router = useRouter();
   const [d, setD] = useState({ nombre: despacho.nombre, nif: despacho.nif, email: despacho.email, soloAsignados: despacho.soloAsignados });
+  const [editar, setEditar] = useState(false);
   const [msg, setMsg] = useState('');
   const [cobro, setCobro] = useState('');
-  const [copiado, setCopiado] = useState('');
+  const [copiado, setCopiado] = useState(false);
+  const [compartible, setCompartible] = useState(false);
 
+  useEffect(() => { setCompartible(typeof navigator !== 'undefined' && Boolean(navigator.share)); }, []);
   // Al volver del pago de Stripe: se confirma sin esperar al aviso.
   useEffect(() => {
     if (!sesion) return;
     llamar(`/api/despacho/cobro?sesion=${encodeURIComponent(sesion)}`).then(() => { setCobro('✓ Cobro activado'); router.replace('/despacho/ajustes'); router.refresh(); }).catch((e) => setCobro(e.message));
   }, [sesion, router]);
 
-  const guardar = async (e) => {
-    e.preventDefault(); setMsg('Guardando…');
-    try { await llamar('/api/despacho', { method: 'PATCH', body: JSON.stringify(d) }); setMsg('✓ Guardado'); router.refresh(); } catch (err) { setMsg(err.message); }
+  const guardar = async (cambios, cerrar = true) => {
+    setMsg('Guardando…');
+    try { await llamar('/api/despacho', { method: 'PATCH', body: JSON.stringify(cambios) }); setMsg('✓ Guardado'); if (cerrar) setEditar(false); router.refresh(); } catch (err) { setMsg(err.message); }
   };
   const pagar = async (portal = false) => {
     setCobro('Abriendo…');
     try { const r = await llamar('/api/despacho/cobro', { method: 'POST', body: JSON.stringify({ portal }) }); window.location.assign(r.url); } catch (err) { setCobro(err.message); }
   };
-  const copiar = async (texto, que) => { try { await navigator.clipboard.writeText(texto); setCopiado(que); } catch { setCopiado(''); } };
-  const tramos = (tipo) => tarifa[tipo].map((x, i) => `${i === 0 ? 'hasta' : x.hasta ? `de ${tarifa[tipo][i - 1].hasta + 1} a` : `${tarifa[tipo][i - 1].hasta + 1} o más:`} ${x.hasta || ''}${x.hasta ? ': ' : ' '}${euros(x.cent)}`).join(' · ');
+  const copiar = async () => { try { await navigator.clipboard.writeText(enlace); setCopiado(true); setTimeout(() => setCopiado(false), 2500); } catch { setCopiado(false); } };
+  const compartir = () => navigator.share?.({ title: `${despacho.nombre} en Fisquo`, text: `Para llevar tus cuentas en Fisquo con ${despacho.nombre}, entra aquí:`, url: enlace }).catch(() => {});
+  const licenciasTotal = licencias ? licencias.aut.total + licencias.pym.total : 0;
+  const tramos = (tipo) => tarifa[tipo].map((x, i) => (i === 0 ? `hasta ${x.hasta}: ${euros(x.cent)}` : x.hasta ? `${tarifa[tipo][i - 1].hasta + 1} a ${x.hasta}: ${euros(x.cent)}` : `${tarifa[tipo][i - 1].hasta + 1} o más: ${euros(x.cent)}`)).join(' · ');
 
   return <>
-    <section className="grupo" aria-labelledby="ad-clientes">
-      <h2 className="grupo-t" id="ad-clientes">Cómo llegan tus clientes</h2>
-      <div className="grupo-c relleno">
-        <p>Tu código es <b>{despacho.codigo}</b>. Con él, tus clientes tienen 3 meses gratis y te dan acceso a sus cuentas.</p>
-        <ul className="desp-registro">
-          <li><span>Clientes nuevos: se registran con este enlace</span><button type="button" className="boton sec" onClick={() => copiar(enlaces.registro, 'registro')}>{copiado === 'registro' ? '✓ Copiado' : 'Copiar enlace'}</button></li>
-          <li><span>Clientes que ya usan Fisquo: te dan acceso con este</span><button type="button" className="boton sec" onClick={() => copiar(enlaces.existente, 'existente')}>{copiado === 'existente' ? '✓ Copiado' : 'Copiar enlace'}</button></li>
-        </ul>
-        <p className="nota">Siempre lo decide el cliente, y puede quitarte el acceso cuando quiera en Ajustes › Tu gestoría. Ve todo lo que haces en sus cuentas.</p>
+    <section className="grupo" aria-labelledby="ad-invitar">
+      <h2 className="grupo-t" id="ad-invitar">Invitar a un cliente</h2>
+      <div className="grupo-c">
+        <div className="celda columna">
+          <span className="txt">Pásale este enlace<small>Si es nuevo en Fisquo, se registra con 3 meses gratis. Si ya lo usa, solo tiene que aceptar. En los dos casos, te da acceso a sus cuentas.</small></span>
+          <div className="desp-enlace"><code>{enlace.replace(/^https?:\/\//, '')}</code></div>
+          <div className="desp-acciones">
+            <button type="button" className="boton" onClick={copiar}>{copiado ? '✓ Copiado' : 'Copiar enlace'}</button>
+            {compartible && <button type="button" className="boton sec" onClick={compartir}>Compartir</button>}
+          </div>
+        </div>
       </div>
+      <p className="grupo-pie">También pueden escribir tu código, <b>{despacho.codigo}</b>, en su Fisquo (Ajustes › Tu gestoría). Siempre lo decide el cliente, y puede quitarte el acceso cuando quiera.</p>
     </section>
 
-    {titular && <form className="formulario tarjeta" onSubmit={guardar}>
-      <h3>Datos del despacho</h3>
-      <label>Nombre<input className="campo" value={d.nombre} maxLength={120} onChange={(e) => setD({ ...d, nombre: e.target.value })} required /></label>
-      <label>NIF<input className="campo" value={d.nif} maxLength={20} onChange={(e) => setD({ ...d, nif: e.target.value })} /></label>
-      <label>Email de contacto<input className="campo" type="email" value={d.email} maxLength={254} onChange={(e) => setD({ ...d, email: e.target.value })} /></label>
-      <label className="check desp-check"><input type="checkbox" checked={d.soloAsignados} onChange={(e) => setD({ ...d, soloAsignados: e.target.checked })} />
-        <span>Cada gestor ve solo sus clientes<small>Los que le asignes en la ficha de cada cliente. El titular los ve todos.</small></span></label>
-      {msg && <p role="status" className={msg.startsWith('✓') || msg === 'Guardando…' ? 'nota' : 'error'}>{msg}</p>}
-      <button className="boton">Guardar</button>
-    </form>}
-
     {titular && licencias && <section className="grupo" aria-labelledby="ad-lic">
-      <h2 className="grupo-t" id="ad-lic">Fisquo incluido en tu cuota</h2>
-      <div className="grupo-c relleno">
-        <p>Si incluyes Fisquo en lo que cobras a un cliente, tu despacho paga su licencia y el cliente no paga nada a Fisquo. Cada cliente nuevo tiene {diasGratis} días gratis. Se activa en la ficha de cada cliente.</p>
-        <table className="desp-licencias">
-          <thead><tr><th scope="col">Licencia</th><th scope="col" className="num">Clientes</th><th scope="col" className="num">En días gratis</th><th scope="col" className="num">Al mes</th></tr></thead>
-          <tbody>{['aut', 'pym'].map((tipo) => <tr key={tipo}><td>{nombres[tipo]}<br /><small className="nota">{tramos(tipo)} por cliente</small></td><td className="num">{licencias[tipo].total}</td><td className="num">{licencias[tipo].gratis}</td><td className="num">{euros(licencias[tipo].importe)}</td></tr>)}</tbody>
-          <tfoot><tr><th scope="row" colSpan={3}>Total al mes (sin IVA)</th><td className="num"><b>{euros(licencias.importe)}</b></td></tr></tfoot>
-        </table>
+      <h2 className="grupo-t" id="ad-lic">Fisquo en tu cuota</h2>
+      <div className="grupo-c">
+        <div className="celda">
+          <span className="txt">{licenciasTotal ? `${licenciasTotal === 1 ? '1 cliente' : `${licenciasTotal} clientes`} con Fisquo incluido` : 'Ningún cliente incluido todavía'}<small>{licenciasTotal ? `${licencias.aut.gratis + licencias.pym.gratis} en sus ${diasGratis} días gratis` : 'Se activa en la ficha de cada cliente, en «Quién lo lleva».'}</small></span>
+          <span className="v"><b>{euros(licencias.importe)}</b><small> al mes</small></span>
+        </div>
         {despacho.cobro?.activo
-          ? <p className="nota">Cobro activo: cada día se ajusta el número de licencias. <button type="button" className="boton sec" onClick={() => pagar(true)}>Facturas y tarjeta</button></p>
-          : licencias.importe > 0 ? <p><button type="button" className="boton" disabled={!stripe} onClick={() => pagar(false)}>Activar el cobro con tarjeta</button>{!stripe && <small className="nota"> El cobro con tarjeta aún no está activo: te escribiremos para hacerlo a mano.</small>}</p>
-            : <p className="nota">Aún no tienes licencias que pagar.</p>}
-        {cobro && <p role="status" className={cobro.startsWith('✓') || cobro === 'Abriendo…' ? 'nota' : 'error'}>{cobro}</p>}
+          ? <button type="button" className="celda ir desp-celda-boton" onClick={() => pagar(true)}><span className="txt">Facturas y tarjeta<small>El número de licencias se ajusta solo cada día</small></span></button>
+          : licencias.importe > 0 && !despacho.demo && <button type="button" className="celda ir desp-celda-boton" disabled={!stripe} onClick={() => pagar(false)}><span className="txt">Activar el cobro con tarjeta<small>{stripe ? 'Se te cobra cada mes lo que salga' : 'Aún no está disponible: te escribiremos para hacerlo a mano'}</small></span></button>}
+        <details className="celda desp-plegable">
+          <summary>Cómo funciona y cuánto cuesta</summary>
+          <p>Si incluyes Fisquo en lo que cobras a un cliente, tu despacho paga su licencia y el cliente no paga nada a Fisquo. Cada cliente nuevo tiene {diasGratis} días gratis. Precio al mes por cliente, sin IVA:</p>
+          <ul>{['aut', 'pym'].map((tipo) => <li key={tipo}><b>{nombres[tipo]}</b>: {tramos(tipo)}</li>)}</ul>
+        </details>
       </div>
+      {cobro && <p role="status" className={cobro.startsWith('✓') || cobro === 'Abriendo…' ? 'grupo-pie' : 'error'}>{cobro}</p>}
     </section>}
+
+    <section className="grupo" aria-labelledby="ad-datos">
+      <h2 className="grupo-t" id="ad-datos">Tu despacho</h2>
+      {!editar ? <div className="grupo-c">
+        <div className="celda"><span className="txt">Nombre</span><span className="v">{despacho.nombre}</span></div>
+        <div className="celda"><span className="txt">NIF</span><span className="v">{despacho.nif || '—'}</span></div>
+        <div className="celda"><span className="txt">Email</span><span className="v">{despacho.email || '—'}</span></div>
+        {titular && <label className="celda desp-interruptor"><span className="txt">Cada gestor ve solo sus clientes<small>Los que le asignes en la ficha de cada cliente. El titular los ve todos.</small></span>
+          <input type="checkbox" role="switch" checked={d.soloAsignados} onChange={(e) => { setD({ ...d, soloAsignados: e.target.checked }); guardar({ soloAsignados: e.target.checked }, false); }} /></label>}
+        {titular && <button type="button" className="celda ir desp-celda-boton" onClick={() => { setEditar(true); setMsg(''); }}><span className="txt">Cambiar los datos</span></button>}
+      </div> : <form className="formulario tarjeta" onSubmit={(e) => { e.preventDefault(); guardar({ nombre: d.nombre, nif: d.nif, email: d.email }); }}>
+        <label>Nombre<input className="campo" value={d.nombre} maxLength={120} onChange={(e) => setD({ ...d, nombre: e.target.value })} required /></label>
+        <label>NIF<input className="campo" value={d.nif} maxLength={20} onChange={(e) => setD({ ...d, nif: e.target.value })} /></label>
+        <label>Email de contacto<input className="campo" type="email" value={d.email} maxLength={254} onChange={(e) => setD({ ...d, email: e.target.value })} /></label>
+        <div className="desp-acciones"><button className="boton">Guardar</button><button type="button" className="boton sec" onClick={() => setEditar(false)}>Cancelar</button></div>
+      </form>}
+      {msg && <p role="status" className={msg.startsWith('✓') || msg === 'Guardando…' ? 'grupo-pie' : 'error'}>{msg}</p>}
+    </section>
 
     <section className="grupo" aria-labelledby="ad-resp">
       <h2 className="grupo-t" id="ad-resp">Quién hace qué</h2>
-      <div className="grupo-c relleno">
-        <ul>
-          <li><b>Fisquo</b> guarda los datos de tus clientes, lee sus tickets y facturas y calcula libros y modelos con lo que hay apuntado. No presenta impuestos ni sustituye la revisión profesional.</li>
-          <li><b>Tu despacho</b> revisa, decide y presenta. Lo que cierras queda bloqueado y lo que cambia después, a la vista.</li>
-          <li><b>El cliente</b> es dueño de sus datos: decide quién los ve y puede exportarlos o llevárselos cuando quiera.</li>
-        </ul>
-        <p className="nota">El detalle está en las condiciones de Fisquo. Si necesitas un acuerdo por escrito para tu despacho, escríbenos.</p>
+      <div className="grupo-c">
+        <div className="celda"><span className="txt">Fisquo<small>Guarda los datos de tus clientes, lee sus tickets y facturas y calcula libros y modelos con lo apuntado. No presenta impuestos ni sustituye tu revisión.</small></span></div>
+        <div className="celda"><span className="txt">Tu despacho<small>Revisa, decide y presenta. Lo que cierras queda bloqueado y lo que cambia después, a la vista.</small></span></div>
+        <div className="celda"><span className="txt">El cliente<small>Es dueño de sus datos: decide quién los ve y puede exportarlos o llevárselos cuando quiera.</small></span></div>
       </div>
+      <p className="grupo-pie">El detalle está en las condiciones de Fisquo. Si necesitas un acuerdo por escrito para tu despacho, escríbenos.</p>
     </section>
 
     <section className="grupo desp-solo-movil" aria-label="Sesión">
-      <div className="grupo-c relleno desp-acciones">
-        <form method="post" action="/api/despacho/salir?a=empresa"><button className="boton sec">Mi empresa en Fisquo</button></form>
-        <form method="post" action="/api/logout"><button className="boton sec">Cerrar sesión</button></form>
+      <div className="grupo-c">
+        <form method="post" action="/api/despacho/salir?a=empresa"><button className="celda ir desp-celda-boton"><span className="txt">Mi empresa en Fisquo<small>La contabilidad de tu propio despacho</small></span></button></form>
+        <form method="post" action="/api/logout"><button className="celda desp-celda-boton rojo"><span className="txt">Cerrar sesión</span></button></form>
       </div>
     </section>
   </>;

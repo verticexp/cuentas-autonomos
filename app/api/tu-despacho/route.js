@@ -2,7 +2,7 @@ import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { hoy } from '@/lib/formato';
 import { auditar } from '@/lib/auditoria';
 import { despachoPorCodigo, leerAccesos, separarCliente, unirCliente } from '@/lib/despachos';
-import { comentariosDe, responder } from '@/lib/comentariosDespacho';
+import { comentariosDe, escribir, marcarLeido, responder } from '@/lib/comentariosDespacho';
 import { planSinLicencia, sincronizarLicencias } from '@/lib/licencias';
 import { pasado, respuesta429 } from '@/lib/limite';
 
@@ -56,12 +56,26 @@ export async function DELETE() {
   return Response.json({ ok: true });
 }
 
-// Responder a una pregunta de la gestoría o marcarla como resuelta. { id, texto?, resuelto? }
+// Responder a una pregunta de la gestoría o marcarla como resuelta ({ id, texto?, resuelto? }), o marcar leído ({ leer: true }).
 export async function PATCH(req) {
   const { u, res } = await cliente({ permiso: 'resumen' });
   if (res) return res;
   if (!u.despachoCliente) return error('No tienes ninguna gestoría con acceso', 404);
   const b = await cuerpo(req);
+  // { leer: true }: el cliente ha abierto la conversación.
+  if (b.leer === true) { await marcarLeido(u.empresa, 'cliente'); return Response.json({ ok: true }); }
   const r = await responder(u.empresa, String(b.id || ''), u, 'cliente', { texto: b.texto, resuelto: b.resuelto });
   return r.error ? error(r.error, r.status || 400) : Response.json(r);
+}
+
+// Escribir a la gestoría: { texto, hilo? } (sin hilo, en la conversación general).
+export async function PUT(req) {
+  const { u, res } = await cliente({ permiso: 'resumen' });
+  if (res) return res;
+  if (!u.despachoCliente) return error('No tienes ninguna gestoría con acceso', 404);
+  const b = await cuerpo(req);
+  const r = await escribir(u.empresa, u, 'cliente', { texto: b.texto, hilo: b.hilo ? String(b.hilo) : undefined });
+  if (r.error) return error(r.error, r.status || 400);
+  await marcarLeido(u.empresa, 'cliente');
+  return Response.json(r);
 }

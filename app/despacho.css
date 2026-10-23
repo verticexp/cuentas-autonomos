@@ -154,6 +154,9 @@ button.celda.desp-celda-boton:disabled { opacity: 0.5; cursor: default; }
 .desp-plazos h3 { margin: 0 0 4px; font-size: 16px; }
 .desp-plazos p { margin: 0; color: var(--muted); font-size: 14px; }
 .desp-plazos .falta { color: var(--hacienda); font-weight: 600; }
+.desp-plazos .falta a, .desp-plazos p a { color: inherit; }
+.desp-plazos > li.vencido { box-shadow: inset 3px 0 0 var(--out); }
+.desp-plazos > li.vencido time small, .desp-plazos > li.vencido .falta { color: var(--out); }
 
 /* Licencias. */
 .desp-licencias { width: 100%; border-collapse: collapse; font-size: 15px; }
@@ -168,3 +171,43 @@ button.celda.desp-celda-boton:disabled { opacity: 0.5; cursor: default; }
 /* Mi empresa y Cerrar sesión: en el ordenador van en la barra lateral; en el móvil, al final de Despacho. */
 .desp-solo-movil { display: none; }
 @media (max-width: 1023.98px) { .desp-solo-movil { display: block; } }
+
+/* Mensajes: la bandeja (una fila por cliente) y la conversación. */
+.desp-conversaciones { margin-top: 14px; }
+.desp-conversaciones .fila.desp-conversacion { display: flex; align-items: center; gap: 12px; padding: 12px 16px; text-decoration: none; }
+.desp-avatar { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--relleno); color: var(--ink); font-weight: 700; }
+.desp-conversacion .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.desp-conversacion .txt strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.desp-conversacion .txt small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); margin-top: 2px; }
+.desp-conversacion.nueva .txt small { color: var(--ink); font-weight: 600; }
+.desp-conversacion-v { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; color: var(--muted); font-size: 13px; }
+.desp-conversacion-v b { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: var(--in-boton); color: #fff; font-size: 12px; line-height: 20px; text-align: center; }
+.desp-conversacion.nueva time { color: var(--in); font-weight: 600; }
+.desp-chat-pagina .chat { margin-top: 12px; }
+/* Tarjeta de mensajes en la ficha del cliente. */
+.desp-mensajes-ficha .txt small { white-space: normal; }
+.desp-burbuja-mini { display: inline-block; max-width: 100%; margin-top: 6px; padding: 6px 10px; border-radius: 12px 12px 12px 4px; background: var(--relleno); color: var(--ink); font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.desp-burbuja-mini.mia { border-radius: 12px 12px 4px 12px; background: var(--marca); color: var(--sobre); }
+/* Aviso en el Resumen del cliente: su gestoría le ha escrito (components/AvisoMensajes.js). */
+.aviso-mensajes { display: flex; align-items: center; gap: 12px; margin: 0 0 14px; padding: 12px 16px; border-radius: 14px; background: var(--surface); color: var(--ink); text-decoration: none; box-shadow: inset 3px 0 0 var(--in-boton); }
+.aviso-mensajes .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.aviso-mensajes .txt small { color: var(--muted); font-size: 13px; margin-top: 2px; }
+.aviso-mensajes-ico { flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--in-boton); color: #fff; }
+.aviso-mensajes-ico svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
+.aviso-mensajes::after { content: ''; flex: none; width: 7px; height: 7px; border-right: 2px solid var(--muted); border-top: 2px solid var(--muted); transform: rotate(45deg); opacity: 0.55; }
+/* Ajustes del despacho. */
+.desp-enlace { padding: 10px 12px; border-radius: 10px; background: var(--relleno); font-size: 14px; overflow-wrap: anywhere; }
+.desp-enlace code { font-family: inherit; }
+.celda .desp-acciones .boton { margin: 0; padding: 10px 18px; font-size: 15px; }
+.celda .v b { color: var(--ink); font-weight: 600; }
+.desp-plegable { display: block; }
+.desp-plegable summary { cursor: pointer; color: var(--ink); list-style: none; display: flex; align-items: center; justify-content: space-between; }
+.desp-plegable summary::-webkit-details-marker { display: none; }
+.desp-plegable summary::after { content: ''; width: 7px; height: 7px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(45deg); opacity: 0.6; transition: transform 0.2s; }
+.desp-plegable[open] summary::after { transform: rotate(-135deg); }
+.desp-plegable p, .desp-plegable ul { margin: 10px 0 0; color: var(--muted); font-size: 14px; line-height: 1.45; }
+.desp-plegable ul { padding-left: 18px; }
+.desp-interruptor { cursor: pointer; }
+.desp-interruptor input { flex: none; width: 44px; height: 26px; margin: 0; }
+.desp-solo-movil form { display: block; }
+.despacho .celda .txt small { white-space: normal; }

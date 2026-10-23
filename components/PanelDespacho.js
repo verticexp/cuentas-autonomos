@@ -34,8 +34,8 @@ function Avisos({ r }) {
   if (r.error) return <span>No se han podido calcular sus cifras</span>;
   const l = [
     r.porRevisar > 0 && <b key="b">{r.porRevisar} por revisar</b>,
-    r.comentarios?.respuestas > 0 && <b key="c">{r.comentarios.respuestas === 1 ? '1 respuesta nueva' : `${r.comentarios.respuestas} respuestas nuevas`}</b>,
-    r.comentarios?.abiertos > 0 && !r.comentarios.respuestas && <span key="p">{r.comentarios.abiertos === 1 ? '1 pregunta abierta' : `${r.comentarios.abiertos} preguntas abiertas`}</span>,
+    r.comentarios?.noLeidos > 0 && <b key="c">{r.comentarios.noLeidos === 1 ? '1 mensaje nuevo' : `${r.comentarios.noLeidos} mensajes nuevos`}</b>,
+    r.comentarios?.abiertos > 0 && !r.comentarios.noLeidos && <span key="p">{r.comentarios.abiertos === 1 ? '1 pregunta abierta' : `${r.comentarios.abiertos} preguntas abiertas`}</span>,
     r.sinJustificante > 0 && <span key="j">{r.sinJustificante} sin justificante</span>,
   ].filter(Boolean);
   return l.length ? l.reduce((a, x, i) => (i ? [...a, ' · ', x] : [x]), []) : <span>Todo al día</span>;
