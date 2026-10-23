@@ -11,7 +11,7 @@ import { eur, fechaCorta } from '@/lib/formato';
 
 const fechaDe = (iso) => fechaCorta(String(iso || '').slice(0, 10));
 const horaDe = (iso) => new Date(iso).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-const ENTRAR = [['/modelos', 'Impuestos'], ['/facturas', 'Facturas'], ['/gastos', 'Gastos'], ['/contabilidad', 'Contabilidad'], ['/contabilidad?ver=libros', 'Libros registro']];
+const ENTRAR = [['/modelos', 'Impuestos', 'Modelos del trimestre y del año'], ['/facturas', 'Facturas', 'Emitidas, cobros y rectificativas'], ['/gastos', 'Gastos', 'Con sus justificantes'], ['/contabilidad', 'Contabilidad', 'Diario, balance y resultados'], ['/contabilidad?ver=libros', 'Libros registro', 'Los libros de IVA e IRPF']];
 
 // Un comentario con su hilo y, si está abierto, el formulario para responder.
 function Hilo({ c, empresa, alCambiar }) {
@@ -75,16 +75,24 @@ export default function ClienteDespacho({ cliente, anio, t, hoy, rol, estado, li
   }, [hoy]);
   const del = comentarios.filter((c) => (c.anio === anio && c.t === t) || !c.resuelto);
   const r = resumen;
-  const cifra = (x) => (!x ? '—' : x.compensar > 0 ? `0 € · a compensar ${eur(x.compensar)}` : x.devolver > 0 ? `0 € · a devolver ${eur(x.devolver)}` : eur(x.importe));
+  const cifra = (x) => (!x ? { v: '—', n: 'No lo presenta' } : x.compensar > 0 ? { v: eur(0), n: `A compensar ${eur(x.compensar)}` } : x.devolver > 0 ? { v: eur(0), n: `A devolver ${eur(x.devolver)}` } : { v: eur(x.importe), n: 'A ingresar' });
+  const pendientes = r ? [
+    r.porRevisar > 0 && `${r.porRevisar} ${r.porRevisar === 1 ? 'documento' : 'documentos'} en su bandeja por revisar`,
+    r.sinJustificante > 0 && `${r.sinJustificante} ${r.sinJustificante === 1 ? 'gasto' : 'gastos'} sin justificante`,
+    r.comentarios?.respuestas > 0 && `${r.comentarios.respuestas === 1 ? 'Una respuesta' : `${r.comentarios.respuestas} respuestas`} del cliente sin leer`,
+  ].filter(Boolean) : [];
+  const irA = (href) => () => entrarEn(cliente.id, href).catch((e) => setMsg(e.message));
+  const preguntarPor = (doc) => () => { setNueva((x) => ({ ...x, doc })); document.getElementById('desp-pregunta')?.focus({ preventScroll: true }); document.getElementById('desp-preg')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
 
   return <>
     <div className="desp-cabecera">
-      <div>
+      <div className="desp-titulo">
         <h1 className="titulo">{cliente.nombre}</h1>
-        <p className="desp-sub">{[cliente.nif, cliente.tipo === 'sociedad' ? 'Sociedad' : 'Autónomo', cliente.territorio, cliente.plan, cliente.licencia && 'Incluido en tu cuota'].filter(Boolean).join(' · ')}</p>
+        <p className="resumen-linea">{[cliente.nif, cliente.tipo === 'sociedad' ? 'Sociedad' : 'Autónomo', cliente.territorio, cliente.plan, cliente.licencia && 'En tu cuota'].filter(Boolean).join(' · ')}</p>
       </div>
-      <label className="desp-periodo">Trimestre
-        <select className="campo" value={`${anio}-${t}`} onChange={(e) => { const [a, q] = e.target.value.split('-'); navegar(router, `/despacho/${id}?anio=${a}&t=${q}`, 'pestana-der', undefined, false, { scroll: false }); }}>
+      <label className="desp-select">
+        <span className="sr">Trimestre</span>
+        <select value={`${anio}-${t}`} onChange={(e) => { const [a, q] = e.target.value.split('-'); navegar(router, `/despacho/${id}?anio=${a}&t=${q}`, 'pestana-der', undefined, false, { scroll: false }); }}>
           {periodos.map((p) => <option key={`${p.anio}-${p.t}`} value={`${p.anio}-${p.t}`}>{p.t}T {p.anio}</option>)}
         </select>
       </label>
@@ -92,114 +100,106 @@ export default function ClienteDespacho({ cliente, anio, t, hoy, rol, estado, li
     {msg && <p role="status" className={msg.startsWith('✓') ? 'nota guardado' : 'error'}>{msg}</p>}
 
     <section className="grupo" aria-labelledby="desp-rev">
-      <h2 className="grupo-t" id="desp-rev">Revisión del {t}T {anio}</h2>
-      <div className="grupo-c relleno">
-        <div className="desp-cierre">
-          <p><span className={`desp-estado e-${estado}`}>{ESTADOS_TEXTO[estado]}</span>{' '}
-            {cierre ? <>Cerrado por {cierre.por || cierre.despacho} el {fechaDe(cierre.fecha)}.{cierre.cambios && <b className="rojo"> Hay facturas o gastos que han cambiado desde entonces.</b>}</> : estado === 'curso' ? 'El trimestre aún no ha terminado.' : `Plazo hasta el ${fechaDe(limite)}.`}</p>
-          <div className="desp-acciones">
-            {cierre ? <button type="button" className="boton sec" disabled={Boolean(ocupado)} onClick={reabrir}>Reabrir</button>
-              : <button type="button" className="boton" disabled={Boolean(ocupado)} onClick={cerrar}>Marcar revisado y cerrar</button>}
-            {cierre?.cambios && <button type="button" className="boton" disabled={Boolean(ocupado)} onClick={cerrar}>Revisado de nuevo</button>}
-          </div>
+      <h2 className="grupo-t" id="desp-rev">{t}T {anio}</h2>
+      <div className="grupo-c">
+        <div className="celda desp-trimestre">
+          <span className="txt">
+            <span><span className={`desp-estado e-${estado}`}>{ESTADOS_TEXTO[estado]}</span></span>
+            <small>{cierre ? <>Cerrado por {cierre.por || cierre.despacho} el {fechaDe(cierre.fecha)}.{cierre.cambios && <b className="rojo"> Hay facturas o gastos que han cambiado desde entonces.</b>}</> : estado === 'curso' ? 'El trimestre aún no ha terminado.' : `Plazo hasta el ${fechaDe(limite)}.`}</small>
+          </span>
+          {cierre ? <span className="desp-acciones">
+            {cierre.cambios && <button type="button" className="boton" disabled={Boolean(ocupado)} onClick={cerrar}>Revisado de nuevo</button>}
+            <button type="button" className="boton sec" disabled={Boolean(ocupado)} onClick={reabrir}>Reabrir</button>
+          </span> : <button type="button" className="boton" disabled={Boolean(ocupado)} onClick={cerrar}>Revisado: cerrar</button>}
         </div>
-        <p className="nota">Al cerrarlo, ni el cliente ni nadie puede crear, cambiar o borrar facturas y gastos de este trimestre (sí cobrarlos, pagarlos o añadir justificantes). Si algo entra por otro camino, lo verás aquí como cambio tras el cierre.</p>
-        {presentados && (presentados.iva !== null || presentados.irpf !== null) && <p className="nota">Presentados: {[presentados.iva !== null && `IVA ${presentados.iva ? 'sí' : 'no'}`, presentados.irpf !== null && `IRPF ${presentados.irpf ? 'sí' : 'no'}`].filter(Boolean).join(' · ')}. Se marcan en sus Impuestos.</p>}
+        {pendientes.map((x) => <div key={x} className="celda desp-pendiente"><span className="txt">{x}</span></div>)}
+        {presentados && (presentados.iva !== null || presentados.irpf !== null) && <div className="celda"><span className="txt">Presentado en Hacienda<small>Se marca en sus Impuestos</small></span><span className="v">{[presentados.iva !== null && `IVA: ${presentados.iva ? 'sí' : 'no'}`, presentados.irpf !== null && `IRPF: ${presentados.irpf ? 'sí' : 'no'}`].filter(Boolean).join(' · ')}</span></div>}
       </div>
+      <p className="grupo-pie">Cerrado, nadie puede crear, cambiar ni borrar sus facturas y gastos de este trimestre (sí cobrarlos, pagarlos o añadir justificantes). Si algo entra por otro camino, lo verás aquí.</p>
     </section>
 
     {r ? <dl className="desp-cifras">
-      <div><dt>Ventas (base)</dt><dd>{eur(r.ventas)}<small>{r.facturas} facturas</small></dd></div>
-      <div><dt>Gastos (base)</dt><dd>{eur(r.compras)}<small>{r.gastos} gastos</small></dd></div>
-      <div><dt>IVA del trimestre</dt><dd>{cifra(r.iva)}</dd></div>
-      <div><dt>IRPF (130)</dt><dd>{cifra(r.irpf)}</dd></div>
-      <div><dt>Por revisar</dt><dd>{r.porRevisar}<small>{r.sinJustificante} gastos sin justificante</small></dd></div>
+      <div><dt>Ventas</dt><dd>{eur(r.ventas)}<small>{r.facturas} facturas · sin IVA</small></dd></div>
+      <div><dt>Gastos</dt><dd>{eur(r.compras)}<small>{r.gastos} gastos · sin IVA</small></dd></div>
+      <div><dt>IVA</dt><dd>{cifra(r.iva).v}<small>{cifra(r.iva).n}</small></dd></div>
+      <div><dt>IRPF</dt><dd>{cifra(r.irpf).v}<small>{cifra(r.irpf).n}</small></dd></div>
     </dl> : <p className="error">No se han podido calcular sus cifras. Entra en sus Impuestos para verlas.</p>}
 
     <section className="grupo" aria-labelledby="desp-entrar">
       <h2 className="grupo-t" id="desp-entrar">Sus cuentas</h2>
-      <div className="grupo-c relleno">
-        <div className="desp-acciones">{ENTRAR.map(([href, texto]) => <button key={href} type="button" className="boton sec" onClick={() => entrarEn(cliente.id, href).catch((e) => setMsg(e.message))}>{texto}</button>)}</div>
-        <p className="nota">Entras con el perfil Gestoría: ves sus facturas, gastos, nóminas, contabilidad e impuestos, y puedes apuntar asientos y marcar modelos como presentados. Arriba verás siempre en qué cliente estás.</p>
+      <div className="grupo-c">
+        {ENTRAR.map(([href, texto, detalle]) => <button key={href} type="button" className="celda ir desp-celda-boton" onClick={irA(href)}><span className="txt">{texto}<small>{detalle}</small></span></button>)}
       </div>
+      <p className="grupo-pie">Entras con el perfil Gestoría. Arriba verás siempre en qué cliente estás y podrás volver al despacho.</p>
     </section>
 
     <section className="grupo" aria-labelledby="desp-desc">
       <h2 className="grupo-t" id="desp-desc">Descargas</h2>
-      <div className="grupo-c relleno">
-        <div className="desp-acciones">
-          <a className="boton" href={`/api/despacho/paquete?empresa=${id}&anio=${anio}&t=${t}`} download>Paquete del {t}T (Excel, PDF y justificantes)</a>
-          <a className="boton sec" href={`/api/despacho/paquete?empresa=${id}&anio=${anio}&t=${t}&formato=xlsx`} download>Solo Excel</a>
-          <a className="boton sec" href={`/api/despacho/paquete?empresa=${id}&anio=${anio}&t=${t}&formato=pdf`} download>Solo PDF</a>
-        </div>
-        <div className="desp-barra">
-          <select className="campo" aria-label="Programa" value={formato} onChange={(e) => setFormato(e.target.value)}>
-            <option value="a3">A3 (SUENLACE.DAT)</option><option value="contaplus">ContaPlus</option><option value="contasol">ContaSol</option>
-          </select>
-          <select className="campo" aria-label="Año" value={anioDiario} onChange={(e) => setAnioDiario(Number(e.target.value))}>
-            {[anio, anio - 1].map((a) => <option key={a} value={a}>{a}</option>)}
-          </select>
-          {formato === 'a3' && <input className="campo" inputMode="numeric" maxLength={5} aria-label="Código de la empresa en A3" placeholder="Código en A3" value={codigo} onChange={(e) => setCodigo(e.target.value.replace(/\D/g, ''))} />}
-          <a className="boton sec" href={`/api/despacho/contable?empresa=${id}&anio=${anioDiario}&formato=${formato}${formato === 'a3' ? `&codigo=${codigo || 1}` : ''}`} download>Exportar contabilidad</a>
+      <div className="grupo-c">
+        <a className="celda ir" href={`/api/despacho/paquete?empresa=${id}&anio=${anio}&t=${t}`} download><span className="txt">Paquete del {t}T<small>Excel, PDF y justificantes en un .zip</small></span></a>
+        <a className="celda ir" href={`/api/despacho/paquete?empresa=${id}&anio=${anio}&t=${t}&formato=xlsx`} download><span className="txt">Solo el Excel</span></a>
+        <a className="celda ir" href={`/api/despacho/paquete?empresa=${id}&anio=${anio}&t=${t}&formato=pdf`} download><span className="txt">Solo el PDF</span></a>
+        <div className="celda columna desp-exportar">
+          <span className="txt">Contabilidad para tu programa<small>El libro diario del año, listo para importar.</small></span>
+          <div className="desp-exportar-campos">
+            <label>Programa<select className="campo" value={formato} onChange={(e) => setFormato(e.target.value)}><option value="a3">A3</option><option value="contaplus">ContaPlus</option><option value="contasol">ContaSol</option></select></label>
+            <label>Año<select className="campo" value={anioDiario} onChange={(e) => setAnioDiario(Number(e.target.value))}>{[anio, anio - 1].map((a) => <option key={a} value={a}>{a}</option>)}</select></label>
+            {formato === 'a3' && <label>Código en A3<input className="campo" inputMode="numeric" maxLength={5} value={codigo} onChange={(e) => setCodigo(e.target.value.replace(/\D/g, ''))} /></label>}
+            <a className="boton sec" href={`/api/despacho/contable?empresa=${id}&anio=${anioDiario}&formato=${formato}${formato === 'a3' ? `&codigo=${codigo || 1}` : ''}`} download>Exportar</a>
+          </div>
         </div>
       </div>
     </section>
 
     <section className="grupo" aria-labelledby="desp-preg">
       <h2 className="grupo-t" id="desp-preg">Preguntas al cliente</h2>
-      <div className="grupo-c relleno">
-        <form className="formulario" onSubmit={preguntar}>
-          <label>Sobre<select className="campo" value={nueva.doc} onChange={(e) => setNueva({ ...nueva, doc: e.target.value })}>
-            <option value="">El {t}T {anio} en general</option>
-            {docs.facturas.length > 0 && <optgroup label="Facturas">{docs.facturas.map((f) => <option key={f.id} value={`factura:${f.id}`}>{f.texto} · {eur(f.total)}</option>)}</optgroup>}
-            {docs.gastos.length > 0 && <optgroup label="Gastos">{docs.gastos.map((g) => <option key={g.id} value={`gasto:${g.id}`}>{fechaDe(g.fecha)} · {g.texto} · {eur(g.total)}</option>)}</optgroup>}
-          </select></label>
-          <label>Pregunta<textarea className="campo" rows={3} maxLength={2000} value={nueva.texto} onChange={(e) => setNueva({ ...nueva, texto: e.target.value })} placeholder="¿Este gasto es de la actividad? Falta el ticket de…" /></label>
-          <button className="boton" disabled={!nueva.texto.trim() || ocupado === 'comentar'}>Enviar al cliente</button>
-        </form>
-        <p className="nota">Le aparece en Ajustes › Tu gestoría y puede responderte allí.</p>
-        {del.length > 0 && <ul className="desp-hilo">{del.map((c) => <Hilo key={c.id} c={c} empresa={cliente.id} alCambiar={() => router.refresh()} />)}</ul>}
-      </div>
+      <form className="grupo-c relleno formulario desp-preguntar" onSubmit={preguntar}>
+        <label>Sobre<select className="campo" value={nueva.doc} onChange={(e) => setNueva({ ...nueva, doc: e.target.value })}>
+          <option value="">El {t}T {anio} en general</option>
+          {docs.facturas.length > 0 && <optgroup label="Facturas">{docs.facturas.map((f) => <option key={f.id} value={`factura:${f.id}`}>{f.texto} · {eur(f.total)}</option>)}</optgroup>}
+          {docs.gastos.length > 0 && <optgroup label="Gastos">{docs.gastos.map((g) => <option key={g.id} value={`gasto:${g.id}`}>{fechaDe(g.fecha)} · {g.texto} · {eur(g.total)}</option>)}</optgroup>}
+        </select></label>
+        <label>Pregunta<textarea id="desp-pregunta" className="campo" rows={3} maxLength={2000} value={nueva.texto} onChange={(e) => setNueva({ ...nueva, texto: e.target.value })} placeholder="¿Este gasto es de la actividad? Falta el ticket de…" /></label>
+        <button className="boton" disabled={!nueva.texto.trim() || ocupado === 'comentar'}>Enviar al cliente</button>
+      </form>
+      <p className="grupo-pie">Le aparece en Ajustes › Tu gestoría y puede responderte allí.</p>
+      {del.length > 0 && <ul className="desp-hilo">{del.map((c) => <Hilo key={c.id} c={c} empresa={cliente.id} alCambiar={() => router.refresh()} />)}</ul>}
     </section>
 
     <section className="grupo" aria-labelledby="desp-docs">
       <h2 className="grupo-t" id="desp-docs">Facturas y gastos del {t}T</h2>
-      <div className="grupo-c relleno">
-        {docs.facturas.length + docs.gastos.length === 0 ? <p className="nota">No hay facturas ni gastos en este trimestre.</p> : <table className="desp-docs">
-          <tbody>
-            {docs.facturas.map((f) => <tr key={f.id}><td>{fechaDe(f.fecha)}</td><td>Factura {f.texto}</td><td className="num">{eur(f.base)} <small>base</small></td><td><button type="button" className="boton sec" onClick={() => { setNueva({ ...nueva, doc: `factura:${f.id}` }); document.getElementById('desp-preg')?.scrollIntoView({ behavior: 'smooth' }); }}>Preguntar</button></td></tr>)}
-            {docs.gastos.map((g) => <tr key={g.id}><td>{fechaDe(g.fecha)}</td><td>{g.texto}{g.sinJustificante && <small> · sin justificante</small>}</td><td className="num">{eur(g.base)} <small>base</small></td><td><button type="button" className="boton sec" onClick={() => { setNueva({ ...nueva, doc: `gasto:${g.id}` }); document.getElementById('desp-preg')?.scrollIntoView({ behavior: 'smooth' }); }}>Preguntar</button></td></tr>)}
-          </tbody>
-        </table>}
-        {docs.mas > 0 && <p className="nota">Y {docs.mas} más: entra en sus Facturas o Gastos para verlos todos.</p>}
-      </div>
+      {docs.facturas.length + docs.gastos.length === 0 ? <p className="nota">No hay facturas ni gastos en este trimestre.</p> : <ul className="grupo-lista desp-docs">
+        {[...docs.facturas.map((f) => ({ ...f, tipo: 'factura', titulo: `Factura ${f.texto}` })), ...docs.gastos.map((g) => ({ ...g, tipo: 'gasto', titulo: g.texto }))].map((x) => <li key={`${x.tipo}-${x.id}`} className="fila">
+          <span className="txt"><strong>{x.titulo}</strong><small>{fechaDe(x.fecha)}{x.tipo === 'gasto' ? ' · gasto' : ''}{x.sinJustificante ? ' · sin justificante' : ''}</small></span>
+          <span className="imp">{eur(x.base)}</span>
+          <button type="button" className="boton sec desp-mini" onClick={preguntarPor(`${x.tipo}:${x.id}`)}>Preguntar</button>
+        </li>)}
+      </ul>}
+      {docs.mas > 0 && <p className="grupo-pie">Y {docs.mas} más: entra en sus Facturas o Gastos para verlos todos.</p>}
     </section>
 
     {titular && <section className="grupo" aria-labelledby="desp-gest">
       <h2 className="grupo-t" id="desp-gest">Quién lo lleva</h2>
-      <div className="grupo-c relleno">
-        {equipo.length > 1 && <label className="desp-periodo">Gestor asignado
-          <select className="campo" value={cliente.gestor || ''} disabled={Boolean(ocupado)} onChange={(e) => accion({ accion: 'gestor', gestor: e.target.value || null }, '✓ Asignado')}>
+      <div className="grupo-c">
+        {equipo.length > 1 && <label className="celda"><span className="txt">Gestor asignado</span>
+          <select className="desp-select-celda" value={cliente.gestor || ''} disabled={Boolean(ocupado)} onChange={(e) => accion({ accion: 'gestor', gestor: e.target.value || null }, '✓ Asignado')}>
             <option value="">Sin asignar</option>
             {equipo.map((x) => <option key={x.id} value={x.id}>{x.nombre}</option>)}
-          </select>
-        </label>}
-        <p>{cliente.licencia ? <>Fisquo va incluido en tu cuota desde el {fechaDe(cliente.licencia.desde)} ({cliente.licenciaNombre}).</> : cliente.pagaSuPlan ? 'El cliente paga su plan de Fisquo con tarjeta.' : 'El cliente aún no paga Fisquo (está en su prueba) o no tiene plan.'}</p>
-        <div className="desp-acciones">
-          {cliente.licencia ? <button type="button" className="boton sec" disabled={Boolean(ocupado)} onClick={() => licencia(false)}>Dejar de incluirlo en mi cuota</button>
-            : <button type="button" className="boton sec" disabled={Boolean(ocupado) || cliente.pagaSuPlan} onClick={() => licencia(true)}>Incluir Fisquo en mi cuota</button>}
-          <button type="button" className="boton sec rojo" disabled={Boolean(ocupado)} onClick={separar}>Dejar de llevar este cliente</button>
+          </select></label>}
+        <div className="celda">
+          <span className="txt">Fisquo en tu cuota<small>{cliente.licencia ? `Lo pagas tú desde el ${fechaDe(cliente.licencia.desde)} (${cliente.licenciaNombre}).` : cliente.pagaSuPlan ? 'El cliente paga su plan con tarjeta.' : 'El cliente aún no paga Fisquo.'}</small></span>
+          {cliente.licencia ? <button type="button" className="boton sec desp-mini" disabled={Boolean(ocupado)} onClick={() => licencia(false)}>Quitar</button>
+            : <button type="button" className="boton sec desp-mini" disabled={Boolean(ocupado) || cliente.pagaSuPlan} onClick={() => licencia(true)}>Incluir</button>}
         </div>
-        {cliente.desde && <p className="nota">Cliente de tu despacho en Fisquo desde el {fechaDe(cliente.desde)}.</p>}
+        <button type="button" className="celda desp-celda-boton rojo" disabled={Boolean(ocupado)} onClick={separar}><span className="txt">Dejar de llevar este cliente</span></button>
       </div>
+      {cliente.desde && <p className="grupo-pie">Cliente de tu despacho en Fisquo desde el {fechaDe(cliente.desde)}.</p>}
     </section>}
 
     <section className="grupo" aria-labelledby="desp-reg">
       <h2 className="grupo-t" id="desp-reg">Lo que ha hecho el despacho</h2>
-      <div className="grupo-c relleno">
-        {accesos.length ? <ul className="desp-registro">{accesos.map((a, i) => <li key={i}><span>{a.nombre}: {a.accion}{a.detalle ? ` · ${a.detalle}` : ''}</span><small>{horaDe(a.fecha)}</small></li>)}</ul> : <p className="nota">Todavía nada.</p>}
-        <p className="nota">El cliente ve esta misma lista en Ajustes › Tu gestoría.</p>
-      </div>
+      {accesos.length ? <ul className="grupo-lista">{accesos.slice(0, 15).map((a, i) => <li key={i} className="fila"><span className="txt">{a.accion}{a.detalle ? ` · ${a.detalle}` : ''}<small>{a.nombre}</small></span><span className="v nota">{horaDe(a.fecha)}</span></li>)}</ul> : <p className="nota">Todavía nada.</p>}
+      <p className="grupo-pie">El cliente ve esta misma lista en Ajustes › Tu gestoría.</p>
     </section>
   </>;
 }

@@ -29,9 +29,9 @@ export default function EquipoDespacho({ equipo, titular, yo }) {
   return <>
     <ul className="grupo-lista">{equipo.map((x) => <li key={x.id} className="fila">
       <span className="txt"><strong>{x.nombre || x.email}{x.id === yo ? ' (tú)' : ''}</strong><small>{[x.email, x.rolTexto, x.clientes ? `${x.clientes} clientes asignados` : null, x.pendiente && 'Invitación pendiente'].filter(Boolean).join(' · ')}</small></span>
-      {titular && x.id !== yo && <span className="desp-acciones">
-        <select className="campo" aria-label={`Rol de ${x.nombre || x.email}`} value={x.rol} onChange={(e) => cambiarRol(x, e.target.value)}><option value="gestor">Gestor</option><option value="titular">Titular</option></select>
-        <button type="button" className="boton sec" onClick={() => quitar(x)}>Quitar</button>
+      {titular && x.id !== yo && <span className="desp-acciones desp-equipo-acc">
+        <select className="desp-select-celda" aria-label={`Rol de ${x.nombre || x.email}`} value={x.rol} onChange={(e) => cambiarRol(x, e.target.value)}><option value="gestor">Gestor</option><option value="titular">Titular</option></select>
+        <button type="button" className="boton sec desp-mini" onClick={() => quitar(x)}>Quitar</button>
       </span>}
     </li>)}</ul>
     {titular && <form className="formulario tarjeta" onSubmit={invitar}>

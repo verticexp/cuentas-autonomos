@@ -107,7 +107,7 @@ export default async function RootLayout({ children }) {
         {u && soloLectura(u.plan) && !ruta.startsWith('/ajustes/plan') && (
           <p className="aviso-lectura" role="status"><span>{app ? SOLO_LECTURA_APP : puede(u, 'empresa') ? 'Tu prueba ha terminado: puedes ver y exportar todo, pero no crear ni editar.' : 'La prueba de tu empresa ha terminado: puedes ver y exportar todo. Para crear o editar, pídele al administrador que elija un plan.'}</span>{!app && puede(u, 'empresa') && <a href="/ajustes/plan">Elegir plan</a>}</p>
         )}
-        {u?.viaDespacho && <AvisoDespacho cliente={u.emisor?.nombre || u.empresaNombre} despacho={u.viaDespacho.nombre} empresa={u.empresa} />}
+        {u?.viaDespacho && !enDespacho && <AvisoDespacho cliente={u.empresaNombre || u.emisor?.nombre} despacho={u.viaDespacho.nombre} empresa={u.empresa} />}
         {children}
         <Suspense>{enDespacho ? <NavDespacho nombre={despacho.nombre} /> : u && <TabBar despacho={Boolean(despacho && rolEn(despacho, u.id))} porRevisar={porRevisar} permisos={permisosDe(u)} empresas={u.misEmpresas} empresa={u.empresa} admin={Boolean(u.admin)} inventario={Boolean(u.fiscal?.inventario)} equipo={Boolean(equipo)} fiscal={{ tipo: u.fiscal?.tipo, iva: u.fiscal?.iva }} faltan={planesQueFaltan(u.plan)} />}<Llegada /><BarraEstado /></Suspense>
         {u?.bloqueoPantalla && <Bloqueo email={u.email} servidor={abierta} />}

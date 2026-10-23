@@ -17,6 +17,8 @@ import { indiceDe, claves } from '../lib/fichas.js';
 import { limpiarCierre } from '../lib/caja.js';
 import { idCuota } from '../lib/cuotas.js';
 import { VERSION_PLAN } from '../lib/prueba.js';
+import { asientoApertura, generarAsientos, mayor } from '../lib/asientos.js';
+import { borradorSociedades, modelo202 } from '../lib/modelos.js';
 
 const { KV_REST_API_URL: url, KV_REST_API_TOKEN: token } = process.env;
 if (!url || !token) throw new Error('Faltan KV_REST_API_URL y KV_REST_API_TOKEN');
@@ -71,7 +73,7 @@ const CLIENTES = [
     clientes: ['Comunidad de propietarios Pere IV, 102', 'Laura Puig Ferrer', 'Restaurant Can Roca S.L.', 'Albert Mas Pons', 'Finques Diagonal S.L.'], ventas: [6, 11], importe: [120, 1900],
     conceptos: ['Reparación de fuga y cambio de llaves de paso', 'Instalación eléctrica de cocina', 'Sustitución de termo eléctrico', 'Boletín y revisión de la instalación'],
     fijos: [['Leasing Furgoneta', 'Renting de la furgoneta', 410], ['Mapfre España S.A.', 'Seguro de responsabilidad civil', 48, 0], ['Vodafone España S.A.U.', 'Teléfono móvil', 32]],
-    variables: [['Material de fontanería y electricidad', [180, 1400], 'Saltoki Barcelona S.L.'], ['Combustible furgoneta', [90, 260], 'Repsol']],
+    variables: [['Material de fontanería y electricidad', [900, 2600], 'Saltoki Barcelona S.L.'], ['Combustible furgoneta', [90, 260], 'Repsol']],
     bienes: [[15, 'Herramientas (taladro percutor, detector, prensadora)', 'Würth España S.A.', 1640, 'utiles']],
     cuota: 294, gestor: 'gestor', plan: 'licencia', estado3T: 'listo',
   },
@@ -223,12 +225,65 @@ async function limpiar(emp) {
   } while (cursor !== '0');
 }
 
+// Contabilidad que cuadra (como scripts/demo.mjs): asiento de apertura con lo que había en el banco, el Impuesto sobre
+// Sociedades de los años cerrados con sus pagos a cuenta, y el saldo del banco igual a la cuenta 572. Si con la apertura
+// el banco quedaría bajo mínimos, se abre con más (un negocio real no vive en descubierto).
+async function cuadrar(emp, e, facturas, gastos, { pres303 = {}, pagos130 = {} } = {}) {
+  const sociedad = e.fiscal.tipo === 'sociedad';
+  const cuotaIS = {}, pagos202 = {};
+  if (sociedad) {
+    for (let y = Y - 2; y < Y; y++) if (`${y + 1}-07-25` < hoy) cuotaIS[y] = borradorSociedades(facturas, gastos, y).cuota;
+    for (let y = Y - 1; y <= Y; y++) for (const x of modelo202(cuotaIS, y)) if (x.pago > 0 && x.fecha < hoy) (pagos202[y] ||= {})[x.p] = x.pago;
+  }
+  const primera = [...facturas, ...gastos].map((x) => x.fecha).sort()[0];
+  // El autónomo vive de su negocio: cada mes saca dinero para él (cuenta 550, titular de la explotación).
+  let retiradas = [];
+  const conRetiradas = (importe) => {
+    retiradas = [];
+    if (sociedad || !importe) return;
+    for (let d = new Date(`${primera.slice(0, 7)}-01T12:00:00Z`); ; d = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1, 12))) {
+      const fecha = dia(d.getUTCFullYear(), d.getUTCMonth() + 1, 30 > new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate() ? 28 : 30);
+      if (fecha > hoy) break;
+      retiradas.push({ id: `retirada-${fecha.slice(0, 7)}`, fecha, concepto: 'Transferencia a la cuenta personal del titular', lineas: [{ cuenta: '550', debe: importe, haber: 0 }, { cuenta: '572', debe: 0, haber: importe }] });
+    }
+  };
+  const saldo = (banco) => {
+    const apertura = { id: 'apertura', ...asientoApertura({ fecha: primera, banco, capital: sociedad ? 3000 : 0 }, sociedad) };
+    const todos = generarAsientos({ facturas, gastos, manuales: [apertura, ...retiradas], fiscal: e.fiscal, pres303, pagos130, pagos202, cuotaIS }, hoy);
+    // El punto más bajo de la cuenta 572 en estos dos años y lo que queda hoy.
+    let minimo = Infinity;
+    for (let y = Y - 2; y <= Y; y++) minimo = Math.min(minimo, mayor(todos, '572', y).final);
+    return { apertura, final: mayor(todos, '572', Y).final, minimo };
+  };
+  let banco = sociedad ? 25000 : 8000;
+  let x = saldo(banco);
+  // Lo que sobra por encima de unos 15.000 € se lo ha ido llevando el titular, mes a mes (en redondo).
+  if (!sociedad && x.final > 15000) {
+    const meses = Math.max(1, Math.round((Date.parse(hoy) - Date.parse(primera)) / (30.4 * 864e5)));
+    conRetiradas(Math.floor((x.final - 15000) / meses / 50) * 50);
+    x = saldo(banco);
+  }
+  if (x.minimo < 3000) { banco = r2(banco + 3000 - x.minimo); x = saldo(banco); }
+  await r.hset(`${P}asientos:${emp}`, porId([x.apertura, ...retiradas]));
+  await r.set(`${P}saldo:${emp}`, { importe: x.final, fecha: hoy });
+  return { cuotaIS, pagos202, banco: x.final };
+}
+
 const desdeCliente = (i) => fechaHora(mas(inicio, 3 + i * 9), 9);
 const vinculo = (c, i, licencia) => ({ id: idDespacho, nombre: 'Gestoría Ferrer (demo)', desde: desdeCliente(i), por: i % 2 ? 'codigo' : 'cliente', ...(c.gestor === 'gestor' ? { gestor: idGestor } : {}), ...(licencia ? { licencia: { desde: mas(hoy, -140) } } : {}) });
 const planDe = (c) => (c.plan === 'licencia'
   ? { tipo: c.fiscal.tipo === 'sociedad' ? 'pym' : 'aut', nombre: 'Pro', version: VERSION_PLAN, periodo: 'mes', pagado: true, gestoria: CODIGO, porDespacho: { id: idDespacho, nombre: 'Gestoría Ferrer (demo)', desde: mas(hoy, -140) } }
   : { tipo: c.fiscal.tipo === 'sociedad' ? 'pym' : 'aut', nombre: 'Pro', version: VERSION_PLAN, periodo: 'mes', hasta: mas(hoy, 45), gestoria: CODIGO });
 
+// Beneficio de cada año (ventas menos gastos, sin IVA y sin los bienes de inversión, que se amortizan): ninguna empresa de
+// la demo puede salir en pérdidas.
+function beneficios(facturas, gastos) {
+  return [Y - 1, Y].map((y) => {
+    const b = r2(facturas.filter((f) => f.fecha.startsWith(String(y))).reduce((s, f) => s + importes(f).base, 0) - gastos.filter((g) => g.fecha.startsWith(String(y)) && !g.inversion).reduce((s, g) => s + importes(g).base, 0));
+    assert.ok(b > 0, `Beneficio negativo en ${y}: ${b}`);
+    return `beneficio ${y} ${Math.round(b)} €`;
+  }).join(', ');
+}
 const resumen = [];
 for (const [i, c] of CLIENTES.entries()) {
   semilla = 101 + i * 37;
@@ -242,16 +297,13 @@ for (const [i, c] of CLIENTES.entries()) {
   // Cambios tras el cierre: un gasto que entró después de cerrar (el ticket de una reparación).
   if (c.estado3T === 'cambios') gastos.push({ id: 'g-tras-cierre', fecha: FECHA_TRAS_CIERRE, actividad: c.actividad.id, concepto: 'Reparación de la cámara frigorífica', proveedor: 'Fred Industrial S.L.', proveedorNif: 'B0000777Z', base: 640, ivaPct: 21 });
   await limpiar(c.id);
-  await r.hset(`${P}empresas`, { [c.id]: { ...e, pres303, pagos130, despachoCliente: vinculo(c, i, c.plan === 'licencia') } });
+  const conta = await cuadrar(c.id, e, facturas, gastos, { pres303, pagos130 });
+  await r.hset(`${P}empresas`, { [c.id]: { ...e, pres303, pagos130, cuotaIS: conta.cuotaIS, pagos202: conta.pagos202, despachoCliente: vinculo(c, i, c.plan === 'licencia') } });
   await r.hset(`${P}facturas:${c.id}`, porId(facturas));
   await r.hset(`${P}gastos:${c.id}`, porId(gastos));
   await r.hset(`${P}clientes:${c.id}`, porId([...new Map(facturas.filter((f) => !f.caja).map((f) => [f.cliente.nombre.toUpperCase(), { id: f.cliente.nombre.toUpperCase(), ...f.cliente }])).values()]));
   if (Object.keys(cierres).length) await r.hset(`${P}cierres:${c.id}`, cierres);
-  // Lo que el despacho no puede hacer solo: cuadrar lo cobrado. Un saldo de banco razonable para Tesorería.
-  const cobrado = facturas.filter((f) => f.cobrada || f.caja).reduce((s, f) => s + importes(f).total, 0);
-  const pagado = gastos.reduce((s, g) => s + importes(g).base + importes(g).iva, 0);
-  await r.set(`${P}saldo:${c.id}`, { importe: r2(Math.max(2400, (cobrado - pagado) * 0.35)), fecha: hoy });
-  resumen.push(`${c.nombre}: ${facturas.length} facturas, ${gastos.length} gastos`);
+  resumen.push(`${c.nombre}: ${facturas.length} facturas, ${gastos.length} gastos, ${beneficios(facturas, gastos)}, banco ${conta.banco} €`);
   c.datos = { facturas, gastos };
 }
 
@@ -319,28 +371,46 @@ for (const c of CLIENTES) {
 // ---- El despacho: su empresa (gratis, facturando la cuota a sus clientes), sus dos personas y su ficha.
 {
   const actividad = { id: 'asesoria', nombre: 'Asesoría fiscal, contable y laboral', serie: '', ivaPct: 21, irpfPct: 0 };
-  const cuotas = { dcli0006: 180 };
+  const FISCAL_DESPACHO = { tipo: 'sociedad', iva: 'general', retenidas: false, trabajadores: true, alquiler: true, intracom: false };
+  // Su cartera: los clientes que tiene en Fisquo y otros cuarenta y dos que aún llevan sus papeles a mano (una gestoría de
+  // barrio vive de cuotas mensuales), más la campaña de la Renta en primavera y las cuentas anuales de las sociedades en julio.
+  semilla = 977;
+  const NOMBRES = ['Ferretería Sants', 'Fruites Marina', 'Taller Mecànic Creu Coberta', 'Perruqueria Estil', 'Clínica Dental Badal', 'Forn de Pa Can Pons', 'Farmàcia Riera', 'Autoescola Hostafrancs', 'Bodega El Tast', 'Peixateria Mar Blau', 'Floristeria Roser', 'Gimnàs Viriat', 'Llibreria Galileo', 'Òptica Vista', 'Restaurant La Brasa', 'Electrodomèstics Puig', 'Pintures Gómez', 'Acadèmia Idiomes Sants', 'Fisioteràpia Torrent', 'Joieria Martí', 'Bar Els Amics', 'Transports Badia', 'Reformes Tarradellas', 'Veterinari Sants', 'Calçats Mireia', 'Copisteria Express', 'Cerrajería Ràpid', 'Estudi Arquitectura Rius', 'Psicòloga Anna Vidal', 'Fotògraf Pau Serra', 'Disseny Web Nord', 'Advocada Laura Gil', 'Escola de Música Do', 'Bugaderia Neta', 'Pastisseria Dolça', 'Mobles Ribera', 'Informàtica Joan', 'Ioga Shanti', 'Traductora Elena Ros', 'Fusteria Valls', 'Tapisseria Comas', 'Climatització Costa'];
+  const cartera = [
+    ...CLIENTES.map((c) => ({ nombre: c.nombre, nif: c.nif || sonora.emisor?.nif || '', cuota: c.id === sonora.id ? 240 : c.fiscal?.tipo === 'sociedad' ? 210 : 95, sociedad: c.id === sonora.id || c.fiscal?.tipo === 'sociedad' })),
+    ...NOMBRES.map((nombre, k) => ({ nombre, nif: `${k % 4 === 0 ? 'B' : ''}${String(700 + k).padStart(k % 4 === 0 ? 7 : 8, '0')}${k % 4 === 0 ? 'F' : 'D'}`, cuota: k % 4 === 0 ? entre(170, 280) : entre(75, 150), sociedad: k % 4 === 0 })),
+  ];
   const facturas = [];
+  const factura = (fecha, c, concepto, base) => {
+    const y = Number(fecha.slice(0, 4)), numero = siguienteNumero(facturas, y, '');
+    facturas.push({ id: `${y}-${numero}`, numero, anio: y, fecha, actividad: actividad.id, cliente: { nombre: c.nombre, nif: c.nif }, concepto, base, ivaPct: 21, irpfPct: 0, nota: '', cobrada: fecha < mas(hoy, -12) || azar() > 0.5 });
+  };
   for (let d = new Date(`${inicio}T12:00:00Z`); d.toISOString().slice(0, 10) <= hoy; d = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1, 12))) {
-    const y = d.getUTCFullYear(), fecha = dia(y, d.getUTCMonth() + 1, 1);
-    for (const c of CLIENTES) {
-      const numero = siguienteNumero(facturas, y, '');
-      facturas.push({ id: `${y}-${numero}`, numero, anio: y, fecha, actividad: actividad.id, cliente: { nombre: c.nombre, nif: c.nif || sonora.emisor?.nif || '' }, concepto: `Cuota mensual de asesoría (${fecha.slice(0, 7)})`, base: cuotas[c.id] || (c.id === sonora.id ? 220 : 70), ivaPct: 21, irpfPct: 0, nota: '', cobrada: fecha < mas(hoy, -10) });
-    }
+    const y = d.getUTCFullYear(), m = d.getUTCMonth() + 1, fecha = dia(y, m, 1);
+    for (const c of cartera) factura(fecha, c, `Cuota mensual de asesoría (${fecha.slice(0, 7)})`, c.cuota);
+    if (m === 6) for (const c of cartera.filter((x) => !x.sociedad)) if (dia(y, 6, 25) <= hoy) factura(dia(y, 6, 25), c, `Declaración de la renta ${y - 1}`, 60);
+    if (m === 7) for (const c of cartera.filter((x) => x.sociedad)) if (dia(y, 7, 28) <= hoy) factura(dia(y, 7, 28), c, `Cuentas anuales e Impuesto sobre Sociedades ${y - 1}`, 380);
   }
   const gastos = [];
   for (let d = new Date(`${inicio}T12:00:00Z`); d.toISOString().slice(0, 10) <= hoy; d = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1, 12))) {
     const y = d.getUTCFullYear(), m = d.getUTCMonth() + 1;
-    for (const [dd, concepto, proveedor, base, iva] of [[1, 'Alquiler del despacho', 'Finques Sants S.L.', 980, 21], [5, 'Programa de contabilidad', 'Wolters Kluwer Tax & Accounting', 160, 21], [10, 'Teléfono e internet', 'Movistar', 65, 21], [28, 'Nóminas y Seguridad Social', '', 5400, 0]]) {
+    for (const [dd, concepto, proveedor, base, iva] of [[1, 'Alquiler del despacho', 'Finques Sants S.L.', 980, 21], [5, 'Programa de contabilidad', 'Wolters Kluwer Tax & Accounting', 160, 21], [10, 'Teléfono e internet', 'Movistar', 65, 21], [28, 'Nóminas y Seguridad Social', '', 4300, 0]]) {
       const fecha = dia(y, m, dd);
       if (fecha <= hoy) gastos.push({ id: `g-${gastos.length + 1}`, fecha, actividad: actividad.id, concepto, base, ivaPct: iva, ...(proveedor ? { proveedor, proveedorNif: `B0000${String(dd).padStart(3, '0')}F` } : {}) });
     }
   }
   await limpiar(empresaDespacho);
-  await r.hset(`${P}empresas`, { [empresaDespacho]: { id: empresaDespacho, nombre: 'Gestoría Ferrer (demo)', creada: fechaHora(inicio, 8), pendiente: false, demo: true, emisor: { nombre: 'GESTORÍA FERRER (DEMO)', nif: 'B00000100', direccion: 'C/ de Sants, 150', ciudad: '08028 Barcelona', plazo: 15 }, actividades: [actividad], fiscal: { tipo: 'sociedad', iva: 'general', retenidas: false, trabajadores: true, alquiler: true, intracom: false }, plan: { fundador: true, despacho: true, tipo: 'pym', nombre: 'Pro', desde: inicio } } });
+  await r.hset(`${P}empresas`, { [empresaDespacho]: { id: empresaDespacho, nombre: 'Gestoría Ferrer (demo)', creada: fechaHora(inicio, 8), pendiente: false, demo: true, emisor: { nombre: 'GESTORÍA FERRER (DEMO)', nif: 'B00000100', direccion: 'C/ de Sants, 150', ciudad: '08028 Barcelona', plazo: 15 }, actividades: [actividad], fiscal: FISCAL_DESPACHO, plan: { fundador: true, despacho: true, tipo: 'pym', nombre: 'Pro', desde: inicio } } });
   await r.hset(`${P}facturas:${empresaDespacho}`, porId(facturas));
   await r.hset(`${P}gastos:${empresaDespacho}`, porId(gastos));
-  await r.set(`${P}saldo:${empresaDespacho}`, { importe: 18640, fecha: hoy });
+  await r.hset(`${P}clientes:${empresaDespacho}`, porId(cartera.map((c) => ({ id: c.nombre.toUpperCase(), nombre: c.nombre, nif: c.nif }))));
+  // Presentados todos los trimestres con el plazo ya pasado.
+  const pres303 = {};
+  for (const { anio, t } of trimestres) if (plazoDe(anio, t) < hoy) (pres303[anio] ||= {})[t] = true;
+  const conta = await cuadrar(empresaDespacho, { fiscal: FISCAL_DESPACHO }, facturas, gastos, { pres303 });
+  const e = await r.hget(`${P}empresas`, empresaDespacho);
+  await r.hset(`${P}empresas`, { [empresaDespacho]: { ...e, pres303, cuotaIS: conta.cuotaIS, pagos202: conta.pagos202 } });
+  resumen.push(`Gestoría Ferrer (demo): ${facturas.length} facturas, ${gastos.length} gastos, ${beneficios(facturas, gastos)}, banco ${conta.banco} €`);
 
   const pass = usuarioDemo.pass;
   await r.hset(`${P}usuarios`, {
