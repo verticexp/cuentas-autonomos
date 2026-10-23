@@ -8,7 +8,7 @@ import { join } from 'node:path';
 import { generarAsientos, mayor } from '../lib/asientos.js';
 import { hoy } from '../lib/formato.js';
 
-test('Aurora: el generador incluye las 96 nóminas en el saldo guardado y conserva sus índices', async () => {
+test('Aurora: el generador incluye las nóminas en el saldo guardado y conserva sus índices', async () => {
   const copia = join(tmpdir(), `fisquo-simulada-test-${process.pid}.json`);
   await promisify(execFile)(process.execPath, ['--import', './tests/apoyo/cargador.mjs', 'scripts/cuenta-simulada.mjs'], {
     cwd: new URL('..', import.meta.url),
@@ -19,7 +19,7 @@ test('Aurora: el generador incluye las 96 nóminas en el saldo guardado y conser
   const hash = (k) => Object.values(Object.fromEntries((db.get(`cuentas:${k}`)?.m || []).map(([k, v]) => [k, JSON.parse(v)])));
   const e = hash('empresas')[0];
   const leer = (k) => hash(`${k}:${e.id}`);
-  const datos = { facturas: leer('facturas'), gastos: leer('gastos'), nominas: leer('nominas'), manuales: leer('asientos'), productos: leer('productos'), ajustes: leer('stock'), albaranes: leer('albaranes'), fiscal: e.fiscal, pagos130: e.pagos130, pagos202: e.pagos202, cuotaIS: e.cuotaIS };
+  const datos = { facturas: leer('facturas'), gastos: leer('gastos'), nominas: leer('nominas'), capital: leer('capital'), manuales: leer('asientos'), productos: leer('productos'), ajustes: leer('stock'), albaranes: leer('albaranes'), fiscal: e.fiscal, pagos130: e.pagos130, pagos202: e.pagos202, cuotaIS: e.cuotaIS, pres123: e.pres123 };
   const anio = Number(hoy().slice(0, 4));
   const saldo = JSON.parse(db.get(`cuentas:saldo:${e.id}`).v).importe;
   assert.ok(datos.nominas.length >= 80);
