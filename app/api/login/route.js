@@ -3,15 +3,6 @@ import { NextResponse } from 'next/server';
 import { desbloqueo, entrar, limpiarEmail, opcionesCookie, opcionesDesbloqueo } from '@/lib/auth';
 import { redis } from '@/lib/redis';
 
-// La gente de un despacho entra a su panel (Mi despacho; el Resumen la lleva allí), con su propia empresa en este
-// dispositivo y sin la vista «Mi empresa» de la sesión anterior. Devuelve si es de un despacho.
-async function aSuEmpresa(res, form) {
-  res.cookies.delete('vista');
-  const cuenta = await redis.hget('usuarios', String((await redis.hget('emails', limpiarEmail(form.get('email')))) || ''));
-  if (cuenta?.despacho) res.cookies.set('e', String(cuenta.empresa || cuenta.id), opcionesCookie);
-  return Boolean(cuenta?.despacho);
-}
-
 export async function POST(req) {
   let form;
   try { form = await req.formData(); }
@@ -26,14 +17,15 @@ export async function POST(req) {
   if (req.headers.get('accept')?.includes('application/json')) {
     if (!r?.token) return NextResponse.json({ error: r?.bloqueado ? 'Demasiados intentos. Espera 15 minutos.' : 'Email o contraseña incorrectos.' }, { status: 401 });
     const res = NextResponse.json({ ok: true });
-    await aSuEmpresa(res, form);
     res.cookies.set('t', r.token, opcionesCookie);
     res.cookies.set('d', await desbloqueo(r.token), opcionesDesbloqueo);
     return res;
   }
   if (!r?.token) return NextResponse.redirect(new URL(`/login?error=${r?.bloqueado ? 'bloqueado' : 1}`, req.url), 303);
-  const res = NextResponse.redirect(new URL('/', req.url), 303);
-  await aSuEmpresa(res, form);
+  // La gente de un despacho entra a su panel (Mi despacho), con su propia empresa en este dispositivo.
+  const cuenta = await redis.hget('usuarios', String((await redis.hget('emails', limpiarEmail(form.get('email')))) || ''));
+  const res = NextResponse.redirect(new URL(cuenta?.despacho ? '/despacho' : '/', req.url), 303);
+  if (cuenta?.despacho) res.cookies.set('e', String(cuenta.empresa || cuenta.id), opcionesCookie);
   res.cookies.set('t', r.token, opcionesCookie);
   res.cookies.set('d', await desbloqueo(r.token), opcionesDesbloqueo);
   res.cookies.set('recien', '1', { path: '/', maxAge: 60, sameSite: 'lax' }); // acaba de entrar: sin pantalla de bloqueo
