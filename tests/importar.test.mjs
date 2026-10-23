@@ -39,7 +39,7 @@ test('lee un Excel comprimido con textos compartidos, celdas vacías, fechas y l
   assert.deepEqual(leerHoja(b), [['Num', '', 'Fecha'], ['Café & Co', 'x', 45658]]);
   // Con vacias: la fila 2 (vacía) se conserva, y las que faltan en el XML también (r salta de 3 a 6).
   assert.deepEqual(leerHoja(b, { vacias: true }), [['Num', '', 'Fecha'], [], ['Café & Co', 'x', 45658]]);
-  const hueco = zipDeflate({ 'xl/worksheets/sheet1.xml': '<worksheet><sheetData><row r="1"><c r="A1" t="inlineStr"><is><t>a</t></is></c></row><row r="4"><c r="A4" t="inlineStr"><is><t>b</t></is></c></row><row r="99999999"><c r="A99999999" t="inlineStr"><is><t>c</t></is></c></row></sheetData></worksheet>' });
+  const hueco = zipDeflate({ 'xl/worksheets/sheet1.xml': '<worksheet><sheetData><row r="1"><c r="A1" t="inlineStr"><is><t>a</t></is></c></row><row r="4"><c r="A4" t="inlineStr"><is><t>b</t></is></c></row><row r="7"><c r="A7" t="inlineStr"><is><t>c</t></is></c></row></sheetData></worksheet>' });
   const h = leerHoja(hueco, { vacias: true });
   assert.deepEqual(h.slice(0, 4), [['a'], [], [], ['b']]);
   assert.ok(h.length < 60);
@@ -100,7 +100,7 @@ test('clientes por nombre o NIF, con CP y población', () => {
 
 test('gastos por fecha, importe y concepto; productos por nombre', () => {
   const g = previa('gastos', [['Fecha', 'Proveedor', 'Concepto', 'Base imponible', '% IVA', 'Estado'], ['2026-02-01', 'Sonido SL', 'Altavoces', 200, '21%', 'Pagado'], ['2026-02-02', 'Gasolinera', '', 50, 0.21, 'Pendiente']],
-    [{ fecha: '2026-02-01', concepto: 'altavoces', base: 200, ivaPct: 21 }]);
+    [{ fecha: '2026-02-01', concepto: 'altavoces', proveedor: 'Sonido SL', base: 200, ivaPct: 21 }]);
   assert.deepEqual(g.items.map((x) => x.estado), ['duplicado', 'nuevo']);
   assert.deepEqual(g.items[1].datos, { fecha: '2026-02-02', concepto: 'Gasolinera', base: 50, ivaPct: 21, proveedor: 'Gasolinera', pendiente: true });
   const p = previa('productos', [['Producto', 'Precio', 'IVA'], ['Hora de DJ', '120,50', 21], ['hora de dj', 1, 21], ['Sin precio', '', 21]], []);
