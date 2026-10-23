@@ -21,13 +21,13 @@ export default async function Plazos() {
   const plazos = plazosDespacho(clientes, { hoy: dia, dias: DIAS });
   return <main className="pagina mk-look despacho">
     <h1 className="titulo">Plazos</h1>
-    <p className="desp-sub">Lo que vence en los próximos {DIAS} días para tus {clientes.length === 1 ? 'cliente' : `${clientes.length} clientes`}. «Presentado» sale de lo que se marca en los Impuestos de cada uno.</p>
+    <p className="desp-sub">Lo que vence en los próximos {DIAS} días para {clientes.length === 1 ? 'tu cliente' : `tus ${clientes.length} clientes`}. «Presentado» sale de lo que se marca en los Impuestos de cada uno.</p>
     {plazos.length ? <ul className="desp-plazos">{plazos.map((p) => {
       const faltan = p.clientes.filter((c) => c.presentado === false);
       const hechos = p.clientes.filter((c) => c.presentado === true).length;
       const n = enDias(dia, p.fecha);
       return <li key={`${p.fecha}-${p.modelo}-${p.periodo}-${p.hacienda}`}>
-        <time dateTime={p.fecha}>{fechaTexto(p.fecha)}<small>{n === 0 ? 'hoy' : n === 1 ? 'mañana' : `en ${n} días`}</small></time>
+        <time dateTime={p.fecha}>{fechaTexto(p.fecha)}{p.fecha.slice(0, 4) !== dia.slice(0, 4) ? ` de ${p.fecha.slice(0, 4)}` : ''}<small>{n === 0 ? 'hoy' : n === 1 ? 'mañana' : `en ${n} días`}</small></time>
         <div>
           <h3>{p.modelo} · {p.nombre} · {p.periodo}</h3>
           <p>{p.hacienda} · {p.clientes.length === 1 ? '1 cliente' : `${p.clientes.length} clientes`}{hechos ? ` · ${hechos} presentados` : ''}</p>

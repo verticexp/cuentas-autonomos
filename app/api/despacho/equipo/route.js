@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic';
 
 // Invitar a un gestor del despacho (titular). { nombre, email, rol? }
 // Sin cuenta: se crea (dentro de la empresa del despacho, sin permisos en ella) y recibe la invitación de siempre.
-// Con cuenta: recibe un enlace que solo acepta esa persona con su sesión (api/despacho/unirse).
+// Con cuenta: recibe un enlace que solo acepta esa persona con su sesión (api/invitacion/despacho).
 export async function POST(req) {
   const { u, d, res } = await miDespacho({ titular: true });
   if (res) return res;
@@ -28,7 +28,7 @@ export async function POST(req) {
     if (ya.despacho) return error('Esa persona ya es de otro despacho');
     const codigo = randomBytes(18).toString('base64url');
     await redis.set(`union-despacho:${codigo}`, { usuario: ya.id, despacho: d.id, rol }, { ex: INVITACION_DIAS * 86400 });
-    const url = new URL(`/api/despacho/unirse?c=${codigo}`, req.url).toString();
+    const url = new URL(`/api/invitacion/despacho?c=${codigo}`, req.url).toString();
     const e = await enviarInvitacion({ para: ya.email, nombre: ya.nombre, quien: u.nombre, empresa: d.nombre, url, responderA: u.email, dias: INVITACION_DIAS });
     return Response.json({ ok: true, pendiente: true, enlace: url, ...e });
   }

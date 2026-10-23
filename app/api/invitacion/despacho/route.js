@@ -5,7 +5,7 @@ import { cambiarDespacho } from '@/lib/despachos';
 
 export const dynamic = 'force-dynamic';
 
-// Enlace del email que recibe quien ya tenía cuenta al ser invitado a un despacho (api/despacho/equipo). Solo lo acepta
+// Enlace del email que recibe quien ya tenía cuenta al ser invitado a un despacho (api/despacho/equipo). Va bajo api/invitacion (pública, como api/invitacion/unirse) para que sin sesión lleve a entrar. Solo lo acepta
 // esa persona, con su sesión, y una sola vez.
 export async function GET(req) {
   const ir = (q) => NextResponse.redirect(new URL(q, req.url), 303);

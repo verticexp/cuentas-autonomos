@@ -73,7 +73,7 @@ export default function ClienteDespacho({ cliente, anio, t, hoy, rol, estado, li
     const y = Number(hoy.slice(0, 4));
     return [y, y - 1].flatMap((a) => [4, 3, 2, 1].map((q) => ({ anio: a, t: q }))).filter((p) => `${p.anio}-${String(p.t * 3 - 2).padStart(2, '0')}-01` <= hoy);
   }, [hoy]);
-  const del = comentarios.filter((c) => c.anio === anio && c.t === t || !c.resuelto);
+  const del = comentarios.filter((c) => (c.anio === anio && c.t === t) || !c.resuelto);
   const r = resumen;
   const cifra = (x) => (!x ? '—' : x.compensar > 0 ? `0 € · a compensar ${eur(x.compensar)}` : x.devolver > 0 ? `0 € · a devolver ${eur(x.devolver)}` : eur(x.importe));
 

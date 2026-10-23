@@ -50,7 +50,7 @@ export default function AjustesDespacho({ despacho, titular, licencias, tarifa, 
       <label>Nombre<input className="campo" value={d.nombre} maxLength={120} onChange={(e) => setD({ ...d, nombre: e.target.value })} required /></label>
       <label>NIF<input className="campo" value={d.nif} maxLength={20} onChange={(e) => setD({ ...d, nif: e.target.value })} /></label>
       <label>Email de contacto<input className="campo" type="email" value={d.email} maxLength={254} onChange={(e) => setD({ ...d, email: e.target.value })} /></label>
-      <label className="check"><input type="checkbox" checked={d.soloAsignados} onChange={(e) => setD({ ...d, soloAsignados: e.target.checked })} />
+      <label className="check desp-check"><input type="checkbox" checked={d.soloAsignados} onChange={(e) => setD({ ...d, soloAsignados: e.target.checked })} />
         <span>Cada gestor ve solo sus clientes<small>Los que le asignes en la ficha de cada cliente. El titular los ve todos.</small></span></label>
       {msg && <p role="status" className={msg.startsWith('✓') || msg === 'Guardando…' ? 'nota' : 'error'}>{msg}</p>}
       <button className="boton">Guardar</button>
@@ -77,7 +77,7 @@ export default function AjustesDespacho({ despacho, titular, licencias, tarifa, 
       <h2 className="grupo-t" id="ad-resp">Quién hace qué</h2>
       <div className="grupo-c relleno">
         <ul>
-          <li><b>Fisquo</b> guarda los datos de tus clientes, lee sus tickets y facturas y calcula libros y modelos. Responde de que sus cálculos sigan la norma con los datos apuntados. No presenta impuestos.</li>
+          <li><b>Fisquo</b> guarda los datos de tus clientes, lee sus tickets y facturas y calcula libros y modelos con lo que hay apuntado. No presenta impuestos ni sustituye la revisión profesional.</li>
           <li><b>Tu despacho</b> revisa, decide y presenta. Lo que cierras queda bloqueado y lo que cambia después, a la vista.</li>
           <li><b>El cliente</b> es dueño de sus datos: decide quién los ve y puede exportarlos o llevárselos cuando quiera.</li>
         </ul>

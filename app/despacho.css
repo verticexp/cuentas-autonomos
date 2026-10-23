@@ -14,7 +14,7 @@
 .desp-periodo select { width: auto; min-width: 120px; }
 .desp-barra { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 16px 0 12px; }
 .desp-barra .campo { flex: 1 1 220px; max-width: 360px; margin: 0; }
-.desp-barra select.campo { flex: 0 1 200px; }
+.desp-barra select.campo { flex: 1 1 140px; max-width: 220px; }
 .desp-barra .boton { margin: 0; }
 .desp-acciones { display: flex; flex-wrap: wrap; gap: 8px; }
 .desp-acciones .boton { margin: 0; }
@@ -103,3 +103,9 @@
 .desp-solo-movil { display: none; }
 @media (max-width: 1023.98px) { .desp-solo-movil { display: block; } }
 .desp-solo-movil form { display: inline; }
+
+/* Aire entre bloques. */
+.despacho .grupo, .despacho .desp-cifras, .despacho .formulario.tarjeta { margin-top: 24px; }
+.despacho .desp-sub + .grupo-lista, .despacho .desp-sub + .desp-plazos { margin-top: 16px; }
+.despacho .desp-cabecera + .grupo, .despacho .desp-cabecera + p + .grupo { margin-top: 20px; }
+.desp-check small { display: block; margin-top: 2px; color: var(--muted); font-size: 13px; }
