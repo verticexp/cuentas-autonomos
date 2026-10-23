@@ -6,6 +6,7 @@ import { emailListo } from '@/lib/email';
 import { avisosRemitente, dkimResend, leerRemitente } from '@/lib/adminAjustes';
 import Volver from '@/components/Volver';
 import AdminEmpresas from '@/components/AdminEmpresas';
+import AdminDespachos from '@/components/AdminDespachos';
 import { PRUEBA_DIAS } from '@/lib/prueba';
 import { PRUEBA_GESTORIA_DIAS } from '@/lib/gestorias';
 import { RECOMENDACION_DIAS } from '@/lib/recomendaciones';
@@ -113,6 +114,11 @@ export default async function Admin() {
         </li>)}</ul>
         <p className="adm-pie">Para verlas en la lista de empresas, elige «Planes que no cuadran» en el filtro de abajo.</p>
       </> : <p className="adm-pie">Todas las empresas tienen un plan que cuadra con su forma jurídica.</p>}
+    </section>
+
+    <section className="adm-caja" aria-labelledby="adm-despachos-t">
+      <h2 id="adm-despachos-t">Despachos asociados</h2>
+      <AdminDespachos />
     </section>
 
     <section id="adm-ajustes" className="adm-dos" aria-label="Configuración">

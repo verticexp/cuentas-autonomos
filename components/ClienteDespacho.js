@@ -1,0 +1,205 @@
+'use client';
+
+import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { llamar } from './Acciones';
+import { confirmar } from './Confirmar';
+import { entrarEn } from './PanelDespacho';
+import { ESTADOS_TEXTO } from './despachoTextos';
+import { navegar } from '@/lib/transicion';
+import { eur, fechaCorta } from '@/lib/formato';
+
+const fechaDe = (iso) => fechaCorta(String(iso || '').slice(0, 10));
+const horaDe = (iso) => new Date(iso).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+const ENTRAR = [['/modelos', 'Impuestos'], ['/facturas', 'Facturas'], ['/gastos', 'Gastos'], ['/contabilidad', 'Contabilidad'], ['/contabilidad?ver=libros', 'Libros registro']];
+
+// Un comentario con su hilo y, si está abierto, el formulario para responder.
+function Hilo({ c, empresa, alCambiar }) {
+  const [texto, setTexto] = useState('');
+  const [msg, setMsg] = useState('');
+  const enviar = async (cuerpo) => {
+    setMsg('');
+    try { await llamar('/api/despacho/comentarios', { method: 'PATCH', body: JSON.stringify({ empresa, id: c.id, ...cuerpo }) }); setTexto(''); alCambiar(); } catch (e) { setMsg(e.message); }
+  };
+  return <li className={c.resuelto ? 'resuelto' : ''}>
+    <span className="doc">{c.doc ? c.doc.texto : `${c.t}T ${c.anio}`}{c.resuelto ? ' · Resuelto' : ''}</span>
+    {c.hilo.map((m, i) => <p key={i} className="msg"><b>{m.lado === 'despacho' ? m.nombre || 'Gestoría' : `${m.nombre || 'Cliente'} (cliente)`}</b> <small>{horaDe(m.fecha)}</small><br />{m.texto}</p>)}
+    {!c.resuelto ? <form onSubmit={(e) => { e.preventDefault(); if (texto.trim()) enviar({ texto }); }}>
+      <textarea className="campo" rows={1} value={texto} maxLength={2000} placeholder="Responder" aria-label="Responder" onChange={(e) => setTexto(e.target.value)} />
+      <button className="boton sec" disabled={!texto.trim()}>Responder</button>
+      <button type="button" className="boton sec" onClick={() => enviar({ resuelto: true })}>Marcar como resuelto</button>
+    </form> : <form onSubmit={(e) => { e.preventDefault(); enviar({ resuelto: false }); }}><button className="boton sec">Volver a abrir</button></form>}
+    {msg && <p className="error" role="alert">{msg}</p>}
+  </li>;
+}
+
+export default function ClienteDespacho({ cliente, anio, t, hoy, rol, estado, limite, presentados, cierre, resumen, docs, comentarios, accesos, equipo }) {
+  const router = useRouter();
+  const [ocupado, setOcupado] = useState('');
+  const [msg, setMsg] = useState('');
+  const [nueva, setNueva] = useState({ texto: '', doc: '' });
+  const [formato, setFormato] = useState('a3');
+  const [codigo, setCodigo] = useState('1');
+  const [anioDiario, setAnioDiario] = useState(anio);
+  const titular = rol === 'titular';
+  const id = encodeURIComponent(cliente.id);
+
+  const accion = async (cuerpo, texto) => {
+    setOcupado(cuerpo.accion); setMsg('');
+    try { await llamar('/api/despacho/cliente', { method: 'POST', body: JSON.stringify({ empresa: cliente.id, anio, t, ...cuerpo }) }); setMsg(texto); router.refresh(); } catch (e) { setMsg(e.message); }
+    setOcupado('');
+  };
+  const cerrar = () => accion({ accion: 'cerrar' }, `✓ ${t}T ${anio} revisado y cerrado`);
+  const reabrir = async () => { if (await confirmar({ titulo: `¿Reabrir el ${t}T ${anio}?`, texto: 'El cliente podrá volver a crear, cambiar y borrar facturas y gastos de este trimestre.', aceptar: 'Reabrir' })) accion({ accion: 'reabrir' }, `${t}T ${anio} reabierto`); };
+  const separar = async () => { if (await confirmar({ titulo: `¿Dejar de llevar a ${cliente.nombre}?`, texto: `Tu despacho dejará de ver sus cuentas.${cliente.licencia ? ' Como pagas su licencia, tendrá un mes de prueba para elegir su plan.' : ''} Sus datos siguen siendo suyos.`, aceptar: 'Dejar de llevarlo', peligro: true })) { await accion({ accion: 'separar' }, ''); navegar(router, '/despacho', 'atras'); } };
+  const licencia = async (si) => {
+    const ok = si
+      ? await confirmar({ titulo: 'Incluir Fisquo en tu cuota', texto: `${cliente.nombre} pasa a ${cliente.licenciaNombre}, pagado por tu despacho. Los 90 primeros días son gratis; después se suma a tus licencias del mes.`, aceptar: 'Incluir' })
+      : await confirmar({ titulo: 'Dejar de incluirlo', texto: `${cliente.nombre} tendrá un mes de prueba para elegir y pagar su plan.`, aceptar: 'Dejar de incluirlo', peligro: true });
+    if (ok) accion({ accion: si ? 'licencia' : 'sinLicencia' }, si ? '✓ Incluido en tu cuota' : 'Ya no está incluido en tu cuota');
+  };
+  const preguntar = async (e) => {
+    e.preventDefault();
+    if (!nueva.texto.trim()) return;
+    const [tipo, docId] = nueva.doc ? nueva.doc.split(':') : [];
+    setOcupado('comentar'); setMsg('');
+    try {
+      await llamar('/api/despacho/comentarios', { method: 'POST', body: JSON.stringify({ empresa: cliente.id, anio, t, texto: nueva.texto, ...(tipo ? { doc: { tipo, id: docId } } : {}) }) });
+      setNueva({ texto: '', doc: '' }); router.refresh();
+    } catch (err) { setMsg(err.message); }
+    setOcupado('');
+  };
+  const periodos = useMemo(() => {
+    const y = Number(hoy.slice(0, 4));
+    return [y, y - 1].flatMap((a) => [4, 3, 2, 1].map((q) => ({ anio: a, t: q }))).filter((p) => `${p.anio}-${String(p.t * 3 - 2).padStart(2, '0')}-01` <= hoy);
+  }, [hoy]);
+  const del = comentarios.filter((c) => c.anio === anio && c.t === t || !c.resuelto);
+  const r = resumen;
+  const cifra = (x) => (!x ? '—' : x.compensar > 0 ? `0 € · a compensar ${eur(x.compensar)}` : x.devolver > 0 ? `0 € · a devolver ${eur(x.devolver)}` : eur(x.importe));
+
+  return <>
+    <div className="desp-cabecera">
+      <div>
+        <h1 className="titulo">{cliente.nombre}</h1>
+        <p className="desp-sub">{[cliente.nif, cliente.tipo === 'sociedad' ? 'Sociedad' : 'Autónomo', cliente.territorio, cliente.plan, cliente.licencia && 'Incluido en tu cuota'].filter(Boolean).join(' · ')}</p>
+      </div>
+      <label className="desp-periodo">Trimestre
+        <select className="campo" value={`${anio}-${t}`} onChange={(e) => { const [a, q] = e.target.value.split('-'); navegar(router, `/despacho/${id}?anio=${a}&t=${q}`, 'pestana-der', undefined, false, { scroll: false }); }}>
+          {periodos.map((p) => <option key={`${p.anio}-${p.t}`} value={`${p.anio}-${p.t}`}>{p.t}T {p.anio}</option>)}
+        </select>
+      </label>
+    </div>
+    {msg && <p role="status" className={msg.startsWith('✓') ? 'nota guardado' : 'error'}>{msg}</p>}
+
+    <section className="grupo" aria-labelledby="desp-rev">
+      <h2 className="grupo-t" id="desp-rev">Revisión del {t}T {anio}</h2>
+      <div className="grupo-c relleno">
+        <div className="desp-cierre">
+          <p><span className={`desp-estado e-${estado}`}>{ESTADOS_TEXTO[estado]}</span>{' '}
+            {cierre ? <>Cerrado por {cierre.por || cierre.despacho} el {fechaDe(cierre.fecha)}.{cierre.cambios && <b className="rojo"> Hay facturas o gastos que han cambiado desde entonces.</b>}</> : estado === 'curso' ? 'El trimestre aún no ha terminado.' : `Plazo hasta el ${fechaDe(limite)}.`}</p>
+          <div className="desp-acciones">
+            {cierre ? <button type="button" className="boton sec" disabled={Boolean(ocupado)} onClick={reabrir}>Reabrir</button>
+              : <button type="button" className="boton" disabled={Boolean(ocupado)} onClick={cerrar}>Marcar revisado y cerrar</button>}
+            {cierre?.cambios && <button type="button" className="boton" disabled={Boolean(ocupado)} onClick={cerrar}>Revisado de nuevo</button>}
+          </div>
+        </div>
+        <p className="nota">Al cerrarlo, ni el cliente ni nadie puede crear, cambiar o borrar facturas y gastos de este trimestre (sí cobrarlos, pagarlos o añadir justificantes). Si algo entra por otro camino, lo verás aquí como cambio tras el cierre.</p>
+        {presentados && (presentados.iva !== null || presentados.irpf !== null) && <p className="nota">Presentados: {[presentados.iva !== null && `IVA ${presentados.iva ? 'sí' : 'no'}`, presentados.irpf !== null && `IRPF ${presentados.irpf ? 'sí' : 'no'}`].filter(Boolean).join(' · ')}. Se marcan en sus Impuestos.</p>}
+      </div>
+    </section>
+
+    {r ? <dl className="desp-cifras">
+      <div><dt>Ventas (base)</dt><dd>{eur(r.ventas)}<small>{r.facturas} facturas</small></dd></div>
+      <div><dt>Gastos (base)</dt><dd>{eur(r.compras)}<small>{r.gastos} gastos</small></dd></div>
+      <div><dt>IVA del trimestre</dt><dd>{cifra(r.iva)}</dd></div>
+      <div><dt>IRPF (130)</dt><dd>{cifra(r.irpf)}</dd></div>
+      <div><dt>Por revisar</dt><dd>{r.porRevisar}<small>{r.sinJustificante} gastos sin justificante</small></dd></div>
+    </dl> : <p className="error">No se han podido calcular sus cifras. Entra en sus Impuestos para verlas.</p>}
+
+    <section className="grupo" aria-labelledby="desp-entrar">
+      <h2 className="grupo-t" id="desp-entrar">Sus cuentas</h2>
+      <div className="grupo-c relleno">
+        <div className="desp-acciones">{ENTRAR.map(([href, texto]) => <button key={href} type="button" className="boton sec" onClick={() => entrarEn(cliente.id, href).catch((e) => setMsg(e.message))}>{texto}</button>)}</div>
+        <p className="nota">Entras con el perfil Gestoría: ves sus facturas, gastos, nóminas, contabilidad e impuestos, y puedes apuntar asientos y marcar modelos como presentados. Arriba verás siempre en qué cliente estás.</p>
+      </div>
+    </section>
+
+    <section className="grupo" aria-labelledby="desp-desc">
+      <h2 className="grupo-t" id="desp-desc">Descargas</h2>
+      <div className="grupo-c relleno">
+        <div className="desp-acciones">
+          <a className="boton" href={`/api/despacho/paquete?empresa=${id}&anio=${anio}&t=${t}`} download>Paquete del {t}T (Excel, PDF y justificantes)</a>
+          <a className="boton sec" href={`/api/despacho/paquete?empresa=${id}&anio=${anio}&t=${t}&formato=xlsx`} download>Solo Excel</a>
+          <a className="boton sec" href={`/api/despacho/paquete?empresa=${id}&anio=${anio}&t=${t}&formato=pdf`} download>Solo PDF</a>
+        </div>
+        <div className="desp-barra">
+          <select className="campo" aria-label="Programa" value={formato} onChange={(e) => setFormato(e.target.value)}>
+            <option value="a3">A3 (SUENLACE.DAT)</option><option value="contaplus">ContaPlus</option><option value="contasol">ContaSol</option>
+          </select>
+          <select className="campo" aria-label="Año" value={anioDiario} onChange={(e) => setAnioDiario(Number(e.target.value))}>
+            {[anio, anio - 1].map((a) => <option key={a} value={a}>{a}</option>)}
+          </select>
+          {formato === 'a3' && <input className="campo" inputMode="numeric" maxLength={5} aria-label="Código de la empresa en A3" placeholder="Código en A3" value={codigo} onChange={(e) => setCodigo(e.target.value.replace(/\D/g, ''))} />}
+          <a className="boton sec" href={`/api/despacho/contable?empresa=${id}&anio=${anioDiario}&formato=${formato}${formato === 'a3' ? `&codigo=${codigo || 1}` : ''}`} download>Exportar contabilidad</a>
+        </div>
+      </div>
+    </section>
+
+    <section className="grupo" aria-labelledby="desp-preg">
+      <h2 className="grupo-t" id="desp-preg">Preguntas al cliente</h2>
+      <div className="grupo-c relleno">
+        <form className="formulario" onSubmit={preguntar}>
+          <label>Sobre<select className="campo" value={nueva.doc} onChange={(e) => setNueva({ ...nueva, doc: e.target.value })}>
+            <option value="">El {t}T {anio} en general</option>
+            {docs.facturas.length > 0 && <optgroup label="Facturas">{docs.facturas.map((f) => <option key={f.id} value={`factura:${f.id}`}>{f.texto} · {eur(f.total)}</option>)}</optgroup>}
+            {docs.gastos.length > 0 && <optgroup label="Gastos">{docs.gastos.map((g) => <option key={g.id} value={`gasto:${g.id}`}>{fechaDe(g.fecha)} · {g.texto} · {eur(g.total)}</option>)}</optgroup>}
+          </select></label>
+          <label>Pregunta<textarea className="campo" rows={3} maxLength={2000} value={nueva.texto} onChange={(e) => setNueva({ ...nueva, texto: e.target.value })} placeholder="¿Este gasto es de la actividad? Falta el ticket de…" /></label>
+          <button className="boton" disabled={!nueva.texto.trim() || ocupado === 'comentar'}>Enviar al cliente</button>
+        </form>
+        <p className="nota">Le aparece en Ajustes › Tu gestoría y puede responderte allí.</p>
+        {del.length > 0 && <ul className="desp-hilo">{del.map((c) => <Hilo key={c.id} c={c} empresa={cliente.id} alCambiar={() => router.refresh()} />)}</ul>}
+      </div>
+    </section>
+
+    <section className="grupo" aria-labelledby="desp-docs">
+      <h2 className="grupo-t" id="desp-docs">Facturas y gastos del {t}T</h2>
+      <div className="grupo-c relleno">
+        {docs.facturas.length + docs.gastos.length === 0 ? <p className="nota">No hay facturas ni gastos en este trimestre.</p> : <table className="desp-docs">
+          <tbody>
+            {docs.facturas.map((f) => <tr key={f.id}><td>{fechaDe(f.fecha)}</td><td>Factura {f.texto}</td><td className="num">{eur(f.base)} <small>base</small></td><td><button type="button" className="boton sec" onClick={() => { setNueva({ ...nueva, doc: `factura:${f.id}` }); document.getElementById('desp-preg')?.scrollIntoView({ behavior: 'smooth' }); }}>Preguntar</button></td></tr>)}
+            {docs.gastos.map((g) => <tr key={g.id}><td>{fechaDe(g.fecha)}</td><td>{g.texto}{g.sinJustificante && <small> · sin justificante</small>}</td><td className="num">{eur(g.base)} <small>base</small></td><td><button type="button" className="boton sec" onClick={() => { setNueva({ ...nueva, doc: `gasto:${g.id}` }); document.getElementById('desp-preg')?.scrollIntoView({ behavior: 'smooth' }); }}>Preguntar</button></td></tr>)}
+          </tbody>
+        </table>}
+        {docs.mas > 0 && <p className="nota">Y {docs.mas} más: entra en sus Facturas o Gastos para verlos todos.</p>}
+      </div>
+    </section>
+
+    {titular && <section className="grupo" aria-labelledby="desp-gest">
+      <h2 className="grupo-t" id="desp-gest">Quién lo lleva</h2>
+      <div className="grupo-c relleno">
+        {equipo.length > 1 && <label className="desp-periodo">Gestor asignado
+          <select className="campo" value={cliente.gestor || ''} disabled={Boolean(ocupado)} onChange={(e) => accion({ accion: 'gestor', gestor: e.target.value || null }, '✓ Asignado')}>
+            <option value="">Sin asignar</option>
+            {equipo.map((x) => <option key={x.id} value={x.id}>{x.nombre}</option>)}
+          </select>
+        </label>}
+        <p>{cliente.licencia ? <>Fisquo va incluido en tu cuota desde el {fechaDe(cliente.licencia.desde)} ({cliente.licenciaNombre}).</> : cliente.pagaSuPlan ? 'El cliente paga su plan de Fisquo con tarjeta.' : 'El cliente aún no paga Fisquo (está en su prueba) o no tiene plan.'}</p>
+        <div className="desp-acciones">
+          {cliente.licencia ? <button type="button" className="boton sec" disabled={Boolean(ocupado)} onClick={() => licencia(false)}>Dejar de incluirlo en mi cuota</button>
+            : <button type="button" className="boton sec" disabled={Boolean(ocupado) || cliente.pagaSuPlan} onClick={() => licencia(true)}>Incluir Fisquo en mi cuota</button>}
+          <button type="button" className="boton sec rojo" disabled={Boolean(ocupado)} onClick={separar}>Dejar de llevar este cliente</button>
+        </div>
+        {cliente.desde && <p className="nota">Cliente de tu despacho en Fisquo desde el {fechaDe(cliente.desde)}.</p>}
+      </div>
+    </section>}
+
+    <section className="grupo" aria-labelledby="desp-reg">
+      <h2 className="grupo-t" id="desp-reg">Lo que ha hecho el despacho</h2>
+      <div className="grupo-c relleno">
+        {accesos.length ? <ul className="desp-registro">{accesos.map((a, i) => <li key={i}><span>{a.nombre}: {a.accion}{a.detalle ? ` · ${a.detalle}` : ''}</span><small>{horaDe(a.fecha)}</small></li>)}</ul> : <p className="nota">Todavía nada.</p>}
+        <p className="nota">El cliente ve esta misma lista en Ajustes › Tu gestoría.</p>
+      </div>
+    </section>
+  </>;
+}

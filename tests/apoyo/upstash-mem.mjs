@@ -62,6 +62,7 @@ export function crearBase() {
       case 'pttl': { if (!vivo(a[0])) return -2; const t = exp.get(a[0]); return t ? Math.max(0, t - Date.now()) : -1; }
       case 'type': return ({ h: 'hash', s: 'set', l: 'list', k: 'string', z: 'zset' })[vivo(a[0])?.t] || 'none';
       case 'sadd': { const m = S(a[0]); let n = 0; for (const x of a.slice(1)) if (!m.has(x)) { m.add(x); n++; } return n; }
+      case 'scard': return vivo(a[0])?.m.size || 0;
       case 'srem': { const v = vivo(a[0]); let n = 0; for (const x of a.slice(1)) if (v?.m.delete(x)) n++; return n; }
       case 'smembers': return [...(vivo(a[0])?.m || [])];
       case 'sismember': return vivo(a[0])?.m.has(a[1]) ? 1 : 0;

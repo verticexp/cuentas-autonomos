@@ -59,7 +59,8 @@ const seccion = (path) => (path === '/' ? '/' : path.startsWith('/presupuestos')
   : deMas(path) ? '/mas' : null);
 
 // porRevisar: facturas que esperan en Gastos › Por revisar (lib/bandeja.js): su número va sobre la pestaña Gastos.
-export default function TabBar({ permisos = [], empresas = [], empresa, admin = false, inventario = false, equipo = true, fiscal = {}, faltan = {}, porRevisar = 0 }) {
+// despacho: la persona es de un despacho (lib/despachos.js): la barra lateral lleva arriba «Mi despacho».
+export default function TabBar({ permisos = [], empresas = [], empresa, admin = false, inventario = false, equipo = true, fiscal = {}, faltan = {}, porRevisar = 0, despacho = false }) {
   const tabs = TABS.filter((t) => !t.permiso || permisos.includes(t.permiso));
   const path = usePathname();
   const router = useRouter();
@@ -177,6 +178,7 @@ export default function TabBar({ permisos = [], empresas = [], empresa, admin = 
           );
           return (
             <>
+              {despacho && <div className="tabs-grupo">{enlace({ href: '/despacho', nombre: 'Mi despacho', icono: <><path d="M4 21V8l8-5 8 5v13" /><path d="M9 21v-6h6v6" /></> })}</div>}
               <div className="tabs-grupo">{enlace({ ...ASISTENTE, plan: faltan[ASISTENTE.href] })}</div>
               {gruposVisibles(permisos, inventario, { fiscal, faltan, equipo }).map((g) => (
                 <div key={g.titulo} className="tabs-grupo" data-tono={g.tono}>

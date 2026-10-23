@@ -13,6 +13,7 @@ import { hoy } from '@/lib/formato';
 import { actividadesDe, fiscalDe, usaIgic, usa303 } from '@/lib/empresa';
 import { soltarAlbaranes } from '@/lib/albaranesServidor';
 import { secundarios } from '@/lib/trabajos';
+import { comprobarCierre } from '@/lib/cierres';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60; // el envío a Verifactu puede esperar al control de flujo de la AEAT
@@ -73,6 +74,9 @@ export async function PATCH(req) {
   const datos = limpiar(b, actividadesDe(u), fiscalDe(u).tipo === 'sociedad', { rectificativa: Boolean(antes.rectifica || antes.serie === 'R'), igic: usaIgic(fiscalDe(u)), conRecargo: usa303(fiscalDe(u)) && !usaIgic(fiscalDe(u)), reagp: fiscalDe(u).iva === 'reagp' });
   if (datos.error) return Response.json({ error: datos.error, errores: datos.errores }, { status: 400 });
   if (Number(datos.fecha.slice(0, 4)) !== antes.anio) return error(`La fecha debe ser de ${antes.anio}`);
+  // Trimestre cerrado por la gestoría (lib/cierres.js): ni la fecha de antes ni la nueva pueden caer en él.
+  const cerrado = await comprobarCierre(u, antes.fecha, datos.fecha);
+  if (cerrado) return error(cerrado, 409);
   // Al cambiar la fecha, se avisa si deja de seguir el orden de su serie (lib/facturas.js fechaFueraDeOrden); con
   // forzarOrden (confirmado en el formulario) se guarda. Si no se toca la fecha, no se mira.
   if (datos.fecha !== antes.fecha && b.forzarOrden !== true) {

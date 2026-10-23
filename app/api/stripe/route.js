@@ -1,6 +1,10 @@
 import { firmaStripe, stripe } from '@/lib/stripe';
 import { marcarPagada } from '@/lib/cobros';
 import { aplicarSuscripcion } from '@/lib/suscripcion';
+import { aplicarSuscripcionDespacho } from '@/lib/licencias';
+
+// La de un despacho (licencias de sus clientes, lib/licencias.js) lleva metadata.despacho; la de una empresa, metadata.empresa.
+const aplicar = (sub) => (sub?.metadata?.despacho ? aplicarSuscripcionDespacho(sub) : aplicarSuscripcion(sub));
 
 export const dynamic = 'force-dynamic';
 
@@ -18,11 +22,11 @@ export async function POST(req) {
   const o = ev.data?.object;
   // Billing pertenece a Fisquo; una cuenta conectada no puede cambiar los planes.
   if (ev.account && (ev.type?.startsWith('customer.subscription.') || ev.type?.startsWith('invoice.'))) return Response.json({ ok: true });
-  if (SUSCRIPCION.includes(ev.type)) await aplicarSuscripcion(o);
+  if (SUSCRIPCION.includes(ev.type)) await aplicar(o);
   else if (['checkout.session.completed', 'checkout.session.async_payment_succeeded'].includes(ev.type)) {
     if (o?.mode === 'subscription' && !ev.account) {
       const sub = o.subscription && (await stripe(`subscriptions/${encodeURIComponent(o.subscription)}`));
-      if (sub?.id) await aplicarSuscripcion(sub);
+      if (sub?.id) await aplicar(sub);
     } else await marcarPagada(o, { cuenta: ev.account });
   }
   return Response.json({ ok: true });
