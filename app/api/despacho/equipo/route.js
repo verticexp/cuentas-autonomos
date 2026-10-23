@@ -16,6 +16,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(req) {
   const { u, d, res } = await miDespacho({ titular: true });
   if (res) return res;
+  if (d.demo) return error('Es un despacho de demostración: no se invita a nadie.', 403);
   const b = await cuerpo(req);
   const rol = b.rol === 'titular' ? 'titular' : 'gestor';
   const email = limpiarEmail(b.email);

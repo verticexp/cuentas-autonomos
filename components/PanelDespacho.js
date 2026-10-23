@@ -87,7 +87,7 @@ export default function PanelDespacho({ filas, equipo = [], anio, t, hoy }) {
           r.porRevisar > 0 && <span key="b" className="aviso">{r.porRevisar} por revisar</span>,
           r.sinJustificante > 0 && <span key="j">{r.sinJustificante} sin justificante</span>,
           r.comentarios?.respuestas > 0 && <span key="c" className="aviso">{r.comentarios.respuestas === 1 ? '1 respuesta' : `${r.comentarios.respuestas} respuestas`}</span>,
-          r.comentarios?.abiertos > 0 && !r.comentarios.respuestas && <span key="p">{r.comentarios.abiertos} preguntas abiertas</span>,
+          r.comentarios?.abiertos > 0 && !r.comentarios.respuestas && <span key="p">{r.comentarios.abiertos === 1 ? '1 pregunta abierta' : `${r.comentarios.abiertos} preguntas abiertas`}</span>,
         ].filter(Boolean) : [];
         return <tr key={f.id}>
           <td className="desp-cliente"><Ir href={`/despacho/${encodeURIComponent(f.id)}?anio=${anio}&t=${t}`}>{f.nombre}</Ir>

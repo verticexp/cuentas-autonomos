@@ -11,6 +11,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(req) {
   const { u, d, res } = await miDespacho({ titular: true });
   if (res) return res;
+  if (d.demo) return error('Es un despacho de demostración: el cobro no se activa.', 403);
   if (!stripeListo()) return error('El cobro con tarjeta aún no está activado en Fisquo. Escríbenos y lo activamos a mano.', 503);
   const b = await cuerpo(req);
   const volver = new URL('/despacho/ajustes', req.url).toString();

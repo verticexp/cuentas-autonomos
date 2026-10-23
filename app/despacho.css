@@ -109,3 +109,4 @@
 .despacho .desp-sub + .grupo-lista, .despacho .desp-sub + .desp-plazos { margin-top: 16px; }
 .despacho .desp-cabecera + .grupo, .despacho .desp-cabecera + p + .grupo { margin-top: 20px; }
 .desp-check small { display: block; margin-top: 2px; color: var(--muted); font-size: 13px; }
+@media (min-width: 861px) { .desp-tabla .desp-cliente { min-width: 230px; } }
