@@ -5,7 +5,8 @@ import { requerir } from '@/lib/auth';
 import { perfilDe, permisosDe } from '@/lib/permisos';
 import { sinFuncion } from '@/lib/planes';
 import { plazosFiscales } from '@/lib/avisos';
-import { fiscalDe } from '@/lib/empresa';
+import { conEquipo, fiscalDe } from '@/lib/empresa';
+import { leer } from '@/lib/redis';
 import { ahoraMadrid } from '@/lib/jornada';
 import { miEmpleado } from '@/lib/jornadaServidor';
 import { gruposVisibles } from '@/components/secciones';
@@ -35,7 +36,8 @@ export default async function Mas() {
   const permisos = permisosDe(u);
   const hoy = ahoraMadrid().slice(0, 10);
   const hacienda = permisos.includes('resumen') ? avisoHacienda(u, hoy) : null;
-  const grupos = gruposVisibles(permisos, Boolean(u.fiscal?.inventario), { fiscal: fiscalDe(u), faltan: planesQueFaltan(u.plan) })
+  const equipo = permisos.includes('nominas') && conEquipo(u, (await leer(u, 'empleados')) || []);
+  const grupos = gruposVisibles(permisos, Boolean(u.fiscal?.inventario), { fiscal: fiscalDe(u), faltan: planesQueFaltan(u.plan), equipo })
     .map((g) => ({ ...g, enlaces: g.enlaces.map((e) => (e.href === '/modelos' && hacienda ? { ...e, aviso: hacienda } : e)) }));
   // Quien ficha pero no lleva las nóminas: su «Fichar» en Equipo (el registro de jornada completo es de quien las lleva).
   if (!permisos.includes('nominas') && (await miEmpleado(u, hoy)).yo) {

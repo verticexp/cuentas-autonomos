@@ -93,14 +93,17 @@ export default async function Resumen({ searchParams }) {
   // Cuenta recién creada: ni facturas ni gastos. En vez de gráficas y trimestres a cero, los primeros pasos.
   const sinDatos = !nFacturas && !nGastos;
   const e = u.emisor || {};
+  // Por orden de valor (auditoría D8-16): lo que da de comer primero y el adorno al final. Los datos de la empresa ya se
+  // piden al registrarse: solo salen si faltan (y entonces van primero, porque sin ellos la factura no vale).
   const pasos = [
-    puede(u, 'empresa') && { id: 'datos', hecho: Boolean(e.nombre && e.nif && e.direccion), href: '/ajustes/facturacion', t: 'Completa los datos de tu empresa', d: 'Nombre, NIF y dirección: salen en cada factura', n: 'datos' },
-    puede(u, 'empresa') && { id: 'logo', hecho: Boolean(u.marca?.logo), href: '/ajustes/marca', t: 'Pon tu logo y tu color', d: 'Tus facturas, con tu imagen', n: 'marca' },
-    puede(u, 'facturar') && { id: 'factura', hecho: nFacturas > 0, href: '/facturas/nueva', t: 'Crea tu primera factura', d: 'En un minuto, con el IVA y el IRPF ya calculados', n: 'factura' },
-    puede(u, 'gastar') && { id: 'gasto', hecho: nGastos > 0, href: '/gastos', t: 'Apunta tu primer gasto', d: 'Hazle una foto al ticket y Fisquo lo rellena', n: 'gasto' },
-    puede(u, DETALLE) && { id: 'banco', hecho: saldo !== null && saldo !== undefined, href: '/banco', t: 'Sube el extracto del banco', d: 'Fisquo empareja cobros y pagos con tus facturas', n: 'beneficio' },
-    u.rol === 'admin' && { id: 'gestoria', hecho: Boolean(u.gestoria?.email), href: '/ajustes/gestoria', t: 'Invita a tu gestoría', d: 'Le llega todo cada trimestre, sin pedírtelo', n: 'usuarios' },
+    puede(u, 'empresa') && !(e.nombre && e.nif && e.direccion) && { id: 'datos', hecho: false, href: '/ajustes/facturacion', t: 'Completa los datos de tu empresa', d: 'Nombre, NIF y dirección: salen en cada factura', n: 'datos', boton: 'Completar' },
+    puede(u, 'facturar') && { id: 'factura', hecho: nFacturas > 0, href: '/facturas/nueva', t: 'Crea tu primera factura', d: 'IVA e IRPF ya calculados', n: 'factura', boton: 'Crear factura' },
+    puede(u, 'gastar') && { id: 'gasto', hecho: nGastos > 0, href: '/gastos', t: 'Apunta tu primer gasto', d: 'Hazle una foto al ticket', n: 'gasto', boton: 'Apuntar gasto' },
+    puede(u, DETALLE) && { id: 'banco', hecho: saldo !== null && saldo !== undefined, href: '/banco', t: 'Sube el extracto del banco', d: 'Fisquo empareja cobros y pagos', n: 'beneficio', boton: 'Subir extracto' },
+    puede(u, 'empresa') && { id: 'logo', hecho: Boolean(u.marca?.logo), href: '/ajustes/marca', t: 'Pon tu logo y tu color', d: 'Tus facturas, con tu imagen', n: 'marca', boton: 'Poner logo' },
+    u.rol === 'admin' && { id: 'gestoria', hecho: Boolean(u.gestoria?.email), href: '/ajustes/gestoria', t: 'Invita a tu gestoría', d: 'Recibe todo cada trimestre', n: 'usuarios', boton: 'Invitar' },
   ].filter(Boolean);
+  const siguientePaso = pasos.find((x) => !x.hecho);
   const hechos = pasos.filter((x) => x.hecho).length;
   const verPasos = pasos.length > 0 && hechos < pasos.length && nFacturas < 10;
   // Hacienda: el último tramo del plazo (3 días o menos) se avisa en rojo (lib/hoy.js).
@@ -132,7 +135,8 @@ export default async function Resumen({ searchParams }) {
     puede(u, 'gastos') && { href: '/gastos', n: 'gasto', t: 'Gastos', enBarra: true },
     puede(u, 'facturas') && { href: '/presupuestos', n: 'presupuesto', t: 'Presupuestos' },
     { href: '/modelos', n: 'hacienda', t: 'Impuestos' },
-    puede(u, DETALLE) && { href: `/contabilidad?anio=${anio}`, n: 'contabilidad', t: 'Contabilidad' },
+    // Para un autónomo, «Libros registro» (el nombre de la pantalla en el menú y el que usa su gestor, D8-20).
+    puede(u, DETALLE) && { href: `/contabilidad?anio=${anio}`, n: 'contabilidad', t: fiscal.tipo === 'sociedad' ? 'Contabilidad' : 'Libros registro' },
   ].filter(Boolean);
 
   return (
@@ -148,7 +152,7 @@ export default async function Resumen({ searchParams }) {
           </nav>}
         </div>
         <h1 className="inicio-hola">Hola, {String(u.nombre || '').split(' ')[0] || 'equipo'}</h1>
-        <p className="inicio-sub">{sinDatos ? 'Vamos a dejarlo todo listo.' : esteAnio ? 'Así va tu año.' : `Así cerraste ${anio}.`}</p>
+        <p className="inicio-sub">{sinDatos ? (siguientePaso?.id === 'factura' ? 'Empieza por tu primera factura: tarda un minuto.' : 'Vamos a dejarlo todo listo.') : esteAnio ? 'Así va tu año.' : `Así cerraste ${anio}.`}</p>
         {u.misEmpresas?.length > 1 && <CambiarEmpresa empresas={u.misEmpresas} actual={u.empresa} variante="chip" />}
       </header>
 
@@ -185,7 +189,7 @@ export default async function Resumen({ searchParams }) {
         </section>
       )}
 
-      <Ir href="/asistente" className="asi-entrada"><svg viewBox="0 0 24 24" aria-hidden><path d="M4 5h16v11H9l-5 4zM8 10h8M8 13h5" /></svg>Pregunta por tus cuentas</Ir>
+      <Ir href="/asistente" className="asi-entrada"><svg viewBox="0 0 24 24" aria-hidden><path d="M4 5h16v11H9l-5 4zM8 10h8M8 13h5" /></svg>{sinDatos ? 'Pregúntame cómo hacer tu primera factura' : 'Pregunta por tus cuentas'}</Ir>
 
       <nav className="accesos" aria-label="Accesos">
         {accesos.map((a) => (
@@ -204,7 +208,7 @@ export default async function Resumen({ searchParams }) {
             {pasos.map((x) => (
               x.hecho
                 ? <div key={x.id} className="celda pp-paso hecho"><span className="pp-ok" aria-hidden>✓</span><span className="txt">{x.t}<small>Hecho</small></span></div>
-                : <Ir key={x.id} href={x.href} tipo="adelante" className="celda ir pp-paso"><Ico n={x.n} /><span className="txt">{x.t}<small>{x.d}</small></span></Ir>
+                : <Ir key={x.id} href={x.href} tipo="adelante" className={`celda ir pp-paso${x === siguientePaso ? ' pp-primero' : ''}`}><Ico n={x.n} /><span className="txt">{x.t}<small>{x.d}</small></span>{x === siguientePaso && <span className="pp-accion" aria-hidden>{x.boton}</span>}</Ir>
             ))}
           </div>
         </section>
@@ -437,24 +441,26 @@ export default async function Resumen({ searchParams }) {
           )}
 
           <section className="grupo">
-            <h2 className="grupo-t">Tus modelos</h2>
+            <h2 className="grupo-t">{sinDatos ? 'Tus próximos plazos' : 'Tus modelos'}</h2>
             <div className="grupo-c">
-              {modelosDe(fiscal).map((m) => ({ ...m, prox: proximoPlazoDe(fiscal, m.id, h, { cuotaIS: u.cuotaIS }) })).map((m) => ({ ...m, cuando: m.prox ? `${m.prox === h ? 'Hoy es el último día' : `Próximo: ${fechaTexto(m.prox)}${m.prox.slice(0, 4) !== h.slice(0, 4) ? ` de ${m.prox.slice(0, 4)}` : ''}`}` : m.cuando })).map((m) => (
+              {/* Sin datos, solo los trimestrales de cada día (D8-19): el 347, el 390 o la renta son ruido el primer día. */}
+              {modelosDe(fiscal).filter((m) => !sinDatos || ['303', '420', '130', '131'].includes(m.id)).map((m) => ({ ...m, prox: proximoPlazoDe(fiscal, m.id, h, { cuotaIS: u.cuotaIS }) })).map((m) => ({ ...m, cuando: m.prox ? `${m.prox === h ? 'Hoy es el último día' : `Próximo: ${fechaTexto(m.prox)}${m.prox.slice(0, 4) !== h.slice(0, 4) ? ` de ${m.prox.slice(0, 4)}` : ''}`}` : m.cuando })).map((m) => (
                 m.calcula
-                  ? <div key={m.id} className="celda ir"><span className="modelo-num"><NumeroModelo modelo={m} /></span><Ir href={`/modelos?anio=${anio}#m${m.id}`} tipo="adelante" className="txt enlace-modelo" aria-label={`Modelo ${m.id}: ${m.nombre}`}>{m.nombre}<small>{m.cuando}</small></Ir><span className="v">{m.id === '100' ? 'Borrador' : 'Calculado'}</span></div>
-                  : <div key={m.id} className="celda"><span className="modelo-num"><NumeroModelo modelo={m} /></span><span className="txt">{m.nombre}<small>{m.cuando}</small></span>{m.calcula && <span className="v">Calculado</span>}</div>
+                  ? <div key={m.id} className="celda ir"><span className="modelo-num"><NumeroModelo modelo={m} /></span><Ir href={`/modelos?anio=${anio}#m${m.id}`} tipo="adelante" className="txt enlace-modelo" aria-label={`Modelo ${m.id}: ${m.nombre}`}>{m.nombre}<small>{m.cuando}</small></Ir><span className="v">{m.id === '100' ? 'Borrador' : 'Lo calcula Fisquo'}</span></div>
+                  : <div key={m.id} className="celda"><span className="modelo-num"><NumeroModelo modelo={m} /></span><span className="txt">{m.nombre}<small>{m.cuando}</small></span>{m.calcula && <span className="v">Lo calcula Fisquo</span>}</div>
               ))}
             </div>
-            <p className="grupo-pie">Según lo que respondiste al empezar ({fiscal.tipo === 'sociedad' ? 'sociedad' : 'autónomo'}). La app calcula los que pone «Calculado» (tócalos para verlos); el resto, tu gestor. Puedes cambiarlo en Ajustes.</p>
+            {sinDatos && <Ir href="/modelos" tipo="adelante" className="celda ir ver-todos">Ver todos los modelos</Ir>}
+            <p className="grupo-pie">Según lo que contestaste al empezar ({fiscal.tipo === 'sociedad' ? 'sociedad' : 'autónomo'}). Fisquo calcula los que lo dicen; el resto, tu gestor. Puedes cambiarlo en Ajustes.</p>
           </section>
 
           <section className="grupo">
-            <h2 className="grupo-t">Descargas</h2>
+            <h2 className="grupo-t">{sinDatos ? 'Recordatorios' : 'Descargas y recordatorios'}</h2>
             <div className="grupo-c">
               {!sinDatos && <a href={exportar('facturas')} className="celda ir"><Ico n="factura" /><span className="txt">Facturas de {anio} (CSV, se abre con Excel)</span></a>}
               {!sinDatos && <a href={exportar('gastos')} className="celda ir"><Ico n="gasto" /><span className="txt">Gastos de {anio} (CSV, se abre con Excel)</span></a>}
               {!sinDatos && esteAnio && puede(u, DETALLE) && (() => { const g = plazo.dias <= 25 ? plazo : { anio, t: tHoy }; return <a href={`/api/paquete?anio=${g.anio}&t=${g.t}`} className="celda ir"><Ico n="hacienda" /><span className="txt">Paquete del {g.t}T {g.anio} para la gestoría<small>Excel y PDF con facturas, gastos e impuestos</small></span></a>; })()}
-              <a href="/api/avisos" className="celda ir"><Ico n="plazo" /><span className="txt">Plazos de Hacienda en tu calendario<small>Aviso 7 días y 1 día antes</small></span></a>
+              <a href="/api/avisos" className="celda ir"><Ico n="plazo" /><span className="txt">Añadir los plazos de Hacienda a tu calendario<small>Aviso 7 días y 1 día antes</small></span></a>
             </div>
           </section>
         </div>

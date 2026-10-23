@@ -4,6 +4,11 @@
 .pasos-barra { height: 6px; border-radius: 999px; background: var(--relleno); margin: 0 0 12px; overflow: hidden; }
 .pasos-barra span { display: block; height: 100%; border-radius: inherit; background: var(--in); }
 .pp-paso.hecho { color: var(--muted); }
+/* El siguiente paso, destacado y con su acción (D8-16); los subtítulos, enteros en dos líneas si hace falta (D8-17). */
+.pp-paso .txt small { white-space: normal; }
+.pp-paso.pp-primero { background: color-mix(in srgb, var(--marca) 7%, var(--surface)); }
+.pp-accion { flex: none; padding: 8px 14px; border-radius: 999px; background: var(--marca); color: var(--sobre); font-size: 15px; font-weight: 600; white-space: nowrap; }
+.ver-todos { color: var(--marca); font-weight: 600; }
 .pp-paso.hecho .txt { text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--muted) 55%, transparent); }
 .pp-paso.hecho .txt small { text-decoration: none; }
 .pp-ok { flex: none; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-size: 15px; font-weight: 700; color: var(--in); background: color-mix(in srgb, var(--in) 14%, transparent); }
