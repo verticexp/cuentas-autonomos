@@ -180,7 +180,9 @@ export function arrancar({ puerto = 0, base = crearBase() } = {}) {
   const ganchos = { antes: null };
   const b64 = (v) => (typeof v === 'string' ? Buffer.from(v).toString('base64') : Array.isArray(v) ? v.map(b64) : v);
   const server = http.createServer((req, res) => {
-    let body = ''; req.on('data', (d) => { body += d; }); req.on('end', async () => {
+    // Se juntan los bytes y se decodifican al final: sumarlos como texto partía las letras con acento entre trozos.
+    const trozos = []; req.on('data', (d) => { trozos.push(d); }); req.on('end', async () => {
+      const body = Buffer.concat(trozos).toString('utf8');
       if (ganchos.antes) await ganchos.antes(body, req.url);
       const enc = req.headers['upstash-encoding'] === 'base64';
       const uno = (cmd) => { try { const r = base.run(cmd); return { result: enc ? b64(r) : r }; } catch (e) { return { error: e.message }; } };

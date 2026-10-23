@@ -19,6 +19,7 @@ import { idCuota } from '../lib/cuotas.js';
 import { VERSION_PLAN } from '../lib/prueba.js';
 import { asientoApertura, generarAsientos, mayor } from '../lib/asientos.js';
 import { borradorSociedades, modelo202 } from '../lib/modelos.js';
+import { escribirIndices } from './indicesDemo.mjs';
 
 const { KV_REST_API_URL: url, KV_REST_API_TOKEN: token } = process.env;
 if (!url || !token) throw new Error('Faltan KV_REST_API_URL y KV_REST_API_TOKEN');
@@ -216,6 +217,8 @@ function trimestresDe(e, facturas, gastos, estado, quien) {
 
 // ---- Escritura: se borra lo de antes de cada empresa generada (datos, índices, cierres, preguntas y registro).
 const COLECCIONES = ['facturas', 'gastos', 'clientes', 'saldo', 'asientos', 'banco', 'bancos'];
+// Los índices, ya hechos: así la app no los reconstruye documento a documento (scripts/indicesDemo.mjs).
+const indices = async (emp, facturas, gastos) => { for (const [col, docs] of [['facturas', facturas], ['gastos', gastos], ['presupuestos', []]]) await escribirIndices(r, P, emp, col, docs); };
 async function limpiar(emp) {
   const ks = [...COLECCIONES.map((n) => `${P}${n}:${emp}`), `${P}cierres:${emp}`, `${P}despacho-comentarios:${emp}`, `${P}despacho-accesos:${emp}`];
   for (const col of ['facturas', 'gastos', 'presupuestos']) ks.push(...Object.values(claves(col, emp)).map((k) => `${P}${k}`));
@@ -305,6 +308,7 @@ for (const [i, c] of CLIENTES.entries()) {
   await r.hset(`${P}empresas`, { [c.id]: { ...e, pres303, pagos130, cuotaIS: conta.cuotaIS, pagos202: conta.pagos202, despachoCliente: vinculo(c, i, c.plan === 'licencia') } });
   await r.hset(`${P}facturas:${c.id}`, porId(facturas));
   await r.hset(`${P}gastos:${c.id}`, porId(gastos));
+  await indices(c.id, facturas, gastos);
   await r.hset(`${P}clientes:${c.id}`, porId([...new Map(facturas.filter((f) => !f.caja).map((f) => [f.cliente.nombre.toUpperCase(), { id: f.cliente.nombre.toUpperCase(), ...f.cliente }])).values()]));
   if (Object.keys(cierres).length) await r.hset(`${P}cierres:${c.id}`, cierres);
   resumen.push(`${c.nombre}: ${facturas.length} facturas, ${gastos.length} gastos, ${beneficios(facturas, gastos)}, banco ${conta.banco} €`);
@@ -420,6 +424,7 @@ for (const c of CLIENTES) {
   await r.hset(`${P}empresas`, { [empresaDespacho]: { id: empresaDespacho, nombre: 'Gestoría Ferrer (demo)', creada: fechaHora(inicio, 8), pendiente: false, demo: true, emisor: { nombre: 'GESTORÍA FERRER (DEMO)', nif: 'B00000100', direccion: 'C/ de Sants, 150', ciudad: '08028 Barcelona', plazo: 15 }, actividades: [actividad], fiscal: FISCAL_DESPACHO, plan: { fundador: true, despacho: true, tipo: 'pym', nombre: 'Pro', desde: inicio } } });
   await r.hset(`${P}facturas:${empresaDespacho}`, porId(facturas));
   await r.hset(`${P}gastos:${empresaDespacho}`, porId(gastos));
+  await indices(empresaDespacho, facturas, gastos);
   await r.hset(`${P}clientes:${empresaDespacho}`, porId(cartera.map((c) => ({ id: c.nombre.toUpperCase(), nombre: c.nombre, nif: c.nif }))));
   // Presentados todos los trimestres con el plazo ya pasado.
   const pres303 = {};
