@@ -17,7 +17,7 @@ function Celda({ v }) {
 
 export default function Precios({ inicial = 'aut', tabla = false, solo = false }) {
   const [seg, setSeg] = useState(CONTRATABLES.some((s) => s.id === inicial) ? inicial : 'aut');
-  const [anual, setAnual] = useState(true); // de entrada, el precio con pago anual
+  const [anual, setAnual] = useState(false); // de entrada, el precio mensual (el mismo «desde 9 €» del resto de la web)
   const [nota, setNota] = useState(false);
   const i = CONTRATABLES.findIndex((s) => s.id === seg);
   const nombreSeg = CONTRATABLES[i].n;
@@ -77,7 +77,7 @@ export default function Precios({ inicial = 'aut', tabla = false, solo = false }
 
       <p className="web-nota">
         Todos incluyen portal del cliente, avisos push, exportación, seguridad e importación desde otro programa.
-        <span id="web-nota-ia" className={`web-nota-extra${nota ? ' abierta' : ''}`}> La lectura IA tiene una cuota mensual de páginas por empresa, compartida con la gestoría; se renueva cada mes natural también con pago anual y no se acumula. En la prueba hay 50 páginas en total. La cuota del plan empieza con el periodo de pago. Consulta la tabla para ver el límite de cada plan.</span>
+        <span id="web-nota-ia" className={`web-nota-extra${nota ? ' abierta' : ''}`}> La lectura IA tiene una cuota mensual de páginas por empresa, compartida con la gestoría; se renueva cada mes natural también con pago anual y no se acumula. En la prueba hay 50 páginas en total. La cuota del plan empieza con el periodo de pago.{tabla ? ' Consulta la tabla para ver el límite de cada plan.' : ''}</span>
         {!nota && <button className="web-nota-mas" aria-expanded={false} aria-controls="web-nota-ia" onClick={() => setNota(true)}>Más detalles</button>}
       </p>
 

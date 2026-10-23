@@ -13,9 +13,9 @@ const CINTA = ['Facturas ilimitadas', 'Verifactu', 'Presupuestos online', 'Gasto
 
 const CIFRAS = [
   { pre: 'desde', n: 9, suf: ' €', t: 'al mes', d: 'Sin cuotas de alta ni permanencia' },
-  { n: 1, suf: ' mes', t: 'de prueba gratis', d: 'Sin dar ninguna tarjeta' },
-  { pre: 'hasta', n: 1500, suf: '', t: 'páginas al mes leídas con IA', d: 'Tickets y facturas, en foto o PDF' },
-  { n: 12, suf: ' modelos', t: 'fiscales calculados', d: '303, 130, 111, 390, 347, Sociedades…' },
+  { n: 30, suf: ' días', t: 'de prueba gratis', d: 'Sin dar ninguna tarjeta' },
+  { pre: 'desde', n: 50, suf: '', t: 'tickets al mes leídos con IA', d: 'En foto o PDF; hasta 1.500 según el plan' },
+  { n: 12, suf: '', t: 'modelos fiscales calculados', d: '303, 130, 111, 390, 347, Sociedades…' },
 ];
 
 // Web pública de fisquo.com: lo que ve en / quien aún no ha entrado.
@@ -26,16 +26,16 @@ export default function Landing() {
         <div className="web-hero-txt">
           <Link href="/funciones/facturacion" className="web-aviso"><span>Verifactu</span>Tus facturas, preparadas<i className="web-solo-ancho"> para la nueva normativa</i><Icono n="flecha" className="ico web-flecha" /></Link>
           <h1>Las cuentas de tu negocio, <em>por fin en orden</em>.</h1>
-          <p className="web-sub">Facturas, gastos con IA, impuestos<span className="web-solo-ancho">, contabilidad, stock, caja y equipo</span><span className="web-solo-movil"> y contabilidad</span> en una sola app. La alternativa a Holded más sencilla y más barata<span className="web-solo-ancho">, para autónomos y pymes</span>.</p>
+          <p className="web-sub">Haz tus facturas, apunta los gastos con una foto y sabrás cada trimestre cuánto pagar a Hacienda. Para autónomos y pymes, desde 9 € al mes + IVA.</p>
           <div className="web-cta">
             <Link className="web-btn web-btn-grande" href="/registro">Empieza gratis<Flecha /></Link>
             <Link className="web-btn web-btn-claro web-btn-grande" href="/funciones"><span><span className="web-solo-ancho">Ver cómo</span><span className="web-solo-movil">Cómo</span> funciona</span></Link>
           </div>
-          <ul className="web-micro"><li><Icono n="tic" />30 días gratis sin tarjeta</li><li><Icono n="tic" />Importa desde Holded</li><li><Icono n="tic" />Preparada para Verifactu</li></ul>
+          <ul className="web-micro"><li><Icono n="tic" />30 días gratis, sin tarjeta</li><li><Icono n="tic" />Sin permanencia</li><li><Icono n="tic" />Tu gestoría entra gratis</li></ul>
         </div>
         <div className="web-hero-vis">
           <VentanaApp />
-          <div className="web-flota f1" aria-hidden><span className="web-flota-ico ok"><Icono n="tic" /></span><div><b>Factura F-0142 cobrada</b><small>+1.210,00 € · Altamira Consultores</small></div></div>
+          <div className="web-flota f1" aria-hidden><span className="web-flota-ico ok"><Icono n="tic" /></span><div><b>Factura F-0141 cobrada</b><small>+640,00 € · Estudio Norte</small></div></div>
           <div className="web-flota f2" aria-hidden><span className="web-flota-ico"><Icono n="asistente" /></span><div><b>Ticket leído con IA</b><small>Suministros Vega SL · 380,00 €</small></div></div>
           <div className="web-flota f3" aria-hidden><span className="web-flota-ico imp"><Icono n="impuestos" /></span><div><b>Aparta 3.347 €</b><small>Modelos del 3.er trimestre</small></div></div>
         </div>
