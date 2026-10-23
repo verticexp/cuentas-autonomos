@@ -82,6 +82,7 @@
 .modelo-plegable > summary .modelo-num svg { display: block; }
 .modelo-dato { flex: none; font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .modelo-dato.favor { color: var(--in); }
+.modelo-dato.info { font-size: 13px; font-weight: 500; color: var(--muted); }
 .modelo-plegable > summary::after { content: ''; flex: none; width: 7px; height: 7px; margin-left: -2px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(45deg) translateY(-2px); opacity: .7; transition: transform .2s ease-out; }
 .modelo-plegable[open] > summary::after { transform: rotate(225deg) translate(-1px, -1px); }
 .modelo-plegable[open] > summary { margin-bottom: 12px; }

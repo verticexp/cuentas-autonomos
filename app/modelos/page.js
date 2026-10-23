@@ -10,7 +10,7 @@ import { datosTerritorio, esForal, foralDe, pagosIrpfForal, plazoForal, situacio
 import { AvisoHaciendaForal } from '@/components/AvisoTerritorio';
 import { casillas303, habil, liquidaciones303, minoracion130, pendienteCaja, prorrataAnio, prorrataProvisional, r2, limiteTrimestre, resumenAnual, situacionTrimestre } from '@/lib/calculos';
 import { NOMBRES_UE, modelo369, plazo369 } from '@/lib/oss';
-import { TIPOS_RENDIMIENTO, modelo123, modelo193 } from '@/lib/capitalMobiliario';
+import { TIPOS_RENDIMIENTO, casillas123, modelo123, modelo193 } from '@/lib/capitalMobiliario';
 import PagosCapital from '@/components/PagosCapital';
 import { avisosFiscales } from '@/lib/revisionFiscal';
 import Prorrata from '@/components/Prorrata';
@@ -210,7 +210,7 @@ export default async function Modelos({ searchParams }) {
     }).map((m) => ({ ...m, ...(foralT ? { aeat: foralT.sede, sede: foralT.hacienda } : { aeat: AEAT[`m${m.num}`] }), ...(m.dia ? { plazo: plazoT(tAhora, m.dia) } : {}) })).map((m) => (dForal ? foralizar(m, tAhora) : m));
     if (l420) importes.unshift({ num: '420', modelo: '420 · IGIC', href: '#m420', texto: l420['45'] < 0 ? `A compensar ${eur(-l420['45'])}` : `A ingresar ${eur(l420.ingresar)}`, importe: l420.ingresar, aeat: SEDE_ATC, sede: 'ATC', plazo: fechaTexto(plazo420(anio, tAhora)) });
     ahora = (
-      <PresentarAhora t={tAhora} anio={anio}
+      <PresentarAhora t={tAhora} anio={anio} hacienda={foralT?.hacienda}
         aviso={textoSituacion(situacion(tAhora), limite(tAhora))}
         importes={importes}
         texto={igic || dForal ? [`${tAhora}T ${anio}`, ...importes.map((m) => `${m.modelo}: ${m.texto}${m.plazo ? ` · hasta el ${m.plazo}` : ''}`)].join('\n') : textoResumenModelos({ t: tAhora, anio, plazo: limite(tAhora), m303, m130, otros: importes.filter((m) => !['303', '130'].includes(m.num)) })} />
@@ -270,7 +270,7 @@ export default async function Modelos({ searchParams }) {
         <div className="grupo-c">
           {modelosDe({ ...f, intracom: hay349 }).map((m) => <div key={m.id} className="celda"><span className="modelo-num">{GLOSARIO[`m${m.id}`] ? <Termino id={`m${m.id}`}>{m.num || m.id}</Termino> : m.num || m.id}</span><span className="txt">{m.nombre}<small>{m.cuando}</small></span></div>)}
         </div>
-        <p className="grupo-pie">Según cómo trabajas ({f.tipo === 'sociedad' ? 'sociedad' : 'autónomo'}). Si algo no encaja, cámbialo en Ajustes › Actividades y modelos.</p>
+        <p className="grupo-pie">Según cómo trabajas ({f.tipo === 'sociedad' ? 'sociedad' : 'autónomo'}). Si algo no encaja, cámbialo en Ajustes › Actividades e impuestos.</p>
       </ModeloPlegable>
 
       {c420 && (
@@ -312,31 +312,41 @@ export default async function Modelos({ searchParams }) {
                 {liquidaciones[t - 1].devolucion > 0 ? <Importe texto="A devolver" v={liquidaciones[t - 1].devolucion} /> : c['46'] < 0 ? <Importe texto="A compensar" v={-c['46']} /> : <Importe texto="A ingresar" v={liquidaciones[t - 1].ingresar} />}
                 {dForal && t === 4 && <p className="nota">{dForal.iva.cuarto ? `El 4T no se presenta aparte: va en el ${dForal.iva.cuarto}, la autoliquidación final del año, hasta el ${limite(4)}.` : 'Con la del 4T va la declaración-resumen anual del IVA.'}</p>}
                 <Plegable><Casillas sinNumeros={Boolean(foralT)} filas={[
+                  // En el orden del formulario de 2026 (diseño DR303e26v101): devengado, deducible, resultado y liquidación.
                   c['01'] && ['01 · Base al 4 %', c['01']], c['03'] && ['03 · Cuota al 4 %', c['03']],
                   c['04'] && ['04 · Base al 10 %', c['04']], c['06'] && ['06 · Cuota al 10 %', c['06']],
                   ['07 · Base al 21 %', c['07']], ['09 · Cuota al 21 %', c['09']],
                   ...c.otros.flatMap((o) => [[`— · Base al ${o.pct} % (revisar casilla)`, o.base], [`— · Cuota al ${o.pct} % (revisar casilla)`, o.iva]]),
+                  c['10'] && ['10 · Compras a la UE (adquisiciones intracomunitarias): base', c['10']], c['11'] && ['11 · Compras a la UE: cuota', c['11']],
+                  c['12'] && ['12 · Inversión del sujeto pasivo (servicios de fuera de la UE y otras): base', c['12']], c['13'] && ['13 · Inversión del sujeto pasivo: cuota', c['13']],
                   c['14'] && ['14 · Rectificativas: base', c['14']], c['15'] && ['15 · Rectificativas: cuota', c['15']],
                   ...[['168', '170', '0,5'], ['19', '21', '1,4'], ['22', '24', '5,2']].flatMap(([b, q, r]) => (c[b] ? [[`${b} · Recargo de equivalencia ${r} %: base`, c[b]], [`${q} · Recargo de equivalencia ${r} %: cuota`, c[q]]] : [])),
                   ...(c.reOtros || []).flatMap((o) => [[`— · Recargo ${String(o.re).replace('.', ',')} %: base (revisar casilla)`, o.base], [`— · Recargo ${String(o.re).replace('.', ',')} %: cuota (revisar casilla)`, o.recargo]]),
                   c['25'] && ['25 · Recargo de rectificativas: base', c['25']], c['26'] && ['26 · Recargo de rectificativas: cuota', c['26']],
-                  c['10'] && ['10 · Compras a la UE: base', c['10']], c['11'] && ['11 · Compras a la UE: cuota', c['11']],
-                  c['12'] && ['12 · Compras de fuera de la UE: base', c['12']], c['13'] && ['13 · Compras de fuera de la UE: cuota', c['13']],
-                  ['27 · Total IVA devengado', c['27']], ['28 · Base del IVA soportado', c['28']], ['29 · IVA soportado', c['29']],
+                  ['27 · Total IVA devengado', c['27'], true],
+                  ['28 · Base del IVA soportado', c['28']], ['29 · IVA soportado deducible', c['29']],
                   c['30'] && ['30 · Bienes de inversión: base', c['30']], c['31'] && ['31 · Bienes de inversión: cuota', c['31']],
                   c['36'] && ['36 · Compras a la UE: base deducible', c['36']], c['37'] && ['37 · Compras a la UE: cuota deducible', c['37']],
                   c['38'] && ['38 · Bienes de inversión de la UE: base', c['38']], c['39'] && ['39 · Bienes de inversión de la UE: cuota', c['39']],
                   c['40'] && ['40 · Abonos de proveedores: base', c['40']], c['41'] && ['41 · Abonos de proveedores: cuota', c['41']],
+                  c['42'] && ['42 · Compensaciones del régimen agrario', c['42']],
                   c.prorrata && ['Prorrata aplicada', `${c.prorrata.provisional} %`],
                   c['44'] && [`44 · Regularización de la prorrata (definitiva: ${c.prorrata.definitiva} %)`, c['44']],
-                  c['59'] && ['59 · Empresas de otros países de la UE', c['59']],
+                  ['45 · Total a deducir', c['45'], true],
+                  ['46 · Resultado del régimen general', c['46'], true],
+                  c['59'] && ['59 · Ventas a empresas de la UE (entregas intracomunitarias)', c['59']],
+                  c['60'] && ['60 · Exportaciones', c['60']],
+                  c['120'] && ['120 · Servicios no sujetos por localizarse fuera de España', c['120']],
+                  c['122'] && ['122 · Ventas con inversión del sujeto pasivo (lo declara el cliente)', c['122']],
                   c['123'] && ['123 · Ventas de la ventanilla única (van en el 369)', c['123']],
                   c['62'] && ['62 · Criterio de caja: base de lo facturado', c['62']], c['63'] && ['63 · Criterio de caja: cuota de lo facturado', c['63']],
                   c['74'] && ['74 · Criterio de caja: base de lo comprado', c['74']], c['75'] && ['75 · Criterio de caja: cuota de lo comprado', c['75']],
-                  [c['46'] < 0 ? '46 · A compensar' : '46 · Resultado', Math.abs(c['46']), true],
-                  liquidaciones[t - 1].compensado > 0 && ['Cuotas anteriores compensadas', menos(liquidaciones[t - 1].compensado)],
-                  c['46'] >= 0 && !liquidaciones[t - 1].devolucion && ['A ingresar tras compensación', liquidaciones[t - 1].ingresar, true],
-                  liquidaciones[t - 1].devolucion > 0 && ['A devolver (todo el saldo a tu favor)', liquidaciones[t - 1].devolucion, true],
+                  liquidaciones[t - 1].anterior > 0 && ['110 · A compensar de trimestres anteriores', liquidaciones[t - 1].anterior],
+                  liquidaciones[t - 1].compensado > 0 && ['78 · Aplicado en este trimestre', menos(liquidaciones[t - 1].compensado)],
+                  liquidaciones[t - 1].anterior > 0 && !liquidaciones[t - 1].devolucion && ['87 · Sigue a tu favor para más adelante', r2(liquidaciones[t - 1].anterior - liquidaciones[t - 1].compensado)],
+                  liquidaciones[t - 1].devolucion > 0 ? ['71 · A devolver (todo el saldo a tu favor)', liquidaciones[t - 1].devolucion, true]
+                    : c['46'] < 0 ? ['71 · Resultado: a compensar en los próximos trimestres', c['46'], true]
+                    : ['71 · Resultado: a ingresar', liquidaciones[t - 1].ingresar, true],
                 ]} /></Plegable>
                 {t === 4 && liquidaciones[3].pendiente > 0 && <p className="nota">Te quedan {eur(liquidaciones[3].pendiente)} a tu favor: puedes compensarlos en {anio + 1} y siguientes o pedir que te los devuelvan (al marcarlo como presentado, elige «pido la devolución»).</p>}
                 <Fichero foral={foralT} modelo="303" anio={anio} t={t} nif={u.emisor?.nif} aeat={AEAT.m303} aviso={c.otros.length > 0 && 'Con tipos de IVA distintos del 4, 10 y 21 % rellénalo a mano en la Sede.'} />
@@ -466,7 +476,8 @@ export default async function Modelos({ searchParams }) {
                 {m.perceptores || p.perceptores ? <Casillas sinNumeros={Boolean(foralT)} filas={[
                   m.perceptores && ['01 · Trabajadores', String(m.perceptores)], m.perceptores && ['02 · Sueldos pagados', m.percepciones], m.perceptores && ['03 · Retenciones', m.retenciones],
                   p.perceptores && ['07 · Profesionales', String(p.perceptores)], p.perceptores && ['08 · Lo que les pagaste (base)', p.base], p.perceptores && ['09 · Retenciones', p.retenciones],
-                  ['28 · A ingresar', Math.max(0, r2(m.retenciones + p.retenciones)), true],
+                  ['28 · Total de retenciones', r2(m.retenciones + p.retenciones)],
+                  ['30 · A ingresar', Math.max(0, r2(m.retenciones + p.retenciones)), true],
                 ]} /> : <p className="nota">Sin nóminas ni profesionales con retención este trimestre.</p>}
                 {r2(m.retenciones + p.retenciones) < 0 && <p className="nota">Sale negativo por un abono de un profesional con retención: el 111 no lo admite. Regularízalo con ese profesional.</p>}
                 <p className="nota">Hasta el {plazoT(t, 20)}.</p>
@@ -540,7 +551,7 @@ export default async function Modelos({ searchParams }) {
           <p className="grupo-pie arriba">El {RET_ALQUILER} % de la renta (sin IVA) de los gastos marcados como alquiler del local.</p>
           <div className="tarjetas">
             {T.map((t) => { const m = modelo115(gastos, anio, t); return (
-              <div key={t} className="tarjeta"><h3>{t}T {anio}</h3>{m.base ? <Casillas sinNumeros={Boolean(foralT)} filas={[['01 · Perceptores', String(m.perceptores)], ['02 · Base de las retenciones', m.base], ['03 · Retenciones a ingresar', m.retenciones, true]]} /> : <p className="nota">Sin alquiler este trimestre.</p>}<p className="nota">Hasta el {plazoT(t, 20)}.</p>{m.base ? <PresentadoRet modelo="115" anio={anio} t={t} hecho={marcaRet(u.pres115, anio, t) ?? presentado(t)} soloLectura={soloLectura} /> : null}</div>
+              <div key={t} className="tarjeta"><h3>{t}T {anio}</h3>{m.base ? <Casillas sinNumeros={Boolean(foralT)} filas={[['01 · Perceptores', String(m.perceptores)], ['02 · Base de las retenciones', m.base], ['03 · Retenciones', m.retenciones], ['05 · A ingresar', m.retenciones, true]]} /> : <p className="nota">Sin alquiler este trimestre.</p>}<p className="nota">Hasta el {plazoT(t, 20)}.</p>{m.base ? <PresentadoRet modelo="115" anio={anio} t={t} hecho={marcaRet(u.pres115, anio, t) ?? presentado(t)} soloLectura={soloLectura} /> : null}</div>
             ); })}
           </div>
         </ModeloPlegable>
@@ -579,10 +590,16 @@ export default async function Modelos({ searchParams }) {
           <p className="grupo-pie arriba">Cuando pagas dividendos a los socios o intereses de un préstamo a una persona o a una empresa, le retienes el 19 % y lo ingresas cada trimestre con el 123 (el del 4T, hasta el 20 de enero). En enero, el 193 resume el año por perceptor.</p>
           <PagosCapital anio={anio} hoy={h} pagos={capitalAnio} sociedad={f.tipo === 'sociedad'} soloLectura={soloLectura} />
           <div className="tarjetas">
-            {T.map((t) => { const m = modelo123(capital, anio, t); return (
+            {T.map((t) => { const m = modelo123(capital, anio, t); const k = casillas123(capital, anio, t); return (
               <div key={t} className="tarjeta"><h3>{t}T {anio}</h3>
                 <Importe texto="A ingresar" v={m.retenciones} />
-                {m.base ? <Plegable><Casillas sinNumeros={Boolean(foralT)} filas={[['01 · Perceptores', String(m.perceptores)], ['02 · Base de las retenciones', m.base], ['03 · Retenciones', m.retenciones, true]]} /></Plegable> : <p className="nota">Sin pagos en este trimestre: no se presenta.</p>}
+                {m.base ? <Plegable><Casillas sinNumeros={Boolean(foralT)} filas={[
+                  // Desde 2024 (Orden HAC/56/2024): dividendos aparte del resto de rentas (intereses y otros); 01-03 cuentan pagos, no personas.
+                  k['01'] > 0 && ['01 · Dividendos: número de pagos', String(k['01'])], k['02'] > 0 && ['02 · Intereses y otras rentas: número de pagos', String(k['02'])], ['03 · Total de pagos', String(k['03'])],
+                  k['04'] > 0 && ['04 · Base: dividendos', k['04']], k['05'] > 0 && ['05 · Base: intereses y otras rentas', k['05']], ['06 · Base total', k['06']],
+                  k['07'] > 0 && ['07 · Retenciones: dividendos', k['07']], k['08'] > 0 && ['08 · Retenciones: intereses y otras rentas', k['08']], ['09 · Total de retenciones', k['09']],
+                  ['14 · A ingresar', k['14'], true],
+                ]} /></Plegable> : <p className="nota">Sin pagos en este trimestre: no se presenta.</p>}
                 {m.base > 0 && <PresentadoRet modelo="123" anio={anio} t={t} hecho={Boolean(u.pres123?.[anio]?.[t])} soloLectura={soloLectura} />}
               </div>
             ); })}
@@ -592,7 +609,7 @@ export default async function Modelos({ searchParams }) {
       })()}
 
       {m193 && (
-        <ModeloPlegable id="m193" num="193" nombre="Resumen anual de dividendos e intereses" detalle={m193.perceptores.length ? `Hasta el ${plazoAnual('01-31')}` : 'Sin pagos este año'} dato={importeFila(m193.retenciones)}>
+        <ModeloPlegable id="m193" num="193" nombre="Resumen anual de dividendos e intereses" detalle={m193.perceptores.length ? `Hasta el ${plazoAnual('01-31')}` : 'Sin pagos este año'} informativo={m193.perceptores.length > 0}>
           <h2 className="grupo-t">193 · Resumen anual</h2>
           {m193.perceptores.length ? <Casillas sinNumeros={Boolean(foralT)} filas={[...m193.perceptores.map((p) => [`${p.nif ? `${p.nif} · ` : ''}${p.nombre} · ${TIPOS_RENDIMIENTO[p.tipo]}`, `${eur(p.base)} · ret. ${eur(p.retenciones)}`]), ['Retenciones del año', m193.retenciones, true]]} /> : <p className="nota">Sin pagos de dividendos ni intereses en {anio}.</p>}
         </ModeloPlegable>
@@ -602,9 +619,9 @@ export default async function Modelos({ searchParams }) {
         const t = tPlazo(30); const m = modelo349(facturas, anio, t, gastos);
         const fila = filaPlazo(t, 30, t && `${m.operadores.length} ${m.operadores.length === 1 ? 'empresa' : 'empresas'}`, t && !m.operadores.length && 'sin operaciones: no se presenta');
         return (
-        <ModeloPlegable id="m349" num="349" nombre="Empresas de la UE" {...fila} dato={importeFila(m.total)}>
-          <h2 className="grupo-t">349 · Empresas de la UE</h2>
-          <p className="grupo-pie arriba">Facturas a clientes con NIF-IVA de otro país de la UE (clave S, servicios prestados) y gastos de proveedores de la UE con su NIF-IVA (clave I, servicios recibidos; si son bienes, la clave es A). Solo se presenta el trimestre en que haya alguna.</p>
+        <ModeloPlegable id="m349" num="349" nombre="Ventas y compras con empresas de la UE" {...fila} informativo={m.total > 0}>
+          <h2 className="grupo-t">349 · Ventas y compras con empresas de la UE</h2>
+          <p className="grupo-pie arriba">Facturas a clientes con NIF-IVA de otro país de la UE (clave S, servicios prestados) y gastos de proveedores de la UE con su NIF-IVA (clave I, servicios recibidos; si son bienes, la clave es A). Solo se presenta el trimestre en que haya alguna. No se paga: es informativo.</p>
           <div className="tarjetas">
             {T.map((t) => { const m = modelo349(facturas, anio, t, gastos); return (
               <div key={t} className="tarjeta"><h3>{t}T {anio}</h3>
@@ -630,8 +647,9 @@ export default async function Modelos({ searchParams }) {
       )}
 
       {m390 && (
-        <ModeloPlegable id="m390" num="390" nombre={dForal ? 'Autoliquidación final del IVA' : 'Resumen anual del IVA'} detalle={dForal ? `Con el 4T · hasta el ${limite(4)}` : `Hasta el ${plazoAnual('01-30')}`}>
+        <ModeloPlegable id="m390" num="390" informativo={!dForal} nombre={dForal ? 'Autoliquidación final del IVA' : 'Resumen anual del IVA'} detalle={dForal ? `Con el 4T · hasta el ${limite(4)}` : `Hasta el ${plazoAnual('01-30')}`}>
           <h2 className="grupo-t">{dForal ? '390 · Autoliquidación final del IVA (con el 4T)' : '390 · Resumen anual del IVA'}</h2>
+          {!dForal && <p className="grupo-pie arriba">No se paga: resume los cuatro 303 del año. Si cuadra con lo que presentaste, solo hay que enviarlo. Aquí van los importes por concepto; los números de casilla del 390 los pone tu gestor o el formulario de la Sede.</p>}
           <div className="tarjeta">
             <Casillas sinNumeros={Boolean(foralT)} filas={[
               m390.base4 && ['Base al 4 %', m390.base4], m390.cuota4 && ['Cuota al 4 %', m390.cuota4],
@@ -643,7 +661,7 @@ export default async function Modelos({ searchParams }) {
               m390.baseFuera && ['Compras de fuera de la UE (base)', m390.baseFuera], m390.cuotaFuera && ['Compras de fuera de la UE (cuota)', m390.cuotaFuera],
               ['Total IVA devengado', m390.devengado, true],
               ['Base del IVA soportado', m390.baseDed], ['Total IVA deducible', m390.deducible, true],
-              ['Resultado del año', m390.resultado, true],
+              ['Suma de los resultados de los 303 del año', m390.resultado, true],
               ...m390.trimestres.map((v, i) => [`303 del ${i + 1}T`, v]),
               m390.sinIva && ['Operaciones sin IVA', m390.sinIva], ['Volumen de operaciones', m390.volumen],
             ]} />
@@ -651,12 +669,12 @@ export default async function Modelos({ searchParams }) {
         </ModeloPlegable>
       )}
 
-      <ModeloPlegable id="m347" num="347" nombre="Operaciones con terceros"
+      <ModeloPlegable id="m347" num="347" nombre="Operaciones con terceros" informativo={m347.ventas.length + m347.compras.length > 0}
         estado={m347.sinNif.length ? 'fuera' : undefined}
         detalle={m347.sinNif.length ? `Falta el NIF de ${m347.sinNif.length} ${m347.sinNif.length === 1 ? 'cliente o proveedor' : 'clientes o proveedores'}`
-          : m347.ventas.length + m347.compras.length ? `${m347.ventas.length + m347.compras.length} clientes y proveedores · hasta el ${plazoAnual(finFebrero)}` : 'Nadie pasa de 3.005,06 €: no se presenta'}>
+          : m347.ventas.length + m347.compras.length ? `${m347.ventas.length + m347.compras.length === 1 ? '1 cliente o proveedor' : `${m347.ventas.length + m347.compras.length} clientes y proveedores`} · hasta el ${plazoAnual(finFebrero)}` : 'Nadie pasa de 3.005,06 €: no se presenta'}>
         <h2 className="grupo-t">347 · Operaciones de más de 3.005,06 €</h2>
-        <p className="grupo-pie arriba">Clientes y proveedores con los que pasas de 3.005,06 € en el año, IVA incluido. No entra lo que ya va en el 349, lo de fuera de la UE, lo que lleva retención (va en el 190 o el 180) ni los tickets sin proveedor. Se presenta del 1 de febrero al {plazoAnual(finFebrero)}.</p>
+        <p className="grupo-pie arriba">Clientes y proveedores con los que pasas de 3.005,06 € en el año, IVA incluido. No entra lo que ya va en el 349, lo de fuera de la UE, lo que lleva retención (va en el 190 o el 180) ni los tickets sin proveedor. Se presenta del 1 de febrero al {plazoAnual(finFebrero)} y no se paga: es informativo.</p>
         {m347.ventas.length || m347.compras.length ? (
           <div className="tarjetas">
             {[['Clientes (clave B)', m347.ventas], ['Proveedores (clave A)', m347.compras]].filter(([, l]) => l.length).map(([t, l]) => (
@@ -670,8 +688,9 @@ export default async function Modelos({ searchParams }) {
       </ModeloPlegable>
 
       {m180 && (
-        <ModeloPlegable id="m180" num="180" nombre="Resumen anual del alquiler" detalle={m180.arrendadores.length ? `Hasta el ${plazoAnual('01-31')}` : 'Sin alquileres este año'} dato={importeFila(m180.retenciones)}>
+        <ModeloPlegable id="m180" num="180" nombre="Resumen anual del alquiler" detalle={m180.arrendadores.length ? `Hasta el ${plazoAnual('01-31')}` : 'Sin alquileres este año'} informativo={m180.arrendadores.length > 0}>
           <h2 className="grupo-t">180 · Resumen anual del alquiler</h2>
+          <p className="grupo-pie arriba">No se paga: resume, por arrendador, el alquiler y las retenciones que ya ingresaste con el 115 cada trimestre.</p>
           <div className="tarjeta">
             {m180.arrendadores.length ? <Casillas sinNumeros={Boolean(foralT)} filas={[...m180.arrendadores.map((p) => [`${p.nif ? `${p.nif} · ` : ''}${p.nombre}`, `${eur(p.base)} · ret. ${eur(p.retenciones)}`]), ['Retenciones del año', m180.retenciones, true]]} /> : <p className="nota">Sin alquileres este año.</p>}
           </div>
@@ -679,8 +698,9 @@ export default async function Modelos({ searchParams }) {
       )}
 
       {m190 && (
-        <ModeloPlegable id="m190" num="190" nombre="Resumen anual de retenciones" detalle={m190.perceptores.length ? `Hasta el ${plazoAnual('01-31')}` : 'Sin nóminas este año'} dato={importeFila(m190.retenciones)}>
+        <ModeloPlegable id="m190" num="190" nombre="Resumen anual de retenciones" detalle={m190.perceptores.length ? `Hasta el ${plazoAnual('01-31')}` : 'Sin nóminas este año'} informativo={m190.perceptores.length > 0}>
           <h2 className="grupo-t">190 · Resumen anual de retenciones</h2>
+          <p className="grupo-pie arriba">No se paga: resume, por persona, lo que pagaste y las retenciones que ya ingresaste con el 111 cada trimestre (A: trabajadores; G: profesionales).</p>
           <div className="tarjeta">
             {m190.perceptores.length ? <Casillas sinNumeros={Boolean(foralT)} filas={[...m190.perceptores.map((p) => [`${p.nif ? `${p.nif} · ` : ''}${p.nombre} (${p.clave})`, `${eur(p.percepciones)} · ret. ${eur(p.retenciones)}`]), ['Percepciones del año', m190.percepciones], ['Retenciones del año', m190.retenciones, true]]} /> : <p className="nota">Sin nóminas este año.</p>}
           </div>
@@ -702,7 +722,7 @@ export default async function Modelos({ searchParams }) {
             {is.foral ? <p className="nota">Tipo de la {foralT.hacienda} según tu cifra de negocios{is.conAnterior ? ` de ${anio - 1}` : ' de este año (no hay datos del anterior)'} ({eur(is.incn)}): {is.tramos[0]?.pct ?? '—'} %. Fisquo no sabe tu plantilla ni tu activo, que también cuentan para ser micro o pequeña empresa: confírmalo con tu gestor.</p> :
             <p className="nota">Tipo de {is.tamano === 'micro' ? 'microempresa (facturación de menos de 1 millón)' : is.tamano === 'reducida' ? 'empresa de reducida dimensión (menos de 10 millones)' : 'general'}{is.conAnterior ? ` según lo facturado en ${anio - 1}` : ', con lo facturado este año (no hay datos del anterior)'}.{' '}
               {is.nuevaCreacion?.aplica ? `Sociedad de nueva creación: tributa al 15 % (primer año con beneficio, ${is.nuevaCreacion.primero}, y el siguiente). No vale si la actividad ya la hacía antes otra persona o sociedad vinculada, si es del mismo grupo o si es patrimonial: confírmalo con tu gestor.`
-                : !f.constitucion ? 'Si la sociedad es de nueva creación, añade su fecha de constitución en Ajustes › Actividades y modelos: el primer año con beneficio y el siguiente tributa al 15 %.'
+                : !f.constitucion ? 'Si la sociedad es de nueva creación, añade su fecha de constitución en Ajustes › Actividades e impuestos: el primer año con beneficio y el siguiente tributa al 15 %.'
                 : is.nuevaCreacion?.falta ? `No hay datos de ${is.nuevaCreacion.falta} en Fisquo para saber si aún toca el 15 % de nueva creación: confírmalo con tu gestor.`
                 : is.nuevaCreacion?.primero && is.nuevaCreacion.primero < anio - 1 ? `El 15 % de nueva creación ya se aplicó en ${is.nuevaCreacion.primero} y ${is.nuevaCreacion.primero + 1}.` : ''}</p>}
           </div>
@@ -713,7 +733,7 @@ export default async function Modelos({ searchParams }) {
         <ModeloPlegable id="m100" num="100" nombre={`Renta ${anio}`} favor={renta.resultado < 0}
           detalle={`Borrador · ${renta.resultado >= 0 ? 'saldría a pagar' : 'saldría a devolver'} · de abril a junio de ${anio + 1}`} dato={importeFila(Math.abs(renta.resultado))}>
           <h2 className="grupo-t">Borrador de la renta {anio}</h2>
-          <p className="grupo-pie arriba">Tu actividad (estimación directa simplificada){f.renta ? ', con los datos personales de Ajustes' : ''}. No incluye deducciones autonómicas, vivienda, planes de pensiones ni discapacidad: tómalo como una idea de cuánto te saldrá.{!f.renta && ' Añade tu situación familiar en Ajustes › Actividades y modelos para afinarlo.'}</p>
+          <p className="grupo-pie arriba">Tu actividad (estimación directa simplificada){f.renta ? ', con los datos personales de Ajustes' : ''}. No incluye deducciones autonómicas, vivienda, planes de pensiones ni discapacidad: tómalo como una idea de cuánto te saldrá.{!f.renta && ' Añade tu situación familiar en Ajustes › Actividades e impuestos para afinarlo.'}</p>
           <div className="tarjeta">
             <Casillas sinNumeros={Boolean(foralT)} filas={[
               ['Ingresos de la actividad', renta.ingresos], ['Gastos deducibles', menos(renta.gastos)], renta.difJust > 0 && ['5 % gastos de difícil justificación', menos(renta.difJust)],

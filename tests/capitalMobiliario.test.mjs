@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { RET_CAPITAL, TIPOS_RENDIMIENTO, limpiarPago, modelo123, modelo193, plazo123, plazo193 } from '../lib/capitalMobiliario.js';
+import { RET_CAPITAL, TIPOS_RENDIMIENTO, casillas123, limpiarPago, modelo123, modelo193, plazo123, plazo193 } from '../lib/capitalMobiliario.js';
 
 const formulario = (cambios = {}) => ({ fecha: '2026-02-10', tipo: 'dividendos', perceptor: { nombre: 'Ana', nif: '12345678Z' }, bruto: 1000, ...cambios });
 const pago = (cambios = {}) => {
@@ -155,4 +155,15 @@ test('plazo193: último día de enero siguiente, desplazado a hábil', () => {
   assert.equal(plazo193(2023), '2024-01-31');
   assert.equal(plazo193(2025), '2026-02-02');
   assert.equal(plazo193(2026), '2027-02-01');
+});
+
+// Auditoría 23-10-2026 (F2-01): el 123 de 2024 en adelante separa dividendos del resto de rentas y cuenta pagos (01-03).
+test('123: casillas de 2024 en adelante, con dividendos y resto de rentas aparte', () => {
+  const pago = (tipo, bruto, fecha = '2026-05-10', nombre = 'Socia') => ({ fecha, tipo, perceptor: { nombre, nif: '12345678Z' }, bruto, retencionPct: 19, retencion: Math.round(bruto * 19) / 100 });
+  const pagos = [pago('dividendos', 5000), pago('dividendos', 5000, '2026-06-01', 'Socio'), pago('intereses', 2000, '2026-06-15', 'Prestamista')];
+  const c = casillas123(pagos, 2026, 2);
+  assert.deepEqual([c['01'], c['02'], c['03']], [2, 1, 3]);
+  assert.deepEqual([c['04'], c['05'], c['06']], [10000, 2000, 12000]);
+  assert.deepEqual([c['07'], c['08'], c['09'], c['12'], c['14']], [1900, 380, 2280, 2280, 2280]);
+  assert.equal(casillas123(pagos, 2026, 1)['03'], 0);
 });

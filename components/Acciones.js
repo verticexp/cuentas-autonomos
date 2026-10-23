@@ -87,7 +87,7 @@ export function Presentado({ anio, t, importe, pagado, con130 = true, situacion,
     });
   };
   const selector = (
-    <select className={`estado ${elegido === 'pagado' || (!con130 && elegido !== 'pendiente') ? 'ok' : 'pend'}`} value={elegido} onChange={cambiar} aria-label={`Estado del ${modelo || (con130 ? '130' : '303')} del ${t}T ${anio}`} aria-disabled={guardando || undefined} aria-busy={guardando || undefined}>
+    <select className={`estado ${elegido === 'pagado' || (!con130 && elegido !== 'pendiente') ? 'ok' : `pend${situacion?.estado === 'fuera' ? ' fuera' : ''}`}`} value={elegido} onChange={cambiar} aria-label={`Estado del ${modelo || (con130 ? '130' : '303')} del ${t}T ${anio}`} aria-disabled={guardando || undefined} aria-busy={guardando || undefined}>
       <option value="pendiente">Pendiente</option>
       {con130 ? <>
         <option value="pagado">Presentado y 130 pagado</option>
