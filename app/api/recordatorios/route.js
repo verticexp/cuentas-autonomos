@@ -4,6 +4,7 @@ import { hoy } from '@/lib/formato';
 import { purgarBajas } from '@/lib/baja';
 import { planificarDia, resumenTanda } from '@/lib/trabajosTareas';
 import { tanda } from '@/lib/trabajos';
+import { sincronizarTodas } from '@/lib/licencias';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -19,8 +20,10 @@ export async function GET(req) {
   const dia = hoy();
   // Empresas dadas de baja cuyo plazo legal de conservación ha acabado: se borran del todo.
   const bajas = await purgarBajas(dia);
+  // Licencias de los despachos: las de los clientes cuyos días gratis acaban hoy empiezan a contar (lib/licencias.js).
+  const despachos = await sincronizarTodas(dia).catch((e) => { console.warn('[licencias]', e.message); return 0; });
   const planificados = await planificarDia(dia, req.nextUrl.origin, ['indices', 'recordatorios', 'push', 'verifactu', 'prueba', 'gestoria']);
   // La primera tanda, aquí mismo (su resumen va en la respuesta); si queda trabajo, encadena las siguientes.
   const r = await tanda(req.nextUrl.origin, 0, { hasta: inicio + 50000 });
-  return Response.json({ ok: true, planificados, bajas, ...resumenTanda(r) });
+  return Response.json({ ok: true, planificados, bajas, despachos, ...resumenTanda(r) });
 }

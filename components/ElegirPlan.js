@@ -25,6 +25,8 @@ export default function ElegirPlan({ plan, tipoEmpresa, uso, admin, app }) {
   const paga = Boolean(actual?.pagado && actual?.suscripcion);
   // Fundador (lib/prueba.js): gratis de por vida; ve los mismos planes que los clientes, sin poder contratarlos.
   const fundador = esFundador(actual);
+  // Lo paga su gestoría (lib/licencias.js): no contrata nada mientras dure.
+  const despacho = actual?.porDespacho || null;
 
   async function llamar(datos) {
     setEstado('enviando');
@@ -55,7 +57,7 @@ export default function ElegirPlan({ plan, tipoEmpresa, uso, admin, app }) {
   if (app) return dias === 0 ? <p className="nota">Tu periodo de prueba ha terminado. Puedes consultar y exportar todos tus datos.</p> : null;
   const ocupado = estado === 'enviando';
   const esActual = (n) => actual?.tipo === tipo && actual?.nombre === n && (actual.periodo || 'mes') === periodo;
-  const estadoPlan = fundador ? 'Gratis de por vida' : paga ? actual.estado === 'past_due' ? 'Revisar pago' : actual.estado === 'trialing' ? 'Prueba con tarjeta' : 'Activo'
+  const estadoPlan = fundador ? 'Gratis de por vida' : despacho ? 'Incluido por tu gestoría' : paga ? actual.estado === 'past_due' ? 'Revisar pago' : actual.estado === 'trialing' ? 'Prueba con tarjeta' : 'Activo'
     : dias === 0 ? 'Prueba finalizada' : dias > 0 ? `Prueba · ${dias} días` : actual?.nombre ? 'Pendiente de activación' : 'Condiciones anteriores';
 
   return <div className={styles.contenido} aria-busy={ocupado}>
@@ -64,12 +66,12 @@ export default function ElegirPlan({ plan, tipoEmpresa, uso, admin, app }) {
       <section className={styles.actual} aria-labelledby="plan-actual">
         <div className={styles.cabeceraActual}><h2 id="plan-actual">Tu suscripción</h2><span className={styles.estado}>{estadoPlan}</span></div>
         <p className={styles.nombreActual}>{fundador ? 'Plan Fundador' : `${TIPOS[actual.tipo]} ${actual.nombre}`}</p>
-        <p className={styles.detalleActual}>{fundador ? 'Todas las funciones, sin límites de usuarios ni cuotas. Abajo tienes los planes que ven los clientes nuevos.' : paga ? `Facturación ${actual.periodo === 'anio' ? 'anual' : 'mensual'} · una empresa por suscripción`
+        <p className={styles.detalleActual}>{fundador ? 'Todas las funciones, sin límites de usuarios ni cuotas. Abajo tienes los planes que ven los clientes nuevos.' : despacho ? `Lo paga ${despacho.nombre} dentro de lo que te cobra. Si deja de incluirlo, tendrás tiempo para elegir tu plan.` : paga ? `Facturación ${actual.periodo === 'anio' ? 'anual' : 'mensual'} · una empresa por suscripción`
           : dias === 0 ? 'Tu cuenta está en solo lectura: puedes consultar y exportar todos tus datos. Elige un plan y vuelves a crear y editar al momento, sin perder nada.'
           : dias > 0 ? 'Prueba sin tarjeta: no se cobra nada si no activas un plan. Si al acabar no has elegido, tu cuenta pasa a solo lectura: ves y exportas todo, pero no puedes crear ni editar.'
           : 'Consulta las opciones disponibles para tu empresa.'}</p>
         {paga && actual.estado === 'past_due' && <p className={styles.alerta}>El último cobro ha fallado. Revisa tu método de pago.</p>}
-        {admin && !fundador && <div className={styles.gestion}>
+        {admin && !fundador && !despacho && <div className={styles.gestion}>
           {paga ? <button type="button" className={styles.botonGestion} disabled={ocupado} onClick={() => llamar({ portal: true })}>Gestionar facturación <span aria-hidden="true">↗</span></button>
             : actual?.nombre && <button type="button" className={styles.botonGestion} disabled={ocupado} onClick={() => llamar({ tipo: actual.tipo, nombre: actual.nombre, periodo: actual.periodo || 'mes' })}>Activar {actual.nombre} · pago {actual.periodo === 'anio' ? 'anual' : 'mensual'}</button>}
           {paga && <span>Tarjeta, facturas y cancelación</span>}
@@ -109,7 +111,7 @@ export default function ElegirPlan({ plan, tipoEmpresa, uso, admin, app }) {
             <p className={styles.para}>{p.fuerte ? 'Operaciones, previsión y análisis en un solo plan' : p.para}</p>
             <p className={styles.precio}><strong>{euros(periodo === 'anio' ? anual / 12 : p.p)} €</strong><span>/mes</span></p>
             <p className={styles.facturacion}>{periodo === 'anio' ? `${euros(anual)} € facturados al año` : 'Facturación mensual'} · sin IVA</p>
-            {fundador ? <p className={styles.incluido}><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m3 8 3 3 7-7" /></svg>Incluido en tu plan Fundador</p> : elegido ? <p className={styles.planElegido}>Tu plan actual</p> : admin ? <button type="button" className={`${styles.botonPlan} ${p.fuerte ? styles.botonPro : ''}`} disabled={ocupado} onClick={() => elegir(p.n)}>{paga ? `Cambiar a ${p.n}` : `Elegir ${p.n}`}</button> : <p className={styles.soloAdmin}>Gestionado por el administrador</p>}
+            {fundador || despacho ? <p className={styles.incluido}><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m3 8 3 3 7-7" /></svg>{fundador ? 'Incluido en tu plan Fundador' : elegido ? 'Tu plan actual, incluido por tu gestoría' : 'Lo gestiona tu gestoría'}</p> : elegido ? <p className={styles.planElegido}>Tu plan actual</p> : admin ? <button type="button" className={`${styles.botonPlan} ${p.fuerte ? styles.botonPro : ''}`} disabled={ocupado} onClick={() => elegir(p.n)}>{paga ? `Cambiar a ${p.n}` : `Elegir ${p.n}`}</button> : <p className={styles.soloAdmin}>Gestionado por el administrador</p>}
             </div><div className={styles.funciones}>
               <p>{p.herencia ? `Todo lo de ${p.herencia}, más:` : 'Lo esencial para tu día a día:'}</p>
               <ul>{p.l.map((t) => <li key={t}><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m3 8 3 3 7-7" /></svg><span>{t}</span></li>)}</ul>

@@ -19,6 +19,7 @@ export async function POST(req) {
   if (esApp(req.headers.get('user-agent'))) return error('El plan se contrata desde la web', 403);
   if (!stripeListo()) return error('Los pagos no están activados todavía. Escríbenos a corporate@fisquo.com.', 503);
   if (esFundador(u.plan)) return error('Tu empresa tiene el plan Fundador: es gratis de por vida y no tienes que contratar nada.', 400);
+  if (u.plan?.porDespacho) return error(`Tu plan lo paga ${u.plan.porDespacho.nombre}: no tienes que contratar nada mientras lo incluya.`, 400);
   const b = await cuerpo(req);
   const volver = new URL('/ajustes/plan', req.url).toString();
   if (b.portal) {

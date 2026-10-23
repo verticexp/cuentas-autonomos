@@ -25,6 +25,9 @@ import RegistrarSw from '@/components/RegistrarSw';
 import GestoAtras from '@/components/GestoAtras';
 import BarraEstado from '@/components/BarraEstado';
 import { WEB } from '@/lib/web';
+import NavDespacho from '@/components/NavDespacho';
+import AvisoDespacho from '@/components/AvisoDespacho';
+import { despachoDe, rolEn } from '@/lib/despachos';
 
 // Pantalla de arranque de la web guardada en la pantalla de inicio del iPhone: el mismo verde que la animación de inicio,
 // así no hay destello blanco al abrirla. iOS elige la de su tamaño (ancho y alto en puntos, escala); public/inicio-ios/.
@@ -84,6 +87,9 @@ export default async function RootLayout({ children }) {
   const ruta = cab.get('x-ruta') || '/';
   const nonce = cab.get('x-nonce') || undefined;
   if (!abierta && !LIBRE.test(ruta)) redirect(`/bloqueo?a=${encodeURIComponent(ruta)}`);
+  // Mi despacho (app/despacho): su propia barra en lugar de la de la empresa.
+  const despacho = u?.despacho && (await despachoDe(u.despacho).catch(() => null));
+  const enDespacho = Boolean(despacho && rolEn(despacho, u.id) && /^\/despacho(\/|$)/.test(ruta.split('?')[0]));
   return (
     <html lang="es" data-tema={tema} data-app={app ? 'ios' : undefined} suppressHydrationWarning>
       <head>
@@ -101,8 +107,9 @@ export default async function RootLayout({ children }) {
         {u && soloLectura(u.plan) && !ruta.startsWith('/ajustes/plan') && (
           <p className="aviso-lectura" role="status"><span>{app ? SOLO_LECTURA_APP : puede(u, 'empresa') ? 'Tu prueba ha terminado: puedes ver y exportar todo, pero no crear ni editar.' : 'La prueba de tu empresa ha terminado: puedes ver y exportar todo. Para crear o editar, pídele al administrador que elija un plan.'}</span>{!app && puede(u, 'empresa') && <a href="/ajustes/plan">Elegir plan</a>}</p>
         )}
+        {u?.viaDespacho && <AvisoDespacho cliente={u.emisor?.nombre || u.empresaNombre} despacho={u.viaDespacho.nombre} empresa={u.empresa} />}
         {children}
-        <Suspense>{u && <TabBar porRevisar={porRevisar} permisos={permisosDe(u)} empresas={u.misEmpresas} empresa={u.empresa} admin={Boolean(u.admin)} inventario={Boolean(u.fiscal?.inventario)} equipo={Boolean(equipo)} fiscal={{ tipo: u.fiscal?.tipo, iva: u.fiscal?.iva }} faltan={planesQueFaltan(u.plan)} />}<Llegada /><BarraEstado /></Suspense>
+        <Suspense>{enDespacho ? <NavDespacho nombre={despacho.nombre} /> : u && <TabBar despacho={Boolean(despacho && rolEn(despacho, u.id))} porRevisar={porRevisar} permisos={permisosDe(u)} empresas={u.misEmpresas} empresa={u.empresa} admin={Boolean(u.admin)} inventario={Boolean(u.fiscal?.inventario)} equipo={Boolean(equipo)} fiscal={{ tipo: u.fiscal?.tipo, iva: u.fiscal?.iva }} faltan={planesQueFaltan(u.plan)} />}<Llegada /><BarraEstado /></Suspense>
         {u?.bloqueoPantalla && <Bloqueo email={u.email} servidor={abierta} />}
       </body>
     </html>

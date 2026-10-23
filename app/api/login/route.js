@@ -1,6 +1,7 @@
 import { respuesta429 } from '@/lib/limite';
 import { NextResponse } from 'next/server';
-import { desbloqueo, entrar, opcionesCookie, opcionesDesbloqueo } from '@/lib/auth';
+import { desbloqueo, entrar, limpiarEmail, opcionesCookie, opcionesDesbloqueo } from '@/lib/auth';
+import { redis } from '@/lib/redis';
 
 export async function POST(req) {
   let form;
@@ -21,7 +22,10 @@ export async function POST(req) {
     return res;
   }
   if (!r?.token) return NextResponse.redirect(new URL(`/login?error=${r?.bloqueado ? 'bloqueado' : 1}`, req.url), 303);
-  const res = NextResponse.redirect(new URL('/', req.url), 303);
+  // La gente de un despacho entra a su panel (Mi despacho), con su propia empresa en este dispositivo.
+  const cuenta = await redis.hget('usuarios', String((await redis.hget('emails', limpiarEmail(form.get('email')))) || ''));
+  const res = NextResponse.redirect(new URL(cuenta?.despacho ? '/despacho' : '/', req.url), 303);
+  if (cuenta?.despacho) res.cookies.set('e', String(cuenta.empresa || cuenta.id), opcionesCookie);
   res.cookies.set('t', r.token, opcionesCookie);
   res.cookies.set('d', await desbloqueo(r.token), opcionesDesbloqueo);
   res.cookies.set('recien', '1', { path: '/', maxAge: 60, sameSite: 'lax' }); // acaba de entrar: sin pantalla de bloqueo
