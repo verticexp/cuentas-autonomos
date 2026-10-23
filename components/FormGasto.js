@@ -12,7 +12,7 @@ import Deslizable from './Deslizable';
 import { eur, fechaCorta } from '@/lib/formato';
 import { TIPOS_IGIC } from '@/lib/igic';
 import { importes, nifUE, origenGasto } from '@/lib/calculos';
-import { conIva, costeAfecto, partirIva, pctAfecto, pctDeducible } from '@/lib/ivaDeducible';
+import { conIva, costeAfecto, partirIva, pctAfecto, pctDeducible, tipoAutoliquidado } from '@/lib/ivaDeducible';
 import { parseImporte } from '@/lib/importe';
 import { CATEGORIAS, categoria, categoriaDe, pareceBien } from '@/lib/categorias';
 import { LIMITE_LIBERTAD, TIPOS_BIEN, coeficiente } from '@/lib/amortizaciones';
@@ -403,7 +403,14 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
           <option value="fuera">Proveedor de fuera de la UE</option>
         </select>
       )}
-      {!igic && !Number(g.ivaPct) && !g.porTipo && ['ue', 'fuera'].includes(g.origen || (nifUE(g.proveedorNif) ? 'ue' : '')) && <p className="nota">El IVA (21 %) lo declaras tú en el 303 y te lo deduces a la vez: no pagas nada de más.{g.origen !== 'fuera' && !nifUE(g.proveedorNif) ? ' Pon su NIF-IVA (por ejemplo, IE6388047V): también va en el 349.' : ''}</p>}
+      {!igic && origenGasto(gn) && <>
+        <label>IVA que declaras por esta compra<select className="campo" value={tipoAutoliquidado(g)} onChange={(e) => poner('ivaAuto', Number(e.target.value))}>
+          <option value={21}>21 % (general)</option>
+          <option value={10}>10 % (alimentos, productos sanitarios…)</option>
+          <option value={4}>4 % (libros, pan, leche…)</option>
+        </select></label>
+        <p className="nota">Ese IVA lo declaras tú en el 303 y te lo deduces a la vez: no cambia lo que pagas, pero tiene que salir en las dos partes.{g.origen !== 'fuera' && !nifUE(g.proveedorNif) ? ' Pon su NIF-IVA (por ejemplo, IE6388047V): también va en el 349.' : ''}</p>
+      </>}
       <label>Fecha<input className="campo" type="date" value={g.fecha} onChange={(e) => poner('fecha', e.target.value)} required /></label>
       <label>Proyecto, obra o local (opcional)<input className="campo" list="proyectos-gasto" value={g.proyecto || ''} onChange={(e) => poner('proyecto', e.target.value)} placeholder="Ej.: Obra Calle Mayor" maxLength={60} /></label>
       <datalist id="proyectos-gasto">{proyectos.map((p) => <option key={p} value={p} />)}</datalist>
