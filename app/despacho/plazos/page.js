@@ -17,7 +17,7 @@ const enDias = (a, b) => Math.round((Date.parse(`${b}T12:00:00Z`) - Date.parse(`
 export default async function Plazos() {
   const { u, d } = await requerirDespacho();
   const dia = hoy();
-  const clientes = (await clientesVisibles(d, u.id)).map(({ id, empresa: e }) => ({ id, nombre: e.emisor?.nombre || e.nombre, fiscal: e.fiscal || {}, pres: { pres303: e.pres303, pagos130: e.pagos130, pres111: e.pres111, pres115: e.pres115, pres123: e.pres123 } }));
+  const clientes = (await clientesVisibles(d, u.id)).map(({ id, empresa: e }) => ({ id, nombre: e.nombre || e.emisor?.nombre, fiscal: e.fiscal || {}, pres: { pres303: e.pres303, pagos130: e.pagos130, pres111: e.pres111, pres115: e.pres115, pres123: e.pres123 } }));
   const plazos = plazosDespacho(clientes, { hoy: dia, dias: DIAS });
   return <main className="pagina mk-look despacho">
     <h1 className="titulo">Plazos</h1>

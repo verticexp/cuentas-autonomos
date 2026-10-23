@@ -53,11 +53,11 @@ export default function TuDespacho({ despacho, accesos = [], comentarios = [], c
     <h2 className="grupo-t" id="td-t">Tu gestoría en Fisquo</h2>
     <div className="grupo-c relleno">
       <p>Si tu gestoría trabaja con Fisquo, dale acceso con su código: verá tus cuentas, revisará cada trimestre y podrá preguntarte aquí. Tú ves todo lo que hace y se lo puedes quitar cuando quieras.</p>
-      <form className="desp-barra" onSubmit={buscar}>
+      <form className="desp-codigo" onSubmit={buscar}>
         <input className="campo" autoCapitalize="characters" autoComplete="off" spellCheck={false} maxLength={20} placeholder="Código de tu gestoría" aria-label="Código de tu gestoría" value={codigo} onChange={(e) => { setCodigo(e.target.value); setNombre(''); }} />
         <button className="boton sec" disabled={!codigo.trim()}>Buscar</button>
       </form>
-      {nombre && <p>Es <b>{nombre}</b>. <button type="button" className="boton" onClick={dar}>Dar acceso a {nombre}</button></p>}
+      {nombre && <div className="desp-codigo-ok"><span>Es <b>{nombre}</b>.</span><button type="button" className="boton" onClick={dar}>Dar acceso a {nombre}</button></div>}
       {msg && <p className="error" role="alert">{msg}</p>}
     </div>
   </section>;
@@ -68,7 +68,7 @@ export default function TuDespacho({ despacho, accesos = [], comentarios = [], c
       <div className="grupo-c relleno">
         <p><b>{despacho.nombre}</b> lleva tus cuentas en Fisquo desde el {fechaCorta(String(despacho.desde).slice(0, 10))}.{despacho.licencia ? ' Fisquo va incluido en lo que te cobra tu gestoría: no pagas nada a Fisquo.' : ''}</p>
         <p className="nota">Entra con el perfil Gestoría: ve tus facturas, gastos, nóminas, contabilidad e impuestos. Cuando revisa un trimestre lo cierra: ya no se pueden cambiar sus facturas ni sus gastos hasta que lo reabra.</p>
-        <button type="button" className="boton sec" onClick={quitar}>Quitar el acceso</button>
+        <button type="button" className="boton sec desp-mini" onClick={quitar}>Quitar el acceso</button>
         {msg && <p className="error" role="alert">{msg}</p>}
       </div>
     </section>

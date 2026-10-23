@@ -6,8 +6,10 @@ export default function AvisoDespacho({ cliente, despacho, empresa }) {
   return (
     <div className="aviso-despacho" role="status">
       <span>Estás en las cuentas de <b>{cliente}</b> como {despacho}</span>
-      <a href={`/despacho/${encodeURIComponent(empresa)}`}>Ficha del cliente</a>
-      <form method="post" action="/api/despacho/salir"><button type="submit">Volver al despacho</button></form>
+      <span className="aviso-despacho-acc">
+        <a href={`/despacho/${encodeURIComponent(empresa)}`}>Ficha del cliente</a>
+        <form method="post" action="/api/despacho/salir"><button type="submit">Volver al despacho</button></form>
+      </span>
     </div>
   );
 }
