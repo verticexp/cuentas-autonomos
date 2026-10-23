@@ -51,7 +51,8 @@ export default async function Analisis({ searchParams }) {
   const anio = Number(sp.anio) || actual;
   const p = /^[1-4]$/.test(sp.p || '') ? sp.p : '';
   const fiscal = fiscalDe(u);
-  const d = informe({ facturas, gastos, nominas: nominas || [], manuales: manuales || [], saldo, fiscal, pagos130: u.pagos130 || {}, pres303: u.pres303 || {}, pres369: u.pres369 || {}, pres123: u.pres123 || {}, capital: (await leer(u, 'capital')) || [], pagos202: u.pagos202 || {}, cuotaIS: u.cuotaIS || {}, productos: productos || [], ajustes: ajustes || [], albaranes: albaranes || [] }, anio, p, h);
+  const capital = (await leer(u, 'capital')) || [];
+  const d = informe({ facturas, gastos, nominas: nominas || [], manuales: manuales || [], saldo, fiscal, pagos130: u.pagos130 || {}, pres303: u.pres303 || {}, pres369: u.pres369 || {}, pres123: u.pres123 || {}, capital, pagos202: u.pagos202 || {}, cuotaIS: u.cuotaIS || {}, productos: productos || [], ajustes: ajustes || [], albaranes: albaranes || [] }, anio, p, h);
   // El balance, al cierre del periodo (o a hoy si aún no ha acabado).
   const bal = balanceContable(d.asientos, d.per.hasta > h ? h : d.per.hasta, { sociedad: fiscal.tipo === 'sociedad' });
   const a = analisis({ pyg: d.actual, anterior: d.anterior, bal, per: d.per, hoy: h, facturas, gastos });
@@ -62,21 +63,23 @@ export default async function Analisis({ searchParams }) {
   const ratio = (id) => a.ratios.find((r) => r.id === id);
   const variacion = (k) => (B && B[k] ? Math.round(((a[k] - B[k]) / Math.abs(B[k])) * 100) : null);
   const sinDatos = d.sinDatos;
+  // Los datos de cualquier año permiten volver a un periodo con actividad.
+  const hayDatos = !sinDatos || [facturas, gastos, nominas, manuales, capital, productos, ajustes, albaranes].some((lista) => lista?.length > 0) || Boolean(saldo?.importe);
 
   return (
     <main className="pagina mk-look modelos analisis">
       <Volver href="/">Resumen</Volver>
       <header className="cabecera modelos-cab">
         <h1 className="titulo">Análisis</h1>
-        <nav className="anios">
+        {hayDatos && <nav className="anios">
           <Ir href={url({ anio: anio - 1 })} tipo="cifras" aria-label="Año anterior">‹</Ir>
           <strong>{anio}</strong>
           {anio < actual ? <Ir href={url({ anio: anio + 1 })} tipo="cifras" aria-label="Año siguiente">›</Ir> : <span className="off">›</span>}
-        </nav>
+        </nav>}
       </header>
-      <nav className="segmentado cont-periodo">
+      {hayDatos && <nav className="segmentado cont-periodo">
         {['', '1', '2', '3', '4'].map((x) => <Ir key={x} href={url({ p: x })} tipo="fundido" className={x === p ? 'activo' : ''}>{x ? `${x}T` : 'Año'}</Ir>)}
-      </nav>
+      </nav>}
 
       {sinDatos ? <Vacio icono="beneficio" tipo={p || anio !== actual ? 'resultados' : 'vacio'} titulo="Aún no hay nada que analizar" accion={{ href: '/facturas/nueva', texto: 'Nueva factura' }} secundaria={p || anio !== actual ? { href: '/analisis', texto: 'Quitar filtros' } : { href: '/gastos#apuntar-gasto', texto: 'Añadir gasto' }}>Apunta tus ventas y gastos para comparar lo que ganas y lo que gastas.</Vacio> : <>
         <div className="teso-cifras">
@@ -165,7 +168,7 @@ export default async function Analisis({ searchParams }) {
         </>}
       </>}
 
-      <p className="grupo-pie arriba">{esSociedad(fiscal) ? <>Todo sale de la <Ir href="/contabilidad">contabilidad</Ir> de Fisquo, así que cuadra con ella.</> : <>Todo sale de tus facturas y gastos, así que cuadra con tus <Ir href="/contabilidad">libros registro</Ir>.</>} Para ver lo que te deben los clientes, por fechas de vencimiento, abre la <Ir href="/cartera">cartera de cobros</Ir>.</p>
+      <details className="como-se-calcula"><summary>Cómo se calcula</summary><p className="grupo-pie arriba">{esSociedad(fiscal) ? <>Todo sale de la <Ir href="/contabilidad">contabilidad</Ir> de Fisquo, así que cuadra con ella.</> : <>Todo sale de tus facturas y gastos, así que cuadra con tus <Ir href="/contabilidad">libros registro</Ir>.</>} Para ver lo que te deben los clientes, por fechas de vencimiento, abre la <Ir href="/cartera">cartera de cobros</Ir>.</p></details>
     </main>
   );
 }

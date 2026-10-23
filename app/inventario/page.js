@@ -27,6 +27,14 @@ const ud = (n) => new Intl.NumberFormat('es-ES', { maximumFractionDigits: 3 }).f
 export default async function Inventario({ searchParams }) {
   const u = await requerir('facturas');
   if (u.plan?.version >= 2 && sinFuncion(u.plan, 'inventario')) return <SinPlan usuario={u} funcion="inventario" />;
+  if (!fiscalDe(u).inventario) return (
+    <main className="pagina mk-look modelos contabilidad inventario">
+      <Volver href="/facturas">Facturas</Volver>
+      <h1 className="titulo">Inventario</h1>
+      {/* Se activa en «Actividades e impuestos» (Vendo productos y quiero controlar el stock), que es de quien administra. */}
+      <Vacio icono="datos" titulo="El inventario está desactivado" accion={puede(u, 'empresa') && { href: '/bienvenida?editar=1', texto: 'Activar inventario' }}>Actívalo si vendes productos y quieres saber cuántos te quedan: cada factura resta stock y cada compra lo suma.{puede(u, 'empresa') ? '' : ' Pídeselo a quien administra la empresa.'}</Vacio>
+    </main>
+  );
   const [datos, pedidosProv] = await Promise.all([datosStock(u), leer(u, 'pedidosProv')]);
   if (datos.sinBD) return <SinBD />;
   const sp = await searchParams;
@@ -34,7 +42,6 @@ export default async function Inventario({ searchParams }) {
   const ver = VISTAS.some(([v]) => v === sp.ver) ? sp.ver : 'stock';
   const anio = Number(sp.anio) || Number(h.slice(0, 4));
   const q = String(sp.q || '').trim().toLowerCase();
-  const activo = Boolean(fiscalDe(u).inventario);
   const inv = inventario(datos, { hoy: anio < Number(h.slice(0, 4)) ? `${anio}-12-31` : h, desde: `${anio}-01-01` });
   const lista = inv.productos.filter((p) => !q || [p.nombre, p.sku, p.codigo, p.proveedor].some((t) => String(t || '').toLowerCase().includes(q)))
     .sort((a, b) => Number(b.bajo) - Number(a.bajo) || a.nombre.localeCompare(b.nombre));
@@ -48,7 +55,7 @@ export default async function Inventario({ searchParams }) {
     <main className="pagina mk-look modelos contabilidad inventario">
       <Volver href="/facturas">Facturas</Volver>
       <h1 className="titulo">Inventario</h1>
-      {!activo && <p className="cont-alerta">El inventario está apagado. Actívalo en Ajustes › Actividades e impuestos («Vendo productos y quiero controlar el stock»).</p>}
+      {!inv.productos.length ? <Vacio icono="datos" titulo="Añade tu primer producto" accion={{ href: '/facturas/catalogo', texto: 'Añadir producto' }}>Añádelo en el catálogo con su coste y su stock mínimo. Después, cada factura lo resta y cada compra lo suma.</Vacio> : <>
 
       <div className="cont-resumen">
         <div><span>Valor del almacén</span><strong>{eur(inv.valor)}</strong></div>
@@ -130,7 +137,8 @@ export default async function Inventario({ searchParams }) {
       )}
 
       {puede(u, 'resumen') && <a className="boton sec cont-excel" href={`/api/inventario${anio < Number(h.slice(0, 4)) ? `?fecha=${anio}-12-31` : ''}`} download>Descargar en Excel</a>}
-      <p className="grupo-pie arriba">A fin de año, el valor del almacén entra solo en la contabilidad (variación de existencias) y en los libros registro.</p>
+      </>}
+      <details className="como-se-calcula"><summary>Cómo se calcula</summary><p className="grupo-pie arriba">A fin de año, el valor del almacén entra solo en la contabilidad (variación de existencias) y en los libros registro.</p></details>
     </main>
   );
 }

@@ -497,3 +497,7 @@ button.enlace:disabled { opacity: 0.5; cursor: not-allowed; }
 /* Un botón principal desactivado (guardando, comprobando…) se ve apagado en los dos temas: antes, en oscuro o en el alta,
    parecía activo y no respondía (auditoría D8-05 y D8-11). */
 .boton:disabled, .login button[type="submit"]:disabled { opacity: 0.45; cursor: not-allowed; filter: none; }
+
+/* Notas técnicas («Cómo se calcula»): a mano si se piden, sin ocupar la pantalla ni el estado vacío (auditoría D8-30). */
+.como-se-calcula { margin-top: 24px; color: var(--muted); font-size: 15px; }
+.como-se-calcula > summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-weight: 500; }
