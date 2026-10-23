@@ -36,7 +36,7 @@ export default async function PresupuestoCliente({ params }) {
       </section>
       <Conceptos lineas={p.lineas} />
       <p className="nota">Para: {p.cliente.nombre}{p.cliente.nif ? ` (${p.cliente.nif})` : ''}</p>
-      {p.senalPct > 0 && <p className="nota">Al aceptar se factura una señal del {p.senalPct} % ({eur(baseSenal(p))} + IVA); el resto, después del evento.</p>}
+      {p.senalPct > 0 && <p className="nota">Al aceptar se factura una señal del {p.senalPct} % ({eur(baseSenal(p))} + IVA); el resto, {p.evento?.fecha ? 'después del evento' : 'al terminar el trabajo'}.</p>}
       {p.nota && <p className="nota">{p.nota}</p>}
       {estado === 'pendiente' && <><p className="nota">Válido hasta el {fechaTexto(caduca(p))}.</p><Responder token={token} /></>}
       {estado === 'caducado' && <p className="nota">Este presupuesto caducó el {fechaTexto(caduca(p))}. Pide uno nuevo.</p>}

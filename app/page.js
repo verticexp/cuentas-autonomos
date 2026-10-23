@@ -248,7 +248,7 @@ export default async function Resumen({ searchParams }) {
             <Ir href="/gastos?ver=revisar" className="hcard ir" style={{ '--c': 'var(--info)' }}>
               <h2 className="hcard-t"><Ico n="gasto" solo />Por revisar</h2>
               <p className="hcard-v">{porRevisar.pendientes}<small>{porRevisar.pendientes === 1 ? 'factura' : 'facturas'}</small></p>
-              <p className="hcard-s">{[porRevisar.cuadran && (porRevisar.cuadran === 1 ? '1 cuadra: apruébala con un toque' : `${porRevisar.cuadran} cuadran: apruébalas de golpe`), porRevisar.leyendo && `${porRevisar.leyendo} leyéndose`, porRevisar.cuarentena && `${porRevisar.cuarentena} de remitentes que no conoces`].filter(Boolean).join(' · ') || 'Ábrelas para revisarlas y guardarlas como gasto'}</p>
+              <p className="hcard-s">{[porRevisar.cuadran && (porRevisar.cuadran === 1 ? '1 cuadra: apruébala con un toque' : `${porRevisar.cuadran} cuadran: apruébalas de golpe`), porRevisar.leyendo && `${porRevisar.leyendo} leyéndose`, porRevisar.cuarentena && (porRevisar.cuarentena === 1 ? '1 de un remitente que no conoces' : `${porRevisar.cuarentena} de remitentes que no conoces`)].filter(Boolean).join(' · ') || 'Ábrelas para revisarlas y guardarlas como gasto'}</p>
             </Ir>
           )}
 
@@ -445,8 +445,8 @@ export default async function Resumen({ searchParams }) {
           <section className="grupo">
             <h2 className="grupo-t">Descargas</h2>
             <div className="grupo-c">
-              {!sinDatos && <a href={exportar('facturas')} className="celda ir"><Ico n="factura" /><span className="txt">Facturas de {anio} en Excel</span></a>}
-              {!sinDatos && <a href={exportar('gastos')} className="celda ir"><Ico n="gasto" /><span className="txt">Gastos de {anio} en Excel</span></a>}
+              {!sinDatos && <a href={exportar('facturas')} className="celda ir"><Ico n="factura" /><span className="txt">Facturas de {anio} (CSV, se abre con Excel)</span></a>}
+              {!sinDatos && <a href={exportar('gastos')} className="celda ir"><Ico n="gasto" /><span className="txt">Gastos de {anio} (CSV, se abre con Excel)</span></a>}
               {!sinDatos && esteAnio && puede(u, DETALLE) && (() => { const g = plazo.dias <= 25 ? plazo : { anio, t: tHoy }; return <a href={`/api/paquete?anio=${g.anio}&t=${g.t}`} className="celda ir"><Ico n="hacienda" /><span className="txt">Paquete del {g.t}T {g.anio} para la gestoría<small>Excel y PDF con facturas, gastos e impuestos</small></span></a>; })()}
               <a href="/api/avisos" className="celda ir"><Ico n="plazo" /><span className="txt">Plazos de Hacienda en tu calendario<small>Aviso 7 días y 1 día antes</small></span></a>
             </div>

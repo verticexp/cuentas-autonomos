@@ -48,7 +48,7 @@ export default async function Inventario({ searchParams }) {
     <main className="pagina mk-look modelos contabilidad inventario">
       <Volver href="/facturas">Facturas</Volver>
       <h1 className="titulo">Inventario</h1>
-      {!activo && <p className="cont-alerta">El inventario está apagado. Actívalo en Ajustes › Actividades y modelos («Vendo productos y quiero controlar el stock»).</p>}
+      {!activo && <p className="cont-alerta">El inventario está apagado. Actívalo en Ajustes › Actividades e impuestos («Vendo productos y quiero controlar el stock»).</p>}
 
       <div className="cont-resumen">
         <div><span>Valor del almacén</span><strong>{eur(inv.valor)}</strong></div>

@@ -77,11 +77,11 @@ export default function Verificado() {
       </section>
 
       <section className="web-sec">
-        <Encabezado kicker="Antes de publicar" titulo="Si una sola prueba falla, no sale" sub="Además de la batería de empresas, hay más de 870 pruebas automáticas y una suite de más de 330 pruebas de extremo a extremo, que usa la app como un cliente real. Nada se publica si una sola falla." />
+        <Encabezado kicker="Antes de publicar" titulo="Si una sola prueba falla, no sale" sub="Además de la batería de empresas, hay más de 1.400 pruebas automáticas y más de 440 comprobaciones de extremo a extremo, que usan la app como un cliente real. Nada se publica si una sola falla." />
       </section>
 
       <section className="web-sec">
-        <Encabezado kicker="Con honestidad" titulo="Lo que Fisquo no hace por ti" sub="Los modelos son borradores y conviene revisarlos con tu gestor antes de presentarlos. Y hay casos que Fisquo todavía no cubre: Canarias (IGIC), País Vasco y Navarra, y la ventanilla única (OSS)." />
+        <Encabezado kicker="Con honestidad" titulo="Lo que Fisquo no hace por ti" sub="Los modelos son borradores: conviene revisarlos con tu gestor antes de presentarlos, y Fisquo no los presenta por ti en la Agencia Tributaria. En el País Vasco las facturas tienen que salir de un programa con TicketBAI, y Fisquo aún no lo es." />
       </section>
 
       <Cta titulo="¿Quieres ver cómo calcula Fisquo?" sub="Pruébalo gratis y compara los modelos con los tuyos. Si tienes dudas, escríbenos." otro={['/contacto', 'Hablar con nosotros']} />

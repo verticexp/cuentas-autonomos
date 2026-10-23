@@ -104,7 +104,7 @@ export default async function Page() {
 
       {empresa && (
         <Grupo titulo="Tu empresa">
-          {!app && <Celda href="/ajustes/plan" ico="plan" tono="azul" titulo="Tu plan" detalle={esFundador(u.plan) ? 'Fundador · gratis de por vida' : `${TIPOS[u.plan.tipo]} ${u.plan.nombre}${dias !== null ? ` · prueba: ${dias} días` : ''}`} aviso={dias !== null && dias <= 7} />}
+          {!app && <Celda href="/ajustes/plan" ico="plan" tono="azul" titulo="Tu plan" detalle={esFundador(u.plan) ? 'Fundador · gratis de por vida' : `${TIPOS[u.plan.tipo]} ${u.plan.nombre}${dias === null ? '' : dias === 0 ? ' · prueba terminada' : ` · prueba: ${dias} ${dias === 1 ? 'día' : 'días'}`}`} aviso={dias !== null && dias <= 7} />}
           {!app && u.rol === 'admin' && <Celda href="/ajustes/recomienda" ico="regalo" tono="azul" titulo="Recomienda Fisquo" detalle="Un mes gratis para ti y para quien invites" />}
           <Celda href="/ajustes/facturacion" ico="empresa" tono="azul" titulo="Datos de la empresa" detalle={datosCompletos ? `${e.nombre} · ${e.nif}` : 'Faltan datos: rellénalos antes de facturar'} aviso={!datosCompletos} />
           <Celda href="/bienvenida?editar=1" ico="actividad" tono="azul" titulo="Actividades e impuestos" detalle={`${fiscalDe(u).tipo === 'sociedad' ? 'Sociedad' : 'Autónomo'} · ${actividadesDe(u).map((x) => x.nombre).join(', ')}`} />
@@ -136,7 +136,7 @@ export default async function Page() {
       <section className="grupo" id="empresas">
         <h2 className="grupo-t">{u.misEmpresas?.length > 1 ? 'Tus empresas' : 'Más empresas'}</h2>
         <CambiarEmpresa empresas={u.misEmpresas} actual={u.empresa} />
-        <p className="grupo-pie">{app ? 'Cada empresa con sus datos, su numeración de facturas y sus permisos.' : 'Cada empresa con sus datos, su numeración de facturas, sus permisos y su propio plan, con su mes de prueba.'}</p>
+        <p className="grupo-pie">{app ? 'Cada empresa con sus datos, su numeración de facturas y sus permisos.' : 'Cada empresa con sus datos, su numeración de facturas, sus permisos y su propio plan, con su propia prueba gratis.'}</p>
       </section>
 
       {fichar && <Grupo titulo="Tu jornada"><Celda href="/jornada" ico="reloj" tono="violeta" titulo="Fichar" detalle="Entrada, salida, pausas y tus horas del mes" /></Grupo>}

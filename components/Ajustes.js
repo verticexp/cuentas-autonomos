@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
+import { AYUDA_CONTRASENA } from '@/lib/contrasena';
 
 const CAMPOS = [
   ['nombre', 'Nombre o razón social (sale en la factura)'],
@@ -136,7 +137,7 @@ export default function Ajustes({ seccion, emisor, drive, driveError, sociedad, 
         {(d, poner) => (
           <>
             <label>Contraseña actual<input className="campo" type="password" placeholder="Contraseña actual" autoComplete="current-password" value={d.actual} onChange={(e) => poner('actual', e.target.value)} required /></label>
-            <label>Nueva contraseña<input className="campo" type="password" placeholder="Nueva (mínimo 8)" autoComplete="new-password" minLength={8} value={d.nueva} onChange={(e) => poner('nueva', e.target.value)} required /></label>
+            <label>Nueva contraseña<input className="campo" type="password" placeholder="Nueva contraseña" autoComplete="new-password" minLength={10} value={d.nueva} onChange={(e) => poner('nueva', e.target.value)} required /><small className="nota">{AYUDA_CONTRASENA}</small></label>
           </>
         )}
       </Formulario>}

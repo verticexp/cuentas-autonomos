@@ -35,4 +35,7 @@ export default async function Bienvenida({ searchParams }) {
   );
 }
 
-export const metadata = { title: 'Bienvenida' };
+// Desde Ajustes («Actividades e impuestos») abre lo mismo para editarlo: la pestaña dice lo que es.
+export async function generateMetadata({ searchParams }) {
+  return { title: (await searchParams)?.editar ? 'Actividades e impuestos' : 'Bienvenida' };
+}

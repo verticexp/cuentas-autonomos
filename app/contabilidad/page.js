@@ -248,7 +248,7 @@ export default async function Contabilidad({ searchParams }) {
               <div key={t} className="celda"><span className="txt">{t}<small>{n} {n === 1 ? 'anotación' : 'anotaciones'} · {s}</small></span></div>
             ))}
           </div>
-          {libros.sinIae && <p className="cont-alerta">Falta el epígrafe del IAE de alguna actividad: ponlo en Ajustes › Actividades y modelos para que salga en los libros.</p>}
+          {libros.sinIae && <p className="cont-alerta">Falta el epígrafe del IAE de alguna actividad: ponlo en Ajustes › Actividades e impuestos para que salga en los libros.</p>}
           <a className="boton cont-excel" href={`/api/libros?anio=${anio}`} download>Descargar los libros registro de {anio}</a>
           <p className="grupo-pie">{sociedad
             ? 'Libros registro del IVA con el formato electrónico de la AEAT (un Excel por libro, con el nombre que pide Hacienda). Como sociedad, además llevas la contabilidad completa: la tienes en las demás pestañas.'

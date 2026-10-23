@@ -27,7 +27,7 @@ export async function POST(req) {
   const n = await redis.incr(k);
   if (n === 1) await redis.expire(k, 2 * 86400);
   const prueba = diasPrueba(u.plan) > 0;
-  if (n > (prueba ? POR_DIA_PRUEBA : POR_DIA)) return error(prueba ? `En el mes de prueba puedes enviar ${POR_DIA_PRUEBA} facturas al día. Inténtalo mañana o elige un plan.` : 'Demasiados envíos por hoy. Inténtalo mañana.', 429);
+  if (n > (prueba ? POR_DIA_PRUEBA : POR_DIA)) return error(prueba ? `Durante la prueba puedes enviar ${POR_DIA_PRUEBA} facturas al día. Inténtalo mañana o elige un plan.` : 'Demasiados envíos por hoy. Inténtalo mañana.', 429);
   const asunto = prueba ? asuntoFactura(f, emisorDe(f, u), u.envio) : b.asunto;
   const mensaje = prueba ? String(b.mensaje || '').slice(0, MENSAJE_PRUEBA) : b.mensaje;
   const r = await enviarFactura(u, f, { para, asunto, mensaje, origen: req.nextUrl.origin, responderA: u.email });

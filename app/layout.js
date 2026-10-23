@@ -96,7 +96,7 @@ export default async function RootLayout({ children }) {
         <GestoAtras />
         <script nonce={nonce} suppressHydrationWarning dangerouslySetInnerHTML={{ __html: 'window.__arranque=performance.now()' }} />
         {u && soloLectura(u.plan) && !ruta.startsWith('/ajustes/plan') && (
-          <p className="aviso-lectura" role="status"><span>{app ? SOLO_LECTURA_APP : 'Tu prueba ha terminado: puedes ver y exportar todo, pero no crear ni editar.'}</span>{!app && <a href="/ajustes/plan">Elegir plan</a>}</p>
+          <p className="aviso-lectura" role="status"><span>{app ? SOLO_LECTURA_APP : puede(u, 'empresa') ? 'Tu prueba ha terminado: puedes ver y exportar todo, pero no crear ni editar.' : 'La prueba de tu empresa ha terminado: puedes ver y exportar todo. Para crear o editar, pídele al administrador que elija un plan.'}</span>{!app && puede(u, 'empresa') && <a href="/ajustes/plan">Elegir plan</a>}</p>
         )}
         {children}
         <Suspense>{u && <TabBar porRevisar={porRevisar} permisos={permisosDe(u)} empresas={u.misEmpresas} empresa={u.empresa} admin={Boolean(u.admin)} inventario={Boolean(u.fiscal?.inventario)} fiscal={{ tipo: u.fiscal?.tipo, iva: u.fiscal?.iva }} faltan={planesQueFaltan(u.plan)} />}<Llegada /><BarraEstado /></Suspense>

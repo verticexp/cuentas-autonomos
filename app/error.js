@@ -5,7 +5,7 @@ export default function Error({ error, retry }) {
   return (
     <main className="pagina">
       <div className="vacio">
-        <p>No se ha podido cargar Fisquo</p>
+        <h1>Algo ha fallado</h1>
         <p>No se ha podido cargar esta pantalla. Tus datos están a salvo: vuelve a intentarlo en unos segundos.</p>
         {error?.digest && <p><small>Código: {error.digest}</small></p>}
         <button type="button" className="boton" onClick={() => retry()}>Reintentar</button>

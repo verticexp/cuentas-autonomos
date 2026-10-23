@@ -2,7 +2,7 @@ import Icono from '@/components/web/Icono';
 import FormContacto from '@/components/web/FormContacto';
 import { CONTACTO } from '@/components/web/datos';
 
-export const metadata = { title: 'Fisquo para gestorías · Fisquo', description: 'Programa de gestorías partner: tus clientes autónomos llegan con las cuentas al día. Acceso gratis para la gestoría y 3 meses gratis para sus clientes.' };
+export const metadata = { title: 'Programa para gestorías · Fisquo', description: 'Programa de gestorías partner: tus clientes autónomos llegan con las cuentas al día. Acceso gratis para la gestoría y 3 meses gratis para sus clientes.' };
 
 const PASOS = [
   ['Te apuntas', 'Nos dejas tus datos y te escribimos para conocer tu gestoría.'],

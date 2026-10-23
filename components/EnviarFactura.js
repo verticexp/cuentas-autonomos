@@ -29,7 +29,7 @@ export default function EnviarFactura({ id, email, asunto, mensaje, envios = [],
         <form className="formulario tarjeta" onSubmit={enviar}>
           <label>Para<input className="campo" type="email" required value={d.para} onChange={(e) => poner('para', e.target.value)} placeholder="cliente@empresa.com" /></label>
           <label>Asunto<input className="campo" value={d.asunto} readOnly={asuntoFijo} onChange={(e) => poner('asunto', e.target.value)} /></label>
-          {asuntoFijo && <p className="envios-nota">En el mes de prueba el asunto es el de tu plantilla.</p>}
+          {asuntoFijo && <p className="envios-nota">Durante la prueba el asunto es el de tu plantilla.</p>}
           <label>Mensaje<textarea className="campo" rows={5} value={d.mensaje} onChange={(e) => poner('mensaje', e.target.value)} /></label>
           <p className="envios-nota">Va con la factura en PDF adjunta.</p>
           {estado && estado !== 'enviando' && <p className="error">{estado}</p>}

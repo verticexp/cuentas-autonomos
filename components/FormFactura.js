@@ -32,7 +32,7 @@ const lineasDe = (x) => (x.lineas?.length
 const numero = (v) => leerImporte(v) || 0;
 
 // riesgos: lo que debe ahora cada cliente con riesgo máximo ({ id: euros }); el límite lo comprueba el servidor.
-export default function FormFactura({ factura, clientes, numeros, hoy, rectifica: orig, plantilla, notaDefecto = '', actividades, productos = [], stock = null, proyectos = [], riesgos = {}, recargo = false, oss = false, margenes = [], reagp = false, igic = false }) {
+export default function FormFactura({ factura, clientes, numeros, hoy, rectifica: orig, plantilla, clienteInicial = null, notaDefecto = '', actividades, productos = [], stock = null, proyectos = [], riesgos = {}, recargo = false, oss = false, margenes = [], reagp = false, igic = false }) {
   const impuesto = igic ? 'IGIC' : 'IVA';
   const operaciones = igic ? { exenta: { nombre: 'Exenta de IGIC' }, exportacion: { nombre: 'Exportación de bienes' }, 'servicios-fuera': { nombre: 'No sujeta por localización' }, isp: { nombre: 'Inversión del sujeto pasivo (lo declara el cliente)' } } : TIPOS_OPERACION;
   // IVA y retención de cada actividad, para rellenar la factura nueva.
@@ -50,7 +50,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
           : [{ concepto: `Anulación de la factura ${numeroFactura(orig)}`, cantidad: '1', precio: aTexto(-(orig.baseDivisa ?? orig.base)), dto: '', ivaPct: orig.ivaPct }] }
       : plantilla
         ? { actividad: plantilla.actividad, fecha: hoy, cliente: plantilla.cliente, lineas: lineasDe(plantilla), irpfPct: plantilla.irpfPct, nota: plantilla.nota || '', cobrada: false, proyecto: plantilla.proyecto || '', ...(plantilla.recargo ? { recargo: true } : {}), ...(plantilla.idioma ? { idioma: plantilla.idioma } : {}), ...(plantilla.oss ? { oss: plantilla.oss } : {}) }
-      : { actividad: actividades[0].id, fecha: hoy, cliente: { nombre: '', nif: '', direccion: '', ciudad: '' }, lineas: [lineaVacia(defecto(actividades[0].id).ivaPct)], nota: notaDefecto, cobrada: false, irpfPct: defecto(actividades[0].id).irpfPct });
+      : { actividad: actividades[0].id, fecha: hoy, cliente: clienteInicial ? { nombre: clienteInicial.nombre, nif: clienteInicial.nif || '', direccion: clienteInicial.direccion || '', ciudad: clienteInicial.ciudad || '', email: clienteInicial.email || '', pais: clienteInicial.pais || '' } : { nombre: '', nif: '', direccion: '', ciudad: '' }, lineas: [lineaVacia(defecto(actividades[0].id).ivaPct)], nota: notaDefecto, cobrada: false, irpfPct: defecto(actividades[0].id).irpfPct });
   // «¿Salir sin guardar?» con cambios. El tipo de cambio que se pide solo al abrir una factura en otra moneda (pedido) no cuenta.
   const sinGuardar = useCambiosSinGuardar({ ...f, divisa: f.divisa && { ...f.divisa, pedido: undefined } });
   // La selección vive solo en el formulario; el cuerpo de la API conserva el cliente histórico completo.
