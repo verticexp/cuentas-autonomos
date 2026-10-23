@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from 'react';
 
-// Pasos para presentar; el de la Sede nombra el modelo si solo se presenta uno.
-const pasos = (nums) => [
+// Pasos para presentar; el de la Sede nombra el modelo si solo se presenta uno. hacienda: la Hacienda foral (Navarra y País
+// Vasco), donde se presentan en su lugar.
+const pasos = (nums, hacienda) => [
   'Revisa que las facturas y gastos del trimestre estén todos en Fisquo.',
   'Comprueba estos importes con tu gestor.',
-  nums.includes('420') ? 'Presenta el 420 en la Sede de la Agencia Tributaria Canaria y los demás modelos en la AEAT.' : nums.length === 1 ? `Presenta el modelo ${nums[0]} en la Sede de la AEAT.` : 'Presenta los modelos en la Sede de la AEAT.',
+  hacienda ? `Presenta ${nums.length === 1 ? `el modelo ${nums[0]}` : 'los modelos'} en la sede de la ${hacienda}.` : nums.includes('420') ? 'Presenta el 420 en la Sede de la Agencia Tributaria Canaria y los demás modelos en la AEAT.' : nums.length === 1 ? `Presenta el modelo ${nums[0]} en la Sede de la AEAT.` : 'Presenta los modelos en la Sede de la AEAT.',
   'Vuelve aquí y marca el trimestre como presentado.',
 ];
 
@@ -14,7 +15,7 @@ const pasos = (nums) => [
 // (se recuerda en este dispositivo), un botón para copiar o compartir el resumen y el enlace a la Sede de cada modelo.
 // `importes`: [{ num, modelo, href, texto, aeat?, plazo? }], todos los modelos que vencen con el trimestre (lib/presentar.js);
 // `plazo`, solo si vence otro día (el 111 y el 115 del 4T); `aeat`, la página de la Sede si la hay.
-export default function PresentarAhora({ t, anio, aviso, importes, texto }) {
+export default function PresentarAhora({ t, anio, aviso, importes, texto, hacienda }) {
   const clave = `presentar:${anio}:${t}`;
   const [hechos, setHechos] = useState([]);
   const [msg, setMsg] = useState('');
@@ -39,7 +40,7 @@ export default function PresentarAhora({ t, anio, aviso, importes, texto }) {
           {importes.map((m) => <li key={m.num}><a href={m.href}><span>{m.modelo}{m.plazo && <small> · hasta el {m.plazo}</small>}</span><strong>{m.texto}</strong></a></li>)}
         </ul>
         <ol className="presentar-pasos">
-          {pasos(importes.map((m) => m.num)).map((p, i) => (
+          {pasos(importes.map((m) => m.num), hacienda).map((p, i) => (
             <li key={i}><label><input type="checkbox" checked={hechos.includes(i)} onChange={() => marcar(i)} /><span>{p}</span></label></li>
           ))}
         </ol>

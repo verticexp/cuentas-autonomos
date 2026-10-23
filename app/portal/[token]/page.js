@@ -6,6 +6,7 @@ import { ESTADOS, estadoDe, numeroPresupuesto } from '@/lib/presupuestos';
 import { portalDe } from '@/lib/portal';
 import '@/app/portal.css';
 import { enDivisa, formatoDoc } from '@/lib/idiomas';
+import { faltanDatosFactura } from '@/lib/empresa';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Tus documentos', robots: { index: false } };
@@ -20,7 +21,7 @@ export default async function Portal({ params }) {
   const { cliente, empresa, facturas, presupuestos } = d;
   const e = empresa.emisor || {};
   const h = hoy();
-  const pdf = Boolean(e.nif && e.iban);
+  const pdf = faltanDatosFactura(e).length === 0;
   const porPagar = facturas.filter((f) => !f.cobrada && importes(f).total > 0);
   const pendiente = porPagar.reduce((s, f) => s + saldoDe(f), 0);
   const t = encodeURIComponent(token);

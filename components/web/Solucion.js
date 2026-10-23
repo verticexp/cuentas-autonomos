@@ -14,7 +14,7 @@ export default function Solucion({ id }) {
     <>
       <section className="web-hero-pag web-hero-sol">
         <div>
-          <p className="web-chip-seg web-entra"><Icono n={s.icono} />Fisquo para {s.n.toLowerCase()}</p>
+          <p className="web-chip-seg web-entra"><Icono n={s.icono} />{s.n === 'Business' ? 'Fisquo Business' : `Fisquo para ${s.n.toLowerCase()}`}</p>
           <h1 className="web-entra" style={{ '--d': '60ms' }}>{s.titulo}</h1>
           <p className="web-sub web-entra" style={{ '--d': '120ms' }}>{s.sub}</p>
           <div className="web-cta web-entra" style={{ '--d': '180ms' }}>
@@ -40,7 +40,7 @@ export default function Solucion({ id }) {
       </section>
 
       <section className="web-sec">
-        <Encabezado kicker="Funciones clave" titulo={id === 'business' ? 'Funciones para definir tu propuesta' : `Lo que más usan los ${s.n.toLowerCase()}`} />
+        <Encabezado kicker="Funciones clave" titulo={id === 'business' ? 'Qué incluye tu propuesta' : `Lo que más usan los ${s.n.toLowerCase()}`} />
         <div className="web-relacionadas cuatro">
           {s.funciones.map((slug, k) => {
             const f = funcion(slug);

@@ -3,13 +3,13 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
+import { AYUDA_CONTRASENA } from '@/lib/contrasena';
 
 const CAMPOS = [
   ['nombre', 'Nombre o razón social (sale en la factura)'],
   ['nif', 'NIF'],
   ['direccion', 'Dirección'],
   ['ciudad', 'Ciudad y CP'],
-  ['iban', 'IBAN'],
 ];
 
 function Formulario({ titulo, inicial, enviar, children }) {
@@ -63,6 +63,7 @@ export default function Ajustes({ seccion, emisor, drive, driveError, sociedad, 
             {CAMPOS.map(([k, n]) => (
               <label key={k}>{n}<input {...(k === 'nif' ? { autoCapitalize: 'characters', autoCorrect: 'off', spellCheck: false } : {})} className="campo" value={d[k] || ''} onChange={(e) => poner(k, e.target.value)} required /></label>
             ))}
+            <label>IBAN (opcional: sale en tus facturas para que te paguen por transferencia)<input autoCapitalize="characters" autoCorrect="off" spellCheck={false} className="campo" value={d.iban || ''} onChange={(e) => poner('iban', e.target.value)} placeholder="ES00 0000 0000 0000 0000 0000" /></label>
             <label>Email de contacto (opcional)<input autoComplete="email" className="campo" type="email" value={d.email || ''} onChange={(e) => poner('email', e.target.value)} placeholder="facturas@tuempresa.es" /></label>
             <label>Teléfono (opcional)<input inputMode="tel" autoComplete="tel" className="campo" type="tel" value={d.telefono || ''} onChange={(e) => poner('telefono', e.target.value)} /></label>
             <label>Web (opcional)<input className="campo" value={d.web || ''} onChange={(e) => poner('web', e.target.value)} placeholder="tuempresa.es" /></label>
@@ -136,7 +137,7 @@ export default function Ajustes({ seccion, emisor, drive, driveError, sociedad, 
         {(d, poner) => (
           <>
             <label>Contraseña actual<input className="campo" type="password" placeholder="Contraseña actual" autoComplete="current-password" value={d.actual} onChange={(e) => poner('actual', e.target.value)} required /></label>
-            <label>Nueva contraseña<input className="campo" type="password" placeholder="Nueva (mínimo 8)" autoComplete="new-password" minLength={8} value={d.nueva} onChange={(e) => poner('nueva', e.target.value)} required /></label>
+            <label>Nueva contraseña<input className="campo" type="password" placeholder="Nueva contraseña" autoComplete="new-password" minLength={10} value={d.nueva} onChange={(e) => poner('nueva', e.target.value)} required /><small className="nota">{AYUDA_CONTRASENA}</small></label>
           </>
         )}
       </Formulario>}

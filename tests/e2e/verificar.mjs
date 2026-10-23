@@ -372,38 +372,39 @@ console.log('Más modelos: 115, 349, 390 y renta');
   await pedir('/api/gastos', { metodo: 'POST', cookie: yo, cuerpo: { fecha: `${Y}-04-30`, actividad: ACTS[0].id, concepto: 'Alquiler local abril', base: '1000', ivaPct: 21, proveedor: 'Locales Pérez', proveedorNif: 'B33333337', alquiler: true } });
   await pedir('/api/facturas', { metodo: 'POST', cookie: yo, cuerpo: { fecha: `${Y}-05-05`, actividad: ACTS[0].id, cliente: { nombre: 'Studio Paris', nif: 'FR 12 345678901' }, concepto: 'Diseño', base: '700', ivaPct: 0, irpfPct: 0, cobrada: true } });
   const m = n(await texto(`/modelos?anio=${Y}`, yo));
-  ok('115: el 19 % del alquiler en su trimestre', () => assert.ok(m.includes(`03 · Retenciones a ingresar ${n(eur(190))}`), m.slice(0, 200)));
+  ok('115: el 19 % del alquiler en su trimestre', () => assert.ok(m.includes(`03 · Retenciones ${n(eur(190))}`), m.slice(0, 200)));
   ok('349: el cliente francés con su NIF-IVA', () => assert.ok(m.includes(`FR12345678901 · Studio Paris (S) ${n(eur(700))}`)));
   const res59 = n(await texto(`/?anio=${Y}`, yo));
-  ok('303: lo facturado sin IVA al cliente francés, en la casilla 59', () => assert.ok(res59.includes(`59 · Empresas de otros países de la UE ${n(eur(700))}`)));
-  ok('Impuestos: qué presentas y cuándo, y el 303 trimestral con la casilla 59', () => assert.ok(m.includes('Impuestos') && m.includes('Qué presentas y cuándo') && m.includes('303 · IVA trimestral') && m.includes(`59 · Empresas de otros países de la UE ${n(eur(700))}`) && m.includes(`hasta el ${Number(limite4T.slice(8))} de ${limite4T.slice(5, 7) === '01' ? 'enero' : 'febrero'} de ${Y + 1}`)));
+  ok('303: lo facturado sin IVA al cliente francés, en la casilla 59', () => assert.ok(res59.includes(`59 · Ventas y servicios a empresas de la UE (intracomunitarias) ${n(eur(700))}`)));
+  ok('Impuestos: qué presentas y cuándo, y el 303 trimestral con la casilla 59', () => assert.ok(m.includes('Impuestos') && m.includes('Qué presentas y cuándo') && m.includes('303 · IVA trimestral') && m.includes(`59 · Ventas y servicios a empresas de la UE (intracomunitarias) ${n(eur(700))}`) && m.includes(`hasta el ${Number(limite4T.slice(8))} de ${limite4T.slice(5, 7) === '01' ? 'enero' : 'febrero'} de ${Y + 1}`)));
   ok('Impuestos: el 115 del 4T, hasta el 20 de enero', () => assert.ok(/115 · Retenciones del alquiler[\s\S]*?Hasta el 20 de enero de \d{4}/.test(m)));
   // Gastos de proveedores de fuera de España sin IVA: el de la UE (por su NIF-IVA) y uno de fuera, a mano.
   const gUE = (await (await pedir('/api/gastos', { metodo: 'POST', cookie: yo, cuerpo: { fecha: `${Y}-05-06`, actividad: ACTS[0].id, concepto: 'Publicidad', base: '120', ivaPct: 0, proveedor: 'Google Ireland', proveedorNif: 'IE6388047V' } })).json()).gasto;
   const gFuera = (await (await pedir('/api/gastos', { metodo: 'POST', cookie: yo, cuerpo: { fecha: `${Y}-05-07`, actividad: ACTS[0].id, concepto: 'Hosting', base: '50', ivaPct: 0, proveedor: 'Hosting Inc', origen: 'fuera' } })).json()).gasto;
   ok('un gasto sin IVA con NIF-IVA de la UE queda como de la UE; el de fuera, como se eligió', () => assert.deepEqual([gUE?.origen, gFuera?.origen], ['ue', 'fuera']));
   const mUE = n(await texto(`/modelos?anio=${Y}`, yo));
-  ok('303: autoliquida la compra de la UE (10-11 y 36-37) y la de fuera (12-13)', () => assert.ok(mUE.includes(`10 · Compras a la UE: base ${n(eur(120))}`) && mUE.includes(`37 · Compras a la UE: cuota deducible ${n(eur(25.2))}`) && mUE.includes(`13 · Compras de fuera de la UE: cuota ${n(eur(10.5))}`)));
+  ok('303: autoliquida la compra de la UE (10-11 y 36-37) y la de fuera (12-13)', () => assert.ok(mUE.includes(`10 · Compras a la UE (adquisiciones intracomunitarias): base ${n(eur(120))}`) && mUE.includes(`37 · Compras a la UE: cuota deducible ${n(eur(25.2))}`) && mUE.includes(`13 · Inversión del sujeto pasivo: cuota ${n(eur(10.5))}`)));
   ok('349: el proveedor de la UE, con clave I', () => assert.ok(mUE.includes(`IE6388047V · Google Ireland (I) ${n(eur(120))}`)));
   // Un profesional con retención (la gestoría): va en el 111 (07 a 09) y en el 190 (clave G).
   const gRet = (await (await pedir('/api/gastos', { metodo: 'POST', cookie: yo, cuerpo: { fecha: `${Y}-05-08`, actividad: ACTS[0].id, concepto: 'Gestoría', base: '200', ivaPct: 21, irpfPct: 15, proveedor: 'Gestoría Ruiz', proveedorNif: 'B11111119' } })).json()).gasto;
   const mRet = n(await texto(`/modelos?anio=${Y}`, yo));
-  ok('gasto con retención del 15 %: en el 111 (07 a 09) y en el 190 con clave G', () => assert.ok(gRet?.irpfPct === 15 && mRet.includes(`09 · Retenciones ${n(eur(30))}`) && mRet.includes('B11111119 · Gestoría Ruiz (G)')));
+  ok('gasto con retención del 15 %: en el 111 (07 a 09) y en el 190 con clave G', () => assert.ok(gRet?.irpfPct === 15 && mRet.includes(`09 · Retenciones ${n(eur(30))}`) && mRet.includes('Gestoría Ruiz B11111119 · clave G (profesional)')));
   await Promise.all([gUE, gFuera, gRet].map((g) => pedir(`/api/gastos?id=${encodeURIComponent(g.id)}`, { metodo: 'DELETE', cookie: yo })));
   // 347: un cliente con más de 3.005,06 € con IVA sale con su trimestre; se borra al acabar.
   const f347 = (await (await pedir('/api/facturas', { metodo: 'POST', cookie: yo, cuerpo: { fecha: `${Y}-03-15`, actividad: ACTS[0].id, cliente: { nombre: 'Cliente Grande SL', nif: 'B55555551' }, concepto: 'Proyecto', base: '3000', ivaPct: 21, irpfPct: 0, cobrada: true } })).json()).factura;
   const m347 = n(await texto(`/modelos?anio=${Y}`, yo));
-  ok('347: el cliente que pasa de 3.005,06 € con IVA, con clave B y su trimestre', () => assert.ok(m347.includes('347 · Operaciones de más de 3.005,06 €') && m347.includes(`B55555551 · Cliente Grande SL (1T ${n(eur(3630))}) ${n(eur(3630))}`), m347.slice(m347.indexOf('347 ·'), m347.indexOf('347 ·') + 400)));
+  ok('347: el cliente que pasa de 3.005,06 € con IVA, con clave B y su trimestre', () => assert.ok(m347.includes('347 · Operaciones de más de 3.005,06 €') && m347.includes(`Cliente Grande SL B55555551 ${n(eur(3630))} ${n(eur(0))} ${n(eur(0))} ${n(eur(0))} ${n(eur(3630))}`), m347.slice(m347.indexOf('347 ·'), m347.indexOf('347 ·') + 400)));
   await pedir(`/api/facturas?id=${encodeURIComponent(f347.id)}`, { metodo: 'DELETE', cookie: yo });
-  const q130 = (txt, re) => re.exec(txt)?.[1];
-  const en130 = q130(m, new RegExp(`130 · Pago a cuenta del IRPF[\\s\\S]*?1 ?T ${Y}[\\s\\S]*?19 · A ingresar ([\\d.,]+ €)`));
+  // La casilla 19 sale con su signo (negativa: «a deducir»); el Resumen enseña lo que se paga (cero si es negativa).
+  const q130 = (txt, re) => { const v = re.exec(txt)?.[1]; return v?.startsWith('-') ? n(eur(0)) : v; };
+  const en130 = q130(m, new RegExp(`130 · Pago a cuenta del IRPF[\\s\\S]*?1 ?T ${Y}[\\s\\S]*?19 · Resultado (-?[\\d.,]+ €)`));
   const enRes = q130(res59, new RegExp(`1 ?T ${Y}[\\s\\S]*?Modelo 130 ([\\d.,]+ €)`));
   ok('Impuestos: el 130 del 1T es el mismo que en el Resumen', () => assert.ok(en130 && en130 === enRes, `${en130} | ${enRes}`));
   // Casilla 13: con un rendimiento del año anterior de 8.500 €, 100 € menos cada trimestre (y el Resumen igual).
   const guardaRend = await pedir('/api/cuenta', { metodo: 'PATCH', cookie: yo, cuerpo: { rend130: { anio: Y - 1, importe: '8.500,00' } } });
   const mMin = n(await texto(`/modelos?anio=${Y}`, yo));
   const resMin = n(await texto(`/?anio=${Y}`, yo));
-  const min130 = q130(mMin, new RegExp(`130 · Pago a cuenta del IRPF[\\s\\S]*?1 ?T ${Y}[\\s\\S]*?19 · A ingresar ([\\d.,]+ €)`));
+  const min130 = q130(mMin, new RegExp(`130 · Pago a cuenta del IRPF[\\s\\S]*?1 ?T ${Y}[\\s\\S]*?19 · Resultado (-?[\\d.,]+ €)`));
   ok('130: con 8.500 € el año anterior, casilla 13 de 100 € y el Resumen lo cuenta igual', () => assert.ok(guardaRend.ok && mMin.includes(`13 · Minoración por el rendimiento de ${Y - 1} ${n(eur(100))}`) && min130 === q130(resMin, new RegExp(`1 ?T ${Y}[\\s\\S]*?Modelo 130 ([\\d.,]+ €)`)), `${min130}`));
   await pedir('/api/cuenta', { metodo: 'PATCH', cookie: yo, cuerpo: { rend130: { anio: Y - 1, importe: null } } });
   // El 390 es la suma de los cuatro 303 (los mismos que van en el paquete de cada trimestre).
@@ -414,7 +415,7 @@ console.log('Más modelos: 115, 349, 390 y renta');
     suma303 += Number(/>303<.{0,200}?>46<.*?<v>(-?[\d.]+)<\/v>/.exec(h)?.[1] ?? NaN);
     if (t === 2) ok('el paquete del 2T lleva el 115 y el 349', () => assert.ok(h.includes('>115<') && h.includes('>349<')));
   }
-  ok('390: resultado del año = suma de los cuatro 303', () => assert.ok(m.includes(`Resultado del año ${n(eur(r2(suma303)))}`), `${suma303}`));
+  ok('390: resultado del año = suma de los cuatro 303', () => assert.ok(m.includes(`Suma de los resultados de los 303 del año ${n(eur(r2(suma303)))}`), `${suma303}`));
   ok('borrador de la renta con rendimiento y resultado', () => assert.ok(m.includes('Borrador de la renta') && m.includes('Rendimiento neto') && /Saldría a (pagar|devolver)/.test(m)));
   const res = n(await texto(`/?anio=${Y}`, yo));
   ok('desde el resumen se llega a los anuales', () => assert.ok(res.includes('Resumen anual del IVA') && res.includes('Borrador')));
@@ -575,7 +576,7 @@ console.log('Portal del cliente');
   const alta4 = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva: 'Portal Prueba', nombre: 'Pau', email: `pp${Date.now()}@test.es` } })).json();
   const fd5 = new FormData(); fd5.set('codigo', alta4.enlace.split('/').pop()); fd5.set('password', 'Clave-Local-07-2026');
   const pp = /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: fd5 })).headers.get('set-cookie') || '')?.[1];
-  const cfg = await (await pedir('/api/cuenta', { metodo: 'PATCH', cookie: pp, cuerpo: { configuracion: { fiscal: { tipo: 'autonomo', iva: 'general' }, emisor: { nombre: 'Pau Portal', nif: '22222222J', iban: 'ES11 2222', plazo: 30 }, actividades: [{ nombre: 'Música', ivaPct: 21, irpfPct: 15 }] } } })).json();
+  const cfg = await (await pedir('/api/cuenta', { metodo: 'PATCH', cookie: pp, cuerpo: { configuracion: { fiscal: { tipo: 'autonomo', iva: 'general' }, emisor: { nombre: 'Pau Portal', nif: '22222222J', direccion: 'C/ Música, 1', cp: '08001', ciudad: 'Barcelona', iban: 'ES11 2222', plazo: 30 }, actividades: [{ nombre: 'Música', ivaPct: 21, irpfPct: 15 }] } } })).json();
   const act = cfg.actividades[0].id;
   const fac = async (cliente, base, cobrada) => (await (await pedir('/api/facturas', { metodo: 'POST', cookie: pp, cuerpo: { fecha: `${Y}-03-0${base % 9 + 1}`, actividad: act, cliente, concepto: 'Bolo', base: String(base), ivaPct: 21, irpfPct: 15, cobrada } })).json()).factura;
   const f1 = await fac({ nombre: 'Sala Apolo', nif: 'B12345674' }, 1000, false);
@@ -670,7 +671,9 @@ console.log('Barra lateral del ordenador');
 {
   const lateral = async (cookie) => /<nav class="tabs-extra"[\s\S]*?<\/nav>/.exec(await (await pedir('/gastos', { cookie })).text())?.[0] || '';
   const mia = await lateral(yo);
-  ok('el administrador ve todas las secciones', () => assert.ok(['/asistente', '/presupuestos', '/facturas/recurrentes', '/facturas/catalogo', '/tesoreria', '/modelos', '/gastos/proveedores', '/nominas', '/ajustes'].every((h) => mia.includes(`href="${h}"`))));
+  ok('el administrador ve todas las secciones', () => assert.ok(['/asistente', '/presupuestos', '/facturas/recurrentes', '/facturas/catalogo', '/tesoreria', '/modelos', '/gastos/proveedores', '/ajustes'].every((h) => mia.includes(`href="${h}"`))));
+  // Desde el 23-10-2026 «Equipo» (nóminas y jornada) solo sale a quien tiene trabajadores: esta cuenta aún no los tiene.
+  ok('sin trabajadores, «Equipo» no sale en la barra', () => assert.ok(!mia.includes('href="/nominas"')));
   // Desde el 19-10-2026 cada pantalla sale una sola vez: Importar y Usuarios viven en Ajustes, no en la barra.
   const ajMia = await (await pedir('/ajustes', { cookie: yo })).text();
   ok('Importar datos y Usuarios están en Ajustes y no repetidos en la barra', () => assert.ok(!mia.includes('href="/ajustes/importar"') && !mia.includes('href="/usuarios"') && ajMia.includes('href="/ajustes/importar"') && ajMia.includes('href="/usuarios"')));
@@ -1937,7 +1940,7 @@ console.log('Nóminas completas (cotización 2026 y modelo 145) y datos para RED
   const nu = /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: fd })).headers.get('set-cookie') || '')?.[1];
   await pedir('/api/cuenta', { metodo: 'PATCH', cookie: nu, cuerpo: { configuracion: { fiscal: { tipo: 'sociedad', iva: 'general', trabajadores: true }, emisor: { nombre: 'Nóminas Prueba SL', nif: 'B43215672', plazo: 30 }, actividades: [{ nombre: 'Oficina', ivaPct: 21, irpfPct: 0 }] } } });
   const mesActual = hoy.slice(0, 7);
-  const e = await pedir('/api/empleados', { metodo: 'POST', cookie: nu, cuerpo: { nombre: 'Ana Completa', nif: '12345678Z', naf: '281234567890', puesto: 'Administrativa', alta: `${mesActual}-01`, baja: '', bruto: '2000', horasSemana: 40, irpfPct: 10, cotizacion: { grupo: 7, pagas: 2, prorrateadas: true, atPct: 1.5 }, datos145: { nacimiento: 1990, situacionFamiliar: 3, discapacidad: 'no', contrato: 'general', descendientes: [], ascendientes: [] } } });
+  const e = await pedir('/api/empleados', { metodo: 'POST', cookie: nu, cuerpo: { nombre: 'Ana Completa', nif: '12345678Z', naf: '281234567890', puesto: 'Administrativa', alta: `${Y}-01-01`, baja: '', bruto: '2000', horasSemana: 40, irpfPct: 10, cotizacion: { grupo: 7, pagas: 2, prorrateadas: true, atPct: 1.5 }, datos145: { nacimiento: 1990, situacionFamiliar: 3, discapacidad: 'no', contrato: 'general', descendientes: [], ascendientes: [] } } });
   ok('el empleado se guarda con su cotización y su 145', () => assert.equal(e.status, 200));
   const malo = await pedir('/api/empleados', { metodo: 'POST', cookie: nu, cuerpo: { nombre: 'Sin cónyuge', nif: '87654321X', alta: `${mesActual}-01`, bruto: '1500', cotizacion: { grupo: 7 }, datos145: { nacimiento: 1985, situacionFamiliar: 2 } } });
   ok('un 145 incompleto (situación 2 sin el NIF del cónyuge) no se guarda (400)', () => assert.equal(malo.status, 400));
@@ -1945,6 +1948,8 @@ console.log('Nóminas completas (cotización 2026 y modelo 145) y datos para RED
   const html = await (await pedir('/nominas', { cookie: nu })).text();
   const id = /href="\/nominas\/([0-9a-f-]{36})"/.exec(html)?.[1];
   const detalle = n(await texto(`/nominas/${id}`, nu));
+  const barraNu = /<nav class="tabs-extra"[\s\S]*?<\/nav>/.exec(await (await pedir('/gastos', { cookie: nu })).text())?.[0] || '';
+  ok('con trabajadores, «Equipo y nóminas» sí sale en la barra', () => assert.ok(barraNu.includes('href="/nominas"')));
   ok('la nómina tiene sus bases, sus cuotas por concepto y el IRPF calculado (13,51 %)', () => assert.ok(id && detalle.includes('Bases de cotización') && detalle.includes('Contingencias comunes') && detalle.includes('643,00') && detalle.includes('13,51'), detalle.slice(0, 500)));
   const red = await pedir(`/api/nominas/red?mes=${mesActual}`, { cookie: nu });
   ok('los datos para RED del mes se descargan en Excel', () => assert.ok(red.status === 200 && (red.headers.get('content-type') || '').includes('spreadsheetml'), String(red.status)));

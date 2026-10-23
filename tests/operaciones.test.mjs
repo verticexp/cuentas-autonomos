@@ -73,6 +73,15 @@ test('libros registro: la calificación o la causa de exención de cada operaci�
   assert.ok(filas.some((x) => x.includes('E5')));
   assert.ok(filas.some((x) => x.includes('E2')));
   assert.ok(filas.some((x) => x.includes('S2')));
+  // La exportación va con la clave de régimen 02 (columna R), como en Verifactu.
+  assert.equal(L.hojas[0].filas.find((x) => x.includes('E2'))[17], '02');
+});
+
+test('libros registro: la rectificativa lleva la clave de su motivo (R1-R4), como en Verifactu', () => {
+  const r = (motivo, id) => f(ES, { id, serie: 'R', base: -100, rectifica: { id: 'o', numero: '01-2026', fecha: '2026-02-01', motivo } });
+  const L = librosRegistro({ facturas: [r('incobrable', 'r3'), r('concurso', 'r2'), r('errorDerecho', 'r1'), r(undefined, 'r4')], fiscal: { tipo: 'autonomo', iva: 'general' }, actividades: [{ id: 'a', nombre: 'A' }] }, 2026, '2026-12-31');
+  const claves = Object.fromEntries(L.hojas[0].filas.filter((x) => /^r\d$/.test(x.at(-1))).map((x) => [x.at(-1), x[5]]));
+  assert.deepEqual(claves, { r3: 'R3', r2: 'R2', r1: 'R1', r4: 'R4' });
 });
 
 test('validación: la operación tiene que cuadrar con el cliente y con las líneas sin IVA', () => {

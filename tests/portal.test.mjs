@@ -88,7 +88,7 @@ test('rectificativas: IRPF con un solo signo y sin cero negativo en PDF y HTML',
 
 test('cuarenta líneas: cabecera repetida y últimas filas con totales, pago y QR', async () => {
   const lineas = Array.from({ length: 40 }, (_, i) => ({ concepto: `Servicio ${i + 1} de producción y montaje del escenario principal`, cantidad: 2, precio: 100, dto: i % 2 ? 10 : 0, ivaPct: i % 2 ? 10 : 21 }));
-  const f = { ...ejemploPdf, lineas, base: 7600, verifactu: { modo: 'pruebas' }, nota: 'Gracias por su confianza.' };
+  const f = { ...ejemploPdf, lineas, base: 7600, verifactu: { modo: 'real' }, nota: 'Gracias por su confianza.' };
   const pages = await paginasPdf(await facturaPdf(f, emisorPdf));
   assert.ok(pages.length > 1);
   for (const runs of pages) assert.ok(runs.some((r) => r.texto === 'CONCEPTO'));
@@ -121,7 +121,7 @@ test('HTML: presupuesto con validez y QR con cuatro módulos de margen blanco', 
   assert.match(html, /VÁLIDO HASTA/);
   assert.match(html, /29\/10\/2026/);
   assert.ok(!html.includes('VENCIMIENTO') && !html.includes('Vencimiento:'));
-  const hqr = facturaHtml({ ...ejemploPdf, verifactu: { modo: 'pruebas' } }, emisorPdf);
+  const hqr = facturaHtml({ ...ejemploPdf, verifactu: { modo: 'real' } }, emisorPdf);
   const png = Buffer.from(hqr.match(/alt="QR de Verifactu" src="data:image\/png;base64,([^"]+)"/)[1], 'base64');
   const w = png.readUInt32BE(16);
   const idat = png.indexOf('IDAT');

@@ -65,7 +65,7 @@ export default async function Gastos({ searchParams }) {
   const sinPareja = (movs || []).filter((m) => (m.estado === 'pendiente' || !m.estado) && m.importe < 0);
   const cand = await candidatosConciliacion(u, movs || []);
   // Todos los que siguen pendientes, también los de sugerencia segura (si no, no se ven en ningún sitio hasta conciliarlos).
-  const revision = revisionGastos(movs || [], cand.gastos, { autonomo: fiscalDe(u).tipo === 'autonomo' });
+  const revision = revisionGastos(movs || [], cand.gastos, { autonomo: fiscalDe(u).tipo === 'autonomo', u });
   const movimiento = !sinFuncion(u.plan, 'revision') && banco && sinPareja.find((m) => m.id === banco);
   const buscado = String(q || '').trim().toLowerCase();
   // Los bienes traídos de otro programa no son gastos de aquí: se ven en Contabilidad › Amortizaciones.
@@ -183,7 +183,7 @@ export default async function Gastos({ searchParams }) {
 
         {vista === 'gastos' && <>
           {/* Primero lo que más se hace: escanear el ticket o subir las facturas. El formulario entero se abre al escanear o al pedirlo. */}
-          {puede(u, 'gastar') && !movimiento && <FormGasto igic={usaIgic(fiscalDe(u))} cupoInicial={cupoIA} hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} productos={stockProductos} plegado={hay} destacar={Boolean(escanear || subir)} proyectos={proyectos} correo={correo} />}
+          {puede(u, 'gastar') && !movimiento && <FormGasto igic={usaIgic(fiscalDe(u))} cupoInicial={cupoIA} hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} productos={stockProductos} plegado destacar={Boolean(escanear || subir)} proyectos={proyectos} correo={correo} />}
 
           {/* Si hay facturas esperando, se dice aquí también, bien a la vista. */}
           {!movimiento && porRevisar.resumen.pendientes > 0 && (
@@ -225,13 +225,12 @@ export default async function Gastos({ searchParams }) {
 
           {pag.siguiente && <p className="grupo-pie"><Link href={url({ desde: pag.siguiente })} className="boton sec">Ver más</Link></p>}
 
-          {!lista.length && (hay || buscado || desde
-            ? <Vacio tipo="resultados" icono="gasto" titulo={buscado ? `Ningún gasto con «${q}»` : 'Ningún gasto con este filtro'} accion={{ href: buscado ? url({ q: null, desde: null }) : '/gastos', texto: buscado ? 'Quitar búsqueda' : 'Ver todos' }} />
-            : <Vacio icono="gasto" titulo="Añade tu primer gasto" accion={puede(u, 'gastar') && { href: '#escanear-ticket', texto: 'Escanear ticket' }} secundaria={puede(u, 'gastar') && { href: '#apuntar-gasto', texto: 'Apuntar a mano' }}>Hazle una foto al ticket o apúntalo a mano: el IVA se resta del 303 y el gasto baja tu IRPF.</Vacio>)}
+          {/* Sin ningún gasto, el estado vacío es la tarjeta plegada del formulario (escanear, subir o apuntar a mano, D8-23). */}
+          {!lista.length && (hay || buscado || desde) && <Vacio tipo="resultados" icono="gasto" titulo={buscado ? `Ningún gasto con «${q}»` : 'Ningún gasto con este filtro'} accion={{ href: buscado ? url({ q: null, desde: null }) : '/gastos', texto: buscado ? 'Quitar búsqueda' : 'Ver todos' }} />}
 
-          <section className="gastos-mas">
-            <h2 className="grupo-t">Más herramientas</h2>
-            <details className="tarjeta bloque" open={pendientes > 0 && !hay}>
+          <details className="gastos-mas" open={hay}>
+            <summary className="grupo-t">Más herramientas</summary>
+            <details className="tarjeta bloque" open={false}>
               <summary><strong>Deducciones que no deberías olvidar</strong> <span className="nota">· {pendientes ? `${pendientes} sin ningún gasto este año` : 'todas cubiertas'}</span></summary>
               <div style={{ marginTop: 12 }}>
                 {LISTA.map((d) => {
@@ -250,7 +249,7 @@ export default async function Gastos({ searchParams }) {
               {fiscalDe(u).tipo === 'autonomo' && <Cuotas desde={`${h.slice(0, 4)}-01`} />}
               <Dietas hoy={h} actividades={actividades} autonomo={fiscalDe(u).tipo === 'autonomo'} />
             </>}
-          </section>
+          </details>
         </>}
       </div>
     </main>

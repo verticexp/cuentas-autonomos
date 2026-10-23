@@ -1,6 +1,7 @@
 /* Web pública de Fisquo (components/web, app/(web)). Nada de aquí afecta a la app: todo cuelga de .web */
 .web {
   --v: #0F1F1B; --v2: #173129; --v3: #1E3D33; --m: #E6F2EC; --m2: #F2F8F5; --c: #FAFAF8; --g: #5B6360; --g2: #8A918D; --linea: #E3E7E4;
+  /* --acc2 para botones con texto blanco y para texto verde sobre claro (5,3:1 y 5,1:1); --acc, solo de adorno (3,4:1). */
   --acc: #1F9D74; --acc2: #167A59; --luz: #7FE3BD; --ambar: #B7791F; --ambar-f: #FCF3E3; --rojo: #C2453A;
   --e: cubic-bezier(0.23, 1, 0.32, 1); --e2: cubic-bezier(0.77, 0, 0.175, 1); --e3: cubic-bezier(0.32, 0.72, 0, 1);
   --pad: max(20px, calc((100% - 1200px) / 2));
@@ -35,7 +36,7 @@ body:has(.web):has(.tabbar) { padding-left: 0 !important; }
 @keyframes web-carga { from { transform: translateX(-100%); } to { transform: translateX(260%); } }
 
 /* ───── Botones ───── */
-.web-btn { position: relative; overflow: hidden; isolation: isolate; display: inline-flex; text-decoration: none; align-items: center; justify-content: center; gap: 8px; background: var(--acc); color: #fff !important; font-weight: 700; padding: 13px 22px; border-radius: 14px; font-size: 15.5px; white-space: nowrap; box-shadow: 0 1px 0 rgba(255, 255, 255, 0.25) inset, 0 8px 18px -10px rgba(31, 157, 116, 0.8); transition: transform 0.2s var(--e), box-shadow 0.3s var(--e), background-color 0.2s ease; }
+.web-btn { position: relative; overflow: hidden; isolation: isolate; display: inline-flex; text-decoration: none; align-items: center; justify-content: center; gap: 8px; background: var(--acc2); color: #fff !important; font-weight: 700; padding: 13px 22px; border-radius: 14px; font-size: 15.5px; white-space: nowrap; box-shadow: 0 1px 0 rgba(255, 255, 255, 0.25) inset, 0 8px 18px -10px rgba(31, 157, 116, 0.8); transition: transform 0.2s var(--e), box-shadow 0.3s var(--e), background-color 0.2s ease; }
 .web-btn::after { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.3) 50%, transparent 70%); transform: translateX(-130%); }
 .web-btn:active { transform: scale(0.97); transition-duration: 0.1s; }
 .web-btn:disabled { opacity: 0.55; cursor: default; }
@@ -61,8 +62,10 @@ body:has(.web):has(.tabbar) { padding-left: 0 !important; }
 /* El desenfoque va en un pseudo-elemento: un backdrop-filter en la propia cabecera haría que el menú móvil (position: fixed)
    quedara encerrado en ella en Safari de iPhone y no se viera. */
 .web-cab { position: fixed; top: 0; left: 0; right: 0; z-index: 50; color: var(--c); }
-.web-cab::before { content: ''; position: absolute; inset: 0; z-index: -1; opacity: 0; background: rgba(15, 31, 27, 0.82); backdrop-filter: blur(16px) saturate(1.5); -webkit-backdrop-filter: blur(16px) saturate(1.5); box-shadow: 0 1px 0 rgba(250, 250, 248, 0.08); transition: opacity 0.35s ease; pointer-events: none; }
+.web-cab::before { content: ''; position: absolute; inset: 0; z-index: -1; opacity: 0; background: rgba(15, 31, 27, 0.9); -webkit-backdrop-filter: blur(16px) saturate(1.5); backdrop-filter: blur(16px) saturate(1.5); box-shadow: 0 1px 0 rgba(250, 250, 248, 0.08); transition: opacity 0.35s ease; pointer-events: none; }
 .web-cab.con-fondo::before { opacity: 1; }
+/* Sin desenfoque (o si el compilador deja solo el prefijo): fondo opaco, para que el texto de debajo no se lea a través del menú. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { .web-cab::before { background: var(--v); } }
 .web-cab.menu-abierto::before { opacity: 1; background: var(--v); }
 .web-cab-in { display: flex; align-items: center; gap: 28px; height: 68px; padding: env(safe-area-inset-top) var(--pad) 0; }
 .web-marca { display: block; flex: none; }
@@ -250,7 +253,7 @@ body:has(.web):has(.tabbar) { padding-left: 0 !important; }
 .web-cifras > div { padding: 32px 28px; border-left: 1px solid var(--linea); }
 .web-cifras > div:first-child { border-left: 0; }
 .web-cifras b { display: block; font-size: clamp(2.2rem, 4vw, 3.2rem); letter-spacing: -0.05em; line-height: 1; font-variant-numeric: tabular-nums; }
-.web-cifras b span { color: var(--acc); }
+.web-cifras b span { color: var(--acc2); }
 .web-cifras b i { font-style: normal; font-size: 0.45em; letter-spacing: 0; font-weight: 600; margin-right: 6px; vertical-align: 0.35em; }
 .web-cifras p { font-weight: 700; margin: 10px 0 4px; } .web-cifras small { color: var(--g); font-size: 14px; }
 @media (max-width: 860px) { .web-cifras { grid-template-columns: 1fr 1fr; } .web-cifras > div:nth-child(3) { border-left: 0; } .web-cifras > div:nth-child(n+3) { border-top: 1px solid var(--linea); } }
@@ -260,7 +263,7 @@ body:has(.web):has(.tabbar) { padding-left: 0 !important; }
 .web-sec-pegada { padding-top: 56px; }
 .web-oscura { position: relative; isolation: isolate; overflow: hidden; background: var(--v); color: var(--c); margin-top: 112px; padding-bottom: 112px; }
 .web-oscura::before { content: ''; position: absolute; inset: 0; z-index: -1; background: radial-gradient(700px 400px at 50% 0%, rgba(31, 157, 116, 0.32), transparent 70%); }
-.web-kicker { display: inline-flex; align-items: center; gap: 8px; color: var(--acc); font-weight: 700; font-size: 14px; letter-spacing: 0.02em; margin-bottom: 14px; }
+.web-kicker { display: inline-flex; align-items: center; gap: 8px; color: var(--acc2); font-weight: 700; font-size: 14px; letter-spacing: 0.02em; margin-bottom: 14px; }
 .web-kicker::before { content: ''; width: 18px; height: 2px; border-radius: 2px; background: currentColor; }
 .web-enc { margin-bottom: 48px; max-width: 760px; }
 .web-enc.centro { text-align: center; margin-inline: auto; } .web-enc.centro .web-enc-sub { margin-inline: auto; }
@@ -483,7 +486,8 @@ body:has(.web):has(.tabbar) { padding-left: 0 !important; }
 .web-para { color: var(--g); font-size: 14.5px; margin: 6px 0 22px; }
 .web-plan-fuerte .web-para, .web-plan-fuerte .web-pie-precio, .web-plan-fuerte .web-precio span, .web-plan-fuerte .web-precio s { color: rgba(250, 250, 248, 0.66); }
 .web-precio { display: flex; align-items: baseline; gap: 6px; animation: web-numero 0.4s var(--e) both; }
-.web-precio strong { font-size: 3.4rem; letter-spacing: -0.055em; line-height: 1; font-variant-numeric: tabular-nums; }
+/* white-space: nowrap: la cifra y su «€» no se separan (en el móvil, «22,40» quedaba con el «€» en otra línea). */
+.web-precio strong { font-size: 3.4rem; letter-spacing: -0.055em; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .web-precio span { color: var(--g); font-weight: 600; } .web-precio s { color: var(--g2); font-size: 1.2rem; font-weight: 600; }
 .web-pie-precio { font-size: 13px; color: var(--g); margin: 8px 0 22px; }
 .web-plan .web-btn { width: 100%; }

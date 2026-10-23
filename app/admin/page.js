@@ -6,6 +6,9 @@ import { emailListo } from '@/lib/email';
 import { avisosRemitente, dkimResend, leerRemitente } from '@/lib/adminAjustes';
 import Volver from '@/components/Volver';
 import AdminEmpresas from '@/components/AdminEmpresas';
+import { PRUEBA_DIAS } from '@/lib/prueba';
+import { PRUEBA_GESTORIA_DIAS } from '@/lib/gestorias';
+import { RECOMENDACION_DIAS } from '@/lib/recomendaciones';
 import '@/app/admin/admin.css';
 
 export const dynamic = 'force-dynamic';
@@ -60,7 +63,7 @@ export default async function Admin() {
     <section className="adm-kpis" aria-label="Cifras principales">
       <div><small>Ingresos al mes</small><strong>{euros(k.mrr)}</strong><span>{euros(k.arr)} al año</span></div>
       <div><small>Empresas de pago</small><strong>{r.porEstado.pago}</strong><span>{r.porEstado.impago ? `${r.porEstado.impago} con pago fallido` : 'Sin pagos fallidos'}</span></div>
-      <div><small>En prueba</small><strong>{r.porEstado.prueba}</strong><span>{k.pruebasQueAcabanEn7} acaban esta semana</span></div>
+      <div><small>En prueba</small><strong>{r.porEstado.prueba}</strong><span>{k.pruebasQueAcabanEn7} {k.pruebasQueAcabanEn7 === 1 ? 'acaba' : 'acaban'} esta semana</span></div>
       <div><small>Conversión</small><strong>{k.conversion === null ? '—' : `${k.conversion} %`}</strong><span>Pruebas acabadas que pagan</span></div>
       <div><small>Altas este mes</small><strong>{k.altasMes}</strong><span>Registros con prueba</span></div>
       <div><small>Personas activas</small><strong>{k.activos7}</strong><span>7 días · {k.activosHoy} hoy · {k.activos30} en 30 días</span></div>
@@ -86,7 +89,7 @@ export default async function Admin() {
     <section className="adm-dos">
       <div className="adm-caja">
         <h2>De dónde vienen</h2>
-        <ul className="adm-lista">{r.origenes.map((o) => <li key={o.origen}><span>{ORIGENES[o.origen]}{o.origen === 'gestoria' ? ' (3 meses)' : o.origen === 'recomendacion' ? ' (2 meses)' : ' (1 mes)'}</span><b>{o.total} · {o.prueba} en prueba · {o.pagan} pagan{o.conversion !== null ? ` · ${o.conversion} %` : ''}</b></li>)}</ul>
+        <ul className="adm-lista">{r.origenes.map((o) => <li key={o.origen}><span>{ORIGENES[o.origen]} ({o.origen === 'gestoria' ? PRUEBA_GESTORIA_DIAS : o.origen === 'recomendacion' ? PRUEBA_DIAS + RECOMENDACION_DIAS : PRUEBA_DIAS} días de prueba)</span><b>{o.total} · {o.prueba} en prueba · {o.pagan} pagan{o.conversion !== null ? ` · ${o.conversion} %` : ''}</b></li>)}</ul>
         <p className="adm-pie">El porcentaje es la conversión de las pruebas ya acabadas de cada canal. Los cupones de Stripe se descuentan de los ingresos.</p>
       </div>
       <div className="adm-caja">

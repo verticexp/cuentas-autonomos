@@ -11,7 +11,9 @@ import { clave, leer, redis } from '@/lib/redis';
 import { contar } from '@/lib/indices';
 import { panelDe } from '@/lib/panelCache';
 import '@/app/tesoreria.css';
-import { importes, r2 } from '@/lib/calculos';
+import { importes, limiteTrimestre, r2 } from '@/lib/calculos';
+import { plazo420 } from '@/lib/igic';
+import { sinFuncion } from '@/lib/planes';
 import { actividadesDe, fiscalDe, hecho303, modelosDe, nombresActividad } from '@/lib/empresa';
 import { eur, fechaCorta, fechaTexto, hoy } from '@/lib/formato';
 import SinBD from '@/components/SinBD';
@@ -73,7 +75,7 @@ export default async function Resumen({ searchParams }) {
   const actividades = actividadesDe(u);
   const fiscal = fiscalDe(u);
   const ACTIVIDADES = nombresActividad(actividades);
-  const { anio, anioActual, esteAnio, r, c303, c130, igic, foral, facturado, gastado, beneficio, plazo, debe, tHoy, qAhora, apartado, aPagar, mesPago,
+  const { anio, anioActual, esteAnio, r, c303, c130, igic, foral, facturado, gastado, beneficio, plazo, debe, tHoy, qAhora, apartado, aPagar,
     sinCobrar, porCobrar, vencidas, sinPagar = { length: 0 }, porPagar = 0, pagosVencidos = { length: 0, nombres: [] }, prevFact, prevBeneficio, meses, cambio, ultimoMes, top, limite, cuotasSS, rendSS, prevRendSS } = P;
   const impuesto = igic ? 'IGIC' : 'IVA';
   const modeloIndirecto = igic ? 'IGIC (420)' : 'Modelo 303';
@@ -91,19 +93,37 @@ export default async function Resumen({ searchParams }) {
   // Cuenta recién creada: ni facturas ni gastos. En vez de gráficas y trimestres a cero, los primeros pasos.
   const sinDatos = !nFacturas && !nGastos;
   const e = u.emisor || {};
+  // Por orden de valor (auditoría D8-16): lo que da de comer primero y el adorno al final. Los datos de la empresa ya se
+  // piden al registrarse: solo salen si faltan (y entonces van primero, porque sin ellos la factura no vale).
   const pasos = [
-    puede(u, 'empresa') && { id: 'datos', hecho: Boolean(e.nombre && e.nif && e.direccion), href: '/ajustes/facturacion', t: 'Completa los datos de tu empresa', d: 'Nombre, NIF y dirección: salen en cada factura', n: 'datos' },
-    puede(u, 'empresa') && { id: 'logo', hecho: Boolean(u.marca?.logo), href: '/ajustes/marca', t: 'Pon tu logo y tu color', d: 'Tus facturas, con tu imagen', n: 'marca' },
-    puede(u, 'facturar') && { id: 'factura', hecho: nFacturas > 0, href: '/facturas/nueva', t: 'Crea tu primera factura', d: 'En un minuto, con el IVA y el IRPF ya calculados', n: 'factura' },
-    puede(u, 'gastar') && { id: 'gasto', hecho: nGastos > 0, href: '/gastos', t: 'Apunta tu primer gasto', d: 'Hazle una foto al ticket y Fisquo lo rellena', n: 'gasto' },
-    puede(u, DETALLE) && { id: 'banco', hecho: saldo !== null && saldo !== undefined, href: '/banco', t: 'Sube el extracto del banco', d: 'Fisquo empareja cobros y pagos con tus facturas', n: 'beneficio' },
-    u.rol === 'admin' && { id: 'gestoria', hecho: Boolean(u.gestoria?.email), href: '/ajustes/gestoria', t: 'Invita a tu gestoría', d: 'Le llega todo cada trimestre, sin pedírtelo', n: 'usuarios' },
+    puede(u, 'empresa') && !(e.nombre && e.nif && e.direccion) && { id: 'datos', hecho: false, href: '/ajustes/facturacion', t: 'Completa los datos de tu empresa', d: 'Nombre, NIF y dirección: salen en cada factura', n: 'datos', boton: 'Completar' },
+    puede(u, 'facturar') && { id: 'factura', hecho: nFacturas > 0, href: '/facturas/nueva', t: 'Crea tu primera factura', d: 'IVA e IRPF ya calculados', n: 'factura', boton: 'Crear factura' },
+    puede(u, 'gastar') && { id: 'gasto', hecho: nGastos > 0, href: '/gastos', t: 'Apunta tu primer gasto', d: 'Hazle una foto al ticket', n: 'gasto', boton: 'Apuntar gasto' },
+    puede(u, DETALLE) && { id: 'banco', hecho: saldo !== null && saldo !== undefined, href: '/banco', t: 'Sube el extracto del banco', d: 'Fisquo empareja cobros y pagos', n: 'beneficio', boton: 'Subir extracto' },
+    puede(u, 'empresa') && { id: 'logo', hecho: Boolean(u.marca?.logo), href: '/ajustes/marca', t: 'Pon tu logo y tu color', d: 'Tus facturas, con tu imagen', n: 'marca', boton: 'Poner logo' },
+    u.rol === 'admin' && { id: 'gestoria', hecho: Boolean(u.gestoria?.email), href: '/ajustes/gestoria', t: 'Invita a tu gestoría', d: 'Recibe todo cada trimestre', n: 'usuarios', boton: 'Invitar' },
   ].filter(Boolean);
+  const siguientePaso = pasos.find((x) => !x.hecho);
   const hechos = pasos.filter((x) => x.hecho).length;
   const verPasos = pasos.length > 0 && hechos < pasos.length && nFacturas < 10;
   // Hacienda: el último tramo del plazo (3 días o menos) se avisa en rojo (lib/hoy.js).
   const avisoHacienda = esteAnio && debe ? accionesHoy({ hacienda: { dias: plazo.dias, importe: aPagar } })[0] : null;
   const urgente = avisoHacienda?.tono === 'rojo';
+  // Las tarjetas no dependen de lo facturado en el año: en enero, antes de la primera factura, siguen el 4T por pagar,
+  // lo que queda por cobrar de diciembre o los gastos por revisar.
+  const verHacienda = esteAnio && (c303 || c130) && (facturado > 0 || Boolean(debe));
+  const verPorPagar = porPagar > 0 && puede(u, 'gastos');
+  // La previsión de caja es del plan Pro (planes v2 y v3): con uno que no la incluye no se enseña la tarjeta.
+  const verTeso = Boolean(teso) && !(u.plan?.version >= 2 && sinFuncion(u.plan, 'tesoreria'));
+  // Por qué baja la previsión (auditoría U-16): el pago más grande hasta el día en que el saldo toca fondo.
+  const causaMinimo = teso?.minimo?.saldo < 0 ? (teso.movimientos || []).filter((m) => m.importe < 0 && m.fecha <= teso.minimo.fecha).sort((a, b) => a.importe - b.importe)[0] : null;
+  const hayTarjetas = !sinDatos && (verHacienda || porCobrar > 0 || verPorPagar || porRevisar.pendientes > 0 || verTeso);
+  // Lo demás que viene para Hacienda en los próximos meses (retenciones, Sociedades, dividendos…), de la previsión de
+  // Tesorería: la tarjeta enseña el IVA y el IRPF y, sin esto, parecía que era todo lo que había que apartar.
+  const otrosHacienda = (teso?.movimientos || []).filter((m) => m.tipo === 'hacienda' && !m.vencido && !/^(IVA|IGIC|IRPF)\b/.test(m.concepto));
+  const lineaOtros = otrosHacienda.length > 0 && `Además: ${otrosHacienda.slice(0, 2).map((m) => `${m.concepto}, ${eur(-m.importe)} hasta el ${fechaTexto(m.fecha)}`).join(' · ')}${otrosHacienda.length > 2 ? ` y ${otrosHacienda.length - 2} más` : ''}`;
+  // Último día para pagar un trimestre, ya pasado al día hábil (el 4T, con el año siguiente).
+  const hastaT = (t, y) => `${fechaTexto(limiteTrimestre(t, y))}${t === 4 ? ` de ${y + 1}` : ''}`;
   // Plazos que pasaron sin marcar el modelo como presentado (lib/tesoreria.js VENCIDOS_DIAS).
   const preguntas = (teso?.movimientos || []).filter((m) => m.pregunta);
   const menos = (t) => t.replace(/^-/, '\u2212');
@@ -117,7 +137,8 @@ export default async function Resumen({ searchParams }) {
     puede(u, 'gastos') && { href: '/gastos', n: 'gasto', t: 'Gastos', enBarra: true },
     puede(u, 'facturas') && { href: '/presupuestos', n: 'presupuesto', t: 'Presupuestos' },
     { href: '/modelos', n: 'hacienda', t: 'Impuestos' },
-    puede(u, DETALLE) && { href: `/contabilidad?anio=${anio}`, n: 'contabilidad', t: 'Contabilidad' },
+    // Para un autónomo, «Libros registro» (el nombre de la pantalla en el menú y el que usa su gestor, D8-20).
+    puede(u, DETALLE) && { href: `/contabilidad?anio=${anio}`, n: 'contabilidad', t: fiscal.tipo === 'sociedad' ? 'Contabilidad' : 'Libros registro' },
   ].filter(Boolean);
 
   return (
@@ -133,7 +154,7 @@ export default async function Resumen({ searchParams }) {
           </nav>}
         </div>
         <h1 className="inicio-hola">Hola, {String(u.nombre || '').split(' ')[0] || 'equipo'}</h1>
-        <p className="inicio-sub">{sinDatos ? 'Vamos a dejarlo todo listo.' : esteAnio ? 'Así va tu año.' : `Así cerraste ${anio}.`}</p>
+        <p className="inicio-sub">{sinDatos ? (siguientePaso?.id === 'factura' ? 'Empieza por tu primera factura: tarda un minuto.' : 'Vamos a dejarlo todo listo.') : esteAnio ? 'Así va tu año.' : `Así cerraste ${anio}.`}</p>
         {u.misEmpresas?.length > 1 && <CambiarEmpresa empresas={u.misEmpresas} actual={u.empresa} variante="chip" />}
       </header>
 
@@ -170,7 +191,7 @@ export default async function Resumen({ searchParams }) {
         </section>
       )}
 
-      <Ir href="/asistente" className="asi-entrada"><svg viewBox="0 0 24 24" aria-hidden><path d="M4 5h16v11H9l-5 4zM8 10h8M8 13h5" /></svg>Pregunta por tus cuentas</Ir>
+      <Ir href="/asistente" className="asi-entrada"><svg viewBox="0 0 24 24" aria-hidden><path d="M4 5h16v11H9l-5 4zM8 10h8M8 13h5" /></svg>{sinDatos ? 'Pregúntame cómo hacer tu primera factura' : 'Pregunta por tus cuentas'}</Ir>
 
       <nav className="accesos" aria-label="Accesos">
         {accesos.map((a) => (
@@ -189,29 +210,31 @@ export default async function Resumen({ searchParams }) {
             {pasos.map((x) => (
               x.hecho
                 ? <div key={x.id} className="celda pp-paso hecho"><span className="pp-ok" aria-hidden>✓</span><span className="txt">{x.t}<small>Hecho</small></span></div>
-                : <Ir key={x.id} href={x.href} tipo="adelante" className="celda ir pp-paso"><Ico n={x.n} /><span className="txt">{x.t}<small>{x.d}</small></span></Ir>
+                : <Ir key={x.id} href={x.href} tipo="adelante" className={`celda ir pp-paso${x === siguientePaso ? ' pp-primero' : ''}`}><Ico n={x.n} /><span className="txt">{x.t}<small>{x.d}</small></span>{x === siguientePaso && <span className="pp-accion" aria-hidden>{x.boton}</span>}</Ir>
             ))}
           </div>
         </section>
       )}
 
-      {facturado > 0 && (
+      {hayTarjetas && (
         <div className="hcards">
-          {esteAnio && (c303 || c130) && (
+          {verHacienda && (
             <Ir href={`/modelos?anio=${debe ? plazo.anio : anioActual}`} className={`hcard ir${urgente ? ' urgente' : ''}`} style={{ '--c': urgente ? 'var(--out)' : 'var(--hacienda)' }}>
               <h2 className="hcard-t"><Ico n="hacienda" solo />Hacienda<span>{debe ? `${plazo.t}T ${plazo.anio}` : `${tHoy}T ${anioActual}`}</span></h2>
               {debe ? (
                 <>
                   <p className="hcard-v"><Cifra v={aPagar} /><small>€ a pagar</small></p>
                   <p className={`hcard-s${urgente ? ' rojo' : ''}`}>{plazo.dias === 0 ? <strong>{debe.irpfForal?.deOficio && !debe.pend303 ? 'Hoy es el día del pago de oficio' : 'Hoy es el último día para presentarlo'}</strong> : plazo.dias === 1 ? <strong>Mañana acaba el plazo</strong> : `Hasta el ${fechaTexto(plazo.fecha)} · quedan ${plazo.dias} días`}</p>
-                  <p className="hcard-s">{[debe.pend303 ? `${nombreIndirecto(debe)}: ${debe.m303 < 0 ? `${eur(-debe.m303)} a compensar` : eur(debe.ivaIngresar)}` : !foral && c303 && `${modeloIndirecto} presentado`, debe.pend130 ? `${nombreIrpf(debe)}: ${importeIrpf(debe)}${igic && plazo.t === 4 ? ' · hasta el 30 de enero' : ''}` : !foral && c130 && 'Modelo 130 presentado'].filter(Boolean).join(' · ')}</p>
+                  <p className="hcard-s">{[debe.pend303 ? `${nombreIndirecto(debe)}: ${debe.m303 < 0 ? `${eur(-debe.m303)} a compensar` : eur(debe.ivaIngresar)}` : !foral && c303 && `${modeloIndirecto} presentado`, debe.pend130 ? `${nombreIrpf(debe)}: ${importeIrpf(debe)}${igic && plazo.t === 4 ? ` · hasta el ${hastaT(4, plazo.anio)}` : ''}` : !foral && c130 && 'Modelo 130 presentado'].filter(Boolean).join(' · ')}</p>
                   {foral && <p className="hcard-s">{plazosPago(debe)}</p>}
                   <p className="hcard-s">Del {tHoy}T llevas {eur(apartado)} para apartar.</p>
+                  {lineaOtros && <p className="hcard-s">{lineaOtros}</p>}
                 </>
               ) : (
                 <>
                   <p className="hcard-v"><Cifra v={apartado} /><small>€ para apartar</small></p>
-                  <p className="hcard-s">{[c303 && `${impuesto}${igic ? ' (420)' : ''} ${eur(qAhora.ivaIngresar)}`, c130 && `IRPF ${importeIrpf(qAhora)}`].filter(Boolean).join(' + ')} · {foral ? plazosPago(qAhora) : igic && tHoy === 4 ? [c303 && '420: hasta el 31 de enero', c130 && '130: hasta el 30 de enero'].filter(Boolean).join('; ') : <>se paga del 1 al {tHoy === 4 ? 30 : 20} de {mesPago}</>}</p>
+                  <p className="hcard-s">{[c303 && `${impuesto}${igic ? ' (420)' : ''} ${eur(qAhora.ivaIngresar)}`, c130 && `IRPF ${importeIrpf(qAhora)}`].filter(Boolean).join(' + ')} · {foral ? plazosPago(qAhora) : igic && tHoy === 4 ? [c303 && `420: hasta el ${fechaTexto(plazo420(anioActual, 4))} de ${anioActual + 1}`, c130 && `130: hasta el ${hastaT(4, anioActual)}`].filter(Boolean).join('; ') : <>se paga hasta el {hastaT(tHoy, anioActual)}</>}</p>
+                  {lineaOtros && <p className="hcard-s">{lineaOtros}</p>}
                 </>
               )}
             </Ir>
@@ -225,7 +248,7 @@ export default async function Resumen({ searchParams }) {
             </Ir>
           )}
 
-          {porPagar > 0 && puede(u, 'gastos') && (
+          {verPorPagar && (
             <Ir href={pagosVencidos.length ? '/gastos?estado=vencidos' : '/gastos?estado=sinpagar'} className="hcard ir" style={{ '--c': 'var(--out)' }}>
               <h2 className="hcard-t"><Ico n="gasto" solo />Por pagar<span>{sinPagar.length === 1 ? '1 factura' : `${sinPagar.length} facturas`}</span></h2>
               <p className="hcard-v"><Cifra v={porPagar} /><small>€</small></p>
@@ -237,15 +260,15 @@ export default async function Resumen({ searchParams }) {
             <Ir href="/gastos?ver=revisar" className="hcard ir" style={{ '--c': 'var(--info)' }}>
               <h2 className="hcard-t"><Ico n="gasto" solo />Por revisar</h2>
               <p className="hcard-v">{porRevisar.pendientes}<small>{porRevisar.pendientes === 1 ? 'factura' : 'facturas'}</small></p>
-              <p className="hcard-s">{[porRevisar.cuadran && (porRevisar.cuadran === 1 ? '1 cuadra: apruébala con un toque' : `${porRevisar.cuadran} cuadran: apruébalas de golpe`), porRevisar.leyendo && `${porRevisar.leyendo} leyéndose`, porRevisar.cuarentena && `${porRevisar.cuarentena} de remitentes que no conoces`].filter(Boolean).join(' · ') || 'Ábrelas para revisarlas y guardarlas como gasto'}</p>
+              <p className="hcard-s">{[porRevisar.cuadran && (porRevisar.cuadran === 1 ? '1 cuadra: apruébala con un toque' : `${porRevisar.cuadran} cuadran: apruébalas de golpe`), porRevisar.leyendo && `${porRevisar.leyendo} leyéndose`, porRevisar.cuarentena && (porRevisar.cuarentena === 1 ? '1 de un remitente que no conoces' : `${porRevisar.cuarentena} de remitentes que no conoces`)].filter(Boolean).join(' · ') || 'Ábrelas para revisarlas y guardarlas como gasto'}</p>
             </Ir>
           )}
 
-          {teso && (
+          {verTeso && (
             <Ir href="/tesoreria" className="hcard ir" style={{ '--c': 'var(--info)' }}>
               <h2 className="hcard-t"><Ico n="beneficio" solo />Tesorería<span>3 meses</span></h2>
               <p className="hcard-v"><Cifra v={teso.final} /><small>€</small></p>
-              <p className={`hcard-s${teso.minimo.saldo < 0 ? ' rojo' : ''}`}>{teso.minimo.saldo < 0 ? `El ${fechaTexto(teso.minimo.fecha)} te quedarías en ${eur(teso.minimo.saldo)}` : `${teso.conSaldo ? 'Saldo previsto' : 'Sin saldo del banco'} · cobras ${eur(teso.entra)} y pagas ${eur(r2(teso.sale + teso.hacienda))}`}</p>
+              <p className={`hcard-s${teso.minimo.saldo < 0 ? ' rojo' : ''}`}>{teso.minimo.saldo < 0 ? `El ${fechaTexto(teso.minimo.fecha)} te quedarías en ${eur(teso.minimo.saldo)}${causaMinimo ? `: incluye ${causaMinimo.concepto}` : ''}` : `${teso.conSaldo ? 'Saldo previsto' : 'Sin saldo del banco'} · cobras ${eur(teso.entra)} y pagas ${eur(r2(teso.sale + teso.hacienda))}`}</p>
             </Ir>
           )}
         </div>
@@ -277,7 +300,7 @@ export default async function Resumen({ searchParams }) {
 
           <section className="grupo res-trim">
             <h2 className="grupo-t">Hacienda por trimestre</h2>
-            <p className="grupo-pie arriba">Orientativo; confírmalo con tu gestor.{foral ? ' Marca cada modelo por separado. El pago fraccionado del IRPF sigue las reglas de tu Hacienda foral.' : c130 ? ` Marca el ${igic ? '420' : '303'} y el 130 de cada trimestre por separado. Si no pagaste el 130, se suma al siguiente.` : ' Marca cada trimestre cuando lo presentes.'}</p>
+            <p className="grupo-pie arriba">Orientativo; confírmalo con tu gestor.{foral ? ' Marca cada modelo por separado. El pago fraccionado del IRPF sigue las reglas de tu Hacienda foral.' : c130 ? ` Marca el ${igic ? '420' : '303'} y el 130 de cada trimestre por separado. Un 130 presentado se descuenta en los siguientes aunque no lo hayas pagado (esa deuda va aparte).` : ' Marca cada trimestre cuando lo presentes.'}</p>
             <div className="trims">
               {r.trimestres.map((q) => {
                 // El trimestre en curso (y los que faltan) aún no se pueden presentar: «En curso», sin selector.
@@ -337,7 +360,7 @@ export default async function Resumen({ searchParams }) {
                           {[['16', '18', '0,5'], ['19', '21', '1,4'], ['22', '24', '5,2']].filter(([b]) => c[b]).flatMap(([b, q, r]) => [fila(b, `Recargo ${r} %: base`, c[b]), fila(q, `Recargo ${r} %: cuota`, c[q])])}
                           {(c['25'] || c['26']) ? <>{fila('25', 'Recargo de rectificativas: base', c['25'])}{fila('26', 'Recargo de rectificativas: cuota', c['26'])}</> : null}
                           {c['10'] > 0 && <>{fila('10', 'Compras a la UE: base', c['10'])}{fila('11', 'Compras a la UE: cuota', c['11'])}</>}
-                          {c['12'] > 0 && <>{fila('12', 'Compras de fuera de la UE: base', c['12'])}{fila('13', 'Compras de fuera de la UE: cuota', c['13'])}</>}
+                          {c['12'] > 0 && <>{fila('12', 'Inversión del sujeto pasivo: base', c['12'])}{fila('13', 'Inversión del sujeto pasivo: cuota', c['13'])}</>}
                           {fila('27', 'Total cuota devengada', c['27'])}
                           {fila('28', 'Base IVA soportado', c['28'])}
                           {fila('29', 'Cuota IVA soportado', c['29'])}
@@ -347,7 +370,7 @@ export default async function Resumen({ searchParams }) {
                           {fila('46', 'Resultado', c['46'])}
                         </dl>
                         {(c['59'] || c['60'] || c['120'] || c['122']) ? <dl>
-                          {c['59'] !== 0 && fila('59', 'Empresas de otros países de la UE', c['59'])}
+                          {c['59'] !== 0 && fila('59', 'Ventas y servicios a empresas de la UE (intracomunitarias)', c['59'])}
                           {c['60'] !== 0 && fila('60', 'Exportaciones', c['60'])}
                           {c['120'] !== 0 && fila('120', 'No sujetas por localización (clientes de fuera de la UE)', c['120'])}
                           {c['122'] !== 0 && fila('122', 'Inversión del sujeto pasivo', c['122'])}
@@ -362,12 +385,12 @@ export default async function Resumen({ searchParams }) {
                           {fila('02', 'Gastos (incluye el 5 %)', q.gasAcum)}
                           {fila('03', 'Rendimiento neto', q.rendAcum)}
                           {fila('04', '20 % de la 03', r2(0.2 * Math.max(0, q.rendAcum)))}
-                          {fila('05', 'Pagos de trimestres anteriores', q.pagosPrev)}
+                          {fila('05', 'Casillas 07 de los 130 anteriores', q.pagosPrev)}
                           {fila('06', 'Retenciones', q.retAcum)}
                           {fila('07', 'Resultado', q.c07)}
                           {q.minoracion > 0 && fila('13', 'Minoración por el rendimiento del año anterior', q.minoracion)}
                           {q.negPrev > 0 && fila('15', 'Negativos de trimestres anteriores', q.negPrev)}
-                          {q.minoracion > 0 && fila('19', 'A ingresar', q.m130)}
+                          {(q.minoracion > 0 || q.negPrev > 0) && fila('19', q.c19 < 0 && q.t < 4 ? 'Resultado (a deducir en los siguientes)' : 'Resultado', q.c19)}
                         </dl>
                         </>}
                       </details>
@@ -420,24 +443,26 @@ export default async function Resumen({ searchParams }) {
           )}
 
           <section className="grupo">
-            <h2 className="grupo-t">Tus modelos</h2>
+            <h2 className="grupo-t">{sinDatos ? 'Tus próximos plazos' : 'Tus modelos'}</h2>
             <div className="grupo-c">
-              {modelosDe(fiscal).map((m) => ({ ...m, prox: proximoPlazoDe(fiscal, m.id, h, { cuotaIS: u.cuotaIS }) })).map((m) => ({ ...m, cuando: m.prox ? `${m.prox === h ? 'Hoy es el último día' : `Próximo: ${fechaTexto(m.prox)}${m.prox.slice(0, 4) !== h.slice(0, 4) ? ` de ${m.prox.slice(0, 4)}` : ''}`}` : m.cuando })).map((m) => (
+              {/* Sin datos, solo los trimestrales de cada día (D8-19): el 347, el 390 o la renta son ruido el primer día. */}
+              {modelosDe(fiscal).filter((m) => !sinDatos || ['303', '420', '130', '131'].includes(m.id)).map((m) => ({ ...m, prox: proximoPlazoDe(fiscal, m.id, h, { cuotaIS: u.cuotaIS }) })).map((m) => ({ ...m, cuando: m.prox ? `${m.prox === h ? 'Hoy es el último día' : `Próximo: ${fechaTexto(m.prox)}${m.prox.slice(0, 4) !== h.slice(0, 4) ? ` de ${m.prox.slice(0, 4)}` : ''}`}` : m.cuando })).map((m) => (
                 m.calcula
-                  ? <div key={m.id} className="celda ir"><span className="modelo-num"><NumeroModelo modelo={m} /></span><Ir href={`/modelos?anio=${anio}#m${m.id}`} tipo="adelante" className="txt enlace-modelo" aria-label={`Modelo ${m.id}: ${m.nombre}`}>{m.nombre}<small>{m.cuando}</small></Ir><span className="v">{m.id === '100' ? 'Borrador' : 'Calculado'}</span></div>
-                  : <div key={m.id} className="celda"><span className="modelo-num"><NumeroModelo modelo={m} /></span><span className="txt">{m.nombre}<small>{m.cuando}</small></span>{m.calcula && <span className="v">Calculado</span>}</div>
+                  ? <div key={m.id} className="celda ir"><span className="modelo-num"><NumeroModelo modelo={m} /></span><Ir href={`/modelos?anio=${anio}#m${m.id}`} tipo="adelante" className="txt enlace-modelo" aria-label={`Modelo ${m.id}: ${m.nombre}`}>{m.nombre}<small>{m.cuando}</small></Ir><span className="v">{m.id === '100' ? 'Borrador' : 'Lo calcula Fisquo'}</span></div>
+                  : <div key={m.id} className="celda"><span className="modelo-num"><NumeroModelo modelo={m} /></span><span className="txt">{m.nombre}<small>{m.cuando}</small></span>{m.calcula && <span className="v">Lo calcula Fisquo</span>}</div>
               ))}
             </div>
-            <p className="grupo-pie">Según lo que respondiste al empezar ({fiscal.tipo === 'sociedad' ? 'sociedad' : 'autónomo'}). La app calcula los que pone «Calculado» (tócalos para verlos); el resto, tu gestor. Puedes cambiarlo en Ajustes.</p>
+            {sinDatos && <Ir href="/modelos" tipo="adelante" className="celda ir ver-todos">Ver todos los modelos</Ir>}
+            <p className="grupo-pie">Según lo que contestaste al empezar ({fiscal.tipo === 'sociedad' ? 'sociedad' : 'autónomo'}). Fisquo calcula los que lo dicen; el resto, tu gestor. Puedes cambiarlo en Ajustes.</p>
           </section>
 
           <section className="grupo">
-            <h2 className="grupo-t">Descargas</h2>
+            <h2 className="grupo-t">{sinDatos ? 'Recordatorios' : 'Descargas y recordatorios'}</h2>
             <div className="grupo-c">
-              {!sinDatos && <a href={exportar('facturas')} className="celda ir"><Ico n="factura" /><span className="txt">Facturas de {anio} en Excel</span></a>}
-              {!sinDatos && <a href={exportar('gastos')} className="celda ir"><Ico n="gasto" /><span className="txt">Gastos de {anio} en Excel</span></a>}
+              {!sinDatos && <a href={exportar('facturas')} className="celda ir"><Ico n="factura" /><span className="txt">Facturas de {anio} (CSV, se abre con Excel)</span></a>}
+              {!sinDatos && <a href={exportar('gastos')} className="celda ir"><Ico n="gasto" /><span className="txt">Gastos de {anio} (CSV, se abre con Excel)</span></a>}
               {!sinDatos && esteAnio && puede(u, DETALLE) && (() => { const g = plazo.dias <= 25 ? plazo : { anio, t: tHoy }; return <a href={`/api/paquete?anio=${g.anio}&t=${g.t}`} className="celda ir"><Ico n="hacienda" /><span className="txt">Paquete del {g.t}T {g.anio} para la gestoría<small>Excel y PDF con facturas, gastos e impuestos</small></span></a>; })()}
-              <a href="/api/avisos" className="celda ir"><Ico n="plazo" /><span className="txt">Plazos de Hacienda en tu calendario<small>Aviso 7 días y 1 día antes</small></span></a>
+              <a href="/api/avisos" className="celda ir"><Ico n="plazo" /><span className="txt">Añadir los plazos de Hacienda a tu calendario<small>Aviso 7 días y 1 día antes</small></span></a>
             </div>
           </section>
         </div>

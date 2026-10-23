@@ -103,3 +103,14 @@ test('contraste: el bloque oscuro automático y el forzado tienen las mismas fic
   assert.ok(m);
   assert.deepEqual(fichasDe(m[1]), bloque(globals, ':root[data-tema="oscuro"]'));
 });
+
+// Auditoría 23-10-2026: los campos se veían sin borde (1,1:1); --borde-campo da ≥ 3:1 frente a lo que lo rodea (WCAG 1.4.11).
+for (const [tema, f] of Object.entries(TEMAS)) {
+  test(`contraste (${tema}): el borde de los campos se distingue del fondo y del propio campo`, () => {
+    for (const fondo of ['surface', 'paper']) {
+      const borde = rgb(f['borde-campo'], f[fondo]);
+      const r = contraste(borde, rgb(f[fondo]));
+      assert.ok(r >= 3, `${tema}: --borde-campo sobre --${fondo} a ${r.toFixed(2)}:1`);
+    }
+  });
+}

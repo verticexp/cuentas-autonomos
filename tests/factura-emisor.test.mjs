@@ -87,7 +87,7 @@ test('PDF válido con todos los campos, pie de 500 caracteres y varias páginas,
     const f = {
       ...factura,
       lineas: Array.from({ length: cantidad }, (_, i) => ({ concepto: `Servicio ${i + 1}`, cantidad: 1, precio: 100, ivaPct: 21 })),
-      ...(qr ? { verifactu: { modo: 'pruebas' } } : {}),
+      ...(qr ? { verifactu: { modo: 'real' } } : {}),
     };
     const e = { ...completo, pie };
     const bytes = await facturaPdf(f, e);
@@ -110,4 +110,52 @@ test('PDF válido con todos los campos, pie de 500 caracteres y varias páginas,
       assert.ok(ls.filter((l) => l.size !== 7.5).every((l) => l.y > techoPie + 16), 'contenido y rótulo del QR separados del pie en cada página');
     }
   }
+});
+
+// Auditoría 23-10-2026 (P-02): el IBAN es opcional. Sin él, la factura sale sin «Transferencia» y con los demás pagos;
+// lo que sí necesita toda factura es nombre, NIF y dirección (art. 6.1 del Reglamento de facturación).
+test('sin IBAN: ni «Transferencia» ni hueco vacío, y se generan HTML y PDF', async () => {
+  const { iban, ...sinIban } = emisor;
+  for (const e of [sinIban, { ...sinIban, bizum: '611222333' }]) {
+    const html = facturaHtml(factura, e);
+    assert.doesNotMatch(html, /Transferencia/);
+    assert.ok(html.includes('Vencimiento: 18/11/2026'));
+    const pdf = await PDFDocument.load(await facturaPdf(factura, e));
+    assert.ok(!textos(pdf.getPage(0)).some((t) => /Transferencia/.test(t.texto)));
+  }
+  assert.ok(facturaHtml(factura, { ...sinIban, bizum: '611222333' }).includes('Bizum: 611222333'));
+});
+
+test('datos de factura: faltan nombre, NIF o dirección; el IBAN no cuenta', async () => {
+  const { faltanDatosFactura } = await import('../lib/empresa.js');
+  assert.deepEqual(faltanDatosFactura(emisor), []);
+  assert.deepEqual(faltanDatosFactura({ ...emisor, iban: '' }), []);
+  assert.deepEqual(faltanDatosFactura({ nombre: ' ', nif: 'B12345678' }), ['nombre', 'dirección']);
+  assert.deepEqual(faltanDatosFactura(), ['nombre', 'NIF', 'dirección']);
+});
+
+// Auditoría 23-10-2026 (F1-32): la leyenda «VERI*FACTU», «Factura verificable…» y el QR solo van cuando los registros se
+// envían de verdad a la AEAT (art. 6.5 RD 1619/2012); en modo pruebas las facturas de los clientes salen sin ellos.
+test('Verifactu en pruebas: ni QR ni leyenda en la factura; en real, sí', async () => {
+  const pruebas = { ...factura, verifactu: { modo: 'pruebas' } }, real = { ...factura, verifactu: { modo: 'real' } };
+  assert.doesNotMatch(facturaHtml(pruebas, emisor), /VERI\*FACTU|QR de Verifactu/);
+  assert.match(facturaHtml(real, emisor), /VERI\*FACTU/);
+  const texto = async (f) => textos((await PDFDocument.load(await facturaPdf(f, emisor))).getPage(0)).map((t) => t.texto).join(' ');
+  assert.doesNotMatch(await texto(pruebas), /verificable/);
+  assert.match(await texto(real), /verificable/);
+});
+
+// Auditoría 23-10-2026 (F1-09 y D3-80): la parte sin IVA lleva sola su mención legal (art. 6.1.j y 6.1.m del Reglamento de
+// facturación): exención con su artículo o «inversión del sujeto pasivo»; en otro idioma, la fórmula de la Directiva.
+test('menciones de la operación sin IVA: exención o inversión del sujeto pasivo, sin repetir la nota', async () => {
+  const sinIva = { ...factura, ivaPct: 0, irpfPct: 0 };
+  const ue = { ...sinIva, cliente: { nombre: 'Kultur GmbH', nif: 'DE123456789' }, operacion: 'servicios-ue' };
+  assert.match(facturaHtml(ue, emisor), /Inversión del sujeto pasivo\./);
+  assert.match(facturaHtml({ ...ue, idioma: 'de' }, emisor), /Steuerschuldnerschaft des Leistungsempfängers/);
+  assert.match(facturaHtml({ ...sinIva, operacion: 'exenta' }, emisor), /exenta de IVA \(art\. 20/);
+  assert.match(facturaHtml({ ...sinIva, cliente: { nombre: 'Client Ltd', nif: 'GB123456789' }, operacion: 'exportacion' }, emisor), /Exportación exenta/);
+  assert.equal((facturaHtml({ ...ue, nota: 'Operación con inversión del sujeto pasivo' }, emisor).match(/sujeto pasivo/g) || []).length, 1);
+  assert.doesNotMatch(facturaHtml(factura, emisor), /sujeto pasivo|exenta/);
+  const pdf = await PDFDocument.load(await facturaPdf(ue, emisor));
+  assert.ok(textos(pdf.getPage(0)).some((t) => /sujeto pasivo/.test(t.texto)));
 });

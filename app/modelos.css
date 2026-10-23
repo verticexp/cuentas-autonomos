@@ -82,6 +82,8 @@
 .modelo-plegable > summary .modelo-num svg { display: block; }
 .modelo-dato { flex: none; font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .modelo-dato.favor { color: var(--in); }
+.modelo-dato.info { font-size: 13px; font-weight: 500; color: var(--muted); }
+.modelo-dato small { display: block; font-size: 12px; font-weight: 500; color: var(--muted); text-align: right; }
 .modelo-plegable > summary::after { content: ''; flex: none; width: 7px; height: 7px; margin-left: -2px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(45deg) translateY(-2px); opacity: .7; transition: transform .2s ease-out; }
 .modelo-plegable[open] > summary::after { transform: rotate(225deg) translate(-1px, -1px); }
 .modelo-plegable[open] > summary { margin-bottom: 12px; }
@@ -104,3 +106,24 @@
 .lista-pagos li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
 .lista-pagos li span:last-child { color: var(--muted); }
 .pagos-capital form label { display: flex; flex-direction: column; gap: 4px; }
+/* Tarjetas de trimestres de altura distinta (349 con un solo trimestre con datos): cada una con su alto, sin huecos (D4-14). */
+.modelos .tarjetas { align-items: start; }
+/* Tablas de los informativos (180, 190 y 347): cifras alineadas a la derecha con su cabecera (D4-11). */
+.tabla-modelo { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 15px; }
+.tabla-modelo caption { text-align: left; font-weight: 600; padding-bottom: 6px; }
+.tabla-modelo th, .tabla-modelo td { padding: 9px 0; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; font-weight: 400; }
+.tabla-modelo thead th { font-size: 13px; color: var(--muted); font-weight: 500; padding-top: 0; }
+.tabla-modelo .n { text-align: right; padding-left: 14px; white-space: nowrap; }
+.tabla-modelo th small { display: block; color: var(--muted); font-size: 13px; margin-top: 2px; }
+.tabla-modelo tfoot th, .tabla-modelo tfoot td { font-weight: 600; border-bottom: 0; }
+.modelos .tarjeta.ancha { grid-column: 1 / -1; }
+@media (max-width: 599px) {
+  .tabla-modelo thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .tabla-modelo tr { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .tabla-modelo tfoot tr { border-bottom: 0; }
+  .tabla-modelo th[scope="row"] { grid-column: 1 / -1; border: 0; padding: 0 0 2px; }
+  .tabla-modelo td { border: 0; padding: 0; display: flex; justify-content: space-between; gap: 8px; text-align: right; }
+  .tabla-modelo td::before { content: attr(data-et); color: var(--muted); font-size: 13px; }
+}
+/* «Lo próximo»: el concepto y el plazo enteros, sin puntos suspensivos (en el móvil pasan a dos líneas). */
+.proximos .txt strong, .proximos .txt small { white-space: normal; }

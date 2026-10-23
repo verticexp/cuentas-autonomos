@@ -1,8 +1,10 @@
+import { headers } from 'next/headers';
+import { ipDe } from '@/lib/limite';
 import { notFound } from 'next/navigation';
 import { importes, numeroFactura, vencimiento } from '@/lib/calculos';
 import { eur, fechaTexto } from '@/lib/formato';
 import { facturaDePago, marcarPagada } from '@/lib/cobros';
-import { cobroFacturasListo, leerPago, stripeListo } from '@/lib/stripe';
+import { cobroFacturasListo, leerPagoPublico, sesionPagoValida, stripeListo } from '@/lib/stripe';
 import { mensajeSeguro } from '@/lib/mensajes';
 import '@/app/cobros.css';
 
@@ -17,9 +19,9 @@ export default async function Pagar({ params, searchParams }) {
   let d = await facturaDePago(token);
   if (!d) notFound();
   // Vuelta desde Stripe: se comprueba el pago con Stripe (no basta con la dirección).
-  if (sesion && !d.f.cobrada && stripeListo()) {
+  if (sesionPagoValida(sesion) && !d.f.cobrada && stripeListo()) {
     const cuenta = d.empresa.stripeConnect?.cuenta;
-    const s = await leerPago(sesion, cuenta);
+    const s = await leerPagoPublico(sesion, cuenta, { token, ip: ipDe({ headers: await headers() }) });
     if (s.metadata?.token === token && (await marcarPagada(s, { cuenta })).aplicado) d = await facturaDePago(token);
   }
   const { f, empresa } = d;

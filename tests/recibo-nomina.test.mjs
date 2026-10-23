@@ -52,7 +52,8 @@ test('antigua por porcentajes y empleado eliminado', () => {
   const r = filasRecibo(n, null, empresa);
   assert.equal(r.cabecera.trabajador.nombre, 'Nombre histórico');
   assert.equal(r.cabecera.periodo.hasta, '2024-02-29');
-  assert.deepEqual(r.aportacionTrabajador, [{ concepto: 'Seguridad Social del trabajador', porcentaje: 6.5, importe: 130 }]);
+  // El recibo simplificado desglosa la cuota sin cambiar sus importes históricos.
+  assert.deepEqual(r.aportacionTrabajador.map((f) => [f.porcentaje, f.importe]), [[4.7, 94], [1.55, 31], [.1, 2], [.15, 3]]);
   assert.equal(r.aportacionEmpresa.length, 1);
   assert.equal(r.aportacionEmpresa[0].importe, 633);
   assert.equal(r.bases.contingenciasComunes, 2000);

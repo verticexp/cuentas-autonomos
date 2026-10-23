@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { casillas303, liquidaciones303, resumenAnual } from '../lib/calculos.js';
-import { declarante, fichero130, fichero303, importe, texto } from '../lib/ficheroAeat.js';
+import { declarante, fichero130, fichero303, importe, partirNombre, texto } from '../lib/ficheroAeat.js';
 
 const yo = { nif: '12345678Z', nombre: 'Marc Ramírez Delgado' };
 const F = [
@@ -86,6 +86,25 @@ test('130: 600 posiciones y las casillas del resumen anual', () => {
   assert.equal(campo(p, 211, 17), importe(q.c07, 17, true));
   assert.equal(resultado, q.m130);
   assert.equal(tipo, q.m130 > 0 ? 'I' : 'N');
+});
+
+test('130: resultado negativo «a deducir» (B) en el 1T-3T y «negativa» (N) en el 4T', () => {
+  const r = resumenAnual([], [], 2026, {}, [], { minoracion: 100 }).trimestres;
+  const t1 = fichero130(yo, 2026, r[0]);
+  assert.deepEqual([t1.tipo, t1.resultado], ['B', -100]);
+  assert.equal(campo(pagina(t1.contenido, '13001000'), 13, 1), 'B');
+  assert.equal(fichero130(yo, 2026, r[3]).tipo, 'N');
+});
+
+test('130: nombre y apellidos por separado, también con nombres compuestos y partículas', () => {
+  assert.deepEqual(partirNombre('María del Mar García López'), { nombre: 'María del Mar', apellidos: 'García López' });
+  assert.deepEqual(partirNombre('Juan de la Fuente Pérez'), { nombre: 'Juan', apellidos: 'de la Fuente Pérez' });
+  assert.deepEqual(partirNombre('García López, Ana'), { nombre: 'Ana', apellidos: 'García López' });
+  assert.deepEqual(partirNombre('Jordi Puig i Ferrer'), { nombre: 'Jordi', apellidos: 'Puig i Ferrer' });
+  assert.deepEqual(partirNombre('John Smith'), { nombre: 'John', apellidos: 'Smith' });
+  assert.deepEqual(partirNombre('Pedro'), { nombre: '', apellidos: 'Pedro' });
+  const p = pagina(fichero130({ ...yo, nombre: 'José Luis Rodríguez Zapatero' }, 2026, resumenAnual(F, G, 2026).trimestres[0]).contenido, '13001000');
+  assert.deepEqual([campo(p, 23, 60).trim(), campo(p, 83, 20).trim()], ['RODRIGUEZ ZAPATERO', 'JOSE LUIS']);
 });
 
 test('130: un 07 negativo deja la 12 a cero y el resultado sin ingreso', () => {

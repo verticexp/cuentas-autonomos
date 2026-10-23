@@ -15,6 +15,7 @@ import { esApp } from '@/lib/app';
 import { COLOR_BASE } from '@/lib/marca';
 import { fuente } from '@/components/fuente';
 import { permisosDe, puede } from '@/lib/permisos';
+import { conEquipo } from '@/lib/empresa';
 import { leer } from '@/lib/redis';
 import { resumen as resumenBandeja } from '@/lib/bandeja';
 import Bloqueo from '@/components/Bloqueo';
@@ -70,6 +71,8 @@ export default async function RootLayout({ children }) {
   const u = await usuarioActual().catch(() => null);
   // Facturas por revisar (lib/bandeja.js): su número va en la pestaña Gastos, para que se vean desde cualquier pantalla.
   const porRevisar = u && puede(u, 'gastos') ? resumenBandeja((await leer(u, 'bandeja').catch(() => [])) || []).pendientes : 0;
+  // «Equipo» en el menú solo con trabajadores (lib/empresa.js conEquipo); los empleados se leen solo si no lo dijo al empezar.
+  const equipo = u && puede(u, 'nominas') && (u.fiscal?.trabajadores || conEquipo(u, (await leer(u, 'empleados').catch(() => [])) || []));
   // Con el bloqueo del servidor activo y sin desbloquear, la pantalla de bloqueo sale aunque el navegador la diera por abierta.
   const abierta = !u || bloqueoDe(u) !== 'activo' || (await desbloqueada().catch(() => false));
   // Al abrir una página de la app sin desbloquear: redirección de verdad (307) antes de pintar nada. Desde la página, la
@@ -96,10 +99,10 @@ export default async function RootLayout({ children }) {
         <GestoAtras />
         <script nonce={nonce} suppressHydrationWarning dangerouslySetInnerHTML={{ __html: 'window.__arranque=performance.now()' }} />
         {u && soloLectura(u.plan) && !ruta.startsWith('/ajustes/plan') && (
-          <p className="aviso-lectura" role="status"><span>{app ? SOLO_LECTURA_APP : 'Tu prueba ha terminado: puedes ver y exportar todo, pero no crear ni editar.'}</span>{!app && <a href="/ajustes/plan">Elegir plan</a>}</p>
+          <p className="aviso-lectura" role="status"><span>{app ? SOLO_LECTURA_APP : puede(u, 'empresa') ? 'Tu prueba ha terminado: puedes ver y exportar todo, pero no crear ni editar.' : 'La prueba de tu empresa ha terminado: puedes ver y exportar todo. Para crear o editar, pídele al administrador que elija un plan.'}</span>{!app && puede(u, 'empresa') && <a href="/ajustes/plan">Elegir plan</a>}</p>
         )}
         {children}
-        <Suspense>{u && <TabBar porRevisar={porRevisar} permisos={permisosDe(u)} empresas={u.misEmpresas} empresa={u.empresa} admin={Boolean(u.admin)} inventario={Boolean(u.fiscal?.inventario)} fiscal={{ tipo: u.fiscal?.tipo, iva: u.fiscal?.iva }} faltan={planesQueFaltan(u.plan)} />}<Llegada /><BarraEstado /></Suspense>
+        <Suspense>{u && <TabBar porRevisar={porRevisar} permisos={permisosDe(u)} empresas={u.misEmpresas} empresa={u.empresa} admin={Boolean(u.admin)} inventario={Boolean(u.fiscal?.inventario)} equipo={Boolean(equipo)} fiscal={{ tipo: u.fiscal?.tipo, iva: u.fiscal?.iva }} faltan={planesQueFaltan(u.plan)} />}<Llegada /><BarraEstado /></Suspense>
         {u?.bloqueoPantalla && <Bloqueo email={u.email} servidor={abierta} />}
       </body>
     </html>

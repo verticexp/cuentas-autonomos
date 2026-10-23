@@ -12,7 +12,8 @@ const aTexto = (n) => String(n).replace('.', ',');
 // Cobrar una factura desde su ficha. Un toque la cobra entera con la fecha de hoy; «Cambiar fecha o importe» abre un
 // formulario para otra fecha o un cobro parcial. Ya cobrada, dice cuándo y deja «Deshacer» (si se cobró a mano).
 // deshacer: 'cobrada' | 'parcial' | null (lib/cobroManual.js deshacerDe). hoy y desde: AAAA-MM-DD (límites de la fecha).
-export default function Cobro({ id, cobrada, total, pagado, pendiente, cobro, deshacer, hoy, desde }) {
+// secundario: la factura aún no se ha enviado y lo principal es mandarla (auditoría U-10); cobrar sigue a mano, en suave.
+export default function Cobro({ id, cobrada, total, pagado, pendiente, cobro, deshacer, hoy, desde, secundario = false }) {
   const router = useRouter();
   const pref = useId();
   const [ocupado, setOcupado] = useState(false);
@@ -47,7 +48,7 @@ export default function Cobro({ id, cobrada, total, pagado, pendiente, cobro, de
   return (
     <div className="cobro">
       {pagado > 0 && <p className="cobro-parcial">Cobrado {eur(pagado)} de {eur(total)} · faltan <strong>{eur(pendiente)}</strong></p>}
-      <button type="button" className="cobro-boton" disabled={ocupado} onClick={cobrarTodo}>
+      <button type="button" className={`cobro-boton${secundario ? ' sec' : ''}`} disabled={ocupado} onClick={cobrarTodo}>
         {ocupado ? 'Cobrando…' : pagado > 0 ? `✓ Cobrar lo que falta (${eur(pendiente)})` : '✓ Marcar como cobrada'}
       </button>
       <div className="cobro-menores">

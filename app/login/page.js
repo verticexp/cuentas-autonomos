@@ -8,6 +8,7 @@ import FormEntrar from '@/components/FormEntrar';
 import PanelMarca from '@/components/PanelMarca';
 import { TrasArranque } from '@/lib/arranque';
 import { mensajeSeguro } from '@/lib/mensajes';
+import { AYUDA_CONTRASENA } from '@/lib/contrasena';
 import '@/app/legal.css';
 
 export const dynamic = 'force-dynamic';
@@ -34,7 +35,8 @@ export default async function Login({ searchParams }) {
             <label htmlFor="email">Email</label>
             <input id="email" name="email" type="email" autoComplete="username" required />
             <label htmlFor="password">Contraseña</label>
-            <input id="password" name="password" type="password" autoComplete="new-password" minLength={8} required />
+            <input id="password" name="password" type="password" autoComplete="new-password" minLength={10} aria-describedby="password-ayuda" required />
+            <p className="nota" id="password-ayuda">{AYUDA_CONTRASENA}</p>
             <button type="submit">Crear cuenta</button>
           </form>
         </TrasArranque>

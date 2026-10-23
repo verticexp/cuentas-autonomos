@@ -33,7 +33,7 @@ export default function CupoEscaneo({ inicial = null }) {
   const renovacion = cupo.renueva ? new Date(`${cupo.renueva}T12:00:00`).toLocaleDateString('es-ES') : '';
   const urgente = cupo.agotado || cupo.porcentaje >= 80;
   return <details className={`ticket-cupo${urgente ? ' ticket-cupo-aviso' : ''}`} open={urgente || undefined}>
-    <summary>{cupo.prueba ? <><span className="solo-web">{cupo.usadas} de {cupo.limite} páginas de prueba</span><span className="solo-app">{cupo.usadas} de {cupo.limite} páginas usadas</span></> : <span>{`${cupo.usadas} de ${cupo.limite} páginas este mes`}</span>} <span aria-hidden="true">ⓘ</span><span className="ticket-cupo-ayuda"> · Ver detalles del cupo</span></summary>
+    <summary>{cupo.prueba ? <><span className="solo-web">Lectura con IA: {cupo.usadas} de {cupo.limite} páginas gratis en tu prueba</span><span className="solo-app">{cupo.usadas} de {cupo.limite} páginas usadas</span></> : <span>{`${cupo.usadas} de ${cupo.limite} páginas este mes`}</span>} <span aria-hidden="true">ⓘ</span><span className="ticket-cupo-ayuda"> · Ver detalles del cupo</span></summary>
     <div className="ticket-cupo-detalle">
       <small>Cada página cuenta como una lectura; si la vuelves a enviar, cuenta otra vez, aunque no guardes el gasto.</small>
       <small>{cupo.prueba ? <><span className="solo-web">La prueba incluye estas páginas en total. No se renuevan durante la prueba.</span><span className="solo-app">Estas son las páginas disponibles en tu cuenta.</span></> : `Se renueva el ${renovacion}. Las páginas no utilizadas no se acumulan.`} El cupo se comparte por empresa con todo el equipo y la gestoría.</small>

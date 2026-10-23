@@ -43,7 +43,7 @@ button:focus-visible, input:focus-visible, a:focus-visible, select:focus-visible
 .grupo-pie { color: var(--muted); font-size: 13px; line-height: 1.35; margin: 7px 16px 0; }
 .grupo-pie.arriba { margin: -2px 0 10px; }
 .celda { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 11px 16px; position: relative; color: var(--ink); text-decoration: none; }
-.celda + .celda::before, .grupo-lista li + li::before { content: ''; position: absolute; top: 0; left: 16px; right: 0; height: 0.5px; background: var(--line); }
+.celda + .celda::before, .grupo-lista li + li::before { content: ''; position: absolute; top: 0; left: 16px; right: 0; height: 0.5px; background: var(--line); z-index: 2; }
 .celda .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .celda .txt small { color: var(--muted); font-size: 13px; margin-top: 2px; }
 .celda .v { flex: none; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -109,8 +109,9 @@ button:focus-visible, input:focus-visible, a:focus-visible, select:focus-visible
   :root:not([data-tema="claro"]) .tipo .activo, :root:not([data-tema="claro"]) .tipo.dos .activo { background: #303236; }
 }
 :root[data-tema="oscuro"] .tipo .activo, :root[data-tema="oscuro"] .tipo.dos .activo { background: #303236; }
-.campo, .login input { border-radius: 10px; border: 0; background: var(--surface); font-size: 17px; }
-.tarjeta.formulario .campo, .tarjeta.formulario .tipo { background: var(--relleno); }
+/* background-color (no el atajo «background»): los select conservan su flecha (app/movil.css). Borde con contraste suficiente. */
+.campo, .login input { border-radius: 10px; border: 1px solid var(--borde-campo); background-color: var(--surface); font-size: 17px; }
+.tarjeta.formulario .campo, .tarjeta.formulario .tipo { background-color: var(--relleno); }
 .formulario label, .formulario legend { font-size: 13px; }
 .estado { border-radius: 999px; font-size: 15px; font-weight: 500; }
 .aviso-plazo { border-radius: 12px; background: var(--surface); }
@@ -255,6 +256,8 @@ fieldset.solo-ver:disabled .campo { opacity: 1; color: var(--ink); -webkit-text-
 /* Cuestionario de bienvenida */
 .cuestionario { display: flex; flex-direction: column; gap: 14px; padding-bottom: 120px; }
 .bienvenida ~ .tabbar, body:has(.bienvenida) .tabbar { display: none; }
+/* Sin la barra lateral, tampoco su hueco: el cuestionario quedaba 124 px a la derecha del centro en el ordenador. */
+@media (min-width: 1024px) { body:has(.bienvenida):has(.tabbar) { padding-left: 0; } } /* gana a body:has(.tabbar) de pulido.css */
 .progreso { display: flex; gap: 6px; margin-top: 8px; }
 .progreso span { flex: 1; height: 4px; border-radius: 2px; background: var(--relleno); transition: background-color 0.3s ease; }
 .progreso span.hecho { background: var(--marca); }
@@ -325,7 +328,6 @@ a.fila:active { transform: scale(0.985); }
 .acciones-factura { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: stretch; }
 .acciones-factura > * { width: 100%; text-align: center; justify-content: center; }
 .acciones-factura > :first-child, .acciones-factura > .borrar { grid-column: 1 / -1; }
-.acciones-factura > :nth-last-child(2):nth-child(even) { grid-column: 1 / -1; }
 .celda .txt small.aviso { color: var(--out); }
 .celda .txt { white-space: normal; }
 /* En las pantallas de Ajustes el título ya dice qué es: fuera el de la primera tarjeta */
@@ -482,3 +484,25 @@ html[data-arranque=visto] #arranque { display: none; }
   .colores button::after { content: ""; position: absolute; inset: -6px; }
   .color-libre input { inset: -6px; width: 44px; height: 44px; }
 }
+
+/* Entradas, salidas y pagos a Hacienda con su color en Banco, Tesorería y el Resumen (antes solo en tesoreria.css: en Banco
+   salían en negro según por dónde se llegara, auditoría D4-16). El signo sigue delante: el color no va solo. */
+.teso-in { color: var(--in); } .teso-out { color: var(--out); } .teso-hac { color: var(--hacienda); }
+/* Importes en negativo de Inventario y Proyectos (Proyectos no carga inventario.css y sus márgenes negativos salían en negro). */
+.inv-rojo { color: var(--out); }
+/* Acciones secundarias dentro de un texto o un formulario («La factura lleva varios tipos de IVA», «Reintentar»…): con
+   aspecto de enlace, no de texto suelto (auditoría D8-23). Antes la clase chocaba con la caja de invitaciones de Usuarios. */
+button.enlace { color: var(--marca); text-decoration: underline; text-underline-offset: 3px; padding: 6px 0; min-height: 32px; text-align: left; }
+button.enlace:disabled { opacity: 0.5; cursor: not-allowed; }
+/* Un botón principal desactivado (guardando, comprobando…) se ve apagado en los dos temas: antes, en oscuro o en el alta,
+   parecía activo y no respondía (auditoría D8-05 y D8-11). */
+.boton:disabled, .login button[type="submit"]:disabled { opacity: 0.45; cursor: not-allowed; filter: none; }
+
+/* Notas técnicas («Cómo se calcula»): a mano si se piden, sin ocupar la pantalla ni el estado vacío (auditoría D8-30). */
+.como-se-calcula { margin-top: 24px; color: var(--muted); font-size: 15px; }
+.como-se-calcula > summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-weight: 500; }
+/* Plegables de texto («Cómo se calcula», «Más herramientas»): con su flecha, para que se vea que se abren. */
+.como-se-calcula > summary, .gastos-mas > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+.como-se-calcula > summary::-webkit-details-marker, .gastos-mas > summary::-webkit-details-marker { display: none; }
+.como-se-calcula > summary::after, .gastos-mas > summary::after { content: ''; flex: none; width: 7px; height: 7px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg) translateY(-2px); opacity: 0.6; transition: transform 0.2s ease; }
+.como-se-calcula[open] > summary::after, .gastos-mas[open] > summary::after { transform: rotate(-135deg) translateY(-2px); }

@@ -2,7 +2,7 @@ import { requerir } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { esApp } from '@/lib/app';
 import { SOLO_LECTURA_APP } from '@/lib/planes';
-import { leer } from '@/lib/redis';
+import { leer, mismoId } from '@/lib/redis';
 import { candidatosConciliacion } from '@/lib/bancoServidor';
 import { documentos, unir } from '@/lib/indices';
 import { CLASES, clasesPara, clasificar, opciones, sugerencias } from '@/lib/banco';
@@ -11,6 +11,7 @@ import { esSociedad } from '@/lib/modulos';
 import { conectarVisible } from '@/lib/enableBanking';
 import { importes, numeroFactura } from '@/lib/calculos';
 import { totalDe } from '@/lib/proveedores';
+import { gastosQueVe, veSueldos } from '@/lib/nominas';
 import { DETALLE, puede } from '@/lib/permisos';
 import { historialBanco } from '@/lib/historialBanco';
 import Volver from '@/components/Volver';
@@ -26,7 +27,7 @@ const ERRORES = {
   caducado: 'La conexión ha caducado. Vuelve a empezar.',
   cancelado: 'No se ha dado permiso en el banco.',
   bloqueada: 'Fisquo estaba bloqueado al volver del banco. Desbloquéalo y vuelve a conectar.',
-  'solo-lectura': 'Tu mes de prueba ha terminado: elige un plan en Ajustes › Tu plan para conectar el banco.',
+  'solo-lectura': 'Tu prueba ha terminado: elige un plan en Ajustes › Tu plan para conectar el banco.',
   banco: 'El banco no ha respondido. Prueba otra vez en un rato.',
   sincuentas: 'El banco no ha compartido ninguna cuenta.',
 };
@@ -43,9 +44,9 @@ export default async function PaginaBanco({ searchParams }) {
   const emparejadosVisibles = historial.grupos.emparejados.items;
   const enlazados = (tipo) => emparejadosVisibles.filter((m) => m.enlace?.tipo === tipo).map((m) => m.enlace.id);
   const [fEnl, gEnl] = await Promise.all([documentos(u, 'facturas', enlazados('factura')), documentos(u, 'gastos', enlazados('gasto'))]);
-  const sug = sugerencias(lista, facturas, gastos);
+  const sug = sugerencias(lista, facturas, gastos, u);
   const fPorId = Object.fromEntries(unir(facturas, fEnl).map((f) => [f.id, f]));
-  const gPorId = Object.fromEntries(unir(gastos, gEnl).map((g) => [g.id, g]));
+  const gPorId = Object.fromEntries(gastosQueVe(u, unir(gastos, gEnl)).filter((g) => !g.agrupado).map((g) => [g.id, g]));
   const sociedad = esSociedad(fiscalDe(u));
   // Lo que se enseña de cada factura o gasto enlazado o sugerido.
   const destino = (tipo, id) => {
@@ -58,10 +59,12 @@ export default async function PaginaBanco({ searchParams }) {
   };
   const pendientes = historial.grupos.pendientes.items.map((m) => ({
     ...m, sugerencia: sug[m.id] ? { ...destino(sug[m.id].tipo, sug[m.id].id), segura: sug[m.id].segura, motivo: sug[m.id].motivo, yaCobrada: Boolean(sug[m.id].yaCobrada), importeSug: sug[m.id].importe } : null,
-    opciones: opciones(m, facturas, gastos, lista),
+    opciones: opciones(m, facturas, gastos, lista, u),
     clase: clasificar(m, { autonomo: fiscalDe(u).tipo === 'autonomo' }), clases: clasesPara(m),
   }));
-  const emparejados = emparejadosVisibles.map((m) => ({ ...m, destino: destino(m.enlace.tipo, m.enlace.id) }));
+  const emparejados = emparejadosVisibles.map((m) => (m.enlace.tipo === 'gasto' && !veSueldos(u) && gEnl.some((g) => g.nomina && mismoId(g.id, m.enlace.id))
+    ? { ...m, enlace: { tipo: 'auto', id: 'nomina' }, antes: undefined, destino: destino('auto', 'nomina') }
+    : { ...m, destino: destino(m.enlace.tipo, m.enlace.id) }));
   const automaticos = emparejadosVisibles.filter((m) => m.auto).length;
   const ignorados = historial.grupos.ignorados.items;
   const cuentasFiltro = new Map((cuentas || []).map((c) => [c.id, c.nombre]));

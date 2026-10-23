@@ -23,7 +23,7 @@ export default async function Nueva({ searchParams }) {
   const u = await requerir('facturar');
   if (!redis) return <SinBD />;
   // Informe de capacidad E01: la factura de origen por id, los números por el contador y los proyectos por las fichas.
-  const { rectifica, duplica } = await searchParams;
+  const { rectifica, duplica, cliente } = await searchParams;
   const [todos, productos, fFichas, gFichas, original0, plantilla0] = await Promise.all([leer(u, 'clientes'), leer(u, 'productos'), todasFichas(u, 'facturas'), todasFichas(u, 'gastos'), rectifica ? leerUno(u, 'facturas', String(rectifica)) : null, duplica ? leerUno(u, 'facturas', String(duplica)) : null]);
   const clientes = todos.sort((a, b) => a.nombre.localeCompare(b.nombre));
   // Solo se calcula el riesgo si algún cliente tiene límite.
@@ -34,6 +34,8 @@ export default async function Nueva({ searchParams }) {
   const anio = Number(h.slice(0, 4));
   const original = original0 || undefined;
   const plantilla = !original && plantilla0;
+  // Desde la ficha de un cliente («Nueva factura»), ya elegido.
+  const clienteInicial = !original && !plantilla && typeof cliente === 'string' ? clientes.find((c) => c.id === cliente) || null : null;
   const num = async (serie) => numeroFactura({ numero: await numeroPrevisto(u, serie, anio), anio, serie });
   const actividades = actividadesDe(u);
   // Con inventario, cuánto queda de cada producto (para avisar al facturar más de lo que hay).
@@ -44,7 +46,7 @@ export default async function Nueva({ searchParams }) {
       <Volver href={original || plantilla ? `/facturas/${(original || plantilla).id}` : '/facturas'} />
       <h1 className="titulo">{original ? 'Factura rectificativa' : plantilla ? 'Duplicar factura' : 'Nueva factura'}</h1>
       <AvisoTicketBai fiscal={fiscalDe(u)} />
-      <FormFactura igic={usaIgic(fiscalDe(u))} recargo={usa303(fiscalDe(u))} oss={usa303(fiscalDe(u)) && Boolean(fiscalDe(u).oss)} margenes={['rebu', 'reav'].filter((k) => fiscalDe(u)[k])} reagp={fiscalDe(u).iva === 'reagp'} clientes={clientes} hoy={h} rectifica={original} plantilla={plantilla || null} notaDefecto={u.emisor?.notaDefecto || ''} numeros={numeros} actividades={actividades} productos={(productos || []).sort((a, b) => a.nombre.localeCompare(b.nombre))} stock={stock} riesgos={riesgos} proyectos={nombresProyectos([...fFichas, ...gFichas].map((f) => ({ proyecto: f.pr })))} />
+      <FormFactura clienteInicial={clienteInicial} igic={usaIgic(fiscalDe(u))} recargo={usa303(fiscalDe(u))} oss={usa303(fiscalDe(u)) && Boolean(fiscalDe(u).oss)} margenes={['rebu', 'reav'].filter((k) => fiscalDe(u)[k])} reagp={fiscalDe(u).iva === 'reagp'} clientes={clientes} hoy={h} rectifica={original} plantilla={plantilla || null} notaDefecto={u.emisor?.notaDefecto || ''} numeros={numeros} actividades={actividades} productos={(productos || []).sort((a, b) => a.nombre.localeCompare(b.nombre))} stock={stock} riesgos={riesgos} proyectos={nombresProyectos([...fFichas, ...gFichas].map((f) => ({ proyecto: f.pr })))} />
     </main>
   );
 }

@@ -17,7 +17,8 @@ export default async function FacturaA4({ f: fOriginal, e, marca, presupuesto = 
   const c = f.cliente;
   const contacto = [e.email, e.telefono, e.web].filter(Boolean).join(' · ');
   const fechaFin = L.fecha(presupuesto ? caduca(f) : vencimiento(f, e.plazo));
-  const qr = f.verifactu ? await QRCode.toString(urlQr(f.verifactu.modo, e.nif, fOriginal), { type: 'svg', errorCorrectionLevel: 'M', margin: 4 }) : null;
+  // QR y «VERI*FACTU» solo en modo real (art. 6.5 RD 1619/2012): en pruebas los registros no van a la AEAT.
+  const qr = f.verifactu?.modo === 'real' ? await QRCode.toString(urlQr(f.verifactu.modo, e.nif, fOriginal), { type: 'svg', errorCorrectionLevel: 'M', margin: 4 }) : null;
   const numeroStyle = (s, w) => ({ fontSize: `${tamanoNumero(s, w)}pt` });
   return (
     <article className="fa" style={{ '--fa-c': base, '--fa-suave': aclarar(base, 0.9), '--fa-claro': aclarar(base, 0.75), '--fa-total-size': `${tamanoTotal(L.dinero(t.total))}pt`, '--fa-resumen': `${anchoResumen(f, L.dinero)}pt` }}>
@@ -77,7 +78,7 @@ export default async function FacturaA4({ f: fOriginal, e, marca, presupuesto = 
           </div>
         )}
         <div className="fa-pago">
-          <div><p className="fa-et">{L.t.pago}</p>{(e.iban || (!e.bizum && !e.otroPago)) && <p>{L.t.transferencia}<br /><strong>{e.iban}</strong></p>}{e.bizum && <p style={{ overflowWrap: 'anywhere' }}>Bizum: {e.bizum}</p>}{e.otroPago && <p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{e.otroPago}</p>}<p className="fa-vencimiento">{`${presupuesto ? L.t.validoHasta : L.t.vencimiento}: ${fechaFin}`}</p></div>
+          <div><p className="fa-et">{L.t.pago}</p>{e.iban && <p>{L.t.transferencia}<br /><strong>{e.iban}</strong></p>}{e.bizum && <p style={{ overflowWrap: 'anywhere' }}>Bizum: {e.bizum}</p>}{e.otroPago && <p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{e.otroPago}</p>}<p className="fa-vencimiento">{`${presupuesto ? L.t.validoHasta : L.t.vencimiento}: ${fechaFin}`}</p></div>
           {qr && <div className="fa-qr"><span dangerouslySetInnerHTML={{ __html: qr }} /><small>VERI*FACTU</small></div>}
         </div>
         <footer className="fa-pie" style={e.pie ? { flexWrap: 'wrap', rowGap: '4pt' } : undefined}>{e.pie && <p style={{ flexBasis: '100%', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{e.pie}</p>}<span>{e.nombre} · {L.t.nif} {e.nif}{e.registro && <> · {e.registro}</>}</span>{qr && <span>Factura verificable en la sede electrónica de la AEAT</span>}</footer>

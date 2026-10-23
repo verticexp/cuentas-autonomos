@@ -9,6 +9,8 @@ import VistaA4 from '@/components/VistaA4';
 import DescargarPdf from '@/components/DescargarPdf';
 import FacturaA4 from '@/components/FacturaA4';
 import '../../../factura.css';
+import { faltanDatosFactura } from '@/lib/empresa';
+import Ir from '@/components/Ir';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,8 +26,9 @@ export default async function PDF({ params }) {
   if (!f) notFound();
   const c = f.cliente;
   const { emisor: EMISOR, marca } = await identidadDoc(u, f);
-  if (!EMISOR.nif || !EMISOR.iban) {
-    return <main className="aviso"><h1>Faltan tus datos de facturación</h1><p>Rellena tu nombre, NIF, dirección e IBAN en <a href="/ajustes">Ajustes</a> para generar el PDF.</p></main>;
+  const faltan = faltanDatosFactura(EMISOR);
+  if (faltan.length) {
+    return <main className="aviso"><h1>Faltan datos para el PDF</h1><p>Toda factura lleva tu nombre, NIF y dirección. Te falta: {faltan.join(', ')}.</p><p><Ir href="/ajustes/facturacion" className="boton">Completar en Ajustes › Datos de la empresa</Ir></p></main>;
   }
 
   const nombre = `${nombreArchivoDoc(numeroFactura(f), c.nombre)}.pdf`;

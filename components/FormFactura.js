@@ -8,7 +8,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { navegar } from '@/lib/transicion';
 import Deslizable from './Deslizable';
-import { baseLinea, desglose, importes, leerImporte, numeroFactura, pagadoDe, pendienteDe, r2, trimestre } from '@/lib/calculos';
+import { baseLinea, desglose, importes, leerImporte, nifUE, numeroFactura, pagadoDe, pendienteDe, r2, trimestre } from '@/lib/calculos';
 import { requisitosIncobrable } from '@/lib/incobrables';
 import '@/app/lineas.css';
 import '@/app/catalogo.css';
@@ -18,6 +18,7 @@ import { IDIOMAS_FACTURA, MONEDAS, formatoDoc } from '@/lib/idiomas';
 import { TIPOS_IGIC } from '@/lib/igic';
 import { NOMBRES_UE, TIPOS_UE, tiposPais } from '@/lib/oss';
 import { TIPOS_OPERACION } from '@/lib/operaciones';
+import { NIF_ES } from '@/lib/verifactuXml';
 import { evaluarRiesgo, tieneLimite } from '@/lib/riesgo';
 import { mismoCliente, nombreForma } from '@/lib/terceros';
 import { cambiarActividadFactura, etiquetaClienteFactura, lineaFacturaVacia, resolverClienteFactura } from '@/lib/formFactura';
@@ -32,7 +33,7 @@ const lineasDe = (x) => (x.lineas?.length
 const numero = (v) => leerImporte(v) || 0;
 
 // riesgos: lo que debe ahora cada cliente con riesgo máximo ({ id: euros }); el límite lo comprueba el servidor.
-export default function FormFactura({ factura, clientes, numeros, hoy, rectifica: orig, plantilla, notaDefecto = '', actividades, productos = [], stock = null, proyectos = [], riesgos = {}, recargo = false, oss = false, margenes = [], reagp = false, igic = false }) {
+export default function FormFactura({ factura, clientes, numeros, hoy, rectifica: orig, plantilla, clienteInicial = null, notaDefecto = '', actividades, productos = [], stock = null, proyectos = [], riesgos = {}, recargo = false, oss = false, margenes = [], reagp = false, igic = false }) {
   const impuesto = igic ? 'IGIC' : 'IVA';
   const operaciones = igic ? { exenta: { nombre: 'Exenta de IGIC' }, exportacion: { nombre: 'Exportación de bienes' }, 'servicios-fuera': { nombre: 'No sujeta por localización' }, isp: { nombre: 'Inversión del sujeto pasivo (lo declara el cliente)' } } : TIPOS_OPERACION;
   // IVA y retención de cada actividad, para rellenar la factura nueva.
@@ -50,7 +51,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
           : [{ concepto: `Anulación de la factura ${numeroFactura(orig)}`, cantidad: '1', precio: aTexto(-(orig.baseDivisa ?? orig.base)), dto: '', ivaPct: orig.ivaPct }] }
       : plantilla
         ? { actividad: plantilla.actividad, fecha: hoy, cliente: plantilla.cliente, lineas: lineasDe(plantilla), irpfPct: plantilla.irpfPct, nota: plantilla.nota || '', cobrada: false, proyecto: plantilla.proyecto || '', ...(plantilla.recargo ? { recargo: true } : {}), ...(plantilla.idioma ? { idioma: plantilla.idioma } : {}), ...(plantilla.oss ? { oss: plantilla.oss } : {}) }
-      : { actividad: actividades[0].id, fecha: hoy, cliente: { nombre: '', nif: '', direccion: '', ciudad: '' }, lineas: [lineaVacia(defecto(actividades[0].id).ivaPct)], nota: notaDefecto, cobrada: false, irpfPct: defecto(actividades[0].id).irpfPct });
+      : { actividad: actividades[0].id, fecha: hoy, cliente: clienteInicial ? { nombre: clienteInicial.nombre, nif: clienteInicial.nif || '', direccion: clienteInicial.direccion || '', ciudad: clienteInicial.ciudad || '', email: clienteInicial.email || '', pais: clienteInicial.pais || '' } : { nombre: '', nif: '', direccion: '', ciudad: '' }, lineas: [lineaVacia(defecto(actividades[0].id).ivaPct)], nota: notaDefecto, cobrada: false, irpfPct: defecto(actividades[0].id).irpfPct });
   // «¿Salir sin guardar?» con cambios. El tipo de cambio que se pide solo al abrir una factura en otra moneda (pedido) no cuenta.
   const sinGuardar = useCambiosSinGuardar({ ...f, divisa: f.divisa && { ...f.divisa, pedido: undefined } });
   // La selección vive solo en el formulario; el cuerpo de la API conserva el cliente histórico completo.
@@ -132,6 +133,17 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
   const clienteNuevo = () => { elegirCliente(''); if (buscando.trim()) ponerCliente('nombre', buscando.trim()); setNuevoCli(true); setCambiando(false); setBuscando(''); };
   const eligiendo = !nuevoCli && (cambiando || !f.cliente.nombre.trim());
   const camposAbiertos = nuevoCli || datosCli;
+  // Retención según el cliente (auditoría 23-10-2026): un cliente de fuera de España no retiene en España, así que la factura
+  // nueva va sin retención salvo que se haya elegido a mano; con NIF de persona (o sin NIF) puede ser un particular, que
+  // tampoco retiene: se avisa con un botón para quitarla.
+  const nifCli = String(f.cliente.nif || '').toUpperCase().replace(/[\s.-]/g, '').replace(/^ES(?=[0-9A-Z]{9}$)/, '');
+  const clienteExtranjero = Boolean(nifCli) && !NIF_ES.test(nifCli);
+  const clientePersona = !nifCli || /^([0-9]{8}|[XYZ][0-9]{7})[A-Z]$/.test(nifCli);
+  useEffect(() => {
+    if (!nueva || orig || irpfPersonalizado.current) return;
+    const objetivo = clienteExtranjero ? 0 : Number(defecto(f.actividad).irpfPct) || 0;
+    if (Number(f.irpfPct) !== objetivo) setF((x) => ({ ...x, irpfPct: objetivo }));
+  }, [clienteExtranjero]); // eslint-disable-line react-hooks/exhaustive-deps -- solo al cambiar de cliente
   const cambiarActividad = (a) => {
     if (nueva && !orig) limpiarErrores(...(!irpfPersonalizado.current ? ['irpfPct'] : []),
       ...f.lineas.flatMap((l, i) => lineaFacturaVacia(l) && !ivasPersonalizados.current.has(i) ? [`lineas.${i}.ivaPct`, ...(i === 0 ? ['ivaPct'] : [])] : []));
@@ -279,7 +291,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
             {ordenados.map((c) => <option key={c.id} value={c.id}>{etiquetaClienteFactura(c)}</option>)}
           </select>
           <label className="ff-etiqueta" htmlFor={idCampo('cliente.nombre')}>Nombre o razón social</label>
-          <input {...atributos('cliente.nombre')} className="campo" placeholder="Ej.: Eventos SL" value={f.cliente.nombre} onChange={(e) => ponerCliente('nombre', e.target.value)} required />{mensaje('cliente.nombre')}
+          <input {...atributos('cliente.nombre')} className="campo" placeholder="Ej.: Talleres García S.L." value={f.cliente.nombre} onChange={(e) => ponerCliente('nombre', e.target.value)} required />{mensaje('cliente.nombre')}
           <label className="ff-etiqueta" htmlFor={idCampo('cliente.nif')}>NIF</label>
           <input spellCheck={false} autoCorrect="off" autoCapitalize="characters" {...atributos('cliente.nif')} className="campo" placeholder="Ej.: B12345678" value={f.cliente.nif} onChange={(e) => ponerCliente('nif', e.target.value)} />{mensaje('cliente.nif')}
           <label className="ff-etiqueta" htmlFor={idCampo('cliente.pais')}>País (si no es España)</label>
@@ -308,8 +320,8 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
       </fieldset>
 
       <div className={`dos-col ff-det ff-evento${verEvento || f.evento?.fecha || f.evento?.lugar ? ' abierto' : ''}`}>
-        <label>Fecha del evento (opcional)<input className="campo" type="date" value={f.evento?.fecha || ''} onChange={(e) => poner('evento', { ...f.evento, fecha: e.target.value })} /></label>
-        <label>Lugar (opcional)<input className="campo" placeholder="Hotel Arts" value={f.evento?.lugar || ''} onChange={(e) => poner('evento', { ...f.evento, lugar: e.target.value })} /></label>
+        <label>Fecha del servicio o del evento, si no es la de la factura (opcional)<input className="campo" type="date" value={f.evento?.fecha || ''} onChange={(e) => poner('evento', { ...f.evento, fecha: e.target.value })} /></label>
+        <label>Lugar (opcional)<input className="campo" placeholder="Ej.: C/ Mayor, 1, Valencia" value={f.evento?.lugar || ''} onChange={(e) => poner('evento', { ...f.evento, lugar: e.target.value })} /></label>
       </div>
       <fieldset className="lineas">
         <legend>Conceptos</legend>
@@ -317,7 +329,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
           <div className="linea" key={i}>
             <div className="linea-cab">
               <label className="ff-etiqueta-oculta" htmlFor={idCampo(`lineas.${i}.concepto`)}>Concepto</label>
-              <input {...atributos(`lineas.${i}.concepto`)} className="campo" placeholder="Ej.: Bolo DJ boda" value={l.concepto} onChange={(e) => ponerLinea(i, 'concepto', e.target.value)} required />
+              <input {...atributos(`lineas.${i}.concepto`)} className="campo" placeholder="Ej.: Reparación de la instalación (2 horas)" value={l.concepto} onChange={(e) => ponerLinea(i, 'concepto', e.target.value)} required />
               {f.lineas.length > 1 && <button type="button" className="linea-quitar" aria-label="Quitar línea" onClick={() => quitarLinea(i)}>×</button>}
             </div>
             {mensaje(`lineas.${i}.concepto`)}
@@ -346,8 +358,10 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
       <datalist id="proyectos-factura">{proyectos.map((p) => <option key={p} value={p} />)}</datalist>
 
       {(nums.some((l) => l.ivaPct === 0) || errores.operacion) && <label>¿Por qué va sin {impuesto}?
-        <select {...atributos('operacion')} className="campo" value={f.operacion || ''} onChange={(e) => poner('operacion', e.target.value || undefined)}>
-          <option value="">{igic ? 'Tipo cero (sin otra operación)' : 'Según el cliente (UE: servicios intracomunitarios · fuera de la UE: no sujeta · España: exenta)'}</option>
+        {/* A un cliente de España sin IVA hay que decir el motivo (auditoría U-17): exenta, inversión del sujeto pasivo… cambian
+            la prorrata y el 303. De la UE o de fuera, el de su NIF sirve por defecto. */}
+        <select {...atributos('operacion')} className="campo" value={f.operacion || ''} required={!igic && !clienteExtranjero} onChange={(e) => poner('operacion', e.target.value || undefined)}>
+          <option value="">{igic ? 'Tipo cero (sin otra operación)' : clienteExtranjero ? `Según el cliente: ${operaciones[nifUE(nifCli) ? 'servicios-ue' : 'servicios-fuera']?.nombre}` : 'Elige el motivo'}</option>
           {Object.entries(operaciones).map(([k, t]) => <option key={k} value={k}>{t.nombre}</option>)}
         </select>{mensaje('operacion')}
       </label>}
@@ -390,6 +404,8 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
         <select aria-labelledby={idCampo('irpf-etiqueta')} {...atributos('irpfPct')} className="campo" value={f.irpfPct} onChange={(e) => poner('irpfPct', Number(e.target.value))}>
           {[...new Set([15, 7, 0, Number(f.irpfPct) || 0])].map((n) => <option key={n} value={n}>{n}%</option>)}
         </select>{mensaje('irpfPct')}
+        {!orig && Number(f.irpfPct) > 0 && clientePersona && f.cliente.nombre.trim() && <p className="nota">Si es un particular (no autónomo ni empresa), la factura va sin retención. <button type="button" className="enlace" onClick={() => poner('irpfPct', 0)}>Quitar la retención</button></p>}
+        {clienteExtranjero && Number(f.irpfPct) === 0 && <p className="nota">Sin retención: el cliente es de fuera de España.</p>}
       </div>
 
       {!igic && (recargo || f.recargo) && <div className="check ff-det termino-check"><input id={idCampo('recargo')} aria-labelledby={idCampo('recargo-etiqueta')} type="checkbox" checked={Boolean(f.recargo)} onChange={(e) => poner('recargo', e.target.checked)} /><span id={idCampo('recargo-etiqueta')}><label htmlFor={idCampo('recargo')}>Cliente en </label><Termino id="recargo">recargo de equivalencia</Termino><label htmlFor={idCampo('recargo')}> (comercio minorista: 5,2 % con el 21 %, 1,4 % con el 10 %, 0,5 % con el 4 %)</label></span></div>}

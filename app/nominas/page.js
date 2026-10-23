@@ -1,8 +1,8 @@
 import Vacio from '@/components/Vacio';
 import { requerir } from '@/lib/auth';
 import { leer } from '@/lib/redis';
-import { r2, trimestre } from '@/lib/calculos';
-import { eur, fechaCorta, hoy } from '@/lib/formato';
+import { r2, trimestre, limiteTrimestre } from '@/lib/calculos';
+import { eur, fechaCorta, fechaTexto, hoy } from '@/lib/formato';
 import { historialNominas, equipoPorFecha } from '@/lib/historialNominas';
 import { calculoNomina, modelo111, nombreMes } from '@/lib/nominas';
 import { FormEmpleado, GenerarMes } from '@/components/Nominas';
@@ -31,8 +31,8 @@ export default async function Nominas({ searchParams }) {
   const completas = N.filter((n) => n.mes === mes && n.detalle).length;
   const t = trimestre(h);
   const m111 = modelo111(N, anio, t);
-  // Plazo del 111: del 1 al 20 del mes siguiente al trimestre (el 4T, hasta el 20 de enero).
-  const plazo111 = t === 4 ? `20 de enero de ${anio + 1}` : `20 de ${['abril', 'julio', 'octubre'][t - 1]}`;
+  // El día 20 siguiente al trimestre, avanzando al próximo hábil cuando corresponda.
+  const plazo111 = fechaTexto(limiteTrimestre(t, anio, 20));
   const { anios, anio: anioHistorial, meses } = historialNominas(N, anio, (await searchParams)?.anio);
 
   return (

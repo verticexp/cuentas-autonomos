@@ -26,7 +26,7 @@ const TIPO = { venta: 'Venta', devolucion: 'Devolución', compra: 'Compra', ajus
 
 export default async function Producto({ params }) {
   const u = await requerir('facturas');
-  if (u.plan?.version === 2 && sinFuncion(u.plan, 'inventario')) return <SinPlan usuario={u} funcion="inventario" />;
+  if (u.plan?.version >= 2 && sinFuncion(u.plan, 'inventario')) return <SinPlan usuario={u} funcion="inventario" />;
   const id = (await params).id;
   const datos = await datosStock(u);
   const { facturas, gastos, albaranes } = datos;
@@ -87,7 +87,7 @@ export default async function Producto({ params }) {
 
 export async function generateMetadata({ params }) {
   const u = await requerir('facturas');
-  if (u.plan?.version === 2 && sinFuncion(u.plan, 'inventario')) return { title: 'Inventario' };
+  if (u.plan?.version >= 2 && sinFuncion(u.plan, 'inventario')) return { title: 'Inventario' };
   const d = await leerUno(u, 'productos', (await params).id);
   return { title: d?.nombre || 'Producto' };
 }

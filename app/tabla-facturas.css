@@ -20,4 +20,6 @@
   .tf-lista .tf-base, .tf-lista .imp { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .tf-lista .tf-base { font-size: 15px; color: var(--muted); }
   .tf-lista .estado-txt { justify-self: start; }
+  /* [data-vt] { width: fit-content } (app/diseno.css) encoge el total: se alinea a la derecha de su columna. */
+  .tf-lista .imp { justify-self: end; }
 }

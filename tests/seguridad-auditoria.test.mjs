@@ -288,7 +288,8 @@ test('S7: dentro de cuota el portal y el PDF siguen devolviendo los documentos d
   await R.redis.hset('portal-enlaces', { valido: { empresa: 'e', cliente: 'CLIENTE' } });
   const P = await cargar('lib/portal.js');
   assert.equal((await P.portalDe('valido', req('/portal/valido', undefined, 'GET'))).facturas[0].id, 'F1');
-  estado.identidadDoc = async () => ({ emisor: { nif: 'B12345678', iban: 'ES1' } });
+  estado.identidadDoc = async () => ({ emisor: { nombre: 'Empresa', nif: 'B12345678', direccion: 'C/ Uno, 1', iban: 'ES1' } });
+  estado.faltanDatosFactura = (await import('../lib/empresa.js')).faltanDatosFactura;
   estado.facturaPdf = async () => Buffer.from('%PDF-prueba');
   const pdf = await cargar('app/api/portal/pdf/route.js');
   const r = await pdf.GET(req('/api/portal/pdf?t=valido&id=F1', undefined, 'GET'));

@@ -36,6 +36,11 @@ test('390: suma de los cuatro 303', () => {
 test('190: por trabajador', () => {
   const N = [{ empleado: 'e', empleadoNombre: 'Eva', mes: '2026-01', bruto: 2000, irpfPct: 10 }, { empleado: 'e', mes: '2026-02', bruto: 2000, irpfPct: 10 }, { empleado: 'e', mes: '2025-12', bruto: 9, irpfPct: 10 }];
   assert.deepEqual(modelo190(N, [{ id: 'e', nombre: 'Eva Gil', nif: '1X' }], 2026), { perceptores: [{ nombre: 'Eva Gil', nif: '1X', clave: 'A', percepciones: 4000, retenciones: 400 }], percepciones: 4000, retenciones: 400 });
+  // Un proveedor en módulos con el 1 % y un agricultor con el 2 %: clave H; un profesional con el 15 %: clave G.
+  const G190 = [{ fecha: '2026-03-01', pagado: '2026-03-01', base: 1000, ivaPct: 21, irpfPct: 1, proveedor: 'Carpintería', proveedorNif: 'B1' },
+    { fecha: '2026-03-02', pagado: '2026-03-02', base: 500, ivaPct: 10, irpfPct: 2, proveedor: 'Granja', proveedorNif: 'B2' },
+    { fecha: '2026-03-03', pagado: '2026-03-03', base: 300, ivaPct: 21, irpfPct: 15, proveedor: 'Gestoría', proveedorNif: 'B3' }];
+  assert.deepEqual(modelo190([], [], 2026, G190).perceptores.map((p) => [p.nombre, p.clave, p.retenciones]), [['Carpintería', 'H', 10], ['Granja', 'H', 10], ['Gestoría', 'G', 45]]);
 });
 
 test('renta: escala, mínimo personal, retenciones y pagos del 130', () => {

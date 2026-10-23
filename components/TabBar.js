@@ -59,7 +59,7 @@ const seccion = (path) => (path === '/' ? '/' : path.startsWith('/presupuestos')
   : deMas(path) ? '/mas' : null);
 
 // porRevisar: facturas que esperan en Gastos › Por revisar (lib/bandeja.js): su número va sobre la pestaña Gastos.
-export default function TabBar({ permisos = [], empresas = [], empresa, admin = false, inventario = false, fiscal = {}, faltan = {}, porRevisar = 0 }) {
+export default function TabBar({ permisos = [], empresas = [], empresa, admin = false, inventario = false, equipo = true, fiscal = {}, faltan = {}, porRevisar = 0 }) {
   const tabs = TABS.filter((t) => !t.permiso || permisos.includes(t.permiso));
   const path = usePathname();
   const router = useRouter();
@@ -178,7 +178,7 @@ export default function TabBar({ permisos = [], empresas = [], empresa, admin = 
           return (
             <>
               <div className="tabs-grupo">{enlace({ ...ASISTENTE, plan: faltan[ASISTENTE.href] })}</div>
-              {gruposVisibles(permisos, inventario, { fiscal, faltan }).map((g) => (
+              {gruposVisibles(permisos, inventario, { fiscal, faltan, equipo }).map((g) => (
                 <div key={g.titulo} className="tabs-grupo" data-tono={g.tono}>
                   <p className="tabs-grupo-t">{g.titulo}</p>
                   {g.enlaces.map(enlace)}

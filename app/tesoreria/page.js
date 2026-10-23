@@ -28,7 +28,7 @@ const TIPO = { cobro: 'Cobro', pago: 'Pago', hacienda: 'Hacienda' };
 
 export default async function Tesoreria({ searchParams }) {
   const u = await requerir('resumen');
-  if (u.plan?.version === 2 && sinFuncion(u.plan, 'tesoreria')) return <SinPlan usuario={u} funcion="tesoreria" />;
+  if (u.plan?.version >= 2 && sinFuncion(u.plan, 'tesoreria')) return <SinPlan usuario={u} funcion="tesoreria" />;
   if (!redis) return <SinBD />;
   // Informe de capacidad E01: lo pendiente, este año y el anterior (impuestos y gastos habituales) y los bienes; como el Resumen.
   const y = Number(hoy().slice(0, 4));
@@ -43,6 +43,9 @@ export default async function Tesoreria({ searchParams }) {
     <main className="pagina mk-look tesoreria">
       <Volver href="/">Resumen</Volver>
       <h1 className="titulo">Tesorería</h1>
+      {!p.movimientos.length && <Vacio icono="cobrar" titulo="Aún no hay nada previsto" accion={{ href: '/facturas/nueva', texto: 'Nueva factura' }} secundaria={{ href: '/gastos#apuntar-gasto', texto: 'Añadir gasto' }}>Aquí verás qué dinero entra y sale en los próximos meses</Vacio>}
+      {!p.movimientos.length && <SaldoBanco saldo={saldo ? saldo.importe : null} fecha={saldo?.fecha} banco={Boolean(saldo?.banco)} editable={puede(u, 'facturar') || puede(u, 'gastar')} />}
+      {p.movimientos.length > 0 && <>
       {esSociedad(fiscalDe(u)) && (puede(u, 'facturar') || puede(u, 'gastar')) && <Ir href="/tesoreria/remesas" className="grupo-pie">Remesas SEPA ›</Ir>}
       <nav className="segmentado">
         {HORIZONTES.map((h) => <Ir key={h} href={`/tesoreria?meses=${h}`} tipo="fundido" className={h === n ? 'activo' : ''}>{h} meses</Ir>)}
@@ -98,10 +101,9 @@ export default async function Tesoreria({ searchParams }) {
           </ul>
         </section>
       ))}
+      </>}
 
-      {!p.movimientos.length && <Vacio icono="cobrar" titulo="Aún no hay nada previsto" accion={{ href: '/facturas/nueva', texto: 'Nueva factura' }} secundaria={{ href: '/gastos#apuntar-gasto', texto: 'Añadir gasto' }}>Aquí verás las facturas por cobrar, los gastos pendientes y habituales y lo que toca pagar a Hacienda.</Vacio>}
-
-      <p className="grupo-pie arriba">Cobros: facturas sin cobrar a su vencimiento (las vencidas, hoy) y las recurrentes. Pagos: gastos pendientes a su vencimiento (los vencidos, hoy) y los que se repiten cada uno de los 3 últimos meses. Hacienda: {usaIgic(fiscalDe(u)) ? 'IGIC (420)' : '303'}, 130, 115 y 111 de los trimestres sin marcar como presentados. Es una previsión: revísala de vez en cuando.</p>
+      <details className="como-se-calcula"><summary>Cómo se calcula</summary><p className="grupo-pie arriba">Cobros: facturas sin cobrar a su vencimiento (las vencidas, hoy) y las recurrentes. Pagos: gastos pendientes a su vencimiento (los vencidos, hoy) y los que se repiten cada uno de los 3 últimos meses. Hacienda: {usaIgic(fiscalDe(u)) ? 'IGIC (420)' : '303'}, 130, 115 y 111 de los trimestres sin marcar como presentados. Es una previsión: revísala de vez en cuando.</p></details>
     </main>
   );
 }

@@ -110,6 +110,13 @@ test('Toca presentar: el 202 sale en abril (1T) y octubre (3T), si no está paga
   assert.deepEqual(modelosAPresentar(3, { pagos202: modelo202({}, 2026), constitucion: '2026-02-01' }), []);
 });
 
+test('Toca presentar: el 111 con nóminas pagadas sin retención se presenta como negativo (art. 108.1 RIRPF)', () => {
+  const l = modelosAPresentar(1, { m111: 0, negativa111: true });
+  assert.deepEqual(l.map((m) => [m.num, m.importe, m.texto]), [['111', 0, 'Negativo: sin importe, pero se presenta']]);
+  assert.deepEqual(modelosAPresentar(1, { m111: 0 }), []);
+  assert.deepEqual(modelosAPresentar(1, { m111: null, negativa111: true }), []); // ya marcado como presentado
+});
+
 test('Toca presentar: en el 4T el 111 y el 115 vencen el 20 de enero y lo dicen; el resumen para compartir los lleva todos', () => {
   const l = modelosAPresentar(4, { m303: { importe: 100 }, m111: 30, m115: 19 });
   assert.deepEqual(l.map((m) => m.dia), [undefined, 20, 20]);
