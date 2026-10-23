@@ -144,3 +144,18 @@ test('Verifactu en pruebas: ni QR ni leyenda en la factura; en real, sí', async
   assert.doesNotMatch(await texto(pruebas), /verificable/);
   assert.match(await texto(real), /verificable/);
 });
+
+// Auditoría 23-10-2026 (F1-09 y D3-80): la parte sin IVA lleva sola su mención legal (art. 6.1.j y 6.1.m del Reglamento de
+// facturación): exención con su artículo o «inversión del sujeto pasivo»; en otro idioma, la fórmula de la Directiva.
+test('menciones de la operación sin IVA: exención o inversión del sujeto pasivo, sin repetir la nota', async () => {
+  const sinIva = { ...factura, ivaPct: 0, irpfPct: 0 };
+  const ue = { ...sinIva, cliente: { nombre: 'Kultur GmbH', nif: 'DE123456789' }, operacion: 'servicios-ue' };
+  assert.match(facturaHtml(ue, emisor), /Inversión del sujeto pasivo\./);
+  assert.match(facturaHtml({ ...ue, idioma: 'de' }, emisor), /Steuerschuldnerschaft des Leistungsempfängers/);
+  assert.match(facturaHtml({ ...sinIva, operacion: 'exenta' }, emisor), /exenta de IVA \(art\. 20/);
+  assert.match(facturaHtml({ ...sinIva, cliente: { nombre: 'Client Ltd', nif: 'GB123456789' }, operacion: 'exportacion' }, emisor), /Exportación exenta/);
+  assert.equal((facturaHtml({ ...ue, nota: 'Operación con inversión del sujeto pasivo' }, emisor).match(/sujeto pasivo/g) || []).length, 1);
+  assert.doesNotMatch(facturaHtml(factura, emisor), /sujeto pasivo|exenta/);
+  const pdf = await PDFDocument.load(await facturaPdf(ue, emisor));
+  assert.ok(textos(pdf.getPage(0)).some((t) => /sujeto pasivo/.test(t.texto)));
+});

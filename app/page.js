@@ -113,6 +113,10 @@ export default async function Resumen({ searchParams }) {
   // La previsión de caja es del plan Pro (planes v2 y v3): con uno que no la incluye no se enseña la tarjeta.
   const verTeso = Boolean(teso) && !(u.plan?.version >= 2 && sinFuncion(u.plan, 'tesoreria'));
   const hayTarjetas = !sinDatos && (verHacienda || porCobrar > 0 || verPorPagar || porRevisar.pendientes > 0 || verTeso);
+  // Lo demás que viene para Hacienda en los próximos meses (retenciones, Sociedades, dividendos…), de la previsión de
+  // Tesorería: la tarjeta enseña el IVA y el IRPF y, sin esto, parecía que era todo lo que había que apartar.
+  const otrosHacienda = (teso?.movimientos || []).filter((m) => m.tipo === 'hacienda' && !m.vencido && !/^(IVA|IGIC|IRPF)\b/.test(m.concepto));
+  const lineaOtros = otrosHacienda.length > 0 && `Además: ${otrosHacienda.slice(0, 2).map((m) => `${m.concepto}, ${eur(-m.importe)} hasta el ${fechaTexto(m.fecha)}`).join(' · ')}${otrosHacienda.length > 2 ? ` y ${otrosHacienda.length - 2} más` : ''}`;
   // Último día para pagar un trimestre, ya pasado al día hábil (el 4T, con el año siguiente).
   const hastaT = (t, y) => `${fechaTexto(limiteTrimestre(t, y))}${t === 4 ? ` de ${y + 1}` : ''}`;
   // Plazos que pasaron sin marcar el modelo como presentado (lib/tesoreria.js VENCIDOS_DIAS).
@@ -218,11 +222,13 @@ export default async function Resumen({ searchParams }) {
                   <p className="hcard-s">{[debe.pend303 ? `${nombreIndirecto(debe)}: ${debe.m303 < 0 ? `${eur(-debe.m303)} a compensar` : eur(debe.ivaIngresar)}` : !foral && c303 && `${modeloIndirecto} presentado`, debe.pend130 ? `${nombreIrpf(debe)}: ${importeIrpf(debe)}${igic && plazo.t === 4 ? ` · hasta el ${hastaT(4, plazo.anio)}` : ''}` : !foral && c130 && 'Modelo 130 presentado'].filter(Boolean).join(' · ')}</p>
                   {foral && <p className="hcard-s">{plazosPago(debe)}</p>}
                   <p className="hcard-s">Del {tHoy}T llevas {eur(apartado)} para apartar.</p>
+                  {lineaOtros && <p className="hcard-s">{lineaOtros}</p>}
                 </>
               ) : (
                 <>
                   <p className="hcard-v"><Cifra v={apartado} /><small>€ para apartar</small></p>
                   <p className="hcard-s">{[c303 && `${impuesto}${igic ? ' (420)' : ''} ${eur(qAhora.ivaIngresar)}`, c130 && `IRPF ${importeIrpf(qAhora)}`].filter(Boolean).join(' + ')} · {foral ? plazosPago(qAhora) : igic && tHoy === 4 ? [c303 && `420: hasta el ${fechaTexto(plazo420(anioActual, 4))} de ${anioActual + 1}`, c130 && `130: hasta el ${hastaT(4, anioActual)}`].filter(Boolean).join('; ') : <>se paga hasta el {hastaT(tHoy, anioActual)}</>}</p>
+                  {lineaOtros && <p className="hcard-s">{lineaOtros}</p>}
                 </>
               )}
             </Ir>

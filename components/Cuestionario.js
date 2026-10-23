@@ -125,7 +125,7 @@ export default function Cuestionario({ inicial, editar, conFacturas, puedeFactur
                 {igic ? <select className="campo" aria-label={`IGIC de ${x.nombre || 'tu actividad'}`} value={x.ivaPct} onChange={(ev) => a(i, 'ivaPct', Number(ev.target.value))}>{tipos.map(([v, n]) => <option key={v} value={v}>{n}</option>)}</select>
                   : <div className="segmentado">{tipos.map(([v, n]) => <button key={v} type="button" aria-pressed={Number(x.ivaPct) === v} className={Number(x.ivaPct) === v ? 'activo' : ''} onClick={() => a(i, 'ivaPct', v)}>{n}</button>)}</div>}
                 {!sociedad && <>
-                  <p className="mini-t">Retención de IRPF <small>(si facturas a empresas o autónomos como profesional)</small></p>
+                  <p className="mini-t">Retención de IRPF <small>(solo actividades profesionales —diseño, consultoría, formación, abogacía…— cuando facturas a empresas o autónomos; obras, reparaciones, comercio u hostelería van sin retención)</small></p>
                   <div className="segmentado">{retenciones.map(([v, n]) => <button key={v} type="button" aria-pressed={Number(x.irpfPct) === v} className={Number(x.irpfPct) === v ? 'activo' : ''} onClick={() => a(i, 'irpfPct', v)}>{n}</button>)}</div>
                   <label className="alta-campo"><span>Epígrafe del IAE (opcional)</span><small>Está en tu alta de autónomo; va en los libros registro.</small><input className="campo" inputMode="numeric" placeholder="Por ejemplo: 844" value={x.iae || ''} onChange={(v) => a(i, 'iae', v.target.value)} /></label>
                 </>}
