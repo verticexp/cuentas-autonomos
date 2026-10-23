@@ -7,8 +7,8 @@ casillas. Lo corregido está en `main` (PR #275, desplegado) y en el segundo PR 
 
 ## Resumen
 
-- **Nota global: 6,3 → 7,4 sobre 10** (antes: media de las revisiones; después: estimación tras los arreglos de hoy, sin
-  una segunda revisión independiente).
+- **Nota global: 6,3 → 7,6 sobre 10** (media de las 17 áreas; antes: revisiones de la auditoría; después: estimación tras
+  los PR #275 y #276, sin una segunda revisión independiente).
 - **Unos 500 hallazgos** entre 13 revisiones; ninguno crítico abierto. Se han corregido los de prioridad alta de cálculo,
   números de casillas, seguridad y primer uso, y la mayoría de los de diseño de las pantallas principales.
 - **Números de modelos**: el 303 ya enseña las casillas y el orden del formulario de 2026 (el recargo del 0,5 % iba como
@@ -58,7 +58,7 @@ BOE (Orden HAC/56/2024, Orden PJC/297/2026, RD 1619/2012, LIVA, LIRPF, RIRPF) y 
 | Móvil | 6,8 | 7,3 | Tablas apiladas, textos sin cortar donde importan. |
 | Web comercial | 5,3 | 6,5 | Portada clara, CTA al registro, /seguridad, /business y /verificado al día. Sin prueba social ni pie legal. |
 | Accesibilidad visual | 6 | 7 | Bordes 3:1 y contraste del botón principal. |
-| **Global** | **6,3** | **7,4** | |
+| **Global (media)** | **6,3** | **7,6** | |
 
 ## Pruebas de uso y satisfacción (ficticias)
 
