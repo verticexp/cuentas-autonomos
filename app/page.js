@@ -24,6 +24,10 @@ import Ico from '@/components/Ico';
 import Logo from '@/components/Logo';
 import AvisoPrueba from '@/components/AvisoPrueba';
 import AvisoMensajes from '@/components/AvisoMensajes';
+import AccesoDespacho from '@/components/AccesoDespacho';
+import { despachoDe, rolEn } from '@/lib/despachos';
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 import { DETALLE, puede } from '@/lib/permisos';
 import '@/app/asistente.css';
 import '@/app/empresas.css';
@@ -61,7 +65,11 @@ export async function generateMetadata() {
 
 export default async function Resumen({ searchParams }) {
   // Sin sesión: la web pública. Con sesión: el panel.
-  if (!(await usuarioActual())) return <Landing />;
+  const sesion = await usuarioActual();
+  if (!sesion) return <Landing />;
+  // La gente de un despacho empieza en Mi despacho (también al entrar desde la app o con Face ID), salvo que haya elegido
+  // ir a su propia empresa («Mi empresa en Fisquo» deja la cookie «vista»).
+  if (sesion.despacho && !sesion.viaDespacho && (await cookies()).get('vista')?.value !== 'empresa' && rolEn(await despachoDe(sesion.despacho).catch(() => null), sesion.id)) redirect('/despacho');
   const u = await requerir('resumen');
   enviarLuego(u); // Verifactu: si quedó algo por enviar (control de flujo de la AEAT), ahora
   if (!redis) return <SinBD />;
@@ -146,6 +154,7 @@ export default async function Resumen({ searchParams }) {
     <main className="pagina mk-look">
       <AvisoPrueba plan={u.plan} app={esApp((await headers()).get('user-agent'))} />
       <AvisoMensajes u={u} />
+      <AccesoDespacho u={u} />
       <header className={`inicio${facturado > 0 ? '' : ' sin-saldo'}`}>
         <div className="inicio-barra">
           <Logo />

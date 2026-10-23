@@ -1,3 +1,4 @@
+import AccesoDespacho from '@/components/AccesoDespacho';
 import { cookies, headers } from 'next/headers';
 import { esApp } from '@/lib/app';
 import { TIPOS, diasPrueba, esFundador } from '@/lib/prueba';
@@ -94,6 +95,7 @@ export default async function Page() {
       {/* En el móvil se llega desde «Más»: hay que poder volver. En el ordenador, Ajustes está en la barra lateral. */}
       <div className="volver-movil"><Volver href="/mas">Más</Volver></div>
       <h1 className="titulo">Ajustes</h1>
+      <AccesoDespacho u={u} />
       <Ir href="/ajustes/perfil" className="mas-perfil">
         <Avatar nombre={u.nombre} size={48} />
         <span className="txt"><strong>{u.nombre}</strong><small>{u.email}</small><small>{perfilDe(u)} en {u.empresaNombre}</small></span>

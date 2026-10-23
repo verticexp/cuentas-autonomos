@@ -1,6 +1,7 @@
 import Ir from '@/components/Ir';
 import Avatar from '@/components/Avatar';
 import MasLista from '@/components/MasLista';
+import AccesoDespacho from '@/components/AccesoDespacho';
 import { requerir } from '@/lib/auth';
 import { perfilDe, permisosDe } from '@/lib/permisos';
 import { sinFuncion } from '@/lib/planes';
@@ -47,6 +48,7 @@ export default async function Mas() {
   return (
     <main className="pagina mk-look mas-pagina">
       <h1 className="titulo">Más</h1>
+      <AccesoDespacho u={u} />
       <Ir href="/ajustes" className="mas-perfil">
         <Avatar nombre={u.nombre} size={44} />
         <span className="txt"><strong>{u.nombre}</strong><small>{perfilDe(u)} en {u.empresaNombre}</small></span>
