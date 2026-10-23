@@ -12,5 +12,8 @@ export async function POST(req) {
   const r = NextResponse.redirect(new URL(u ? destino : '/login', req.url), 303);
   const cuenta = u && (await redis.hget('usuarios', u.id));
   if (cuenta) r.cookies.set('e', String(cuenta.empresa || cuenta.id), opcionesCookie);
+  // «Mi empresa en Fisquo»: el Resumen deja de llevar a Mi despacho mientras dure la sesión del navegador.
+  if (destino === '/') r.cookies.set('vista', 'empresa', { path: '/', sameSite: 'lax', httpOnly: true, secure: true });
+  else r.cookies.delete('vista');
   return r;
 }

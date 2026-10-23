@@ -1,7 +1,7 @@
 /* Mi despacho (app/despacho): la lista de clientes de una gestoría, la ficha de cada cliente, plazos, equipo y ajustes.
    Usa las piezas de la app (grupo, grupo-c, celda, grupo-lista, fila, buscar, chips, pestañas): esto solo añade lo propio. */
 
-.despacho .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.despacho .sr, .acceso-despacho .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
 /* Aviso arriba cuando la gestoría está dentro de las cuentas de un cliente (components/AvisoDespacho.js). Una línea; en
    el móvil, el texto arriba y los dos botones debajo, del mismo tamaño. */
@@ -211,3 +211,12 @@ button.celda.desp-celda-boton:disabled { opacity: 0.5; cursor: default; }
 .desp-interruptor input { flex: none; width: 44px; height: 26px; margin: 0; }
 .desp-solo-movil form { display: block; }
 .despacho .celda .txt small { white-space: normal; }
+/* Puerta a Mi despacho desde la empresa propia (components/AccesoDespacho.js): grande y arriba, sobre todo en el móvil. */
+.acceso-despacho { display: flex; align-items: center; gap: 12px; margin: 0 0 14px; padding: 14px 16px; border-radius: 16px; background: var(--marca); color: var(--sobre); text-decoration: none; }
+.acceso-despacho .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.acceso-despacho .txt strong { font-weight: 700; }
+.acceso-despacho .txt small { margin-top: 2px; font-size: 14px; color: inherit; opacity: 0.85; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acceso-despacho-ico { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: color-mix(in srgb, var(--sobre) 16%, transparent); }
+.acceso-despacho-ico svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
+.acceso-despacho-n { flex: none; min-width: 24px; height: 24px; padding: 0 7px; border-radius: 12px; background: var(--sobre); color: var(--marca); font-size: 13px; line-height: 24px; text-align: center; }
+.acceso-despacho::after { content: ''; flex: none; width: 8px; height: 8px; border-right: 2px solid currentColor; border-top: 2px solid currentColor; transform: rotate(45deg); opacity: 0.8; }
