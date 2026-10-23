@@ -14,7 +14,12 @@ import '@/app/chat.css';
 // docs: { facturas, gastos } para preguntar por un documento (solo el despacho) · docInicial: 'gasto:id' o 'factura:id'.
 // leer: { url, metodo, cuerpo? } para marcar como leído al abrirlo (desde aquí y no al pintar la página: la app precarga
 // las pantallas y daría por leído lo que nadie ha visto).
+// comprobar: URL (GET) que devuelve los hilos ({ hilos } o { comentarios }) para ver si hay algo nuevo sin recargar la
+// pantalla entera: recargarla cada 30 segundos costaba unas 100 consultas a la base de datos cada vez.
 const hora = (iso) => new Date(iso).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+// Cuántos mensajes hay, el último y cuántos están en preguntas resueltas: si cambia algo, hay que recargar.
+const firma = (lista) => `${lista.length}|${lista.reduce((m, x) => (x.fecha > m ? x.fecha : m), '')}|${lista.filter((x) => x.resuelto).length}`;
+const ESPERA = 60000;
 function dia(iso, hoy) {
   const d = iso.slice(0, 10);
   if (d === hoy) return 'Hoy';
@@ -24,7 +29,7 @@ function dia(iso, hoy) {
   return t[0].toUpperCase() + t.slice(1);
 }
 
-export default function Chat({ mensajes, lado, leidoAntes = '', enviar, leer, docs = null, docInicial = '', nombreOtro, vacio }) {
+export default function Chat({ mensajes, lado, leidoAntes = '', enviar, leer, comprobar, docs = null, docInicial = '', nombreOtro, vacio }) {
   const router = useRouter();
   const [texto, setTexto] = useState('');
   const [doc, setDoc] = useState(docInicial);
@@ -40,11 +45,19 @@ export default function Chat({ mensajes, lado, leidoAntes = '', enviar, leer, do
 
   // Lo último a la vista, dentro de la caja de mensajes (sin mover la página).
   useEffect(() => { const l = lista.current; if (l) l.scrollTop = l.scrollHeight; }, [mensajes.length]);
-  // Lo nuevo llega solo: cada 30 segundos, si la pantalla está a la vista y no se está escribiendo.
+  // Lo nuevo llega solo: cada minuto, si la pantalla está a la vista y no se está escribiendo, se miran los mensajes (una
+  // consulta pequeña) y solo si ha cambiado algo se recarga la pantalla.
+  const actual = firma(mensajes);
   useEffect(() => {
-    const t = setInterval(() => { if (document.visibilityState === 'visible' && !caja.current?.value) router.refresh(); }, 30000);
+    if (!comprobar) return undefined;
+    const t = setInterval(async () => {
+      if (document.visibilityState !== 'visible' || caja.current?.value) return;
+      const d = await fetch(comprobar, { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+      const hilos = d?.hilos || d?.comentarios;
+      if (Array.isArray(hilos) && firma(hilos.flatMap((c) => (c.hilo || []).map((m) => ({ fecha: m.fecha, resuelto: Boolean(c.resuelto) })))) !== actual) router.refresh();
+    }, ESPERA);
     return () => clearInterval(t);
-  }, [router]);
+  }, [comprobar, actual, router]);
   // Abierto: lo del otro lado queda leído (y el número de «Mensajes» se pone al día).
   const sinLeer = mensajes.some((m) => m.lado !== lado && m.fecha > leidoAntes);
   useEffect(() => {

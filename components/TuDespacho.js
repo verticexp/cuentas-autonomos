@@ -47,7 +47,7 @@ export default function TuDespacho({ despacho, accesos = [], mensajes = [], leid
     <section className="grupo" aria-labelledby="td-p">
       <h2 className="grupo-t" id="td-p">Mensajes con {despacho.nombre}</h2>
       <Chat mensajes={mensajes} lado="cliente" leidoAntes={leidoAntes} nombreOtro={despacho.nombre}
-        enviar={{ url: '/api/tu-despacho', metodo: 'PUT', extra: {} }} leer={{ url: '/api/tu-despacho', metodo: 'PATCH', cuerpo: { leer: true } }}
+        enviar={{ url: '/api/tu-despacho', metodo: 'PUT', extra: {} }} leer={{ url: '/api/tu-despacho', metodo: 'PATCH', cuerpo: { leer: true } }} comprobar="/api/tu-despacho"
         vacio={`Escribe a ${despacho.nombre} cuando quieras: le llega a su Fisquo. Si te pregunta por una factura o un gasto, lo verás aquí.`} />
     </section>
     <section className="grupo" aria-labelledby="td-t">
