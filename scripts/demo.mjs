@@ -1,6 +1,8 @@
-// Crea (o rehace desde cero) la empresa de demo: una S.L. de sonido e iluminación para eventos,
-// con dos años de facturas, gastos (con categorías del plan contable y bienes de inversión que se amortizan), clientes
-// ficticios, el saldo del banco y Verifactu en modo pruebas.
+// Crea (o rehace desde cero) la empresa de demo: una S.L. de sonido e iluminación para eventos, con dos años de todo lo
+// que hace la app: facturas (series, rectificativa, recurrentes, presupuestos, ventas a la UE), gastos (alquiler con
+// retención, compras a la UE, dietas, bienes de inversión que se amortizan, pagos con vencimiento), empleados con sus
+// nóminas y su registro de jornada, dividendos, inventario, pedidos y albaranes, remesas SEPA, el banco, la contabilidad,
+// dos personas más del equipo con sus permisos y Verifactu en modo pruebas.
 // Uso: KV_REST_API_URL=… KV_REST_API_TOKEN=… DEMO_PASSWORD=… node scripts/demo.mjs
 // Si la demo ya existe, DEMO_PASSWORD es opcional: sin ella se conserva la contraseña que tiene.
 import assert from 'node:assert/strict';
@@ -16,6 +18,13 @@ import { limpiarDoc, siguiente, albaranDePedido, facturaDeAlbaranes, limpiarPedi
 import { ibanValido, identificadorAcreedor } from '../lib/sepa.js';
 import { claveProveedor } from '../lib/proveedores.js';
 import { limpiarProyecto } from '../lib/proyectos.js';
+import { calculoNomina, fechaPagoNomina, gastoDeNomina, limpiarCotizacion, limpiarDatos145, nominaCompleta } from '../lib/nominas.js';
+import { extrasNomina, laborables, resumenMes, validar } from '../lib/jornada.js';
+import { calcularDieta, conceptoDieta } from '../lib/dietas.js';
+import { limpiarPago, plazo123 } from '../lib/capitalMobiliario.js';
+import { plantillaDe } from '../lib/recurrentes.js';
+import { baseSenal, numeroPresupuesto } from '../lib/presupuestos.js';
+import { VERSION_PERMISOS } from '../lib/permisos.js';
 
 const { KV_REST_API_URL: url, KV_REST_API_TOKEN: token, DEMO_PASSWORD: password } = process.env;
 if (!url || !token) throw new Error('Faltan KV_REST_API_URL y KV_REST_API_TOKEN');
@@ -45,7 +54,7 @@ const empresa = {
   id, nombre: process.env.DEMO_EMPRESA || 'Sonora Eventos S.L.', creada: ahora, pendiente: false, verifactu: 'pruebas',
   emisor: { nombre: (process.env.DEMO_EMPRESA || 'SONORA EVENTOS S.L.').toUpperCase(), nif: 'B00000000', direccion: 'C/ de la Marina, 19', ciudad: '08005 Barcelona', iban: 'ES91 2100 0418 4502 0005 1332', plazo: 30, bic: 'CAIXESBBXXX', acreedorSepa: identificadorAcreedor('B00000000') },
   actividades: ACTIVIDADES,
-  fiscal: { tipo: 'sociedad', iva: 'general', retenidas: false, trabajadores: true, alquiler: true, intracom: false, inventario: true },
+  fiscal: { tipo: 'sociedad', iva: 'general', retenidas: false, trabajadores: true, alquiler: true, intracom: true, inventario: true },
 };
 
 // Generador con semilla: la demo sale siempre igual.
@@ -103,12 +112,14 @@ for (let d = inicio; d.toISOString().slice(0, 10) <= hoy; d = new Date(Date.UTC(
     const fecha = dia(y, m, dd);
     if (fecha <= hoy) gastos.push({ id: `demo-${gastos.length + 1}`, fecha, actividad, concepto, base, ivaPct, ...extra });
   };
-  g(1, 'Alquiler del almacén', 950);
+  // El almacén es alquilado: la empresa retiene el 19 % al propietario (modelos 115 y 180).
+  g(1, 'Alquiler del almacén', 950, 21, 'sonido-e-iluminacion', { proveedor: 'Finques Poblenou S.L.', proveedorNif: 'B00000301', alquiler: true });
   g(5, 'Gestoría', 180);
   g(5, 'Seguro de responsabilidad civil', 62, 0);
   g(8, 'Teléfono e internet', 75);
   g(10, 'Software y suscripciones', 48);
-  g(28, 'Nóminas y Seguridad Social', 4200 + EVENTOS_MES[m - 1] * 150, 0);
+  // Material comprado en Alemania dos veces al año: sin IVA en la factura, lo autoliquida Sonora (303 y 349).
+  if (m === 4 || m === 11) g(9, 'Micrófonos y accesorios (Musikhaus Thomann)', 780 + m * 15, 0, 'alquiler-de-equipos', { proveedor: 'Musikhaus Thomann GmbH', proveedorNif: 'DE000000001', origen: 'ue', ivaAuto: 21 });
   g(15, 'Combustible furgoneta', entre(120, 380));
   if (azar() > 0.6) g(18, 'Publicidad en Instagram y Google', entre(80, 300));
   if (azar() > 0.7) g(20, 'Material y equipos (cables, lámparas, consumibles)', entre(150, 900), 21, 'alquiler-de-equipos');
@@ -371,6 +382,199 @@ for (const g of relacionados.sort((a, b) => distanciaFestival(a) - distanciaFest
 const mesesTienda = new Set(facturas.filter((f) => f.caja).map((f) => f.fecha.slice(0, 7)));
 for (const g of gastos.filter((g) => g.concepto === 'Alquiler del almacén' && mesesTienda.has(g.fecha.slice(0, 7)))) g.proyecto = limpiarProyecto('Tienda Poblenou');
 
+// ---- Equipo: empleados con nómina completa (cotización 2026 y, en uno, el IRPF del modelo 145), un temporal de verano
+// que ya causó baja, una persona a media jornada que cobra las horas extra del registro de jornada, y dos de ellas con
+// cuenta en Fisquo (Marta factura; Aina solo ficha).
+const nifDni = (n) => `${String(n).padStart(8, '0')}${'TRWAGMYFPDXBNJZSQVHLCKE'[n % 23]}`;
+const Ya = Number(hoy.slice(0, 4));
+const ultimoDiaMes = (mes) => new Date(Date.UTC(Number(mes.slice(0, 4)), Number(mes.slice(5, 7)), 0)).toISOString().slice(0, 10);
+// Las dos cuentas del equipo, solo en la demo de siempre (otra DEMO_EMAIL, como la cuenta simulada, no las toca).
+const CON_EQUIPO = EMAIL === 'demo@verticexp.com';
+const EMAIL_MARTA = CON_EQUIPO ? 'marta-demo@verticexp.com' : '', EMAIL_AINA = CON_EQUIPO ? 'aina-demo@verticexp.com' : '';
+const empleado = (b) => {
+  const cotizacion = limpiarCotizacion(b.cotizacion);
+  assert.ok(!cotizacion.error, cotizacion.error);
+  const datos145 = b.datos145 ? limpiarDatos145(b.datos145, b.nif) : undefined;
+  assert.ok(!datos145?.error, datos145?.error);
+  return { irpfPct: 12, ssTrabajadorPct: 6.5, ssEmpresaPct: 32.15, email: '', horasSemana: 40, precioHoraExtra: 0, baja: '', ...b, cotizacion, ...(datos145 ? { datos145 } : {}) };
+};
+const empleados = [
+  empleado({ id: 'demo-emp-marta', nombre: 'Marta Soler Puig', nif: nifDni(39123456), naf: '081234567890', puesto: 'Coordinadora de eventos y ventas', alta: '2021-03-01', bruto: 2150, email: EMAIL_MARTA,
+    cotizacion: { grupo: 5, pagas: 2, prorrateadas: true, atPct: 1.5 }, datos145: { nacimiento: 1987, situacionFamiliar: 3, situacion: 'activo', contrato: 'general' } }),
+  empleado({ id: 'demo-emp-jordi', nombre: 'Jordi Vidal Roca', nif: nifDni(46234567), naf: '081234567891', puesto: 'Comercial y técnico de sonido', alta: '2022-09-01', bruto: 1950, irpfPct: 13,
+    cotizacion: { grupo: 8, pagas: 2, prorrateadas: true, atPct: 1.5 } }),
+  empleado({ id: 'demo-emp-pau', nombre: 'Pau Ribas Serra', nif: nifDni(47345678), naf: '081234567892', puesto: 'Técnico de iluminación', alta: '2023-05-15', bruto: 1600, irpfPct: 10,
+    cotizacion: { grupo: 8, pagas: 2, prorrateadas: false, atPct: 1.5 } }),
+  empleado({ id: 'demo-emp-aina', nombre: 'Aina Costa Martí', nif: nifDni(48456789), naf: '081234567893', puesto: 'Auxiliar de almacén y tienda', alta: hace(10, 1), bruto: 820, irpfPct: 2, horasSemana: 20, precioHoraExtra: 13.5, email: EMAIL_AINA,
+    cotizacion: { grupo: 10, pagas: 2, prorrateadas: true, atPct: 1.5 } }),
+  empleado({ id: 'demo-emp-sergi', nombre: 'Sergi Mas Pons', nif: nifDni(49567890), naf: '081234567894', puesto: 'Técnico de montaje (temporada de verano)', alta: `${Ya - 1}-06-01`, baja: `${Ya - 1}-09-30`, bruto: 1550, irpfPct: 6,
+    cotizacion: { grupo: 9, pagas: 2, prorrateadas: true, atPct: 1.5, temporal: true } }),
+];
+const activoEn = (e, mes) => e.alta.slice(0, 7) <= mes && (!e.baja || e.baja.slice(0, 7) >= mes);
+
+// Registro de jornada de los últimos tres meses y lo que va del actual (hasta ayer): jornada partida con pausa para
+// comer; los días de evento, Jordi sale tarde; Aina, además, hace los sábados de la tienda (horas extra que se pagan).
+const jornada = [];
+const mesesJornada = [3, 2, 1, 0].map((k) => hace(k, 1).slice(0, 7));
+const sabadosTienda = new Set(facturas.filter((f) => f.caja).map((f) => f.fecha));
+const hm = (fecha, minutos) => `${fecha}T${String(Math.floor(minutos / 60)).padStart(2, '0')}:${String(minutos % 60).padStart(2, '0')}`;
+const fichaje = (e, fecha, entrada, salida, pausas = [], extra = {}) => {
+  const v = validar({ entrada: hm(fecha, entrada), salida: hm(fecha, salida), pausas: pausas.map(([a, b]) => ({ inicio: hm(fecha, a), fin: hm(fecha, b) })) });
+  assert.ok(!v.error, v.error);
+  jornada.push({ id: `${e.id}-${v.entrada}`, empleado: e.id, fecha, ...v, por: id, ...extra });
+};
+for (let t = Date.parse(`${mesesJornada[0]}-01T12:00:00Z`); new Date(t).toISOString().slice(0, 10) < hoy; t += 864e5) {
+  const fecha = new Date(t).toISOString().slice(0, 10), n = Number(fecha.slice(8, 10));
+  for (const e of empleados.filter((x) => activoEn(x, fecha.slice(0, 7)) && x.alta <= fecha)) {
+    if (e.id === 'demo-emp-aina' && sabadosTienda.has(fecha)) { fichaje(e, fecha, 600, 840); continue; }
+    if (!laborables(fecha, fecha)) continue;
+    if (e.id === 'demo-emp-aina') { fichaje(e, fecha, 540, 780); continue; }
+    const entrada = 480 + (n % 3) * 5;
+    const tarde = e.id === 'demo-emp-jordi' && n % 9 === 0;
+    fichaje(e, fecha, entrada, tarde ? 1170 : entrada + 510, [[810, 840]]);
+  }
+}
+// Una salida corregida (se olvidó de fichar) y un día apuntado a mano, con su anotación para la Inspección.
+{
+  const f = jornada.find((x) => x.empleado === 'demo-emp-pau' && x.fecha.startsWith(mesesJornada[1]));
+  f.cambios = [{ cuando: `${mas(f.fecha, 1)}T09:12:00.000Z`, por: id, porNombre: 'Demo', motivo: 'Se olvidó de fichar la salida' }];
+  const g = jornada.find((x) => x.empleado === 'demo-emp-marta' && x.fecha.startsWith(mesesJornada[2]));
+  g.manual = 'Trabajó desde la feria de proveedores y lo apuntó al volver';
+}
+
+// Nóminas de cada mes cerrado, como las genera Nóminas (app/api/nominas): las pagas extra de Pau en junio y diciembre;
+// las horas del registro de jornada (y las extra de Aina) desde que hay registro. Todas pagadas el último día del mes.
+const MESES_PAGAS = { 1: [12], 2: [6, 12], 3: [3, 6, 12], 4: [3, 6, 9, 12] };
+const nominas = [];
+for (let k = 24; k >= 1; k--) {
+  const mes = hace(k, 1).slice(0, 7);
+  for (const e of empleados.filter((x) => activoEn(x, mes))) {
+    const x = jornada.some((f) => f.fecha.startsWith(mes)) ? extrasNomina(resumenMes(jornada, e, mes), e) : null;
+    const pagaExtra = !e.cotizacion.prorrateadas && (MESES_PAGAS[e.cotizacion.pagas] || []).includes(Number(mes.slice(5, 7))) ? e.bruto : 0;
+    const c = nominaCompleta(e, { bruto: r2(e.bruto + pagaExtra + (x?.importe || 0)), pagaExtra, horasExtra: x?.importe || 0, mes, ...(x?.horas?.trabajadas ? { horas: r2(x.horas.trabajadas / 60) } : {}) });
+    assert.ok(!c.error, `${e.nombre} ${mes}: ${c.error}`);
+    const n = { id: `demo-nom-${mes}-${e.id.slice(9)}`, mes, empleado: e.id, empleadoNombre: e.nombre, pagada: true, pagado: ultimoDiaMes(mes), ...(x ? { horas: x.horas } : {}), ...(x?.importe ? { extras: { importe: x.importe, precio: e.precioHoraExtra } } : {}), bruto: c.importes.bruto, ...c, completa: true };
+    nominas.push(n);
+    gastos.push(gastoDeNomina(n, 'sonido-e-iluminacion'));
+  }
+}
+assert.ok(nominas.some((n) => n.extras?.importe > 0), 'Faltan horas extra en las nóminas de Aina');
+assert.ok(nominas.some((n) => n.detalle.pagaExtra > 0), 'Falta una paga extra');
+assert.ok(nominas.some((n) => n.detalle.irpf.calculado !== null), 'Falta el IRPF calculado con el 145');
+
+// Dietas y kilometraje del equipo (lo exento, sin IVA).
+for (const [fecha, d, persona, motivo] of [
+  [hace(19, 12), { tipo: 'manutencion', dias: 3, pernocta: true, extranjero: true }, 'Marta Soler', 'Feria Prolight + Sound (Fráncfort)'],
+  [hace(15, 6), { tipo: 'manutencion', dias: 2, pernocta: true }, 'Pau Ribas', 'Montaje del festival de Girona'],
+  [hace(7, 22), { tipo: 'km', km: 184 }, 'Jordi Vidal', 'Visita técnica en Sitges y Vilanova'],
+  [hace(3, 14), { tipo: 'manutencion', dias: 2, pernocta: true }, 'Jordi Vidal', 'Boda en el Empordà'],
+  [hace(1, 9), { tipo: 'km', km: 96 }, 'Marta Soler', 'Visitas a clientes del Maresme'],
+]) {
+  const c = calcularDieta({ ...d, quien: 'empleado', fecha });
+  assert.ok(!c.error, c.error);
+  const { base, ivaPct, ...dieta } = c;
+  gastos.push({ id: `demo-dieta-${gastos.length + 1}`, fecha, actividad: 'sonido-e-iluminacion', concepto: [conceptoDieta(c), persona, motivo].join(' · ').slice(0, 140), base, ivaPct, dieta: { ...dieta, persona, motivo } });
+}
+
+// Pagos a proveedores con vencimiento: dos facturas recibidas sin pagar, una ya vencida.
+gastos.push({ id: 'demo-vence-1', fecha: antes(41), actividad: 'sonido-e-iluminacion', concepto: 'Transporte de equipos al congreso', proveedor: 'Transportes Ràpid S.L.', base: 385, ivaPct: 21, pendiente: true, vence: antes(11), numero: `TR-${hoy.slice(0, 4)}-0388` });
+gastos.push({ id: 'demo-vence-2', fecha: antes(6), actividad: 'sonido-e-iluminacion', concepto: 'Montaje de escenario y truss', proveedor: 'Montajes Escénicos BCN S.L.', base: 1240, ivaPct: 21, categoria: '607', pendiente: true, vence: mas(hoy, 24), numero: `ME-${hoy.slice(0, 4)}-0127` });
+for (const g of gastos.filter((g) => g.pendiente && !g.vence)) g.vence = mas(g.fecha, 30);
+
+// Ventas a un festival de Francia (servicios a una empresa de la UE: sin IVA, al 303 y al 349), cada julio.
+const CLIENTE_UE = { nombre: 'Les Nuits du Sud SARL', nif: 'FR12000000001', direccion: '14 Quai du Port', ciudad: '13002 Marseille', pais: 'FR' };
+for (const y of [Ya - 2, Ya - 1, Ya]) {
+  const fecha = dia(y, 7, 8);
+  if (fecha < facturas.map((f) => f.fecha).sort()[0] || fecha > hoy) continue;
+  const numero = siguienteNumero(facturas, y, 'A');
+  facturas.push({ id: `A${y}-${numero}`, numero, anio: y, serie: 'A', fecha, actividad: 'alquiler-de-equipos', cliente: CLIENTE_UE, concepto: 'Alquiler de equipo de sonido para festival en Marsella', base: 4200 + (y - Ya + 2) * 300, ivaPct: 0, irpfPct: 0, operacion: 'servicios-ue', nota: 'Autoliquidación: inversión del sujeto pasivo (art. 196 Directiva 2006/112/CE)', cobrada: true, cobro: { fecha: mas(fecha, 20), metodo: 'manual' } });
+}
+
+// Facturas recurrentes: el equipo de sonido fijo del Beach Club, cada día 5 desde hace un año (las de antes, cobradas
+// con tarjeta), y el mantenimiento de la Fundació, en pausa desde que acabó su temporada.
+const recurrentes = [];
+for (const [rid, cliente, concepto, base, dia5, desde, hasta, activa] of [
+  ['demo-rec-beach', CLIENTES[4], 'Alquiler mensual del equipo de sonido instalado', 380, 5, 12, 0, true],
+  ['demo-rec-fundacio', CLIENTES[6], 'Mantenimiento técnico mensual de la sala', 240, 1, 16, 5, false],
+]) {
+  const emitidas = [];
+  for (let k = desde; k >= hasta; k--) {
+    const fecha = hace(k, dia5);
+    if (fecha > hoy) continue;
+    const y = Number(fecha.slice(0, 4)), numero = siguienteNumero(facturas, y, 'A');
+    const f = { id: `A${y}-${numero}`, numero, anio: y, serie: 'A', fecha, actividad: 'alquiler-de-equipos', cliente, concepto, base, ivaPct: 21, irpfPct: 0, nota: '', cobrada: k > 1, ...(k > 1 ? { cobro: { fecha, metodo: 'manual' } } : {}) };
+    facturas.push(f);
+    emitidas.push(f);
+  }
+  const ultima = emitidas.at(-1).fecha.slice(0, 7);
+  recurrentes.push({ id: rid, origen: emitidas[0].id, plantilla: plantillaDe(emitidas[0]), dia: dia5, enviar: activa, activa, ultima, creada: creado(emitidas[0].fecha) });
+}
+
+// Presupuestos: uno facturado (el del festival), uno con la señal facturada y la boda por hacer, uno pendiente con varios
+// conceptos, uno rechazado y otro caducado.
+const presupuestos = [];
+const presupuesto = (b) => {
+  const anio = Number(b.fecha.slice(0, 4)), numero = siguienteNumero(presupuestos, anio, 'P');
+  const p = { id: `P${anio}-${numero}`, numero, anio, serie: 'P', actividad: 'sonido-e-iluminacion', ivaPct: 21, irpfPct: 0, nota: '', senalPct: 0, validez: 15, estado: 'pendiente', token: randomBytes(18).toString('base64url'), facturas: [], ...b };
+  presupuestos.push(p);
+  return p;
+};
+{
+  const fest = facturas.filter((f) => f.cliente.nif === CLIENTES[3].nif && f.fecha.startsWith(String(Ya)) && !f.serie).sort((a, b) => b.base - a.base)[0]
+    || facturas.filter((f) => f.cliente.nif === CLIENTES[3].nif && !f.serie).sort((a, b) => b.fecha.localeCompare(a.fecha))[0];
+  const p = presupuesto({ fecha: mas(fest.fecha, -30), cliente: fest.cliente, concepto: fest.concepto, base: fest.base, validez: 30, estado: 'aceptado', respuesta: { fecha: `${mas(fest.fecha, -24)}T11:20:00.000Z`, nombre: 'Montse Riera (Ajuntament de Vilamar)' } });
+  p.facturas.push({ id: fest.id, numero: numeroFactura(fest), tipo: 'resto', base: fest.base });
+  fest.presupuesto = { id: p.id, numero: numeroPresupuesto(p) };
+}
+presupuesto({ fecha: antes(62), cliente: CLIENTES[7], concepto: 'DJ y sonido para celebración familiar', base: 690, actividad: 'dj-y-musica' });
+presupuesto({ fecha: antes(48), cliente: CLIENTES[0], concepto: 'Iluminación de fachada para la cena de gala', base: 3200, estado: 'rechazado', respuesta: { fecha: `${antes(44)}T17:05:00.000Z`, nombre: 'Dirección de eventos (Hotel Mirador)' } });
+{
+  const p = presupuesto({ fecha: antes(22), cliente: CLIENTES[2], concepto: 'Sonido, iluminación y DJ para boda en Sant Pol', base: 4800, senalPct: 30, validez: 20, estado: 'aceptado', respuesta: { fecha: `${antes(20)}T19:42:00.000Z`, nombre: 'Celebra Bodas y Eventos' }, entrega: mas(hoy, 21) });
+  const fecha = antes(19), y = Number(fecha.slice(0, 4)), numero = siguienteNumero(facturas, y, '');
+  const base = baseSenal(p);
+  const f = { id: `${y}-${numero}`, numero, anio: y, fecha, actividad: 'sonido-e-iluminacion', cliente: p.cliente, concepto: `Señal del 30 % según presupuesto ${numeroPresupuesto(p)}: ${p.concepto}`, base, ivaPct: 21, irpfPct: 0, nota: '', cobrada: true, cobro: { fecha: antes(16), metodo: 'manual' }, presupuesto: { id: p.id, numero: numeroPresupuesto(p) } };
+  facturas.push(f);
+  p.facturas.push({ id: f.id, numero: numeroFactura(f), tipo: 'senal', base });
+}
+{
+  const lineas = [
+    { concepto: 'Sonorización de auditorio (2 días)', cantidad: 2, precio: 1450, dto: 0, ivaPct: 21 },
+    { concepto: 'Microfonía inalámbrica para ponentes', cantidad: 6, precio: 85, dto: 10, ivaPct: 21 },
+    { concepto: 'Técnico de sonido (jornada)', cantidad: 2, precio: 320, dto: 0, ivaPct: 21 },
+  ];
+  presupuesto({ fecha: antes(4), cliente: CLIENTES[5], concepto: `${lineas[0].concepto} y 2 más`, lineas, base: r2(lineas.reduce((s, l) => s + baseLinea(l), 0)), validez: 30 });
+}
+
+// Dividendos del año pasado (aprobadas las cuentas, en julio) e intereses del préstamo de una socia: retención del 19 %
+// (modelos 123 y 193).
+const capital = [];
+for (const [fecha, tipo, nombre, dni, bruto] of [
+  [`${Ya - 1}-12-20`, 'intereses', 'Clara Font Ruiz', 38987654, 360],
+  [`${hoy >= `${Ya}-07-15` ? Ya : Ya - 1}-07-15`, 'dividendos', 'Pere Sala Vidal', 39876543, 4800],
+  [`${hoy >= `${Ya}-07-15` ? Ya : Ya - 1}-07-15`, 'dividendos', 'Clara Font Ruiz', 38987654, 3200],
+]) {
+  const p = limpiarPago({ fecha, tipo, perceptor: { nombre, nif: nifDni(dni) }, bruto, nota: tipo === 'dividendos' ? 'Reparto del resultado aprobado en junta' : 'Préstamo de la socia al 4,5 %' });
+  assert.ok(!p.error, p.error);
+  capital.push({ id: `demo-capital-${capital.length + 1}`, ...p, creado: creado(fecha) });
+}
+
+// Numeración correlativa: dentro de cada serie y año, los números siguen el orden de las fechas (art. 6.1.a del
+// Reglamento de facturación). Lo de arriba se genera por partes; aquí se ordena y se ponen al día las referencias.
+{
+  const nuevo = new Map();
+  const grupos = Map.groupBy(facturas, (f) => `${f.serie || ''}|${f.anio}`);
+  for (const lista of grupos.values()) {
+    lista.sort((a, b) => a.fecha.localeCompare(b.fecha) || a.numero - b.numero);
+    lista.forEach((f, i) => { const antes = f.id; f.numero = i + 1; f.id = `${f.serie || ''}${f.anio}-${f.numero}`; nuevo.set(antes, f.id); });
+  }
+  const porIdF = new Map(facturas.map((f) => [f.id, f]));
+  for (const f of facturas) if (f.rectifica) { const o = porIdF.get(nuevo.get(f.rectifica.id)); f.rectifica = { ...f.rectifica, id: o.id, numero: numeroFactura(o) }; }
+  for (const a of albaranes) if (a.factura) a.factura = nuevo.get(a.factura);
+  for (const r of remesas.filter((x) => x.tipo === 'cobros')) r.docs = r.docs.map((d) => nuevo.get(d));
+  for (const p of presupuestos) p.facturas = p.facturas.map((x) => { const f = porIdF.get(nuevo.get(x.id)); return { ...x, id: f.id, numero: numeroFactura(f) }; });
+  for (const r of recurrentes) r.origen = nuevo.get(r.origen);
+}
+
 // Integridad de los datos generados, antes de escribir nada en la base de datos.
 const stockFinal = inventario({ productos: PRODUCTOS, facturas, gastos, ajustes: ajustesStock, albaranes }, { hoy });
 for (const p of stockFinal.productos) assert.ok(p.stock >= 0, `Stock negativo: ${p.nombre}`);
@@ -383,12 +587,30 @@ for (const remesa of remesas.filter((r) => r.tipo === 'cobros')) for (const docI
   assert.ok(f?.cobrada && f.cobro?.metodo === 'sepa', `Recibo sin cobrar: ${docId}`);
 }
 assert.ok(stockFinal.bajos.some((p) => p.proveedor === PRODUCTOS[0].proveedor && !enCamino(pedidosProv)[p.id]), 'Falta material de Audio Pro por pedir');
+for (const p of presupuestos) for (const x of p.facturas) assert.ok(idsFacturas.has(x.id), `Factura del presupuesto inexistente: ${x.id}`);
+for (const r of recurrentes) assert.ok(idsFacturas.has(r.origen), `Origen de la recurrente inexistente: ${r.origen}`);
+for (const f of facturas.filter((f) => f.rectifica)) assert.ok(idsFacturas.has(f.rectifica.id), `Rectifica una factura inexistente: ${f.rectifica.id}`);
+for (const lista of Map.groupBy(facturas, (f) => `${f.serie || ''}|${f.anio}`).values()) {
+  const orden = [...lista].sort((a, b) => a.numero - b.numero);
+  orden.forEach((f, i) => { assert.equal(f.numero, i + 1, `Hueco en la numeración: ${f.id}`); if (i) assert.ok(orden[i - 1].fecha <= f.fecha, `Numeración fuera de orden: ${f.id}`); });
+}
+assert.ok(gastos.some((g) => g.alquiler) && gastos.some((g) => g.origen === 'ue') && gastos.some((g) => g.dieta) && facturas.some((f) => f.operacion === 'servicios-ue'));
 
 const porId = (xs) => Object.fromEntries(xs.map((x) => [x.id, x]));
 await r.hset(`${P}empresas`, { [id]: empresa });
 await r.hset(`${P}usuarios`, { [id]: { id, nombre: 'Demo', email: EMAIL, admin: false, creado: ahora, empresa: id, rol: 'admin', pass } });
 await r.hset(`${P}emails`, { [EMAIL]: id });
-await r.del(...['facturas', 'gastos', 'clientes', 'registros', 'verifactu', 'saldo', 'asientos', 'banco', 'bancos', 'cuentasAnuales', 'productos', 'stock', 'albaranes', 'pedidosProv', 'domiciliaciones', 'cuentasProv', 'fichasProv', 'remesas'].map((n) => `${P}${n}:${id}`));
+// Dos personas del equipo con cuenta: Marta (Facturación) y Aina (solo ficha su jornada), con la contraseña de la demo.
+for (const [email, nombre, permisos] of CON_EQUIPO ? [[EMAIL_MARTA, 'Marta Soler', ['facturas', 'facturar']], [EMAIL_AINA, 'Aina Costa', []]] : []) {
+  const uid = (await r.hget(`${P}emails`, email)) || randomBytes(4).toString('hex');
+  const m = { rol: 'miembro', permisos, pv: VERSION_PERMISOS };
+  await r.hset(`${P}usuarios`, { [uid]: { id: uid, nombre, email, admin: false, creado: ahora, empresa: id, ...m, empresas: { [id]: m }, pass } });
+  await r.hset(`${P}emails`, { [email]: uid });
+}
+// Los enlaces públicos de los presupuestos de antes dejan de abrir.
+const tokensAntes = Object.values((await r.hgetall(`${P}presupuestos:${id}`)) || {}).map((p) => p.token).filter(Boolean);
+if (tokensAntes.length) await r.hdel(`${P}presupuesto-enlaces`, ...tokensAntes);
+await r.del(...['facturas', 'gastos', 'clientes', 'registros', 'verifactu', 'saldo', 'asientos', 'banco', 'bancos', 'cuentasAnuales', 'productos', 'stock', 'albaranes', 'pedidosProv', 'domiciliaciones', 'cuentasProv', 'fichasProv', 'remesas', 'empleados', 'nominas', 'jornada', 'presupuestos', 'recurrentes', 'capital'].map((n) => `${P}${n}:${id}`));
 await r.hset(`${P}facturas:${id}`, porId(facturas));
 await r.hset(`${P}gastos:${id}`, porId(gastos));
 await r.hset(`${P}albaranes:${id}`, porId(albaranes));
@@ -396,6 +618,13 @@ await r.hset(`${P}pedidosProv:${id}`, porId(pedidosProv));
 await r.hset(`${P}domiciliaciones:${id}`, porId(domiciliaciones));
 await r.hset(`${P}cuentasProv:${id}`, porId(cuentasProv));
 await r.hset(`${P}remesas:${id}`, porId(remesas));
+await r.hset(`${P}empleados:${id}`, porId(empleados));
+await r.hset(`${P}nominas:${id}`, porId(nominas));
+await r.hset(`${P}jornada:${id}`, porId(jornada));
+await r.hset(`${P}presupuestos:${id}`, porId(presupuestos));
+await r.hset(`${P}presupuesto-enlaces`, Object.fromEntries(presupuestos.map((p) => [p.token, { empresa: id, id: p.id }])));
+await r.hset(`${P}recurrentes:${id}`, porId(recurrentes));
+await r.hset(`${P}capital:${id}`, porId(capital));
 // Trimestres ya presentados (los que tienen el plazo pasado), el Impuesto sobre Sociedades de los años cerrados y sus 202.
 const Y = Number(hoy.slice(0, 4));
 const pagos130 = {}, pagos202 = {}, cuotaIS = {};
@@ -405,12 +634,16 @@ for (let y = Y - 2; y <= Y; y++) for (let t = 1; t <= 4; t++) {
 }
 for (let y = Y - 2; y < Y; y++) if (`${y + 1}-07-25` < hoy) cuotaIS[y] = borradorSociedades(facturas, gastos, y).cuota;
 for (let y = Y - 1; y <= Y; y++) for (const x of modelo202(cuotaIS, y)) if (x.pago > 0 && x.fecha < hoy) (pagos202[y] ||= {})[x.p] = x.pago;
-await r.hset(`${P}empresas`, { [id]: { ...empresa, pagos130, pagos202, cuotaIS } });
+// Retenciones de dividendos e intereses (123) presentadas en su plazo.
+const pres123 = {};
+for (const p of capital) { const y = Number(p.fecha.slice(0, 4)), t = Math.ceil(Number(p.fecha.slice(5, 7)) / 3); if (plazo123(y, t) < hoy) (pres123[y] ||= {})[t] = true; }
+await r.hset(`${P}empresas`, { [id]: { ...empresa, pagos130, pagos202, cuotaIS, pres123 } });
 
-// Contabilidad: apertura (capital y lo que había en el banco), el préstamo de la furgoneta y sus cuotas de principal.
+// Contabilidad: apertura (capital y lo que había en el banco: con un colchón para las nóminas), el préstamo de la
+// furgoneta y sus cuotas de principal.
 const primera = [...facturas, ...gastos].map((x) => x.fecha).sort()[0];
 const furgo = gastos.find((g) => g.inversion?.tipo === 'transporte');
-const asientos = [{ id: 'demo-apertura', ...asientoApertura({ fecha: primera, banco: 15000, capital: 3000 }, true) }];
+const asientos = [{ id: 'demo-apertura', ...asientoApertura({ fecha: primera, banco: 45000, capital: 3000 }, true) }];
 asientos.push({ id: 'demo-prestamo', fecha: furgo.fecha, concepto: 'Préstamo para la furgoneta (CaixaBank)', lineas: [{ cuenta: '572', debe: 24000, haber: 0 }, { cuenta: '170', debe: 0, haber: 19200 }, { cuenta: '520', debe: 0, haber: 4800 }] });
 for (let d = new Date(`${furgo.fecha.slice(0, 7)}-12T00:00:00Z`); d.toISOString().slice(0, 10) <= hoy; d.setUTCMonth(d.getUTCMonth() + 1)) {
   const f = d.toISOString().slice(0, 10);
@@ -422,7 +655,7 @@ for (let d = new Date(`${furgo.fecha.slice(0, 7)}-12T00:00:00Z`); d.toISOString(
 await r.hset(`${P}asientos:${id}`, porId(asientos));
 
 // El saldo del banco, el mismo que da la contabilidad (así cuadra la cuenta 572 con el banco).
-const banco = mayor(generarAsientos({ facturas, gastos, manuales: asientos, fiscal: empresa.fiscal, pagos130, pagos202, cuotaIS, productos: PRODUCTOS, ajustes: ajustesStock, albaranes }, hoy), '572', Y).final;
+const banco = mayor(generarAsientos({ facturas, gastos, nominas, capital, manuales: asientos, fiscal: empresa.fiscal, pagos130, pagos202, cuotaIS, pres123, productos: PRODUCTOS, ajustes: ajustesStock, albaranes }, hoy), '572', Y).final;
 await r.set(`${P}saldo:${id}`, { importe: banco, fecha: hoy });
 await r.hset(`${P}productos:${id}`, porId(PRODUCTOS));
 await r.hset(`${P}stock:${id}`, porId(ajustesStock));
@@ -437,7 +670,7 @@ const FICHAS_CLIENTE = {
   G00000006: { formaCobro: 'transferencia', plazo: 45, comercial: 'Jordi Vidal', zona: 'Costa del Maresme' },
   '00000007T': { formaCobro: 'bizum', plazo: 0, comercial: 'Marta Soler', zona: 'Barcelona ciudad', riesgoMax: 1500 },
 };
-await r.hset(`${P}clientes:${id}`, porId(CLIENTES.map((c) => ({ id: c.nombre.toUpperCase(), ...c, ...FICHAS_CLIENTE[c.nif] }))));
+await r.hset(`${P}clientes:${id}`, porId([...CLIENTES, CLIENTE_UE].map((c) => ({ id: c.nombre.toUpperCase(), ...c, ...FICHAS_CLIENTE[c.nif] }))));
 await r.hset(`${P}fichasProv:${id}`, porId(cuentasProv.map((c, i) => ({ id: c.id, nombre: c.nombre, formaPago: 'transferencia', plazo: [30, 45, 60][i % 3], comercial: 'Marta Soler', zona: 'Barcelona ciudad' }))));
 // Extracto del último mes y medio, sin emparejar: los cobros de facturas pendientes y los pagos de gastos (Fisquo los
 // sugiere), y algunos cargos que no están en Fisquo (salen en Gastos › En revisión o para decir qué son en Banco).
@@ -445,7 +678,10 @@ const desde = new Date(Date.parse(`${hoy}T12:00:00Z`) - 45 * 864e5).toISOString(
 const movs = [];
 const mov = (fecha, importe, concepto, contraparte = '') => { if (fecha <= hoy && fecha >= desde) movs.push({ fecha, importe: Math.round(importe * 100) / 100, concepto, contraparte }); };
 for (const f of facturas.filter((x) => !x.cobrada && !domiciliaciones.some((d) => d.id === x.cliente.nombre.toUpperCase()) && x.fecha >= mas(desde, -30)).slice(0, 4)) mov(mas(f.fecha, 12), importes(f).total, `TRANSFERENCIA FACTURA ${numeroFactura(f)}`, f.cliente.nombre);
-for (const g of gastos.filter((x) => (x.pagado || x.fecha) >= desde && !x.pendiente && !x.inversion && !/Nóminas/.test(x.concepto))) mov(g.pagado || g.fecha, -(importes(g).base + importes(g).iva), `RECIBO ${g.concepto.toUpperCase()}`, g.proveedor || '');
+for (const g of gastos.filter((x) => (x.pagado || x.fecha) >= desde && !x.pendiente && !x.inversion && !x.nomina && !x.dieta)) mov(g.pagado || g.fecha, -importes(g).total, `RECIBO ${g.concepto.toUpperCase()}`, g.proveedor || '');
+// Las nóminas, una transferencia por persona, y los seguros sociales del mes, a final del mes siguiente.
+for (const n of nominas) mov(fechaPagoNomina(n), -calculoNomina(n).neto, `TRANSFERENCIA NOMINA ${n.empleadoNombre.toUpperCase()}`, n.empleadoNombre);
+for (const [mes, ns] of Map.groupBy(nominas, (n) => n.mes)) mov(ultimoDiaMes(mas(`${mes}-28`, 8).slice(0, 7)), -r2(ns.reduce((s, n) => s + calculoNomina(n).seguros, 0)), 'TGSS COTIZACION REGIMEN GENERAL', 'TESORERIA GENERAL SEGURIDAD SOCIAL');
 for (const f of facturas.filter((f) => f.cobro?.metodo === 'sepa')) mov(f.cobro.fecha, f.cobro.importe, `COBRO REMESA ${numeroFactura(f)}`, f.cliente.nombre);
 for (const f of facturas.filter((f) => f.caja).sort((a, b) => a.fecha.localeCompare(b.fecha)).slice(-2)) mov(f.fecha, f.caja.tarjeta, 'LIQUIDACION TPV SUMUP', 'SUMUP');
 const m1 = hoy.slice(0, 8);
@@ -458,4 +694,9 @@ const conIds = movs.map((m, i) => ({ id: idMovimiento('extracto', m, i), cuenta:
 await r.hset(`${P}banco:${id}`, porId(conIds));
 await r.hset(`${P}bancos:${id}`, { extracto: { id: 'extracto', nombre: 'CaixaBank', origen: 'extracto', subido: hoy, saldo: banco, fechaSaldo: hoy } });
 
-console.log(`Demo lista: ${EMAIL} · ${facturas.length} facturas · ${gastos.length} gastos · desde ${inicio.toISOString().slice(0, 10)}`);
+console.log(`Demo lista: ${EMAIL} · ${facturas.length} facturas · ${gastos.length} gastos · ${nominas.length} nóminas · ${jornada.length} fichajes · ${presupuestos.length} presupuestos · desde ${inicio.toISOString().slice(0, 10)}`);
+for (let y = Y - 2; y <= Y; y++) {
+  const { base } = borradorSociedades(facturas, gastos, y);
+  console.log(`  · ${y}: beneficio antes de impuestos ${base} €`);
+  assert.ok(base > 0, `La demo tiene pérdidas en ${y}`);
+}

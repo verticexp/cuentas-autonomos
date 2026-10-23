@@ -7,7 +7,6 @@ import { writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { arrancar } from '../tests/apoyo/upstash-mem.mjs';
-import { gastoDeNomina, SS_EMPRESA, SS_TRABAJADOR } from '../lib/nominas.js';
 import { plantillaDe } from '../lib/recurrentes.js';
 import { claves } from '../lib/fichas.js';
 import { borradorSociedades, modelo202 } from '../lib/modelos.js';
@@ -66,27 +65,7 @@ try {
     { id: 'sim-servicio-ue', proveedor: 'Software Kultur Ireland (ficticia)', proveedorNif: 'IE6388047V', concepto: 'Servicio digital UE', base: 120, origen: 'ue' },
     { id: 'sim-servicio-fuera', proveedor: 'Stage Software USA (ficticia)', proveedorNif: 'US123456789', concepto: 'Servicio digital fuera de la UE', base: 80, origen: 'fuera' },
   ]) await redis.hset(`gastos:${id}`, { [g.id]: { fecha: hoy, actividad, ivaPct: 0, ...g } });
-  // Sustituye los costes salariales agregados por nóminas individuales: evita duplicar gastos.
-  const gastos = Object.values(await redis.hgetall(`gastos:${id}`));
-  for (const g of gastos.filter((g) => g.concepto === 'Nóminas y Seguridad Social')) await redis.hdel(`gastos:${id}`, g.id);
-  const empleados = [
-    ['Clara Soler Vidal', 'Dirección de producción', 2600, 18],
-    ['Hugo Serra Costa', 'Técnico de sonido', 2200, 15],
-    ['Nora Vidal Roca', 'Iluminación y vídeo', 2100, 14],
-    ['Leo Martí Font', 'Logística y almacén', 1900, 12],
-  ];
-  for (const [i, [nombre, puesto, bruto, irpfPct]] of empleados.entries()) {
-    const dni = 90000000 + i;
-    const e = { id: `sim-empleado-${i + 1}`, nombre, nif: `${dni}${'TRWAGMYFPDXBNJZSQVHLCKE'[dni % 23]}`, puesto, bruto, irpfPct, ssTrabajadorPct: SS_TRABAJADOR, ssEmpresaPct: SS_EMPRESA, alta: `${anio - 2}-01-01`, baja: '', email: `equipo${i + 1}@aurora-eventos.example`, horasSemana: 40, precioHoraExtra: 22 };
-    await redis.hset(`empleados:${id}`, { [e.id]: e });
-    for (const g of gastos.filter((g) => g.concepto === 'Nóminas y Seguridad Social')) {
-      const mes = g.fecha.slice(0, 7);
-      const n = { ...e, id: `${e.id}-${mes}`, empleado: e.id, empleadoNombre: nombre, mes };
-      await redis.hset(`nominas:${id}`, { [n.id]: n });
-      const coste = gastoDeNomina(n, actividad);
-      await redis.hset(`gastos:${id}`, { [coste.id]: coste });
-    }
-  }
+  // Los empleados y sus nóminas (con su gasto) vienen ya de scripts/demo.mjs.
   for (let i = 0; i < 16; i++) {
     const fecha = `${anio}-10-${String(1 + i % 12).padStart(2, '0')}`;
     const p = { id: `P${anio}-${i + 1}`, numero: i + 1, anio, serie: 'P', fecha: fecha > hoy ? hoy : fecha, actividad, cliente: clientes[i % clientes.length], concepto: ['Congreso Aurora', 'Festival de otoño', 'Gala solidaria', 'Boda en el Mirador'][i % 4], base: 900 + i * 375, ivaPct: 21, irpfPct: 0, estado: i % 3 === 0 ? 'aceptado' : i % 3 === 1 ? 'rechazado' : 'pendiente', senalPct: 30, validez: 30, facturas: [], token: `simulada-presupuesto-${i + 1}` };
@@ -102,7 +81,7 @@ try {
     const k = claves(col, id);
     assert.equal(await redis.hlen(k.ixf), await redis.hlen(`${col}:${id}`), `Índice incompleto: ${col}`);
   }
-  assert.equal(await redis.hlen(`empleados:${id}`), 4);
+  assert.equal(await redis.hlen(`empleados:${id}`), 5);
   // Saldo contable actualizado después de sustituir costes de personal.
   const { generarAsientos, mayor } = await import('../lib/asientos.js');
   const leer = async (col) => Object.values((await redis.hgetall(`${col}:${id}`)) || {});
@@ -119,7 +98,7 @@ try {
   for (let y = anio - 1; y <= anio; y++) for (const x of modelo202(cuotaIS, y)) if (x.pago > 0 && x.fecha < hoy) (pagos202[y] ||= {})[x.p] = x.pago;
   emp = { ...(await redis.hget('empresas', id)), cuotaIS, pagos202 };
   await redis.hset('empresas', { [id]: emp });
-  const saldo = mayor(generarAsientos({ facturas, gastos: gastosFinales, nominas, manuales: await leer('asientos'), fiscal: emp.fiscal, pagos130: emp.pagos130, pagos202, cuotaIS, productos, ajustes, albaranes }, hoy), '572', anio).final;
+  const saldo = mayor(generarAsientos({ facturas, gastos: gastosFinales, nominas, capital: await leer('capital'), manuales: await leer('asientos'), fiscal: emp.fiscal, pagos130: emp.pagos130, pagos202, cuotaIS, pres123: emp.pres123, productos, ajustes, albaranes }, hoy), '572', anio).final;
   await redis.set(`saldo:${id}`, { importe: saldo, fecha: hoy });
   const bancos = await redis.hgetall(`bancos:${id}`);
   for (const [key, banco] of Object.entries(bancos || {})) await redis.hset(`bancos:${id}`, { [key]: { ...banco, saldo, fechaSaldo: hoy } });
