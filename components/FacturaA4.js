@@ -17,7 +17,8 @@ export default async function FacturaA4({ f: fOriginal, e, marca, presupuesto = 
   const c = f.cliente;
   const contacto = [e.email, e.telefono, e.web].filter(Boolean).join(' · ');
   const fechaFin = L.fecha(presupuesto ? caduca(f) : vencimiento(f, e.plazo));
-  const qr = f.verifactu ? await QRCode.toString(urlQr(f.verifactu.modo, e.nif, fOriginal), { type: 'svg', errorCorrectionLevel: 'M', margin: 4 }) : null;
+  // QR y «VERI*FACTU» solo en modo real (art. 6.5 RD 1619/2012): en pruebas los registros no van a la AEAT.
+  const qr = f.verifactu?.modo === 'real' ? await QRCode.toString(urlQr(f.verifactu.modo, e.nif, fOriginal), { type: 'svg', errorCorrectionLevel: 'M', margin: 4 }) : null;
   const numeroStyle = (s, w) => ({ fontSize: `${tamanoNumero(s, w)}pt` });
   return (
     <article className="fa" style={{ '--fa-c': base, '--fa-suave': aclarar(base, 0.9), '--fa-claro': aclarar(base, 0.75), '--fa-total-size': `${tamanoTotal(L.dinero(t.total))}pt`, '--fa-resumen': `${anchoResumen(f, L.dinero)}pt` }}>

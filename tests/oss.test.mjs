@@ -9,11 +9,13 @@ test('OSS: catálogo de los 26 países, congelado también en sus tipos', () => 
     assert.ok(Object.isFrozen(tipo));
     assert.ok(Object.isFrozen(tipo.reducidos));
   }
-  assert.deepEqual(TIPOS_UE.AT, { general: 20, reducidos: [10, 13] });
+  // 2026: Austria añade el 4,9 % (1 de julio), Finlandia baja del 14 al 13,5 % y Lituania pasa del 9 al 12 % (1 de enero).
+  assert.deepEqual(TIPOS_UE.AT, { general: 20, reducidos: [4.9, 10, 13] });
+  assert.deepEqual(TIPOS_UE.LT, { general: 21, reducidos: [5, 12] });
   assert.deepEqual(TIPOS_UE.RO, { general: 21, reducidos: [11] });
   assert.deepEqual(TIPOS_UE.SK, { general: 23, reducidos: [5, 19] });
   assert.deepEqual(tiposPais('FR'), [20, 2.1, 5.5, 10, 0]);
-  assert.deepEqual(tiposPais('FI'), [25.5, 10, 14, 0]);
+  assert.deepEqual(tiposPais('FI'), [25.5, 10, 13.5, 0]);
   assert.deepEqual(tiposPais('IE'), [23, 4.8, 9, 13.5, 0]);
   assert.deepEqual(tiposPais('DK'), [25, 0]);
   assert.deepEqual(tiposPais('GR'), [24, 6, 13, 0]);

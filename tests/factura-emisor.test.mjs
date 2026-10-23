@@ -87,7 +87,7 @@ test('PDF válido con todos los campos, pie de 500 caracteres y varias páginas,
     const f = {
       ...factura,
       lineas: Array.from({ length: cantidad }, (_, i) => ({ concepto: `Servicio ${i + 1}`, cantidad: 1, precio: 100, ivaPct: 21 })),
-      ...(qr ? { verifactu: { modo: 'pruebas' } } : {}),
+      ...(qr ? { verifactu: { modo: 'real' } } : {}),
     };
     const e = { ...completo, pie };
     const bytes = await facturaPdf(f, e);
@@ -132,4 +132,15 @@ test('datos de factura: faltan nombre, NIF o dirección; el IBAN no cuenta', asy
   assert.deepEqual(faltanDatosFactura({ ...emisor, iban: '' }), []);
   assert.deepEqual(faltanDatosFactura({ nombre: ' ', nif: 'B12345678' }), ['nombre', 'dirección']);
   assert.deepEqual(faltanDatosFactura(), ['nombre', 'NIF', 'dirección']);
+});
+
+// Auditoría 23-10-2026 (F1-32): la leyenda «VERI*FACTU», «Factura verificable…» y el QR solo van cuando los registros se
+// envían de verdad a la AEAT (art. 6.5 RD 1619/2012); en modo pruebas las facturas de los clientes salen sin ellos.
+test('Verifactu en pruebas: ni QR ni leyenda en la factura; en real, sí', async () => {
+  const pruebas = { ...factura, verifactu: { modo: 'pruebas' } }, real = { ...factura, verifactu: { modo: 'real' } };
+  assert.doesNotMatch(facturaHtml(pruebas, emisor), /VERI\*FACTU|QR de Verifactu/);
+  assert.match(facturaHtml(real, emisor), /VERI\*FACTU/);
+  const texto = async (f) => textos((await PDFDocument.load(await facturaPdf(f, emisor))).getPage(0)).map((t) => t.texto).join(' ');
+  assert.doesNotMatch(await texto(pruebas), /verificable/);
+  assert.match(await texto(real), /verificable/);
 });
