@@ -683,3 +683,36 @@ test('seguridad: una empresa de la demo no puede unirse a un despacho de verdad'
   await empresa('e1', { demo: true });
   error(await D.unirCliente('e1', d), /demostración/, 409);
 });
+
+test('oferta de lanzamiento: dura 2 años, la tarifa baja y vuelve a la normal al acabar', async () => {
+  assert.equal(L.finOferta('2026-04-01'), '2028-03-31');
+  assert.equal(L.finOferta('2028-02-29'), '2030-02-28');
+  assert.equal(L.precioUnidad('pym', 1, L.TARIFA_LANZAMIENTO), 1200);
+  assert.equal(L.precioUnidad('aut', 100, L.TARIFA_LANZAMIENTO), 400);
+  const d = { id: 'd1', oferta: { desde: HOY, hasta: '2028-03-31' }, cobro: { activo: true } };
+  assert.equal(await L.tarifaDe(d, '2028-03-31'), L.TARIFA_LANZAMIENTO);
+  assert.equal(await L.tarifaDe(d, '2028-04-01'), L.TARIFA);
+  // Sin cobro y con plazas: ve el precio de lanzamiento; con cobro sin plaza o de demostración, el normal.
+  assert.equal(await L.tarifaDe({ id: 'd2' }, HOY), L.TARIFA_LANZAMIENTO);
+  assert.equal(await L.tarifaDe({ id: 'd3', cobro: { activo: true } }, HOY), L.TARIFA);
+  assert.equal(await L.tarifaDe({ id: 'd4', demo: true }, HOY), L.TARIFA);
+  const lista = [{ fiscal: { tipo: 'sociedad' }, despachoCliente: { licencia: { desde: '2026-01-01' } } }];
+  const cuenta = L.cuentaLicencias(lista, HOY, L.TARIFA_LANZAMIENTO);
+  assert.equal(cuenta.lanzamiento, true);
+  assert.equal(cuenta.importe, 1200);
+});
+
+test('oferta de lanzamiento: solo 30 plazas, una por despacho y sin contar los de demostración', async () => {
+  assert.equal(await L.plazasLibres(), 30);
+  const con = await L.tomarPlaza({ id: 'd0' }, HOY);
+  assert.deepEqual(con.oferta, { desde: HOY, hasta: '2028-03-31' });
+  assert.equal((await L.tomarPlaza({ id: 'd0' }, HOY)).oferta.hasta, '2028-03-31');
+  assert.equal(await L.plazasLibres(), 29);
+  assert.equal((await L.tomarPlaza({ id: 'demo', demo: true }, HOY)).oferta, undefined);
+  // Quien ya la tiene no ocupa otra plaza.
+  assert.deepEqual((await L.tomarPlaza(con, '2027-01-01')).oferta, con.oferta);
+  for (let i = 1; i < 30; i++) assert.ok((await L.tomarPlaza({ id: `d${i}` }, HOY)).oferta);
+  assert.equal(await L.plazasLibres(), 0);
+  assert.equal((await L.tomarPlaza({ id: 'd30' }, HOY)).oferta, undefined);
+  assert.equal(await L.tarifaDe({ id: 'd30' }, HOY), L.TARIFA);
+});
