@@ -7,7 +7,7 @@ import { GRUPOS } from '@/lib/nominas';
 const DISCAPACIDAD = [['no', 'Sin discapacidad'], ['33a65', 'Del 33 % al 64 %'], ['65', 'Del 65 % o más']];
 const anio = new Date().getFullYear();
 
-export function Cotizacion({ valor, cambiar }) {
+export function Cotizacion({ valor, cambiar, parcial = false }) {
   const c = valor || {};
   const poner = (k, v) => cambiar({ ...c, [k]: v });
   return (
@@ -32,7 +32,8 @@ export function Cotizacion({ valor, cambiar }) {
         <label>Pagas extra al año<input className="campo" inputMode="numeric" value={c.pagas ?? 2} onChange={(e) => poner('pagas', e.target.value)} /></label>
         <label className="check"><input type="checkbox" checked={c.prorrateadas !== false} onChange={(e) => poner('prorrateadas', e.target.checked)} /> Van prorrateadas en el sueldo de cada mes</label>
       </div>
-      <p className="nota">La tarifa de accidentes de trabajo depende de la actividad (la de oficina es el 1,5 %); te la dice tu gestoría o la Disposición adicional 61.ª de la Ley 42/2006.</p>
+      {parcial && <p className="nota">A tiempo parcial, la base mínima sale de las horas fichadas del mes en el registro de jornada. Sin fichajes, la base mínima se calcula en proporción a la jornada.</p>}
+      <p className="nota">La tarifa de accidentes de trabajo depende de la actividad (la de oficina es el 1,5 %); te la dice tu gestoría o la disposición adicional cuarta de la Ley 42/2006.</p>
     </fieldset>
   );
 }
