@@ -38,7 +38,7 @@ export default async function Conversacion({ params, searchParams }) {
       <Ir className="boton sec desp-mini" href={`/despacho/${encodeURIComponent(e.id)}`}>Ver su ficha</Ir>
     </div>
     <Chat key={docInicial} mensajes={mensajesDe(hilos)} lado="despacho" leidoAntes={leido.despacho || ''} nombreOtro={nombre} docs={docs} docInicial={docInicial}
-      enviar={{ url: '/api/despacho/comentarios', metodo: 'POST', extra: { empresa: e.id } }} leer={{ url: '/api/despacho/comentarios', metodo: 'PATCH', cuerpo: { empresa: e.id, leer: true } }}
+      enviar={{ url: '/api/despacho/comentarios', metodo: 'POST', extra: { empresa: e.id } }} leer={{ url: '/api/despacho/comentarios', metodo: 'PATCH', cuerpo: { empresa: e.id, leer: true } }} comprobar={`/api/despacho/comentarios?empresa=${encodeURIComponent(e.id)}`}
       vacio={`Escribe a ${nombre}: le llega a su Fisquo y te contesta aquí. Para preguntar por una factura o un gasto, elígelo antes de escribir.`} />
   </main>;
 }
