@@ -6,7 +6,7 @@ import Precios from '@/components/web/Precios';
 import Tour from '@/components/web/demos/Tour';
 import { Calculadora } from '@/components/web/demos/Demos';
 import { VentanaApp } from '@/components/web/demos/Pantallas';
-import { Cta, Encabezado, Faq, Flecha } from '@/components/web/Bloques';
+import { Confianza, Cta, Encabezado, Faq, Flecha } from '@/components/web/Bloques';
 import { FAQ_GENERAL, FUNCIONES, SEGMENTOS } from '@/components/web/datos';
 
 const CINTA = ['Facturas ilimitadas', 'Verifactu', 'Presupuestos online', 'Gastos con IA', 'Modelo 303', 'Modelo 130', 'Modelos 111 y 115', 'Modelos 390, 347 y 349', 'Impuesto de Sociedades', 'Renta (100)', 'Conciliación de extractos', 'Libros registro (formato AEAT)', 'Contabilidad por partida doble', 'Balance y resultados', 'Amortizaciones', 'Cuentas anuales', 'Inventario y stock', 'Previsión de caja', 'Nóminas', 'Registro de jornada', 'Permisos por área', 'Varias empresas', 'Portal del cliente', 'Asistente IA', 'Cámbiate desde Holded, A3 o Sage', 'Face ID'];
@@ -84,6 +84,22 @@ export default function Landing() {
       </section>
 
       <section className="web-sec">
+        <div className="web-mudanza" data-r>
+          <div>
+            <p className="web-kicker">Con tu gestoría</p>
+            <h2>Fisquo calcula. Tú o tu gestoría revisáis y presentáis.</h2>
+            <p>Fisquo no sustituye a tu gestoría: le deja el trabajo hecho. Entra gratis con su propio acceso y ve tus facturas, gastos e impuestos sin poder tocarlos. Y si ya trabaja con Fisquo, con su código tienes 3 meses de prueba.</p>
+            <Link href="/gestorias" className="web-btn">¿Eres gestoría? Trabaja con nosotros<Flecha /></Link>
+          </div>
+          <ol>
+            <li><b>Tú apuntas</b><span>Facturas y gastos durante el trimestre, con una foto del ticket.</span></li>
+            <li><b>Tu gestoría revisa</b><span>Lo encuentra todo ordenado, sin perseguir papeles.</span></li>
+            <li><b>Se presenta como siempre</b><span>Con los modelos ya calculados y sin sustos de última hora.</span></li>
+          </ol>
+        </div>
+      </section>
+
+      <section className="web-sec">
         <Encabezado kicker="Para quién" titulo="Crece sin cambiar de herramienta" sub="Empieza como autónomo y sigue con Fisquo cuando contrates a tu primer empleado o abras tu segunda empresa." />
         <div className="web-segs web-carrusel">
           {SEGMENTOS.map((s, i) => (
@@ -114,6 +130,8 @@ export default function Landing() {
           </ol>
         </div>
       </section>
+
+      <Confianza />
 
       <section className="web-sec" id="precios">
         <Encabezado kicker="Precios" titulo="Un precio claro para cada tamaño" sub="Sin cuotas de alta, sin permanencia y con un mes para probarlo todo." centro />
