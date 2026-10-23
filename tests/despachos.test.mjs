@@ -563,3 +563,32 @@ test('despachos: el despacho de demostración no admite clientes de verdad', asy
   assert.equal((await redis.hget('empresas', 'e1')).despachoCliente, undefined);
   assert.deepEqual(await D.clientesDe(d.id), []);
 });
+
+test('mensajes: la conversación general se crea una vez, las preguntas sobre documentos van aparte y se cuentan los no leídos', async () => {
+  error(await M.escribir('e1', quien, 'despacho', { texto: '   ' }), /Escribe el mensaje/);
+  // Cada mensaje en su milisegundo: el orden del chat es el de la hora (dos en el mismo instante empatarían).
+  const pausa = () => new Promise((ok) => setTimeout(ok, 3));
+  const a = await M.escribir('e1', quien, 'despacho', { texto: 'Hola, ¿todo bien?' });
+  await pausa();
+  assert.equal(a.comentario.id, M.GENERAL);
+  const b = await M.escribir('e1', u, 'cliente', { texto: 'Sí, gracias' });
+  await pausa();
+  assert.equal(b.comentario.id, M.GENERAL);
+  assert.equal(b.comentario.hilo.length, 2);
+  const doc = await M.escribir('e1', quien, 'despacho', { texto: '¿Y este ticket?', doc: { tipo: 'gasto', id: 'g1', texto: 'Gasto del 03/02/2026 · Bar', fecha: '2026-02-03' } });
+  assert.notEqual(doc.comentario.id, M.GENERAL);
+  assert.deepEqual([doc.comentario.anio, doc.comentario.t], [2026, 1]);
+  await pausa();
+  const r = await M.escribir('e1', u, 'cliente', { texto: 'Lo subo hoy', hilo: doc.comentario.id });
+  assert.equal(r.comentario.hilo.length, 2);
+  const hilos = await M.comentariosDe('e1');
+  const mensajes = M.mensajesDe(hilos);
+  assert.deepEqual(mensajes.map((m) => m.texto), ['Hola, ¿todo bien?', 'Sí, gracias', '¿Y este ticket?', 'Lo subo hoy']);
+  assert.ok(mensajes[2].primero && mensajes[2].doc && !mensajes[3].primero);
+  // Sin marcar nada: el despacho tiene 2 del cliente sin leer y el cliente 2 del despacho.
+  assert.equal(M.noLeidos(hilos, await M.leidoDe('e1'), 'despacho'), 2);
+  assert.equal(M.noLeidos(hilos, await M.leidoDe('e1'), 'cliente'), 2);
+  await M.marcarLeido('e1', 'despacho');
+  assert.equal(M.noLeidos(hilos, await M.leidoDe('e1'), 'despacho'), 0);
+  assert.equal(M.noLeidos(hilos, await M.leidoDe('e1'), 'cliente'), 2);
+});

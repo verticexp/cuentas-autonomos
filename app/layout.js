@@ -28,6 +28,7 @@ import { WEB } from '@/lib/web';
 import NavDespacho from '@/components/NavDespacho';
 import AvisoDespacho from '@/components/AvisoDespacho';
 import { despachoDe, rolEn } from '@/lib/despachos';
+import { conversaciones, totalNoLeidos } from '@/lib/mensajesDespacho';
 
 // Pantalla de arranque de la web guardada en la pantalla de inicio del iPhone: el mismo verde que la animación de inicio,
 // así no hay destello blanco al abrirla. iOS elige la de su tamaño (ancho y alto en puntos, escala); public/inicio-ios/.
@@ -90,6 +91,7 @@ export default async function RootLayout({ children }) {
   // Mi despacho (app/despacho): su propia barra en lugar de la de la empresa.
   const despacho = u?.despacho && (await despachoDe(u.despacho).catch(() => null));
   const enDespacho = Boolean(despacho && rolEn(despacho, u.id) && /^\/despacho(\/|$)/.test(ruta.split('?')[0]));
+  const mensajesNuevos = enDespacho ? totalNoLeidos(await conversaciones(despacho, u.id).catch(() => [])) : 0;
   return (
     <html lang="es" data-tema={tema} data-app={app ? 'ios' : undefined} suppressHydrationWarning>
       <head>
@@ -109,7 +111,7 @@ export default async function RootLayout({ children }) {
         )}
         {u?.viaDespacho && !enDespacho && <AvisoDespacho cliente={u.empresaNombre || u.emisor?.nombre} despacho={u.viaDespacho.nombre} empresa={u.empresa} />}
         {children}
-        <Suspense>{enDespacho ? <NavDespacho nombre={despacho.nombre} /> : u && <TabBar despacho={Boolean(despacho && rolEn(despacho, u.id))} porRevisar={porRevisar} permisos={permisosDe(u)} empresas={u.misEmpresas} empresa={u.empresa} admin={Boolean(u.admin)} inventario={Boolean(u.fiscal?.inventario)} equipo={Boolean(equipo)} fiscal={{ tipo: u.fiscal?.tipo, iva: u.fiscal?.iva }} faltan={planesQueFaltan(u.plan)} />}<Llegada /><BarraEstado /></Suspense>
+        <Suspense>{enDespacho ? <NavDespacho nombre={despacho.nombre} noLeidos={mensajesNuevos} /> : u && <TabBar despacho={Boolean(despacho && rolEn(despacho, u.id))} porRevisar={porRevisar} permisos={permisosDe(u)} empresas={u.misEmpresas} empresa={u.empresa} admin={Boolean(u.admin)} inventario={Boolean(u.fiscal?.inventario)} equipo={Boolean(equipo)} fiscal={{ tipo: u.fiscal?.tipo, iva: u.fiscal?.iva }} faltan={planesQueFaltan(u.plan)} />}<Llegada /><BarraEstado /></Suspense>
         {u?.bloqueoPantalla && <Bloqueo email={u.email} servidor={abierta} />}
       </body>
     </html>

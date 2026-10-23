@@ -23,6 +23,7 @@ import Cifra from '@/components/Cifra';
 import Ico from '@/components/Ico';
 import Logo from '@/components/Logo';
 import AvisoPrueba from '@/components/AvisoPrueba';
+import AvisoMensajes from '@/components/AvisoMensajes';
 import { DETALLE, puede } from '@/lib/permisos';
 import '@/app/asistente.css';
 import '@/app/empresas.css';
@@ -144,6 +145,7 @@ export default async function Resumen({ searchParams }) {
   return (
     <main className="pagina mk-look">
       <AvisoPrueba plan={u.plan} app={esApp((await headers()).get('user-agent'))} />
+      <AvisoMensajes u={u} />
       <header className={`inicio${facturado > 0 ? '' : ' sin-saldo'}`}>
         <div className="inicio-barra">
           <Logo />

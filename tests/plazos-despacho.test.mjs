@@ -115,10 +115,13 @@ test('Anuales del año anterior: enero y último día hábil de febrero', () => 
 
 test('Renta, Sociedades, Registro Mercantil y los tres pagos del 202', () => {
   const plazos = plazosDespacho([cliente(), cliente({ tipo: 'sociedad' }, undefined, { id: 's', nombre: 'Sociedad' })], { hoy: '2026-01-01', dias: 364 });
-  for (const [modelo, fecha] of [['100', '2026-06-30'], ['200', '2026-07-27'], ['rm-libros', '2026-04-30'], ['rm-cuentas', '2026-07-30']]) {
+  for (const [modelo, fecha] of [['100', '2026-06-30'], ['200', '2026-07-27']]) {
     assert.equal(fila(plazos, modelo).fecha, fecha);
     assert.equal(fila(plazos, modelo).periodo, '2025');
   }
+  // Los del Registro Mercantil salen como «RM», cada uno con su nombre.
+  const rm = plazos.filter((p) => p.modelo === 'RM').map((p) => [p.fecha, p.periodo, /Legalizar|Depositar/.test(p.nombre)]);
+  assert.deepEqual(rm, [['2026-04-30', '2025', true], ['2026-07-30', '2025', true]]);
   assert.deepEqual(plazos.filter((p) => p.modelo === '202').map((p) => [p.periodo, p.fecha]), [
     ['1P 2026', '2026-04-20'], ['2P 2026', '2026-10-20'], ['3P 2026', '2026-12-21'],
   ]);
@@ -179,4 +182,22 @@ test('Función pura: admite fiscal parcial y no modifica los datos de entrada', 
   assert.deepEqual(plazosDespacho(clientes, opciones), plazos);
   assert.equal(marca(plazos, '303'), true);
   assert.deepEqual(plazosDespacho([], opciones), []);
+});
+
+test('Vencidos sin presentar: solo con atraso, solo los clientes sin marcar y nunca lo que no se puede saber', () => {
+  const sinMarcar = cliente({}, {}, { id: 'a', nombre: 'Ana' });
+  const presentado = cliente({}, { pres303: { 2026: { 3: true } }, pagos130: { 2026: { 3: 0 } } }, { id: 'b', nombre: 'Berta' });
+  const sociedad = cliente({ tipo: 'sociedad' }, { pres303: { 2026: { 3: true } } }, { id: 's', nombre: 'Sociedad' });
+  // Sin atraso (por defecto), nada anterior a hoy.
+  assert.ok(plazosDespacho([sinMarcar], { hoy: '2026-10-23' }).every((p) => p.fecha >= '2026-10-23' && !p.vencido));
+  const plazos = plazosDespacho([sinMarcar, presentado, sociedad], { hoy: '2026-10-23', dias: 120, atraso: 30 });
+  const vencidos = plazos.filter((p) => p.vencido);
+  assert.deepEqual(vencidos.map((p) => [p.fecha, p.modelo, p.periodo, p.clientes.map((c) => c.id)]), [
+    ['2026-10-20', '130', '3T 2026', ['a']],
+    ['2026-10-20', '303', '3T 2026', ['a']],
+  ]);
+  // El 202 de octubre de la sociedad no se sabe si se pagó: no sale como vencido.
+  assert.ok(!vencidos.some((p) => p.modelo === '202'));
+  // Con 120 días entra el 4T entero (vence el 1 de febrero de 2027, primer día hábil tras el 30 de enero).
+  assert.ok(plazos.some((p) => p.modelo === '303' && p.periodo === '4T 2026' && p.fecha === '2027-02-01' && !p.vencido));
 });

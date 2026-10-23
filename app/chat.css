@@ -1,0 +1,35 @@
+/* Chat entre el despacho y su cliente (components/Chat.js): burbujas como en cualquier app de mensajes, las mías a la
+   derecha con el color de la app, y el cuadro de escribir pegado abajo. */
+.chat { display: flex; flex-direction: column; gap: 10px; }
+.chat .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.chat-mensajes { display: flex; flex-direction: column; gap: 6px; padding: 14px 12px; border-radius: 16px; background: var(--surface); min-height: 240px; max-height: min(62vh, 640px); overflow-y: auto; overscroll-behavior: contain; }
+.chat-vacio { margin: auto; padding: 30px 12px; color: var(--muted); text-align: center; max-width: 32ch; line-height: 1.4; }
+.chat-grupo { display: flex; flex-direction: column; }
+.chat-dia, .chat-nuevos { display: flex; align-items: center; gap: 10px; margin: 10px 0 6px; color: var(--muted); font-size: 12px; font-weight: 600; }
+.chat-dia::before, .chat-dia::after, .chat-nuevos::before, .chat-nuevos::after { content: ''; flex: 1; height: 0.5px; background: var(--line); }
+.chat-nuevos { color: var(--out); }
+.chat-nuevos::before, .chat-nuevos::after { background: color-mix(in srgb, var(--out) 45%, transparent); }
+.chat-burbuja { align-self: flex-start; max-width: min(78%, 560px); padding: 8px 12px 6px; border-radius: 18px 18px 18px 6px; background: var(--relleno); color: var(--ink); animation: chat-entra 0.25s ease-out; }
+.chat-burbuja.mia { align-self: flex-end; border-radius: 18px 18px 6px 18px; background: var(--marca); color: var(--sobre); }
+.chat-burbuja.resuelta { opacity: 0.65; }
+.chat-burbuja p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.35; }
+.chat-autor { display: block; margin-bottom: 2px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.chat-sobre { display: flex; align-items: center; gap: 6px; margin: 0 0 6px; padding: 6px 8px; border-radius: 10px; background: color-mix(in srgb, currentColor 9%, transparent); font-size: 13px; font-weight: 600; }
+.chat-sobre svg { flex: none; width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
+.chat-sobre.respuesta { padding: 0; background: none; font-weight: 400; opacity: 0.75; }
+.chat-pie { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 4px 10px; margin-top: 3px; font-size: 12px; opacity: 0.75; }
+.chat-pie button { margin: 0; padding: 0; border: 0; background: none; box-shadow: none; color: inherit; font: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; }
+.chat-pie time { font-variant-numeric: tabular-nums; }
+@keyframes chat-entra { from { opacity: 0; transform: translateY(6px); } }
+@media (prefers-reduced-motion: reduce) { .chat-burbuja { animation: none; } }
+
+.chat-escribir { position: relative; display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 16px; background: var(--surface); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08); }
+.chat-contexto { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0; padding: 6px 10px; border-radius: 10px; background: var(--relleno); font-size: 13px; }
+.chat-contexto button { flex: none; width: 26px; height: 26px; margin: 0; padding: 0; border: 0; border-radius: 50%; background: var(--surface); box-shadow: none; color: var(--muted); font-size: 17px; line-height: 1; cursor: pointer; }
+.chat-adjuntar select { width: 100%; height: 34px; margin: 0; padding: 0 10px; border: 0; border-radius: 10px; background: var(--relleno); color: var(--muted); font: inherit; font-size: 14px; cursor: pointer; }
+.chat-linea { display: flex; align-items: flex-end; gap: 8px; }
+.chat-linea textarea { flex: 1; min-height: 42px; max-height: 160px; margin: 0; padding: 10px 14px; border: 0; border-radius: 21px; background: var(--relleno); color: var(--ink); font: inherit; font-size: 16px; line-height: 1.35; resize: none; }
+.chat-linea textarea:focus { outline: 2px solid var(--marca); outline-offset: 0; }
+.chat-enviar { flex: none; display: grid; place-items: center; width: 42px; height: 42px; margin: 0; padding: 0; border: 0; border-radius: 50%; background: var(--marca); color: var(--sobre); box-shadow: none; cursor: pointer; }
+.chat-enviar:disabled { opacity: 0.4; cursor: default; }
+.chat-enviar svg { width: 20px; height: 20px; fill: currentColor; }

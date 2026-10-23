@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
+import Ir from './Ir';
 import { confirmar } from './Confirmar';
 import { entrarEn } from './PanelDespacho';
 import { ESTADOS_TEXTO } from './despachoTextos';
@@ -13,31 +14,11 @@ const fechaDe = (iso) => fechaCorta(String(iso || '').slice(0, 10));
 const horaDe = (iso) => new Date(iso).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 const ENTRAR = [['/modelos', 'Impuestos', 'Modelos del trimestre y del año'], ['/facturas', 'Facturas', 'Emitidas, cobros y rectificativas'], ['/gastos', 'Gastos', 'Con sus justificantes'], ['/contabilidad', 'Contabilidad', 'Diario, balance y resultados'], ['/contabilidad?ver=libros', 'Libros registro', 'Los libros de IVA e IRPF']];
 
-// Un comentario con su hilo y, si está abierto, el formulario para responder.
-function Hilo({ c, empresa, alCambiar }) {
-  const [texto, setTexto] = useState('');
-  const [msg, setMsg] = useState('');
-  const enviar = async (cuerpo) => {
-    setMsg('');
-    try { await llamar('/api/despacho/comentarios', { method: 'PATCH', body: JSON.stringify({ empresa, id: c.id, ...cuerpo }) }); setTexto(''); alCambiar(); } catch (e) { setMsg(e.message); }
-  };
-  return <li className={c.resuelto ? 'resuelto' : ''}>
-    <span className="doc">{c.doc ? c.doc.texto : `${c.t}T ${c.anio}`}{c.resuelto ? ' · Resuelto' : ''}</span>
-    {c.hilo.map((m, i) => <p key={i} className="msg"><b>{m.lado === 'despacho' ? m.nombre || 'Gestoría' : `${m.nombre || 'Cliente'} (cliente)`}</b> <small>{horaDe(m.fecha)}</small><br />{m.texto}</p>)}
-    {!c.resuelto ? <form onSubmit={(e) => { e.preventDefault(); if (texto.trim()) enviar({ texto }); }}>
-      <textarea className="campo" rows={1} value={texto} maxLength={2000} placeholder="Responder" aria-label="Responder" onChange={(e) => setTexto(e.target.value)} />
-      <button className="boton sec" disabled={!texto.trim()}>Responder</button>
-      <button type="button" className="boton sec" onClick={() => enviar({ resuelto: true })}>Marcar como resuelto</button>
-    </form> : <form onSubmit={(e) => { e.preventDefault(); enviar({ resuelto: false }); }}><button className="boton sec">Volver a abrir</button></form>}
-    {msg && <p className="error" role="alert">{msg}</p>}
-  </li>;
-}
-
-export default function ClienteDespacho({ cliente, anio, t, hoy, rol, estado, limite, presentados, cierre, resumen, docs, comentarios, accesos, equipo }) {
+// mensajes: { ultimo, noLeidos, preguntas } de la conversación con el cliente (components/Chat.js, en Mensajes).
+export default function ClienteDespacho({ cliente, anio, t, hoy, rol, estado, limite, presentados, cierre, resumen, docs, mensajes, accesos, equipo }) {
   const router = useRouter();
   const [ocupado, setOcupado] = useState('');
   const [msg, setMsg] = useState('');
-  const [nueva, setNueva] = useState({ texto: '', doc: '' });
   const [formato, setFormato] = useState('a3');
   const [codigo, setCodigo] = useState('1');
   const [anioDiario, setAnioDiario] = useState(anio);
@@ -58,31 +39,19 @@ export default function ClienteDespacho({ cliente, anio, t, hoy, rol, estado, li
       : await confirmar({ titulo: 'Dejar de incluirlo', texto: `${cliente.nombre} tendrá un mes de prueba para elegir y pagar su plan.`, aceptar: 'Dejar de incluirlo', peligro: true });
     if (ok) accion({ accion: si ? 'licencia' : 'sinLicencia' }, si ? '✓ Incluido en tu cuota' : 'Ya no está incluido en tu cuota');
   };
-  const preguntar = async (e) => {
-    e.preventDefault();
-    if (!nueva.texto.trim()) return;
-    const [tipo, docId] = nueva.doc ? nueva.doc.split(':') : [];
-    setOcupado('comentar'); setMsg('');
-    try {
-      await llamar('/api/despacho/comentarios', { method: 'POST', body: JSON.stringify({ empresa: cliente.id, anio, t, texto: nueva.texto, ...(tipo ? { doc: { tipo, id: docId } } : {}) }) });
-      setNueva({ texto: '', doc: '' }); router.refresh();
-    } catch (err) { setMsg(err.message); }
-    setOcupado('');
-  };
   const periodos = useMemo(() => {
     const y = Number(hoy.slice(0, 4));
     return [y, y - 1].flatMap((a) => [4, 3, 2, 1].map((q) => ({ anio: a, t: q }))).filter((p) => `${p.anio}-${String(p.t * 3 - 2).padStart(2, '0')}-01` <= hoy);
   }, [hoy]);
-  const del = comentarios.filter((c) => (c.anio === anio && c.t === t) || !c.resuelto);
   const r = resumen;
   const cifra = (x) => (!x ? { v: '—', n: 'No lo presenta' } : x.compensar > 0 ? { v: eur(0), n: `A compensar ${eur(x.compensar)}` } : x.devolver > 0 ? { v: eur(0), n: `A devolver ${eur(x.devolver)}` } : { v: eur(x.importe), n: 'A ingresar' });
   const pendientes = r ? [
     r.porRevisar > 0 && `${r.porRevisar} ${r.porRevisar === 1 ? 'documento' : 'documentos'} en su bandeja por revisar`,
     r.sinJustificante > 0 && `${r.sinJustificante} ${r.sinJustificante === 1 ? 'gasto' : 'gastos'} sin justificante`,
-    r.comentarios?.respuestas > 0 && `${r.comentarios.respuestas === 1 ? 'Una respuesta' : `${r.comentarios.respuestas} respuestas`} del cliente sin leer`,
+    r.comentarios?.noLeidos > 0 && `${r.comentarios.noLeidos === 1 ? 'Un mensaje' : `${r.comentarios.noLeidos} mensajes`} del cliente sin leer`,
   ].filter(Boolean) : [];
   const irA = (href) => () => entrarEn(cliente.id, href).catch((e) => setMsg(e.message));
-  const preguntarPor = (doc) => () => { setNueva((x) => ({ ...x, doc })); document.getElementById('desp-pregunta')?.focus({ preventScroll: true }); document.getElementById('desp-preg')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+  const chat = (doc) => `/despacho/mensajes/${id}${doc ? `?doc=${encodeURIComponent(doc)}` : ''}`;
 
   return <>
     <div className="desp-cabecera">
@@ -152,18 +121,16 @@ export default function ClienteDespacho({ cliente, anio, t, hoy, rol, estado, li
     </section>
 
     <section className="grupo" aria-labelledby="desp-preg">
-      <h2 className="grupo-t" id="desp-preg">Preguntas al cliente</h2>
-      <form className="grupo-c relleno formulario desp-preguntar" onSubmit={preguntar}>
-        <label>Sobre<select className="campo" value={nueva.doc} onChange={(e) => setNueva({ ...nueva, doc: e.target.value })}>
-          <option value="">El {t}T {anio} en general</option>
-          {docs.facturas.length > 0 && <optgroup label="Facturas">{docs.facturas.map((f) => <option key={f.id} value={`factura:${f.id}`}>{f.texto} · {eur(f.total)}</option>)}</optgroup>}
-          {docs.gastos.length > 0 && <optgroup label="Gastos">{docs.gastos.map((g) => <option key={g.id} value={`gasto:${g.id}`}>{fechaDe(g.fecha)} · {g.texto} · {eur(g.total)}</option>)}</optgroup>}
-        </select></label>
-        <label>Pregunta<textarea id="desp-pregunta" className="campo" rows={3} maxLength={2000} value={nueva.texto} onChange={(e) => setNueva({ ...nueva, texto: e.target.value })} placeholder="¿Este gasto es de la actividad? Falta el ticket de…" /></label>
-        <button className="boton" disabled={!nueva.texto.trim() || ocupado === 'comentar'}>Enviar al cliente</button>
-      </form>
-      <p className="grupo-pie">Le aparece en Ajustes › Tu gestoría y puede responderte allí.</p>
-      {del.length > 0 && <ul className="desp-hilo">{del.map((c) => <Hilo key={c.id} c={c} empresa={cliente.id} alCambiar={() => router.refresh()} />)}</ul>}
+      <h2 className="grupo-t" id="desp-preg">Mensajes</h2>
+      <div className="grupo-c">
+        <Ir className="celda ir desp-mensajes-ficha" href={chat()}>
+          <span className="txt">
+            {mensajes.noLeidos > 0 ? <b className="rojo">{mensajes.noLeidos === 1 ? '1 mensaje nuevo' : `${mensajes.noLeidos} mensajes nuevos`}</b> : mensajes.ultimo ? 'Conversación' : 'Escribir al cliente'}
+            {mensajes.ultimo ? <span className={`desp-burbuja-mini${mensajes.ultimo.lado === 'despacho' ? ' mia' : ''}`}>{mensajes.ultimo.texto}</span> : <small>Le llega a su Fisquo y te contesta aquí.</small>}
+            {mensajes.preguntas > 0 && <small>{mensajes.preguntas === 1 ? '1 pregunta sobre un documento sin resolver' : `${mensajes.preguntas} preguntas sobre documentos sin resolver`}</small>}
+          </span>
+        </Ir>
+      </div>
     </section>
 
     <section className="grupo" aria-labelledby="desp-docs">
@@ -172,7 +139,7 @@ export default function ClienteDespacho({ cliente, anio, t, hoy, rol, estado, li
         {[...docs.facturas.map((f) => ({ ...f, tipo: 'factura', titulo: `Factura ${f.texto}` })), ...docs.gastos.map((g) => ({ ...g, tipo: 'gasto', titulo: g.texto }))].map((x) => <li key={`${x.tipo}-${x.id}`} className="fila">
           <span className="txt"><strong>{x.titulo}</strong><small>{fechaDe(x.fecha)}{x.tipo === 'gasto' ? ' · gasto' : ''}{x.sinJustificante ? ' · sin justificante' : ''}</small></span>
           <span className="imp">{eur(x.base)}</span>
-          <button type="button" className="boton sec desp-mini" onClick={preguntarPor(`${x.tipo}:${x.id}`)}>Preguntar</button>
+          <Ir className="boton sec desp-mini" href={chat(`${x.tipo}:${x.id}`)}>Preguntar</Ir>
         </li>)}
       </ul>}
       {docs.mas > 0 && <p className="grupo-pie">Y {docs.mas} más: entra en sus Facturas o Gastos para verlos todos.</p>}

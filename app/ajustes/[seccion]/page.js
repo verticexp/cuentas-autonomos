@@ -29,7 +29,7 @@ import { emailListo } from '@/lib/email';
 import { trimestreAnterior } from '@/lib/gestoriaEnvio';
 import TuDespacho from '@/components/TuDespacho';
 import { leerAccesos } from '@/lib/despachos';
-import { comentariosDe } from '@/lib/comentariosDespacho';
+import { comentariosDe, leidoDe, mensajesDe } from '@/lib/comentariosDespacho';
 import { ahoraMadrid } from '@/lib/jornada';
 import { CONTACTO } from '@/components/web/datos';
 import Series from '@/components/Series';
@@ -67,6 +67,12 @@ async function datosSeries(u, anio) {
   const [rectificativas, caja] = await Promise.all([numeroPrevisto(u, 'R', anio), numeroPrevisto(u, SERIE_CAJA, anio)]);
   return { actividades, anio, rectificativas, caja: caja > 1 ? caja : 0 };
 }
+// Tu gestoría en Fisquo (lib/despachos.js): su vínculo, lo que ha hecho y la conversación (la marca leída el chat al verse).
+async function datosTuDespacho(u) {
+  if (!u.despachoCliente || u.viaDespacho) return { despacho: null };
+  const [accesos, hilos, leido] = await Promise.all([leerAccesos(u.empresa, 60), comentariosDe(u.empresa), leidoDe(u.empresa)]);
+  return { despacho: u.despachoCliente, accesos, mensajes: mensajesDe(hilos), leidoAntes: leido.cliente || '' };
+}
 // Los 8 últimos trimestres cerrados, del más reciente al más antiguo.
 function ultimosTrimestres(hoy) {
   const lista = [];
@@ -97,7 +103,7 @@ export default async function Seccion({ params, searchParams }) {
       <h1 className="titulo">{app && seccion === 'seguridad' ? 'Contraseña y bloqueo' : TITULOS[seccion]}</h1>
       {seccion === 'marca' && <Marca marca={u.marca} nombre={u.emisor?.nombre} />}
       {seccion === 'series' && <Series {...await datosSeries(u, Number(ahoraMadrid().slice(0, 4)))} />}
-      {seccion === 'gestoria' && <TuDespacho despacho={u.despachoCliente || null} accesos={u.despachoCliente ? await leerAccesos(u.empresa, 60) : []} comentarios={u.despachoCliente ? await comentariosDe(u.empresa) : []} codigo={typeof (await searchParams)?.codigo === 'string' ? (await searchParams).codigo : ''} />}
+      {seccion === 'gestoria' && <TuDespacho {...await datosTuDespacho(u)} codigo={typeof (await searchParams)?.codigo === 'string' ? (await searchParams).codigo : ''} />}
       {seccion === 'gestoria' && <Gestoria gestoria={u.gestoria || null} trimestres={ultimosTrimestres(ahoraMadrid().slice(0, 10))} invitar={u.rol === 'admin'} emailListo={emailListo()} app={app} />}
       {seccion === 'api' && <AjustesApi key={u.empresa} inicial={{ claves: await clavesDe(u), webhooks: await webhooksDe(u) }} alcances={alcancesDe(u)} eventos={[...(puede(u, 'facturas') ? ['factura.creada', 'factura.cobrada'] : []), ...(puede(u, ['gastos', 'nominas']) ? ['gasto.creado'] : [])]} />}
       {seccion === 'apariencia' && <Apariencia inicial={(await cookies()).get('tema')?.value} />}

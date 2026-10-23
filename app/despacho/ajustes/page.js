@@ -9,7 +9,7 @@ import '@/app/mk.css';
 import '@/app/despacho.css';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Despacho · Mi despacho' };
+export const metadata = { title: 'Ajustes · Mi despacho' };
 
 // Datos del despacho, cómo llegan los clientes, licencias y lo que hace (y no hace) Fisquo.
 export default async function AjustesDelDespacho({ searchParams }) {
@@ -19,10 +19,10 @@ export default async function AjustesDelDespacho({ searchParams }) {
   const licencias = rol === 'titular' ? await licenciasDe(d, hoy()) : null;
   const tarifa = Object.fromEntries(Object.entries(TARIFA).map(([k, v]) => [k, v.map((x) => ({ hasta: x.hasta === Infinity ? null : x.hasta, cent: x.cent }))]));
   return <main className="pagina mk-look despacho">
-    <h1 className="titulo">{d.nombre}</h1>
+    <h1 className="titulo">Ajustes</h1>
     <AjustesDespacho
-      despacho={{ nombre: d.nombre, nif: d.nif || '', email: d.email || '', codigo: d.codigo, soloAsignados: Boolean(d.soloAsignados), cobro: d.cobro || null }}
+      despacho={{ nombre: d.nombre, nif: d.nif || '', email: d.email || '', codigo: d.codigo, soloAsignados: Boolean(d.soloAsignados), cobro: d.cobro || null, demo: Boolean(d.demo) }}
       titular={rol === 'titular'} licencias={licencias} tarifa={tarifa} nombres={NOMBRES_LICENCIA} diasGratis={DIAS_GRATIS} stripe={stripeListo()} sesion={typeof q.sesion === 'string' ? q.sesion : ''}
-      enlaces={{ registro: `${origen}/registro?codigo=${encodeURIComponent(d.codigo)}`, existente: `${origen}/ajustes/gestoria?codigo=${encodeURIComponent(d.codigo)}` }} />
+      enlace={`${origen}/api/invitacion/gestoria?c=${encodeURIComponent(d.codigo)}`} />
   </main>;
 }

@@ -105,7 +105,7 @@ const CLIENTES = [
     fijos: [['Amazon Web Services EMEA', 'Servidores en la nube', 85], ['Euskaltel S.A.', 'Fibra y móvil', 52]],
     variables: [['Licencias de software', [40, 600]], ['Kilometraje y aparcamiento', [30, 160], 'Parking Plaza del Castillo', 21]],
     bienes: [[11, 'Portátil Lenovo ThinkPad', 'PcComponentes S.L.', 1590, 'informatica']],
-    cuota: 294, gestor: 'gestor', plan: 'prueba', estado3T: 'listo',
+    cuota: 294, gestor: 'gestor', plan: 'prueba', estado3T: 'listo', atrasado: true,
   },
   {
     id: 'dcli0006', contacto: 'Elena Ruiz', nombre: 'Nexo Consultores S.L.', nif: 'B00000106', ciudad: '08008 Barcelona', direccion: 'Passeig de Gràcia, 92',
@@ -192,18 +192,22 @@ const FECHA_TRAS_CIERRE = `${ultimo.anio}-${FIN[ultimo.t - 1].slice(0, 2)}-26`;
 const persona = (quien) => (quien === 'gestor' ? { id: idGestor, nombre: 'Pol Martí' } : { id: idTitular, nombre: 'Núria Ferrer' });
 
 // estado del último trimestre: listo (por revisar) · revisado (cerrado) · cambios (cerrado y después cambió) · presentado.
+// Si el plazo del último trimestre ya pasó, una gestoría al día lo ha presentado: lo revisado pasa a presentado (el bar,
+// presentado y con cambios después) y solo el cliente marcado como atrasado sale por revisar y fuera de plazo.
+const PLAZO_PASADO = plazoDe(ultimo.anio, ultimo.t) < hoy;
+const estadoReal = (c) => (!PLAZO_PASADO ? c.estado3T : c.estado3T === 'listo' && !c.atrasado ? 'presentado' : c.estado3T === 'revisado' ? 'presentado' : c.estado3T);
 function trimestresDe(e, facturas, gastos, estado, quien) {
   const pres303 = {}, pagos130 = {}, cierres = {};
   const autonomo = e.fiscal.tipo === 'autonomo';
   for (const { anio, t } of trimestres) {
     const esUltimo = anio === ultimo.anio && t === ultimo.t;
-    const presentado = !esUltimo || estado === 'presentado';
-    if (presentado && plazoDe(anio, t) < hoy || (esUltimo && estado === 'presentado')) {
+    const presentado = !esUltimo || estado === 'presentado' || (PLAZO_PASADO && estado === 'cambios');
+    if ((presentado && plazoDe(anio, t) < hoy) || (esUltimo && presentado)) {
       (pres303[anio] ||= {})[t] = true;
       if (autonomo) (pagos130[anio] ||= {})[t] = 0; // 0: presentado con lo que calcula Fisquo
     }
     if (!esUltimo || ['revisado', 'cambios', 'presentado'].includes(estado)) {
-      const cerrado = esUltimo ? mas(hoy, -2) : mas(plazoDe(anio, t), -6);
+      const cerrado = esUltimo && !PLAZO_PASADO ? mas(hoy, -2) : mas(plazoDe(anio, t), -6);
       cierres[`${anio}-${t}`] = { fecha: fechaHora(cerrado, 17), por: persona(quien), despacho: 'Gestoría Ferrer (demo)', ...huella(facturas, gastos, anio, t) };
     }
   }
@@ -293,7 +297,7 @@ for (const [i, c] of CLIENTES.entries()) {
     emisor: { nombre: c.nombre.toUpperCase(), nif: c.nif, direccion: c.direccion, ciudad: c.ciudad, plazo: 30 },
     actividades: [c.actividad], fiscal: { ...c.fiscal, intracom: false }, plan: planDe(c),
   };
-  const { pres303, pagos130, cierres } = trimestresDe(e, facturas, gastos, c.estado3T, c.gestor);
+  const { pres303, pagos130, cierres } = trimestresDe(e, facturas, gastos, estadoReal(c), c.gestor);
   // Cambios tras el cierre: un gasto que entró después de cerrar (el ticket de una reparación).
   if (c.estado3T === 'cambios') gastos.push({ id: 'g-tras-cierre', fecha: FECHA_TRAS_CIERRE, actividad: c.actividad.id, concepto: 'Reparación de la cámara frigorífica', proveedor: 'Fred Industrial S.L.', proveedorNif: 'B0000777Z', base: 640, ivaPct: 21 });
   await limpiar(c.id);
@@ -332,27 +336,40 @@ const docFactura = (datos) => {
   const f = datos.facturas.filter((x) => !x.caja && x.fecha.startsWith(String(ultimo.anio)) && Math.ceil(Number(x.fecha.slice(5, 7)) / 3) === ultimo.t).sort((a, b) => b.base - a.base)[0];
   return f && { tipo: 'factura', id: f.id, texto: `Factura ${f.id} · ${f.cliente.nombre}` };
 };
+// Conversaciones: la general de cada cliente (doc nulo) y las preguntas sobre un documento. [lado, texto, hace cuántos días].
+// leidoHasta: hace cuántos días leyó cada lado por última vez (lo posterior del otro sale como «Nuevo»).
 const HILOS = {
   [sonora.id]: [
-    { doc: (d) => docGasto(d, /Técnicos de montaje|Transporte/), hilo: [['despacho', '¿Esta subcontratación tiene contrato o presupuesto firmado? Si la Agencia lo pide en una comprobación, conviene tenerlo.', 9], ['cliente', 'Sí, te lo subo como justificante esta semana.', 8], ['despacho', 'Perfecto, gracias. Lo dejo como resuelto.', 8]], resuelto: true },
-    { doc: () => null, hilo: [['despacho', 'Para el 4T: si compráis más equipo de sonido antes del 31 de diciembre, avisadme y vemos si os conviene amortizarlo este año.', 3]] },
+    { doc: () => null, hilo: [['despacho', `Hola, soy Núria. Ya tenemos cerrado y presentado el ${ultimo.t}T: IVA, retenciones y el pago a cuenta de Sociedades.`, 5], ['cliente', 'Perfecto, gracias. ¿Cuándo se carga en el banco?', 5], ['despacho', 'Lo domicilié para el último día del plazo. Lo verás en el banco ese día.', 5], ['despacho', 'Para el 4T: si compráis más equipo de sonido antes del 31 de diciembre, avisadme y vemos si os conviene amortizarlo este año.', 1]] },
+    { doc: (d) => docGasto(d, /Técnicos de montaje|Transporte/), hilo: [['despacho', '¿Esta subcontratación tiene contrato o presupuesto firmado? Si la Agencia lo pide en una comprobación, conviene tenerlo.', 12], ['cliente', 'Sí, te lo subo como justificante esta semana.', 11], ['despacho', 'Perfecto, gracias. Lo dejo como resuelto.', 11]], resuelto: true },
   ],
-  dcli0001: [{ doc: (d) => docFactura(d), hilo: [['despacho', 'Esta factura lleva retención del 15 %: ¿el cliente te ha enviado el certificado de retenciones del año pasado?', 6], ['cliente', 'Me lo mandaron en enero, lo busco y te lo paso.', 5]] }],
+  dcli0001: [
+    { doc: () => null, hilo: [['cliente', 'Hola Núria, este mes he facturado bastante más. ¿Tengo que apartar algo más para el IRPF?', 6], ['despacho', 'Sí: con el 130 pagas el 20 % del beneficio del año. Te lo calcula Fisquo en el Resumen, «Para apartar».', 6]] },
+    { doc: (d) => docFactura(d), hilo: [['despacho', 'Esta factura lleva retención del 15 %: ¿el cliente te ha enviado el certificado de retenciones del año pasado?', 5], ['cliente', 'Me lo mandaron en enero, lo busco y te lo paso.', 2]] },
+  ],
   dcli0002: [
     { doc: (d) => docGasto(d, /Material de fontanería/), hilo: [['despacho', 'Falta el ticket de esta compra en Saltoki. ¿Puedes hacerle una foto y subirla?', 4]] },
-    { doc: (d) => docGasto(d, /Combustible/), hilo: [['despacho', 'La furgoneta, ¿la usas solo para trabajar? Para deducir el 100 % del IVA del combustible tiene que ser así.', 4], ['cliente', 'Sí, solo para trabajar. Tengo otro coche para casa.', 3]] },
+    { doc: (d) => docGasto(d, /Combustible/), hilo: [['despacho', 'La furgoneta, ¿la usas solo para trabajar? Para deducir el 100 % del IVA del combustible tiene que ser así.', 4], ['cliente', 'Sí, solo para trabajar. Tengo otro coche para casa.', 1]] },
   ],
-  dcli0003: [{ doc: () => ({ tipo: 'gasto', id: 'g-tras-cierre', texto: `Gasto del ${FECHA_TRAS_CIERRE.split('-').reverse().join('/')} · Fred Industrial S.L.` }), hilo: [['despacho', 'Has añadido esta reparación después de que cerrara el trimestre. ¿Es de septiembre? Si es así, lo reviso y presento una complementaria.', 1]] }],
-  dcli0005: [{ doc: () => null, hilo: [['despacho', 'Iñaki, recuerda que en Navarra el IVA del 3T es el modelo F-69. ¿Has facturado algo a clientes de fuera de España este trimestre?', 2], ['cliente', 'No, todo a clientes de Navarra.', 1]] }],
+  dcli0003: [
+    { doc: () => ({ tipo: 'gasto', id: 'g-tras-cierre', texto: `Gasto del ${FECHA_TRAS_CIERRE.split('-').reverse().join('/')} · Fred Industrial S.L.` }), hilo: [['despacho', 'Has añadido esta reparación después de que cerrara el trimestre. ¿Es de septiembre? Si es así, presento una complementaria.', 2], ['cliente', 'Sí, es del 26 de septiembre, se me pasó subirla. Perdona.', 1]] },
+  ],
+  dcli0004: [{ doc: () => null, hilo: [['despacho', 'Lucía, el IGIC del 3T ya está presentado en la Agencia Tributaria Canaria. Todo correcto.', 3], ['cliente', '¡Genial, gracias!', 3]] }],
+  dcli0005: [{ doc: () => null, hilo: [['despacho', `Iñaki, el F-69 del ${ultimo.t}T ${PLAZO_PASADO ? "ya ha vencido" : "vence en unos días"} y aún no lo tenemos. ¿Has facturado algo a clientes de fuera de Navarra?`, 2], ['cliente', 'Perdona, se me pasó. Todo a clientes de Navarra; mañana subo las dos últimas facturas.', 0]] }],
   dcli0006: [{ doc: (d) => docGasto(d, /Viajes y dietas/), hilo: [['despacho', '¿Este viaje fue para un cliente? Indica en la nota para cuál: así queda justificado.', 7], ['cliente', 'Fue para Logística Prat, el proceso de selección de Madrid.', 6], ['despacho', 'Gracias, anotado.', 6]], resuelto: true }],
 };
+// El despacho tiene sin leer lo último de Marta, Jordi, el bar e Iñaki; Sonora (la demo del cliente), el último mensaje de Núria.
+const LEIDO = { [sonora.id]: { despacho: 0, cliente: 2 }, dcli0001: { despacho: 4, cliente: 0 }, dcli0002: { despacho: 3, cliente: 0 }, dcli0003: { despacho: 1.5, cliente: 0 }, dcli0005: { despacho: 1, cliente: 0 } };
 for (const c of CLIENTES) {
   const quien = persona(c.gestor);
   const hilos = (HILOS[c.id] || []).map((h, j) => {
     const doc = h.doc(c.datos);
-    return { id: `dcom${String(j + 1).padStart(4, '0')}`, anio: ultimo.anio, t: ultimo.t, ...(doc ? { doc } : {}), hilo: h.hilo.map(([lado, texto, d], k) => msg(lado, quien, c.contacto, texto, fechaHora(mas(hoy, -d), 10 + k))), resuelto: Boolean(h.resuelto) };
+    return { id: doc ? `dcom${String(j + 1).padStart(4, '0')}` : 'general', anio: ultimo.anio, t: ultimo.t, ...(doc ? { doc } : {}), hilo: h.hilo.map(([lado, texto, d], k) => msg(lado, quien, c.contacto, texto, fechaHora(mas(hoy, -d), 10 + k))), resuelto: Boolean(h.resuelto) };
   });
   if (hilos.length) await r.hset(`${P}despacho-comentarios:${c.id}`, porId(hilos));
+  const leido = LEIDO[c.id] || { despacho: 0, cliente: 0 };
+  await r.del(`${P}despacho-leido:${c.id}`);
+  await r.hset(`${P}despacho-leido:${c.id}`, { despacho: leido.despacho ? fechaHora(mas(hoy, -leido.despacho), 8) : ahora, cliente: leido.cliente ? fechaHora(mas(hoy, -leido.cliente), 8) : ahora });
   // Registro (lo más reciente primero): entradas, cierres, descargas y exportaciones de los últimos trimestres.
   const registro = [];
   const apunta = (fecha, accion, detalle = '') => registro.push({ fecha, quien: quien.id, nombre: quien.nombre, despacho: 'Gestoría Ferrer (demo)', accion, detalle });
@@ -361,9 +378,9 @@ for (const c of CLIENTES) {
     apunta(fechaHora(base, 9), 'Entró en tus cuentas');
     apunta(fechaHora(base, 11), `Descargó el paquete del ${t}T ${anio}`);
     if (t === 4) apunta(fechaHora(mas(base, 1), 12), 'Exportó la contabilidad', `SUENLACE.DAT · ${anio}`);
-    if (!(anio === ultimo.anio && t === ultimo.t) || ['revisado', 'cambios', 'presentado'].includes(c.estado3T) || c.id === sonora.id) apunta(fechaHora(mas(base, 2), 17), `Revisó y cerró el ${t}T ${anio}`);
+    if (!(anio === ultimo.anio && t === ultimo.t) || ['revisado', 'cambios', 'presentado'].includes(estadoReal(c)) || c.id === sonora.id) apunta(fechaHora(mas(base, 2), 17), `Revisó y cerró el ${t}T ${anio}`);
   }
-  for (const h of hilos) apunta(h.hilo[0].fecha, 'Te ha dejado una pregunta', h.doc?.texto || `${ultimo.t}T ${ultimo.anio}`);
+  for (const h of hilos.filter((x) => x.doc)) apunta(h.hilo[0].fecha, 'Te ha preguntado por un documento', h.doc.texto);
   registro.sort((a, b) => b.fecha.localeCompare(a.fecha));
   await r.rpush(`${P}despacho-accesos:${c.id}`, ...registro);
 }
