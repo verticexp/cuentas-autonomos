@@ -83,6 +83,7 @@
 .modelo-dato { flex: none; font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .modelo-dato.favor { color: var(--in); }
 .modelo-dato.info { font-size: 13px; font-weight: 500; color: var(--muted); }
+.modelo-dato small { display: block; font-size: 12px; font-weight: 500; color: var(--muted); text-align: right; }
 .modelo-plegable > summary::after { content: ''; flex: none; width: 7px; height: 7px; margin-left: -2px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(45deg) translateY(-2px); opacity: .7; transition: transform .2s ease-out; }
 .modelo-plegable[open] > summary::after { transform: rotate(225deg) translate(-1px, -1px); }
 .modelo-plegable[open] > summary { margin-bottom: 12px; }
@@ -124,3 +125,5 @@
   .tabla-modelo td { border: 0; padding: 0; display: flex; justify-content: space-between; gap: 8px; text-align: right; }
   .tabla-modelo td::before { content: attr(data-et); color: var(--muted); font-size: 13px; }
 }
+/* «Lo próximo»: el concepto y el plazo enteros, sin puntos suspensivos (en el móvil pasan a dos líneas). */
+.proximos .txt strong, .proximos .txt small { white-space: normal; }

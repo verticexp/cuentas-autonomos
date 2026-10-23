@@ -44,7 +44,7 @@ function Enlace({ r }) {
   const [copiado, setCopiado] = useState(false);
   const url = r.enlace;
   return (
-    <div className="enlace">
+    <div className="enlace-invitacion">
       {r.enviado && <p className="invit-enviada" role="status">Invitación enviada a {r.email}.</p>}
       {r.aviso && <p className="invit-aviso" role="alert"><strong>La invitación está lista, pero el email no ha salido.</strong> {r.aviso}. Cópiale el enlace y envíaselo tú.</p>}
       <p className="nota">{r.enviado ? 'También puedes copiarle el enlace' : 'Envíale este enlace para que elija su contraseña'} (vale 7 días y una sola vez):</p>

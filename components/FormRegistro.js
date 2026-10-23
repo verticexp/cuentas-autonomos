@@ -299,7 +299,8 @@ export default function FormRegistro({ inicial = {}, sesion = null, recomendacio
         <p>{error.mensaje}</p>
         {error.campo && <button type="button" className="registro-corregir" onClick={() => enfocarVisible(form.current?.querySelector(`[data-paso="${paso}"] [name="${error.campo}"]`))}>Revisar campo</button>}
       </div>}
-      <button type="submit" disabled={enviando || comprobando || (paso === PASO.negocio && !tipo)}>
+      {/* Sin elegir el tipo de negocio el botón sigue activo: al pulsarlo, siguiente() dice qué falta (auditoría D8-11). */}
+      <button type="submit" disabled={enviando || comprobando}>
         {comprobando ? (paso === PASO.cuenta ? 'Comprobando email…' : 'Comprobando…') : paso < PASO.revisar ? 'Continuar' : enviando ? 'Creando…' : sesion ? 'Crear empresa' : 'Crear cuenta'}
       </button>
       {paso === PASO.negocio && !tipo && <p className="nota registro-falta" id="registro-falta">Elige una opción para seguir.</p>}

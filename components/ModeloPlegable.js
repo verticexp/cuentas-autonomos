@@ -7,7 +7,8 @@ import { useEffect, useRef } from 'react';
 // Se abre solo al llegar con su ancla, como el #m303 de «Toca presentar».
 // `estado`: 'listo' | 'fuera' | 'hecho' para colorear la línea de estado; `dato`: importe ya en texto; `favor`, en verde (a compensar o a devolver);
 // `informativo`: los modelos que solo resumen (349, 347, 390, 180, 190, 193) dicen «No se paga» en vez de un importe que parezca un pago.
-export default function ModeloPlegable({ id, num, nombre, estado, detalle, dato, favor, informativo, children }) {
+// `parcial`: el periodo aún no ha terminado y el importe es el de hasta hoy (lo dice debajo, auditoría D4-07).
+export default function ModeloPlegable({ id, num, nombre, estado, detalle, dato, favor, informativo, parcial, children }) {
   const ref = useRef(null);
   useEffect(() => {
     const abrir = () => { if (window.location.hash === `#${id}` && ref.current) ref.current.open = true; };
@@ -26,7 +27,7 @@ export default function ModeloPlegable({ id, num, nombre, estado, detalle, dato,
         <summary>
           <span className="modelo-num">{num}</span>
           <span className="txt">{nombre}{detalle && <small className={estado ? `est-${estado}` : undefined}>{detalle}</small>}</span>
-          {informativo ? <span className="modelo-dato info">No se paga</span> : dato && <strong className={`modelo-dato${favor ? ' favor' : ''}`}>{dato}</strong>}
+          {informativo ? <span className="modelo-dato info">No se paga</span> : dato && <strong className={`modelo-dato${favor ? ' favor' : ''}`}>{dato}{parcial && <small>hasta hoy</small>}</strong>}
         </summary>
         {children}
       </details>

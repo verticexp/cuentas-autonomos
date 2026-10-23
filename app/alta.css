@@ -6,6 +6,9 @@
 .alta-barra > span { height: 4px; flex: 1; border-radius: 4px; background: var(--relleno); }
 .alta-barra > .hecho { background: var(--marca, var(--ink)); }
 .bienvenida .cuestionario { max-width: 640px; margin: 0 auto; }
+.bienvenida-cab { display: flex; align-items: center; justify-content: space-between; gap: 16px; max-width: 640px; margin: 0 auto; }
+.bienvenida-cab .logo-bienvenida { display: block; height: 30px; width: auto; color: var(--ink); }
+.bienvenida-cab button.enlace { color: var(--muted); }
 .bienvenida .alta-progreso { margin-top: 16px; }
 .bienvenida .alta-datos { border-top: 1px solid var(--line); padding-top: 16px; margin-top: 8px; }
 .bienvenida .alta-datos summary { cursor: pointer; font-size: 14px; font-weight: 600; padding: 8px 0; }

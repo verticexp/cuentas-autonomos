@@ -61,7 +61,9 @@ export default function Cuestionario({ inicial, editar, conFacturas, puedeFactur
   }, [paso, terminado]);
   const [fiscal, setFiscal] = useState(inicial.fiscal);
   const [emisor, setEmisor] = useState(inicial.emisor);
-  const [acts, setActs] = useState(inicial.actividades.length ? inicial.actividades : [{ nombre: '', ivaPct: usaIgic(inicial.fiscal) ? 7 : 21, irpfPct: inicial.fiscal.tipo === 'sociedad' ? 0 : 15 }]);
+  // La retención no viene marcada (auditoría D8-03): depende de la actividad y de a quién factura, y un 15 % puesto por
+  // defecto daba facturas erróneas a quien no es profesional. Se elige antes de seguir.
+  const [acts, setActs] = useState(inicial.actividades.length ? inicial.actividades : [{ nombre: '', ivaPct: usaIgic(inicial.fiscal) ? 7 : 21, irpfPct: inicial.fiscal.tipo === 'sociedad' ? 0 : null }]);
   const [error, setError] = useState('');
   useEffect(() => { if (error) errorRef.current?.focus(); }, [error]);
   const [guardando, setGuardando] = useState(false);
@@ -101,9 +103,9 @@ export default function Cuestionario({ inicial, editar, conFacturas, puedeFactur
     },
     {
       titulo: '¿A qué te dedicas?',
-      texto: 'Cada actividad tiene su propia numeración de facturas. Puedes añadir varias.',
-      listo: acts.every((x) => String(x.nombre).trim()) && Boolean(emisor.nombre.trim() && emisor.nif.trim()),
-      falta: acts.every((x) => String(x.nombre).trim()) ? 'Faltan el nombre y el NIF de tus datos.' : 'Escribe el nombre de tu actividad para seguir.',
+      texto: 'Con esto preparamos tus facturas y tus impuestos. Si haces cosas distintas (por ejemplo, fontanería y venta de material), añade cada una por separado: cada una lleva su propia numeración.',
+      listo: acts.every((x) => String(x.nombre).trim()) && Boolean(emisor.nombre.trim() && emisor.nif.trim()) && (sociedad || acts.every((x) => x.irpfPct !== null && x.irpfPct !== undefined)),
+      falta: !acts.every((x) => String(x.nombre).trim()) ? 'Escribe el nombre de tu actividad para seguir.' : !(emisor.nombre.trim() && emisor.nif.trim()) ? 'Faltan el nombre y el NIF de tus datos.' : 'Elige si pones retención de IRPF en tus facturas.',
       cuerpo: (
         <>
           <label className="alta-campo"><span>¿Dónde presentas tus impuestos?</span>
@@ -126,14 +128,14 @@ export default function Cuestionario({ inicial, editar, conFacturas, puedeFactur
                   : <div className="segmentado">{tipos.map(([v, n]) => <button key={v} type="button" aria-pressed={Number(x.ivaPct) === v} className={Number(x.ivaPct) === v ? 'activo' : ''} onClick={() => a(i, 'ivaPct', v)}>{n}</button>)}</div>}
                 {!sociedad && <>
                   <p className="mini-t">Retención de IRPF <small>(solo actividades profesionales —diseño, consultoría, formación, abogacía…— cuando facturas a empresas o autónomos; obras, reparaciones, comercio u hostelería van sin retención)</small></p>
-                  <div className="segmentado">{retenciones.map(([v, n]) => <button key={v} type="button" aria-pressed={Number(x.irpfPct) === v} className={Number(x.irpfPct) === v ? 'activo' : ''} onClick={() => a(i, 'irpfPct', v)}>{n}</button>)}</div>
+                  <div className="segmentado">{retenciones.map(([v, n]) => { const elegido = x.irpfPct !== null && x.irpfPct !== undefined && Number(x.irpfPct) === v; return <button key={v} type="button" aria-pressed={elegido} className={elegido ? 'activo' : ''} onClick={() => a(i, 'irpfPct', v)}>{n}</button>; })}</div>
                   <label className="alta-campo"><span>Epígrafe del IAE (opcional)</span><small>Está en tu alta de autónomo; va en los libros registro.</small><input className="campo" inputMode="numeric" placeholder="Por ejemplo: 844" value={x.iae || ''} onChange={(v) => a(i, 'iae', v.target.value)} /></label>
                 </>}
                 {fija && <p className="mini-t">Ya tiene facturas: su numeración no cambia.</p>}
               </div>
             );
           })}
-          {acts.length < 8 && <button type="button" className="boton sec ancho" onClick={() => setActs((l) => [...l, { nombre: '', ivaPct: l[0]?.ivaPct ?? 21, irpfPct: sociedad ? 0 : (l[0]?.irpfPct ?? 15) }])}>Añadir otra actividad</button>}
+          {acts.length < 8 && <button type="button" className="boton sec ancho" onClick={() => setActs((l) => [...l, { nombre: '', ivaPct: l[0]?.ivaPct ?? 21, irpfPct: sociedad ? 0 : (l[0]?.irpfPct ?? null) }])}>Añadir otra actividad</button>}
         </>
       ),
     },
@@ -252,8 +254,8 @@ export default function Cuestionario({ inicial, editar, conFacturas, puedeFactur
 
   return (
     <div className="cuestionario" aria-busy={guardando}>
-      {editar ? <p className="nota" role="status">Configuración del negocio · Paso {paso + 1} de {pasos.length}</p> : <ProgresoAlta paso={paso + 1} total={pasos.length} etiqueta="Preparar tu negocio" />}
-      {paso === 0 && !editar && <p className="hola">Tu cuenta ya está creada. Ahora preparamos tus actividades e impuestos. Podrás cambiar esta configuración en Ajustes.</p>}
+      {editar ? <p className="nota" role="status">Configuración del negocio · Paso {paso + 1} de {pasos.length}</p> : <ProgresoAlta paso={paso + 1} total={pasos.length} etiqueta={`Casi listo · pregunta ${paso + 1} de ${pasos.length}`} />}
+      {paso === 0 && !editar && <p className="hola">Tu cuenta ya está creada. Son {pasos.length} preguntas rápidas y todo se puede cambiar después en Ajustes.</p>}
       <div className="paso" key={paso}>
         <h1 className="titulo" ref={tituloRef} tabIndex={-1}>{p.titulo}</h1>
         <p className="grupo-pie arriba">{p.texto}</p>
@@ -266,11 +268,12 @@ export default function Cuestionario({ inicial, editar, conFacturas, puedeFactur
           </details>
         )}
       </div>
-      {error && <p className="error" role="alert" ref={errorRef} tabIndex={-1}>{error}</p>}
-      {!p.listo && !guardando && p.falta && <p className="nota cuestionario-falta" id="cuestionario-falta">{p.falta}</p>}
+      {/* El aviso de lo que falta se va solo en cuanto el paso está completo. */}
+      {error && !(p.listo && error === p.falta) && <p className="error" role="alert" ref={errorRef} tabIndex={-1}>{error}</p>}
+      {!p.listo && !guardando && p.falta && error !== p.falta && <p className="nota cuestionario-falta" id="cuestionario-falta">{p.falta}</p>}
       <div className="cuestionario-botones">
         {paso > 0 ? <button type="button" className="boton sec" disabled={guardando} onClick={atras}>Atrás</button> : editar ? <a href="/ajustes" className="boton sec">Cancelar</a> : <span />}
-        <button type="button" className="boton" disabled={!p.listo || guardando} aria-describedby={!p.listo && p.falta ? 'cuestionario-falta' : undefined} onClick={() => (ultimo ? terminar() : avanzar())}>{ultimo ? (guardando ? 'Guardando…' : editar ? 'Guardar' : 'Terminar') : 'Siguiente'}</button>
+        <button type="button" className="boton" disabled={guardando} aria-describedby={!p.listo && p.falta ? 'cuestionario-falta' : undefined} onClick={() => (!p.listo ? setError(p.falta || 'Completa este paso para seguir.') : ultimo ? terminar() : avanzar())}>{ultimo ? (guardando ? 'Guardando…' : editar ? 'Guardar' : 'Terminar') : 'Siguiente'}</button>
       </div>
     </div>
   );

@@ -19,6 +19,8 @@ html[data-saliendo] .form-entrar form, html[data-saliendo] form.form-entrar { op
     animation: entrar-aparece 0.6s var(--salida) 0.35s both; }
 
   .login .form-entrar { align-self: center; justify-self: center; width: calc(100% - 96px); max-width: 360px; padding: 48px 0; }
+  /* El alta tiene pasos de alturas distintas: arriba con un margen fijo, para que no salte al pulsar «Continuar» (D8-12). */
+  .login .form-entrar:has(form.registro) { align-self: start; padding-top: 56px; }
   .login .form-entrar form { max-width: none; }
   .login .form-entrar form, .login form.form-entrar { animation: entrar-form 0.5s var(--vt-curva) both; }
   .login .form-entrar .login-legal { animation: entrar-aparece 0.5s var(--salida) both; }
