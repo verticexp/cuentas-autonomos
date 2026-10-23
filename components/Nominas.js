@@ -7,20 +7,21 @@ import { volverA } from '@/lib/transicion';
 import { SS_EMPRESA, SS_TRABAJADOR, calculoNomina, nominaCompleta } from '@/lib/nominas';
 import { leerImporte } from '@/lib/calculos';
 import { Cotizacion, Modelo145 } from './DatosNomina';
-import { eur } from '@/lib/formato';
+import { eur, hoy as hoyActual } from '@/lib/formato';
 
 // Alta o edición de un empleado.
 export function FormEmpleado({ empleado, hoy }) {
   const router = useRouter();
   const nuevo = !empleado;
-  const [e, setE] = useState(empleado || { nombre: '', nif: '', puesto: '', alta: hoy, baja: '', bruto: '', irpfPct: 12, ssTrabajadorPct: SS_TRABAJADOR, ssEmpresaPct: SS_EMPRESA, email: '', horasSemana: 40, precioHoraExtra: '' });
+  const mes = (hoy || hoyActual()).slice(0, 7);
+  const [e, setE] = useState(empleado || { nombre: '', nif: '', puesto: '', alta: hoy, baja: '', bruto: '', irpfPct: 12, ssTrabajadorPct: SS_TRABAJADOR, ssEmpresaPct: SS_EMPRESA, email: '', horasSemana: 40, precioHoraExtra: '', cotizacion: { grupo: '', temporal: false, pagas: 2, prorrateadas: true, atPct: 1.5 } });
   const [abierto, setAbierto] = useState(!nuevo);
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
   const poner = (k, v) => setE({ ...e, [k]: v });
   // Nómina completa: con los datos de cotización, el cálculo de 2026 (y el IRPF del 145 si están); si no, los %.
   const bruto = leerImporte(e.bruto) || 0;
-  const completa = e.cotizacion?.grupo && bruto > 0 ? nominaCompleta({ ...e, bruto, cotizacion: { ...e.cotizacion, grupo: Number(e.cotizacion.grupo), pagas: Number(e.cotizacion.pagas ?? 2), atPct: Number(String(e.cotizacion.atPct ?? 1.5).replace(',', '.')), prorrateadas: e.cotizacion.prorrateadas !== false } }, { bruto }) : null;
+  const completa = e.cotizacion?.grupo && bruto > 0 ? nominaCompleta({ ...e, bruto, cotizacion: { ...e.cotizacion, grupo: Number(e.cotizacion.grupo), pagas: Number(e.cotizacion.pagas ?? 2), atPct: Number(String(e.cotizacion.atPct ?? 1.5).replace(',', '.')), prorrateadas: e.cotizacion.prorrateadas !== false } }, { bruto, mes }) : null;
   const c = completa && !completa.error ? calculoNomina(completa) : calculoNomina(e);
 
   async function enviar(ev) {
@@ -50,7 +51,7 @@ export function FormEmpleado({ empleado, hoy }) {
       <label>{e.cotizacion && e.cotizacion.prorrateadas === false ? 'Sueldo bruto al mes (sin las pagas extra)' : 'Sueldo bruto al mes (con pagas extra prorrateadas)'}<input className="campo" inputMode="decimal" placeholder="Ej. 1.800" value={e.bruto} onChange={(x) => poner('bruto', x.target.value)} required /></label>
       <label>Número de afiliación a la Seguridad Social (para RED)<input className="campo" inputMode="numeric" value={e.naf || ''} onChange={(x) => poner('naf', x.target.value)} placeholder="Opcional" /></label>
       <label className="check"><input type="checkbox" checked={Boolean(e.cotizacion)} onChange={(x) => poner('cotizacion', x.target.checked ? { grupo: '', temporal: false, pagas: 2, prorrateadas: true, atPct: 1.5 } : undefined)} /> Nómina completa: bases y cuotas de 2026 por su grupo de cotización</label>
-      {e.cotizacion && <Cotizacion valor={e.cotizacion} cambiar={(v) => poner('cotizacion', v)} />}
+      {e.cotizacion && <Cotizacion valor={e.cotizacion} cambiar={(v) => poner('cotizacion', v)} parcial={(Number(e.horasSemana) || 40) < 40} />}
       {e.cotizacion && <label className="check"><input type="checkbox" checked={Boolean(e.datos145)} onChange={(x) => poner('datos145', x.target.checked ? { situacionFamiliar: 3, nacimiento: '', discapacidad: 'no', contrato: 'general', descendientes: [], ascendientes: [] } : undefined)} /> IRPF automático con su modelo 145</label>}
       {e.cotizacion && e.datos145 && <Modelo145 valor={e.datos145} cambiar={(v) => poner('datos145', v)} />}
       <div className="tres-col">

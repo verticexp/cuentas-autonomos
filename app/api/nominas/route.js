@@ -50,7 +50,8 @@ export async function POST(req) {
         if (e.cotizacion) {
           // Nómina completa: bases y cuotas de 2026 y el IRPF del 145; con pagas sin prorratear, la del mes que toca.
           const pagaExtra = !e.cotizacion.prorrateadas && (MESES_PAGAS[e.cotizacion.pagas] || []).includes(Number(mes.slice(5, 7))) ? e.bruto : 0;
-          const c = nominaCompleta(e, { bruto: r2(e.bruto + pagaExtra + (x?.importe || 0)), pagaExtra, horasExtra: x?.importe || 0 });
+          // A tiempo parcial, la base mínima por las horas fichadas del mes (lib/cotizacion.js); el IRPF, con los meses de alta del año.
+          const c = nominaCompleta(e, { bruto: r2(e.bruto + pagaExtra + (x?.importe || 0)), pagaExtra, horasExtra: x?.importe || 0, mes, ...(x?.horas?.trabajadas ? { horas: r2(x.horas.trabajadas / 60) } : {}) });
           if (c.error) return error(`${e.nombre}: ${c.error}`);
           nuevas.push({ ...base, bruto: c.importes.bruto, ...c, completa: true });
         } else nuevas.push({ ...base, bruto: r2(e.bruto + (x?.importe || 0)), irpfPct: e.irpfPct, ssTrabajadorPct: e.ssTrabajadorPct, ssEmpresaPct: e.ssEmpresaPct });
@@ -85,7 +86,7 @@ export async function PATCH(req) {
       const pagaExtra = 'pagaExtra' in b ? r2(leerImporte(b.pagaExtra) || 0) : antes.detalle?.pagaExtra || 0;
       const horasExtra = 'horasExtra' in b ? r2(leerImporte(b.horasExtra) || 0) : antes.detalle?.horasExtra || 0;
       if (pagaExtra < 0 || horasExtra < 0 || pagaExtra + horasExtra > n.bruto) return error('La paga extra y las horas extra van dentro del bruto del mes');
-      const c = nominaCompleta(e, { bruto: n.bruto, pagaExtra, horasExtra, irpfPct: 'irpfPct' in b && String(b.irpfPct).trim() !== '' ? Number(String(b.irpfPct).replace(',', '.')) : undefined });
+      const c = nominaCompleta(e, { bruto: n.bruto, pagaExtra, horasExtra, irpfPct: 'irpfPct' in b && String(b.irpfPct).trim() !== '' ? Number(String(b.irpfPct).replace(',', '.')) : undefined, mes: antes.mes, ...(antes.horas?.trabajadas ? { horas: r2(antes.horas.trabajadas / 60) } : {}) });
       if (c.error) return error(c.error);
       Object.assign(n, c, { completa: true });
     } else {
