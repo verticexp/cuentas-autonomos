@@ -294,7 +294,7 @@ export default async function Resumen({ searchParams }) {
 
           <section className="grupo res-trim">
             <h2 className="grupo-t">Hacienda por trimestre</h2>
-            <p className="grupo-pie arriba">Orientativo; confírmalo con tu gestor.{foral ? ' Marca cada modelo por separado. El pago fraccionado del IRPF sigue las reglas de tu Hacienda foral.' : c130 ? ` Marca el ${igic ? '420' : '303'} y el 130 de cada trimestre por separado. Si no pagaste el 130, se suma al siguiente.` : ' Marca cada trimestre cuando lo presentes.'}</p>
+            <p className="grupo-pie arriba">Orientativo; confírmalo con tu gestor.{foral ? ' Marca cada modelo por separado. El pago fraccionado del IRPF sigue las reglas de tu Hacienda foral.' : c130 ? ` Marca el ${igic ? '420' : '303'} y el 130 de cada trimestre por separado. Un 130 presentado se descuenta en los siguientes aunque no lo hayas pagado (esa deuda va aparte).` : ' Marca cada trimestre cuando lo presentes.'}</p>
             <div className="trims">
               {r.trimestres.map((q) => {
                 // El trimestre en curso (y los que faltan) aún no se pueden presentar: «En curso», sin selector.
@@ -379,12 +379,12 @@ export default async function Resumen({ searchParams }) {
                           {fila('02', 'Gastos (incluye el 5 %)', q.gasAcum)}
                           {fila('03', 'Rendimiento neto', q.rendAcum)}
                           {fila('04', '20 % de la 03', r2(0.2 * Math.max(0, q.rendAcum)))}
-                          {fila('05', 'Pagos de trimestres anteriores', q.pagosPrev)}
+                          {fila('05', 'Casillas 07 de los 130 anteriores', q.pagosPrev)}
                           {fila('06', 'Retenciones', q.retAcum)}
                           {fila('07', 'Resultado', q.c07)}
                           {q.minoracion > 0 && fila('13', 'Minoración por el rendimiento del año anterior', q.minoracion)}
                           {q.negPrev > 0 && fila('15', 'Negativos de trimestres anteriores', q.negPrev)}
-                          {q.minoracion > 0 && fila('19', 'A ingresar', q.m130)}
+                          {(q.minoracion > 0 || q.negPrev > 0) && fila('19', q.c19 < 0 && q.t < 4 ? 'Resultado (a deducir en los siguientes)' : 'Resultado', q.c19)}
                         </dl>
                         </>}
                       </details>

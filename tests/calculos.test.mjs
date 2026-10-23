@@ -177,6 +177,25 @@ test('130, casilla 13: minoración según el rendimiento del año anterior', () 
   assert.deepEqual(resumenAnual(F, [], 2026, { 1: 190, 2: 190 }).trimestres.map((q) => q.m130), [190, 190, 0, 0]);
 });
 
+test('130, casilla 05: un trimestre presentado y sin pagar también se descuenta en el siguiente', () => {
+  // 10.000 € en el 1T y otros 10.000 € en el 2T, sin gastos ni retenciones. 1T: 03 = 9.500, 07 = 19 = 1.900.
+  const F = [{ fecha: '2026-02-01', base: 10000, ivaPct: 21, irpfPct: 0 }, { fecha: '2026-05-01', base: 10000, ivaPct: 21, irpfPct: 0 }];
+  const sinPagar = resumenAnual(F, [], 2026, { 1: 0 }).trimestres[1];
+  assert.deepEqual([sinPagar.rendAcum, sinPagar.pagosPrev, sinPagar.c07, sinPagar.m130], [19000, 1900, 1900, 1900]);
+  assert.deepEqual(resumenAnual(F, [], 2026, { 1: 1900 }).trimestres[1].m130, 1900);
+  // Sin presentar, el 1T no se descuenta: el 2T lo lleva todo.
+  assert.equal(resumenAnual(F, [], 2026, {}).trimestres[1].m130, 3800);
+  // Pagado, cuenta lo declarado entonces aunque después cambien los datos del 1T (una factura más de 1.000 €).
+  const despues = resumenAnual([...F, { fecha: '2026-03-01', base: 1000, ivaPct: 21, irpfPct: 0 }], [], 2026, { 1: 1900 }).trimestres[1];
+  assert.deepEqual([despues.pagosPrev, despues.c07], [1900, 2090]);
+});
+
+test('130, casilla 19: con la minoración y sin beneficio sale negativa, a deducir en los siguientes', () => {
+  const r = resumenAnual([{ fecha: '2026-05-01', base: 2000, ivaPct: 21, irpfPct: 0 }], [], 2026, { 1: 0 }, [], { minoracion: 100 }).trimestres;
+  assert.deepEqual([r[0].c19, r[0].m130], [-100, 0]);
+  assert.deepEqual([r[1].negPrev, r[1].c19, r[1].m130], [100, 180, 180]);
+});
+
 test('margen para apartar: rendimiento ÷ ingresos acumulados hasta el trimestre', () => {
   const F = [{ fecha: '2026-02-01', base: 10000, ivaPct: 21, irpfPct: 0, actividad: 'dj' }];
   const G = [{ fecha: '2026-02-02', base: 6000, ivaPct: 21, actividad: 'dj' }];

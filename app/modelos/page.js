@@ -206,6 +206,7 @@ export default async function Modelos({ searchParams }) {
     const importes = modelosAPresentar(tAhora, {
       m303, m130, m131,
       m111: hay111 && !marcaRet(u.pres111, anio, tAhora) ? r2(modelo111(nominas || [], anio, tAhora).retenciones + retencionesProfesionales(gastos, anio, tAhora).retenciones) : null,
+      negativa111: modelo111(nominas || [], anio, tAhora).perceptores > 0,
       m115: hay115 && !marcaRet(u.pres115, anio, tAhora) ? modelo115(gastos, anio, tAhora).retenciones : null,
       m123: hay123 && !u.pres123?.[anio]?.[tAhora] ? modelo123(capital, anio, tAhora).retenciones : null,
       m349: hay349 ? modelo349(facturas, anio, tAhora, gastos) : null,
@@ -366,18 +367,18 @@ export default async function Modelos({ searchParams }) {
         return (
         <ModeloPlegable id="m130" num="130" nombre="Pago a cuenta del IRPF" {...filaTrim(t)} dato={t && importeFila(r130.trimestres[t - 1].m130)}>
           <h2 className="grupo-t">130 · Pago a cuenta del IRPF</h2>
-          <p className="grupo-pie arriba">Acumulado desde enero: el 20 % de tu rendimiento, menos las retenciones de tus facturas y lo que ya pagaste en trimestres anteriores. Marca aquí cada trimestre cuando lo presentes: lo que no está presentado no cuenta en el siguiente.</p>
+          <p className="grupo-pie arriba">Acumulado desde enero: el 20 % de tu rendimiento, menos las retenciones de tus facturas y lo ya declarado en los 130 anteriores del año. Marca aquí cada trimestre cuando lo presentes, lo pagues o no: lo que no está presentado no se descuenta en el siguiente.</p>
           <Rend130 soloLectura={soloLectura} anio={anio - 1} valor={rendAnterior ?? null} sugerido={sugerido} minoracion={minoracion130(rendAnterior)} />
           <div className="tarjetas">
             {r130.trimestres.map((q) => (
               <div key={q.t} className="tarjeta"><h3>{q.t}T {anio}</h3>
-                <Importe texto="A ingresar" v={q.m130} />
+                {q.c19 < 0 && q.t < 4 ? <Importe texto="A deducir en los siguientes" v={-q.c19} /> : <Importe texto="A ingresar" v={q.m130} />}
                 <Plegable><Casillas sinNumeros={Boolean(foralT)} filas={[
                   ['01 · Ingresos', q.ingAcum], ['02 · Gastos (con el 5 % de difícil justificación)', q.gasAcum], ['03 · Rendimiento neto', q.rendAcum],
-                  ['04 · 20 % de la 03', r2(0.2 * Math.max(0, q.rendAcum))], ['05 · Pagado en trimestres anteriores', q.pagosPrev],
+                  ['04 · 20 % de la 03', r2(0.2 * Math.max(0, q.rendAcum))], ['05 · Casillas 07 de los 130 anteriores del año', q.pagosPrev],
                   ['06 · Retenciones de tus facturas', q.retAcum], ['07 · Resultado', q.c07],
                   q.minoracion && ['13 · Minoración por el rendimiento de ' + (anio - 1), q.minoracion], q.negPrev && ['15 · Negativos de trimestres anteriores', q.negPrev],
-                  ['19 · A ingresar', q.m130, true],
+                  ['19 · Resultado', q.c19, true],
                 ]} /></Plegable>
                 <Fichero foral={foralT} modelo="130" anio={anio} t={q.t} nif={u.emisor?.nif} aeat={AEAT.m130} />
                 <Presentado soloLectura={soloLectura} anio={anio} t={q.t} importe={q.m130} pagado={u.pagos130?.[anio]?.[q.t]} situacion={situacion(q.t)} plazo={limite(q.t)} />
@@ -469,7 +470,7 @@ export default async function Modelos({ searchParams }) {
       {hay111 && (() => {
         const t = tPlazo(20);
         return (
-        <ModeloPlegable id="m111" num={dForal ? dForal.ret.num : '111'} nombre="Retenciones de nóminas y profesionales" {...filaPlazo(t, 20, null, t && !a111(t) && 'sin nóminas ni profesionales con retención')}
+        <ModeloPlegable id="m111" num={dForal ? dForal.ret.num : '111'} nombre="Retenciones de nóminas y profesionales" {...filaPlazo(t, 20, null, t && !a111(t) && !modelo111(nominas || [], anio, t).perceptores && 'sin nóminas ni profesionales con retención')}
           dato={importeFila(t ? a111(t) : r2(T.reduce((s, x) => s + a111(x), 0)))}>
           <h2 className="grupo-t">{dForal ? dForal.ret.num : '111'} · Retenciones de trabajadores y profesionales</h2>
           <p className="grupo-pie arriba">Lo retenido en las nóminas del trimestre y en las facturas de profesionales (los gastos con retención, por ejemplo tu gestoría).</p>
@@ -483,6 +484,7 @@ export default async function Modelos({ searchParams }) {
                   ['30 · A ingresar', Math.max(0, r2(m.retenciones + p.retenciones)), true],
                 ]} /> : <p className="nota">Sin nóminas ni profesionales con retención este trimestre.</p>}
                 {r2(m.retenciones + p.retenciones) < 0 && <p className="nota">Sale negativo por un abono de un profesional con retención: el 111 no lo admite. Regularízalo con ese profesional.</p>}
+                {m.perceptores > 0 && r2(m.retenciones + p.retenciones) === 0 && <p className="nota">Sin retenciones, pero con nóminas pagadas: el 111 se presenta igual, como negativo.</p>}
                 <p className="nota">Hasta el {plazoT(t, 20)}.</p>
                 {(m.perceptores || p.perceptores) ? <PresentadoRet modelo="111" anio={anio} t={t} hecho={marcaRet(u.pres111, anio, t) ?? presentado(t)} soloLectura={soloLectura} /> : null}
               </div>
