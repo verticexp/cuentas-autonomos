@@ -3,13 +3,13 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
-import { eur } from '@/lib/formato';
+import { eur, fechaCorta } from '@/lib/formato';
 
 const euros = (c) => eur(c / 100);
 
 // Ajustes de Mi despacho, como los Ajustes de la app: invitar a clientes (un solo enlace), Fisquo en tu cuota, los datos
 // del despacho y lo que hace cada uno. Lo largo va plegado.
-export default function AjustesDespacho({ despacho, titular, licencias, tarifa, nombres, diasGratis, stripe, sesion, enlace }) {
+export default function AjustesDespacho({ despacho, titular, licencias, tarifa, oferta, nombres, diasGratis, stripe, sesion, enlace }) {
   const router = useRouter();
   const [d, setD] = useState({ nombre: despacho.nombre, nif: despacho.nif, email: despacho.email, soloAsignados: despacho.soloAsignados });
   const [editar, setEditar] = useState(false);
@@ -61,12 +61,14 @@ export default function AjustesDespacho({ despacho, titular, licencias, tarifa, 
           <span className="txt">{licenciasTotal ? `${licenciasTotal === 1 ? '1 cliente' : `${licenciasTotal} clientes`} con Fisquo incluido` : 'Ningún cliente incluido todavía'}<small>{licenciasTotal ? `${licencias.aut.gratis + licencias.pym.gratis} en sus ${diasGratis} días gratis` : 'Se activa en la ficha de cada cliente, en «Quién lo lleva».'}</small></span>
           <span className="v"><b>{euros(licencias.importe)}</b><small> al mes</small></span>
         </div>
+        {oferta?.activa && <div className="celda"><span className="txt">Precio de lanzamiento<small>{oferta.acaba ? `Acaba pronto: desde el día siguiente, tarifa normal` : 'Tu despacho está entre los primeros: lo mantienes 2 años'}</small></span><span className="v">hasta el {fechaCorta(oferta.hasta)}</span></div>}
+        {oferta?.plazas && <div className="celda"><span className="txt">Oferta de lanzamiento<small>{`Quedan ${oferta.plazas} de 30 plazas: al activar el cobro, mantienes este precio ${oferta.anios} años`}</small></span></div>}
         {despacho.cobro?.activo
           ? <button type="button" className="celda ir desp-celda-boton" onClick={() => pagar(true)}><span className="txt">Facturas y tarjeta<small>El número de licencias se ajusta solo cada día</small></span></button>
           : licencias.importe > 0 && !despacho.demo && <button type="button" className="celda ir desp-celda-boton" disabled={!stripe} onClick={() => pagar(false)}><span className="txt">Activar el cobro con tarjeta<small>{stripe ? 'Se te cobra cada mes lo que salga' : 'Aún no está disponible: te escribiremos para hacerlo a mano'}</small></span></button>}
         <details className="celda desp-plegable">
           <summary>Cómo funciona y cuánto cuesta</summary>
-          <p>Si incluyes Fisquo en lo que cobras a un cliente, tu despacho paga su licencia y el cliente no paga nada a Fisquo. Cada cliente tiene {diasGratis} días gratis la primera vez. Sin el cobro con tarjeta activo, al acabar esos días tienes 15 más para activarlo; después la licencia se retira y el cliente tiene un mes para elegir su plan. Precio al mes por cliente, sin IVA:</p>
+          <p>Si incluyes Fisquo en lo que cobras a un cliente, tu despacho paga su licencia y el cliente no paga nada a Fisquo. Cada cliente tiene {diasGratis} días gratis la primera vez. Sin el cobro con tarjeta activo, al acabar esos días tienes 15 más para activarlo; después la licencia se retira y el cliente tiene un mes para elegir su plan. Precio al mes por cliente, sin IVA{oferta?.activa || oferta?.plazas ? ' (de lanzamiento)' : ''}:</p>
           <ul>{['aut', 'pym'].map((tipo) => <li key={tipo}><b>{nombres[tipo]}</b>: {tramos(tipo)}</li>)}</ul>
         </details>
       </div>

@@ -1,6 +1,11 @@
 import Icono from '@/components/web/Icono';
 import FormContacto from '@/components/web/FormContacto';
 import { CONTACTO } from '@/components/web/datos';
+import { OFERTA, TARIFA, TARIFA_LANZAMIENTO, plazasLibres } from '@/lib/licencias';
+
+// Las plazas de la oferta de lanzamiento se recuentan cada 10 minutos.
+export const revalidate = 600;
+const euros = (cent) => `${String(cent / 100).replace('.', ',')} €`;
 
 export const metadata = { title: 'Programa para gestorías · Fisquo', description: 'Programa de gestorías partner: un panel con todos tus clientes, el trimestre revisado y cerrado, preguntas al cliente y exportación a A3, ContaPlus o ContaSol. Gratis para la gestoría y 3 meses gratis para sus clientes.' };
 
@@ -19,7 +24,8 @@ const VENTAJAS = [
   'Fisquo no sustituye a la gestoría: tú revisas y presentas, y el cliente ve todo lo que haces en sus cuentas.',
 ];
 
-export default function Gestorias() {
+export default async function Gestorias() {
+  const plazas = await plazasLibres().catch(() => null);
   return (
     <section className="web-contacto">
       <div className="web-contacto-txt">
@@ -32,6 +38,10 @@ export default function Gestorias() {
         <ul className="web-gestorias-ventajas web-entra" style={{ '--d': '390ms' }}>
           {VENTAJAS.map((v) => <li key={v}><Icono n="tic" />{v}</li>)}
         </ul>
+        {plazas !== 0 && <div className="web-gestorias-oferta web-entra" style={{ '--d': '420ms' }}>
+          <p><b>Oferta de lanzamiento{plazas ? `: quedan ${plazas} de ${OFERTA.plazas} plazas` : ` para las ${OFERTA.plazas} primeras gestorías`}</b></p>
+          <p>Si incluyes Fisquo en la cuota de tus clientes, pagas {euros(TARIFA_LANZAMIENTO.aut[0].cent)} al mes por autónomo y {euros(TARIFA_LANZAMIENTO.pym[0].cent)} por pyme (en lugar de {euros(TARIFA.aut[0].cent)} y {euros(TARIFA.pym[0].cent)}), sin IVA, durante {OFERTA.anios} años. Cada cliente tiene además sus 3 primeros meses gratis.</p>
+        </div>}
         <a className="web-contacto-mail web-entra" style={{ '--d': '440ms' }} href={`mailto:${CONTACTO}`}><Icono n="correo" />{CONTACTO}</a>
       </div>
       <div className="web-entra" style={{ '--d': '160ms' }}><FormContacto plan="Gestoría partner" gestoria /></div>
