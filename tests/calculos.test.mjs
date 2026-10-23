@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { apartar, margenIrpf, casillas303, desglose, importes, minoracion130, origenGasto, siguienteNumero, resumenAnual, leerImporte, numeroFactura, proximoPlazo, vencimiento, vencida } from '../lib/calculos.js';
+import { apartar, margenIrpf, casillas303, desglose, importes, liquidaciones303, minoracion130, origenGasto, siguienteNumero, resumenAnual, leerImporte, numeroFactura, proximoPlazo, vencimiento, vencida } from '../lib/calculos.js';
 
 const { facturas, gastos } = JSON.parse(readFileSync(new URL('../data/inicial.json', import.meta.url)));
 
@@ -147,6 +147,15 @@ test('303: lo facturado sin IVA a empresas de otros países de la UE va en la ca
   assert.deepEqual([c['59'], c.sinIva, c['07']], [500, 800, 100]);
 });
 
+test('303: los servicios a Irlanda del Norte (XI) van a la 120; sus bienes, a la 59', () => {
+  const F = [
+    { fecha: '2026-04-02', base: 500, ivaPct: 0, operacion: 'servicios-ue', cliente: { nif: 'XI123456789' } },
+    { fecha: '2026-04-03', base: 300, ivaPct: 0, operacion: 'intracomunitaria', cliente: { nif: 'XI123456789' } },
+  ];
+  const c = casillas303(F, [], 2026, 2);
+  assert.deepEqual([c['59'], c['120']], [300, 500]);
+});
+
 test('303: gastos de proveedores de la UE (10-11 y 36-37) y de fuera (12-13 y 28-29), sin cambiar el resultado', () => {
   const F = [{ fecha: '2026-07-02', base: 1000, ivaPct: 21 }];
   const G = [
@@ -194,6 +203,18 @@ test('130, casilla 19: con la minoración y sin beneficio sale negativa, a deduc
   const r = resumenAnual([{ fecha: '2026-05-01', base: 2000, ivaPct: 21, irpfPct: 0 }], [], 2026, { 1: 0 }, [], { minoracion: 100 }).trimestres;
   assert.deepEqual([r[0].c19, r[0].m130], [-100, 0]);
   assert.deepEqual([r[1].negPrev, r[1].c19, r[1].m130], [100, 180, 180]);
+});
+
+test('303: el saldo a compensar de antes de Fisquo se descuenta, y lo caducado (cuatro años) ya no', () => {
+  const F = [{ fecha: '2026-02-01', base: 5714.29, ivaPct: 21 }]; // 1.200 € de IVA en el 1T 2026
+  const sin = liquidaciones303(F, [], 2026)[0];
+  assert.deepEqual([sin.anterior, sin.ingresar], [0, 1200]);
+  const con = liquidaciones303(F, [], 2026, undefined, { saldoInicial: { importe: 3000, anio: 2025, t: 4 } });
+  assert.deepEqual([con[0].anterior, con[0].compensado, con[0].ingresar, con[0].pendiente], [3000, 1200, 0, 1800]);
+  assert.deepEqual(con[0].origen, { anio: 2025, t: 4 });
+  // Un saldo del 1T 2022 se compensa hasta el 303 del 1T 2026 (plazo 20-4-2026); en el 2T 2026 ya no.
+  const viejo = liquidaciones303([{ fecha: '2026-05-01', base: 1000, ivaPct: 21 }], [], 2026, undefined, { saldoInicial: { importe: 500, anio: 2022, t: 1 } });
+  assert.deepEqual([viejo[0].pendiente, viejo[1].caducado, viejo[1].anterior, viejo[1].ingresar], [500, 500, 0, 210]);
 });
 
 test('margen para apartar: rendimiento ÷ ingresos acumulados hasta el trimestre', () => {

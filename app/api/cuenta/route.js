@@ -182,6 +182,23 @@ export async function PATCH(req) {
     await auditar(u, `Prorrata provisional del IVA de ${anio}`, valor === null ? 'quitada' : `${valor} %`);
     return Response.json({ ok: true });
   }
+  // Saldo del IVA a compensar de antes de Fisquo (lib/calculos.js liquidaciones303): { importe, anio, t } o null.
+  if (b.saldoIva !== undefined) {
+    if (sin('contabilidad')) return sin('contabilidad');
+    if (b.saldoIva === null) {
+      await actualizarUsuario(u, { saldoIva: null });
+      await auditar(u, 'Saldo del IVA a compensar de antes de Fisquo', 'quitado');
+      return Response.json({ ok: true });
+    }
+    const { anio, t } = b.saldoIva;
+    const importe = leerImporte(String(b.saldoIva.importe ?? ''));
+    if (!Number.isInteger(anio) || anio < 2000 || anio > 2100 || ![1, 2, 3, 4].includes(t)) return error('Trimestre no válido');
+    if (!Number.isFinite(importe) || importe <= 0 || importe > 1e9) return error('Escribe el saldo a compensar (la casilla 87 de tu último 303)');
+    const saldoIva = { importe: Math.round(importe * 100) / 100, anio, t };
+    await actualizarUsuario(u, { saldoIva });
+    await auditar(u, 'Saldo del IVA a compensar de antes de Fisquo', `${saldoIva.importe} € tras el ${t}T ${anio}`);
+    return Response.json({ ok: true });
+  }
   const porAnio = ['rend130', 'cuotaIS'].find((k) => b[k]);
   if (porAnio) {
     if (sin('contabilidad')) return sin('contabilidad');

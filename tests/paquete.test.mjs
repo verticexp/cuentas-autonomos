@@ -28,6 +28,16 @@ test('paquete: solo el trimestre, con totales y modelos', () => {
   assert.deepEqual(d.modelos.map((m) => [m.id, m.resultado]), [['303', 273], ['130', 97], ['111', 200]]);
 });
 
+test('paquete: el 303 explica el recargo de equivalencia que suma la 27 (casillas 168-170 y 22-24)', () => {
+  const F = [
+    { id: 'r1', numero: 4, anio: 2026, fecha: '2026-07-11', actividad: 'a', cliente: { nombre: 'Tienda', nif: 'B3' }, concepto: 'Género', base: 1000, ivaPct: 21, recargo: true, irpfPct: 0 },
+    { id: 'r2', numero: 5, anio: 2026, fecha: '2026-07-12', actividad: 'a', cliente: { nombre: 'Tienda', nif: 'B3' }, concepto: 'Género', base: 1000, ivaPct: 4, recargo: true, irpfPct: 0 },
+  ];
+  const m303 = datosPaquete(u, { facturas: F, gastos: [], nominas: [] }, 2026, 3).modelos.find((m) => m.id === '303');
+  const fila = (n) => m303.casillas.find(([c]) => c === n)?.[2];
+  assert.deepEqual([fila('22'), fila('24'), fila('168'), fila('170'), fila('27')], [1000, 52, 1000, 5, 307]);
+});
+
 test('paquete: Excel con sus 4 hojas y texto escapado; PDF válido', async () => {
   const d = datosPaquete(u, { facturas, gastos, nominas }, 2026, 3);
   const x = leerZip(paqueteXlsx(d));

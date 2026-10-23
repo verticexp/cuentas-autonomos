@@ -156,7 +156,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
       const stock = productos.length ? emparejarLineas(t.lineas || [], productos).map((l) => ({ ...l, cantidad: String(l.cantidad).replace('.', ','), coste: String(l.coste).replace('.', ',') })) : [];
       const varios = (t.desglose || []).filter((d) => d.base).length > 1;
       setG((x) => ({ ...x, ...(stock.length ? { stock } : {}), proveedor: t.proveedor?.nombre || x.proveedor, proveedorNif: t.proveedor?.nif || x.proveedorNif, concepto: t.concepto || t.proveedor?.nombre || x.concepto,
-        base: String(t.base).replace('.', ','), ivaPct: t.ivaPct, fecha: t.fecha || x.fecha, numero: t.numero || '', ...([7, 15].includes(Number(t.irpfPct)) ? { irpfPct: Number(t.irpfPct) } : {}),
+        base: String(t.base).replace('.', ','), ivaPct: t.ivaPct, fecha: t.fecha || x.fecha, numero: t.numero || '', ...([1, 2, 7, 15].includes(Number(t.irpfPct)) ? { irpfPct: Number(t.irpfPct) } : {}),
         ...(t.vencimiento && t.vencimiento >= (t.fecha || '') ? { vence: t.vencimiento, ...(t.vencimiento >= hoy ? { pendiente: true } : {}) } : {}), efactura: t.formato, ...(!Number(t.ivaPct) && nifUE(t.proveedor?.nif) ? { origen: 'ue' } : {}),
         porTipo: varios ? aFormulario(t.desglose.filter((d) => d.base)) : undefined }));
       setLeyendo(`Factura electrónica ${t.numero || ''} leída${varios ? `, con varios tipos de ${impuesto} por separado` : ''}. Revisa los datos antes de guardar.`);
@@ -347,6 +347,8 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
           <option value={0}>Sin retención</option>
           <option value={15}>Le retengo el 15 % (profesional)</option>
           <option value={7}>Le retengo el 7 % (profesional que empieza)</option>
+          <option value={2}>Le retengo el 2 % (agricultor o ganadero)</option>
+          <option value={1}>Le retengo el 1 % (empresario en módulos)</option>
         </select>
       )}
       {Number(g.irpfPct) > 0 && <p className="nota">Le pagas la factura menos la retención, y esa retención la ingresas tú en el 111.</p>}

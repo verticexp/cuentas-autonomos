@@ -15,6 +15,7 @@ import PagosCapital from '@/components/PagosCapital';
 import { avisosFiscales } from '@/lib/revisionFiscal';
 import Prorrata from '@/components/Prorrata';
 import Rend130 from '@/components/Rend130';
+import SaldoIva from '@/components/SaldoIva';
 import { modelo111 } from '@/lib/nominas';
 import { borradorRenta, borradorSociedades, modelo115, modelo180, modelo190, modelo202, modelo347, modelo349, modelo390, retencionesProfesionales, MINIMO_PERSONAL, RET_ALQUILER } from '@/lib/modelos';
 import CuotaIS from '@/components/CuotaIS';
@@ -242,6 +243,9 @@ export default async function Modelos({ searchParams }) {
   // Prorrata: se enseña si hay operaciones exentas este año o el anterior, o si se ha guardado un porcentaje.
   const prorrata = c303 && { guardado: u.prorrata?.[anio] ?? null, provisional: prorrataProvisional(facturas, anio, 4, iva), definitiva: prorrataAnio(facturas, anio), anterior: prorrataAnio(facturas, anio - 1) };
   const verProrrata = prorrata && (prorrata.guardado !== null || prorrata.definitiva !== null || prorrata.anterior !== null);
+  // Saldo del IVA de antes de Fisquo: en el primer año con datos o en el que empieza a descontarse el ya guardado.
+  const primerAnio = [...facturas, ...gastos].reduce((min, x) => Math.min(min, Number(x.fecha.slice(0, 4)) || min), anio);
+  const verSaldoIva = c303 && !dForal && (u.saldoIva ? anio === u.saldoIva.anio + (u.saldoIva.t === 4 ? 1 : 0) : anio <= primerAnio);
 
   return (
     <main className="pagina mk-look modelos">
@@ -305,6 +309,7 @@ export default async function Modelos({ searchParams }) {
           <h2 className="grupo-t">{dForal ? dForal.iva.num : '303'} · IVA trimestral</h2>
           <p className="grupo-pie arriba">El IVA de tus facturas menos el de tus gastos. Si sale negativo, se compensa en los trimestres siguientes (durante cuatro años como máximo) o, en el 4T, puedes pedir que te lo devuelvan.</p>
           {verProrrata && <Prorrata soloLectura={soloLectura} anio={anio} {...prorrata} titulo={<Termino id="prorrata">Prorrata del IVA</Termino>} />}
+          {verSaldoIva && <SaldoIva soloLectura={soloLectura} anio={anio} valor={u.saldoIva || null} />}
           {iva.recc && (() => {
             const corte = anio < actual ? `${anio}-12-31` : h;
             const pendiente = pendienteCaja(facturas, iva.recc, corte);
@@ -738,11 +743,12 @@ export default async function Modelos({ searchParams }) {
         <ModeloPlegable id="m100" num="100" nombre={`Renta ${anio}`} favor={renta.resultado < 0}
           detalle={`Borrador · ${renta.resultado >= 0 ? 'saldría a pagar' : 'saldría a devolver'} · de abril a junio de ${anio + 1}`} dato={importeFila(Math.abs(renta.resultado))}>
           <h2 className="grupo-t">Borrador de la renta {anio}</h2>
-          <p className="grupo-pie arriba">Tu actividad (estimación directa simplificada){f.renta ? ', con los datos personales de Ajustes' : ''}. No incluye deducciones autonómicas, vivienda, planes de pensiones ni discapacidad: tómalo como una idea de cuánto te saldrá.{!f.renta && ' Añade tu situación familiar en Ajustes › Actividades e impuestos para afinarlo.'}</p>
+          <p className="grupo-pie arriba">Tu actividad (estimación directa simplificada){f.renta ? ', con los datos personales de Ajustes' : ''}. No incluye deducciones autonómicas, vivienda, planes de pensiones ni discapacidad: tómalo como una idea de cuánto te saldrá.{!f.renta && ' Añade tu situación familiar en Ajustes › Actividades e impuestos para afinarlo.'}{!f.renta?.inicio && ' Si empezaste la actividad hace poco, pon allí el año: los dos primeros años con beneficio se reducen un 20 %.'}</p>
           <div className="tarjeta">
             <Casillas sinNumeros={Boolean(foralT)} filas={[
               ['Ingresos de la actividad', renta.ingresos], ['Gastos deducibles', menos(renta.gastos)], renta.difJust > 0 && ['5 % gastos de difícil justificación', menos(renta.difJust)],
               renta.reduccion > 0 && [renta.tipoReduccion === 'dependiente' ? 'Reducción por cliente único (art. 32.2.1.º)' : 'Reducción por rentas bajas (art. 32.2.3.º)', menos(renta.reduccion)],
+              renta.reduccionInicio > 0 && ['Reducción por inicio de actividad (20 %, art. 32.3)', menos(renta.reduccionInicio)],
               ['Rendimiento neto', renta.rendimiento, true],
               renta.otrasRentas > 0 && ['Otras rentas (solo para el tipo)', renta.otrasRentas],
               [`Cuota (escala general, mínimos de ${eur(renta.minimos.total)}${renta.minimos.total > MINIMO_PERSONAL ? `: personal ${eur(renta.minimos.personal)}${renta.minimos.descendientes ? `, hijos ${eur(renta.minimos.descendientes)}` : ''}${renta.minimos.ascendientes ? `, ascendientes ${eur(renta.minimos.ascendientes)}` : ''}` : ''})`, renta.cuota],
