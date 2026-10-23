@@ -89,3 +89,12 @@ test('Hacienda: un 202 marcado como presentado ya no se cuenta', () => {
   const p = prevision({ facturas: [], gastos: [], fiscal: { tipo: 'sociedad', iva: 'general' }, cuotaIS: { 2025: 1000 }, pagos202: { 2026: { 2: 180 } }, hoy: '2026-10-08', meses: 3, actividades: [] });
   assert.deepEqual(p.movimientos.filter((m) => m.concepto.includes('202')).map((m) => m.fecha), ['2026-12-21']);
 });
+
+test('previsión (auditoría C1-17): la retención de un gasto pendiente va al 111 del trimestre en que se prevé pagarlo', () => {
+  const fiscalRet = { tipo: 'autonomo', iva: 'general', trabajadores: true };
+  // Gasto profesional de agosto con retención de 150 €, pendiente y con vencimiento el 1 de noviembre.
+  const G = [gas('g1', '2026-08-10', 1000, { irpfPct: 15, pendiente: true, vence: '2026-11-01', proveedor: 'Abogada', proveedorNif: 'B12345674' })];
+  const p = prevision({ facturas: [], gastos: G, fiscal: fiscalRet, hoy: '2026-09-15', meses: 6 });
+  const ret = p.movimientos.filter((m) => m.tipo === 'hacienda' && /^Retenciones/.test(m.concepto));
+  assert.deepEqual(ret.map((m) => [m.concepto, m.importe]), [['Retenciones (111) del 4T', -150]]);
+});

@@ -181,3 +181,8 @@ test('IVA deducible en parte: columna «% IVA deducible» (50, «0,5» o celda d
     ['2026-02-03', 'Móvil', 100, 21, '0,5'], ['2026-02-04', 'X', 100, 21, 150], ['2026-02-05', 'Y', 100, 21, '']], []);
   assert.deepEqual(p.items.map((x) => x.datos?.deduciblePct ?? x.error ?? 100), [50, 100, 50, 'El % de IVA deducible tiene que estar entre 0 y 100', 100]);
 });
+
+test('gastos (auditoría C1-23): un % deducible de Excel como fracción numérica (0,125) es el 12,5 %, no 125', () => {
+  const g = previa('gastos', [['Fecha', 'Concepto', 'Base imponible', '% IVA', '% IVA deducible'], ['2026-02-01', 'Coche', 100, 21, 0.125], ['2026-02-02', 'Furgoneta', 100, 21, '50%']], []);
+  assert.deepEqual(g.items.map((x) => [x.estado, x.datos?.deduciblePct]), [['nuevo', 12.5], ['nuevo', 50]]);
+});

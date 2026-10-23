@@ -52,7 +52,7 @@ export default async function Analisis({ searchParams }) {
   const p = /^[1-4]$/.test(sp.p || '') ? sp.p : '';
   const fiscal = fiscalDe(u);
   const capital = (await leer(u, 'capital')) || [];
-  const d = informe({ facturas, gastos, nominas: nominas || [], manuales: manuales || [], saldo, fiscal, pagos130: u.pagos130 || {}, pres303: u.pres303 || {}, pres369: u.pres369 || {}, pres123: u.pres123 || {}, capital, pagos202: u.pagos202 || {}, cuotaIS: u.cuotaIS || {}, productos: productos || [], ajustes: ajustes || [], albaranes: albaranes || [] }, anio, p, h);
+  const d = informe({ facturas, gastos, nominas: nominas || [], manuales: manuales || [], saldo, fiscal, pagos130: u.pagos130 || {}, pres303: u.pres303 || {}, pres369: u.pres369 || {}, pres123: u.pres123 || {}, pres111: u.pres111 || {}, pres115: u.pres115 || {}, pagadosHacienda: u.pagadosHacienda || {}, capital, pagos202: u.pagos202 || {}, cuotaIS: u.cuotaIS || {}, productos: productos || [], ajustes: ajustes || [], albaranes: albaranes || [] }, anio, p, h);
   // El balance, al cierre del periodo (o a hoy si aún no ha acabado).
   const bal = balanceContable(d.asientos, d.per.hasta > h ? h : d.per.hasta, { sociedad: fiscal.tipo === 'sociedad' });
   const a = analisis({ pyg: d.actual, anterior: d.anterior, bal, per: d.per, hoy: h, facturas, gastos });

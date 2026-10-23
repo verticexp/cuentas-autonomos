@@ -9,7 +9,7 @@ import { actividadesDe, fiscalDe, usaIgic } from '@/lib/empresa';
 export const dynamic = 'force-dynamic';
 
 const datosDe = (u, b) => {
-  const d = limpiar(b, actividadesDe(u), fiscalDe(u).tipo === 'sociedad', { igic: usaIgic(fiscalDe(u)) });
+  const d = limpiar(b, actividadesDe(u), fiscalDe(u).tipo === 'sociedad', { igic: usaIgic(fiscalDe(u)), presupuesto: true });
   if (d.error) return d;
   delete d.cobrada;
   return { ...d, senalPct: [0, 20, 30, 50].includes(Number(b.senalPct)) ? Number(b.senalPct) : 0, validez: Math.min(90, Math.max(1, Number(b.validez) || 15)) };

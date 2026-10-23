@@ -1,6 +1,6 @@
 # Imita la API de Stripe para las pruebas de punta a punta (nunca en producción): toda sesión creada sale pagada y toda
 # cuenta conectada (Accounts v2) sale lista para cobrar.
-import json, urllib.parse
+import json, time, urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 S = {}
 C = {}
@@ -23,9 +23,15 @@ class H(BaseHTTPRequestHandler):
             d = json.loads(self.cuerpo() or '{}')
             if d.get('account') not in C: return self.responder({'error': {'message': 'No such account'}}, 404)
             return self.responder({'object': 'v2.core.account_link', 'account': d['account'], 'url': f"http://127.0.0.1:8077/alta/{d['account']}", 'use_case': d.get('use_case')})
+        if ruta.startswith('/v1/checkout/sessions/') and ruta.endswith('/expire'):
+            i = ruta.split('/')[-2]
+            if i not in S or S[i].get('cuenta') != self.headers.get('Stripe-Account'): return self.responder({'error': {'message': 'No such session'}}, 404)
+            if S[i]['status'] != 'open': return self.responder({'error': {'message': 'Only open sessions can be expired'}}, 400)
+            S[i]['status'] = 'expired'
+            return self.responder(S[i])
         f = dict(urllib.parse.parse_qsl(self.cuerpo()))
         i = f'cs_test_{len(S) + 1}'
-        S[i] = {'id': i, 'object': 'checkout.session', 'payment_status': 'paid', 'currency': 'eur', 'amount_total': int(f['line_items[0][price_data][unit_amount]']),
+        S[i] = {'id': i, 'object': 'checkout.session', 'status': 'complete', 'payment_status': 'paid', 'expires_at': int(time.time()) + 86400, 'currency': 'eur', 'amount_total': int(f['line_items[0][price_data][unit_amount]']),
                 'metadata': {k[9:-1]: v for k, v in f.items() if k.startswith('metadata[')}, 'url': f'http://127.0.0.1:8077/pagina/{i}', 'form': f,
                 'cuenta': self.headers.get('Stripe-Account')}
         self.responder(S[i])
