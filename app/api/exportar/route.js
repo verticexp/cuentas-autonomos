@@ -10,9 +10,10 @@ import { gastosQueVe } from '@/lib/nominas';
 export const dynamic = 'force-dynamic';
 
 const num = (n) => n.toFixed(2).replace('.', ',');
-// Un texto que empieza por = + - @ Excel lo ejecuta como fórmula: se le antepone un apóstrofo (los importes no pasan por aquí).
-const texto = (v) => (/^[=+\-@\t\r]/.test(String(v)) ? `'${v}` : String(v));
-const celda = (v) => { const s = typeof v === 'string' && !/^-?\d+(,\d+)?$/.test(v) ? texto(v) : String(v); return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+// Un texto que empieza por = + - @ Excel lo ejecuta como fórmula: se le antepone un apóstrofo. Los importes («-12,50»,
+// también los negativos de las rectificativas) no pasan por aquí: tienen que seguir siendo números en Excel.
+const texto = (v) => (/^[\s\x00-\x1f]*[=+\-@]|^[\t\r\n]/.test(String(v)) ? `'${v}` : String(v));
+const celda = (v) => { const s = typeof v === 'string' && !/^-?\d+(,\d+)?$/.test(v) ? texto(v) : String(v); return /[;"\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
 const csv = (filas) => '\uFEFF' + filas.map((f) => f.map(celda).join(';')).join('\r\n');
 
 // CSV para Excel (separador «;», coma decimal). ?tipo=facturas|gastos&anio=2026&t=3 (sin t: todo el año)

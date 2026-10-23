@@ -1,5 +1,5 @@
 import { mensajePlan } from '@/lib/app';
-import { leer } from '@/lib/redis';
+import { leer, leerUno } from '@/lib/redis';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { sugerencias } from '@/lib/banco';
 import { candidatosConciliacion, contabilizar, deshacer, emparejar, ignorar } from '@/lib/bancoServidor';
@@ -20,7 +20,7 @@ export async function POST(req) {
     if (b.ids !== undefined && (!Array.isArray(b.ids) || b.ids.length > 200 || b.ids.some((id) => typeof id !== 'string' || !id.trim()))) return error('Elige como máximo 200 ids de movimiento válidos');
     const movs = (await leer(u, 'banco')) || [];
     const { facturas, gastos } = await candidatosConciliacion(u, movs);
-    const s = sugerencias(movs, facturas, gastos);
+    const s = sugerencias(movs, facturas, gastos, u);
     const ids = b.ids === undefined ? movs.filter((m) => !m.estado || m.estado === 'pendiente').slice(0, 150).map((m) => m.id) : [...new Set(b.ids)];
     const rechazados = [];
     let hechos = 0;
@@ -38,6 +38,9 @@ export async function POST(req) {
   }
   const id = String(b.id || '');
   if (!id) return error('Falta el movimiento');
+  const contable = b.accion === 'contabilizar' && ['prestamo', 'socio', 'ingreso'].includes(b.clase)
+    || b.accion === 'deshacer' && (await leerUno(u, 'banco', id))?.enlace?.tipo === 'asiento';
+  if (contable && !puede(u, 'contabilidad')) return error('Pide el permiso de contabilidad al administrador', 403);
   const r = b.accion === 'emparejar' ? await emparejar(u, id, b.tipo, String(b.destino || ''))
     : b.accion === 'deshacer' ? await deshacer(u, id)
       : b.accion === 'ignorar' ? await ignorar(u, id)

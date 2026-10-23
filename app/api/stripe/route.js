@@ -16,6 +16,8 @@ export async function POST(req) {
   if (!firmaStripe(cuerpo, req.headers.get('stripe-signature'))) return Response.json({ error: 'Firma no válida' }, { status: 400 });
   const ev = JSON.parse(cuerpo);
   const o = ev.data?.object;
+  // Billing pertenece a Fisquo; una cuenta conectada no puede cambiar los planes.
+  if (ev.account && (ev.type?.startsWith('customer.subscription.') || ev.type?.startsWith('invoice.'))) return Response.json({ ok: true });
   if (SUSCRIPCION.includes(ev.type)) await aplicarSuscripcion(o);
   else if (['checkout.session.completed', 'checkout.session.async_payment_succeeded'].includes(ev.type)) {
     if (o?.mode === 'subscription' && !ev.account) {

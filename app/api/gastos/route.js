@@ -5,6 +5,7 @@ import { emparejar } from '@/lib/bancoServidor';
 import { auditar } from '@/lib/auditoria';
 import { borrarGasto, crearGasto, editarGasto, pagarGasto } from '@/lib/gastosServidor';
 import { gastoEditado, nuevoGasto } from '@/lib/gastoCuerpo';
+import { venceValido } from '@/lib/pagos';
 import { conVencimiento } from '@/lib/pagosServidor';
 import { hoy } from '@/lib/formato';
 import { secundarios } from '@/lib/trabajos';
@@ -16,6 +17,7 @@ export async function POST(req) {
   const { u, res } = await usuarioApi({ permiso: 'gastar' });
   if (res) return res;
   const b = await cuerpo(req);
+  if (b.vence && !venceValido(b.vence, b.fecha)) return error('Escribe un vencimiento real, entre la fecha del gasto y dos años después');
   if (b.banco) {
     const no = sinFuncion(u.plan, 'revision');
     if (no) return error(mensajePlan(no, req.headers.get('user-agent')), 403);
@@ -37,6 +39,7 @@ export async function PATCH(req) {
   const { u, res } = await usuarioApi({ permiso: 'gastar' });
   if (res) return res;
   const b = await cuerpo(req);
+  if (b.vence && !venceValido(b.vence, b.fecha)) return error('Escribe un vencimiento real, entre la fecha del gasto y dos años después');
   if (!b.id) return error('Ese gasto ya no existe', 404);
   // Solo {id, pagado: true}: marcar como pagado un gasto sin pagar (deslizar en la lista), sin tocar nada más.
   if (Object.keys(b).length === 2 && b.pagado === true) {
