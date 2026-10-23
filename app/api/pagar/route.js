@@ -1,8 +1,7 @@
 import { pasado, ipDe, MUCHOS } from '@/lib/limite';
 import { NextResponse } from 'next/server';
-import { numeroFactura, saldoDe } from '@/lib/calculos';
 import { facturaDePago } from '@/lib/cobros';
-import { cobroFacturasListo, crearPago } from '@/lib/stripe';
+import { cobroFacturasListo, prepararPago } from '@/lib/stripe';
 import { actualizarEstado } from '@/lib/stripeConnect';
 
 export const dynamic = 'force-dynamic';
@@ -24,17 +23,7 @@ export async function POST(req) {
   if (!cobroFacturasListo(d.empresa)) return atras('El pago con tarjeta no está disponible: paga por transferencia.');
   const est = await actualizarEstado({ empresa: d.e.empresa, stripeConnect: d.empresa.stripeConnect });
   if (est.estado !== 'activa') return atras('El pago con tarjeta no está disponible ahora: paga por transferencia.');
-  // Lo que queda por pagar (si ya hubo un pago parcial, solo el resto).
-  const total = saldoDe(d.f);
-  if (total <= 0) return atras('Esta factura no tiene nada que pagar.');
-  const s = await crearPago({
-    importe: total,
-    concepto: `Factura ${numeroFactura(d.f)} · ${d.empresa.emisor?.nombre || d.empresa.nombre || ''}`.trim(),
-    email: d.f.cliente.email,
-    volver,
-    datos: { token, factura: d.f.id, empresa: d.e.empresa, importe: String(Math.round(total * 100)) },
-    cuenta: d.empresa.stripeConnect.cuenta,
-  });
-  if (s.error) { console.error('Stripe:', s.error); return atras('No se ha podido abrir el pago. Inténtalo de nuevo o paga por transferencia.'); }
+  const s = await prepararPago(d, { token, volver });
+  if (s.error) { console.error('Stripe:', s.error); return atras(s.publico ? s.error : 'No se ha podido abrir el pago. Inténtalo de nuevo o paga por transferencia.'); }
   return NextResponse.redirect(s.url, 303);
 }
