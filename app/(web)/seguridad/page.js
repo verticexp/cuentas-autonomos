@@ -12,9 +12,17 @@ const MEDIDAS = [
   { i: 'candado', t: 'Face ID, huella o llave de acceso', d: 'Además de tu contraseña, puedes bloquear Fisquo en el móvil y abrirlo con tu cara, tu huella o una llave de acceso.' },
   { i: 'escudo', t: 'Copia de seguridad cada noche', d: 'Cada noche se hace una copia cifrada de todos los datos, que se guarda 90 días.' },
   { i: 'llave', t: 'Todo viaja cifrado', d: 'Lo que envías y recibes va siempre cifrado. La app funciona en servidores de Fráncfort (Alemania).' },
-  { i: 'documento', t: 'Tus datos no se venden', d: 'Ni publicidad ni perfiles, y no se usan para entrenar inteligencia artificial. La IA solo lee lo que tú le das: los tickets que subes y lo que le preguntas.' },
+  { i: 'documento', t: 'Tus datos no se venden', d: 'Ni publicidad ni perfiles comerciales. Tus datos solo sirven para llevar tus cuentas.' },
   { i: 'correo', t: 'Invitaciones que caducan', d: 'Las invitaciones a tu equipo valen 7 días y una sola vez.' },
 ];
+// La IA, con lo que dicen la política de privacidad, lib/permisoIA.js y la bandeja de gastos (lo leído espera en
+// «Por revisar» salvo la regla de proveedores de confianza que activa el propio usuario).
+const IA = [
+  { i: 'asistente', t: 'Solo lee lo que le das', d: 'El ticket o la factura que subes y lo que preguntas al asistente. Nada más, y solo cuando tú lo pides.' },
+  { i: 'candado', t: 'No aprende con tus datos', d: 'El proveedor de IA es Anthropic, y tus datos no se usan para entrenar ningún modelo.' },
+  { i: 'tic', t: 'Tú das el visto bueno', d: 'Lo que lee te lo enseña para revisarlo antes de guardarlo, salvo los proveedores que marques de confianza. Y si prefieres, lo rellenas todo a mano.' },
+];
+
 const TECNICO = [
   ['¿Cómo se protege la conexión?', 'Fisquo solo funciona por HTTPS, con HSTS: tu navegador nunca se conecta sin cifrar.'],
   ['¿Y si alguien intenta hacer algo en mi nombre desde otra web?', 'Todas las acciones que cambian datos se comprueban para que solo puedan venir de la propia app (protección contra CSRF).'],
@@ -39,6 +47,23 @@ export default function Seguridad() {
             </div>
           ))}
         </div>
+      </section>
+
+      <section className="web-sec">
+        <Encabezado kicker="Inteligencia artificial" titulo="La IA, con tus reglas" sub="Fisquo usa IA para leer tus tickets y responder a tus preguntas. Así la usa." />
+        <div className="web-extras tres">
+          {IA.map((m, k) => (
+            <div key={m.t} data-foco data-r style={{ '--d': `${k * 70}ms` }}>
+              <span className="web-fcard-ico"><Icono n={m.i} /></span>
+              <b>{m.t}</b><p>{m.d}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="web-sec">
+        <Encabezado kicker="Quién hace qué" titulo="Fisquo calcula. Tú o tu gestoría presentáis." sub="Fisquo calcula tus modelos con tus facturas y gastos; tú o tu gestoría los revisáis y los presentáis en Hacienda. Tu gestoría entra con su propio acceso y ve tus datos sin poder tocarlos." />
+        <p className="web-centro"><Link href="/gestorias" className="web-enlace">Programa para gestorías<Flecha /></Link></p>
       </section>
 
       <section className="web-sec">
