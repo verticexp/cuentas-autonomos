@@ -555,3 +555,11 @@ test('licencias: sin plan (cuentas de antes) no se incluye; quitarla no acorta l
   const pagaba = L.planConLicencia({ tipo: 'aut', nombre: 'Pro', pagado: true, hasta: '2026-09-01' }, 'aut', d, HOY);
   assert.equal(pagaba.porDespacho.hastaPrueba, undefined);
 });
+
+test('despachos: el despacho de demostración no admite clientes de verdad', async () => {
+  const d = await despacho();
+  await empresa('e1');
+  error(await D.unirCliente('e1', { ...d, demo: true }), /demostración/, 409);
+  assert.equal((await redis.hget('empresas', 'e1')).despachoCliente, undefined);
+  assert.deepEqual(await D.clientesDe(d.id), []);
+});
