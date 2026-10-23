@@ -407,6 +407,9 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
         {!orig && Number(f.irpfPct) > 0 && clientePersona && f.cliente.nombre.trim() && <p className="nota">Si es un particular (no autónomo ni empresa), la factura va sin retención. <button type="button" className="enlace" onClick={() => poner('irpfPct', 0)}>Quitar la retención</button></p>}
         {clienteExtranjero && Number(f.irpfPct) === 0 && <p className="nota">Sin retención: el cliente es de fuera de España.</p>}
       </div>
+      {/* Sin NIF del cliente solo cabe la factura simplificada (art. 4 del Reglamento de facturación): hasta 400 €, o 3.000 €
+          en comercio y hostelería; por encima de 3.000 € el servidor ya lo pide (auditoría F1-10). */}
+      {!orig && !nifCli && !f.oss?.pais && f.cliente.nombre.trim() && t.total + t.irpf > 400 && <p className="nota">Sin el NIF del cliente, esta factura solo vale como simplificada: hasta 400 € (3.000 € en comercio y hostelería). Pídele su NIF o DNI y añádelo.</p>}
 
       {!igic && (recargo || f.recargo) && <div className="check ff-det termino-check"><input id={idCampo('recargo')} aria-labelledby={idCampo('recargo-etiqueta')} type="checkbox" checked={Boolean(f.recargo)} onChange={(e) => poner('recargo', e.target.checked)} /><span id={idCampo('recargo-etiqueta')}><label htmlFor={idCampo('recargo')}>Cliente en </label><Termino id="recargo">recargo de equivalencia</Termino><label htmlFor={idCampo('recargo')}> (comercio minorista: 5,2 % con el 21 %, 1,4 % con el 10 %, 0,5 % con el 4 %)</label></span></div>}
 
