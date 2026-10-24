@@ -1,37 +1,64 @@
-/* Chat entre el despacho y su cliente (components/Chat.js): burbujas como en cualquier app de mensajes, las mías a la
-   derecha con el color de la app, y el cuadro de escribir pegado abajo. */
+/* Chat entre el despacho y su cliente (components/Chat.js), como WhatsApp: las burbujas del otro, blancas a la izquierda;
+   las mías, del color de la app suavizado, a la derecha; la hora dentro de la burbuja y el cuadro de escribir abajo.
+   En el móvil, la conversación del despacho ocupa toda la pantalla (.desp-chat-pagina, al final). */
 .chat { display: flex; flex-direction: column; gap: 10px; }
 .chat .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.chat-mensajes { display: flex; flex-direction: column; gap: 6px; padding: 14px 12px; border-radius: 16px; background: var(--surface); min-height: 240px; max-height: min(62vh, 640px); overflow-y: auto; overscroll-behavior: contain; }
+.chat-mensajes { display: flex; flex-direction: column; gap: 3px; padding: 12px 10px; border-radius: 16px; background: var(--paper); min-height: 240px; max-height: min(62vh, 640px); overflow-y: auto; overscroll-behavior: contain; }
 .chat-vacio { margin: auto; padding: 30px 12px; color: var(--muted); text-align: center; max-width: 32ch; line-height: 1.4; }
 .chat-grupo { display: flex; flex-direction: column; }
-.chat-dia, .chat-nuevos { display: flex; align-items: center; gap: 10px; margin: 10px 0 6px; color: var(--muted); font-size: 12px; font-weight: 600; }
-.chat-dia::before, .chat-dia::after, .chat-nuevos::before, .chat-nuevos::after { content: ''; flex: 1; height: 0.5px; background: var(--line); }
-.chat-nuevos { color: var(--out); }
-.chat-nuevos::before, .chat-nuevos::after { background: color-mix(in srgb, var(--out) 45%, transparent); }
-.chat-burbuja { align-self: flex-start; max-width: min(78%, 560px); padding: 8px 12px 6px; border-radius: 18px 18px 18px 6px; background: var(--relleno); color: var(--ink); animation: chat-entra 0.25s ease-out; }
-.chat-burbuja.mia { align-self: flex-end; border-radius: 18px 18px 6px 18px; background: var(--marca); color: var(--sobre); }
-.chat-burbuja.resuelta { opacity: 0.85; }
-.chat-burbuja p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.35; }
-.chat-autor { display: block; margin-bottom: 2px; font-size: 13px; font-weight: 600; color: var(--muted); }
-.chat-sobre { display: flex; align-items: center; gap: 6px; margin: 0 0 6px; padding: 6px 8px; border-radius: 10px; background: color-mix(in srgb, currentColor 9%, transparent); font-size: 13px; font-weight: 600; }
+.chat-dia, .chat-nuevos { align-self: center; margin: 10px 0 6px; padding: 4px 10px; border-radius: 8px; background: var(--surface); color: var(--muted); font-size: 12px; font-weight: 600; box-shadow: 0 1px 1px rgba(0, 0, 0, 0.06); }
+.chat-nuevos { background: color-mix(in srgb, var(--out) 12%, var(--surface)); color: var(--out); }
+.chat-burbuja { position: relative; align-self: flex-start; max-width: min(80%, 560px); padding: 6px 9px 5px 10px; border-radius: 4px 12px 12px 12px; background: var(--surface); color: var(--ink); box-shadow: 0 1px 1px rgba(0, 0, 0, 0.08); }
+.chat-burbuja.mia { align-self: flex-end; border-radius: 12px 4px 12px 12px; background: color-mix(in srgb, var(--in-boton) 16%, var(--surface)); }
+.chat-burbuja.resuelta { opacity: 0.8; }
+.chat-burbuja p { display: inline; margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.35; }
+.chat-autor { display: block; margin-bottom: 1px; font-size: 13px; font-weight: 700; color: var(--marca); }
+.chat-sobre { display: flex; align-items: center; gap: 6px; margin: 2px 0 5px; padding: 6px 8px; border-left: 3px solid var(--marca); border-radius: 6px; background: color-mix(in srgb, var(--ink) 6%, transparent); font-size: 13px; font-weight: 600; }
 .chat-sobre svg { flex: none; width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
-.chat-sobre.respuesta { padding: 0; background: none; font-weight: 400; opacity: 0.75; }
-.chat-pie { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 2px 12px; margin-top: 3px; font-size: 12px; }
-.chat-pie time, .chat-pie > span { opacity: 0.8; }
-.chat-pie button { min-height: 28px; margin: 0; padding: 0 2px; border: 0; background: none; box-shadow: none; color: inherit; font: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; }
+.chat-sobre.respuesta { font-weight: 400; color: var(--muted); }
+/* La hora, abajo a la derecha dentro de la burbuja (con hueco al final del texto, como WhatsApp); los botones, debajo. */
+.chat-pie { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 4px 8px; float: right; margin: 4px 0 -2px 10px; font-size: 11px; color: var(--muted); }
 .chat-pie time { font-variant-numeric: tabular-nums; }
-@keyframes chat-entra { from { opacity: 0; transform: translateY(6px); } }
-@media (prefers-reduced-motion: reduce) { .chat-burbuja { animation: none; } }
+.chat-pie button { min-height: 28px; margin: 0; padding: 0 10px; border: 0; border-radius: 14px; background: color-mix(in srgb, var(--ink) 7%, transparent); box-shadow: none; color: var(--ink); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+.chat-burbuja::after { content: ''; display: block; clear: both; }
+.chat-grupo.nueva .chat-burbuja { animation: chat-entra 0.2s ease-out; }
+@keyframes chat-entra { from { opacity: 0; transform: translateY(4px); } }
+@media (prefers-reduced-motion: reduce) { .chat-grupo.nueva .chat-burbuja { animation: none; } }
 
-.chat-escribir { position: relative; display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 16px; background: var(--surface); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08); }
-.chat-contexto { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0; padding: 6px 10px; border-radius: 10px; background: var(--relleno); font-size: 13px; }
-.chat-contexto button { flex: none; width: 26px; height: 26px; margin: 0; padding: 0; border: 0; border-radius: 50%; background: var(--surface); box-shadow: none; color: var(--muted); font-size: 17px; line-height: 1; cursor: pointer; }
-.chat-adjuntar select { width: 100%; height: 34px; margin: 0; padding: 0 10px; border: 0; border-radius: 10px; background: var(--relleno); color: var(--muted); font: inherit; font-size: 14px; cursor: pointer; }
-.chat-linea { display: flex; align-items: flex-end; gap: 8px; }
-.chat-linea textarea { flex: 1; min-height: 42px; max-height: 160px; margin: 0; padding: 10px 14px; border: 0; border-radius: 21px; background: var(--relleno); color: var(--ink); font: inherit; font-size: 16px; line-height: 1.35; resize: none; }
+.chat-escribir { display: flex; flex-direction: column; gap: 6px; }
+.chat-contexto { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0; padding: 6px 10px; border-left: 3px solid var(--marca); border-radius: 8px; background: var(--surface); font-size: 13px; }
+.chat-contexto button { flex: none; width: 28px; height: 28px; margin: 0; padding: 0; border: 0; border-radius: 50%; background: var(--relleno); box-shadow: none; color: var(--muted); font-size: 17px; line-height: 1; cursor: pointer; }
+.chat-linea { display: flex; align-items: flex-end; gap: 6px; }
+/* El clip: el desplegable de documentos, invisible encima del icono (se abre el nativo del sistema). */
+.chat-adjuntar { position: relative; flex: none; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; color: var(--muted); cursor: pointer; }
+.chat-adjuntar svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.chat-adjuntar select { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; font-size: 16px; }
+.chat-adjuntar:focus-within { outline: 2px solid var(--marca); }
+.chat-linea textarea { flex: 1; min-height: 44px; max-height: 140px; margin: 0; padding: 11px 16px; border: 0; border-radius: 22px; background: var(--surface); color: var(--ink); font: inherit; font-size: 16px; line-height: 1.35; resize: none; box-shadow: 0 1px 1px rgba(0, 0, 0, 0.08); }
 .chat-linea textarea:focus { outline: 2px solid var(--marca); outline-offset: 0; }
-.chat-enviar { flex: none; display: grid; place-items: center; width: 42px; height: 42px; margin: 0; padding: 0; border: 0; border-radius: 50%; background: var(--marca); color: var(--sobre); box-shadow: none; cursor: pointer; }
+.chat-enviar { flex: none; display: grid; place-items: center; width: 44px; height: 44px; margin: 0; padding: 0; border: 0; border-radius: 50%; background: var(--marca); color: var(--sobre); box-shadow: none; cursor: pointer; }
 .chat-enviar:disabled { opacity: 0.4; cursor: default; }
 .chat-enviar svg { width: 20px; height: 20px; fill: currentColor; }
 .chat-mensajes:focus-visible { outline: 2px solid var(--marca); outline-offset: 2px; }
+
+/* Cabecera de la conversación del despacho: volver, quién es y su ficha. */
+.chat-cabecera { display: flex; align-items: center; gap: 10px; margin: 0 0 12px; }
+.chat-cabecera .volver { margin: 0; }
+.chat-quien { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; color: inherit; text-decoration: none; }
+.chat-quien > span { min-width: 0; display: flex; flex-direction: column; }
+.chat-quien small { color: var(--muted); font-size: 13px; }
+.chat-nombre { margin: 0; font-size: 22px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Móvil: la conversación del despacho a pantalla completa. Cabecera fija arriba, mensajes en medio (lo único que se
+   desplaza) y el cuadro de escribir abajo, por encima del teclado; la barra de pestañas se esconde (.tabbar-chat). */
+@media (max-width: 1023.98px) {
+  .tabbar-chat { display: none !important; }
+  .desp-chat-pagina { position: fixed; inset: 0; z-index: 20; display: flex; flex-direction: column; max-width: none; height: 100dvh; margin: 0; padding: 0; background: var(--paper); }
+  .desp-chat-pagina .chat-cabecera { flex: none; margin: 0; padding: calc(env(safe-area-inset-top) + 6px) 12px 8px 4px; background: var(--surface); border-bottom: 0.5px solid var(--line); }
+  .desp-chat-pagina .chat-cabecera .volver { min-height: 44px; margin: 0; padding: 0 6px 0 12px; font-size: 30px; font-weight: 400; color: var(--marca); }
+  .desp-chat-pagina .chat-cabecera .volver-texto { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .desp-chat-pagina .chat-nombre { font-size: 17px; }
+  .desp-chat-pagina .chat { flex: 1; min-height: 0; margin: 0; gap: 0; }
+  .desp-chat-pagina .chat-mensajes { flex: 1; min-height: 0; max-height: none; border-radius: 0; padding: 10px 8px; }
+  .desp-chat-pagina .chat-escribir { flex: none; padding: 6px 6px calc(env(safe-area-inset-bottom) + 6px); background: var(--paper); }
+}
