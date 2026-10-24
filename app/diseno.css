@@ -348,6 +348,10 @@ a.fila:active { transform: scale(0.985); }
 /* Al entrar en una conversación (sin barra) o salir de ella, la barra va con su pantalla: se aparta con ella y la otra la tapa
    (lib/transicion.js, SIN_BARRA). Con su propia capa quedaba encima de la conversación y se desvanecía: un destello abajo. */
 html[data-vt-barra] .tabs, html[data-vt-barra] .tabbar .mas { view-transition-name: none; }
+/* Pantalla que llega tarde, cuando ya se soltó la transición (lib/transicion.js): fundido corto en vez de aparecer de golpe. */
+html[data-llega-tarde] .pagina { animation: llega-tarde 0.24s var(--salida) both; }
+@keyframes llega-tarde { from { opacity: 0; transform: translateY(6px); } }
+@media (prefers-reduced-motion: reduce) { html[data-llega-tarde] .pagina { animation-name: llega-tarde-suave; } @keyframes llega-tarde-suave { from { opacity: 0; } } }
 .segmentado.vt a.activo { view-transition-name: segmento; }
 ::view-transition-group(segmento) { animation-duration: 0.32s; animation-timing-function: var(--vt-curva); }
 /* Textos que viajan de la fila a la cabecera: la caja mide lo que el texto, así no se deforma al crecer */
