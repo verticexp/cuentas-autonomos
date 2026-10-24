@@ -12,7 +12,7 @@ import { bloqueoDe, desbloqueada, usuarioActual } from '@/lib/auth';
 import { SOLO_LECTURA_APP, soloLectura } from '@/lib/planes';
 import { esApp } from '@/lib/app';
 import { COLOR_BASE } from '@/lib/marca';
-import { fuente } from '@/components/fuente';
+import { fuente, titulos } from '@/components/fuente';
 import { permisosDe, puede } from '@/lib/permisos';
 import { conEquipo } from '@/lib/empresa';
 import { leer } from '@/lib/redis';
@@ -102,7 +102,7 @@ export default async function RootLayout({ children }) {
         ))}
         <script nonce={nonce} suppressHydrationWarning dangerouslySetInnerHTML={{ __html: YA_VISTO }} />
       </head>
-      <body className={fuente.variable} style={{ '--acento': COLOR_BASE }} data-marca="base">
+      <body className={`${fuente.variable} ${titulos.variable}`} style={{ '--acento': COLOR_BASE }} data-marca="base">
         <Arranque />
         <RegistrarSw />
         <GestoAtras />
