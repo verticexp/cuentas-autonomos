@@ -181,10 +181,12 @@ fieldset.solo-ver { border: 0; padding: 0; margin: 0; min-width: 0; }
 fieldset.solo-ver:disabled .boton, fieldset.solo-ver:disabled button[type="submit"] { display: none; }
 fieldset.solo-ver:disabled .campo { opacity: 1; color: var(--ink); -webkit-text-fill-color: var(--ink); }
 
-/* Barra de pestañas */
+/* Barra de pestañas. En el iPhone queda justo encima de la raya de inicio, como las de Apple: la zona segura (34 px) ya deja
+   aire de sobra, así que se mete 12 px en ella; sin zona segura (Android, Safari con su barra), 12 px del borde. */
+:root { --barra-abajo: max(12px, calc(env(safe-area-inset-bottom, 0px) - 12px)); }
 .tabbar {
   position: fixed; z-index: 8; left: 50%; transform: translateX(-50%);
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+  bottom: var(--barra-abajo);
   width: min(calc(100% - 24px), 480px);
   display: flex; align-items: center; gap: 6px;
 }
