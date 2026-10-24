@@ -1,6 +1,5 @@
-import { SelectorCuenta } from '@/components/SelectorCuenta';
 import { requerirDespacho } from '@/lib/despachoPagina';
-import { clientesVisibles, equipoDe, usaEmpresaPropia } from '@/lib/despachos';
+import { clientesVisibles, equipoDe } from '@/lib/despachos';
 import { filasClientes } from '@/lib/panelDespacho';
 import { periodoDe } from '@/lib/despachoApi';
 import { hoy } from '@/lib/formato';
@@ -31,7 +30,6 @@ export default async function Despacho({ searchParams }) {
   const cuenta = (e) => filas.filter((f) => enPestana(f, e)).length;
   const url = (e) => `/despacho?anio=${anio}&t=${t}${e === 'todos' ? '' : `&estado=${e}`}`;
   return <main className="pagina mk-look despacho">
-    <SelectorCuenta actual="despacho" despacho={d.nombre} empresas={rol === 'titular' && usaEmpresaPropia(d) ? (u.misEmpresas || []).filter((x) => !x.cliente) : []} className="sel-movil" />
     <h1 className="titulo">{d.nombre}</h1>
     <p className="resumen-linea desp-linea">
       <span>{filas.length === 1 ? '1 cliente' : `${filas.length} clientes`}{rol === 'gestor' && d.soloAsignados ? ' asignados a ti' : ''} · {t}T {anio}</span>

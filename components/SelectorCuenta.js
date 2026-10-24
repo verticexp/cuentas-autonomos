@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import Avatar from '@/components/Avatar';
-import { alPulsar } from '@/lib/transicion';
+import { SIN_BARRA, alPulsar } from '@/lib/transicion';
 import '@/app/despacho.css';
 
 // Dónde trabaja la gente de un despacho, como el selector de cuenta de las apps de Apple: una pastilla con el nombre de lo
@@ -99,20 +99,26 @@ export function SelectorCuenta({ actual, despacho, cliente = null, empresas = []
   );
 }
 
-// Arriba de cada pantalla de la gente de un despacho fuera del panel (en su empresa o dentro de un cliente), en lugar de la
-// franja oscura de antes: «‹ Mi despacho» a la izquierda, como el «‹ Mail» de iOS al volver de otra app, y el selector a la
-// derecha. Se esconde en el panel (tiene su propia barra) y en las pantallas sin sesión. noLeidos: mensajes de clientes.
+// Arriba de cada pantalla de la gente de un despacho, en lugar de la franja oscura de antes, como el «‹ Mail» de iOS al volver
+// de otra app: fuera del panel (en su empresa o dentro de un cliente), «‹ Mi despacho»; en el panel, «‹ Mi empresa» si la
+// tiene (la misma puerta, al revés). El selector, a la derecha. Sin barra en las conversaciones (lib/transicion.js SIN_BARRA)
+// ni en las pantallas sin sesión. noLeidos: mensajes de clientes (en el panel ya van sobre «Mensajes»).
 export default function BarraDespacho({ noLeidos = 0, ...selector }) {
   const path = usePathname() || '';
   const router = useRouter();
-  if (/^\/(despacho|login|registro|bloqueo|invitacion|p\/|portal\/|pagar\/|privacidad|condiciones)(\/|$)/.test(path) || path.endsWith('/pdf')) return null;
+  if (SIN_BARRA.test(path) || /^\/(login|registro|bloqueo|invitacion|p\/|portal\/|pagar\/|privacidad|condiciones)(\/|$)/.test(path) || path.endsWith('/pdf')) return null;
+  // El layout no se repinta al ir de la empresa al panel sin recargar: dónde se está lo dice la dirección.
+  const enPanel = /^\/despacho(\/|$)/.test(path);
   const badge = noLeidos > 0 && <b className="sel-n"><span aria-hidden>{noLeidos > 99 ? '99+' : noLeidos}</span><span className="sr">{noLeidos === 1 ? '1 mensaje nuevo' : `${noLeidos} mensajes nuevos`}</span></b>;
+  const volver = enPanel
+    ? selector.empresas?.length > 0 && <form method="post" action="/api/despacho/salir?a=empresa"><button type="submit" className="barra-despacho-volver">‹ Mi empresa</button></form>
+    : selector.actual === 'cliente'
+      ? <form method="post" action="/api/despacho/salir"><button type="submit" className="barra-despacho-volver">‹ Mi despacho{badge}</button></form>
+      : <Link href="/despacho" className="barra-despacho-volver" onClick={alPulsar(router, '/despacho', 'tab-izq')}>‹ Mi despacho{badge}</Link>;
   return (
-    <div className="barra-despacho" data-inicio={path === '/' || undefined} data-cliente={selector.actual === 'cliente' || undefined}>
-      {selector.actual === 'cliente'
-        ? <form method="post" action="/api/despacho/salir"><button type="submit" className="barra-despacho-volver">‹ Mi despacho{badge}</button></form>
-        : <Link href="/despacho" className="barra-despacho-volver" onClick={alPulsar(router, '/despacho', 'tab-izq')}>‹ Mi despacho{badge}</Link>}
-      <SelectorCuenta {...selector} className="sel-derecha" />
+    <div className="barra-despacho" data-cliente={(!enPanel && selector.actual === 'cliente') || undefined}>
+      {volver || <span aria-hidden />}
+      <SelectorCuenta {...selector} actual={enPanel ? 'despacho' : selector.actual} className="sel-derecha" />
     </div>
   );
 }

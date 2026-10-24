@@ -3,8 +3,6 @@ import { datosHoy } from '@/lib/hoyDespacho';
 import { fechaCorta, fechaTexto, hoy } from '@/lib/formato';
 import Ir from '@/components/Ir';
 import Vacio from '@/components/Vacio';
-import { SelectorCuenta } from '@/components/SelectorCuenta';
-import { usaEmpresaPropia } from '@/lib/despachos';
 import '@/app/mk.css';
 import '@/app/despacho.css';
 
@@ -19,14 +17,13 @@ const lista = (nombres, max = 4) => `${nombres.slice(0, max).join(', ')}${nombre
 // Lo primero de Mi despacho: lo que pide atención hoy en todos tus clientes (lib/hoyDespacho.js), cada cosa con su
 // botón para ir directo. Si no hay nada, lo dice.
 export default async function Hoy() {
-  const { u, d, rol } = await requerirDespacho();
+  const { u, d } = await requerirDespacho();
   const dia = hoy();
   const h = await datosHoy(d, u, dia);
   const total = h.mensajes.length + h.recibidos.length + h.porRevisar.length + h.plazos.length;
   const hora = Number(new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Madrid' }).slice(11, 13));
   const saludo = hora < 14 ? 'Buenos días' : hora < 21 ? 'Buenas tardes' : 'Buenas noches';
   return <main className="pagina mk-look despacho">
-    <SelectorCuenta actual="despacho" despacho={d.nombre} empresas={rol === 'titular' && usaEmpresaPropia(d) ? (u.misEmpresas || []).filter((x) => !x.cliente) : []} className="sel-movil" />
     <h1 className="titulo">{saludo}{u.nombre ? `, ${u.nombre.split(' ')[0]}` : ''}</h1>
     <p className="desp-sub">Hoy, {fechaTexto(dia)}. {total ? 'Esto es lo que te espera en tus clientes:' : ''}</p>
     {h.clientes === 0 ? <Vacio icono="usuarios" titulo="Aún no tienes clientes">
