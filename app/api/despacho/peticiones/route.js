@@ -9,6 +9,7 @@ import { anular, enlazarHilo, pedir, peticionDe, peticionesDe } from '@/lib/peti
 import { leerJustificante } from '@/lib/justificantes';
 import { respuestaArchivo } from '@/lib/documentoVista';
 import { avisarCliente } from '@/lib/avisosDespacho';
+import { fechaCorta } from '@/lib/formato';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,12 +42,12 @@ export async function POST(req) {
     if (!g) return error('Ese gasto ya no existe', 404);
     if (g.archivo?.clave) return error('Este gasto ya tiene su justificante', 409);
     ({ doc } = await docDe(ctx, { tipo: 'gasto', id: g.id }));
-    gasto = { id: g.id, texto: doc?.texto || g.proveedor || g.concepto };
+    gasto = { id: g.id, texto: `${g.proveedor || g.concepto || 'gasto'} (${fechaCorta(g.fecha)})` };
   }
   const r = await pedir(e.id, quien, { despacho: d.id, tipo: b.tipo, gasto, texto: b.texto });
   if (r.error) return error(r.error, r.status || 400);
   const nota = r.peticion.texto ? ` ${r.peticion.texto}` : '';
-  const texto = b.tipo === 'ticket' ? `📎 ¿Me subes el ticket o la factura de este gasto? Puedes hacerle una foto.${nota}` : `📎 Te pido un documento: ${r.peticion.texto}. Puedes subirlo desde Ajustes › Tu gestoría.`;
+  const texto = b.tipo === 'ticket' ? `📎 ¿Me subes el ticket o la factura de este gasto? Puedes hacerle una foto.${nota}` : `📎 Te pido un documento: ${r.peticion.texto}. Súbelo con el botón «Subir» de arriba: una foto o un PDF.`;
   const m = await escribir(e.id, quien, 'despacho', { texto, doc, despacho: d.id });
   if (m.comentario) await enlazarHilo(e.id, r.peticion.id, m.comentario.id);
   await marcarLeido(e.id, 'despacho');

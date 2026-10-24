@@ -10,6 +10,7 @@ import { pagaSuPlan, NOMBRES_LICENCIA, tipoLicencia } from '@/lib/licencias';
 import { hoy } from '@/lib/formato';
 import { redis } from '@/lib/redis';
 import { peticionesDe } from '@/lib/peticionesDespacho';
+import { esCuota } from '@/lib/cuotas';
 import Volver from '@/components/Volver';
 import ClienteDespacho from '@/components/ClienteDespacho';
 import '@/app/mk.css';
@@ -35,7 +36,7 @@ export default async function ClienteDelDespacho({ params, searchParams }) {
   const cierre = await estadoCierre(ctx, anio, t, cierres);
   const docs = {
     facturas: facturas.slice(0, 300).map((f) => ({ id: f.id, texto: `${numeroFactura(f)} · ${f.cliente?.nombre || ''}`, fecha: f.fecha, base: Number(f.base) || 0, total: importes(f).total })),
-    gastos: gastos.slice(0, 300).map((g) => ({ id: g.id, texto: g.proveedor || g.concepto || 'Gasto', fecha: g.fecha, base: Number(g.base) || 0, total: importes(g).total, sinJustificante: !g.archivo })),
+    gastos: gastos.slice(0, 300).map((g) => ({ id: g.id, texto: g.proveedor || g.concepto || 'Gasto', fecha: g.fecha, base: Number(g.base) || 0, total: importes(g).total, sinJustificante: !g.archivo && !g.nomina && !esCuota(g) && Number(g.base) > 0 })),
     mas: Math.max(0, facturas.length - 300) + Math.max(0, gastos.length - 300),
   };
   const v = e.despachoCliente || {};

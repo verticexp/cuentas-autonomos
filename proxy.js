@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { cabeceraCsp, modoCsp, politicaCsp } from '@/lib/csp';
+import { cabeceraCsp, EMBEBIBLE, modoCsp, politicaCsp } from '@/lib/csp';
 import { desvioApp } from '@/lib/app';
 import { PUBLICO } from '@/lib/rutasPublicas';
 
@@ -24,7 +24,7 @@ export function proxy(req) {
     if (modoCsp() === 'off') return NextResponse.next({ request: { headers: h } });
     // Nonce nuevo en cada petición: Next.js lo lee de la cabecera para sus scripts; x-nonce, para los nuestros (lib/csp.js).
     const nonce = btoa(crypto.randomUUID());
-    const csp = politicaCsp(nonce);
+    const csp = politicaCsp(nonce, { embebible: EMBEBIBLE.test(req.nextUrl.pathname) });
     h.set('x-nonce', nonce);
     h.set(cabeceraCsp(), csp);
     const res = NextResponse.next({ request: { headers: h } });
