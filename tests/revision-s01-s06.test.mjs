@@ -43,6 +43,7 @@ test('S01: un cobro durante la reconstrucción del índice no deja la factura co
   assert.deepEqual(await I.fichasMarcadas(u, 'facturas', 'p'), [], 'la ficha no puede seguir pendiente');
   // Ediciones que no cambian la cantidad de documentos tampoco se pierden: cambio de fecha durante otra reconstrucción.
   await R.redis.del(`ixv:facturas:${u.empresa}`);
+  I.olvidarIndices(); // borrado por fuera de la app: que se note ya, no a los pocos segundos
   leida = false; hecho = null;
   srv.ganchos.antes = async (cuerpo) => {
     if (hecho) return;

@@ -18,7 +18,7 @@ export default async function Mensajes() {
   const lista = await conversaciones(d, u.id);
   const conMensajes = lista.filter((c) => c.ultimo), sin = lista.filter((c) => !c.ultimo);
   const fila = (c) => <li key={c.id}>
-    <Ir className={`fila desp-conversacion${c.noLeidos ? ' nueva' : ''}`} href={`/despacho/mensajes/${encodeURIComponent(c.id)}`}>
+    <Ir prefetch={false} className={`fila desp-conversacion${c.noLeidos ? ' nueva' : ''}`} href={`/despacho/mensajes/${encodeURIComponent(c.id)}`}>
       <span className="desp-avatar" aria-hidden>{c.nombre.trim()[0]?.toUpperCase() || '·'}</span>
       <span className="txt">
         <strong>{c.nombre}</strong>
@@ -34,8 +34,8 @@ export default async function Mensajes() {
     <h1 className="titulo">Mensajes</h1>
     <p className="desp-sub">Habla con tus clientes sin salir de Fisquo. Les llega a su app, en Tu gestoría, y te contestan aquí.</p>
     {lista.length > 1 && <div className="desp-acciones desp-mensajes-acciones">
-      <Ir className="boton sec" href="/despacho/mensajes/varios">Escribir a varios</Ir>
-      <Ir className="boton sec" href="/despacho/ajustes/plantillas">Mensajes guardados</Ir>
+      <Ir prefetch={false} className="boton sec" href="/despacho/mensajes/varios">Escribir a varios</Ir>
+      <Ir prefetch={false} className="boton sec" href="/despacho/ajustes/plantillas">Mensajes guardados</Ir>
     </div>}
     {conMensajes.length > 0 && <ul className="grupo-lista desp-conversaciones">{conMensajes.map(fila)}</ul>}
     {sin.length > 0 && <section className="grupo" aria-labelledby="msg-sin">

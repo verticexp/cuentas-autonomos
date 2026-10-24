@@ -102,7 +102,7 @@ export default function PanelDespacho({ filas, equipo = [], anio, t, hoy }) {
         const estado = r?.cambiosTrasCierre ? 'cambios' : f.estado;
         const meta = [f.nif, f.tipo === 'sociedad' ? 'Sociedad' : 'Autónomo', f.territorio !== 'Territorio común' && f.territorio, f.gestor && nombres[f.gestor], f.licencia && 'En tu cuota'].filter(Boolean).join(' · ');
         return <li key={f.id}>
-          <Ir className="fila desp-fila" href={`/despacho/${encodeURIComponent(f.id)}?anio=${anio}&t=${t}`}>
+          <Ir prefetch={false} className="fila desp-fila" href={`/despacho/${encodeURIComponent(f.id)}?anio=${anio}&t=${t}`}>
             <span className="txt">
               <strong>{f.nombre}</strong>
               <small>{meta}</small>

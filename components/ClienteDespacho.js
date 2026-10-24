@@ -184,7 +184,7 @@ export default function ClienteDespacho({ cliente, anio, t, hoy, rol, estado, li
     <section className="grupo" aria-labelledby="desp-preg">
       <h2 className="grupo-t" id="desp-preg">Mensajes</h2>
       <div className="grupo-c">
-        <Ir className="celda ir desp-mensajes-ficha" href={chat()}>
+        <Ir prefetch={false} className="celda ir desp-mensajes-ficha" href={chat()}>
           <span className="txt">
             {mensajes.noLeidos > 0 ? <b className="rojo">{mensajes.noLeidos === 1 ? '1 mensaje nuevo' : `${mensajes.noLeidos} mensajes nuevos`}</b> : mensajes.ultimo ? 'Conversación' : 'Escribir al cliente'}
             {mensajes.ultimo ? <span className={`desp-burbuja-mini${mensajes.ultimo.lado === 'despacho' ? ' mia' : ''}`}>{mensajes.ultimo.texto}</span> : <small>Le llega a su Fisquo y te contesta aquí.</small>}
@@ -202,13 +202,13 @@ export default function ClienteDespacho({ cliente, anio, t, hoy, rol, estado, li
             <span className="txt"><strong>{x.titulo}</strong><small>{fechaDe(x.fecha)}{x.tipo === 'gasto' ? ' · gasto' : ''}{x.sinJustificante ? ' · sin justificante' : ''}</small></span>
             <span className="imp">{eur(x.base)}</span>
           </button>
-          <Ir className="boton sec desp-mini" href={chat(`${x.tipo}:${x.id}`)}>Preguntar</Ir>
+          <Ir prefetch={false} className="boton sec desp-mini" href={chat(`${x.tipo}:${x.id}`)}>Preguntar</Ir>
         </li>)}
       </ul>}
       {docs.mas > 0 && <p className="grupo-pie">Y {docs.mas} más: entra en sus Facturas o Gastos para verlos todos.</p>}
       <VistaDocumento base={`/api/despacho/documento?empresa=${id}`} doc={ver} alCerrar={() => setVer(null)}
         acciones={(d, cerrarVista) => <>
-          <Ir className="boton sec" href={chat(`${d.tipo}:${d.id}`)}>Preguntar por {d.tipo === 'factura' ? 'esta factura' : 'este gasto'}</Ir>
+          <Ir prefetch={false} className="boton sec" href={chat(`${d.tipo}:${d.id}`)}>Preguntar por {d.tipo === 'factura' ? 'esta factura' : 'este gasto'}</Ir>
           <AccionesDocumento d={d} lado="despacho" empresa={cliente.id} alHacer={() => { cerrarVista(); setMsg('✓ Ticket pedido: le llega a su Fisquo'); router.refresh(); }} />
         </>} />
     </section>
