@@ -138,7 +138,7 @@ export default function TabBar({ permisos = [], empresas = [], empresa, admin = 
 
   return (
     <>
-    <div className="tabbar" data-teclado={teclado || undefined}>
+    <div className={`tabbar${path === '/tu-gestoria' ? ' tabbar-chat' : ''}`} data-teclado={teclado || undefined}>
       <Link href="/" className="tabbar-logo" aria-label="Fisquo, resumen" onClick={(e) => { e.preventDefault(); ir('/'); }}><Logo /></Link>
       {despacho === 'empresa' && <Espacio actual="empresa" className="espacio-lateral" />}
       {empresa && <CambiarEmpresa empresas={empresas} actual={empresa} variante="lateral" />}

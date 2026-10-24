@@ -1,4 +1,5 @@
 import { invalidarNoLeidos } from '@/lib/mensajesDespacho';
+import { avisarCliente } from '@/lib/avisosDespacho';
 import { cuerpo, error } from '@/lib/api';
 import { clienteDelDespacho } from '@/lib/despachoApi';
 import { pasado, respuesta429 } from '@/lib/limite';
@@ -28,6 +29,7 @@ export async function POST(req) {
   await marcarLeido(e.id, 'despacho');
   await invalidarNoLeidos(d.id);
   if (doc) await registrarAcceso(e.id, quien, 'Te ha preguntado por un documento', doc.texto);
+  avisarCliente(e, { titulo: `Mensaje de ${d.nombre}`, cuerpo: String(b.texto || '') });
   return Response.json(r);
 }
 

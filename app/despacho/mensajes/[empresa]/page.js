@@ -9,6 +9,7 @@ import Volver from '@/components/Volver';
 import Ir from '@/components/Ir';
 import Chat from '@/components/Chat';
 import Avatar from '@/components/Avatar';
+import { plantillasDe } from '@/lib/plantillasDespacho';
 import '@/app/mk.css';
 import '@/app/despacho.css';
 
@@ -42,7 +43,7 @@ export default async function Conversacion({ params, searchParams }) {
       </Ir>
     </header>
     <Chat key={docInicial} mensajes={mensajesDe(hilos)} lado="despacho" leidoAntes={leido.despacho || ''} nombreOtro={nombre} docs={docs} docInicial={docInicial}
-      enviar={{ url: '/api/despacho/comentarios', metodo: 'POST', extra: { empresa: e.id } }} leer={{ url: '/api/despacho/comentarios', metodo: 'PATCH', cuerpo: { empresa: e.id, leer: true } }} comprobar={`/api/despacho/comentarios?empresa=${encodeURIComponent(e.id)}`}
+      enviar={{ url: '/api/despacho/comentarios', metodo: 'POST', extra: { empresa: e.id } }} leer={{ url: '/api/despacho/comentarios', metodo: 'PATCH', cuerpo: { empresa: e.id, leer: true } }} comprobar={`/api/despacho/comentarios?empresa=${encodeURIComponent(e.id)}`} vista={`/api/despacho/documento?empresa=${encodeURIComponent(e.id)}`} plantillas={plantillasDe(d)}
       vacio={`Escribe a ${nombre}: le llega a su Fisquo y te contesta aquí. Para preguntar por una factura o un gasto, elígelo antes de escribir.`} />
   </main>;
 }

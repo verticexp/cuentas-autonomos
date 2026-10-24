@@ -5,14 +5,15 @@ import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
 import { confirmar } from './Confirmar';
 import { fechaCorta } from '@/lib/formato';
-import Chat from './Chat';
+import Ir from './Ir';
+import PeticionesCliente from './PeticionesCliente';
 import '@/app/despacho.css';
 
 const horaDe = (iso) => new Date(iso).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
 // Ajustes › Tu gestoría: el despacho que lleva tus cuentas en Fisquo (lib/despachos.js). Le das acceso con su código,
 // ves lo que hace y le respondes; puedes quitárselo cuando quieras.
-export default function TuDespacho({ despacho, accesos = [], mensajes = [], leidoAntes = '', codigo: codigoInicial = '' }) {
+export default function TuDespacho({ despacho, accesos = [], ultimo = null, noLeidos = 0, peticiones = [], codigo: codigoInicial = '' }) {
   const router = useRouter();
   const [codigo, setCodigo] = useState(codigoInicial);
   const [nombre, setNombre] = useState('');
@@ -44,11 +45,17 @@ export default function TuDespacho({ despacho, accesos = [], mensajes = [], leid
   </section>;
 
   return <>
+    <PeticionesCliente peticiones={peticiones} />
     <section className="grupo" aria-labelledby="td-p">
       <h2 className="grupo-t" id="td-p">Mensajes con {despacho.nombre}</h2>
-      <Chat mensajes={mensajes} lado="cliente" leidoAntes={leidoAntes} nombreOtro={despacho.nombre}
-        enviar={{ url: '/api/tu-despacho', metodo: 'PUT', extra: {} }} leer={{ url: '/api/tu-despacho', metodo: 'PATCH', cuerpo: { leer: true } }} comprobar="/api/tu-despacho"
-        vacio={`Escribe a ${despacho.nombre} cuando quieras: le llega a su Fisquo. Si te pregunta por una factura o un gasto, lo verás aquí.`} />
+      <div className="grupo-c">
+        <Ir className="celda ir desp-mensajes-ficha" href="/tu-gestoria">
+          <span className="txt">
+            {noLeidos > 0 ? <b className="rojo">{noLeidos === 1 ? '1 mensaje nuevo' : `${noLeidos} mensajes nuevos`}</b> : ultimo ? 'Abrir la conversación' : `Escribir a ${despacho.nombre}`}
+            {ultimo ? <span className={`desp-burbuja-mini${ultimo.lado === 'cliente' ? ' mia' : ''}`}>{ultimo.texto}</span> : <small>Le llega a su Fisquo y te contesta aquí.</small>}
+          </span>
+        </Ir>
+      </div>
     </section>
     <section className="grupo" aria-labelledby="td-t">
       <h2 className="grupo-t" id="td-t">Tu gestoría en Fisquo</h2>

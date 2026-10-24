@@ -6,7 +6,7 @@ import { llamar } from './Acciones';
 import { confirmar } from './Confirmar';
 
 // Equipo de Mi despacho: lista, invitar (titular), cambiar el rol y quitar.
-export default function EquipoDespacho({ equipo, titular, yo }) {
+export default function EquipoDespacho({ equipo, titular, yo, sinAsignar = null, trimestre = '' }) {
   const router = useRouter();
   const [d, setD] = useState({ nombre: '', email: '', rol: 'gestor' });
   const [msg, setMsg] = useState('');
@@ -28,12 +28,15 @@ export default function EquipoDespacho({ equipo, titular, yo }) {
   };
   return <>
     <ul className="grupo-lista">{equipo.map((x) => <li key={x.id} className="fila">
-      <span className="txt"><strong>{x.nombre || x.email}{x.id === yo ? ' (tú)' : ''}</strong><small>{[x.email, x.rolTexto, x.clientes ? `${x.clientes} clientes asignados` : null, x.pendiente && 'Invitación pendiente'].filter(Boolean).join(' · ')}</small></span>
+      <span className="txt"><strong>{x.nombre || x.email}{x.id === yo ? ' (tú)' : ''}</strong><small>{[x.email, x.rolTexto, x.pendiente && 'Invitación pendiente'].filter(Boolean).join(' · ')}</small>
+        {x.carga && <Carga c={x.carga} trimestre={trimestre} />}</span>
       {titular && x.id !== yo && <span className="desp-acciones desp-equipo-acc">
         <select className="desp-select-celda" aria-label={`Rol de ${x.nombre || x.email}`} value={x.rol} onChange={(e) => cambiarRol(x, e.target.value)}><option value="gestor">Gestor</option><option value="titular">Titular</option></select>
         <button type="button" className="boton sec desp-mini" onClick={() => quitar(x)}>Quitar</button>
       </span>}
-    </li>)}</ul>
+    </li>)}
+    {sinAsignar?.clientes > 0 && <li className="fila"><span className="txt"><strong>Sin asignar</strong><small>Asígnalos en la ficha de cada cliente, en «Quién lo lleva».</small><Carga c={sinAsignar} trimestre={trimestre} /></span></li>}
+    </ul>
     {titular && <form className="formulario tarjeta" onSubmit={invitar}>
       <h3>Invitar a alguien del despacho</h3>
       <label>Nombre<input className="campo" value={d.nombre} maxLength={60} onChange={(e) => setD({ ...d, nombre: e.target.value })} required /></label>
@@ -44,4 +47,16 @@ export default function EquipoDespacho({ equipo, titular, yo }) {
     {msg && <p role="status" className={msg.startsWith('✓') || msg === 'Enviando…' ? 'nota' : 'error'}>{msg}</p>}
     {enlace && <p className="nota">Enlace de la invitación: <code>{enlace}</code></p>}
   </>;
+}
+
+// La carga de una persona: sus clientes y lo que tienen pendiente (lo que pide atención, en color).
+function Carga({ c, trimestre }) {
+  const partes = [
+    [c.clientes, c.clientes === 1 ? '1 cliente' : `${c.clientes} clientes`, false],
+    [c.porRevisar, `${c.porRevisar} por revisar del ${trimestre}`, true],
+    [c.sinLeer, c.sinLeer === 1 ? '1 mensaje sin leer' : `${c.sinLeer} mensajes sin leer`, true],
+    [c.esperan, c.esperan === 1 ? '1 documento esperando' : `${c.esperan} documentos esperando`, false],
+  ].filter(([n]) => n > 0);
+  if (!partes.length) return <span className="desp-carga"><span>Sin clientes asignados</span></span>;
+  return <span className="desp-carga">{partes.map(([, t, aviso]) => <span key={t} className={aviso ? 'aviso' : ''}>{t}</span>)}</span>;
 }

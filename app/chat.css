@@ -62,3 +62,18 @@
   .desp-chat-pagina .chat-mensajes { flex: 1; min-height: 0; max-height: none; border-radius: 0; padding: 10px 8px; }
   .desp-chat-pagina .chat-escribir { flex: none; padding: 6px 6px calc(env(safe-area-inset-bottom) + 6px); background: var(--paper); }
 }
+
+/* La cita del documento se toca para verlo (components/VistaDocumento.js). */
+button.chat-sobre { width: 100%; border: 0; border-left: 3px solid var(--marca); box-shadow: none; color: inherit; font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
+button.chat-sobre.respuesta { background: color-mix(in srgb, var(--ink) 6%, transparent); padding: 6px 8px; }
+.chat-sobre-ver { margin-left: auto; padding-left: 8px; color: var(--marca); font-weight: 700; white-space: nowrap; }
+.chat-contexto .chat-ver { flex: none; width: auto; height: 28px; padding: 0 12px; border-radius: 14px; background: var(--relleno); color: var(--ink); font-size: 13px; font-weight: 600; }
+.chat-contexto > span { flex: 1; min-width: 0; }
+a.chat-sobre { text-decoration: none; color: inherit; }
+/* Mensajes guardados del despacho (lib/plantillasDespacho.js), encima del cuadro de escribir. */
+.chat-boton-guardados { margin: 0; padding: 0; border: 0; background: none; box-shadow: none; }
+.chat-guardados { display: flex; flex-direction: column; gap: 4px; max-height: 40dvh; overflow-y: auto; padding: 6px; border-radius: 14px; background: var(--surface); box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1); }
+.chat-guardados button { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; margin: 0; padding: 8px 10px; border: 0; border-radius: 10px; background: none; box-shadow: none; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+.chat-guardados button:hover, .chat-guardados button:focus-visible { background: var(--relleno); }
+.chat-guardados span { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.desp-mensajes-acciones { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 14px; }

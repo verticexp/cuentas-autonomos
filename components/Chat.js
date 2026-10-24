@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
 import { eur, fechaCorta } from '@/lib/formato';
+import VistaDocumento from './VistaDocumento';
+import AccionesDocumento from './AccionesDocumento';
 import '@/app/chat.css';
 
 // Chat entre el despacho y su cliente (lib/comentariosDespacho.js): los mensajes en orden, los míos a la derecha, con la
@@ -14,6 +16,8 @@ import '@/app/chat.css';
 // docs: { facturas, gastos } para preguntar por un documento (solo el despacho) · docInicial: 'gasto:id' o 'factura:id'.
 // leer: { url, metodo, cuerpo? } para marcar como leído al abrirlo (desde aquí y no al pintar la página: la app precarga
 // las pantallas y daría por leído lo que nadie ha visto).
+// vista: URL de la vista previa de documentos (api/despacho/documento?empresa=… o api/tu-despacho/documento): tocar la
+// factura o el gasto de una pregunta la abre sin salir del chat (components/VistaDocumento.js).
 // comprobar: URL (GET) que devuelve los hilos ({ hilos } o { comentarios }) para ver si hay algo nuevo sin recargar la
 // pantalla entera: recargarla cada 30 segundos costaba unas 100 consultas a la base de datos cada vez.
 const hora = (iso) => new Date(iso).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
@@ -29,12 +33,14 @@ function dia(iso, hoy) {
   return t[0].toUpperCase() + t.slice(1);
 }
 
-export default function Chat({ mensajes, lado, leidoAntes = '', enviar, leer, comprobar, docs = null, docInicial = '', nombreOtro, vacio }) {
+export default function Chat({ mensajes, lado, leidoAntes = '', enviar, leer, comprobar, vista, plantillas = [], docs = null, docInicial = '', nombreOtro, vacio }) {
   const router = useRouter();
   const [texto, setTexto] = useState('');
   const [doc, setDoc] = useState(docInicial);
   const [respondiendo, setRespondiendo] = useState(null);
   const [ocupado, setOcupado] = useState(false);
+  const [ver, setVer] = useState(null);
+  const [guardados, setGuardados] = useState(false);
   const [error, setError] = useState('');
   const lista = useRef(null);
   const caja = useRef(null);
@@ -102,15 +108,15 @@ export default function Chat({ mensajes, lado, leidoAntes = '', enviar, leer, co
         return <div key={`${m.hilo}-${m.fecha}-${i}`} className={`chat-grupo${i >= vistos ? ' nueva' : ''}`}>
           {nuevoDia && <p className="chat-dia"><span>{cabecera}</span></p>}
           {m.fecha === primeroNuevo && <p className="chat-nuevos"><span>Nuevos</span></p>}
-          <div className={`chat-burbuja${mio ? ' mia' : ''}${m.resuelto && m.doc ? ' resuelta' : ''}`}>
-            {m.doc && m.primero && <span className="chat-sobre"><svg viewBox="0 0 24 24" aria-hidden><path d="M7 3h7l4 4v14H7zM14 3v4h4" /></svg>{m.doc.texto}</span>}
-            {m.doc && !m.primero && <span className="chat-sobre respuesta">Sobre {m.doc.texto}</span>}
+          <div className={`chat-burbuja${mio ? ' mia' : ''}${m.resuelto && m.doc && m.doc.tipo !== 'informe' ? ' resuelta' : ''}`}>
+            {m.doc && m.primero && <Sobre doc={m.doc} vista={vista} alVer={setVer}><svg viewBox="0 0 24 24" aria-hidden><path d="M7 3h7l4 4v14H7zM14 3v4h4" /></svg>{m.doc.texto}</Sobre>}
+            {m.doc && !m.primero && <Sobre doc={m.doc} vista={vista} alVer={setVer} respuesta>Sobre {m.doc.texto}</Sobre>}
             {mio ? <span className="sr">Tú:</span> : <b className="chat-autor">{m.nombre || nombreOtro}</b>}
             <p>{m.texto}</p>
             <span className="chat-pie">
-              {m.doc && m.primero && !m.resuelto && <button type="button" aria-label={`Responder sobre ${m.doc.texto}`} onClick={() => { setRespondiendo(m); setDoc(''); caja.current?.focus(); }}>Responder aquí</button>}
-              {m.doc && m.primero && lado === 'despacho' && <button type="button" aria-label={`${m.resuelto ? 'Reabrir' : 'Marcar como resuelta'} la pregunta sobre ${m.doc.texto}`} onClick={() => resolver(m, !m.resuelto)}>{m.resuelto ? 'Reabrir' : 'Marcar resuelta'}</button>}
-              {m.doc && m.primero && m.resuelto && <span>Resuelta</span>}
+              {m.doc && m.doc.tipo !== 'informe' && m.primero && !m.resuelto && <button type="button" aria-label={`Responder sobre ${m.doc.texto}`} onClick={() => { setRespondiendo(m); setDoc(''); caja.current?.focus(); }}>Responder aquí</button>}
+              {m.doc && m.doc.tipo !== 'informe' && m.primero && lado === 'despacho' && <button type="button" aria-label={`${m.resuelto ? 'Reabrir' : 'Marcar como resuelta'} la pregunta sobre ${m.doc.texto}`} onClick={() => resolver(m, !m.resuelto)}>{m.resuelto ? 'Reabrir' : 'Marcar resuelta'}</button>}
+              {m.doc && m.doc.tipo !== 'informe' && m.primero && m.resuelto && <span>Resuelta</span>}
               <time dateTime={m.fecha}>{hora(m.fecha)}</time>
             </span>
           </div>
@@ -118,8 +124,16 @@ export default function Chat({ mensajes, lado, leidoAntes = '', enviar, leer, co
       })}
     </div>
     <form className="chat-escribir" onSubmit={mandar}>
-      {sobre && <p className="chat-contexto"><span>{respondiendo ? 'Respondiendo a' : 'Preguntas por'}: <b>{sobre}</b></span><button type="button" aria-label="Quitar el documento" onClick={() => { setRespondiendo(null); setDoc(''); }}>×</button></p>}
+      {sobre && <p className="chat-contexto"><span>{respondiendo ? 'Respondiendo a' : 'Preguntas por'}: <b>{sobre}</b></span>
+        {vista && <button type="button" className="chat-ver" onClick={() => { const [tipo, docId] = respondiendo ? [respondiendo.doc.tipo, respondiendo.doc.id] : doc.split(':'); setVer({ tipo, id: docId }); }}>Ver</button>}
+        <button type="button" aria-label="Quitar el documento" onClick={() => { setRespondiendo(null); setDoc(''); }}>×</button></p>}
+      {guardados && <div className="chat-guardados" role="group" aria-label="Mensajes guardados">
+        {plantillas.map((p) => <button key={p.id} type="button" onClick={() => { setTexto(p.texto); setGuardados(false); caja.current?.focus(); }}><b>{p.titulo}</b><span>{p.texto}</span></button>)}
+      </div>}
       <div className="chat-linea">
+        {plantillas.length > 0 && <button type="button" className="chat-adjuntar chat-boton-guardados" aria-expanded={guardados} aria-label="Mensajes guardados" title="Mensajes guardados" onClick={() => setGuardados(!guardados)}>
+          <svg viewBox="0 0 24 24" aria-hidden><path d="M6 3h12v18l-6-4-6 4z" /></svg>
+        </button>}
         {docs && !respondiendo && !doc && opciones.length > 0 && <label className="chat-adjuntar" title="Preguntar por una factura o un gasto">
           <svg viewBox="0 0 24 24" aria-hidden><path d="M20 11.5l-7.8 7.8a5 5 0 01-7.1-7.1l8.5-8.5a3.3 3.3 0 014.7 4.7l-8.5 8.5a1.7 1.7 0 01-2.4-2.4l7.8-7.8" /></svg>
           <span className="sr">Preguntar por una factura o un gasto</span>
@@ -137,5 +151,20 @@ export default function Chat({ mensajes, lado, leidoAntes = '', enviar, leer, co
       </div>
       {error && <p className="error" role="alert">{error}</p>}
     </form>
+    {vista && <VistaDocumento base={vista} doc={ver} alCerrar={() => setVer(null)}
+      acciones={(d, cerrar) => <AccionesDocumento d={d} lado={lado} empresa={enviar.extra?.empresa} alHacer={() => { cerrar(); router.refresh(); }} />} />}
   </div>;
+}
+
+// La cita de la factura o el gasto de una pregunta: con vista previa, se toca para verlo.
+function Sobre({ doc, vista, alVer, respuesta = false, children }) {
+  const clase = `chat-sobre${respuesta ? ' respuesta' : ''}`;
+  // El informe del trimestre (api/…/informe): se abre el PDF.
+  if (vista && doc.tipo === 'informe' && /^\d{4}-[1-4]$/.test(doc.id)) {
+    const [anio, t] = doc.id.split('-');
+    const url = `${vista.replace('/documento', '/informe')}${vista.includes('?') ? '&' : '?'}anio=${anio}&t=${t}`;
+    return <a className={`${clase} toca`} href={url} target="_blank" rel="noopener">{children}<span className="chat-sobre-ver" aria-hidden>Abrir ›</span></a>;
+  }
+  if (!vista || !['factura', 'gasto'].includes(doc.tipo)) return <span className={clase}>{children}</span>;
+  return <button type="button" className={`${clase} toca`} onClick={() => alVer({ tipo: doc.tipo, id: doc.id })} aria-label={`Ver ${doc.texto}`}>{children}<span className="chat-sobre-ver" aria-hidden>Ver ›</span></button>;
 }
