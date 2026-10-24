@@ -58,3 +58,5 @@
   .espacio-lateral { display: flex; margin: 0 4px 12px; }
   .espacio-movil { display: none; }
 }
+/* Pestañas que en el móvil no van abajo (Equipo de Mi despacho, desde Ajustes). */
+@media (max-width: 1023.98px) { .tabs a.tab-ordenador { display: none; } }

@@ -22,6 +22,12 @@ export default {
     ];
   },
   async headers() {
-    return [{ source: '/:path*', headers: seguridad }];
+    // Los documentos de la vista previa (lib/csp.js EMBEBIBLE) se pueden ver en un marco de la propia web: la última regla
+    // que coincide gana.
+    const marcoPropio = seguridad.map((h) => (h.key === 'X-Frame-Options' ? { ...h, value: 'SAMEORIGIN' } : h.key === 'Content-Security-Policy' ? { ...h, value: h.value.replace("frame-ancestors 'none'", "frame-ancestors 'self'") } : h));
+    return [
+      { source: '/:path*', headers: seguridad },
+      ...['despacho', 'tu-despacho'].flatMap((a) => ['documento', 'peticiones', 'informe'].map((r) => ({ source: `/api/${a}/${r}`, headers: marcoPropio }))),
+    ];
   },
 };

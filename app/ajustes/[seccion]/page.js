@@ -29,7 +29,8 @@ import { emailListo } from '@/lib/email';
 import { trimestreAnterior } from '@/lib/gestoriaEnvio';
 import TuDespacho from '@/components/TuDespacho';
 import { leerAccesos } from '@/lib/despachos';
-import { comentariosDe, leidoDe, mensajesDe } from '@/lib/comentariosDespacho';
+import { comentariosDe, leidoDe, mensajesDe, noLeidos } from '@/lib/comentariosDespacho';
+import { peticionesDe, pendientes } from '@/lib/peticionesDespacho';
 import { ahoraMadrid } from '@/lib/jornada';
 import { CONTACTO } from '@/components/web/datos';
 import Series from '@/components/Series';
@@ -70,8 +71,8 @@ async function datosSeries(u, anio) {
 // Tu gestoría en Fisquo (lib/despachos.js): su vínculo, lo que ha hecho y la conversación (la marca leída el chat al verse).
 async function datosTuDespacho(u) {
   if (!u.despachoCliente || u.viaDespacho) return { despacho: null };
-  const [accesos, hilos, leido] = await Promise.all([leerAccesos(u.empresa, 60), comentariosDe(u.empresa, { despacho: u.despachoCliente.id }), leidoDe(u.empresa)]);
-  return { despacho: u.despachoCliente, accesos, mensajes: mensajesDe(hilos), leidoAntes: leido.cliente || '' };
+  const [accesos, hilos, leido, peticiones] = await Promise.all([leerAccesos(u.empresa, 60), comentariosDe(u.empresa, { despacho: u.despachoCliente.id }), leidoDe(u.empresa), peticionesDe(u.empresa, { despacho: u.despachoCliente.id, ctx: u })]);
+  return { despacho: u.despachoCliente, accesos, ultimo: mensajesDe(hilos).at(-1) || null, noLeidos: noLeidos(hilos, leido, 'cliente'), peticiones: pendientes(peticiones) };
 }
 // Los 8 últimos trimestres cerrados, del más reciente al más antiguo.
 function ultimosTrimestres(hoy) {

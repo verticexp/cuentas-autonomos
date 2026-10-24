@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
 import { eur, fechaCorta } from '@/lib/formato';
+import Ir from './Ir';
 
 const euros = (c) => eur(c / 100);
 
@@ -39,6 +40,15 @@ export default function AjustesDespacho({ despacho, titular, licencias, tarifa, 
   const tramos = (tipo) => tarifa[tipo].map((x, i) => (i === 0 ? `hasta ${x.hasta}: ${euros(x.cent)}` : x.hasta ? `${tarifa[tipo][i - 1].hasta + 1} a ${x.hasta}: ${euros(x.cent)}` : `${tarifa[tipo][i - 1].hasta + 1} o más: ${euros(x.cent)}`)).join(' · ');
 
   return <>
+    <section className="grupo" aria-labelledby="ad-gestion">
+      <h2 className="grupo-t" id="ad-gestion">Tu despacho</h2>
+      <div className="grupo-c">
+        <Ir className="celda ir" href="/despacho/equipo"><span className="txt">Equipo<small>Quién trabaja contigo y qué tiene pendiente cada uno</small></span></Ir>
+        {titular && <Ir className="celda ir" href="/despacho/facturacion"><span className="txt">Facturación<small>Lo que te paga cada cliente y lo que te cuesta Fisquo</small></span></Ir>}
+        <Ir className="celda ir" href="/despacho/ajustes/plantillas"><span className="txt">Mensajes guardados<small>Plantillas para lo que escribes a menudo</small></span></Ir>
+      </div>
+    </section>
+
     <section className="grupo" aria-labelledby="ad-invitar">
       <h2 className="grupo-t" id="ad-invitar">Invitar a un cliente</h2>
       <div className="grupo-c">

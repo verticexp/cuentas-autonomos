@@ -9,19 +9,23 @@ import { entrarEn } from './PanelDespacho';
 import { ESTADOS_TEXTO } from './despachoTextos';
 import { navegar } from '@/lib/transicion';
 import { eur, fechaCorta } from '@/lib/formato';
+import VistaDocumento from './VistaDocumento';
+import AccionesDocumento from './AccionesDocumento';
 
 const fechaDe = (iso) => fechaCorta(String(iso || '').slice(0, 10));
 const horaDe = (iso) => new Date(iso).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 const ENTRAR = [['/modelos', 'Impuestos', 'Modelos del trimestre y del año'], ['/facturas', 'Facturas', 'Emitidas, cobros y rectificativas'], ['/gastos', 'Gastos', 'Con sus justificantes'], ['/contabilidad', 'Contabilidad', 'Diario, balance y resultados'], ['/contabilidad?ver=libros', 'Libros registro', 'Los libros de IVA e IRPF']];
 
 // mensajes: { ultimo, noLeidos, preguntas } de la conversación con el cliente (components/Chat.js, en Mensajes).
-export default function ClienteDespacho({ cliente, anio, t, hoy, rol, estado, limite, presentados, cierre, resumen, docs, mensajes, accesos, equipo }) {
+export default function ClienteDespacho({ cliente, anio, t, hoy, rol, estado, limite, presentados, cierre, resumen, docs, mensajes, accesos, equipo, peticiones = [], informe = null }) {
   const router = useRouter();
   const [ocupado, setOcupado] = useState('');
   const [msg, setMsg] = useState('');
   const [formato, setFormato] = useState('a3');
   const [codigo, setCodigo] = useState('1');
   const [anioDiario, setAnioDiario] = useState(anio);
+  const [ver, setVer] = useState(null);
+  const [pedido, setPedido] = useState('');
   const titular = rol === 'titular';
   const id = encodeURIComponent(cliente.id);
 
@@ -51,6 +55,39 @@ export default function ClienteDespacho({ cliente, anio, t, hoy, rol, estado, li
     r.comentarios?.noLeidos > 0 && `${r.comentarios.noLeidos === 1 ? 'Un mensaje' : `${r.comentarios.noLeidos} mensajes`} del cliente sin leer`,
   ].filter(Boolean) : [];
   const irA = (href) => () => entrarEn(cliente.id, href).catch((e) => setMsg(e.message));
+  // Documentos pedidos al cliente (lib/peticionesDespacho.js).
+  const pedir = async (cuerpo) => { await llamar('/api/despacho/peticiones', { method: 'POST', body: JSON.stringify({ empresa: cliente.id, ...cuerpo }) }); };
+  const pedirDocumento = async (e) => {
+    e.preventDefault();
+    if (!pedido.trim()) return;
+    setOcupado('pedir'); setMsg('');
+    try { await pedir({ tipo: 'documento', texto: pedido }); setPedido(''); setMsg('✓ Pedido. Le llega a su Fisquo con un botón para subirlo.'); router.refresh(); } catch (err) { setMsg(err.message); }
+    setOcupado('');
+  };
+  // Los tickets que faltan, de una vez (los que ya se le han pedido no se repiten).
+  const sinTicket = docs.gastos.filter((g) => g.sinJustificante && !peticiones.some((p) => p.estado === 'pendiente' && p.gasto?.id === g.id));
+  const pedirTickets = async () => {
+    if (!(await confirmar({ titulo: `¿Pedirle ${sinTicket.length === 1 ? 'el ticket que falta' : `${Math.min(30, sinTicket.length)} tickets`}?`, texto: 'Le llega un mensaje por cada gasto, con un botón para hacerle una foto o subir el PDF.', aceptar: 'Pedir' }))) return;
+    setOcupado('tickets'); setMsg('');
+    let n = 0;
+    try { for (const g of sinTicket.slice(0, 30)) { await pedir({ tipo: 'ticket', gasto: g.id }); n += 1; } setMsg(`✓ ${n === 1 ? 'Pedido 1 ticket' : `Pedidos ${n} tickets`}`); } catch (err) { setMsg(n ? `Pedidos ${n}; el resto, no: ${err.message}` : err.message); }
+    setOcupado(''); router.refresh();
+  };
+  const anularPeticion = async (p) => {
+    try { await llamar(`/api/despacho/peticiones?empresa=${id}&id=${encodeURIComponent(p.id)}`, { method: 'DELETE' }); router.refresh(); } catch (err) { setMsg(err.message); }
+  };
+  const enviarInforme = () => accion({ accion: 'informe' }, `✓ Informe del ${t}T enviado: lo ve en su chat`);
+  const informeUrl = `/api/despacho/informe?empresa=${id}&anio=${anio}&t=${t}`;
+  const pidiendo = peticiones.filter((p) => p.estado === 'pendiente');
+  // Cierre guiado: cada paso con su estado (hecho o no) y lo que se puede hacer.
+  const presentado = presentados && [presentados.iva, presentados.irpf].filter((x) => x !== null);
+  const pasos = [
+    { id: 'falta', t: 'Lo que falta', hecho: pendientes.length === 0 && !pidiendo.length },
+    { id: 'impuestos', t: 'Revisa sus impuestos', hecho: Boolean(presentado?.length && presentado.every(Boolean)) },
+    { id: 'paquete', t: 'Descarga el paquete', hecho: false, opcional: true },
+    { id: 'cerrar', t: 'Cierra el trimestre', hecho: Boolean(cierre) && !cierre.cambios },
+    { id: 'informe', t: 'Envíale el informe', hecho: Boolean(informe) },
+  ];
   const chat = (doc) => `/despacho/mensajes/${id}${doc ? `?doc=${encodeURIComponent(doc)}` : ''}`;
 
   return <>
@@ -69,22 +106,46 @@ export default function ClienteDespacho({ cliente, anio, t, hoy, rol, estado, li
     {msg && <p role="status" className={msg.startsWith('✓') ? 'nota guardado' : 'error'}>{msg}</p>}
 
     <section className="grupo" aria-labelledby="desp-rev">
-      <h2 className="grupo-t" id="desp-rev">{t}T {anio}</h2>
-      <div className="grupo-c">
-        <div className="celda desp-trimestre">
-          <span className="txt">
-            <span><span className={`desp-estado e-${estado}`}>{ESTADOS_TEXTO[estado]}</span></span>
-            <small>{cierre ? <>Cerrado por {cierre.por || cierre.despacho} el {fechaDe(cierre.fecha)}.{cierre.cambios && <b className="rojo"> Hay facturas o gastos que han cambiado desde entonces.</b>}</> : estado === 'curso' ? 'El trimestre aún no ha terminado.' : `Plazo hasta el ${fechaDe(limite)}.`}</small>
-          </span>
-          {cierre ? <span className="desp-acciones">
-            {cierre.cambios && <button type="button" className="boton" disabled={Boolean(ocupado)} onClick={cerrar}>Revisado de nuevo</button>}
-            <button type="button" className="boton sec" disabled={Boolean(ocupado)} onClick={reabrir}>Reabrir</button>
-          </span> : <button type="button" className="boton" disabled={Boolean(ocupado)} onClick={cerrar}>Revisado: cerrar</button>}
-        </div>
-        {pendientes.map((x) => <div key={x} className="celda desp-pendiente"><span className="txt">{x}</span></div>)}
-        {presentados && (presentados.iva !== null || presentados.irpf !== null) && <div className="celda"><span className="txt">Presentado en Hacienda<small>Se marca en sus Impuestos</small></span><span className="v">{[presentados.iva !== null && `IVA: ${presentados.iva ? 'sí' : 'no'}`, presentados.irpf !== null && `IRPF: ${presentados.irpf ? 'sí' : 'no'}`].filter(Boolean).join(' · ')}</span></div>}
-      </div>
-      <p className="grupo-pie">Cerrado, nadie puede crear, cambiar ni borrar sus facturas y gastos de este trimestre (sí cobrarlos, pagarlos o añadir justificantes). Si algo entra por otro camino, lo verás aquí.</p>
+      <h2 className="grupo-t" id="desp-rev">Cierre del {t}T {anio}, paso a paso</h2>
+      <p className="desp-estado-linea"><span className={`desp-estado e-${estado}`}>{ESTADOS_TEXTO[estado]}</span>
+        <small>{cierre ? <>Cerrado por {cierre.por || cierre.despacho} el {fechaDe(cierre.fecha)}.{cierre.cambios && <b className="rojo"> Hay facturas o gastos que han cambiado desde entonces.</b>}</> : estado === 'curso' ? 'El trimestre aún no ha terminado.' : `Plazo hasta el ${fechaDe(limite)}.`}</small></p>
+      <ol className="desp-pasos">
+        {pasos.map((p, i) => <li key={p.id} className={p.hecho ? 'hecho' : ''}>
+          <span className="desp-paso-n" aria-hidden>{p.hecho ? '✓' : i + 1}</span>
+          <div className="desp-paso">
+            <strong>{p.t}{p.hecho && <span className="sr"> (hecho)</span>}</strong>
+            {p.id === 'falta' && <>
+              {pendientes.length || pidiendo.length ? <ul className="desp-paso-lista">
+                {pendientes.map((x) => <li key={x}>{x}</li>)}
+                {pidiendo.length > 0 && <li>{pidiendo.length === 1 ? 'Le has pedido 1 documento y aún no lo ha subido' : `Le has pedido ${pidiendo.length} documentos y aún no los ha subido`}</li>}
+              </ul> : <small>Nada pendiente: todo tiene su justificante y no hay mensajes sin leer.</small>}
+              {sinTicket.length > 0 && <button type="button" className="boton sec desp-mini" disabled={Boolean(ocupado)} onClick={pedirTickets}>{sinTicket.length === 1 ? 'Pedirle el ticket que falta' : sinTicket.length > 30 ? `Pedirle 30 de los ${sinTicket.length} tickets que faltan` : `Pedirle los ${sinTicket.length} tickets que faltan`}</button>}
+            </>}
+            {p.id === 'impuestos' && <>
+              <small>{presentado?.length ? [presentados.iva !== null && `IVA: ${presentados.iva ? 'presentado' : 'sin presentar'}`, presentados.irpf !== null && `IRPF: ${presentados.irpf ? 'presentado' : 'sin presentar'}`].filter(Boolean).join(' · ') : 'Comprueba los modelos y márcalos como presentados.'}</small>
+              <button type="button" className="boton sec desp-mini" onClick={irA('/modelos')}>Abrir sus impuestos</button>
+            </>}
+            {p.id === 'paquete' && <>
+              <small>Excel, PDF y justificantes del trimestre, para tu programa o tu archivo.</small>
+              <a className="boton sec desp-mini" href={`/api/despacho/paquete?empresa=${id}&anio=${anio}&t=${t}`} download>Descargar el paquete</a>
+            </>}
+            {p.id === 'cerrar' && <>
+              <small>Cerrado, nadie puede crear, cambiar ni borrar sus facturas y gastos de este trimestre (sí cobrarlos, pagarlos o añadir justificantes).</small>
+              {cierre ? <span className="desp-acciones">
+                {cierre.cambios && <button type="button" className="boton desp-mini" disabled={Boolean(ocupado)} onClick={cerrar}>Revisado de nuevo</button>}
+                <button type="button" className="boton sec desp-mini" disabled={Boolean(ocupado)} onClick={reabrir}>Reabrir</button>
+              </span> : <button type="button" className="boton desp-mini" disabled={Boolean(ocupado) || estado === 'curso'} onClick={cerrar}>Revisado: cerrar el {t}T</button>}
+            </>}
+            {p.id === 'informe' && <>
+              <small>{informe ? `Enviado el ${fechaDe(informe.fecha)}${informe.por ? ` por ${informe.por}` : ''}.` : 'Un PDF sencillo con lo que ha facturado, lo que paga y cómo va el año. Le llega a su chat.'}</small>
+              <span className="desp-acciones">
+                <a className="boton sec desp-mini" href={informeUrl} target="_blank" rel="noopener">Ver el informe</a>
+                <button type="button" className="boton desp-mini" disabled={Boolean(ocupado)} onClick={enviarInforme}>{informe ? 'Enviarlo otra vez' : 'Enviárselo'}</button>
+              </span>
+            </>}
+          </div>
+        </li>)}
+      </ol>
     </section>
 
     {r ? <dl className="desp-cifras">
@@ -137,12 +198,41 @@ export default function ClienteDespacho({ cliente, anio, t, hoy, rol, estado, li
       <h2 className="grupo-t" id="desp-docs">Facturas y gastos del {t}T</h2>
       {docs.facturas.length + docs.gastos.length === 0 ? <p className="nota">No hay facturas ni gastos en este trimestre.</p> : <ul className="grupo-lista desp-docs">
         {[...docs.facturas.map((f) => ({ ...f, tipo: 'factura', titulo: `Factura ${f.texto}` })), ...docs.gastos.map((g) => ({ ...g, tipo: 'gasto', titulo: g.texto }))].map((x) => <li key={`${x.tipo}-${x.id}`} className="fila">
-          <span className="txt"><strong>{x.titulo}</strong><small>{fechaDe(x.fecha)}{x.tipo === 'gasto' ? ' · gasto' : ''}{x.sinJustificante ? ' · sin justificante' : ''}</small></span>
-          <span className="imp">{eur(x.base)}</span>
+          <button type="button" className="desp-doc-ver" onClick={() => setVer({ tipo: x.tipo, id: x.id })} aria-label={`Ver ${x.titulo}`}>
+            <span className="txt"><strong>{x.titulo}</strong><small>{fechaDe(x.fecha)}{x.tipo === 'gasto' ? ' · gasto' : ''}{x.sinJustificante ? ' · sin justificante' : ''}</small></span>
+            <span className="imp">{eur(x.base)}</span>
+          </button>
           <Ir className="boton sec desp-mini" href={chat(`${x.tipo}:${x.id}`)}>Preguntar</Ir>
         </li>)}
       </ul>}
       {docs.mas > 0 && <p className="grupo-pie">Y {docs.mas} más: entra en sus Facturas o Gastos para verlos todos.</p>}
+      <VistaDocumento base={`/api/despacho/documento?empresa=${id}`} doc={ver} alCerrar={() => setVer(null)}
+        acciones={(d, cerrarVista) => <>
+          <Ir className="boton sec" href={chat(`${d.tipo}:${d.id}`)}>Preguntar por {d.tipo === 'factura' ? 'esta factura' : 'este gasto'}</Ir>
+          <AccionesDocumento d={d} lado="despacho" empresa={cliente.id} alHacer={() => { cerrarVista(); setMsg('✓ Ticket pedido: le llega a su Fisquo'); router.refresh(); }} />
+        </>} />
+    </section>
+
+    <section className="grupo" aria-labelledby="desp-pet">
+      <h2 className="grupo-t" id="desp-pet">Documentos que le pides</h2>
+      <form className="desp-pedir" onSubmit={pedirDocumento}>
+        <input className="campo" value={pedido} maxLength={300} onChange={(e) => setPedido(e.target.value)} placeholder="Por ejemplo: el contrato de alquiler del local" aria-label="Qué documento necesitas" />
+        <button className="boton" disabled={!pedido.trim() || Boolean(ocupado)}>Pedir</button>
+      </form>
+      {peticiones.length > 0 && <ul className="grupo-lista desp-peticiones">
+        {peticiones.slice(0, 30).map((p) => <li key={p.id} className="fila">
+          <span className="txt">
+            <strong>{p.tipo === 'ticket' ? `Ticket de ${p.gasto?.texto || 'un gasto'}` : p.texto}</strong>
+            <small>{p.estado === 'pendiente' ? `Pedido el ${fechaDe(p.creada)}${p.por?.nombre ? ` por ${p.por.nombre}` : ''}` : p.estado === 'entregada' ? `Subido${p.entrega?.fecha ? ` el ${fechaDe(p.entrega.fecha)}` : ''}` : p.motivo || 'Anulado'}</small>
+          </span>
+          <span className={`desp-estado ${p.estado === 'pendiente' ? 'e-revisar' : p.estado === 'entregada' ? 'e-presentado' : 'e-curso'}`}>{p.estado === 'pendiente' ? 'Pendiente' : p.estado === 'entregada' ? 'Recibido' : 'Anulado'}</span>
+          {p.estado === 'entregada' && (p.tipo === 'ticket'
+            ? <button type="button" className="boton sec desp-mini" onClick={() => setVer({ tipo: 'gasto', id: p.gasto.id })}>Ver</button>
+            : p.entrega?.archivo && <a className="boton sec desp-mini" href={`/api/despacho/peticiones?empresa=${id}&id=${encodeURIComponent(p.id)}&archivo=1`} target="_blank" rel="noopener">Ver</a>)}
+          {p.estado === 'pendiente' && <button type="button" className="boton sec desp-mini" onClick={() => anularPeticion(p)}>Anular</button>}
+        </li>)}
+      </ul>}
+      <p className="grupo-pie">Le llega un mensaje a su Fisquo con un botón para hacer una foto o subir un PDF. Los tickets van directos a su gasto.</p>
     </section>
 
     {titular && <section className="grupo" aria-labelledby="desp-gest">

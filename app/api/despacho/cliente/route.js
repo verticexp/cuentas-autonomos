@@ -5,6 +5,11 @@ import { cambiarVinculo, registrarAcceso, rolEn, separarCliente } from '@/lib/de
 import { cerrarTrimestre, reabrirTrimestre } from '@/lib/cierres';
 import { incluirLicencia, planSinLicencia, quitarLicencia, sincronizarLicencias } from '@/lib/licencias';
 import { auditar } from '@/lib/auditoria';
+import { redis } from '@/lib/redis';
+import { escribir, marcarLeido, responder } from '@/lib/comentariosDespacho';
+import { invalidarNoLeidos } from '@/lib/mensajesDespacho';
+import { avisarCliente } from '@/lib/avisosDespacho';
+import { rangoTrimestre } from '@/lib/cierres';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,6 +32,21 @@ export async function POST(req) {
     const texto = accion === 'cerrar' ? `Revisó y cerró el ${t}T ${anio}` : `Reabrió el ${t}T ${anio}`;
     await Promise.all([registrarAcceso(e.id, quien, texto), auditar(ctx, `${d.nombre}: ${texto.toLowerCase()}`)]);
     return Response.json({ ok: true, cierre: x.cierre || null });
+  }
+  // informe: le manda al chat el informe del trimestre (PDF, api/despacho/informe y api/tu-despacho/informe).
+  if (accion === 'informe') {
+    const { anio, t } = periodoDe(b.anio, b.t, dia);
+    const doc = { tipo: 'informe', id: `${anio}-${t}`, texto: `Informe del ${t}T ${anio}`, fecha: rangoTrimestre(anio, t)[1] };
+    const m = await escribir(e.id, quien, 'despacho', { texto: `📊 Te he preparado el informe del ${t}T ${anio}: lo que has facturado y gastado, lo que pagas de impuestos y cómo va el año. Tócalo para abrirlo.`, doc, despacho: d.id });
+    if (m.error) return error(m.error, m.status || 400);
+    // No es una pregunta: no cuenta entre las que quedan por resolver.
+    await responder(e.id, m.comentario.id, quien, 'despacho', { resuelto: true, despacho: d.id });
+    await redis.hset(`despacho-informes:${e.id}`, { [`${anio}-${t}`]: { fecha: new Date().toISOString(), por: quien.nombre || '', despacho: d.id } });
+    await marcarLeido(e.id, 'despacho');
+    await invalidarNoLeidos(d.id);
+    await registrarAcceso(e.id, quien, 'Te ha enviado el informe del trimestre', `${t}T ${anio}`);
+    avisarCliente(e, { titulo: `${d.nombre}: informe del ${t}T ${anio}`, cuerpo: 'Lo que has facturado, lo que pagas de impuestos y cómo va el año.' });
+    return Response.json({ ok: true });
   }
   if (accion === 'gestor') {
     const gestor = b.gestor ? String(b.gestor) : null;

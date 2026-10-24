@@ -1,8 +1,10 @@
 import { invalidarNoLeidos } from '@/lib/mensajesDespacho';
+import { avisarDespacho } from '@/lib/avisosDespacho';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
+import { redis } from '@/lib/redis';
 import { hoy } from '@/lib/formato';
 import { auditar } from '@/lib/auditoria';
-import { despachoPorCodigo, leerAccesos, separarCliente, unirCliente } from '@/lib/despachos';
+import { despachoDe, despachoPorCodigo, leerAccesos, separarCliente, unirCliente } from '@/lib/despachos';
 import { comentariosDe, escribir, marcarLeido, responder } from '@/lib/comentariosDespacho';
 import { planSinLicencia, sincronizarLicencias } from '@/lib/licencias';
 import { pasado, respuesta429 } from '@/lib/limite';
@@ -81,5 +83,7 @@ export async function PUT(req) {
   await marcarLeido(u.empresa, 'cliente');
   // El número de «Mensajes» del despacho se pone al día.
   await invalidarNoLeidos(u.despachoCliente.id);
+  const [d, e] = await Promise.all([despachoDe(u.despachoCliente.id), redis.hget('empresas', u.empresa)]);
+  if (d && e) avisarDespacho(d, e, { titulo: `Mensaje de ${u.empresaNombre || e.nombre}`, cuerpo: String(b.texto || '') });
   return Response.json(r);
 }

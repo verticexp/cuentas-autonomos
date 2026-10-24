@@ -33,6 +33,10 @@ export default async function Mensajes() {
   return <main className="pagina mk-look despacho">
     <h1 className="titulo">Mensajes</h1>
     <p className="desp-sub">Habla con tus clientes sin salir de Fisquo. Les llega a su app, en Tu gestoría, y te contestan aquí.</p>
+    {lista.length > 1 && <div className="desp-acciones desp-mensajes-acciones">
+      <Ir className="boton sec" href="/despacho/mensajes/varios">Escribir a varios</Ir>
+      <Ir className="boton sec" href="/despacho/ajustes/plantillas">Mensajes guardados</Ir>
+    </div>}
     {conMensajes.length > 0 && <ul className="grupo-lista desp-conversaciones">{conMensajes.map(fila)}</ul>}
     {sin.length > 0 && <section className="grupo" aria-labelledby="msg-sin">
       <h2 className="grupo-t" id="msg-sin">Empezar una conversación</h2>
