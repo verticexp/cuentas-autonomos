@@ -1,31 +1,49 @@
-/* Pestaña «Más» del móvil: buscador, atajos y el resto de pantallas en listas por grupos (cada grupo con su color). */
-.mas-perfil { display: flex; align-items: center; gap: 12px; padding: 12px 14px; margin-bottom: 14px; border-radius: 18px; background: var(--surface); color: var(--ink); text-decoration: none; border: 1px solid var(--line); -webkit-tap-highlight-color: transparent; }
-.mas-perfil:active { background: var(--line); }
-.mas-perfil .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.mas-perfil .txt strong, .mas-perfil .txt small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.mas-perfil-ir { flex: none; color: var(--muted); font-weight: 600; font-size: 15px; }
-.mas-perfil:focus-visible, .mas-tile:focus-visible { outline: 2px solid var(--marca); outline-offset: 2px; }
+/* «Más» y Ajustes como en iOS 26 (App Store, Fotos, Ajustes del iPhone): título grande con tu avatar a la derecha,
+   favoritos arriba y listas agrupadas de una línea, con el icono en un cuadrado de color sólido y el valor en gris a la
+   derecha. Sin sombras ni subtítulos. */
 
-.mas-buscar { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px; margin-bottom: 22px; border-radius: 12px; background: var(--relleno); color: var(--muted); }
-.mas-buscar svg { flex: none; width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+/* Color sólido de cada grupo (components/secciones.js): el de los iconos del sistema de Apple. El dibujo va en blanco. */
+[data-tono="verde"] { --tono-solido: #2FA35A; }
+[data-tono="azul"] { --tono-solido: #0A7AFF; }
+[data-tono="ambar"] { --tono-solido: #F28A00; }
+[data-tono="violeta"] { --tono-solido: #5856D6; }
+[data-tono="rojo"] { --tono-solido: #FF3B30; }
+[data-tono="gris"] { --tono-solido: #8E8E93; }
+
+.mas-cab { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.mas-cab .titulo { margin-bottom: 10px; }
+.mas-cuenta { flex: none; display: grid; border-radius: 50%; margin-top: -4px; -webkit-tap-highlight-color: transparent; transition: transform 0.12s var(--salida, ease-out); }
+.mas-cuenta:active { transform: scale(0.94); }
+.mas-cuenta:focus-visible, .mas-tile:focus-visible { outline: 2px solid var(--marca); outline-offset: 2px; }
+
+.mas-buscar { display: flex; align-items: center; gap: 6px; height: 36px; padding: 0 10px; margin-bottom: 16px; border-radius: 10px; background: var(--relleno); color: var(--muted); }
+.mas-buscar svg { flex: none; width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
 .mas-buscar input { flex: 1; min-width: 0; height: 100%; border: 0; background: none; font-size: 17px; color: var(--ink); outline: none; -webkit-appearance: none; appearance: none; }
 .mas-buscar input::placeholder { color: var(--muted); }
 .mas-buscar:focus-within { box-shadow: 0 0 0 2px var(--marca); }
 
-.mas-pagina .grupo { margin-bottom: 24px; }
-.mas-fila { min-height: 56px; -webkit-tap-highlight-color: transparent; }
-.mas-fila .txt { font-size: 17px; }
-.mas-fila .txt small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.celda.mas-fila + .celda::before { left: 60px; }
-.mas-ico { flex: none; width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; background: var(--tono-fondo, var(--menta)); color: var(--tono, var(--ico)); }
-.mas-ico svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.mas-aviso { flex: none; font-size: 13px; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: var(--tono-fondo); color: var(--tono); white-space: nowrap; }
+/* Listas agrupadas: cabecera pequeña y gris, filas de 44 px y separador que empieza donde acaba el icono. */
+.mas-pagina .grupo, .ajustes-lista .grupo { margin-bottom: 22px; }
+.mas-pagina .grupo-t, .ajustes-lista .grupo-t { font-family: inherit; font-size: 13px; font-weight: 400; letter-spacing: 0; color: var(--muted); margin: 0 16px 6px; }
+.mk-look.mas-pagina .grupo-c, .ajustes-lista .grupo-c { box-shadow: none; border: 0; border-radius: 12px; }
+.mas-fila { min-height: 44px; padding-top: 7px; padding-bottom: 7px; -webkit-tap-highlight-color: transparent; }
+/* El nombre se ve entero; el valor ocupa lo que sobra y se corta con «…» si no cabe. */
+.mas-fila .txt { flex: 1 1 auto; min-width: 0; font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.celda.mas-fila + .celda::before { left: 57px; }
+.mas-ico { flex: none; width: 29px; height: 29px; border-radius: 7px; display: grid; place-items: center; background: var(--tono-solido, #8E8E93); color: #fff; }
+.mas-ico svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+/* El valor de la derecha (como «Wi-Fi  Casa» en el iPhone): gris; en rojo o ámbar si apremia. */
+.mas-fila .txt:has(+ .mas-valor) { flex: 0 1 auto; }
+.mas-valor { flex: 1 1 0; min-width: 0; text-align: right; font-size: 17px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mas-valor[data-tono] { color: var(--tono); }
 
-.mas-atajos { margin-bottom: 24px; }
-.mas-rejilla { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
-.mas-tile { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 4px 10px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); color: var(--ink); text-decoration: none; text-align: center; -webkit-tap-highlight-color: transparent; transition: transform 0.12s cubic-bezier(0.23, 1, 0.32, 1), background-color 0.12s; }
-.mas-tile:active { transform: scale(0.97); background: var(--line); }
-.mas-tile .mas-ico { width: 40px; height: 40px; border-radius: 12px; }
-.mas-tile .mas-ico svg { width: 22px; height: 22px; }
-.mas-nombre { font-size: 12px; font-weight: 600; line-height: 1.2; overflow-wrap: anywhere; hyphens: auto; }
-@media (prefers-reduced-motion: reduce) { .mas-tile { transition: none; } }
+/* Favoritos: cuatro iconos grandes, como en el Centro de control. */
+.mas-favoritos { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 22px; }
+.mas-tile { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 4px 10px; border-radius: 14px; background: var(--surface); color: var(--ink); text-decoration: none; text-align: center; -webkit-tap-highlight-color: transparent; transition: transform 0.12s cubic-bezier(0.23, 1, 0.32, 1), background-color 0.12s; }
+.mas-tile:active { transform: scale(0.96); background: var(--relleno); }
+.mas-tile .mas-ico { width: 40px; height: 40px; border-radius: 10px; }
+.mas-tile .mas-ico svg { width: 23px; height: 23px; }
+.mas-nombre { max-width: 100%; font-size: 11px; font-weight: 500; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mas-punto { position: absolute; top: 8px; right: 10px; width: 9px; height: 9px; border-radius: 50%; background: var(--tono-solido, #FF3B30); }
+@media (prefers-reduced-motion: reduce) { .mas-tile, .mas-cuenta { transition: none; } }
+@media (min-width: 1024px) { .mas-favoritos { grid-template-columns: repeat(4, minmax(0, 120px)); } }

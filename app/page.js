@@ -24,7 +24,6 @@ import Ico from '@/components/Ico';
 import Logo from '@/components/Logo';
 import AvisoPrueba from '@/components/AvisoPrueba';
 import AvisoMensajes from '@/components/AvisoMensajes';
-import AccesoDespacho from '@/components/AccesoDespacho';
 import { despachoDe, rolEn, usaEmpresaPropia } from '@/lib/despachos';
 import { redirect } from 'next/navigation';
 import { DETALLE, puede } from '@/lib/permisos';
@@ -157,7 +156,6 @@ export default async function Resumen({ searchParams }) {
     <main className="pagina mk-look">
       <AvisoPrueba plan={u.plan} app={esApp((await headers()).get('user-agent'))} />
       <AvisoMensajes u={u} />
-      <AccesoDespacho u={u} />
       <header className={`inicio${facturado > 0 ? '' : ' sin-saldo'}`}>
         <div className="inicio-barra">
           <Logo />
@@ -169,7 +167,7 @@ export default async function Resumen({ searchParams }) {
         </div>
         <h1 className="inicio-hola">Hola, {String(u.nombre || '').split(' ')[0] || 'equipo'}</h1>
         <p className="inicio-sub">{sinDatos ? (siguientePaso?.id === 'factura' ? 'Empieza por tu primera factura: tarda un minuto.' : 'Vamos a dejarlo todo listo.') : esteAnio ? 'Así va tu año.' : `Así cerraste ${anio}.`}</p>
-        {u.misEmpresas?.length > 1 && <CambiarEmpresa empresas={u.misEmpresas} actual={u.empresa} variante="chip" />}
+        {!u.despacho && u.misEmpresas?.length > 1 && <CambiarEmpresa empresas={u.misEmpresas} actual={u.empresa} variante="chip" />}
       </header>
 
       {facturado > 0 && (

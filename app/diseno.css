@@ -372,6 +372,9 @@ html[data-vt=gesto]::view-transition-new(root) { animation: 0.28s var(--vt-curva
 /* Nueva factura o presupuesto: sube como una hoja */
 html[data-vt=subir]::view-transition-old(root) { animation: 0.46s var(--vt-curva) both vt-al-fondo; }
 html[data-vt=subir]::view-transition-new(root) { animation: 0.46s var(--vt-curva) both vt-hoja; }
+/* Cerrar una hoja (el «OK» de Ajustes): baja y la pantalla de detrás vuelve a su sitio */
+html[data-vt=bajar]::view-transition-old(root) { animation: 0.4s var(--vt-curva) both vt-hoja-baja; z-index: 1; }
+html[data-vt=bajar]::view-transition-new(root) { animation: 0.4s var(--vt-curva) both vt-del-fondo; }
 /* Pestañas: un desliz corto hacia el lado de la pestaña tocada */
 html[data-vt=tab-der]::view-transition-old(root) { animation: 0.24s var(--vt-curva) both vt-tab-a-izq; }
 html[data-vt=tab-der]::view-transition-new(root) { animation: 0.3s var(--vt-curva) both vt-tab-desde-der; }
@@ -403,6 +406,8 @@ html[data-vt=cifras]::view-transition-group(root) { animation-duration: 0.24s; }
 @keyframes vt-volver-gesto { from { transform: translateX(calc((var(--vt-x, 0px) - 100vw) * 0.3)); filter: brightness(0.9); } }
 @keyframes vt-al-fondo { to { transform: scale(0.93); filter: brightness(0.75); border-radius: 18px; } }
 @keyframes vt-hoja { from { transform: translateY(100%); } }
+@keyframes vt-hoja-baja { to { transform: translateY(100%); } }
+@keyframes vt-del-fondo { from { transform: scale(0.93); filter: brightness(0.75); border-radius: 18px; } }
 @keyframes vt-tab-a-izq { to { transform: translateX(-24px); opacity: 0; } }
 @keyframes vt-tab-desde-der { from { transform: translateX(24px); opacity: 0; } }
 @keyframes vt-tab-a-der { to { transform: translateX(24px); opacity: 0; } }

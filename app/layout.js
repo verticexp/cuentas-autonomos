@@ -25,7 +25,7 @@ import GestoAtras from '@/components/GestoAtras';
 import BarraEstado from '@/components/BarraEstado';
 import { WEB } from '@/lib/web';
 import Barra from '@/components/Barra';
-import AvisoDespacho from '@/components/AvisoDespacho';
+import BarraDespacho from '@/components/SelectorCuenta';
 import { despachoDe, rolEn, usaEmpresaPropia } from '@/lib/despachos';
 import { noLeidosDespacho } from '@/lib/mensajesDespacho';
 
@@ -110,9 +110,13 @@ export default async function RootLayout({ children }) {
         {u && soloLectura(u.plan) && !ruta.startsWith('/ajustes/plan') && (
           <p className="aviso-lectura" role="status"><span>{app ? SOLO_LECTURA_APP : puede(u, 'empresa') ? 'Tu prueba ha terminado: puedes ver y exportar todo, pero no crear ni editar.' : 'La prueba de tu empresa ha terminado: puedes ver y exportar todo. Para crear o editar, pídele al administrador que elija un plan.'}</span>{!app && puede(u, 'empresa') && <a href="/ajustes/plan">Elegir plan</a>}</p>
         )}
-        {u?.viaDespacho && !enDespacho && <AvisoDespacho cliente={u.empresaNombre || u.emisor?.nombre} despacho={u.viaDespacho.nombre} empresa={u.empresa} />}
+        {/* La gente de un despacho, fuera del panel: «‹ Mi despacho» y el selector de cuenta (se esconde sola en el panel). */}
+        {rolDespacho && <BarraDespacho actual={u.viaDespacho ? 'cliente' : 'empresa'} despacho={despacho.nombre} noLeidos={mensajesNuevos}
+          cliente={u.viaDespacho ? { id: u.empresa, nombre: u.empresaNombre || u.emisor?.nombre || 'Cliente' } : null}
+          empresas={rolDespacho === 'titular' && usaEmpresaPropia(despacho) ? (u.misEmpresas || []).filter((x) => !x.cliente) : []}
+          empresa={u.viaDespacho ? null : u.empresa} empresaNombre={u.viaDespacho ? '' : u.empresaNombre} />}
         {children}
-        <Suspense><Barra despacho={rolDespacho ? { nombre: despacho.nombre, noLeidos: mensajesNuevos, titular: rolDespacho === 'titular' && usaEmpresaPropia(despacho) } : null} tabbar={u ? { despacho: rolDespacho ? (u.viaDespacho ? 'cliente' : usaEmpresaPropia(despacho) ? 'empresa' : 'cliente') : null, porRevisar, permisos: permisosDe(u), empresas: u.misEmpresas, empresa: u.empresa, admin: Boolean(u.admin), inventario: Boolean(u.fiscal?.inventario), equipo: Boolean(equipo), fiscal: { tipo: u.fiscal?.tipo, iva: u.fiscal?.iva }, faltan: planesQueFaltan(u.plan) } : null} /><Llegada /><BarraEstado /></Suspense>
+        <Suspense><Barra despacho={rolDespacho ? { nombre: despacho.nombre, noLeidos: mensajesNuevos, empresas: rolDespacho === 'titular' && usaEmpresaPropia(despacho) ? (u.misEmpresas || []).filter((x) => !x.cliente) : [], titular: rolDespacho === 'titular' && usaEmpresaPropia(despacho) } : null} tabbar={u ? { despacho: rolDespacho ? (u.viaDespacho ? 'cliente' : usaEmpresaPropia(despacho) ? 'empresa' : 'cliente') : null, porRevisar, permisos: permisosDe(u), empresas: u.misEmpresas, empresa: u.empresa, admin: Boolean(u.admin), inventario: Boolean(u.fiscal?.inventario), equipo: Boolean(equipo), fiscal: { tipo: u.fiscal?.tipo, iva: u.fiscal?.iva }, faltan: planesQueFaltan(u.plan) } : null} /><Llegada /><BarraEstado /></Suspense>
         {u?.bloqueoPantalla && <Bloqueo email={u.email} servidor={abierta} />}
       </body>
     </html>

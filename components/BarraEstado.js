@@ -17,7 +17,9 @@ export default function BarraEstado() {
       const papel = oscuro ? '#111214' : '#F3F4F1';
       const inicio = document.getElementById('arranque') && html.dataset.arranque !== 'visto';
       const bloqueada = !html.dataset.abierta && document.querySelector('.pantalla-bloqueo');
-      const color = inicio ? '#0F1F1B' : (location.pathname === '/' && !bloqueada) ? cabecera : papel;
+      // Ajustes en el móvil es una hoja: arriba se ve el fondo oscurecido de detrás (app/ajustes.css --hoja-fondo).
+      const hoja = /^\/ajustes(\/|$)/.test(location.pathname) && matchMedia('(max-width: 1023.98px)').matches;
+      const color = inicio ? '#0F1F1B' : (location.pathname === '/' && !bloqueada) ? cabecera : hoja ? (oscuro ? '#000000' : '#9EA19D') : papel;
       // Solo se cambia el color de las etiquetas que ya hay (son de Next: quitarlas rompía la navegación)
       const metas = [...document.querySelectorAll('meta[name="theme-color"]')];
       if (!metas.length) { const m = document.createElement('meta'); m.name = 'theme-color'; document.head.appendChild(m); metas.push(m); }
