@@ -3,6 +3,8 @@ import { clientesVisibles } from '@/lib/despachos';
 import { plazosDespacho } from '@/lib/plazosDespacho';
 import { fechaCorta, fechaTexto, hoy } from '@/lib/formato';
 import Ir from '@/components/Ir';
+import CalendarioDespacho from '@/components/CalendarioDespacho';
+import { headers } from 'next/headers';
 import Vacio from '@/components/Vacio';
 import '@/app/mk.css';
 import '@/app/despacho.css';
@@ -42,6 +44,9 @@ function Plazo({ p, dia }) {
 // en los próximos 120, por meses. «Presentado» sale de lo que se marca en los Impuestos de cada cliente.
 export default async function Plazos() {
   const { u, d } = await requerirDespacho();
+  const token = d.miembros[u.id]?.calendario;
+  const cabeceras = token ? await headers() : null;
+  const url = token ? `https://${cabeceras.get('host')}/api/abierta/calendario?t=${encodeURIComponent(token)}` : '';
   const dia = hoy();
   const clientes = (await clientesVisibles(d, u.id)).map(({ id, empresa: e }) => ({ id, nombre: e.nombre || e.emisor?.nombre, fiscal: e.fiscal || {}, pres: { pres303: e.pres303, pagos130: e.pagos130, pres111: e.pres111, pres115: e.pres115, pres123: e.pres123 } }));
   const plazos = plazosDespacho(clientes, { hoy: dia, dias: DIAS, atraso: ATRASO });
@@ -51,6 +56,7 @@ export default async function Plazos() {
   return <main className="pagina mk-look despacho">
     <h1 className="titulo">Plazos</h1>
     <p className="desp-sub">Los modelos de {clientes.length === 1 ? 'tu cliente' : `tus ${clientes.length} clientes`} que vencen en los próximos {DIAS} días y lo que venció sin presentar. «Presentado» sale de lo que se marca en los Impuestos de cada uno.</p>
+    <CalendarioDespacho token={token} url={url} />
     {vencidos.length > 0 && <section className="grupo" aria-labelledby="pl-vencidos">
       <h2 className="grupo-t rojo" id="pl-vencidos">Fuera de plazo</h2>
       <ul className="desp-plazos">{vencidos.map((p) => <Plazo key={`${p.fecha}-${p.modelo}-${p.periodo}-${p.hacienda}`} p={p} dia={dia} />)}</ul>
