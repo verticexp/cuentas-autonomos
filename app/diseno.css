@@ -265,7 +265,7 @@ fieldset.solo-ver:disabled .campo { opacity: 1; color: var(--ink); -webkit-text-
 .progreso span.hecho { background: var(--marca); }
 .hola { color: var(--muted); font-size: 15px; }
 .paso { display: flex; flex-direction: column; gap: 12px; animation: paso 0.32s cubic-bezier(0.2, 0.8, 0.2, 1); }
-@keyframes paso { from { opacity: 0; transform: translateX(24px); filter: blur(3px); } }
+@keyframes paso { from { opacity: 0; transform: translateX(24px); } }
 .paso .titulo { margin-bottom: 0; }
 .opciones { display: flex; flex-direction: column; background: var(--surface); border-radius: 12px; overflow: hidden; }
 .opcion { display: flex; align-items: center; gap: 12px; padding: 13px 16px; text-align: left; position: relative; border-radius: 0; color: var(--ink); }
@@ -297,7 +297,7 @@ fieldset.solo-ver:disabled .campo { opacity: 1; color: var(--ink); -webkit-text-
 
 /* Factura: cabecera que nace de la fila de la lista */
 .factura-hero { background: var(--surface); border-radius: 16px; padding: 16px 18px 14px; margin: 6px 0 16px; animation: hero 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); }
-@keyframes hero { from { opacity: 0; transform: translateY(12px) scale(0.98); filter: blur(4px); } }
+@keyframes hero { from { opacity: 0; transform: translateY(12px) scale(0.98); } }
 html:active-view-transition .factura-hero { animation: none; }
 .fh-num { color: var(--muted); font-size: 13px; font-weight: 500; }
 .fh-cliente { font-size: 22px; font-weight: 600; line-height: 1.2; margin-top: 2px; width: fit-content; }
@@ -349,9 +349,14 @@ a.fila:active { transform: scale(0.985); }
    (lib/transicion.js, SIN_BARRA). Con su propia capa quedaba encima de la conversación y se desvanecía: un destello abajo. */
 html[data-vt-barra] .tabs, html[data-vt-barra] .tabbar .mas { view-transition-name: none; }
 /* Pantalla que llega tarde, cuando ya se soltó la transición (lib/transicion.js): fundido corto en vez de aparecer de golpe. */
-html[data-llega-tarde] .pagina { animation: llega-tarde 0.24s var(--salida) both; }
-@keyframes llega-tarde { from { opacity: 0; transform: translateY(6px); } }
-@media (prefers-reduced-motion: reduce) { html[data-llega-tarde] .pagina { animation-name: llega-tarde-suave; } @keyframes llega-tarde-suave { from { opacity: 0; } } }
+html[data-llega-tarde] .pagina { animation: llega-tarde 0.22s var(--salida) both; }
+@keyframes llega-tarde { from { opacity: 0; } }
+/* Pantalla de espera (lib/transicion.js ponerEspera): ocupa el sitio de la nueva mientras llega, debajo de la barra de
+   pestañas; al llegar, se funde. Mientras, la barra de título compacta de la de antes no se ve. */
+.espera-pantalla { position: fixed; inset: 0; z-index: 6; overflow: hidden; background: var(--paper); pointer-events: none; transition: opacity 0.22s var(--salida); }
+.espera-pantalla.saliendo { opacity: 0; }
+.volver-e { height: 22px; width: 96px; margin: 2px 0 16px; border-radius: 8px; }
+html[data-espera] .titulo-compacto { opacity: 0; visibility: hidden; transition: none; }
 .segmentado.vt a.activo { view-transition-name: segmento; }
 ::view-transition-group(segmento) { animation-duration: 0.32s; animation-timing-function: var(--vt-curva); }
 /* Textos que viajan de la fila a la cabecera: la caja mide lo que el texto, así no se deforma al crecer */
@@ -370,16 +375,25 @@ html[data-vt=atras]::view-transition-new(root) { animation: 0.36s var(--vt-curva
 html[data-vt=gesto]::view-transition-old(root) { animation: 0.28s var(--vt-curva) both vt-irse-gesto; z-index: 1; }
 html[data-vt=gesto]::view-transition-new(root) { animation: 0.28s var(--vt-curva) both vt-volver-gesto; }
 /* Nueva factura o presupuesto: sube como una hoja */
-html[data-vt=subir]::view-transition-old(root) { animation: 0.46s var(--vt-curva) both vt-al-fondo; }
-html[data-vt=subir]::view-transition-new(root) { animation: 0.46s var(--vt-curva) both vt-hoja; }
+/* Formulario de crear (nueva factura, presupuesto, albarán): a pantalla completa, sube desde abajo y la de detrás se
+   oscurece un poco; al salir («‹ Atrás», cancelar) baja, como un modal de iOS. */
+html[data-vt=subir]::view-transition-old(root) { animation: 0.5s var(--vt-curva) both vt-atenuar; }
+html[data-vt=subir]::view-transition-new(root) { animation: 0.5s var(--vt-curva) both vt-hoja; box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.14); }
+html[data-vt=cerrar]::view-transition-old(root) { animation: 0.42s var(--vt-curva) both vt-hoja-baja; z-index: 1; box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.14); }
+html[data-vt=cerrar]::view-transition-new(root) { animation: 0.42s var(--vt-curva) both vt-desatenuar; }
+/* Ajustes: una hoja de tarjeta; la pantalla de detrás se encoge y se oscurece, como en iOS. */
+html[data-vt=hoja]::view-transition-old(root) { animation: 0.46s var(--vt-curva) both vt-al-fondo; }
+html[data-vt=hoja]::view-transition-new(root) { animation: 0.46s var(--vt-curva) both vt-hoja; }
 /* Cerrar una hoja (el «OK» de Ajustes): baja y la pantalla de detrás vuelve a su sitio */
 html[data-vt=bajar]::view-transition-old(root) { animation: 0.4s var(--vt-curva) both vt-hoja-baja; z-index: 1; }
 html[data-vt=bajar]::view-transition-new(root) { animation: 0.4s var(--vt-curva) both vt-del-fondo; }
 /* Pestañas: un desliz corto hacia el lado de la pestaña tocada */
-html[data-vt=tab-der]::view-transition-old(root) { animation: 0.24s var(--vt-curva) both vt-tab-a-izq; }
-html[data-vt=tab-der]::view-transition-new(root) { animation: 0.3s var(--vt-curva) both vt-tab-desde-der; }
-html[data-vt=tab-izq]::view-transition-old(root) { animation: 0.24s var(--vt-curva) both vt-tab-a-der; }
-html[data-vt=tab-izq]::view-transition-new(root) { animation: 0.3s var(--vt-curva) both vt-tab-desde-izq; }
+/* Barra de abajo: en iOS cambiar de pestaña no desliza nada. La nueva aparece encima de la de antes con un fundido corto
+   (sin mezclar las dos: así no hay destello). */
+@media (max-width: 1023.98px) {
+  html[data-vt^=tab-]::view-transition-old(root) { animation: none; mix-blend-mode: normal; }
+  html[data-vt^=tab-]::view-transition-new(root) { animation: 0.18s var(--salida) both vt-dentro; mix-blend-mode: normal; }
+}
 /* Pestañas de una pantalla (components/Pestanas.js): la cabecera y las pestañas se quedan quietas, la pastilla viaja hasta la
    tocada (la pinta la caja de la transición: no se deforma aunque las pestañas no midan igual), el texto cambia de color y lo de
    debajo se desliza un poco hacia ese lado, como con la barra */
@@ -404,6 +418,8 @@ html[data-vt=cifras]::view-transition-group(root) { animation-duration: 0.24s; }
 @keyframes vt-volver { from { transform: translateX(-30%); filter: brightness(0.9); } }
 @keyframes vt-irse-gesto { from { transform: translateX(var(--vt-x, 0px)); box-shadow: -10px 0 30px rgba(0, 0, 0, 0.12); } to { transform: translateX(100%); box-shadow: -10px 0 30px rgba(0, 0, 0, 0.12); } }
 @keyframes vt-volver-gesto { from { transform: translateX(calc((var(--vt-x, 0px) - 100vw) * 0.3)); filter: brightness(0.9); } }
+@keyframes vt-atenuar { to { filter: brightness(0.86); } }
+@keyframes vt-desatenuar { from { filter: brightness(0.86); } }
 @keyframes vt-al-fondo { to { transform: scale(0.93); filter: brightness(0.75); border-radius: 18px; } }
 @keyframes vt-hoja { from { transform: translateY(100%); } }
 @keyframes vt-hoja-baja { to { transform: translateY(100%); } }
