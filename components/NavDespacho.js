@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { SIN_BARRA, alPulsar } from '@/lib/transicion';
 import Logo from '@/components/Logo';
-import { SelectorCuenta } from '@/components/SelectorCuenta';
 import '@/app/lateral.css';
 
 // Barra de «Mi despacho» (app/despacho), en lugar de la de una empresa: en el móvil, las cuatro pestañas abajo; en el
@@ -21,15 +20,15 @@ const TABS = [
 const activa = (path, href) => (href === '/despacho' ? path === '/despacho' || /^\/despacho\/(?!plazos|equipo|ajustes|mensajes|hoy|facturacion)[^/]+$/.test(path) : path.startsWith(href));
 
 // noLeidos: mensajes de clientes sin leer (su número va sobre «Mensajes»).
-// titular: la única con acceso a la empresa propia del despacho (Facturación); empresas: las suyas, en el selector de arriba.
-export default function NavDespacho({ nombre, noLeidos = 0, titular = false, empresas = [] }) {
+// titular: la única con acceso a la empresa propia del despacho (Facturación). Volver a ella y cambiar de cuenta, en la
+// barra de arriba (components/SelectorCuenta.js).
+export default function NavDespacho({ nombre, noLeidos = 0, titular = false }) {
   const path = usePathname();
   const router = useRouter();
   return (
     // Dentro de una conversación, en el móvil, la barra de abajo se esconde (como en WhatsApp): deja sitio para escribir.
     <div className={`tabbar tabbar-despacho${SIN_BARRA.test(path || '') ? ' tabbar-chat' : ''}`}>
       <Link href="/despacho" className="tabbar-logo" aria-label={`${nombre}, clientes`}><Logo /></Link>
-      <SelectorCuenta actual="despacho" despacho={nombre} empresas={empresas} className="sel-lateral" />
       <nav className="tabs" aria-label="Mi despacho">
         {TABS.map((t) => (
           <Link key={t.href} href={t.href} data-href={t.href} className={`${activa(path, t.href) ? 'activo' : ''}${t.soloOrdenador ? ' tab-ordenador' : ''}`} aria-current={activa(path, t.href) ? 'page' : undefined} onClick={alPulsar(router, t.href, 'tab-der')}>
