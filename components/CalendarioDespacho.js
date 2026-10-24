@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 
+// «En tu calendario» (Mi despacho › Plazos): suscribirse a los plazos de los clientes (lib/calendarioIcs.js) con un enlace
+// personal que se puede anular.
 export default function CalendarioDespacho({ token, url: inicial }) {
   const [url, setUrl] = useState(token ? inicial : '');
   const [ocupado, setOcupado] = useState(false);
@@ -40,7 +42,7 @@ export default function CalendarioDespacho({ token, url: inicial }) {
         </div>
       </div>
     </div>
-    {url && <p className="grupo-pie">Se actualiza solo. Quien tenga el enlace ve tus plazos: no lo compartas.</p>}
+    <p className="grupo-pie">{url ? 'Se actualiza solo. Quien tenga el enlace ve tus plazos: no lo compartas.' : 'Los plazos de tus clientes en Google Calendar, Apple o Outlook, con un aviso 3 días antes. Se actualizan solos.'}</p>
     <p className="grupo-pie" role="status" aria-live="polite">{mensaje}</p>
   </section>;
 }

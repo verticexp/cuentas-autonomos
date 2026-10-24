@@ -67,7 +67,7 @@ export default function ClienteDespacho({ cliente, anio, t, hoy, rol, estado, li
   // Los tickets que faltan, de una vez (los que ya se le han pedido no se repiten).
   const sinTicket = docs.gastos.filter((g) => g.sinJustificante && !peticiones.some((p) => p.estado === 'pendiente' && p.gasto?.id === g.id));
   const pedirTickets = async () => {
-    if (!(await confirmar({ titulo: `¿Pedirle ${sinTicket.length === 1 ? 'el ticket que falta' : `los ${sinTicket.length} tickets que faltan`}?`, texto: 'Le llega un mensaje por cada gasto, con un botón para hacerle una foto o subir el PDF.', aceptar: 'Pedir' }))) return;
+    if (!(await confirmar({ titulo: `¿Pedirle ${sinTicket.length === 1 ? 'el ticket que falta' : `${Math.min(30, sinTicket.length)} tickets`}?`, texto: 'Le llega un mensaje por cada gasto, con un botón para hacerle una foto o subir el PDF.', aceptar: 'Pedir' }))) return;
     setOcupado('tickets'); setMsg('');
     let n = 0;
     try { for (const g of sinTicket.slice(0, 30)) { await pedir({ tipo: 'ticket', gasto: g.id }); n += 1; } setMsg(`✓ ${n === 1 ? 'Pedido 1 ticket' : `Pedidos ${n} tickets`}`); } catch (err) { setMsg(n ? `Pedidos ${n}; el resto, no: ${err.message}` : err.message); }
@@ -119,7 +119,7 @@ export default function ClienteDespacho({ cliente, anio, t, hoy, rol, estado, li
                 {pendientes.map((x) => <li key={x}>{x}</li>)}
                 {pidiendo.length > 0 && <li>{pidiendo.length === 1 ? 'Le has pedido 1 documento y aún no lo ha subido' : `Le has pedido ${pidiendo.length} documentos y aún no los ha subido`}</li>}
               </ul> : <small>Nada pendiente: todo tiene su justificante y no hay mensajes sin leer.</small>}
-              {sinTicket.length > 0 && <button type="button" className="boton sec desp-mini" disabled={Boolean(ocupado)} onClick={pedirTickets}>{sinTicket.length === 1 ? 'Pedirle el ticket que falta' : `Pedirle los ${sinTicket.length} tickets que faltan`}</button>}
+              {sinTicket.length > 0 && <button type="button" className="boton sec desp-mini" disabled={Boolean(ocupado)} onClick={pedirTickets}>{sinTicket.length === 1 ? 'Pedirle el ticket que falta' : sinTicket.length > 30 ? `Pedirle 30 de los ${sinTicket.length} tickets que faltan` : `Pedirle los ${sinTicket.length} tickets que faltan`}</button>}
             </>}
             {p.id === 'impuestos' && <>
               <small>{presentado?.length ? [presentados.iva !== null && `IVA: ${presentados.iva ? 'presentado' : 'sin presentar'}`, presentados.irpf !== null && `IRPF: ${presentados.irpf ? 'presentado' : 'sin presentar'}`].filter(Boolean).join(' · ') : 'Comprueba los modelos y márcalos como presentados.'}</small>

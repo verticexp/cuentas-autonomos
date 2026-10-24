@@ -220,7 +220,7 @@ const COLECCIONES = ['facturas', 'gastos', 'clientes', 'saldo', 'asientos', 'ban
 // Los índices, ya hechos: así la app no los reconstruye documento a documento (scripts/indicesDemo.mjs).
 const indices = async (emp, facturas, gastos) => { for (const [col, docs] of [['facturas', facturas], ['gastos', gastos], ['presupuestos', []]]) await escribirIndices(r, P, emp, col, docs); };
 async function limpiar(emp) {
-  const ks = [...COLECCIONES.map((n) => `${P}${n}:${emp}`), `${P}cierres:${emp}`, `${P}despacho-comentarios:${emp}`, `${P}despacho-accesos:${emp}`];
+  const ks = [...COLECCIONES.map((n) => `${P}${n}:${emp}`), `${P}cierres:${emp}`, `${P}despacho-comentarios:${emp}`, `${P}despacho-accesos:${emp}`, `${P}despacho-peticiones:${emp}`, `${P}despacho-informes:${emp}`];
   for (const col of ['facturas', 'gastos', 'presupuestos']) ks.push(...Object.values(claves(col, emp)).map((k) => `${P}${k}`));
   await r.del(...ks);
   // El resumen guardado del panel (lib/panelCache.js) se calcularía con datos viejos el mismo día.
@@ -317,7 +317,7 @@ for (const [i, c] of CLIENTES.entries()) {
 
 // ---- Sonora Eventos (la demo del cliente): cliente del despacho, con su último trimestre presentado y cerrado.
 {
-  await r.del(`${P}cierres:${sonora.id}`, `${P}despacho-comentarios:${sonora.id}`, `${P}despacho-accesos:${sonora.id}`);
+  await r.del(`${P}cierres:${sonora.id}`, `${P}despacho-comentarios:${sonora.id}`, `${P}despacho-accesos:${sonora.id}`, `${P}despacho-peticiones:${sonora.id}`, `${P}despacho-informes:${sonora.id}`);
   const [fs, gs] = await Promise.all([r.hgetall(`${P}facturas:${sonora.id}`), r.hgetall(`${P}gastos:${sonora.id}`)]);
   const facturas = Object.values(fs || {}), gastos = Object.values(gs || {});
   const cierres = {};
@@ -371,6 +371,13 @@ for (const c of CLIENTES) {
     return { id: doc ? `dcom${String(j + 1).padStart(4, '0')}` : `general-${idDespacho}`, despacho: idDespacho, anio: ultimo.anio, t: ultimo.t, ...(doc ? { doc } : {}), hilo: h.hilo.map(([lado, texto, d], k) => msg(lado, quien, c.contacto, texto, fechaHora(mas(hoy, -d), 10 + k))), resuelto: Boolean(h.resuelto) };
   });
   if (hilos.length) await r.hset(`${P}despacho-comentarios:${c.id}`, porId(hilos));
+  // Documentos pedidos (lib/peticionesDespacho.js): el ticket del último gasto sin justificante y, a Sonora y a Jordi, un papel más.
+  const sinTicket = c.datos.gastos.filter((g) => !g.archivo && !g.nomina && g.proveedor && Number(g.base) > 0).sort((a, b) => b.fecha.localeCompare(a.fecha))[0];
+  const peticiones = [
+    ...(sinTicket ? [{ id: `dpet${c.id.slice(-4)}1`, despacho: idDespacho, tipo: 'ticket', texto: '', gasto: { id: sinTicket.id, texto: `${sinTicket.proveedor} (${sinTicket.fecha.split('-').reverse().join('/')})` }, creada: fechaHora(mas(hoy, -2), 9), por: quien, estado: 'pendiente' }] : []),
+    ...({ [sonora.id]: 'Las escrituras de constitución de la sociedad', dcli0002: 'El contrato de renting de la furgoneta' }[c.id] ? [{ id: `dpet${c.id.slice(-4)}2`, despacho: idDespacho, tipo: 'documento', texto: { [sonora.id]: 'Las escrituras de constitución de la sociedad', dcli0002: 'El contrato de renting de la furgoneta' }[c.id], creada: fechaHora(mas(hoy, -1), 12), por: quien, estado: 'pendiente' }] : []),
+  ];
+  if (peticiones.length) await r.hset(`${P}despacho-peticiones:${c.id}`, porId(peticiones));
   const leido = LEIDO[c.id] || { despacho: 0, cliente: 0 };
   await r.del(`${P}despacho-leido:${c.id}`);
   await r.hset(`${P}despacho-leido:${c.id}`, { despacho: leido.despacho ? fechaHora(mas(hoy, -leido.despacho), 8) : ahora, cliente: leido.cliente ? fechaHora(mas(hoy, -leido.cliente), 8) : ahora });
