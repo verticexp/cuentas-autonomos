@@ -114,3 +114,9 @@ test('transiciones como en iOS: sin esperar al servidor, pestañas sin deslizar,
   // Nada entra desenfocado: eso es de web, no de app.
   assert.doesNotMatch(css, /@keyframes (paso|hero) \{[^}]*blur/);
 });
+
+test('la barra de título compacta no cambia estado en un efecto de diseño (error 185 de React en WebKit)', async () => {
+  // Dentro de una transición de vista, el setState de un useLayoutEffect encadenaba repintados en WebKit hasta que React
+  // cortaba y salía «No se ha podido cargar Fisquo» al cambiar de pestaña (24-10-2026).
+  assert.doesNotMatch(await leer('components/TituloCompacto.js'), /useLayoutEffect\s*\(|import \{[^}]*useLayoutEffect/);
+});

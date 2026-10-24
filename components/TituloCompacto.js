@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { SIN_BARRA, subirArriba } from '@/lib/transicion';
 import '@/app/titulo-compacto.css';
@@ -60,11 +60,13 @@ export default function TituloCompacto() {
     };
   }, [path]);
 
-  // Si el nombre de «‹ Atrás» no cabe junto al título, solo la flecha, como en iOS (no «‹ Fa…»).
-  useLayoutEffect(() => {
+  // Si el nombre de «‹ Atrás» no cabe junto al título, solo la flecha, como en iOS (no «‹ Fa…»). Se mide en el fotograma
+  // siguiente y sin useLayoutEffect: un setState en un efecto de diseño dentro de una transición de vista encadenaba
+  // repintados en WebKit hasta el error 185 de React (pantalla «No se ha podido cargar Fisquo»).
+  useEffect(() => {
     const el = nombreAtras.current;
-    setSoloFlecha(false);
-    if (el) requestAnimationFrame(() => setSoloFlecha(el.scrollWidth > el.clientWidth + 1));
+    const id = requestAnimationFrame(() => setSoloFlecha(Boolean(el) && el.scrollWidth > el.clientWidth + 1));
+    return () => cancelAnimationFrame(id);
   }, [estado]);
 
   // Con la barra a la vista, lo fijo arriba de la página se coloca debajo de ella.
