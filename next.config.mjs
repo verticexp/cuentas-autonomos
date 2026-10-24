@@ -14,6 +14,9 @@ const seguridad = [
 
 export default {
   poweredByHeader: false,
+  // Las pantallas ya vistas se reutilizan 30 s al volver a ellas (antes, 0: cada cambio de pestaña volvía a pedirla y a
+  // consultar la base de datos). Tras guardar algo, la siguiente navegación las olvida (lib/cambiosDatos.js).
+  experimental: { staleTimes: { dynamic: 30 } },
   async redirects() {
     return [
       { source: '/grandes-empresas', destination: '/business', permanent: true },
