@@ -50,7 +50,14 @@ html, body { overscroll-behavior-y: none; }
    Darle su propia capa de composición (y a la base del botón +) hace que WebKit la mantenga clavada durante el scroll. */
 .tabs, .tabbar .mas { will-change: transform; }
 @media (max-width: 1023.98px) {
-  .tabbar[data-teclado] { display: none; }
+  /* Con el teclado fuera (formularios) o dentro de una conversación (.tabbar-chat, chat.css), la barra baja y se funde en
+     vez de desaparecer de golpe; al volver, sube igual. Escondida no se puede tocar ni enfocar (visibility). */
+  .tabbar { transition: opacity 0.22s var(--salida), transform 0.3s var(--vt-curva), visibility 0s; }
+  .tabbar[data-teclado], .tabbar.tabbar-chat {
+    opacity: 0; transform: translateX(-50%) translateY(calc(100% + 24px)); visibility: hidden; pointer-events: none;
+    transition: opacity 0.18s var(--salida), transform 0.24s var(--vt-curva), visibility 0s linear 0.24s;
+  }
+  @media (prefers-reduced-motion: reduce) { .tabbar[data-teclado], .tabbar.tabbar-chat { transform: translateX(-50%); } }
   /* También protege los campos en horizontal, donde el notch ocupa un lateral. */
   .pagina.gastos-formulario, .pagina.modelos:not(.contabilidad):not(.analisis) {
     padding-left: max(16px, env(safe-area-inset-left, 0px));
