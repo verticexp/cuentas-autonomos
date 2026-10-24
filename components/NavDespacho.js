@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { SIN_BARRA, alPulsar } from '@/lib/transicion';
+import { SIN_BARRA, alPulsar, subirArriba, volverHasta } from '@/lib/transicion';
 import Logo from '@/components/Logo';
 import '@/app/lateral.css';
 
@@ -25,13 +25,23 @@ const activa = (path, href) => (href === '/despacho' ? path === '/despacho' || /
 export default function NavDespacho({ nombre, noLeidos = 0, titular = false }) {
   const path = usePathname();
   const router = useRouter();
+  // La pestaña en la que ya se está, como en iOS: en su pantalla sube arriba; desde una de dentro (la ficha de un cliente),
+  // vuelve a ella. En el ordenador, la barra lateral lleva siempre a la pantalla.
+  const pulsar = (t) => (e) => {
+    const movil = matchMedia('(max-width: 1023.98px)').matches;
+    if (!e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0 && activa(path || '', t.href)) {
+      if (path === t.href) { e.preventDefault(); subirArriba(); return; }
+      if (movil) { e.preventDefault(); volverHasta(router, t.href); return; }
+    }
+    alPulsar(router, t.href, 'tab-der')(e);
+  };
   return (
     // Dentro de una conversación, en el móvil, la barra de abajo se esconde (como en WhatsApp): deja sitio para escribir.
     <div className={`tabbar tabbar-despacho${SIN_BARRA.test(path || '') ? ' tabbar-chat' : ''}`}>
       <Link href="/despacho" className="tabbar-logo" aria-label={`${nombre}, clientes`}><Logo /></Link>
       <nav className="tabs" aria-label="Mi despacho">
         {TABS.map((t) => (
-          <Link key={t.href} href={t.href} data-href={t.href} className={`${activa(path, t.href) ? 'activo' : ''}${t.soloOrdenador ? ' tab-ordenador' : ''}`} aria-current={activa(path, t.href) ? 'page' : undefined} onClick={alPulsar(router, t.href, 'tab-der')}>
+          <Link key={t.href} href={t.href} data-href={t.href} className={`${activa(path, t.href) ? 'activo' : ''}${t.soloOrdenador ? ' tab-ordenador' : ''}`} aria-current={activa(path, t.href) ? 'page' : undefined} onClick={pulsar(t)}>
             <svg viewBox="0 0 24 24" aria-hidden>{t.icono}</svg>
             <span>{t.nombre}</span>
             {t.href === '/despacho/mensajes' && noLeidos > 0 && <b className="tab-n" aria-label={`${noLeidos} sin leer`}>{noLeidos > 99 ? '99+' : noLeidos}</b>}

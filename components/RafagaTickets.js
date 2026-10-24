@@ -13,6 +13,7 @@ import { fotograma, reducir } from '@/lib/reducirImagen';
 import { preparar, subir } from '@/lib/justificanteCliente';
 import CupoEscaneo from './CupoEscaneo';
 import { escanearNativo, escanerDisponible } from '@/lib/escanerNativo';
+import { vibrar } from '@/lib/haptica';
 import { NO_IA, permisoIA } from '@/lib/permisoIA';
 import '@/app/rafaga.css';
 
@@ -86,7 +87,7 @@ export default function RafagaTickets({ hoy, actividades, igic = false }) {
   const disparar = () => {
     const v = video.current;
     if (!v?.videoWidth || fotos.length >= cupo) return;
-    navigator.vibrate?.(8);
+    vibrar('golpe');
     setFotos((f) => [...f, fotograma(v)]);
   };
   const escanear = async () => {

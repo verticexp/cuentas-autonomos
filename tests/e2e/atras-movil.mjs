@@ -238,7 +238,7 @@ try {
   // antes de salir; seguir editando no deja rastro en el historial y, tras guardar, ni se pregunta ni «atrás» vuelve al formulario.
   const pregunta = (p) => p.getByRole('alertdialog', { name: '¿Salir sin guardar?' });
   const conAviso = (p) => p.waitForFunction(() => Boolean(history.state?.__sinGuardar));
-  const concepto = (p) => p.getByPlaceholder('Ej.: Bolo DJ boda');
+  const concepto = (p) => p.getByPlaceholder('Ej.: Reparación de la instalación (2 horas)');
   // Como una persona: un toque en el campo antes de escribir (fill solo no cuenta como gesto para el navegador).
   const escribir = async (campo, texto) => { await campo.click(); await campo.fill(texto); };
   const facturaNueva = async (p) => {

@@ -19,6 +19,42 @@ test('la app de iOS vuelve atrás deslizando desde el borde y la web la avisa co
   assert.doesNotMatch(swift, /allowsBackForwardNavigationGestures = (false|activo|!)/);
 });
 
+test('en la app de iOS solo se vuelve deslizando desde pantallas con «‹ Atrás», y nunca hacia delante', { skip: sinApp }, async () => {
+  const swift = await leer('mobile/ios/App/App/FisquoViewController.swift');
+  const web = await leer('components/GestoAtras.js');
+  // WebKit también pone deslizar desde el borde derecho para ir adelante: se apaga.
+  assert.match(swift, /edges\.contains\(\.right\) \{ borde\.isEnabled = false \}/);
+  // El tapón decide al empezar, sin encenderlo ni apagarlo (eso perdía el primer deslizamiento).
+  assert.match(swift, /func gestureRecognizerShouldBegin[^}]*bloqueado/);
+  assert.doesNotMatch(swift, /tapon\.isEnabled = /);
+  // Una página nueva empieza sin bloqueo antes de que corra su JavaScript, no al terminar de cargar (llegaba tarde).
+  assert.match(swift, /alEmpezarPagina = \{[^}]*bloquear\(false\)/);
+  assert.match(await leer('mobile/ios/App/App/DelegadoWeb.swift'), /didCommit[\s\S]*alEmpezarPagina\?\(\)/);
+  // La web dice que hay gesto solo sin capas encima y con «‹ Atrás» (o un paso anterior): las pestañas no lo tienen.
+  assert.match(web, /const libre = abiertas\.length === 0 && destino\(\) !== null;/);
+  assert.doesNotMatch(web, /RAICES/);
+});
+
+test('la vibración pasa siempre por lib/haptica.js (en iOS navigator.vibrate no existe)', async () => {
+  const { readdir } = await import('node:fs/promises');
+  for (const nombre of await readdir(new URL('../components/', import.meta.url))) {
+    if (!nombre.endsWith('.js')) continue;
+    assert.doesNotMatch(await leer(`components/${nombre}`), /navigator\.vibrate|setAttribute\('switch'/, nombre);
+  }
+  const haptica = await leer('lib/haptica.js');
+  assert.match(haptica, /messageHandlers\?\.haptica/);
+  if (!sinApp) assert.match(await leer('mobile/ios/App/App/FisquoViewController.swift'), /add\(Haptica\(\), name: "haptica"\)/);
+});
+
+test('tocar la pestaña en la que se está sube arriba o vuelve a ella, como en iOS', async () => {
+  const barra = await leer('components/TabBar.js');
+  assert.match(barra, /if \(h === path\) \{ subirArriba\(\); return; \}/);
+  assert.match(barra, /if \(movil && h === activo\) \{ volverHasta\(router, h\); return; \}/);
+  const despacho = await leer('components/NavDespacho.js');
+  assert.match(despacho, /subirArriba\(\)/);
+  assert.match(despacho, /volverHasta\(router, t\.href\)/);
+});
+
 test('el gesto y el cierre de hojas con atrás están en todas las pantallas', async () => {
   assert.match(await leer('app/layout.js'), /<GestoAtras \/>/);
 });
