@@ -4,10 +4,11 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { alPulsar } from '@/lib/transicion';
 import Logo from '@/components/Logo';
+import Espacio from '@/components/Espacio';
 import '@/app/lateral.css';
 
 // Barra de «Mi despacho» (app/despacho), en lugar de la de una empresa: en el móvil, las cuatro pestañas abajo; en el
-// ordenador, la barra lateral con «Mi empresa» y «Cerrar sesión» debajo.
+// ordenador, la barra lateral con el selector «Mi despacho | Mi empresa» arriba y «Cerrar sesión» debajo.
 const TABS = [
   { href: '/despacho', nombre: 'Clientes', icono: <><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20c1-3.6 3.6-5.5 6.5-5.5s5.5 1.9 6.5 5.5M16 4.8a3.5 3.5 0 010 6.4M18.5 14.8c1.4.9 2.4 2.6 3 5.2" /></> },
   { href: '/despacho/mensajes', nombre: 'Mensajes', icono: <path d="M5 5h14a2 2 0 012 2v9a2 2 0 01-2 2h-7l-5 4v-4H5a2 2 0 01-2-2V7a2 2 0 012-2z" /> },
@@ -18,13 +19,14 @@ const TABS = [
 const activa = (path, href) => (href === '/despacho' ? path === '/despacho' || /^\/despacho\/(?!plazos|equipo|ajustes|mensajes)[^/]+$/.test(path) : path.startsWith(href));
 
 // noLeidos: mensajes de clientes sin leer (su número va sobre «Mensajes»).
-// titular: la única con acceso a la empresa propia del despacho («Mi empresa en Fisquo»).
+// titular: la única con acceso a la empresa propia del despacho (selector «Mi despacho | Mi empresa» de arriba).
 export default function NavDespacho({ nombre, noLeidos = 0, titular = false }) {
   const path = usePathname();
   const router = useRouter();
   return (
     <div className="tabbar tabbar-despacho">
       <Link href="/despacho" className="tabbar-logo" aria-label={`${nombre}, clientes`}><Logo /></Link>
+      {titular && <Espacio actual="despacho" className="espacio-lateral" />}
       <nav className="tabs" aria-label="Mi despacho">
         {TABS.map((t) => (
           <Link key={t.href} href={t.href} data-href={t.href} className={activa(path, t.href) ? 'activo' : ''} aria-current={activa(path, t.href) ? 'page' : undefined} onClick={alPulsar(router, t.href, 'tab-der')}>
@@ -37,12 +39,6 @@ export default function NavDespacho({ nombre, noLeidos = 0, titular = false }) {
       <nav className="tabs-extra" aria-label="Más">
         <div className="tabs-grupo">
           <p className="tabs-grupo-t">{nombre}</p>
-          {titular && <form method="post" action="/api/despacho/salir?a=empresa" className="tabs-salir">
-            <button type="submit">
-              <svg viewBox="0 0 24 24" aria-hidden><path d="M5 20V11M10 20V5M15 20v-7M20 20V9" /></svg>
-              <span>Mi empresa en Fisquo</span>
-            </button>
-          </form>}
         </div>
         <form method="post" action="/api/logout" className="tabs-salir">
           <button type="submit">
