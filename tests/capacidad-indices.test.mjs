@@ -66,6 +66,8 @@ test('E01: datos de antes del índice se indexan solos y las páginas recorren t
   assert.deepEqual(pend, orden(fs.filter((f) => !f.cobrada)));
   // Un documento añadido por fuera hace que el índice no cuadre y se reconstruye.
   srv.base.run(['hset', `cuentas:facturas:${u.empresa}`, '2026-500', JSON.stringify(factura(500))]);
+  // Lo escrito por fuera de la app se nota a los pocos segundos (lib/indices.js VIGENCIA_MS); aquí, ya.
+  I.olvidarIndices();
   assert.equal(await I.contar(u, 'facturas'), 174);
 });
 
@@ -155,4 +157,12 @@ test('E01: varias lecturas a la vez con el índice desactualizado lo reconstruye
   const evals = cmds.filter((c) => String(c[0]).toLowerCase() === 'eval' && String(c[1]).includes('local function quitar'));
   assert.equal(evals.length, 1, `una reconstrucción (60 documentos caben en un lote), no ${evals.length}`);
   assert.equal(await I.contar(u, 'facturas'), 60);
+});
+
+test('E01: un índice ya comprobado no se vuelve a comprobar en cada lectura', async () => {
+  const u = empresa();
+  await R.redis.hset(R.clave(u, 'facturas'), Object.fromEntries(Array.from({ length: 20 }, (_, i) => [`2026-${i + 1}`, factura(i + 1)])));
+  await I.asegurar(u, 'facturas');
+  const cmds = await registrar(async () => { for (let i = 0; i < 20; i++) await I.asegurar(u, 'facturas'); });
+  assert.equal(cmds.length, 0, 'veinte lecturas seguidas: ninguna comprobación más');
 });

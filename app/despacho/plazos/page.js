@@ -21,7 +21,7 @@ const fichaDe = (id, periodo) => {
   const m = /^(\d)T (\d{4})$/.exec(periodo);
   return `/despacho/${encodeURIComponent(id)}${m ? `?anio=${m[2]}&t=${m[1]}` : ''}`;
 };
-const nombres = (lista, max = 8) => <>{lista.slice(0, max).map((c, i) => <span key={c.id}>{i ? ', ' : ''}<Ir href={c.href}>{c.nombre}</Ir></span>)}{lista.length > max ? ` y ${lista.length - max} más` : ''}</>;
+const nombres = (lista, max = 8) => <>{lista.slice(0, max).map((c, i) => <span key={c.id}>{i ? ', ' : ''}<Ir prefetch={false} href={c.href}>{c.nombre}</Ir></span>)}{lista.length > max ? ` y ${lista.length - max} más` : ''}</>;
 
 function Plazo({ p, dia }) {
   const n = enDias(dia, p.fecha);

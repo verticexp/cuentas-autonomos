@@ -40,7 +40,7 @@ export default async function Facturacion() {
     ].map(([nombre, importe]) => <div key={nombre}><dt>{nombre}</dt><dd className={nombre === 'Vencido' && importe > 0 ? 'rojo' : undefined}>{euros(importe)}</dd></div>)}</dl>
     <section className="grupo" aria-labelledby="fact-clientes">
       <h2 className="grupo-t" id="fact-clientes">Por cliente</h2>
-      {filas.length ? <ul className="grupo-lista desp-facturacion">{filas.map((c) => <li key={c.id}><Ir className="fila" href={`/despacho/${encodeURIComponent(c.id)}`}>
+      {filas.length ? <ul className="grupo-lista desp-facturacion">{filas.map((c) => <li key={c.id}><Ir prefetch={false} className="fila" href={`/despacho/${encodeURIComponent(c.id)}`}>
         <span className="txt">
           <strong>{c.nombre}</strong>
           <small>{c.facturas ? `${c.facturas === 1 ? '1 factura' : `${c.facturas} facturas`}${c.ultima ? ` · última el ${fechaCorta(c.ultima)}` : ''}` : 'Sin facturas en 12 meses'}{c.licencia ? ` · Fisquo ${euros(c.costeFisquo12m)}/año` : ''}</small>
