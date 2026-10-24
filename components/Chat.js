@@ -54,6 +54,40 @@ export default function Chat({ mensajes, lado, leidoAntes = '', enviar, leer, co
   // Lo último a la vista, dentro de la caja de mensajes (sin mover la página).
   const alFinal = () => { const l = lista.current; if (l) l.scrollTop = l.scrollHeight; };
   useEffect(alFinal, [mensajes.length]);
+  // Si se estaba viendo lo último (con margen), al cambiar el alto se sigue viendo lo último.
+  const pegado = useRef(true);
+  const alDesplazar = () => { const l = lista.current; if (l) pegado.current = l.scrollHeight - l.scrollTop - l.clientHeight < 80; };
+  // Teclado del móvil, como WhatsApp: la conversación a pantalla completa (.desp-chat-pagina, chat.css) se ajusta al hueco
+  // que de verdad queda a la vista. iOS no encoge la pantalla al sacar el teclado: la desplaza hacia arriba y la
+  // conversación quedaba por debajo, con los mensajes fuera de la vista. visualViewport dice cuánto se ve y desde dónde.
+  useEffect(() => {
+    const vv = window.visualViewport;
+    const pagina = lista.current?.closest('.desp-chat-pagina');
+    if (!vv || !pagina) return undefined;
+    const movil = matchMedia('(max-width: 1023.98px)');
+    let marco = 0;
+    const ajustar = () => {
+      cancelAnimationFrame(marco);
+      marco = requestAnimationFrame(() => {
+        if (!movil.matches) { pagina.style.height = ''; pagina.style.top = ''; pagina.classList.remove('con-teclado'); return; }
+        pagina.style.height = `${Math.round(vv.height)}px`;
+        pagina.style.top = `${Math.round(vv.offsetTop)}px`;
+        pagina.classList.toggle('con-teclado', vv.height < window.innerHeight * 0.8);
+        if (pegado.current) alFinal();
+      });
+    };
+    vv.addEventListener('resize', ajustar);
+    vv.addEventListener('scroll', ajustar);
+    movil.addEventListener('change', ajustar);
+    ajustar();
+    return () => {
+      cancelAnimationFrame(marco);
+      vv.removeEventListener('resize', ajustar);
+      vv.removeEventListener('scroll', ajustar);
+      movil.removeEventListener('change', ajustar);
+      pagina.style.height = ''; pagina.style.top = ''; pagina.classList.remove('con-teclado');
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // Lo nuevo llega solo: cada minuto, si la pantalla está a la vista y no se está escribiendo, se miran los mensajes (una
   // consulta pequeña) y solo si ha cambiado algo se recarga la pantalla.
   const actual = firma(mensajes);
@@ -98,7 +132,7 @@ export default function Chat({ mensajes, lado, leidoAntes = '', enviar, leer, co
 
   let diaAnterior = '';
   return <div className="chat">
-    <div ref={lista} className="chat-mensajes" role="log" aria-label={`Mensajes con ${nombreOtro}`} tabIndex={0}>
+    <div ref={lista} className="chat-mensajes" role="log" aria-label={`Mensajes con ${nombreOtro}`} tabIndex={0} onScroll={alDesplazar}>
       {mensajes.length === 0 && <p className="chat-vacio">{vacio}</p>}
       {mensajes.map((m, i) => {
         const mio = m.lado === lado;
@@ -143,7 +177,7 @@ export default function Chat({ mensajes, lado, leidoAntes = '', enviar, leer, co
             {docs.gastos.length > 0 && <optgroup label="Gastos">{opciones.filter((o) => o.v.startsWith('gasto')).map((o) => <option key={o.v} value={o.v}>{o.t}</option>)}</optgroup>}
           </select>
         </label>}
-        <textarea ref={caja} rows={1} value={texto} maxLength={2000} placeholder="Mensaje" aria-label="Mensaje" onChange={(e) => setTexto(e.target.value)} onFocus={() => setTimeout(alFinal, 300)}
+        <textarea ref={caja} rows={1} value={texto} maxLength={2000} placeholder="Mensaje" aria-label="Mensaje" onChange={(e) => setTexto(e.target.value)} onFocus={() => { pegado.current = true; setTimeout(alFinal, 300); }}
           onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing && window.matchMedia('(min-width: 1024px)').matches) mandar(e); }} />
         <button className="chat-enviar" aria-label="Enviar" disabled={!texto.trim() || ocupado}>
           <svg viewBox="0 0 24 24" aria-hidden><path d="M4 12l16-8-6 16-2.5-6.5z" /></svg>
