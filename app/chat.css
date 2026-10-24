@@ -45,7 +45,7 @@
 .chat-cabecera { display: flex; align-items: center; gap: 10px; margin: 0 0 12px; }
 .chat-cabecera .volver { margin: 0; }
 .chat-quien { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; color: inherit; text-decoration: none; }
-.chat-quien > span { min-width: 0; display: flex; flex-direction: column; }
+.chat-quien > span:not(.avatar) { min-width: 0; display: flex; flex-direction: column; }
 .chat-quien small { color: var(--muted); font-size: 13px; }
 .chat-nombre { margin: 0; font-size: 22px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 

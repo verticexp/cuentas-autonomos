@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { alPulsar } from '@/lib/transicion';
+import { SIN_BARRA, alPulsar } from '@/lib/transicion';
 import Logo from '@/components/Logo';
 import Espacio from '@/components/Espacio';
 import '@/app/lateral.css';
@@ -27,7 +27,7 @@ export default function NavDespacho({ nombre, noLeidos = 0, titular = false }) {
   const router = useRouter();
   return (
     // Dentro de una conversación, en el móvil, la barra de abajo se esconde (como en WhatsApp): deja sitio para escribir.
-    <div className={`tabbar tabbar-despacho${/^\/despacho\/mensajes\/[^/]+$/.test(path || '') ? ' tabbar-chat' : ''}`}>
+    <div className={`tabbar tabbar-despacho${SIN_BARRA.test(path || '') ? ' tabbar-chat' : ''}`}>
       <Link href="/despacho" className="tabbar-logo" aria-label={`${nombre}, clientes`}><Logo /></Link>
       {titular && <Espacio actual="despacho" className="espacio-lateral" />}
       <nav className="tabs" aria-label="Mi despacho">
