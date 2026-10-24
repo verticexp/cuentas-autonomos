@@ -5,7 +5,7 @@
     "dev": "next dev",
     "build": "npm test && next build",
     "start": "next start",
-    "test": "env -u KV_REST_API_URL -u KV_REST_API_TOKEN -u UPSTASH_REDIS_REST_URL -u UPSTASH_REDIS_REST_TOKEN -u CONTROLAT_KV_REST_API_URL -u CONTROLAT_KV_REST_API_TOKEN node --test tests/*.test.mjs",
+    "test": "env -u KV_REST_API_URL -u KV_REST_API_TOKEN -u UPSTASH_REDIS_REST_URL -u UPSTASH_REDIS_REST_TOKEN -u CONTROLAT_KV_REST_API_URL -u CONTROLAT_KV_REST_API_TOKEN -u CONTROLAT_KV_KV_REST_API_URL -u CONTROLAT_KV_KV_REST_API_TOKEN node --test tests/*.test.mjs",
     "verificar": "node tests/e2e/verificar.mjs"
   },
   "dependencies": {

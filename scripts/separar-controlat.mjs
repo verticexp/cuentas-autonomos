@@ -1,16 +1,17 @@
-// node scripts/separar-controlat.mjs [--copiar | --borrar-origen]
+// node scripts/separar-controlat.mjs [--copiar | --comparar | --borrar-origen]
 // Copia a una base de datos aparte las claves de Controla'T (todas las que no empiezan por «cuentas:») de la base de
 // datos compartida. Sin opciones solo cuenta y no escribe nada.
 //   ORIGEN_URL / ORIGEN_TOKEN    la base compartida de ahora
 //   DESTINO_URL / DESTINO_TOKEN  la nueva de Controla'T (debe estar vacía)
 // --copiar        copia cada clave con su tipo y su caducidad y compara después origen y destino.
+// --comparar      solo compara origen y destino, sin escribir.
 // --borrar-origen borra del origen las claves de Controla'T ya presentes e iguales en el destino.
 import { Redis } from '@upstash/redis';
 
 const P = 'cuentas:';
 const opcion = process.argv[2];
 try {
-  if (process.argv.length > 3 || (opcion && !['--copiar', '--borrar-origen'].includes(opcion))) throw new Error('Uso: node scripts/separar-controlat.mjs [--copiar | --borrar-origen]');
+  if (process.argv.length > 3 || (opcion && !['--copiar', '--comparar', '--borrar-origen'].includes(opcion))) throw new Error('Uso: node scripts/separar-controlat.mjs [--copiar | --comparar | --borrar-origen]');
   const falta = ['ORIGEN_URL', 'ORIGEN_TOKEN', 'DESTINO_URL', 'DESTINO_TOKEN'].filter((v) => !process.env[v]);
   if (falta.length) throw new Error(`Faltan ${falta.join(', ')}`);
   if (process.env.ORIGEN_URL === process.env.DESTINO_URL) throw new Error('Origen y destino son la misma base de datos');
@@ -29,7 +30,14 @@ try {
   async function leer(r, k) {
     const tipo = await r.type(k);
     if (tipo === 'string') return { tipo, v: await r.get(k) };
-    if (tipo === 'hash') return { tipo, v: Object.entries((await r.hgetall(k)) || {}).sort() };
+    // Sin deserializar, hgetall devuelve [campo, valor, campo, valor…] (como hgetallCrudo de lib/redis.js).
+    if (tipo === 'hash') {
+      const a = (await r.hgetall(k)) || [];
+      const pares = [];
+      if (Array.isArray(a)) for (let i = 0; i < a.length; i += 2) pares.push([a[i], a[i + 1]]);
+      else pares.push(...Object.entries(a));
+      return { tipo, v: pares.sort() };
+    }
     if (tipo === 'list') return { tipo, v: await r.lrange(k, 0, -1) };
     if (tipo === 'set') return { tipo, v: (await r.smembers(k)).sort() };
     if (tipo === 'zset') return { tipo, v: await r.zrange(k, 0, -1, { withScores: true }) };
@@ -58,6 +66,14 @@ try {
     for (const k of claves) if (!igual(await leer(o, k), await leer(d, k))) distintas.push(k);
     if (distintas.length) throw new Error(`No coinciden ${distintas.length} claves: ${distintas.slice(0, 20).join(', ')}`);
     console.log(`Copiadas y comprobadas ${claves.length} claves`);
+  }
+
+  if (opcion === '--comparar') {
+    const distintas = [];
+    for (const k of claves) if (!igual(await leer(o, k), await leer(d, k))) distintas.push(k);
+    const sobran = (await d.dbsize()) - claves.length;
+    console.log(distintas.length ? `Difieren ${distintas.length} claves: ${distintas.join(', ')}` : 'Todas las claves del origen son iguales en el destino');
+    if (sobran > 0) console.log(`El destino tiene ${sobran} claves más (escritas ya en la base nueva)`);
   }
 
   if (opcion === '--borrar-origen') {
