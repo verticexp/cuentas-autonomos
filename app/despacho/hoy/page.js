@@ -4,6 +4,7 @@ import { fechaCorta, fechaTexto, hoy } from '@/lib/formato';
 import Ir from '@/components/Ir';
 import Vacio from '@/components/Vacio';
 import Espacio from '@/components/Espacio';
+import { usaEmpresaPropia } from '@/lib/despachos';
 import '@/app/mk.css';
 import '@/app/despacho.css';
 
@@ -25,7 +26,7 @@ export default async function Hoy() {
   const hora = Number(new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Madrid' }).slice(11, 13));
   const saludo = hora < 14 ? 'Buenos días' : hora < 21 ? 'Buenas tardes' : 'Buenas noches';
   return <main className="pagina mk-look despacho">
-    {rol === 'titular' && <Espacio actual="despacho" className="espacio-movil" />}
+    {rol === 'titular' && usaEmpresaPropia(d) && <Espacio actual="despacho" className="espacio-movil" />}
     <h1 className="titulo">{saludo}{u.nombre ? `, ${u.nombre.split(' ')[0]}` : ''}</h1>
     <p className="desp-sub">Hoy, {fechaTexto(dia)}. {total ? 'Esto es lo que te espera en tus clientes:' : ''}</p>
     {h.clientes === 0 ? <Vacio icono="usuarios" titulo="Aún no tienes clientes">

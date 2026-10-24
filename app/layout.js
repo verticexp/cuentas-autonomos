@@ -26,7 +26,7 @@ import BarraEstado from '@/components/BarraEstado';
 import { WEB } from '@/lib/web';
 import Barra from '@/components/Barra';
 import AvisoDespacho from '@/components/AvisoDespacho';
-import { despachoDe, rolEn } from '@/lib/despachos';
+import { despachoDe, rolEn, usaEmpresaPropia } from '@/lib/despachos';
 import { noLeidosDespacho } from '@/lib/mensajesDespacho';
 
 // Pantalla de arranque de la web guardada en la pantalla de inicio del iPhone: el mismo verde que la animación de inicio,
@@ -112,7 +112,7 @@ export default async function RootLayout({ children }) {
         )}
         {u?.viaDespacho && !enDespacho && <AvisoDespacho cliente={u.empresaNombre || u.emisor?.nombre} despacho={u.viaDespacho.nombre} empresa={u.empresa} />}
         {children}
-        <Suspense><Barra despacho={rolDespacho ? { nombre: despacho.nombre, noLeidos: mensajesNuevos, titular: rolDespacho === 'titular' } : null} tabbar={u ? { despacho: rolDespacho ? (u.viaDespacho ? 'cliente' : 'empresa') : null, porRevisar, permisos: permisosDe(u), empresas: u.misEmpresas, empresa: u.empresa, admin: Boolean(u.admin), inventario: Boolean(u.fiscal?.inventario), equipo: Boolean(equipo), fiscal: { tipo: u.fiscal?.tipo, iva: u.fiscal?.iva }, faltan: planesQueFaltan(u.plan) } : null} /><Llegada /><BarraEstado /></Suspense>
+        <Suspense><Barra despacho={rolDespacho ? { nombre: despacho.nombre, noLeidos: mensajesNuevos, titular: rolDespacho === 'titular' && usaEmpresaPropia(despacho) } : null} tabbar={u ? { despacho: rolDespacho ? (u.viaDespacho ? 'cliente' : usaEmpresaPropia(despacho) ? 'empresa' : 'cliente') : null, porRevisar, permisos: permisosDe(u), empresas: u.misEmpresas, empresa: u.empresa, admin: Boolean(u.admin), inventario: Boolean(u.fiscal?.inventario), equipo: Boolean(equipo), fiscal: { tipo: u.fiscal?.tipo, iva: u.fiscal?.iva }, faltan: planesQueFaltan(u.plan) } : null} /><Llegada /><BarraEstado /></Suspense>
         {u?.bloqueoPantalla && <Bloqueo email={u.email} servidor={abierta} />}
       </body>
     </html>

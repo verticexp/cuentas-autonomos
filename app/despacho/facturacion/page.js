@@ -1,5 +1,5 @@
 import { requerirDespacho } from '@/lib/despachoPagina';
-import { clientesVisibles } from '@/lib/despachos';
+import { clientesVisibles, usaEmpresaPropia } from '@/lib/despachos';
 import { cuentaLicencias, tarifaDe, tipoLicencia } from '@/lib/licencias';
 import { leerRango } from '@/lib/indices';
 import { facturacionPorCliente } from '@/lib/facturacionDespacho';
@@ -18,6 +18,7 @@ const euros = (n) => eur(n);
 // lo vencido, y lo que le cuesta Fisquo de los clientes a los que paga la licencia. Solo el titular.
 export default async function Facturacion() {
   const { u, d } = await requerirDespacho({ titular: true });
+  if (!usaEmpresaPropia(d)) return <main className="pagina mk-look despacho"><div className="volver-movil"><Volver href="/despacho/ajustes">Ajustes</Volver></div><h1 className="titulo">Facturación</h1><p className="desp-sub">Para ver aquí lo que facturas a cada cliente, lleva las cuentas de tu despacho en Fisquo: actívalo en Ajustes, en «Tu despacho».</p><Ir className="boton" href="/despacho/ajustes">Ir a Ajustes</Ir></main>;
   if (!d.empresa) return <main className="pagina mk-look despacho"><div className="volver-movil"><Volver href="/despacho/ajustes">Ajustes</Volver></div><h1 className="titulo">Facturación</h1><p className="desp-sub">Tu despacho aún no tiene su empresa en Fisquo: créala desde «Mi empresa» para facturar a tus clientes y verlo aquí.</p></main>;
   const dia = hoy();
   // Mismo día del año anterior; el 29 de febrero se limita al último día de febrero.

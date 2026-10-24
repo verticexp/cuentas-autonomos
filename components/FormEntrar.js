@@ -33,6 +33,7 @@ export default function FormEntrar({ errorInicial = '' }) {
 
   return (
     <form method="post" action="/api/login" onSubmit={entrar}>
+      <input type="hidden" name="inicio" value="1" />
       <h1><Logo className="logo-login" /></h1>
       <p className="login-titulo">Inicia sesión</p>
       <BotonesSociales />

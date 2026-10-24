@@ -25,6 +25,8 @@ import Logo from '@/components/Logo';
 import AvisoPrueba from '@/components/AvisoPrueba';
 import AvisoMensajes from '@/components/AvisoMensajes';
 import AccesoDespacho from '@/components/AccesoDespacho';
+import { despachoDe, rolEn, usaEmpresaPropia } from '@/lib/despachos';
+import { redirect } from 'next/navigation';
 import { DETALLE, puede } from '@/lib/permisos';
 import '@/app/asistente.css';
 import '@/app/empresas.css';
@@ -62,7 +64,15 @@ export async function generateMetadata() {
 
 export default async function Resumen({ searchParams }) {
   // Sin sesión: la web pública. Con sesión: el panel.
-  if (!(await usuarioActual())) return <Landing />;
+  const sesion = await usuarioActual();
+  if (!sesion) return <Landing />;
+  // Un despacho que no lleva sus propias cuentas en Fisquo (lib/despachos.js usaEmpresaPropia) no tiene empresa que ver:
+  // su inicio es Mi despacho.
+  if (sesion.despacho && !sesion.viaDespacho) {
+    const d = await despachoDe(sesion.despacho).catch(() => null);
+    // Solo si está en la empresa del despacho: si el titular tiene además su propio negocio en Fisquo, ese se ve.
+    if (rolEn(d, sesion.id) && !usaEmpresaPropia(d) && String(sesion.empresa) === String(d.empresa)) redirect('/despacho');
+  }
   const u = await requerir('resumen');
   enviarLuego(u); // Verifactu: si quedó algo por enviar (control de flujo de la AEAT), ahora
   if (!redis) return <SinBD />;
