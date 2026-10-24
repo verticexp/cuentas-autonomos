@@ -96,3 +96,21 @@ test('barra de título compacta: en todas las pantallas del móvil, sin tapar lo
   assert.match(css, /^\.titulo-compacto \{ display: none; \}/m);
   assert.match(css, /html\[data-titulo-compacto\] \.resumen-fijo, html\[data-titulo-compacto\] \.pagina \.caja-total \{ top: calc\(env\(safe-area-inset-top, 0px\) \+ 44px\); \}/);
 });
+
+test('transiciones como en iOS: sin esperar al servidor, pestañas sin deslizar, modales que bajan al salir', async () => {
+  const vt = await leer('lib/transicion.js');
+  // En el móvil la pantalla nueva entra a los 100 ms como mucho: si no ha llegado, con una pantalla de espera.
+  assert.match(vt, /if \(aqui\(\) === desde\) ponerEspera\(tipo\);\s*soltar\(\);\s*\}, 100\);/);
+  assert.match(await leer('components/Llegada.js'), /quitarEspera\(\)/);
+  // «Atrás» deshace como se entró: el formulario que subió baja; la hoja se cierra.
+  assert.match(vt, /const SALIDA = \{ subir: 'cerrar', hoja: 'bajar' \};/);
+  assert.match(vt, /if \(tipo === 'atras'\) tipo = SALIDA\[historia\.vias\[historia\.idx\]\] \|\| tipo;/);
+  assert.match(await leer('app/mas/page.js'), /<Ir href="\/ajustes" tipo="hoja"/);
+  const css = await leer('app/diseno.css');
+  for (const t of ['subir', 'cerrar', 'hoja', 'bajar']) assert.match(css, new RegExp(`html\\[data-vt=${t}\\]::view-transition-new\\(root\\)`), t);
+  // La barra de abajo no desliza la pantalla: fundido corto encima de la de antes.
+  assert.match(css, /html\[data-vt\^=tab-\]::view-transition-old\(root\) \{ animation: none; mix-blend-mode: normal; \}/);
+  assert.doesNotMatch(css, /vt-tab-desde-der; \}\nhtml\[data-vt=tab/);
+  // Nada entra desenfocado: eso es de web, no de app.
+  assert.doesNotMatch(css, /@keyframes (paso|hero) \{[^}]*blur/);
+});

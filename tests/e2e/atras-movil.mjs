@@ -275,9 +275,12 @@ try {
     assert.equal(await concepto(p).inputValue(), 'Diseño de logotipo');
     assert.equal(await p.evaluate(() => history.length), largo, 'seguir editando no apila otra entrada');
     assert.equal(await p.evaluate(() => Math.round(scrollY)), altura);
-    // Android: el botón atrás con la pregunta abierta la cierra, y se sigue editando.
+    // Android: el botón atrás con la pregunta abierta la cierra, y se sigue editando. (El vigilante de la pregunta se pone
+    // en el fotograma siguiente a que aparezca: components/GestoAtras.js repasa una vez por fotograma.)
+    const vigilantes = await p.evaluate(() => window.__vigilantes.length);
     await p.goBack();
     await pregunta(p).waitFor();
+    await p.waitForFunction((n) => window.__vigilantes.length > n && !window.__vigilantes.at(-1).__destruido, vigilantes, { timeout: 5000 });
     await p.evaluate(() => window.__vigilantes.at(-1).requestClose());
     await pregunta(p).waitFor({ state: 'detached' });
     await conAviso(p);
