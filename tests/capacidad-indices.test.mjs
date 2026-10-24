@@ -145,3 +145,14 @@ test('E05: el número previsto en «Nueva factura» es el que sale al emitir', a
   assert.equal((await F.crearFactura(u, datos)).factura.numero, 13);
   assert.equal(await F.numeroPrevisto(u, '', 2026), 14);
 });
+
+test('E01: varias lecturas a la vez con el índice desactualizado lo reconstruyen una sola vez', async () => {
+  const u = empresa();
+  const fs = Array.from({ length: 60 }, (_, i) => factura(i + 1));
+  for (const f of fs) srv.base.run(['hset', `cuentas:facturas:${u.empresa}`, f.id, JSON.stringify(f)]);
+  // Como una pantalla del despacho: la lista, un rango y las pendientes, a la vez.
+  const cmds = await registrar(() => Promise.all([I.contar(u, 'facturas'), I.leerRango(u, 'facturas', '2026-01-01', '2026-12-31'), I.fichasMarcadas(u, 'facturas', 'p'), I.contar(u, 'facturas')]));
+  const evals = cmds.filter((c) => String(c[0]).toLowerCase() === 'eval' && String(c[1]).includes('local function quitar'));
+  assert.equal(evals.length, 1, `una reconstrucción (60 documentos caben en un lote), no ${evals.length}`);
+  assert.equal(await I.contar(u, 'facturas'), 60);
+});
