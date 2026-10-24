@@ -120,3 +120,13 @@ test('la barra de título compacta no cambia estado en un efecto de diseño (err
   // cortaba y salía «No se ha podido cargar Fisquo» al cambiar de pestaña (24-10-2026).
   assert.doesNotMatch(await leer('components/TituloCompacto.js'), /useLayoutEffect\s*\(|import \{[^}]*useLayoutEffect/);
 });
+
+test('la hoja de Ajustes se cierra arrastrándola hacia abajo, entera, y deja el fondo como estaba', async () => {
+  assert.match(await leer('app/ajustes/layout.js'), /<ArrastrarAjustes \/>/);
+  const arrastre = await leer('components/ArrastrarAjustes.js');
+  // Desde cualquier pantalla de dentro se vuelve a la de antes de abrir Ajustes, como el «OK».
+  assert.match(arrastre, /salirDe\(router, '\/ajustes', '\/mas', 'bajar'\)/);
+  assert.match(await leer('components/CerrarAjustes.js'), /salirDe\(router, '\/ajustes', '\/mas', 'bajar'\)/);
+  // El fondo oscurecido de detrás de la hoja no se queda en la pantalla a la que se vuelve.
+  assert.match(arrastre, /return \(\) => \{\s*document\.body\.style\.removeProperty\('background'\)/);
+});
