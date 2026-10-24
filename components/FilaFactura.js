@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { navegar } from '@/lib/transicion';
+import { vibrar } from '@/lib/haptica';
 
 // Al tocar una fila (factura, presupuesto o gasto), se convierte en la cabecera de la pantalla que abre.
 // Se precarga al tocarla (o al pasar el ratón), no al verse: precargar todas las filas visibles pedía la pantalla entera de
@@ -13,7 +14,7 @@ export default function FilaFactura({ href, children }) {
     if (e.metaKey || e.ctrlKey) return;
     e.preventDefault();
     const fila = e.currentTarget;
-    navigator.vibrate?.(6);
+    vibrar();
     navegar(router, href, 'abrir', () => {
       fila.style.viewTransitionName = 'factura-tarjeta';
       fila.querySelector('[data-vt="cliente"]')?.style.setProperty('view-transition-name', 'factura-cliente');

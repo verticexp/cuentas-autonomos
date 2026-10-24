@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { SIN_BARRA, alPulsar, instalarHistorial, navegar, posicion } from '@/lib/transicion';
+import { SIN_BARRA, alPulsar, instalarHistorial, navegar, posicion, subirArriba, volverHasta } from '@/lib/transicion';
+import { vibrar } from '@/lib/haptica';
 import Logo from '@/components/Logo';
 import CambiarEmpresa from '@/components/CambiarEmpresa';
 import { ASISTENTE, extraDe, gruposVisibles } from '@/components/secciones';
@@ -32,21 +33,6 @@ const ICONO_ATAJO = {
   albaran: <path d="M7 3h10l3 3v15H4V3zM8 9h8M8 13h8M8 17h5" />,
   presupuesto: <path d="M6 3h12v18H6zM9 8h6M9 12h6M9 16h3" />,
 };
-
-// Vibración suave: Android con vibrate; iPhone (iOS 18+) con el truco del interruptor nativo.
-let interruptor;
-function vibrar() {
-  if (navigator.vibrate) { navigator.vibrate(8); return; }
-  if (!interruptor) {
-    interruptor = document.createElement('label');
-    interruptor.style.display = 'none';
-    const i = document.createElement('input');
-    i.type = 'checkbox'; i.setAttribute('switch', '');
-    interruptor.appendChild(i);
-    document.body.appendChild(interruptor);
-  }
-  interruptor.click();
-}
 
 // Pantallas de Ajustes que no cuelgan de /ajustes.
 const DE_AJUSTES = ['/usuarios', '/bienvenida'];
@@ -122,8 +108,11 @@ export default function TabBar({ permisos = [], empresas = [], empresa, admin = 
 
   const orden = (h) => tabs.findIndex((t) => t.href === h);
   // En el ordenador, como el resto de la barra lateral: sin deslizar la página entera (con la barra dentro parecía recargarse).
+  // La pestaña en la que ya se está, como en iOS: en su pantalla, sube arriba del todo; desde una de dentro (una factura, un
+  // proveedor), vuelve a ella.
   const ir = (h) => {
-    if (h === path) return;
+    if (h === path) { subirArriba(); return; }
+    if (movil && h === activo) { volverHasta(router, h); return; }
     activoRef.current = h;
     if (movil) navegar(router, h, orden(h) > orden(activo) ? 'tab-der' : 'tab-izq'); else router.push(h);
     setActivo(h);

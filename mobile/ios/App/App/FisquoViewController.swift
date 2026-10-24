@@ -5,9 +5,12 @@ import Capacitor
 // Controlador principal: el WebView de Capacitor que carga www.fisquo.com, con lo que una app de iOS necesita además:
 // - ventanas nuevas y descargas resueltas dentro de la app (DelegadoWeb.swift), no en Safari, que no tiene la sesión;
 // - el escáner de documentos nativo para los tickets (EscanerPlugin.swift);
-// - deslizar desde el borde izquierdo para volver atrás, como en Safari (no con una hoja abierta: GestoAtras, abajo);
+// - deslizar desde el borde izquierdo para volver atrás, solo donde la pantalla tiene «‹ Atrás» y sin hojas encima, y nunca
+//   hacia delante (GestoAtras, abajo);
+// - la vibración del sistema al tocar las pestañas, cobrar o marcar como pagado (Haptica, abajo; lib/haptica.js);
 // - tirar hacia abajo para recargar y los accesos rápidos del icono (SceneDelegate.swift);
-// - el teclado sin la barra de formulario de iOS («^ ˅ ✓»), como en las apps de mensajería (quitarBarraDelTeclado, abajo).
+// - el teclado sin la barra de formulario de iOS («^ ˅ ✓»), como en las apps de mensajería (quitarBarraDelTeclado, abajo);
+// - sin arrastrar enlaces ni imágenes al mantenerlos pulsados (sinArrastrar, abajo).
 class FisquoViewController: CAPBridgeViewController {
     private var delegado: DelegadoWeb?
     private var gestoAtras: GestoAtras?
@@ -30,7 +33,8 @@ class FisquoViewController: CAPBridgeViewController {
         let webView = super.webView(with: frame, configuration: configuration)
         // Sin vista previa al mantener pulsado un enlace: en una app no tiene sentido abrir la página «en Safari».
         webView.allowsLinkPreview = false
-        // Atrás deslizando desde el borde: recorre el historial de la web (pantallas y pasos de los formularios).
+        // Atrás deslizando desde el borde: recorre el historial de la web (pantallas y pasos de los formularios). Dónde se puede
+        // lo decide la web (GestoAtras, abajo).
         webView.allowsBackForwardNavigationGestures = true
         return webView
     }
@@ -46,8 +50,11 @@ class FisquoViewController: CAPBridgeViewController {
         let gestoAtras = GestoAtras(webView: webView)
         webView.configuration.userContentController.add(gestoAtras, name: "gestoAtras")
         self.gestoAtras = gestoAtras
+        delegado.alEmpezarPagina = { [weak gestoAtras] in gestoAtras?.bloquear(false) } // la anterior pudo dejarlo bloqueado
+        webView.configuration.userContentController.add(Haptica(), name: "haptica")
 
         quitarBarraDelTeclado(webView)
+        sinArrastrar(webView)
 
         let recargar = UIRefreshControl()
         recargar.addTarget(self, action: #selector(recargar(_:)), for: .valueChanged)
@@ -61,7 +68,6 @@ class FisquoViewController: CAPBridgeViewController {
 
     private func terminoCarga() {
         webView?.scrollView.refreshControl?.endRefreshing()
-        gestoAtras?.bloquear(false) // página nueva: la anterior pudo dejarlo bloqueado con una hoja abierta
         guard !cargada else { return }
         cargada = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
@@ -85,33 +91,74 @@ class FisquoViewController: CAPBridgeViewController {
     }
 }
 
-// Mensajes de la web (components/GestoAtras.js): con una hoja o un diálogo abiertos, deslizar desde el borde no debe sacar
-// de la pantalla que tapan, como en las apps nativas. Mientras tanto, un gesto propio del borde izquierdo se queda con el
-// deslizamiento y el de volver de WebKit, que espera a que este falle, no llega a empezar. (Apagar y encender
-// allowsBackForwardNavigationGestures dejaba sin efecto el primer deslizamiento después.) Solo el WebView principal: el
-// visor de ventanas nuevas (VisorWeb.swift) comparte esta configuración.
-private final class GestoAtras: NSObject, WKScriptMessageHandler {
+// Mensajes de la web (components/GestoAtras.js): el gesto de volver solo vale donde la pantalla tiene «‹ Atrás» y sin una
+// hoja o un diálogo encima, como en las apps nativas; entre las pestañas de abajo no hay gesto. El de WebKit espera siempre a
+// que falle un gesto propio del borde izquierdo (el tapón), que se queda con el deslizamiento cuando no vale y falla en
+// seguida cuando sí. No se enciende ni se apaga nada: apagar y encender allowsBackForwardNavigationGestures, o el propio
+// tapón, dejaba sin efecto el primer deslizamiento después. El tapón solo bloquea: no retrasa ni cancela los toques de la
+// página ni le quita sus gestos (desplazar, deslizar una fila).
+// WebKit pone también deslizar desde el borde derecho para ir «adelante» en el historial: en una app no existe, se apaga.
+// Solo el WebView principal: el visor de ventanas nuevas (VisorWeb.swift) comparte esta configuración.
+private final class GestoAtras: NSObject, WKScriptMessageHandler, UIGestureRecognizerDelegate {
     private weak var webView: WKWebView?
     private let tapon = UIScreenEdgePanGestureRecognizer()
+    private var bloqueado = false
 
     init(webView: WKWebView) {
         self.webView = webView
         super.init()
         tapon.edges = .left
-        tapon.isEnabled = false
+        tapon.cancelsTouchesInView = false
+        tapon.delaysTouchesBegan = false
+        tapon.delegate = self
         webView.addGestureRecognizer(tapon)
+        for gesto in webView.gestureRecognizers ?? [] where gesto !== tapon {
+            gesto.require(toFail: tapon)
+            if let borde = gesto as? UIScreenEdgePanGestureRecognizer, borde.edges.contains(.right) { borde.isEnabled = false }
+        }
     }
 
     func bloquear(_ si: Bool) {
-        if si, let webView {
-            for gesto in webView.gestureRecognizers ?? [] where gesto !== tapon { gesto.require(toFail: tapon) }
-        }
-        tapon.isEnabled = si
+        bloqueado = si
+    }
+
+    func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        bloqueado
+    }
+
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otro: UIGestureRecognizer) -> Bool {
+        true
     }
 
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         guard let activo = message.body as? Bool, let webView, message.webView === webView else { return }
         bloquear(!activo)
+    }
+}
+
+// Vibración del sistema (lib/haptica.js): «toque» al cambiar de pestaña o abrir algo, «exito» al cobrar o pagar, «aviso» y
+// «error». navigator.vibrate no existe en iOS, y el truco del interruptor de la web (iOS 18) solo da un tipo de toque.
+private final class Haptica: NSObject, WKScriptMessageHandler {
+    private let seleccion = UISelectionFeedbackGenerator()
+    private let impacto = UIImpactFeedbackGenerator(style: .light)
+    private let resultado = UINotificationFeedbackGenerator()
+
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        switch message.body as? String {
+        case "exito": resultado.notificationOccurred(.success)
+        case "aviso": resultado.notificationOccurred(.warning)
+        case "error": resultado.notificationOccurred(.error)
+        case "golpe": impacto.impactOccurred()
+        default: seleccion.selectionChanged()
+        }
+    }
+}
+
+// Mantener pulsada una fila o una imagen la «levantaba» para arrastrarla a otra app, como un enlace de Safari: en una app,
+// mantener pulsado no hace eso. Es la interacción de arrastrar de la vista de contenido de WebKit.
+private func sinArrastrar(_ webView: WKWebView) {
+    for vista in webView.scrollView.subviews {
+        for arrastre in vista.interactions.compactMap({ $0 as? UIDragInteraction }) { arrastre.isEnabled = false }
     }
 }
 

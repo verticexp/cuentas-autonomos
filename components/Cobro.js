@@ -4,6 +4,7 @@ import { useId, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
 import { eur, fechaTexto } from '@/lib/formato';
+import { vibrar } from '@/lib/haptica';
 import '@/app/cobro.css';
 
 const VIA = { stripe: ' con tarjeta o Bizum', banco: ' por el banco', sepa: ' por remesa' };
@@ -27,7 +28,7 @@ export default function Cobro({ id, cobrada, total, pagado, pendiente, cobro, de
     setOcupado(true); setError('');
     try {
       await llamar('/api/facturas', { method: 'PATCH', body: JSON.stringify({ id, ...cuerpo }) });
-      navigator.vibrate?.(8);
+      vibrar('exito');
       setAbierto(false);
       router.refresh();
     } catch (e) { setError(e.message); } finally { setOcupado(false); }

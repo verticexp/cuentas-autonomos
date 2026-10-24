@@ -7,6 +7,15 @@ input[type="date"].campo, input[type="month"].campo { -webkit-appearance: none; 
 input[type="date"].campo::-webkit-date-and-time-value { text-align: left; }
 select.campo { -webkit-appearance: none; appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%); background-position: calc(100% - 20px) 50%, calc(100% - 15px) 50%; background-size: 5px 5px; background-repeat: no-repeat; padding-right: 36px; }
 select.estado { border: 0; font: inherit; font-weight: 600; font-size: 13px; padding: 6px 28px 6px 12px; -webkit-appearance: none; appearance: none; background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%); background-position: calc(100% - 14px) 52%, calc(100% - 9px) 52%; background-size: 5px 5px; background-repeat: no-repeat; max-width: 60%; }
+/* App de iOS y web guardada en la pantalla de inicio: como en una app, mantener pulsado un botón, un enlace o una imagen no
+   abre el menú de enlace («Abrir», «Copiar», «Compartir») ni selecciona su texto, y nada se levanta para arrastrarlo. El texto
+   de las pantallas y de los campos se sigue pudiendo seleccionar y copiar (un IBAN, un número de factura). */
+html[data-app] :is(a, button, summary, [role="button"], [role="tab"]) { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; -webkit-user-drag: none; }
+html[data-app] :is(img, svg) { -webkit-touch-callout: none; -webkit-user-drag: none; }
+@media (display-mode: standalone) {
+  :is(a, button, summary, [role="button"], [role="tab"]) { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; -webkit-user-drag: none; }
+  :is(img, svg) { -webkit-touch-callout: none; -webkit-user-drag: none; }
+}
 /* Respuesta inmediata al tocar */
 .fila, .boton, .chips a, .tabbar a, .volver, .estado, .borrar { -webkit-tap-highlight-color: transparent; transition: background-color .12s cubic-bezier(0.23, 1, 0.32, 1), transform .12s cubic-bezier(0.23, 1, 0.32, 1), opacity .12s cubic-bezier(0.23, 1, 0.32, 1); }
 a.fila:active, li.fila:active { background: var(--line); }

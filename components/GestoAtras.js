@@ -6,22 +6,23 @@ import { anterior, instalarHistorial, volverA } from '@/lib/transicion';
 import { hayAvisoEncima, hayCambiosSinGuardar, instalarSinGuardar, salirSinGuardar, soltarCambios } from './useCambiosSinGuardar';
 
 // «Atrás» del móvil en toda la app (va en el layout):
+// - Solo se vuelve deslizando desde las pantallas que tienen «‹ Atrás» (o desde el segundo paso de un formulario), como en
+//   iOS: entre las pestañas de abajo (Resumen, Facturas, Gastos…) o las de una pantalla (Gastos › Por revisar) no hay gesto.
 // - Con una hoja o un diálogo abiertos ([aria-modal]): en Android, el botón o el gesto de atrás los cierra (como Escape) en
 //   vez de salir de la pantalla; en la app de iOS, el gesto de volver se apaga mientras están abiertos, como en las apps
 //   nativas (mobile/ios/App/App/FisquoViewController.swift). La pantalla de bloqueo no se cierra así.
 // - Web guardada en la pantalla de inicio del iPhone: ahí iOS no tiene gesto de volver. Deslizar desde el borde izquierdo
 //   lleva la pantalla con el dedo y, al soltar, vuelve como «‹ Atrás» (lib/transicion.js volverA).
 const BORDE = 24; // px desde el borde izquierdo en los que empieza el gesto
-const RAICES = ['/', '/facturas', '/gastos', '/mas', '/login', '/bloqueo', '/bienvenida', '/confirmar-email'];
 const visible = (el) => el.getClientRects().length > 0;
 const capas = () => [...document.querySelectorAll('[aria-modal="true"], dialog[open]')].filter(visible);
 
-// Adónde lleva el gesto: a la pantalla anterior (o al paso anterior de un formulario) o, si se abrió esta directamente,
-// a la de su «‹ Atrás». Las pantallas principales (pestañas, entrada) no tienen gesto, como en iOS.
+// Adónde lleva el gesto: a la de su «‹ Atrás» (lib/transicion.js volverA retrocede si es lo de detrás) o al paso anterior
+// del formulario. null: esta pantalla no tiene gesto.
 function destino() {
   const enlace = [...document.querySelectorAll('a.volver, a.legal-volver, a.aj-ok')].find(visible); // aj-ok: cerrar la hoja de Ajustes
-  if (anterior() && (enlace || Number.isInteger(history.state?.__paso) || !RAICES.includes(location.pathname))) return enlace?.getAttribute('href') || location.pathname;
-  return enlace?.getAttribute('href') || null;
+  if (enlace) return enlace.getAttribute('href');
+  return anterior() && Number.isInteger(history.state?.__paso) ? location.pathname : null;
 }
 
 export default function GestoAtras() {
@@ -30,7 +31,8 @@ export default function GestoAtras() {
   // «¿Salir sin guardar?» (components/useCambiosSinGuardar.js): el atrás del sistema desde un formulario con cambios pregunta.
   useEffect(() => { instalarSinGuardar(router); }, [router]);
 
-  // Hojas y diálogos: Android los cierra con atrás; la app de iOS deja sin gesto de volver la pantalla que tapan.
+  // Hojas y diálogos: Android los cierra con atrás. La app de iOS tiene el gesto de volver solo donde hay «‹ Atrás» y sin
+  // nada encima.
   useEffect(() => {
     instalarHistorial();
     const nativo = window.webkit?.messageHandlers?.gestoAtras;
@@ -38,11 +40,13 @@ export default function GestoAtras() {
     if (!nativo && !conCierre) return undefined;
     let gestoActivo = null; // la primera vez se dice siempre (la página anterior pudo dejarlo apagado)
     let escape = -1e9; // un Escape de teclado de verdad ya cierra la capa: el cierre que llega detrás no repite
+    let pendiente = 0;
     const vigilantes = new Map();
     const vistas = new WeakSet();
     const repasar = () => {
+      pendiente = 0;
       const abiertas = capas();
-      const libre = abiertas.length === 0;
+      const libre = abiertas.length === 0 && destino() !== null;
       if (nativo && libre !== gestoActivo) { gestoActivo = libre; nativo.postMessage(libre); }
       if (!conCierre) return;
       // Los <dialog> los cierra ya el navegador; la pantalla de bloqueo no se cierra.
@@ -63,13 +67,24 @@ export default function GestoAtras() {
       }
     };
     const teclas = (e) => { if (e.key === 'Escape' && e.isTrusted) escape = performance.now(); };
-    const mo = new MutationObserver(repasar);
+    // Un repaso por fotograma como mucho: al cambiar de pantalla llegan cientos de cambios seguidos.
+    const pedir = () => { if (!pendiente) pendiente = requestAnimationFrame(repasar); };
+    // Vuelta a una página guardada por el navegador (atrás entre documentos): la app nativa empezó de cero con ella.
+    const volvio = (e) => { if (e.persisted) { gestoActivo = null; pedir(); } };
+    const mo = new MutationObserver(pedir);
     mo.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['aria-modal', 'open'] });
     document.addEventListener('keydown', teclas, true);
+    addEventListener('popstate', pedir); // el paso de un formulario va en el estado del historial
+    addEventListener('resize', pedir); // «‹ Atrás» puede verse o no según el ancho (iPad al girar)
+    addEventListener('pageshow', volvio);
     repasar();
     return () => {
       mo.disconnect();
+      cancelAnimationFrame(pendiente);
       document.removeEventListener('keydown', teclas, true);
+      removeEventListener('popstate', pedir);
+      removeEventListener('resize', pedir);
+      removeEventListener('pageshow', volvio);
       vigilantes.forEach((w) => w.destroy());
       if (nativo && gestoActivo === false) nativo.postMessage(true);
     };
