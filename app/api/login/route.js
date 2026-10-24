@@ -17,6 +17,12 @@ export async function POST(req) {
   if (req.headers.get('accept')?.includes('application/json')) {
     if (!r?.token) return NextResponse.json({ error: r?.bloqueado ? 'Demasiados intentos. Espera 15 minutos.' : 'Email o contraseña incorrectos.' }, { status: 401 });
     const res = NextResponse.json({ ok: true });
+    // Desde la pantalla de inicio de sesión (inicio=1, components/FormEntrar.js), la gente de un despacho empieza en su
+    // propia empresa, no en el último cliente que abrió (desde la de bloqueo se sigue donde se estaba).
+    if (form.get('inicio') === '1') {
+      const cuenta = await redis.hget('usuarios', String((await redis.hget('emails', limpiarEmail(form.get('email')))) || ''));
+      if (cuenta?.despacho) res.cookies.set('e', String(cuenta.empresa || cuenta.id), opcionesCookie);
+    }
     res.cookies.set('t', r.token, opcionesCookie);
     res.cookies.set('d', await desbloqueo(r.token), opcionesDesbloqueo);
     return res;

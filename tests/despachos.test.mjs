@@ -716,3 +716,14 @@ test('oferta de lanzamiento: solo 30 plazas, una por despacho y sin contar los d
   assert.equal((await L.tomarPlaza({ id: 'd30' }, HOY)).oferta, undefined);
   assert.equal(await L.tarifaDe({ id: 'd30' }, HOY), L.TARIFA);
 });
+
+test('despachos: «Mi empresa» es opcional; los nuevos empiezan sin ella y los de antes la conservan', async () => {
+  const r = await D.crearDespacho({ nombre: 'Asesoría Sin Empresa', codigo: 'SINEMP', titular: 'tsin', empresa: 'esin' });
+  assert.equal(r.despacho.empresaPropia, false);
+  assert.equal(D.usaEmpresaPropia(r.despacho), false);
+  assert.equal(D.usaEmpresaPropia({ id: 'viejo' }), true, 'sin el campo: como antes');
+  assert.equal(D.usaEmpresaPropia(null), false);
+  assert.deepEqual(D.limpiarDatosDespacho({ empresaPropia: true }).datos, { empresaPropia: true });
+  assert.deepEqual(D.limpiarDatosDespacho({ empresaPropia: 'sí' }).datos, { empresaPropia: false });
+  assert.deepEqual(D.limpiarDatosDespacho({ nombre: 'X' }).datos, { nombre: 'X' }, 'sin tocarlo, no cambia');
+});

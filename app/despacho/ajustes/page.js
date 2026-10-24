@@ -5,6 +5,7 @@ import { stripeListo } from '@/lib/stripe';
 import { hoy } from '@/lib/formato';
 import { WEB } from '@/lib/web';
 import AjustesDespacho from '@/components/AjustesDespacho';
+import { usaEmpresaPropia } from '@/lib/despachos';
 import '@/app/mk.css';
 import '@/app/despacho.css';
 
@@ -25,7 +26,7 @@ export default async function AjustesDelDespacho({ searchParams }) {
   return <main className="pagina mk-look despacho">
     <h1 className="titulo">Ajustes</h1>
     <AjustesDespacho
-      despacho={{ nombre: d.nombre, nif: d.nif || '', email: d.email || '', codigo: d.codigo, soloAsignados: Boolean(d.soloAsignados), cobro: rol === 'titular' ? d.cobro || null : null, demo: Boolean(d.demo) }}
+      despacho={{ nombre: d.nombre, nif: d.nif || '', email: d.email || '', codigo: d.codigo, soloAsignados: Boolean(d.soloAsignados), empresaPropia: usaEmpresaPropia(d), cobro: rol === 'titular' ? d.cobro || null : null, demo: Boolean(d.demo) }}
       titular={rol === 'titular'} licencias={licencias} tarifa={tarifa} oferta={oferta} nombres={NOMBRES_LICENCIA} diasGratis={DIAS_GRATIS} stripe={stripeListo()} sesion={typeof q.sesion === 'string' ? q.sesion : ''}
       enlace={`${origen}/api/invitacion/gestoria?c=${encodeURIComponent(d.codigo)}`} />
   </main>;

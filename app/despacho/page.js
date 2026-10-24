@@ -1,6 +1,6 @@
 import Espacio from '@/components/Espacio';
 import { requerirDespacho } from '@/lib/despachoPagina';
-import { clientesVisibles, equipoDe } from '@/lib/despachos';
+import { clientesVisibles, equipoDe, usaEmpresaPropia } from '@/lib/despachos';
 import { filasClientes } from '@/lib/panelDespacho';
 import { periodoDe } from '@/lib/despachoApi';
 import { hoy } from '@/lib/formato';
@@ -31,7 +31,7 @@ export default async function Despacho({ searchParams }) {
   const cuenta = (e) => filas.filter((f) => enPestana(f, e)).length;
   const url = (e) => `/despacho?anio=${anio}&t=${t}${e === 'todos' ? '' : `&estado=${e}`}`;
   return <main className="pagina mk-look despacho">
-    {rol === 'titular' && <Espacio actual="despacho" className="espacio-movil" />}
+    {rol === 'titular' && usaEmpresaPropia(d) && <Espacio actual="despacho" className="espacio-movil" />}
     <h1 className="titulo">{d.nombre}</h1>
     <p className="resumen-linea desp-linea">
       <span>{filas.length === 1 ? '1 cliente' : `${filas.length} clientes`}{rol === 'gestor' && d.soloAsignados ? ' asignados a ti' : ''} · {t}T {anio}</span>

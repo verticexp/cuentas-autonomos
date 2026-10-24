@@ -447,7 +447,7 @@ for (const c of CLIENTES) {
     [idGestor]: { id: idGestor, nombre: 'Pol Martí', email: GESTOR, admin: false, creado: fechaHora(inicio, 8), emailVerificado: true, empresa: empresaDespacho, rol: 'miembro', permisos: [], pv: 2, pass, despacho: idDespacho },
   });
   await r.hset(`${P}emails`, { [TITULAR]: idTitular, [GESTOR]: idGestor });
-  await r.hset(`${P}despachos`, { [idDespacho]: { id: idDespacho, nombre: 'Gestoría Ferrer (demo)', nif: 'B00000100', email: TITULAR, codigo: CODIGO, empresa: empresaDespacho, creado: fechaHora(inicio, 8), miembros: { [idTitular]: { rol: 'titular', desde: fechaHora(inicio, 8) }, [idGestor]: { rol: 'gestor', desde: fechaHora(mas(inicio, 30), 8) } }, soloAsignados: false, demo: true } });
+  await r.hset(`${P}despachos`, { [idDespacho]: { id: idDespacho, nombre: 'Gestoría Ferrer (demo)', nif: 'B00000100', email: TITULAR, codigo: CODIGO, empresa: empresaDespacho, creado: fechaHora(inicio, 8), miembros: { [idTitular]: { rol: 'titular', desde: fechaHora(inicio, 8) }, [idGestor]: { rol: 'gestor', desde: fechaHora(mas(inicio, 30), 8) } }, soloAsignados: false, empresaPropia: true, demo: true } });
   await r.hset(`${P}despacho-codigos`, { [CODIGO]: idDespacho });
   await r.del(`${P}despacho-clientes:${idDespacho}`);
   await r.sadd(`${P}despacho-clientes:${idDespacho}`, ...CLIENTES.map((c) => c.id));

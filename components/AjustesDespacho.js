@@ -12,7 +12,7 @@ const euros = (c) => eur(c / 100);
 // del despacho y lo que hace cada uno. Lo largo va plegado.
 export default function AjustesDespacho({ despacho, titular, licencias, tarifa, oferta, nombres, diasGratis, stripe, sesion, enlace }) {
   const router = useRouter();
-  const [d, setD] = useState({ nombre: despacho.nombre, nif: despacho.nif, email: despacho.email, soloAsignados: despacho.soloAsignados });
+  const [d, setD] = useState({ nombre: despacho.nombre, nif: despacho.nif, email: despacho.email, soloAsignados: despacho.soloAsignados, empresaPropia: despacho.empresaPropia });
   const [editar, setEditar] = useState(false);
   const [msg, setMsg] = useState('');
   const [cobro, setCobro] = useState('');
@@ -93,6 +93,8 @@ export default function AjustesDespacho({ despacho, titular, licencias, tarifa, 
         <div className="celda"><span className="txt">Email</span><span className="v">{despacho.email || '—'}</span></div>
         {titular && <label className="celda desp-interruptor"><span className="txt">Cada gestor ve solo sus clientes<small>Los que le asignes en la ficha de cada cliente. El titular los ve todos.</small></span>
           <input type="checkbox" role="switch" checked={d.soloAsignados} onChange={(e) => { setD({ ...d, soloAsignados: e.target.checked }); guardar({ soloAsignados: e.target.checked }, false); }} /></label>}
+        {titular && <label className="celda desp-interruptor"><span className="txt">También llevo las cuentas del despacho en Fisquo<small>Facturas a tus clientes, gastos e impuestos del propio despacho, en «Mi empresa». Si no, entras siempre directo a Mi despacho.</small></span>
+          <input type="checkbox" role="switch" checked={d.empresaPropia} onChange={(e) => { setD({ ...d, empresaPropia: e.target.checked }); guardar({ empresaPropia: e.target.checked }, false); }} /></label>}
         {titular && <button type="button" className="celda ir desp-celda-boton" onClick={() => { setEditar(true); setMsg(''); }}><span className="txt">Cambiar los datos</span></button>}
       </div> : <form className="formulario tarjeta" onSubmit={(e) => { e.preventDefault(); guardar({ nombre: d.nombre, nif: d.nif, email: d.email }); }}>
         <label>Nombre<input className="campo" value={d.nombre} maxLength={120} onChange={(e) => setD({ ...d, nombre: e.target.value })} required /></label>
@@ -115,7 +117,7 @@ export default function AjustesDespacho({ despacho, titular, licencias, tarifa, 
 
     <section className="grupo desp-solo-movil" aria-label="Sesión">
       <div className="grupo-c">
-        {titular && <form method="post" action="/api/despacho/salir?a=empresa"><button className="celda ir desp-celda-boton"><span className="txt">Mi empresa en Fisquo<small>La contabilidad de tu propio despacho</small></span></button></form>}
+        {titular && d.empresaPropia && <form method="post" action="/api/despacho/salir?a=empresa"><button className="celda ir desp-celda-boton"><span className="txt">Mi empresa en Fisquo<small>La contabilidad de tu propio despacho</small></span></button></form>}
         <form method="post" action="/api/logout"><button className="celda desp-celda-boton rojo"><span className="txt">Cerrar sesión</span></button></form>
       </div>
     </section>
