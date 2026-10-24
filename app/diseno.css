@@ -343,6 +343,9 @@ a.fila:active { transform: scale(0.985); }
 ::view-transition-group(tabs) { border-radius: 999px; }
 ::view-transition-group(mas) { border-radius: 50%; }
 ::view-transition-old(tabs), ::view-transition-new(tabs), ::view-transition-old(mas), ::view-transition-new(mas) { animation-duration: 0.2s; }
+/* Al entrar en una conversación (sin barra) o salir de ella, la barra va con su pantalla: se aparta con ella y la otra la tapa
+   (lib/transicion.js, SIN_BARRA). Con su propia capa quedaba encima de la conversación y se desvanecía: un destello abajo. */
+html[data-vt-barra] .tabs, html[data-vt-barra] .tabbar .mas { view-transition-name: none; }
 .segmentado.vt a.activo { view-transition-name: segmento; }
 ::view-transition-group(segmento) { animation-duration: 0.32s; animation-timing-function: var(--vt-curva); }
 /* Textos que viajan de la fila a la cabecera: la caja mide lo que el texto, así no se deforma al crecer */

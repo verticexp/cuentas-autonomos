@@ -4,7 +4,7 @@ import Espacio from '@/components/Espacio';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { alPulsar, instalarHistorial, navegar, posicion } from '@/lib/transicion';
+import { SIN_BARRA, alPulsar, instalarHistorial, navegar, posicion } from '@/lib/transicion';
 import Logo from '@/components/Logo';
 import CambiarEmpresa from '@/components/CambiarEmpresa';
 import { ASISTENTE, extraDe, gruposVisibles } from '@/components/secciones';
@@ -138,7 +138,7 @@ export default function TabBar({ permisos = [], empresas = [], empresa, admin = 
 
   return (
     <>
-    <div className={`tabbar${path === '/tu-gestoria' ? ' tabbar-chat' : ''}`} data-teclado={teclado || undefined}>
+    <div className={`tabbar${SIN_BARRA.test(path) ? ' tabbar-chat' : ''}`} data-teclado={teclado || undefined}>
       <Link href="/" className="tabbar-logo" aria-label="Fisquo, resumen" onClick={(e) => { e.preventDefault(); ir('/'); }}><Logo /></Link>
       {despacho === 'empresa' && <Espacio actual="empresa" className="espacio-lateral" />}
       {empresa && <CambiarEmpresa empresas={empresas} actual={empresa} variante="lateral" />}

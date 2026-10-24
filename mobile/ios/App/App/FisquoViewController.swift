@@ -6,7 +6,8 @@ import Capacitor
 // - ventanas nuevas y descargas resueltas dentro de la app (DelegadoWeb.swift), no en Safari, que no tiene la sesión;
 // - el escáner de documentos nativo para los tickets (EscanerPlugin.swift);
 // - deslizar desde el borde izquierdo para volver atrás, como en Safari (no con una hoja abierta: GestoAtras, abajo);
-// - tirar hacia abajo para recargar y los accesos rápidos del icono (SceneDelegate.swift).
+// - tirar hacia abajo para recargar y los accesos rápidos del icono (SceneDelegate.swift);
+// - el teclado sin la barra de formulario de iOS («^ ˅ ✓»), como en las apps de mensajería (quitarBarraDelTeclado, abajo).
 class FisquoViewController: CAPBridgeViewController {
     private var delegado: DelegadoWeb?
     private var gestoAtras: GestoAtras?
@@ -45,6 +46,8 @@ class FisquoViewController: CAPBridgeViewController {
         let gestoAtras = GestoAtras(webView: webView)
         webView.configuration.userContentController.add(gestoAtras, name: "gestoAtras")
         self.gestoAtras = gestoAtras
+
+        quitarBarraDelTeclado(webView)
 
         let recargar = UIRefreshControl()
         recargar.addTarget(self, action: #selector(recargar(_:)), for: .valueChanged)
@@ -110,4 +113,25 @@ private final class GestoAtras: NSObject, WKScriptMessageHandler {
         guard let activo = message.body as? Bool, let webView, message.webView === webView else { return }
         bloquear(!activo)
     }
+}
+
+// La barra que iOS pone encima del teclado en las páginas web (anterior, siguiente y ✓) no la puede quitar la web. En una app,
+// sobra: la conversación ya tiene su botón de enviar y los formularios, el suyo de guardar. Además dejaba un hueco entre el
+// teclado y el cuadro de escribir. La da inputAccessoryView de la vista de contenido de WebKit: se sustituye su clase por una
+// subclase (creada una sola vez) que no da ninguna, lo mismo que hace el plugin Keyboard de Capacitor.
+private func quitarBarraDelTeclado(_ webView: WKWebView) {
+    guard let contenido = webView.scrollView.subviews.first(where: { String(describing: type(of: $0)).hasPrefix("WKContent") }) else { return }
+    let base: AnyClass = type(of: contenido)
+    let nombre = "\(NSStringFromClass(base))_SinBarra"
+    var clase: AnyClass? = NSClassFromString(nombre)
+    if clase == nil, let nueva = objc_allocateClassPair(base, nombre, 0) {
+        let selector = #selector(getter: UIResponder.inputAccessoryView)
+        let ninguna: @convention(block) (AnyObject) -> UIView? = { _ in nil }
+        if let original = class_getInstanceMethod(base, selector) {
+            class_addMethod(nueva, selector, imp_implementationWithBlock(ninguna), method_getTypeEncoding(original))
+        }
+        objc_registerClassPair(nueva)
+        clase = nueva
+    }
+    if let clase { object_setClass(contenido, clase) }
 }
