@@ -43,3 +43,18 @@
 
 /* Plan que incluye una pantalla que el plan de la empresa no tiene (lib/modulos.js planesQueFaltan): menú lateral y «Más». */
 .plan-chip { flex: none; font-size: 11px; font-weight: 600; letter-spacing: 0.02em; line-height: 1; padding: 4px 7px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+
+/* Selector «Mi despacho | Mi empresa» (components/Espacio.js): arriba de la barra lateral en el ordenador y arriba del
+   panel del despacho en el móvil. Dos mitades iguales; la activa, rellena. */
+.espacio { display: flex; gap: 4px; padding: 4px; border-radius: 14px; background: var(--relleno); }
+.espacio form { display: contents; }
+.espacio-op { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 40px; margin: 0; padding: 0 6px; border: 0; border-radius: 10px; background: none; box-shadow: none; font: inherit; font-size: 14px; font-weight: 600; color: var(--muted); text-decoration: none; cursor: pointer; white-space: nowrap; }
+.espacio-op:hover { color: var(--ink); }
+.espacio-op.activo { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgb(0 0 0 / 0.12); cursor: default; }
+.espacio-op:focus-visible { outline: 2px solid var(--acento, currentColor); outline-offset: 2px; }
+.espacio-lateral { display: none; }
+.espacio-movil { margin: 0 0 16px; }
+@media (min-width: 1024px) {
+  .espacio-lateral { display: flex; margin: 0 4px 12px; }
+  .espacio-movil { display: none; }
+}

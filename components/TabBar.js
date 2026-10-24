@@ -1,5 +1,6 @@
 'use client';
 
+import Espacio from '@/components/Espacio';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -59,8 +60,9 @@ const seccion = (path) => (path === '/' ? '/' : path.startsWith('/presupuestos')
   : deMas(path) ? '/mas' : null);
 
 // porRevisar: facturas que esperan en Gastos › Por revisar (lib/bandeja.js): su número va sobre la pestaña Gastos.
-// despacho: la persona es de un despacho (lib/despachos.js): la barra lateral lleva arriba «Mi despacho».
-export default function TabBar({ permisos = [], empresas = [], empresa, admin = false, inventario = false, equipo = true, fiscal = {}, faltan = {}, porRevisar = 0, despacho = false }) {
+// despacho: la persona es de un despacho (lib/despachos.js). En su propia empresa ('empresa'), arriba de la barra lateral
+// va el selector «Mi despacho | Mi empresa» (components/Espacio.js); dentro de un cliente ('cliente'), el enlace a Mi despacho.
+export default function TabBar({ permisos = [], empresas = [], empresa, admin = false, inventario = false, equipo = true, fiscal = {}, faltan = {}, porRevisar = 0, despacho = null }) {
   const tabs = TABS.filter((t) => !t.permiso || permisos.includes(t.permiso));
   const path = usePathname();
   const router = useRouter();
@@ -138,6 +140,7 @@ export default function TabBar({ permisos = [], empresas = [], empresa, admin = 
     <>
     <div className="tabbar" data-teclado={teclado || undefined}>
       <Link href="/" className="tabbar-logo" aria-label="Fisquo, resumen" onClick={(e) => { e.preventDefault(); ir('/'); }}><Logo /></Link>
+      {despacho === 'empresa' && <Espacio actual="empresa" className="espacio-lateral" />}
       {empresa && <CambiarEmpresa empresas={empresas} actual={empresa} variante="lateral" />}
       <nav
         ref={nav}
@@ -178,7 +181,7 @@ export default function TabBar({ permisos = [], empresas = [], empresa, admin = 
           );
           return (
             <>
-              {despacho && <div className="tabs-grupo">{enlace({ href: '/despacho', nombre: 'Mi despacho', icono: <><path d="M4 21V8l8-5 8 5v13" /><path d="M9 21v-6h6v6" /></> })}</div>}
+              {despacho === 'cliente' && <div className="tabs-grupo">{enlace({ href: '/despacho', nombre: 'Mi despacho', icono: <><path d="M4 21V8l8-5 8 5v13" /><path d="M9 21v-6h6v6" /></> })}</div>}
               <div className="tabs-grupo">{enlace({ ...ASISTENTE, plan: faltan[ASISTENTE.href] })}</div>
               {gruposVisibles(permisos, inventario, { fiscal, faltan, equipo }).map((g) => (
                 <div key={g.titulo} className="tabs-grupo" data-tono={g.tono}>

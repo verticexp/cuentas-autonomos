@@ -5,7 +5,6 @@ import './movil.css';
 import './diseno.css';
 import './pulido.css';
 import './v2.css';
-import TabBar from '@/components/TabBar';
 import { planesQueFaltan } from '@/lib/modulos';
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -25,7 +24,7 @@ import RegistrarSw from '@/components/RegistrarSw';
 import GestoAtras from '@/components/GestoAtras';
 import BarraEstado from '@/components/BarraEstado';
 import { WEB } from '@/lib/web';
-import NavDespacho from '@/components/NavDespacho';
+import Barra from '@/components/Barra';
 import AvisoDespacho from '@/components/AvisoDespacho';
 import { despachoDe, rolEn } from '@/lib/despachos';
 import { noLeidosDespacho } from '@/lib/mensajesDespacho';
@@ -90,8 +89,10 @@ export default async function RootLayout({ children }) {
   if (!abierta && !LIBRE.test(ruta)) redirect(`/bloqueo?a=${encodeURIComponent(ruta)}`);
   // Mi despacho (app/despacho): su propia barra en lugar de la de la empresa.
   const despacho = u?.despacho && (await despachoDe(u.despacho).catch(() => null));
-  const enDespacho = Boolean(despacho && rolEn(despacho, u.id) && /^\/despacho(\/|$)/.test(ruta.split('?')[0]));
-  const mensajesNuevos = enDespacho ? await noLeidosDespacho(despacho, u.id).catch(() => 0) : 0;
+  const rolDespacho = despacho ? rolEn(despacho, u.id) : null;
+  const enDespacho = Boolean(rolDespacho && /^\/despacho(\/|$)/.test(ruta.split('?')[0]));
+  // La barra la elige components/Barra.js con la ruta del navegador: aquí van las dos (la del despacho, si es de uno).
+  const mensajesNuevos = rolDespacho ? await noLeidosDespacho(despacho, u.id).catch(() => 0) : 0;
   return (
     <html lang="es" data-tema={tema} data-app={app ? 'ios' : undefined} suppressHydrationWarning>
       <head>
@@ -111,7 +112,7 @@ export default async function RootLayout({ children }) {
         )}
         {u?.viaDespacho && !enDespacho && <AvisoDespacho cliente={u.empresaNombre || u.emisor?.nombre} despacho={u.viaDespacho.nombre} empresa={u.empresa} />}
         {children}
-        <Suspense>{enDespacho ? <NavDespacho nombre={despacho.nombre} noLeidos={mensajesNuevos} titular={rolEn(despacho, u.id) === 'titular'} /> : u && <TabBar despacho={Boolean(despacho && rolEn(despacho, u.id))} porRevisar={porRevisar} permisos={permisosDe(u)} empresas={u.misEmpresas} empresa={u.empresa} admin={Boolean(u.admin)} inventario={Boolean(u.fiscal?.inventario)} equipo={Boolean(equipo)} fiscal={{ tipo: u.fiscal?.tipo, iva: u.fiscal?.iva }} faltan={planesQueFaltan(u.plan)} />}<Llegada /><BarraEstado /></Suspense>
+        <Suspense><Barra despacho={rolDespacho ? { nombre: despacho.nombre, noLeidos: mensajesNuevos, titular: rolDespacho === 'titular' } : null} tabbar={u ? { despacho: rolDespacho ? (u.viaDespacho ? 'cliente' : 'empresa') : null, porRevisar, permisos: permisosDe(u), empresas: u.misEmpresas, empresa: u.empresa, admin: Boolean(u.admin), inventario: Boolean(u.fiscal?.inventario), equipo: Boolean(equipo), fiscal: { tipo: u.fiscal?.tipo, iva: u.fiscal?.iva }, faltan: planesQueFaltan(u.plan) } : null} /><Llegada /><BarraEstado /></Suspense>
         {u?.bloqueoPantalla && <Bloqueo email={u.email} servidor={abierta} />}
       </body>
     </html>
