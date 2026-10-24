@@ -95,6 +95,7 @@ export default function GestoAtras() {
     let g = null; // { x, y, pagina, href, arrastre, dx, vel, t }
     const limpiar = (pagina) => {
       document.body.style.removeProperty('background-color');
+      delete document.documentElement.dataset.gesto;
       for (const p of ['transform', 'transition', 'box-shadow', 'background', 'min-height', 'will-change', 'visibility']) pagina?.style.removeProperty(p);
     };
     const quitar = () => {
@@ -129,6 +130,7 @@ export default function GestoAtras() {
           p.style.minHeight = '100dvh';
           p.style.boxShadow = '-10px 0 30px rgba(0, 0, 0, 0.12)';
         }
+        document.documentElement.dataset.gesto = '1'; // la barra de título compacta se aparta (components/TituloCompacto.js)
         // Lo de detrás, un poco más oscuro: como la pantalla anterior en iOS.
         document.body.style.backgroundColor = 'color-mix(in srgb, var(--paper) 90%, #000)';
       }

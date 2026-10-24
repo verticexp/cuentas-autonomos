@@ -85,3 +85,14 @@ test('el diálogo de confirmación se cancela si se sale de la pantalla', async 
   assert.match(confirmar, /addEventListener\('popstate', salir\)/);
   assert.match(confirmar, /removeEventListener\('popstate', salir\)/);
 });
+
+test('barra de título compacta: en todas las pantallas del móvil, sin tapar lo fijo de arriba', async () => {
+  assert.match(await leer('app/layout.js'), /<TituloCompacto \/>/);
+  const barra = await leer('components/TituloCompacto.js');
+  // «‹ Atrás» de la barra pulsa el de la página: mismo destino y mismo «¿Salir sin guardar?».
+  assert.match(barra, /partes\.current\.volver\?\.click\(\)/);
+  const css = await leer('app/titulo-compacto.css');
+  // Solo en el móvil; el resumen de las listas y el total de Caja bajan con ella.
+  assert.match(css, /^\.titulo-compacto \{ display: none; \}/m);
+  assert.match(css, /html\[data-titulo-compacto\] \.resumen-fijo, html\[data-titulo-compacto\] \.pagina \.caja-total \{ top: calc\(env\(safe-area-inset-top, 0px\) \+ 44px\); \}/);
+});
