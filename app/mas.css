@@ -12,9 +12,11 @@
 
 .mas-cab { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .mas-cab .titulo { margin-bottom: 10px; }
-.mas-cuenta { flex: none; display: grid; border-radius: 50%; margin-top: -4px; -webkit-tap-highlight-color: transparent; transition: transform 0.12s var(--salida, ease-out); }
-.mas-cuenta:active { transform: scale(0.94); }
-.mas-cuenta:focus-visible, .mas-tile:focus-visible { outline: 2px solid var(--marca); outline-offset: 2px; }
+/* «Ajustes» arriba a la derecha: una cápsula con la rueda y su nombre, como los botones de la barra de iOS 26. */
+.mas-ajustes { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 36px; margin-top: -4px; padding: 0 14px 0 10px; border-radius: 18px; background: var(--surface); color: var(--ink); font-size: 15px; font-weight: 600; text-decoration: none; -webkit-tap-highlight-color: transparent; transition: transform 0.12s var(--salida, ease-out); }
+.mas-ajustes svg { width: 19px; height: 19px; fill: none; stroke: var(--muted); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.mas-ajustes:active { transform: scale(0.95); background: var(--relleno); }
+.mas-ajustes:focus-visible, .mas-tile:focus-visible { outline: 2px solid var(--marca); outline-offset: 2px; }
 
 .mas-buscar { display: flex; align-items: center; gap: 6px; height: 36px; padding: 0 10px; margin-bottom: 16px; border-radius: 10px; background: var(--relleno); color: var(--muted); }
 .mas-buscar svg { flex: none; width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
@@ -45,5 +47,5 @@
 .mas-tile .mas-ico svg { width: 23px; height: 23px; }
 .mas-nombre { max-width: 100%; font-size: 11px; font-weight: 500; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mas-punto { position: absolute; top: 8px; right: 10px; width: 9px; height: 9px; border-radius: 50%; background: var(--tono-solido, #FF3B30); }
-@media (prefers-reduced-motion: reduce) { .mas-tile, .mas-cuenta { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .mas-tile, .mas-ajustes { transition: none; } }
 @media (min-width: 1024px) { .mas-favoritos { grid-template-columns: repeat(4, minmax(0, 120px)); } }
