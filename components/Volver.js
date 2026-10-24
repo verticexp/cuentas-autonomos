@@ -20,16 +20,25 @@ const NOMBRES = {
 export default function Volver({ href, children = 'Atrás' }) {
   const router = useRouter();
   const [etiqueta, setEtiqueta] = useState(children);
+  // La gestoría acaba de entrar en las cuentas de un cliente desde Mi despacho (PanelDespacho.js entrarEn): en esa primera
+  // pantalla, «atrás» vuelve a la ficha del cliente, no al Resumen del cliente.
+  const [entrada, setEntrada] = useState('');
   useEffect(() => {
     instalarHistorial();
     const antes = anterior();
-    if (antes) setEtiqueta(NOMBRES[antes.split(/[?#]/)[0]] || 'Atrás');
+    let desde = '';
+    try { const e = JSON.parse(sessionStorage.getItem('fisquo-entrada') || 'null'); if (!antes && e?.a && e.a.split(/[?#]/)[0] === location.pathname) desde = e.desde; } catch {}
+    setEntrada(desde);
+    if (desde) setEtiqueta('Ficha del cliente');
+    else if (antes) setEtiqueta(NOMBRES[antes.split(/[?#]/)[0]] || 'Atrás');
     else setEtiqueta(children);
   }, [children]);
   const alPulsar = (e) => {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.button > 0) return;
     e.preventDefault();
+    // A Mi despacho, con la página entera: la barra y el aviso de arriba son los del despacho.
+    if (entrada) { window.location.assign(entrada); return; }
     salirSinGuardar(() => volverA(router, href));
   };
-  return <Link href={href} className="volver" onClick={alPulsar}>‹ <span className="volver-texto">{etiqueta}</span></Link>;
+  return <Link href={entrada || href} className="volver" onClick={alPulsar}>‹ <span className="volver-texto">{etiqueta}</span></Link>;
 }

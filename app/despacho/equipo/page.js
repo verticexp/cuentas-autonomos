@@ -1,5 +1,6 @@
 import { requerirDespacho } from '@/lib/despachoPagina';
 import { clientesVisibles, equipoDe, ROLES_DESPACHO } from '@/lib/despachos';
+import Volver from '@/components/Volver';
 import EquipoDespacho from '@/components/EquipoDespacho';
 import { filasClientes } from '@/lib/panelDespacho';
 import { conversaciones } from '@/lib/mensajesDespacho';
@@ -31,6 +32,7 @@ export default async function Equipo() {
   };
   const cartera = (id) => carga(id).clientes;
   return <main className="pagina mk-look despacho">
+    <div className="volver-movil"><Volver href="/despacho/ajustes">Ajustes</Volver></div>
     <h1 className="titulo">Equipo</h1>
     <p className="desp-sub">{d.soloAsignados ? 'Cada gestor ve solo los clientes que tiene asignados; el titular, todos.' : 'Todo el equipo ve a todos los clientes. Puedes limitarlo en Ajustes.'}</p>
     <EquipoDespacho equipo={equipo.map((x) => ({ ...x, rolTexto: ROLES_DESPACHO[x.rol], clientes: cartera(x.id), carga: carga(x.id) }))} sinAsignar={carga(null)} trimestre={`${t}T`} titular={rol === 'titular'} yo={u.id} />

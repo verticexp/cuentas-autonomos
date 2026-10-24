@@ -4,6 +4,7 @@ import { cuentaLicencias, tarifaDe, tipoLicencia } from '@/lib/licencias';
 import { leerRango } from '@/lib/indices';
 import { facturacionPorCliente } from '@/lib/facturacionDespacho';
 import Ir from '@/components/Ir';
+import Volver from '@/components/Volver';
 import { eur, fechaCorta, hoy } from '@/lib/formato';
 import '@/app/mk.css';
 import '@/app/despacho.css';
@@ -17,7 +18,7 @@ const euros = (n) => eur(n);
 // lo vencido, y lo que le cuesta Fisquo de los clientes a los que paga la licencia. Solo el titular.
 export default async function Facturacion() {
   const { u, d } = await requerirDespacho({ titular: true });
-  if (!d.empresa) return <main className="pagina mk-look despacho"><h1 className="titulo">Facturación</h1><p className="desp-sub">Tu despacho aún no tiene su empresa en Fisquo: créala desde «Mi empresa» para facturar a tus clientes y verlo aquí.</p></main>;
+  if (!d.empresa) return <main className="pagina mk-look despacho"><div className="volver-movil"><Volver href="/despacho/ajustes">Ajustes</Volver></div><h1 className="titulo">Facturación</h1><p className="desp-sub">Tu despacho aún no tiene su empresa en Fisquo: créala desde «Mi empresa» para facturar a tus clientes y verlo aquí.</p></main>;
   const dia = hoy();
   // Mismo día del año anterior; el 29 de febrero se limita al último día de febrero.
   const anio = Number(dia.slice(0, 4)) - 1, mes = Number(dia.slice(5, 7));
@@ -32,6 +33,7 @@ export default async function Facturacion() {
   });
   const { filas, totales, sinEmparejar } = facturacionPorCliente({ clientes, facturas, hoy: dia });
   return <main className="pagina mk-look despacho">
+    <div className="volver-movil"><Volver href="/despacho/ajustes">Ajustes</Volver></div>
     <h1 className="titulo">Facturación</h1>
     <p className="desp-sub">Las facturas que tu despacho emite desde su propia empresa en Fisquo en los últimos 12 meses, emparejadas con cada cliente por su NIF. El coste de Fisquo es el de este mes por doce; el margen, las bases sin IVA menos ese coste.</p>
     <dl className="desp-cifras">{[
