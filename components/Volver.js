@@ -31,5 +31,5 @@ export default function Volver({ href, children = 'Atrás' }) {
     e.preventDefault();
     salirSinGuardar(() => volverA(router, href));
   };
-  return <Link href={href} className="volver" onClick={alPulsar}>‹ {etiqueta}</Link>;
+  return <Link href={href} className="volver" onClick={alPulsar}>‹ <span className="volver-texto">{etiqueta}</span></Link>;
 }

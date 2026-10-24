@@ -24,7 +24,8 @@ export default function NavDespacho({ nombre, noLeidos = 0, titular = false }) {
   const path = usePathname();
   const router = useRouter();
   return (
-    <div className="tabbar tabbar-despacho">
+    // Dentro de una conversación, en el móvil, la barra de abajo se esconde (como en WhatsApp): deja sitio para escribir.
+    <div className={`tabbar tabbar-despacho${/^\/despacho\/mensajes\/[^/]+$/.test(path || '') ? ' tabbar-chat' : ''}`}>
       <Link href="/despacho" className="tabbar-logo" aria-label={`${nombre}, clientes`}><Logo /></Link>
       {titular && <Espacio actual="despacho" className="espacio-lateral" />}
       <nav className="tabs" aria-label="Mi despacho">

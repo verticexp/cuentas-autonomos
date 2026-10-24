@@ -41,10 +41,13 @@ export default function Chat({ mensajes, lado, leidoAntes = '', enviar, leer, co
   const hoy = new Date().toISOString().slice(0, 10);
   // La raya de «Nuevos» se queda donde estaba al abrir, aunque al marcarlo leído la página se recargue.
   const [leidoAlAbrir] = useState(leidoAntes);
+  // Solo se animan los mensajes que llegan con la conversación abierta (antes, todos se movían en cada recarga).
+  const [vistos] = useState(mensajes.length);
   const primeroNuevo = useMemo(() => mensajes.find((m) => m.lado !== lado && m.fecha > leidoAlAbrir)?.fecha, [mensajes, lado, leidoAlAbrir]);
 
   // Lo último a la vista, dentro de la caja de mensajes (sin mover la página).
-  useEffect(() => { const l = lista.current; if (l) l.scrollTop = l.scrollHeight; }, [mensajes.length]);
+  const alFinal = () => { const l = lista.current; if (l) l.scrollTop = l.scrollHeight; };
+  useEffect(alFinal, [mensajes.length]);
   // Lo nuevo llega solo: cada minuto, si la pantalla está a la vista y no se está escribiendo, se miran los mensajes (una
   // consulta pequeña) y solo si ha cambiado algo se recarga la pantalla.
   const actual = firma(mensajes);
@@ -96,7 +99,7 @@ export default function Chat({ mensajes, lado, leidoAntes = '', enviar, leer, co
         const cabecera = dia(m.fecha, hoy);
         const nuevoDia = cabecera !== diaAnterior;
         diaAnterior = cabecera;
-        return <div key={`${m.hilo}-${m.fecha}-${i}`} className="chat-grupo">
+        return <div key={`${m.hilo}-${m.fecha}-${i}`} className={`chat-grupo${i >= vistos ? ' nueva' : ''}`}>
           {nuevoDia && <p className="chat-dia"><span>{cabecera}</span></p>}
           {m.fecha === primeroNuevo && <p className="chat-nuevos"><span>Nuevos</span></p>}
           <div className={`chat-burbuja${mio ? ' mia' : ''}${m.resuelto && m.doc ? ' resuelta' : ''}`}>
@@ -116,16 +119,17 @@ export default function Chat({ mensajes, lado, leidoAntes = '', enviar, leer, co
     </div>
     <form className="chat-escribir" onSubmit={mandar}>
       {sobre && <p className="chat-contexto"><span>{respondiendo ? 'Respondiendo a' : 'Preguntas por'}: <b>{sobre}</b></span><button type="button" aria-label="Quitar el documento" onClick={() => { setRespondiendo(null); setDoc(''); }}>×</button></p>}
-      {docs && !respondiendo && !doc && opciones.length > 0 && <label className="chat-adjuntar">
-        <span className="sr">Preguntar por una factura o un gasto</span>
-        <select value="" onChange={(e) => setDoc(e.target.value)}>
-          <option value="">+ Preguntar por una factura o un gasto…</option>
-          {docs.facturas.length > 0 && <optgroup label="Facturas">{opciones.filter((o) => o.v.startsWith('factura')).map((o) => <option key={o.v} value={o.v}>{o.t}</option>)}</optgroup>}
-          {docs.gastos.length > 0 && <optgroup label="Gastos">{opciones.filter((o) => o.v.startsWith('gasto')).map((o) => <option key={o.v} value={o.v}>{o.t}</option>)}</optgroup>}
-        </select>
-      </label>}
       <div className="chat-linea">
-        <textarea ref={caja} rows={1} value={texto} maxLength={2000} placeholder="Escribe un mensaje" aria-label="Mensaje" onChange={(e) => setTexto(e.target.value)}
+        {docs && !respondiendo && !doc && opciones.length > 0 && <label className="chat-adjuntar" title="Preguntar por una factura o un gasto">
+          <svg viewBox="0 0 24 24" aria-hidden><path d="M20 11.5l-7.8 7.8a5 5 0 01-7.1-7.1l8.5-8.5a3.3 3.3 0 014.7 4.7l-8.5 8.5a1.7 1.7 0 01-2.4-2.4l7.8-7.8" /></svg>
+          <span className="sr">Preguntar por una factura o un gasto</span>
+          <select value="" onChange={(e) => setDoc(e.target.value)}>
+            <option value="">Preguntar por una factura o un gasto…</option>
+            {docs.facturas.length > 0 && <optgroup label="Facturas">{opciones.filter((o) => o.v.startsWith('factura')).map((o) => <option key={o.v} value={o.v}>{o.t}</option>)}</optgroup>}
+            {docs.gastos.length > 0 && <optgroup label="Gastos">{opciones.filter((o) => o.v.startsWith('gasto')).map((o) => <option key={o.v} value={o.v}>{o.t}</option>)}</optgroup>}
+          </select>
+        </label>}
+        <textarea ref={caja} rows={1} value={texto} maxLength={2000} placeholder="Mensaje" aria-label="Mensaje" onChange={(e) => setTexto(e.target.value)} onFocus={() => setTimeout(alFinal, 300)}
           onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing && window.matchMedia('(min-width: 1024px)').matches) mandar(e); }} />
         <button className="chat-enviar" aria-label="Enviar" disabled={!texto.trim() || ocupado}>
           <svg viewBox="0 0 24 24" aria-hidden><path d="M4 12l16-8-6 16-2.5-6.5z" /></svg>
