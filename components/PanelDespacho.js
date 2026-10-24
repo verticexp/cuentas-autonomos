@@ -17,7 +17,11 @@ export async function entrarEn(empresa, ir = '/') {
   const r = await fetch('/api/despacho/entrar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ empresa, ir }) });
   const d = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(d.error || 'No se ha podido entrar en este cliente.');
-  try { sessionStorage.removeItem('fisquo-arranque'); } catch {}
+  try {
+    sessionStorage.removeItem('fisquo-arranque');
+    // Entrar recarga la página y se pierde el «atrás»: la primera pantalla del cliente vuelve a donde se estaba (Volver.js).
+    sessionStorage.setItem('fisquo-entrada', JSON.stringify({ desde: location.pathname + location.search, a: d.ir || '/' }));
+  } catch {}
   window.location.assign(d.ir || '/');
 }
 
