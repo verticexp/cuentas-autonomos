@@ -101,19 +101,19 @@ try {
     await p.waitForTimeout(900);
     assert.equal(ruta(p), '/mas');
     // Desplazar en vertical desde el borde o arrastrar poco y despacio no vuelve.
-    await p.goto(`${BASE}/ajustes/facturacion`);
+    await p.goto(`${BASE}/clientes`);
     await p.locator('a.volver').waitFor();
     await deslizar(p, { desde: [6, 700], hasta: [10, 300] });
     await deslizar(p, { hasta: [60, 421], pasos: 6, ms: 60 });
     await p.waitForTimeout(900);
-    assert.equal(ruta(p), '/ajustes/facturacion');
+    assert.equal(ruta(p), '/clientes');
     assert(await sinRastro(p));
-    // Con una hoja abierta (el «+»), el gesto no saca de la pantalla.
+    // Con una hoja abierta (el «+»), el gesto no saca de la pantalla (en Clientes: Ajustes es una hoja sin barra de pestañas).
     await p.locator('.tabbar .mas').click();
     await p.locator('.hoja-panel').waitFor();
     await deslizar(p);
     await p.waitForTimeout(900);
-    assert.equal(ruta(p), '/ajustes/facturacion');
+    assert.equal(ruta(p), '/clientes');
     assert.equal(await p.locator('.hoja-panel').count(), 1);
     assert.deepEqual(errores, []);
     console.log('iPhone (pantalla de inicio): el gesto vuelve, sustituye si no hay nada detrás y respeta pestañas, scroll y hojas OK');
@@ -123,13 +123,13 @@ try {
   // 2. Android: el botón atrás con una hoja abierta la cierra y no sale de la pantalla.
   {
     const { ctx, p, errores } = await movil({ viewport: { width: 412, height: 915 } });
-    await p.goto(`${BASE}/ajustes/facturacion`);
+    await p.goto(`${BASE}/clientes`);
     await p.locator('.tabbar .mas').click();
     await p.locator('.hoja-panel').waitFor();
     await p.waitForFunction(() => window.__vigilantes?.length > 0);
     await p.evaluate(() => window.__vigilantes.at(-1).requestClose());
     await p.locator('.hoja-panel').waitFor({ state: 'detached' });
-    assert.equal(ruta(p), '/ajustes/facturacion');
+    assert.equal(ruta(p), '/clientes');
     // Cerrada con su botón, su vigilante se va: el siguiente atrás ya sale de la pantalla.
     await p.locator('.tabbar .mas').click();
     await p.locator('.hoja-panel').waitFor();

@@ -458,10 +458,10 @@ if (process.env.PUSH_PRUEBAS && process.env.CRON_SECRET) {
   const c2 = await cron();
   ok('y no repite el aviso el mismo día', () => assert.equal(recibidos().length, 1 + avisos.length, JSON.stringify(c2)));
   const aj = n(await texto('/ajustes', yo));
-  ok('Ajustes dice en cuántos dispositivos están activados', () => assert.ok(aj.includes('Activados en 1 dispositivo')));
+  ok('Ajustes dice si están activados', () => assert.ok(aj.includes('Avisos Activados')));
   await pedir('/api/push', { metodo: 'DELETE', cookie: yo, cuerpo: { endpoint: sub.endpoint } });
   const aj2 = n(await texto('/ajustes', yo));
-  ok('al desactivarlos se quita el dispositivo', () => assert.ok(!aj2.includes('Activados en')));
+  ok('al desactivarlos se quita el dispositivo', () => assert.ok(!aj2.includes('Avisos Activados') && aj2.includes('Avisos No')));
   const sw = await fetch(`${BASE}/sw`);
   ok('el service worker se sirve sin sesión', () => assert.ok(sw.status === 200 && sw.headers.get('content-type').includes('javascript')));
 } else console.log('  (sin PUSH_PRUEBAS y CRON_SECRET: se salta)');
@@ -933,7 +933,7 @@ if (process.env.ANTHROPIC_URL) {
   const aj = await (await pedir('/ajustes', { cookie: otro })).text();
   const mas = await (await pedir('/mas', { cookie: otro })).text();
   // Desde el 19-10-2026, en el móvil se llega por el buscador de «Más» (pregunta a Fisquo) y no desde Ajustes.
-  ok('se llega desde el resumen, desde el buscador de «Más» y desde la barra lateral', () => assert.ok(res.includes('Pregunta por tus cuentas') && mas.includes('Busca o pregunta a Fisquo') && /<nav class="tabs-extra"[\s\S]*?href="\/asistente"/.test(aj)));
+  ok('se llega desde el resumen, desde el buscador de «Más» y desde la barra lateral', () => assert.ok(res.includes('Pregunta por tus cuentas') && mas.includes('action="/asistente"') && /<nav class="tabs-extra"[\s\S]*?href="\/asistente"/.test(aj)));
 } else console.log('  (sin ANTHROPIC_URL: se salta)');
 
 console.log('Varias empresas en la misma cuenta');
@@ -1640,7 +1640,7 @@ console.log('Registro de actividad');
   ok('lo que hace otra persona de la empresa también (gasto borrado por «Solo gastos»)', () => assert.ok(act.includes('Gasto borrado') && act.includes('Gasto para auditar') && act.includes('Solo gastos'), act.slice(0, 300)));
   ok('invitaciones, cambios de permisos (con el perfil) y facturas borradas', () => assert.ok(act.includes('Persona invitada') && act.includes('Permisos cambiados') && act.includes('· Gastos') && act.includes('Factura borrada') && act.includes('Cliente Auditado · 33 € sin IVA'), act.slice(-400)));
   const aj = n(await texto('/ajustes', yo));
-  ok('Ajustes enlaza a Actividad para el administrador', () => assert.ok(aj.includes('Permisos, datos, borrados y exportaciones')));
+  ok('Ajustes enlaza a Actividad para el administrador', () => assert.ok(/\bActividad\b/.test(aj)));
   // Se mira el HTML entero (también lo que va en los scripts): nada del registro.
   const noAdmin = await (await pedir('/ajustes/actividad', { cookie: otro })).text();
   ok('quien no es administrador de la empresa ve «No tienes acceso», sin nada del registro en el HTML', () => assert.ok(noAdmin.includes('No tienes acceso') && !noAdmin.includes('Exportaci') && !noAdmin.includes(`gastos-${Y}.csv`)));
@@ -1803,7 +1803,9 @@ console.log('Ajustes nuevos: perfil, empresa, cobros, diseño, email de envío, 
   ok('Tu perfil: cada persona cambia su nombre, aunque no gestione la empresa', () => assert.deepEqual([sPer, sPerOtro], [200, 200]));
   const [sDatos] = await patch({ nombre: 'Prueba Pérez', nif: '12345678Z', direccion: 'C/ Uno 1', ciudad: '08001 Barcelona', iban: 'ES00', email: 'hola@prueba.es', telefono: '600000000', web: 'prueba.es' });
   const aj = n(await texto('/ajustes', yo));
-  ok('Datos de la empresa conserva lo de Cobros, y Ajustes lo resume', () => assert.ok(sDatos === 200 && aj.includes('45 días') && aj.includes('Bizum') && aj.includes('Gestoría Prueba') && aj.includes('Mensaje propio'), aj.slice(0, 400)));
+  const cob = await (await pedir('/ajustes/cobros', { cookie: yo })).text();
+  // Desde el 24-10-2026 Ajustes enseña un valor corto a la derecha de cada fila (como el iPhone); el Bizum, en su pantalla.
+  ok('Datos de la empresa conserva lo de Cobros, y Ajustes lo resume', () => assert.ok(sDatos === 200 && aj.includes('Cobros 45 días') && cob.includes('600 123 456') && aj.includes('Gestoría Prueba') && aj.includes('Email de envío Propio'), aj.slice(0, 400)));
   const [sNumMal] = await patch({ numeracion: { serie: 'NO', anio: Y, siguiente: 50 } });
   const [sNum, rNum] = await patch({ numeracion: { serie: '', anio: Y, siguiente: 500 } });
   const [sAtras] = await patch({ numeracion: { serie: '', anio: Y, siguiente: 10 } });

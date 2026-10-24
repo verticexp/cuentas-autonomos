@@ -1,7 +1,7 @@
 /* Mi despacho (app/despacho): la lista de clientes de una gestoría, la ficha de cada cliente, plazos, equipo y ajustes.
    Usa las piezas de la app (grupo, grupo-c, celda, grupo-lista, fila, buscar, chips, pestañas): esto solo añade lo propio. */
 
-.despacho .sr, .acceso-despacho .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.despacho .sr, .acceso-despacho .sr, .barra-despacho .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
 /* Aviso arriba cuando la gestoría está dentro de las cuentas de un cliente (components/AvisoDespacho.js). Una línea; en
    el móvil, el texto arriba y los dos botones debajo, del mismo tamaño. */
@@ -305,3 +305,74 @@ button.celda.desp-celda-boton:disabled { opacity: 0.5; cursor: default; }
 .desp-facturacion .v { display: flex; flex-direction: column; align-items: flex-end; text-align: right; }
 .desp-facturacion .v small { color: var(--muted); font-size: 13px; }
 .desp-aviso-mini { align-self: flex-start; margin-top: 4px; padding: 2px 8px; border-radius: 8px; background: color-mix(in srgb, var(--aviso, var(--marca)) 18%, var(--surface)); color: var(--ink) !important; font-size: 12px; }
+
+/* Selector de cuenta de la gente de un despacho (components/SelectorCuenta.js): una pastilla y su menú, como en las apps de
+   Apple. Arriba de cada pantalla fuera del panel va con «‹ Mi despacho» (.barra-despacho), en lugar de la franja oscura. */
+:root { --cliente-tono: #C25E00; }
+@media (prefers-color-scheme: dark) { :root:not([data-tema="claro"]) { --cliente-tono: #FFB15C; } }
+:root[data-tema="oscuro"] { --cliente-tono: #FFB15C; }
+.sel-cuenta { position: relative; min-width: 0; }
+.sel-cuenta.abierto { z-index: 40; }
+.sel-pastilla { display: inline-flex; align-items: center; gap: 7px; max-width: 100%; height: 34px; margin: 0; padding: 0 10px 0 5px; border: 0; border-radius: 17px; background: var(--surface); box-shadow: none; color: var(--ink); font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.sel-pastilla:active { background: var(--relleno); }
+.sel-pastilla:focus-visible { outline: 2px solid var(--marca); outline-offset: 2px; }
+.sel-nombre { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sel-flecha { flex: none; width: 15px; height: 15px; fill: none; stroke: var(--muted); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; transition: transform 0.2s var(--salida); }
+.sel-cuenta.abierto .sel-flecha { transform: rotate(180deg); }
+.sel-casa { flex: none; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--marca); color: var(--sobre); }
+.sel-casa svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; }
+.sel-menu { position: absolute; z-index: 40; top: calc(100% + 8px); left: 0; width: 290px; max-width: calc(100vw - 32px); overflow: hidden; border-radius: 14px; background: color-mix(in srgb, var(--surface) 94%, transparent); -webkit-backdrop-filter: blur(24px) saturate(1.8); backdrop-filter: blur(24px) saturate(1.8); box-shadow: 0 0 0 0.5px var(--line), 0 12px 40px rgb(0 0 0 / 0.2); transform-origin: top left; animation: sel-abrir 0.18s var(--salida); }
+.sel-derecha .sel-menu { left: auto; right: 0; transform-origin: top right; }
+@keyframes sel-abrir { from { opacity: 0; transform: scale(0.94); } }
+@media (prefers-reduced-motion: reduce) { .sel-menu { animation: none; } .sel-flecha { transition: none; } }
+.sel-bloque + .sel-bloque { border-top: 6px solid var(--relleno); }
+.sel-bloque form { display: block; }
+.sel-op { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; min-height: 44px; margin: 0; padding: 8px 14px; border: 0; border-radius: 0; background: none; box-shadow: none; color: var(--ink); font: inherit; font-size: 16px; text-align: left; text-decoration: none; cursor: pointer; position: relative; }
+.sel-bloque > :is(.sel-op, form) + :is(.sel-op, form) { box-shadow: inset 0 0.5px 0 var(--line); }
+.sel-op:hover, .sel-op:active { background: var(--relleno); }
+.sel-op.activa { cursor: default; font-weight: 600; }
+.sel-op.activa:hover { background: none; }
+.sel-op > svg, .sel-marca { flex: none; width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.sel-marca { stroke: var(--marca); stroke-width: 2.4; }
+.sel-izq { display: flex; align-items: center; gap: 10px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sel-op small { flex: none; color: var(--muted); font-size: 13px; }
+.sel-t { margin: 0; padding: 10px 14px 2px; color: var(--muted); font-size: 13px; }
+.sel-msg { margin: 0; padding: 10px 14px; color: var(--out); font-size: 14px; }
+
+.barra-despacho { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 16px; padding-top: max(6px, env(safe-area-inset-top)); background: color-mix(in srgb, var(--paper) 84%, transparent); -webkit-backdrop-filter: blur(20px) saturate(1.8); backdrop-filter: blur(20px) saturate(1.8); }
+.barra-despacho form { display: contents; }
+.barra-despacho-volver { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 34px; margin: 0; padding: 0; border: 0; background: none; box-shadow: none; color: var(--marca); font: inherit; font-size: 16px; font-weight: 600; text-decoration: none; cursor: pointer; }
+.barra-despacho .sel-cuenta { display: flex; justify-content: flex-end; }
+.sel-n { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: var(--out); color: #fff; font-size: 12px; line-height: 20px; text-align: center; }
+/* Dentro de un cliente, la pastilla lleva el color de «estás en las cuentas de otro» (también la barra de pestañas). */
+.barra-despacho[data-cliente] .sel-pastilla { box-shadow: inset 0 0 0 1.5px var(--cliente-tono); }
+@media (max-width: 1023.98px) {
+  .tabbar[data-cliente] .tabs { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--cliente-tono) 55%, transparent); }
+  .tabbar[data-cliente] .tabs a.activo { color: var(--cliente-tono); }
+}
+/* En el Resumen del móvil, sobre la cabecera verde (app/diseno.css .inicio): del mismo color, con el texto claro. En el
+   ordenador la cabecera es una tarjeta y la barra va como en las demás pantallas. */
+@media (max-width: 1023.98px) {
+  .barra-despacho[data-inicio] { background: #0F1F1B; color: var(--crema, #F3EFE4); }
+  .barra-despacho[data-inicio] .barra-despacho-volver { color: #9FE0BE; }
+  .barra-despacho[data-inicio] .sel-pastilla { background: rgb(255 255 255 / 0.14); color: #fff; }
+  .barra-despacho[data-inicio] .sel-flecha { stroke: currentColor; }
+}
+@media (max-width: 1023.98px) and (prefers-color-scheme: dark) { :root:not([data-tema="claro"]) .barra-despacho[data-inicio] { background: #13231E; } }
+@media (max-width: 1023.98px) { :root[data-tema="oscuro"] .barra-despacho[data-inicio] { background: #13231E; } }
+/* La hoja de Ajustes del móvil tapa la app: el selector se queda debajo. */
+@media (max-width: 1023.98px) { body:has(.aj-marco) .barra-despacho { display: none; } }
+@media (min-width: 1024px) {
+  .barra-despacho { padding: 10px 40px; }
+  body:has(.barra-despacho) .ajustes-lista { top: 54px; height: calc(100vh - 54px); }
+}
+/* En el panel: arriba de la pantalla en el móvil y arriba de la barra lateral en el ordenador. */
+.sel-movil { margin: 0 0 12px; }
+.sel-lateral { display: none; }
+@media (min-width: 1024px) {
+  .sel-movil { display: none; }
+  .sel-lateral { display: block; margin: -8px 0 10px; }
+  .sel-lateral .sel-pastilla { width: 100%; height: 40px; border-radius: 10px; background: var(--relleno); }
+  .sel-lateral .sel-flecha { margin-left: auto; }
+  .sel-lateral .sel-menu { width: 100%; }
+}

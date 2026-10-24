@@ -19,7 +19,7 @@ const capas = () => [...document.querySelectorAll('[aria-modal="true"], dialog[o
 // Adónde lleva el gesto: a la pantalla anterior (o al paso anterior de un formulario) o, si se abrió esta directamente,
 // a la de su «‹ Atrás». Las pantallas principales (pestañas, entrada) no tienen gesto, como en iOS.
 function destino() {
-  const enlace = [...document.querySelectorAll('a.volver, a.legal-volver')].find(visible);
+  const enlace = [...document.querySelectorAll('a.volver, a.legal-volver, a.aj-ok')].find(visible); // aj-ok: cerrar la hoja de Ajustes
   if (anterior() && (enlace || Number.isInteger(history.state?.__paso) || !RAICES.includes(location.pathname))) return enlace?.getAttribute('href') || location.pathname;
   return enlace?.getAttribute('href') || null;
 }
@@ -93,7 +93,7 @@ export default function GestoAtras() {
       if (t.clientX > BORDE || e.target.closest?.('.tabbar') || capas().length) return;
       const href = destino();
       if (!href) return;
-      g = { x: t.clientX, y: t.clientY, href, arrastre: false, dx: 0, vel: 0, t: e.timeStamp, pagina: document.querySelector('body > main:not(.pantalla-bloqueo), body > .pdf-fondo') };
+      g = { x: t.clientX, y: t.clientY, href, arrastre: false, dx: 0, vel: 0, t: e.timeStamp, pagina: document.querySelector('body > main:not(.pantalla-bloqueo), body > .pdf-fondo, .aj-detalle > main') };
       document.addEventListener('touchmove', mover, { passive: false, capture: true });
       document.addEventListener('touchend', soltar, { capture: true });
       document.addEventListener('touchcancel', soltar, { capture: true });
