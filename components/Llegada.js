@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useLayoutEffect } from 'react';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { tomarCambios, vigilarCambios } from '@/lib/cambiosDatos';
 
 // Avisa a la transición de que la pantalla nueva ya está pintada (va en el layout: vale para todas).
 // Si lo que hay es el esqueleto de carga (app/loading.js), espera al contenido de verdad: así se desliza la pantalla
@@ -9,6 +10,10 @@ import { usePathname, useSearchParams } from 'next/navigation';
 export default function Llegada() {
   const ruta = usePathname();
   const params = useSearchParams().toString();
+  const router = useRouter();
+  useEffect(vigilarCambios, []);
+  // Se llegó por un enlace sin transición después de guardar algo: lo recordado puede ser viejo, se pide de nuevo.
+  useEffect(() => { if (tomarCambios()) router.refresh(); }, [ruta, params]); // eslint-disable-line react-hooks/exhaustive-deps
   // Llegó después de que la transición se soltara (lib/transicion.js): entra con un fundido corto en vez de aparecer de golpe.
   // Antes de pintar, para que no se vea un instante sin el fundido.
   useLayoutEffect(() => {
