@@ -165,9 +165,11 @@ test(`simulación: ${EMPRESAS} empresas ficticias contra cálculos de referencia
       ok(c(o.total) === o.trimestres.reduce((s, x) => s + c(x), 0), `${E}: 347 de ${o.nombre} no suma sus trimestres`);
     }
 
-    // 8. 349 de las ventas = casilla 59 del 303.
+    // 8. 349 de las ventas = casilla 59 del 303. Lo que un abono deja en negativo no va en el 349 (no admite bases
+    // negativas): queda aparte, en negativos.
     for (const t of [1, 2, 3, 4]) {
-      const v349 = modelo349(facturas, ANIO, t).operadores.filter((o) => o.clave !== 'A' && o.clave !== 'I').reduce((s, o) => s + c(o.base), 0);
+      const m349 = modelo349(facturas, ANIO, t);
+      const v349 = [...m349.operadores, ...m349.negativos].filter((o) => o.clave !== 'A' && o.clave !== 'I').reduce((s, o) => s + c(o.base), 0);
       ok(v349 === c(casillas303(facturas, gastos, ANIO, t)['59']), `${E} T${t}: 349 ≠ casilla 59`);
     }
 

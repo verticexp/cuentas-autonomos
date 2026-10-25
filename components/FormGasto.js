@@ -15,6 +15,7 @@ import { importes, nifUE, origenGasto } from '@/lib/calculos';
 import { conIva, costeAfecto, partirIva, pctAfecto, pctDeducible, tipoAutoliquidado } from '@/lib/ivaDeducible';
 import { parseImporte } from '@/lib/importe';
 import { CATEGORIAS, categoria, categoriaDe, pareceBien } from '@/lib/categorias';
+import { SUBCLAVES_190, clave190De } from '@/lib/modelos';
 import { LIMITE_LIBERTAD, TIPOS_BIEN, coeficiente } from '@/lib/amortizaciones';
 import { emparejarLineas } from '@/lib/inventario';
 import { leerFacturaElectronica } from '@/lib/facturae';
@@ -55,7 +56,7 @@ const desdePropuesta = (p, vacio) => {
 };
 
 // Lo habitual del proveedor (lib/proveedorHabitual.js) en lo que aún no se ha tocado.
-const CAMPOS_HABITUALES = ['categoria', 'deduciblePct', 'afectoPct', 'actividad', 'proyecto', 'alquiler', 'recc'];
+const CAMPOS_HABITUALES = ['categoria', 'deduciblePct', 'afectoPct', 'actividad', 'proyecto', 'alquiler', 'recc', 'clave190'];
 
 // plegado: en la lista de gastos empieza como una tarjeta con «Escanear ticket», «Subir facturas» y «Apuntar a mano»; el
 // formulario se abre al escanear o al pedirlo. Las facturas subidas van a «Por revisar» (lib/bandeja.js), en la misma
@@ -352,6 +353,15 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
         </select>
       )}
       {Number(g.irpfPct) > 0 && <p className="nota">Le pagas la factura menos la retención, y esa retención la ingresas tú en el 111.</p>}
+      {Number(g.irpfPct) > 0 && !g.alquiler && (() => {
+        // Subclave del 190 (lib/modelos.js): solo si a ese % le corresponde más de una.
+        const opciones = Object.entries(SUBCLAVES_190).filter(([, s]) => s.pct === Number(g.irpfPct));
+        return opciones.length > 1 && (
+          <select className="campo" value={clave190De(g)} onChange={(e) => poner('clave190', e.target.value)} aria-label="Qué es, para el modelo 190">
+            {opciones.map(([k, s]) => <option key={k} value={k}>{s.nombre} · 190 {k}</option>)}
+          </select>
+        );
+      })()}
       {(conIva(gn) || origenGasto(gn)) && <>
         <select className="campo" value={pctOtro ? 'otro' : String(pctDeducible(g))} aria-label={`${impuesto} que te deduces`}
           onChange={(e) => {
