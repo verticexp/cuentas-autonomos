@@ -102,7 +102,7 @@ export default async function Factura({ params }) {
           <span className={`fh-estado e-${estado.toLowerCase()}`}>{estado}{!f.cobrada && ` · vence el ${fechaTexto(vencimiento(f, u.emisor?.plazo))}`}</span>
           <span>Emitida el {fechaTexto(f.fecha)}</span>
         </div>
-        {editar && <div className="fh-cobrada"><Cobro id={f.id} cobrada={Boolean(f.cobrada)} total={i.total} pagado={pagadoDe(f)} pendiente={Math.max(0, pendienteDe(f))} cobro={f.cobro ? { fecha: f.cobro.fecha, metodo: f.cobro.metodo } : null} deshacer={deshacerDe(f)} hoy={hoy()} desde={f.fecha} secundario={sinEnviar} /></div>}
+        {editar && <div className="fh-cobrada"><Cobro id={f.id} cobrada={Boolean(f.cobrada)} total={i.total} pagado={pagadoDe(f)} pendiente={Math.max(0, pendienteDe(f))} cobro={f.cobro ? { fecha: f.cobro.fecha, metodo: f.cobro.metodo } : null} deshacer={deshacerDe(f)} hoy={hoy()} desde={f.fecha} secundario={sinEnviar} formaInicial={f.formaCobro === 'efectivo' ? 'efectivo' : ''} /></div>}
       </section>
       {/* Lo de cada día arriba (PDF, enviar, duplicar); lo de vez en cuando, en «Más opciones», con Borrar al final. Sin
           enviar todavía, lo principal es mandársela al cliente (auditoría U-10); después, el PDF. */}

@@ -49,9 +49,10 @@ export async function PATCH(req) {
   const antes = b.id && (await leerUno(u, 'facturas', b.id));
   if (!antes) return error('Esa factura ya no existe', 404);
   if (antes.caja) return error('Es un cierre de caja: corrígelo desde Caja');
-  // Cobrar a mano: { id, accion: 'cobrar', fecha?, importe? } (sin ellos, entera y hoy) o { id, accion: 'deshacer' }.
+  // Cobrar a mano: { id, accion: 'cobrar', fecha?, importe?, forma? } (sin ellos, entera y hoy; forma 'efectivo' para un
+  // cobro en efectivo, lib/cobroManual.js FORMAS_COBRO) o { id, accion: 'deshacer' }.
   if (b.accion === 'cobrar' || b.accion === 'deshacer') {
-    const r = b.accion === 'cobrar' ? await cobrarFactura(u, antes.id, { fecha: b.fecha, importe: b.importe }, hoy()) : await deshacerCobro(u, antes.id);
+    const r = b.accion === 'cobrar' ? await cobrarFactura(u, antes.id, { fecha: b.fecha, importe: b.importe, forma: b.forma }, hoy()) : await deshacerCobro(u, antes.id);
     if (r.error) return error(r.error, r.status || 400);
     await secundarios(u, { facturas: [r.factura.id] });
     return Response.json({ ok: true, ...estadoCobro(r.factura), ...(r.extra || {}) });
