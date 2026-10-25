@@ -70,8 +70,11 @@ test('IVA simplificado: ingresos a cuenta en el 1T-3T y liquidación del año en
     { id: 'g2', fecha: '2026-06-01', actividad: 'bar', base: 4000, ivaPct: 21, inversion: { tipo: 'maquinaria' } }, // bien de inversión: 840
   ];
   const r = simplificado({ modulos, gastos, anio: 2026, t: 4 });
-  // 4.000 − 1.050 − 40 (1 %) = 2.910, por encima de la mínima (800); menos 720 ingresados y 840 del bien de inversión.
-  assert.deepEqual([r.actividades[0].derivada, r.ingresado, r.activosFijos, r.resultado], [2910, 720, 840, 1350]);
+  // El bien de inversión se deduce en el 2T: 240 − 840 = −600 a compensar; 3T: 240 − 600 = −360 a compensar.
+  assert.deepEqual([2, 3].map((t) => simplificado({ modulos, gastos, anio: 2026, t }).resultado), [-600, -360]);
+  // 4.000 − 1.050 − 40 (1 %) = 2.910, por encima de la mínima (800); menos 720 ingresados a cuenta y 360 a compensar.
+  // En el año se ingresa lo mismo que deduciéndolo en el 4T: 240 + 1.830 = 2.070 = 3 × 240 + (2.910 − 720 − 840).
+  assert.deepEqual([r.actividades[0].derivada, r.ingresado, r.activosFijos, r.compensar, r.resultado], [2910, 720, 0, 360, 1830]);
   // Si el IVA soportado se come la cuota, manda la cuota mínima (20 % de 4.000).
   const mucho = simplificado({ modulos, gastos: [{ id: 'g3', fecha: '2026-03-01', actividad: 'bar', base: 20000, ivaPct: 21 }], anio: 2026, t: 4 });
   assert.equal(mucho.actividades[0].derivada, 800);

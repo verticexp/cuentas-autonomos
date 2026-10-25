@@ -506,34 +506,37 @@ test('bar en módulos · 131 de los cuatro trimestres', () => {
 });
 
 test('bar en módulos · 303 del régimen simplificado: 1T-3T y liquidación del 4T', () => {
-  // 1T y 3T (sin compras de activos fijos): ingreso a cuenta 9.000 × 4 % = 360. El 2T y el 4T, en el «todo» de abajo.
-  for (const t of [1, 3]) assert.equal(simplificado({ modulos: modulosBar, gastos: gastosB, anio: 2026, t }).resultado, 360);
+  // Ingreso a cuenta 9.000 × 4 % = 360. La cafetera (mayo, activo fijo: 3.500 × 21 % = 735) se deduce en el 2T (Sede de
+  // la AEAT, régimen simplificado: «en el periodo en que se hayan soportado, o sucesivos»): 2T = 360 − 735 = −375 a
+  // compensar; 3T = 360 − 375 = −15 a compensar (art. 99.Cinco LIVA).
+  assert.deepEqual([1, 2, 3].map((t) => simplificado({ modulos: modulosBar, gastos: gastosB, anio: 2026, t }).resultado), [360, -375, -15]);
   const s = simplificado({ modulos: modulosBar, gastos: gastosB, anio: 2026, t: 4 });
   // IVA soportado corriente: bebidas (3.000 + 3.500 + 4.000 + 3.000) × 10 % = 1.350 y luz 4 × 84 = 336 → 1.686.
   // Difícil justificación 1 % de 9.000 = 90. Cuota derivada = máx(9.000 − 1.686 − 90 = 7.224; mínima 1.800) = 7.224.
-  // Ingresado en el año 3 × 360 = 1.080; IVA de la cafetera (activo fijo) 3.500 × 21 % = 735.
-  assert.deepEqual([s.actividades[0].corrientes, s.actividades[0].dificil, s.actividades[0].minima, s.derivada, s.ingresado, s.activosFijos], [1686, 90, 1800, 7224, 1080, 735]);
+  // Ingresado en el año 3 × 360 = 1.080 (los ingresos a cuenta, aunque se compensaran); 15 a compensar del 3T:
+  // 4T = 7.224 − 1.080 − 15 = 6.129.
+  assert.deepEqual([s.actividades[0].corrientes, s.actividades[0].dificil, s.actividades[0].minima, s.derivada, s.ingresado, s.activosFijos, s.compensar, s.resultado], [1686, 90, 1800, 7224, 1080, 0, 15, 6129]);
 });
 
 test('bar en módulos · el IVA de todo el inmovilizado es de activos fijos, también por debajo de 3.005,06 € (arreglado)', () => {
   // Año malo: 70.000 € de compras al 10 % (7.000 de IVA) + luz 336 = 7.336 de cuotas corrientes; 9.000 − 7.336 − 90 = 1.574,
   // menos que la cuota mínima (9.000 × 20 % = 1.800): derivada 1.800. Un arcón de 1.000 € (inmovilizado) es activo fijo
   // (instrucciones del 303, régimen simplificado, casilla G: «activos fijos los elementos del inmovilizado»): sus 210 € se
-  // deducen aparte con los 735 de la cafetera (945) y no se pierden con la cuota mínima: el año sale 1.800 − 1.080 − 945
-  // = −225. (Antes la app solo trataba como activo fijo lo de 3.005,06 € o más: el arcón iba a corrientes, quedaba
-  // absorbido por la cuota mínima y el año salía −15.)
+  // deducen aparte, en el 1T (360 − 210 = 150), y no se pierden con la cuota mínima. (Antes la app solo trataba como
+  // activo fijo lo de 3.005,06 € o más: el arcón iba a corrientes y quedaba absorbido por la cuota mínima.)
   const gastos = [
     gb('compras', '2026-06-15', 70000, 10, { concepto: 'Bebidas y comida', proveedor: 'Distribuciones Plaza SL', proveedorNif: 'B28111222' }),
     ...gastosB.filter((g) => g.id.startsWith('luz') || g.id === 'cafetera'),
     gb('arcon', '2026-03-10', 1000, 21, { inversion: { tipo: 'maquinaria' }, concepto: 'Arcón congelador', proveedor: 'Hostelería Equipos SL', proveedorNif: 'B28333444' }),
   ];
   const s = simplificado({ modulos: modulosBar, gastos, anio: 2026, t: 4 });
-  assert.deepEqual([s.actividades[0].corrientes, s.derivada, s.activosFijos], [7336, 1800, 945]);
+  assert.deepEqual([s.actividades[0].corrientes, s.derivada], [7336, 1800]);
+  assert.deepEqual([simplificado({ modulos: modulosBar, gastos, anio: 2026, t: 1 }).activosFijos, simplificado({ modulos: modulosBar, gastos, anio: 2026, t: 1 }).resultado], [210, 150]);
 });
 
 // ── Errores de la app encontrados y no arreglados (cambio grande o dudoso): quedan como «todo» con el esperado correcto. ──
 
-test('no residentes · el alquiler de un local en España a un casero francés no es una adquisición intracomunitaria de servicios', { todo: 'la app lo trata como servicio de la UE (10-11, 36-37 y clave I del 349)' }, () => {
+test('no residentes · el alquiler de un local en España a un casero francés no es una adquisición intracomunitaria de servicios (arreglado)', () => {
   // Servicio sobre un inmueble: se localiza donde está el inmueble (art. 70.Uno.1.º LIVA), no por la regla general del art.
   // 69.Uno.1.º; con un proveedor no establecido, el sujeto pasivo es Pablo (art. 84.Uno.2.º.a). Va en las 12-13 («otras
   // operaciones con inversión del sujeto pasivo», instrucciones del 303) y se deduce en las 28-29; no va en el 349, que
@@ -562,13 +565,6 @@ test('fisioterapeuta · el IVA no deducible por la prorrata de un bien de invers
   const op = opciones130({ tipo: 'autonomo', iva: 'general' }, { 2025: 20000 }, 2026);
   const T = resumenAnual(facturasF, [...gastosF, equipo], 2026, {}, ['fisio'], op).trimestres;
   assert.equal(T[1].gastos, 3874.39);
-});
-
-test('bar en módulos · en el simplificado, el IVA de los activos fijos se deduce en el trimestre de la compra', { todo: 'la app lo deduce todo en el 4T' }, () => {
-  // Instrucciones del 303, régimen simplificado: las casillas 51 a 58 se cumplimentan «en cualquier periodo de liquidación»
-  // y la 55 recoge las cuotas de activos fijos «soportadas o satisfechas en el periodo». La cafetera (mayo, 735 €): 2T =
-  // 360 − 735 = −375; 4T = 7.224 − 1.080 = 6.144.
-  assert.deepEqual([2, 4].map((t) => simplificado({ modulos: modulosBar, gastos: gastosB, anio: 2026, t }).resultado), [-375, 6144]);
 });
 
 test('minoración del 130 (art. 110.3.c RIRPF): tabla de la casilla 13', () => {
