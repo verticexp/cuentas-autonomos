@@ -130,11 +130,12 @@ export async function PATCH(req) {
     await actualizarUsuario(u, { pres303: pres, pagadosHacienda: marcarPagado(u, `${anio}-${t}-${usaIgic(fiscalDe(u)) ? '420' : '303'}`, Boolean(hecho)) });
     return Response.json({ ok: true });
   }
-  // 111 y 115 marcados aparte; hecho null quita la marca (vuelven a contar como presentados con el 303 y el 130).
+  // 111 y 115 marcados aparte; hecho null quita la marca (vuelven a contar como presentados con el 303 y el 130). El 123,
+  // el 216 y el 369 solo cuentan como presentados con su marca.
   if (b.presentadoRet) {
     if (sin('contabilidad')) return sin('contabilidad');
     const { modelo, anio, t, hecho } = b.presentadoRet;
-    if (!['111', '115', '123', '369'].includes(modelo)) return error('Modelo no válido');
+    if (!['111', '115', '123', '216', '369'].includes(modelo)) return error('Modelo no válido');
     if (!Number.isInteger(anio) || anio < 2000 || anio > 2100 || ![1, 2, 3, 4].includes(t)) return error('Trimestre no válido');
     const k = `pres${modelo}`;
     const datos = { ...(u[k] || {}) };

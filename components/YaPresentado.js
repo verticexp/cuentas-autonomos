@@ -14,6 +14,7 @@ const CUERPO = {
   111: ({ anio, t }) => ({ presentadoRet: { modelo: '111', anio, t, hecho: true } }),
   115: ({ anio, t }) => ({ presentadoRet: { modelo: '115', anio, t, hecho: true } }),
   123: ({ anio, t }) => ({ presentadoRet: { modelo: '123', anio, t, hecho: true } }),
+  216: ({ anio, t }) => ({ presentadoRet: { modelo: '216', anio, t, hecho: true } }),
   369: ({ anio, t }) => ({ presentadoRet: { modelo: '369', anio, t, hecho: true } }),
 };
 
