@@ -26,6 +26,7 @@ import { eur, fechaTexto, hoy, textoResumenModelos, textoSituacion } from '@/lib
 import { conPagoDomiciliable, finDomiciliacion } from '@/lib/domiciliacion';
 import PresentarAhora from '@/components/PresentarAhora';
 import CalendarioFiscal from '@/components/CalendarioFiscal';
+import RectificativaIva from '@/components/RectificativaIva';
 import { modelosAPresentar } from '@/lib/presentar';
 import Volver from '@/components/Volver';
 import Vacio from '@/components/Vacio';
@@ -69,9 +70,11 @@ const plazo = (t, anio, dia = 30) => { const l = limiteTrimestre(t, anio, dia); 
 // Resta en un desglose; sin «−0,00 €» cuando es cero.
 const menos = (v) => (v ? -v : 0);
 // Fichero para el botón «Importar» del formulario de la Sede (app/api/aeat): sin NIF en Ajustes no se puede generar.
-const Fichero = ({ modelo, anio, t, nif, aeat, aviso, foral }) => foral ? <p className="descargas"><a href={foral.sede} target="_blank" rel="noopener noreferrer">Abrir la sede de la {foral.hacienda}</a></p> : (
+// Sin t, un modelo anual; con mes, un 349 mensual. boe: declaración informativa, que se presenta con el fichero entero
+// («Presentación mediante fichero» de la Sede) en lugar de importarlo en el formulario.
+const Fichero = ({ modelo, anio, t, mes, nif, aeat, aviso, foral, boe = false }) => foral ? <p className="descargas"><a href={foral.sede} target="_blank" rel="noopener noreferrer">Abrir la sede de la {foral.hacienda}</a></p> : (
   <p className="descargas">{aviso || (nif
-    ? <><a href={`/api/aeat?modelo=${modelo}&anio=${anio}&t=${t}`} download>Descargar fichero para la Sede (.txt, para «Importar»)</a> · <a href={aeat} target="_blank" rel="noopener noreferrer">Abrir la Sede</a></>
+    ? <><a href={`/api/aeat?${new URLSearchParams({ modelo, anio: String(anio), ...(t ? { t: String(t) } : {}), ...(mes ? { mes: String(mes) } : {}) })}`} download>{boe ? 'Descargar fichero para presentar (formato BOE)' : 'Descargar fichero para la Sede (.txt, para «Importar»)'}</a>{aeat && <> · <a href={aeat} target="_blank" rel="noopener noreferrer">Abrir la Sede</a></>}</>
     : <>Para descargar el fichero de la Sede, <a href="/ajustes">rellena tu NIF en Ajustes</a>.</>)}</p>
 );
 // Importe destacado arriba de cada tarjeta del 303/130; sin «0,00 €» cuando no hay nada que ingresar.
@@ -448,6 +451,7 @@ export default async function Modelos({ searchParams }) {
                 ]} /></Plegable>
                 {t === 4 && liquidaciones[3].pendiente > 0 && <p className="nota">Te quedan {eur(liquidaciones[3].pendiente)} a tu favor: puedes compensarlos en {anio + 1} y siguientes o pedir que te los devuelvan (al marcarlo como presentado, elige «pido la devolución»).</p>}
                 {p303(t) && <EmitidasDespues facturas={emitidasDespues(facturas, anio, t, iva.recc)} />}
+                {p303(t) && !foralT && <RectificativaIva anio={anio} t={t} c69={r2(c['46'] - (liquidaciones[t - 1].compensado || 0))} abierta={emitidasDespues(facturas, anio, t, iva.recc).length > 0} />}
                 <Fichero foral={foralT} modelo="303" anio={anio} t={t} nif={u.emisor?.nif} aeat={AEAT.m303} aviso={c.otros.length > 0 && 'Con tipos de IVA distintos del 4, 10 y 21 % rellénalo a mano en la Sede.'} />
                 <Presentado soloLectura={soloLectura} modelo="303" anio={anio} t={t} importe={0} pagado={t === 4 && u.pres303?.[anio]?.[4] === 'devolucion' ? 'devolucion' : p303(t)} con130={false} situacion={situacion(t)} plazo={limite(t)} devolucion={t === 4 && (liquidaciones[3].pendiente > 0 || liquidaciones[3].devolucion > 0)} />
               </div>
@@ -586,6 +590,7 @@ export default async function Modelos({ searchParams }) {
                 {r2(m.retenciones + p.retenciones) < 0 && <p className="nota">Sale negativo por un abono de un profesional con retención: el 111 no lo admite. Regularízalo con ese profesional.</p>}
                 {m.perceptores > 0 && r2(m.retenciones + p.retenciones) === 0 && <p className="nota">Sin retenciones, pero con nóminas pagadas: el 111 se presenta igual, como negativo.</p>}
                 <p className="nota">Hasta el {plazoT(t, 20)}.</p>
+                {(m.perceptores || p.perceptores) ? <Fichero foral={foralT} modelo="111" anio={anio} t={t} nif={u.emisor?.nif} aeat={AEAT.m111} /> : null}
                 {(m.perceptores || p.perceptores) ? <PresentadoRet modelo="111" anio={anio} t={t} hecho={marcaRet(u.pres111, anio, t) ?? presentado(t)} soloLectura={soloLectura} /> : null}
               </div>
             ); })}
@@ -668,7 +673,7 @@ export default async function Modelos({ searchParams }) {
           <p className="grupo-pie arriba">El {RET_ALQUILER} % de la renta (sin IVA) de los gastos marcados como alquiler del local.</p>
           <div className="tarjetas">
             {T.map((t) => { const m = modelo115(gastos, anio, t); return (
-              <div key={t} className="tarjeta"><h3>{t}T {anio}</h3>{m.base ? <Casillas sinNumeros={Boolean(foralT)} filas={[['01 · Perceptores', String(m.perceptores)], ['02 · Base de las retenciones', m.base], ['03 · Retenciones', m.retenciones], ['05 · A ingresar', m.retenciones, true]]} /> : <p className="nota">Sin alquiler este trimestre.</p>}<p className="nota">Hasta el {plazoT(t, 20)}.</p>{m.base ? <PresentadoRet modelo="115" anio={anio} t={t} hecho={marcaRet(u.pres115, anio, t) ?? presentado(t)} soloLectura={soloLectura} /> : null}</div>
+              <div key={t} className="tarjeta"><h3>{t}T {anio}</h3>{m.base ? <Casillas sinNumeros={Boolean(foralT)} filas={[['01 · Perceptores', String(m.perceptores)], ['02 · Base de las retenciones', m.base], ['03 · Retenciones', m.retenciones], ['05 · A ingresar', m.retenciones, true]]} /> : <p className="nota">Sin alquiler este trimestre.</p>}<p className="nota">Hasta el {plazoT(t, 20)}.</p>{m.base ? <Fichero foral={foralT} modelo="115" anio={anio} t={t} nif={u.emisor?.nif} aeat={AEAT.m115} /> : null}{m.base ? <PresentadoRet modelo="115" anio={anio} t={t} hecho={marcaRet(u.pres115, anio, t) ?? presentado(t)} soloLectura={soloLectura} /> : null}</div>
             ); })}
           </div>
         </ModeloPlegable>
@@ -811,6 +816,7 @@ export default async function Modelos({ searchParams }) {
                   // Rectificaciones de periodos ya declarados: la nueva base de ese periodo y la que se declaró.
                   ...m.rectificaciones.map((r) => [`Corrige ${/T$/.test(r.periodo) ? `el ${r.periodo} de ${r.ejercicio}` : nombreMes(`${r.ejercicio}-${r.periodo}`)}: ${r.nif} · ${r.nombre} (${r.clave})`, `${eur(r.base)} (antes ${eur(r.anterior)})`])]} /><p className="nota">Hasta el {fechaTexto(m.plazo)}.</p></> : <p className="nota">Sin operaciones: no se presenta.</p>}
                 {m.negativos.length > 0 && <p className="nota">Los abonos de {m.negativos.map((c) => `${c.nombre} (${eur(c.base)})`).join(', ')} restan más de lo que hay en el trimestre: en el 349 no puede quedar nada en negativo. Si corrigen una operación de otro trimestre, van como rectificación de ese trimestre: hazlo con una factura rectificativa de la original o revísalo con tu gestor.</p>}
+                {(m.operadores.length > 0 || m.rectificaciones.length > 0) && !m.negativos.length && <Fichero foral={foralT} boe modelo="349" anio={anio} t={/T$/.test(m.periodo) ? Number(m.periodo[0]) : Math.ceil(Number(m.periodo) / 3)} mes={/T$/.test(m.periodo) ? null : Number(m.periodo)} nif={u.emisor?.nif} />}
               </div>
             ))}
           </div>
@@ -842,6 +848,7 @@ export default async function Modelos({ searchParams }) {
               ...m390.trimestres.map((v, i) => [`— · 303 del ${i + 1}T (casilla 46)`, v]),
             ]} />
           </div>
+          {!dForal && <Fichero modelo="390" anio={anio} nif={u.emisor?.nif} aeat={AEAT.m390} />}
         </ModeloPlegable>
       )}
 
@@ -869,6 +876,7 @@ export default async function Modelos({ searchParams }) {
           </div>
         ) : <div className="tarjeta"><p className="nota">Nadie pasa de 3.005,06 € este año: no se presenta.</p></div>}
         {m347.sinNif.length > 0 && <p className="nota">Sin NIF: {m347.sinNif.map((o) => o.nombre).join(', ')}. Añádelo en sus facturas o gastos (si es de fuera de España, su país en la ficha del cliente): sin él no se puede declarar.</p>}
+        {m347.ventas.length + m347.compras.length > 0 && !m347.sinNif.length && <Fichero foral={foralT} boe modelo="347" anio={anio} nif={u.emisor?.nif} />}
       </ModeloPlegable>
 
       {m180 && (
@@ -879,6 +887,7 @@ export default async function Modelos({ searchParams }) {
             {m180.arrendadores.length ? <TablaPersonas columnas={['Alquiler', 'Retenido']} filas={m180.arrendadores.map((p) => ({ clave: `${p.nif}-${p.nombre}-${p.situacion || ''}-${p.refCatastral || ''}`, nombre: p.nombre, detalle: [p.nif, p.refCatastral ? `Ref. catastral ${p.refCatastral}` : p.situacion === 4 ? 'Local sin referencia catastral' : '', p.situacion ? '' : 'Falta el local: indícalo en el gasto'].filter(Boolean).join(' · '), cifras: [p.base, p.retenciones] }))}
               total={m180.arrendadores.length > 1 ? [r2(m180.arrendadores.reduce((x, p) => x + p.base, 0)), m180.retenciones] : null} /> : <p className="nota">Sin alquileres este año.</p>}
           </div>
+          {m180.arrendadores.length > 0 && <Fichero foral={foralT} boe modelo="180" anio={anio} nif={u.emisor?.nif} />}
         </ModeloPlegable>
       )}
 
@@ -907,6 +916,7 @@ export default async function Modelos({ searchParams }) {
                 total={m190.perceptores.length > 1 ? [m190.percepciones, m190.retenciones, ...(ss ? [r2(m190.perceptores.reduce((x, p) => x + (p.gastosDeducibles || 0), 0))] : [])] : null} />;
             })() : <p className="nota">Sin nóminas este año.</p>}
           </div>
+          {m190.perceptores.length > 0 && <Fichero foral={foralT} boe modelo="190" anio={anio} nif={u.emisor?.nif} />}
         </ModeloPlegable>
       )}
 
@@ -995,9 +1005,10 @@ export default async function Modelos({ searchParams }) {
 export const metadata = { title: 'Impuestos' };
 
 // Trimestre ya presentado en el que cuentan facturas emitidas después de que acabara (por la fecha de su operación o la de
-// la factura que rectifican, lib/calculos.js emitidasDespues): si no iban al presentarlo, hay que presentar una complementaria.
+// la factura que rectifican, lib/calculos.js emitidasDespues): si no iban al presentarlo, hay que presentar una autoliquidación
+// rectificativa (desde 2025 sustituye a la complementaria en el 303).
 function EmitidasDespues({ facturas }) {
   if (!facturas.length) return null;
   const nums = facturas.slice(0, 5).map((f) => numeroFactura(f)).join(', ');
-  return <p className="nota aviso-rect">{facturas.length === 1 ? 'Cuenta en este trimestre una factura emitida después' : `Cuentan en este trimestre ${facturas.length} facturas emitidas después`}, por su fecha de operación: {nums}{facturas.length > 5 ? ` y ${facturas.length - 5} más` : ''}. Si al presentarlo no {facturas.length === 1 ? 'la' : 'las'} incluiste, presenta una complementaria de este 303.</p>;
+  return <p className="nota aviso-rect">{facturas.length === 1 ? 'Cuenta en este trimestre una factura emitida después' : `Cuentan en este trimestre ${facturas.length} facturas emitidas después`}, por su fecha de operación: {nums}{facturas.length > 5 ? ` y ${facturas.length - 5} más` : ''}. Si al presentarlo no {facturas.length === 1 ? 'la' : 'las'} incluiste, presenta una autoliquidación rectificativa de este 303 (aquí debajo, «Preparar la rectificativa»).</p>;
 }

@@ -624,5 +624,5 @@ function AvisoPresentado({ g, gasto, presentados }) {
   const sale = antes && antes !== ahora && presentados.includes(antes);
   if (!entra && !sale) return null;
   const nombre = (k) => `${k.split('-')[1]}T ${k.split('-')[0]}`;
-  return <p className="nota aviso-rect">{entra ? `Este gasto cuenta en el ${nombre(ahora)}, que ya está presentado` : `Este gasto sale del ${nombre(antes)}, que ya está presentado`}: habrá que corregir ese 303, pidiendo su rectificación si sale menos a pagar o con una complementaria si sale más.</p>;
+  return <p className="nota aviso-rect">{entra ? `Este gasto cuenta en el ${nombre(ahora)}, que ya está presentado` : `Este gasto sale del ${nombre(antes)}, que ya está presentado`}: habrá que corregir ese 303 con una autoliquidación rectificativa (Impuestos te la prepara).</p>;
 }

@@ -127,3 +127,12 @@
 }
 /* «Lo próximo»: el concepto y el plazo enteros, sin puntos suspensivos (en el móvil pasan a dos líneas). */
 .proximos .txt strong, .proximos .txt small { white-space: normal; }
+
+/* Autoliquidación rectificativa de un 303 presentado (components/RectificativaIva.js) y calendario de plazos. */
+.rectificativa { margin-top: 12px; border-top: 0.5px solid var(--line); padding-top: 10px; }
+.rectificativa > summary { cursor: pointer; font-weight: 600; color: var(--marca); }
+.rectificativa .desglose { display: grid; gap: 6px; margin: 12px 0; }
+.rectificativa .desglose > div { display: flex; justify-content: space-between; gap: 16px; }
+.rectificativa .desglose dt { color: var(--muted); }
+.rectificativa .desglose dd { margin: 0; font-variant-numeric: tabular-nums; }
+.calendario-fiscal { margin-top: 12px; display: grid; gap: 8px; }

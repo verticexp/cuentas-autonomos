@@ -1,6 +1,6 @@
 import { usuarioApi } from '@/lib/api';
 import { actividadesDe, fiscalDe, usa130, usa303, ajustesIva, modelosDe, usaIgic } from '@/lib/empresa';
-import { casillas303, liquidaciones303, opciones130, resumenAnual } from '@/lib/calculos';
+import { casillas303, liquidaciones303, opciones130, r2, rectificativa303, resumenAnual } from '@/lib/calculos';
 import { declarante, fichero111, fichero115, fichero130, fichero303, fichero390, nombreFichero } from '@/lib/ficheroAeat';
 import { fichero180, fichero190, fichero347, fichero349 } from '@/lib/ficherosInformativas';
 import { modelo115, modelo180, modelo190, modelo347, modelo349, modelo390, periodos349, retencionesProfesionales } from '@/lib/modelos';
@@ -51,7 +51,13 @@ export async function GET(req) {
   const iva = ajustesIva(u);
   let r, periodo = anual ? undefined : t;
   try {
-    if (modelo === '303') r = fichero303(yo, anio, t, casillas303(facturas, gastos, anio, t, iva), liquidaciones303(facturas, gastos, anio, undefined, iva)[t - 1]);
+    if (modelo === '303') {
+      const c = casillas303(facturas, gastos, anio, t, iva), liq = liquidaciones303(facturas, gastos, anio, undefined, iva)[t - 1];
+      // Autoliquidación rectificativa (&rectificativa=1&ingresado=…&devuelto=…&justificante=…&baja=1): lib/calculos.js.
+      const rect = q.get('rectificativa') === '1' ? rectificativa303(r2(c['46'] - (liq?.compensado || 0)), { ingresado: q.get('ingresado'), devuelto: q.get('devuelto'), justificante: q.get('justificante'), bajaDomiciliacion: q.get('baja') === '1' }) : null;
+      if (rect?.error) return Response.json({ error: rect.error }, { status: 400 });
+      r = fichero303(yo, anio, t, c, liq, rect);
+    }
     else if (modelo === '130') {
       const ids = actividadesDe(u).map((a) => a.id);
       r = fichero130(yo, anio, resumenAnual(facturas, gastos, anio, u.pagos130?.[anio] || {}, ids, { ivaCoste: !usa303(f), hasta, ...opciones130(f, u.rend130, anio), iva }).trimestres[t - 1]);
@@ -73,7 +79,12 @@ export async function GET(req) {
         // La página oculta las identidades y sueldos sin este permiso; un fichero BOE no permite agruparlos.
         if (!puede(u, 'nominas') && m.perceptores.some((p) => ['A', 'E'].includes(p.clave))) return Response.json({ error: 'Necesitas el permiso Empleados y nóminas para descargar el 190 con trabajadores o administradores' }, { status: 403 });
         r = fichero190(contacto, anio, m);
-      } else if (modelo === '347') r = fichero347(contacto, anio, modelo347(facturas, gastos, anio, { recc: iva.recc }));
+      } else if (modelo === '347') {
+        // Provincia de cada declarado: del «Ciudad y CP» de las fichas de clientes y proveedores (o de la factura).
+        const [clientes, fichasProv] = await Promise.all([leer(u, 'clientes'), leer(u, 'fichasProv')]);
+        const domicilios = new Map([...(clientes || []), ...(fichasProv || [])].flatMap((x) => [[String(x.nif || '').toUpperCase().replace(/[\s.-]/g, '').replace(/^ES/, ''), x.ciudad], [String(x.nombre || '').trim().toUpperCase(), x.ciudad]]).filter(([k, v]) => k && v));
+        r = fichero347(contacto, anio, modelo347(facturas, gastos, anio, { recc: iva.recc, domicilios }));
+      }
       else {
         const periodos = periodos349(facturas, anio, t, gastos);
         if (periodos[0].mensual && mes === null) return Response.json({ error: 'El 349 de este trimestre es mensual: indica mes=1..12 para elegir la declaración' }, { status: 400 });

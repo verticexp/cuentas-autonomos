@@ -8,7 +8,7 @@ import { modelo111 } from '../lib/nominas.js';
 import { modelo115, modelo180, modelo190, modelo347, modelo349, modelo390, periodos349, retencionesProfesionales } from '../lib/modelos.js';
 
 const yo = { nif: '12345678Z', nombre: 'Ana García López', telefono: '+34 600 123 456', contacto: 'José Muñoz Pérez' };
-const cliente = { nombre: 'Álmacén Peña SL', nif: 'B12345674' };
+const cliente = { nombre: 'Álmacén Peña SL', nif: 'B12345674', ciudad: '28013 Madrid' };
 const de = { nombre: 'Berlin GmbH', nif: 'DE123456789' };
 const gasto = (id, fecha, base, extra = {}) => ({ id, fecha, pagado: fecha, base, ivaPct: 21, proveedor: cliente.nombre, proveedorNif: cliente.nif, concepto: 'Material', ...extra });
 const factura = (id, fecha, base, extra = {}) => ({ id, fecha, base, ivaPct: 21, cliente, ...extra });
@@ -133,11 +133,14 @@ test('347: residentes, no residentes y NIF comunitario, importes anuales y trime
     factura('usa', '2026-07-01', 4000, { ivaPct: 0, cliente: { nombre: 'American Co', pais: 'US', nif: 'US123456789' }, operacion: 'servicios-fuera' }),
     factura('fr', '2026-10-01', 3000, { cliente: { nombre: 'Paris SARL', nif: 'FR12345678901', pais: 'FR' } })];
   const G = [gasto('alq', '2026-04-01', 3000, { alquilerSinRetencion: true })];
-  const lineas = boe(fichero347(yo, 2026, modelo347(F, G, 2026)).contenido, '347', 4);
+  // La provincia del proveedor sale de su ficha (domicilios: NIF → «ciudad y CP»).
+  const lineas = boe(fichero347(yo, 2026, modelo347(F, G, 2026, { domicilios: new Map([['B12345674', '28013 Madrid']]) })).contenido, '347', 4);
   assert.deepEqual(leer(lineas[0], { n: [136, 9, 'numero'], total: [145, 16, 'signo'], inmuebles: [161, 9, 'numero'] }), { n: 4, total: 1489000, inmuebles: 0 });
   const esp = lineas.find((p) => campo(p, 18, 9) === cliente.nif && campo(p, 82, 1) === 'B');
   assert.deepEqual(leer(esp, { nif: [18, 9], nombre: [36, 40], hoja: [76, 1], provincia: [77, 2], pais: [79, 2], clave: [82, 1], total: [83, 16, 'signo'], t1: [136, 16, 'signo'], t2: [168, 16, 'signo'], t3: [200, 16, 'signo'], t4: [232, 16, 'signo'] }),
-    { nif: cliente.nif, nombre: 'ALMACEN PEÑA SL', hoja: 'D', provincia: '00', pais: '', clave: 'B', total: 363000, t1: 121000, t2: 242000, t3: 0, t4: 0 });
+    { nif: cliente.nif, nombre: 'ALMACEN PEÑA SL', hoja: 'D', provincia: '28', pais: '', clave: 'B', total: 363000, t1: 121000, t2: 242000, t3: 0, t4: 0 });
+  // Sin código postal, el fichero dice de quién falta.
+  assert.throws(() => fichero347(yo, 2026, modelo347([factura('x', '2026-02-01', 4000, { cliente: { nombre: 'Sin CP SL', nif: 'B12345674' } })], [], 2026)), /código postal de Sin CP SL/);
   const usa = lineas.find((p) => campo(p, 79, 2) === 'US');
   assert.equal(campo(usa, 18, 9), ' '.repeat(9));
   assert.equal(campo(usa, 77, 4), '99US');

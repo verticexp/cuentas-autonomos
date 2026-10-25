@@ -565,5 +565,5 @@ function AvisoPresentado({ f, factura, presentados }) {
   if (!entra && !sale) return null;
   const nombre = (k) => `${k.split('-')[1]}T ${k.split('-')[0]}`;
   const porOperacion = f.evento?.fecha && f.evento.fecha < f.fecha;
-  return <p className="nota aviso-rect">{entra ? `Esta factura cuenta en el ${nombre(ahora)}${porOperacion ? ' por su fecha de operación' : ''}, que ya está presentado` : `Esta factura sale del ${nombre(antes)}, que ya está presentado`}: habrá que corregir ese 303, con una complementaria si sale más a pagar o pidiendo su rectificación si sale menos.</p>;
+  return <p className="nota aviso-rect">{entra ? `Esta factura cuenta en el ${nombre(ahora)}${porOperacion ? ' por su fecha de operación' : ''}, que ya está presentado` : `Esta factura sale del ${nombre(antes)}, que ya está presentado`}: habrá que corregir ese 303 con una autoliquidación rectificativa (Impuestos te la prepara).</p>;
 }
