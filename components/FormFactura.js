@@ -8,7 +8,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { navegar } from '@/lib/transicion';
 import Deslizable from './Deslizable';
-import { baseLinea, desglose, importes, leerImporte, nifUE, numeroFactura, pagadoDe, pendienteDe, r2, trimestre } from '@/lib/calculos';
+import { baseLinea, desglose, fechaIva, importes, leerImporte, nifUE, numeroFactura, pagadoDe, pendienteDe, r2, trimestre } from '@/lib/calculos';
 import { requisitosIncobrable } from '@/lib/incobrables';
 import '@/app/lineas.css';
 import '@/app/catalogo.css';
@@ -34,7 +34,8 @@ const numero = (v) => leerImporte(v) || 0;
 
 // riesgos: lo que debe ahora cada cliente con riesgo máximo ({ id: euros }); el límite lo comprueba el servidor.
 // limiteSimplificada: hasta dónde llega la factura sin NIF del cliente en esta empresa (lib/empresa.js limiteSimplificada).
-export default function FormFactura({ factura, clientes, numeros, hoy, rectifica: orig, plantilla, clienteInicial = null, notaDefecto = '', actividades, productos = [], stock = null, proyectos = [], riesgos = {}, bienes = [], recargo = false, oss = false, margenes = [], reagp = false, igic = false, limiteSimplificada = 400 }) {
+// presentados: trimestres ya presentados ('AAAA-T', lib/empresa.js trimestresPresentados), para avisar si la factura los cambia.
+export default function FormFactura({ factura, clientes, numeros, hoy, rectifica: orig, plantilla, clienteInicial = null, notaDefecto = '', actividades, productos = [], stock = null, proyectos = [], riesgos = {}, bienes = [], recargo = false, oss = false, margenes = [], reagp = false, igic = false, limiteSimplificada = 400, presentados = [] }) {
   const impuesto = igic ? 'IGIC' : 'IVA';
   const operaciones = igic ? { exenta: { nombre: 'Exenta de IGIC' }, exportacion: { nombre: 'Exportación de bienes' }, 'servicios-fuera': { nombre: 'No sujeta por localización' }, isp: { nombre: 'Inversión del sujeto pasivo (lo declara el cliente)' } } : TIPOS_OPERACION;
   // IVA y retención de cada actividad, para rellenar la factura nueva.
@@ -258,6 +259,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
       </Deslizable>}
 
       <label>Fecha<input {...atributos('fecha')} className="campo" type="date" value={f.fecha} onChange={(e) => poner('fecha', e.target.value)} required />{mensaje('fecha')}</label>
+      <AvisoPresentado f={f} factura={factura} presentados={presentados} />
 
       <fieldset>
         <legend>Cliente</legend>
@@ -508,7 +510,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
       )}
 
       {nueva && <button type="button" className="ff-m ff-det-boton" aria-expanded={detalles} onClick={() => setDetalles((v) => !v)}>{detalles ? 'Ocultar detalles' : 'Detalles: IRPF, nota, proyecto, idioma y moneda'}</button>}
-      {nueva && detalles && !verEvento && !f.evento?.fecha && !f.evento?.lugar && <button type="button" className="ff-m ff-evento-boton" onClick={() => setVerEvento(true)}>+ Fecha y lugar del evento</button>}
+      {nueva && detalles && !verEvento && !f.evento?.fecha && !f.evento?.lugar && <button type="button" className="ff-m ff-evento-boton" onClick={() => setVerEvento(true)}>+ Fecha de la operación y lugar</button>}
 
       <label className="check"><input type="checkbox" checked={f.cobrada} onChange={(e) => poner('cobrada', e.target.checked)} /> Ya está cobrada</label>
 
@@ -548,4 +550,20 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
       </aside>
     </form>
   );
+}
+
+// Una factura que entra en un trimestre ya presentado (por su fecha, la de la operación o la de la factura que rectifica,
+// lib/calculos.js fechaIva), que sale de él o que cambia de importe dentro de él lo cambia: hay que corregir ese 303.
+const trimestreIva = (x) => { const d = x?.fecha && fechaIva(x); return /^\d{4}-\d{2}-\d{2}$/.test(d || '') ? `${d.slice(0, 4)}-${trimestre(d)}` : null; };
+const totalDe = (x) => { try { return r2(importes(x).total); } catch { return null; } };
+function AvisoPresentado({ f, factura, presentados }) {
+  // Las rectificativas ya dicen en qué autoliquidación van (aviso-rect de arriba).
+  if (!presentados.length || f.rectifica) return null;
+  const ahora = trimestreIva(f), antes = trimestreIva(factura);
+  const entra = ahora && presentados.includes(ahora) && (!factura || ahora !== antes || totalDe(f) !== totalDe(factura));
+  const sale = antes && antes !== ahora && presentados.includes(antes);
+  if (!entra && !sale) return null;
+  const nombre = (k) => `${k.split('-')[1]}T ${k.split('-')[0]}`;
+  const porOperacion = f.evento?.fecha && f.evento.fecha < f.fecha;
+  return <p className="nota aviso-rect">{entra ? `Esta factura cuenta en el ${nombre(ahora)}${porOperacion ? ' por su fecha de operación' : ''}, que ya está presentado` : `Esta factura sale del ${nombre(antes)}, que ya está presentado`}: habrá que corregir ese 303, con una complementaria si sale más a pagar o pidiendo su rectificación si sale menos.</p>;
 }

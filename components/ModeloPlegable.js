@@ -27,7 +27,7 @@ export default function ModeloPlegable({ id, num, nombre, estado, detalle, dato,
         <summary>
           <span className="modelo-num">{num}</span>
           <span className="txt">{nombre}{detalle && <small className={estado ? `est-${estado}` : undefined}>{detalle}</small>}</span>
-          {informativo ? <span className="modelo-dato info">No se paga</span> : dato && <strong className={`modelo-dato${favor ? ' favor' : ''}`}>{dato}{parcial && <small>hasta hoy</small>}</strong>}
+          {informativo ? <span className="modelo-dato info">No se paga</span> : dato && <strong className={`modelo-dato${favor ? ' favor' : ''}`}>{dato}{parcial && <small>apuntado hasta hoy</small>}</strong>}
         </summary>
         {children}
       </details>

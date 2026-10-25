@@ -9,7 +9,7 @@ import ModulosActividad from '@/components/ModulosActividad';
 import { liquidaciones420, modelo425, plazo420 } from '@/lib/igic';
 import { datosTerritorio, esForal, foralDe, pagosIrpfForal, plazoForal, situacionForal, territorioDe } from '@/lib/territorios';
 import { AvisoHaciendaForal } from '@/components/AvisoTerritorio';
-import { casillas303, habil, liquidaciones303, minoracion130, opciones130, origenGasto, pendienteCaja, prorrataAnio, prorrataProvisional, r2, limiteTrimestre, resumenAnual, situacionTrimestre } from '@/lib/calculos';
+import { casillas303, emitidasDespues, habil, liquidaciones303, numeroFactura, minoracion130, opciones130, origenGasto, pendienteCaja, prorrataAnio, prorrataProvisional, r2, limiteTrimestre, resumenAnual, situacionTrimestre } from '@/lib/calculos';
 import { NOMBRES_UE, modelo369, plazo369 } from '@/lib/oss';
 import { TIPOS_RENDIMIENTO, casillas123, modelo123, modelo193 } from '@/lib/capitalMobiliario';
 import PagosCapital from '@/components/PagosCapital';
@@ -323,7 +323,7 @@ export default async function Modelos({ searchParams }) {
           <ul className="grupo-lista proximos">
             {proximos.map((m) => (
               <li key={`${m.fecha}-${m.concepto}`}><div className="fila">
-                <span className="txt"><strong>{m.concepto}</strong><small>Hasta el {fechaTexto(m.fecha)}{m.fecha.slice(0, 4) !== String(anio) ? ` de ${m.fecha.slice(0, 4)}` : ''}{m.estimado ? ' · estimado con lo apuntado hasta hoy' : ''}</small></span>
+                <span className="txt"><strong>{m.concepto}</strong><small>Hasta el {fechaTexto(m.fecha)}{m.fecha.slice(0, 4) !== String(anio) ? ` de ${m.fecha.slice(0, 4)}` : ''}{m.estimado ? ' · previsión del trimestre entero' : ''}</small></span>
                 <span className="imp">{eur(-m.importe)}</span>
               </div></li>
             ))}
@@ -435,6 +435,7 @@ export default async function Modelos({ searchParams }) {
                     : ['71 · Resultado: a ingresar', liquidaciones[t - 1].ingresar, true],
                 ]} /></Plegable>
                 {t === 4 && liquidaciones[3].pendiente > 0 && <p className="nota">Te quedan {eur(liquidaciones[3].pendiente)} a tu favor: puedes compensarlos en {anio + 1} y siguientes o pedir que te los devuelvan (al marcarlo como presentado, elige «pido la devolución»).</p>}
+                {p303(t) && <EmitidasDespues facturas={emitidasDespues(facturas, anio, t, iva.recc)} />}
                 <Fichero foral={foralT} modelo="303" anio={anio} t={t} nif={u.emisor?.nif} aeat={AEAT.m303} aviso={c.otros.length > 0 && 'Con tipos de IVA distintos del 4, 10 y 21 % rellénalo a mano en la Sede.'} />
                 <Presentado soloLectura={soloLectura} modelo="303" anio={anio} t={t} importe={0} pagado={t === 4 && u.pres303?.[anio]?.[4] === 'devolucion' ? 'devolucion' : p303(t)} con130={false} situacion={situacion(t)} plazo={limite(t)} devolucion={t === 4 && (liquidaciones[3].pendiente > 0 || liquidaciones[3].devolucion > 0)} />
               </div>
@@ -979,3 +980,11 @@ export default async function Modelos({ searchParams }) {
 }
 
 export const metadata = { title: 'Impuestos' };
+
+// Trimestre ya presentado en el que cuentan facturas emitidas después de que acabara (por la fecha de su operación o la de
+// la factura que rectifican, lib/calculos.js emitidasDespues): si no iban al presentarlo, hay que presentar una complementaria.
+function EmitidasDespues({ facturas }) {
+  if (!facturas.length) return null;
+  const nums = facturas.slice(0, 5).map((f) => numeroFactura(f)).join(', ');
+  return <p className="nota aviso-rect">{facturas.length === 1 ? 'Cuenta en este trimestre una factura emitida después' : `Cuentan en este trimestre ${facturas.length} facturas emitidas después`}, por su fecha de operación: {nums}{facturas.length > 5 ? ` y ${facturas.length - 5} más` : ''}. Si al presentarlo no {facturas.length === 1 ? 'la' : 'las'} incluiste, presenta una complementaria de este 303.</p>;
+}

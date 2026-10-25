@@ -158,7 +158,7 @@ function DesgloseCompleto({ n }) {
       <dl className="nomina-desglose">{filas('trabajador').map(([k, v]) => <Fragment key={k}><dt>{NOMBRES_CUOTA[k] || k}</dt><dd>{eur(v)}</dd></Fragment>)}</dl>
       <p className="rotulo">Cuotas de la empresa</p>
       <dl className="nomina-desglose">{filas('empresa').map(([k, v]) => <Fragment key={k}><dt>{NOMBRES_CUOTA[k] || k}</dt><dd>{eur(v)}</dd></Fragment>)}</dl>
-      <p className="nota">IRPF: {String(d.irpf.tipo).replace('.', ',')} % {d.irpf.manual ? '(puesto a mano)' : d.irpf.calculado !== null ? `calculado con su modelo 145 (sobre ${eur(d.irpf.anual)} al año)` : '(el de su ficha)'}. Grupo {d.grupo}{d.temporal ? ', contrato temporal' : ''}{d.parcial < 1 ? `, jornada al ${Math.round(d.parcial * 100)} %` : ''}.</p>
+      <p className="nota">IRPF: {String(d.irpf.tipo).replace('.', ',')} % {d.irpf.manual ? '(puesto a mano)' : d.administrador ? '(el fijo de un administrador)' : d.irpf.calculado !== null ? `calculado con su modelo 145 (sobre ${eur(d.irpf.anual)} al año)` : '(el de su ficha)'}{d.irpf.bajoMinimo !== undefined ? `; pediste un ${String(d.irpf.bajoMinimo).replace('.', ',')} %, pero la retención no puede bajar de la que toca` : ''}. Grupo {d.grupo}{d.temporal ? ', contrato temporal' : ''}{d.parcial < 1 ? `, jornada al ${Math.round(d.parcial * 100)} %` : ''}.</p>
     </div>
   );
 }

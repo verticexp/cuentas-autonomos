@@ -3,7 +3,7 @@ import { requerir } from '@/lib/auth';
 import { leer, leerUno } from '@/lib/redis';
 import { puede } from '@/lib/permisos';
 import { eur, fechaCorta, hoy } from '@/lib/formato';
-import { usaIgic, actividadesDe, fiscalDe } from '@/lib/empresa';
+import { usaIgic, actividadesDe, fiscalDe, trimestresPresentados } from '@/lib/empresa';
 import { idValido, ordenar, paraPantalla } from '@/lib/bandeja';
 import { proyectosDe } from '@/lib/stockServidor';
 import FormGasto from '@/components/FormGasto';
@@ -46,7 +46,7 @@ export default async function DocumentoBandeja({ params }) {
       {doc.estado === 'error' && <p className="nota" role="alert">{doc.error} {doc.total > 0 ? `Total leído: ${eur(doc.total)}.` : ''}</p>}
       {!['leyendo', 'aprobado'].includes(doc.estado) && (
         <fieldset className="solo-ver" disabled={!gastar}>
-          <FormGasto igic={usaIgic(fiscalDe(u))} especial={Object.values(u.prorrata?.especial || {}).some(Boolean)} recargo={fiscalDe(u).iva === 'recargo'} hoy={hoy()} actividades={actividadesDe(u)} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo}
+          <FormGasto presentados={trimestresPresentados(u)} igic={usaIgic(fiscalDe(u))} especial={Object.values(u.prorrata?.especial || {}).some(Boolean)} recargo={fiscalDe(u).iva === 'recargo'} hoy={hoy()} actividades={actividadesDe(u)} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo}
             productos={stockProductos} proyectos={gastar ? await proyectosDe(u) : []} documento={{ id, propuesta: d.propuesta || {}, banco: d.banco, habitual: d.habitual }} siguiente={siguiente} />
         </fieldset>
       )}
