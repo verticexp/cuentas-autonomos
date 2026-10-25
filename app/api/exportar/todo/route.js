@@ -9,7 +9,7 @@ import { hoy } from '@/lib/formato';
 
 export const dynamic = 'force-dynamic';
 
-const LISTAS = ['facturas', 'registros', 'gastos', 'clientes', 'productos', 'presupuestos', 'recurrentes', 'empleados', 'nominas', 'jornada', 'bancos', 'banco', 'asientos', 'cuentasAnuales', 'stock', 'albaranes', 'pedidosProv', 'domiciliaciones', 'cuentasProv', 'fichasProv', 'remesas', 'numeracion', 'facturasBorradas'];
+const LISTAS = ['facturas', 'registros', 'gastos', 'clientes', 'productos', 'presupuestos', 'recurrentes', 'empleados', 'nominas', 'jornada', 'bancos', 'banco', 'asientos', 'cuentasAnuales', 'stock', 'albaranes', 'pedidosProv', 'domiciliaciones', 'cuentasProv', 'fichasProv', 'remesas', 'numeracion', 'facturasBorradas', 'bancoReglas'];
 const json = (x) => Buffer.from(JSON.stringify(x, null, 1));
 
 // Todos los datos de la empresa en un .zip con un JSON por tipo (portabilidad, RGPD art. 20). Solo su administrador.

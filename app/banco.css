@@ -1,6 +1,9 @@
 /* Banco: cuentas conectadas, extractos y emparejar movimientos con facturas y gastos */
 .bco.ocupado { opacity: 0.6; pointer-events: none; transition: opacity 0.2s; }
 .bco-aviso { background: color-mix(in srgb, var(--in) 12%, var(--surface)); color: var(--in); border-radius: 12px; padding: 10px 14px; font-size: 15px; margin: 0 0 12px; }
+/* Lo pendiente va arriba y la subida del extracto abajo: el aviso acompaña al desplazarse para que no quede fuera de la vista. */
+.bco > .bco-aviso { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 8px); z-index: 3; background: color-mix(in srgb, var(--in) 12%, var(--paper)); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12); }
+.bco > .bco-aviso.error { background: color-mix(in srgb, var(--out) 12%, var(--paper)); }
 .bco-aviso.error { background: color-mix(in srgb, var(--out) 12%, var(--surface)); color: var(--out); }
 .bco-nota { color: var(--muted); font-size: 13px; margin: 8px 0 0; line-height: 1.4; }
 .bco-botones { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
@@ -89,6 +92,68 @@
   .bco-conectar .bco-bancos { columns: 2; column-gap: 24px; max-height: none; }
   .bco-conectar .bco-bancos li { break-inside: avoid; }
 }
+/* Arriba: el saldo y subir el extracto a un toque, sin quitar sitio a lo pendiente */
+.bco-resumen { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--surface); border-radius: 12px; padding: 10px 16px; margin: 8px 0 14px; }
+.bco-resumen-saldo { display: flex; flex-direction: column; gap: 1px; min-width: 0; color: var(--ink); text-decoration: none; }
+.bco-resumen-saldo span { color: var(--muted); font-size: 13px; }
+.bco-resumen-saldo strong { font-family: var(--f-titulos), var(--font); font-size: 22px; font-weight: 700; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.bco-resumen .boton { flex: none; }
+.bco-historial { margin-bottom: 14px; }
+.bco-historial > .bco-nota { margin: 0; }
+.bco-buscar summary { display: flex; align-items: center; min-height: 44px; cursor: pointer; list-style: none; font-size: 15px; color: var(--muted); }
+.bco-buscar summary::-webkit-details-marker { display: none; }
+.bco-buscar summary span { margin-left: 4px; }
+.bco-buscar summary::after { content: '›'; margin-left: 6px; }
+.bco-buscar[open] summary::after { content: '⌄'; }
+.bco-buscar > .bco-filtros { margin-bottom: 12px; }
+.bco-sub { font-size: 14px; font-weight: 600; color: var(--muted); margin: 14px 0 6px; letter-spacing: 0; }
+.bco-sub span { font-weight: 500; margin-left: 4px; }
+#banco-cuentas { scroll-margin-top: 24px; }
+
+/* Cómo descargar el extracto: una tarjeta pegada a la importación */
+.bco-guia { background: var(--surface); border-radius: 12px; padding: 0 16px; margin: -8px 0 20px; }
+.bco-guia summary { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 48px; cursor: pointer; list-style: none; font-size: 15px; font-weight: 600; }
+.bco-guia summary::-webkit-details-marker { display: none; }
+.bco-guia summary::after { content: '›'; color: var(--muted); font-size: 20px; transition: transform 0.2s; }
+.bco-guia[open] summary::after { transform: rotate(90deg); }
+.bco-guia-cuerpo { padding: 0 0 14px; }
+.bco-guia-formatos, .bco-guia-consejos { margin: 8px 0 0; padding-left: 18px; font-size: 14px; color: var(--muted); line-height: 1.45; }
+.bco-guia-formatos b { color: var(--ink); font-weight: 600; }
+.bco-guia-consejos { margin-top: 12px; }
+.bco-guia-elegir { display: flex; flex-direction: column; gap: 5px; margin-top: 14px; font-size: 14px; color: var(--muted); }
+.bco-guia-elegir .campo { width: 100%; box-sizing: border-box; background: var(--relleno); padding: 10px 12px; font-size: 15px; }
+.bco-guia-banco { margin: 12px 0 0; padding: 10px 12px; border-radius: 10px; background: var(--relleno); font-size: 14px; line-height: 1.45; }
+.bco-guia-banco dt { margin-top: 8px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+.bco-guia-banco dt:first-child { margin-top: 0; }
+.bco-guia-banco dd { margin: 2px 0 0; }
+
+/* Reglas automáticas: la lista y su formulario (también dentro de un movimiento: «Crear regla con esto») */
+.bco-reglas { margin-bottom: 28px; }
+.bco-reglas > .bco-lista { margin-top: 10px; }
+.bco-reglas > .bco-form-regla, .bco-reglas > .bco-botones { margin-top: 12px; }
+.bco-regla { display: flex; align-items: center; gap: 10px; }
+.bco-regla.editando { display: block; }
+.bco-regla .bco-txt small { white-space: normal; }
+.bco-regla-botones { flex: none; display: flex; gap: 14px; }
+.bco-regla-fila { margin: 10px 0 0; }
+.bco-regla-boton { align-self: flex-start; border: 0; background: none; padding: 2px 0; margin-top: 2px; font: inherit; font-size: 13px; color: var(--muted); cursor: pointer; }
+.bco-regla-boton:hover { text-decoration: underline; text-underline-offset: 2px; }
+.bco-form-regla { display: flex; flex-direction: column; gap: 10px; }
+.bco-form-regla label, .bco-form-t { display: flex; flex-direction: column; gap: 5px; font-size: 14px; color: var(--muted); }
+.bco-form-regla .campo { width: 100%; min-width: 0; box-sizing: border-box; background: var(--relleno); padding: 10px 12px; font-size: 15px; }
+.bco-form-regla .bco-nota { margin: 0; }
+.bco-mov .bco-form-regla .bco-botones { margin: 2px 0 0; }
+.bco-form-regla .bco-tipo { margin: 6px 0 0; }
+.bco-form-regla .bco-deshacer { align-self: flex-start; }
+.bco-form-importes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.bco-regla-nota { margin: 0 0 8px; color: var(--ink); }
+/* Con sitio, el formulario va a dos columnas: lo que escribes arriba, lo que pasa abajo */
+@media (min-width: 700px) {
+  .bco-form-regla { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 16px; align-items: start; }
+  .bco-form-regla > .bco-nota, .bco-form-regla > .bco-botones, .bco-form-regla > .bco-form-importes, .bco-form-regla > label:first-child { grid-column: 1 / -1; }
+  .bco-form-regla > .bco-deshacer { grid-column: 1 / -1; justify-self: start; }
+}
+
 /* Tres columnas por movimiento (qué es, pareja y botones) solo donde caben con el menú lateral */
 @media (min-width: 1280px) {
   .pagina.banco { max-width: 1040px; }
@@ -103,6 +168,7 @@
   .bco-elegir .campo { flex: 1; }
   .bco-elegir .bco-botones { margin: 0; flex-wrap: nowrap; }
   .bco-elegir .bco-nota { display: none; }
+  .bco-mov:not(.hecho) > .bco-regla-fila { grid-column: 1 / -1; }
 }
 .bco-quees { margin: 10px 0 0 52px; padding: 10px 12px; border-radius: 12px; background: var(--relleno); }
 .bco-quees-t { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
@@ -116,4 +182,6 @@
 
 @media (max-width: 1023.98px) {
   .bco-quitar { min-width: 44px; min-height: 44px; }
+  .bco-regla-boton { padding: 8px 0 4px; }
+  .bco-regla-botones .bco-deshacer { min-height: 44px; padding: 0 2px; }
 }
