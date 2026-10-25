@@ -158,7 +158,7 @@ export default async function Modelos({ searchParams }) {
     m190.perceptores = [...juntos('A', 'trabajador', 'trabajadores'), ...juntos('E', 'administrador', 'administradores'), ...m190.perceptores.filter((p) => !['A', 'E'].includes(p.clave))];
   }
   // Impuesto sobre Sociedades: con las bases negativas de antes de Fisquo y el incremento de los fondos propios apuntados.
-  const opIS = { ivaCoste: !usa303(f), productos: productos || [], ajustes: ajustes || [], albaranes: albaranes || [], manuales: manuales || [], constitucion: f.constitucion, cuotaIS: u.cuotaIS || {}, territorio: f.territorio, binsPrevias: u.binsPrevias || {}, fondosPropios: u.fondosPropios || {}, pagos202: u.pagos202 || {} };
+  const opIS = { ivaCoste: !usa303(f), productos: productos || [], ajustes: ajustes || [], albaranes: albaranes || [], manuales: manuales || [], capital, constitucion: f.constitucion, cuotaIS: u.cuotaIS || {}, territorio: f.territorio, binsPrevias: u.binsPrevias || {}, fondosPropios: u.fondosPropios || {}, pagos202: u.pagos202 || {} };
   const is = f.tipo === 'sociedad' && borradorSociedades(facturas, gastos, anio, { ...opIS, hasta: h < `${anio}-12-31` ? h : `${anio}-12-31` });
   // 202: con más de 6 M de cifra de negocios, el del art. 40.3 (sobre la base de los 3, 9 y 11 primeros meses); si no, el
   // del art. 40.2 (el 18 % de la cuota apuntada). Lo que sale del borrador de cada año en Fisquo se propone como esa cuota.
@@ -536,15 +536,15 @@ export default async function Modelos({ searchParams }) {
         return (
         <ModeloPlegable id="m303" num="303" nombre="IVA trimestral (régimen simplificado)" {...filaTrim(t)} dato={t && importeFila(Math.max(0, simp[t - 1].resultado))}>
           <h2 className="grupo-t">303 · IVA en el régimen simplificado</h2>
-          <p className="grupo-pie arriba">En los tres primeros trimestres ingresas el porcentaje de la Orden sobre la cuota anual de tus módulos. En el 4T se liquida el año: la cuota de cada actividad menos el IVA de sus gastos corrientes y un 1 % por gastos de difícil justificación (nunca menos que la cuota mínima), menos lo ya ingresado, más el IVA de las compras a otros países y menos el de los bienes de inversión.{sinDatos.length ? ` Falta la cuota de ${sinDatos.map((a) => a.nombre).join(', ')}: ponla arriba, en el 131.` : ''}</p>
+          <p className="grupo-pie arriba">En los tres primeros trimestres ingresas el porcentaje de la Orden sobre la cuota anual de tus módulos. En el 4T se liquida el año: la cuota de cada actividad menos el IVA de sus gastos corrientes y un 1 % por gastos de difícil justificación (nunca menos que la cuota mínima), menos lo ya ingresado, más el IVA de las compras a otros países. El IVA de los activos fijos (maquinaria, mobiliario…) se resta en el trimestre de la compra.{sinDatos.length ? ` Falta la cuota de ${sinDatos.map((a) => a.nombre).join(', ')}: ponla arriba, en el 131.` : ''}</p>
           <div className="tarjetas">
             {simp.map((x) => (
               <div key={x.t} className="tarjeta"><h3>{x.t}T {anio}</h3>
                 {x.resultado < 0 ? <Importe texto="A compensar" v={-x.resultado} /> : <Importe texto="A ingresar" v={x.resultado} />}
-                <Plegable><Casillas sinNumeros={Boolean(foralT)} filas={x.t < 4 ? [...x.actividades.map((a) => [`${actividadesDe(u).find((b) => b.id === a.id)?.nombre || a.id} · ingreso a cuenta`, a.ingreso]), ['Total', x.ingreso, true]] : [
+                <Plegable><Casillas sinNumeros={Boolean(foralT)} filas={x.t < 4 ? [...x.actividades.map((a) => [`${actividadesDe(u).find((b) => b.id === a.id)?.nombre || a.id} · ingreso a cuenta`, a.ingreso]), ['Total ingresos a cuenta', x.ingreso], x.activosFijos && ['IVA de los activos fijos', x.activosFijos], x.compensar && ['A compensar de trimestres anteriores', x.compensar], ['Resultado', x.resultado, true]] : [
                   ...x.actividades.flatMap((a) => [[`${actividadesDe(u).find((b) => b.id === a.id)?.nombre || a.id} · cuota devengada`, a.cuota], ['IVA soportado de gastos corrientes', a.corrientes], ['1 % de difícil justificación', a.dificil], ['Cuota mínima', a.minima], ['Cuota del régimen simplificado', a.derivada, true]]),
                   ['Ingresado en el 1T-3T', x.ingresado], x.autoDevengado && ['IVA de compras a otros países (devengado)', x.autoDevengado], x.autoDeducible && ['IVA de compras a otros países (deducible)', x.autoDeducible],
-                  x.activosFijos && ['IVA de los bienes de inversión', x.activosFijos], ['Resultado', x.resultado, true],
+                  x.activosFijos && ['IVA de los activos fijos', x.activosFijos], x.compensar && ['A compensar de trimestres anteriores', x.compensar], ['Resultado', x.resultado, true],
                 ]} /></Plegable>
                 <Presentado soloLectura={soloLectura} modelo="303" anio={anio} t={x.t} importe={0} pagado={p303(x.t)} con130={false} situacion={situacion(x.t)} plazo={limite(x.t)} />
               </div>
