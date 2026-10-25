@@ -122,10 +122,10 @@ test('modelo193: agrupa por perceptor y tipo, filtra el año y ordena por nombre
   ];
   assert.deepEqual(modelo193(pagos, 2026), {
     perceptores: [
-      { nif: '12345678Z', nombre: 'Ana', tipo: 'dividendos', base: 150, retenciones: 28.5 },
-      { nif: '12345678Z', nombre: 'Ana', tipo: 'intereses', base: 25, retenciones: 4.75 },
-      { nif: '', nombre: 'Bruno', tipo: 'intereses', base: 150, retenciones: 9.5 },
-      { nif: '', nombre: 'Zoe', tipo: 'dividendos', base: 200, retenciones: 38 },
+      { nif: '12345678Z', nombre: 'Ana', tipo: 'dividendos', clave: 'A', naturaleza: '02', base: 150, retenciones: 28.5 },
+      { nif: '12345678Z', nombre: 'Ana', tipo: 'intereses', clave: 'B', naturaleza: '03', base: 25, retenciones: 4.75 },
+      { nif: '', nombre: 'Bruno', tipo: 'intereses', clave: 'B', naturaleza: '03', base: 150, retenciones: 9.5 },
+      { nif: '', nombre: 'Zoe', tipo: 'dividendos', clave: 'A', naturaleza: '02', base: 200, retenciones: 38 },
     ], base: 525, retenciones: 80.75,
   });
 });

@@ -23,7 +23,7 @@ test('115 y 180: 19 % de las rentas del alquiler', () => {
 
 test('349: clientes de la UE por NIF-IVA, sumados por trimestre', () => {
   assert.equal(nifUE('12345678Z'), ''); assert.equal(nifUE('ES12345678Z'), ''); assert.equal(nifUE('fr 12345678901'), 'FR12345678901');
-  assert.deepEqual(modelo349(F, 2026, 2), { operadores: [{ nif: 'DE123456789', nombre: 'Berlin GmbH', clave: 'S', base: 2500 }], total: 2500 });
+  assert.deepEqual(modelo349(F, 2026, 2), { operadores: [{ nif: 'DE123456789', nombre: 'Berlin GmbH', clave: 'S', base: 2500 }], total: 2500, rectificaciones: [], totalRectificaciones: 0, negativos: [], mensual: null });
   assert.equal(modelo349(F, 2026, 1).total, 0);
 });
 
@@ -35,7 +35,7 @@ test('390: suma de los cuatro 303', () => {
 
 test('190: por trabajador', () => {
   const N = [{ empleado: 'e', empleadoNombre: 'Eva', mes: '2026-01', bruto: 2000, irpfPct: 10 }, { empleado: 'e', mes: '2026-02', bruto: 2000, irpfPct: 10 }, { empleado: 'e', mes: '2025-12', bruto: 9, irpfPct: 10 }];
-  assert.deepEqual(modelo190(N, [{ id: 'e', nombre: 'Eva Gil', nif: '1X' }], 2026), { perceptores: [{ nombre: 'Eva Gil', nif: '1X', clave: 'A', percepciones: 4000, retenciones: 400 }], percepciones: 4000, retenciones: 400 });
+  assert.deepEqual(modelo190(N, [{ id: 'e', nombre: 'Eva Gil', nif: '1X' }], 2026), { perceptores: [{ nombre: 'Eva Gil', nif: '1X', clave: 'A', subclave: '', percepciones: 4000, retenciones: 400, gastosDeducibles: 0, contrato: 1 }], percepciones: 4000, retenciones: 400 });
   // Un proveedor en módulos con el 1 % y un agricultor con el 2 %: clave H; un profesional con el 15 %: clave G.
   const G190 = [{ fecha: '2026-03-01', pagado: '2026-03-01', base: 1000, ivaPct: 21, irpfPct: 1, proveedor: 'Carpintería', proveedorNif: 'B1' },
     { fecha: '2026-03-02', pagado: '2026-03-02', base: 500, ivaPct: 10, irpfPct: 2, proveedor: 'Granja', proveedorNif: 'B2' },
