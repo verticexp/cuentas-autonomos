@@ -18,7 +18,8 @@ import Prorrata from '@/components/Prorrata';
 import Rend130 from '@/components/Rend130';
 import SaldoIva from '@/components/SaldoIva';
 import { modelo111, nombreMes } from '@/lib/nominas';
-import { borradorRenta, borradorSociedades, modelo115, modelo180, modelo190, modelo202, modelo202Art403, modelo347, modelo349, modelo390, ETIQUETAS390, ORDEN390, TOTALES390, retencionesProfesionales, MINIMO_PERSONAL, RET_ALQUILER } from '@/lib/modelos';
+import { borradorRenta, borradorSociedades, modelo115, modelo180, modelo190, modelo202, modelo202Art403, modelo347, modelo349, modelo390, ETIQUETAS390, ORDEN390, TOTALES390, retencionesProfesionales, MINIMO_PERSONAL, RET_ALQUILER, modelo216, modelo296 } from '@/lib/modelos';
+import { SUBCLAVES_296, nombrePais } from '@/lib/noResidentes';
 import CuotaIS, { ImporteAnio } from '@/components/CuotaIS';
 import { Presentado, Presentado202, PresentadoRet } from '@/components/Acciones';
 import { eur, fechaTexto, hoy, textoResumenModelos, textoSituacion } from '@/lib/formato';
@@ -78,6 +79,7 @@ const AEAT = {
   m303: 'https://sede.agenciatributaria.gob.es/Sede/procedimientoini/G414.shtml',
   m130: 'https://sede.agenciatributaria.gob.es/Sede/procedimientoini/G601.shtml',
   m131: 'https://sede.agenciatributaria.gob.es/Sede/procedimientoini/G602.shtml',
+  m216: 'https://sede.agenciatributaria.gob.es/Sede/procedimientoini/GF05.shtml',
 };
 // Desglose por casillas plegado en el móvil (el importe ya se ve arriba); en el ordenador, siempre abierto.
 const Plegable = ({ children }) => <details className="casillas-plegable"><summary>Ver las casillas</summary>{children}</details>;
@@ -161,6 +163,9 @@ export default async function Modelos({ searchParams }) {
   const cuotaSugerida = (y) => (f.tipo === 'sociedad' && !dForal && [...facturas, ...gastos].some((x) => x.fecha?.startsWith(`${y}-`)) ? borradorSociedades(facturas, gastos, y, opIS).cuotaEjercicio : null);
   const renta = f.tipo === 'autonomo' && !dForal && borradorRenta(facturas, gastos, anio, u.pagos130?.[anio], { ivaCoste: !usa303(f), personal: f.renta || {}, iva, rendimientos: u.rend130 || {}, normal: f.irpf === 'normal' });
   const m180 = hay115 && modelo180(gastos, anio);
+  // No residentes (216 y 296): si hay gastos marcados «no reside en España» (lib/noResidentes.js).
+  const hay216 = gastos.some((g) => g.noResidente);
+  const m296 = hay216 && modelo296(gastos, anio);
   const m347 = modelo347(facturas, gastos, anio, { recc: iva.recc });
   const c303 = !igic && usa303(f);
   const ids = actividadesDe(u).map((a) => a.id);
@@ -229,7 +234,7 @@ export default async function Modelos({ searchParams }) {
   // «Toca presentar» en territorio foral: los números de su Hacienda y el plazo de cada modelo.
   const foralizar = (m, t) => {
     const num = { 303: t === 4 && dForal.iva.cuarto ? dForal.iva.cuarto : dForal.iva.num, 111: dForal.ret.num, 115: dForal.ret.alquiler }[m.num] || m.num;
-    const plazo = m.num === '130' ? limiteIrpf(t) : ['111', '115', '123'].includes(m.num) ? plazoT(t, 20) : m.num === '303' ? limite(t) : m.plazo;
+    const plazo = m.num === '130' ? limiteIrpf(t) : ['111', '115', '123', '216'].includes(m.num) ? plazoT(t, 20) : m.num === '303' ? limite(t) : m.plazo;
     return { ...m, num, modelo: String(m.modelo).replace(m.num, num), ...(plazo ? { plazo } : {}) };
   };
   let ahora = null;
@@ -247,6 +252,8 @@ export default async function Modelos({ searchParams }) {
       negativa111: modelo111(nominas || [], anio, tAhora).perceptores > 0,
       m115: hay115 && !marcaRet(u.pres115, anio, tAhora) ? modelo115(gastos, anio, tAhora).retenciones : null,
       m123: hay123 && !u.pres123?.[anio]?.[tAhora] ? modelo123(capital, anio, tAhora).retenciones : null,
+      m216: hay216 && !u.pres216?.[anio]?.[tAhora] ? modelo216(gastos, anio, tAhora).retenciones : null,
+      negativa216: modelo216(gastos, anio, tAhora).negativa,
       m349: hay349 ? modelo349(facturas, anio, tAhora, gastos) : null,
       pagos202, pagados202: u.pagos202?.[anio], constitucion: f.constitucion,
     }).map((m) => ({ ...m, ...(foralT ? { aeat: foralT.sede, sede: foralT.hacienda } : { aeat: AEAT[`m${m.num}`] }), ...(m.dia ? { plazo: plazoT(tAhora, m.dia) } : {}) })).map((m) => (dForal ? foralizar(m, tAhora) : m));
@@ -337,10 +344,10 @@ export default async function Modelos({ searchParams }) {
       )}
 
       <ModeloPlegable id="calendario" num={<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M3 10h18M8 3v4M16 3v4" /></svg>}
-        nombre="Qué presentas y cuándo" detalle={`${modelosDe({ ...f, intracom: hay349 }).length} modelos y plazos según cómo trabajas`}>
+        nombre="Qué presentas y cuándo" detalle={`${modelosDe({ ...f, intracom: hay349, noResidentes: hay216 }).length} modelos y plazos según cómo trabajas`}>
         <h2 className="grupo-t">Qué presentas y cuándo</h2>
         <div className="grupo-c">
-          {modelosDe({ ...f, intracom: hay349 }).map((m) => <div key={m.id} className="celda"><span className="modelo-num">{GLOSARIO[`m${m.id}`] ? <Termino id={`m${m.id}`}>{m.num || m.id}</Termino> : m.num || m.id}</span><span className="txt">{m.nombre}<small>{m.cuando}</small></span></div>)}
+          {modelosDe({ ...f, intracom: hay349, noResidentes: hay216 }).map((m) => <div key={m.id} className="celda"><span className="modelo-num">{GLOSARIO[`m${m.id}`] ? <Termino id={`m${m.id}`}>{m.num || m.id}</Termino> : m.num || m.id}</span><span className="txt">{m.nombre}<small>{m.cuando}</small></span></div>)}
         </div>
         <p className="grupo-pie">Según cómo trabajas ({f.tipo === 'sociedad' ? 'sociedad' : 'autónomo'}). Si algo no encaja, cámbialo en Ajustes › Actividades e impuestos.</p>
       </ModeloPlegable>
@@ -651,6 +658,37 @@ export default async function Modelos({ searchParams }) {
         );
       })()}
 
+      {hay216 && (() => {
+        const t = tPlazo(20);
+        const m = t && modelo216(gastos, anio, t);
+        return (
+        <ModeloPlegable id="m216" num="216" nombre="Retenciones de no residentes" {...filaPlazo(t, 20, null, t && !m.rentas && 'sin pagos a no residentes')}
+          dato={importeFila(t ? m.retenciones : r2(T.reduce((s, x) => s + modelo216(gastos, anio, x).retenciones, 0)))}>
+          <h2 className="grupo-t">216 · Retenciones de no residentes</h2>
+          <p className="grupo-pie arriba">Lo que retienes al pagar a quien no reside en España ni tiene aquí un establecimiento (los gastos marcados «no reside en España»: el alquiler de un local cuyo dueño vive fuera, un profesional de otro país…): el 24 %, el 19 % si reside en la UE o el EEE, o el límite del convenio con su país si te da su certificado de residencia fiscal. No va en el 111 ni en el 115: se ingresa con el 216 cada trimestre, por la fecha de pago (el del 4T, hasta el 20 de enero), y en enero el 296 lo resume por perceptor. Lo exento por la ley o por un convenio también se declara, sin retención.</p>
+          <div className="tarjetas">
+            {T.map((t) => { const m = modelo216(gastos, anio, t); const c = m.c; return (
+              <div key={t} className="tarjeta"><h3>{t}T {anio}</h3>
+                <Importe texto="A ingresar" v={c['21']} />
+                {m.rentas ? <Plegable><Casillas sinNumeros={Boolean(foralT)} filas={[
+                  // Desde 2024 (Orden HAC/56/2024): dividendos aparte del resto de rentas; 05-07 y 14-16 cuentan rentas (pagos).
+                  c['05'] > 0 && ['05 · Dividendos: número de rentas', String(c['05'])], c['06'] > 0 && ['06 · Resto de rentas: número', String(c['06'])], ['07 · Rentas con retención', String(c['07'])],
+                  c['08'] > 0 && ['08 · Base: dividendos', c['08']], c['09'] > 0 && ['09 · Base: resto de rentas', c['09']], ['10 · Base total', c['10']],
+                  c['11'] > 0 && ['11 · Retenciones: dividendos', c['11']], c['12'] > 0 && ['12 · Retenciones: resto de rentas', c['12']], ['13 · Total de retenciones', c['13']],
+                  c['14'] > 0 && ['14 · Sin retención: dividendos (número)', String(c['14'])], c['15'] > 0 && ['15 · Sin retención: resto de rentas (número)', String(c['15'])], c['16'] > 0 && ['16 · Rentas sin retención', String(c['16'])],
+                  c['17'] > 0 && ['17 · Base sin retención: dividendos', c['17']], c['18'] > 0 && ['18 · Base sin retención: resto de rentas', c['18']], c['16'] > 0 && ['19 · Base de las rentas sin retención', c['19']],
+                  ['21 · A ingresar', c['21'], true],
+                ]} /></Plegable> : <p className="nota">Sin pagos a no residentes este trimestre: no se presenta.</p>}
+                {m.negativa && <p className="nota">Solo rentas exentas: se presenta igual, como declaración negativa.</p>}
+                {m.rentas > 0 && <p className="nota">Hasta el {plazoT(t, 20)}.</p>}
+                {m.rentas > 0 && <PresentadoRet modelo="216" anio={anio} t={t} hecho={Boolean(u.pres216?.[anio]?.[t])} soloLectura={soloLectura} />}
+              </div>
+            ); })}
+          </div>
+        </ModeloPlegable>
+        );
+      })()}
+
       {hay369 && (() => {
         const t = T.find((x) => plazo369(anio, x) >= h);
         const m = t && modelo369(facturas, anio, t);
@@ -799,6 +837,18 @@ export default async function Modelos({ searchParams }) {
           <div className="tarjeta">
             {m180.arrendadores.length ? <TablaPersonas columnas={['Alquiler', 'Retenido']} filas={m180.arrendadores.map((p) => ({ clave: `${p.nif}-${p.nombre}`, nombre: p.nombre, detalle: p.nif, cifras: [p.base, p.retenciones] }))}
               total={m180.arrendadores.length > 1 ? [r2(m180.arrendadores.reduce((x, p) => x + p.base, 0)), m180.retenciones] : null} /> : <p className="nota">Sin alquileres este año.</p>}
+          </div>
+        </ModeloPlegable>
+      )}
+
+      {m296 && (
+        <ModeloPlegable id="m296" num="296" nombre="Resumen anual de no residentes" detalle={m296.perceptores.length ? `Hasta el ${plazoAnual('01-31')}` : 'Sin pagos a no residentes este año'} informativo={m296.perceptores.length > 0}>
+          <h2 className="grupo-t">296 · Resumen anual de no residentes</h2>
+          <p className="grupo-pie arriba">No se paga: resume, por perceptor, lo que pagaste a no residentes y lo que les retuviste con el 216, con su país de residencia, el tipo de renta (clave) y el porcentaje. Lo exento por la ley o por un convenio también va, al 0 %. Se presenta del 1 al 31 de enero.{notaHastaHoy}</p>
+          <div className="tarjeta">
+            {m296.perceptores.length ? <TablaPersonas columnas={['Pagado', 'Retenido']} filas={m296.perceptores.map((p) => ({ clave: `${p.nombre}-${p.nif || p.nifResidencia}-${p.clave}-${p.subclave}-${p.pct}`, nombre: p.nombre,
+              detalle: [p.nif || (p.nifResidencia && `NIF en su país ${p.nifResidencia}`), `${nombrePais(p.pais)} (${p.pais})`, `clave ${p.clave} (${p.claveNombre})`, `subclave ${p.subclave} (${SUBCLAVES_296[p.subclave]})`, `${String(p.pct).replace('.', ',')} %`].filter(Boolean).join(' · '), cifras: [p.base, p.retenciones] }))}
+              total={m296.perceptores.length > 1 ? [m296.base, m296.retenciones] : null} /> : <p className="nota">Sin pagos a no residentes este año.</p>}
           </div>
         </ModeloPlegable>
       )}
