@@ -958,7 +958,7 @@ export default async function Modelos({ searchParams }) {
         <ModeloPlegable id="m100" num="100" nombre={`Renta ${anio}`} favor={renta.resultado < 0}
           detalle={`Borrador · ${renta.resultado >= 0 ? 'saldría a pagar' : 'saldría a devolver'} · de abril a junio de ${anio + 1}`} dato={importeFila(Math.abs(renta.resultado))}>
           <h2 className="grupo-t">Borrador de la renta {anio}</h2>
-          <p className="grupo-pie arriba">Tu actividad (estimación directa simplificada){f.renta ? ', con los datos personales de Ajustes' : ''}. No incluye deducciones autonómicas, vivienda, planes de pensiones ni discapacidad: tómalo como una idea de cuánto te saldrá.{!f.renta && ' Añade tu situación familiar en Ajustes › Actividades e impuestos para afinarlo.'}{!f.renta?.inicio && ' Si empezaste la actividad hace poco, pon allí el año: los dos primeros años con beneficio se reducen un 20 %.'}{renta.aproximada && ' Sin tu comunidad autónoma (Ajustes › Actividades e impuestos), la parte autonómica es aproximada: se calcula como la estatal.'}</p>
+          <p className="grupo-pie arriba">Tu actividad (estimación directa simplificada){f.renta ? ', con los datos personales de Ajustes' : ''}. No incluye vivienda, planes de pensiones ni discapacidad, y las deducciones autonómicas solo si pones su importe en Ajustes: tómalo como una idea de cuánto te saldrá.{!f.renta && ' Añade tu situación familiar en Ajustes › Actividades e impuestos para afinarlo.'}{!f.renta?.inicio && ' Si empezaste la actividad hace poco, pon allí el año: los dos primeros años con beneficio se reducen un 20 %.'}{renta.aproximada && ' Sin tu comunidad autónoma (Ajustes › Actividades e impuestos), la parte autonómica es aproximada: se calcula como la estatal.'}</p>
           <div className="tarjeta">
             <Casillas sinNumeros={Boolean(foralT)} filas={[
               ['Ingresos de la actividad', renta.ingresos], ['Gastos deducibles', menos(renta.gastos)], renta.difJust > 0 && ['5 % gastos de difícil justificación', menos(renta.difJust)],
@@ -972,6 +972,7 @@ export default async function Modelos({ searchParams }) {
               renta.cuotaAhorro > 0 && ['Cuota del ahorro de esas ganancias (19 % a 30 %)', renta.cuotaAhorro],
               ['Cuota', renta.cuota, true],
               renta.deduccionCeuta > 0 && [`Deducción por rentas obtenidas en ${renta.nombreCcaa} (60 %)`, menos(renta.deduccionCeuta)],
+              renta.deduccionesAutonomicas > 0 && [`Deducciones autonómicas${renta.nombreCcaa ? ` de ${renta.nombreCcaa}` : ''} (las que pusiste en Ajustes)`, menos(renta.deduccionesAutonomicas)],
               ['Retenciones de tus facturas', menos(renta.retenciones)], ['Pagos del 130 marcados', menos(renta.pagos130)],
               renta.maternidad.maternidad > 0 && ['Deducción por maternidad', menos(renta.maternidad.maternidad)],
               renta.maternidad.guarderia > 0 && ['Incremento por gastos de guardería', menos(renta.maternidad.guarderia)],
