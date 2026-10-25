@@ -237,9 +237,10 @@ test('diseñadora · 111, 115, 180 y 190', () => {
 
 test('diseñadora · 347: quién pasa de 3.005,06 € con IVA', () => {
   const r = modelo347(facturasD, gastosD, 2026);
-  // Ventas: solo Laura (particular sin retención): (800 + 1.200 + 1.100 + 600) × 1,21 = 4.477 (968 / 1.452 / 1.331 / 726).
-  // Los clientes con retención van en su 190 (art. 33.2 RGAT), los de la UE en el 349 y el de EE. UU. no se declara.
-  assert.deepEqual(r.ventas.map((o) => [o.nif, o.total, o.trimestres]), [['50123456Z', 4477, [968, 1452, 1331, 726]]]);
+  // Art. 33.2.g RGAT: Acme (servicios de EE. UU.) también entra: 2.000 + 2.500 = 4.500, sin NIF español.
+  // Laura (particular sin retención): (800 + 1.200 + 1.100 + 600) × 1,21 = 4.477 (968 / 1.452 / 1.331 / 726).
+  // Los clientes con retención van en su 190 (art. 33.2 RGAT) y los de la UE en el 349.
+  assert.deepEqual(r.ventas.map((o) => [o.nif, o.total, o.trimestres]), [['', 4500, [2000, 0, 0, 2500]], ['50123456Z', 4477, [968, 1452, 1331, 726]]]);
   // Compras: furgoneta 24.200 (3T) y renting 4 × 1.452 = 5.808. No: alquiler (180), gestoría (190), Google (349), autónomos
   // (sin factura), ordenador 1.815, papel 786,50, teléfono 435,60 y la multa 200 (no pasan de 3.005,06).
   assert.deepEqual(r.compras.map((o) => [o.nif, o.total, o.trimestres]), [['A28123453', 24200, [0, 0, 24200, 0]], ['A82345671', 5808, [1452, 1452, 1452, 1452]]]);
