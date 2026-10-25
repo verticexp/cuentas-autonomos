@@ -47,7 +47,7 @@ const imp = (v) => (v ? eur(v) : '');
 
 export default async function Contabilidad({ searchParams }) {
   const u = await requerir(DETALLE);
-  const [facturas, gastosLeidos, nominasLeidas, manuales, saldo, productos, ajustes, albaranes, movimientos] = await Promise.all([leer(u, 'facturas'), leer(u, 'gastos'), leer(u, 'nominas'), leer(u, 'asientos'), redis?.get(clave(u, 'saldo')), leer(u, 'productos'), leer(u, 'stock'), leer(u, 'albaranes'), leer(u, 'banco')]);
+  const [facturas, gastosLeidos, nominasLeidas, manuales, saldo, productos, ajustes, albaranes] = await Promise.all([leer(u, 'facturas'), leer(u, 'gastos'), leer(u, 'nominas'), leer(u, 'asientos'), redis?.get(clave(u, 'saldo')), leer(u, 'productos'), leer(u, 'stock'), leer(u, 'albaranes')]);
   // Sin el permiso «Nóminas», las de cada persona van juntas por mes (lib/nominas.js, Codex H2).
   const gastos = gastosQueVe(u, gastosLeidos), nominas = nominasQueVe(u, nominasLeidas);
   if (!facturas) return <SinBD />;
@@ -63,6 +63,8 @@ export default async function Contabilidad({ searchParams }) {
   const p = /^[1-4]$/.test(sp.p || '') ? sp.p : '';
   const cuenta = /^\d{1,9}$/.test(sp.cuenta || '') ? sp.cuenta : '572';
   const libros = ver === 'libros' && librosRegistro({ facturas, gastos, nominas: nominas || [], productos: productos || [], ajustes: ajustes || [], albaranes: albaranes || [], fiscal, actividades: actividadesDe(u), empresa: { nombre: u.emisor?.nombre || '', nif: u.emisor?.nif || '' } }, anio, h);
+  // Los movimientos del banco, solo para el cuadre con la 572 (components/contabilidad/CuadreBanco.js): en las vistas que lo enseñan.
+  const movimientos = sociedad && ['balance', 'diario', 'mayor'].includes(ver) ? await leer(u, 'banco') : [];
   const d = informe({ facturas, gastos, nominas: nominas || [], manuales: manuales || [], saldo, movimientos: movimientos || [], bancoConectado: Boolean(u.banco?.conectado), fiscal, pagos130: u.pagos130 || {}, pres303: u.pres303 || {}, pres369: u.pres369 || {}, pres123: u.pres123 || {}, pres111: u.pres111 || {}, pres115: u.pres115 || {}, pagadosHacienda: u.pagadosHacienda || {}, prorrata: u.prorrata || {}, capital: (await leer(u, 'capital')) || [], pagos202: u.pagos202 || {}, cuotaIS: u.cuotaIS || {}, binsPrevias: u.binsPrevias || {}, fondosPropios: u.fondosPropios || {}, productos: productos || [], ajustes: ajustes || [], albaranes: albaranes || [] }, anio, p, h, { cuenta: ver === 'mayor' ? cuenta : '' });
   const mesPorDefecto = String(Number(d.fecha.slice(5, 7))).padStart(2, '0');
   const mes = /^(0[1-9]|1[0-2])$/.test(sp.mes || '') ? sp.mes : mesPorDefecto;
@@ -83,8 +85,9 @@ export default async function Contabilidad({ searchParams }) {
   );
   const ca = ver === 'anuales' && sociedad && cuentasAnuales({ asientos: d.asientos, gastos, nominas: nominas || [], empresa: u, anio, guardado: (await leerUno(u, 'cuentasAnuales', String(anio))) || {} });
   const cerrado = anio < actual;
-  // Se muestran todas las casillas del modelo, incluidas las de saldo cero.
-  const filasBalance = (nodos, nivel = 0) => nodos.flatMap((n) => [{ ...n, nivel }, ...(n.hijos ? filasBalance(n.hijos, nivel + 1) : [])]);
+  // Filas del balance oficial con importe en alguno de los dos años (las masas, siempre). Todas las casillas, también las
+  // que valen cero, van en el CSV del modelo PYMES.
+  const filasBalance = (nodos, nivel = 0) => nodos.flatMap((n) => ((ca.bal[0].v[n.id] || ca.bal[1].v[n.id] || nivel === 0) ? [{ ...n, nivel }, ...(n.hijos ? filasBalance(n.hijos, nivel + 1) : [])] : []));
   const FilaOf = ({ t, codigo, a, b, nivel = 0, fuerte }) => <div className={`cont-fila${fuerte ? ' cont-total' : ''}`} style={{ paddingLeft: nivel * 10 }}><span className="cont-n"><small className="cont-casilla">{codigo}</small>{t}</span><span className="cont-cifras"><span>{eur(a)}</span><small>{eur(b)}</small></span></div>;
 
   return (
@@ -313,7 +316,7 @@ export default async function Contabilidad({ searchParams }) {
           <h2 className="grupo-t">Pérdidas y ganancias de pymes de {anio}</h2>
           <div className="tarjeta cont-tabla">
             <div className="cont-fila cont-cab"><span className="cont-n">Concepto y casilla</span><span className="cont-cifras"><span>{anio}</span><small>{anio - 1}</small></span></div>
-            {filasPygOficial().map((l) => <FilaOf key={l.id} codigo={l.codigo} t={l.t} a={l.p ? ca.pyg[0].v[l.id] : ca.pyg[0][l.id]} b={l.p ? ca.pyg[1].v[l.id] : ca.pyg[1][l.id]} nivel={String(l.id).includes('.') ? 2 : l.p ? 1 : 0} fuerte={!l.p} />)}
+            {filasPygOficial().filter((l) => !l.p || ca.pyg[0].v[l.id] || ca.pyg[1].v[l.id]).map((l) => <FilaOf key={l.id} codigo={l.codigo} t={l.t} a={l.p ? ca.pyg[0].v[l.id] : ca.pyg[0][l.id]} b={l.p ? ca.pyg[1].v[l.id] : ca.pyg[1][l.id]} nivel={String(l.id).includes('.') ? 2 : l.p ? 1 : 0} fuerte={!l.p} />)}
           </div>
         </section>}
 

@@ -41,7 +41,8 @@ test('PYMES: todas las casillas del balance y la PyG, incluidas las nuevas y los
   assert.equal(b.activo, 3005); assert.equal(b.pasivo, 3005); // 10000 = 30000.
   for (const [id, n] of Object.entries({ 'A.VII': 80, 'B.II.1.a': 120, 'B.II.1.b': 50, 'PA1.III.1': 50, 'PA1.III.2': 100, PA2: 40, PA3: 30, 'PB.VI': 200, 'PB.VII': 70, 'PC.IV.1.a': 300, 'PC.IV.1.b': 100, 'PC.VI': 20, 'PA1.VII': 895 })) assert.equal(b.v[id], n, id);
   assert.deepEqual([p.A, p.B, p.C, p.D], [1000, 95, 1095, 895]);
-  assert.deepEqual([p.v['13.a'], p.v['13.b'], p.v[18], p.v['18.a'], p.v['18.b'], p.v['18.c'], p.v[19]], [40, 0, 55, 10, 20, 25, -200]);
+  // La 7692 (otros ingresos financieros) va a la 13.b y la 669 (otros gastos financieros) a la 14, como en el modelo.
+  assert.deepEqual([p.v['13.a'], p.v['13.b'], p.v[14], p.v[18], p.v['18.a'], p.v['18.b'], p.v['18.c'], p.v[19]], [40, 30, -5, 30, 10, 20, 0, -200]);
   assert.equal(b.v['PA1.VII'], p.D); // Casillas 21700 = 49500, tras regularizar.
 });
 
@@ -93,7 +94,9 @@ test('una apertura manual el 1 de enero impide otra automática; sin saldo no se
   assert.equal(d.filter((a) => a.origen?.tipo === 'apertura').length, 1);
   assert.ok(!d.some((a) => a.origen?.tipo === 'apertura-contable'));
   assert.deepEqual(asientosCierreApertura([], 2026, hoy), []);
-  assert.throws(() => asientosCierreApertura([apunte('2025-01-01', 'Incompleto', [['572', 10]])], 2025, hoy), /No se puede cerrar/);
+  // Si no cuadra, el diario sale igual, sin el asiento de cierre (la pantalla no se rompe).
+  const incompleto = asientosCierreApertura([apunte('2025-01-01', 'Incompleto', [['572', 10]])], 2025, hoy);
+  assert.ok(!incompleto.some((a) => a.origen?.tipo === 'cierre-contable'));
 });
 
 test('informe: añade cierre solo a diario, conserva asientos, mayor, sumas y cuentas anuales', () => {
