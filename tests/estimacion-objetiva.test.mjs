@@ -32,9 +32,34 @@ test('131: un trimestre negativo se resta en los siguientes del año (casilla 11
   const q = modelos131({ modulos, facturas }, 2026);
   assert.deepEqual(q.map((c) => c['13']), [-250, 0, 150, 200]);
   assert.deepEqual(q.map((c) => c['11']), [0, 200, 50, 0]);
-  const v = modelos131({ modulos: { tienda: { tipo: 'datos', rendimiento: 100000, asalariados: 3 } }, vivienda: true }, 2026);
-  // 0,5 % de 100.000 = 500 por trimestre, con 660,14 € en el año: 500 + 160,14 + 0 + 0.
-  assert.deepEqual(v.map((c) => c['12']), [500, 160.14, 0, 0]);
+  // Vivienda (casilla 12): 0,5 % de 30.000 = 150 por trimestre.
+  const v = modelos131({ modulos: { tienda: { tipo: 'datos', rendimiento: 30000, asalariados: 0 } }, vivienda: true }, 2026);
+  assert.deepEqual(v.map((c) => c['12']), [150, 150, 150, 150]);
+  assert.deepEqual(v.map((c) => c['13']), [450, 450, 450, 450]);
+});
+
+// Instrucciones del 131 en la Sede, casilla 12 (art. 110.3.d del Reglamento).
+test('131, casilla 12: límite de 33.007,20 € de rendimientos previsibles y tope de 660,14 € en el año', () => {
+  const vivienda = (modulos, facturas = []) => modelos131({ modulos, facturas, vivienda: true }, 2026).map((c) => c['12']);
+  // Con 33.007,20 € o más, nada; justo por debajo, 0,5 % = 165,04, y el 4T solo lo que falta hasta 660,14.
+  assert.deepEqual(vivienda({ tienda: { tipo: 'datos', rendimiento: 33007.2 } }), [0, 0, 0, 0]);
+  assert.deepEqual(vivienda({ tienda: { tipo: 'datos', rendimiento: 33007.19 } }), [165.04, 165.04, 165.04, 165.02]);
+  // Apartado II: 2 % de la 03, con el primer trimestre elevado al año (1.000 × 4 = 4.000) para el límite. En el 2T, el 2 %
+  // de 50.000 = 1.000, pero quedan 640,14 del tope del año.
+  const sin = { obra: { tipo: 'sinDatos' } };
+  assert.deepEqual(vivienda(sin, [fac('a', '2026-02-01', 1000, 'obra'), fac('b', '2026-05-01', 50000, 'obra')]), [20, 640.14, 0, 0]);
+  // I y II juntos: 30.000 de la 01 + 800 × 4 = 33.200, por encima del límite.
+  assert.deepEqual(vivienda({ tienda: { tipo: 'datos', rendimiento: 30000 }, ...sin }, [fac('a', '2026-02-01', 800, 'obra')]), [0, 0, 0, 0]);
+  // Sin ingresos en el 1T, cuenta el primer trimestre con ingresos: 9.000 × 4 = 36.000 en el 2T.
+  assert.deepEqual(vivienda(sin, [fac('a', '2026-05-01', 9000, 'obra')]), [0, 0, 0, 0]);
+  // Solo agrícola (apartado III): 2 % de la 05 si los ingresos previsibles no llegan (5.000 × 4 = 20.000); 9.000 × 4, sí.
+  const huerta = { huerta: { tipo: 'agricola' } };
+  assert.deepEqual(vivienda(huerta, [fac('a', '2026-02-01', 5000, 'huerta')]), [100, 0, 0, 0]);
+  assert.deepEqual(vivienda(huerta, [fac('a', '2026-02-01', 9000, 'huerta')]), [0, 0, 0, 0]);
+  // Agrícola y de las otras a la vez: nunca.
+  assert.deepEqual(vivienda({ ...huerta, tienda: { tipo: 'datos', rendimiento: 10000 } }, [fac('a', '2026-02-01', 1000, 'huerta')]), [0, 0, 0, 0]);
+  // Sin `vivienda`, nada.
+  assert.deepEqual(modelos131({ modulos: { tienda: { tipo: 'datos', rendimiento: 10000 } } }, 2026).map((c) => c['12']), [0, 0, 0, 0]);
 });
 
 test('IVA simplificado: ingresos a cuenta en el 1T-3T y liquidación del año en el 4T', () => {

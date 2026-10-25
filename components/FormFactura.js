@@ -442,7 +442,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
             const pais = e.target.value;
             limpiarErrores('oss.pais');
             // Con el IVA de su país (el general, si el tipo de la línea no existe allí), sin retención ni recargo.
-            setF((x) => ({ ...x, oss: pais ? { pais } : undefined, ...(pais ? { irpfPct: 0, recargo: false } : {}),
+            setF((x) => ({ ...x, oss: pais ? { pais, ...(x.oss?.bienes ? { bienes: true } : {}) } : undefined, ...(pais ? { irpfPct: 0, recargo: false } : {}),
               lineas: x.lineas.map((l) => (pais && !tiposPais(pais).includes(Number(l.ivaPct)) ? { ...l, ivaPct: TIPOS_UE[pais].general } : !pais && ![21, 10, 4, 0].includes(Number(l.ivaPct)) ? { ...l, ivaPct: defecto(x.actividad).ivaPct } : l)) }));
           }}>
             <option value="">No: IVA español</option>
@@ -450,6 +450,15 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
           </select>
           {mensaje('oss.pais')}
           {f.oss?.pais && <span className="nota">Con el IVA de {NOMBRES_UE[f.oss.pais]}: no va en el 303, sino en el modelo 369.</span>}
+        </label>
+      )}
+      {!igic && f.oss?.pais && (
+        // El 369 separa las prestaciones de servicios (apartado 3) de las entregas de bienes enviados desde España (apartado 4).
+        <label className="ff-det">Qué vendes por la ventanilla única
+          <select className="campo" value={f.oss.bienes ? 'bienes' : 'servicios'} onChange={(e) => setF((x) => ({ ...x, oss: { pais: x.oss.pais, ...(e.target.value === 'bienes' ? { bienes: true } : {}) } }))}>
+            <option value="servicios">Servicios</option>
+            <option value="bienes">Bienes que envías desde España</option>
+          </select>
         </label>
       )}
 
