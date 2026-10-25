@@ -65,7 +65,7 @@ const CAMPOS_HABITUALES = ['categoria', 'deduciblePct', 'afectoPct', 'actividad'
 // formulario se abre al escanear o al pedirlo. Las facturas subidas van a «Por revisar» (lib/bandeja.js), en la misma
 // pantalla; correo: { listo, direccion } de la dirección para reenviárselas (lib/buzon.js).
 // documento: una factura de la bandeja (lib/bandeja.js) para revisar y aprobar; siguiente: la que va después.
-export default function FormGasto({ hoy, gasto, actividades, alquiler = false, plegado = false, destacar = false, regimen = 'autonomo', cupoInicial = null, movimiento = null, productos = [], proyectos = [], igic = false, especial = false, documento = null, siguiente = null , correo = null }) {
+export default function FormGasto({ hoy, gasto, actividades, alquiler = false, plegado = false, destacar = false, regimen = 'autonomo', cupoInicial = null, movimiento = null, productos = [], proyectos = [], igic = false, especial = false, recargo = false, documento = null, siguiente = null , correo = null }) {
   const impuesto = igic ? 'IGIC' : 'IVA';
   const router = useRouter();
   const prefijo = useId();
@@ -468,6 +468,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
       {/* Sociedades, gastos sin IVA (impuestos, multas, donativos): no deducible en el Impuesto sobre Sociedades (art. 15 LIS,
           lib/categorias.js noDeducibleIS). Sin tocarlo, lo que propone Fisquo por el concepto. */}
       {(g.noDeducibleIS !== undefined || !conIva(gn)) && <label className="gasto-pendiente"><input type="checkbox" checked={g.noDeducibleIS ?? Boolean(regimen === 'sociedad' ? noDeducibleIS(gn) : noDeducibleIRPF(gn))} onChange={(e) => poner('noDeducibleIS', e.target.checked)} />{regimen === 'sociedad' ? 'No es deducible en el Impuesto sobre Sociedades (el propio impuesto, multas, sanciones, recargos, donativos)' : 'No es deducible en el IRPF (el propio IRPF, multas, sanciones, recargos, donativos)'}</label>}
+      {!igic && (recargo || g.recargo) && conIva(gn) && !origenGasto(gn) && <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.recargo)} onChange={(e) => poner('recargo', e.target.checked || undefined)} />Su factura lleva recargo de equivalencia (no se deduce: es más coste de la compra)</label>}
       {!igic && (conIva(gn) || g.recc) && <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.recc)} onChange={(e) => poner('recc', e.target.checked)} />Su factura dice «Régimen especial del criterio de caja» (el IVA se deduce al pagarla)</label>}
       {!igic && (conIva(gn) || g.importacion) && <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.importacion)} onChange={(e) => poner('importacion', e.target.checked)} />Importación de fuera de la UE: el IVA lo he pagado en la aduana (DUA)</label>}
       {!igic && (especial || g.usoProrrata) && conIva(gn) && <label>Uso en la prorrata especial<select className="campo" value={g.usoProrrata || ''} onChange={(e) => poner('usoProrrata', e.target.value || undefined)}>

@@ -32,7 +32,8 @@ const linea = (concepto, cantidad, precio, ivaPct, extra = {}) => ({ concepto, c
 // 1. «Moda Carmen»: boutique de una autónoma en recargo de equivalencia (no presenta el 303; sí el 309 y el 130)
 // ------------------------------------------------------------------------------------------------------------------
 const TEXTIL = { proveedor: 'Textil Levante S.L.', proveedorNif: 'B12345674', categoria: '600', actividad: 'tienda' };
-const MILANO = { proveedor: 'Moda Milano SRL', proveedorNif: 'IT12345678901', categoria: '600', actividad: 'tienda' };
+// recargo: lo marca el alta del gasto en una compra de bienes a la UE de quien está en el recargo (lib/gastoCuerpo.js).
+const MILANO = { proveedor: 'Moda Milano SRL', proveedorNif: 'IT12345678901', categoria: '600', actividad: 'tienda', recargo: true };
 // Compras de 2026. Las de España llevan IVA y recargo (art. 154 y 161 LIVA: 21 % + 5,2 %, 10 % + 1,4 %, 4 % + 0,5 %).
 const gastosBoutique = [
   gasto('b1', '2026-01-15', 3000, 21, { ...TEXTIL, recargo: true }), // IVA 630,00 · recargo 156,00
@@ -104,7 +105,7 @@ test('boutique en recargo: 130, ingresos con el IVA cobrado y el IVA del 309 com
   assert.deepEqual(r.trimestres.map((q) => q.gastos), [181.5, 0, 121, 0]);
 });
 
-test('boutique en recargo: el recargo soportado también es coste en el 130 (compras de España y del 309)', { todo: 'ERROR DE LA APP sin arreglar: un gasto no guarda el recargo de equivalencia soportado (lib/gastoCuerpo.js) y el coste sin 303 (lib/ivaDeducible.js ivaNoDeducible) solo suma el IVA, ni el recargo de la factura ni el del 309' }, () => {
+test('boutique en recargo: el recargo soportado también es coste en el 130 (compras de España y del 309)', () => {
   // El recargo que cobra el mayorista (art. 161 LIVA) y el que se ingresa con el 309 (art. 156) no se recuperan nunca:
   // son coste de la compra igual que el IVA. Gasto por trimestre:
   // 1T: 3.000 + 630 + 156 = 3.786 · 2.500 + 525 + 130 = 3.155 · 150 + 31,50 = 181,50 → 7.122,50
@@ -122,6 +123,13 @@ test('boutique en recargo: el recargo soportado también es coste en el 130 (com
   const u = { fiscal: { iva: 'recargo' }, actividades: [{ id: 'tienda', nombre: 'Boutique' }] };
   const g = nuevoGasto(u, { fecha: '2026-01-15', concepto: 'Ropa', base: '3000', ivaPct: 21, recargo: true, proveedor: 'Textil Levante S.L.', proveedorNif: 'B12345674' }).gasto;
   assert.equal(importes(g).recargo, 156);
+  // La compra de bienes a la UE lo lleva sin marcarlo (309, art. 156 LIVA); un servicio de la UE o un proveedor de España
+  // sin marcar, no; y quien no está en el recargo, nunca.
+  const alta = (x, quien = u) => nuevoGasto(quien, { fecha: '2026-03-12', concepto: 'Compra', base: '2500', ivaPct: 0, ...x }).gasto;
+  assert.equal(alta({ proveedor: 'Moda Milano SRL', proveedorNif: 'IT12345678901', categoria: '600' }).recargo, true);
+  assert.equal(alta({ proveedor: 'Cloud Software Ltd', proveedorNif: 'IE6388047V', categoria: '629' }).recargo, undefined);
+  assert.equal(alta({ proveedor: 'Textil Levante S.L.', proveedorNif: 'B12345674', ivaPct: 21 }).recargo, undefined);
+  assert.equal(alta({ proveedor: 'Textil Levante S.L.', proveedorNif: 'B12345674', ivaPct: 21, recargo: true }, { ...u, fiscal: { iva: 'general' } }).recargo, undefined);
 });
 
 test('boutique en recargo: facturas sin NIF hasta 3.000 € en la serie FS, completas en la suya y rectificativas en la R', async () => {
