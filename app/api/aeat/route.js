@@ -13,6 +13,12 @@ import { hoy } from '@/lib/formato';
 export const dynamic = 'force-dynamic';
 
 // Importación de autoliquidaciones y presentación BOE de informativas. Mismos cálculos que app/modelos/page.js.
+// NIF y nombre → «ciudad y CP» de las fichas de clientes y proveedores (lib/modelos.js provinciaDe).
+async function domiciliosDe(u) {
+  const [clientes, fichasProv] = await Promise.all([leer(u, 'clientes'), leer(u, 'fichasProv')]);
+  return new Map([...(clientes || []), ...(fichasProv || [])].flatMap((x) => [[String(x.nif || '').toUpperCase().replace(/[\s.-]/g, '').replace(/^ES/, ''), x.ciudad], [String(x.nombre || '').trim().toUpperCase(), x.ciudad]]).filter(([k, v]) => k && v));
+}
+
 export async function GET(req) {
   const { u, res } = await usuarioApi({ permiso: 'resumen' });
   if (res) return res;
@@ -73,17 +79,16 @@ export async function GET(req) {
     }
     else {
       const contacto = { ...yo, telefono: u.emisor?.telefono, contacto: u.nombre, email: u.email };
-      if (modelo === '180') r = fichero180(contacto, anio, modelo180(gastos, anio));
+      // Provincia de cada tercero: del «Ciudad y CP» de las fichas de clientes y proveedores (o de la factura).
+      const domicilios = await domiciliosDe(u);
+      if (modelo === '180') r = fichero180(contacto, anio, modelo180(gastos, anio, { domicilios }));
       else if (modelo === '190') {
-        const m = modelo190(nominas || [], empleados || [], anio, gastos);
+        const m = modelo190(nominas || [], empleados || [], anio, gastos, { domicilios });
         // La página oculta las identidades y sueldos sin este permiso; un fichero BOE no permite agruparlos.
-        if (!puede(u, 'nominas') && m.perceptores.some((p) => ['A', 'E'].includes(p.clave))) return Response.json({ error: 'Necesitas el permiso Empleados y nóminas para descargar el 190 con trabajadores o administradores' }, { status: 403 });
+        if (!puede(u, 'nominas') && m.perceptores.some((p) => ['A', 'E', 'L'].includes(p.clave))) return Response.json({ error: 'Necesitas el permiso Empleados y nóminas para descargar el 190 con trabajadores o administradores' }, { status: 403 });
         r = fichero190(contacto, anio, m);
       } else if (modelo === '347') {
-        // Provincia de cada declarado: del «Ciudad y CP» de las fichas de clientes y proveedores (o de la factura).
-        const [clientes, fichasProv] = await Promise.all([leer(u, 'clientes'), leer(u, 'fichasProv')]);
-        const domicilios = new Map([...(clientes || []), ...(fichasProv || [])].flatMap((x) => [[String(x.nif || '').toUpperCase().replace(/[\s.-]/g, '').replace(/^ES/, ''), x.ciudad], [String(x.nombre || '').trim().toUpperCase(), x.ciudad]]).filter(([k, v]) => k && v));
-        r = fichero347(contacto, anio, modelo347(facturas, gastos, anio, { recc: iva.recc, domicilios }));
+r = fichero347(contacto, anio, modelo347(facturas, gastos, anio, { recc: iva.recc, domicilios }));
       }
       else {
         const periodos = periodos349(facturas, anio, t, gastos);

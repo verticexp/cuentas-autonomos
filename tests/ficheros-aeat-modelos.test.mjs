@@ -100,10 +100,12 @@ test('115: página de 500 posiciones, arrendadores, base, retención y resultado
 });
 
 test('180: declarante y un perceptor por inmueble, referencia, bases y totales BOE', () => {
-  const [cab, p, otro] = boe(fichero180(yo, 2026, modelo180(alquileres, 2026)).contenido, '180', 2);
+  const domicilios = new Map([[cliente.nif, cliente.ciudad]]);
+  assert.throws(() => fichero180(yo, 2026, modelo180(alquileres, 2026)), /código postal de Álmacén Peña SL: ponlo en su ficha de proveedor/);
+  const [cab, p, otro] = boe(fichero180(yo, 2026, modelo180(alquileres, 2026, { domicilios })).contenido, '180', 2);
   assert.deepEqual(leer(cab, { n: [136, 9, 'numero'], base: [145, 16, 'signo'], ret: [161, 15, 'numero'] }), { n: 2, base: 220000, ret: 41800 });
   assert.deepEqual(leer(p, { nif: [18, 9], representante: [27, 9], nombre: [36, 40], provincia: [76, 2], modalidad: [78, 1], base: [79, 14, 'signo'], pct: [93, 4, 'numero'], ret: [97, 13, 'numero'], devengo: [110, 4, 'numero'], situacion: [114, 1], referencia: [115, 20] }),
-    { nif: cliente.nif, representante: '', nombre: 'ALMACEN PEÑA SL', provincia: '00', modalidad: '1', base: 100000, pct: 1900, ret: 19000, devengo: 0, situacion: '1', referencia: '1234567AB1234C0001DE' });
+    { nif: cliente.nif, representante: '', nombre: 'ALMACEN PEÑA SL', provincia: '28', modalidad: '1', base: 100000, pct: 1900, ret: 19000, devengo: 0, situacion: '1', referencia: '1234567AB1234C0001DE' });
   assert.equal(campo(otro, 114, 21), '4' + ' '.repeat(20));
   assert.equal(campo(p, 135, 181), ' '.repeat(181));
   assert.equal(campo(p, 316, 12), '0'.repeat(12));
@@ -111,21 +113,47 @@ test('180: declarante y un perceptor por inmueble, referencia, bases y totales B
 });
 
 test('190: perceptor A con datos 145, E con retenciones estatales, G y H con subclave', () => {
-  const empleados = [{ id: 'e1', nombre: 'Eva Núñez Pérez', nif: '11111111H', datos145: { nacimiento: 1986, situacionFamiliar: 2, nifConyuge: '22222222J', discapacidad: '33a65', movilidadReducida: true, contrato: 'inferiorAnio', movilidadGeografica: true,
+  const empleados = [{ id: 'e1', nombre: 'Eva Núñez Pérez', nif: '11111111H', cp: '08001', datos145: { nacimiento: 1986, situacionFamiliar: 2, nifConyuge: '22222222J', discapacidad: '33a65', movilidadReducida: true, contrato: 'inferiorAnio', movilidadGeografica: true,
     descendientes: [{ nacimiento: 2025, porEntero: true }, { nacimiento: 2015, porEntero: false }] } },
-  { id: 'e2', nombre: 'Luis García López', nif: '33333333P', cotizacion: { administrador: 'autonomo', pequena: true } }];
+  { id: 'e2', nombre: 'Luis García López', nif: '33333333P', cp: '41001', cotizacion: { administrador: 'autonomo', pequena: true } }];
   const N = [...nominas, nomina('e2', '2026-02', 1000, 190)];
   const G = [gasto('g', '2026-03-01', 100, { irpfPct: 7 }), gasto('h', '2026-04-01', 200, { irpfPct: 1 })];
-  const [cab, a, e, g, h] = boe(fichero190(yo, 2026, modelo190(N, empleados, 2026, G)).contenido, '190', 4);
+  const domicilios = new Map([[cliente.nif, cliente.ciudad]]);
+  assert.throws(() => fichero190(yo, 2026, modelo190(N, empleados.map((x) => ({ ...x, cp: '' })), 2026, G, { domicilios })), /código postal de Eva Núñez Pérez: ponlo en su ficha de empleado/);
+  assert.throws(() => fichero190(yo, 2026, modelo190(N, empleados, 2026, G)), /código postal de Álmacén Peña SL: ponlo en su ficha de proveedor/);
+  const [cab, a, e, g, h] = boe(fichero190(yo, 2026, modelo190(N, empleados, 2026, G, { domicilios })).contenido, '190', 4);
+  assert.equal(campo(e, 76, 2), '41');
+  assert.equal(campo(g, 76, 2), '28');
   assert.deepEqual(leer(cab, { n: [136, 9, 'numero'], bruto: [145, 16, 'signo'], ret: [161, 15, 'numero'] }), { n: 4, bruto: 430000, ret: 64900 });
   assert.deepEqual(leer(a, { nif: [18, 9], nombre: [36, 40], provincia: [76, 2], clave: [78, 1], subclave: [79, 2], bruto: [81, 14, 'signo'], ret: [95, 13, 'numero'], nacimiento: [153, 4, 'numero'], familiar: [157, 1], conyuge: [158, 9], discapacidad: [167, 1], contrato: [168, 1], movilidad: [170, 1], gastos: [184, 13, 'numero'], menores: [223, 2], resto: [225, 4] }),
-    { nif: '11111111H', nombre: 'NUÑEZ PEREZ EVA', provincia: '00', clave: 'A', subclave: '00', bruto: 300000, ret: 45000, nacimiento: 1986, familiar: '2', conyuge: '22222222J', discapacidad: '2', contrato: '2', movilidad: '1', gastos: 19500, menores: '11', resto: '0100' });
+    { nif: '11111111H', nombre: 'NUÑEZ PEREZ EVA', provincia: '08', clave: 'A', subclave: '00', bruto: 300000, ret: 45000, nacimiento: 1986, familiar: '2', conyuge: '22222222J', discapacidad: '2', contrato: '2', movilidad: '1', gastos: 19500, menores: '11', resto: '0100' });
   assert.equal(campo(e, 78, 3), 'E03');
   assert.equal(campo(e, 323, 13), '0000000019000');
   assert.equal(campo(g, 78, 3), 'G03');
   assert.equal(campo(h, 78, 3), 'H04');
   assert.equal(campo(g, 153, 5), '00000');
   assert.equal(campo(g, 395, 106), ' '.repeat(106));
+});
+
+test('190: del finiquito, la indemnización exenta con la clave L.05; atrasos de 2025 con su ejercicio de devengo', () => {
+  const empleados = [{ id: 'e1', nombre: 'Eva Núñez Pérez', nif: '11111111H', cp: '28013' }];
+  // Finiquito: 3.000 € sujetos (salario, pagas y vacaciones) con 450 € de retención y 5.000 € de indemnización exenta.
+  const fin = { empleado: 'e1', mes: '2026-05', tipo: 'finiquito', importes: { bruto: 3000, indemnizacionExenta: 5000, irpf: 450, ssTrabajador: 190, ssEmpresa: 0 } };
+  // Nómina de junio con 1.200 € de atrasos de oct-dic 2025 y feb 2026 (900 € de 2025, 300 € de 2026), al 15 %.
+  const conAtrasos = { empleado: 'e1', mes: '2026-06', importes: { bruto: 3200, irpf: 480, ssTrabajador: 200, ssEmpresa: 0 }, detalle: { atrasos: { importe: 1200, meses: ['2025-10', '2025-11', '2025-12', '2026-02'] } } };
+  const m = modelo190([fin, conAtrasos], empleados, 2026);
+  const a = m.perceptores.find((p) => p.clave === 'A' && !p.ejercicioDevengo), atr = m.perceptores.find((p) => p.ejercicioDevengo);
+  const l = m.perceptores.find((p) => p.clave === 'L');
+  assert.deepEqual([a.percepciones, a.retenciones, a.gastosDeducibles], [5300, 795, 390]);
+  assert.deepEqual([atr.ejercicioDevengo, atr.percepciones, atr.retenciones], [2025, 900, 135]);
+  assert.deepEqual([l.subclave, l.percepciones, l.retenciones, l.provincia], ['05', 5000, 0, '28']);
+  assert.equal(m.percepciones, 11200);
+  const lineas = boe(fichero190(yo, 2026, m).contenido, '190', 3);
+  const regL = lineas.find((x) => campo(x, 78, 1) === 'L'), regAtr = lineas.find((x) => campo(x, 148, 4) === '2025');
+  assert.equal(campo(regL, 78, 3), 'L05');
+  assert.equal(campo(regL, 81, 14), ' 0000000500000');
+  assert.equal(campo(regL, 153, 5), '00000');
+  assert.equal(campo(regAtr, 78, 3), 'A00');
 });
 
 test('347: residentes, no residentes y NIF comunitario, importes anuales y trimestrales', () => {
@@ -289,7 +317,8 @@ const peticion = (q) => ({ nextUrl: new URL(`https://fisquo.test/api/aeat?${q}`)
 
 test('API: siete modelos, anuales sin t, nombres, ISO-8859-1, aplicabilidad, validación y permisos', async () => {
   const u = { rol: 'admin', nombre: yo.contacto, emisor: { nif: yo.nif, nombre: yo.nombre, telefono: yo.telefono }, fiscal: { trabajadores: true, alquiler: true, intracom: true } };
-  const estado = { sesion: { u }, nominas, empleados: [{ id: 'e1', nombre: 'Eva Núñez Pérez', nif: '11111111H' }], datos: { facturas: [factura('f', '2026-02-01', 4000)], gastos: [...alquileres, ...profesionales] } };
+  // La provincia de los perceptores sale del CP del empleado y de la ficha del proveedor (clientes/fichasProv).
+  const estado = { sesion: { u }, nominas, empleados: [{ id: 'e1', nombre: 'Eva Núñez Pérez', nif: '11111111H', cp: '28013' }], fichasProv: [cliente], datos: { facturas: [factura('f', '2026-02-01', 4000)], gastos: [...alquileres, ...profesionales] } };
   const GET = await cargarRuta(estado);
   for (const modelo of ['111', '115', '180', '190', '347', '349', '390']) {
     const trimestral = ['111', '115', '349'].includes(modelo);

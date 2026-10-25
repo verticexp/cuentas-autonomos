@@ -50,6 +50,8 @@ function limpio(b, antes = {}) {
       datos145: datos145 || undefined,
       // Número de afiliación a la Seguridad Social (para RED).
       naf: String(b.naf || '').replace(/\D/g, '').slice(0, 12),
+      // La provincia del 190 (lib/modelos.js modelo190) sale de aquí.
+      cp: /^\d{5}$/.test(String(b.cp || '').trim()) ? String(b.cp).trim() : '',
     },
   };
 }

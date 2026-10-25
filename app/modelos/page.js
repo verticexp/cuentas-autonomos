@@ -100,7 +100,7 @@ const TablaPersonas = ({ titulo, columnas, filas, total }) => (
     {total && <tfoot><tr><th scope="row">Total</th>{total.map((v, i) => <td key={columnas[i]} className="n" data-et={columnas[i]}>{eur(v)}</td>)}</tr></tfoot>}
   </table>
 );
-const CLAVES_190 = { A: 'trabajador', E: 'consejero o administrador', G: 'profesional', H: 'módulos o agricultura', I: 'otras rentas' };
+const CLAVES_190 = { A: 'trabajador', E: 'consejero o administrador', G: 'profesional', H: 'módulos o agricultura', I: 'otras rentas', L: 'indemnización por despido exenta' };
 // Datos adicionales del 190 (clave A, lib/modelos.js), en palabras.
 const SITUACION_190 = { 1: 'sin pareja, con hijos', 2: 'casado, cónyuge con pocas rentas', 3: 'otra situación familiar' };
 const datos190 = (p) => [
@@ -160,7 +160,7 @@ export default async function Modelos({ searchParams }) {
       const suma = (k) => r2(l.reduce((s, p) => s + (p[k] || 0), 0));
       return l.length ? [{ nombre: `${l.length} ${l.length === 1 ? uno : varios}`, nif: '', clave, subclave: '', percepciones: suma('percepciones'), retenciones: suma('retenciones'), ...(l.some((p) => 'gastosDeducibles' in p) ? { gastosDeducibles: suma('gastosDeducibles') } : {}) }] : [];
     };
-    m190.perceptores = [...juntos('A', 'trabajador', 'trabajadores'), ...juntos('E', 'administrador', 'administradores'), ...m190.perceptores.filter((p) => !['A', 'E'].includes(p.clave))];
+    m190.perceptores = [...juntos('A', 'trabajador', 'trabajadores'), ...juntos('E', 'administrador', 'administradores'), ...juntos('L', 'indemnización exenta', 'indemnizaciones exentas'), ...m190.perceptores.filter((p) => !['A', 'E', 'L'].includes(p.clave))];
   }
   // Impuesto sobre Sociedades: con las bases negativas de antes de Fisquo y el incremento de los fondos propios apuntados.
   const opIS = { ivaCoste: !usa303(f), iva, productos: productos || [], ajustes: ajustes || [], albaranes: albaranes || [], manuales: manuales || [], capital, constitucion: f.constitucion, cuotaIS: u.cuotaIS || {}, territorio: f.territorio, binsPrevias: u.binsPrevias || {}, fondosPropios: u.fondosPropios || {}, pagos202: u.pagos202 || {} };
@@ -911,8 +911,8 @@ export default async function Modelos({ searchParams }) {
             {m190.perceptores.length ? (() => {
               // La Seguridad Social del trabajador (gastos deducibles) solo va en la clave A y la E.01 y E.02.
               const ss = m190.perceptores.some((p) => 'gastosDeducibles' in p);
-              return <TablaPersonas columnas={['Pagado', 'Retenido', ...(ss ? ['Seg. Social'] : [])]} filas={m190.perceptores.map((p) => ({ clave: `${p.clave}${p.subclave}-${p.nif}-${p.nombre}`, nombre: p.nombre,
-                detalle: [p.nif, `clave ${p.clave}${p.subclave ? `.${p.subclave}` : ''} (${CLAVES_190[p.clave] || p.clave})`, ...datos190(p)].filter(Boolean).join(' · '), cifras: [p.percepciones, p.retenciones, ...(ss ? [p.gastosDeducibles ?? null] : [])] }))}
+              return <TablaPersonas columnas={['Pagado', 'Retenido', ...(ss ? ['Seg. Social'] : [])]} filas={m190.perceptores.map((p) => ({ clave: `${p.clave}${p.subclave}-${p.nif}-${p.nombre}-${p.ejercicioDevengo || ''}`, nombre: p.nombre,
+                detalle: [p.nif, `clave ${p.clave}${p.subclave ? `.${p.subclave}` : ''} (${CLAVES_190[p.clave] || p.clave})`, p.ejercicioDevengo && `atrasos de ${p.ejercicioDevengo}`, ...datos190(p)].filter(Boolean).join(' · '), cifras: [p.percepciones, p.retenciones, ...(ss ? [p.gastosDeducibles ?? null] : [])] }))}
                 total={m190.perceptores.length > 1 ? [m190.percepciones, m190.retenciones, ...(ss ? [r2(m190.perceptores.reduce((x, p) => x + (p.gastosDeducibles || 0), 0))] : [])] : null} />;
             })() : <p className="nota">Sin nóminas este año.</p>}
           </div>

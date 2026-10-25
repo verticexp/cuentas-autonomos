@@ -3,7 +3,7 @@
 import { Fragment, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
-import { volverA } from '@/lib/transicion';
+import { navegar, volverA } from '@/lib/transicion';
 import { SS_EMPRESA, SS_TRABAJADOR, calculoNomina, nominaCompleta } from '@/lib/nominas';
 import { leerImporte } from '@/lib/calculos';
 import { Cotizacion, Modelo145, IncidenciasNomina } from './DatosNomina';
@@ -30,7 +30,7 @@ export function FormEmpleado({ empleado, hoy }) {
     try {
       await llamar('/api/empleados', { method: nuevo ? 'POST' : 'PATCH', body: JSON.stringify(e) });
       if (nuevo) { setAbierto(false); setE({ ...e, nombre: '', nif: '', puesto: '', bruto: '', email: '' }); router.refresh(); }
-      else if (e.baja && e.baja !== empleado.baja) { router.push(`/nominas/empleado/${e.id}/finiquito`); router.refresh(); }
+      else if (e.baja && e.baja !== empleado.baja) { navegar(router, `/nominas/empleado/${e.id}/finiquito`); router.refresh(); }
       else volverA(router, '/nominas', 'atras', true);
     } catch (err) { setError(err.message); }
     setEnviando(false);
@@ -51,6 +51,7 @@ export function FormEmpleado({ empleado, hoy }) {
       </div>
       <label>{e.cotizacion && e.cotizacion.prorrateadas === false ? 'Sueldo bruto al mes (sin las pagas extra)' : 'Sueldo bruto al mes (con pagas extra prorrateadas)'}<input className="campo" inputMode="decimal" placeholder="Ej. 1.800" value={e.bruto} onChange={(x) => poner('bruto', x.target.value)} required /></label>
       <label>Número de afiliación a la Seguridad Social (para RED)<input className="campo" inputMode="numeric" value={e.naf || ''} onChange={(x) => poner('naf', x.target.value)} placeholder="Opcional" /></label>
+      <label>Código postal de su domicilio (para el modelo 190)<input className="campo" inputMode="numeric" autoComplete="off" maxLength={5} value={e.cp || ''} onChange={(x) => poner('cp', x.target.value.replace(/\D/g, ''))} placeholder="28013" /></label>
       <label className="check"><input type="checkbox" checked={Boolean(e.cotizacion)} onChange={(x) => poner('cotizacion', x.target.checked ? { grupo: '', temporal: false, pagas: 2, prorrateadas: true, atPct: 1.5 } : undefined)} /> Nómina completa: bases y cuotas de 2026 por su grupo de cotización</label>
       {e.cotizacion && <Cotizacion valor={e.cotizacion} cambiar={(v) => poner('cotizacion', v)} parcial={(Number(e.horasSemana) || 40) < 40} />}
       {e.cotizacion && <label className="check"><input type="checkbox" checked={Boolean(e.datos145)} onChange={(x) => poner('datos145', x.target.checked ? { situacionFamiliar: 3, nacimiento: '', discapacidad: 'no', contrato: 'general', descendientes: [], ascendientes: [] } : undefined)} /> IRPF automático con su modelo 145</label>}

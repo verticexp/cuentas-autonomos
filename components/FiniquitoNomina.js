@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { navegar } from '@/lib/transicion';
 import { llamar } from './Acciones';
 import { CAUSAS_FINIQUITO } from '@/lib/finiquito';
 import { calculoNomina } from '@/lib/nominas';
@@ -16,7 +17,7 @@ export default function FiniquitoNomina({ empleado, hoy, existente }) {
     setEnviando(true); setError('');
     try {
       const r = await llamar('/api/nominas', { method: 'POST', body: JSON.stringify({ tipo: 'finiquito', empleado: empleado.id, datos, guardar }) });
-      if (guardar) { router.push(`/nominas/${r.id}`); router.refresh(); }
+      if (guardar) { navegar(router, `/nominas/${r.id}`, 'adelante', undefined, true); router.refresh(); }
       else setResultado(r.finiquito);
     } catch (e) { setError(e.message); }
     setEnviando(false);
