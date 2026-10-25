@@ -78,6 +78,7 @@ export default function Cabecera() {
             </div>
           ))}
           <Link href="/precios" className={`web-nav-btn${activo('/precios') ? ' activo' : ''}`} onMouseEnter={salir}>Precios</Link>
+          <Link href="/demo" className={`web-nav-btn${activo('/demo') ? ' activo' : ''}`} onMouseEnter={salir}>Demo</Link>
           <Link href="/seguridad" className={`web-nav-btn${activo('/seguridad') ? ' activo' : ''}`} onMouseEnter={salir}>Seguridad</Link>
         </nav>
         <div className="web-cab-acciones">
@@ -117,9 +118,12 @@ export default function Cabecera() {
           ))}
           <p className="web-cajon-t">Más</p>
           <Link href="/precios" style={{ '--n': 10 }} tabIndex={movil ? 0 : -1}><Icono n="rayo" />Precios</Link>
-          <Link href="/seguridad" style={{ '--n': 11 }} tabIndex={movil ? 0 : -1}><Icono n="escudo" />Seguridad</Link>
-          <Link href="/verificado" style={{ '--n': 12 }} tabIndex={movil ? 0 : -1}><Icono n="tic" />Cálculos verificados</Link>
-          <Link href="/contacto" style={{ '--n': 13 }} tabIndex={movil ? 0 : -1}><Icono n="correo" />Contacto</Link>
+          <Link href="/demo" style={{ '--n': 11 }} tabIndex={movil ? 0 : -1}><Icono n="ojo" />Demo sin registrarte</Link>
+          <Link href="/guias" style={{ '--n': 12 }} tabIndex={movil ? 0 : -1}><Icono n="documento" />Guías fiscales</Link>
+          <Link href="/comparativa" style={{ '--n': 13 }} tabIndex={movil ? 0 : -1}><Icono n="tienda" />Comparativas</Link>
+          <Link href="/seguridad" style={{ '--n': 14 }} tabIndex={movil ? 0 : -1}><Icono n="escudo" />Seguridad</Link>
+          <Link href="/verificado" style={{ '--n': 15 }} tabIndex={movil ? 0 : -1}><Icono n="tic" />Cálculos verificados</Link>
+          <Link href="/contacto" style={{ '--n': 16 }} tabIndex={movil ? 0 : -1}><Icono n="correo" />Contacto</Link>
           <div className="web-cajon-cta">
             <Link href="/login" className="web-btn web-btn-claro" tabIndex={movil ? 0 : -1}>Entrar</Link>
             <Link href="/registro" className="web-btn" tabIndex={movil ? 0 : -1}>Empieza gratis</Link>

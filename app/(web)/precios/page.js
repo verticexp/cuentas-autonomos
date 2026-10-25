@@ -1,5 +1,6 @@
 import Link from '@/components/web/EnlacePublico';
 import Precios from '@/components/web/Precios';
+import PruebaSocial from '@/components/web/PruebaSocial';
 import { Confianza, Cta, Faq, Flecha } from '@/components/web/Bloques';
 import { FAQ_PRECIOS } from '@/components/web/datos';
 
@@ -33,6 +34,7 @@ export default function PaginaPrecios() {
           </ol>
         </div>
       </section>
+      <PruebaSocial />
       <Confianza titulo="Tus datos, a salvo y siempre tuyos" />
       <Faq preguntas={FAQ_PRECIOS} titulo="Dudas sobre los precios" />
       <Cta titulo="¿Aún dudas qué plan elegir?" sub="Cuéntanos cómo es tu negocio y te recomendamos el plan que te sale más a cuenta." otro={['/funciones', 'Ver funciones']} />

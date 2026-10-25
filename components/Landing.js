@@ -3,10 +3,12 @@ import Link from '@/components/web/EnlacePublico';
 import Marco from '@/components/web/Marco';
 import Icono from '@/components/web/Icono';
 import Precios from '@/components/web/Precios';
+import PruebaSocial from '@/components/web/PruebaSocial';
 import Tour from '@/components/web/demos/Tour';
 import { Calculadora } from '@/components/web/demos/Demos';
 import { VentanaApp } from '@/components/web/demos/Pantallas';
 import { Confianza, Cta, Encabezado, Faq, Flecha } from '@/components/web/Bloques';
+import { GUIAS } from '@/data/web-guias';
 import { FAQ_GENERAL, FUNCIONES, SEGMENTOS } from '@/components/web/datos';
 
 const CINTA = ['Facturas ilimitadas', 'Verifactu', 'Presupuestos online', 'Gastos con IA', 'Modelo 303', 'Modelo 130', 'Modelos 111 y 115', 'Modelos 390, 347 y 349', 'Impuesto de Sociedades', 'Renta (100)', 'Conciliación de extractos', 'Libros registro (formato AEAT)', 'Contabilidad por partida doble', 'Balance y resultados', 'Amortizaciones', 'Cuentas anuales', 'Inventario y stock', 'Previsión de caja', 'Nóminas', 'Registro de jornada', 'Permisos por área', 'Varias empresas', 'Portal del cliente', 'Asistente IA', 'Cámbiate desde Holded, A3 o Sage', 'Face ID'];
@@ -30,6 +32,7 @@ export default function Landing() {
           <div className="web-cta">
             <Link className="web-btn web-btn-grande" href="/registro">Empieza gratis<Flecha /></Link>
             <Link className="web-btn web-btn-claro web-btn-grande" href="/funciones"><span><span className="web-solo-ancho">Ver cómo</span><span className="web-solo-movil">Cómo</span> funciona</span></Link>
+            <Link className="web-hero-demo" href="/demo">Ver la demo sin registrarte<Flecha /></Link>
           </div>
           <ul className="web-micro"><li><Icono n="tic" />30 días gratis, sin tarjeta</li><li><Icono n="tic" />Sin permanencia</li><li><Icono n="tic" />Tu gestoría entra gratis</li></ul>
         </div>
@@ -122,6 +125,7 @@ export default function Landing() {
             <h2>¿Vienes de Holded, A3 o Sage? Trae tus datos en minutos</h2>
             <p>Importa clientes, facturas y gastos, y también tu contabilidad: el balance de sumas y saldos y los bienes de inversión con lo ya amortizado. Sin volver a teclear nada y sin perder tu historial.</p>
             <Link href="/contacto" className="web-btn">Quiero cambiarme<Flecha /></Link>
+            <p className="web-mudanza-mas"><Link href="/comparativa" className="web-enlace">Fisquo frente a Holded y Quipu<Flecha /></Link></p>
           </div>
           <ol>
             <li><b>Exporta</b><span>Descarga tus datos desde tu programa actual.</span></li>
@@ -131,12 +135,29 @@ export default function Landing() {
         </div>
       </section>
 
+      <PruebaSocial />
+
       <Confianza />
 
       <section className="web-sec" id="precios">
         <Encabezado kicker="Precios" titulo="Un precio claro para cada tamaño" sub="Sin cuotas de alta, sin permanencia y con un mes para probarlo todo." centro />
         <Precios />
         <p className="web-centro"><Link href="/precios" className="web-enlace">Comparar todos los planes en detalle<Flecha /></Link></p>
+      </section>
+
+      <section className="web-sec">
+        <Encabezado kicker="Guías fiscales" titulo="Entiende tus impuestos antes de presentarlos" sub="Cuatro guías con la norma citada y la fecha de revisión: el 303, el 130, el calendario del autónomo y la factura simplificada." />
+        <div className="web-relacionadas cuatro">
+          {GUIAS.map((g, i) => (
+            <Link key={g.slug} href={`/guias/${g.slug}`} data-foco data-r className="web-fcard" style={{ '--d': `${i * 70}ms` }}>
+              <span className="web-fcard-ico"><Icono n="documento" /></span>
+              <h3>{g.corto}</h3>
+              <p>{g.resumen}</p>
+              <span className="web-enlace">Leer la guía<Flecha /></span>
+            </Link>
+          ))}
+        </div>
+        <p className="web-centro"><Link href="/guias" className="web-enlace">Todas las guías<Flecha /></Link></p>
       </section>
 
       <Faq preguntas={FAQ_GENERAL} />
