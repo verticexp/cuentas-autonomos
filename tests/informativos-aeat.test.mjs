@@ -359,3 +359,14 @@ test('alquiler del local sin retención e inmueble: lo que guarda el gasto y lo 
   assert.equal(conLoHabitual({}, h).alquilerSinRetencion, 'menos900');
   assert.equal(conLoHabitual({ alquiler: true }, h).alquilerSinRetencion, undefined);
 });
+
+test('349 mensual: el trimestre en que se pasa de 50.000 € se parte en la declaración hasta ese mes y una por mes', async () => {
+  const { periodos349 } = await import('../lib/modelos.js');
+  const ue = (id, fecha, base) => ({ id, fecha, actividad: 'a', cliente: { nombre: 'Berlin GmbH', nif: 'DE123456789' }, base, ivaPct: 0, irpfPct: 0, operacion: 'servicios-ue' });
+  // 30.000 en abril y 30.000 en mayo: se superan los 50.000 € en mayo.
+  const F = [ue('a', '2026-04-10', 30000), ue('b', '2026-05-10', 30000), ue('c', '2026-06-10', 1000)];
+  const p = periodos349(F, 2026, 2);
+  assert.deepEqual(p.map((x) => [x.periodo, x.total, x.plazo]), [['05', 60000, '2026-06-22'], ['06', 1000, '2026-07-20']]);
+  // Un trimestre normal: una sola declaración trimestral.
+  assert.deepEqual(periodos349([ue('d', '2026-02-10', 1000)], 2026, 1).map((x) => [x.periodo, x.total, x.plazo]), [['1T', 1000, '2026-04-20']]);
+});

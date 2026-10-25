@@ -18,7 +18,7 @@ import Prorrata from '@/components/Prorrata';
 import Rend130 from '@/components/Rend130';
 import SaldoIva from '@/components/SaldoIva';
 import { modelo111, nombreMes } from '@/lib/nominas';
-import { borradorRenta, borradorSociedades, modelo115, modelo180, modelo190, modelo309, modelo202, modelo202Art403, modelo347, modelo349, modelo390, ETIQUETAS390, ORDEN390, TOTALES390, retencionesProfesionales, MINIMO_PERSONAL, RET_ALQUILER } from '@/lib/modelos';
+import { borradorRenta, borradorSociedades, modelo115, modelo180, modelo190, modelo309, modelo202, modelo202Art403, modelo347, modelo349, periodos349, modelo390, ETIQUETAS390, ORDEN390, TOTALES390, retencionesProfesionales, MINIMO_PERSONAL, RET_ALQUILER } from '@/lib/modelos';
 import CuotaIS, { ImporteAnio } from '@/components/CuotaIS';
 import { Presentado, Presentado202, PresentadoRet } from '@/components/Acciones';
 import { eur, fechaTexto, hoy, textoResumenModelos, textoSituacion } from '@/lib/formato';
@@ -753,15 +753,15 @@ export default async function Modelos({ searchParams }) {
           <h2 className="grupo-t">349 · Ventas y compras con empresas de la UE</h2>
           <p className="grupo-pie arriba">Facturas a clientes con NIF-IVA de otro país de la UE (clave S, servicios prestados) y gastos de proveedores de la UE con su NIF-IVA (clave I, servicios recibidos; si son bienes, la clave es A). Solo se presenta el trimestre en que haya alguna. No se paga: es informativo.</p>
           <div className="tarjetas">
-            {T.map((t) => { const m = modelo349(facturas, anio, t, gastos); return (
-              <div key={t} className="tarjeta"><h3>{t}T {anio}</h3>
-                {m.mensual && <p className="nota"><strong>Desde {nombreMes(m.mensual)}, el 349 es mensual: hasta el 20 del mes siguiente.</strong> Las entregas y servicios a empresas de la UE pasan de 50.000 € en el trimestre o en alguno de los cuatro anteriores.</p>}
+            {T.flatMap((t) => periodos349(facturas, anio, t, gastos)).map((m, i) => (
+              <div key={`${m.periodo}-${i}`} className="tarjeta"><h3>{/T$/.test(m.periodo) ? `${m.periodo} ${anio}` : `${nombreMes(`${anio}-${m.periodo}`)} (mensual)`}</h3>
+                {m.mensual && /T$/.test(m.periodo) === false && m.periodo === m.mensual.slice(5, 7) && <p className="nota"><strong>Desde {nombreMes(m.mensual)}, el 349 es mensual: hasta el 20 del mes siguiente.</strong> Las entregas y servicios a empresas de la UE pasan de 50.000 € en el trimestre o en alguno de los cuatro anteriores.</p>}
                 {m.operadores.length || m.rectificaciones.length ? <><Casillas sinNumeros={Boolean(foralT)} filas={[...m.operadores.map((c) => [`${c.nif} · ${c.nombre} (${c.clave})`, c.base]), ['Total', m.total, true],
                   // Rectificaciones de periodos ya declarados: la nueva base de ese periodo y la que se declaró.
-                  ...m.rectificaciones.map((r) => [`Corrige ${/T$/.test(r.periodo) ? `el ${r.periodo} de ${r.ejercicio}` : nombreMes(`${r.ejercicio}-${r.periodo}`)}: ${r.nif} · ${r.nombre} (${r.clave})`, `${eur(r.base)} (antes ${eur(r.anterior)})`])]} /><p className="nota">Hasta el {plazo(t, anio)}.</p></> : <p className="nota">Sin operaciones: no se presenta.</p>}
+                  ...m.rectificaciones.map((r) => [`Corrige ${/T$/.test(r.periodo) ? `el ${r.periodo} de ${r.ejercicio}` : nombreMes(`${r.ejercicio}-${r.periodo}`)}: ${r.nif} · ${r.nombre} (${r.clave})`, `${eur(r.base)} (antes ${eur(r.anterior)})`])]} /><p className="nota">Hasta el {fechaTexto(m.plazo)}.</p></> : <p className="nota">Sin operaciones: no se presenta.</p>}
                 {m.negativos.length > 0 && <p className="nota">Los abonos de {m.negativos.map((c) => `${c.nombre} (${eur(c.base)})`).join(', ')} restan más de lo que hay en el trimestre: en el 349 no puede quedar nada en negativo. Si corrigen una operación de otro trimestre, van como rectificación de ese trimestre: hazlo con una factura rectificativa de la original o revísalo con tu gestor.</p>}
               </div>
-            ); })}
+            ))}
           </div>
         </ModeloPlegable>
         );
