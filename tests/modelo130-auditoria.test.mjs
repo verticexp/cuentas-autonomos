@@ -89,3 +89,14 @@ test('casilla 16: el 2 % de la 03 por la vivienda de antes de 2013, con la 05 qu
   const grandes = [fac('g', '2026-02-01', 9000)];
   assert.equal(resumenAnual(grandes, [], 2026, {}, ['a'], op).trimestres[0].c16, 0);
 });
+
+test('gastos no deducibles en el IRPF del autónomo: una multa o el propio 130 no restan (art. 15 LIS por el 28.1 LIRPF)', async () => {
+  const { noDeducibleIRPF } = await import('../lib/categorias.js');
+  const multa = { ...gas('multa', '2026-02-12', 200), ivaPct: 0, concepto: 'Multa de tráfico' };
+  const pago130 = { ...gas('p130', '2026-02-13', 300), ivaPct: 0, concepto: 'Pago modelo 130 4T' };
+  assert.ok(noDeducibleIRPF(multa) && noDeducibleIRPF(pago130));
+  assert.equal(noDeducibleIRPF({ ...multa, noDeducibleIS: false }), null);
+  const F = [fac('f', '2026-02-01', 10000)];
+  assert.equal(resumenAnual(F, [multa, pago130], 2026, {}, ['a']).trimestres[0].gastos, 0);
+  assert.equal(resumenAnual(F, [{ ...multa, noDeducibleIS: false }], 2026, {}, ['a']).trimestres[0].gastos, 200);
+});
