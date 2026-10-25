@@ -22,7 +22,7 @@ export default async function Nomina({ params }) {
     <main className="pagina mk-look">
       <Volver href="/nominas">Nóminas</Volver>
       <header className="cabecera"><h1 className="titulo">{n.empleadoNombre}</h1></header>
-      <p className="nota">Nómina de {nombreMes(n.mes)}</p>
+      <p className="nota">{n.tipo === 'finiquito' ? 'Finiquito' : 'Nómina'} de {nombreMes(n.mes)}</p>
       {n.horas && (
         <p className="nota nomina-horas">
           <Ir href={`/jornada?mes=${n.mes}`}>Registro de jornada</Ir>: {hhmm(n.horas.trabajadas)} h trabajadas de {hhmm(n.horas.teoricas)} h de su jornada

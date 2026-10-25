@@ -115,3 +115,40 @@ export function Modelo145({ valor, cambiar }) {
     </fieldset>
   );
 }
+
+export function IncidenciasNomina({ valor, cambiar, mes }) {
+  const it = valor.it, atrasos = valor.atrasos;
+  const ponerIT = (k, v) => cambiar({ ...valor, it: { ...it, [k]: v } });
+  return <>
+    <fieldset className="grupo-campos">
+      <legend>Incapacidad temporal (IT)</legend>
+      <label className="check"><input type="checkbox" checked={Boolean(it)} onChange={(ev) => cambiar({ ...valor, it: ev.target.checked ? { baja: `${mes}-01`, alta: '', tipo: 'comun', complementoPct: 0 } : null })} /> Incluir una baja médica</label>
+      {it && <>
+        <div className="dos-col">
+          <label>Fecha de baja médica<input className="campo" type="date" value={it.baja} onChange={(ev) => ponerIT('baja', ev.target.value)} required /></label>
+          <label>Alta médica (vacío: sigue de baja)<input className="campo" type="date" min={it.baja} value={it.alta || ''} onChange={(ev) => ponerIT('alta', ev.target.value)} /></label>
+        </div>
+        <label>Contingencia<select className="campo" value={it.tipo} onChange={(ev) => ponerIT('tipo', ev.target.value)}><option value="comun">Enfermedad común o accidente no laboral</option><option value="profesional">Accidente de trabajo o enfermedad profesional</option></select></label>
+        <p className="nota">Fisquo toma las bases de la nómina guardada del mes anterior a la baja. Si falta, introduce las bases de ese recibo. El día del alta médica se incluye en la baja.</p>
+        <div className="dos-col">
+          <label>Base CC del mes anterior (€)<input className="campo" inputMode="decimal" value={it.baseAnterior ?? ''} onChange={(ev) => ponerIT('baseAnterior', ev.target.value)} /></label>
+          <label>Base AT/EP del mes anterior (€)<input className="campo" inputMode="decimal" value={it.baseATAnterior ?? ''} onChange={(ev) => ponerIT('baseATAnterior', ev.target.value)} /></label>
+        </div>
+        {it.tipo === 'profesional' && <div className="dos-col">
+          <label>Horas extra del mes anterior (€)<input className="campo" inputMode="decimal" value={it.horasExtraMesAnterior ?? ''} onChange={(ev) => ponerIT('horasExtraMesAnterior', ev.target.value)} /></label>
+          <label>Horas extra del año anterior (€)<input className="campo" inputMode="decimal" value={it.horasExtraAnteriores ?? ''} onChange={(ev) => ponerIT('horasExtraAnteriores', ev.target.value)} /></label>
+        </div>}
+        <label>Complemento del convenio hasta el % del salario<input className="campo" inputMode="decimal" value={it.complementoPct ?? 0} onChange={(ev) => ponerIT('complementoPct', ev.target.value)} /></label>
+      </>}
+    </fieldset>
+    <fieldset className="grupo-campos">
+      <legend>Atrasos</legend>
+      <label className="check"><input type="checkbox" checked={Boolean(atrasos)} onChange={(ev) => cambiar({ ...valor, atrasos: ev.target.checked ? { importe: '', meses: [] } : null })} /> Añadir atrasos de convenio al bruto</label>
+      {atrasos && <>
+        <label>Importe de atrasos (€)<input className="campo" inputMode="decimal" value={atrasos.importe} onChange={(ev) => cambiar({ ...valor, atrasos: { ...atrasos, importe: ev.target.value } })} required /></label>
+        <label>Meses de devengo, separados por comas<input className="campo" placeholder="2025-11, 2025-12" value={atrasos.textoMeses ?? atrasos.meses.join(', ')} onChange={(ev) => cambiar({ ...valor, atrasos: { ...atrasos, textoMeses: ev.target.value, meses: ev.target.value.split(',').map((m) => m.trim()).filter(Boolean) } })} required /></label>
+        <p className="nota">Se añaden al salario y retienen al tipo del mes. La gestoría prepara la liquidación complementaria de cotización; si son de otro año, revisa la imputación del IRPF al año de devengo (art. 14.2.b LIRPF).</p>
+      </>}
+    </fieldset>
+  </>;
+}
