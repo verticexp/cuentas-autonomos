@@ -5,7 +5,7 @@ import ProgresoAlta from './ProgresoAlta';
 import usePasosEnHistorial from './usePasosEnHistorial';
 import { llamar } from './Acciones';
 import { TIPOS_IGIC } from '@/lib/igic';
-import { limpiarFiscal, modelosDe, usaIgic } from '@/lib/empresa';
+import { COMUNIDADES_RENTA, limpiarFiscal, modelosDe, usaIgic } from '@/lib/empresa';
 import { OPCIONES_TERRITORIO, esForal, territorioDe } from '@/lib/territorios';
 
 const IVAS = [[21, '21 %'], [10, '10 %'], [4, '4 %'], [0, 'Sin IVA']];
@@ -194,14 +194,20 @@ export default function Cuestionario({ inicial, editar, conFacturas, puedeFactur
               <p className="nota">Con esto la renta tiene en cuenta tus mínimos familiares y las reducciones para rendimientos bajos. Solo se usa en el borrador.</p>
               <div className="alta-campos">
                 <label className="alta-campo"><span>Tu año de nacimiento</span><input className="campo" inputMode="numeric" placeholder="1985" value={fiscal.renta?.nacimiento || ''} onChange={(v) => f('renta', { ...fiscal.renta, nacimiento: v.target.value })} /></label>
-                <label className="alta-campo"><span>Hijos menores de 25 que viven contigo</span><small>Su año de nacimiento, separados por comas.</small><input className="campo" placeholder="2015, 2019" value={Array.isArray(fiscal.renta?.hijos) ? fiscal.renta.hijos.join(', ') : fiscal.renta?.hijos || ''} onChange={(v) => f('renta', { ...fiscal.renta, hijos: v.target.value })} /></label>
+                <label className="alta-campo"><span>Comunidad autónoma donde vives</span><small>Para la escala y los mínimos autonómicos.</small><select className="campo" value={fiscal.renta?.ccaa || ''} onChange={(v) => f('renta', { ...fiscal.renta, ccaa: v.target.value || undefined })}>
+                  <option value="">Sin elegir (cálculo aproximado)</option>
+                  {COMUNIDADES_RENTA.map(([id, nombre]) => <option key={id} value={id}>{nombre}</option>)}
+                </select></label>
+                <label className="alta-campo"><span>Hijos menores de 25 que viven contigo</span><small>Su año de nacimiento, separados por comas. Con el mes (05/2024) si tiene menos de 3 años o los cumple este año.</small><input className="campo" placeholder="2015, 2019" value={Array.isArray(fiscal.renta?.hijos) ? fiscal.renta.hijos.map((y, i) => (fiscal.renta.hijosMes?.[i] ? `${String(fiscal.renta.hijosMes[i]).padStart(2, '0')}/${y}` : y)).join(', ') : fiscal.renta?.hijos || ''} onChange={(v) => f('renta', { ...fiscal.renta, hijos: v.target.value })} /></label>
                 <label className="alta-campo"><span>Padres o abuelos mayores de 65 que viven contigo</span><small>Su año de nacimiento, separados por comas.</small><input className="campo" placeholder="1950" value={Array.isArray(fiscal.renta?.ascendientes) ? fiscal.renta.ascendientes.join(', ') : fiscal.renta?.ascendientes || ''} onChange={(v) => f('renta', { ...fiscal.renta, ascendientes: v.target.value })} /></label>
                 <label className="alta-campo"><span>Año en que empezaste la actividad</span><small>Si el año anterior no tenías otra: el primer año con beneficio y el siguiente pagas sobre un 20 % menos.</small><input className="campo" inputMode="numeric" placeholder="2025" value={fiscal.renta?.inicio || ''} onChange={(v) => f('renta', { ...fiscal.renta, inicio: v.target.value })} /></label>
                 <label className="alta-campo"><span>Otras rentas del año, en euros</span><small>Nómina, alquileres, intereses… (para calcular tu tipo).</small><input className="campo" inputMode="decimal" placeholder="0" value={fiscal.renta?.otrasRentas || ''} onChange={(v) => f('renta', { ...fiscal.renta, otrasRentas: v.target.value })} /></label>
+                {fiscal.renta?.madre && fiscal.renta?.hijos && <label className="alta-campo"><span>Lo pagado a la guardería este año, en euros</span><small>Guardería o centro de educación infantil autorizado de tus hijos menores de 3 años (hasta 1.000 € más por hijo).</small><input className="campo" inputMode="decimal" placeholder="0" value={fiscal.renta?.guarderia || ''} onChange={(v) => f('renta', { ...fiscal.renta, guarderia: v.target.value })} /></label>}
               </div>
               <div className="grupo-c">
                 <SiNo valor={fiscal.renta?.compartidos !== false} cambiar={(v) => f('renta', { ...fiscal.renta, compartidos: v })} titulo="El otro progenitor también hace la renta" detalle="Cada uno aplica la mitad del mínimo por hijos" />
                 <SiNo valor={Boolean(fiscal.renta?.dependiente)} cambiar={(v) => f('renta', { ...fiscal.renta, dependiente: v })} titulo="Trabajas para un único cliente (o eres TRADE)" detalle="Sin empleados y con al menos el 70 % de tus ingresos con retención: reducción de 2.000 € o más" />
+                {fiscal.renta?.hijos && <SiNo valor={Boolean(fiscal.renta?.madre)} cambiar={(v) => f('renta', { ...fiscal.renta, madre: v })} titulo="Eres la madre" detalle="Deducción por maternidad: 100 € al mes por cada hijo menor de 3 años (hasta 1.200 € al año)" />}
                 {fiscal.renta?.inicio && <SiNo valor={Boolean(fiscal.renta?.exEmpleador)} cambiar={(v) => f('renta', { ...fiscal.renta, exEmpleador: v })} titulo="Más de la mitad de tus ingresos vienen de la empresa donde trabajabas el año anterior" detalle="Entonces no tienes la reducción del 20 % por empezar la actividad" />}
               </div>
             </details>

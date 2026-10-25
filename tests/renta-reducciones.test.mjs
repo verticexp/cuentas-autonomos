@@ -2,7 +2,7 @@
 // Cuantías del manual práctico de Renta 2025 de la AEAT.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { borradorRenta, cuotaEscala, minimosRenta, reduccionActividad } from '../lib/modelos.js';
+import { borradorRenta, minimosRenta, reduccionActividad } from '../lib/modelos.js';
 import { limpiarFiscal, limpiarRenta } from '../lib/empresa.js';
 
 const fac = (base, irpfPct = 0) => [{ fecha: '2026-03-01', base, ivaPct: 21, irpfPct, actividad: 'dj' }];
@@ -48,7 +48,8 @@ test('borrador: un autónomo pequeño paga menos con la reducción y los hijos',
   // 10.000 − 5 % = 9.500; reducción 1.620 − 0,405 × 1.500 = 1.012,50 → 8.487,50.
   assert.equal(sin.reduccion, 1012.5);
   assert.equal(sin.rendimiento, 8487.5);
-  assert.equal(sin.cuota, Math.round((cuotaEscala(8487.5) - cuotaEscala(5550)) * 100) / 100);
+  // Sin comunidad, la estatal y la del art. 65 por separado: 2 × (8.487,50 − 5.550) × 9,5 % = 2 × 279,06.
+  assert.equal(sin.cuota, 558.12);
   const conHijos = borradorRenta(fac(10000), [], 2026, {}, { personal: { hijos: [2018, 2020], compartidos: false } });
   assert.ok(conHijos.cuota < sin.cuota);
   // Mínimos por encima del rendimiento: cuota cero.
