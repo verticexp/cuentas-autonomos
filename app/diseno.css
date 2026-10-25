@@ -538,3 +538,6 @@ button.enlace:disabled { opacity: 0.5; cursor: not-allowed; }
 .como-se-calcula > summary::-webkit-details-marker, .gastos-mas > summary::-webkit-details-marker { display: none; }
 .como-se-calcula > summary::after, .gastos-mas > summary::after { content: ''; flex: none; width: 7px; height: 7px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg) translateY(-2px); opacity: 0.6; transition: transform 0.2s ease; }
 .como-se-calcula[open] > summary::after, .gastos-mas[open] > summary::after { transform: rotate(-135deg) translateY(-2px); }
+/* Sin red (components/SinRed.js) y página «Sin conexión» (app/sin-conexion). */
+.sin-red { position: fixed; left: 50%; transform: translateX(-50%); top: calc(env(safe-area-inset-top) + 8px); z-index: 30; margin: 0; padding: 8px 14px; max-width: calc(100vw - 32px); border-radius: 12px; background: var(--ink); color: var(--paper); font-size: 13px; text-align: center; box-shadow: 0 4px 16px rgb(0 0 0 / 0.18); }
+.sin-conexion { max-width: 420px; margin: 0 auto; padding-top: 18vh; text-align: center; display: grid; gap: 14px; justify-items: center; }

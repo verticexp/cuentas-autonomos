@@ -28,6 +28,7 @@ import TituloCompacto from '@/components/TituloCompacto';
 import { WEB } from '@/lib/web';
 import Barra from '@/components/Barra';
 import BarraDespacho from '@/components/SelectorCuenta';
+import SinRed from '@/components/SinRed';
 import { despachoDe, rolEn, usaEmpresaPropia } from '@/lib/despachos';
 import { noLeidosDespacho } from '@/lib/mensajesDespacho';
 
@@ -108,6 +109,7 @@ export default async function RootLayout({ children }) {
         <Arranque />
         <RegistrarSw />
         <GestoAtras />
+        <SinRed />
         <ToqueSeguro />
         <script nonce={nonce} suppressHydrationWarning dangerouslySetInnerHTML={{ __html: 'window.__arranque=performance.now()' }} />
         {u && soloLectura(u.plan) && !ruta.startsWith('/ajustes/plan') && (
