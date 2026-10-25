@@ -2,9 +2,11 @@ import { error } from '@/lib/api';
 import { hoy } from '@/lib/formato';
 import { clienteDelDespacho } from '@/lib/despachoApi';
 import { registrarAcceso } from '@/lib/despachos';
-import { diarioDe, FORMATOS_DIARIO, tipoDiario } from '@/lib/diarioContable';
+import { FORMATOS_DIARIO, tipoDiario } from '@/lib/diarioContable';
 import { auditar } from '@/lib/auditoria';
 import { concurrencia, respuesta429 } from '@/lib/limite';
+
+import { diarioConCierreDe } from '@/lib/contabilidad';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -21,7 +23,7 @@ export async function GET(req) {
   if (!Number.isInteger(anio) || anio < 2000 || anio > 2100) return error('Año no válido');
   if (!FORMATOS_DIARIO.includes(formato)) return error('Formato no válido: a3, contaplus o contasol');
   // Una exportación a la vez por cliente (lee y contabiliza su año entero).
-  const r = await concurrencia('exportar', e.id, 1, 120000, () => diarioDe(ctx, { anio, formato, codigo: q.get('codigo') || 1, fecha }));
+  const r = await concurrencia('exportar', e.id, 1, 120000, () => diarioConCierreDe(ctx, { anio, formato, codigo: q.get('codigo') || 1, fecha }));
   if (r?.ocupado) return respuesta429(5, 'Ya hay una exportación en curso para este cliente. Espera a que termine.');
   if (r.error) return error(r.error);
   await Promise.all([registrarAcceso(e.id, quien, 'Exportó la contabilidad', `${r.nombre} · ${anio}`), auditar(ctx, 'Exportación contable (despacho)', `${r.nombre} · ${anio} · ${formato}`)]);
