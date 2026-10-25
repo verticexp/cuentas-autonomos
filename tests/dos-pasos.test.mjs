@@ -111,7 +111,7 @@ async function usuario(id = 'u1') {
 async function conDosPasos(u) {
   const alta = await D.empezarAlta(u);
   assert.match(alta.qr, /^data:image\/png;base64,/);
-  assert.match(alta.uri, /^otpauth:\/\/totp\/Fisquo%3Au1%40ejemplo\.es\?secret=[A-Z2-7]{32}&/);
+  assert.match(alta.uri, new RegExp(`^otpauth://totp/Fisquo%3A${u.id}%40ejemplo\\.es\\?secret=[A-Z2-7]{32}&`));
   const secreto = alta.clave.replace(/ /g, '');
   const r = await D.activar(u, codigoTotp(secreto, pasoDe()));
   assert.equal(r.ok, true);
