@@ -236,3 +236,12 @@ test('Registro de accesos: los 30 últimos, del más reciente al más antiguo, y
   await A.borrarUsuario(u.id);
   assert.deepEqual(await X.accesosDe('u3'), []);
 });
+
+test('Soporte (/admin): quitar la verificación de una cuenta deja entrar solo con la contraseña', async () => {
+  const u = await usuario('u9');
+  await conDosPasos(u);
+  assert.ok((await A.entrar('u9@ejemplo.es', clave, '1.1.1.1')).segundoPaso);
+  // Lo que hace app/api/admin/dos-pasos: quitar dosPasos con cambiarUsuario.
+  await A.cambiarUsuario('u9', ({ dosPasos, ...x }) => (dosPasos ? x : null)); // eslint-disable-line no-unused-vars
+  assert.ok((await A.entrar('u9@ejemplo.es', clave, '1.1.1.1')).token);
+});

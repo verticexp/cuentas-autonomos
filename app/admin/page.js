@@ -9,6 +9,7 @@ import { avisosRemitente, dkimResend, leerRemitente } from '@/lib/adminAjustes';
 import Volver from '@/components/Volver';
 import AdminEmpresas from '@/components/AdminEmpresas';
 import AdminDespachos from '@/components/AdminDespachos';
+import AdminDosPasos from '@/components/AdminDosPasos';
 import { PRUEBA_DIAS } from '@/lib/prueba';
 import { PRUEBA_GESTORIA_DIAS } from '@/lib/gestorias';
 import { RECOMENDACION_DIAS } from '@/lib/recomendaciones';
@@ -141,6 +142,12 @@ export default async function Admin() {
     <section className="adm-caja" aria-labelledby="adm-despachos-t">
       <h2 id="adm-despachos-t">Despachos asociados</h2>
       <AdminDespachos />
+    </section>
+
+    <section className="adm-caja" aria-labelledby="adm-dos-pasos-t">
+      <h2 id="adm-dos-pasos-t">Soporte: verificación en dos pasos</h2>
+      <p className="adm-pie">Para quien ha perdido el móvil y los códigos de recuperación, después de comprobar que es el titular.</p>
+      <AdminDosPasos />
     </section>
 
     <section id="adm-ajustes" className="adm-dos" aria-label="Configuración">
