@@ -29,7 +29,8 @@ test('349: clientes de la UE por NIF-IVA, sumados por trimestre', () => {
 
 test('390: suma de los cuatro 303', () => {
   const c = modelo390(F, G, 2026);
-  assert.deepEqual([c.base21, c.cuota21, c.base10, c.cuota10, c.sinIva, c.deducible, c.resultado, c.volumen], [1000, 210, 400, 40, 2500, 399, -149, 3900]);
+  // Casillas del 390: 05-06 y 03-04 régimen ordinario, 103 servicios a la UE, 108 volumen de operaciones.
+  assert.deepEqual([c.c['05'], c.c['06'], c.c['03'], c.c['04'], c.c['103'], c.deducible, c.resultado, c.c['108']], [1000, 210, 400, 40, 2500, 399, -149, 3900]);
   assert.deepEqual(c.trimestres, [-63, -126, 40, 0]);
 });
 

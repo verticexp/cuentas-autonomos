@@ -19,7 +19,8 @@ test('P04: para cada tipo de IVA admitido, la cuota devengada del 303 y del 390 
   const c = casillas303([fac(2), fac(5)], [], 2026, 1);
   assert.deepEqual(c.otros.map((o) => [o.pct, o.base, o.iva]), [[2, 100, 2], [5, 100, 5]]);
   assert.equal(c['27'], 7);
-  assert.deepEqual(modelo390([fac(2), fac(5)], [], 2026).otros.map((o) => [o.pct, o.iva]), [[2, 2], [5, 5]]);
+  const m390 = modelo390([fac(2), fac(5)], [], 2026);
+  assert.deepEqual([m390.c['668'], m390.c['703']], [2, 5]); // casillas del 2 % y del 5 % en el 390
   // Mezcla con tipos oficiales y varias líneas.
   const m = fac(21, 0, { lineas: [{ concepto: 'a', cantidad: 1, precio: 100, ivaPct: 21 }, { concepto: 'b', cantidad: 1, precio: 200, ivaPct: 5 }, { concepto: 'c', cantidad: 1, precio: 50, ivaPct: 4 }], base: 350 });
   const cm = casillas303([m], [], 2026, 1);

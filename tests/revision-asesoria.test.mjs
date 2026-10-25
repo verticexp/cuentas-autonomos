@@ -123,7 +123,7 @@ test('2. Abonos de proveedores: casillas 40 y 41, y el fichero de la Sede se gen
   assert.deepEqual([c['28'], c['29'], c['40'], c['41'], c['45'], c['46']], [300, 63, -500, -105, -42, 42]);
   const f = fichero303(yo, 2026, 1, c, liquidaciones303([], G, 2026)[0]);
   assert.ok(f.contenido.includes('<T30301000>'));
-  assert.equal(modelo390([], G, 2026).cuotaRectDed, -105);
+  assert.equal(modelo390([], G, 2026).c['62'], -105);
 });
 
 test('3. Trimestre negativo: compensación, devolución en el 4T y caducidad de cuatro años', () => {

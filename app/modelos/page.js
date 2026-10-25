@@ -18,7 +18,7 @@ import Prorrata from '@/components/Prorrata';
 import Rend130 from '@/components/Rend130';
 import SaldoIva from '@/components/SaldoIva';
 import { modelo111 } from '@/lib/nominas';
-import { borradorRenta, borradorSociedades, modelo115, modelo180, modelo190, modelo202, modelo347, modelo349, modelo390, retencionesProfesionales, MINIMO_PERSONAL, RET_ALQUILER } from '@/lib/modelos';
+import { borradorRenta, borradorSociedades, modelo115, modelo180, modelo190, modelo202, modelo347, modelo349, modelo390, ETIQUETAS390, ORDEN390, TOTALES390, retencionesProfesionales, MINIMO_PERSONAL, RET_ALQUILER } from '@/lib/modelos';
 import CuotaIS from '@/components/CuotaIS';
 import { Presentado, Presentado202, PresentadoRet } from '@/components/Acciones';
 import { eur, fechaTexto, hoy, textoResumenModelos, textoSituacion } from '@/lib/formato';
@@ -704,21 +704,12 @@ export default async function Modelos({ searchParams }) {
       {m390 && (
         <ModeloPlegable id="m390" num="390" informativo={!dForal} nombre={dForal ? 'Autoliquidación final del IVA' : 'Resumen anual del IVA'} detalle={dForal ? `Con el 4T · hasta el ${limite(4)}` : `Hasta el ${plazoAnual('01-30')}`}>
           <h2 className="grupo-t">{dForal ? '390 · Autoliquidación final del IVA (con el 4T)' : '390 · Resumen anual del IVA'}</h2>
-          {!dForal && <p className="grupo-pie arriba">No se paga: resume los cuatro 303 del año.{notaHastaHoy} Si cuadra con lo que presentaste, solo hay que enviarlo. Aquí van los importes por concepto; los números de casilla del 390 los pone tu gestor o el formulario de la Sede.</p>}
+          {!dForal && <p className="grupo-pie arriba">No se paga: resume los cuatro 303 del año.{notaHastaHoy} Si cuadra con lo que presentaste, solo hay que enviarlo. Salen las casillas con importe{anio > 2025 ? `, con la numeración del formulario de 2025 (el de ${anio} aún no se ha publicado)` : ''}.</p>}
+          {m390.avisos.map((a) => <p key={a} className="nota aviso">{a}</p>)}
           <div className="tarjeta">
             <Casillas sinNumeros={Boolean(foralT)} filas={[
-              m390.base4 && ['Base al 4 %', m390.base4], m390.cuota4 && ['Cuota al 4 %', m390.cuota4],
-              m390.base10 && ['Base al 10 %', m390.base10], m390.cuota10 && ['Cuota al 10 %', m390.cuota10],
-              ['Base al 21 %', m390.base21], ['Cuota al 21 %', m390.cuota21],
-              m390.baseRect && ['Rectificativas: base', m390.baseRect], m390.cuotaRect && ['Rectificativas: cuota', m390.cuotaRect],
-              ...m390.otros.flatMap((o) => [[`Base al ${o.pct} % (revisar casilla)`, o.base], [`Cuota al ${o.pct} % (revisar casilla)`, o.iva]]),
-              m390.baseUE && ['Compras a la UE (base)', m390.baseUE], m390.cuotaUE && ['Compras a la UE (cuota)', m390.cuotaUE],
-              m390.baseFuera && ['Inversión del sujeto pasivo (base)', m390.baseFuera], m390.cuotaFuera && ['Inversión del sujeto pasivo (cuota)', m390.cuotaFuera],
-              ['Total IVA devengado', m390.devengado, true],
-              ['Base del IVA soportado', m390.baseDed], ['Total IVA deducible', m390.deducible, true],
-              ['Suma de los resultados de los 303 del año', m390.resultado, true],
-              ...m390.trimestres.map((v, i) => [`303 del ${i + 1}T`, v]),
-              m390.sinIva && ['Operaciones sin IVA', m390.sinIva], ['Volumen de operaciones', m390.volumen],
+              ...ORDEN390.filter((k) => TOTALES390.includes(k) || (m390.c[k] !== undefined && m390.c[k] !== 0)).map((k) => [`${k} · ${ETIQUETAS390[k]}`, k === '118' ? `${String(m390.c[k]).replace('.', ',')} %` : m390.c[k] ?? 0, TOTALES390.includes(k)]),
+              ...m390.trimestres.map((v, i) => [`— · 303 del ${i + 1}T (casilla 46)`, v]),
             ]} />
           </div>
         </ModeloPlegable>
