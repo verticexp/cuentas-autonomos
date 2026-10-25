@@ -47,8 +47,13 @@ export default function TituloCompacto() {
     const pedir = () => { if (!pendiente) pendiente = requestAnimationFrame(medir); };
     buscar();
     const t = setTimeout(buscar, 400); // la pantalla nueva puede llegar un poco después de la dirección
-    const mo = new MutationObserver(() => { clearTimeout(mo.t); mo.t = setTimeout(buscar, 120); });
-    mo.observe(document.querySelector('main') || document.body, { childList: true, subtree: true, characterData: true });
+    // Todo el body y no el primer main: si al llegar era el esqueleto de carga (main.cargando), el contenido de verdad entra
+    // en otro main y no se vería el cambio (con conexión lenta, la barra no salía). Lo que cambia la propia barra no cuenta.
+    const mo = new MutationObserver((cambios) => {
+      if (cambios.every((c) => barra.current?.contains(c.target))) return;
+      clearTimeout(mo.t); mo.t = setTimeout(buscar, 120);
+    });
+    mo.observe(document.body, { childList: true, subtree: true, characterData: true });
     addEventListener('scroll', pedir, { passive: true });
     addEventListener('resize', buscar);
     movil.addEventListener('change', buscar);

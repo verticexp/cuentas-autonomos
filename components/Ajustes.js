@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
+import useCambiosSinGuardar from './useCambiosSinGuardar';
 import { AYUDA_CONTRASENA } from '@/lib/contrasena';
 import '@/app/ajustes-formularios.css';
 
@@ -13,17 +14,24 @@ const CAMPOS = [
   ['ciudad', 'Ciudad y CP'],
 ];
 
-function Formulario({ titulo, inicial, enviar, children }) {
+// refrescar: tras guardar, se pide de nuevo la pantalla (la lista de Ajustes enseña lo guardado en sus filas).
+function Formulario({ titulo, inicial, enviar, refrescar = true, children }) {
+  const router = useRouter();
   const [datos, setDatos] = useState(inicial);
   // «Guardar», como el «OK» de iOS: solo se puede tocar si algo ha cambiado desde lo último guardado.
   const [original, setOriginal] = useState(inicial);
   const [msg, setMsg] = useState('');
   const cambiado = JSON.stringify(datos) !== JSON.stringify(original);
+  // «¿Salir sin guardar?» al cerrar la hoja (CerrarAjustes, ArrastrarAjustes) o con el atrás del sistema. Se registra si hay
+  // cambios (no los datos: al guardar a veces se vacían, como la contraseña) y, guardado, solo se suelta la entrada de aviso.
+  const sinGuardar = useCambiosSinGuardar(cambiado);
   const guardar = async (e) => {
     e.preventDefault();
     setMsg('Guardando…');
     let final = datos;
-    try { await enviar(datos, (x) => { final = x; setDatos(x); }); setOriginal(final); setMsg('Guardado'); } catch (err) { setMsg(err.message); }
+    try { await enviar(datos, (x) => { final = x; setDatos(x); }); setOriginal(final); setMsg('Guardado'); } catch (err) { setMsg(err.message); return; }
+    await sinGuardar.soltar(); // la entrada de aviso se quita antes de refrescar
+    if (refrescar) router.refresh();
   };
   return (
     <form className="formulario aj-form" onSubmit={guardar}>
@@ -55,13 +63,12 @@ function ProbarDrive({ error }) {
 
 // extra: otra tarjeta de la sección en la misma rejilla (el cobro con tarjeta en Cobros).
 export default function Ajustes({ seccion, emisor, drive, driveError, sociedad, nombre, extra = null }) {
-  const router = useRouter();
   return (
     <div className="tarjetas bloque">
       {seccion === 'facturacion' && <Formulario
         titulo="Datos de la empresa"
         inicial={emisor}
-        enviar={async (d) => { await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify(d) }); router.refresh(); }}
+        enviar={async (d) => { await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify(d) }); }}
       >
         {(d, poner) => (
           <>
@@ -85,7 +92,7 @@ export default function Ajustes({ seccion, emisor, drive, driveError, sociedad, 
       {seccion === 'cobros' && <Formulario
         titulo="Cómo te pagan"
         inicial={{ plazo: emisor.plazo ?? 30, recordatorios: emisor.recordatorios || '', bizum: emisor.bizum || '', otroPago: emisor.otroPago || '' }}
-        enviar={async (d) => { await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify({ cobros: d }) }); router.refresh(); }}
+        enviar={async (d) => { await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify({ cobros: d }) }); }}
       >
         {(d, poner) => (
           <>
@@ -102,7 +109,7 @@ export default function Ajustes({ seccion, emisor, drive, driveError, sociedad, 
       {seccion === 'marca' && <Formulario
         titulo="Textos de la factura"
         inicial={{ pie: emisor.pie || '', notaDefecto: emisor.notaDefecto || '' }}
-        enviar={async (d) => { await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify({ diseno: d }) }); router.refresh(); }}
+        enviar={async (d) => { await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify({ diseno: d }) }); }}
       >
         {(d, poner) => (
           <>
@@ -117,7 +124,7 @@ export default function Ajustes({ seccion, emisor, drive, driveError, sociedad, 
       {seccion === 'perfil' && <Formulario
         titulo="Tu nombre"
         inicial={{ nombre: nombre || '' }}
-        enviar={async (d) => { await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify({ perfil: d }) }); router.refresh(); }}
+        enviar={async (d) => { await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify({ perfil: d }) }); }}
       >
         {(d, poner) => (
           <>
@@ -129,7 +136,7 @@ export default function Ajustes({ seccion, emisor, drive, driveError, sociedad, 
       {seccion === 'drive' && <Formulario
         titulo="Google Drive"
         inicial={{ url: drive?.url || '', token: drive?.token || '' }}
-        enviar={async (d) => { await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify({ drive: d }) }); router.refresh(); }}
+        enviar={async (d) => { await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify({ drive: d }) }); }}
       >
         {(d, poner) => (
           <>
@@ -144,6 +151,7 @@ export default function Ajustes({ seccion, emisor, drive, driveError, sociedad, 
       </Formulario>}
       {seccion === 'seguridad' && <Formulario
         titulo="Cambiar contraseña"
+        refrescar={false}
         inicial={{ actual: '', nueva: '' }}
         enviar={async (d, set) => { await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify(d) }); set({ actual: '', nueva: '' }); }}
       >

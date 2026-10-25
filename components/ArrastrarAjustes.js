@@ -3,11 +3,13 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { salirDe } from '@/lib/transicion';
+import { salirSinGuardar } from './useCambiosSinGuardar';
 
 // Ajustes en el móvil es una hoja (app/ajustes.css .aj-marco): como en iOS, se arrastra hacia abajo para cerrarla, desde su
 // cabecera o con la pantalla arriba del todo. Al soltar, se cierra si ha bajado bastante o se ha lanzado rápido (la
 // transición «bajar» sigue desde donde la dejó el dedo) y vuelve a la pantalla de antes de abrir Ajustes; si no, vuelve a
-// su sitio. Hacia arriba es desplazar la pantalla y de lado, el gesto de volver.
+// su sitio. Hacia arriba es desplazar la pantalla y de lado, el gesto de volver. Con cambios sin guardar se pregunta antes
+// (components/useCambiosSinGuardar.js) y, si la persona se queda, la hoja vuelve a su sitio.
 const UMBRAL = 8; // px antes de decidir si el gesto es arrastrar la hoja
 
 export default function ArrastrarAjustes() {
@@ -60,10 +62,16 @@ export default function ArrastrarAjustes() {
       addEventListener('click', tragar, { capture: true, once: true });
       setTimeout(() => removeEventListener('click', tragar, { capture: true }), 350);
       if (e.type === 'touchend' && (dy > innerHeight * 0.22 || (vel > 0.5 && dy > 30))) {
-        salirDe(router, '/ajustes', '/mas', 'bajar');
-        setTimeout(() => { if (marco.isConnected) limpiar(marco); }, 1500); // si la navegación no llegó, la hoja vuelve
+        // Mientras se pregunta, la hoja se queda donde la dejó el dedo; si no se sale, vuelve a su sitio.
+        salirSinGuardar(() => {
+          salirDe(router, '/ajustes', '/mas', 'bajar');
+          setTimeout(() => { if (marco.isConnected) limpiar(marco); }, 1500); // si la navegación no llegó, la hoja vuelve
+        }).then((salio) => { if (!salio) devolver(marco); });
         return;
       }
+      devolver(marco);
+    };
+    const devolver = (marco) => {
       marco.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.2, 0.64, 1)';
       marco.style.transform = 'translate3d(0, 0, 0)';
       setTimeout(() => limpiar(marco), 420);

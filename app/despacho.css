@@ -292,6 +292,9 @@ button.celda.desp-celda-boton:disabled { opacity: 0.5; cursor: default; }
 .sel-pastilla { display: inline-flex; align-items: center; gap: 7px; max-width: 100%; height: 34px; margin: 0; padding: 0 10px 0 5px; border: 0; border-radius: 17px; background: var(--surface); box-shadow: none; color: var(--ink); font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .sel-pastilla:active { background: var(--relleno); }
 .sel-pastilla:focus-visible { outline: 2px solid var(--marca); outline-offset: 2px; }
+/* Zona táctil de 44 px (la pastilla mide 34) sin cambiar cómo se ve */
+.sel-pastilla, .barra-despacho-volver { position: relative; }
+.sel-pastilla::after, .barra-despacho-volver::after { content: ''; position: absolute; inset: -5px -4px; }
 .sel-nombre { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sel-flecha { flex: none; width: 15px; height: 15px; fill: none; stroke: var(--muted); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; transition: transform 0.2s var(--salida); }
 .sel-cuenta.abierto .sel-flecha { transform: rotate(180deg); }
@@ -305,7 +308,9 @@ button.celda.desp-celda-boton:disabled { opacity: 0.5; cursor: default; }
 .sel-bloque form { display: block; }
 .sel-op { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; min-height: 44px; margin: 0; padding: 8px 14px; border: 0; border-radius: 0; background: none; box-shadow: none; color: var(--ink); font: inherit; font-size: 16px; text-align: left; text-decoration: none; cursor: pointer; position: relative; }
 .sel-bloque > :is(.sel-op, form) + :is(.sel-op, form) { box-shadow: inset 0 0.5px 0 var(--line); }
-.sel-op:hover, .sel-op:active { background: var(--relleno); }
+.sel-op:hover, .sel-op:active, .sel-op:focus-visible { background: var(--relleno); }
+.sel-op:focus-visible { outline: 2px solid var(--marca); outline-offset: -2px; }
+.sel-menu:focus { outline: none; }
 .sel-op.activa { cursor: default; font-weight: 600; }
 .sel-op.activa:hover { background: none; }
 .sel-op > svg, .sel-marca { flex: none; width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }

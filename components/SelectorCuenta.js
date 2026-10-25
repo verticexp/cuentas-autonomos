@@ -1,20 +1,27 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import Avatar from '@/components/Avatar';
-import { SIN_BARRA, alPulsar } from '@/lib/transicion';
+import { CONVERSACION, SIN_BARRA, alPulsar } from '@/lib/transicion';
 import '@/app/despacho.css';
 
 // Dónde trabaja la gente de un despacho, como el selector de cuenta de las apps de Apple: una pastilla con el nombre de lo
 // que se tiene abierto (Mi despacho, su propia empresa o un cliente) y, al tocarla, un menú para ir a otro sitio sin pasar
 // por el panel: volver al despacho, la ficha del cliente, la empresa propia o uno de los clientes abiertos hace poco.
-// Los recientes se recuerdan en este dispositivo (solo id y nombre).
+// Los recientes se recuerdan en este dispositivo (solo id y nombre), una lista por persona: en un ordenador compartido, otra
+// gestoría no ve los clientes de la anterior. Se borra al cerrar sesión (BarraDespacho).
 const CLAVE = 'fisquo-clientes-recientes';
 const RECIENTES = 4;
-const leerRecientes = () => { try { const l = JSON.parse(localStorage.getItem(CLAVE)); return Array.isArray(l) ? l : []; } catch { return []; } };
-const apuntar = (c) => { try { localStorage.setItem(CLAVE, JSON.stringify([c, ...leerRecientes().filter((x) => x.id !== c.id)].slice(0, 8))); } catch { /* sin almacenamiento: sin recientes */ } };
+const claveDe = (usuario) => `${CLAVE}:${usuario}`;
+const leerRecientes = (usuario) => { try { const l = usuario && JSON.parse(localStorage.getItem(claveDe(usuario))); return Array.isArray(l) ? l : []; } catch { return []; } };
+const apuntar = (usuario, c) => { if (usuario) try { localStorage.setItem(claveDe(usuario), JSON.stringify([c, ...leerRecientes(usuario).filter((x) => x.id !== c.id)].slice(0, 8))); } catch { /* sin almacenamiento: sin recientes */ } };
+const olvidar = (usuario) => { try { if (usuario) localStorage.removeItem(claveDe(usuario)); } catch { /* sin almacenamiento: nada que borrar */ } };
+// El ancho del móvil (como app/despacho.css): useSyncExternalStore da «false» al hidratar y el de verdad justo después.
+const ANCHO_MOVIL = '(max-width: 1023.98px)';
+const alCambiarAncho = (aviso) => { const m = matchMedia(ANCHO_MOVIL); m.addEventListener('change', aviso); return () => m.removeEventListener('change', aviso); };
+const esMovil = () => matchMedia(ANCHO_MOVIL).matches;
 // Al pasar de un cliente a otro se sigue en la misma pantalla (Facturas de uno → Facturas del otro), si es de las principales.
 const SECCIONES = /^\/(facturas|gastos|modelos|contabilidad|banco|clientes|presupuestos|tesoreria|cartera|analisis|nominas|mas)(?=\/|$)/;
 
@@ -22,24 +29,44 @@ const Casa = () => <span className="sel-casa" aria-hidden><svg viewBox="0 0 24 2
 const Marca = () => <svg className="sel-marca" viewBox="0 0 24 24" aria-hidden><path d="M5 12l5 5 9-10" /></svg>;
 
 // actual: 'despacho' | 'empresa' | 'cliente'. despacho: su nombre. cliente: { id, nombre } (dentro de un cliente).
+// usuario: el id de quien tiene la sesión (de quién son los clientes recientes).
 // empresas: las propias a las que puede ir (solo la titular con «Mi empresa» activada); empresa: la abierta, si es propia,
 // y empresaNombre, su nombre.
-export function SelectorCuenta({ actual, despacho, cliente = null, empresas = [], empresa = null, empresaNombre = '', className = '' }) {
+export function SelectorCuenta({ actual, despacho, cliente = null, empresas = [], empresa = null, empresaNombre = '', usuario = '', className = '' }) {
   const router = useRouter();
   const [abierto, setAbierto] = useState(false);
   const [recientes, setRecientes] = useState([]);
   const [msg, setMsg] = useState('');
   const caja = useRef(null);
-  useEffect(() => { if (cliente) apuntar({ id: cliente.id, nombre: cliente.nombre }); }, [cliente]);
-  useEffect(() => { if (abierto) setRecientes(leerRecientes().filter((x) => x.id !== cliente?.id).slice(0, RECIENTES)); }, [abierto, cliente]);
+  const pastilla = useRef(null);
+  useEffect(() => { if (cliente) apuntar(usuario, { id: cliente.id, nombre: cliente.nombre }); }, [cliente, usuario]);
+  useEffect(() => { if (abierto) setRecientes(leerRecientes(usuario).filter((x) => x.id !== cliente?.id).slice(0, RECIENTES)); }, [abierto, cliente, usuario]);
+  // Teclado: al abrir, el foco pasa al menú (a su primera opción); Escape lo cierra y devuelve el foco a la pastilla; tabular
+  // fuera (o tocar fuera) lo cierra; las flechas, Inicio y Fin recorren las opciones.
   useEffect(() => {
     if (!abierto) return undefined;
+    (caja.current?.querySelector('.sel-menu :is(a, button)[role="menuitem"]') || caja.current?.querySelector('.sel-menu'))?.focus();
     const fuera = (e) => { if (!caja.current?.contains(e.target)) setAbierto(false); };
-    const tecla = (e) => { if (e.key === 'Escape') setAbierto(false); };
+    const tecla = (e) => {
+      if (e.key !== 'Escape') return;
+      const foco = document.activeElement;
+      if (foco === document.body || caja.current?.contains(foco)) pastilla.current?.focus();
+      setAbierto(false);
+    };
     document.addEventListener('pointerdown', fuera);
+    document.addEventListener('focusin', fuera);
     document.addEventListener('keydown', tecla);
-    return () => { document.removeEventListener('pointerdown', fuera); document.removeEventListener('keydown', tecla); };
+    return () => { document.removeEventListener('pointerdown', fuera); document.removeEventListener('focusin', fuera); document.removeEventListener('keydown', tecla); };
   }, [abierto]);
+  const recorrer = (e) => {
+    if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) return;
+    const opciones = [...caja.current.querySelectorAll('.sel-menu :is(a, button)[role="menuitem"]')];
+    if (!opciones.length) return;
+    e.preventDefault();
+    const i = opciones.indexOf(document.activeElement);
+    const abajo = e.key === 'ArrowDown';
+    opciones[e.key === 'Home' ? 0 : e.key === 'End' ? opciones.length - 1 : i < 0 ? (abajo ? 0 : opciones.length - 1) : (i + (abajo ? 1 : opciones.length - 1)) % opciones.length].focus();
+  };
 
   // Cambiar de cuenta recarga la página: la barra, los permisos y los datos son los de la otra empresa.
   const pedir = async (url, cuerpo, destino) => {
@@ -63,13 +90,14 @@ export function SelectorCuenta({ actual, despacho, cliente = null, empresas = []
   const nombre = actual === 'despacho' ? despacho : actual === 'cliente' ? cliente?.nombre : variasPropias ? empresas.find((x) => x.id === empresa)?.nombre || empresaNombre : 'Mi empresa';
   return (
     <div className={`sel-cuenta ${className}${abierto ? ' abierto' : ''}`} ref={caja}>
-      <button type="button" className="sel-pastilla" aria-haspopup="menu" aria-expanded={abierto} onClick={() => setAbierto(!abierto)}>
+      <button type="button" ref={pastilla} className="sel-pastilla" aria-haspopup="menu" aria-expanded={abierto} onClick={() => setAbierto(!abierto)}
+        onKeyDown={(e) => { if (!abierto && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) { e.preventDefault(); setAbierto(true); } }}>
         {actual === 'despacho' ? <Casa /> : <Avatar nombre={actual === 'empresa' ? empresas.find((x) => x.id === empresa)?.nombre || empresaNombre || nombre : nombre} size={24} />}
         <span className="sel-nombre">{nombre}</span>
         <svg className="sel-flecha" viewBox="0 0 24 24" aria-hidden><path d="M7 10l5 5 5-5" /></svg>
       </button>
       {abierto && (
-        <div className="sel-menu" role="menu" aria-label="Cambiar de cuenta">
+        <div className="sel-menu" role="menu" aria-label="Cambiar de cuenta" tabIndex={-1} onKeyDown={recorrer}>
           {actual === 'cliente' && (
             <div className="sel-bloque">
               <form method="post" action="/api/despacho/salir" role="none"><button type="submit" role="menuitem" className="sel-op">Volver a Mi despacho<svg viewBox="0 0 24 24" aria-hidden><path d="M9 14L4 9l5-5" /><path d="M4 9h10.5a5.5 5.5 0 010 11H11" /></svg></button></form>
@@ -101,12 +129,26 @@ export function SelectorCuenta({ actual, despacho, cliente = null, empresas = []
 
 // Arriba de cada pantalla de la gente de un despacho, en lugar de la franja oscura de antes, como el «‹ Mail» de iOS al volver
 // de otra app: fuera del panel (en su empresa o dentro de un cliente), «‹ Mi despacho»; en el panel, «‹ Mi empresa» si la
-// tiene (la misma puerta, al revés). El selector, a la derecha. Sin barra en las conversaciones (lib/transicion.js SIN_BARRA)
+// tiene (la misma puerta, al revés). El selector, a la derecha. Sin barra en las conversaciones y, en el móvil, en Ajustes (lib/transicion.js SIN_BARRA)
 // ni en las pantallas sin sesión. noLeidos: mensajes de clientes (en el panel ya van sobre «Mensajes»).
 export default function BarraDespacho({ noLeidos = 0, ...selector }) {
   const path = usePathname() || '';
   const router = useRouter();
-  if (SIN_BARRA.test(path) || /^\/(login|registro|bloqueo|invitacion|p\/|portal\/|pagar\/|privacidad|condiciones)(\/|$)/.test(path) || path.endsWith('/pdf')) return null;
+  const movil = useSyncExternalStore(alCambiarAncho, esMovil, () => false);
+  // Cerrar sesión es un formulario POST a /api/logout que funciona sin JavaScript (components/TabBar.js y otros): con él, antes
+  // de enviarlo, se borran los clientes recientes de esta persona. Vive aquí y no en el selector porque este no sale en todas
+  // las pantallas (conversaciones, bloqueo). La lista de antes, común a todas las personas, se borra siempre.
+  const usuario = selector.usuario;
+  useEffect(() => {
+    try { localStorage.removeItem(CLAVE); } catch { /* sin almacenamiento */ }
+    const alEnviar = (e) => {
+      try { if (new URL(e.submitter?.formAction || e.target.action, location.href).pathname === '/api/logout') olvidar(usuario); } catch { /* no era un formulario */ }
+    };
+    document.addEventListener('submit', alEnviar, true);
+    return () => document.removeEventListener('submit', alEnviar, true);
+  }, [usuario]);
+  // Ajustes tapa la barra solo en el móvil (es una hoja encima de la app); en el ordenador es una pantalla más, con su barra.
+  if ((movil ? SIN_BARRA : CONVERSACION).test(path) || /^\/(login|registro|bloqueo|invitacion|p\/|portal\/|pagar\/|privacidad|condiciones)(\/|$)/.test(path) || path.endsWith('/pdf')) return null;
   // El layout no se repinta al ir de la empresa al panel sin recargar: dónde se está lo dice la dirección.
   const enPanel = /^\/despacho(\/|$)/.test(path);
   const badge = noLeidos > 0 && <b className="sel-n"><span aria-hidden>{noLeidos > 99 ? '99+' : noLeidos}</span><span className="sr">{noLeidos === 1 ? '1 mensaje nuevo' : `${noLeidos} mensajes nuevos`}</span></b>;

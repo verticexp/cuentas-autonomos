@@ -114,7 +114,7 @@ export default async function RootLayout({ children }) {
           <p className="aviso-lectura" role="status"><span>{app ? SOLO_LECTURA_APP : puede(u, 'empresa') ? 'Tu prueba ha terminado: puedes ver y exportar todo, pero no crear ni editar.' : 'La prueba de tu empresa ha terminado: puedes ver y exportar todo. Para crear o editar, pídele al administrador que elija un plan.'}</span>{!app && puede(u, 'empresa') && <a href="/ajustes/plan">Elegir plan</a>}</p>
         )}
         {/* La gente de un despacho, fuera del panel: «‹ Mi despacho» y el selector de cuenta (se esconde sola en el panel). */}
-        {rolDespacho && <BarraDespacho actual={u.viaDespacho ? 'cliente' : 'empresa'} despacho={despacho.nombre} noLeidos={mensajesNuevos}
+        {rolDespacho && <BarraDespacho actual={u.viaDespacho ? 'cliente' : 'empresa'} despacho={despacho.nombre} noLeidos={mensajesNuevos} usuario={u.id}
           cliente={u.viaDespacho ? { id: u.empresa, nombre: u.empresaNombre || u.emisor?.nombre || 'Cliente' } : null}
           empresas={rolDespacho === 'titular' && usaEmpresaPropia(despacho) ? (u.misEmpresas || []).filter((x) => !x.cliente) : []}
           empresa={u.viaDespacho ? null : u.empresa} empresaNombre={u.viaDespacho ? '' : u.empresaNombre} />}

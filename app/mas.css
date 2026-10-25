@@ -16,6 +16,9 @@
 .mas-ajustes { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 36px; margin-top: -4px; padding: 0 14px 0 10px; border-radius: 18px; background: var(--surface); color: var(--ink); font-size: 15px; font-weight: 600; text-decoration: none; -webkit-tap-highlight-color: transparent; transition: transform 0.12s var(--salida, ease-out); }
 .mas-ajustes svg { width: 19px; height: 19px; fill: none; stroke: var(--muted); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .mas-ajustes:active { transform: scale(0.95); background: var(--relleno); }
+/* Zona táctil de 44 px (la pastilla mide 36) sin cambiar cómo se ve */
+.mas-ajustes { position: relative; }
+.mas-ajustes::after { content: ''; position: absolute; inset: -4px -2px; }
 .mas-ajustes:focus-visible, .mas-tile:focus-visible { outline: 2px solid var(--marca); outline-offset: 2px; }
 
 .mas-buscar { display: flex; align-items: center; gap: 6px; height: 36px; padding: 0 10px; margin-bottom: 16px; border-radius: 10px; background: var(--relleno); color: var(--muted); }

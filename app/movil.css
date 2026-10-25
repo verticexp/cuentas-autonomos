@@ -12,7 +12,7 @@ select.estado { border: 0; font: inherit; font-weight: 600; font-size: 13px; pad
    de las pantallas y de los campos se sigue pudiendo seleccionar y copiar (un IBAN, un número de factura). */
 html[data-app] :is(a, button, summary, [role="button"], [role="tab"]) { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; -webkit-user-drag: none; }
 html[data-app] :is(img, svg) { -webkit-touch-callout: none; -webkit-user-drag: none; }
-@media (display-mode: standalone) {
+@media (display-mode: standalone) and (pointer: coarse) {
   :is(a, button, summary, [role="button"], [role="tab"]) { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; -webkit-user-drag: none; }
   :is(img, svg) { -webkit-touch-callout: none; -webkit-user-drag: none; }
 }
