@@ -392,7 +392,7 @@ console.log('Más modelos: 115, 349, 390 y renta');
   // Un profesional con retención (la gestoría): va en el 111 (07 a 09) y en el 190 (clave G).
   const gRet = (await (await pedir('/api/gastos', { metodo: 'POST', cookie: yo, cuerpo: { fecha: `${Y}-05-08`, actividad: ACTS[0].id, concepto: 'Gestoría', base: '200', ivaPct: 21, irpfPct: 15, proveedor: 'Gestoría Ruiz', proveedorNif: 'B11111119' } })).json()).gasto;
   const mRet = n(await texto(`/modelos?anio=${Y}`, yo));
-  ok('gasto con retención del 15 %: en el 111 (07 a 09) y en el 190 con clave G', () => assert.ok(gRet?.irpfPct === 15 && mRet.includes(`09 · Retenciones ${n(eur(30))}`) && mRet.includes('Gestoría Ruiz B11111119 · clave G (profesional)')));
+  ok('gasto con retención del 15 %: en el 111 (07 a 09) y en el 190 con clave G', () => assert.ok(gRet?.irpfPct === 15 && mRet.includes(`09 · Retenciones ${n(eur(30))}`) && mRet.includes('Gestoría Ruiz B11111119 · clave G.01 (profesional)')));
   await Promise.all([gUE, gFuera, gRet].map((g) => pedir(`/api/gastos?id=${encodeURIComponent(g.id)}`, { metodo: 'DELETE', cookie: yo })));
   // 347: un cliente con más de 3.005,06 € con IVA sale con su trimestre; se borra al acabar.
   const f347 = (await (await pedir('/api/facturas', { metodo: 'POST', cookie: yo, cuerpo: { fecha: `${Y}-03-15`, actividad: ACTS[0].id, cliente: { nombre: 'Cliente Grande SL', nif: 'B55555551' }, concepto: 'Proyecto', base: '3000', ivaPct: 21, irpfPct: 0, cobrada: true } })).json()).factura;
@@ -419,7 +419,7 @@ console.log('Más modelos: 115, 349, 390 y renta');
     suma303 += Number(/>303<.{0,200}?>46<.*?<v>(-?[\d.]+)<\/v>/.exec(h)?.[1] ?? NaN);
     if (t === 2) ok('el paquete del 2T lleva el 115 y el 349', () => assert.ok(h.includes('>115<') && h.includes('>349<')));
   }
-  ok('390: resultado del año = suma de los cuatro 303', () => assert.ok(m.includes(`Suma de los resultados de los 303 del año ${n(eur(r2(suma303)))}`), `${suma303}`));
+  ok('390: resultado del año (casilla 65) = suma de los cuatro 303', () => assert.ok(m.includes(`65 · Resultado del régimen general ${n(eur(r2(suma303)))}`), `${suma303}`));
   ok('borrador de la renta con rendimiento y resultado', () => assert.ok(m.includes('Borrador de la renta') && m.includes('Rendimiento neto') && /Saldría a (pagar|devolver)/.test(m)));
   const res = n(await texto(`/?anio=${Y}`, yo));
   ok('desde el resumen se llega a los anuales', () => assert.ok(res.includes('Resumen anual del IVA') && res.includes('Borrador')));
