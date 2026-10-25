@@ -109,6 +109,8 @@ export default function Bloqueo({ email, servidor = true }) {
     const r = await fetch('/api/login', { method: 'POST', headers: { Accept: 'application/json' }, body: new FormData(e.currentTarget) }).catch(() => null);
     const d = await r?.json().catch(() => ({}));
     setEnviando(false);
+    // Otra cuenta con verificación en dos pasos: el código se pide en su página (app/login/dos-pasos).
+    if (r?.ok && d?.segundoPaso) { location.assign('/login/dos-pasos?bloqueo=1'); return; }
     if (r?.ok) { pass.current.value = ''; entro(otra); } else setError(d?.error || 'No se ha podido comprobar. Revisa la conexión.');
   }
 

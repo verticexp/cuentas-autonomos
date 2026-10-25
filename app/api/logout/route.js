@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { cerrarSesion, cerrarSesiones, usuarioActual } from '@/lib/auth';
 
 export async function POST(req) {
-  // ?todas: «Cerrar sesión en todos los dispositivos» (Ajustes › Face ID y contraseña).
+  // ?todas: «Cerrar sesión en todos los dispositivos» (Ajustes › Seguridad).
   const u = req.nextUrl.searchParams.has('todas') && (await usuarioActual());
   if (u) await cerrarSesiones(u.id);
   else await cerrarSesion(req.cookies.get('t')?.value);

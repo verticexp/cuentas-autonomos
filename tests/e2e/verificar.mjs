@@ -1423,7 +1423,7 @@ console.log('\nSesiones y contraseñas');
   // Cerrar sesión en todos los dispositivos
   const s3 = await entrar(nueva), s4 = await entrar(nueva);
   const pagina = await (await fetch(BASE + '/ajustes/seguridad', { headers: { Origin: BASE, Cookie: `t=${s3.t}` } })).text();
-  ok('Ajustes › Face ID y contraseña tiene «Cerrar sesión en todos los dispositivos»', () => assert.ok(pagina.includes('Cerrar sesión en todos los dispositivos') && pagina.includes('/api/logout?todas=1')));
+  ok('Ajustes › Seguridad tiene «Cerrar sesión en todos los dispositivos»', () => assert.ok(pagina.includes('Cerrar sesión en todos los dispositivos') && pagina.includes('/api/logout?todas=1')));
   const todas = await fetch(BASE + '/api/logout?todas=1', { method: 'POST', redirect: 'manual', headers: { Origin: BASE, Cookie: `t=${s3.t}` } });
   const trasTodas = [await vale(s3.t), await vale(s4.t), await vale(t1b)];
   ok('«Cerrar sesión en todos los dispositivos» cierra todas sus sesiones y lleva al login', () => assert.ok(trasTodas.every((x) => !x) && todas.headers.get('location')?.includes('/login'), JSON.stringify(trasTodas)));

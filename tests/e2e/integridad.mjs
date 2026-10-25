@@ -42,7 +42,7 @@ const factura = (i, extra = {}) => ({ fecha: '2026-03-10', actividad: ACT, clien
 const empresa = (await db('hkeys', 'cuentas:empresas'))[0];
 
 console.log('F07 · bloqueo de pantalla también en la API');
-// Desde el 17-10-2026 el bloqueo es opcional y personal (Ajustes › Face ID y contraseña): se activa para comprobarlo.
+// Desde el 17-10-2026 el bloqueo es opcional y personal (Ajustes › Seguridad): se activa para comprobarlo.
 await json('/api/cuenta', { metodo: 'PATCH', cuerpo: { bloqueoPantalla: true } });
 await ok('sin desbloqueo, la API no da datos (423)', async () => {
   assert.equal((await pedir('/api/exportar?tipo=facturas', { sinDesbloqueo: true })).status, 423);

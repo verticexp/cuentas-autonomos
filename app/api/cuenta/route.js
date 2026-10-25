@@ -70,7 +70,7 @@ export async function PATCH(req) {
   if (res) return res;
   // Marcar modelos como presentados y los datos que deciden los impuestos piden «Contabilidad» (Codex H3).
   const sin = (p) => !puede(u, p) && error('No tienes permiso para esto. Pídeselo al administrador de tu empresa.', 403);
-  // Bloqueo de pantalla opcional (Ajustes › Face ID y contraseña): personal, no de la empresa.
+  // Bloqueo de pantalla opcional (Ajustes › Seguridad): personal, no de la empresa.
   if ('bloqueoPantalla' in b) {
     await actualizarUsuario(u, { bloqueoPantalla: Boolean(b.bloqueoPantalla) });
     return Response.json({ ok: true });

@@ -12,7 +12,7 @@ import { AYUDA_CONTRASENA } from '@/lib/contrasena';
 import '@/app/legal.css';
 
 export const dynamic = 'force-dynamic';
-const ERRORES = { 1: 'Email o contraseña incorrectos.', bloqueado: 'Demasiados intentos. Espera 15 minutos.' };
+const ERRORES = { 1: 'Email o contraseña incorrectos.', bloqueado: 'Demasiados intentos. Espera 15 minutos.', caducado: 'Ha pasado demasiado tiempo. Vuelve a escribir tu email y contraseña.' };
 
 export default async function Login({ searchParams }) {
   if (!redis) return <SinBD />;
