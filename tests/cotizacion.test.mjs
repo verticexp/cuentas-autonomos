@@ -41,7 +41,8 @@ test('bases diarias: grupos 8 a 11, días de 1 a 31', () => {
     assert.equal(baja.base, 1329.44);
     assert.equal(baja.minima, 1329.44);
     assert.equal(baja.maxima, 4761.12);
-    assert.equal(baja.baseAT, 1424.40);
+    // También la mínima de AT/EP va por días en estos grupos (47,48 × 28): el mismo mínimo diario que la de comunes.
+    assert.equal(baja.baseAT, 1329.44);
     const alta = baseMensual({ remuneracion: 6000, grupo, dias: 31 });
     assert.equal(alta.minima, 1471.88);
     assert.equal(alta.maxima, 5271.24);
