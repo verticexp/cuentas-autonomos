@@ -357,6 +357,13 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
         <button {...atributos('lineas')} type="button" className="boton sec" onClick={anadirLinea}>+ Añadir otro concepto</button>
       </fieldset>
 
+      {!orig && <label className="ff-det">Qué vendes
+        <select className="campo" value={f.accesoria || ''} onChange={(e) => poner('accesoria', e.target.value || undefined)}>
+          <option value="">Lo de mi actividad</option>
+          <option value="inversion">Un bien de inversión de la actividad (maquinaria, vehículo, equipo…)</option>
+          <option value="inmueble">Un inmueble o una operación financiera que no es habitual</option>
+        </select>
+      </label>}
       <label className="ff-det">Proyecto, obra o local (opcional)
         <input className="campo" list="proyectos-factura" value={f.proyecto || ''} onChange={(e) => poner('proyecto', e.target.value)} placeholder="Para ver la rentabilidad de cada uno" maxLength={60} />
       </label>

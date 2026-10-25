@@ -89,7 +89,7 @@ export async function PATCH(req) {
   const r = await conLimiteDe(u, datos.cliente, () => actualizarFactura(u, antes.id, async (actual) => {
     if (actual.verifactu) return { error: 'Esta factura ya está registrada en Verifactu: para corregirla, haz una rectificativa' };
     // Lo opcional que el formulario ya no manda se quita (volver al español, a euros, quitar el recargo…).
-    const nueva = { ...actual, evento: undefined, proyecto: undefined, operacion: undefined, idioma: undefined, divisa: undefined, baseDivisa: undefined, oss: undefined, recargo: undefined, recc: undefined, margen: undefined, cuotasIncluidas: undefined, compensacion: undefined, ...datos };
+    const nueva = { ...actual, evento: undefined, proyecto: undefined, operacion: undefined, accesoria: undefined, idioma: undefined, divisa: undefined, baseDivisa: undefined, oss: undefined, recargo: undefined, recc: undefined, margen: undefined, cuotasIncluidas: undefined, compensacion: undefined, ...datos };
     // Criterio de caja: se recalcula con la nueva fecha; una rectificativa conserva el de su original.
     Object.assign(nueva, nueva.rectifica ? (actual.recc ? { recc: true } : {}) : marcaRecc(u, nueva));
     const mas = pendienteDe(nueva) - (mismoCliente(actual.cliente, nueva.cliente) ? pendienteDe(actual) : 0);
