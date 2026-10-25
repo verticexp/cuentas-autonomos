@@ -178,7 +178,7 @@ export default async function Modelos({ searchParams }) {
   // Módulos (lib/estimacionObjetiva.js): el 131 y, en el régimen simplificado, el 303 salen de los datos de cada actividad.
   const c131 = usa131(f), cSimp = usaSimplificado(f);
   const modAnio = u.modulos?.[anio] || {};
-  const r131 = c131 && modelos131({ modulos: modAnio, facturas, rendAnterior }, anio);
+  const r131 = c131 && modelos131({ modulos: modAnio, facturas, rendAnterior, vivienda: Boolean(f.renta?.vivienda) }, anio);
   const simp = cSimp && T.map((t) => simplificado({ modulos: modAnio, gastos, anio, t }));
   // El 303 y el 130 se marcan como presentados cada uno por su cuenta; el trimestre está hecho cuando lo están los dos.
   const p303 = (t, y = anio) => hecho303(u.pres303, u.pagos130, y, t);
@@ -457,7 +457,7 @@ export default async function Modelos({ searchParams }) {
                     ['04 · 20 % de la 03', r2(0.2 * Math.max(0, q.rendAcum))], ['05 · Casillas 07 de los 130 anteriores del año', q.pagosPrev],
                     ['06 · Retenciones de tus facturas', q.retAcum], ['07 · Resultado', q.c07],
                   ]),
-                  q.minoracion && ['13 · Minoración por el rendimiento de ' + (anio - 1), q.minoracion], q.negPrev && ['15 · Negativos de trimestres anteriores', q.negPrev],
+                  q.minoracion && ['13 · Minoración por el rendimiento de ' + (anio - 1), q.minoracion], q.negPrev && ['15 · Negativos de trimestres anteriores', q.negPrev], q.c16 && ['16 · Préstamo de la vivienda habitual (antes de 2013)', q.c16],
                   ['19 · Resultado', q.c19, true],
                 ]} /></Plegable>
                 <Fichero foral={foralT} modelo="130" anio={anio} t={q.t} nif={u.emisor?.nif} aeat={AEAT.m130} />
