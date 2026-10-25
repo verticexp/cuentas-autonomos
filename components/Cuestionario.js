@@ -170,11 +170,14 @@ export default function Cuestionario({ inicial, editar, conFacturas, puedeFactur
             {!igic && <SiNo valor={fiscal.intracom} cambiar={(v) => f('intracom', v)} titulo="Compro o vendo a empresas de otros países de la UE" />}
             <SiNo valor={fiscal.inventario} cambiar={(v) => f('inventario', v)} titulo="Vendo productos y quiero controlar el stock" detalle="Inventario: entradas, salidas, stock mínimo y su valor" />
           </div>
-          <details className="alta-especiales" open={Boolean(fiscal.rebu || fiscal.reav || fiscal.capital || fiscal.oss || fiscal.recc) || undefined}>
+          <details className="alta-especiales" open={Boolean(fiscal.rebu || fiscal.reav || fiscal.capital || fiscal.oss || fiscal.recc || fiscal.minorista) || undefined}>
             <summary>Situaciones especiales (opcional)</summary>
             <div className="grupo-c">
             {!igic && ['general', 'simplificado'].includes(fiscal.iva) && <SiNo valor={Boolean(fiscal.rebu)} cambiar={(v) => f('rebu', v)} titulo="Vendo bienes usados, arte o antigüedades con el IVA sobre el margen" detalle="Régimen especial de los bienes usados (REBU)" />}
             {!igic && ['general', 'simplificado'].includes(fiscal.iva) && <SiNo valor={Boolean(fiscal.reav)} cambiar={(v) => f('reav', v)} titulo="Soy una agencia de viajes" detalle="Régimen especial de las agencias de viajes (REAV): IVA sobre el margen" />}
+            {/* Límite de la factura simplificada (art. 4 del Reglamento de facturación, lib/empresa.js limiteSimplificada): en
+                recargo de equivalencia ya es de minorista, sin marcarlo. */}
+            {fiscal.iva !== 'recargo' && <SiNo valor={Boolean(fiscal.minorista)} cambiar={(v) => f('minorista', v)} titulo="Mi actividad es de comercio minorista, hostelería u otro sector del art. 4.1.c" detalle="Factura simplificada (sin NIF del cliente) hasta 3.000 € en vez de 400 €: venta al por menor, ambulante o a domicilio, transporte de personas, bares y restaurantes, discotecas, peluquería y estética, instalaciones deportivas, fotografía, aparcamientos, alquiler de películas, tintorerías y lavanderías y autopistas de peaje" />}
             <SiNo valor={Boolean(fiscal.capital)} cambiar={(v) => f('capital', v)} titulo="Pago dividendos o intereses a socios o a quien me prestó dinero" detalle="Retención del 19 %: modelos 123 y 193" />
             {!igic && fiscal.iva === 'general' && <SiNo valor={Boolean(fiscal.oss)} cambiar={(v) => f('oss', v)} titulo="Vendo a particulares de otros países de la UE con el IVA de su país" detalle="Ventanilla única (OSS): ese IVA va en el modelo 369" />}
             {!igic && fiscal.iva === 'general' && <SiNo valor={Boolean(fiscal.recc)} cambiar={(v) => f('recc', v ? { desde: `${new Date().getFullYear()}-01-01` } : undefined)} titulo="Estoy en el criterio de caja (RECC)" detalle="El IVA de tus facturas se paga al cobrarlas y el de tus gastos se deduce al pagarlos" />}

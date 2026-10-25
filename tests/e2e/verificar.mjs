@@ -44,6 +44,8 @@ const ok = (nombre, fn) => { try { fn(); console.log(`  ✓ ${nombre}`); } catch
 // fechas (forzarOrden) salvo que la prueba lo quite a propósito con forzarOrden: false.
 // Los clientes empresa llevan domicilio (art. 6.1.e del Reglamento de facturación): si la prueba no lo pone, uno de prueba
 // (la sección «Domicilio del cliente» lo comprueba sin él, con domicilioReal: true).
+// Las empresas de prueba que facturan sin NIF del cliente por encima de 400 € se declaran de los sectores del art. 4.1.c
+// (minorista: simplificada hasta 3.000 €); la de «Importar» no, y comprueba el límite de 400 €.
 const EMPRESA = /^(ES)?[ABCDEFGHJNPQRSUVW]/i;
 async function pedir(ruta, { metodo = 'GET', cuerpo, cookie, form, domicilioReal = false } = {}) {
   if (!domicilioReal && /^\/api\/(facturas|presupuestos|albaranes)$/.test(ruta) && ['POST', 'PATCH'].includes(metodo) && cuerpo?.cliente && EMPRESA.test(String(cuerpo.cliente.nif || '').replace(/\s/g, '')) && !cuerpo.cliente.direccion) cuerpo = { ...cuerpo, cliente: { ...cuerpo.cliente, direccion: 'Calle de Prueba, 1' } };
@@ -71,7 +73,7 @@ const antesDe = await pedir('/', { cookie: yo });
 const htmlAntes = await antesDe.text();
 ok('una empresa nueva empieza por el cuestionario', () => assert.ok(htmlAntes.includes('url=/bienvenida') || antesDe.headers.get('location')?.includes('/bienvenida'), `status ${antesDe.status}`));
 const conf = await pedir('/api/cuenta', { metodo: 'PATCH', cookie: yo, cuerpo: { configuracion: {
-  fiscal: { tipo: 'autonomo', iva: 'general' },
+  fiscal: { tipo: 'autonomo', iva: 'general', minorista: true },
   emisor: { nombre: 'Prueba Pérez', nif: '12345678Z', direccion: 'C/ Uno 1', ciudad: '08001 Barcelona', iban: 'ES00', plazo: 30 },
   actividades: [{ nombre: 'Diseño gráfico', ivaPct: 21, irpfPct: 15 }, { nombre: 'Formación', ivaPct: 0, irpfPct: 0 }],
 } } });
@@ -145,6 +147,8 @@ console.log('Domicilio del cliente');
   const sinDomicilio = await pedir('/api/facturas', { metodo: 'POST', cookie: yo, domicilioReal: true, cuerpo: { fecha: hoy, actividad: ACTS[0].id, cliente: { nombre: 'Empresa Sin Domicilio SL', nif: 'B76543214' }, base: '100', ivaPct: 21, irpfPct: 0 } });
   const j = await sinDomicilio.json();
   ok('a una empresa no se le factura sin su domicilio (art. 6.1.e)', () => assert.ok(sinDomicilio.status === 400 && /domicilio/.test(j.errores?.['cliente.direccion'] || j.error), JSON.stringify(j)));
+  const vista = n(await texto(`/facturas/${encodeURIComponent(facturas[1].id)}/pdf`, yo));
+  ok('sin NIF del cliente, la factura se titula «Factura simplificada» (art. 7)', () => assert.ok(vista.includes('Factura simplificada'), vista.slice(0, 400)));
 }
 
 console.log('Facturas con varias líneas');
@@ -489,7 +493,7 @@ console.log('Sociedad');
 const alta2 = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva: 'Náutica Prueba SL', nombre: 'Pere', email: `p${Date.now()}@test.es` } })).json();
 const fd3 = new FormData(); fd3.set('codigo', alta2.enlace.split('/').pop()); fd3.set('password', 'Clave-Local-04-2026');
 const soc = /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: fd3 })).headers.get('set-cookie') || '')?.[1];
-await pedir('/api/cuenta', { metodo: 'PATCH', cookie: soc, cuerpo: { configuracion: { fiscal: { tipo: 'sociedad', iva: 'general', trabajadores: true }, emisor: { nombre: 'Náutica Prueba SL', nif: 'B12345674' }, actividades: [{ nombre: 'Chárter', ivaPct: 21, irpfPct: 15 }] } } });
+await pedir('/api/cuenta', { metodo: 'PATCH', cookie: soc, cuerpo: { configuracion: { fiscal: { tipo: 'sociedad', iva: 'general', trabajadores: true, minorista: true }, emisor: { nombre: 'Náutica Prueba SL', nif: 'B12345674' }, actividades: [{ nombre: 'Chárter', ivaPct: 21, irpfPct: 15 }] } } });
 const sf = await (await pedir('/api/facturas', { metodo: 'POST', cookie: soc, cuerpo: { fecha: `${Y}-02-02`, cliente: { nombre: 'Cliente' }, base: '1000', ivaPct: 21, irpfPct: 15 } })).json();
 const resSoc = n(await texto('/', soc));
 ok('la sociedad ve su facturado', () => assert.ok(resSoc.includes(n(eurSin(1000))), 'no aparece su facturado'));
@@ -534,7 +538,7 @@ console.log('Previsión de tesorería');
   const alta3 = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva: 'Tesorería Prueba', nombre: 'Tere', email: `t${Date.now()}@test.es` } })).json();
   const fd4 = new FormData(); fd4.set('codigo', alta3.enlace.split('/').pop()); fd4.set('password', 'Clave-Local-05-2026');
   const te = /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: fd4 })).headers.get('set-cookie') || '')?.[1];
-  const cfg = await (await pedir('/api/cuenta', { metodo: 'PATCH', cookie: te, cuerpo: { configuracion: { fiscal: { tipo: 'autonomo', iva: 'general' }, emisor: { nombre: 'Tere', nif: '11111111H', plazo: 30 }, actividades: [{ nombre: 'Música', ivaPct: 21, irpfPct: 15 }] } } })).json();
+  const cfg = await (await pedir('/api/cuenta', { metodo: 'PATCH', cookie: te, cuerpo: { configuracion: { fiscal: { tipo: 'autonomo', iva: 'general', minorista: true }, emisor: { nombre: 'Tere', nif: '11111111H', plazo: 30 }, actividades: [{ nombre: 'Música', ivaPct: 21, irpfPct: 15 }] } } })).json();
   const masD = (d) => new Date(Date.parse(`${hoy}T12:00:00Z`) + d * 864e5).toISOString().slice(0, 10);
   const F2 = [];
   for (const [fecha, base, cobrada] of [[masD(-5), 1000, false], [masD(-60), 400, false], [masD(-10), 300, true]]) {
@@ -576,7 +580,7 @@ console.log('Portal del cliente');
   const alta4 = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva: 'Portal Prueba', nombre: 'Pau', email: `pp${Date.now()}@test.es` } })).json();
   const fd5 = new FormData(); fd5.set('codigo', alta4.enlace.split('/').pop()); fd5.set('password', 'Clave-Local-07-2026');
   const pp = /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: fd5 })).headers.get('set-cookie') || '')?.[1];
-  const cfg = await (await pedir('/api/cuenta', { metodo: 'PATCH', cookie: pp, cuerpo: { configuracion: { fiscal: { tipo: 'autonomo', iva: 'general' }, emisor: { nombre: 'Pau Portal', nif: '22222222J', direccion: 'C/ Música, 1', cp: '08001', ciudad: 'Barcelona', iban: 'ES11 2222', plazo: 30 }, actividades: [{ nombre: 'Música', ivaPct: 21, irpfPct: 15 }] } } })).json();
+  const cfg = await (await pedir('/api/cuenta', { metodo: 'PATCH', cookie: pp, cuerpo: { configuracion: { fiscal: { tipo: 'autonomo', iva: 'general', minorista: true }, emisor: { nombre: 'Pau Portal', nif: '22222222J', direccion: 'C/ Música, 1', cp: '08001', ciudad: 'Barcelona', iban: 'ES11 2222', plazo: 30 }, actividades: [{ nombre: 'Música', ivaPct: 21, irpfPct: 15 }] } } })).json();
   const act = cfg.actividades[0].id;
   const fac = async (cliente, base, cobrada) => (await (await pedir('/api/facturas', { metodo: 'POST', cookie: pp, cuerpo: { fecha: `${Y}-03-0${base % 9 + 1}`, actividad: act, cliente, concepto: 'Bolo', base: String(base), ivaPct: 21, irpfPct: 15, cobrada } })).json()).factura;
   const f1 = await fac({ nombre: 'Sala Apolo', nif: 'B12345674' }, 1000, false);
@@ -622,6 +626,10 @@ console.log('Importar desde Holded o Excel');
   const fd6 = new FormData(); fd6.set('codigo', alta5.enlace.split('/').pop()); fd6.set('password', 'Clave-Local-08-2026');
   const im = /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: fd6 })).headers.get('set-cookie') || '')?.[1];
   await pedir('/api/cuenta', { metodo: 'PATCH', cookie: im, cuerpo: { configuracion: { fiscal: { tipo: 'autonomo', iva: 'general' }, emisor: { nombre: 'Imma', nif: '33333333P', iban: 'ES22', plazo: 30 }, actividades: [{ nombre: 'Música', ivaPct: 21, irpfPct: 15 }] } } });
+  // Fuera de los sectores del art. 4.1.c, la simplificada (sin NIF del cliente) llega a 400 € IVA incluido.
+  const limite = await pedir('/api/facturas', { metodo: 'POST', cookie: im, cuerpo: { fecha: hoy, cliente: { nombre: 'Sin NIF' }, concepto: 'Bolo', base: '400', ivaPct: 21, irpfPct: 0 } });
+  const jl = await limite.json();
+  ok('sin NIF del cliente, más de 400 € no se factura (art. 4 del Reglamento de facturación)', () => assert.ok(limite.status === 400 && /400 € IVA incluido/.test(jl.errores?.['cliente.nif'] || ''), JSON.stringify(jl)));
   const subir = async (tipo, nombre, datos, guardar, cookie = im) => {
     const f = new FormData(); f.set('tipo', tipo); f.set('archivo', new Blob([datos]), nombre); if (guardar) f.set('guardar', '1');
     const r = await pedir('/api/importar', { metodo: 'POST', cookie, form: f });
@@ -693,7 +701,7 @@ console.log('Banco: extractos, conexión y emparejar');
   const emailB = `banco${Date.now()}@test.es`;
   const bq = await entrar(await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva: 'Banco Prueba', nombre: 'Berta', email: emailB } })).json(), 'Clave-Local-16-2026');
   const empresa = await kv(['HGET', 'cuentas:emails', emailB]);
-  const cfg = await (await pedir('/api/cuenta', { metodo: 'PATCH', cookie: bq, cuerpo: { configuracion: { fiscal: { tipo: 'autonomo', iva: 'general' }, emisor: { nombre: 'Berta', nif: '44444444A', plazo: 30 }, actividades: [{ nombre: 'Eventos', ivaPct: 21, irpfPct: 0 }] } } })).json();
+  const cfg = await (await pedir('/api/cuenta', { metodo: 'PATCH', cookie: bq, cuerpo: { configuracion: { fiscal: { tipo: 'autonomo', iva: 'general', minorista: true }, emisor: { nombre: 'Berta', nif: '44444444A', plazo: 30 }, actividades: [{ nombre: 'Eventos', ivaPct: 21, irpfPct: 0 }] } } })).json();
   const act = cfg.actividades[0].id;
   const fac = async (fecha, cliente, base) => (await (await pedir('/api/facturas', { metodo: 'POST', cookie: bq, cuerpo: { fecha, actividad: act, cliente: { nombre: cliente }, concepto: 'Evento', base: String(base), ivaPct: 21, irpfPct: 0, cobrada: false } })).json()).factura;
   const gas = async (fecha, concepto, base, proveedor, pendiente) => (await (await pedir('/api/gastos', { metodo: 'POST', cookie: bq, cuerpo: { fecha, actividad: act, concepto, base: String(base), ivaPct: 21, proveedor, pendiente } })).json()).gasto;
@@ -949,7 +957,7 @@ console.log('Varias empresas en la misma cuenta');
   const nueva = await pedir('/', { cookie: enB });
   const nuevaHtml = await nueva.text();
   ok('la empresa nueva empieza por su cuestionario', () => assert.ok(nueva.headers.get('location')?.includes('/bienvenida') || nuevaHtml.includes('url=/bienvenida'), `status ${nueva.status}`));
-  const cfgB = await (await pedir('/api/cuenta', { metodo: 'PATCH', cookie: enB, cuerpo: { configuracion: { fiscal: { tipo: 'sociedad', iva: 'general' }, emisor: { nombre: 'Segunda Empresa S.L.', nif: 'B87654323', plazo: 15 }, actividades: [{ nombre: 'Consultoría', ivaPct: 21, irpfPct: 0 }] } } })).json();
+  const cfgB = await (await pedir('/api/cuenta', { metodo: 'PATCH', cookie: enB, cuerpo: { configuracion: { fiscal: { tipo: 'sociedad', iva: 'general', minorista: true }, emisor: { nombre: 'Segunda Empresa S.L.', nif: 'B87654323', plazo: 15 }, actividades: [{ nombre: 'Consultoría', ivaPct: 21, irpfPct: 0 }] } } })).json();
   const fB = (await (await pedir('/api/facturas', { metodo: 'POST', cookie: enB, cuerpo: { fecha: hoy, actividad: cfgB.actividades[0].id, cliente: { nombre: 'Cliente de B' }, concepto: 'Consultoría', base: '500', ivaPct: 21, irpfPct: 0 } })).json()).factura;
   ok('cada empresa con su numeración (B empieza en 1)', () => assert.ok(fB.numero === 1 && nA > 1, `${fB.numero} ${nA}`));
   const listaB = n(await texto('/facturas', enB)), listaA = n(await texto('/facturas', yo));
@@ -1302,7 +1310,7 @@ console.log('\nAislamiento entre empresas (todas las rutas /api)');
     const inv = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva, nombre, email } })).json();
     const f = new FormData(); f.set('codigo', inv.enlace.split('/').pop()); f.set('password', `Clave-Local-${nombre.length}x-2026`);
     const t = /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: f })).headers.get('set-cookie') || '')?.[1];
-    const conf = await (await pedir('/api/cuenta', { metodo: 'PATCH', cookie: t, cuerpo: { configuracion: { fiscal: { tipo: 'sociedad', iva: 'general' }, emisor: { nombre: empresaNueva, nif: 'B22222228', plazo: 30 }, actividades: [{ nombre: 'Eventos', ivaPct: 21, irpfPct: 0 }] } } })).json();
+    const conf = await (await pedir('/api/cuenta', { metodo: 'PATCH', cookie: t, cuerpo: { configuracion: { fiscal: { tipo: 'sociedad', iva: 'general', minorista: true }, emisor: { nombre: empresaNueva, nif: 'B22222228', plazo: 30 }, actividades: [{ nombre: 'Eventos', ivaPct: 21, irpfPct: 0 }] } } })).json();
     const id = await kv(['HGET', 'cuentas:emails', email]);
     return { t, email, id, empresa: JSON.parse(await kv(['HGET', 'cuentas:usuarios', id])).empresa, act: conf.actividades?.[0]?.id };
   };
@@ -1883,7 +1891,7 @@ console.log('Módulos (131), IVA simplificado y bienes usados (REBU)');
   const alta = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: yo, cuerpo: { empresaNueva: 'Módulos Prueba', nombre: 'Mónica', email: `mod${Date.now()}@test.es` } })).json();
   const fd = new FormData(); fd.set('codigo', alta.enlace.split('/').pop()); fd.set('password', 'Clave-Local-05-2026');
   const md = /t=([^;]+)/.exec((await pedir('/api/invitacion', { metodo: 'POST', form: fd })).headers.get('set-cookie') || '')?.[1];
-  const cfg = await (await pedir('/api/cuenta', { metodo: 'PATCH', cookie: md, cuerpo: { configuracion: { fiscal: { tipo: 'autonomo', iva: 'simplificado', irpf: 'modulos', rebu: true }, emisor: { nombre: 'Mónica Módulos', nif: '55555555K', direccion: 'Calle Mayor 2', ciudad: '28001 Madrid', iban: 'ES91 2100 0418 4502 0005 1332', plazo: 30 }, actividades: [{ nombre: 'Bar', ivaPct: 10, irpfPct: 0 }] } } })).json();
+  const cfg = await (await pedir('/api/cuenta', { metodo: 'PATCH', cookie: md, cuerpo: { configuracion: { fiscal: { tipo: 'autonomo', iva: 'simplificado', irpf: 'modulos', rebu: true, minorista: true }, emisor: { nombre: 'Mónica Módulos', nif: '55555555K', direccion: 'Calle Mayor 2', ciudad: '28001 Madrid', iban: 'ES91 2100 0418 4502 0005 1332', plazo: 30 }, actividades: [{ nombre: 'Bar', ivaPct: 10, irpfPct: 0 }] } } })).json();
   const act = cfg.actividades?.[0]?.id;
   const guarda = await pedir('/api/cuenta', { metodo: 'PATCH', cookie: md, cuerpo: { modulos: { anio: Y, actividad: act, datos: { tipo: 'datos', rendimiento: '20.000', asalariados: '2', iva: { cuota: '4000', ingreso: '6', minima: '20' } } } } });
   ok('se guardan los datos de módulos de la actividad', () => assert.equal(guarda.status, 200));

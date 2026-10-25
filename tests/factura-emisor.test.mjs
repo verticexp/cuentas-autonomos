@@ -163,8 +163,9 @@ test('menciones de la operación sin IVA: exención o inversión del sujeto pasi
 test('validación (auditoría F1-10): una factura de más de 3.000 € a un cliente de España sin NIF lo pide; un presupuesto no', async () => {
   const { validarFactura } = await import('../lib/validacion.js');
   const b = (extra = {}) => ({ fecha: '2026-03-10', cliente: { nombre: 'Particular' }, base: 3000, ivaPct: 21, irpfPct: 0, ...extra });
-  assert.match(validarFactura(b()).errores['cliente.nif'], /3\.000 €/);
-  assert.equal(validarFactura(b({ base: 2000 })).ok, true);
+  // Aun en los sectores del art. 4.1.c (límite de 3.000 €), por encima se pide el NIF.
+  assert.match(validarFactura(b(), { limiteSimplificada: 3000 }).errores['cliente.nif'], /3\.000 €/);
+  assert.equal(validarFactura(b({ base: 2000 }), { limiteSimplificada: 3000 }).ok, true);
   assert.equal(validarFactura(b(), { presupuesto: true }).ok, true);
   assert.equal(validarFactura(b({ cliente: { nombre: 'Particular', nif: '12345678Z' } })).ok, true);
   assert.equal(validarFactura(b({ cliente: { nombre: 'Client', pais: 'US' } })).ok, true);

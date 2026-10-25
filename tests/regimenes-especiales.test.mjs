@@ -8,7 +8,8 @@ import { generarAsientos } from '../lib/asientos.js';
 import { librosRegistro } from '../lib/librosRegistro.js';
 
 const ACTS = [{ id: 'a', nombre: 'Tienda', serie: '', ivaPct: 21, irpfPct: 0 }];
-const pedir = (extra, op) => limpiar({ fecha: '2026-03-10', actividad: 'a', cliente: { nombre: 'Ana Cliente' }, irpfPct: 0, ...extra }, ACTS, false, op);
+// Una tienda vende al por menor (art. 4.1.c del Reglamento de facturación): sin NIF del cliente, simplificada hasta 3.000 €.
+const pedir = (extra, op) => limpiar({ fecha: '2026-03-10', actividad: 'a', cliente: { nombre: 'Ana Cliente' }, irpfPct: 0, ...extra }, ACTS, false, { limiteSimplificada: 3000, ...op });
 const linea = (precio, coste, cantidad = 1, ivaPct = 21) => ({ concepto: 'Reloj antiguo', cantidad: String(cantidad), precio: String(precio), coste: String(coste), ivaPct });
 
 test('REBU: el IVA va dentro del margen (venta − coste) y la base guardada es la venta sin ese IVA', () => {
