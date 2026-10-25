@@ -113,7 +113,8 @@ ok('gastos', () => assert.deepEqual(gastos.map((g) => [g.fecha, g.base, g.ivaPct
 const rf = await pedir('/api/facturas', { metodo: 'POST', cookie: yo, cuerpo: { fecha: `${Y}-03-03`, actividad: ACTS[1].id, cliente: { nombre: 'Escuela', nif: 'B66666660', direccion: 'C/ Escuela 1' }, concepto: 'Curso', base: '400', ivaPct: 0, irpfPct: 0, cobrada: true } });
 const fa = (await rf.json()).factura;
 ok(`la segunda actividad numera en su serie: A${Y}-001`, () => assert.equal(numeroFactura(fa), `A${Y}-001`));
-ok(`y la primera sigue la suya: 01-${Y}`, () => assert.equal(numeroFactura(facturas[0]), `01-${Y}`));
+// Las de arriba no llevan NIF del cliente: son simplificadas y van en su propia serie (art. 7.1.a del Reglamento de facturación).
+ok(`las facturas sin NIF del cliente van a la serie de las simplificadas: FS${Y}-001`, () => assert.equal(numeroFactura(facturas[0]), `FS${Y}-001`));
 facturas.push(fa);
 
 const P = panelResumen({ facturas, gastos, emisor: { plazo: 30, limite: 17094 }, hoy, actividades: ACTS, fiscal: limpiarFiscal({ tipo: 'autonomo' }) });
@@ -380,7 +381,7 @@ console.log('Más modelos: 115, 349, 390 y renta');
   ok('349: el cliente francés con su NIF-IVA', () => assert.ok(m.includes(`FR12345678901 · Studio Paris (S) ${n(eur(700))}`)));
   const res59 = n(await texto(`/?anio=${Y}`, yo));
   ok('303: lo facturado sin IVA al cliente francés, en la casilla 59', () => assert.ok(res59.includes(`59 · Ventas y servicios a empresas de la UE (intracomunitarias) ${n(eur(700))}`)));
-  ok('Impuestos: qué presentas y cuándo, y el 303 trimestral con la casilla 59', () => assert.ok(m.includes('Impuestos') && m.includes('Qué presentas y cuándo') && m.includes('303 · IVA trimestral') && m.includes(`59 · Ventas y servicios a empresas de la UE (intracomunitarias) ${n(eur(700))}`) && m.includes(`hasta el ${Number(limite4T.slice(8))} de ${limite4T.slice(5, 7) === '01' ? 'enero' : 'febrero'} de ${Y + 1}`)));
+  ok('Impuestos: qué presentas y cuándo, y el 303 trimestral con la casilla 59', () => assert.ok(m.includes('Impuestos') && m.includes('Qué presentas y cuándo') && m.includes('303 · IVA trimestral') && m.includes('59 · Ventas y servicios a empresas de la UE (intracomunitarias)') && m.includes(n(eur(700))) && m.includes(`hasta el ${Number(limite4T.slice(8))} de ${limite4T.slice(5, 7) === '01' ? 'enero' : 'febrero'} de ${Y + 1}`)));
   ok('Impuestos: el 115 del 4T, hasta el 20 de enero', () => assert.ok(/115 · Retenciones del alquiler[\s\S]*?Hasta el 20 de enero de \d{4}/.test(m)));
   // Gastos de proveedores de fuera de España sin IVA: el de la UE (por su NIF-IVA) y uno de fuera, a mano.
   const gUE = (await (await pedir('/api/gastos', { metodo: 'POST', cookie: yo, cuerpo: { fecha: `${Y}-05-06`, actividad: ACTS[0].id, concepto: 'Publicidad', base: '120', ivaPct: 0, proveedor: 'Google Ireland', proveedorNif: 'IE6388047V' } })).json()).gasto;
