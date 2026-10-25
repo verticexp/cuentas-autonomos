@@ -2,7 +2,7 @@ import { Fragment } from 'react';
 import QRCode from 'qrcode';
 import { baseLinea, columnasLineas, desglose, importes, numeroFactura, vencimiento } from '@/lib/calculos';
 import '@/app/factura.css';
-import { enDivisa, filasTotales, formatoDoc, menciones } from '@/lib/idiomas';
+import { enDivisa, filasTotales, formatoDoc, menciones, notaAparte, textoRectifica, tituloDoc } from '@/lib/idiomas';
 import { aclarar, colorValido } from '@/lib/marca';
 import { COLOR_FACTURA, anchoResumen, tamanoNumero, tamanoTotal } from '@/lib/pdf';
 import { urlQr } from '@/lib/verifactu';
@@ -28,7 +28,7 @@ export default async function FacturaA4({ f: fOriginal, e, marca, presupuesto = 
             {marca?.logo && <span className="fa-logo"><img src={marca.logo} alt="" /></span>}
             <h1 className="fa-emisor">{e.nombre}</h1>
           </div>
-          <h2>{presupuesto ? L.t.presupuesto : f.serie === 'R' ? L.t.rectificativa : L.t.factura}</h2>
+          <h2>{tituloDoc(f, L.t, presupuesto)}</h2>
         </header>
         <div className="fa-datos">
           <div><p className="fa-et">{L.t.numero}</p><p className="fa-num">{L.t.nro} {numeroFactura(f)}</p></div>
@@ -71,10 +71,10 @@ export default async function FacturaA4({ f: fOriginal, e, marca, presupuesto = 
         {(f.rectifica || f.nota || f.divisa || f.recc || f.oss || f.margen) && (
           <div className="fa-notas">
             <p className="fa-et">{L.t.notas}</p>
-            {f.rectifica && <p>{L.t.rectifica(f.rectifica.numero, L.fecha(f.rectifica.fecha))}</p>}
+            {f.rectifica && <p style={{ whiteSpace: 'pre-wrap' }}>{textoRectifica(f, L)}</p>}
             {menciones(f, L).map((m) => <p key={m}>{m}</p>)}
             {f.divisa && L.moneda !== 'EUR' && <p>{L.t.contravalor}: {L.t.base} {L.euros(tEur.base)} · {L.t.iva} {L.euros(tEur.iva)}{tEur.irpf ? ` · ${L.t.retencion} ${L.euros(-tEur.irpf)}` : ''} · {L.t.total} {L.euros(tEur.total)}. {L.cambio(f.divisa)}.</p>}
-            {f.nota && <p>{f.nota}</p>}
+            {notaAparte(f) && <p>{notaAparte(f)}</p>}
           </div>
         )}
         <div className="fa-pago">
