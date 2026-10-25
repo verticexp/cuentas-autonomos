@@ -158,7 +158,7 @@ export default async function Modelos({ searchParams }) {
     m190.perceptores = [...juntos('A', 'trabajador', 'trabajadores'), ...juntos('E', 'administrador', 'administradores'), ...m190.perceptores.filter((p) => !['A', 'E'].includes(p.clave))];
   }
   // Impuesto sobre Sociedades: con las bases negativas de antes de Fisquo y el incremento de los fondos propios apuntados.
-  const opIS = { ivaCoste: !usa303(f), productos: productos || [], ajustes: ajustes || [], albaranes: albaranes || [], manuales: manuales || [], constitucion: f.constitucion, cuotaIS: u.cuotaIS || {}, territorio: f.territorio, binsPrevias: u.binsPrevias || {}, fondosPropios: u.fondosPropios || {}, pagos202: u.pagos202 || {} };
+  const opIS = { ivaCoste: !usa303(f), productos: productos || [], ajustes: ajustes || [], albaranes: albaranes || [], manuales: manuales || [], capital, constitucion: f.constitucion, cuotaIS: u.cuotaIS || {}, territorio: f.territorio, binsPrevias: u.binsPrevias || {}, fondosPropios: u.fondosPropios || {}, pagos202: u.pagos202 || {} };
   const is = f.tipo === 'sociedad' && borradorSociedades(facturas, gastos, anio, { ...opIS, hasta: h < `${anio}-12-31` ? h : `${anio}-12-31` });
   // 202: con más de 6 M de cifra de negocios, el del art. 40.3 (sobre la base de los 3, 9 y 11 primeros meses); si no, el
   // del art. 40.2 (el 18 % de la cuota apuntada). Lo que sale del borrador de cada año en Fisquo se propone como esa cuota.
