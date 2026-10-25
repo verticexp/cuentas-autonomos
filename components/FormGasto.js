@@ -14,7 +14,7 @@ import { TIPOS_IGIC } from '@/lib/igic';
 import { importes, nifUE, origenGasto } from '@/lib/calculos';
 import { conIva, costeAfecto, partirIva, pctAfecto, pctDeducible, tipoAutoliquidado } from '@/lib/ivaDeducible';
 import { parseImporte } from '@/lib/importe';
-import { CATEGORIAS, categoria, categoriaDe, pareceBien } from '@/lib/categorias';
+import { CATEGORIAS, categoria, categoriaDe, noDeducibleIS, pareceBien } from '@/lib/categorias';
 import { SUBCLAVES_190, clave190De } from '@/lib/modelos';
 import { LIMITE_LIBERTAD, TIPOS_BIEN, coeficiente } from '@/lib/amortizaciones';
 import { emparejarLineas } from '@/lib/inventario';
@@ -431,6 +431,9 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
         {!g.vence && <p className="nota">Si no lo pones, vence en el plazo de pago de la ficha del proveedor o, sin él, a los 30 días (el plazo legal).</p>}
       </>}
       {(alquiler || g.alquiler) && <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.alquiler)} onChange={(e) => poner('alquiler', e.target.checked)} />Es el alquiler del local (retención del 19 %)</label>}
+      {/* Sociedades, gastos sin IVA (impuestos, multas, donativos): no deducible en el Impuesto sobre Sociedades (art. 15 LIS,
+          lib/categorias.js noDeducibleIS). Sin tocarlo, lo que propone Fisquo por el concepto. */}
+      {regimen === 'sociedad' && (g.noDeducibleIS !== undefined || !conIva(gn)) && <label className="gasto-pendiente"><input type="checkbox" checked={g.noDeducibleIS ?? Boolean(noDeducibleIS(gn))} onChange={(e) => poner('noDeducibleIS', e.target.checked)} />No es deducible en el Impuesto sobre Sociedades (el propio impuesto, multas, sanciones, recargos, donativos)</label>}
       {!igic && (conIva(gn) || g.recc) && <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.recc)} onChange={(e) => poner('recc', e.target.checked)} />Su factura dice «Régimen especial del criterio de caja» (el IVA se deduce al pagarla)</label>}
       {!igic && (conIva(gn) || g.importacion) && <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.importacion)} onChange={(e) => poner('importacion', e.target.checked)} />Importación de fuera de la UE: el IVA lo he pagado en la aduana (DUA)</label>}
       {!igic && (especial || g.usoProrrata) && conIva(gn) && <label>Uso en la prorrata especial<select className="campo" value={g.usoProrrata || ''} onChange={(e) => poner('usoProrrata', e.target.value || undefined)}>

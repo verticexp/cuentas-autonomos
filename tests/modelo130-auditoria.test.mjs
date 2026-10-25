@@ -66,3 +66,10 @@ test('exoneración del 130: aviso según el 70 % facturado con retención el añ
   assert.ok(ids(avisosFiscales({ facturas: pocas, anio: 2026, hoy: '2026-03-01', c303: false, retenidas: true })).includes('no-exonerado-130'));
   assert.equal(avisosFiscales({ facturas: F, anio: 2026, hoy: '2026-03-01', c303: false }).some((a) => a.id.includes('exonerado')), false);
 });
+
+test('renta en estimación directa normal: sin el 5 % de difícil justificación', async () => {
+  const { borradorRenta } = await import('../lib/modelos.js');
+  const F = [fac('f', '2026-02-01', 40000)], G = [gas('g', '2026-02-10', 10000)];
+  assert.equal(borradorRenta(F, G, 2026).difJust, 1500);
+  assert.equal(borradorRenta(F, G, 2026, {}, { normal: true }).difJust, 0);
+});

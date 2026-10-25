@@ -48,7 +48,8 @@ test('Sociedades: con datos del año anterior a cero, el tipo es el de microempr
   const gastos = [{ id: 'g0', fecha: '2025-06-01', actividad: 'a', concepto: 'Alta', base: 100, ivaPct: 0 }, { id: 'g1', fecha: '2026-03-02', actividad: 'a', concepto: 'Compras', base: 1000000, ivaPct: 0 }];
   const b = borradorSociedades(facturas, gastos, 2026);
   assert.equal(b.tamano, 'micro');
-  assert.equal(b.cuota, 20000); // 50.000 × 19 % + 50.000 × 21 %
+  // Base 100.000 € menos los 100 € de pérdida de 2025 (art. 26 LIS): 50.000 × 19 % + 49.900 × 21 %.
+  assert.equal(b.cuota, 9500 + 10479);
   // Sin nada del año anterior en la app, se usa la de este año.
   assert.equal(borradorSociedades(facturas, gastos.slice(1), 2026).tamano, 'reducida');
 });
