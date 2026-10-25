@@ -15,7 +15,7 @@ import { importes, nifUE, origenGasto } from '@/lib/calculos';
 import { conIva, costeAfecto, partirIva, pctAfecto, pctDeducible, tipoAutoliquidado } from '@/lib/ivaDeducible';
 import { parseImporte } from '@/lib/importe';
 import { CATEGORIAS, categoria, categoriaDe, noDeducibleIS, pareceBien } from '@/lib/categorias';
-import { SUBCLAVES_190, clave190De } from '@/lib/modelos';
+import { CAUSAS_SIN_RETENCION, SITUACIONES_INMUEBLE, SUBCLAVES_190, clave190De } from '@/lib/modelos';
 import { LIMITE_LIBERTAD, TIPOS_BIEN, coeficiente } from '@/lib/amortizaciones';
 import { emparejarLineas } from '@/lib/inventario';
 import { leerFacturaElectronica } from '@/lib/facturae';
@@ -56,7 +56,7 @@ const desdePropuesta = (p, vacio) => {
 };
 
 // Lo habitual del proveedor (lib/proveedorHabitual.js) en lo que aún no se ha tocado.
-const CAMPOS_HABITUALES = ['categoria', 'deduciblePct', 'afectoPct', 'actividad', 'proyecto', 'alquiler', 'recc', 'clave190'];
+const CAMPOS_HABITUALES = ['categoria', 'deduciblePct', 'afectoPct', 'actividad', 'proyecto', 'alquiler', 'alquilerSinRetencion', 'inmueble', 'recc', 'clave190'];
 
 // plegado: en la lista de gastos empieza como una tarjeta con «Escanear ticket», «Subir facturas» y «Apuntar a mano»; el
 // formulario se abre al escanear o al pedirlo. Las facturas subidas van a «Por revisar» (lib/bandeja.js), en la misma
@@ -182,7 +182,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
       setG((x) => ({ ...x, ...(stock.length ? { stock } : {}), proveedor: t.proveedor || x.proveedor, proveedorNif: t.nif || x.proveedorNif, ...(t.numero ? { numero: t.numero } : {}), ...(t.vence ? { vence: t.vence, ...(t.vence >= hoy ? { pendiente: true } : {}) } : {}), concepto: t.concepto || t.proveedor || x.concepto, base: t.base !== '' ? String(t.base).replace('.', ',') : x.base, ivaPct: t.ivaPct, irpfPct: t.irpfPct || 0, fecha: t.fecha, ...(!Number(t.ivaPct) && nifUE(t.nif) ? { origen: 'ue' } : {}),
         porTipo: t.varios ? aFormulario(t.desglose) : undefined,
         // Lo que se eligió en el último gasto de este proveedor, en lo que aún no se ha tocado.
-        ...Object.fromEntries(CAMPOS_HABITUALES.filter((c) => d.habitual?.[c] !== undefined && (x[c] === undefined || x[c] === '' || (c === 'actividad' && x[c] === vacio.actividad))).map((c) => [c, d.habitual[c]])),
+        ...Object.fromEntries(CAMPOS_HABITUALES.filter((c) => d.habitual?.[c] !== undefined && (x[c] === undefined || x[c] === '' || (c === 'actividad' && x[c] === vacio.actividad)) && !(c === 'alquilerSinRetencion' && x.alquiler) && !(c === 'alquiler' && x.alquilerSinRetencion)).map((c) => [c, d.habitual[c]])),
         ...(d.habitual?.concepto ? { concepto: d.habitual.concepto } : {}),
         ...(d.habitual?.irpfPct && t.irpfPct == null ? { irpfPct: d.habitual.irpfPct } : {}) }));
       if (d.habitual?.afectoPct !== undefined) setVerAfecto(true);
@@ -350,18 +350,24 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
           <option value={7}>Le retengo el 7 % (profesional que empieza)</option>
           <option value={2}>Le retengo el 2 % (agricultor o ganadero)</option>
           <option value={1}>Le retengo el 1 % (empresario en módulos)</option>
+          {/* Art. 75.2.b RIRPF (lib/modelos.js SUBCLAVES_190, clave I): no en el alquiler del local, que lleva la suya. */}
+          {!(g.alquiler || g.alquilerSinRetencion) && <>
+            <option value={19}>Le retengo el 19 % (alquiler de una máquina o de un negocio, propiedad industrial…)</option>
+            <option value={24}>Le retengo el 24 % (derechos de imagen)</option>
+          </>}
         </select>
       )}
       {Number(g.irpfPct) > 0 && <p className="nota">Le pagas la factura menos la retención, y esa retención la ingresas tú en el 111.</p>}
       {Number(g.irpfPct) > 0 && !g.alquiler && (() => {
-        // Subclave del 190 (lib/modelos.js): solo si a ese % le corresponde más de una.
+        // Subclave del 190 (lib/modelos.js): solo si a ese % le corresponde más de una; si no, se dice cuál es.
         const opciones = Object.entries(SUBCLAVES_190).filter(([, s]) => s.pct === Number(g.irpfPct));
-        return opciones.length > 1 && (
+        return opciones.length > 1 ? (
           <select className="campo" value={clave190De(g)} onChange={(e) => poner('clave190', e.target.value)} aria-label="Qué es, para el modelo 190">
             {opciones.map(([k, s]) => <option key={k} value={k}>{s.nombre} · 190 {k}</option>)}
           </select>
-        );
+        ) : opciones.length === 1 && <p className="nota">En el 190 va con la clave {opciones[0][0]}: {opciones[0][1].nombre}.</p>;
       })()}
+      {Number(g.irpfPct) > 0 && !g.alquiler && clave190De(g)[0] === 'I' && <p className="nota">Solo si para quien cobra es parte de su actividad económica (va en el 111 con los profesionales, casillas 07 a 09). Si no lo es, por ejemplo un particular que te alquila una máquina, es capital mobiliario: apúntalo en Impuestos, en los pagos de dividendos e intereses («Otros rendimientos del capital», modelos 123 y 193).</p>}
       {(conIva(gn) || origenGasto(gn)) && <>
         <select className="campo" value={pctOtro ? 'otro' : String(pctDeducible(g))} aria-label={`${impuesto} que te deduces`}
           onChange={(e) => {
@@ -431,7 +437,23 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
         <label>Vence el<input className="campo" type="date" value={g.vence || ''} min={g.fecha} onChange={(e) => poner('vence', e.target.value)} /></label>
         {!g.vence && <p className="nota">Si no lo pones, vence en el plazo de pago de la ficha del proveedor o, sin él, a los 30 días (el plazo legal).</p>}
       </>}
-      {(alquiler || g.alquiler) && <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.alquiler)} onChange={(e) => poner('alquiler', e.target.checked)} />Es el alquiler del local (retención del 19 %)</label>}
+      {(alquiler || g.alquiler || g.alquilerSinRetencion) && <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.alquiler || g.alquilerSinRetencion)} onChange={(e) => setG((x) => ({ ...x, alquiler: e.target.checked, alquilerSinRetencion: undefined, ...(e.target.checked ? {} : { inmueble: undefined }), ...(e.target.checked && [19, 24].includes(Number(x.irpfPct)) ? { irpfPct: 0 } : {}) }))} />Es el alquiler del local</label>}
+      {/* Alquiler del local: con la retención del 19 % (115 y 180) o sin ella por una de las causas del art. 75.3.h RIRPF
+          (al 347, como arrendamiento de local); y el inmueble, para el 180 por arrendador e inmueble (lib/modelos.js). */}
+      {(g.alquiler || g.alquilerSinRetencion) && <>
+        <label>Retención del alquiler<select className="campo" value={g.alquilerSinRetencion || ''} onChange={(e) => setG((x) => ({ ...x, alquiler: !e.target.value, alquilerSinRetencion: e.target.value || undefined, ...(e.target.value ? { irpfPct: 0 } : {}) }))}>
+          <option value="">Le retengo el 19 % (lo ingreso con el 115)</option>
+          {Object.entries(CAUSAS_SIN_RETENCION).map(([k, n]) => <option key={k} value={k}>Sin retención: {n}</option>)}
+        </select></label>
+        {g.alquilerSinRetencion
+          ? <p className="nota">Sin retención no va al 115 ni al 180, pero sí al 347 (si con ese arrendador pasas de 3.005,06 € en el año), marcado como alquiler de local. {g.alquilerSinRetencion === 'menos900' ? 'Si en el año acabas pagándole más de 900 €, ya hay que retener: cambia esto en los siguientes recibos.' : g.alquilerSinRetencion === 'epigrafe861' ? 'Guarda el certificado que te da el arrendador: sin él, hay que retener.' : 'Si dudas, pregúntalo a tu gestoría: sin causa, el alquiler del local lleva siempre el 19 %.'}</p>
+          : <p className="nota">El 19 % lo ingresas cada trimestre con el 115 y en enero va en el 180. No se retiene si el arrendador no llega a 900 € al año contigo, si está en el epígrafe 861 del IAE con cuota (y te da el certificado) o si es una vivienda para un empleado o un leasing: elígelo arriba.</p>}
+        <label>Dónde está el local<select className="campo" value={g.inmueble?.situacion || ''} onChange={(e) => poner('inmueble', e.target.value ? { ...(g.inmueble || {}), situacion: Number(e.target.value), ...(e.target.value === '4' ? { refCatastral: '' } : {}) } : undefined)}>
+          <option value="">Sin indicar</option>
+          {Object.entries(SITUACIONES_INMUEBLE).map(([k, n]) => <option key={k} value={k}>{n}</option>)}
+        </select></label>
+        {g.inmueble?.situacion && Number(g.inmueble.situacion) !== 4 && <label>Referencia catastral<input className="campo" value={g.inmueble.refCatastral || ''} onChange={(e) => poner('inmueble', { ...g.inmueble, refCatastral: e.target.value.toUpperCase() })} maxLength={24} placeholder="20 letras y números, en el recibo del IBI" /></label>}
+      </>}
       {/* Sociedades, gastos sin IVA (impuestos, multas, donativos): no deducible en el Impuesto sobre Sociedades (art. 15 LIS,
           lib/categorias.js noDeducibleIS). Sin tocarlo, lo que propone Fisquo por el concepto. */}
       {regimen === 'sociedad' && (g.noDeducibleIS !== undefined || !conIva(gn)) && <label className="gasto-pendiente"><input type="checkbox" checked={g.noDeducibleIS ?? Boolean(noDeducibleIS(gn))} onChange={(e) => poner('noDeducibleIS', e.target.checked)} />No es deducible en el Impuesto sobre Sociedades (el propio impuesto, multas, sanciones, recargos, donativos)</label>}

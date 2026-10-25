@@ -51,6 +51,40 @@ test('cobrar: rechaza lo que no tiene sentido', () => {
   assert.match(cobroManual(abono, { importe: 10 }, HOY).error, /abono/);
 });
 
+test('cobro en efectivo: guarda metodo «efectivo» (cuenta para el 347) y se deshace como cualquier cobro a mano', () => {
+  // Entera en efectivo: la marca del cobro lleva el método; por una parte, el pago.
+  const entera = cobroManual(fac(), { forma: 'efectivo' }, HOY);
+  assert.deepEqual(entera.nueva.cobro, { fecha: HOY, metodo: 'efectivo' });
+  const parte = cobroManual(fac(), { importe: '21', forma: 'efectivo' }, HOY).nueva;
+  assert.deepEqual(parte.pagos, [{ fecha: HOY, importe: 21, metodo: 'efectivo' }]);
+  // Sin forma (o vacía), como siempre: 'manual'.
+  assert.equal(cobroManual(fac(), { forma: '' }, HOY).nueva.cobro.metodo, 'manual');
+  for (const forma of ['bitcoin', 'toString', 'manual']) assert.match(cobroManual(fac(), { forma }, HOY).error, /forma de cobro no es válida/, forma);
+  assert.equal(deshacerDe(entera.nueva), 'cobrada');
+  assert.equal(deshacerCobroManual(entera.nueva).nueva.cobrada, false);
+  assert.equal(deshacerDe(parte), 'parcial');
+  assert.equal(deshacerCobroManual(parte).nueva.pagos, undefined);
+});
+
+test('347: el cobro a mano en efectivo cuenta para los cobros en metálico de más de 6.000 €; los cierres de caja, no', async () => {
+  const { modelo347 } = await import('../lib/modelos.js');
+  const ana = { nombre: 'Ana SL', nif: 'B12345674' };
+  // 5.000 + 1.050 de IVA = 6.050 cobrados en efectivo (> 6.000, art. 34.1.h RGAT y posiciones 101-115 del diseño).
+  const efectivo = cobroManual(fac({ id: 'e1', base: 5000, cliente: ana }), { forma: 'efectivo' }, HOY).nueva;
+  // Otra de 1.210 cobrada a mano sin decir cómo: no cuenta como efectivo.
+  const otra = cobroManual(fac({ id: 'e2', base: 1000, cliente: ana }), {}, HOY).nueva;
+  const r = modelo347([efectivo, otra], [], 2026);
+  assert.deepEqual(r.ventas.map((o) => [o.nombre, o.total, o.metalico ?? 0]), [['Ana SL', 7260, 6050]]);
+  // 4.000 + 840 = 4.840 en efectivo: se declara (pasa de 3.005,06) pero sin metálico (no pasa de 6.000).
+  const poco = cobroManual(fac({ id: 'e3', base: 4000, cliente: ana }), { forma: 'efectivo' }, HOY).nueva;
+  assert.equal(modelo347([poco], [], 2026).ventas.length, 1);
+  assert.equal(modelo347([poco], [], 2026).ventas[0].metalico, undefined);
+  // Un cierre de caja cobrado en efectivo (ventas a consumidores, art. 7.2 del Reglamento de facturación) no suma metálico,
+  // aunque lleve un NIF: solo los 6.050 de la factura.
+  const cierre = fac({ id: 'z1', base: 8000, cliente: ana, simplificada: true, caja: { efectivo: 9680 }, pagos: [{ fecha: HOY, importe: 9680, metodo: 'efectivo' }] });
+  assert.equal(modelo347([efectivo, cierre], [], 2026).ventas[0].metalico, 6050);
+});
+
 test('deshacer: quita la marca de cobrada a mano o el último cobro parcial a mano, pero no el de Stripe, banco o remesa', () => {
   const cobrada = cobroManual(fac(), {}, HOY).nueva;
   assert.equal(deshacerDe(cobrada), 'cobrada');

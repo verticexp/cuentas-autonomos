@@ -7,6 +7,7 @@ import { portalDe } from '@/lib/portal';
 import '@/app/portal.css';
 import { enDivisa, formatoDoc, textosFactura, tituloDoc } from '@/lib/idiomas';
 import { faltanDatosFactura } from '@/lib/empresa';
+import Vacio from '@/components/Vacio';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Tus documentos', robots: { index: false } };
@@ -60,7 +61,7 @@ export default async function Portal({ params }) {
             </li>
           );
         })}
-      </ul> : <p className="nota">Todavía no hay facturas.</p>}
+      </ul> : <Vacio compacto icono="factura" titulo="Todavía no hay facturas">Cuando te emitan una, la verás aquí para descargarla y, si se puede, pagarla.</Vacio>}
 
       {presupuestos.length > 0 && <>
         <h2 className="portal-t">Presupuestos</h2>

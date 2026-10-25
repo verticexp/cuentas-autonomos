@@ -807,8 +807,9 @@ export default async function Modelos({ searchParams }) {
               <div key={t} className="tarjeta ancha"><h3>{t}</h3>
                 <TablaPersonas columnas={m347.soloAnual ? ['Total'] : ['1T', '2T', '3T', '4T', 'Total']} filas={l.map((o, i) => ({
                   clave: `${i}-${o.nif}-${o.nombre}`, nombre: o.nombre,
-                  // Lo que va aparte en el registro: el NIF-IVA de la UE, la inversión del sujeto pasivo, el criterio de caja y el efectivo.
-                  detalle: [o.nif || (o.nifComunitario && `NIF-IVA ${o.nifComunitario}`), o.isp && 'Inversión del sujeto pasivo', o.caja && `Criterio de caja: ${eur(o.importeCaja)} devengado al ${o.clave === 'B' ? 'cobrar' : 'pagar'} (va aparte)`,
+                  // Lo que va aparte en el registro: el NIF-IVA de la UE, la inversión del sujeto pasivo, el alquiler del local, el
+                  // criterio de caja y el efectivo.
+                  detalle: [o.nif || (o.nifComunitario && `NIF-IVA ${o.nifComunitario}`), o.isp && 'Inversión del sujeto pasivo', o.arrendamiento && 'Alquiler del local sin retención (va aparte)', o.caja && `Criterio de caja: ${eur(o.importeCaja)} devengado al ${o.clave === 'B' ? 'cobrar' : 'pagar'} (va aparte)`,
                     o.metalico && `Cobrado en efectivo: ${eur(o.metalico)}${o.ejercicioMetalico !== anio ? ` de facturas de ${o.ejercicioMetalico}` : ''}`].filter(Boolean).join(' · '),
                   cifras: m347.soloAnual ? [o.total] : [...(o.trimestres || [null, null, null, null]), o.total],
                 }))} />
@@ -822,9 +823,9 @@ export default async function Modelos({ searchParams }) {
       {m180 && (
         <ModeloPlegable id="m180" num="180" nombre="Resumen anual del alquiler" detalle={m180.arrendadores.length ? `Hasta el ${plazoAnual('01-31')}` : 'Sin alquileres este año'} informativo={m180.arrendadores.length > 0}>
           <h2 className="grupo-t">180 · Resumen anual del alquiler</h2>
-          <p className="grupo-pie arriba">No se paga: resume, por arrendador, el alquiler y las retenciones que ya ingresaste con el 115 cada trimestre.{notaHastaHoy}</p>
+          <p className="grupo-pie arriba">No se paga: resume, por arrendador y local, el alquiler y las retenciones que ya ingresaste con el 115 cada trimestre.{notaHastaHoy}</p>
           <div className="tarjeta">
-            {m180.arrendadores.length ? <TablaPersonas columnas={['Alquiler', 'Retenido']} filas={m180.arrendadores.map((p) => ({ clave: `${p.nif}-${p.nombre}`, nombre: p.nombre, detalle: p.nif, cifras: [p.base, p.retenciones] }))}
+            {m180.arrendadores.length ? <TablaPersonas columnas={['Alquiler', 'Retenido']} filas={m180.arrendadores.map((p) => ({ clave: `${p.nif}-${p.nombre}-${p.situacion || ''}-${p.refCatastral || ''}`, nombre: p.nombre, detalle: [p.nif, p.refCatastral ? `Ref. catastral ${p.refCatastral}` : p.situacion === 4 ? 'Local sin referencia catastral' : '', p.situacion ? '' : 'Falta el local: indícalo en el gasto'].filter(Boolean).join(' · '), cifras: [p.base, p.retenciones] }))}
               total={m180.arrendadores.length > 1 ? [r2(m180.arrendadores.reduce((x, p) => x + p.base, 0)), m180.retenciones] : null} /> : <p className="nota">Sin alquileres este año.</p>}
           </div>
         </ModeloPlegable>
