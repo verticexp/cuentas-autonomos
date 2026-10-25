@@ -1,10 +1,10 @@
-// Modelos informativos 347, 349, 190 y 193 según los diseños de registro de la AEAT (ejercicio 2025) y las instrucciones
+// Modelos informativos 347, 349, 190, 180 y 193 (y el 115) según los diseños de registro de la AEAT (ejercicio 2025) y las instrucciones
 // de cada modelo. Los esperados están calculados a mano; la fuente, en el comentario de cada caso.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { casillas303 } from '../lib/calculos.js';
-import { SUBCLAVES_190, clave190De, modelo190, modelo347, modelo349 } from '../lib/modelos.js';
-import { clave193, limpiarPago, modelo193 } from '../lib/capitalMobiliario.js';
+import { SUBCLAVES_190, clave190De, importes, modelo115, modelo180, modelo190, modelo347, modelo349, retencionesProfesionales } from '../lib/modelos.js';
+import { NATURALEZAS_C, NATURALEZAS_C_NOMBRES, clave193, limpiarPago, modelo193 } from '../lib/capitalMobiliario.js';
 import { gastoEditado, nuevoGasto } from '../lib/gastoCuerpo.js';
 import { conLoHabitual, habitualDeGastos } from '../lib/proveedorHabitual.js';
 
@@ -215,7 +215,8 @@ test('190: subclaves G, H e I de los gastos con retención: la elegida (clave190
   assert.deepEqual(modelo190([], [], 2026, G).perceptores.map((p) => [p.nombre, `${p.clave}${p.subclave}`]),
     [['Gestoría', 'G01'], ['Corredor', 'G02'], ['Joven', 'G03'], ['Carpintería', 'H04'], ['Monte', 'H03'], ['Granja', 'H01']]);
   assert.equal(clave190De({ irpfPct: 19 }), 'I03');
-  assert.ok(Object.values(SUBCLAVES_190).every((s) => [1, 2, 7, 15, 19].includes(s.pct)));
+  // Los % de las subclaves son los que admite un gasto (lib/validacion.js validarGasto).
+  assert.ok(Object.values(SUBCLAVES_190).every((s) => [1, 2, 7, 15, 19, 24].includes(s.pct)));
 });
 
 test('190: el gasto guarda clave190 solo con retención de ese %, fuera del alquiler, y se recuerda por proveedor', () => {
@@ -256,4 +257,116 @@ test('193: clave y naturaleza por perceptor (diseño, posiciones 92-94): dividen
   assert.equal(p('intereses', 'Ana', '12345678Z', 19, { naturaleza: '04' }).naturaleza, undefined);
   assert.equal(p('otros', 'Ana', '12345678Z', 19, { naturaleza: '99' }).naturaleza, undefined);
   assert.deepEqual(clave193({ tipo: 'intereses', perceptor: { nif: 'B12345674' } }), { clave: 'B', naturaleza: '03' });
+});
+
+test('193: clave D, intereses del préstamo de un socio vinculado por el exceso sobre el triple de su parte (art. 46.a LIRPF)', () => {
+  const p = (extra = {}) => limpiarPago({ fecha: '2026-12-31', tipo: 'intereses', perceptor: { nombre: 'Socio', nif: '12345678Z' }, bruto: '2.000', retencionPct: 19, ...extra });
+  // 2.000 de intereses, 500 del exceso: D.03 con 500 y 95 de retención (19 %); B.03 con 1.500 y 380 − 95 = 285.
+  const v = p({ vinculado: true, exceso: '500' });
+  assert.deepEqual([v.vinculado, v.exceso, v.retencion], [true, 500, 380]);
+  const m = modelo193([v], 2026);
+  assert.deepEqual(m.perceptores.map((x) => [x.clave, x.naturaleza, x.base, x.retenciones]), [['B', '03', 1500, 285], ['D', '03', 500, 95]]);
+  assert.deepEqual([m.base, m.retenciones], [2000, 380]);
+  // Todo del exceso: solo D. Sin exceso (no pasa del triple): solo B. Sin marcar: B, como siempre.
+  assert.deepEqual(modelo193([p({ vinculado: true, exceso: 2000 })], 2026).perceptores.map((x) => [x.clave, x.base, x.retenciones]), [['D', 2000, 380]]);
+  assert.deepEqual(modelo193([p({ vinculado: true, exceso: '' })], 2026).perceptores.map((x) => [x.clave, x.base]), [['B', 2000]]);
+  assert.equal(p().vinculado, undefined);
+  // Solo en intereses y con el socio persona física (la clave D es de contribuyentes del IRPF); el exceso, de 0 al bruto.
+  assert.equal(limpiarPago({ fecha: '2026-12-31', tipo: 'otros', perceptor: { nombre: 'Socio', nif: '12345678Z' }, bruto: 100, vinculado: true, exceso: 50 }).vinculado, undefined);
+  assert.match(p({ vinculado: true, exceso: 10, perceptor: { nombre: 'Matriz SL', nif: 'B12345674' } }).error, /persona física/);
+  assert.match(p({ vinculado: true, exceso: '2000,01' }).error, /no pueden pasar del bruto/);
+  assert.match(p({ vinculado: true, exceso: '-1' }).error, /0 o más/);
+});
+
+test('193: naturalezas de la clave C del diseño (posiciones 93-94), de la 01 a la 15, con nombre para el formulario', () => {
+  assert.deepEqual(NATURALEZAS_C, ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12', '13', '14', '15']);
+  assert.ok(NATURALEZAS_C.every((k) => NATURALEZAS_C_NOMBRES[k].length > 5));
+});
+
+// ---------- 190 y 111: rentas del art. 75.2.b RIRPF ----------
+
+test('190 clave I y 111 (casillas 07-09): gastos con el 19 % o el 24 % fuera del alquiler del local (art. 75.2.b y 101.2 RIRPF)', () => {
+  const u = { actividades: [{ id: 'a', nombre: 'Tienda' }], fiscal: { tipo: 'autonomo', iva: 'general' } };
+  const b = { fecha: '2026-05-03', actividad: 'a', concepto: 'Alquiler de la carretilla', proveedor: 'Maquinaria SL', proveedorNif: 'B76543213', base: '1000', ivaPct: 21, irpfPct: 19 };
+  const maquina = nuevoGasto(u, b).gasto;
+  assert.equal(maquina.irpfPct, 19);
+  // 1.000 de base: 190 de retención; total 1.000 + 210 − 190 = 1.020.
+  assert.deepEqual([importes(maquina).irpf, importes(maquina).total], [190, 1020]);
+  const imagen = nuevoGasto(u, { ...b, proveedor: 'Modelo', proveedorNif: '12345678Z', concepto: 'Derechos de imagen', irpfPct: 24 }).gasto;
+  const autor = nuevoGasto(u, { ...b, proveedor: 'Autora', proveedorNif: '87654321X', concepto: 'Derechos de autor', irpfPct: 15, clave190: 'I02' }).gasto;
+  const G = [maquina, imagen, autor].map((g) => ({ ...g, pagado: g.fecha }));
+  assert.deepEqual(modelo190([], [], 2026, G).perceptores.map((x) => [x.nombre, `${x.clave}${x.subclave}`, x.percepciones, x.retenciones]),
+    [['Maquinaria SL', 'I03', 1000, 190], ['Modelo', 'I01', 1000, 240], ['Autora', 'I02', 1000, 150]]);
+  // En el 111, con las actividades económicas (instrucciones del 111: «cuando deriven de una actividad económica
+  // desarrollada por su perceptor»): 3 perceptores, 3.000 de base y 580 de retenciones. Nada en el 115.
+  assert.deepEqual(retencionesProfesionales(G, 2026, 2), { perceptores: 3, base: 3000, retenciones: 580 });
+  assert.equal(modelo115(G, 2026, 2).base, 0);
+  // El 19 % o el 24 % no van con el alquiler del local (lleva su 19 % o ninguna); otros % siguen sin admitirse.
+  assert.match(nuevoGasto(u, { ...b, alquiler: true }).error, /alquiler del local ya lleva/);
+  assert.match(nuevoGasto(u, { ...b, irpfPct: 21 }).error, /1, 2, 7, 15, 19 o 24/);
+});
+
+// ---------- 115, 180 y 347: alquiler del local por inmueble y sin retención ----------
+
+test('115 y 180 por arrendador e inmueble (diseño del 180, posiciones 114-134); sin retención, al 347 como arrendamiento', () => {
+  const REF = '9872023VH5797S0001WX';
+  const G = [
+    gas('a1', '2026-01-05', 1000, 21, 'Locales SL', 'B12345674', { alquiler: true, inmueble: { situacion: 1, refCatastral: REF } }),
+    gas('a2', '2026-02-05', 1000, 21, 'Locales SL', 'B12345674', { alquiler: true, inmueble: { situacion: 1, refCatastral: REF } }),
+    gas('a3', '2026-02-05', 500, 21, 'Locales SL', 'B12345674', { alquiler: true, inmueble: { situacion: 4 } }),
+    // Sin retención (epígrafe 861 con cuota, art. 75.3.h.3.º RIRPF): ni 115 ni 180; al 347 con la marca de la posición 100.
+    gas('s1', '2026-03-01', 3000, 21, 'Rentas Luis', '87654321X', { alquilerSinRetencion: 'epigrafe861', inmueble: { situacion: 2, refCatastral: REF } }),
+    gas('s2', '2026-06-01', 3000, 21, 'Rentas Luis', '87654321X', { alquilerSinRetencion: 'epigrafe861' }),
+  ];
+  // 115 del 1T: 2.500 de base y el 19 %: 190 + 190 + 95 = 475, un perceptor.
+  assert.deepEqual(modelo115(G, 2026, 1), { perceptores: 1, base: 2500, retenciones: 475 });
+  // 180: un registro por inmueble del mismo arrendador.
+  assert.deepEqual(modelo180(G, 2026), {
+    arrendadores: [
+      { nombre: 'Locales SL', nif: 'B12345674', situacion: 1, refCatastral: REF, base: 2000, retenciones: 380 },
+      { nombre: 'Locales SL', nif: 'B12345674', situacion: 4, base: 500, retenciones: 95 },
+    ],
+    base: 2500, retenciones: 475,
+  });
+  // Sin retención, importes() no retiene: 3.000 + 630 = 3.630 por recibo.
+  assert.deepEqual([importes(G[3]).irpf, importes(G[3]).total], [0, 3630]);
+  // 347: Locales SL fuera (va en el 180); Rentas Luis, 7.260, en el 1T y el 2T, con la marca de arrendamiento.
+  const r = modelo347([], G, 2026);
+  assert.deepEqual(r.compras.map((o) => [o.nombre, o.total, o.trimestres, o.arrendamiento ?? false]), [['Rentas Luis', 7260, [3630, 3630, 0, 0], true]]);
+});
+
+test('alquiler del local sin retención e inmueble: lo que guarda el gasto y lo que no admite', () => {
+  const u = { actividades: [{ id: 'a', nombre: 'Tienda' }], fiscal: { tipo: 'autonomo', iva: 'general' } };
+  const b = { fecha: '2026-05-03', actividad: 'a', concepto: 'Alquiler del local', proveedor: 'Rentas Luis', proveedorNif: '87654321X', base: '60', ivaPct: 21 };
+  const g = nuevoGasto(u, { ...b, alquilerSinRetencion: 'menos900', inmueble: { situacion: '1', refCatastral: '9872023 vh5797s 0001wx' } }).gasto;
+  assert.deepEqual([g.alquiler, g.alquilerSinRetencion, g.inmueble], [undefined, 'menos900', { situacion: 1, refCatastral: '9872023VH5797S0001WX' }]);
+  // Con retención, el inmueble sin referencia (situación 4); en un gasto que no es alquiler, el inmueble no se guarda.
+  assert.deepEqual(nuevoGasto(u, { ...b, alquiler: true, inmueble: { situacion: 4 } }).gasto.inmueble, { situacion: 4 });
+  assert.equal(nuevoGasto(u, { ...b, inmueble: { situacion: 4 } }).gasto.inmueble, undefined);
+  // Al editar, quitar la marca la quita.
+  assert.equal(gastoEditado(u, b, g).gasto.alquilerSinRetencion, undefined);
+  for (const [extra, texto] of [
+    [{ alquiler: true, alquilerSinRetencion: 'menos900' }, /una de las dos/],
+    [{ alquilerSinRetencion: 'porque sí' }, /por qué el alquiler/],
+    [{ alquilerSinRetencion: 'menos900', irpfPct: 15 }, /no lleva retención/],
+    [{ alquiler: true, inmueble: { situacion: 1, refCatastral: '1234' } }, /20 letras y números/],
+    [{ alquiler: true, inmueble: { situacion: 5 } }, /dónde está el inmueble/],
+    [{ alquiler: true, inmueble: { situacion: 4, refCatastral: '9872023VH5797S0001WX' } }, /en blanco/],
+  ]) assert.match(nuevoGasto(u, { ...b, ...extra }).error, texto, JSON.stringify(extra));
+  // Lo habitual del proveedor recuerda la causa y el inmueble; si la nueva factura ya dice «alquiler», manda ella.
+  const h = habitualDeGastos([g]);
+  assert.deepEqual([h.alquilerSinRetencion, h.inmueble.situacion], ['menos900', 1]);
+  assert.equal(conLoHabitual({}, h).alquilerSinRetencion, 'menos900');
+  assert.equal(conLoHabitual({ alquiler: true }, h).alquilerSinRetencion, undefined);
+});
+
+test('349 mensual: el trimestre en que se pasa de 50.000 € se parte en la declaración hasta ese mes y una por mes', async () => {
+  const { periodos349 } = await import('../lib/modelos.js');
+  const ue = (id, fecha, base) => ({ id, fecha, actividad: 'a', cliente: { nombre: 'Berlin GmbH', nif: 'DE123456789' }, base, ivaPct: 0, irpfPct: 0, operacion: 'servicios-ue' });
+  // 30.000 en abril y 30.000 en mayo: se superan los 50.000 € en mayo.
+  const F = [ue('a', '2026-04-10', 30000), ue('b', '2026-05-10', 30000), ue('c', '2026-06-10', 1000)];
+  const p = periodos349(F, 2026, 2);
+  assert.deepEqual(p.map((x) => [x.periodo, x.total, x.plazo]), [['05', 60000, '2026-06-22'], ['06', 1000, '2026-07-20']]);
+  // Un trimestre normal: una sola declaración trimestral.
+  assert.deepEqual(periodos349([ue('d', '2026-02-10', 1000)], 2026, 1).map((x) => [x.periodo, x.total, x.plazo]), [['1T', 1000, '2026-04-20']]);
 });

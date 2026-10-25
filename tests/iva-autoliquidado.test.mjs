@@ -78,8 +78,9 @@ test('costeAfecto e ivaNoDeducible usan el tipo elegido, también con afectació
     assert.equal(costeAfecto(g), 1000 + mitad);
     assert.equal(costeAfecto({ ...g, afectoPct: 75, deduciblePct: 25 }), costeParcial);
     assert.equal(ivaGasto({ ...g, deduciblePct: 0 }).noDeducible, cuota);
-    assert.equal(ivaNoDeducible(g, { ivaCoste: true }), 0);
-    assert.equal(costeAfecto(g, { ivaCoste: true }), 1000);
+    // Sin 303 (exento, recargo, agricultura) el IVA autoliquidado se paga con el 309 y no se deduce: es coste entero.
+    assert.equal(ivaNoDeducible(g, { ivaCoste: true }), cuota);
+    assert.equal(costeAfecto(g, { ivaCoste: true }), 1000 + cuota);
   }
 });
 

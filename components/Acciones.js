@@ -140,7 +140,8 @@ export function Presentado202({ anio, p, importe, pagado, soloLectura = false })
   );
 }
 
-// 111 y 115: presentado o pendiente con su propia marca (lib/empresa.js marcaRet; sin ella, como el trimestre).
+// 111 y 115: presentado o pendiente con su propia marca (lib/empresa.js marcaRet; sin ella, como el trimestre). También el
+// 123, el 216 y el 369, que solo cuentan como presentados con ella.
 // soloLectura: sin el permiso «Contabilidad», el estado sin selector.
 export function PresentadoRet({ modelo, anio, t, hecho, soloLectura = false }) {
   const router = useRouter();

@@ -73,3 +73,30 @@ test('renta en estimación directa normal: sin el 5 % de difícil justificación
   assert.equal(borradorRenta(F, G, 2026).difJust, 1500);
   assert.equal(borradorRenta(F, G, 2026, {}, { normal: true }).difJust, 0);
 });
+
+test('casilla 16: el 2 % de la 03 por la vivienda de antes de 2013, con la 05 que devuelve lo deducido', async () => {
+  const { fichero130 } = await import('../lib/ficheroAeat.js');
+  // 1T y 2T con 5.000 € de ingresos y 1.000 € de gastos cada uno (20.000 € previsibles: menos de 33.007,20).
+  const F = [fac('f1', '2026-02-01', 5000), fac('f2', '2026-05-01', 5000)], G = [gas('g1', '2026-02-10', 1000), gas('g2', '2026-05-10', 1000)];
+  const op = opciones130({ renta: { vivienda: true } }, {}, 2026);
+  const r = resumenAnual(F, G, 2026, { 1: 0 }, ['a'], op).trimestres;
+  // 1T: 03 = 3.800 (4.000 − 5 %); 04 = 760; 16 = 76; 19 = 684.
+  assert.deepEqual([r[0].rendAcum, r[0].c16, r[0].c19], [3800, 76, 684]);
+  // 2T: 03 = 7.600; 04 = 1.520; 05 = 760 − 76 = 684; 07 = 836; 16 = 152; 19 = 684.
+  assert.deepEqual([r[1].pagosPrev, r[1].c07, r[1].c16, r[1].c19], [684, 836, 152, 684]);
+  assert.equal(fichero130({ nif: '12345678Z', nombre: 'Ana Pérez' }, 2026, r[0]).resultado, 684); // la 17 ya resta la 16
+  // Con 33.007,20 € o más de ingresos previsibles, no.
+  const grandes = [fac('g', '2026-02-01', 9000)];
+  assert.equal(resumenAnual(grandes, [], 2026, {}, ['a'], op).trimestres[0].c16, 0);
+});
+
+test('gastos no deducibles en el IRPF del autónomo: una multa o el propio 130 no restan (art. 15 LIS por el 28.1 LIRPF)', async () => {
+  const { noDeducibleIRPF } = await import('../lib/categorias.js');
+  const multa = { ...gas('multa', '2026-02-12', 200), ivaPct: 0, concepto: 'Multa de tráfico' };
+  const pago130 = { ...gas('p130', '2026-02-13', 300), ivaPct: 0, concepto: 'Pago modelo 130 4T' };
+  assert.ok(noDeducibleIRPF(multa) && noDeducibleIRPF(pago130));
+  assert.equal(noDeducibleIRPF({ ...multa, noDeducibleIS: false }), null);
+  const F = [fac('f', '2026-02-01', 10000)];
+  assert.equal(resumenAnual(F, [multa, pago130], 2026, {}, ['a']).trimestres[0].gastos, 0);
+  assert.equal(resumenAnual(F, [{ ...multa, noDeducibleIS: false }], 2026, {}, ['a']).trimestres[0].gastos, 200);
+});

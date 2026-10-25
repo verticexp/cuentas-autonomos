@@ -138,6 +138,8 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
   // nueva va sin retención salvo que se haya elegido a mano; con NIF de persona (o sin NIF) puede ser un particular, que
   // tampoco retiene: se avisa con un botón para quitarla.
   const nifCli = String(f.cliente.nif || '').toUpperCase().replace(/[\s.-]/g, '').replace(/^ES(?=[0-9A-Z]{9}$)/, '');
+  // Sin ningún NIF del cliente en una venta en España es simplificada: su número es el de la serie FS (lib/empresa.js).
+  const numeroNueva = !orig && numeros?.simplificada && !nifCli && !f.oss?.pais && (!f.cliente.pais || String(f.cliente.pais).toUpperCase() === 'ES') ? numeros.simplificada : numeros?.[f.actividad];
   const clienteExtranjero = Boolean(nifCli) && !NIF_ES.test(nifCli);
   // Cliente de otro país (País distinto de ES): sin NIF, su factura no es simplificada (lib/validacion.js sinNifEspana).
   const clientePais = Boolean(f.cliente.pais) && String(f.cliente.pais).trim().toUpperCase() !== 'ES';
@@ -248,7 +250,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
   return (
     <form ref={formulario} className={`formulario ff${nueva ? ' ff-nuevo' : ''}`} onSubmit={enviar}>
       <div className={`ff-campos${detalles ? ' det-abierto' : ''}`}>
-      <p className="rotulo">{nueva ? `Se numerará como ${numeros[f.actividad]}` : `Factura ${numeroFactura(f)}`}{orig ? <> · <Termino id="rectificativa">Rectificativa</Termino> de la {numeroFactura(orig)} (pon el importe que corrige: en negativo si anula)</> : ''}</p>
+      <p className="rotulo">{nueva ? `Se numerará como ${numeroNueva}` : `Factura ${numeroFactura(f)}`}{orig ? <> · <Termino id="rectificativa">Rectificativa</Termino> de la {numeroFactura(orig)} (pon el importe que corrige: en negativo si anula)</> : ''}</p>
       {actividades.length > 1 && <Deslizable className={`tipo ${actividades.length === 2 ? 'dos' : 'varias'}`}>
         {actividades.map(({ id, nombre }) => (
           <button type="button" key={id} className={f.actividad === id ? 'activo' : ''} onClick={() => cambiarActividad(id)}>{nombre}</button>
@@ -355,6 +357,13 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
         <button {...atributos('lineas')} type="button" className="boton sec" onClick={anadirLinea}>+ Añadir otro concepto</button>
       </fieldset>
 
+      {!orig && <label className="ff-det">Qué vendes
+        <select className="campo" value={f.accesoria || ''} onChange={(e) => poner('accesoria', e.target.value || undefined)}>
+          <option value="">Lo de mi actividad</option>
+          <option value="inversion">Un bien de inversión de la actividad (maquinaria, vehículo, equipo…)</option>
+          <option value="inmueble">Un inmueble o una operación financiera que no es habitual</option>
+        </select>
+      </label>}
       <label className="ff-det">Proyecto, obra o local (opcional)
         <input className="campo" list="proyectos-factura" value={f.proyecto || ''} onChange={(e) => poner('proyecto', e.target.value)} placeholder="Para ver la rentabilidad de cada uno" maxLength={60} />
       </label>
@@ -510,7 +519,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
       {/* En el ordenador, la factura se va dibujando al lado mientras se rellena */}
       <aside className="ff-vista" aria-label="Vista previa">
         <div className="ff-papel">
-          <div className="ff-papel-cab"><b>Factura {nueva ? numeros[f.actividad] : numeroFactura(f)}</b><small>{f.fecha ? new Date(`${f.fecha}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }) : ''}</small></div>
+          <div className="ff-papel-cab"><b>Factura {nueva ? numeroNueva : numeroFactura(f)}</b><small>{f.fecha ? new Date(`${f.fecha}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }) : ''}</small></div>
           <div className="ff-para"><small>Para</small><b>{f.cliente.nombre || 'Tu cliente'}</b>{f.cliente.nif && <small>{f.cliente.nif}</small>}</div>
           <ul className="ff-lineas">
             {f.lineas.map((l, i) => (

@@ -66,3 +66,13 @@ test('390: saldo a compensar del último periodo (97) y cuotas a compensar del a
   // 1T −2.100 (a compensar), 2T 210 compensados, 4T −210: 97 = 210 y 662 = 2.100 − 210 = 1.890.
   assert.deepEqual([c['95'], c['97'], c['98'], c['662']], [0, 210, 0, 1890]);
 });
+
+test('390 y prorrata: la venta de un bien de inversión va en la 107, se resta del volumen y no cuenta en la prorrata (arts. 104.Tres y 121)', async () => {
+  const { prorrataAnio } = await import('../lib/calculos.js');
+  const F = [fac('g', '2025-02-01', 6000, 21), fac('e', '2025-02-02', 4000, 0, { operacion: 'exenta' }), fac('furgo', '2025-06-01', 10000, 21, { accesoria: 'inversion' })];
+  const { c } = modelo390(F, [], 2025);
+  assert.deepEqual([c['99'], c['105'], c['107'], c['108']], [16000, 4000, 10000, 10000]);
+  // Sin la furgoneta: 6.000 de 10.000 dan derecho a deducir, el 60 % (con ella saldría el 80 %).
+  assert.equal(prorrataAnio(F, 2025), 60);
+  assert.equal(c['118'], 60);
+});

@@ -5,6 +5,7 @@ import { vistaImportacion } from '@/lib/vistaImportacion';
 import Link from 'next/link';
 import { eur, fechaCorta } from '@/lib/formato';
 import { saldoDe as saldo } from '@/lib/calculos';
+import Vacio from './Vacio';
 import '@/app/importar.css';
 
 const TIPOS = [['clientes', 'Clientes'], ['facturas', 'Facturas'], ['gastos', 'Gastos'], ['productos', 'Productos'], ['saldos', 'Saldos'], ['bienes', 'Bienes']];
@@ -164,7 +165,7 @@ export default function Importar() {
             </select>
           </label>
           <p className="nota" role="status">Filas {filas.desde}–{filas.hasta} de {filas.total}</p>
-          {!filas.total && <p className="nota">No hay filas con este estado.</p>}
+          {!filas.total && <Vacio compacto tipo="resultados" icono="excel" titulo="No hay filas con este estado">Elige otro estado en el filtro para ver el resto de filas.</Vacio>}
           <ul className="grupo-lista importar-filas">
             {filas.items.map((x) => {
               const [a, b] = x.completa ? [x.datos.nombre, `Se añade: ${Object.entries(x.completa).map(([k, v]) => `${CAMPO[k] || k} ${v}`).join(' · ')}`] : x.datos ? resumen(tipo, x.datos) : [x.original?.find(Boolean) || `Fila ${x.n}`, `Fila ${x.n} · ${x.estado === 'quitada' ? 'no se importará' : x.error}`];

@@ -8,7 +8,7 @@ import SinBD from '@/components/SinBD';
 import FormFactura from '@/components/FormFactura';
 import { AvisoTicketBai } from '@/components/AvisoTerritorio';
 import Volver from '@/components/Volver';
-import { usaIgic, actividadesDe, fiscalDe, limiteSimplificada, usa303 } from '@/lib/empresa';
+import { usaIgic, actividadesDe, fiscalDe, limiteSimplificada, serieSimplificada, usa303 } from '@/lib/empresa';
 import { inventario } from '@/lib/inventario';
 import { datosStock } from '@/lib/stockServidor';
 import { nombresProyectos } from '@/lib/proyectos';
@@ -41,6 +41,8 @@ export default async function Nueva({ searchParams }) {
   // Con inventario, cuánto queda de cada producto (para avisar al facturar más de lo que hay).
   const stock = fiscalDe(u).inventario ? Object.fromEntries(inventario(await datosStock(u), { hoy: h }).productos.map((p) => [p.id, p.stock])) : null;
   const numeros = Object.fromEntries(await Promise.all(actividades.map(async (a) => [a.id, await num(original ? 'R' : a.serie)])));
+  // Sin NIF del cliente, la factura es simplificada y va en su serie (lib/empresa.js serieSimplificada).
+  if (!original) numeros.simplificada = await num(serieSimplificada(actividades));
   return (
     <main className="pagina mk-look">
       <Volver href={original || plantilla ? `/facturas/${(original || plantilla).id}` : '/facturas'} />

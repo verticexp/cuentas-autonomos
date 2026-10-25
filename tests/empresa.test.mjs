@@ -34,10 +34,11 @@ test('una actividad con facturas no cambia de serie ni se puede quitar', () => {
 
 test('modelos según cómo trabaja', () => {
   const ids = (f) => modelosDe(limpiarFiscal(f)).map((m) => m.id);
-  assert.deepEqual(ids({ tipo: 'autonomo' }), ['303', '390', '130', '347', '100']);
-  assert.deepEqual(ids({ tipo: 'autonomo', retenidas: true }), ['303', '390', '347', '100']);
-  assert.deepEqual(ids({ tipo: 'autonomo', iva: 'exento' }), ['130', '347', '100']);
-  assert.deepEqual(ids({ tipo: 'sociedad', trabajadores: true, alquiler: true, intracom: true }), ['303', '390', '349', '111', '190', '115', '180', '347', '200', '202', 'rm-libros', 'rm-cuentas']);
+  assert.deepEqual(ids({ tipo: 'autonomo' }), ['303', '390', '130', '347', '100', '036']);
+  assert.deepEqual(ids({ tipo: 'autonomo', retenidas: true }), ['303', '390', '347', '100', '036']);
+  // Exento: sin 303, el IVA de sus compras a la UE o con inversión del sujeto pasivo va en el 309.
+  assert.deepEqual(ids({ tipo: 'autonomo', iva: 'exento' }), ['309', '130', '347', '100', '036']);
+  assert.deepEqual(ids({ tipo: 'sociedad', trabajadores: true, alquiler: true, intracom: true }), ['303', '390', '349', '111', '190', '115', '180', '347', '200', '202', '232', '840', 'rm-libros', 'rm-cuentas', '036']);
   assert.equal(limpiarFiscal({ tipo: 'sociedad', iva: 'recargo', retenidas: true }).iva, 'general');
   assert.equal(limpiarFiscal({ tipo: 'sociedad', retenidas: true }).retenidas, false);
 });

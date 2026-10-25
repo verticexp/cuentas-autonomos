@@ -110,10 +110,11 @@ ok('facturas', () => assert.deepEqual(facturas.map((f) => [f.fecha, f.base, f.co
 ok('gastos', () => assert.deepEqual(gastos.map((g) => [g.fecha, g.base, g.ivaPct]), GAS.map((x) => [x.fecha, x.base, x.ivaPct])));
 
 // Una factura de la segunda actividad: va en su propia serie (A) y no cuenta en el total de 2025 (es de este año).
-const rf = await pedir('/api/facturas', { metodo: 'POST', cookie: yo, cuerpo: { fecha: `${Y}-03-03`, actividad: ACTS[1].id, cliente: { nombre: 'Escuela' }, concepto: 'Curso', base: '400', ivaPct: 0, irpfPct: 0, cobrada: true } });
+const rf = await pedir('/api/facturas', { metodo: 'POST', cookie: yo, cuerpo: { fecha: `${Y}-03-03`, actividad: ACTS[1].id, cliente: { nombre: 'Escuela', nif: 'B66666660', direccion: 'C/ Escuela 1' }, concepto: 'Curso', base: '400', ivaPct: 0, irpfPct: 0, cobrada: true } });
 const fa = (await rf.json()).factura;
 ok(`la segunda actividad numera en su serie: A${Y}-001`, () => assert.equal(numeroFactura(fa), `A${Y}-001`));
-ok(`y la primera sigue la suya: 01-${Y}`, () => assert.equal(numeroFactura(facturas[0]), `01-${Y}`));
+// Las de arriba no llevan NIF del cliente: son simplificadas y van en su propia serie (art. 7.1.a del Reglamento de facturación).
+ok(`las facturas sin NIF del cliente van a la serie de las simplificadas: FS${Y}-001`, () => assert.equal(numeroFactura(facturas[0]), `FS${Y}-001`));
 facturas.push(fa);
 
 const P = panelResumen({ facturas, gastos, emisor: { plazo: 30, limite: 17094 }, hoy, actividades: ACTS, fiscal: limpiarFiscal({ tipo: 'autonomo' }) });
@@ -380,7 +381,7 @@ console.log('Más modelos: 115, 349, 390 y renta');
   ok('349: el cliente francés con su NIF-IVA', () => assert.ok(m.includes(`FR12345678901 · Studio Paris (S) ${n(eur(700))}`)));
   const res59 = n(await texto(`/?anio=${Y}`, yo));
   ok('303: lo facturado sin IVA al cliente francés, en la casilla 59', () => assert.ok(res59.includes(`59 · Ventas y servicios a empresas de la UE (intracomunitarias) ${n(eur(700))}`)));
-  ok('Impuestos: qué presentas y cuándo, y el 303 trimestral con la casilla 59', () => assert.ok(m.includes('Impuestos') && m.includes('Qué presentas y cuándo') && m.includes('303 · IVA trimestral') && m.includes(`59 · Ventas y servicios a empresas de la UE (intracomunitarias) ${n(eur(700))}`) && m.includes(`hasta el ${Number(limite4T.slice(8))} de ${limite4T.slice(5, 7) === '01' ? 'enero' : 'febrero'} de ${Y + 1}`)));
+  ok('Impuestos: qué presentas y cuándo, y el 303 trimestral con la casilla 59', () => assert.ok(m.includes('Impuestos') && m.includes('Qué presentas y cuándo') && m.includes('303 · IVA trimestral') && m.includes('59 · Ventas y servicios a empresas de la UE (intracomunitarias)') && m.includes(n(eur(700))) && m.includes(`hasta el ${Number(limite4T.slice(8))} de ${limite4T.slice(5, 7) === '01' ? 'enero' : 'febrero'} de ${Y + 1}`)));
   ok('Impuestos: el 115 del 4T, hasta el 20 de enero', () => assert.ok(/115 · Retenciones del alquiler[\s\S]*?Hasta el 20 de enero de \d{4}/.test(m)));
   // Gastos de proveedores de fuera de España sin IVA: el de la UE (por su NIF-IVA) y uno de fuera, a mano.
   const gUE = (await (await pedir('/api/gastos', { metodo: 'POST', cookie: yo, cuerpo: { fecha: `${Y}-05-06`, actividad: ACTS[0].id, concepto: 'Publicidad', base: '120', ivaPct: 0, proveedor: 'Google Ireland', proveedorNif: 'IE6388047V' } })).json()).gasto;
@@ -1818,7 +1819,7 @@ console.log('Ajustes nuevos: perfil, empresa, cobros, diseño, email de envío, 
   const [sNum, rNum] = await patch({ numeracion: { serie: '', anio: Y, siguiente: 500 } });
   const [sAtras] = await patch({ numeracion: { serie: '', anio: Y, siguiente: 10 } });
   ok('Series: la siguiente factura puede saltar hacia delante, nunca hacia atrás', () => assert.deepEqual([sNumMal, sNum, rNum.siguiente, sAtras], [400, 200, 500, 400]));
-  const fNum = (await (await pedir('/api/facturas', { metodo: 'POST', cookie: yo, cuerpo: { fecha: hoy, cliente: { nombre: 'Cliente Salto' }, concepto: 'Tras el salto', base: '10', ivaPct: 21 } })).json()).factura;
+  const fNum = (await (await pedir('/api/facturas', { metodo: 'POST', cookie: yo, cuerpo: { fecha: hoy, cliente: { nombre: 'Cliente Salto', nif: 'B44444446', direccion: 'C/ Salto 1' }, concepto: 'Tras el salto', base: '10', ivaPct: 21 } })).json()).factura;
   ok('y la siguiente factura lleva ese número', () => assert.equal(fNum?.numero, 500, JSON.stringify(fNum)));
   const ser = n(await texto('/ajustes/series', yo));
   ok('la pantalla de Series enseña el siguiente número', () => assert.ok(ser.includes(`501-${Y}`), ser.slice(0, 400)));

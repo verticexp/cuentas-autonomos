@@ -49,9 +49,10 @@ export async function PATCH(req) {
   const antes = b.id && (await leerUno(u, 'facturas', b.id));
   if (!antes) return error('Esa factura ya no existe', 404);
   if (antes.caja) return error('Es un cierre de caja: corrígelo desde Caja');
-  // Cobrar a mano: { id, accion: 'cobrar', fecha?, importe? } (sin ellos, entera y hoy) o { id, accion: 'deshacer' }.
+  // Cobrar a mano: { id, accion: 'cobrar', fecha?, importe?, forma? } (sin ellos, entera y hoy; forma 'efectivo' para un
+  // cobro en efectivo, lib/cobroManual.js FORMAS_COBRO) o { id, accion: 'deshacer' }.
   if (b.accion === 'cobrar' || b.accion === 'deshacer') {
-    const r = b.accion === 'cobrar' ? await cobrarFactura(u, antes.id, { fecha: b.fecha, importe: b.importe }, hoy()) : await deshacerCobro(u, antes.id);
+    const r = b.accion === 'cobrar' ? await cobrarFactura(u, antes.id, { fecha: b.fecha, importe: b.importe, forma: b.forma }, hoy()) : await deshacerCobro(u, antes.id);
     if (r.error) return error(r.error, r.status || 400);
     await secundarios(u, { facturas: [r.factura.id] });
     return Response.json({ ok: true, ...estadoCobro(r.factura), ...(r.extra || {}) });
@@ -88,7 +89,7 @@ export async function PATCH(req) {
   const r = await conLimiteDe(u, datos.cliente, () => actualizarFactura(u, antes.id, async (actual) => {
     if (actual.verifactu) return { error: 'Esta factura ya está registrada en Verifactu: para corregirla, haz una rectificativa' };
     // Lo opcional que el formulario ya no manda se quita (volver al español, a euros, quitar el recargo…).
-    const nueva = { ...actual, evento: undefined, proyecto: undefined, operacion: undefined, idioma: undefined, divisa: undefined, baseDivisa: undefined, oss: undefined, recargo: undefined, recc: undefined, margen: undefined, cuotasIncluidas: undefined, compensacion: undefined, ...datos };
+    const nueva = { ...actual, evento: undefined, proyecto: undefined, operacion: undefined, accesoria: undefined, idioma: undefined, divisa: undefined, baseDivisa: undefined, oss: undefined, recargo: undefined, recc: undefined, margen: undefined, cuotasIncluidas: undefined, compensacion: undefined, ...datos };
     // Criterio de caja: se recalcula con la nueva fecha; una rectificativa conserva el de su original.
     Object.assign(nueva, nueva.rectifica ? (actual.recc ? { recc: true } : {}) : marcaRecc(u, nueva));
     const mas = pendienteDe(nueva) - (mismoCliente(actual.cliente, nueva.cliente) ? pendienteDe(actual) : 0);
