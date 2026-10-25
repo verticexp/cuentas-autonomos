@@ -34,7 +34,7 @@ const numero = (v) => leerImporte(v) || 0;
 
 // riesgos: lo que debe ahora cada cliente con riesgo máximo ({ id: euros }); el límite lo comprueba el servidor.
 // limiteSimplificada: hasta dónde llega la factura sin NIF del cliente en esta empresa (lib/empresa.js limiteSimplificada).
-export default function FormFactura({ factura, clientes, numeros, hoy, rectifica: orig, plantilla, clienteInicial = null, notaDefecto = '', actividades, productos = [], stock = null, proyectos = [], riesgos = {}, recargo = false, oss = false, margenes = [], reagp = false, igic = false, limiteSimplificada = 400 }) {
+export default function FormFactura({ factura, clientes, numeros, hoy, rectifica: orig, plantilla, clienteInicial = null, notaDefecto = '', actividades, productos = [], stock = null, proyectos = [], riesgos = {}, bienes = [], recargo = false, oss = false, margenes = [], reagp = false, igic = false, limiteSimplificada = 400 }) {
   const impuesto = igic ? 'IGIC' : 'IVA';
   const operaciones = igic ? { exenta: { nombre: 'Exenta de IGIC' }, exportacion: { nombre: 'Exportación de bienes' }, 'servicios-fuera': { nombre: 'No sujeta por localización' }, isp: { nombre: 'Inversión del sujeto pasivo (lo declara el cliente)' } } : TIPOS_OPERACION;
   // IVA y retención de cada actividad, para rellenar la factura nueva.
@@ -362,6 +362,12 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
           <option value="">Lo de mi actividad</option>
           <option value="inversion">Un bien de inversión de la actividad (maquinaria, vehículo, equipo…)</option>
           <option value="inmueble">Un inmueble o una operación financiera que no es habitual</option>
+        </select>
+      </label>}
+      {!orig && f.accesoria === 'inversion' && bienes.length > 0 && <label className="ff-det">Qué bien vendes (se da de baja y deja de amortizarse)
+        <select className="campo" value={f.bien || ''} onChange={(e) => poner('bien', e.target.value || undefined)}>
+          <option value="">No está en Fisquo (lo compré antes de usarlo)</option>
+          {bienes.map((b) => <option key={b.id} value={b.id}>{b.proveedor || 'Sin proveedor'} · {b.fecha.split('-').reverse().join('/')} · {eur(b.base)}</option>)}
         </select>
       </label>}
       <label className="ff-det">Proyecto, obra o local (opcional)

@@ -955,6 +955,8 @@ export default async function Modelos({ searchParams }) {
               renta.otrasRentas > 0 && ['Otras rentas (solo para el tipo)', renta.otrasRentas],
               [`Cuota estatal (mínimos de ${eur(renta.minimos.total)}${renta.minimos.total > MINIMO_PERSONAL ? `: personal ${eur(renta.minimos.personal)}${renta.minimos.descendientes ? `, hijos ${eur(renta.minimos.descendientes)}` : ''}${renta.minimos.ascendientes ? `, ascendientes ${eur(renta.minimos.ascendientes)}` : ''}` : ''})`, renta.cuotaEstatal],
               [renta.aproximada ? 'Cuota autonómica (aproximada, como la estatal)' : `Cuota autonómica de ${renta.nombreCcaa}${renta.minimosAutonomicos.total !== renta.minimos.total ? ` (mínimos de ${eur(renta.minimosAutonomicos.total)})` : ''}`, renta.cuotaAutonomica],
+              ...renta.ganancias.map((x) => [`Venta de ${x.concepto} (base del ahorro): ${eur(x.transmision)} menos ${eur(x.adquisicion)} sin amortizar`, x.ganancia]),
+              renta.cuotaAhorro > 0 && ['Cuota del ahorro de esas ganancias (19 % a 30 %)', renta.cuotaAhorro],
               ['Cuota', renta.cuota, true],
               renta.deduccionCeuta > 0 && [`Deducción por rentas obtenidas en ${renta.nombreCcaa} (60 %)`, menos(renta.deduccionCeuta)],
               ['Retenciones de tus facturas', menos(renta.retenciones)], ['Pagos del 130 marcados', menos(renta.pagos130)],
@@ -963,6 +965,8 @@ export default async function Modelos({ searchParams }) {
               [renta.resultado >= 0 ? 'Saldría a pagar' : 'Saldría a devolver', Math.abs(renta.resultado), true],
             ]} />
             <p className="nota">Tipo medio: {String(renta.tipoMedio).replace('.', ',')} %.{anio !== renta.escalaDe && ` Con la escala de ${renta.escalaDe} (la última publicada por la Agencia Tributaria).`}</p>
+            {renta.ganancias.some((x) => x.ganancia < 0) && <p className="nota">La pérdida por la venta de un bien de la actividad no resta aquí: se compensa con otras ganancias del ahorro o en los cuatro años siguientes (art. 49 LIRPF).</p>}
+            {renta.sinBien > 0 && <p className="nota">Has vendido {renta.sinBien === 1 ? 'un bien de inversión' : `${renta.sinBien} bienes de inversión`} sin decir cuál en la factura: su ganancia o pérdida (base del ahorro, no de la actividad) no está en este borrador.</p>}
             {renta.inicioActividad?.falta && <p className="nota">No hay datos de {renta.inicioActividad.falta} para saber si aún toca la reducción del 20 % por inicio de actividad: pon el rendimiento neto de ese año en el 130 de {renta.inicioActividad.falta + 1} o confírmalo con tu gestor.</p>}
             {renta.inicioActividad?.primero && <p className="nota">La reducción del 20 % por inicio de actividad ya se aplicó en {renta.inicioActividad.primero} y {renta.inicioActividad.primero + 1} (los dos primeros años con beneficio).</p>}
             {renta.maternidad.sinMes > 0 && <p className="nota">Para la deducción por maternidad del año en que nació tu hijo o en que cumple 3 años hace falta el mes: escríbelo en Ajustes con el año (por ejemplo, 05/2024).</p>}
