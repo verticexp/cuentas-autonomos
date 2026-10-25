@@ -71,29 +71,43 @@ for (const [clave, viewport] of [['aut',{width:390,height:844}], ['sociedad',{wi
   page.on('pageerror', e=>errores.push(e.message));
   await page.goto(`${BASE}/bienvenida`);
   await page.waitForSelector('.cuestionario');
-  if (clave==='vacia') {
-    await page.getByRole('radio',{name:'Sociedad'}).check();
+  // Tres pasos para todos: cómo trabajas y a qué te dedicas, datos de facturación e impuestos (sin paso de revisión).
+  await page.getByRole('heading',{name:'¿Cómo trabajas?'}).waitFor();
+  assert.match(await page.locator('.alta-etapa').innerText(),/Paso 1 de 3/);
+  if (clave==='vacia') await page.getByRole('radio',{name:'Sociedad'}).check();
+  else assert.equal(await page.getByRole('radio',{name:'Autónomo'}).count(),0,'con la forma ya elegida en el registro, no se vuelve a preguntar de entrada');
+  await page.getByLabel('Nombre de tu actividad').fill('Diseño y eventos');
+  // El autónomo elige su retención antes de seguir; la sociedad no la tiene.
+  if (clave==='aut') {
     await page.getByRole('button',{name:'Siguiente'}).click();
+    await page.getByRole('heading',{name:'¿Cómo trabajas?'}).waitFor();
+    assert.match(await page.locator('p.error[role=alert]').innerText(),/retención de IRPF/);
+    await page.getByRole('button',{name:'Sin retención'}).click();
+  }
+  await page.getByRole('button',{name:'Siguiente'}).click();
+  await page.getByRole('heading',{name:/datos de facturación/i}).waitFor();
+  assert.match(await page.locator('.alta-etapa').innerText(),/Paso 2 de 3/);
+  if (clave==='vacia') {
     await page.getByLabel('Razón social (obligatorio)').fill('Empresa de pruebas');
-    await page.getByLabel('CIF (obligatorio)').fill('B12345674');
+    await page.getByLabel('CIF (obligatorio)').fill('B24691354');
     await page.getByRole('button',{name:'Atrás',exact:true}).click();
+    assert.equal(await page.getByLabel('Nombre de tu actividad').inputValue(),'Diseño y eventos');
     await page.getByRole('button',{name:'Siguiente'}).click();
     assert.equal(await page.getByLabel('Razón social (obligatorio)').inputValue(),'Empresa de pruebas');
-    await page.getByRole('button',{name:'Siguiente'}).click();
-  } else {
-    await page.getByRole('heading',{name:'¿A qué te dedicas?'}).waitFor();
-    assert.match(await page.locator('.alta-etapa').innerText(),/Paso 1 de 3/);
   }
-  await page.getByLabel('Nombre de tu actividad').fill('Diseño y eventos');
   await page.getByRole('button',{name:'Siguiente'}).click();
+  await page.getByRole('heading',{name:'Impuestos y extras'}).waitFor();
+  assert.match(await page.locator('.alta-etapa').innerText(),/Paso 3 de 3/);
   await page.getByRole('switch',{name:'Alquilo un local u oficina'}).check();
+  await page.getByRole('button',{name:'Atrás',exact:true}).click();
   await page.getByRole('button',{name:'Atrás',exact:true}).click();
   assert.equal(await page.getByLabel('Nombre de tu actividad').inputValue(),'Diseño y eventos');
   await page.getByRole('button',{name:'Siguiente'}).click();
-  assert(await page.getByRole('switch',{name:'Alquilo un local u oficina'}).isChecked());
   await page.getByRole('button',{name:'Siguiente'}).click();
-  await page.getByRole('heading',{name:'Tus modelos'}).waitFor();
-  assert.match(await page.locator('.paso').innerText(),/115/);
+  assert(await page.getByRole('switch',{name:'Alquilo un local u oficina'}).isChecked());
+  // En vez de un paso de revisión, una línea con lo elegido y los modelos que le tocan.
+  assert.match(await page.locator('.alta-resumen-linea').innerText(),/Vamos a preparar: .*Diseño y eventos.*115/);
+  assert.equal(await page.getByRole('heading',{name:'Tus modelos'}).count(),0);
   await page.locator('.paso').evaluate(el => Promise.all(el.getAnimations({ subtree: true }).map(a => a.finished)));
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
   if(clave==='aut') {
@@ -104,11 +118,19 @@ for (const [clave, viewport] of [['aut',{width:390,height:844}], ['sociedad',{wi
     await page.unroute('**/api/cuenta');
   }
   await page.getByRole('button',{name:'Terminar'}).click();
-  await page.getByRole('heading',{name:'Tu negocio ya está preparado'}).waitFor();
+  await page.getByRole('heading',{name:'Tu negocio ya está preparado'}).waitFor({timeout:10000}).catch(async (e)=>{ throw new Error(`${clave}: no termina (${await page.locator('p.error[role=alert]').allInnerTexts()})`); });
   assert.equal(await page.getByRole('link',{name:'Crear mi primera factura'}).getAttribute('href'),'/facturas/nueva');
-  assert.equal(await page.getByRole('link',{name:'Importar mis datos'}).getAttribute('href'),'/ajustes/importar');
-  await page.getByRole('link',{name:clave==='sociedad'?'Importar mis datos':'Crear mi primera factura'}).click();
-  await page.waitForURL(clave==='sociedad'?'**/ajustes/importar':'**/facturas/nueva');
+  // «¿Vienes de otro programa?»: Holded, Quipu u otro, a la importación con el origen ya elegido.
+  await page.getByRole('heading',{name:'¿Vienes de otro programa?'}).waitFor();
+  for (const [origen, texto] of [['holded','Holded'],['quipu','Quipu'],['otro','Otro programa o Excel']]) assert.equal(await page.getByRole('link',{name:texto}).getAttribute('href'),`/ajustes/importar?origen=${origen}`);
+  if (clave==='sociedad') {
+    await page.getByRole('link',{name:'Quipu'}).click();
+    await page.waitForURL('**/ajustes/importar?origen=quipu');
+    await page.getByText('Qué exportar desde Quipu').waitFor();
+  } else {
+    await page.getByRole('link',{name:'Crear mi primera factura'}).click();
+    await page.waitForURL('**/facturas/nueva');
+  }
   assert(!page.url().includes('bienvenida'));
   assert.deepEqual(errores,[]);
   console.log(`${clave}: recorrido, atrás, datos conservados, guardado y destino OK`);

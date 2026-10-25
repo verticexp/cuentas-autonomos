@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import ProgresoAlta from './ProgresoAlta';
 import usePasosEnHistorial from './usePasosEnHistorial';
+import VienesDeOtroPrograma from './VienesDeOtroPrograma';
+import Ir from './Ir';
 import { llamar } from './Acciones';
 import { TIPOS_IGIC } from '@/lib/igic';
 import { COMUNIDADES_RENTA, limpiarFiscal, modelosDe, usaIgic } from '@/lib/empresa';
@@ -48,7 +50,8 @@ function CamposEmisor({ emisor, sociedad, cambiar }) {
   ))}</div>;
 }
 
-// Preguntas una a una; al final, los modelos que le tocan.
+// Tres pasos (auditoría D8-10): cómo trabajas y a qué te dedicas, tus datos de facturación, impuestos y extras. Sin paso de
+// revisión: el último botón crea la cuenta y, encima, resume en una línea lo elegido y los modelos que le tocan.
 export default function Cuestionario({ inicial, editar, conFacturas, puedeFacturar = true }) {
   // Los datos fiscales del registro ya están guardados. Se revisan sin repetir dos pantallas.
   const datosCompletos = !editar && Boolean(inicial.emisor.nombre?.trim() && inicial.emisor.nif?.trim());
@@ -81,34 +84,35 @@ export default function Cuestionario({ inicial, editar, conFacturas, puedeFactur
   const e = (k, v) => setEmisor((x) => ({ ...x, [k]: v }));
   const a = (i, k, v) => setActs((l) => l.map((x, j) => (j === i ? { ...x, [k]: v } : x)));
 
-  const todosPasos = [
+  const formaOpciones = (
+    <div className="opciones">
+      <Opcion grupo="forma" activo={!sociedad} titulo="Autónomo" detalle="Trabajas por tu cuenta, con tu NIF" onClick={() => f('tipo', 'autonomo')} />
+      <Opcion grupo="forma" activo={sociedad} titulo="Sociedad" detalle="SL, SA, cooperativa… con CIF propio" onClick={() => { f('tipo', 'sociedad'); setActs((l) => l.map((x) => ({ ...x, irpfPct: 0 }))); }} />
+    </div>
+  );
+  const datosListos = Boolean(emisor.nombre.trim() && emisor.nif.trim());
+  const actividadesListas = acts.every((x) => String(x.nombre).trim()) && (sociedad || acts.every((x) => x.irpfPct !== null && x.irpfPct !== undefined));
+  // Lo elegido en una línea, encima del último botón: forma, territorio si no es el común, actividades y modelos que le tocan.
+  const modelos = modelosDe(limpiarFiscal(fiscal));
+  const numeros = modelos.map((m) => m.num || m.id);
+  const nombresActs = acts.map((x) => String(x.nombre).trim()).filter(Boolean);
+  const resumenLinea = [
+    sociedad ? 'Sociedad' : 'Autónomo',
+    territorio !== 'comun' && OPCIONES_TERRITORIO.find(([k]) => k === territorio)?.[1],
+    nombresActs.length > 2 ? `${nombresActs.length} actividades` : nombresActs.join(' y '),
+    `${numeros.length === 1 ? 'modelo' : 'modelos'} ${numeros.slice(0, 7).join(', ')}${numeros.length > 7 ? ` y ${numeros.length - 7} más` : ''}`,
+  ].filter(Boolean).join(' · ');
+
+  const pasos = [
     {
       titulo: '¿Cómo trabajas?',
-      texto: 'Según la forma, Hacienda te pide unos modelos u otros.',
-      listo: true,
-      cuerpo: (
-        <div className="opciones">
-          <Opcion grupo="forma" activo={!sociedad} titulo="Autónomo" detalle="Trabajas por tu cuenta, con tu NIF" onClick={() => f('tipo', 'autonomo')} />
-          <Opcion grupo="forma" activo={sociedad} titulo="Sociedad" detalle="SL, SA, cooperativa… con CIF propio" onClick={() => { f('tipo', 'sociedad'); setActs((l) => l.map((x) => ({ ...x, irpfPct: 0 }))); }} />
-        </div>
-      ),
-    },
-    {
-      titulo: sociedad ? 'Datos de la sociedad' : 'Tus datos',
-      texto: 'Salen en cada factura.',
-      listo: emisor.nombre.trim() && emisor.nif.trim(),
-      falta: 'Escribe el nombre y el NIF para seguir.',
-      cuerpo: (
-        <CamposEmisor emisor={emisor} sociedad={sociedad} cambiar={e} />
-      ),
-    },
-    {
-      titulo: '¿A qué te dedicas?',
-      texto: 'Con esto preparamos tus facturas y tus impuestos. Si haces cosas distintas (por ejemplo, fontanería y venta de material), añade cada una por separado: cada una lleva su propia numeración.',
-      listo: acts.every((x) => String(x.nombre).trim()) && Boolean(emisor.nombre.trim() && emisor.nif.trim()) && (sociedad || acts.every((x) => x.irpfPct !== null && x.irpfPct !== undefined)),
-      falta: !acts.every((x) => String(x.nombre).trim()) ? 'Escribe el nombre de tu actividad para seguir.' : !(emisor.nombre.trim() && emisor.nif.trim()) ? 'Faltan el nombre y el NIF de tus datos.' : 'Elige si pones retención de IRPF en tus facturas.',
+      corto: 'Tu negocio',
+      texto: 'Tu forma de trabajar y a qué te dedicas: con esto preparamos tus facturas y tus impuestos.',
+      listo: actividadesListas,
+      falta: !acts.every((x) => String(x.nombre).trim()) ? 'Escribe el nombre de tu actividad para seguir.' : 'Elige si pones retención de IRPF en tus facturas.',
       cuerpo: (
         <>
+          {!datosCompletos && formaOpciones}
           <label className="alta-campo"><span>¿Dónde presentas tus impuestos?</span>
             <select className="campo" value={territorioDe(fiscal)} onChange={(ev) => {
               const t = ev.target.value, canarias = t === 'canarias';
@@ -116,6 +120,8 @@ export default function Cuestionario({ inicial, editar, conFacturas, puedeFactur
               setActs((l) => l.map((x) => ({ ...x, ivaPct: (canarias ? TIPOS_IGIC : [21, 10, 4, 0]).includes(Number(x.ivaPct)) ? x.ivaPct : canarias ? 7 : 21 })));
             }}>{OPCIONES_TERRITORIO.map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select>
           </label>
+          <h2 className="alta-sub">¿A qué te dedicas?</h2>
+          <p className="nota alta-sub-texto">Si haces cosas distintas (por ejemplo, fontanería y venta de material), añade cada una por separado: cada una lleva su propia numeración.</p>
           {acts.map((x, i) => {
             const fija = x.id && conFacturas.includes(x.id);
             return (
@@ -137,12 +143,29 @@ export default function Cuestionario({ inicial, editar, conFacturas, puedeFactur
             );
           })}
           {acts.length < 8 && <button type="button" className="boton sec ancho" onClick={() => setActs((l) => [...l, { nombre: '', ivaPct: l[0]?.ivaPct ?? 21, irpfPct: sociedad ? 0 : (l[0]?.irpfPct ?? null) }])}>Añadir otra actividad</button>}
+          {datosCompletos && (
+            <details className="alta-datos">
+              <summary>Trabajas como {sociedad ? 'sociedad' : 'autónomo'} · cambiar</summary>
+              {formaOpciones}
+            </details>
+          )}
         </>
       ),
     },
     {
-      titulo: 'Prepara tus impuestos',
-      texto: 'Para saber qué modelos tienes que presentar.',
+      titulo: sociedad ? 'Datos de facturación de la sociedad' : 'Tus datos de facturación',
+      corto: 'Tus datos',
+      texto: datosCompletos ? 'Salen en cada factura. Los diste al registrarte: revísalos y completa lo que falte.' : 'Salen en cada factura y en tus cobros.',
+      listo: datosListos,
+      falta: 'Escribe el nombre y el NIF para seguir.',
+      cuerpo: (
+        <CamposEmisor emisor={emisor} sociedad={sociedad} cambiar={e} />
+      ),
+    },
+    {
+      titulo: 'Impuestos y extras',
+      corto: 'Impuestos',
+      texto: 'Para saber qué modelos tienes que presentar. Lo que no sepas, déjalo como está: se cambia después en Ajustes.',
       listo: true,
       cuerpo: (
         <>
@@ -225,32 +248,30 @@ export default function Cuestionario({ inicial, editar, conFacturas, puedeFactur
               <input className="campo" type="date" min="1900-01-01" value={fiscal.constitucion || ''} onChange={(v) => f('constitucion', v.target.value)} />
             </label>
           )}
+          <p className="alta-resumen-linea" role="status"><strong>{editar ? 'Se guardará' : 'Vamos a preparar'}:</strong> {resumenLinea}</p>
         </>
       ),
     },
-    {
-      titulo: 'Tus modelos',
-      texto: 'Esto es lo que te toca presentar. La app calcula los marcados; el resto, tu gestor.',
-      listo: true,
-      cuerpo: (
-        <div className="grupo-c">
-          {modelosDe(limpiarFiscal(fiscal)).map((m) => (
-            <div key={m.id} className="celda"><span className="modelo-num">{m.num || m.id}</span><span className="txt">{m.nombre}<small>{m.cuando}</small></span>{m.calcula && <span className="v">Calculado</span>}</div>
-          ))}
-        </div>
-      ),
-    },
   ];
-  const pasos = datosCompletos ? todosPasos.slice(2) : todosPasos;
   const p = pasos[paso];
   const ultimo = paso === pasos.length - 1;
+  // Lo que falta de un paso anterior (el botón «atrás» del navegador deja volver y quitarlo): se avisa al volver a él.
+  const avisoAlVolver = useRef('');
   const historial = usePasosEnHistorial({
     paso, base: 0, total: pasos.length, bloqueado: guardando,
-    cambiarPaso: (n) => { setError(''); setTerminado(false); setPaso(n); },
+    cambiarPaso: (n) => { setError(avisoAlVolver.current); avisoAlVolver.current = ''; setTerminado(false); setPaso(n); },
   });
 
   async function terminar() {
     if (guardando) return;
+    // El último botón crea la cuenta: nada de lo anterior puede haber quedado a medias.
+    const roto = pasos.findIndex((x) => !x.listo);
+    if (roto >= 0) {
+      if (roto === paso) { setError(pasos[roto].falta || 'Completa este paso para seguir.'); return; }
+      avisoAlVolver.current = pasos[roto].falta || 'Completa este paso para seguir.';
+      historial.saltar(roto);
+      return;
+    }
     setGuardando(true); setError('');
     try {
       await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify({ configuracion: { fiscal: limpiarFiscal(fiscal), emisor, actividades: acts } }) });
@@ -268,9 +289,10 @@ export default function Cuestionario({ inicial, editar, conFacturas, puedeFactur
         <h1 className="titulo" ref={tituloRef} tabIndex={-1}>Tu negocio ya está preparado</h1>
         <p className="grupo-pie">Tus datos, actividades e impuestos están guardados. ¿Por dónde quieres empezar?</p>
         <div className="alta-acciones">
-          {puedeFacturar && <a className="boton" href="/facturas/nueva">Crear mi primera factura</a>}
-          <a className="boton sec" href="/ajustes/importar">Importar mis datos</a>
+          {puedeFacturar && <Ir className="boton" href="/facturas/nueva" tipo="subir">Crear mi primera factura</Ir>}
         </div>
+        {/* Quien viene de otro programa trae sus clientes, facturas y gastos en vez de empezar de cero. */}
+        <VienesDeOtroPrograma />
         <a className="alta-resumen-enlace" href="/">Ir al resumen</a>
       </div>
     </div>
@@ -281,19 +303,12 @@ export default function Cuestionario({ inicial, editar, conFacturas, puedeFactur
 
   return (
     <div className="cuestionario" aria-busy={guardando}>
-      {editar ? <p className="nota" role="status">Configuración del negocio · Paso {paso + 1} de {pasos.length}</p> : <ProgresoAlta paso={paso + 1} total={pasos.length} etiqueta={`Casi listo · pregunta ${paso + 1} de ${pasos.length}`} />}
-      {paso === 0 && !editar && <p className="hola">Tu cuenta ya está creada. Son {pasos.length} preguntas rápidas y todo se puede cambiar después en Ajustes.</p>}
+      {editar ? <p className="nota" role="status">Configuración del negocio · Paso {paso + 1} de {pasos.length}</p> : <ProgresoAlta paso={paso + 1} total={pasos.length} etiqueta={`Casi listo · ${p.corto}`} />}
+      {paso === 0 && !editar && <p className="hola">Tu cuenta ya está creada. Son {pasos.length} pasos rápidos y todo se puede cambiar después en Ajustes.</p>}
       <div className="paso" key={paso}>
         <h1 className="titulo" ref={tituloRef} tabIndex={-1}>{p.titulo}</h1>
         <p className="grupo-pie arriba">{p.texto}</p>
         {p.cuerpo}
-        {datosCompletos && paso === 0 && (
-          <details className="alta-datos">
-            <summary>Revisar datos de facturación y cuenta de cobro</summary>
-            <p>{emisor.nombre} · {emisor.nif}<br />{emisor.direccion}<br />{emisor.cp} {emisor.ciudad} {emisor.provincia}</p>
-            <CamposEmisor emisor={emisor} sociedad={sociedad} cambiar={e} />
-          </details>
-        )}
       </div>
       {/* El aviso de lo que falta se va solo en cuanto el paso está completo. */}
       {error && !(p.listo && error === p.falta) && <p className="error" role="alert" ref={errorRef} tabIndex={-1}>{error}</p>}

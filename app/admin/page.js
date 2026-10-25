@@ -2,6 +2,8 @@ import { requerirAdmin } from '@/lib/auth';
 import { redis } from '@/lib/redis';
 import { actividadReciente, ultimaActividad } from '@/lib/actividad';
 import { ESTADOS, ORIGENES, resumenAdmin } from '@/lib/admin';
+import { textoDias } from '@/lib/embudo';
+import { embudoDe } from '@/lib/embudoServidor';
 import { emailListo } from '@/lib/email';
 import { avisosRemitente, dkimResend, leerRemitente } from '@/lib/adminAjustes';
 import Volver from '@/components/Volver';
@@ -38,6 +40,8 @@ export default async function Admin() {
   const [empresas, usuarios, actividad, ultima] = await Promise.all([redis.hgetall('empresas'), redis.hgetall('usuarios'), actividadReciente(30), ultimaActividad()]);
   const r = resumenAdmin({ empresas: Object.values(empresas || {}), usuarios: Object.values(usuarios || {}), actividad, ultima });
   const k = r.kpis;
+  // Embudo de activación (lib/embudo.js): solo índices y contadores, no documentos.
+  const embudo = await embudoDe({ filas: r.filas, empresas: empresas || {}, ultima });
   const remitente = process.env.RESEND_FROM || '';
   const rem = leerRemitente(remitente || 'Fisquo <no-reply@fisquo.com>');
   const dkim = await dkimResend(rem.dominio);
@@ -74,6 +78,24 @@ export default async function Admin() {
       <Barras titulo="Altas por semana (12 semanas)" datos={r.altas} etiqueta={(d) => fecha(d.desde)} valor={(d) => d.n} />
       <Barras titulo="Personas que entran cada día (30 días)" datos={r.diario} etiqueta={(d) => fecha(d.dia)} valor={(d) => d.usuarios} />
     </section>
+
+    {embudo && <section className="adm-caja adm-embudo" aria-labelledby="adm-embudo-t">
+      <h2 id="adm-embudo-t">Activación de las altas</h2>
+      <p className="adm-pie">De las empresas que se dan de alta, cuántas llegan a cada paso. Cuenta cada una en un paso solo si ha hecho también los anteriores; «% previo» es sobre el paso de arriba y los días son la mediana desde el alta.</p>
+      <div className="adm-embudo-rejilla">
+        {embudo.map((v) => <table key={v.id} className="adm-embudo-tabla">
+          <caption>{v.nombre}</caption>
+          <thead><tr><th scope="col">Paso</th><th scope="col">Empresas</th><th scope="col">% previo</th><th scope="col">Mediana</th></tr></thead>
+          <tbody>{v.pasos.map((p) => <tr key={p.id}>
+            <th scope="row">{p.nombre}<span className="adm-embudo-barra" aria-hidden><i style={{ width: `${p.pctAltas ?? 0}%` }} /></span></th>
+            <td>{p.n}</td>
+            <td>{p.pctPrevio === null ? '' : `${p.pctPrevio} %`}</td>
+            <td title={p.id !== 'alta' && p.n > p.conDia ? `${p.conDia} de ${p.n} con día conocido` : undefined}>{p.id === 'alta' ? '' : textoDias(p.mediana)}</td>
+          </tr>)}</tbody>
+        </table>)}
+      </div>
+      <p className="adm-pie">Factura y gasto: el día de la más antigua (si es anterior al alta, cuenta 0 días). Banco: el día en que se subió el extracto o se conectó la cuenta. Modelo: cuando se marcó como presentado; los que no guardan el día (el 130 a cero, el 202) cuentan en el embudo pero no en la mediana.</p>
+    </section>}
 
     <section className="adm-dos">
       <div className="adm-caja">

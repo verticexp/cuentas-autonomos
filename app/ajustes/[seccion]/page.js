@@ -21,6 +21,7 @@ import Verifactu from '@/components/Verifactu';
 import { certificadoListo } from '@/lib/verifactuEnvio';
 import { leer } from '@/lib/redis';
 import Importar from '@/components/Importar';
+import { origenValido } from '@/lib/importarOrigen';
 import { actividadesDe, fiscalDe, serieSimplificada } from '@/lib/empresa';
 import { numeroPrevisto } from '@/lib/facturas';
 import { todasFichas } from '@/lib/indices';
@@ -119,7 +120,7 @@ export default async function Seccion({ params, searchParams }) {
       })()}
       {seccion === 'controlat' && <Controlat activo={Boolean(u.controlat)} />}
       {seccion === 'avisos' && <AvisosPush listo={pushListo()} />}
-      {seccion === 'importar' && <Importar />}
+      {seccion === 'importar' && await (async () => { const origen = origenValido((await searchParams)?.origen); return <Importar key={origen || 'sin-origen'} origen={origen} />; })()}
       {seccion === 'verifactu' && await (async () => {
         const regs = await leer(u, 'registros');
         const facturas = await documentos(u, 'facturas', [...new Set((regs || []).map((r) => r.factura))]);
