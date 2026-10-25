@@ -1,11 +1,15 @@
-import Link from 'next/link';
+import Ir from './Ir';
 import Ico from './Ico';
 import styles from './Vacio.module.css';
+
+// Los formularios de crear suben como una hoja (lib/transicion.js 'subir'), como el resto de enlaces a ellos; lo demás entra
+// de lado. Un tipo propio ({ href, texto, tipo }) manda.
+const esFormulario = (href) => /^\/(?:facturas|presupuestos|albaranes)\/nuev[ao](?:[?#]|$)/.test(href);
 
 function Accion({ valor, secundaria = false }) {
   if (!valor) return null;
   if (typeof valor === 'object' && 'href' in valor && 'texto' in valor) {
-    return <Link href={valor.href} className={`boton${secundaria ? ' sec' : ''}`}>{valor.texto}</Link>;
+    return <Ir href={valor.href} tipo={valor.tipo || (esFormulario(valor.href) ? 'subir' : 'adelante')} className={`boton${secundaria ? ' sec' : ''}`}>{valor.texto}</Ir>;
   }
   return valor;
 }

@@ -13,7 +13,7 @@ import { alPulsar } from '@/lib/transicion';
 export default function Ir({ href, tipo = 'adelante', prefetch, scroll, onClick, children, ...resto }) { // eslint-disable-line no-unused-vars
   const router = useRouter();
   const ir = alPulsar(router, href, tipo, undefined, scroll === false ? { scroll: false } : undefined);
-  const precargar = () => router.prefetch(href);
+  const precargar = () => { if (!String(href).startsWith('#')) router.prefetch(href); }; // un ancla de esta pantalla no tiene nada que precargar
   return (
     <Link href={href} prefetch={false} scroll={scroll} onPointerDown={precargar} onMouseEnter={precargar} {...resto} onClick={(e) => { onClick?.(e); if (!e.defaultPrevented) ir(e); }}>
       {children}

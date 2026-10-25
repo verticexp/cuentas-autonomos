@@ -5,6 +5,7 @@ import { periodoDe } from '@/lib/despachoApi';
 import { plantillasDe } from '@/lib/plantillasDespacho';
 import { hoy } from '@/lib/formato';
 import Volver from '@/components/Volver';
+import Vacio from '@/components/Vacio';
 import EscribirVarios from '@/components/EscribirVarios';
 import { ESTADOS_TEXTO } from '@/components/despachoTextos';
 import '@/app/mk.css';
@@ -23,6 +24,6 @@ export default async function Varios() {
     <Volver href="/despacho/mensajes">Mensajes</Volver>
     <h1 className="titulo">Escribir a varios</h1>
     <p className="desp-sub">Cada cliente lo recibe en su conversación, como si le escribieras solo a él. Nadie ve a quién más se lo has mandado.</p>
-    <EscribirVarios clientes={filas.map((f) => ({ id: f.id, nombre: f.nombre, estado: ESTADOS_TEXTO[f.estado], porRevisar: f.estado === 'listo' }))} plantillas={plantillasDe(d)} trimestre={`${t}T`} />
+    {!filas.length ? <Vacio icono="usuarios" titulo="Aún no tienes clientes a quienes escribir" accion={{ href: '/despacho/ajustes', texto: 'Invitar a un cliente' }}>Cuando tus clientes te den acceso a sus cuentas, podrás mandarles el mismo mensaje a varios a la vez desde aquí.</Vacio> : <EscribirVarios clientes={filas.map((f) => ({ id: f.id, nombre: f.nombre, estado: ESTADOS_TEXTO[f.estado], porRevisar: f.estado === 'listo' }))} plantillas={plantillasDe(d)} trimestre={`${t}T`} />}
   </main>;
 }

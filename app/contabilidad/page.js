@@ -72,6 +72,14 @@ export default async function Contabilidad({ searchParams }) {
   const visibles = (ids) => A.partidas.filter((x) => ids.includes(x.id) && (x.importe || ant(x.id) || x.id === 'cifra'));
   const totalLibro = (k) => d.libro.reduce((s, b) => s + b[k], 0);
   const escribe = puede(u, 'contabilidad');
+  // Sin ningún asiento (cuenta nueva) o sin asientos en el año que se mira: una explicación y lo que lo llena, no tablas a cero.
+  const sinAsientos = !d.asientos.length, anioVacio = !d.diario.length;
+  const vacioContable = (todo) => (
+    <Vacio icono="contabilidad" titulo={sinAsientos ? 'Aún no hay nada que contabilizar' : `Sin asientos en ${anio}`}
+      accion={puede(u, 'facturar') && { href: '/facturas/nueva', texto: 'Nueva factura' }} secundaria={puede(u, 'gastar') && { href: '/gastos#apuntar-gasto', texto: 'Añadir gasto' }}>
+      {sinAsientos ? 'La contabilidad se hace sola: cada factura, gasto, nómina, cobro y pago genera su asiento, y aquí verás ' + todo + '.' : `Cuando haya facturas, gastos o nóminas de ${anio}, aquí verás ${todo}. Cambia de año con las flechas de arriba.`}
+    </Vacio>
+  );
   const ca = ver === 'anuales' && sociedad && cuentasAnuales({ asientos: d.asientos, gastos, nominas: nominas || [], empresa: u, anio, guardado: (await leerUno(u, 'cuentasAnuales', String(anio))) || {} });
   const cerrado = anio < actual;
   // Filas del balance oficial con importe en alguno de los dos años (las masas, siempre).
@@ -93,7 +101,8 @@ export default async function Contabilidad({ searchParams }) {
         {vistas.map(([v, n]) => <Ir key={v} href={url({ ver: v, p: '' })} tipo="fundido" className={v === ver ? 'activo' : ''}>{n}</Ir>)}
       </Deslizable>
 
-      {ver === 'pyg' && <>
+      {ver === 'pyg' && anioVacio && <section className="bloque">{vacioContable('tu cuenta de resultados')}</section>}
+      {ver === 'pyg' && !anioVacio && <>
         <nav className="segmentado cont-periodo">
           {['', '1', '2', '3', '4'].map((x) => <Ir key={x} href={url({ p: x })} tipo="fundido" className={x === p ? 'activo' : ''}>{x ? `${x}T` : 'Año'}</Ir>)}
         </nav>
@@ -112,7 +121,8 @@ export default async function Contabilidad({ searchParams }) {
         </section>
       </>}
 
-      {ver === 'balance' && (
+      {ver === 'balance' && sinAsientos && <section className="bloque">{vacioContable('el balance')}</section>}
+      {ver === 'balance' && !sinAsientos && (
         <section className="bloque">
           <div className="tarjetas cont-balance">
             {[['Activo', d.bal.activo, d.bal.total], ['Patrimonio neto y pasivo', d.bal.pasivo, d.bal.totalPasivo]].map(([t, lado, total]) => (
@@ -153,12 +163,14 @@ export default async function Contabilidad({ searchParams }) {
               </table>
             </article>
           ))}
-          {!d.diario.some((a) => a.fecha.slice(5, 7) === mes) && <Vacio icono="contabilidad" tipo="resultados" titulo="Sin asientos en este mes" accion={{ href: url({ mes: null, p: null }), texto: 'Ver el último mes' }}>Cada factura, gasto, nómina, cobro y pago genera el suyo.</Vacio>}
+          {anioVacio && <>{vacioContable('el libro diario')}</>}
+          {!anioVacio && !d.diario.some((a) => a.fecha.slice(5, 7) === mes) && <Vacio icono="contabilidad" tipo="resultados" titulo="Sin asientos en este mes" accion={{ href: url({ mes: null, p: null }), texto: 'Ver el último mes' }}>Cada factura, gasto, nómina, cobro y pago genera el suyo.</Vacio>}
           <p className="grupo-pie">Libro diario de {anio}: {d.diario.length} <Termino id="asiento">asientos</Termino>. Fisquo los genera solos de tus facturas (y sus cobros), gastos (y sus pagos), nóminas, <Termino id="amortizacion">amortizaciones</Termino>, liquidaciones de IVA y retenciones de los trimestres marcados como presentados, y el cierre de cada año. Los apuntados a mano se pueden borrar.</p>
         </section>
       )}
 
-      {ver === 'sumas' && (
+      {ver === 'sumas' && anioVacio && <section className="bloque">{vacioContable('las sumas y saldos de cada cuenta')}</section>}
+      {ver === 'sumas' && !anioVacio && (
         <section className="bloque">
           <ul className="grupo-lista cont-sumas">
             {d.sumas.filas.map((x) => (
@@ -197,7 +209,7 @@ export default async function Contabilidad({ searchParams }) {
               </div></li>
             ))}
           </ul>
-          {!d.mayor.movs.length && <Vacio compacto tipo="resultados" icono="contabilidad" titulo={`Sin movimientos en ${anio}`} accion={{ href: '#cuenta-mayor', texto: 'Ver otra cuenta' }} />}
+          {!d.mayor.movs.length && (sinAsientos ? vacioContable('el libro mayor de cada cuenta') : <Vacio compacto tipo="resultados" icono="contabilidad" titulo={`Sin movimientos en ${anio}`} accion={{ href: '#cuenta-mayor', texto: 'Ver otra cuenta' }} />)}
           <p className="grupo-pie">Libro mayor: cada apunte de la cuenta (y sus subcuentas), del más reciente al más antiguo, con el saldo después de cada uno (debe − haber){d.mayor.movs.length > 300 ? '. Se ven los 300 últimos; el Excel los tiene todos' : ''}.</p>
           </> : <Vacio compacto icono="contabilidad" titulo="Esa cuenta no existe en el plan contable" accion={{ href: '#cuenta-mayor', texto: 'Elegir cuenta' }} />}
         </section>
@@ -236,6 +248,11 @@ export default async function Contabilidad({ searchParams }) {
 
       {libros && (
         <section className="bloque">
+          {!libros.resumen.ingresos && !libros.resumen.gastos && !libros.resumen.bienes ? (
+            <Vacio icono="contabilidad" titulo={`Aún no hay nada que anotar en ${anio}`} accion={puede(u, 'facturar') && { href: '/facturas/nueva', texto: 'Nueva factura' }} secundaria={puede(u, 'gastar') && { href: '/gastos#apuntar-gasto', texto: 'Añadir gasto' }}>
+              Los libros registro se rellenan solos con cada factura emitida, cada gasto y cada bien de inversión que apuntes. Cuando los haya, aquí verás el resumen y podrás descargarlos con el formato de la AEAT.
+            </Vacio>
+          ) : <>
           <div className="cont-resumen">
             <div><span>Ingresos</span><strong>{eur(libros.totales.ingresos)}</strong></div>
             <div><span>Gastos deducibles</span><strong>{eur(libros.totales.gastos)}</strong></div>
@@ -250,6 +267,7 @@ export default async function Contabilidad({ searchParams }) {
           </div>
           {libros.sinIae && <p className="cont-alerta">Falta el epígrafe del IAE de alguna actividad: ponlo en Ajustes › Actividades e impuestos para que salga en los libros.</p>}
           <a className="boton cont-excel" href={`/api/libros?anio=${anio}`} download>Descargar los libros registro de {anio}</a>
+          </>}
           <p className="grupo-pie">{sociedad
             ? 'Libros registro del IVA con el formato electrónico de la AEAT (un Excel por libro, con el nombre que pide Hacienda). Como sociedad, además llevas la contabilidad completa: la tienes en las demás pestañas.'
             : 'Es lo que te pide la ley si estás en estimación directa: los libros registro del IVA y del IRPF, unificados y con el formato electrónico de la AEAT (un Excel por libro, con el nombre que pide Hacienda). Sirven para un requerimiento y se pueden importar en el Pre303. En Resultados ves tu beneficio real del año, que te puede pedir el banco.'}</p>
@@ -273,7 +291,8 @@ export default async function Contabilidad({ searchParams }) {
           <p className="grupo-pie">El depósito es de un mes desde la aprobación: la fecha es la máxima si la junta se celebra el último día.</p>
         </section>
 
-        <section className="bloque">
+        {sinAsientos && <section className="bloque">{vacioContable('el balance y la cuenta de pérdidas y ganancias de las cuentas anuales')}</section>}
+        {!sinAsientos && <section className="bloque">
           <h2 className="grupo-t">Balance de pymes a 31-12-{anio}</h2>
           <div className="tarjeta cont-tabla">
             <div className="cont-fila cont-cab"><span className="cont-n">Activo</span><span className="cont-cifras"><span>{anio}</span><small>{anio - 1}</small></span></div>
@@ -285,9 +304,9 @@ export default async function Contabilidad({ searchParams }) {
             {filasBalance(ESTRUCTURA_BALANCE.pasivo).map((n) => <FilaOf key={n.id} t={n.t} a={ca.bal[0].v[n.id]} b={ca.bal[1].v[n.id]} nivel={n.nivel} fuerte={n.nivel === 0} />)}
             <FilaOf t="TOTAL PATRIMONIO NETO Y PASIVO" a={ca.bal[0].pasivo} b={ca.bal[1].pasivo} fuerte />
           </div>
-        </section>
+        </section>}
 
-        <section className="bloque">
+        {!sinAsientos && <section className="bloque">
           <h2 className="grupo-t">Pérdidas y ganancias de pymes de {anio}</h2>
           <div className="tarjeta cont-tabla">
             {LINEAS_PYG.flatMap((l) => [
@@ -297,7 +316,7 @@ export default async function Contabilidad({ searchParams }) {
             ])}
             <FilaOf t="D) Resultado del ejercicio" a={ca.pyg[0].D} b={ca.pyg[1].D} fuerte />
           </div>
-        </section>
+        </section>}
 
         <section className="bloque">
           {escribe && <FormCuentasAnuales anio={anio} datos={ca.datos} memoria={ca.memoria} borrador={ca.borrador} secciones={SECCIONES} />}

@@ -36,6 +36,7 @@ import { accionesHoy } from '@/lib/hoy';
 import { resumen as resumenBandeja } from '@/lib/bandeja';
 import { proximoPlazoDe } from '@/lib/avisos';
 import YaPresentado from '@/components/YaPresentado';
+import VienesDeOtroPrograma from '@/components/VienesDeOtroPrograma';
 
 export const dynamic = 'force-dynamic';
 // Solo los modelos definidos en el glosario reciben ayuda.
@@ -227,6 +228,9 @@ export default async function Resumen({ searchParams }) {
           </div>
         </section>
       )}
+
+      {/* Cuenta nueva: quien viene de otro programa puede traer sus clientes, facturas y gastos desde aquí. */}
+      {sinDatos && puede(u, 'empresa') && <VienesDeOtroPrograma />}
 
       {hayTarjetas && (
         <div className="hcards">
