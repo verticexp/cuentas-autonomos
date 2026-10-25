@@ -84,7 +84,7 @@ test('202: 18 % de la cuota del último Impuesto sobre Sociedades presentado', (
   assert.equal(modelo202({}, 2026)[1].cuota, null);
 });
 
-test('347: más de 3.005,06 € con IVA por cliente (B) y proveedor (A), por trimestres; sin 349, retenciones ni fuera de la UE', () => {
+test('347: más de 3.005,06 € con IVA por cliente (B) y proveedor (A), por trimestres; sin 349 ni retenciones', () => {
   const F = [
     { fecha: '2026-02-01', base: 2000, ivaPct: 21, irpfPct: 0, cliente: { nombre: 'Grande SL', nif: 'B12345678' } },
     { fecha: '2026-05-01', base: 1000, ivaPct: 21, irpfPct: 0, cliente: { nombre: 'Grande SL', nif: 'b-12345678' } },
@@ -92,6 +92,7 @@ test('347: más de 3.005,06 € con IVA por cliente (B) y proveedor (A), por tri
     { fecha: '2026-03-02', base: 2400, ivaPct: 21, irpfPct: 0, cliente: { nombre: 'Justa SL', nif: 'B11111111' } }, // 2.904 €: no
     { fecha: '2026-03-03', base: 9000, ivaPct: 21, irpfPct: 15, cliente: { nombre: 'Con retención', nif: 'B22222222' } },
     { fecha: '2026-03-04', base: 9000, ivaPct: 0, irpfPct: 0, cliente: { nombre: 'Berlin', nif: 'DE123456789' } },
+    // Sin país en la ficha: su identificador no es un NIF español y la factura va sin IVA, así que es extranjero.
     { fecha: '2026-03-05', base: 9000, ivaPct: 0, irpfPct: 0, cliente: { nombre: 'New York Inc', nif: '12-3456789' } },
   ];
   const G = [
@@ -101,9 +102,11 @@ test('347: más de 3.005,06 € con IVA por cliente (B) y proveedor (A), por tri
     { fecha: '2026-04-04', base: 5000, ivaPct: 21 },
   ];
   const m = modelo347(F, G, 2026);
-  assert.deepEqual(m.ventas.map((o) => [o.nif, o.total, o.trimestres]), [['B12345678', 3630, [2420, 1210, 0, 0]], ['B87654321', 3509, [3509, 0, 0, 0]]]);
+  // Art. 33.2.g RGAT: el servicio a EE. UU. sí se declara; el identificador extranjero no va en el NIF español.
+  assert.deepEqual(m.ventas.map((o) => [o.nif, o.total, o.trimestres]), [['', 9000, [9000, 0, 0, 0]], ['B12345678', 3630, [2420, 1210, 0, 0]], ['B87654321', 3509, [3509, 0, 0, 0]]]);
   assert.deepEqual(m.compras.map((o) => [o.nif, o.total]), [['B33333333', 3630]]);
-  assert.equal(m.sinNif.length, 0);
+  // El extranjero sin país en su ficha sale en la lista de los que hay que completar: el 347 pide su país.
+  assert.deepEqual(m.sinNif.map((o) => o.nombre), ['New York Inc']);
 });
 
 test('Impuesto sobre Sociedades: tipos por tamaño y año, y pagos del 202', () => {

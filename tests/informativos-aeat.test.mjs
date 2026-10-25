@@ -82,7 +82,8 @@ test('347: criterio de caja en un registro aparte y solo anual, con lo devengado
   const F = [fac('c', '2026-02-10', 4000, 21, ANA, { pagos: [{ fecha: '2026-11-10', importe: 3025 }, { fecha: '2027-03-01', importe: 1815 }] })];
   const r = modelo347(F, [], 2026, { recc });
   assert.equal(r.soloAnual, true);
-  assert.deepEqual(r.ventas, [{ clave: 'B', nif: 'B12345674', nombre: 'Ana SL', caja: true, importeCaja: 3025, total: 4840 }]);
+  // El 347 expone país y provincia en cada registro; vacíos aquí, por ser un residente español sin domicilio informado.
+  assert.deepEqual(r.ventas, [{ clave: 'B', nif: 'B12345674', pais: '', provincia: '', nombre: 'Ana SL', caja: true, importeCaja: 3025, total: 4840 }]);
   // En 2027: nada por la regla general y 1.815 devengados al cobrar; se declara porque la operación pasó del límite en 2026.
   assert.deepEqual(modelo347(F, [], 2027, { recc }).ventas.map((o) => [o.total, o.importeCaja]), [[0, 1815]]);
   // Gasto de un proveedor en el criterio de caja (g.recc), sin la empresa en él: registro aparte; el resto con trimestres.

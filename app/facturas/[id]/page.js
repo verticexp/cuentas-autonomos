@@ -18,7 +18,7 @@ import VerifactuFactura from '@/components/VerifactuFactura';
 import { RepetirFactura } from '@/components/Recurrente';
 import { asuntoFactura, mensajeFactura } from '@/lib/envio';
 import { puede } from '@/lib/permisos';
-import { usaIgic, actividadesDe, fiscalDe, limiteSimplificada, nombresActividad, usa130, usa303, ajustesIva } from '@/lib/empresa';
+import { usaIgic, actividadesDe, fiscalDe, limiteSimplificada, nombresActividad, usa130, usa303, ajustesIva, trimestresPresentados } from '@/lib/empresa';
 import { enlacePortal } from '@/lib/portal';
 import { CambiarEnlace, Compartir } from '@/components/AccionesPresupuesto';
 import { proyectosDe } from '@/lib/stockServidor';
@@ -151,7 +151,7 @@ export default async function Factura({ params }) {
       {/* Los datos completos (líneas, cliente, notas) se ven y se editan plegados: la pantalla es para consultarla. */}
       <details className="editar-factura">
         <summary>{editar && !f.verifactu ? 'Ver y editar los datos' : 'Ver los datos de la factura'}</summary>
-      <fieldset className="solo-ver" disabled={!editar}><FormFactura igic={usaIgic(fiscalDe(u))} key={JSON.stringify(f)} recargo={usa303(fiscal)} oss={usa303(fiscal) && Boolean(fiscal.oss)} margenes={['rebu', 'reav'].filter((k) => fiscal[k])} reagp={fiscal.iva === 'reagp'} limiteSimplificada={limiteSimplificada(fiscal)} factura={f} clientes={clientes} actividades={actividades} productos={(productos || []).sort((a, b) => a.nombre.localeCompare(b.nombre))} riesgos={riesgos} proyectos={editar ? await proyectosDe(u) : []} /></fieldset>
+      <fieldset className="solo-ver" disabled={!editar}><FormFactura presentados={trimestresPresentados(u)} igic={usaIgic(fiscalDe(u))} key={JSON.stringify(f)} recargo={usa303(fiscal)} oss={usa303(fiscal) && Boolean(fiscal.oss)} margenes={['rebu', 'reav'].filter((k) => fiscal[k])} reagp={fiscal.iva === 'reagp'} limiteSimplificada={limiteSimplificada(fiscal)} factura={f} clientes={clientes} actividades={actividades} productos={(productos || []).sort((a, b) => a.nombre.localeCompare(b.nombre))} riesgos={riesgos} proyectos={editar ? await proyectosDe(u) : []} /></fieldset>
       </details>
     </main>
   );

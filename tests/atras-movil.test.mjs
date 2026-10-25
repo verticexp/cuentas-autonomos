@@ -130,3 +130,50 @@ test('la hoja de Ajustes se cierra arrastrándola hacia abajo, entera, y deja el
   // El fondo oscurecido de detrás de la hoja no se queda en la pantalla a la que se vuelve.
   assert.match(arrastre, /return \(\) => \{\s*document\.body\.style\.removeProperty\('background'\)/);
 });
+
+test('cerrar la hoja de Ajustes con cambios sin guardar pregunta antes, también arrastrándola', async () => {
+  // Los formularios de Ajustes se registran (sin eso, salirDe descartaba lo escrito sin avisar) y las dos salidas pasan por el aviso.
+  assert.match(await leer('components/Ajustes.js'), /useCambiosSinGuardar\(cambiado\)/);
+  assert.match(await leer('components/CerrarAjustes.js'), /salirSinGuardar\(\(\) => salirDe\(router, '\/ajustes', '\/mas', 'bajar'\)\)/);
+  const arrastre = await leer('components/ArrastrarAjustes.js');
+  assert.match(arrastre, /salirSinGuardar\(\(\) => \{\s*salirDe\(router, '\/ajustes', '\/mas', 'bajar'\);/);
+  // Si la persona se queda, la hoja vuelve a su sitio.
+  assert.match(arrastre, /\.then\(\(salio\) => \{ if \(!salio\) devolver\(marco\); \}\)/);
+});
+
+test('la pantalla de espera recoge los toques mientras dura y los suelta al fundirse', async () => {
+  const css = await leer('app/diseno.css');
+  assert.match(css, /\.espera-pantalla \{[^}]*pointer-events: auto;/);
+  assert.match(css, /\.espera-pantalla\.saliendo \{[^}]*pointer-events: none;/);
+  // Si la navegación no llega nunca, a los 8 s se quita.
+  assert.match(await leer('lib/transicion.js'), /ponerEspera\.t = setTimeout\(quitarEspera, 8000\)/);
+});
+
+test('Ajustes sin barra solo en el móvil: en el ordenador sigue la barra del despacho y la lateral', async () => {
+  const { SIN_BARRA, CONVERSACION } = await import('../lib/transicion.js');
+  for (const ruta of ['/ajustes', '/ajustes/marca', '/ajustes?x=1']) {
+    assert.ok(SIN_BARRA.test(ruta), `${ruta} sin barra en el móvil`);
+    assert.ok(!CONVERSACION.test(ruta), `${ruta} con barra en el ordenador`);
+  }
+  for (const ruta of ['/despacho/mensajes/abc', '/tu-gestoria']) assert.ok(SIN_BARRA.test(ruta) && CONVERSACION.test(ruta), ruta);
+  assert.ok(!SIN_BARRA.test('/facturas') && !CONVERSACION.test('/facturas'));
+  const barra = await leer('components/SelectorCuenta.js');
+  assert.match(barra, /\(movil \? SIN_BARRA : CONVERSACION\)\.test\(path\)/);
+  assert.match(await leer('lib/transicion.js'), /const sinBarra = \(ruta\) => CONVERSACION\.test\(ruta\) \|\| \(SIN_BARRA\.test\(ruta\) && movil\(\)\);/);
+});
+
+test('los clientes recientes del selector son de cada usuario y se borran al cerrar sesión', async () => {
+  const selector = await leer('components/SelectorCuenta.js');
+  assert.match(selector, /const claveDe = \(usuario\) => `\$\{CLAVE\}:\$\{usuario\}`;/);
+  assert.match(selector, /\/api\/logout'\) olvidar\(usuario\)/);
+  assert.match(await leer('app/layout.js'), /<BarraDespacho [^>]*usuario=\{u\.id\}/);
+});
+
+test('el menú del selector de cuenta se maneja con el teclado y la barra de título compacta ve el contenido que llega', async () => {
+  const selector = await leer('components/SelectorCuenta.js');
+  assert.match(selector, /ArrowDown/);
+  assert.match(selector, /pastilla\.current\?\.focus\(\)/); // Escape devuelve el foco a la pastilla
+  assert.match(selector, /addEventListener\('focusin', fuera\)/); // tabular fuera lo cierra
+  assert.match(await leer('components/TituloCompacto.js'), /mo\.observe\(document\.body,/);
+  assert.match(await leer('app/movil.css'), /@media \(display-mode: standalone\) and \(pointer: coarse\)/);
+});

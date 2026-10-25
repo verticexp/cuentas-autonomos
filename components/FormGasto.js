@@ -11,7 +11,7 @@ import { anterior, atras, volverA } from '@/lib/transicion';
 import Deslizable from './Deslizable';
 import { eur, fechaCorta } from '@/lib/formato';
 import { TIPOS_IGIC } from '@/lib/igic';
-import { importes, nifUE, origenGasto } from '@/lib/calculos';
+import { importes, nifUE, origenGasto, r2, trimestre } from '@/lib/calculos';
 import { conIva, costeAfecto, partirIva, pctAfecto, pctDeducible, tipoAutoliquidado } from '@/lib/ivaDeducible';
 import { parseImporte } from '@/lib/importe';
 import { CATEGORIAS, categoria, categoriaDe, noDeducibleIRPF, noDeducibleIS, pareceBien } from '@/lib/categorias';
@@ -65,7 +65,7 @@ const CAMPOS_HABITUALES = ['categoria', 'deduciblePct', 'afectoPct', 'actividad'
 // formulario se abre al escanear o al pedirlo. Las facturas subidas van a «Por revisar» (lib/bandeja.js), en la misma
 // pantalla; correo: { listo, direccion } de la dirección para reenviárselas (lib/buzon.js).
 // documento: una factura de la bandeja (lib/bandeja.js) para revisar y aprobar; siguiente: la que va después.
-export default function FormGasto({ hoy, gasto, actividades, alquiler = false, plegado = false, destacar = false, regimen = 'autonomo', cupoInicial = null, movimiento = null, productos = [], proyectos = [], igic = false, especial = false, recargo = false, documento = null, siguiente = null , correo = null }) {
+export default function FormGasto({ hoy, gasto, actividades, alquiler = false, plegado = false, destacar = false, regimen = 'autonomo', cupoInicial = null, movimiento = null, productos = [], proyectos = [], igic = false, especial = false, recargo = false, documento = null, siguiente = null , correo = null, presentados = [] }) {
   const impuesto = igic ? 'IGIC' : 'IVA';
   const router = useRouter();
   const prefijo = useId();
@@ -440,6 +440,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
         <p className="nota">Ese IVA lo declaras tú en el 303 y te lo deduces a la vez: no cambia lo que pagas, pero tiene que salir en las dos partes.{g.origen !== 'fuera' && !nifUE(g.proveedorNif) ? ' Pon su NIF-IVA (por ejemplo, IE6388047V): también va en el 349.' : ''}</p>
       </>}
       <label>Fecha<input className="campo" type="date" value={g.fecha} onChange={(e) => poner('fecha', e.target.value)} required /></label>
+      <AvisoPresentado g={g} gasto={gasto} presentados={presentados} />
       <label>Proyecto, obra o local (opcional)<input className="campo" list="proyectos-gasto" value={g.proyecto || ''} onChange={(e) => poner('proyecto', e.target.value)} placeholder="Ej.: Obra Calle Mayor" maxLength={60} /></label>
       <datalist id="proyectos-gasto">{proyectos.map((p) => <option key={p} value={p} />)}</datalist>
       {documento?.banco && <label className="gasto-pendiente"><input type="checkbox" checked={conBanco} onChange={(e) => setConBanco(e.target.checked)} />Es el cargo del banco del {fechaCorta(documento.banco.fecha)} por {eur(Math.abs(documento.banco.importe))}{documento.banco.concepto ? ` (${documento.banco.concepto})` : ''}: emparejarlo</label>}
@@ -610,4 +611,18 @@ function NoResidente({ g, poner, prefijo }) {
       <p className="nota">Esta retención no va en el {g.alquiler ? '115' : '111'}: la ingresas con el 216 del trimestre en que le pagas y en enero va en el 296, también si no le retienes nada. Para aplicar el convenio (menos retención o ninguna, como los beneficios de una empresa o un profesional sin establecimiento en España) guarda su certificado de residencia fiscal del año.</p>
     </>}
   </>;
+}
+
+// Un gasto que entra en un trimestre ya presentado (presentados: 'AAAA-T', lib/empresa.js trimestresPresentados), que sale
+// de él o que cambia de importe dentro de él lo cambia: hay que corregir ese 303.
+const trimestreDe = (x) => (/^\d{4}-\d{2}-\d{2}$/.test(x?.fecha || '') ? `${x.fecha.slice(0, 4)}-${trimestre(x.fecha)}` : null);
+const totalGasto = (x) => { try { return r2(importes(x).total); } catch { return null; } };
+function AvisoPresentado({ g, gasto, presentados }) {
+  if (!presentados.length) return null;
+  const ahora = trimestreDe(g), antes = trimestreDe(gasto);
+  const entra = ahora && presentados.includes(ahora) && (!gasto || ahora !== antes || totalGasto(g) !== totalGasto(gasto));
+  const sale = antes && antes !== ahora && presentados.includes(antes);
+  if (!entra && !sale) return null;
+  const nombre = (k) => `${k.split('-')[1]}T ${k.split('-')[0]}`;
+  return <p className="nota aviso-rect">{entra ? `Este gasto cuenta en el ${nombre(ahora)}, que ya está presentado` : `Este gasto sale del ${nombre(antes)}, que ya está presentado`}: habrá que corregir ese 303, pidiendo su rectificación si sale menos a pagar o con una complementaria si sale más.</p>;
 }

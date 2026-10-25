@@ -2,7 +2,7 @@ import { requisitosIncobrable } from '@/lib/incobrables';
 import { leerUno } from '@/lib/redis';
 import { actualizarFactura } from '@/lib/actualizarFactura';
 import { borrarFactura, crearFactura, fechaFueraDeOrden, guardarCliente, limpiar, marcaRecc } from '@/lib/facturas';
-import { numeroFactura, pendienteDe } from '@/lib/calculos';
+import { fechaDevengo, numeroFactura, pendienteDe } from '@/lib/calculos';
 import { conLimiteDe, revisarRiesgo } from '@/lib/tercerosServidor';
 import { mismoCliente } from '@/lib/terceros';
 import { enlazadosCon } from '@/lib/enlacesBanco';
@@ -75,8 +75,9 @@ export async function PATCH(req) {
   const datos = limpiar(b, actividadesDe(u), fiscalDe(u).tipo === 'sociedad', { rectificativa: Boolean(antes.rectifica || antes.serie === 'R'), igic: usaIgic(fiscalDe(u)), conRecargo: usa303(fiscalDe(u)) && !usaIgic(fiscalDe(u)), reagp: fiscalDe(u).iva === 'reagp', limiteSimplificada: limiteSimplificada(fiscalDe(u)) });
   if (datos.error) return Response.json({ error: datos.error, errores: datos.errores }, { status: 400 });
   if (Number(datos.fecha.slice(0, 4)) !== antes.anio) return error(`La fecha debe ser de ${antes.anio}`);
-  // Trimestre cerrado por la gestoría (lib/cierres.js): ni la fecha de antes ni la nueva pueden caer en él.
-  const cerrado = await comprobarCierre(u, antes.fecha, datos.fecha);
+  // Trimestre cerrado por la gestoría (lib/cierres.js): ni la fecha de antes ni la nueva pueden caer en él, tampoco las de
+  // la operación (cuentan en el trimestre de su devengo, lib/calculos.js fechaDevengo).
+  const cerrado = await comprobarCierre(u, antes.fecha, fechaDevengo(antes), datos.fecha, fechaDevengo(datos));
   if (cerrado) return error(cerrado, 409);
   // Al cambiar la fecha, se avisa si deja de seguir el orden de su serie (lib/facturas.js fechaFueraDeOrden); con
   // forzarOrden (confirmado en el formulario) se guarda. Si no se toca la fecha, no se mira.
