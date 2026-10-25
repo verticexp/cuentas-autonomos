@@ -1,10 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 const OPCIONES = [['automatico', 'Automático'], ['claro', 'Claro'], ['oscuro', 'Oscuro']];
 
 export default function Apariencia({ inicial }) {
+  const router = useRouter();
   const [tema, setTema] = useState(inicial === 'claro' || inicial === 'oscuro' ? inicial : 'automatico');
 
   function elegir(valor) {
@@ -14,6 +16,7 @@ export default function Apariencia({ inicial }) {
     else document.documentElement.dataset.tema = valor;
     setTema(valor);
     window.dispatchEvent(new Event('fisquo-tema'));
+    router.refresh(); // la lista de Ajustes enseña el tema elegido en su fila: se vuelve a pedir con la cookie nueva
   }
 
   return (

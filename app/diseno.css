@@ -352,9 +352,11 @@ html[data-vt-barra] .tabs, html[data-vt-barra] .tabbar .mas { view-transition-na
 html[data-llega-tarde] .pagina { animation: llega-tarde 0.22s var(--salida) both; }
 @keyframes llega-tarde { from { opacity: 0; } }
 /* Pantalla de espera (lib/transicion.js ponerEspera): ocupa el sitio de la nueva mientras llega, debajo de la barra de
-   pestañas; al llegar, se funde. Mientras, la barra de título compacta de la de antes no se ve. */
-.espera-pantalla { position: fixed; inset: 0; z-index: 6; overflow: hidden; background: var(--paper); pointer-events: none; transition: opacity 0.22s var(--salida); }
-.espera-pantalla.saliendo { opacity: 0; }
+   pestañas (z-index 8, sigue pulsable); al llegar, se funde. Mientras, la barra de título compacta de la de antes no se ve.
+   Recoge los toques: sin eso, un segundo toque abría otra factura de la pantalla de antes, oculta debajo. Al fundirse
+   (.saliendo) los deja pasar, porque ya es la pantalla nueva la que hay debajo. */
+.espera-pantalla { position: fixed; inset: 0; z-index: 6; overflow: hidden; background: var(--paper); pointer-events: auto; transition: opacity 0.22s var(--salida); }
+.espera-pantalla.saliendo { opacity: 0; pointer-events: none; }
 .volver-e { height: 22px; width: 96px; margin: 2px 0 16px; border-radius: 8px; }
 html[data-espera] .titulo-compacto { opacity: 0; visibility: hidden; transition: none; }
 .segmentado.vt a.activo { view-transition-name: segmento; }

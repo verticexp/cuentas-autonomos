@@ -18,7 +18,7 @@
   /* Mientras el dedo lleva la pantalla hacia atrás (components/GestoAtras.js), la barra se aparta con ella. */
   html[data-gesto] .titulo-compacto { opacity: 0; transition-duration: 0.1s; }
   .tc-titulo {
-    grid-column: 2; max-width: 62vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    grid-column: 2; max-width: 62vw; height: 44px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     padding: 0 4px; border: 0; background: none; color: var(--ink); font: inherit; font-size: 17px; font-weight: 600; letter-spacing: -0.01em;
     -webkit-tap-highlight-color: transparent;
   }
