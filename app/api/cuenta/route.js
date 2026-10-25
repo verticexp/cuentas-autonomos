@@ -182,6 +182,17 @@ export async function PATCH(req) {
     await auditar(u, `Prorrata provisional del IVA de ${anio}`, valor === null ? 'quitada' : `${valor} %`);
     return Response.json({ ok: true });
   }
+  // Prorrata especial de un año (art. 103.Dos.1.º LIVA, lib/calculos.js): true o false. Va dentro de prorrata.especial.
+  if (b.prorrataEspecial) {
+    if (sin('contabilidad')) return sin('contabilidad');
+    const { anio, especial } = b.prorrataEspecial;
+    if (!Number.isInteger(anio) || anio < 2000 || anio > 2100) return error('Año no válido');
+    const datos = { ...(u.prorrata || {}), especial: { ...(u.prorrata?.especial || {}) } };
+    if (especial === true) datos.especial[anio] = true; else delete datos.especial[anio];
+    await actualizarUsuario(u, { prorrata: datos });
+    await auditar(u, `Prorrata del IVA de ${anio}`, especial === true ? 'especial' : 'general');
+    return Response.json({ ok: true });
+  }
   // Saldo del IVA a compensar de antes de Fisquo (lib/calculos.js liquidaciones303): { importe, anio, t } o null.
   if (b.saldoIva !== undefined) {
     if (sin('contabilidad')) return sin('contabilidad');

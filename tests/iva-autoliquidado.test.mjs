@@ -33,7 +33,8 @@ test('303: libros de Francia al 4 %, devengado y deducible de 40 € sin cambiar
 test('303: prorrata del 50 % deduce 20 € del IVA de los libros', () => {
   const iva = { prorrata: { 2026: 50 } };
   const c = casillas303([], [libros], 2026, 1, iva);
-  assert.deepEqual([c['10'], c['11'], c['36'], c['37'], c['46']], [1000, 40, 500, 20, 20]);
+  // Las bases van sin prorratear (instrucciones del 303 de 2026); solo la cuota lleva el porcentaje.
+  assert.deepEqual([c['10'], c['11'], c['36'], c['37'], c['46']], [1000, 40, 1000, 20, 20]);
   assert.equal(c.prorrata.perdido, 20);
   const l = liquidaciones303([], [libros], 2026, '2026-03-31', iva)[0];
   assert.deepEqual([l.bruto, l.ingresar, l.perdidoProrrata], [20, 20, 20]);

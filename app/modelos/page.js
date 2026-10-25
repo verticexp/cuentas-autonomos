@@ -263,7 +263,7 @@ export default async function Modelos({ searchParams }) {
   const a111 = (t) => r2(modelo111(nominas || [], anio, t).retenciones + retencionesProfesionales(gastos, anio, t).retenciones);
   const avisos = avisosFiscales({ facturas, gastos, anio, hoy: h, c303, c130: Boolean(r130), liquidaciones, r130, pagos130: u.pagos130?.[anio] || {}, a111: hay111 ? a111 : null });
   // Prorrata: se enseña si hay operaciones exentas este año o el anterior, o si se ha guardado un porcentaje.
-  const prorrata = c303 && { guardado: u.prorrata?.[anio] ?? null, provisional: prorrataProvisional(facturas, anio, 4, iva), definitiva: prorrataAnio(facturas, anio), anterior: prorrataAnio(facturas, anio - 1) };
+  const prorrata = c303 && { especial: Boolean(u.prorrata?.especial?.[anio]), guardado: u.prorrata?.[anio] ?? null, provisional: prorrataProvisional(facturas, anio, 4, iva), definitiva: prorrataAnio(facturas, anio), anterior: prorrataAnio(facturas, anio - 1) };
   const verProrrata = prorrata && (prorrata.guardado !== null || prorrata.definitiva !== null || prorrata.anterior !== null);
   // Saldo del IVA de antes de Fisquo: en el primer año con datos o en el que empieza a descontarse el ya guardado.
   const primerAnio = [...facturas, ...gastos].reduce((min, x) => Math.min(min, Number(x.fecha.slice(0, 4)) || min), anio);
@@ -378,11 +378,13 @@ export default async function Modelos({ searchParams }) {
                   ['27 · Total IVA devengado', c['27'], true],
                   ['28 · Base del IVA soportado', c['28']], ['29 · IVA soportado deducible', c['29']],
                   c['30'] && ['30 · Bienes de inversión: base', c['30']], c['31'] && ['31 · Bienes de inversión: cuota', c['31']],
+                  c['32'] && ['32 · Importaciones (IVA pagado en la aduana): base', c['32']], c['33'] && ['33 · Importaciones: cuota deducible', c['33']],
+                  c['34'] && ['34 · Importaciones de bienes de inversión: base', c['34']], c['35'] && ['35 · Importaciones de bienes de inversión: cuota', c['35']],
                   c['36'] && ['36 · Compras a la UE: base deducible', c['36']], c['37'] && ['37 · Compras a la UE: cuota deducible', c['37']],
                   c['38'] && ['38 · Bienes de inversión de la UE: base', c['38']], c['39'] && ['39 · Bienes de inversión de la UE: cuota', c['39']],
                   c['40'] && ['40 · Abonos de proveedores: base', c['40']], c['41'] && ['41 · Abonos de proveedores: cuota', c['41']],
                   c['42'] && ['42 · Compensaciones del régimen agrario', c['42']],
-                  c.prorrata && ['Prorrata aplicada', `${c.prorrata.provisional} %`],
+                  c.prorrata && [c.prorrata.especial ? 'Prorrata especial aplicada a lo común' : 'Prorrata aplicada', `${c.prorrata.provisional} %`],
                   c['44'] && [`44 · Regularización de la prorrata (definitiva: ${c.prorrata.definitiva} %)`, c['44']],
                   ['45 · Total a deducir', c['45'], true],
                   ['46 · Resultado del régimen general', c['46'], true],
