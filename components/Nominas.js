@@ -6,7 +6,7 @@ import { llamar } from './Acciones';
 import { volverA } from '@/lib/transicion';
 import { SS_EMPRESA, SS_TRABAJADOR, calculoNomina, nominaCompleta } from '@/lib/nominas';
 import { leerImporte } from '@/lib/calculos';
-import { Cotizacion, Modelo145 } from './DatosNomina';
+import { Cotizacion, Modelo145, IncidenciasNomina } from './DatosNomina';
 import { eur, hoy as hoyActual } from '@/lib/formato';
 
 // Alta o edición de un empleado.
@@ -30,6 +30,7 @@ export function FormEmpleado({ empleado, hoy }) {
     try {
       await llamar('/api/empleados', { method: nuevo ? 'POST' : 'PATCH', body: JSON.stringify(e) });
       if (nuevo) { setAbierto(false); setE({ ...e, nombre: '', nif: '', puesto: '', bruto: '', email: '' }); router.refresh(); }
+      else if (e.baja && e.baja !== empleado.baja) { router.push(`/nominas/empleado/${e.id}/finiquito`); router.refresh(); }
       else volverA(router, '/nominas', 'atras', true);
     } catch (err) { setError(err.message); }
     setEnviando(false);
@@ -95,35 +96,38 @@ export function GenerarMes({ mes, texto }) {
 // Detalle de una nómina: corregir importes y marcarla como pagada.
 export function FormNomina({ nomina }) {
   const router = useRouter();
-  const [n, setN] = useState(nomina);
+  const [n, setN] = useState({ ...nomina, bruto: nomina.ajustes?.bruto ?? nomina.bruto, ...nomina.ajustes });
   const [msg, setMsg] = useState('');
   const poner = (k, v) => setN({ ...n, [k]: v });
-  const c = calculoNomina(n);
+  const c = calculoNomina(nomina);
   async function guardar(cambios) {
     setMsg('Guardando…');
-    try { await llamar('/api/nominas', { method: 'PATCH', body: JSON.stringify({ id: n.id, ...cambios }) }); setMsg('Guardado'); router.refresh(); }
+    try { await llamar('/api/nominas', { method: 'PATCH', body: JSON.stringify({ id: n.id, ...cambios }) }); setMsg('Guardado'); if ('pagada' in cambios) setN({ ...n, pagada: cambios.pagada }); router.refresh(); }
     catch (e) { setMsg(e.message); }
   }
   return (
     <>
-      {n.detalle && <DesgloseCompleto n={n} />}
+      {n.detalle && <DesgloseCompleto n={nomina} />}
+      {nomina.finiquito && <div className="tarjeta bloque"><h2>Finiquito</h2><dl className="nomina-desglose">{nomina.finiquito.lineas.map((l) => <Fragment key={l.concepto}><dt>{l.concepto}</dt><dd>{eur(l.importe)}</dd></Fragment>)}</dl></div>}
+      {(nomina.detalle?.avisos || []).map((a) => <p className="nota" key={a}>{a}</p>)}
       <dl className="tarjeta bloque nomina-desglose">
-        <dt>Sueldo bruto</dt><dd>{eur(c.bruto)}</dd>
+        <dt>{n.tipo === 'finiquito' ? 'Total devengado' : 'Sueldo bruto'}</dt><dd>{eur(c.totalDevengado ?? c.bruto)}</dd>
         <dt>Retención IRPF ({n.irpfPct} %)</dt><dd>−{eur(c.irpf)}</dd>
         <dt>Seguridad Social del trabajador ({n.ssTrabajadorPct} %)</dt><dd>−{eur(c.ssTrabajador)}</dd>
         <dt><strong>Neto a pagar</strong></dt><dd><strong>{eur(c.neto)}</strong></dd>
         <dt>Seguridad Social de la empresa ({n.ssEmpresaPct} %)</dt><dd>{eur(c.ssEmpresa)}</dd>
         <dt><strong>Coste para la empresa</strong></dt><dd><strong>{eur(c.coste)}</strong></dd>
       </dl>
-      <button type="button" className={`boton ancho ${n.pagada ? 'sec' : ''}`} onClick={() => { setN({ ...n, pagada: !n.pagada }); guardar({ pagada: !n.pagada }); }}>{n.pagada ? '✓ Pagada · desmarcar' : 'Marcar como pagada'}</button>
-      <form className="formulario tarjeta" onSubmit={(e) => { e.preventDefault(); guardar(n.completa ? { bruto: n.bruto, pagaExtra: n.pagaExtra ?? n.detalle?.pagaExtra ?? 0, horasExtra: n.horasExtra ?? n.detalle?.horasExtra ?? 0, irpfPct: n.irpfManual ?? (n.detalle?.irpf?.manual ? n.irpfPct : '') } : { bruto: n.bruto, irpfPct: n.irpfPct, ssTrabajadorPct: n.ssTrabajadorPct, ssEmpresaPct: n.ssEmpresaPct }); }}>
+      <button type="button" className={`boton ancho ${n.pagada ? 'sec' : ''}`} disabled={msg === 'Guardando…'} onClick={() => guardar({ pagada: !n.pagada })}>{n.pagada ? '✓ Pagada · desmarcar' : 'Marcar como pagada'}</button>
+      {n.tipo === 'finiquito' && msg && <p role="status">{msg}</p>}
+      {n.tipo !== 'finiquito' && <form className="formulario tarjeta" onSubmit={(e) => { e.preventDefault(); guardar(n.completa ? { bruto: n.bruto, it: n.it || null, atrasos: n.atrasos || null, numeroHorasExtra: n.numeroHorasExtra ?? n.detalle?.numeroHorasExtra ?? (n.horas?.extra || 0) / 60, numeroHorasExtraFuerzaMayor: n.numeroHorasExtraFuerzaMayor ?? n.detalle?.numeroHorasExtraFuerzaMayor ?? 0, horasExtraFuerzaMayor: n.horasExtraFuerzaMayor ?? 0, pagaExtra: n.pagaExtra ?? n.detalle?.pagaExtra ?? 0, horasExtra: n.horasExtra ?? n.detalle?.horasExtraResto ?? n.detalle?.horasExtra ?? 0, irpfPct: n.irpfManual ?? (n.detalle?.irpf?.manual ? n.irpfPct : '') } : { bruto: n.bruto, irpfPct: n.irpfPct, ssTrabajadorPct: n.ssTrabajadorPct, ssEmpresaPct: n.ssEmpresaPct }); }}>
         <h3>Corregir esta nómina</h3>
-        <p className="nota" style={{ margin: 0 }}>Para pagas extra, horas o atrasos de este mes. No cambia la ficha del empleado.</p>
-        <label>Bruto del mes<input className="campo" inputMode="decimal" value={n.bruto} onChange={(x) => poner('bruto', x.target.value)} required /></label>
+        <p className="nota" style={{ margin: 0 }}>El bruto ordinario incluye pagas y horas extra. La IT sustituye el salario de sus días y los atrasos se añaden al resultado. No cambia la ficha del empleado.</p>
+        <label>Bruto ordinario antes de IT y atrasos<input className="campo" inputMode="decimal" value={n.bruto} onChange={(x) => poner('bruto', x.target.value)} required /></label>
         {n.completa ? (
           <div className="tres-col">
             <label>Paga extra incluida<input className="campo" inputMode="decimal" value={n.pagaExtra ?? n.detalle?.pagaExtra ?? 0} onChange={(x) => poner('pagaExtra', x.target.value)} /></label>
-            <label>Horas extra incluidas<input className="campo" inputMode="decimal" value={n.horasExtra ?? n.detalle?.horasExtra ?? 0} onChange={(x) => poner('horasExtra', x.target.value)} /></label>
+            <label>Resto de horas extra incluidas (€)<input className="campo" inputMode="decimal" value={n.horasExtra ?? n.detalle?.horasExtraResto ?? n.detalle?.horasExtra ?? 0} onChange={(x) => poner('horasExtra', x.target.value)} /></label>
             <label>IRPF % (vacío: automático)<input className="campo" inputMode="decimal" value={n.irpfManual ?? (n.detalle?.irpf?.manual ? n.irpfPct : '')} onChange={(x) => poner('irpfManual', x.target.value)} /></label>
           </div>
         ) : (
@@ -133,9 +137,15 @@ export function FormNomina({ nomina }) {
             <label>SS emp. %<input className="campo" inputMode="decimal" value={n.ssEmpresaPct} onChange={(x) => poner('ssEmpresaPct', x.target.value)} /></label>
           </div>
         )}
+        {n.completa && <label>Horas extra de fuerza mayor incluidas (€)<input className="campo" inputMode="decimal" value={n.horasExtraFuerzaMayor ?? n.detalle?.horasExtraFuerzaMayor ?? 0} onChange={(x) => poner('horasExtraFuerzaMayor', x.target.value)} /></label>}
+        {n.completa && <div className="dos-col">
+          <label>Número de horas extra (resto)<input className="campo" inputMode="decimal" value={n.numeroHorasExtra ?? n.detalle?.numeroHorasExtra ?? (n.horas?.extra || 0) / 60} onChange={(x) => poner('numeroHorasExtra', x.target.value)} /></label>
+          <label>Número de horas extra de fuerza mayor<input className="campo" inputMode="decimal" value={n.numeroHorasExtraFuerzaMayor ?? n.detalle?.numeroHorasExtraFuerzaMayor ?? 0} onChange={(x) => poner('numeroHorasExtraFuerzaMayor', x.target.value)} /></label>
+        </div>}
+        {n.completa && <IncidenciasNomina valor={n} cambiar={setN} mes={n.mes} />}
         {msg && <p role="status" className={msg === 'Guardado' ? 'nota guardado' : msg === 'Guardando…' ? 'nota' : 'error'}>{msg === 'Guardado' ? '✓ Guardado' : msg}</p>}
-        <button className="boton">Guardar</button>
-      </form>
+        <button className="boton" disabled={msg === 'Guardando…'}>Guardar</button>
+      </form>}
     </>
   );
 }
@@ -154,6 +164,14 @@ function DesgloseCompleto({ n }) {
         {d.prorrata > 0 && <><dt>Prorrata de las pagas extra (incluida)</dt><dd>{eur(d.prorrata)}</dd></>}
         {d.exceso > 0 && <><dt>Por encima de la base máxima (solidaridad)</dt><dd>{eur(d.exceso)}</dd></>}
       </dl>
+      {d.it && <><p className="rotulo">Incapacidad temporal · {d.it.dias} días</p><dl className="nomina-desglose">
+        <dt>Salario de días trabajados (incluye el día del accidente)</dt><dd>{eur(d.it.salarioTrabajado)}</dd>
+        <dt>Días sin prestación / al 60 % / al 75 %</dt><dd>{d.it.tramos.sinPrestacion} / {d.it.tramos.al60} / {d.it.tramos.al75}</dd>
+        <dt>Prestación a cargo de la empresa</dt><dd>{eur(d.it.empresa)}</dd>
+        <dt>Pago delegado (a deducir en la liquidación de cuotas)</dt><dd>{eur(d.it.pagoDelegado)}</dd>
+        <dt>Complemento de convenio a cargo de la empresa</dt><dd>{eur(d.it.complemento)}</dd>
+      </dl></>}
+      {d.atrasos && <p>Atrasos: {eur(d.atrasos.importe)} · {d.atrasos.meses.join(', ')}</p>}
       <p className="rotulo">Cuotas del trabajador</p>
       <dl className="nomina-desglose">{filas('trabajador').map(([k, v]) => <Fragment key={k}><dt>{NOMBRES_CUOTA[k] || k}</dt><dd>{eur(v)}</dd></Fragment>)}</dl>
       <p className="rotulo">Cuotas de la empresa</p>
