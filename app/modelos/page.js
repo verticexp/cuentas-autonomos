@@ -23,7 +23,9 @@ import { SUBCLAVES_296, nombrePais } from '@/lib/noResidentes';
 import CuotaIS, { ImporteAnio } from '@/components/CuotaIS';
 import { Presentado, Presentado202, PresentadoRet } from '@/components/Acciones';
 import { eur, fechaTexto, hoy, textoResumenModelos, textoSituacion } from '@/lib/formato';
+import { conPagoDomiciliable, finDomiciliacion } from '@/lib/domiciliacion';
 import PresentarAhora from '@/components/PresentarAhora';
+import CalendarioFiscal from '@/components/CalendarioFiscal';
 import { modelosAPresentar } from '@/lib/presentar';
 import Volver from '@/components/Volver';
 import Vacio from '@/components/Vacio';
@@ -203,6 +205,14 @@ export default async function Modelos({ searchParams }) {
   const fechaLimite = (t, dia = 30) => (dForal ? plazoForal(terr, dia === 20 ? 'ret' : 'iva', t, anio) : limiteTrimestre(t, anio, dia));
   const plazoT = (t, dia = 30) => conAnio(fechaLimite(t, dia), t);
   const limiteIrpf = (t) => conAnio(plazoForal(terr, 'irpf', t, anio), t);
+  // Hasta cuándo se puede domiciliar el pago del trimestre que toca (AEAT, lib/domiciliacion.js; ni foral ni IGIC): el 303
+  // y el 130 por un lado y, en el 4T, el 111, el 115 y el 123, que acaban antes, por otro.
+  const domiciliarAhora = (importes) => {
+    if (dForal || igic || !importes.some((m) => m.importe > 0 && conPagoDomiciliable(m.num))) return '';
+    const dia = (d) => conAnio(finDomiciliacion(fechaLimite(tAhora, d)), tAhora);
+    const antes = importes.filter((m) => m.dia === 20 && m.importe > 0).map((m) => m.num);
+    return `Si domicilias el pago, hasta el ${dia(30)}${tAhora === 4 && antes.length ? `; el ${antes.join(', el ')}, hasta el ${dia(20)}` : ''}.`;
+  };
   const situacionIrpf = (t) => situacionForal(terr, 'irpf', t, anio, h);
 
   // Fila plegada de cada modelo en el móvil: el trimestre que toca, cómo va y su importe.
@@ -265,6 +275,7 @@ export default async function Modelos({ searchParams }) {
     ahora = (
       <PresentarAhora t={tAhora} anio={anio} hacienda={foralT?.hacienda}
         aviso={textoSituacion(situacion(tAhora), limite(tAhora))}
+        domiciliar={domiciliarAhora(importes)}
         importes={importes}
         texto={igic || dForal ? [`${tAhora}T ${anio}`, ...importes.map((m) => `${m.modelo}: ${m.texto}${m.plazo ? ` · hasta el ${m.plazo}` : ''}`)].join('\n') : textoResumenModelos({ t: tAhora, anio, plazo: limite(tAhora), m303, m130, otros: importes.filter((m) => !['303', '130'].includes(m.num)) })} />
     );
@@ -323,7 +334,7 @@ export default async function Modelos({ searchParams }) {
           <ul className="grupo-lista proximos">
             {proximos.map((m) => (
               <li key={`${m.fecha}-${m.concepto}`}><div className="fila">
-                <span className="txt"><strong>{m.concepto}</strong><small>Hasta el {fechaTexto(m.fecha)}{m.fecha.slice(0, 4) !== String(anio) ? ` de ${m.fecha.slice(0, 4)}` : ''}{m.estimado ? ' · previsión del trimestre entero' : ''}</small></span>
+                <span className="txt"><strong>{m.concepto}</strong><small>Hasta el {fechaTexto(m.fecha)}{m.fecha.slice(0, 4) !== String(anio) ? ` de ${m.fecha.slice(0, 4)}` : ''}{m.estimado ? ' · previsión del trimestre entero' : ''}{!dForal && !igic && conPagoDomiciliable(m.concepto) && finDomiciliacion(m.fecha) >= h ? ` · domiciliado, hasta el ${fechaTexto(finDomiciliacion(m.fecha))}` : ''}</small></span>
                 <span className="imp">{eur(-m.importe)}</span>
               </div></li>
             ))}
@@ -354,6 +365,7 @@ export default async function Modelos({ searchParams }) {
           {modelosDe({ ...f, intracom: hay349, trabajadores: f.trabajadores || hay111, alquiler: f.alquiler || hay115, noResidentes: hay216 }).map((m) => <div key={m.id} className="celda"><span className="modelo-num">{GLOSARIO[`m${m.id}`] ? <Termino id={`m${m.id}`}>{m.num || m.id}</Termino> : m.num || m.id}</span><span className="txt">{m.nombre}<small>{m.cuando}</small></span></div>)}
         </div>
         <p className="grupo-pie">Según cómo trabajas ({f.tipo === 'sociedad' ? 'sociedad' : 'autónomo'}). Si algo no encaja, cámbialo en Ajustes › Actividades e impuestos.</p>
+        <CalendarioFiscal ruta={u.calendario ? `/api/calendario/${u.calendario}.ics` : null} />
       </ModeloPlegable>
 
       {c420 && (
