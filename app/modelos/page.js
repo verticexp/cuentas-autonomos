@@ -848,7 +848,7 @@ export default async function Modelos({ searchParams }) {
                   clave: `${i}-${o.nif}-${o.nombre}`, nombre: o.nombre,
                   // Lo que va aparte en el registro: el NIF-IVA de la UE, la inversión del sujeto pasivo, el alquiler del local, el
                   // criterio de caja y el efectivo.
-                  detalle: [o.nif || (o.nifComunitario && `NIF-IVA ${o.nifComunitario}`), o.isp && 'Inversión del sujeto pasivo', o.arrendamiento && 'Alquiler del local sin retención (va aparte)', o.caja && `Criterio de caja: ${eur(o.importeCaja)} devengado al ${o.clave === 'B' ? 'cobrar' : 'pagar'} (va aparte)`,
+                  detalle: [o.nif || (o.nifComunitario && `NIF-IVA ${o.nifComunitario}`), o.provincia === '99' && (o.pais ? `No residente · ${nombrePais(o.pais)}` : 'No residente: falta su país'), o.isp && 'Inversión del sujeto pasivo', o.arrendamiento && 'Alquiler del local sin retención (va aparte)', o.caja && `Criterio de caja: ${eur(o.importeCaja)} devengado al ${o.clave === 'B' ? 'cobrar' : 'pagar'} (va aparte)`,
                     o.metalico && `Cobrado en efectivo: ${eur(o.metalico)}${o.ejercicioMetalico !== anio ? ` de facturas de ${o.ejercicioMetalico}` : ''}`].filter(Boolean).join(' · '),
                   cifras: m347.soloAnual ? [o.total] : [...(o.trimestres || [null, null, null, null]), o.total],
                 }))} />
@@ -856,7 +856,7 @@ export default async function Modelos({ searchParams }) {
             ))}
           </div>
         ) : <div className="tarjeta"><p className="nota">Nadie pasa de 3.005,06 € este año: no se presenta.</p></div>}
-        {m347.sinNif.length > 0 && <p className="nota">Sin NIF: {m347.sinNif.map((o) => o.nombre).join(', ')}. Añádelo en sus facturas o gastos: sin él no se puede declarar.</p>}
+        {m347.sinNif.length > 0 && <p className="nota">Sin NIF: {m347.sinNif.map((o) => o.nombre).join(', ')}. Añádelo en sus facturas o gastos (si es de fuera de España, su país en la ficha del cliente): sin él no se puede declarar.</p>}
       </ModeloPlegable>
 
       {m180 && (

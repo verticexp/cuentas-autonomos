@@ -93,3 +93,11 @@ test('fallo 12: la actividad agrícola fuera del REAGP también va por el aparta
   assert.equal(limpiarFiscal({ tipo: 'sociedad', iva: 'general', agricola: true }).agricola, undefined);
   assert.equal(limpiarFiscal({ tipo: 'autonomo', iva: 'general', irpf: 'modulos', agricola: true }).agricola, undefined);
 });
+
+test('fallo 3 (coste): el recargo de los bienes comprados con inversión del sujeto pasivo es coste, como el del 309', async () => {
+  const { recargoSoportado } = await import('../lib/ivaDeducible.js');
+  const { costeGasto } = await import('../lib/calculos.js');
+  const g = { id: 'm', fecha: '2026-05-04', base: 1000, ivaPct: 21, origen: 'isp', categoria: '600', recargo: true, proveedor: 'Móviles SA', proveedorNif: 'A28123453' };
+  assert.equal(recargoSoportado(g), 52);
+  assert.equal(costeGasto(g, { ivaCoste: true }), 1262);
+});
