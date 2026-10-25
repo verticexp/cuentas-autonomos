@@ -13,8 +13,9 @@ export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Tus documentos', robots: { index: false } };
 
 // Portal del cliente: sin cuenta, con su enlace ve todas sus facturas y presupuestos, los descarga y paga.
-export default async function Portal({ params }) {
+export default async function Portal({ params, searchParams }) {
   const { token } = await params;
+  const { hecho, error } = (await searchParams) || {};
   const d = await portalDe(token);
   // Las páginas no pueden fijar un 429: el endpoint público devuelve el límite sin leer documentos.
   if (d instanceof Response) redirect(`/api/portal/limite?espera=${d.headers.get('Retry-After')}`);
@@ -37,6 +38,8 @@ export default async function Portal({ params }) {
         <div className="fh-pie"><span>{porPagar.length ? `Pendiente de pago · ${porPagar.length} ${porPagar.length === 1 ? 'factura' : 'facturas'}` : 'No tienes nada pendiente'}</span></div>
       </section>
 
+      {hecho && <p className="nota" role="status">{hecho === 'rechazada' ? 'Hemos avisado a la empresa de que rechazas la factura.' : 'Gracias: la empresa ya sabe que la factura está conforme.'}</p>}
+      {error && <p className="error" role="alert">{String(error).slice(0, 200)}</p>}
       <h2 className="portal-t">Facturas</h2>
       {facturas.length ? <ul className="grupo-lista portal-lista">
         {facturas.map((f) => {
@@ -58,6 +61,17 @@ export default async function Portal({ params }) {
                 {pdf && <a className="boton pequeno sec" href={`/api/portal/pdf?t=${t}&id=${encodeURIComponent(f.id)}`}>PDF</a>}
                 {pagar && <form action="/api/portal/pagar" method="post"><input type="hidden" name="t" value={token} /><input type="hidden" name="id" value={f.id} /><button className="boton pequeno">Pagar</button></form>}
               </span>
+              {/* Estados de la factura electrónica entre empresas (Ley 18/2022): conforme o rechazada, con su motivo. */}
+              {!f.cobrada && (f.estadoCliente ? <small className="portal-estado">{f.estadoCliente.estado === 'aceptada' ? `Marcaste esta factura como conforme el ${fechaTexto(f.estadoCliente.fecha.slice(0, 10))}.` : `La rechazaste el ${fechaTexto(f.estadoCliente.fecha.slice(0, 10))}: ${f.estadoCliente.motivo}`}</small> : (
+                <details className="portal-estado">
+                  <summary>¿Está bien esta factura?</summary>
+                  <form action="/api/portal/estado" method="post" className="fila-act"><input type="hidden" name="t" value={token} /><input type="hidden" name="id" value={f.id} /><input type="hidden" name="estado" value="aceptada" /><button className="boton pequeno sec">Sí, está conforme</button></form>
+                  <form action="/api/portal/estado" method="post"><input type="hidden" name="t" value={token} /><input type="hidden" name="id" value={f.id} /><input type="hidden" name="estado" value="rechazada" />
+                    <label>Si no, dinos qué falla<textarea className="campo" name="motivo" rows={2} maxLength={300} required placeholder="Ej.: el importe no coincide con el presupuesto" /></label>
+                    <button className="boton pequeno sec">Rechazar la factura</button>
+                  </form>
+                </details>
+              ))}
             </li>
           );
         })}

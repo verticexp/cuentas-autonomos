@@ -100,6 +100,8 @@ export default async function Factura({ params }) {
         </dl>
         <div className="fh-pie">
           <span className={`fh-estado e-${estado.toLowerCase()}`}>{estado}{!f.cobrada && ` · vence el ${fechaTexto(vencimiento(f, u.emisor?.plazo))}`}</span>
+          {/* Lo que el cliente dijo desde su portal (estados de la factura electrónica, Ley 18/2022). */}
+          {f.estadoCliente && <span className={`fh-estado ${f.estadoCliente.estado === 'rechazada' ? 'e-vencida' : 'e-cobrada'}`}>{f.estadoCliente.estado === 'rechazada' ? `El cliente la rechazó el ${fechaTexto(f.estadoCliente.fecha.slice(0, 10))}: ${f.estadoCliente.motivo}` : `El cliente la dio por conforme el ${fechaTexto(f.estadoCliente.fecha.slice(0, 10))}`}</span>}
           <span>Emitida el {fechaTexto(f.fecha)}</span>
         </div>
         {editar && <div className="fh-cobrada"><Cobro id={f.id} cobrada={Boolean(f.cobrada)} total={i.total} pagado={pagadoDe(f)} pendiente={Math.max(0, pendienteDe(f))} cobro={f.cobro ? { fecha: f.cobro.fecha, metodo: f.cobro.metodo } : null} deshacer={deshacerDe(f)} hoy={hoy()} desde={f.fecha} secundario={sinEnviar} formaInicial={f.formaCobro === 'efectivo' ? 'efectivo' : ''} /></div>}

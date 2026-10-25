@@ -119,6 +119,8 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
     const c = coincidencias[0];
     setClienteSeleccionado(c?.id || '');
     poner('cliente', c ? { nombre: c.nombre, nif: c.nif, direccion: c.direccion, ciudad: c.ciudad, email: c.email || '', pais: c.pais || '' } : { nombre: '', nif: '', direccion: '', ciudad: '', pais: '' });
+    // Factura nueva: el idioma y la moneda de su ficha (lib/terceros.js); una rectificativa sigue los de la original.
+    if (nueva && !orig && c) setF((x) => ({ ...x, idioma: c.idioma && c.idioma !== 'es' ? c.idioma : undefined, divisa: c.moneda && c.moneda !== 'EUR' ? { moneda: c.moneda } : undefined }));
   };
   // Móvil (solo en la factura nueva, app/factura-movil.css): buscador de clientes y, plegados, los datos del cliente y los
   // detalles (IRPF, nota, proyecto y evento). En el ordenador se ve todo como siempre.
