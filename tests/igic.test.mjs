@@ -123,9 +123,9 @@ test('Canarias: conserva deducción, elimina opciones incompatibles y ofrece 420
   for (const k of ['oss', 'recc', 'rebu', 'reav']) assert.equal(f[k], undefined);
   assert.equal(reccDe({ ...f, recc: { desde: '2026-01-01' } }), undefined);
   // El 415 (operaciones con terceros de la Agencia Tributaria Canaria) va junto al 347 (auditoría 23-10-2026, F1-16).
-  assert.deepEqual(modelosDe(f).map((m) => m.id), ['420', '425', '130', '111', '190', '115', '180', '347', '415', '100']);
+  assert.deepEqual(modelosDe(f).map((m) => m.id), ['420', '425', '130', '111', '190', '115', '180', '347', '415', '100', '036']);
   assert.ok(modelosDe(f).filter((m) => ['420', '425'].includes(m.id)).every((m) => m.calcula));
-  assert.deepEqual(modelosDe(fiscalCanarias).map((m) => m.id), ['420', '425', '347', '415', '200', '202', 'rm-libros', 'rm-cuentas']);
+  assert.deepEqual(modelosDe(fiscalCanarias).map((m) => m.id), ['420', '425', '347', '415', '200', '202', '232', '840', 'rm-libros', 'rm-cuentas', '036']);
   assert.equal(usaIgic(limpiarFiscal({})), false);
   assert.equal(limpiarFiscal({}).territorio, undefined);
   assert.ok(modelosDe({}).some((m) => m.id === '303'));
