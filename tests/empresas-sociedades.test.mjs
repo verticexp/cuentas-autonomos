@@ -519,7 +519,7 @@ const opNO = { manuales: manualesNO, capital: capitalNO, cuotaIS: cuotaISNO, pag
 test('Importaciones Nórdicas · IS: reducida dimensión, la máquina vendida, los intereses del socio y el 202 de 2026', () => {
   // 2025: cifra de negocios 1.200.000 + 66.000 de alquileres = 1.266.000 (sin datos de 2024 en la app, la del propio año):
   // entre 1 y 10 M → reducida dimensión, 24 % en 2025 (DT 44.ª LIS; Manual de Sociedades 2025, pág. 11).
-  const b25 = borradorSociedades(facturasNO, gastosNO, 2025, opNO);
+  const b25 = borradorSociedades(facturasNO, gastosNO, 2025, { ...opNO, iva: ivaNO });
   assert.deepEqual([b25.ingresos, b25.incn, b25.tamano, b25.tipos], [1266000, 1266000, 'reducida', [24, 24]]);
   // 2026: cifra de negocios de 2025 → reducida, 23 %. Ingresos: 1.063.700 + 176.500,50 + 4.000 − 4.000 (impago) + 60.000 +
   // 182.500 (Francia) + 11.700 (ventanilla única) + 7.000 (la máquina) = 1.501.400,50. El asiento de baja de la máquina
@@ -527,7 +527,7 @@ test('Importaciones Nórdicas · IS: reducida dimensión, la máquina vendida, l
   // Amortización (12 % maquinaria, art. 12.1.a LIS): carretilla 18.500 × 12 % × 256 / 365 = 1.557,04 (desde el 20-4) y
   // embaladora 9.000 × 12 % × 122 / 365 = 360,99 (desde el 1-9) → 1.918,03. Intereses del préstamo del socio: 8.000 de
   // gasto financiero (cuenta 662; deducibles: el art. 16 LIS solo limita lo que pase de 1 M); los dividendos no son gasto.
-  const b = borradorSociedades(facturasNO, gastosNO, 2026, opNO);
+  const b = borradorSociedades(facturasNO, gastosNO, 2026, { ...opNO, iva: ivaNO });
   assert.deepEqual([b.ingresos, b.amortizacion, b.financieros, b.ajustesContables, b.incn, b.tamano, b.tipos], [1501400.5, 1918.03, 8000, -4000, 1266000, 'reducida', [23, 23]]);
   // 202 de 2026 (art. 40.2 LIS; la cifra de negocios no pasa de 6 M: no es el del art. 40.3): 18 % de 30.000 (2024) = 5.400
   // en abril y 18 % de 49.194 (2025) = 8.854,92 en octubre y diciembre.
@@ -535,17 +535,17 @@ test('Importaciones Nórdicas · IS: reducida dimensión, la máquina vendida, l
   assert.deepEqual(modelo202(cuotaISNO, 2026).map((p) => [p.de, p.pago]), [[2024, 5400], [2025, 8854.92], [2025, 8854.92]]);
 });
 
-test('Importaciones Nórdicas · IS por la norma: el IVA que no se deduce por la prorrata es gasto (NRV 12.ª PGC)', { todo: 'borradorSociedades no resta el IVA no deducible por la prorrata (sí lo hace la renta, resumenAnual); ver el informe' }, () => {
+test('Importaciones Nórdicas · IS por la norma: el IVA que no se deduce por la prorrata es gasto (NRV 12.ª PGC)', () => {
   // 2025: prorrata general del 95 %: no se deduce el 5 % de 4 × 55.125 = 11.025, que es más coste de las compras (norma de
   // registro y valoración 12.ª del PGC; art. 10.3 LIS). Gastos 800.000 + 250.000 + 11.025 = 1.061.025; base 204.975 × 24 % =
   // 49.194.
-  const b25 = borradorSociedades(facturasNO, gastosNO, 2025, opNO);
+  const b25 = borradorSociedades(facturasNO, gastosNO, 2025, { ...opNO, iva: ivaNO });
   assert.deepEqual([b25.gastos, b25.resultadoContable, b25.base, b25.cuota], [1061025, 204975, 204975, 49194]);
   // 2026: 600.000 + 200.000 + 3.000 + 157.000 (DUA) + 63.000 (Alemania) + 1.918,03 + 8.000 (intereses) + 2.310 de IVA no
   // deducible (4 × 525 del transporte al 95 % − 420 de la regularización + los 630 de la reparación de las viviendas) =
   // 1.035.228,03. Resultado 1.501.400,50 − 1.035.228,03 − 4.000 = 462.172,47 × 23 % = 106.299,67 (106.299,6681); menos los
   // 202 (5.400 + 8.854,92 + 8.854,92 = 23.109,84) → 83.189,83.
-  const b = borradorSociedades(facturasNO, gastosNO, 2026, opNO);
+  const b = borradorSociedades(facturasNO, gastosNO, 2026, { ...opNO, iva: ivaNO });
   assert.deepEqual([b.gastos, b.resultadoContable, b.base, b.cuota, b.pagos, b.resultado], [1035228.03, 462172.47, 462172.47, 106299.67, 23109.84, 83189.83]);
 });
 

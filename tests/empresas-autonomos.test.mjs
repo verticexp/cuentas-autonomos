@@ -557,7 +557,7 @@ test('fisioterapeuta · bien de inversión con prorrata: 30-31 al 25 % y regular
   assert.deepEqual([q2['30'], q2['31'], q2['45'], q4['44']], [4000, 210, c2(128.63 + 210), 87.55]);
 });
 
-test('fisioterapeuta · el IVA no deducible por la prorrata de un bien de inversión es más valor del bien (se amortiza)', { todo: 'la app lo resta entero como gasto del trimestre de la compra' }, () => {
+test('fisioterapeuta · el IVA no deducible por la prorrata de un bien de inversión es más valor del bien (se amortiza)', () => {
   // Norma de registro y valoración 12.ª del PGC (art. 28.1 LIRPF y 10.3 LIS): el IVA soportado no deducible forma parte del
   // precio de adquisición; la regularización por la prorrata definitiva es gasto o ingreso del año. Valor: 4.000 + 840 × 75 %
   // = 4.630; amortización del 2T al 12 % (equipos electrónicos, Orden 27-3-1998): 4.630 × 12 % × 91/365 = 138,52.

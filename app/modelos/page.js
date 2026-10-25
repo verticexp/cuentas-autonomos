@@ -158,7 +158,7 @@ export default async function Modelos({ searchParams }) {
     m190.perceptores = [...juntos('A', 'trabajador', 'trabajadores'), ...juntos('E', 'administrador', 'administradores'), ...m190.perceptores.filter((p) => !['A', 'E'].includes(p.clave))];
   }
   // Impuesto sobre Sociedades: con las bases negativas de antes de Fisquo y el incremento de los fondos propios apuntados.
-  const opIS = { ivaCoste: !usa303(f), productos: productos || [], ajustes: ajustes || [], albaranes: albaranes || [], manuales: manuales || [], capital, constitucion: f.constitucion, cuotaIS: u.cuotaIS || {}, territorio: f.territorio, binsPrevias: u.binsPrevias || {}, fondosPropios: u.fondosPropios || {}, pagos202: u.pagos202 || {} };
+  const opIS = { ivaCoste: !usa303(f), iva, productos: productos || [], ajustes: ajustes || [], albaranes: albaranes || [], manuales: manuales || [], capital, constitucion: f.constitucion, cuotaIS: u.cuotaIS || {}, territorio: f.territorio, binsPrevias: u.binsPrevias || {}, fondosPropios: u.fondosPropios || {}, pagos202: u.pagos202 || {} };
   const is = f.tipo === 'sociedad' && borradorSociedades(facturas, gastos, anio, { ...opIS, hasta: h < `${anio}-12-31` ? h : `${anio}-12-31` });
   // 202: con más de 6 M de cifra de negocios, el del art. 40.3 (sobre la base de los 3, 9 y 11 primeros meses); si no, el
   // del art. 40.2 (el 18 % de la cuota apuntada). Lo que sale del borrador de cada año en Fisquo se propone como esa cuota.
@@ -588,7 +588,7 @@ export default async function Modelos({ searchParams }) {
         const [mes, dia] = pg.plazo;
         const fecha = fechaTexto(habil(`${anio}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`));
         const pyme = pg.exentaPyme && is && is.incn <= dForal.is.pequena;
-        const anterior = pg.sobre === 'base' && !pyme ? borradorSociedades(facturas, gastos, anio - 1, { ivaCoste: !usa303(f), territorio: f.territorio }) : null;
+        const anterior = pg.sobre === 'base' && !pyme ? borradorSociedades(facturas, gastos, anio - 1, { ivaCoste: !usa303(f), iva, territorio: f.territorio }) : null;
         const cuota = u.cuotaIS?.[anio - 1];
         const pago = pyme ? 0 : pg.sobre === 'cuota' ? (cuota > 0 ? r2(cuota * pg.pct / 100) : null) : anterior ? r2(anterior.base * pg.pct / 100) : null;
         return (
