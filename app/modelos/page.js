@@ -621,18 +621,28 @@ export default async function Modelos({ searchParams }) {
       {hay369 && (() => {
         const t = T.find((x) => plazo369(anio, x) >= h);
         const m = t && modelo369(facturas, anio, t);
+        // Acogida al régimen: se presenta cada trimestre, también sin ventas («Declaración sin actividad», a cero).
+        const acogida = usa303(f) && Boolean(f.oss);
+        const pais = (p) => NOMBRES_UE[p] || p;
+        const tipos = (titulo, lista) => lista.flatMap((p) => p.tipos.map((x) => [`${titulo} · ${pais(p.pais)} · ${String(x.pct).replace('.', ',')} %`, `${eur(x.base)} · IVA ${eur(x.cuota)}`]));
         return (
-        <ModeloPlegable id="m369" num="369" nombre="IVA de la ventanilla única" detalle={t ? `${t}T · hasta el ${fechaTexto(plazo369(anio, t))}${plazo369(anio, t).slice(0, 4) !== String(actual) ? ` de ${plazo369(anio, t).slice(0, 4)}` : ''}` : 'Total del año'}
+        <ModeloPlegable id="m369" num="369" nombre="IVA de la ventanilla única" detalle={t ? `${t}T${m.sinActividad && acogida ? ' · sin actividad, a cero' : ''} · hasta el ${fechaTexto(plazo369(anio, t))}${plazo369(anio, t).slice(0, 4) !== String(actual) ? ` de ${plazo369(anio, t).slice(0, 4)}` : ''}` : 'Total del año'}
           dato={importeFila(m ? m.cuota : r2(T.reduce((s, x) => s + modelo369(facturas, anio, x).cuota, 0)))}>
           <h2 className="grupo-t">369 · Ventanilla única (OSS)</h2>
-          <p className="grupo-pie arriba">El IVA de tus ventas a particulares de otros países de la UE, con el tipo de cada país. No va en el 303 (allí solo su base, en la casilla 123): se declara aquí cada trimestre, por país y tipo, hasta el último día del mes siguiente (ese día, aunque caiga en fin de semana).</p>
+          <p className="grupo-pie arriba">El IVA de tus ventas a particulares de otros países de la UE, con el tipo de cada país. No va en el 303 (allí solo su base, en la casilla 123): se declara aquí cada trimestre, por país y tipo (los servicios aparte de los bienes), hasta el último día del mes siguiente (ese día, aunque caiga en fin de semana). Mientras estés en el régimen se presenta todos los trimestres, aunque no vendas nada. Las rectificativas de un trimestre anterior van como corrección de su cuota, y lo negativo de un país no compensa lo de otro: lo devuelve ese país.</p>
           <div className="tarjetas">
             {T.map((t) => { const m = modelo369(facturas, anio, t); return (
               <div key={t} className="tarjeta"><h3>{t}T {anio}</h3>
                 <Importe texto="A ingresar" v={m.cuota} />
-                {m.paises.length ? <Plegable><Casillas sinNumeros={Boolean(foralT)} filas={[...m.paises.flatMap((p) => p.tipos.map((x) => [`${NOMBRES_UE[p.pais] || p.pais} · ${String(x.pct).replace('.', ',')} %`, `${eur(x.base)} · IVA ${eur(x.cuota)}`])), ['Total a ingresar', m.cuota, true]]} /></Plegable> : <p className="nota">Sin ventas de la ventanilla única.</p>}
+                {!m.sinActividad ? <Plegable><Casillas sinNumeros={Boolean(foralT)} filas={[
+                  ...tipos('3 · Servicios', m.servicios), ...tipos('4 · Bienes', m.bienes),
+                  ...m.correcciones.map((c) => [`7 · Corrección · ${pais(c.pais)} · ${c.t}T ${c.anio}`, c.cuota]),
+                  ...m.paises.map((p) => [`8 · Resultado · ${pais(p.pais)}`, p.saldo < 0 ? `${eur(-p.saldo)} a devolver por ese país` : p.saldo]),
+                  ['Total a ingresar', m.cuota, true]]} /></Plegable>
+                  : <p className="nota">Sin ventas ni correcciones{acogida ? ': se presenta igualmente, marcando «Declaración sin actividad».' : '.'}</p>}
+                {m.fuera.length > 0 && <p className="nota">Rectificativas de hace más de 3 años ({m.fuera.map((c) => `${pais(c.pais)} ${c.t}T ${c.anio}: ${eur(c.cuota)}`).join('; ')}): ya no van en el 369, sino ante la Hacienda de ese país.</p>}
                 <p className="nota">Plazo: hasta el {fechaTexto(plazo369(anio, t))}{t === 4 ? ` de ${anio + 1}` : ''}.</p>
-                {(m.cuota > 0 || u.pres369?.[anio]?.[t]) && <PresentadoRet modelo="369" anio={anio} t={t} hecho={Boolean(u.pres369?.[anio]?.[t])} soloLectura={soloLectura} />}
+                {(acogida || !m.sinActividad || u.pres369?.[anio]?.[t]) && <PresentadoRet modelo="369" anio={anio} t={t} hecho={Boolean(u.pres369?.[anio]?.[t])} soloLectura={soloLectura} />}
               </div>
             ); })}
           </div>
