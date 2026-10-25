@@ -5,7 +5,7 @@ import { eur, fechaTexto, hoy } from '@/lib/formato';
 import { ESTADOS, estadoDe, numeroPresupuesto } from '@/lib/presupuestos';
 import { portalDe } from '@/lib/portal';
 import '@/app/portal.css';
-import { enDivisa, formatoDoc } from '@/lib/idiomas';
+import { enDivisa, formatoDoc, textosFactura, tituloDoc } from '@/lib/idiomas';
 import { faltanDatosFactura } from '@/lib/empresa';
 
 export const dynamic = 'force-dynamic';
@@ -44,7 +44,8 @@ export default async function Portal({ params }) {
           return (
             <li key={f.id} className="portal-doc">
               <span className="txt">
-                <strong>Factura {numeroFactura(f)}</strong>
+                {/* «Factura simplificada» si va sin NIF del cliente, como en su PDF (lib/idiomas.js tituloDoc). */}
+                <strong>{tituloDoc(f, textosFactura('es'))} {numeroFactura(f)}</strong>
                 <small>{fechaTexto(f.fecha)}{f.concepto ? ` · ${f.concepto}` : ''}</small>
               </span>
               <span className="imp-col">

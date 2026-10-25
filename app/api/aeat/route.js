@@ -1,6 +1,6 @@
 import { usuarioApi } from '@/lib/api';
 import { actividadesDe, fiscalDe, usa130, usa303, ajustesIva } from '@/lib/empresa';
-import { casillas303, liquidaciones303, minoracion130, resumenAnual } from '@/lib/calculos';
+import { casillas303, liquidaciones303, opciones130, resumenAnual } from '@/lib/calculos';
 import { declarante, fichero130, fichero303, nombreFichero } from '@/lib/ficheroAeat';
 import { datosImpuestos } from '@/lib/datosImpuestos';
 import { hoy } from '@/lib/formato';
@@ -30,8 +30,7 @@ export async function GET(req) {
     if (modelo === '303') { const iva = ajustesIva(u); r = fichero303(yo, anio, t, casillas303(facturas, gastos, anio, t, iva), liquidaciones303(facturas, gastos, anio, undefined, iva)[t - 1]); }
     else {
       const ids = actividadesDe(u).map((a) => a.id);
-      const minoracion = minoracion130(u.rend130?.[anio - 1]);
-      r = fichero130(yo, anio, resumenAnual(facturas, gastos, anio, u.pagos130?.[anio] || {}, ids, { ivaCoste: !usa303(f), hasta, minoracion, iva: ajustesIva(u) }).trimestres[t - 1]);
+      r = fichero130(yo, anio, resumenAnual(facturas, gastos, anio, u.pagos130?.[anio] || {}, ids, { ivaCoste: !usa303(f), hasta, ...opciones130(f, u.rend130, anio), iva: ajustesIva(u) }).trimestres[t - 1]);
     }
   } catch (e) {
     return Response.json({ error: e.message }, { status: 422 });

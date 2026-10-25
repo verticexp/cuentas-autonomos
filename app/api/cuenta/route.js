@@ -182,6 +182,17 @@ export async function PATCH(req) {
     await auditar(u, `Prorrata provisional del IVA de ${anio}`, valor === null ? 'quitada' : `${valor} %`);
     return Response.json({ ok: true });
   }
+  // Prorrata especial de un año (art. 103.Dos.1.º LIVA, lib/calculos.js): true o false. Va dentro de prorrata.especial.
+  if (b.prorrataEspecial) {
+    if (sin('contabilidad')) return sin('contabilidad');
+    const { anio, especial } = b.prorrataEspecial;
+    if (!Number.isInteger(anio) || anio < 2000 || anio > 2100) return error('Año no válido');
+    const datos = { ...(u.prorrata || {}), especial: { ...(u.prorrata?.especial || {}) } };
+    if (especial === true) datos.especial[anio] = true; else delete datos.especial[anio];
+    await actualizarUsuario(u, { prorrata: datos });
+    await auditar(u, `Prorrata del IVA de ${anio}`, especial === true ? 'especial' : 'general');
+    return Response.json({ ok: true });
+  }
   // Saldo del IVA a compensar de antes de Fisquo (lib/calculos.js liquidaciones303): { importe, anio, t } o null.
   if (b.saldoIva !== undefined) {
     if (sin('contabilidad')) return sin('contabilidad');
@@ -199,17 +210,21 @@ export async function PATCH(req) {
     await auditar(u, 'Saldo del IVA a compensar de antes de Fisquo', `${saldoIva.importe} € tras el ${t}T ${anio}`);
     return Response.json({ ok: true });
   }
-  const porAnio = ['rend130', 'cuotaIS'].find((k) => b[k]);
+  // También, en el Impuesto sobre Sociedades (lib/modelos.js borradorSociedades): las bases imponibles negativas pendientes
+  // de antes de Fisquo por año de origen (art. 26 LIS) y el incremento de los fondos propios del año (reserva de
+  // capitalización, art. 25 LIS), que no pueden ser negativos.
+  const porAnio = ['rend130', 'cuotaIS', 'binsPrevias', 'fondosPropios'].find((k) => b[k]);
   if (porAnio) {
     if (sin('contabilidad')) return sin('contabilidad');
     const { anio, importe } = b[porAnio];
-    if (!Number.isInteger(anio) || anio < 2000 || anio > 2100) return error('Año no válido');
+    if (!Number.isInteger(anio) || anio < 1990 || anio > 2100 || (porAnio !== 'binsPrevias' && anio < 2000)) return error('Año no válido');
     const valor = importe === null || importe === '' ? null : leerImporte(String(importe));
     if (valor !== null && !Number.isFinite(valor)) return error('Importe no válido');
+    if (valor !== null && valor < 0 && ['binsPrevias', 'fondosPropios'].includes(porAnio)) return error('Escribe el importe en positivo');
     const datos = { ...(u[porAnio] || {}) };
     if (valor === null) delete datos[anio]; else datos[anio] = valor;
     await actualizarUsuario(u, { [porAnio]: datos });
-    await auditar(u, porAnio === 'rend130' ? `Rendimiento de ${anio} para el 130` : `Cuota del Impuesto sobre Sociedades de ${anio}`, valor === null ? 'quitado' : String(valor));
+    await auditar(u, { rend130: `Rendimiento de ${anio} para el 130`, cuotaIS: `Cuota del Impuesto sobre Sociedades de ${anio}`, binsPrevias: `Base imponible negativa pendiente de ${anio}`, fondosPropios: `Incremento de los fondos propios de ${anio}` }[porAnio], valor === null ? 'quitado' : String(valor));
     return Response.json({ ok: true });
   }
   if (b.marca) {

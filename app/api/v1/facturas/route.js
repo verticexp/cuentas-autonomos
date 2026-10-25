@@ -1,7 +1,7 @@
 import { usuarioClave, respuestaPublica, jsonPublico, errorPublico, cuerpoPublico } from '@/lib/apiPublica';
 import { facturaPublica, paginaPublica, parametrosPagina } from '@/lib/apiPublicaDatos';
 import { limpiar, crearFactura } from '@/lib/facturas';
-import { actividadesDe, fiscalDe, usa303, usaIgic } from '@/lib/empresa';
+import { actividadesDe, fiscalDe, limiteSimplificada, usa303, usaIgic } from '@/lib/empresa';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -21,7 +21,7 @@ export const POST = (req) => respuestaPublica(async () => {
   const b = await cuerpoPublico(req);
   if (Object.hasOwn(b, 'rectifica') || Object.hasOwn(b, 'motivoRectificacion')) return errorPublico('La API todavía no admite rectificativas');
   const fiscal = fiscalDe(u);
-  const datos = limpiar(b, actividadesDe(u), fiscal.tipo === 'sociedad', { rectificativa: false, igic: usaIgic(fiscal), conRecargo: usa303(fiscal) && !usaIgic(fiscal), reagp: fiscal.iva === 'reagp' });
+  const datos = limpiar(b, actividadesDe(u), fiscal.tipo === 'sociedad', { rectificativa: false, igic: usaIgic(fiscal), conRecargo: usa303(fiscal) && !usaIgic(fiscal), reagp: fiscal.iva === 'reagp', limiteSimplificada: limiteSimplificada(fiscal) });
   if (datos.error) return errorPublico(datos.error);
   const r = await crearFactura(u, datos, { idem: idem === null ? undefined : `api:${apiClave.id}:${idem}`, ordenFechas: true });
   if (r.error) return errorPublico(r.error, r.riesgo || r.ordenFechas ? 409 : 400);

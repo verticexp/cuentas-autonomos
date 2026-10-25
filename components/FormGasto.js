@@ -14,7 +14,8 @@ import { TIPOS_IGIC } from '@/lib/igic';
 import { importes, nifUE, origenGasto } from '@/lib/calculos';
 import { conIva, costeAfecto, partirIva, pctAfecto, pctDeducible, tipoAutoliquidado } from '@/lib/ivaDeducible';
 import { parseImporte } from '@/lib/importe';
-import { CATEGORIAS, categoria, categoriaDe, pareceBien } from '@/lib/categorias';
+import { CATEGORIAS, categoria, categoriaDe, noDeducibleIS, pareceBien } from '@/lib/categorias';
+import { SUBCLAVES_190, clave190De } from '@/lib/modelos';
 import { LIMITE_LIBERTAD, TIPOS_BIEN, coeficiente } from '@/lib/amortizaciones';
 import { emparejarLineas } from '@/lib/inventario';
 import { leerFacturaElectronica } from '@/lib/facturae';
@@ -55,13 +56,13 @@ const desdePropuesta = (p, vacio) => {
 };
 
 // Lo habitual del proveedor (lib/proveedorHabitual.js) en lo que aún no se ha tocado.
-const CAMPOS_HABITUALES = ['categoria', 'deduciblePct', 'afectoPct', 'actividad', 'proyecto', 'alquiler', 'recc'];
+const CAMPOS_HABITUALES = ['categoria', 'deduciblePct', 'afectoPct', 'actividad', 'proyecto', 'alquiler', 'recc', 'clave190'];
 
 // plegado: en la lista de gastos empieza como una tarjeta con «Escanear ticket», «Subir facturas» y «Apuntar a mano»; el
 // formulario se abre al escanear o al pedirlo. Las facturas subidas van a «Por revisar» (lib/bandeja.js), en la misma
 // pantalla; correo: { listo, direccion } de la dirección para reenviárselas (lib/buzon.js).
 // documento: una factura de la bandeja (lib/bandeja.js) para revisar y aprobar; siguiente: la que va después.
-export default function FormGasto({ hoy, gasto, actividades, alquiler = false, plegado = false, destacar = false, regimen = 'autonomo', cupoInicial = null, movimiento = null, productos = [], proyectos = [], igic = false, documento = null, siguiente = null , correo = null }) {
+export default function FormGasto({ hoy, gasto, actividades, alquiler = false, plegado = false, destacar = false, regimen = 'autonomo', cupoInicial = null, movimiento = null, productos = [], proyectos = [], igic = false, especial = false, documento = null, siguiente = null , correo = null }) {
   const impuesto = igic ? 'IGIC' : 'IVA';
   const router = useRouter();
   const prefijo = useId();
@@ -352,6 +353,15 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
         </select>
       )}
       {Number(g.irpfPct) > 0 && <p className="nota">Le pagas la factura menos la retención, y esa retención la ingresas tú en el 111.</p>}
+      {Number(g.irpfPct) > 0 && !g.alquiler && (() => {
+        // Subclave del 190 (lib/modelos.js): solo si a ese % le corresponde más de una.
+        const opciones = Object.entries(SUBCLAVES_190).filter(([, s]) => s.pct === Number(g.irpfPct));
+        return opciones.length > 1 && (
+          <select className="campo" value={clave190De(g)} onChange={(e) => poner('clave190', e.target.value)} aria-label="Qué es, para el modelo 190">
+            {opciones.map(([k, s]) => <option key={k} value={k}>{s.nombre} · 190 {k}</option>)}
+          </select>
+        );
+      })()}
       {(conIva(gn) || origenGasto(gn)) && <>
         <select className="campo" value={pctOtro ? 'otro' : String(pctDeducible(g))} aria-label={`${impuesto} que te deduces`}
           onChange={(e) => {
@@ -421,7 +431,16 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
         {!g.vence && <p className="nota">Si no lo pones, vence en el plazo de pago de la ficha del proveedor o, sin él, a los 30 días (el plazo legal).</p>}
       </>}
       {(alquiler || g.alquiler) && <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.alquiler)} onChange={(e) => poner('alquiler', e.target.checked)} />Es el alquiler del local (retención del 19 %)</label>}
+      {/* Sociedades, gastos sin IVA (impuestos, multas, donativos): no deducible en el Impuesto sobre Sociedades (art. 15 LIS,
+          lib/categorias.js noDeducibleIS). Sin tocarlo, lo que propone Fisquo por el concepto. */}
+      {regimen === 'sociedad' && (g.noDeducibleIS !== undefined || !conIva(gn)) && <label className="gasto-pendiente"><input type="checkbox" checked={g.noDeducibleIS ?? Boolean(noDeducibleIS(gn))} onChange={(e) => poner('noDeducibleIS', e.target.checked)} />No es deducible en el Impuesto sobre Sociedades (el propio impuesto, multas, sanciones, recargos, donativos)</label>}
       {!igic && (conIva(gn) || g.recc) && <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.recc)} onChange={(e) => poner('recc', e.target.checked)} />Su factura dice «Régimen especial del criterio de caja» (el IVA se deduce al pagarla)</label>}
+      {!igic && (conIva(gn) || g.importacion) && <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.importacion)} onChange={(e) => poner('importacion', e.target.checked)} />Importación de fuera de la UE: el IVA lo he pagado en la aduana (DUA)</label>}
+      {!igic && (especial || g.usoProrrata) && conIva(gn) && <label>Uso en la prorrata especial<select className="campo" value={g.usoProrrata || ''} onChange={(e) => poner('usoProrrata', e.target.value || undefined)}>
+        <option value="">Común a operaciones con IVA y exentas (con el porcentaje)</option>
+        <option value="gravadas">Solo para operaciones con IVA (se deduce entero)</option>
+        <option value="exentas">Solo para operaciones exentas (no se deduce)</option>
+      </select></label>}
       {!igic && ((Number(g.ivaPct) === 0 && !g.porTipo) || g.compensacion) && (
         <label className="gasto-pendiente">Compra a un agricultor, ganadero o pescador del régimen especial (REAGP)
           <select className="campo" value={g.compensacion || ''} onChange={(e) => poner('compensacion', Number(e.target.value) || undefined)}>

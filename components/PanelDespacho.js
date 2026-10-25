@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Ir from '@/components/Ir';
+import Vacio from '@/components/Vacio';
 import { navegar } from '@/lib/transicion';
 import { eur } from '@/lib/formato';
 import { ESTADOS_TEXTO } from '@/components/despachoTextos';
@@ -118,6 +119,6 @@ export default function PanelDespacho({ filas, equipo = [], anio, t, hoy }) {
           </Ir>
         </li>;
       })}</ul>
-    </> : <p className="nota desp-vacio">Ningún cliente con estos filtros.</p>}
+    </> : <Vacio compacto tipo="resultados" icono="usuarios" titulo={texto || gestor ? 'Ningún cliente con estos filtros' : 'Ningún cliente en esta lista'} accion={(texto || gestor) && <button type="button" className="boton sec" onClick={() => { setBuscar(''); setGestor(''); }}>Quitar filtros</button>} />}
   </div>;
 }

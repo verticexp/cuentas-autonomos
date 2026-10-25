@@ -82,7 +82,7 @@ test('N08: las pérdidas dejan la casilla 07 del 130 con signo, sin un pago nega
 
 test('N09: el 390 incluye la base deducible de compras intracomunitarias', () => {
   const r = modelo390([], [gasto('ue', 100, { alquiler: false, ivaPct: 0, proveedorNif: 'DE123456789' })], 2026);
-  assert.equal(r.baseDed, 100);
+  assert.equal((r.c['597'] || 0) + (r.c['56'] || 0), 100);
   assert.equal(r.deducible, 21);
 });
 

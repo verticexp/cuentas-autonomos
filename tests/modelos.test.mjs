@@ -23,19 +23,20 @@ test('115 y 180: 19 % de las rentas del alquiler', () => {
 
 test('349: clientes de la UE por NIF-IVA, sumados por trimestre', () => {
   assert.equal(nifUE('12345678Z'), ''); assert.equal(nifUE('ES12345678Z'), ''); assert.equal(nifUE('fr 12345678901'), 'FR12345678901');
-  assert.deepEqual(modelo349(F, 2026, 2), { operadores: [{ nif: 'DE123456789', nombre: 'Berlin GmbH', clave: 'S', base: 2500 }], total: 2500 });
+  assert.deepEqual(modelo349(F, 2026, 2), { operadores: [{ nif: 'DE123456789', nombre: 'Berlin GmbH', clave: 'S', base: 2500 }], total: 2500, rectificaciones: [], totalRectificaciones: 0, negativos: [], mensual: null });
   assert.equal(modelo349(F, 2026, 1).total, 0);
 });
 
 test('390: suma de los cuatro 303', () => {
   const c = modelo390(F, G, 2026);
-  assert.deepEqual([c.base21, c.cuota21, c.base10, c.cuota10, c.sinIva, c.deducible, c.resultado, c.volumen], [1000, 210, 400, 40, 2500, 399, -149, 3900]);
+  // Casillas del 390: 05-06 y 03-04 régimen ordinario, 103 servicios a la UE, 108 volumen de operaciones.
+  assert.deepEqual([c.c['05'], c.c['06'], c.c['03'], c.c['04'], c.c['103'], c.deducible, c.resultado, c.c['108']], [1000, 210, 400, 40, 2500, 399, -149, 3900]);
   assert.deepEqual(c.trimestres, [-63, -126, 40, 0]);
 });
 
 test('190: por trabajador', () => {
   const N = [{ empleado: 'e', empleadoNombre: 'Eva', mes: '2026-01', bruto: 2000, irpfPct: 10 }, { empleado: 'e', mes: '2026-02', bruto: 2000, irpfPct: 10 }, { empleado: 'e', mes: '2025-12', bruto: 9, irpfPct: 10 }];
-  assert.deepEqual(modelo190(N, [{ id: 'e', nombre: 'Eva Gil', nif: '1X' }], 2026), { perceptores: [{ nombre: 'Eva Gil', nif: '1X', clave: 'A', percepciones: 4000, retenciones: 400 }], percepciones: 4000, retenciones: 400 });
+  assert.deepEqual(modelo190(N, [{ id: 'e', nombre: 'Eva Gil', nif: '1X' }], 2026), { perceptores: [{ nombre: 'Eva Gil', nif: '1X', clave: 'A', subclave: '', percepciones: 4000, retenciones: 400, gastosDeducibles: 0, contrato: 1 }], percepciones: 4000, retenciones: 400 });
   // Un proveedor en módulos con el 1 % y un agricultor con el 2 %: clave H; un profesional con el 15 %: clave G.
   const G190 = [{ fecha: '2026-03-01', pagado: '2026-03-01', base: 1000, ivaPct: 21, irpfPct: 1, proveedor: 'Carpintería', proveedorNif: 'B1' },
     { fecha: '2026-03-02', pagado: '2026-03-02', base: 500, ivaPct: 10, irpfPct: 2, proveedor: 'Granja', proveedorNif: 'B2' },

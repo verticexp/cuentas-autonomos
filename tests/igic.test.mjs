@@ -133,8 +133,8 @@ test('Canarias: conserva deducción, elimina opciones incompatibles y ofrece 420
 
 test('Canarias: tipos permitidos en factura simple, líneas, gasto y actividades; rechaza 21 y no confía en impuesto del cuerpo', () => {
   for (const p of TIPOS_IGIC) {
-    assert.equal(validarFactura(documento({ ivaPct: p }), { igic: true }).ok, true, `factura ${p}`);
-    assert.equal(validarFactura(documento({ lineas: [{ concepto: 'Línea', cantidad: 1, precio: 100, ivaPct: p }] }), { igic: true }).ok, true, `línea ${p}`);
+    assert.equal(validarFactura(documento({ ivaPct: p }), { igic: true, limiteSimplificada: 3000 }).ok, true, `factura ${p}`);
+    assert.equal(validarFactura(documento({ lineas: [{ concepto: 'Línea', cantidad: 1, precio: 100, ivaPct: p }] }), { igic: true, limiteSimplificada: 3000 }).ok, true, `línea ${p}`);
     assert.equal(validarGasto(gas('2026-01-10', 100, p, { concepto: 'Compra' }), { igic: true }).ok, true);
     assert.equal(limpiarActividades([{ ...actividad, ivaPct: p }], [], new Set(), { igic: true }).actividades[0].ivaPct, p);
   }
@@ -143,10 +143,10 @@ test('Canarias: tipos permitidos en factura simple, líneas, gasto y actividades
   assert.ok(validarGasto(gas('2026-01-10', 100, 21, { concepto: 'Compra' }), { igic: true }).errores.ivaPct);
   assert.ok(limpiarActividades([{ ...actividad, ivaPct: 21 }], [], new Set(), { igic: true }).error);
   assert.equal(validarFactura(documento({ impuesto: 'igic' })).ok, false);
-  const f = limpiar(documento(), [actividad], true, { igic: true });
+  const f = limpiar(documento(), [actividad], true, { igic: true, limiteSimplificada: 3000 });
   assert.equal(f.impuesto, 'igic');
   assert.equal(f.ivaPct, 7);
-  for (const extra of [{ recargo: true }, { oss: { pais: 'FR' } }, { margen: 'rebu' }]) assert.ok(limpiar(documento(extra), [actividad], true, { igic: true }).error);
+  for (const extra of [{ recargo: true }, { oss: { pais: 'FR' } }, { margen: 'rebu' }]) assert.match(limpiar(documento(extra), [actividad], true, { igic: true, limiteSimplificada: 3000 }).error, /Canarias|aplicable|IGIC/);
 });
 
 test('Documentos: IGIC en todos los idiomas, sin alterar los textos IVA anteriores', async () => {

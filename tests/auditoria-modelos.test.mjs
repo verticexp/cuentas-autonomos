@@ -11,7 +11,7 @@ const fac = (id, fecha, base, extra = {}) => ({ id, fecha, numero: Number(id.sli
 test('303: las rectificativas van a las casillas 14 y 15 con su signo (art. 80 LIVA), no restan en las 07 y 09', () => {
   const c = casillas303([fac('f1', '2026-02-01', 5000), fac('r1', '2026-02-10', -1000, { serie: 'R', rectifica: { numero: '07-2025' } })], [], 2026, 1);
   assert.deepEqual([c['07'], c['09'], c['14'], c['15'], c['27']], [5000, 1050, -1000, -210, 840]);
-  assert.equal(modelo390([fac('f1', '2026-02-01', 5000), fac('r1', '2026-02-10', -1000, { rectifica: { numero: '07-2025' } })], [], 2026).cuotaRect, -210);
+  assert.equal(modelo390([fac('f1', '2026-02-01', 5000), fac('r1', '2026-02-10', -1000, { rectifica: { numero: '07-2025' } })], [], 2026).c['30'], -210);
 });
 
 test('fichero del 303: un trimestre con solo un abono ya se puede descargar (antes, «importe negativo en un campo sin signo»)', () => {
@@ -48,7 +48,8 @@ test('Sociedades: con datos del año anterior a cero, el tipo es el de microempr
   const gastos = [{ id: 'g0', fecha: '2025-06-01', actividad: 'a', concepto: 'Alta', base: 100, ivaPct: 0 }, { id: 'g1', fecha: '2026-03-02', actividad: 'a', concepto: 'Compras', base: 1000000, ivaPct: 0 }];
   const b = borradorSociedades(facturas, gastos, 2026);
   assert.equal(b.tamano, 'micro');
-  assert.equal(b.cuota, 20000); // 50.000 × 19 % + 50.000 × 21 %
+  // Base 100.000 € menos los 100 € de pérdida de 2025 (art. 26 LIS): 50.000 × 19 % + 49.900 × 21 %.
+  assert.equal(b.cuota, 9500 + 10479);
   // Sin nada del año anterior en la app, se usa la de este año.
   assert.equal(borradorSociedades(facturas, gastos.slice(1), 2026).tamano, 'reducida');
 });

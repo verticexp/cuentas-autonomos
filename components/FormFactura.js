@@ -33,7 +33,8 @@ const lineasDe = (x) => (x.lineas?.length
 const numero = (v) => leerImporte(v) || 0;
 
 // riesgos: lo que debe ahora cada cliente con riesgo máximo ({ id: euros }); el límite lo comprueba el servidor.
-export default function FormFactura({ factura, clientes, numeros, hoy, rectifica: orig, plantilla, clienteInicial = null, notaDefecto = '', actividades, productos = [], stock = null, proyectos = [], riesgos = {}, recargo = false, oss = false, margenes = [], reagp = false, igic = false }) {
+// limiteSimplificada: hasta dónde llega la factura sin NIF del cliente en esta empresa (lib/empresa.js limiteSimplificada).
+export default function FormFactura({ factura, clientes, numeros, hoy, rectifica: orig, plantilla, clienteInicial = null, notaDefecto = '', actividades, productos = [], stock = null, proyectos = [], riesgos = {}, recargo = false, oss = false, margenes = [], reagp = false, igic = false, limiteSimplificada = 400 }) {
   const impuesto = igic ? 'IGIC' : 'IVA';
   const operaciones = igic ? { exenta: { nombre: 'Exenta de IGIC' }, exportacion: { nombre: 'Exportación de bienes' }, 'servicios-fuera': { nombre: 'No sujeta por localización' }, isp: { nombre: 'Inversión del sujeto pasivo (lo declara el cliente)' } } : TIPOS_OPERACION;
   // IVA y retención de cada actividad, para rellenar la factura nueva.
@@ -138,6 +139,8 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
   // tampoco retiene: se avisa con un botón para quitarla.
   const nifCli = String(f.cliente.nif || '').toUpperCase().replace(/[\s.-]/g, '').replace(/^ES(?=[0-9A-Z]{9}$)/, '');
   const clienteExtranjero = Boolean(nifCli) && !NIF_ES.test(nifCli);
+  // Cliente de otro país (País distinto de ES): sin NIF, su factura no es simplificada (lib/validacion.js sinNifEspana).
+  const clientePais = Boolean(f.cliente.pais) && String(f.cliente.pais).trim().toUpperCase() !== 'ES';
   const clientePersona = !nifCli || /^([0-9]{8}|[XYZ][0-9]{7})[A-Z]$/.test(nifCli);
   useEffect(() => {
     if (!nueva || orig || irpfPersonalizado.current) return;
@@ -320,7 +323,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
       </fieldset>
 
       <div className={`dos-col ff-det ff-evento${verEvento || f.evento?.fecha || f.evento?.lugar ? ' abierto' : ''}`}>
-        <label>Fecha del servicio o del evento, si no es la de la factura (opcional)<input className="campo" type="date" value={f.evento?.fecha || ''} onChange={(e) => poner('evento', { ...f.evento, fecha: e.target.value })} /></label>
+        <label>Fecha de la operación (servicio o entrega), si no es la de la factura (opcional)<input className="campo" type="date" value={f.evento?.fecha || ''} onChange={(e) => poner('evento', { ...f.evento, fecha: e.target.value })} /></label>
         <label>Lugar (opcional)<input className="campo" placeholder="Ej.: C/ Mayor, 1, Valencia" value={f.evento?.lugar || ''} onChange={(e) => poner('evento', { ...f.evento, lugar: e.target.value })} /></label>
       </div>
       <fieldset className="lineas">
@@ -375,6 +378,8 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
           <option value="concurso">Concurso del cliente (R2, art. 80 Tres)</option>
           <option value="incobrable">Crédito incobrable: el cliente no paga (R3, art. 80 Cuatro)</option>
         </select>
+        {/* La causa sale impresa en la rectificativa (art. 15 del Reglamento de facturación, lib/idiomas.js textoRectifica). */}
+        {!f.motivoRectificacion && <small className="nota">Con «Otras causas», escribe la causa en la nota: sale impresa como motivo de la rectificación.</small>}
       </label>}
       {orig && (() => {
         // Lo que cambia según el motivo (informe de la asesoría, 20-10-2026): dónde va en el 303 y en el IRPF.
@@ -408,8 +413,8 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
         {clienteExtranjero && Number(f.irpfPct) === 0 && <p className="nota">Sin retención: el cliente es de fuera de España.</p>}
       </div>
       {/* Sin NIF del cliente solo cabe la factura simplificada (art. 4 del Reglamento de facturación): hasta 400 €, o 3.000 €
-          en comercio y hostelería; por encima de 3.000 € el servidor ya lo pide (auditoría F1-10). */}
-      {!orig && !nifCli && !f.oss?.pais && f.cliente.nombre.trim() && t.total + t.irpf > 400 && <p className="nota">Sin el NIF del cliente, esta factura solo vale como simplificada: hasta 400 € (3.000 € en comercio y hostelería). Pídele su NIF o DNI y añádelo.</p>}
+          en los sectores del art. 4.1.c que la empresa marca en Ajustes. Por encima, el servidor la rechaza (lib/validacion.js). */}
+      {!orig && !nifCli && !f.oss?.pais && !clientePais && f.cliente.nombre.trim() && t.total + t.irpf > limiteSimplificada && <p className="error" role="alert">Sin el NIF del cliente solo cabe la factura simplificada, y esta llega hasta {limiteSimplificada === 3000 ? '3.000' : limiteSimplificada} € IVA incluido (art. 4 del Reglamento de facturación). Pídele su NIF o DNI y añádelo.{limiteSimplificada < 3000 && ' Si vendes al por menor, en hostelería u otro sector del art. 4.1.c, el límite es de 3.000 €: márcalo en Ajustes › Actividades e impuestos.'}</p>}
 
       {!igic && (recargo || f.recargo) && <div className="check ff-det termino-check"><input id={idCampo('recargo')} aria-labelledby={idCampo('recargo-etiqueta')} type="checkbox" checked={Boolean(f.recargo)} onChange={(e) => poner('recargo', e.target.checked)} /><span id={idCampo('recargo-etiqueta')}><label htmlFor={idCampo('recargo')}>Cliente en </label><Termino id="recargo">recargo de equivalencia</Termino><label htmlFor={idCampo('recargo')}> (comercio minorista: 5,2 % con el 21 %, 1,4 % con el 10 %, 0,5 % con el 4 %)</label></span></div>}
 
@@ -442,7 +447,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
             const pais = e.target.value;
             limpiarErrores('oss.pais');
             // Con el IVA de su país (el general, si el tipo de la línea no existe allí), sin retención ni recargo.
-            setF((x) => ({ ...x, oss: pais ? { pais } : undefined, ...(pais ? { irpfPct: 0, recargo: false } : {}),
+            setF((x) => ({ ...x, oss: pais ? { pais, ...(x.oss?.bienes ? { bienes: true } : {}) } : undefined, ...(pais ? { irpfPct: 0, recargo: false } : {}),
               lineas: x.lineas.map((l) => (pais && !tiposPais(pais).includes(Number(l.ivaPct)) ? { ...l, ivaPct: TIPOS_UE[pais].general } : !pais && ![21, 10, 4, 0].includes(Number(l.ivaPct)) ? { ...l, ivaPct: defecto(x.actividad).ivaPct } : l)) }));
           }}>
             <option value="">No: IVA español</option>
@@ -450,6 +455,15 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
           </select>
           {mensaje('oss.pais')}
           {f.oss?.pais && <span className="nota">Con el IVA de {NOMBRES_UE[f.oss.pais]}: no va en el 303, sino en el modelo 369.</span>}
+        </label>
+      )}
+      {!igic && f.oss?.pais && (
+        // El 369 separa las prestaciones de servicios (apartado 3) de las entregas de bienes enviados desde España (apartado 4).
+        <label className="ff-det">Qué vendes por la ventanilla única
+          <select className="campo" value={f.oss.bienes ? 'bienes' : 'servicios'} onChange={(e) => setF((x) => ({ ...x, oss: { pais: x.oss.pais, ...(e.target.value === 'bienes' ? { bienes: true } : {}) } }))}>
+            <option value="servicios">Servicios</option>
+            <option value="bienes">Bienes que envías desde España</option>
+          </select>
         </label>
       )}
 

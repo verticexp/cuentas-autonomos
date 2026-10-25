@@ -8,7 +8,7 @@ import SinBD from '@/components/SinBD';
 import FormFactura from '@/components/FormFactura';
 import { AvisoTicketBai } from '@/components/AvisoTerritorio';
 import Volver from '@/components/Volver';
-import { usaIgic, actividadesDe, fiscalDe, usa303 } from '@/lib/empresa';
+import { usaIgic, actividadesDe, fiscalDe, limiteSimplificada, usa303 } from '@/lib/empresa';
 import { inventario } from '@/lib/inventario';
 import { datosStock } from '@/lib/stockServidor';
 import { nombresProyectos } from '@/lib/proyectos';
@@ -46,7 +46,7 @@ export default async function Nueva({ searchParams }) {
       <Volver href={original || plantilla ? `/facturas/${(original || plantilla).id}` : '/facturas'} />
       <h1 className="titulo">{original ? 'Factura rectificativa' : plantilla ? 'Duplicar factura' : 'Nueva factura'}</h1>
       <AvisoTicketBai fiscal={fiscalDe(u)} />
-      <FormFactura clienteInicial={clienteInicial} igic={usaIgic(fiscalDe(u))} recargo={usa303(fiscalDe(u))} oss={usa303(fiscalDe(u)) && Boolean(fiscalDe(u).oss)} margenes={['rebu', 'reav'].filter((k) => fiscalDe(u)[k])} reagp={fiscalDe(u).iva === 'reagp'} clientes={clientes} hoy={h} rectifica={original} plantilla={plantilla || null} notaDefecto={u.emisor?.notaDefecto || ''} numeros={numeros} actividades={actividades} productos={(productos || []).sort((a, b) => a.nombre.localeCompare(b.nombre))} stock={stock} riesgos={riesgos} proyectos={nombresProyectos([...fFichas, ...gFichas].map((f) => ({ proyecto: f.pr })))} />
+      <FormFactura clienteInicial={clienteInicial} igic={usaIgic(fiscalDe(u))} recargo={usa303(fiscalDe(u))} oss={usa303(fiscalDe(u)) && Boolean(fiscalDe(u).oss)} margenes={['rebu', 'reav'].filter((k) => fiscalDe(u)[k])} reagp={fiscalDe(u).iva === 'reagp'} limiteSimplificada={limiteSimplificada(fiscalDe(u))} clientes={clientes} hoy={h} rectifica={original} plantilla={plantilla || null} notaDefecto={u.emisor?.notaDefecto || ''} numeros={numeros} actividades={actividades} productos={(productos || []).sort((a, b) => a.nombre.localeCompare(b.nombre))} stock={stock} riesgos={riesgos} proyectos={nombresProyectos([...fFichas, ...gFichas].map((f) => ({ proyecto: f.pr })))} />
     </main>
   );
 }

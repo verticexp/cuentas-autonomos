@@ -9,7 +9,7 @@ import ModulosActividad from '@/components/ModulosActividad';
 import { liquidaciones420, modelo425, plazo420 } from '@/lib/igic';
 import { datosTerritorio, esForal, foralDe, pagosIrpfForal, plazoForal, situacionForal, territorioDe } from '@/lib/territorios';
 import { AvisoHaciendaForal } from '@/components/AvisoTerritorio';
-import { casillas303, habil, liquidaciones303, minoracion130, pendienteCaja, prorrataAnio, prorrataProvisional, r2, limiteTrimestre, resumenAnual, situacionTrimestre } from '@/lib/calculos';
+import { casillas303, habil, liquidaciones303, minoracion130, opciones130, pendienteCaja, prorrataAnio, prorrataProvisional, r2, limiteTrimestre, resumenAnual, situacionTrimestre } from '@/lib/calculos';
 import { NOMBRES_UE, modelo369, plazo369 } from '@/lib/oss';
 import { TIPOS_RENDIMIENTO, casillas123, modelo123, modelo193 } from '@/lib/capitalMobiliario';
 import PagosCapital from '@/components/PagosCapital';
@@ -17,14 +17,15 @@ import { avisosFiscales } from '@/lib/revisionFiscal';
 import Prorrata from '@/components/Prorrata';
 import Rend130 from '@/components/Rend130';
 import SaldoIva from '@/components/SaldoIva';
-import { modelo111 } from '@/lib/nominas';
-import { borradorRenta, borradorSociedades, modelo115, modelo180, modelo190, modelo202, modelo347, modelo349, modelo390, retencionesProfesionales, MINIMO_PERSONAL, RET_ALQUILER } from '@/lib/modelos';
-import CuotaIS from '@/components/CuotaIS';
+import { modelo111, nombreMes } from '@/lib/nominas';
+import { borradorRenta, borradorSociedades, modelo115, modelo180, modelo190, modelo202, modelo202Art403, modelo347, modelo349, modelo390, ETIQUETAS390, ORDEN390, TOTALES390, retencionesProfesionales, MINIMO_PERSONAL, RET_ALQUILER } from '@/lib/modelos';
+import CuotaIS, { ImporteAnio } from '@/components/CuotaIS';
 import { Presentado, Presentado202, PresentadoRet } from '@/components/Acciones';
 import { eur, fechaTexto, hoy, textoResumenModelos, textoSituacion } from '@/lib/formato';
 import PresentarAhora from '@/components/PresentarAhora';
 import { modelosAPresentar } from '@/lib/presentar';
 import Volver from '@/components/Volver';
+import Vacio from '@/components/Vacio';
 import Ir from '@/components/Ir';
 import SinBD from '@/components/SinBD';
 import ModeloPlegable from '@/components/ModeloPlegable';
@@ -82,16 +83,27 @@ const AEAT = {
 const Plegable = ({ children }) => <details className="casillas-plegable"><summary>Ver las casillas</summary>{children}</details>;
 // sinNumeros: en una Hacienda foral (lib/territorios.js) su modelo numera distinto: solo el concepto, sin la casilla de la AEAT.
 // Informativos (180, 190 y 347): una fila por persona y una columna por cifra; en el móvil, las cifras debajo del nombre
-// con su etiqueta (app/modelos.css). Los trimestres a cero se ven como 0,00 € (auditoría D4-11).
+// con su etiqueta (app/modelos.css). Los trimestres a cero se ven como 0,00 € (auditoría D4-11); una cifra que ese
+// registro no lleva (null), como —.
 const TablaPersonas = ({ titulo, columnas, filas, total }) => (
   <table className="tabla-modelo">
     {titulo && <caption>{titulo}</caption>}
     <thead><tr><th scope="col">Nombre</th>{columnas.map((c) => <th key={c} scope="col" className="n">{c}</th>)}</tr></thead>
-    <tbody>{filas.map((f) => <tr key={f.clave}><th scope="row">{f.nombre}{f.detalle && <small>{f.detalle}</small>}</th>{f.cifras.map((v, i) => <td key={columnas[i]} className="n" data-et={columnas[i]}>{eur(v)}</td>)}</tr>)}</tbody>
+    <tbody>{filas.map((f) => <tr key={f.clave}><th scope="row">{f.nombre}{f.detalle && <small>{f.detalle}</small>}</th>{f.cifras.map((v, i) => <td key={columnas[i]} className="n" data-et={columnas[i]}>{v == null ? '—' : eur(v)}</td>)}</tr>)}</tbody>
     {total && <tfoot><tr><th scope="row">Total</th>{total.map((v, i) => <td key={columnas[i]} className="n" data-et={columnas[i]}>{eur(v)}</td>)}</tr></tfoot>}
   </table>
 );
-const CLAVES_190 = { A: 'trabajador', G: 'profesional', H: 'módulos o agricultura' };
+const CLAVES_190 = { A: 'trabajador', E: 'consejero o administrador', G: 'profesional', H: 'módulos o agricultura', I: 'otras rentas' };
+// Datos adicionales del 190 (clave A, lib/modelos.js), en palabras.
+const SITUACION_190 = { 1: 'sin pareja, con hijos', 2: 'casado, cónyuge con pocas rentas', 3: 'otra situación familiar' };
+const datos190 = (p) => [
+  p.nacimiento && `nacido en ${p.nacimiento}`,
+  p.situacionFamiliar && `${SITUACION_190[p.situacionFamiliar]} (${p.situacionFamiliar})${p.nifConyuge ? `, cónyuge ${p.nifConyuge}` : ''}`,
+  p.discapacidad && `discapacidad ${p.discapacidad}`,
+  p.contrato && `contrato ${p.contrato}${p.contrato === 2 ? ' (menos de un año)' : ''}`,
+  p.movilidad && 'movilidad geográfica',
+  p.hijos && (p.hijos.menores3.total || p.hijos.resto.total) && `hijos: ${p.hijos.menores3.total} menores de 3 (${p.hijos.menores3.porEntero} por entero) y ${p.hijos.resto.total} más (${p.hijos.resto.porEntero} por entero)`,
+].filter(Boolean);
 const Casillas = ({ filas, sinNumeros = false }) => <dl>{filas.filter(Boolean).map(([t, v, b]) => <div key={t} className={b ? 'fuerte' : ''}><dt>{sinNumeros ? String(t).replace(/^(\d{2,3}|—) · /, '') : t}</dt><dd>{typeof v === 'number' ? eur(v) : v}</dd></div>)}</dl>;
 
 export default async function Modelos({ searchParams }) {
@@ -121,7 +133,8 @@ export default async function Modelos({ searchParams }) {
   const m425 = c420 && modelo425(facturas, gastos, anio, iva);
   // Se enseña cada modelo si le toca por su situación fiscal o si ya hay datos que lo piden.
   const hay115 = f.alquiler || gastos.some((g) => g.alquiler);
-  const hay349 = !igic && (f.intracom || modelo349(facturas, anio, undefined, gastos).total > 0);
+  const m349anio = modelo349(facturas, anio, undefined, gastos);
+  const hay349 = !igic && (f.intracom || m349anio.total > 0 || m349anio.rectificaciones.length > 0);
   // Ventanilla única (369) y dividendos e intereses (123 y 193): si la empresa los tiene marcados o ya hay datos del año.
   const hay369 = !igic && ((usa303(f) && f.oss) || facturas.some((x) => x.oss && x.fecha.startsWith(`${anio}-`)));
   const capitalAnio = capital.filter((p) => p.fecha.startsWith(`${anio}-`)).sort((a, b) => a.fecha.localeCompare(b.fecha));
@@ -132,24 +145,33 @@ export default async function Modelos({ searchParams }) {
   const m190 = (f.trabajadores || nominas?.length > 0 || conRetencion) && modelo190(nominas || [], empleados || [], anio, gastos);
   // Sin el permiso «Nóminas», lo de cada trabajador no se ve: una línea con todos (los profesionales sí, son facturas).
   if (m190 && !puede(u, 'nominas')) {
-    const trab = m190.perceptores.filter((p) => p.clave === 'A');
-    const suma = (k) => r2(trab.reduce((s, p) => s + p[k], 0));
-    m190.perceptores = [...(trab.length ? [{ nombre: `${trab.length} ${trab.length === 1 ? 'trabajador' : 'trabajadores'}`, nif: '', clave: 'A', percepciones: suma('percepciones'), retenciones: suma('retenciones') }] : []), ...m190.perceptores.filter((p) => p.clave !== 'A')];
+    const juntos = (clave, uno, varios) => {
+      const l = m190.perceptores.filter((p) => p.clave === clave);
+      const suma = (k) => r2(l.reduce((s, p) => s + (p[k] || 0), 0));
+      return l.length ? [{ nombre: `${l.length} ${l.length === 1 ? uno : varios}`, nif: '', clave, subclave: '', percepciones: suma('percepciones'), retenciones: suma('retenciones'), ...(l.some((p) => 'gastosDeducibles' in p) ? { gastosDeducibles: suma('gastosDeducibles') } : {}) }] : [];
+    };
+    m190.perceptores = [...juntos('A', 'trabajador', 'trabajadores'), ...juntos('E', 'administrador', 'administradores'), ...m190.perceptores.filter((p) => !['A', 'E'].includes(p.clave))];
   }
-  const is = f.tipo === 'sociedad' && borradorSociedades(facturas, gastos, anio, { pagos202: u.pagos202 || {}, ivaCoste: !usa303(f), productos: productos || [], ajustes: ajustes || [], albaranes: albaranes || [], manuales: manuales || [], hasta: h < `${anio}-12-31` ? h : `${anio}-12-31`, constitucion: f.constitucion, cuotaIS: u.cuotaIS || {}, territorio: f.territorio });
-  const renta = f.tipo === 'autonomo' && !dForal && borradorRenta(facturas, gastos, anio, u.pagos130?.[anio], { ivaCoste: !usa303(f), personal: f.renta || {}, iva });
+  // Impuesto sobre Sociedades: con las bases negativas de antes de Fisquo y el incremento de los fondos propios apuntados.
+  const opIS = { ivaCoste: !usa303(f), productos: productos || [], ajustes: ajustes || [], albaranes: albaranes || [], manuales: manuales || [], constitucion: f.constitucion, cuotaIS: u.cuotaIS || {}, territorio: f.territorio, binsPrevias: u.binsPrevias || {}, fondosPropios: u.fondosPropios || {}, pagos202: u.pagos202 || {} };
+  const is = f.tipo === 'sociedad' && borradorSociedades(facturas, gastos, anio, { ...opIS, hasta: h < `${anio}-12-31` ? h : `${anio}-12-31` });
+  // 202: con más de 6 M de cifra de negocios, el del art. 40.3 (sobre la base de los 3, 9 y 11 primeros meses); si no, el
+  // del art. 40.2 (el 18 % de la cuota apuntada). Lo que sale del borrador de cada año en Fisquo se propone como esa cuota.
+  const pagos202 = f.tipo === 'sociedad' && !dForal ? (is.obligado403 ? modelo202Art403(facturas, gastos, anio, opIS) : modelo202(u.cuotaIS, anio)) : null;
+  const cuotaSugerida = (y) => (f.tipo === 'sociedad' && !dForal && [...facturas, ...gastos].some((x) => x.fecha?.startsWith(`${y}-`)) ? borradorSociedades(facturas, gastos, y, opIS).cuotaEjercicio : null);
+  const renta = f.tipo === 'autonomo' && !dForal && borradorRenta(facturas, gastos, anio, u.pagos130?.[anio], { ivaCoste: !usa303(f), personal: f.renta || {}, iva, rendimientos: u.rend130 || {}, normal: f.irpf === 'normal' });
   const m180 = hay115 && modelo180(gastos, anio);
-  const m347 = modelo347(facturas, gastos, anio);
+  const m347 = modelo347(facturas, gastos, anio, { recc: iva.recc });
   const c303 = !igic && usa303(f);
   const ids = actividadesDe(u).map((a) => a.id);
   const rendAnterior = u.rend130?.[anio - 1];
-  const r130 = usa130(f) && !dForal && resumenAnual(facturas, gastos, anio, u.pagos130?.[anio] || {}, ids, { ivaCoste: !usa303(f), hasta: h < `${anio}-12-31` ? h : `${anio}-12-31`, minoracion: minoracion130(rendAnterior), iva });
+  const r130 = usa130(f) && !dForal && resumenAnual(facturas, gastos, anio, u.pagos130?.[anio] || {}, ids, { ivaCoste: !usa303(f), hasta: h < `${anio}-12-31` ? h : `${anio}-12-31`, ...opciones130(f, u.rend130, anio), iva });
   // Pago fraccionado del IRPF foral (lib/territorios.js): su cálculo y sus plazos; en Álava lo liquida la Diputación.
   const pf = usa130(f) && dForal && pagosIrpfForal(f, { facturas, gastos, anio, rend130: u.rend130 || {}, actividades: ids, ivaCoste: !usa303(f), iva });
   const pfPresenta = Boolean(pf?.pagos) && !pf.deOficio;
   // Lo que Fisquo sabe del año anterior, como sugerencia (si ese año no está entero en Fisquo, no vale: lo confirma la persona).
   const conAnterior = usa130(f) && facturas.some((x) => x.fecha.startsWith(`${anio - 1}-`));
-  const sugerido = conAnterior ? resumenAnual(facturas, gastos, anio - 1, {}, ids, { ivaCoste: !usa303(f), iva }).trimestres[3].rendAcum : null;
+  const sugerido = conAnterior ? resumenAnual(facturas, gastos, anio - 1, {}, ids, { ivaCoste: !usa303(f), ...opciones130(f, u.rend130, anio - 1, false), iva }).trimestres[3].rendAcum : null;
   // Módulos (lib/estimacionObjetiva.js): el 131 y, en el régimen simplificado, el 303 salen de los datos de cada actividad.
   const c131 = usa131(f), cSimp = usaSimplificado(f);
   const modAnio = u.modulos?.[anio] || {};
@@ -226,7 +248,7 @@ export default async function Modelos({ searchParams }) {
       m115: hay115 && !marcaRet(u.pres115, anio, tAhora) ? modelo115(gastos, anio, tAhora).retenciones : null,
       m123: hay123 && !u.pres123?.[anio]?.[tAhora] ? modelo123(capital, anio, tAhora).retenciones : null,
       m349: hay349 ? modelo349(facturas, anio, tAhora, gastos) : null,
-      pagos202: f.tipo === 'sociedad' && !dForal ? modelo202(u.cuotaIS, anio) : null, pagados202: u.pagos202?.[anio], constitucion: f.constitucion,
+      pagos202, pagados202: u.pagos202?.[anio], constitucion: f.constitucion,
     }).map((m) => ({ ...m, ...(foralT ? { aeat: foralT.sede, sede: foralT.hacienda } : { aeat: AEAT[`m${m.num}`] }), ...(m.dia ? { plazo: plazoT(tAhora, m.dia) } : {}) })).map((m) => (dForal ? foralizar(m, tAhora) : m));
     if (l420) importes.unshift({ num: '420', modelo: '420 · IGIC', href: '#m420', texto: l420['45'] < 0 ? `A compensar ${eur(-l420['45'])}` : `A ingresar ${eur(l420.ingresar)}`, importe: l420.ingresar, aeat: SEDE_ATC, sede: 'ATC', plazo: fechaTexto(plazo420(anio, tAhora)) });
     ahora = (
@@ -260,9 +282,9 @@ export default async function Modelos({ searchParams }) {
 
   // Casos que Fisquo no resuelve solo (lib/revisionFiscal.js): presentar algo aparte o revisar antes del 4T.
   const a111 = (t) => r2(modelo111(nominas || [], anio, t).retenciones + retencionesProfesionales(gastos, anio, t).retenciones);
-  const avisos = avisosFiscales({ facturas, gastos, anio, hoy: h, c303, c130: Boolean(r130), liquidaciones, r130, pagos130: u.pagos130?.[anio] || {}, a111: hay111 ? a111 : null });
+  const avisos = avisosFiscales({ facturas, gastos, anio, hoy: h, c303, c130: Boolean(r130), retenidas: f.tipo === 'autonomo' && !usa131(f) && !dForal ? Boolean(f.retenidas) : null, liquidaciones, r130, pagos130: u.pagos130?.[anio] || {}, a111: hay111 ? a111 : null });
   // Prorrata: se enseña si hay operaciones exentas este año o el anterior, o si se ha guardado un porcentaje.
-  const prorrata = c303 && { guardado: u.prorrata?.[anio] ?? null, provisional: prorrataProvisional(facturas, anio, 4, iva), definitiva: prorrataAnio(facturas, anio), anterior: prorrataAnio(facturas, anio - 1) };
+  const prorrata = c303 && { especial: Boolean(u.prorrata?.especial?.[anio]), guardado: u.prorrata?.[anio] ?? null, provisional: prorrataProvisional(facturas, anio, 4, iva), definitiva: prorrataAnio(facturas, anio), anterior: prorrataAnio(facturas, anio - 1) };
   const verProrrata = prorrata && (prorrata.guardado !== null || prorrata.definitiva !== null || prorrata.anterior !== null);
   // Saldo del IVA de antes de Fisquo: en el primer año con datos o en el que empieza a descontarse el ya guardado.
   const primerAnio = [...facturas, ...gastos].reduce((min, x) => Math.min(min, Number(x.fecha.slice(0, 4)) || min), anio);
@@ -296,6 +318,13 @@ export default async function Modelos({ searchParams }) {
             ))}
           </ul>
         </section>
+      )}
+
+      {!facturas.length && !gastos.length && !nominas?.length && !capitalAnio.length && (
+        <Vacio icono="hacienda" titulo={`Aún no hay nada que declarar en ${anio}`}
+          accion={puede(u, 'facturar') && { href: '/facturas/nueva', texto: 'Nueva factura' }} secundaria={puede(u, 'gastar') && { href: '/gastos#apuntar-gasto', texto: 'Añadir gasto' }}>
+          Fisquo calcula los modelos con tus facturas y gastos. Cuando apuntes los primeros, verás aquí cuánto toca ingresar cada trimestre. Abajo tienes qué modelos te tocan y sus plazos.
+        </Vacio>
       )}
 
       {avisos.length > 0 && (
@@ -370,11 +399,13 @@ export default async function Modelos({ searchParams }) {
                   ['27 · Total IVA devengado', c['27'], true],
                   ['28 · Base del IVA soportado', c['28']], ['29 · IVA soportado deducible', c['29']],
                   c['30'] && ['30 · Bienes de inversión: base', c['30']], c['31'] && ['31 · Bienes de inversión: cuota', c['31']],
+                  c['32'] && ['32 · Importaciones (IVA pagado en la aduana): base', c['32']], c['33'] && ['33 · Importaciones: cuota deducible', c['33']],
+                  c['34'] && ['34 · Importaciones de bienes de inversión: base', c['34']], c['35'] && ['35 · Importaciones de bienes de inversión: cuota', c['35']],
                   c['36'] && ['36 · Compras a la UE: base deducible', c['36']], c['37'] && ['37 · Compras a la UE: cuota deducible', c['37']],
                   c['38'] && ['38 · Bienes de inversión de la UE: base', c['38']], c['39'] && ['39 · Bienes de inversión de la UE: cuota', c['39']],
                   c['40'] && ['40 · Abonos de proveedores: base', c['40']], c['41'] && ['41 · Abonos de proveedores: cuota', c['41']],
                   c['42'] && ['42 · Compensaciones del régimen agrario', c['42']],
-                  c.prorrata && ['Prorrata aplicada', `${c.prorrata.provisional} %`],
+                  c.prorrata && [c.prorrata.especial ? 'Prorrata especial aplicada a lo común' : 'Prorrata aplicada', `${c.prorrata.provisional} %`],
                   c['44'] && [`44 · Regularización de la prorrata (definitiva: ${c.prorrata.definitiva} %)`, c['44']],
                   ['45 · Total a deducir', c['45'], true],
                   ['46 · Resultado del régimen general', c['46'], true],
@@ -408,15 +439,20 @@ export default async function Modelos({ searchParams }) {
         <ModeloPlegable id="m130" num="130" nombre="Pago a cuenta del IRPF" {...filaTrim(t)} dato={t && importeFila(r130.trimestres[t - 1].m130)}>
           <h2 className="grupo-t">130 · Pago a cuenta del IRPF</h2>
           <p className="grupo-pie arriba">Acumulado desde enero: el 20 % de tu rendimiento, menos las retenciones de tus facturas y lo ya declarado en los 130 anteriores del año. Marca aquí cada trimestre cuando lo presentes, lo pagues o no: lo que no está presentado no se descuenta en el siguiente.</p>
-          <Rend130 soloLectura={soloLectura} anio={anio - 1} valor={rendAnterior ?? null} sugerido={sugerido} minoracion={minoracion130(rendAnterior)} />
+          <Rend130 soloLectura={soloLectura} anio={anio - 1} valor={rendAnterior ?? null} sugerido={sugerido} minoracion={opciones130(f, u.rend130, anio).minoracion} />
           <div className="tarjetas">
             {r130.trimestres.map((q) => (
               <div key={q.t} className="tarjeta"><h3>{q.t}T {anio}</h3>
                 {q.c19 < 0 && q.t < 4 ? <Importe texto="A deducir en los siguientes" v={-q.c19} /> : <Importe texto="A ingresar" v={q.m130} />}
                 <Plegable><Casillas sinNumeros={Boolean(foralT)} filas={[
-                  ['01 · Ingresos', q.ingAcum], ['02 · Gastos (con el 5 % de difícil justificación)', q.gasAcum], ['03 · Rendimiento neto', q.rendAcum],
-                  ['04 · 20 % de la 03', r2(0.2 * Math.max(0, q.rendAcum))], ['05 · Casillas 07 de los 130 anteriores del año', q.pagosPrev],
-                  ['06 · Retenciones de tus facturas', q.retAcum], ['07 · Resultado', q.c07],
+                  ...(q.c08 !== undefined ? [
+                    ['08 · Ingresos del trimestre (actividad agrícola, ganadera o forestal)', q.c08], ['09 · 2 % de la 08', q.c09],
+                    ['10 · Retenciones del trimestre', q.c10], ['11 · Resultado', q.c11], ['12 · Suma de resultados', q.c12],
+                  ] : [
+                    ['01 · Ingresos', q.ingAcum], [q.difJust ? '02 · Gastos (con el 5 % de difícil justificación)' : '02 · Gastos', q.gasAcum], ['03 · Rendimiento neto', q.rendAcum],
+                    ['04 · 20 % de la 03', r2(0.2 * Math.max(0, q.rendAcum))], ['05 · Casillas 07 de los 130 anteriores del año', q.pagosPrev],
+                    ['06 · Retenciones de tus facturas', q.retAcum], ['07 · Resultado', q.c07],
+                  ]),
                   q.minoracion && ['13 · Minoración por el rendimiento de ' + (anio - 1), q.minoracion], q.negPrev && ['15 · Negativos de trimestres anteriores', q.negPrev],
                   ['19 · Resultado', q.c19, true],
                 ]} /></Plegable>
@@ -548,7 +584,7 @@ export default async function Modelos({ searchParams }) {
         <ModeloPlegable id="m202" num={pg.num} nombre="Pago fraccionado de Sociedades" detalle={pyme ? 'No lo pagan las micro y pequeñas empresas' : `Hasta el ${fecha}`} dato={pago ? importeFila(pago) : undefined}>
           <h2 className="grupo-t">{pg.num} · Pago fraccionado del Impuesto sobre Sociedades</h2>
           <p className="grupo-pie arriba">{pg.sobre === 'cuota' ? `El ${pg.pct} % de la cuota efectiva del último Impuesto sobre Sociedades, menos las retenciones, hasta el ${fecha}.` : `El ${pg.pct} % de la base imponible del último periodo, menos las retenciones, hasta el ${fecha}. No lo pagan las micro y pequeñas empresas.`}</p>
-          {pg.sobre === 'cuota' && <div className="tarjetas"><CuotaIS soloLectura={soloLectura} anio={anio - 1} valor={cuota ?? null} uso="el pago de octubre" /></div>}
+          {pg.sobre === 'cuota' && <div className="tarjetas"><CuotaIS foral soloLectura={soloLectura} anio={anio - 1} valor={cuota ?? null} uso="el pago de octubre" /></div>}
           <div className="tarjeta">
             {pyme ? <p className="nota">Con {eur(is.incn)} de cifra de negocios eres micro o pequeña empresa: no lo pagas (si además cumples los requisitos de plantilla y activo).</p>
               : pago !== null ? <Casillas filas={[[pg.sobre === 'cuota' ? `Cuota de ${anio - 1}` : `Base imponible de ${anio - 1}`, pg.sobre === 'cuota' ? cuota : anterior.base], [`${pg.pct} % · A ingresar`, pago, true]]} />
@@ -559,26 +595,38 @@ export default async function Modelos({ searchParams }) {
       })()}
 
       {f.tipo === 'sociedad' && !dForal && (() => {
-        const pagos = modelo202(u.cuotaIS, anio);
+        const pagos = pagos202;
+        const art403 = Boolean(is?.obligado403);
         // El próximo pago por hacer; sin la cuota del año del que sale, se avisa de que falta.
         const x = pagos.find((y) => y.fecha >= h && (y.cuota === null || (y.pago > 0 && !u.pagos202?.[anio]?.[y.p])));
         const fila = !x ? { detalle: 'Sin pagos pendientes este año' }
           : x.cuota === null ? { estado: 'listo', detalle: `${x.p}P · falta la cuota del Impuesto sobre Sociedades de ${x.de}` }
           : { detalle: `${x.p}P · hasta el ${conAnio(x.fecha, 0)}` };
+        // Art. 40.3: 5/7 del tipo redondeado por defecto (con 10 M o más, 19/20 por exceso) sobre la base de los 3, 9 y 11 meses.
+        const fin = { 1: '31 de marzo', 2: '30 de septiembre', 3: '30 de noviembre' };
         return (
         <ModeloPlegable id="m202" num="202" nombre="Pagos a cuenta de Sociedades" {...fila} dato={x && importeFila(x.pago)}>
           <h2 className="grupo-t">202 · Pagos a cuenta del Impuesto sobre Sociedades</h2>
-          <p className="grupo-pie arriba">El 18 % de la cuota del último Impuesto sobre Sociedades presentado (menos deducciones, bonificaciones y retenciones; sin restar los pagos a cuenta). Si salió a cero o es el primer año, no se presenta. Si facturas más de 6 millones, se calcula de otra forma: lo hace tu gestor.</p>
-          <div className="tarjetas">
-            <CuotaIS soloLectura={soloLectura} anio={anio - 2} valor={u.cuotaIS?.[anio - 2] ?? null} uso="el pago de abril" />
-            <CuotaIS soloLectura={soloLectura} anio={anio - 1} valor={u.cuotaIS?.[anio - 1] ?? null} uso="los pagos de octubre y diciembre" />
-          </div>
+          {art403 ? <p className="grupo-pie arriba">Con más de 6 millones de cifra de negocios en {anio - 1} ({eur(is.incn)}) va por la modalidad del artículo 40.3: un porcentaje de la base imponible de lo que va de año (los 3, 9 y 11 primeros meses), menos las retenciones y los pagos ya hechos este año.{is.incn >= 1e7 ? ' Con 10 millones o más, el porcentaje es 19/20 del tipo y el pago no baja del 23 % del resultado contable.' : ' El porcentaje es 5/7 del tipo, redondeado hacia abajo.'} Con lo apuntado en Fisquo: confírmalo con tu gestor.</p>
+            : <p className="grupo-pie arriba">El 18 % de la «cuota del ejercicio a ingresar o devolver» del último Impuesto sobre Sociedades presentado: la cuota íntegra menos deducciones, bonificaciones y retenciones, sin restar los pagos a cuenta. Si salió a cero o es el primer año, no se presenta. Si facturas más de 6 millones, se calcula sobre lo que va de año (artículo 40.3).</p>}
+          {!art403 && <div className="tarjetas">
+            <CuotaIS soloLectura={soloLectura} anio={anio - 2} valor={u.cuotaIS?.[anio - 2] ?? null} sugerido={cuotaSugerida(anio - 2)} uso="el pago de abril" />
+            <CuotaIS soloLectura={soloLectura} anio={anio - 1} valor={u.cuotaIS?.[anio - 1] ?? null} sugerido={cuotaSugerida(anio - 1)} uso="los pagos de octubre y diciembre" />
+          </div>}
           <div className="tarjetas">
             {pagos.map((x) => (
               <div key={x.p} className="tarjeta"><div className="trim-cab"><h3>{x.p}P {anio} · {x.mes}</h3>{x.pago > 0 && <Presentado202 soloLectura={soloLectura} anio={anio} p={x.p} importe={x.pago} pagado={u.pagos202?.[anio]?.[x.p]} />}</div>
-                {x.cuota === null ? <p className="nota">Falta la cuota del Impuesto sobre Sociedades de {x.de}.</p>
-                  : x.pago ? <Casillas sinNumeros={Boolean(foralT)} filas={[[`Cuota de ${x.de}`, x.cuota], ['18 % · A ingresar', x.pago, true]]} />
+                {x.modalidad === '40.3' ? <Casillas filas={[
+                  ['13 · Base imponible previa', x.basePrevia], x.compensacion > 0 && ['14 · Bases negativas de años anteriores', menos(x.compensacion)], [`16 · Base hasta el ${fin[x.p]}`, x.base],
+                  ...x.tramos.map((t) => [`${t.pct} % de ${eur(t.base)}`, t.cuota]),
+                  x.retenciones > 0 && ['28 · Retenciones', menos(x.retenciones)], x.anteriores > 0 && ['30 · Pagos anteriores de este año', menos(x.anteriores)],
+                  x.minimo > 0 && ['33 · Mínimo (23 % del resultado contable)', x.minimo],
+                  ['A ingresar', x.pago, true],
+                ]} />
+                  : x.cuota === null ? <p className="nota">Falta la cuota del Impuesto sobre Sociedades de {x.de}.</p>
+                  : x.pago ? <Casillas sinNumeros={Boolean(foralT)} filas={[[`Cuota de ${x.de} (menos retenciones)`, x.cuota], ['18 % · A ingresar', x.pago, true]]} />
                   : <p className="nota">La cuota de {x.de} fue cero: no se presenta.</p>}
+                {x.modalidad === '40.3' && x.resultado < 0 && <p className="nota">Sale negativo: con más de 6 millones se presenta igual, sin importe.</p>}
                 <p className="nota">Hasta el {conAnio(x.fecha, 0)}.</p>
               </div>
             ))}
@@ -606,18 +654,28 @@ export default async function Modelos({ searchParams }) {
       {hay369 && (() => {
         const t = T.find((x) => plazo369(anio, x) >= h);
         const m = t && modelo369(facturas, anio, t);
+        // Acogida al régimen: se presenta cada trimestre, también sin ventas («Declaración sin actividad», a cero).
+        const acogida = usa303(f) && Boolean(f.oss);
+        const pais = (p) => NOMBRES_UE[p] || p;
+        const tipos = (titulo, lista) => lista.flatMap((p) => p.tipos.map((x) => [`${titulo} · ${pais(p.pais)} · ${String(x.pct).replace('.', ',')} %`, `${eur(x.base)} · IVA ${eur(x.cuota)}`]));
         return (
-        <ModeloPlegable id="m369" num="369" nombre="IVA de la ventanilla única" detalle={t ? `${t}T · hasta el ${fechaTexto(plazo369(anio, t))}${plazo369(anio, t).slice(0, 4) !== String(actual) ? ` de ${plazo369(anio, t).slice(0, 4)}` : ''}` : 'Total del año'}
+        <ModeloPlegable id="m369" num="369" nombre="IVA de la ventanilla única" detalle={t ? `${t}T${m.sinActividad && acogida ? ' · sin actividad, a cero' : ''} · hasta el ${fechaTexto(plazo369(anio, t))}${plazo369(anio, t).slice(0, 4) !== String(actual) ? ` de ${plazo369(anio, t).slice(0, 4)}` : ''}` : 'Total del año'}
           dato={importeFila(m ? m.cuota : r2(T.reduce((s, x) => s + modelo369(facturas, anio, x).cuota, 0)))}>
           <h2 className="grupo-t">369 · Ventanilla única (OSS)</h2>
-          <p className="grupo-pie arriba">El IVA de tus ventas a particulares de otros países de la UE, con el tipo de cada país. No va en el 303 (allí solo su base, en la casilla 123): se declara aquí cada trimestre, por país y tipo, hasta el último día del mes siguiente (ese día, aunque caiga en fin de semana).</p>
+          <p className="grupo-pie arriba">El IVA de tus ventas a particulares de otros países de la UE, con el tipo de cada país. No va en el 303 (allí solo su base, en la casilla 123): se declara aquí cada trimestre, por país y tipo (los servicios aparte de los bienes), hasta el último día del mes siguiente (ese día, aunque caiga en fin de semana). Mientras estés en el régimen se presenta todos los trimestres, aunque no vendas nada. Las rectificativas de un trimestre anterior van como corrección de su cuota, y lo negativo de un país no compensa lo de otro: lo devuelve ese país.</p>
           <div className="tarjetas">
             {T.map((t) => { const m = modelo369(facturas, anio, t); return (
               <div key={t} className="tarjeta"><h3>{t}T {anio}</h3>
                 <Importe texto="A ingresar" v={m.cuota} />
-                {m.paises.length ? <Plegable><Casillas sinNumeros={Boolean(foralT)} filas={[...m.paises.flatMap((p) => p.tipos.map((x) => [`${NOMBRES_UE[p.pais] || p.pais} · ${String(x.pct).replace('.', ',')} %`, `${eur(x.base)} · IVA ${eur(x.cuota)}`])), ['Total a ingresar', m.cuota, true]]} /></Plegable> : <p className="nota">Sin ventas de la ventanilla única.</p>}
+                {!m.sinActividad ? <Plegable><Casillas sinNumeros={Boolean(foralT)} filas={[
+                  ...tipos('3 · Servicios', m.servicios), ...tipos('4 · Bienes', m.bienes),
+                  ...m.correcciones.map((c) => [`7 · Corrección · ${pais(c.pais)} · ${c.t}T ${c.anio}`, c.cuota]),
+                  ...m.paises.map((p) => [`8 · Resultado · ${pais(p.pais)}`, p.saldo < 0 ? `${eur(-p.saldo)} a devolver por ese país` : p.saldo]),
+                  ['Total a ingresar', m.cuota, true]]} /></Plegable>
+                  : <p className="nota">Sin ventas ni correcciones{acogida ? ': se presenta igualmente, marcando «Declaración sin actividad».' : '.'}</p>}
+                {m.fuera.length > 0 && <p className="nota">Rectificativas de hace más de 3 años ({m.fuera.map((c) => `${pais(c.pais)} ${c.t}T ${c.anio}: ${eur(c.cuota)}`).join('; ')}): ya no van en el 369, sino ante la Hacienda de ese país.</p>}
                 <p className="nota">Plazo: hasta el {fechaTexto(plazo369(anio, t))}{t === 4 ? ` de ${anio + 1}` : ''}.</p>
-                {(m.cuota > 0 || u.pres369?.[anio]?.[t]) && <PresentadoRet modelo="369" anio={anio} t={t} hecho={Boolean(u.pres369?.[anio]?.[t])} soloLectura={soloLectura} />}
+                {(acogida || !m.sinActividad || u.pres369?.[anio]?.[t]) && <PresentadoRet modelo="369" anio={anio} t={t} hecho={Boolean(u.pres369?.[anio]?.[t])} soloLectura={soloLectura} />}
               </div>
             ); })}
           </div>
@@ -656,21 +714,25 @@ export default async function Modelos({ searchParams }) {
       {m193 && (
         <ModeloPlegable id="m193" num="193" nombre="Resumen anual de dividendos e intereses" detalle={m193.perceptores.length ? `Hasta el ${plazoAnual('01-31')}` : 'Sin pagos este año'} informativo={m193.perceptores.length > 0}>
           <h2 className="grupo-t">193 · Resumen anual</h2>
-          {m193.perceptores.length ? <Casillas sinNumeros={Boolean(foralT)} filas={[...m193.perceptores.map((p) => [`${p.nif ? `${p.nif} · ` : ''}${p.nombre} · ${TIPOS_RENDIMIENTO[p.tipo]}`, `${eur(p.base)} · ret. ${eur(p.retenciones)}`]), ['Retenciones del año', m193.retenciones, true]]} /> : <p className="nota">Sin pagos de dividendos ni intereses en {anio}.</p>}
+          {m193.perceptores.length ? <Casillas sinNumeros={Boolean(foralT)} filas={[...m193.perceptores.map((p) => [`${p.nif ? `${p.nif} · ` : ''}${p.nombre} · ${TIPOS_RENDIMIENTO[p.tipo]} (clave ${p.clave}, naturaleza ${p.naturaleza})`, `${eur(p.base)} · ret. ${eur(p.retenciones)}`]), ['Retenciones del año', m193.retenciones, true]]} /> : <p className="nota">Sin pagos de dividendos ni intereses en {anio}.</p>}
         </ModeloPlegable>
       )}
 
       {hay349 && (() => {
         const t = tPlazo(30); const m = modelo349(facturas, anio, t, gastos);
-        const fila = filaPlazo(t, 30, t && `${m.operadores.length} ${m.operadores.length === 1 ? 'empresa' : 'empresas'}`, t && !m.operadores.length && 'sin operaciones: no se presenta');
+        const fila = filaPlazo(t, 30, t && (m.operadores.length || !m.rectificaciones.length ? `${m.operadores.length} ${m.operadores.length === 1 ? 'empresa' : 'empresas'}` : 'rectificaciones'), t && !m.operadores.length && !m.rectificaciones.length && 'sin operaciones: no se presenta');
         return (
-        <ModeloPlegable id="m349" num="349" nombre="Ventas y compras con empresas de la UE" {...fila} informativo={m.total > 0}>
+        <ModeloPlegable id="m349" num="349" nombre="Ventas y compras con empresas de la UE" {...fila} informativo={m.total > 0 || m.rectificaciones.length > 0}>
           <h2 className="grupo-t">349 · Ventas y compras con empresas de la UE</h2>
           <p className="grupo-pie arriba">Facturas a clientes con NIF-IVA de otro país de la UE (clave S, servicios prestados) y gastos de proveedores de la UE con su NIF-IVA (clave I, servicios recibidos; si son bienes, la clave es A). Solo se presenta el trimestre en que haya alguna. No se paga: es informativo.</p>
           <div className="tarjetas">
             {T.map((t) => { const m = modelo349(facturas, anio, t, gastos); return (
               <div key={t} className="tarjeta"><h3>{t}T {anio}</h3>
-                {m.operadores.length ? <><Casillas sinNumeros={Boolean(foralT)} filas={[...m.operadores.map((c) => [`${c.nif} · ${c.nombre} (${c.clave})`, c.base]), ['Total', m.total, true]]} /><p className="nota">Hasta el {plazo(t, anio)}.</p></> : <p className="nota">Sin operaciones: no se presenta.</p>}
+                {m.mensual && <p className="nota"><strong>Desde {nombreMes(m.mensual)}, el 349 es mensual: hasta el 20 del mes siguiente.</strong> Las entregas y servicios a empresas de la UE pasan de 50.000 € en el trimestre o en alguno de los cuatro anteriores.</p>}
+                {m.operadores.length || m.rectificaciones.length ? <><Casillas sinNumeros={Boolean(foralT)} filas={[...m.operadores.map((c) => [`${c.nif} · ${c.nombre} (${c.clave})`, c.base]), ['Total', m.total, true],
+                  // Rectificaciones de periodos ya declarados: la nueva base de ese periodo y la que se declaró.
+                  ...m.rectificaciones.map((r) => [`Corrige ${/T$/.test(r.periodo) ? `el ${r.periodo} de ${r.ejercicio}` : nombreMes(`${r.ejercicio}-${r.periodo}`)}: ${r.nif} · ${r.nombre} (${r.clave})`, `${eur(r.base)} (antes ${eur(r.anterior)})`])]} /><p className="nota">Hasta el {plazo(t, anio)}.</p></> : <p className="nota">Sin operaciones: no se presenta.</p>}
+                {m.negativos.length > 0 && <p className="nota">Los abonos de {m.negativos.map((c) => `${c.nombre} (${eur(c.base)})`).join(', ')} restan más de lo que hay en el trimestre: en el 349 no puede quedar nada en negativo. Si corrigen una operación de otro trimestre, van como rectificación de ese trimestre: hazlo con una factura rectificativa de la original o revísalo con tu gestor.</p>}
               </div>
             ); })}
           </div>
@@ -694,21 +756,12 @@ export default async function Modelos({ searchParams }) {
       {m390 && (
         <ModeloPlegable id="m390" num="390" informativo={!dForal} nombre={dForal ? 'Autoliquidación final del IVA' : 'Resumen anual del IVA'} detalle={dForal ? `Con el 4T · hasta el ${limite(4)}` : `Hasta el ${plazoAnual('01-30')}`}>
           <h2 className="grupo-t">{dForal ? '390 · Autoliquidación final del IVA (con el 4T)' : '390 · Resumen anual del IVA'}</h2>
-          {!dForal && <p className="grupo-pie arriba">No se paga: resume los cuatro 303 del año.{notaHastaHoy} Si cuadra con lo que presentaste, solo hay que enviarlo. Aquí van los importes por concepto; los números de casilla del 390 los pone tu gestor o el formulario de la Sede.</p>}
+          {!dForal && <p className="grupo-pie arriba">No se paga: resume los cuatro 303 del año.{notaHastaHoy} Si cuadra con lo que presentaste, solo hay que enviarlo. Salen las casillas con importe{anio > 2025 ? `, con la numeración del formulario de 2025 (el de ${anio} aún no se ha publicado)` : ''}.</p>}
+          {m390.avisos.map((a) => <p key={a} className="nota aviso">{a}</p>)}
           <div className="tarjeta">
             <Casillas sinNumeros={Boolean(foralT)} filas={[
-              m390.base4 && ['Base al 4 %', m390.base4], m390.cuota4 && ['Cuota al 4 %', m390.cuota4],
-              m390.base10 && ['Base al 10 %', m390.base10], m390.cuota10 && ['Cuota al 10 %', m390.cuota10],
-              ['Base al 21 %', m390.base21], ['Cuota al 21 %', m390.cuota21],
-              m390.baseRect && ['Rectificativas: base', m390.baseRect], m390.cuotaRect && ['Rectificativas: cuota', m390.cuotaRect],
-              ...m390.otros.flatMap((o) => [[`Base al ${o.pct} % (revisar casilla)`, o.base], [`Cuota al ${o.pct} % (revisar casilla)`, o.iva]]),
-              m390.baseUE && ['Compras a la UE (base)', m390.baseUE], m390.cuotaUE && ['Compras a la UE (cuota)', m390.cuotaUE],
-              m390.baseFuera && ['Inversión del sujeto pasivo (base)', m390.baseFuera], m390.cuotaFuera && ['Inversión del sujeto pasivo (cuota)', m390.cuotaFuera],
-              ['Total IVA devengado', m390.devengado, true],
-              ['Base del IVA soportado', m390.baseDed], ['Total IVA deducible', m390.deducible, true],
-              ['Suma de los resultados de los 303 del año', m390.resultado, true],
-              ...m390.trimestres.map((v, i) => [`303 del ${i + 1}T`, v]),
-              m390.sinIva && ['Operaciones sin IVA', m390.sinIva], ['Volumen de operaciones', m390.volumen],
+              ...ORDEN390.filter((k) => TOTALES390.includes(k) || (m390.c[k] !== undefined && m390.c[k] !== 0)).map((k) => [`${k} · ${ETIQUETAS390[k]}`, k === '118' ? `${String(m390.c[k]).replace('.', ',')} %` : m390.c[k] ?? 0, TOTALES390.includes(k)]),
+              ...m390.trimestres.map((v, i) => [`— · 303 del ${i + 1}T (casilla 46)`, v]),
             ]} />
           </div>
         </ModeloPlegable>
@@ -719,12 +772,19 @@ export default async function Modelos({ searchParams }) {
         detalle={m347.sinNif.length ? `Falta el NIF de ${m347.sinNif.length} ${m347.sinNif.length === 1 ? 'cliente o proveedor' : 'clientes o proveedores'}`
           : m347.ventas.length + m347.compras.length ? `${m347.ventas.length + m347.compras.length === 1 ? '1 cliente o proveedor' : `${m347.ventas.length + m347.compras.length} clientes y proveedores`} · hasta el ${plazoAnual(finFebrero)}` : 'Nadie pasa de 3.005,06 €: no se presenta'}>
         <h2 className="grupo-t">347 · Operaciones de más de 3.005,06 €</h2>
-        <p className="grupo-pie arriba">Clientes y proveedores con los que pasas de 3.005,06 € en el año, IVA incluido. No entra lo que ya va en el 349, lo de fuera de la UE, lo que lleva retención (va en el 190 o el 180) ni los tickets sin proveedor. Se presenta del 1 de febrero al {plazoAnual(finFebrero)} y no se paga: es informativo.{notaHastaHoy}</p>
+        <p className="grupo-pie arriba">Clientes y proveedores con los que pasas de 3.005,06 € en el año, IVA incluido (y el recargo de equivalencia o la compensación agraria, si los hay). No entra lo que ya va en el 349, lo de fuera de la UE, lo que lleva retención (va en el 190 o el 180), los impuestos, sueldos y Seguridad Social ni los tickets sin proveedor. Se presenta del 1 de febrero al {plazoAnual(finFebrero)} y no se paga: es informativo.{notaHastaHoy}</p>
+        {m347.soloAnual && <p className="nota">Estás en el criterio de caja: tu 347 va solo con el total del año, sin trimestres.</p>}
         {m347.ventas.length || m347.compras.length ? (
           <div className="tarjetas">
             {[['Clientes (clave B)', m347.ventas], ['Proveedores (clave A)', m347.compras]].filter(([, l]) => l.length).map(([t, l]) => (
               <div key={t} className="tarjeta ancha"><h3>{t}</h3>
-                <TablaPersonas columnas={['1T', '2T', '3T', '4T', 'Total']} filas={l.map((o) => ({ clave: `${o.nif}-${o.nombre}`, nombre: o.nombre, detalle: o.nif, cifras: [...o.trimestres, o.total] }))} />
+                <TablaPersonas columnas={m347.soloAnual ? ['Total'] : ['1T', '2T', '3T', '4T', 'Total']} filas={l.map((o, i) => ({
+                  clave: `${i}-${o.nif}-${o.nombre}`, nombre: o.nombre,
+                  // Lo que va aparte en el registro: el NIF-IVA de la UE, la inversión del sujeto pasivo, el criterio de caja y el efectivo.
+                  detalle: [o.nif || (o.nifComunitario && `NIF-IVA ${o.nifComunitario}`), o.isp && 'Inversión del sujeto pasivo', o.caja && `Criterio de caja: ${eur(o.importeCaja)} devengado al ${o.clave === 'B' ? 'cobrar' : 'pagar'} (va aparte)`,
+                    o.metalico && `Cobrado en efectivo: ${eur(o.metalico)}${o.ejercicioMetalico !== anio ? ` de facturas de ${o.ejercicioMetalico}` : ''}`].filter(Boolean).join(' · '),
+                  cifras: m347.soloAnual ? [o.total] : [...(o.trimestres || [null, null, null, null]), o.total],
+                }))} />
               </div>
             ))}
           </div>
@@ -748,8 +808,13 @@ export default async function Modelos({ searchParams }) {
           <h2 className="grupo-t">190 · Resumen anual de retenciones</h2>
           <p className="grupo-pie arriba">No se paga: resume, por persona, lo que pagaste y las retenciones que ya ingresaste con el 111 cada trimestre.{notaHastaHoy}</p>
           <div className="tarjeta">
-            {m190.perceptores.length ? <TablaPersonas columnas={['Pagado', 'Retenido']} filas={m190.perceptores.map((p) => ({ clave: `${p.clave}-${p.nif}-${p.nombre}`, nombre: p.nombre, detalle: [p.nif, `clave ${p.clave} (${CLAVES_190[p.clave] || p.clave})`].filter(Boolean).join(' · '), cifras: [p.percepciones, p.retenciones] }))}
-              total={m190.perceptores.length > 1 ? [m190.percepciones, m190.retenciones] : null} /> : <p className="nota">Sin nóminas este año.</p>}
+            {m190.perceptores.length ? (() => {
+              // La Seguridad Social del trabajador (gastos deducibles) solo va en la clave A y la E.01 y E.02.
+              const ss = m190.perceptores.some((p) => 'gastosDeducibles' in p);
+              return <TablaPersonas columnas={['Pagado', 'Retenido', ...(ss ? ['Seg. Social'] : [])]} filas={m190.perceptores.map((p) => ({ clave: `${p.clave}${p.subclave}-${p.nif}-${p.nombre}`, nombre: p.nombre,
+                detalle: [p.nif, `clave ${p.clave}${p.subclave ? `.${p.subclave}` : ''} (${CLAVES_190[p.clave] || p.clave})`, ...datos190(p)].filter(Boolean).join(' · '), cifras: [p.percepciones, p.retenciones, ...(ss ? [p.gastosDeducibles ?? null] : [])] }))}
+                total={m190.perceptores.length > 1 ? [m190.percepciones, m190.retenciones, ...(ss ? [r2(m190.perceptores.reduce((x, p) => x + (p.gastosDeducibles || 0), 0))] : [])] : null} />;
+            })() : <p className="nota">Sin nóminas este año.</p>}
           </div>
         </ModeloPlegable>
       )}
@@ -758,22 +823,43 @@ export default async function Modelos({ searchParams }) {
         <ModeloPlegable id="m200" num={dForal ? dForal.is.num : '200'} nombre={`Impuesto de Sociedades ${anio}`} favor={is.resultado < 0}
           detalle={`Borrador · ${is.resultado >= 0 ? 'saldría a pagar' : 'saldría a devolver'} · ${dForal ? `en julio de ${anio + 1}` : `hasta el ${plazoAnual('07-25')}`}`} dato={importeFila(Math.abs(is.resultado))} parcial={anio === actual}>
           <h2 className="grupo-t">Borrador del Impuesto sobre Sociedades {anio}</h2>
-          <p className="grupo-pie arriba">Solo con lo que hay en Fisquo, con la amortización de tus bienes de inversión y sin otros ajustes (gastos no deducibles, pérdidas de años anteriores, reservas…): tómalo como una idea de cuánto saldrá. {dForal ? `Se presenta en julio de ${anio + 1}.` : `Se presenta del 1 de julio al ${plazoAnual('07-25')}.`}</p>
+          <p className="grupo-pie arriba">Solo con lo que hay en Fisquo: con la amortización de tus bienes de inversión, sin los gastos que no son deducibles{is.foral ? '' : ', con las pérdidas de años anteriores y la reserva de capitalización que apuntes'}; sin deducciones ni otros ajustes: tómalo como una idea de cuánto saldrá. {dForal ? `Se presenta en julio de ${anio + 1}.` : `Se presenta del 1 de julio al ${plazoAnual('07-25')}.`}</p>
           <div className="tarjeta">
             <Casillas sinNumeros={Boolean(foralT)} filas={[
-              ['Ingresos', is.ingresos], ['Gastos', menos(is.gastos)], is.amortizacion && ['de ellos, amortizaciones', menos(is.amortizacion)], is.ajustesContables && ['Ingresos y gastos de asientos manuales', is.ajustesContables], is.perdida > 0 && ['Resultado (pérdida)', -is.perdida], ['Base imponible (beneficio)', is.base, true],
+              ['Ingresos', is.ingresos], ['Gastos', menos(is.gastos)], is.amortizacion && ['de ellos, amortizaciones', menos(is.amortizacion)], is.ajustesContables && ['Ingresos y gastos de asientos manuales', is.ajustesContables],
+              (is.ajusteNoDeducible > 0 || is.compensacion > 0 || is.reserva?.aplicada > 0) && ['Resultado contable', is.resultadoContable],
+              is.ajusteNoDeducible > 0 && ['Gastos no deducibles (art. 15, ajuste positivo)', is.ajusteNoDeducible],
+              (is.ajusteNoDeducible > 0 || is.compensacion > 0 || is.reserva?.aplicada > 0) && ['Base imponible previa', is.basePrevia],
+              is.reserva?.aplicada > 0 && [`Reserva de capitalización (art. 25, ${is.reserva.pct} % de ${eur(is.reserva.incremento)})`, menos(is.reserva.aplicada)],
+              is.compensacion > 0 && ['Pérdidas de años anteriores compensadas (art. 26)', menos(is.compensacion)],
+              is.perdida > 0 && ['Resultado (pérdida)', -is.perdida], ['Base imponible (beneficio)', is.base, true],
               ...is.tramos.map((x) => [is.tramos.length > 1 ? `${x.pct} % de ${eur(x.base)}` : `Cuota al ${x.pct} %`, x.cuota]),
               ['Cuota', is.cuota, true], is.retenciones && ['Retenciones soportadas', menos(is.retenciones)], [dForal ? 'Pagos fraccionados marcados' : 'Pagos del 202 marcados', menos(is.pagos)],
               [is.resultado >= 0 ? 'Saldría a pagar' : 'Saldría a devolver', Math.abs(is.resultado), true],
             ]} />
+            {is.noDeducibles?.length > 0 && <p className="nota">No se restan por no ser deducibles (art. 15 de la Ley del Impuesto sobre Sociedades): {is.noDeducibles.map((x) => `${x.concepto} (${eur(x.importe)}, ${x.motivo})`).join('; ')}. Revísalo: si alguno sí es deducible, ábrelo en Gastos y quita la marca «No es deducible en el Impuesto sobre Sociedades».</p>}
             {is.perdida > 0 && <p className="nota">Con pérdidas no hay cuota: los {eur(is.perdida)} se compensan con los beneficios de los años siguientes (base imponible negativa), y lo pagado a cuenta en el 202 se devuelve al presentar el 200. Los pagos del 202 se siguen haciendo: salen de la cuota del año anterior.</p>}
-            {is.foral ? <p className="nota">Tipo de la {foralT.hacienda} según tu cifra de negocios{is.conAnterior ? ` de ${anio - 1}` : ' de este año (no hay datos del anterior)'} ({eur(is.incn)}): {is.tramos[0]?.pct ?? '—'} %. Fisquo no sabe tu plantilla ni tu activo, que también cuentan para ser micro o pequeña empresa: confírmalo con tu gestor.</p> :
-            <p className="nota">Tipo de {is.tamano === 'micro' ? 'microempresa (facturación de menos de 1 millón)' : is.tamano === 'reducida' ? 'empresa de reducida dimensión (menos de 10 millones)' : 'general'}{is.conAnterior ? ` según lo facturado en ${anio - 1}` : ', con lo facturado este año (no hay datos del anterior)'}.{' '}
+            {!is.foral && is.basePrevia > 0 && (is.compensacion > 0 || is.binsPendientes?.length > 0) && <p className="nota">Pérdidas de años anteriores pendientes al empezar {anio}: {is.binsPendientes.map((x) => `${x.de}, ${eur(x.importe)}`).join('; ')}. Se compensan de la más antigua a la más reciente, {is.sinLimiteBIN ? 'sin el límite del 70 % (de los tres primeros años con beneficio de una sociedad de nueva creación, art. 26.3)' : `hasta ${eur(is.limiteBIN)} (el 70 % de la base previa o, en todo caso, 1 millón)`}. Las de los años que llevas en Fisquo salen de lo apuntado: si alguno no está completo aquí, pon la de verdad abajo (manda sobre la calculada).</p>}
+            {!is.foral && is.binsQuedan?.length > 0 && <p className="nota">Quedan por compensar en los años siguientes: {is.binsQuedan.map((x) => `${x.de}, ${eur(x.importe)}`).join('; ')}.</p>}
+            {is.reserva?.pendiente > 0 && <p className="nota">De la reserva de capitalización quedan {eur(is.reserva.pendiente)} sin aplicar (límite del {is.reserva.limitePct ?? 20} % de la base previa): se pueden aplicar en los dos años siguientes, pero Fisquo no los arrastra.</p>}
+            {is.foral ? <p className="nota">Tipo de la {foralT.hacienda} según tu cifra de negocios{is.conAnterior ? ` de ${anio - 1}` : ' de este año (no hay datos del anterior)'} ({eur(is.incn)}): {is.tramos[0]?.pct ?? '—'} %. Fisquo no sabe tu plantilla ni tu activo, que también cuentan para ser micro o pequeña empresa: confírmalo con tu gestor. Las pérdidas de años anteriores siguen las reglas de tu Hacienda foral: no se compensan aquí.</p> :
+            <p className="nota">Tipo de {is.tamano === 'micro' ? 'microempresa (facturación de menos de 1 millón)' : is.tamano === 'reducida' ? 'empresa de reducida dimensión (menos de 10 millones)' : 'general'}{is.conAnterior ? ` según lo facturado en ${anio - 1}` : ', con lo facturado este año (no hay datos del anterior)'}{is.incnAnual !== is.incn ? ` (${eur(is.incn)} en el año de constitución, ${eur(is.incnAnual)} elevado al año para la reducida dimensión)` : ''}.{' '}
               {is.nuevaCreacion?.aplica ? `Sociedad de nueva creación: tributa al 15 % (primer año con beneficio, ${is.nuevaCreacion.primero}, y el siguiente). No vale si la actividad ya la hacía antes otra persona o sociedad vinculada, si es del mismo grupo o si es patrimonial: confírmalo con tu gestor.`
                 : !f.constitucion ? 'Si la sociedad es de nueva creación, añade su fecha de constitución en Ajustes › Actividades e impuestos: el primer año con beneficio y el siguiente tributa al 15 %.'
                 : is.nuevaCreacion?.falta ? `No hay datos de ${is.nuevaCreacion.falta} en Fisquo para saber si aún toca el 15 % de nueva creación: confírmalo con tu gestor.`
                 : is.nuevaCreacion?.primero && is.nuevaCreacion.primero < anio - 1 ? `El 15 % de nueva creación ya se aplicó en ${is.nuevaCreacion.primero} y ${is.nuevaCreacion.primero + 1}.` : ''}</p>}
           </div>
+          {!is.foral && <div className="tarjetas">
+            <ImporteAnio campo="fondosPropios" anio={anio} valor={u.fondosPropios?.[anio] ?? null} soloLectura={soloLectura}
+              titulo={`Incremento de los fondos propios en ${anio}`}
+              ayuda={`Para la reserva de capitalización (art. 25): reduce la base un 20 % de lo que crecen los fondos propios (sin el resultado del año ni las aportaciones de los socios ni la reserva legal), si se mantiene 3 años y se dota la reserva. Te lo da tu gestor; sin él, no se aplica.`} />
+            <div className="tarjeta"><p><strong>Pérdidas de antes de Fisquo pendientes de compensar</strong></p>
+              <p className="nota">Fisquo calcula las de los años que tiene (hasta cinco atrás). Las de antes, o la real de un año que no está entero aquí, apúntalas por año de origen con lo que aún quedaba por compensar (está en el cuadro de bases negativas de tu último modelo 200).</p></div>
+            {Object.entries(u.binsPrevias || {}).sort(([a], [b]) => a - b).map(([y, v]) => (
+              <ImporteAnio key={y} campo="binsPrevias" anio={Number(y)} valor={v} soloLectura={soloLectura} titulo={`Base imponible negativa de ${y}`} ayuda="Lo que quedaba por compensar. Vacío y Guardar la quita." />
+            ))}
+            {!soloLectura && <ImporteAnio campo="binsPrevias" anio={null} valor={null} anioEditable titulo="Añadir una base negativa de otro año" ayuda="Año de origen e importe pendiente." />}
+          </div>}
         </ModeloPlegable>
       )}
 
@@ -781,7 +867,7 @@ export default async function Modelos({ searchParams }) {
         <ModeloPlegable id="m100" num="100" nombre={`Renta ${anio}`} favor={renta.resultado < 0}
           detalle={`Borrador · ${renta.resultado >= 0 ? 'saldría a pagar' : 'saldría a devolver'} · de abril a junio de ${anio + 1}`} dato={importeFila(Math.abs(renta.resultado))}>
           <h2 className="grupo-t">Borrador de la renta {anio}</h2>
-          <p className="grupo-pie arriba">Tu actividad (estimación directa simplificada){f.renta ? ', con los datos personales de Ajustes' : ''}. No incluye deducciones autonómicas, vivienda, planes de pensiones ni discapacidad: tómalo como una idea de cuánto te saldrá.{!f.renta && ' Añade tu situación familiar en Ajustes › Actividades e impuestos para afinarlo.'}{!f.renta?.inicio && ' Si empezaste la actividad hace poco, pon allí el año: los dos primeros años con beneficio se reducen un 20 %.'}</p>
+          <p className="grupo-pie arriba">Tu actividad (estimación directa simplificada){f.renta ? ', con los datos personales de Ajustes' : ''}. No incluye deducciones autonómicas, vivienda, planes de pensiones ni discapacidad: tómalo como una idea de cuánto te saldrá.{!f.renta && ' Añade tu situación familiar en Ajustes › Actividades e impuestos para afinarlo.'}{!f.renta?.inicio && ' Si empezaste la actividad hace poco, pon allí el año: los dos primeros años con beneficio se reducen un 20 %.'}{renta.aproximada && ' Sin tu comunidad autónoma (Ajustes › Actividades e impuestos), la parte autonómica es aproximada: se calcula como la estatal.'}</p>
           <div className="tarjeta">
             <Casillas sinNumeros={Boolean(foralT)} filas={[
               ['Ingresos de la actividad', renta.ingresos], ['Gastos deducibles', menos(renta.gastos)], renta.difJust > 0 && ['5 % gastos de difícil justificación', menos(renta.difJust)],
@@ -789,11 +875,20 @@ export default async function Modelos({ searchParams }) {
               renta.reduccionInicio > 0 && ['Reducción por inicio de actividad (20 %, art. 32.3)', menos(renta.reduccionInicio)],
               ['Rendimiento neto', renta.rendimiento, true],
               renta.otrasRentas > 0 && ['Otras rentas (solo para el tipo)', renta.otrasRentas],
-              [`Cuota (escala general, mínimos de ${eur(renta.minimos.total)}${renta.minimos.total > MINIMO_PERSONAL ? `: personal ${eur(renta.minimos.personal)}${renta.minimos.descendientes ? `, hijos ${eur(renta.minimos.descendientes)}` : ''}${renta.minimos.ascendientes ? `, ascendientes ${eur(renta.minimos.ascendientes)}` : ''}` : ''})`, renta.cuota],
+              [`Cuota estatal (mínimos de ${eur(renta.minimos.total)}${renta.minimos.total > MINIMO_PERSONAL ? `: personal ${eur(renta.minimos.personal)}${renta.minimos.descendientes ? `, hijos ${eur(renta.minimos.descendientes)}` : ''}${renta.minimos.ascendientes ? `, ascendientes ${eur(renta.minimos.ascendientes)}` : ''}` : ''})`, renta.cuotaEstatal],
+              [renta.aproximada ? 'Cuota autonómica (aproximada, como la estatal)' : `Cuota autonómica de ${renta.nombreCcaa}${renta.minimosAutonomicos.total !== renta.minimos.total ? ` (mínimos de ${eur(renta.minimosAutonomicos.total)})` : ''}`, renta.cuotaAutonomica],
+              ['Cuota', renta.cuota, true],
+              renta.deduccionCeuta > 0 && [`Deducción por rentas obtenidas en ${renta.nombreCcaa} (60 %)`, menos(renta.deduccionCeuta)],
               ['Retenciones de tus facturas', menos(renta.retenciones)], ['Pagos del 130 marcados', menos(renta.pagos130)],
+              renta.maternidad.maternidad > 0 && ['Deducción por maternidad', menos(renta.maternidad.maternidad)],
+              renta.maternidad.guarderia > 0 && ['Incremento por gastos de guardería', menos(renta.maternidad.guarderia)],
               [renta.resultado >= 0 ? 'Saldría a pagar' : 'Saldría a devolver', Math.abs(renta.resultado), true],
             ]} />
-            <p className="nota">Tipo medio: {String(renta.tipoMedio).replace('.', ',')} %.</p>
+            <p className="nota">Tipo medio: {String(renta.tipoMedio).replace('.', ',')} %.{anio !== renta.escalaDe && ` Con la escala de ${renta.escalaDe} (la última publicada por la Agencia Tributaria).`}</p>
+            {renta.inicioActividad?.falta && <p className="nota">No hay datos de {renta.inicioActividad.falta} para saber si aún toca la reducción del 20 % por inicio de actividad: pon el rendimiento neto de ese año en el 130 de {renta.inicioActividad.falta + 1} o confírmalo con tu gestor.</p>}
+            {renta.inicioActividad?.primero && <p className="nota">La reducción del 20 % por inicio de actividad ya se aplicó en {renta.inicioActividad.primero} y {renta.inicioActividad.primero + 1} (los dos primeros años con beneficio).</p>}
+            {renta.maternidad.sinMes > 0 && <p className="nota">Para la deducción por maternidad del año en que nació tu hijo o en que cumple 3 años hace falta el mes: escríbelo en Ajustes con el año (por ejemplo, 05/2024).</p>}
+            {renta.maternidad.importe > 0 && <p className="nota">La deducción por maternidad resta aunque salga a devolver. Si cobras el abono anticipado (modelo 140), lo ya cobrado se descuenta.</p>}
           </div>
         </ModeloPlegable>
       )}

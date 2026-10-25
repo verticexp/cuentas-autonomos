@@ -5,6 +5,7 @@ import { leerRango } from '@/lib/indices';
 import { facturacionPorCliente } from '@/lib/facturacionDespacho';
 import Ir from '@/components/Ir';
 import Volver from '@/components/Volver';
+import Vacio from '@/components/Vacio';
 import { eur, fechaCorta, hoy } from '@/lib/formato';
 import '@/app/mk.css';
 import '@/app/despacho.css';
@@ -54,7 +55,7 @@ export default async function Facturacion() {
           {c.pendiente > 0 && <small className={c.vencido > 0 ? 'rojo' : undefined}>{c.vencido > 0 ? `${euros(c.vencido)} vencido` : `${euros(c.pendiente)} pendiente`}</small>}
           <small>Margen {euros(c.margen12m)}</small>
         </span>
-      </Ir></li>)}</ul> : <p className="nota">Cuando tengas clientes, aquí verás su facturación.</p>}
+      </Ir></li>)}</ul> : <Vacio icono="usuarios" titulo="Aún no hay facturación que mostrar" accion={{ href: '/despacho', texto: 'Ver mis clientes' }}>Cuando tus clientes tengan facturas emitidas desde tu despacho, verás aquí cuánto has facturado, lo pendiente y el coste de Fisquo de cada uno.</Vacio>}
     </section>
     {sinEmparejar.numero > 0 && <p className="grupo-pie">{sinEmparejar.numero === 1 ? '1 factura' : `${sinEmparejar.numero} facturas`} ({euros(sinEmparejar.total)}) de clientes que no están en Fisquo.</p>}
   </main>;

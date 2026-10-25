@@ -1,6 +1,6 @@
 'use client';
 
-import { GRUPOS } from '@/lib/nominas';
+import { ADMINISTRADOR, GRUPOS } from '@/lib/nominas';
 
 // Datos de un empleado para la nómina completa (lib/nominas.js): cotización a la Seguridad Social y modelo 145, el que
 // el trabajador entrega a la empresa para calcular su retención del IRPF.
@@ -28,6 +28,17 @@ export function Cotizacion({ valor, cambiar, parcial = false }) {
         </label>
         <label>Accidentes de trabajo (%)<input className="campo" inputMode="decimal" value={c.atPct ?? 1.5} onChange={(e) => poner('atPct', e.target.value)} /></label>
       </div>
+      {c.temporal && <label className="check"><input type="checkbox" checked={Boolean(c.sustitucion)} onChange={(e) => poner('sustitucion', e.target.checked)} /> Es un contrato de sustitución (sin la cotización adicional de los contratos de menos de 30 días)</label>}
+      <label>¿Es consejero o administrador de la sociedad?
+        <select className="campo" value={c.administrador || ''} onChange={(e) => poner('administrador', e.target.value || undefined)}>
+          <option value="">No, es un trabajador</option>
+          {Object.entries(ADMINISTRADOR).map(([k, n]) => <option key={k} value={k}>{n}</option>)}
+        </select>
+      </label>
+      {c.administrador && <>
+        <label className="check"><input type="checkbox" checked={Boolean(c.pequena)} onChange={(e) => poner('pequena', e.target.checked)} /> La sociedad facturó menos de 100.000 € el año pasado (retención del 19 % en vez del 35 %)</label>
+        <p className="nota">{c.administrador === 'asimilado' ? 'Cotiza en el régimen general sin desempleo, FOGASA ni formación profesional.' : 'Cotiza él en el RETA: su nómina no lleva Seguridad Social.'} La retención es la de los administradores (art. 101.2 del Reglamento del IRPF), no la del modelo 145, y va en el 190 con la clave E.</p>
+      </>}
       <div className="dos-col">
         <label>Pagas extra al año<input className="campo" inputMode="numeric" value={c.pagas ?? 2} onChange={(e) => poner('pagas', e.target.value)} /></label>
         <label className="check"><input type="checkbox" checked={c.prorrateadas !== false} onChange={(e) => poner('prorrateadas', e.target.checked)} /> Van prorrateadas en el sueldo de cada mes</label>

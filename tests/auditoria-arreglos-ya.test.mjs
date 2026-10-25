@@ -21,10 +21,11 @@ const gastos = [gas('g1', '2025-05-01', 15000)];
 test('IS: el primer año con beneficio y el siguiente tributan al 15 %; después, los tipos de micro', () => {
   const op = { constitucion: '2025-03-01' };
   assert.equal(borradorSociedades(facturas, gastos, 2025, op).cuota, 0);
+  // 2026 compensa los 5.000 € de pérdidas de 2025 (art. 26 LIS): base 95.000 € al 15 %.
   const b26 = borradorSociedades(facturas, gastos, 2026, op);
   assert.deepEqual(b26.nuevaCreacion, { aplica: true, primero: 2026 });
-  assert.deepEqual(b26.tramos.map((x) => [x.base, x.pct]), [[100000, 15]]);
-  assert.equal(b26.cuota, 15000);
+  assert.deepEqual(b26.tramos.map((x) => [x.base, x.pct]), [[95000, 15]]);
+  assert.equal(b26.cuota, 14250);
   const b27 = borradorSociedades(facturas, gastos, 2027, op);
   assert.deepEqual([b27.nuevaCreacion, b27.cuota], [{ aplica: true, primero: 2026 }, 15000]);
   // 2028: ya no; micro (17 % los primeros 50.000 € y 20 % el resto).
@@ -34,15 +35,16 @@ test('IS: el primer año con beneficio y el siguiente tributan al 15 %; después
 });
 
 test('IS: sin fecha de constitución, o constituida después del año, se queda en el 19/21 % de micro', () => {
-  assert.equal(borradorSociedades(facturas, gastos, 2026).cuota, 9500 + 10500);
+  // Con la pérdida de 2025 (5.000 €) compensada: 50.000 × 19 % + 45.000 × 21 %.
+  assert.equal(borradorSociedades(facturas, gastos, 2026).cuota, 9500 + 9450);
   assert.equal(borradorSociedades(facturas, gastos, 2026).nuevaCreacion, null);
-  assert.equal(borradorSociedades(facturas, gastos, 2026, { constitucion: '2027-01-10' }).cuota, 20000);
+  assert.equal(borradorSociedades(facturas, gastos, 2026, { constitucion: '2027-01-10' }).cuota, 9500 + 9450);
 });
 
 test('IS: el 15 % solo sustituye al tipo del tramo cuando es menor', () => {
   // Una empresa grande (más de 10 M el año anterior) baja del 25 % al 15 %; ningún tramo sube.
   const grandes = [fac('a', '2025-06-01', 12e6), fac('b', '2026-06-01', 1e6)];
-  const caros = [gas('c', '2025-06-01', 13e6)];
+  const caros = [gas('c', '2025-06-01', 12e6)]; // 2025 a cero: sin pérdidas que compensar en 2026
   const b = borradorSociedades(grandes, caros, 2026, { constitucion: '2025-01-15' });
   assert.equal(b.tamano, 'general');
   assert.deepEqual(b.tramos.map((x) => x.pct), [15]);
@@ -78,9 +80,9 @@ test('Contabilidad: el gasto por Impuesto sobre Sociedades del cierre usa el 15 
   const fiscal = { tipo: 'sociedad', iva: 'general', constitucion: '2025-03-01' };
   const A = generarAsientos({ facturas, gastos, fiscal, cuotaIS: {} }, '2027-03-01');
   const is26 = A.find((a) => a.concepto === 'Impuesto sobre Sociedades 2026');
-  assert.equal(is26.lineas.find((l) => l.cuenta === '630').debe, 15000);
+  assert.equal(is26.lineas.find((l) => l.cuenta === '630').debe, 14250); // 95.000 € al 15 %, tras compensar la pérdida de 2025
   const sinFecha = generarAsientos({ facturas, gastos, fiscal: { tipo: 'sociedad', iva: 'general' }, cuotaIS: {} }, '2027-03-01');
-  assert.equal(sinFecha.find((a) => a.concepto === 'Impuesto sobre Sociedades 2026').lineas.find((l) => l.cuenta === '630').debe, 20000);
+  assert.equal(sinFecha.find((a) => a.concepto === 'Impuesto sobre Sociedades 2026').lineas.find((l) => l.cuenta === '630').debe, 9500 + 9450);
 });
 
 // ── 2. Impuestos: «Toca presentar» con todos los modelos que vencen a la vez ──

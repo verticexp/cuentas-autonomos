@@ -183,7 +183,7 @@ export default async function Gastos({ searchParams }) {
 
         {vista === 'gastos' && <>
           {/* Primero lo que más se hace: escanear el ticket o subir las facturas. El formulario entero se abre al escanear o al pedirlo. */}
-          {puede(u, 'gastar') && !movimiento && <FormGasto igic={usaIgic(fiscalDe(u))} cupoInicial={cupoIA} hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} productos={stockProductos} plegado destacar={Boolean(escanear || subir)} proyectos={proyectos} correo={correo} />}
+          {puede(u, 'gastar') && !movimiento && <FormGasto igic={usaIgic(fiscalDe(u))} especial={Object.values(u.prorrata?.especial || {}).some(Boolean)} cupoInicial={cupoIA} hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} productos={stockProductos} plegado destacar={Boolean(escanear || subir)} proyectos={proyectos} correo={correo} />}
 
           {/* Si hay facturas esperando, se dice aquí también, bien a la vista. */}
           {!movimiento && porRevisar.resumen.pendientes > 0 && (
@@ -205,7 +205,7 @@ export default async function Gastos({ searchParams }) {
             </p>
           )}
 
-          {puede(u, 'gastar') && movimiento && <FormGasto igic={usaIgic(fiscalDe(u))} cupoInicial={cupoIA} key={movimiento.id} hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} productos={stockProductos} movimiento={movimiento} proyectos={proyectos} />}
+          {puede(u, 'gastar') && movimiento && <FormGasto igic={usaIgic(fiscalDe(u))} especial={Object.values(u.prorrata?.especial || {}).some(Boolean)} cupoInicial={cupoIA} key={movimiento.id} hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} productos={stockProductos} movimiento={movimiento} proyectos={proyectos} />}
 
           {!sinFuncion(u.plan, 'revision') && puede(u, 'gastar') && !movimiento && revision.total > 0 && <RevisionGastos items={revision.items} total={revision.total} />}
 
