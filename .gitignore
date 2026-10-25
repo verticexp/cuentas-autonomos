@@ -5,3 +5,4 @@ node_modules
 .DS_Store
 dump.rdb
 copia-integridad-*.json
+.claude/worktrees
