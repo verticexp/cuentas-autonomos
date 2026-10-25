@@ -5,6 +5,7 @@ import Link from '@/components/web/EnlacePublico';
 import { useEffect, useRef, useState } from 'react';
 import Logo from '@/components/Logo';
 import { enfocar, irALaApp } from '@/lib/arranque';
+import '@/app/login.css';
 
 // Segundo paso al entrar con contraseña (lib/dosPasos.js): el código de 6 cifras de la app de autenticación o, sin el
 // móvil, un código de recuperación. Dentro del inicio de sesión (components/FormEntrar.js, alVolver) o en su propia

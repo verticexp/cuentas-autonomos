@@ -7,7 +7,7 @@ import { fechaCorta } from '@/lib/formato';
 
 // Ajustes › Seguridad › Verificación en dos pasos (lib/dosPasos.js, app/api/dos-pasos): al entrar con contraseña, pide
 // además el código de una app de autenticación. Activarla (QR, primer código y los diez códigos de recuperación, que solo
-// se ven una vez), códigos nuevos y quitarla. activa: { desde, quedan } si ya la tiene.
+// se ven una vez), códigos nuevos y quitarla. activa: { desde (día en Madrid), quedan } si ya la tiene.
 export default function DosPasos({ activa = null }) {
   const router = useRouter();
   const [alta, setAlta] = useState(null);
@@ -67,7 +67,7 @@ export default function DosPasos({ activa = null }) {
         </form>
       ) : activa ? (
         <>
-          <p className="nota">Activada{activa.desde ? ` desde el ${fechaCorta(activa.desde.slice(0, 10))}` : ''}. Al entrar con tu contraseña te pedimos también el código de la app. Te quedan {activa.quedan} códigos de recuperación.</p>
+          <p className="nota">Activada{activa.desde ? ` desde el ${fechaCorta(activa.desde)}` : ''}. Al entrar con tu contraseña te pedimos también el código de la app. Te quedan {activa.quedan} códigos de recuperación.</p>
           {activa.quedan <= 3 && <p className="nota falta">Te quedan pocos códigos de recuperación: genera otros.</p>}
           {modo === 'codigos' ? (
             <form onSubmit={nuevos}>

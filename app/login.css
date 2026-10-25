@@ -71,3 +71,7 @@
 }
 
 .login .registro[data-teclado="1"] :is(input, select, .registro-opcion, .registro-periodo label) { transition: none; }
+/* Enlaces con forma de botón dentro del inicio de sesión (segundo paso, components/FormCodigo.js): sin el fondo de los
+   botones del formulario. */
+.login button.enlace { background: none; color: var(--ink); font-size: 14px; font-weight: 500; padding: 6px 0; margin: 0; border-radius: 0; width: auto; min-height: 0; text-align: center; text-decoration: underline; text-underline-offset: 3px; }
+.login button.enlace:hover { filter: none; }
