@@ -21,7 +21,7 @@ import Verifactu from '@/components/Verifactu';
 import { certificadoListo } from '@/lib/verifactuEnvio';
 import { leer } from '@/lib/redis';
 import Importar from '@/components/Importar';
-import { actividadesDe, fiscalDe } from '@/lib/empresa';
+import { actividadesDe, fiscalDe, serieSimplificada } from '@/lib/empresa';
 import { numeroPrevisto } from '@/lib/facturas';
 import { todasFichas } from '@/lib/indices';
 import { SERIE_CAJA } from '@/lib/caja';
@@ -65,8 +65,9 @@ const DE_EMPRESA = ['plan', 'facturacion', 'marca', 'series', 'cobros', 'envio',
 async function datosSeries(u, anio) {
   const conFacturas = new Set((await todasFichas(u, 'facturas')).map((f) => f.a));
   const actividades = await Promise.all(actividadesDe(u).map(async (a) => ({ id: a.id, nombre: a.nombre, serie: a.serie || '', bloqueada: conFacturas.has(a.id), siguiente: await numeroPrevisto(u, a.serie || '', anio) })));
-  const [rectificativas, caja] = await Promise.all([numeroPrevisto(u, 'R', anio), numeroPrevisto(u, SERIE_CAJA, anio)]);
-  return { actividades, anio, rectificativas, caja: caja > 1 ? caja : 0 };
+  const fs = serieSimplificada(actividadesDe(u));
+  const [rectificativas, caja, simplificadas] = await Promise.all([numeroPrevisto(u, 'R', anio), numeroPrevisto(u, SERIE_CAJA, anio), numeroPrevisto(u, fs, anio)]);
+  return { actividades, anio, rectificativas, caja: caja > 1 ? caja : 0, simplificadas, serieFs: fs };
 }
 // Tu gestoría en Fisquo (lib/despachos.js): su vínculo, lo que ha hecho y la conversación (la marca leída el chat al verse).
 async function datosTuDespacho(u) {

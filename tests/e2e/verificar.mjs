@@ -110,7 +110,7 @@ ok('facturas', () => assert.deepEqual(facturas.map((f) => [f.fecha, f.base, f.co
 ok('gastos', () => assert.deepEqual(gastos.map((g) => [g.fecha, g.base, g.ivaPct]), GAS.map((x) => [x.fecha, x.base, x.ivaPct])));
 
 // Una factura de la segunda actividad: va en su propia serie (A) y no cuenta en el total de 2025 (es de este año).
-const rf = await pedir('/api/facturas', { metodo: 'POST', cookie: yo, cuerpo: { fecha: `${Y}-03-03`, actividad: ACTS[1].id, cliente: { nombre: 'Escuela' }, concepto: 'Curso', base: '400', ivaPct: 0, irpfPct: 0, cobrada: true } });
+const rf = await pedir('/api/facturas', { metodo: 'POST', cookie: yo, cuerpo: { fecha: `${Y}-03-03`, actividad: ACTS[1].id, cliente: { nombre: 'Escuela', nif: 'B66666660', direccion: 'C/ Escuela 1' }, concepto: 'Curso', base: '400', ivaPct: 0, irpfPct: 0, cobrada: true } });
 const fa = (await rf.json()).factura;
 ok(`la segunda actividad numera en su serie: A${Y}-001`, () => assert.equal(numeroFactura(fa), `A${Y}-001`));
 ok(`y la primera sigue la suya: 01-${Y}`, () => assert.equal(numeroFactura(facturas[0]), `01-${Y}`));
@@ -1818,7 +1818,7 @@ console.log('Ajustes nuevos: perfil, empresa, cobros, diseño, email de envío, 
   const [sNum, rNum] = await patch({ numeracion: { serie: '', anio: Y, siguiente: 500 } });
   const [sAtras] = await patch({ numeracion: { serie: '', anio: Y, siguiente: 10 } });
   ok('Series: la siguiente factura puede saltar hacia delante, nunca hacia atrás', () => assert.deepEqual([sNumMal, sNum, rNum.siguiente, sAtras], [400, 200, 500, 400]));
-  const fNum = (await (await pedir('/api/facturas', { metodo: 'POST', cookie: yo, cuerpo: { fecha: hoy, cliente: { nombre: 'Cliente Salto' }, concepto: 'Tras el salto', base: '10', ivaPct: 21 } })).json()).factura;
+  const fNum = (await (await pedir('/api/facturas', { metodo: 'POST', cookie: yo, cuerpo: { fecha: hoy, cliente: { nombre: 'Cliente Salto', nif: 'B44444446', direccion: 'C/ Salto 1' }, concepto: 'Tras el salto', base: '10', ivaPct: 21 } })).json()).factura;
   ok('y la siguiente factura lleva ese número', () => assert.equal(fNum?.numero, 500, JSON.stringify(fNum)));
   const ser = n(await texto('/ajustes/series', yo));
   ok('la pantalla de Series enseña el siguiente número', () => assert.ok(ser.includes(`501-${Y}`), ser.slice(0, 400)));

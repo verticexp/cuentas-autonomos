@@ -7,7 +7,7 @@ import { numeroFactura } from '@/lib/calculos';
 
 // Ajustes › Series y numeración. actividades: [{ id, nombre, serie, bloqueada (ya tiene facturas), siguiente }].
 // Cada actividad factura con su serie; el número vuelve a empezar cada año y nunca va hacia atrás (lib/facturas.js).
-export default function Series({ actividades, anio, rectificativas, caja }) {
+export default function Series({ actividades, anio, rectificativas, caja, simplificadas = 1, serieFs = 'FS' }) {
   return (
     <>
       <section className="grupo">
@@ -20,6 +20,7 @@ export default function Series({ actividades, anio, rectificativas, caja }) {
         <h2 className="grupo-t">Series reservadas</h2>
         <div className="grupo-c">
           <div className="celda"><span className="txt">R · Facturas rectificativas<small>Siguiente: {numeroFactura({ serie: 'R', anio, numero: rectificativas })}</small></span></div>
+          <div className="celda"><span className="txt">{serieFs} · Facturas simplificadas (sin NIF del cliente)<small>Siguiente: {numeroFactura({ serie: serieFs, anio, numero: simplificadas })}</small></span></div>
           <div className="celda"><span className="txt">Z · Cierres de caja<small>{caja ? `Siguiente: ${numeroFactura({ serie: 'Z', anio, numero: caja })}` : 'Para las ventas del día del TPV o el mostrador'}</small></span></div>
         </div>
         <p className="grupo-pie">La numeración de cada serie vuelve a empezar en 1 cada año.</p>
