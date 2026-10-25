@@ -9,7 +9,7 @@ import ModulosActividad from '@/components/ModulosActividad';
 import { liquidaciones420, modelo425, plazo420 } from '@/lib/igic';
 import { datosTerritorio, esForal, foralDe, pagosIrpfForal, plazoForal, situacionForal, territorioDe } from '@/lib/territorios';
 import { AvisoHaciendaForal } from '@/components/AvisoTerritorio';
-import { casillas303, habil, liquidaciones303, minoracion130, pendienteCaja, prorrataAnio, prorrataProvisional, r2, limiteTrimestre, resumenAnual, situacionTrimestre } from '@/lib/calculos';
+import { casillas303, habil, liquidaciones303, minoracion130, opciones130, pendienteCaja, prorrataAnio, prorrataProvisional, r2, limiteTrimestre, resumenAnual, situacionTrimestre } from '@/lib/calculos';
 import { NOMBRES_UE, modelo369, plazo369 } from '@/lib/oss';
 import { TIPOS_RENDIMIENTO, casillas123, modelo123, modelo193 } from '@/lib/capitalMobiliario';
 import PagosCapital from '@/components/PagosCapital';
@@ -144,13 +144,13 @@ export default async function Modelos({ searchParams }) {
   const c303 = !igic && usa303(f);
   const ids = actividadesDe(u).map((a) => a.id);
   const rendAnterior = u.rend130?.[anio - 1];
-  const r130 = usa130(f) && !dForal && resumenAnual(facturas, gastos, anio, u.pagos130?.[anio] || {}, ids, { ivaCoste: !usa303(f), hasta: h < `${anio}-12-31` ? h : `${anio}-12-31`, minoracion: minoracion130(rendAnterior), iva });
+  const r130 = usa130(f) && !dForal && resumenAnual(facturas, gastos, anio, u.pagos130?.[anio] || {}, ids, { ivaCoste: !usa303(f), hasta: h < `${anio}-12-31` ? h : `${anio}-12-31`, ...opciones130(f, u.rend130, anio), iva });
   // Pago fraccionado del IRPF foral (lib/territorios.js): su cálculo y sus plazos; en Álava lo liquida la Diputación.
   const pf = usa130(f) && dForal && pagosIrpfForal(f, { facturas, gastos, anio, rend130: u.rend130 || {}, actividades: ids, ivaCoste: !usa303(f), iva });
   const pfPresenta = Boolean(pf?.pagos) && !pf.deOficio;
   // Lo que Fisquo sabe del año anterior, como sugerencia (si ese año no está entero en Fisquo, no vale: lo confirma la persona).
   const conAnterior = usa130(f) && facturas.some((x) => x.fecha.startsWith(`${anio - 1}-`));
-  const sugerido = conAnterior ? resumenAnual(facturas, gastos, anio - 1, {}, ids, { ivaCoste: !usa303(f), iva }).trimestres[3].rendAcum : null;
+  const sugerido = conAnterior ? resumenAnual(facturas, gastos, anio - 1, {}, ids, { ivaCoste: !usa303(f), ...opciones130(f, u.rend130, anio - 1, false), iva }).trimestres[3].rendAcum : null;
   // Módulos (lib/estimacionObjetiva.js): el 131 y, en el régimen simplificado, el 303 salen de los datos de cada actividad.
   const c131 = usa131(f), cSimp = usaSimplificado(f);
   const modAnio = u.modulos?.[anio] || {};
@@ -261,7 +261,7 @@ export default async function Modelos({ searchParams }) {
 
   // Casos que Fisquo no resuelve solo (lib/revisionFiscal.js): presentar algo aparte o revisar antes del 4T.
   const a111 = (t) => r2(modelo111(nominas || [], anio, t).retenciones + retencionesProfesionales(gastos, anio, t).retenciones);
-  const avisos = avisosFiscales({ facturas, gastos, anio, hoy: h, c303, c130: Boolean(r130), liquidaciones, r130, pagos130: u.pagos130?.[anio] || {}, a111: hay111 ? a111 : null });
+  const avisos = avisosFiscales({ facturas, gastos, anio, hoy: h, c303, c130: Boolean(r130), retenidas: f.tipo === 'autonomo' && !usa131(f) && !dForal ? Boolean(f.retenidas) : null, liquidaciones, r130, pagos130: u.pagos130?.[anio] || {}, a111: hay111 ? a111 : null });
   // Prorrata: se enseña si hay operaciones exentas este año o el anterior, o si se ha guardado un porcentaje.
   const prorrata = c303 && { especial: Boolean(u.prorrata?.especial?.[anio]), guardado: u.prorrata?.[anio] ?? null, provisional: prorrataProvisional(facturas, anio, 4, iva), definitiva: prorrataAnio(facturas, anio), anterior: prorrataAnio(facturas, anio - 1) };
   const verProrrata = prorrata && (prorrata.guardado !== null || prorrata.definitiva !== null || prorrata.anterior !== null);
@@ -418,15 +418,20 @@ export default async function Modelos({ searchParams }) {
         <ModeloPlegable id="m130" num="130" nombre="Pago a cuenta del IRPF" {...filaTrim(t)} dato={t && importeFila(r130.trimestres[t - 1].m130)}>
           <h2 className="grupo-t">130 · Pago a cuenta del IRPF</h2>
           <p className="grupo-pie arriba">Acumulado desde enero: el 20 % de tu rendimiento, menos las retenciones de tus facturas y lo ya declarado en los 130 anteriores del año. Marca aquí cada trimestre cuando lo presentes, lo pagues o no: lo que no está presentado no se descuenta en el siguiente.</p>
-          <Rend130 soloLectura={soloLectura} anio={anio - 1} valor={rendAnterior ?? null} sugerido={sugerido} minoracion={minoracion130(rendAnterior)} />
+          <Rend130 soloLectura={soloLectura} anio={anio - 1} valor={rendAnterior ?? null} sugerido={sugerido} minoracion={opciones130(f, u.rend130, anio).minoracion} />
           <div className="tarjetas">
             {r130.trimestres.map((q) => (
               <div key={q.t} className="tarjeta"><h3>{q.t}T {anio}</h3>
                 {q.c19 < 0 && q.t < 4 ? <Importe texto="A deducir en los siguientes" v={-q.c19} /> : <Importe texto="A ingresar" v={q.m130} />}
                 <Plegable><Casillas sinNumeros={Boolean(foralT)} filas={[
-                  ['01 · Ingresos', q.ingAcum], ['02 · Gastos (con el 5 % de difícil justificación)', q.gasAcum], ['03 · Rendimiento neto', q.rendAcum],
-                  ['04 · 20 % de la 03', r2(0.2 * Math.max(0, q.rendAcum))], ['05 · Casillas 07 de los 130 anteriores del año', q.pagosPrev],
-                  ['06 · Retenciones de tus facturas', q.retAcum], ['07 · Resultado', q.c07],
+                  ...(q.c08 !== undefined ? [
+                    ['08 · Ingresos del trimestre (actividad agrícola, ganadera o forestal)', q.c08], ['09 · 2 % de la 08', q.c09],
+                    ['10 · Retenciones del trimestre', q.c10], ['11 · Resultado', q.c11], ['12 · Suma de resultados', q.c12],
+                  ] : [
+                    ['01 · Ingresos', q.ingAcum], [q.difJust ? '02 · Gastos (con el 5 % de difícil justificación)' : '02 · Gastos', q.gasAcum], ['03 · Rendimiento neto', q.rendAcum],
+                    ['04 · 20 % de la 03', r2(0.2 * Math.max(0, q.rendAcum))], ['05 · Casillas 07 de los 130 anteriores del año', q.pagosPrev],
+                    ['06 · Retenciones de tus facturas', q.retAcum], ['07 · Resultado', q.c07],
+                  ]),
                   q.minoracion && ['13 · Minoración por el rendimiento de ' + (anio - 1), q.minoracion], q.negPrev && ['15 · Negativos de trimestres anteriores', q.negPrev],
                   ['19 · Resultado', q.c19, true],
                 ]} /></Plegable>
