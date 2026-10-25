@@ -139,7 +139,7 @@ button:focus-visible, input:focus-visible, a:focus-visible, select:focus-visible
 .marca { margin-bottom: 20px; }
 .faceid { margin-bottom: 20px; }
 /* Verificación en dos pasos y accesos (Ajustes › Seguridad) */
-.dos-pasos, .accesos { margin-bottom: 20px; }
+.dos-pasos, .ultimos-accesos { margin-bottom: 20px; }
 .dos-pasos .falta { color: var(--aviso); font-weight: 600; }
 .qr-dos-pasos { display: block; width: 220px; height: 220px; margin: 8px 0 12px; border-radius: 12px; background: #fff; padding: 8px; }
 .clave-dos-pasos, .codigos-recuperacion code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.04em; user-select: all; overflow-wrap: anywhere; }

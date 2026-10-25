@@ -4,7 +4,7 @@ const cuando = (f) => new Date(f).toLocaleString('es-ES', { timeZone: 'Europe/Ma
 
 export default function AccesosRecientes({ lista = [] }) {
   return (
-    <section className="tarjeta formulario accesos">
+    <section className="tarjeta formulario ultimos-accesos">
       <h3>Últimos accesos</h3>
       {lista.length ? (
         <ul className="dispositivos">
