@@ -45,7 +45,7 @@ export default function Asistente({ listo, ejemplos, inicial = '' }) {
       {!mensajes.length && (
         <div className="asi-ejemplos">
           {ejemplos.map((e) => <button key={e} type="button" onClick={() => enviar(e)}>{e}</button>)}
-          {!ejemplos.length && <p className="asi-nota">Con tus permisos no hay datos que consultar. Pídeselos al administrador de tu empresa.</p>}
+          {!ejemplos.length && <Vacio compacto icono="asistente" titulo="Aún no hay nada que consultar">Con tus permisos el asistente no tiene datos que mirar. Pídele al administrador de tu empresa que te dé acceso.</Vacio>}
         </div>
       )}
       <ul className="asi-lista" aria-live="polite">

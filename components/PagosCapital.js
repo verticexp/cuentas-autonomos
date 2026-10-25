@@ -6,6 +6,7 @@ import { llamar } from '@/components/Acciones';
 import { confirmar } from '@/components/Confirmar';
 import { RET_CAPITAL, TIPOS_RENDIMIENTO } from '@/lib/capitalMobiliario';
 import { eur, fechaCorta } from '@/lib/formato';
+import Vacio from '@/components/Vacio';
 
 // Dividendos e intereses pagados en el año (modelos 123 y 193): apuntarlos y borrarlos. La retención del 19 % se calcula
 // sola (se puede cambiar si un convenio o una exención dice otra cosa).
@@ -47,7 +48,7 @@ export default function PagosCapital({ anio, pagos, hoy, sociedad = true, soloLe
             </li>
           ))}
         </ul>
-      ) : <p className="nota">Aún no has apuntado pagos de {anio}.</p>}
+      ) : <Vacio compacto icono="cobrar" titulo={`Aún no has apuntado pagos de ${anio}`}>Apunta aquí los dividendos o intereses que pagues: Fisquo calcula la retención y rellena los modelos 123 y 193.</Vacio>}
       {!soloLectura && !abierto && <button type="button" className="boton sec pequeno" onClick={() => setAbierto(true)}>Apuntar un pago</button>}
       {!soloLectura && abierto && (
         <form onSubmit={guardar}>

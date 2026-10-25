@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
 import Ir from './Ir';
+import Vacio from './Vacio';
 
 // Ajustes › Verifactu: activarlo en pruebas o de verdad y ver cómo van los envíos a la AEAT.
 export default function Verifactu({ modo, admin, listo, faltaEmisor, fisquo, cuentas }) {
@@ -25,7 +26,8 @@ export default function Verifactu({ modo, admin, listo, faltaEmisor, fisquo, cue
         {modo === 'pruebas' && 'Cada factura nueva se envía al entorno de pruebas de la AEAT: no cuenta para Hacienda y su QR es de pruebas. Úsalo solo para probar antes de activarlo de verdad.'}
         {!modo && 'Con Verifactu, cada factura se registra en la AEAT al crearla: no hay que hacer nada más. Fisquo la envía en tu nombre con su certificado.'}
       </p>
-      {modo && <p className="nota">Registradas: {cuentas.hechas} · Pendientes de enviar: {cuentas.pendientes}{cuentas.rechazadas ? ` · Rechazadas: ${cuentas.rechazadas}` : ''}{cuentas.conErrores ? ` · Aceptadas con errores: ${cuentas.conErrores}` : ''}</p>}
+      {modo && !cuentas.hechas && !cuentas.pendientes && !cuentas.rechazadas && !cuentas.conErrores && <Vacio compacto icono="factura" titulo="Todavía no se ha registrado ninguna factura">Cada factura nueva que emitas aparecerá aquí con su estado de envío a la AEAT.</Vacio>}
+      {modo && (cuentas.hechas > 0 || cuentas.pendientes > 0 || cuentas.rechazadas > 0 || cuentas.conErrores > 0) && <p className="nota">Registradas: {cuentas.hechas} · Pendientes de enviar: {cuentas.pendientes}{cuentas.rechazadas ? ` · Rechazadas: ${cuentas.rechazadas}` : ''}{cuentas.conErrores ? ` · Aceptadas con errores: ${cuentas.conErrores}` : ''}</p>}
       {modo && cuentas.otroModo > 0 && <p className="nota">Además hay {cuentas.otroModo} {cuentas.otroModo === 1 ? 'registro' : 'registros'} del entorno de {modo === 'real' ? 'pruebas' : 'producción'}: no se mezclan con estos ni se envían aquí.</p>}
       {modo && cuentas.incidencias?.length > 0 && (
         <div className="verifactu-incidencias">

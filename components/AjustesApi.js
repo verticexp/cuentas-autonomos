@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { llamar } from './Acciones';
 import { confirmar } from './Confirmar';
 import { FACTURA_EJEMPLO } from '@/lib/apiEjemplo';
+import Vacio from './Vacio';
 
 const NOMBRES = { 'facturas:leer': 'Ver facturas', 'facturas:escribir': 'Crear facturas', 'gastos:leer': 'Ver gastos', 'clientes:leer': 'Ver clientes' };
 const EVENTOS = { 'factura.creada': 'Factura creada', 'factura.cobrada': 'Factura cobrada', 'gasto.creado': 'Gasto creado' };
@@ -57,7 +58,7 @@ export default function AjustesApi({ inicial, alcances, eventos }) {
     <section className="grupo">
       <h2 className="grupo-t">Claves de API</h2>
       <div className="grupo-c">
-        {!datos.claves.length && <div className="celda"><span className="txt">Todavía no hay claves</span></div>}
+        {!datos.claves.length && <Vacio compacto icono="conexion" titulo="Todavía no hay claves">Una clave deja que otro programa (tu tienda online, Zapier…) lea o cree datos en Fisquo. Créala en el formulario de abajo.</Vacio>}
         {datos.claves.map((k) => <div className="celda" key={k.id}>
           <span className="txt" style={{ minWidth: 0, overflowWrap: 'anywhere' }}><strong>{k.nombre}</strong><small>{k.prefijo}… · {k.alcances.map((a) => NOMBRES[a]).join(', ')}</small><small>Creada: {fecha(k.creada)} · Último uso: {fecha(k.ultimoUso)}</small></span>
           <button className="borrar" type="button" disabled={ocupado} aria-label={`Revocar clave ${k.nombre}`} onClick={() => revocar('clave', k.id)}>Revocar</button>
@@ -77,7 +78,7 @@ export default function AjustesApi({ inicial, alcances, eventos }) {
     <section className="grupo">
       <h2 className="grupo-t">Webhooks</h2>
       <div className="grupo-c">
-        {!datos.webhooks.length && <div className="celda"><span className="txt">Todavía no hay webhooks</span></div>}
+        {!datos.webhooks.length && <Vacio compacto icono="aviso" titulo="Todavía no hay webhooks">Un webhook avisa a otro programa cuando creas o cobras una factura. Añade su dirección en el formulario de abajo.</Vacio>}
         {datos.webhooks.map((w) => <div className="celda" key={w.id}>
           <span className="txt" style={{ minWidth: 0, overflowWrap: 'anywhere' }}><strong>{w.url}</strong><small>{w.eventos.map((e) => EVENTOS[e]).join(', ')} · {w.activo ? 'Activo' : 'Inactivo'}</small><small>Creado: {fecha(w.creado)}</small></span>
           <button className="borrar" type="button" disabled={ocupado} aria-label={`Eliminar webhook ${w.url}`} onClick={() => revocar('webhook', w.id)}>Eliminar</button>

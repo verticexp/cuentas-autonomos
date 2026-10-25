@@ -25,6 +25,7 @@ import { eur, fechaTexto, hoy, textoResumenModelos, textoSituacion } from '@/lib
 import PresentarAhora from '@/components/PresentarAhora';
 import { modelosAPresentar } from '@/lib/presentar';
 import Volver from '@/components/Volver';
+import Vacio from '@/components/Vacio';
 import Ir from '@/components/Ir';
 import SinBD from '@/components/SinBD';
 import ModeloPlegable from '@/components/ModeloPlegable';
@@ -296,6 +297,13 @@ export default async function Modelos({ searchParams }) {
             ))}
           </ul>
         </section>
+      )}
+
+      {!facturas.length && !gastos.length && !nominas?.length && !capitalAnio.length && (
+        <Vacio icono="hacienda" titulo={`Aún no hay nada que declarar en ${anio}`}
+          accion={puede(u, 'facturar') && { href: '/facturas/nueva', texto: 'Nueva factura' }} secundaria={puede(u, 'gastar') && { href: '/gastos#apuntar-gasto', texto: 'Añadir gasto' }}>
+          Fisquo calcula los modelos con tus facturas y gastos. Cuando apuntes los primeros, verás aquí cuánto toca ingresar cada trimestre. Abajo tienes qué modelos te tocan y sus plazos.
+        </Vacio>
       )}
 
       {avisos.length > 0 && (

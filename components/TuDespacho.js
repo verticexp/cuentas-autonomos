@@ -6,6 +6,7 @@ import { llamar } from './Acciones';
 import { confirmar } from './Confirmar';
 import { fechaCorta } from '@/lib/formato';
 import Ir from './Ir';
+import Vacio from './Vacio';
 import PeticionesCliente from './PeticionesCliente';
 import '@/app/despacho.css';
 
@@ -69,7 +70,7 @@ export default function TuDespacho({ despacho, accesos = [], ultimo = null, noLe
     <section className="grupo" aria-labelledby="td-a">
       <h2 className="grupo-t" id="td-a">Lo que ha hecho en tus cuentas</h2>
       <div className="grupo-c relleno">
-        {accesos.length ? <ul className="desp-registro">{accesos.map((a, i) => <li key={i}><span>{a.nombre}{a.despacho ? ` (${a.despacho})` : ''}: {a.accion}{a.detalle ? ` · ${a.detalle}` : ''}</span><small>{horaDe(a.fecha)}</small></li>)}</ul> : <p className="nota">Todavía nada.</p>}
+        {accesos.length ? <ul className="desp-registro">{accesos.map((a, i) => <li key={i}><span>{a.nombre}{a.despacho ? ` (${a.despacho})` : ''}: {a.accion}{a.detalle ? ` · ${a.detalle}` : ''}</span><small>{horaDe(a.fecha)}</small></li>)}</ul> : <Vacio compacto icono="actividad" titulo="Tu gestoría aún no ha hecho nada">Aquí verás lo que consulte o cambie en tus cuentas, con quién y cuándo.</Vacio>}
       </div>
     </section>
   </>;

@@ -327,6 +327,7 @@ export default function Banco({ cuentas, pendientes, emparejados, ignorados, aut
         </section>
       )}
       <Paginas datos={historial?.grupos.pendientes} estado="pendientes" />
+      {historial && historial.total > 0 && historial.grupos.pendientes.total === 0 && !Object.values(historial.filtros).some(Boolean) && <Vacio compacto icono="gasto" titulo="No tienes movimientos por revisar">Todos los movimientos de tus extractos ya están emparejados o ignorados. Los nuevos aparecerán aquí al subir el siguiente extracto.</Vacio>}
       </div>
 
       {emparejados.length > 0 && (
