@@ -1,7 +1,9 @@
 import Logo from '@/components/Logo';
 import { Reintentar } from '@/components/SinRed';
 
-export const dynamic = 'force-static';
+// Dinámica, no estática: así sus scripts llevan el nonce de la CSP (proxy.js). El service worker la guarda al instalarse
+// con sus cabeceras, y sin red la sirve tal cual.
+export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Sin conexión', robots: { index: false } };
 
 // Lo que enseña el service worker (app/sw) si se navega sin red: sin datos de la cuenta, para poder guardarla en el
