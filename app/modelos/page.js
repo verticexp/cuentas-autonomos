@@ -9,7 +9,7 @@ import ModulosActividad from '@/components/ModulosActividad';
 import { liquidaciones420, modelo425, plazo420 } from '@/lib/igic';
 import { datosTerritorio, esForal, foralDe, pagosIrpfForal, plazoForal, situacionForal, territorioDe } from '@/lib/territorios';
 import { AvisoHaciendaForal } from '@/components/AvisoTerritorio';
-import { casillas303, habil, liquidaciones303, minoracion130, opciones130, pendienteCaja, prorrataAnio, prorrataProvisional, r2, limiteTrimestre, resumenAnual, situacionTrimestre } from '@/lib/calculos';
+import { casillas303, habil, liquidaciones303, minoracion130, opciones130, origenGasto, pendienteCaja, prorrataAnio, prorrataProvisional, r2, limiteTrimestre, resumenAnual, situacionTrimestre } from '@/lib/calculos';
 import { NOMBRES_UE, modelo369, plazo369 } from '@/lib/oss';
 import { TIPOS_RENDIMIENTO, casillas123, modelo123, modelo193 } from '@/lib/capitalMobiliario';
 import PagosCapital from '@/components/PagosCapital';
@@ -18,7 +18,7 @@ import Prorrata from '@/components/Prorrata';
 import Rend130 from '@/components/Rend130';
 import SaldoIva from '@/components/SaldoIva';
 import { modelo111, nombreMes } from '@/lib/nominas';
-import { borradorRenta, borradorSociedades, modelo115, modelo180, modelo190, modelo202, modelo202Art403, modelo347, modelo349, modelo390, ETIQUETAS390, ORDEN390, TOTALES390, retencionesProfesionales, MINIMO_PERSONAL, RET_ALQUILER } from '@/lib/modelos';
+import { borradorRenta, borradorSociedades, modelo115, modelo180, modelo190, modelo309, modelo202, modelo202Art403, modelo347, modelo349, modelo390, ETIQUETAS390, ORDEN390, TOTALES390, retencionesProfesionales, MINIMO_PERSONAL, RET_ALQUILER } from '@/lib/modelos';
 import CuotaIS, { ImporteAnio } from '@/components/CuotaIS';
 import { Presentado, Presentado202, PresentadoRet } from '@/components/Acciones';
 import { eur, fechaTexto, hoy, textoResumenModelos, textoSituacion } from '@/lib/formato';
@@ -133,6 +133,9 @@ export default async function Modelos({ searchParams }) {
   const m425 = c420 && modelo425(facturas, gastos, anio, iva);
   // Se enseña cada modelo si le toca por su situación fiscal o si ya hay datos que lo piden.
   const hay115 = f.alquiler || gastos.some((g) => g.alquiler);
+  // 309: sin 303 (exento, recargo, agricultura), el IVA de las compras a la UE o con inversión del sujeto pasivo del año.
+  const hay309 = !igic && !usa303(f) && gastos.some((g) => g.fecha.startsWith(`${anio}-`) && origenGasto(g));
+  const m309 = (t) => modelo309(gastos, anio, t, { regimen: f.iva });
   const m349anio = modelo349(facturas, anio, undefined, gastos);
   const hay349 = !igic && (f.intracom || m349anio.total > 0 || m349anio.rectificaciones.length > 0);
   // Ventanilla única (369) y dividendos e intereses (123 y 193): si la empresa los tiene marcados o ya hay datos del año.
@@ -248,6 +251,7 @@ export default async function Modelos({ searchParams }) {
       m115: hay115 && !marcaRet(u.pres115, anio, tAhora) ? modelo115(gastos, anio, tAhora).retenciones : null,
       m123: hay123 && !u.pres123?.[anio]?.[tAhora] ? modelo123(capital, anio, tAhora).retenciones : null,
       m349: hay349 ? modelo349(facturas, anio, tAhora, gastos) : null,
+      m309: hay309 ? m309(tAhora).ingresar : null,
       pagos202, pagados202: u.pagos202?.[anio], constitucion: f.constitucion,
     }).map((m) => ({ ...m, ...(foralT ? { aeat: foralT.sede, sede: foralT.hacienda } : { aeat: AEAT[`m${m.num}`] }), ...(m.dia ? { plazo: plazoT(tAhora, m.dia) } : {}) })).map((m) => (dForal ? foralizar(m, tAhora) : m));
     if (l420) importes.unshift({ num: '420', modelo: '420 · IGIC', href: '#m420', texto: l420['45'] < 0 ? `A compensar ${eur(-l420['45'])}` : `A ingresar ${eur(l420.ingresar)}`, importe: l420.ingresar, aeat: SEDE_ATC, sede: 'ATC', plazo: fechaTexto(plazo420(anio, tAhora)) });
@@ -646,6 +650,29 @@ export default async function Modelos({ searchParams }) {
             {T.map((t) => { const m = modelo115(gastos, anio, t); return (
               <div key={t} className="tarjeta"><h3>{t}T {anio}</h3>{m.base ? <Casillas sinNumeros={Boolean(foralT)} filas={[['01 · Perceptores', String(m.perceptores)], ['02 · Base de las retenciones', m.base], ['03 · Retenciones', m.retenciones], ['05 · A ingresar', m.retenciones, true]]} /> : <p className="nota">Sin alquiler este trimestre.</p>}<p className="nota">Hasta el {plazoT(t, 20)}.</p>{m.base ? <PresentadoRet modelo="115" anio={anio} t={t} hecho={marcaRet(u.pres115, anio, t) ?? presentado(t)} soloLectura={soloLectura} /> : null}</div>
             ); })}
+          </div>
+        </ModeloPlegable>
+        );
+      })()}
+
+      {hay309 && (() => {
+        const t = tPlazo(30);
+        const HECHO = { 1: 'Adquisición intracomunitaria de bienes', 3: 'Inversión del sujeto pasivo (servicios de la UE o de fuera, y compras de España sin IVA)' };
+        return (
+        <ModeloPlegable id="m309" num="309" nombre="IVA de compras a la UE o con inversión del sujeto pasivo" {...filaPlazo(t, 30, null, t && !m309(t).declaraciones.length && 'sin compras de este tipo')}
+          dato={importeFila(t ? m309(t).ingresar : r2(T.reduce((s, x) => s + m309(x).ingresar, 0)))}>
+          <h2 className="grupo-t">309 · IVA no periódico</h2>
+          <p className="grupo-pie arriba">Como no presentas el 303, el IVA de lo que compras a proveedores de la UE, de servicios de fuera de la UE o de España con inversión del sujeto pasivo lo ingresas tú con este modelo, el trimestre en que haya alguna compra así: uno por cada tipo de operación.{f.iva === 'recargo' ? ' En el recargo de equivalencia, las compras de bienes a la UE llevan además el recargo.' : ''} No te lo deduces: es más coste de la compra.</p>
+          <div className="tarjetas">
+            {T.flatMap((t) => { const m = m309(t); return m.declaraciones.length ? m.declaraciones.map((d) => (
+              <div key={`${t}-${d.hecho}`} className="tarjeta"><h3>{t}T {anio} · {HECHO[d.hecho]}</h3>
+                <Casillas sinNumeros={Boolean(foralT)} filas={[
+                  ...[['01', '02', '03'], ['25', '26', '27'], ['04', '05', '06'], ['07', '08', '09']].filter(([b]) => d.c[b] !== undefined).flatMap(([b, p, q]) => [[`${b} · Base al ${String(d.c[p]).replace('.', ',')} %`, d.c[b]], [`${q} · Cuota`, d.c[q]]]),
+                  ...[['10', '11', '12'], ['13', '14', '15'], ['16', '17', '18'], ['19', '20', '21']].filter(([b]) => d.c[b] !== undefined).flatMap(([b, p, q]) => [[`${b} · Base del recargo del ${String(d.c[p]).replace('.', ',')} %`, d.c[b]], [`${q} · Recargo`, d.c[q]]]),
+                  ['22 · Total cuota devengada', d.c['22']], ['24 · A ingresar', d.c['24'], true],
+                ]} />
+                {d.masTipos && <p className="nota">Hay más de cuatro tipos de IVA en este trimestre: el formulario solo tiene cuatro filas, revisa el reparto con tu gestor.</p>}
+              </div>)) : []; })}
           </div>
         </ModeloPlegable>
         );

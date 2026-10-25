@@ -339,7 +339,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
             {tiposImpuesto.map((n) => <option key={n} value={n}>{impuesto} {n}%</option>)}
           </select></label>
         </div>
-        {!g.inversion && !g.isp && !g.importacion && !g.compensacion && !['ue', 'fuera'].includes(g.origen) && !gasto?.pedidoProv && (
+        {!g.inversion && !g.isp && !g.importacion && !g.compensacion && !['ue', 'fuera', 'isp'].includes(g.origen) && !gasto?.pedidoProv && (
           <button type="button" className="enlace" onClick={() => poner('porTipo', [{ ivaPct: Number(g.ivaPct), base: g.base }, { ivaPct: tiposImpuesto.find((n) => n !== Number(g.ivaPct)), base: '' }])}>La factura lleva varios tipos de {impuesto}</button>
         )}
       </>}
@@ -411,6 +411,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
           <option value="es">Proveedor de España</option>
           <option value="ue">Proveedor de otro país de la UE</option>
           <option value="fuera">Proveedor de fuera de la UE</option>
+          <option value="isp">Proveedor de España con inversión del sujeto pasivo (su factura lo dice: obras, chatarra, oro…)</option>
         </select>
       )}
       {!igic && origenGasto(gn) && <>
