@@ -37,7 +37,7 @@ export default function Demo() {
           <Link href="/guias" data-foco data-r className="web-fcard" style={{ '--d': '70ms' }}>
             <span className="web-fcard-ico"><Icono n="documento" /></span>
             <h3>Guías fiscales</h3>
-            <p>El modelo 303, el 130, el calendario fiscal y la factura simplificada, explicados.</p>
+            <p>IVA, IRPF, Impuesto sobre Sociedades, retenciones, cuentas anuales y calendarios, para autónomos y sociedades.</p>
             <span className="web-enlace">Leer las guías<Flecha /></span>
           </Link>
           <Link href="/precios" data-foco data-r className="web-fcard" style={{ '--d': '140ms' }}>
