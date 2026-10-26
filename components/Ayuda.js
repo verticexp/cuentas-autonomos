@@ -47,15 +47,17 @@ export default function Ayuda({ contacto, app = false }) {
         </div>
       </section>
 
-      <form className="formulario tarjeta" onSubmit={enviar}>
-        <h3>Escríbenos</h3>
-        <label>Sobre qué
-          <select className="campo" value={d.tema} onChange={(e) => setD({ ...d, tema: e.target.value })}>{temas.map((t) => <option key={t} value={t}>{app && t === 'Mi plan o mi factura de Fisquo' ? 'Mi cuenta' : t}</option>)}</select>
-        </label>
-        <label>Mensaje<textarea className="campo" rows={5} maxLength={3000} value={d.mensaje} onChange={(e) => setD({ ...d, mensaje: e.target.value })} placeholder="Cuéntanos qué necesitas o qué ha pasado" required /></label>
-        {msg && <p role="status" className={msg === 'Enviado' ? 'nota guardado' : msg === 'Enviando…' ? 'nota' : 'error'}>{msg === 'Enviado' ? '✓ Enviado: te respondemos a tu email, normalmente en el día.' : msg}</p>}
+      <form className="formulario aj-form" onSubmit={enviar}>
+        <h3 aria-level={2}>Escríbenos</h3>
+        <div className="aj-grupo">
+          <label>Sobre qué
+            <select className="campo" value={d.tema} onChange={(e) => setD({ ...d, tema: e.target.value })}>{temas.map((t) => <option key={t} value={t}>{app && t === 'Mi plan o mi factura de Fisquo' ? 'Mi cuenta' : t}</option>)}</select>
+          </label>
+          <label>Mensaje<textarea className="campo" rows={5} maxLength={3000} value={d.mensaje} onChange={(e) => setD({ ...d, mensaje: e.target.value })} placeholder="Cuéntanos qué necesitas o qué ha pasado" required /></label>
+        </div>
+        {msg && <p role="status" className={msg === 'Enviado' ? 'nota aj-pie guardado' : msg === 'Enviando…' ? 'nota aj-pie' : 'error aj-pie'}>{msg === 'Enviado' ? '✓ Enviado: te respondemos a tu email, normalmente en el día.' : msg}</p>}
         <button className="boton" disabled={msg === 'Enviando…'}>Enviar</button>
-        <p className="nota">También en <a href={`mailto:${contacto}`}>{contacto}</a>.</p>
+        <p className="nota aj-pie">También en <a href={`mailto:${contacto}`}>{contacto}</a>.</p>
       </form>
 
       <section className="grupo">
