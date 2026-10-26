@@ -169,8 +169,11 @@ export default async function Resumen({ searchParams }) {
             {anio < anioActual ? <Ir href={`/?anio=${anio + 1}`} tipo="cifras" aria-label="Año siguiente">›</Ir> : <span className="off">›</span>}
           </nav>}
         </div>
-        <h1 className="inicio-hola">Hola, {String(u.nombre || '').split(' ')[0] || 'equipo'}</h1>
-        <p className="inicio-sub">{sinDatos ? (siguientePaso?.id === 'factura' ? 'Empieza por tu primera factura: tarda un minuto.' : 'Vamos a dejarlo todo listo.') : esteAnio ? 'Así va tu año.' : `Así cerraste ${anio}.`}</p>
+        {/* La gestoría dentro de las cuentas de un cliente: no se saluda a sí misma ni le habla de «tu año» (son las del cliente) */}
+        {u.viaDespacho
+          ? <><h1 className="inicio-hola">{u.empresaNombre}</h1><p className="inicio-sub">{sinDatos ? 'Todavía no ha apuntado nada.' : esteAnio ? 'Así va su año.' : `Así cerró ${anio}.`}</p></>
+          : <><h1 className="inicio-hola">Hola, {String(u.nombre || '').split(' ')[0] || 'equipo'}</h1>
+            <p className="inicio-sub">{sinDatos ? (siguientePaso?.id === 'factura' ? 'Empieza por tu primera factura: tarda un minuto.' : 'Vamos a dejarlo todo listo.') : esteAnio ? 'Así va tu año.' : `Así cerraste ${anio}.`}</p></>}
         {!u.despacho && u.misEmpresas?.length > 1 && <CambiarEmpresa empresas={u.misEmpresas} actual={u.empresa} variante="chip" />}
       </header>
 
@@ -207,7 +210,7 @@ export default async function Resumen({ searchParams }) {
         </section>
       )}
 
-      <Ir href="/asistente" className="asi-entrada"><svg viewBox="0 0 24 24" aria-hidden><path d="M4 5h16v11H9l-5 4zM8 10h8M8 13h5" /></svg>{sinDatos ? 'Pregúntame cómo hacer tu primera factura' : 'Pregunta por tus cuentas'}</Ir>
+      <Ir href="/asistente" className="asi-entrada"><svg viewBox="0 0 24 24" aria-hidden><path d="M4 5h16v11H9l-5 4zM8 10h8M8 13h5" /></svg>{u.viaDespacho ? 'Pregunta por sus cuentas' : sinDatos ? 'Pregúntame cómo hacer tu primera factura' : 'Pregunta por tus cuentas'}</Ir>
 
       <nav className="accesos" aria-label="Accesos">
         {accesos.map((a) => (

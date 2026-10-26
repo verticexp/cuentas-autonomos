@@ -93,9 +93,9 @@ export default function AjustesDespacho({ despacho, titular, licencias, tarifa, 
         <div className="celda"><span className="txt">Nombre</span><span className="v">{despacho.nombre}</span></div>
         <div className="celda"><span className="txt">NIF</span><span className="v">{despacho.nif || '—'}</span></div>
         <div className="celda"><span className="txt">Email</span><span className="v">{despacho.email || '—'}</span></div>
-        {titular && <label className="celda desp-interruptor"><span className="txt">Cada gestor ve solo sus clientes<small>Los que le asignes en la ficha de cada cliente. El titular los ve todos.</small></span>
+        {titular && <label className="celda desp-interruptor sino"><span className="txt">Cada gestor ve solo sus clientes<small>Los que le asignes en la ficha de cada cliente. El titular los ve todos.</small></span>
           <input type="checkbox" role="switch" checked={d.soloAsignados} onChange={(e) => { setD({ ...d, soloAsignados: e.target.checked }); guardar({ soloAsignados: e.target.checked }, false); }} /></label>}
-        {titular && <label className="celda desp-interruptor"><span className="txt">También llevo las cuentas del despacho en Fisquo<small>Facturas a tus clientes, gastos e impuestos del propio despacho, en «Mi empresa». Si no, entras siempre directo a Mi despacho.</small></span>
+        {titular && <label className="celda desp-interruptor sino"><span className="txt">También llevo las cuentas del despacho en Fisquo<small>Facturas a tus clientes, gastos e impuestos del propio despacho, en «Mi empresa». Si no, entras siempre directo a Mi despacho.</small></span>
           <input type="checkbox" role="switch" checked={d.empresaPropia} onChange={(e) => { setD({ ...d, empresaPropia: e.target.checked }); guardar({ empresaPropia: e.target.checked }, false); }} /></label>}
         {titular && <button type="button" className="celda ir desp-celda-boton" onClick={() => { setEditar(true); setMsg(''); }}><span className="txt">Cambiar los datos</span></button>}
       </div> : <form className="formulario tarjeta" onSubmit={envolver(async (e) => { e.preventDefault(); await guardar({ nombre: d.nombre, nif: d.nif, email: d.email }); })}>

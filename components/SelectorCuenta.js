@@ -151,9 +151,12 @@ export default function BarraDespacho({ noLeidos = 0, ...selector }) {
   if ((movil ? SIN_BARRA : CONVERSACION).test(path) || /^\/(login|registro|bloqueo|invitacion|p\/|portal\/|pagar\/|privacidad|condiciones)(\/|$)/.test(path) || path.endsWith('/pdf')) return null;
   // El layout no se repinta al ir de la empresa al panel sin recargar: dónde se está lo dice la dirección.
   const enPanel = /^\/despacho(\/|$)/.test(path);
+  // «‹ Mi empresa» solo en las pestañas del panel: en una ficha o una subpantalla ya hay un «‹ atrás» de la página justo debajo
+  // (salían dos seguidos), y Mi empresa sigue en el selector.
+  const pestanaPanel = /^\/despacho(\/(hoy|mensajes|plazos|ajustes))?\/?$/.test(path);
   const badge = noLeidos > 0 && <b className="sel-n"><span aria-hidden>{noLeidos > 99 ? '99+' : noLeidos}</span><span className="sr">{noLeidos === 1 ? '1 mensaje nuevo' : `${noLeidos} mensajes nuevos`}</span></b>;
   const volver = enPanel
-    ? selector.empresas?.length > 0 && <form method="post" action="/api/despacho/salir?a=empresa"><button type="submit" className="barra-despacho-volver">‹ Mi empresa</button></form>
+    ? pestanaPanel && selector.empresas?.length > 0 && <form method="post" action="/api/despacho/salir?a=empresa"><button type="submit" className="barra-despacho-volver">‹ Mi empresa</button></form>
     : selector.actual === 'cliente'
       ? <form method="post" action="/api/despacho/salir"><button type="submit" className="barra-despacho-volver">‹ Mi despacho{badge}</button></form>
       : <Link href="/despacho" className="barra-despacho-volver" onClick={alPulsar(router, '/despacho', 'tab-izq')}>‹ Mi despacho{badge}</Link>;

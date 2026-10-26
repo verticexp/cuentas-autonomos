@@ -199,11 +199,11 @@ export default function ClienteDespacho({ cliente, anio, t, hoy, rol, estado, li
       <h2 className="grupo-t" id="desp-docs">Facturas y gastos del {t}T</h2>
       {docs.facturas.length + docs.gastos.length === 0 ? <Vacio compacto icono="factura" titulo={`Sin facturas ni gastos en el ${t}T`}>Cuando el cliente apunte facturas o gastos de este trimestre, los verás aquí para revisarlos.</Vacio> : <ul className="grupo-lista desp-docs">
         {[...docs.facturas.map((f) => ({ ...f, tipo: 'factura', titulo: `Factura ${f.texto}` })), ...docs.gastos.map((g) => ({ ...g, tipo: 'gasto', titulo: g.texto }))].map((x) => <li key={`${x.tipo}-${x.id}`} className="fila">
+          {/* Al tocarla se abre con «Preguntar por esta factura»: un botón «Preguntar» en cada fila no dejaba leer el número */}
           <button type="button" className="desp-doc-ver" onClick={() => setVer({ tipo: x.tipo, id: x.id })} aria-label={`Ver ${x.titulo}`}>
             <span className="txt"><strong>{x.titulo}</strong><small>{fechaDe(x.fecha)}{x.tipo === 'gasto' ? ' · gasto' : ''}{x.sinJustificante ? ' · sin justificante' : ''}</small></span>
             <span className="imp">{eur(x.base)}</span>
           </button>
-          <Ir prefetch={false} className="boton sec desp-mini" href={chat(`${x.tipo}:${x.id}`)}>Preguntar</Ir>
         </li>)}
       </ul>}
       {docs.mas > 0 && <p className="grupo-pie">Y {docs.mas} más: entra en sus Facturas o Gastos para verlos todos.</p>}

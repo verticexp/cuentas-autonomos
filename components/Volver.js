@@ -32,6 +32,10 @@ export default function Volver({ href, children = 'Atrás' }) {
     if (desde) setEtiqueta('Ficha del cliente');
     else if (antes) setEtiqueta(NOMBRES[antes.split(/[?#]/)[0]] || 'Atrás');
     else setEtiqueta(children);
+    // Con «‹ Ficha del cliente» aquí, la barra de arriba no repite «‹ Mi despacho» (app/despacho.css): dos atrás seguidos.
+    const raiz = document.documentElement;
+    if (desde) raiz.dataset.entradaCliente = '1';
+    return () => { delete raiz.dataset.entradaCliente; };
   }, [children]);
   const alPulsar = (e) => {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.button > 0) return;

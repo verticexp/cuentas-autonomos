@@ -3,13 +3,23 @@ import { conversaciones } from '@/lib/mensajesDespacho';
 import { diaDe, fechaCorta, hoy, hora } from '@/lib/formato';
 import Ir from '@/components/Ir';
 import Vacio from '@/components/Vacio';
+import Avatar from '@/components/Avatar';
 import '@/app/mk.css';
 import '@/app/despacho.css';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Mensajes · Mi despacho' };
 
-const cuando = (iso, dia) => (diaDe(iso) === dia ? hora(iso) : fechaCorta(diaDe(iso)));
+// Como en el chat («Hoy», «Ayer», el día de la semana) y no la fecha entera para lo de esta semana.
+const DIAS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+function cuando(iso, dia) {
+  const d = diaDe(iso);
+  const hace = Math.round((Date.parse(`${dia}T12:00:00Z`) - Date.parse(`${d}T12:00:00Z`)) / 864e5);
+  if (hace <= 0) return hora(iso);
+  if (hace === 1) return 'Ayer';
+  if (hace < 7) return DIAS[new Date(`${d}T12:00:00Z`).getUTCDay()];
+  return fechaCorta(d);
+}
 
 // Mensajes: una conversación por cliente, como una app de mensajería. Arriba, las que tienen algo sin leer.
 export default async function Mensajes() {
@@ -19,7 +29,7 @@ export default async function Mensajes() {
   const conMensajes = lista.filter((c) => c.ultimo), sin = lista.filter((c) => !c.ultimo);
   const fila = (c) => <li key={c.id}>
     <Ir prefetch={false} className={`fila desp-conversacion${c.noLeidos ? ' nueva' : ''}`} href={`/despacho/mensajes/${encodeURIComponent(c.id)}`}>
-      <span className="desp-avatar" aria-hidden>{c.nombre.trim()[0]?.toUpperCase() || '·'}</span>
+      <Avatar nombre={c.nombre} size={40} />
       <span className="txt">
         <strong>{c.nombre}</strong>
         <small>{c.ultimo ? `${c.ultimo.lado === 'despacho' ? 'Tú: ' : ''}${c.ultimo.doc && c.ultimo.primero ? `(${c.ultimo.doc.texto}) ` : ''}${c.ultimo.texto}` : 'Aún no habéis hablado'}</small>

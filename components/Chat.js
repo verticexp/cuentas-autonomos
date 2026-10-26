@@ -177,7 +177,8 @@ export default function Chat({ mensajes, lado, leidoAntes = '', enviar, leer, co
           <svg viewBox="0 0 24 24" aria-hidden><path d="M6 3h12v18l-6-4-6 4z" /></svg>
         </button>}
         {docs && !respondiendo && !doc && opciones.length > 0 && <label className="chat-adjuntar" title="Preguntar por una factura o un gasto">
-          <svg viewBox="0 0 24 24" aria-hidden><path d="M20 11.5l-7.8 7.8a5 5 0 01-7.1-7.1l8.5-8.5a3.3 3.3 0 014.7 4.7l-8.5 8.5a1.7 1.7 0 01-2.4-2.4l7.8-7.8" /></svg>
+          {/* Un documento con «?», no un clip: no adjunta un archivo, pregunta por una factura o un gasto que ya está en Fisquo */}
+          <svg viewBox="0 0 24 24" aria-hidden><path d="M6 3h8l4 4v14H6z" /><path d="M14 3v4h4" /><path d="M9.8 11.2a2.2 2.2 0 1 1 3.1 2c-.6.3-.9.8-.9 1.4v.4M12 17.6v.1" /></svg>
           <span className="sr">Preguntar por una factura o un gasto</span>
           <select value="" onChange={(e) => setDoc(e.target.value)}>
             <option value="">Preguntar por una factura o un gasto…</option>

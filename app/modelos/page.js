@@ -328,7 +328,8 @@ export default async function Modelos({ searchParams }) {
           {anio < actual ? <Ir href={`/modelos?anio=${anio + 1}`} tipo="cifras" aria-label="Año siguiente">›</Ir> : <span className="off">›</span>}
         </nav>
       </header>
-      <p className="grupo-pie arriba">Calculados con lo que hay en Fisquo. Son orientativos: revísalos con tu gestor antes de presentarlos.</p>
+      {/* A la gestoría, dentro de un cliente, no se le pide que lo revise «con tu gestor» */}
+      <p className="grupo-pie arriba">{u.viaDespacho ? 'Calculados con lo que ha apuntado en Fisquo hasta hoy.' : 'Calculados con lo que hay en Fisquo. Son orientativos: revísalos con tu gestor antes de presentarlos.'}</p>
       <AvisoHaciendaForal fiscal={f} />
 
       {ahora}
