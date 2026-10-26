@@ -8,11 +8,11 @@ import { desvioApp } from '../lib/app.js';
 import { PLANES } from '../components/web/datos.js';
 import * as social from '../data/web-social.js';
 import { EMPRESA_LEGAL } from '../data/empresa-legal.js';
-import { GUIAS, REVISION_GUIAS, guia } from '../data/web-guias.js';
+import { GUIAS, PUBLICOS, REVISION_GUIAS, guia } from '../data/web-guias.js';
 import { FECHA_VERIFICACION, RIVALES } from '../data/web-comparativas.js';
 import { casosValidos, gestoriasValidas, notaValida, opinionesValidas, pruebaSocial } from '../lib/webSocial.js';
 import { datosDeclaracion, identidadLegal } from '../lib/webLegal.js';
-import { plazoTrimestre, plazosAnuales, siguienteHabil } from '../lib/webCalendario.js';
+import { calendarioSociedad, plazoTrimestre, plazosAnuales, siguienteHabil } from '../lib/webCalendario.js';
 import { preciosFisquo, rellenar } from '../lib/webComparativa.js';
 import { jsonLd, metaPagina } from '../lib/webMeta.js';
 
@@ -93,10 +93,15 @@ test('comparativas: precios de los rivales comprobados el 23-10-2026 y los de Fi
   assert.equal(rellenar('{aut}-{pym}-{min}-{max}'), '9-25-9-55');
 });
 
-test('guías: cuatro, con norma, fecha de revisión, llamada final y todos los bloques conocidos', () => {
-  assert.deepEqual(GUIAS.map((g) => g.slug), ['modelo-303', 'modelo-130', 'calendario-fiscal-autonomo-2026-2027', 'factura-simplificada']);
+test('guías: para autónomos y para pymes, con norma, fecha de revisión, llamada final y todos los bloques conocidos', () => {
+  assert.deepEqual(GUIAS.map((g) => g.slug), ['modelo-303', 'modelo-130', 'calendario-fiscal-autonomo-2026-2027', 'factura-simplificada',
+    'calendario-fiscal-sociedad-2026-2027', 'impuesto-sociedades-200-202', 'retenciones-111-115-190-180', 'cuentas-anuales-sociedad']);
   assert.match(REVISION_GUIAS, /^2026-10-\d\d$/);
-  const CONOCIDOS = ['p', 'ul', 'ol', 'pasos', 'nota', 'tabla', 'ejemplo', 'plazos', 'anuales'];
+  // Cada guía en un grupo del índice, y ningún grupo vacío: tantas de pymes como de autónomos, como mínimo.
+  const de = (p) => GUIAS.filter((g) => g.para === p).length;
+  assert.ok(GUIAS.every((g) => PUBLICOS.some(([id]) => id === g.para)));
+  assert.ok(de('pymes') >= de('autonomos') && de('todos') > 0);
+  const CONOCIDOS = ['p', 'ul', 'ol', 'pasos', 'nota', 'tabla', 'ejemplo', 'plazos', 'anuales', 'calendarioSociedad'];
   for (const g of GUIAS) {
     assert.ok(g.normas.length >= 2 && g.faqs.length >= 2 && g.cta.titulo && g.cta.sub, g.slug);
     assert.ok(g.descripcion.length <= 160, `${g.slug}: descripción larga (${g.descripcion.length})`);
@@ -112,6 +117,20 @@ test('guías: cuatro, con norma, fecha de revisión, llamada final y todos los b
   assert.match(todo, /5 de octubre de 2026/);
   assert.match(todo, /no estaba publicado en el BOE/);
   assert.match(todo, /Real Decreto 1619\/2012/);
+});
+
+test('calendario de la sociedad: las fechas de la app, con el 111 del 4T el 20 de enero, el 202, el 200 y el Registro', async () => {
+  const f = Object.fromEntries((await calendarioSociedad(2027)).map((p) => [p.fecha, p]));
+  assert.match(f['2027-01-20'].texto, /^111 y 115 del 4T$/);
+  assert.match(f['2027-02-01'].texto, /303 y 349 del 4T y 390; 190 y 180/); // el 30 y el 31 de enero de 2027 son fin de semana
+  assert.match(f['2027-04-20'].texto, /202$/);
+  assert.match(f['2027-12-20'].texto, /^202$/);
+  assert.match(f['2027-07-26'].texto, /^200/); // el 25 de julio de 2027 es domingo
+  assert.ok(f['2027-07-26'].domicilia < '2027-07-26');
+  assert.equal(f['2027-03-31'].texto, 'formular las cuentas anuales del año anterior (los administradores)');
+  assert.equal(f['2027-06-30'].texto, 'aprobar las cuentas anuales en junta de socios');
+  assert.equal(f['2027-07-30'].domicilia, null);
+  assert.ok(!Object.values(f).some((p) => /130|la renta/.test(p.texto)), 'una sociedad no presenta el 130 ni la renta');
 });
 
 test('calendario: último día hábil, domiciliación y resúmenes anuales de 2026 y 2027', () => {

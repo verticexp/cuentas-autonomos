@@ -2,7 +2,7 @@ import Link from '@/components/web/EnlacePublico';
 import Icono from '@/components/web/Icono';
 import { Cta, Encabezado, Faq, Flecha } from '@/components/web/Bloques';
 import { REVISION_GUIAS, guia } from '@/data/web-guias';
-import { fechaLarga, plazoTrimestre, plazosAnuales } from '@/lib/webCalendario';
+import { calendarioSociedad, diaMes, fechaLarga, plazoTrimestre, plazosAnuales } from '@/lib/webCalendario';
 import { jsonLd } from '@/lib/webMeta';
 import { WEB } from '@/lib/web';
 
@@ -43,6 +43,13 @@ function Anuales({ anio }) {
   return <TablaSimple etiqueta="Resúmenes anuales" cab={['Modelo', 'Qué recoge', 'Último día para presentar']} filas={filas} />;
 }
 
+// Calendario de una sociedad, mes a mes (lib/webCalendario.js calendarioSociedad: las fechas de la app).
+const primeraMayuscula = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+async function CalendarioSociedad({ anio }) {
+  const filas = (await calendarioSociedad(anio)).map((p) => [fechaLarga(p.fecha), primeraMayuscula(p.texto), p.domicilia ? diaMes(p.domicilia) : '—']);
+  return <TablaSimple etiqueta={`Calendario de una sociedad en ${anio}`} cab={['Último día', 'Qué se presenta o se hace', 'Domiciliado, hasta']} filas={filas} />;
+}
+
 function Bloque({ b, tabla }) {
   if (b.p) return <p><Rico t={b.p} /></p>;
   if (b.ul) return <ul className="web-art-lista">{b.ul.map((x) => <li key={x}><Icono n="tic" /><span><Rico t={x} /></span></li>)}</ul>;
@@ -52,6 +59,7 @@ function Bloque({ b, tabla }) {
   if (b.tabla) return <TablaSimple etiqueta={tabla} cab={b.tabla.cab} filas={b.tabla.filas} />;
   if (b.plazos) return <Plazos anios={b.plazos} />;
   if (b.anuales) return <Anuales anio={b.anuales} />;
+  if (b.calendarioSociedad) return <CalendarioSociedad anio={b.calendarioSociedad} />;
   if (b.ejemplo) {
     const e = b.ejemplo;
     return (

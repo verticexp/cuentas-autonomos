@@ -916,7 +916,10 @@ html[data-web-nav] .web-flota { animation: web-flotar 6s ease-in-out infinite; }
 
 /* ───── Guías, comparativas y aviso legal ───── */
 .web-guias { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-.web-guias .web-fcard { min-height: 270px; } .web-guias .web-fcard h2 { font-size: 1.5rem; }
+.web-guias .web-fcard { min-height: 270px; } .web-guias .web-fcard h3 { font-size: 1.5rem; }
+/* Índice de /guias agrupado por público: un título por grupo, el siguiente grupo más pegado al anterior. */
+.web-guias-t { font-family: var(--f-marca); font-size: clamp(1.5rem, 1.2rem + 1vw, 2rem); letter-spacing: -0.02em; margin: 0 0 20px; }
+.web-sec:has(> .web-guias-t) + .web-sec:has(> .web-guias-t) { padding-top: 0; }
 .web-guia-meta { color: var(--g); font-size: 13.5px; }
 @media (max-width: 900px) { .web-guias { grid-template-columns: 1fr; } .web-guias .web-fcard { min-height: 0; } }
 .web-art-meta { color: rgba(250, 250, 248, 0.66); font-size: 14.5px; margin: -8px 0 0; }
