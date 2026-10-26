@@ -1,7 +1,7 @@
 import { cuerpo, error } from '@/lib/api';
 import { hoy } from '@/lib/formato';
-import { clienteDelDespacho, periodoDe } from '@/lib/despachoApi';
-import { cambiarVinculo, registrarAcceso, rolEn, separarCliente } from '@/lib/despachos';
+import { clienteDelDespacho, miDespacho, periodoDe } from '@/lib/despachoApi';
+import { aceptarCliente, cambiarVinculo, registrarAcceso, rolEn, separarCliente } from '@/lib/despachos';
 import { cerrarTrimestre, reabrirTrimestre } from '@/lib/cierres';
 import { incluirLicencia, planSinLicencia, quitarLicencia, sincronizarLicencias } from '@/lib/licencias';
 import { auditar } from '@/lib/auditoria';
@@ -21,6 +21,8 @@ const SOLO_TITULAR = ['gestor', 'licencia', 'sinLicencia', 'separar'];
 export async function POST(req) {
   const b = await cuerpo(req);
   const accion = String(b.accion || '');
+  // aceptar / rechazar: una solicitud (se unió con el código y aún no la ve nadie del despacho). Solo el titular.
+  if (accion === 'aceptar' || accion === 'rechazar') return solicitud(b.empresa, accion);
   const r = await clienteDelDespacho(b.empresa, { titular: SOLO_TITULAR.includes(accion) });
   if (r.res) return r.res;
   const { e, d, ctx, quien } = r;
@@ -30,7 +32,7 @@ export async function POST(req) {
     const x = accion === 'cerrar' ? await cerrarTrimestre(ctx, anio, t, quien) : await reabrirTrimestre(ctx, anio, t);
     if (x.error) return error(x.error);
     const texto = accion === 'cerrar' ? `Revisó y cerró el ${t}T ${anio}` : `Reabrió el ${t}T ${anio}`;
-    await Promise.all([registrarAcceso(e.id, quien, texto), auditar(ctx, `${d.nombre}: ${texto.toLowerCase()}`)]);
+    await Promise.all([registrarAcceso(e.id, quien, texto), auditar(ctx, `${d.nombre}: ${texto.toLowerCase()}`, '', { enGestoria: false })]);
     return Response.json({ ok: true, cierre: x.cierre || null });
   }
   // informe: le manda al chat el informe del trimestre (PDF, api/despacho/informe y api/tu-despacho/informe).
@@ -72,4 +74,23 @@ export async function POST(req) {
     return Response.json({ ok: true });
   }
   return error('Acción no válida');
+}
+
+async function solicitud(empresaId, accion) {
+  const r = await miDespacho({ titular: true });
+  if (r.res) return r.res;
+  const { d, quien } = r;
+  const e = empresaId && (await redis.hget('empresas', String(empresaId)));
+  if (!e || e.despachoCliente?.id !== d.id || !e.despachoCliente.pendiente) return error('Esa solicitud ya no existe', 404);
+  if (accion === 'rechazar') {
+    const x = await separarCliente(e.id, d.id);
+    if (x.error) return error(x.error, x.status || 400);
+    await registrarAcceso(e.id, quien, 'No aceptó llevar tus cuentas');
+    return Response.json({ ok: true });
+  }
+  const x = await aceptarCliente(e.id, d.id);
+  if (x.error) return error(x.error, x.status || 400);
+  await registrarAcceso(e.id, quien, 'Aceptó llevar tus cuentas');
+  avisarCliente(e, { titulo: `${d.nombre} ya lleva tus cuentas`, cuerpo: 'Ha aceptado tu solicitud: desde ahora ve tus cuentas y puedes escribirle.' });
+  return Response.json({ ok: true });
 }

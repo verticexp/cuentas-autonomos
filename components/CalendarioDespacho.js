@@ -42,7 +42,7 @@ export default function CalendarioDespacho({ token, url: inicial }) {
         </div>
       </div>
     </div>
-    <p className="grupo-pie">{url ? 'Se actualiza solo. Quien tenga el enlace ve tus plazos: no lo compartas.' : 'Los plazos de tus clientes en Google Calendar, Apple o Outlook, con un aviso 3 días antes. Se actualizan solos.'}</p>
+    <p className="grupo-pie">{url ? 'Se actualiza solo. Es secreto: quien tenga el enlace ve los nombres de tus clientes y sus plazos, sin contraseña. No lo compartas; si se te escapa, pulsa «Dejar de compartir» y crea uno nuevo.' : 'Los plazos de tus clientes en Google Calendar, Apple o Outlook, con un aviso 3 días antes. Se actualizan solos.'}</p>
     <p className="grupo-pie" role="status" aria-live="polite">{mensaje}</p>
   </section>;
 }

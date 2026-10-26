@@ -349,3 +349,6 @@ html[data-entrada-cliente] .barra-despacho-volver { visibility: hidden; }
   body:has(.barra-despacho) .pagina { padding-top: 12px; }
   body:has(.barra-despacho) .ajustes-lista { padding-top: 12px; }
 }
+
+/* Solicitudes de clientes nuevos (components/SolicitudesDespacho.js) */
+.despacho .grupo-lista .fila .desp-mini + .desp-mini { margin-left: 8px !important; }

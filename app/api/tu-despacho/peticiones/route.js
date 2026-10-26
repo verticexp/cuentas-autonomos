@@ -16,7 +16,7 @@ async function cliente(opciones) {
   const r = await usuarioApi(opciones);
   if (r.res) return r;
   if (r.u.viaDespacho) return { res: error('Esto es para el cliente, no para su gestoría', 403) };
-  if (!r.u.despachoCliente) return { res: error('No tienes ninguna gestoría con acceso', 404) };
+  if (!r.u.despachoCliente || r.u.despachoCliente.pendiente) return { res: error('No tienes ninguna gestoría con acceso', 404) };
   return r;
 }
 

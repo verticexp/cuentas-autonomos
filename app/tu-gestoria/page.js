@@ -16,7 +16,7 @@ export const metadata = { title: 'Tu gestoría · Mensajes' };
 // pantalla completa. Arriba, lo que la gestoría le ha pedido, con su botón para subirlo.
 export default async function TuGestoria() {
   const u = await requerir('resumen');
-  if (!u.despachoCliente || u.viaDespacho) redirect('/ajustes/gestoria');
+  if (!u.despachoCliente || u.despachoCliente.pendiente || u.viaDespacho) redirect('/ajustes/gestoria');
   const despacho = u.despachoCliente;
   const [hilos, leido, peticiones] = await Promise.all([comentariosDe(u.empresa, { despacho: despacho.id }), leidoDe(u.empresa), peticionesDe(u.empresa, { despacho: despacho.id, ctx: u })]);
   return <main className="pagina mk-look despacho desp-chat-pagina">

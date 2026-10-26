@@ -28,19 +28,28 @@ export default function TuDespacho({ despacho, accesos = [], ultimo = null, noLe
     try { await llamar('/api/tu-despacho', { method: 'POST', body: JSON.stringify({ codigo: codigo.trim() }) }); router.replace('/ajustes/gestoria'); router.refresh(); } catch (err) { setMsg(err.message); }
   };
   const quitar = async () => {
-    if (!(await confirmar({ titulo: `¿Quitar el acceso a ${despacho.nombre}?`, texto: `Dejará de ver tus cuentas al momento.${despacho.licencia ? ' Como tu gestoría pagaba tu plan, tendrás un mes de prueba para elegir el tuyo.' : ''}`, aceptar: 'Quitar el acceso', peligro: true }))) return;
+    if (!despacho.pendiente && !(await confirmar({ titulo: `¿Quitar el acceso a ${despacho.nombre}?`, texto: `Dejará de ver tus cuentas al momento.${despacho.licencia ? ' Como tu gestoría pagaba tu plan, tendrás un mes de prueba para elegir el tuyo.' : ''}`, aceptar: 'Quitar el acceso', peligro: true }))) return;
     try { await llamar('/api/tu-despacho', { method: 'DELETE' }); router.refresh(); } catch (err) { setMsg(err.message); }
   };
 
   if (!despacho) return <section className="grupo" aria-labelledby="td-t">
     <h2 className="grupo-t" id="td-t">Tu gestoría en Fisquo</h2>
     <div className="grupo-c relleno">
-      <p>Si tu gestoría trabaja con Fisquo, dale acceso con su código: verá tus cuentas, revisará cada trimestre y podrá preguntarte aquí. Tú ves todo lo que hace y se lo puedes quitar cuando quieras.</p>
+      <p>Si tu gestoría trabaja con Fisquo, pídele que te lleve con su código: cuando lo acepte, verá tus cuentas, revisará cada trimestre y podrá preguntarte aquí. Tú ves todo lo que hace y se lo puedes quitar cuando quieras.</p>
       <form className="desp-codigo" onSubmit={buscar}>
         <input className="campo" autoCapitalize="characters" autoComplete="off" spellCheck={false} maxLength={20} placeholder="Código de tu gestoría" aria-label="Código de tu gestoría" value={codigo} onChange={(e) => { setCodigo(e.target.value); setNombre(''); }} />
         <button className="boton sec" disabled={!codigo.trim()}>Buscar</button>
       </form>
-      {nombre && <div className="desp-codigo-ok"><span>Es <b>{nombre}</b>.</span><button type="button" className="boton" onClick={dar}>Dar acceso a {nombre}</button></div>}
+      {nombre && <div className="desp-codigo-ok"><span>Es <b>{nombre}</b>.</span><button type="button" className="boton" onClick={dar}>Pedir a {nombre} que me lleve</button></div>}
+      {msg && <p className="error" role="alert">{msg}</p>}
+    </div>
+  </section>;
+
+  if (despacho.pendiente) return <section className="grupo" aria-labelledby="td-t">
+    <h2 className="grupo-t" id="td-t">Tu gestoría en Fisquo</h2>
+    <div className="grupo-c relleno">
+      <p>Has pedido a <b>{despacho.nombre}</b> que lleve tus cuentas. Falta que lo acepte: hasta entonces no ve nada.</p>
+      <button type="button" className="boton sec desp-mini" onClick={quitar}>Cancelar la solicitud</button>
       {msg && <p className="error" role="alert">{msg}</p>}
     </div>
   </section>;

@@ -26,6 +26,6 @@ export async function GET(req) {
   const r = await concurrencia('exportar', e.id, 1, 120000, () => diarioConCierreDe(ctx, { anio, formato, codigo: q.get('codigo') || 1, fecha }));
   if (r?.ocupado) return respuesta429(5, 'Ya hay una exportación en curso para este cliente. Espera a que termine.');
   if (r.error) return error(r.error);
-  await Promise.all([registrarAcceso(e.id, quien, 'Exportó la contabilidad', `${r.nombre} · ${anio}`), auditar(ctx, 'Exportación contable (despacho)', `${r.nombre} · ${anio} · ${formato}`)]);
+  await Promise.all([registrarAcceso(e.id, quien, 'Exportó la contabilidad', `${r.nombre} · ${anio}`), auditar(ctx, 'Exportación contable (despacho)', `${r.nombre} · ${anio} · ${formato}`, { enGestoria: false })]);
   return new Response(r.contenido, { headers: { 'Content-Type': tipoDiario(formato), 'Content-Disposition': `attachment; filename="${r.nombre}"`, 'Cache-Control': 'no-store' } });
 }

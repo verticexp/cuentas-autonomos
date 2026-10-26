@@ -112,8 +112,9 @@ export default async function RootLayout({ children }) {
         <SinRed />
         <ToqueSeguro />
         <script nonce={nonce} suppressHydrationWarning dangerouslySetInnerHTML={{ __html: 'window.__arranque=performance.now()' }} />
-        {u && soloLectura(u.plan) && !ruta.startsWith('/ajustes/plan') && (
-          <p className="aviso-lectura" role="status"><span>{app ? SOLO_LECTURA_APP : puede(u, 'empresa') ? 'Tu prueba ha terminado: puedes ver y exportar todo, pero no crear ni editar.' : 'La prueba de tu empresa ha terminado: puedes ver y exportar todo. Para crear o editar, pídele al administrador que elija un plan.'}</span>{!app && puede(u, 'empresa') && <a href="/ajustes/plan">Elegir plan</a>}</p>
+        {/* En Mi despacho no: el panel trabaja con su propio plan, no con el del cliente que tenga abierto (lib/planes.js LIBRES). */}
+        {u && soloLectura(u.plan) && !ruta.startsWith('/ajustes/plan') && !/^\/despacho([/?]|$)/.test(ruta) && (
+          <p className="aviso-lectura" role="status"><span>{u.viaDespacho ? 'La prueba de este cliente ha terminado: puedes ver y exportar todo, pero no crear ni editar hasta que elija un plan o le des una licencia.' : app ? SOLO_LECTURA_APP : puede(u, 'empresa') ? 'Tu prueba ha terminado: puedes ver y exportar todo, pero no crear ni editar.' : 'La prueba de tu empresa ha terminado: puedes ver y exportar todo. Para crear o editar, pídele al administrador que elija un plan.'}</span>{!app && puede(u, 'empresa') && <a href="/ajustes/plan">Elegir plan</a>}</p>
         )}
         {/* La gente de un despacho, fuera del panel: «‹ Mi despacho» y el selector de cuenta (se esconde sola en el panel). */}
         {rolDespacho && <BarraDespacho actual={u.viaDespacho ? 'cliente' : 'empresa'} despacho={despacho.nombre} noLeidos={mensajesNuevos} usuario={u.id}

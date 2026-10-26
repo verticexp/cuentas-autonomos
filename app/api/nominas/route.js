@@ -10,6 +10,7 @@ import { calcularFiniquito } from '@/lib/finiquito';
 import { extrasNomina, resumenMes } from '@/lib/jornada';
 import { secundarios } from '@/lib/trabajos';
 import { hoy } from '@/lib/formato';
+import { auditar } from '@/lib/auditoria';
 import { usarFuncion } from '@/lib/usoPlan';
 import { conCerrojo, Ocupado } from '@/lib/cerrojo';
 
@@ -59,6 +60,7 @@ export async function POST(req) {
         n.id = crypto.randomUUID();
         await guardarConGasto(u, n);
         await guardar(u, 'empleados', { ...e, baja: datos.baja });
+        await auditar(u, 'Finiquito', `${e.nombre} · baja ${datos.baja}`);
         return Response.json({ ok: true, id: n.id });
       }
       const activos = (empleados || []).filter((e) => e.alta.slice(0, 7) <= mes && (!e.baja || e.baja.slice(0, 7) >= mes));
@@ -84,6 +86,7 @@ export async function POST(req) {
       const cerrado = await comprobarCierre(u, ...nuevas.map((n) => gastoDeNomina(n, '').fecha));
       if (cerrado) return error(cerrado, 409);
       for (const n of nuevas) await guardarConGasto(u, n);
+      if (nuevas.length) await auditar(u, 'Nóminas generadas', `${mes} · ${nuevas.map((n) => n.empleadoNombre).join(', ')}`);
       return Response.json({ ok: true, creadas: nuevas.length });
     }, { caduca: 60000 });
   } catch (e) {
@@ -139,6 +142,8 @@ async function corregir(req, u) {
     }
   }
   try { await guardarConGasto(u, n, { fiscal }); } catch (e) { if (e instanceof TrimestreCerrado) return error(e.message, 409); throw e; }
+  const que = fiscal ? 'Nómina corregida' : n.pagada ? 'Nómina marcada como pagada' : 'Nómina marcada como no pagada';
+  await auditar(u, que, `${antes.empleadoNombre || ''} · ${antes.mes || ''}`);
   return Response.json({ ok: true });
 }
 
@@ -155,6 +160,7 @@ async function eliminar(req, u) {
   await soltarEnlaces(u, tx, 'gasto', `nomina-${id}`);
   await tx.exec();
   await secundarios(u, { meses: [gastoDeNomina(antes, '').fecha] });
+  await auditar(u, antes.tipo === 'finiquito' ? 'Finiquito borrado' : 'Nómina borrada', `${antes.empleadoNombre || ''} · ${antes.mes || ''}`);
   return Response.json({ ok: true });
 }
 

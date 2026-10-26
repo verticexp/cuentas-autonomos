@@ -6,7 +6,7 @@ import '@/app/despacho.css';
 // En el Resumen del cliente: si su gestoría (lib/despachos.js) le ha escrito y no lo ha leído, o le ha pedido algún
 // documento, un aviso que lleva a la conversación (app/tu-gestoria).
 export default async function AvisoMensajes({ u }) {
-  if (!u?.despachoCliente || u.viaDespacho) return null;
+  if (!u?.despachoCliente || u.despachoCliente.pendiente || u.viaDespacho) return null;
   const [hilos, leido, peticiones] = await Promise.all([comentariosDe(u.empresa, { despacho: u.despachoCliente.id }), leidoDe(u.empresa), peticionesDe(u.empresa, { despacho: u.despachoCliente.id, ctx: u })]);
   const n = noLeidos(hilos, leido, 'cliente');
   const p = pendientes(peticiones).length;
