@@ -1,6 +1,8 @@
 /* Formularios de Ajustes (components/Ajustes.js) como los de iOS: el título pequeño y gris encima, los campos en un grupo
    de filas, la ayuda debajo y «Guardar» a todo lo ancho. */
 .aj-form { display: flex; flex-direction: column; gap: 0; background: transparent; border: 0; box-shadow: none; padding: 0; }
+/* Si le sigue otra sección (Tu gestoría, Ayuda), el «Guardar» no se pega a su título. */
+.aj-form:not(:last-child) { margin-bottom: 28px; }
 .aj-form h3 { color: var(--muted); font-size: 13px; font-weight: 400; line-height: 18px; margin: 0 16px 7px; }
 .aj-form .aj-grupo { background: var(--surface); border-radius: 12px; overflow: hidden; margin-bottom: 8px; }
 .aj-form .aj-grupo > label { display: flex; flex-direction: column; gap: 3px; position: relative; padding: 10px 16px; color: var(--muted); font-size: 13px; }
