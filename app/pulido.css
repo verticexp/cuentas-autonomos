@@ -207,3 +207,12 @@ summary .nota { margin: 0; }
 input.campo:focus-visible, select.campo:focus-visible, textarea.campo:focus-visible { border-color: var(--ink); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ink) 10%, transparent); outline: none; }
 .campos .campo:focus-visible { box-shadow: none; border-color: var(--line); background: var(--relleno); }
 @media (prefers-reduced-motion: reduce) { details::details-content { transition: none; } }
+
+/* Zonas de toque de 44 px como mínimo (HIG de Apple) en pantallas táctiles. Los enlaces y botones de texto pequeños se ven
+   igual: un ::after transparente amplía la zona. Las casillas con texto y los selectores de estado crecen de verdad. */
+@media (pointer: coarse) {
+  :is(.resumen-fijo-t a, .resumen-linea a, a.grupo-pie, .jor-editar, .bco-regla-boton) { position: relative; }
+  :is(.resumen-fijo-t a, .resumen-linea a, a.grupo-pie, .jor-editar, .bco-regla-boton)::after { content: ''; position: absolute; inset: -12px -4px; }
+  :is(.formulario .check, .formulario label:not(.sino):has(> input[type="checkbox"]:first-child), .remesas .rem-check, .cat-servicio) { min-height: 44px; }
+  select.estado { min-height: 44px; }
+}

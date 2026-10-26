@@ -66,7 +66,7 @@ export default function Ajustes({ seccion, emisor, drive, driveError, sociedad, 
   return (
     <div className="tarjetas bloque">
       {seccion === 'facturacion' && <Formulario
-        titulo="Datos de la empresa"
+        titulo="Lo que sale en tus facturas"
         inicial={emisor}
         enviar={async (d) => { await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify(d) }); }}
       >
@@ -134,7 +134,7 @@ export default function Ajustes({ seccion, emisor, drive, driveError, sociedad, 
         )}
       </Formulario>}
       {seccion === 'drive' && <Formulario
-        titulo="Google Drive"
+        titulo="Conexión con tu Drive"
         inicial={{ url: drive?.url || '', token: drive?.token || '' }}
         enviar={async (d) => { await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify({ drive: d }) }); }}
       >

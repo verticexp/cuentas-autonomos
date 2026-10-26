@@ -88,7 +88,7 @@ export default function AjustesDespacho({ despacho, titular, licencias, tarifa, 
     </section>}
 
     <section className="grupo" aria-labelledby="ad-datos">
-      <h2 className="grupo-t" id="ad-datos">Tu despacho</h2>
+      <h2 className="grupo-t" id="ad-datos">Datos del despacho</h2>
       {!editar ? <div className="grupo-c">
         <div className="celda"><span className="txt">Nombre</span><span className="v">{despacho.nombre}</span></div>
         <div className="celda"><span className="txt">NIF</span><span className="v">{despacho.nif || '—'}</span></div>

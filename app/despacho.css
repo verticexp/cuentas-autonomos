@@ -284,7 +284,7 @@ button.celda.desp-celda-boton:disabled { opacity: 0.5; cursor: default; }
 
 /* Selector de cuenta de la gente de un despacho (components/SelectorCuenta.js): una pastilla y su menú, como en las apps de
    Apple. Arriba de cada pantalla fuera del panel va con «‹ Mi despacho» (.barra-despacho), en lugar de la franja oscura. */
-:root { --cliente-tono: #C25E00; }
+:root { --cliente-tono: #A34F00; }
 @media (prefers-color-scheme: dark) { :root:not([data-tema="claro"]) { --cliente-tono: #FFB15C; } }
 :root[data-tema="oscuro"] { --cliente-tono: #FFB15C; }
 .sel-cuenta { position: relative; min-width: 0; }

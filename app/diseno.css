@@ -292,6 +292,7 @@ fieldset.solo-ver:disabled .campo { opacity: 1; color: var(--ink); -webkit-text-
 .quitar { color: var(--out); font-size: 15px; padding: 6px; }
 .mini-t { font-size: 13px; color: var(--muted); margin-top: 4px; }
 .mini-t.fuera { margin: 2px 0 -4px 16px; }
+.mini-t small { font-size: inherit; }
 .sino input[type="checkbox"] { appearance: none; -webkit-appearance: none; width: 51px; height: 31px; border-radius: 16px; background: var(--relleno); position: relative; flex: none; transition: background-color 0.25s var(--salida); cursor: pointer; }
 .sino input[type="checkbox"]::after { content: ''; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 3px 8px rgba(0,0,0,.15), 0 3px 1px rgba(0,0,0,.06); transition: transform 0.3s var(--vt-curva); }
 .sino input[type="checkbox"]:checked { background: var(--in); }
