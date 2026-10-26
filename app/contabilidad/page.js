@@ -299,7 +299,7 @@ export default async function Contabilidad({ searchParams }) {
 
         {sinAsientos && <section className="bloque">{vacioContable('el balance y la cuenta de pérdidas y ganancias de las cuentas anuales')}</section>}
         {!sinAsientos && <section className="bloque">
-          <h2 className="grupo-t">Balance de pymes a 31-12-{anio}</h2>
+          <h2 className="grupo-t">Balance de pymes al 31/12/{anio}</h2>
           <div className="tarjeta cont-tabla">
             <div className="cont-fila cont-cab"><span className="cont-n">Activo</span><span className="cont-cifras"><span>{anio}</span><small>{anio - 1}</small></span></div>
             {filasBalance(ESTRUCTURA_BALANCE.activo).map((n) => <FilaOf key={n.id} codigo={n.codigo} t={n.t} a={ca.bal[0].v[n.id]} b={ca.bal[1].v[n.id]} nivel={n.nivel} fuerte={n.nivel === 0} />)}

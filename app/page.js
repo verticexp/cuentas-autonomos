@@ -65,6 +65,9 @@ export async function generateMetadata() {
 export default async function Resumen({ searchParams }) {
   // Sin sesión: la web pública. Con sesión: el panel.
   const sesion = await usuarioActual();
+  // En la app de iOS nunca la portada con precios (lib/app.js): con una cookie de sesión que ya no vale (contraseña cambiada
+  // en otro dispositivo, sesiones cerradas), proxy.js deja pasar «/» y aquí no hay usuario.
+  if (!sesion && esApp((await headers()).get('user-agent'))) redirect('/login');
   if (!sesion) return <Landing />;
   // Un despacho que no lleva sus propias cuentas en Fisquo (lib/despachos.js usaEmpresaPropia) no tiene empresa que ver:
   // su inicio es Mi despacho.
