@@ -3,9 +3,9 @@
    Todo pensado primero para el móvil (también para las apps de iOS y Android) y después para el ordenador. */
 
 /* ───── Letra de títulos y cifras (Geist, components/fuente.js) ───── */
-.titulo, .grupo-t, .inicio-hola, .grupo-mes h2, .subtitulo, .fh-cliente, .trim-cab h3, .vacio p:first-child { font-family: var(--f-titulos), var(--font); letter-spacing: -0.025em; }
+.titulo, .grupo-t, .inicio-hola, .grupo-mes h2, .subtitulo, .ficha-titulo, .nom-historial h2, .fh-cliente, .trim-cab h3, .vacio p:first-child { font-family: var(--f-titulos), var(--font); letter-spacing: -0.025em; }
 .titulo { font-weight: 700; letter-spacing: -0.035em; }
-.grupo-t, .grupo-mes h2 { font-weight: 600; }
+.grupo-t, .grupo-mes h2, .ficha-titulo, .nom-historial h2 { font-weight: 600; }
 .hcard-v, .saldo-v, .fh-total, .teso-cifra strong, .bco-total strong, .grande, .trim-cifras strong, .ff-total b { font-family: var(--f-titulos), var(--font); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
 .hcard-v, .saldo-v, .fh-total { font-weight: 600; }
 /* Nada por debajo de 13 px salvo las etiquetas cortas */
@@ -63,7 +63,7 @@
 .trims { display: grid; gap: 10px; }
 @media (min-width: 560px) { .trims { grid-template-columns: 1fr 1fr; } }
 .trim { background: var(--surface); border-radius: 16px; padding: 14px 16px 12px; min-width: 0; }
-.trim-cab { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.trim-cab { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 4px 10px; }
 .trim-cab h3 { font-size: 17px; font-weight: 700; margin: 0; }
 .trim .estado { max-width: 64%; min-width: 0; text-overflow: ellipsis; }
 .trim-cifras { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 22px; margin: 12px 0 2px; }
@@ -87,10 +87,14 @@
 @media (min-width: 1024px) {
   .pagina:has(> .inicio) { max-width: 1200px; }
   .hcards { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
-  .res-rejilla { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 28px; align-items: start; }
-  .res-col > .grupo:last-child { margin-bottom: 0; }
   .graf-pila { height: 210px; } .graf-capa { height: 210px; } .graf-eje { height: 210px; }
   .graf-barras { height: 234px; background: linear-gradient(var(--line), var(--line)) 0 0 / 100% 1px no-repeat, linear-gradient(var(--line), var(--line)) 0 105px / 100% 1px no-repeat, linear-gradient(var(--line), var(--line)) 0 210px / 100% 1px no-repeat; }
+}
+/* Las dos columnas, desde 1200 px: a 1024 la de la derecha se quedaba en 267 px («Tus modelos» palabra a palabra) y el
+   4T se salía de su tarjeta. */
+@media (min-width: 1200px) {
+  .res-rejilla { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 28px; align-items: start; }
+  .res-col > .grupo:last-child { margin-bottom: 0; }
 }
 
 /* ───── Tesorería: gráfica de la previsión (components/GraficaCaja.js) ───── */

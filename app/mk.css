@@ -33,11 +33,12 @@
 .mk-look .saldo-cambio.sube,
 .mk-look .hcard-cambio.sube {
   background: color-mix(in srgb, var(--in) 15%, var(--surface));
-  color: var(--in);
+  /* Con un 15 % de --ink, como .estado-txt (app/v2.css): el color puro sobre su fondo tintado no llegaba a 4,5:1. */
+  color: color-mix(in srgb, var(--in) 85%, var(--ink));
 }
 .mk-look .saldo-cambio.baja,
 .mk-look .hcard-cambio.baja {
   background: color-mix(in srgb, var(--out) 14%, var(--surface));
-  color: var(--out);
+  color: color-mix(in srgb, var(--out) 85%, var(--ink));
 }
 @media (min-width: 1024px) { .volver-movil { display: none; } }

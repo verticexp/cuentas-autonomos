@@ -144,7 +144,7 @@ export default async function Facturas({ searchParams }) {
       <div className="pestanas-panel">
         {grupos.length > 0 && (
           <div className={`tf-cab solo-pc${!a && Object.keys(ACTIVIDADES).length > 1 ? ' con-act' : ''}`} aria-hidden>
-            <span>Cliente</span><span>Número</span><span>Fecha</span>{!a && Object.keys(ACTIVIDADES).length > 1 && <span>Actividad</span>}<span className="tf-n">Base</span><span className="tf-n">Total</span><span>Estado</span>
+            <span>Cliente</span><span>Número</span><span>Fecha</span>{!a && Object.keys(ACTIVIDADES).length > 1 && <span className="tf-c-act">Actividad</span>}<span className="tf-n tf-c-base">Base</span><span className="tf-n">Total</span><span>Estado</span>
           </div>
         )}
         {grupos.map((g) => {
@@ -163,7 +163,7 @@ export default async function Facturas({ searchParams }) {
                             {/* En el móvil, el número, la fecha y la actividad van en una línea; en el ordenador, en columnas. */}
                             <span className="txt">
                               <strong data-vt="cliente">{f.cliente.nombre}</strong>
-                              <small className="tf-meta"><span className="tf-num">{f.caja ? 'Cierre de caja · ' : ''}{numeroFactura(f)}</span><span className="tf-fecha">{fechaCorta(f.fecha)}</span>{!a && Object.keys(ACTIVIDADES).length > 1 && <span className="tf-act">{ACTIVIDADES[f.actividad]}</span>}</small>
+                              <small className="tf-meta"><span className="tf-num">{f.caja && <span className="tf-caja">Cierre de caja · </span>}{numeroFactura(f)}</span><span className="tf-fecha">{fechaCorta(f.fecha)}</span>{!a && Object.keys(ACTIVIDADES).length > 1 && <span className="tf-act">{ACTIVIDADES[f.actividad]}</span>}</small>
                             </span>
                             <span className="tf-base solo-pc">{eur(importes(f).base)}</span>
                             <span className="imp-col">

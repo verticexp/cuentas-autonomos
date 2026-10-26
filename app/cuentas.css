@@ -21,7 +21,11 @@
 .grupo-lista { list-style: none; padding: 0; margin-top: 16px; background: var(--surface); border-radius: 20px; overflow: hidden; }
 .grupo-lista li + li { border-top: 1px solid var(--line); }
 .grupo-lista a.fila { text-decoration: none; }
-.num { flex: none; font-weight: 700; color: var(--muted); font-size: 14px; width: 64px; }
+/* Número de factura en la lista del mes, en su columna y sin partirse en dos líneas («Z2026-» y «013»). En el móvil va
+   en la línea de debajo, como en Facturas, para dejar sitio al nombre del cliente. */
+.num { flex: none; font-weight: 700; color: var(--muted); font-size: 14px; width: 92px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.num-movil { display: none; }
+@media (max-width: 559.98px) { .fila > .num { display: none; } .num-movil { display: inline; } }
 .imp.pend { color: var(--out); }
 
 .formulario { display: flex; flex-direction: column; gap: 12px; }

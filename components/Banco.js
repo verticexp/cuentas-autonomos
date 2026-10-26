@@ -372,7 +372,8 @@ export default function Banco({ cuentas, pendientes, emparejados, ignorados, aut
       )}
 
       <section className="bco-cuentas" id="banco-cuentas">
-        {cuentas.length > 0 && <div className="bco-total"><span>Saldo en tus cuentas</span><strong className={conSaldo && total < 0 ? 'teso-out' : undefined}>{conSaldo ? eur(total) : '—'}</strong>{conSaldo && total < 0 && <small className="nota">En descubierto. ¿No cuadra con tu banco? Sube el último extracto.</small>}</div>}
+        {/* Con una sola cuenta, el total es su saldo (y el de arriba): solo se repite si está en descubierto, por el aviso. */}
+        {(cuentas.length > 1 || (cuentas.length === 1 && conSaldo && total < 0)) && <div className="bco-total"><span>Saldo en tus cuentas</span><strong className={conSaldo && total < 0 ? 'teso-out' : undefined}>{conSaldo ? eur(total) : '—'}</strong>{conSaldo && total < 0 && <small className="nota">En descubierto. ¿No cuadra con tu banco? Sube el último extracto.</small>}</div>}
         {cuentas.map((c) => (
           <div key={c.id} className="bco-cuenta">
             <span className="bco-txt">

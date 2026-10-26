@@ -85,7 +85,7 @@ export default async function Mes({ params }) {
                 <span className="num">{numeroFactura(f)}</span>
                 <span className="txt">
                   <strong>{f.cliente.nombre}</strong>
-                  <small>{fechaCorta(f.fecha)} · {ACTIVIDADES[f.actividad]}{f.cobrada ? '' : ' · Pendiente'}</small>
+                  <small><span className="num-movil">{numeroFactura(f)} · </span>{fechaCorta(f.fecha)} · {ACTIVIDADES[f.actividad]}{f.cobrada ? '' : ' · Pendiente'}</small>
                 </span>
                 <span className={`imp ${f.cobrada ? '' : 'pend'}`}>{eur(importes(f).total)}</span>
               </Ir>

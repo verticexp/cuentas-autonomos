@@ -54,6 +54,9 @@ textarea.campo { font: inherit; line-height: 1.4; resize: vertical; }
 .aj-cuenta-fila .txt { display: flex; flex-direction: column; min-width: 0; }
 .aj-cuenta-fila .txt strong, .aj-cuenta-fila .txt small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .aj-cuenta-fila .txt small { font-size: 12px; color: var(--muted); }
+/* Una tarjeta por fila: con las dos columnas de .tarjetas (desde 820 px) el formulario ocupaba media columna y cortaba
+   los datos (208 px a 1024: «SONORA EVENTOS S»). */
+.aj-detalle .tarjetas { grid-template-columns: minmax(0, 1fr); }
 
 /* Móvil: una hoja que ha subido sobre la app. Detrás, la pantalla de antes oscurecida (el borde que asoma arriba). En /ajustes
    se ve la lista; en cada ajuste, solo esa pantalla, dentro de la misma hoja. Sin barra de pestañas (lib/transicion.js SIN_BARRA). */
