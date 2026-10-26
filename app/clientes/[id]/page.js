@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { requerir } from '@/lib/auth';
 import { puede } from '@/lib/permisos';
 import { detalleCliente, listarClientes } from '@/lib/tercerosServidor';
-import { valoresDe } from '@/lib/terceros';
+import { nombreForma, valoresDe } from '@/lib/terceros';
 import { numeroFactura, pendienteDe, importes } from '@/lib/calculos';
 import { eur, fechaCorta } from '@/lib/formato';
 import { numeroDoc } from '@/lib/albaranes';
@@ -24,14 +24,21 @@ export default async function Cliente({ params }) {
   if (!detalle) notFound();
   const lista = await listarClientes(u);
   const editar = puede(u, 'facturar');
+  const c = detalle.cliente;
+  const resumenDatos = [c.nif, c.ciudad, c.email, nombreForma(c.formaCobro)].filter(Boolean).join(' · ');
+  const pendientes = new Set(detalle.pendientes.map((f) => f.id));
+  const cobradas = detalle.facturas.filter((f) => !pendientes.has(f.id));
   const facturas = (docs) => <ul className="grupo-lista">{docs.map((f) => <li key={f.id}><Ir className="fila ficha-fila ficha-doc" href={`/facturas/${encodeURIComponent(f.id)}`}><span className="txt"><strong>{numeroFactura(f)}</strong><small>{fechaCorta(f.fecha)}</small></span>{pendienteDe(f) > 0 ? <span className="imp">Pendiente {eur(pendienteDe(f))}</span> : <span className="imp">{eur(importes(f).total)} · cobrada</span>}</Ir></li>)}</ul>;
   return <main className="pagina mk-look fichas-pagina"><Volver href="/clientes">Clientes</Volver><h1 className="titulo">{detalle.cliente.nombre}</h1>
     <UsoRiesgo cliente={detalle.cliente} panel />
     {editar && <Ir className="boton ficha-nueva-factura" href={`/facturas/nueva?cliente=${encodeURIComponent(detalle.cliente.id)}`}>Nueva factura</Ir>}
-    <section className="bloque"><h2 className="ficha-titulo">Datos del cliente</h2><FichaCliente cliente={detalle.cliente} editar={editar} puedeRiesgo={puede(u, 'empresa')} comerciales={valoresDe(lista, 'comercial')} zonas={valoresDe(lista, 'zona')} borrar={!detalle.facturas.length && !detalle.pendientes.length} /></section>
+    {/* Los datos, plegados con un resumen: lo que se viene a ver es lo que debe y sus facturas (antes el formulario ocupaba
+        la pantalla entera). Abiertos en un cliente sin facturas, que es cuando se completan. Las pendientes no se repiten
+        en «Últimas facturas». */}
+    <details className="plegable bloque ficha-datos" open={!detalle.facturas.length && !detalle.pendientes.length}><summary><span><h2 className="ficha-titulo">Datos del cliente</h2>{resumenDatos && <small>{resumenDatos}</small>}</span></summary><FichaCliente cliente={detalle.cliente} editar={editar} puedeRiesgo={puede(u, 'empresa')} comerciales={valoresDe(lista, 'comercial')} zonas={valoresDe(lista, 'zona')} borrar={!detalle.facturas.length && !detalle.pendientes.length} /></details>
     <section className="bloque"><h2 className="ficha-titulo">Pendiente de cobro</h2>{detalle.pendientes.length ? facturas(detalle.pendientes) : <Vacio compacto icono="cobrar" titulo="Todo cobrado: no te debe nada" />}</section>
     {detalle.albaranes.length > 0 && <section className="bloque"><h2 className="ficha-titulo">Albaranes sin facturar</h2><p className="nota">Cuentan en su riesgo hasta que se facturen.</p><ul className="grupo-lista">{detalle.albaranes.map((a) => <li key={a.id}><Ir className="fila ficha-fila" href={`/albaranes/${encodeURIComponent(a.id)}`}><span className="txt"><strong>{numeroDoc(a)}</strong><small>{fechaCorta(a.fecha)}</small></span><span className="imp">{eur(riesgoAlbaran(a))}</span></Ir></li>)}</ul></section>}
-    <section className="bloque"><h2 className="ficha-titulo">Últimas facturas</h2>{detalle.facturas.length ? facturas(detalle.facturas) : <Vacio compacto icono="factura" titulo="Aún no le has hecho ninguna factura" accion={editar && { href: `/facturas/nueva?cliente=${encodeURIComponent(detalle.cliente.id)}`, texto: 'Nueva factura' }} />}</section>
+    {(cobradas.length > 0 || !detalle.facturas.length) && <section className="bloque"><h2 className="ficha-titulo">{detalle.pendientes.length ? 'Últimas facturas cobradas' : 'Últimas facturas'}</h2>{cobradas.length ? facturas(cobradas) : <Vacio compacto icono="factura" titulo="Aún no le has hecho ninguna factura" accion={editar && { href: `/facturas/nueva?cliente=${encodeURIComponent(detalle.cliente.id)}`, texto: 'Nueva factura' }} />}</section>}
   </main>;
 }
 

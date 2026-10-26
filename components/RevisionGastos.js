@@ -82,16 +82,22 @@ function Cargo({ x, abierto, abrir }) {
   );
 }
 
+// Los primeros cinco: con trece, la lista de gastos (lo que se viene a ver) quedaba dos pantallas más abajo.
+const VISIBLES = 5;
+
 export default function RevisionGastos({ items, total }) {
   const [abierto, setAbierto] = useState(null);
+  const [todos, setTodos] = useState(false);
+  const vistos = todos ? items : items.slice(0, VISIBLES);
   return (
     <section className="grupo gastos-revision">
       <h2 className="grupo-t">Cargos del banco sin gasto · {total}</h2>
       <p className="grupo-pie arriba">Cargos de tu banco sin su gasto en Fisquo. Toca uno para revisar la coincidencia, elegir otro gasto o añadirlo con su factura.</p>
       <ul className="grupo-lista">
-        {items.map((x) => <Cargo key={x.m.id} x={x} abierto={abierto === x.m.id} abrir={() => setAbierto(abierto === x.m.id ? null : x.m.id)} />)}
+        {vistos.map((x) => <Cargo key={x.m.id} x={x} abierto={abierto === x.m.id} abrir={() => setAbierto(abierto === x.m.id ? null : x.m.id)} />)}
       </ul>
-      {total > items.length && <p className="grupo-pie"><Link href="/banco">Y {total - items.length} más en Banco ›</Link></p>}
+      {!todos && items.length > VISIBLES && <button type="button" className="boton pequeno sec rev-ver-todos" onClick={() => setTodos(true)}>Ver los {items.length - VISIBLES} restantes</button>}
+      {(todos || items.length <= VISIBLES) && total > items.length && <p className="grupo-pie"><Link href="/banco">Y {total - items.length} más en Banco ›</Link></p>}
     </section>
   );
 }

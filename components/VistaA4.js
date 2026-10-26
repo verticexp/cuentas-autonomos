@@ -9,6 +9,7 @@ export default function VistaA4({ children }) {
   useEffect(() => {
     const ajustar = () => {
       const w = caja.current.clientWidth;
+      if (!w) return; // oculta (la vista previa del detalle de factura, en pantallas estrechas)
       const k = Math.min(1, (w - 24) / 794);
       setV({ k, x: Math.max(12, (w - 794 * k) / 2) });
     };

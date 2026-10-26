@@ -56,3 +56,8 @@
   .ficha-riesgo { max-width: 100%; width: 100%; text-align: left; }
   .ficha-cabecera .boton { width: 100%; }
 }
+/* Datos de la ficha plegados (clientes y proveedores): el título y, debajo, un resumen de lo guardado. */
+.ficha-datos > summary { margin: 24px 0 14px; }
+.ficha-datos > summary > span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ficha-datos > summary .ficha-titulo { margin: 0; }
+.ficha-datos > summary small { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
