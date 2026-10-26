@@ -40,3 +40,6 @@
   .jor-meses { justify-content: flex-start; }
 }
 .jornada > .boton.ancho { margin-bottom: 20px; }
+
+.jor-resumen .fila.activa { background: var(--relleno); }
+.jor-todos { display: inline-flex; align-items: center; min-height: 44px; color: var(--ink); }
