@@ -27,7 +27,7 @@ export default function Catalogo({ productos, editar, inventario = false, igic =
   const editarProducto = (x) => {
     setP({ ...x, precio: String(x.precio).replace('.', ',') });
     setAbierto(true);
-    requestAnimationFrame(() => formulario.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+    requestAnimationFrame(() => formulario.current?.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }));
   };
   const poner = (k, v) => setP((x) => ({ ...x, [k]: v }));
   const guardar = async (e) => {
