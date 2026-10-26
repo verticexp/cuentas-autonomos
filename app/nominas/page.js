@@ -112,7 +112,7 @@ export default async function Nominas({ searchParams }) {
         </>
       )}
 
-      <header className="cabecera modelos-cab">
+      <header className="cabecera modelos-cab nom-historial">
         <h2>Historial de nóminas</h2>
         <nav className="anios">
           {anterior ? <Ir href={`/nominas?anio=${anterior}`} tipo="cifras" aria-label="Año anterior">‹</Ir> : <span className="off">‹</span>}

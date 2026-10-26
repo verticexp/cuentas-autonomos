@@ -35,7 +35,7 @@
 .desp-fila .txt { grid-area: txt; min-width: 0; display: flex; flex-direction: column; }
 /* En el móvil, la etiqueta de estado va al lado del nombre: el nombre y los avisos se parten en vez de cortarse
    («Bar La Plaça (Núri…»); con sitio, en columnas, una línea con «…» */
-.desp-fila .txt strong { overflow-wrap: anywhere; font-weight: 600; }
+.desp-fila .txt strong { white-space: normal; overflow: visible; overflow-wrap: anywhere; font-weight: 600; }
 .desp-fila .txt small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); margin-top: 2px; min-height: 1.35em; }
 .desp-fila .txt small.desp-avisos { white-space: normal; }
 .desp-col-estado { grid-area: estado; }

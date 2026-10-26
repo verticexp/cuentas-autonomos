@@ -116,7 +116,7 @@ export default async function RegistroJornada({ searchParams }) {
       {verDias(plegar ? dias.slice(0, 7) : dias)}
       {plegar && (
         <details className="jor-anteriores plegable">
-          <summary className="grupo-t">Ver los {dias.length - 7} días anteriores</summary>
+          <summary>Ver los {dias.length - 7} días anteriores</summary>
           {verDias(dias.slice(7))}
         </details>
       )}

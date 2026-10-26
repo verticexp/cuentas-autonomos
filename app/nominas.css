@@ -9,3 +9,6 @@
 .nomina-desglose dt:nth-of-type(4), .nomina-desglose dd:nth-of-type(4), .nomina-desglose dt:nth-of-type(6), .nomina-desglose dd:nth-of-type(6) { padding-top: 8px; border-top: 0.5px solid var(--line); }
 .fila .imp small { display: block; font-size: 12px; font-weight: 400; color: var(--muted); text-align: right; }
 .pagina > .boton.ancho, .pagina > .formulario { margin-bottom: 8px; }
+/* «Historial de nóminas» con su ‹ año ›: un título de sección (no de página), separado del botón de añadir */
+.nom-historial { margin-top: 28px; }
+.nom-historial h2 { font-size: 22px; margin: 0; }
