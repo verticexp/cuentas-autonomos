@@ -289,6 +289,9 @@ fieldset.solo-ver:disabled .campo { opacity: 1; color: var(--ink); -webkit-text-
 .actividad-form .campo { background: var(--relleno); }
 .fila-act { display: flex; gap: 10px; align-items: center; }
 .fila-act .campo { flex: 1; }
+/* Solo botones: si no caben, pasan a la línea siguiente enteros en vez de partir el texto («Activar / Verifactu») */
+.fila-act:not(:has(.campo)) { flex-wrap: wrap; }
+.fila-act:not(:has(.campo)) > .boton { white-space: nowrap; }
 .quitar { color: var(--out); font-size: 15px; padding: 6px; }
 .mini-t { font-size: 13px; color: var(--muted); margin-top: 4px; }
 .mini-t.fuera { margin: 2px 0 -4px 16px; }

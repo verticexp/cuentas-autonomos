@@ -200,6 +200,12 @@ html[data-entrada] .tabbar { animation: entrada-barra 0.5s var(--vt-curva) 0.15s
 :root { interpolate-size: allow-keywords; }
 details::details-content { block-size: 0; overflow: clip; opacity: 0; transition: block-size 0.32s var(--vt-curva), opacity 0.2s var(--salida), content-visibility 0.32s allow-discrete; }
 details[open]::details-content { block-size: auto; opacity: 1; }
+/* La flecha de plegar de toda la app (la de Ayuda): hacia abajo cerrado, hacia arriba abierto. En un <details class="plegable">
+   la pone el summary; en un botón que pliega, un <span class="chevron"> dentro del botón con aria-expanded. */
+details.plegable > summary { list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; cursor: pointer; }
+details.plegable > summary::-webkit-details-marker { display: none; }
+details.plegable > summary::after, .chevron { content: ''; flex: none; width: 7px; height: 7px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: translateY(-2px) rotate(45deg); transition: transform 0.2s; }
+details.plegable[open] > summary::after, [aria-expanded="true"] > .chevron { transform: translateY(2px) rotate(225deg); }
 /* Una .nota dentro del título de un plegable va en la misma línea: sin el margen de párrafo, que la montaba sobre el texto al partirse */
 summary .nota { margin: 0; }
 /* Los campos y botones se resaltan suave al enfocarlos */
