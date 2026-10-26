@@ -14,6 +14,7 @@ import FaceId from '@/components/FaceId';
 import DosPasos from '@/components/DosPasos';
 import AccesosRecientes from '@/components/AccesosRecientes';
 import { accesosDe } from '@/lib/accesos';
+import { diaDe } from '@/lib/formato';
 import ElegirPlan from '@/components/ElegirPlan';
 import estilosPlan from '@/components/ElegirPlan.module.css';
 import AvisosPush from '@/components/AvisosPush';
@@ -116,7 +117,7 @@ export default async function Seccion({ params, searchParams }) {
       {seccion === 'ayuda' && <Ayuda contacto={CONTACTO} app={app} />}
       {seccion === 'envio' && <EmailEnvio inicial={u.envio || {}} empresa={u.emisor || {}} />}
       {seccion === 'seguridad' && <FaceId lista={llaves} bloqueo={Boolean(u.bloqueoPantalla)} app={app} />}
-      {seccion === 'seguridad' && u.pass && <DosPasos activa={u.dosPasos?.secreto ? { desde: u.dosPasos.desde ? new Date(u.dosPasos.desde).toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' }) : null, quedan: (u.dosPasos.recuperacion || []).length } : null} />}
+      {seccion === 'seguridad' && u.pass && <DosPasos activa={u.dosPasos?.secreto ? { desde: u.dosPasos.desde ? diaDe(u.dosPasos.desde) : null, quedan: (u.dosPasos.recuperacion || []).length } : null} />}
       {seccion === 'plan' && <ElegirPlan plan={u.plan} tipoEmpresa={fiscalDe(u).tipo === 'sociedad' ? 'pym' : 'aut'} uso={usoPlan} admin={u.rol === 'admin'} app={app} />}
       {seccion === 'recomienda' && await (async () => {
         const resumen = await resumenRecomendaciones(u.empresa);
