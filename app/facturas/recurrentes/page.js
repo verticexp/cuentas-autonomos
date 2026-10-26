@@ -5,6 +5,7 @@ import { importes } from '@/lib/calculos';
 import { eur } from '@/lib/formato';
 import { puede } from '@/lib/permisos';
 import Volver from '@/components/Volver';
+import Ir from '@/components/Ir';
 import { AccionesRecurrente } from '@/components/Recurrente';
 import { enviosPendientes } from '@/lib/recurrentes';
 import { nombreMes } from '@/lib/nominas';
@@ -22,7 +23,7 @@ export default async function Recurrentes() {
     <main className="pagina mk-look">
       <Volver href="/facturas">Facturas</Volver>
       <h1 className="titulo">Facturas recurrentes</h1>
-      {!lista.length && <Vacio icono="factura" titulo="Repite una factura cada mes" accion={{ href: '/facturas', texto: 'Elegir factura' }}>Abre una factura y pulsa «Repetir cada mes».</Vacio>}
+      {!lista.length && <Vacio icono="factura" titulo="Repite una factura cada mes" accion={{ href: '/facturas', texto: 'Elegir factura' }}>Abre una factura y, en «Más opciones», pulsa «Repetir cada mes».</Vacio>}
       {lista.length > 0 && (
         <ul className="recurrentes">
           {lista.map((r) => (
@@ -40,6 +41,8 @@ export default async function Recurrentes() {
           ))}
         </ul>
       )}
+      {/* Con alguna ya creada no había ninguna pista de cómo añadir otra. */}
+      {lista.length > 0 && editar && <p className="grupo-pie">Para repetir otra, abre la factura y, en «Más opciones», pulsa «Repetir cada mes». <Ir href="/facturas">Ir a Facturas</Ir></p>}
     </main>
   );
 }

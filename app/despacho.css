@@ -352,3 +352,8 @@ html[data-entrada-cliente] .barra-despacho-volver { visibility: hidden; }
 
 /* Solicitudes de clientes nuevos (components/SolicitudesDespacho.js) */
 .despacho .grupo-lista .fila .desp-mini + .desp-mini { margin-left: 8px !important; }
+/* Lista de clientes de hasta 800 px (el ordenador de 1024): estado y cifras algo más estrechos para que quepa el nombre
+   del cliente (se cortaba en «Iñaki Etxeberria Consult…»). */
+@container (min-width: 640px) and (max-width: 799.98px) {
+  .desp-cols, .desp-lista .fila.desp-fila { grid-template-columns: minmax(0, 1fr) 156px 96px 96px 12px; }
+}

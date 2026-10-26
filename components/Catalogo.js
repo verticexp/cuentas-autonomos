@@ -5,7 +5,7 @@ import { TIPOS_IGIC } from '@/lib/igic';
 import { confirmar as confirmarAccion } from './Confirmar';
 
 import Vacio from '@/components/Vacio';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
 import { eur, pctCorto } from '@/lib/formato';
@@ -19,11 +19,21 @@ export default function Catalogo({ productos, editar, inventario = false, igic =
   const vacio = { nombre: '', precio: '', ivaPct: igic ? 7 : 21 };
   const [p, setP] = useState(vacio);
   const [error, setError] = useState('');
+  // El alta, plegada tras «+ Añadir al catálogo» como «+ Añadir empleado»: lo que se viene a ver es la lista. Abierta si
+  // aún no hay nada; tocar un producto la abre para editarlo.
+  const [abierto, setAbierto] = useState(productos.length === 0);
+  const formulario = useRef(null);
+  const cerrar = () => { setP(vacio); setError(''); setAbierto(false); };
+  const editarProducto = (x) => {
+    setP({ ...x, precio: String(x.precio).replace('.', ',') });
+    setAbierto(true);
+    requestAnimationFrame(() => formulario.current?.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }));
+  };
   const poner = (k, v) => setP((x) => ({ ...x, [k]: v }));
   const guardar = async (e) => {
     e.preventDefault();
     setError('');
-    try { await llamar('/api/productos', { method: 'POST', body: JSON.stringify(p) }); setP(vacio); router.refresh(); } catch (err) { setError(err.message); }
+    try { await llamar('/api/productos', { method: 'POST', body: JSON.stringify(p) }); setP(vacio); if (p.id) setAbierto(false); router.refresh(); } catch (err) { setError(err.message); }
   };
   const quitar = async (id) => {
     if (!(await confirmarAccion({ titulo: 'Quitar del catálogo', texto: '¿Quitar del catálogo? Las facturas ya hechas no cambian.', aceptar: 'Quitar', peligro: true }))) return;
@@ -31,8 +41,9 @@ export default function Catalogo({ productos, editar, inventario = false, igic =
   };
   return (
     <>
-      {editar && (
-        <form id="anadir-catalogo" className="formulario tarjeta catalogo-form" onSubmit={envolver(guardar)}>
+      {editar && !abierto && <button type="button" id="anadir-catalogo" className="boton sec ancho catalogo-nuevo" onClick={() => setAbierto(true)}>+ Añadir al catálogo</button>}
+      {editar && abierto && (
+        <form ref={formulario} id="anadir-catalogo" className="formulario tarjeta catalogo-form" onSubmit={envolver(guardar)}>
           <h3>{p.id ? 'Editar' : 'Añadir'}</h3>
           <label>Nombre<input className="campo" required placeholder="Sesión DJ 4 horas" value={p.nombre} onChange={(e) => poner('nombre', e.target.value)} /></label>
           <div className="dos-col">
@@ -61,8 +72,8 @@ export default function Catalogo({ productos, editar, inventario = false, igic =
             </>}
           </>}
           {error && <p className="error" role="alert">{error}</p>}
-          <div className={p.id ? 'dos-col' : ''}>
-            {p.id && <button type="button" className="boton sec" onClick={() => setP(vacio)}>Cancelar</button>}
+          <div className="dos-col">
+            <button type="button" className="boton sec" onClick={cerrar}>Cancelar</button>
             <button className="boton" disabled={enviando}>{p.id ? 'Guardar cambios' : 'Añadir al catálogo'}</button>
           </div>
         </form>
@@ -72,7 +83,7 @@ export default function Catalogo({ productos, editar, inventario = false, igic =
         <ul className="catalogo">
           {productos.map((x) => (
             <li key={x.id}>
-              <button type="button" className="cat-info" disabled={!editar} aria-describedby={!editar ? "cat-permisos-ayuda" : undefined} onClick={() => editar && setP({ ...x, precio: String(x.precio).replace('.', ',') })}>
+              <button type="button" className="cat-info" disabled={!editar} aria-describedby={!editar ? "cat-permisos-ayuda" : undefined} onClick={() => editar && editarProducto(x)}>
                 <strong>{x.nombre}</strong><small>{inventario && !x.servicio && x.sku ? `${x.sku} · ` : ''}{igic ? 'IGIC' : 'IVA'} {pctCorto(x.ivaPct)}{inventario && x.servicio ? ' · servicio' : ''}</small>
               </button>
               <span className="cat-precio">{eur(x.precio)}</span>

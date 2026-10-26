@@ -16,6 +16,7 @@ import Volver from '@/components/Volver';
 import Conceptos from '@/components/Conceptos';
 
 import '@/app/mk.css';
+import '@/app/factura-detalle.css';
 
 export const dynamic = 'force-dynamic';
 
@@ -49,19 +50,25 @@ export default async function Presupuesto({ params }) {
       {p.estado !== 'pendiente' && <Conceptos lineas={p.lineas} />}
       {p.respuesta && <p className="nota">{p.estado === 'rechazado' ? 'Rechazado' : 'Aceptado'} por {p.respuesta.nombre} el {fechaTexto(p.respuesta.fecha.slice(0, 10))}.</p>}
       {p.facturas.length > 0 && <p className="nota">Facturas: {p.facturas.map((f, n) => <span key={f.id}>{n ? ', ' : ''}<Link href={`/facturas/${f.id}`}>{f.numero}</Link> ({f.tipo === 'senal' ? 'señal' : senal ? 'resto' : 'total'})</span>)}</p>}
+      {/* Como en la factura: lo de cada día arriba; el portal, cambiar el enlace y borrar, en «Más opciones» (Borrar al final). */}
       {editar && <div className="acciones-factura">
         {estado === 'pendiente' && <Compartir ruta={`/p/${p.token}`} texto={`Presupuesto ${numeroPresupuesto(p)}`} />}
-        <Link href={`/p/${p.token}`} className="boton sec">Ver como el cliente</Link>
-        <CambiarEnlace datos={{ tipo: 'presupuesto', id: p.id }} pregunta="¿Cambiar el enlace de este presupuesto? El que tiene el cliente dejará de funcionar." />
         {estado === 'pendiente' && <MarcarAceptado id={p.id} />}
         {['pendiente', 'aceptado'].includes(estado) && p.senalPct > 0 && !senal && <Facturar id={p.id} tipo="senal">Facturar señal ({eur(baseSenal(p))})</Facturar>}
         {['pendiente', 'aceptado'].includes(estado) && <Facturar id={p.id} tipo="resto">{senal ? `Facturar el resto (${eur(baseResto(p))})` : 'Facturar todo'}</Facturar>}
-        {!p.facturas.length && <Borrar url={`/api/presupuestos?id=${p.id}`} pregunta={`¿Borrar el presupuesto ${numeroPresupuesto(p)}? El enlace del cliente dejará de funcionar.`} volver="/presupuestos" />}
+        <Link href={`/p/${p.token}`} className="boton sec">Ver como el cliente</Link>
       </div>}
-      {portal && <section className="portal-enlace">
-        <p className="nota">Portal de {p.cliente.nombre}: ve todas sus facturas y presupuestos, los descarga en PDF y paga.</p>
-        <div className="portal-botones"><Compartir ruta={portal} texto={`Tus documentos de ${u.emisor?.nombre || ''}`.trim()} etiqueta="Enviar su portal" className="boton sec" /><Link href={portal} className="boton sec">Ver su portal</Link><CambiarEnlace datos={{ tipo: 'portal', cliente: p.cliente.nombre, nif: p.cliente.nif || '' }} pregunta={`¿Cambiar el enlace del portal de ${p.cliente.nombre}? El que tiene dejará de funcionar y tendrás que enviarle el nuevo.`} /></div>
-      </section>}
+      {(editar || portal) && <details className="mas-opciones">
+        <summary>Más opciones</summary>
+        <div className="mas-opciones-c">
+          {portal && <section className="portal-enlace">
+            <p className="nota">Portal de {p.cliente.nombre}: ve todas sus facturas y presupuestos, los descarga en PDF y paga.</p>
+            <div className="portal-botones"><Compartir ruta={portal} texto={`Tus documentos de ${u.emisor?.nombre || ''}`.trim()} etiqueta="Enviar su portal" className="boton sec" /><Link href={portal} className="boton sec">Ver su portal</Link><CambiarEnlace datos={{ tipo: 'portal', cliente: p.cliente.nombre, nif: p.cliente.nif || '' }} pregunta={`¿Cambiar el enlace del portal de ${p.cliente.nombre}? El que tiene dejará de funcionar y tendrás que enviarle el nuevo.`} etiqueta="Cambiar el enlace del portal" /></div>
+          </section>}
+          {editar && <div className="portal-botones"><CambiarEnlace datos={{ tipo: 'presupuesto', id: p.id }} pregunta="¿Cambiar el enlace de este presupuesto? El que tiene el cliente dejará de funcionar." etiqueta="Cambiar el enlace del presupuesto" /></div>}
+          {editar && !p.facturas.length && <div className="mas-opciones-borrar"><Borrar url={`/api/presupuestos?id=${p.id}`} pregunta={`¿Borrar el presupuesto ${numeroPresupuesto(p)}? El enlace del cliente dejará de funcionar.`} volver="/presupuestos" /></div>}
+        </div>
+      </details>}
       {editar && p.estado === 'pendiente' && <FormPresupuesto key={JSON.stringify(p)} presupuesto={p} clientes={clientes} actividades={actividadesDe(u)} />}
     </main>
   );

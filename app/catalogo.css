@@ -1,5 +1,6 @@
 /* Catálogo de productos y servicios */
-.catalogo-form { margin-bottom: 16px; }
+.catalogo-form, .catalogo-nuevo { margin-bottom: 16px; }
+.catalogo-form { scroll-margin-top: 16px; }
 .catalogo { list-style: none; margin: 0; padding: 0; background: var(--surface); border-radius: 12px; overflow: hidden; }
 .catalogo li { display: flex; align-items: center; gap: 10px; padding: 6px 8px 6px 16px; }
 .catalogo li + li { border-top: 0.5px solid var(--line); }

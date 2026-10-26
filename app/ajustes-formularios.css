@@ -1,6 +1,8 @@
 /* Formularios de Ajustes (components/Ajustes.js) como los de iOS: el título pequeño y gris encima, los campos en un grupo
    de filas, la ayuda debajo y «Guardar» a todo lo ancho. */
 .aj-form { display: flex; flex-direction: column; gap: 0; background: transparent; border: 0; box-shadow: none; padding: 0; }
+/* Si le sigue otra sección (Tu gestoría, Ayuda), el «Guardar» no se pega a su título. */
+.aj-form:not(:last-child) { margin-bottom: 28px; }
 .aj-form h3 { color: var(--muted); font-size: 13px; font-weight: 400; line-height: 18px; margin: 0 16px 7px; }
 .aj-form .aj-grupo { background: var(--surface); border-radius: 12px; overflow: hidden; margin-bottom: 8px; }
 .aj-form .aj-grupo > label { display: flex; flex-direction: column; gap: 3px; position: relative; padding: 10px 16px; color: var(--muted); font-size: 13px; }
@@ -14,3 +16,13 @@
 .aj-form .aj-pie, .aj-form > .nota {  font-size: 13px; line-height: 1.35; margin: 0 16px 10px; }
 .aj-form > .boton { width: 100%; min-height: 50px; border-radius: 12px; margin-top: 2px; }
 .aj-form > .boton:disabled { opacity: .5; pointer-events: none; }
+.aj-form .aj-grupo > label.check { flex-direction: row; align-items: flex-start; gap: 10px; color: var(--ink); }
+.aj-form .aj-grupo > label.check input { appearance: auto; width: auto; margin: 3px 0 0; accent-color: var(--marca); }
+.aj-form .aj-grupo > label.check span { display: block; }
+.aj-form .aj-grupo > label.check small { display: block; margin-top: 3px; color: var(--muted); font-size: 13px; line-height: 1.35; }
+.aj-form > ul.aj-pie { padding-left: 36px; }
+.aj-form > ul.aj-pie li + li { margin-top: 3px; }
+.aj-vista-previa { background: var(--surface); border-radius: 12px; padding: 12px 16px; margin: 0 0 10px; overflow: hidden; }
+.aj-vista-previa h4 { margin: 0 0 8px; }
+.aj-vista-previa p { margin: 0 0 8px; }
+.aj-vista-previa p:last-child { margin-bottom: 0; }

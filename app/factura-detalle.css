@@ -17,3 +17,14 @@
 @media (prefers-reduced-motion: reduce) {
   .mas-opciones > summary::after, .editar-factura > summary::after { transition: none; }
 }
+/* Ordenador ancho: la factura a la derecha, tal como sale en el PDF; al tocarla se abre el PDF. Más estrecho no cabe al
+   lado de las acciones y queda el botón «Ver / descargar PDF». */
+.fd-vista { display: none; }
+@media (min-width: 1200px) {
+  .fd-rejilla { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 32px; align-items: start; }
+  .fd-vista { display: block; position: sticky; top: 24px; }
+  .fd-vista-a4 { display: block; border-radius: 12px; text-decoration: none; color: inherit; transition: transform 0.2s var(--salida); }
+  .fd-vista-a4:hover { transform: translateY(-2px); }
+  .fd-vista-a4:focus-visible { outline: 2px solid var(--marca); outline-offset: 4px; }
+}
+@media print { .fd-vista { display: none; } }

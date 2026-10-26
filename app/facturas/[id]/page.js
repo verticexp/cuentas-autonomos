@@ -18,12 +18,15 @@ import VerifactuFactura from '@/components/VerifactuFactura';
 import { RepetirFactura } from '@/components/Recurrente';
 import { asuntoFactura, mensajeFactura } from '@/lib/envio';
 import { puede } from '@/lib/permisos';
-import { usaIgic, actividadesDe, fiscalDe, limiteSimplificada, nombresActividad, usa130, usa303, ajustesIva, trimestresPresentados } from '@/lib/empresa';
+import { usaIgic, actividadesDe, faltanDatosFactura, fiscalDe, limiteSimplificada, nombresActividad, usa130, usa303, ajustesIva, trimestresPresentados } from '@/lib/empresa';
 import { enlacePortal } from '@/lib/portal';
 import { CambiarEnlace, Compartir } from '@/components/AccionesPresupuesto';
 import { proyectosDe } from '@/lib/stockServidor';
 import { riesgosPendientes } from '@/lib/tercerosServidor';
 import { tieneLimite } from '@/lib/riesgo';
+import { identidadDoc } from '@/lib/documento';
+import VistaA4 from '@/components/VistaA4';
+import FacturaA4 from '@/components/FacturaA4';
 import '@/app/portal.css';
 
 import '@/app/mk.css';
@@ -85,9 +88,14 @@ export default async function Factura({ params }) {
       </main>
     );
   }
+  // En el ordenador ancho, la factura tal como sale en el PDF, a la derecha (lo que antes era un hueco de 400 px).
+  const { emisor: emisorDoc, marca } = await identidadDoc(u, f);
+  const vista = !faltanDatosFactura(emisorDoc).length;
   return (
     <main className="pagina mk-look">
       <Volver href="/facturas">Facturas</Volver>
+      <div className="fd-rejilla">
+      <div className="fd-col">
       <section className="factura-hero">
         <p className="fh-num">Factura {numeroFactura(f)}{actividades.length > 1 ? ` · ${nombresActividad(actividades)[f.actividad] || ''}` : ''}</p>
         <h1 className="fh-cliente">{f.cliente.nombre}</h1>
@@ -125,7 +133,7 @@ export default async function Factura({ params }) {
           {String(f.cliente?.nif || '').trim() && <p className="nota efactura">Factura electrónica: <a href={`/api/facturas/efactura?id=${encodeURIComponent(f.id)}&formato=facturae`} download>Facturae 3.2.2</a> · <a href={`/api/facturas/efactura?id=${encodeURIComponent(f.id)}&formato=ubl`} download>UBL (Peppol)</a>{f.cobrada ? ` · cobrada${f.cobro?.fecha ? ` el ${fechaTexto(f.cobro.fecha.slice(0, 10))}` : ''}` : ''}</p>}
           {portal && <section className="portal-enlace">
             <p className="nota">Portal de {f.cliente.nombre}: ve todas sus facturas y presupuestos, los descarga en PDF y paga.</p>
-            <div className="portal-botones"><Compartir ruta={portal} texto={`Tus documentos de ${u.emisor?.nombre || ''}`.trim()} etiqueta="Enviar su portal" className="boton sec" /><Link href={portal} className="boton sec">Ver su portal</Link><CambiarEnlace datos={{ tipo: 'portal', cliente: f.cliente.nombre, nif: f.cliente.nif || '' }} pregunta={`¿Cambiar el enlace del portal de ${f.cliente.nombre}? El que tiene dejará de funcionar y tendrás que enviarle el nuevo.`} /></div>
+            <div className="portal-botones"><Compartir ruta={portal} texto={`Tus documentos de ${u.emisor?.nombre || ''}`.trim()} etiqueta="Enviar su portal" className="boton sec" /><Link href={portal} className="boton sec">Ver su portal</Link><CambiarEnlace datos={{ tipo: 'portal', cliente: f.cliente.nombre, nif: f.cliente.nif || '' }} pregunta={`¿Cambiar el enlace del portal de ${f.cliente.nombre}? El que tiene dejará de funcionar y tendrás que enviarle el nuevo.`} etiqueta="Cambiar el enlace del portal" /></div>
           </section>}
           {editar && f.serie !== 'R' && <RepetirFactura factura={f.id} dia={Math.min(28, Number(f.fecha.slice(8, 10)))} existente={recurrentes.find((r) => r.origen === f.id)} />}
           {editar && <div className="mas-opciones-borrar"><Borrar url={`/api/facturas?id=${f.id}`} pregunta={`¿Borrar la factura ${numeroFactura(f)}? Hacienda exige numeración correlativa: si ya la has enviado, mejor haz una rectificativa.`} volver="/facturas" /></div>}
@@ -155,6 +163,15 @@ export default async function Factura({ params }) {
         <summary>{editar && !f.verifactu ? 'Ver y editar los datos' : 'Ver los datos de la factura'}</summary>
       <fieldset className="solo-ver" disabled={!editar}><FormFactura presentados={trimestresPresentados(u)} igic={usaIgic(fiscalDe(u))} key={JSON.stringify(f)} recargo={usa303(fiscal)} oss={usa303(fiscal) && Boolean(fiscal.oss)} margenes={['rebu', 'reav'].filter((k) => fiscal[k])} reagp={fiscal.iva === 'reagp'} limiteSimplificada={limiteSimplificada(fiscal)} factura={f} clientes={clientes} actividades={actividades} productos={(productos || []).sort((a, b) => a.nombre.localeCompare(b.nombre))} riesgos={riesgos} proyectos={editar ? await proyectosDe(u) : []} /></fieldset>
       </details>
+      </div>
+      {vista && (
+        <aside className="fd-vista" aria-label="Vista previa del PDF">
+          <Ir href={`/facturas/${f.id}/pdf`} className="fd-vista-a4" aria-label={`Abrir el PDF de la factura ${numeroFactura(f)}`}>
+            <VistaA4><FacturaA4 f={f} e={emisorDoc} marca={marca} /></VistaA4>
+          </Ir>
+        </aside>
+      )}
+      </div>
     </main>
   );
 }
