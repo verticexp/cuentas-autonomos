@@ -21,5 +21,5 @@ export const EMPRESA_LEGAL = {
   domicilio: 'Calle Aragó, 6, 1.º 1.ª, 08150 Parets del Vallès (Barcelona)',
   email: '',
   registro: null,
-  declaracion: { fecha: '', lugar: '' },
+  declaracion: { fecha: '26 de octubre de 2026, a las 10:00', lugar: 'Parets del Vallès (Barcelona)' },
 };
