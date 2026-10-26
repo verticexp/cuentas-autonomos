@@ -20,6 +20,6 @@ export const EMPRESA_LEGAL = {
   nif: 'B05814041',
   domicilio: 'Calle Aragó, 6, 1.º 1.ª, 08150 Parets del Vallès (Barcelona)',
   email: '',
-  registro: null,
+  registro: { nombre: 'Registro Mercantil de Barcelona', hoja: 'B-665709', inscripcion: '1.ª' }, // inscripción electrónica del 26-10-2026: sin tomo ni folio
   declaracion: { fecha: '26 de octubre de 2026, a las 10:00', lugar: 'Parets del Vallès (Barcelona)' },
 };

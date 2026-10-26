@@ -38,7 +38,7 @@ test('prueba social: una entrada incompleta o con una ruta peligrosa no llega a 
 
 test('identidad legal: vacía no publica nada y necesita titular, NIF y domicilio', () => {
   // La sociedad real ya está, con la declaración firmada el 26-10-2026.
-  assert.deepEqual([identidadLegal().nif, identidadLegal().registro], ['B05814041', null]);
+  assert.deepEqual([identidadLegal().nif, identidadLegal().registro.hoja], ['B05814041', 'B-665709']);
   assert.equal(datosDeclaracion(undefined, {}).lugar, 'Parets del Vallès (Barcelona)');
   assert.equal(identidadLegal({ titular: 'Fisquo SL', nif: '', domicilio: 'Calle 1' }), null);
   assert.equal(identidadLegal({ titular: 'Fisquo SL', nif: 'B00000000', domicilio: '   ' }), null);
