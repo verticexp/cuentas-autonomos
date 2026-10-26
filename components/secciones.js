@@ -39,6 +39,8 @@ export const ASISTENTE = { href: '/asistente', nombre: 'Pregunta a Fisquo', icon
 const TODAS = [...EXTRA.flatMap((g) => g.enlaces), ASISTENTE];
 // La pantalla extra en la que se está (la más concreta), para marcarla.
 export const extraDe = (path) => TODAS.filter((e) => path === e.href || path.startsWith(`${e.href}/`)).sort((a, b) => b.href.length - a.href.length)[0]?.href ?? null;
+// Si la pantalla misma está en la barra lateral: en el ordenador su «‹ atrás» sobra (components/Volver.js).
+export const esSeccion = (path) => TODAS.some((e) => e.href === path);
 
 // Los grupos con solo lo que esta persona puede ver (permisos) y lo que esta empresa usa (inventario). Con la forma de la
 // empresa (fiscal), las pantallas del autónomo llevan su nombre (lib/modulos.js PARA_AUTONOMO: «Libros registro»…); faltan: { href: plan } de lib/modulos.js, el plan

@@ -27,10 +27,12 @@ body { --marca: var(--acento, #0F1F1B); --sobre: #fff; font-size: 17px; letter-s
 a { color: var(--marca); }
 button:focus-visible, input:focus-visible, a:focus-visible, select:focus-visible { outline: 2px solid var(--marca); outline-offset: 2px; }
 .volver { color: var(--marca); font-weight: 400; font-size: 17px; }
+/* En el ordenador, la pantalla que ya está en la barra lateral no lleva «‹ atrás» (components/Volver.js) */
+@media (min-width: 1024px) { .volver.volver-movil { display: none; } }
 
 /* Tarjetas antiguas: pasan a ser grupos lisos */
 .tarjeta { background: var(--surface); border-radius: 12px; padding: 14px 16px; box-shadow: none; }
-.tarjeta h3 { font-size: 17px; font-weight: 600; margin-bottom: 10px; }
+.tarjeta h3, .tarjeta .tarjeta-titulo { font-size: 17px; font-weight: 600; margin-bottom: 10px; }
 .tarjetas { gap: 20px; }
 .bloque { margin-bottom: 28px; }
 .grande { font-size: 22px; font-weight: 600; letter-spacing: 0; }

@@ -40,8 +40,8 @@ export default function Dietas({ hoy, actividades, autonomo }) {
         </div>
       )}
       {actividades.length > 1 && <select aria-label="Actividad" className="campo" value={d.actividad} onChange={(e) => poner('actividad', e.target.value)}>{actividades.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}</select>}
-      {!titular && <label>Trabajador (opcional)<input className="campo" placeholder="Trabajador (opcional)" value={d.persona} onChange={(e) => poner('persona', e.target.value)} /></label>}
-      <label>Motivo o destino (opcional)<input className="campo" placeholder="Motivo o destino (opcional)" value={d.motivo} onChange={(e) => poner('motivo', e.target.value)} /></label>
+      {!titular && <label>Trabajador (opcional)<input className="campo" placeholder="Nombre y apellidos" value={d.persona} onChange={(e) => poner('persona', e.target.value)} /></label>}
+      <label>Motivo o destino (opcional)<input className="campo" placeholder="Ej.: visita a un cliente en Girona" value={d.motivo} onChange={(e) => poner('motivo', e.target.value)} /></label>
       {d.tipo === 'km' ? (
         <div className="dos-col">
           <label>Kilómetros<input className="campo" inputMode="decimal" placeholder="0" value={d.km} onChange={(e) => poner('km', e.target.value)} required /></label>

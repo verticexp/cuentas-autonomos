@@ -23,7 +23,7 @@
 .ficha-fila { text-decoration: none; }
 .ficha-fila .txt small { overflow-wrap: anywhere; }
 .ficha-riesgo { display: flex; flex-direction: column; gap: 5px; text-align: right; max-width: 48%; min-width: 0; font-size: 14px; }
-.ficha-riesgo small { color: var(--muted); }
+.ficha-riesgo small { color: var(--muted); font-size: 12px; }
 .ficha-riesgo-panel { padding: 20px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); margin-bottom: 16px; }
 .ficha-cifras { display: flex; flex-wrap: wrap; gap: 18px 28px; margin-bottom: 14px; }
 .ficha-cifras span { display: flex; flex-direction: column; gap: 4px; color: var(--muted); }

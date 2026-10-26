@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { anterior, instalarHistorial, volverA } from '@/lib/transicion';
 import { salirSinGuardar } from './useCambiosSinGuardar';
+import { esSeccion } from './secciones';
 
 // Cómo se llama cada pantalla a la que se puede volver (para el botón: «‹ Más», «‹ Facturas»…).
 const NOMBRES = {
@@ -19,6 +20,8 @@ const NOMBRES = {
 // Sin JavaScript sigue siendo un enlace a ese destino. Desde un formulario con cambios sin guardar, pregunta antes.
 export default function Volver({ href, children = 'Atrás' }) {
   const router = useRouter();
+  // Las pantallas de la barra lateral no llevan «atrás» en el ordenador (volver-movil, app/mk.css), como Facturas o Gastos.
+  const seccion = esSeccion(usePathname());
   const [etiqueta, setEtiqueta] = useState(children);
   // La gestoría acaba de entrar en las cuentas de un cliente desde Mi despacho (PanelDespacho.js entrarEn): en esa primera
   // pantalla, «atrás» vuelve a la ficha del cliente, no al Resumen del cliente.
@@ -44,5 +47,5 @@ export default function Volver({ href, children = 'Atrás' }) {
     if (entrada) { window.location.assign(entrada); return; }
     salirSinGuardar(() => volverA(router, href));
   };
-  return <Link href={entrada || href} className="volver" onClick={alPulsar}>‹ <span className="volver-texto">{etiqueta}</span></Link>;
+  return <Link href={entrada || href} className={`volver${seccion && !entrada ? ' volver-movil' : ''}`} onClick={alPulsar}>‹ <span className="volver-texto">{etiqueta}</span></Link>;
 }

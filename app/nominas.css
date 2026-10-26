@@ -11,4 +11,4 @@
 .pagina > .boton.ancho, .pagina > .formulario { margin-bottom: 8px; }
 /* «Historial de nóminas» con su ‹ año ›: un título de sección (no de página), separado del botón de añadir */
 .nom-historial { margin-top: 28px; }
-.nom-historial h2 { font-size: 22px; margin: 0; }
+.nom-historial h2 { font-size: 20px; margin: 0; }

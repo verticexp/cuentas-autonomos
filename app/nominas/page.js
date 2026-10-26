@@ -59,7 +59,7 @@ export default async function Nominas({ searchParams }) {
       )}
 
       <section className="tarjeta bloque">
-        <h2>Bases para la gestoría</h2>
+        <h2 className="tarjeta-titulo">Bases para la gestoría</h2>
         <form action="/api/nominas/bases" method="get" className="formulario">
           <label>Mes de las bases<input className="campo" type="month" name="mes" defaultValue={mes} required /></label>
           <button className="boton sec">Descargar bases del mes</button>
@@ -112,6 +112,18 @@ export default async function Nominas({ searchParams }) {
         </>
       )}
 
+      {/* Junto al equipo, no al final de todo el historial de nóminas */}
+      {antiguos.length > 0 && (
+        <>
+          <p className="rotulo">Ya no están</p>
+          <ul className="grupo-lista bloque">
+            {antiguos.map((e) => (
+              <li key={e.id}><Ir href={`/nominas/empleado/${e.id}`} className="fila"><span className="txt"><strong>{e.nombre}</strong><small>{e.baja ? `Baja el ${fechaCorta(e.baja)}` : `Alta el ${fechaCorta(e.alta)}`}</small></span></Ir></li>
+            ))}
+          </ul>
+        </>
+      )}
+
       <header className="cabecera modelos-cab nom-historial">
         <h2>Historial de nóminas</h2>
         <nav className="anios">
@@ -123,7 +135,7 @@ export default async function Nominas({ searchParams }) {
       {!meses.length && <Vacio compacto tipo="resultados" icono="usuarios" titulo={`Sin nóminas en ${anioHistorial}`} />}
       {meses.map((m) => (
         <div key={m}>
-          <p className="rotulo">{nombreMes(m)}</p>
+          <p className="rotulo">{nombreMes(m).replace(/^./, (c) => c.toUpperCase())}</p>
           <ul className="grupo-lista bloque">
             {N.filter((n) => n.mes === m).map((n) => (
               <li key={n.id}>
@@ -136,17 +148,6 @@ export default async function Nominas({ searchParams }) {
           </ul>
         </div>
       ))}
-
-      {antiguos.length > 0 && (
-        <>
-          <p className="rotulo">Ya no están</p>
-          <ul className="grupo-lista bloque">
-            {antiguos.map((e) => (
-              <li key={e.id}><Ir href={`/nominas/empleado/${e.id}`} className="fila"><span className="txt"><strong>{e.nombre}</strong><small>{e.baja ? `Baja el ${fechaCorta(e.baja)}` : `Alta el ${fechaCorta(e.alta)}`}</small></span></Ir></li>
-            ))}
-          </ul>
-        </>
-      )}
     </main>
   );
 }

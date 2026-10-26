@@ -7,7 +7,7 @@
 .chat-vacio { margin: auto; padding: 30px 12px; color: var(--muted); text-align: center; max-width: 32ch; line-height: 1.4; }
 .chat-grupo { display: flex; flex-direction: column; }
 .chat-dia, .chat-nuevos { align-self: center; margin: 10px 0 6px; padding: 4px 10px; border-radius: 8px; background: var(--surface); color: var(--muted); font-size: 12px; font-weight: 600; box-shadow: 0 1px 1px rgba(0, 0, 0, 0.06); }
-.chat-nuevos { background: color-mix(in srgb, var(--out) 12%, var(--surface)); color: var(--out); }
+.chat-nuevos { background: color-mix(in srgb, var(--out) 12%, var(--surface)); color: color-mix(in srgb, var(--out) 85%, var(--ink)); }
 .chat-burbuja { position: relative; align-self: flex-start; max-width: min(80%, 560px); padding: 6px 9px 5px 10px; border-radius: 4px 12px 12px 12px; background: var(--surface); color: var(--ink); box-shadow: 0 1px 1px rgba(0, 0, 0, 0.08); }
 .chat-burbuja.mia { align-self: flex-end; border-radius: 12px 4px 12px 12px; background: color-mix(in srgb, var(--in-boton) 16%, var(--surface)); }
 .chat-burbuja.resuelta { opacity: 0.8; }

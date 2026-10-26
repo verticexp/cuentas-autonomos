@@ -107,6 +107,9 @@ export default async function Resumen({ searchParams }) {
   const linea = puntos.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join('');
   // Cuenta recién creada: ni facturas ni gastos. En vez de gráficas y trimestres a cero, los primeros pasos.
   const sinDatos = !nFacturas && !nGastos;
+  // «Tus modelos»: los seis con el plazo más cercano; el resto, en Impuestos (con los 14 de una sociedad la columna medía 1.700 px).
+  const nModelos = modelosDe(fiscal).length;
+  const MODELOS_RESUMEN = 6;
   const e = u.emisor || {};
   // Por orden de valor (auditoría D8-16): lo que da de comer primero y el adorno al final. Los datos de la empresa ya se
   // piden al registrarse: solo salen si faltan (y entonces van primero, porque sin ellos la factura no vale).
@@ -469,13 +472,13 @@ export default async function Resumen({ searchParams }) {
             <h2 className="grupo-t">{sinDatos ? 'Tus próximos plazos' : 'Tus modelos'}</h2>
             <div className="grupo-c envolver">
               {/* Sin datos, solo los trimestrales de cada día (D8-19): el 347, el 390 o la renta son ruido el primer día. */}
-              {modelosDe(fiscal).filter((m) => !sinDatos || ['303', '420', '130', '131'].includes(m.id)).map((m) => ({ ...m, prox: proximoPlazoDe(fiscal, m.id, h, { cuotaIS: u.cuotaIS }) })).map((m) => ({ ...m, cuando: m.prox ? `${m.prox === h ? 'Hoy es el último día' : `Próximo: ${fechaTexto(m.prox)}${m.prox.slice(0, 4) !== h.slice(0, 4) ? ` de ${m.prox.slice(0, 4)}` : ''}`}` : m.cuando })).map((m) => (
+              {modelosDe(fiscal).filter((m) => !sinDatos || ['303', '420', '130', '131'].includes(m.id)).map((m) => ({ ...m, prox: proximoPlazoDe(fiscal, m.id, h, { cuotaIS: u.cuotaIS }) })).sort((a, b) => (sinDatos ? 0 : (a.prox || '9').localeCompare(b.prox || '9'))).slice(0, sinDatos ? undefined : MODELOS_RESUMEN).map((m) => ({ ...m, cuando: m.prox ? `${m.prox === h ? 'Hoy es el último día' : `Próximo: ${fechaTexto(m.prox)}${m.prox.slice(0, 4) !== h.slice(0, 4) ? ` de ${m.prox.slice(0, 4)}` : ''}`}` : m.cuando })).map((m) => (
                 m.calcula
                   ? <div key={m.id} className="celda ir"><span className="modelo-num"><NumeroModelo modelo={m} /></span><Ir href={`/modelos?anio=${anio}#m${m.id}`} tipo="adelante" className="txt enlace-modelo" aria-label={`Modelo ${m.id}: ${m.nombre}${m.cuando ? `. ${m.cuando}` : ''}`}>{m.nombre} <small>{m.cuando}</small></Ir><span className="v">{m.id === '100' ? 'Borrador' : 'Lo calcula Fisquo'}</span></div>
                   : <div key={m.id} className="celda"><span className="modelo-num"><NumeroModelo modelo={m} /></span><span className="txt">{m.nombre}<small>{m.cuando}</small></span>{m.calcula && <span className="v">Lo calcula Fisquo</span>}</div>
               ))}
             </div>
-            {sinDatos && <Ir href="/modelos" tipo="adelante" className="celda ir ver-todos">Ver todos los modelos</Ir>}
+            {(sinDatos || nModelos > MODELOS_RESUMEN) && <Ir href={sinDatos ? '/modelos' : `/modelos?anio=${anio}`} tipo="adelante" className="celda ir ver-todos">{sinDatos ? 'Ver todos los modelos' : `Ver los ${nModelos} modelos`}</Ir>}
             <p className="grupo-pie">Según lo que contestaste al empezar ({fiscal.tipo === 'sociedad' ? 'sociedad' : 'autónomo'}). Fisquo calcula los que lo dicen; el resto, tu gestor. Puedes cambiarlo en Ajustes.</p>
           </section>
 
