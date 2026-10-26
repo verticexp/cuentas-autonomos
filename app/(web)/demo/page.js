@@ -7,7 +7,7 @@ import { metaPagina } from '@/lib/webMeta';
 
 export const metadata = metaPagina({
   titulo: 'Demo de Fisquo sin registrarte',
-  descripcion: 'Recorre Fisquo en cinco pasos con datos de ejemplo, sin registrarte: factura, gasto leído con IA, impuestos, banco y gestoría.',
+  descripcion: 'Recorre Fisquo en cinco pasos con datos de ejemplo, sin registrarte y como autónomo o como sociedad: factura, gasto leído con IA, impuestos, banco y gestoría.',
   ruta: '/demo',
 });
 
@@ -17,7 +17,7 @@ export default function Demo() {
       <section className="web-hero-pag">
         <p className="web-kicker web-entra">Demo</p>
         <h1 className="web-entra" style={{ '--d': '60ms' }}>Recorre Fisquo <em>sin registrarte</em></h1>
-        <p className="web-sub web-entra" style={{ '--d': '120ms' }}>Cinco pasos, dos minutos y datos de ejemplo. Prueba a hacer una factura, leer un ticket con IA, ver tus impuestos, cuadrar el banco y compartirlo con tu gestoría.</p>
+        <p className="web-sub web-entra" style={{ '--d': '120ms' }}>Cinco pasos, dos minutos y datos de ejemplo, como autónomo o como sociedad. Prueba a hacer una factura, leer un ticket con IA, ver tus impuestos, cuadrar el banco y compartirlo con tu gestoría.</p>
         <ul className="web-micro web-entra" style={{ '--d': '180ms' }}><li><Icono n="tic" />Sin registro ni tarjeta</li><li><Icono n="tic" />Datos de ejemplo</li><li><Icono n="tic" />No se guarda nada</li></ul>
       </section>
 
@@ -37,7 +37,7 @@ export default function Demo() {
           <Link href="/guias" data-foco data-r className="web-fcard" style={{ '--d': '70ms' }}>
             <span className="web-fcard-ico"><Icono n="documento" /></span>
             <h3>Guías fiscales</h3>
-            <p>El modelo 303, el 130, el calendario del autónomo y la factura simplificada, explicados.</p>
+            <p>IVA, IRPF, Impuesto sobre Sociedades, retenciones, cuentas anuales y calendarios, para autónomos y sociedades.</p>
             <span className="web-enlace">Leer las guías<Flecha /></span>
           </Link>
           <Link href="/precios" data-foco data-r className="web-fcard" style={{ '--d': '140ms' }}>

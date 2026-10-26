@@ -21,6 +21,9 @@ const CIFRAS = [
 ];
 
 // Web pública de fisquo.com: lo que ve en / quien aún no ha entrado.
+// Las cuatro guías de la portada: dos para todos, una de autónomos y una de sociedades.
+const PORTADA_GUIAS = ['modelo-303', 'modelo-130', 'impuesto-sociedades-200-202', 'retenciones-111-115-190-180'];
+
 export default function Landing() {
   return (
     <Marco>
@@ -146,9 +149,9 @@ export default function Landing() {
       </section>
 
       <section className="web-sec">
-        <Encabezado kicker="Guías fiscales" titulo="Entiende tus impuestos antes de presentarlos" sub="Cuatro guías con la norma citada y la fecha de revisión: el 303, el 130, el calendario del autónomo y la factura simplificada." />
+        <Encabezado kicker="Guías fiscales" titulo="Entiende tus impuestos antes de presentarlos" sub="Guías con la norma citada y la fecha de revisión, para autónomos y para sociedades: IVA, IRPF, Impuesto sobre Sociedades, retenciones, cuentas anuales y calendarios." />
         <div className="web-relacionadas cuatro">
-          {GUIAS.map((g, i) => (
+          {PORTADA_GUIAS.map((slug) => GUIAS.find((g) => g.slug === slug)).map((g, i) => (
             <Link key={g.slug} href={`/guias/${g.slug}`} data-foco data-r className="web-fcard" style={{ '--d': `${i * 70}ms` }}>
               <span className="web-fcard-ico"><Icono n="documento" /></span>
               <h3>{g.corto}</h3>

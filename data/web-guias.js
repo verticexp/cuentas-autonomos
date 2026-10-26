@@ -1,11 +1,13 @@
+import { GUIAS_PYMES } from './web-guias-pymes.js';
+
 // Guías fiscales de la web pública (/guias). Contenido informativo y prudente: cada guía cita la norma en la que se apoya
 // y lleva su fecha de revisión. Cuando cambie una norma o un plazo, se edita aquí y se sube REVISION_GUIAS.
 //
-// Cada guía: slug (URL), corto (nombre en menús y pie), titulo (h1), descripcion (SEO), resumen (índice), minutos de
+// Cada guía: slug (URL), para (público: autonomos, pymes o todos), corto (nombre en menús y pie), titulo (h1), descripcion (SEO), resumen (índice), minutos de
 // lectura, normas (lo que se cita), secciones { id, t, bloques } y faqs. Bloques:
 //   { p }  { ul: [] }  { ol: [] }  { pasos: [{ t, d }] }  { nota }  { tabla: { cab, filas } }
 //   { ejemplo: { titulo, filas: [[etiqueta, valor, destacada]], pie } }
-//   { plazos: [anios] }  { anuales: anio }   (tablas con fechas calculadas en lib/webCalendario.js)
+//   { plazos: [anios] }  { anuales: anio }  { calendarioSociedad: anio }   (tablas con fechas calculadas en lib/webCalendario.js)
 // Dentro de un texto, **así** sale en negrita.
 
 // Fecha en la que se contrastó el contenido con las normas citadas y con lo publicado hasta entonces.
@@ -26,6 +28,7 @@ const PLAZOS_TRIMESTRALES = {
 export const GUIAS = [
   {
     slug: 'modelo-303',
+    para: 'todos',
     corto: 'Modelo 303',
     titulo: 'Modelo 303 paso a paso',
     descripcion: 'Qué es el modelo 303, quién lo presenta, los plazos y cómo se rellena la declaración trimestral del IVA: IVA repercutido, IVA soportado y resultado.',
@@ -133,12 +136,13 @@ export const GUIAS = [
       ['¿Puedo presentar el 303 fuera de plazo?', 'Sí, pero con recargo si lo haces sin requerimiento previo de la Administración. El recargo aumenta cuanto más tardes (art. 27 de la Ley General Tributaria).'],
       ['¿El 303 y el 130 tienen los mismos plazos?', 'Sí: del 1 al 20 de abril, julio y octubre, y del 1 al 30 de enero. Por eso muchos autónomos presentan los dos a la vez.'],
     ],
-    relacionadas: ['modelo-130', 'calendario-fiscal-autonomo-2026-2027', 'factura-simplificada'],
+    relacionadas: ['modelo-130', 'calendario-fiscal-sociedad-2026-2027', 'factura-simplificada'],
     cta: { titulo: 'Que tu 303 salga calculado', sub: 'Apunta tus facturas y gastos en Fisquo y ten las casillas listas cada trimestre. 30 días gratis, sin tarjeta.' },
     aviso: DISCLAIMER,
   },
   {
     slug: 'modelo-130',
+    para: 'autonomos',
     corto: 'Modelo 130',
     titulo: 'Modelo 130: cómo se calcula el pago fraccionado',
     descripcion: 'Quién presenta el modelo 130, plazos y cómo se calcula el pago fraccionado del IRPF: 20 % del rendimiento neto acumulado, menos retenciones y pagos anteriores.',
@@ -240,6 +244,7 @@ export const GUIAS = [
   },
   {
     slug: 'calendario-fiscal-autonomo-2026-2027',
+    para: 'autonomos',
     corto: 'Calendario fiscal 2026-2027',
     titulo: 'Calendario fiscal del autónomo 2026-2027',
     descripcion: 'Fechas de 2026 y 2027 de los modelos 303, 130, 111, 115 y 349 y de los resúmenes anuales, con los días trasladados y las fechas de Verifactu.',
@@ -285,7 +290,7 @@ export const GUIAS = [
       {
         id: 'sociedades', t: 'Si tienes una sociedad',
         bloques: [
-          { p: 'El calendario cambia: el pago fraccionado del Impuesto sobre Sociedades (**modelo 202**) se presenta del 1 al 20 de abril, octubre y diciembre, y el impuesto anual (**modelo 200**) en los 25 días naturales siguientes a los seis meses posteriores al cierre del ejercicio; si el ejercicio coincide con el año natural, del 1 al 25 de julio. La sociedad no presenta el 130.' },
+          { p: 'El calendario cambia: el pago fraccionado del Impuesto sobre Sociedades (**modelo 202**) se presenta del 1 al 20 de abril, octubre y diciembre, y el impuesto anual (**modelo 200**) en los 25 días naturales siguientes a los seis meses posteriores al cierre del ejercicio; si el ejercicio coincide con el año natural, del 1 al 25 de julio. La sociedad no presenta el 130. Todas sus fechas están en la guía del calendario fiscal de la sociedad.' },
         ],
       },
       {
@@ -300,12 +305,13 @@ export const GUIAS = [
       ['¿Todos los autónomos presentan los mismos modelos?', 'No. Depende de tu régimen de IVA y de IRPF, de si tienes empleados o pagas alquiler con retención y de si compras o vendes a otros países de la UE. Tu gestoría puede decirte cuáles te tocan.'],
       ['¿Está confirmado el aplazamiento de Verifactu hasta 2028?', 'No. Hacienda lo anunció el 5 de octubre de 2026, pero a 23 de octubre de 2026 no estaba publicado en el BOE. Mientras tanto rigen las fechas del Real Decreto-ley 15/2025.'],
     ],
-    relacionadas: ['modelo-303', 'modelo-130', 'factura-simplificada'],
+    relacionadas: ['modelo-303', 'modelo-130', 'retenciones-111-115-190-180'],
     cta: { titulo: 'Que no se te pase ningún plazo', sub: 'Fisquo te avisa antes de cada presentación y calcula tus modelos. 30 días gratis, sin tarjeta.' },
     aviso: DISCLAIMER,
   },
   {
     slug: 'factura-simplificada',
+    para: 'todos',
     corto: 'Factura simplificada',
     titulo: 'Factura simplificada: cuándo puedes hacerla',
     descripcion: 'Cuándo se puede expedir una factura simplificada (400 € o 3.000 € según el sector), qué datos lleva, su serie propia y cuándo hace falta una completa.',
@@ -390,4 +396,7 @@ export const GUIAS = [
   },
 ];
 
+// Las de pymes y sociedades (data/web-guias-pymes.js) van detrás. para: 'autonomos', 'pymes' o 'todos' (índice de /guias).
+GUIAS.push(...GUIAS_PYMES);
+export const PUBLICOS = [['pymes', 'Para pymes y sociedades'], ['autonomos', 'Para autónomos'], ['todos', 'Para autónomos y pymes']];
 export const guia = (slug) => GUIAS.find((g) => g.slug === slug);
