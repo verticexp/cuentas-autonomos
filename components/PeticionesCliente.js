@@ -33,7 +33,7 @@ export default function PeticionesCliente({ peticiones = [], compacta = false })
   };
   const titulo = peticiones.length === 1 ? 'Tu gestoría te pide un documento' : `Tu gestoría te pide ${peticiones.length} documentos`;
   return <section className={`peticiones${compacta ? ' compacta' : ''}`} aria-label={titulo}>
-    {compacta ? <button type="button" className="peticiones-t" aria-expanded={abierta} onClick={() => setAbierta(!abierta)}>📎 {titulo}<span aria-hidden>{abierta ? '▴' : '▾'}</span></button> : <h2 className="grupo-t">{titulo}</h2>}
+    {compacta ? <button type="button" className="peticiones-t" aria-expanded={abierta} onClick={() => setAbierta(!abierta)}>📎 {titulo}<span className="chevron" aria-hidden /></button> : <h2 className="grupo-t">{titulo}</h2>}
     {abierta && <ul>
       {peticiones.map((p) => <li key={p.id}>
         <span className="txt">

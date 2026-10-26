@@ -46,7 +46,7 @@ export default function Verifactu({ modo, admin, listo, faltaEmisor, fisquo, cue
       )}
       {!listo && <p className="nota">Fisquo todavía no tiene configurado su certificado para enviar a la AEAT: las facturas quedan pendientes y se enviarán solas en cuanto lo esté.</p>}
       {faltaEmisor && <p className="error">Rellena el nombre y el NIF de la empresa en Datos de facturación antes de activarlo.</p>}
-      <details>
+      <details className="plegable">
         <summary><strong>{modo === 'real' ? 'Autorización a Fisquo en la AEAT' : 'Antes de activarlo de verdad: autoriza a Fisquo en la AEAT'}</strong></summary>
         <ol className="nota">
           <li>Entra en la sede electrónica de la AEAT con tu certificado o Cl@ve y busca «Apoderamientos» → «Alta de apoderamiento».</li>

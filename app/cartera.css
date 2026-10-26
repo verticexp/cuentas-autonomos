@@ -11,7 +11,7 @@
 .car-efecto { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 0 16px 12px 24px; }
 .car-forma { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
 .car-forma select { font: inherit; color: var(--ink); background: var(--relleno); border: 0; border-radius: 8px; padding: 6px 8px; }
-.car-recibido, .car-solo { font-size: 13px; color: var(--muted); }
+.car-solo { font-size: 13px; color: var(--muted); }
 .car-solo { margin: 0; padding: 0 16px 12px 24px; }
 .car-aviso { display: block; background: color-mix(in srgb, var(--hacienda) 14%, var(--surface)); color: var(--ink); border-radius: 12px; padding: 10px 14px; font-size: 15px; text-decoration: none; margin: 0 0 20px; }
 .chips.deslizable.car-formas { margin: 0 -16px 16px; padding: 0 16px; }

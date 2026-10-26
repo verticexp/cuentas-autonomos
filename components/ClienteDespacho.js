@@ -7,7 +7,7 @@ import Ir from './Ir';
 import Vacio from './Vacio';
 import { confirmar } from './Confirmar';
 import { entrarEn } from './PanelDespacho';
-import { ESTADOS_TEXTO } from './despachoTextos';
+import { ESTADOS_TEXTO, accionParaDespacho } from './despachoTextos';
 import { navegar } from '@/lib/transicion';
 import { eur, fechaCorta, fechaHora } from '@/lib/formato';
 import VistaDocumento from './VistaDocumento';
@@ -199,11 +199,11 @@ export default function ClienteDespacho({ cliente, anio, t, hoy, rol, estado, li
       <h2 className="grupo-t" id="desp-docs">Facturas y gastos del {t}T</h2>
       {docs.facturas.length + docs.gastos.length === 0 ? <Vacio compacto icono="factura" titulo={`Sin facturas ni gastos en el ${t}T`}>Cuando el cliente apunte facturas o gastos de este trimestre, los verás aquí para revisarlos.</Vacio> : <ul className="grupo-lista desp-docs">
         {[...docs.facturas.map((f) => ({ ...f, tipo: 'factura', titulo: `Factura ${f.texto}` })), ...docs.gastos.map((g) => ({ ...g, tipo: 'gasto', titulo: g.texto }))].map((x) => <li key={`${x.tipo}-${x.id}`} className="fila">
+          {/* Al tocarla se abre con «Preguntar por esta factura»: un botón «Preguntar» en cada fila no dejaba leer el número */}
           <button type="button" className="desp-doc-ver" onClick={() => setVer({ tipo: x.tipo, id: x.id })} aria-label={`Ver ${x.titulo}`}>
             <span className="txt"><strong>{x.titulo}</strong><small>{fechaDe(x.fecha)}{x.tipo === 'gasto' ? ' · gasto' : ''}{x.sinJustificante ? ' · sin justificante' : ''}</small></span>
             <span className="imp">{eur(x.base)}</span>
           </button>
-          <Ir prefetch={false} className="boton sec desp-mini" href={chat(`${x.tipo}:${x.id}`)}>Preguntar</Ir>
         </li>)}
       </ul>}
       {docs.mas > 0 && <p className="grupo-pie">Y {docs.mas} más: entra en sus Facturas o Gastos para verlos todos.</p>}
@@ -256,7 +256,7 @@ export default function ClienteDespacho({ cliente, anio, t, hoy, rol, estado, li
 
     <section className="grupo" aria-labelledby="desp-reg">
       <h2 className="grupo-t" id="desp-reg">Lo que ha hecho el despacho</h2>
-      {accesos.length ? <ul className="grupo-lista">{accesos.slice(0, 15).map((a, i) => <li key={i} className="fila"><span className="txt">{a.accion}{a.detalle ? ` · ${a.detalle}` : ''}<small>{a.nombre}</small></span><span className="v nota">{horaDe(a.fecha)}</span></li>)}</ul> : <Vacio compacto icono="actividad" titulo="El despacho aún no ha hecho nada">Aquí quedará anotado lo que hagáis en las cuentas de este cliente.</Vacio>}
+      {accesos.length ? <ul className="grupo-lista">{accesos.slice(0, 15).map((a, i) => <li key={i} className="fila"><span className="txt">{accionParaDespacho(a.accion)}{a.detalle ? ` · ${a.detalle}` : ''}<small>{a.nombre}</small></span><span className="v nota">{horaDe(a.fecha)}</span></li>)}</ul> : <Vacio compacto icono="actividad" titulo="El despacho aún no ha hecho nada">Aquí quedará anotado lo que hagáis en las cuentas de este cliente.</Vacio>}
       <p className="grupo-pie">El cliente ve esta misma lista en Ajustes › Tu gestoría.</p>
     </section>
   </>;

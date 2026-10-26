@@ -3,7 +3,7 @@
 import { useId, useRef, useState } from 'react';
 import { vistaImportacion } from '@/lib/vistaImportacion';
 import Link from 'next/link';
-import { eur, fechaCorta } from '@/lib/formato';
+import { eur, fechaCorta, pctCorto } from '@/lib/formato';
 import { saldoDe as saldo } from '@/lib/calculos';
 import Vacio from './Vacio';
 import { ORIGENES, guiaDe } from '@/lib/importarOrigen';
@@ -27,11 +27,11 @@ const ESTADO = { nuevo: 'Nuevo', completar: 'Se completa', quitada: 'Quitada', d
 // Una línea legible de cada fila de la vista previa.
 function resumen(tipo, d) {
   if (tipo === 'clientes') return [d.nombre, [d.nif, d.ciudad, d.email].filter(Boolean).join(' · ')];
-  if (tipo === 'productos') return [d.nombre, `${eur(d.precio)} · IVA ${d.ivaPct} %`];
+  if (tipo === 'productos') return [d.nombre, `${eur(d.precio)} · IVA ${pctCorto(d.ivaPct)}`];
   if (tipo === 'saldos') return [`${d.cuenta} · ${d.nombre || ''}`, `${d.saldo >= 0 ? 'Deudor' : 'Acreedor'} ${eur(Math.abs(d.saldo))}`];
   if (tipo === 'bienes') return [d.concepto, `${fechaCorta(d.fecha)} · ${eur(d.base)} · amortizado ${eur(d.inversion.acumulada)}`];
-  if (tipo === 'gastos') return [d.concepto, `${fechaCorta(d.fecha)} · ${eur(d.base)} + IVA ${d.ivaPct} %${d.pendiente ? ' · sin pagar' : ''}`];
-  return [`${d.importada} · ${d.cliente.nombre}`, `${fechaCorta(d.fecha)} · ${eur(d.base)} + IVA ${d.ivaPct} %${d.irpfPct ? ` − IRPF ${d.irpfPct} %` : ''} · ${d.cobrada ? 'cobrada' : d.pagos?.length ? `cobrada en parte (pendiente ${eur(saldo(d))})` : 'pendiente'}`];
+  if (tipo === 'gastos') return [d.concepto, `${fechaCorta(d.fecha)} · ${eur(d.base)} + IVA ${pctCorto(d.ivaPct)}${d.pendiente ? ' · sin pagar' : ''}`];
+  return [`${d.importada} · ${d.cliente.nombre}`, `${fechaCorta(d.fecha)} · ${eur(d.base)} + IVA ${pctCorto(d.ivaPct)}${d.irpfPct ? ` − IRPF ${pctCorto(d.irpfPct)}` : ''} · ${d.cobrada ? 'cobrada' : d.pagos?.length ? `cobrada en parte (pendiente ${eur(saldo(d))})` : 'pendiente'}`];
 }
 
 // Importar desde Holded, Quipu u otro programa o Excel: se elige de dónde se viene y qué, se sube el archivo, se revisa la

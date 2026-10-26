@@ -7,7 +7,7 @@ import { navegar, volverA } from '@/lib/transicion';
 import { SS_EMPRESA, SS_TRABAJADOR, calculoNomina, nominaCompleta } from '@/lib/nominas';
 import { leerImporte } from '@/lib/calculos';
 import { Cotizacion, Modelo145, IncidenciasNomina } from './DatosNomina';
-import { eur, hoy as hoyActual } from '@/lib/formato';
+import { eur, hoy as hoyActual, pctCorto } from '@/lib/formato';
 
 // Alta o edición de un empleado.
 export function FormEmpleado({ empleado, hoy }) {
@@ -41,10 +41,9 @@ export function FormEmpleado({ empleado, hoy }) {
     <form className="formulario tarjeta" onSubmit={enviar}>
       {nuevo && <h3>Nuevo empleado</h3>}
       <label>Nombre y apellidos<input className="campo" placeholder="Nombre y apellidos" value={e.nombre} onChange={(x) => poner('nombre', x.target.value)} required /></label>
-      <div className="dos-col">
-        <label>DNI / NIE<input spellCheck={false} autoCorrect="off" autoCapitalize="characters" className="campo" placeholder="DNI / NIE" value={e.nif} onChange={(x) => poner('nif', x.target.value)} /></label>
-        <label>Puesto<input className="campo" placeholder="Puesto" value={e.puesto} onChange={(x) => poner('puesto', x.target.value)} /></label>
-      </div>
+      {/* El puesto suele ser largo («Coordinadora de eventos»): en media columna no se leía entero */}
+      <label>Puesto<input className="campo" placeholder="Puesto" value={e.puesto} onChange={(x) => poner('puesto', x.target.value)} /></label>
+      <label>DNI / NIE<input spellCheck={false} autoCorrect="off" autoCapitalize="characters" className="campo" placeholder="DNI / NIE" value={e.nif} onChange={(x) => poner('nif', x.target.value)} /></label>
       <div className="dos-col">
         <label>Alta<input className="campo" type="date" value={e.alta} onChange={(x) => poner('alta', x.target.value)} required /></label>
         <label>Baja (si ya no está)<input className="campo" type="date" value={e.baja} onChange={(x) => poner('baja', x.target.value)} /></label>
@@ -113,10 +112,10 @@ export function FormNomina({ nomina }) {
       {(nomina.detalle?.avisos || []).map((a) => <p className="nota" key={a}>{a}</p>)}
       <dl className="tarjeta bloque nomina-desglose">
         <dt>{n.tipo === 'finiquito' ? 'Total devengado' : 'Sueldo bruto'}</dt><dd>{eur(c.totalDevengado ?? c.bruto)}</dd>
-        <dt>Retención IRPF ({n.irpfPct} %)</dt><dd>−{eur(c.irpf)}</dd>
-        <dt>Seguridad Social del trabajador ({n.ssTrabajadorPct} %)</dt><dd>−{eur(c.ssTrabajador)}</dd>
+        <dt>Retención IRPF ({pctCorto(n.irpfPct)})</dt><dd>−{eur(c.irpf)}</dd>
+        <dt>Seguridad Social del trabajador ({pctCorto(n.ssTrabajadorPct)})</dt><dd>−{eur(c.ssTrabajador)}</dd>
         <dt><strong>Neto a pagar</strong></dt><dd><strong>{eur(c.neto)}</strong></dd>
-        <dt>Seguridad Social de la empresa ({n.ssEmpresaPct} %)</dt><dd>{eur(c.ssEmpresa)}</dd>
+        <dt>Seguridad Social de la empresa ({pctCorto(n.ssEmpresaPct)})</dt><dd>{eur(c.ssEmpresa)}</dd>
         <dt><strong>Coste para la empresa</strong></dt><dd><strong>{eur(c.coste)}</strong></dd>
       </dl>
       <button type="button" className={`boton ancho ${n.pagada ? 'sec' : ''}`} disabled={msg === 'Guardando…'} onClick={() => guardar({ pagada: !n.pagada })}>{n.pagada ? '✓ Pagada · desmarcar' : 'Marcar como pagada'}</button>

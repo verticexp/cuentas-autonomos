@@ -28,6 +28,6 @@ export default async function AjustesDelDespacho({ searchParams }) {
     <AjustesDespacho
       despacho={{ nombre: d.nombre, nif: d.nif || '', email: d.email || '', codigo: d.codigo, soloAsignados: Boolean(d.soloAsignados), empresaPropia: usaEmpresaPropia(d), cobro: rol === 'titular' ? d.cobro || null : null, demo: Boolean(d.demo) }}
       titular={rol === 'titular'} licencias={licencias} tarifa={tarifa} oferta={oferta} nombres={NOMBRES_LICENCIA} diasGratis={DIAS_GRATIS} stripe={stripeListo()} sesion={typeof q.sesion === 'string' ? q.sesion : ''}
-      enlace={`${origen}/api/invitacion/gestoria?c=${encodeURIComponent(d.codigo)}`} />
+      enlace={`${origen}/invitacion/gestoria/${encodeURIComponent(d.codigo)}`} />
   </main>;
 }

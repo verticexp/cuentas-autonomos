@@ -30,7 +30,8 @@ export default async function Despacho({ searchParams }) {
   const cuenta = (e) => filas.filter((f) => enPestana(f, e)).length;
   const url = (e) => `/despacho?anio=${anio}&t=${t}${e === 'todos' ? '' : `&estado=${e}`}`;
   return <main className="pagina mk-look despacho">
-    <h1 className="titulo">{d.nombre}</h1>
+    {/* La pestaña es «Clientes»: el nombre del despacho ya va en el selector de arriba (y se repetía aquí en grande) */}
+    <h1 className="titulo">Clientes</h1>
     <p className="resumen-linea desp-linea">
       <span>{filas.length === 1 ? '1 cliente' : `${filas.length} clientes`}{rol === 'gestor' && d.soloAsignados ? ' asignados a ti' : ''} · {t}T {anio}</span>
       {filas.length > 0 && <a href={`/api/despacho/paquete?todos=1&anio=${anio}&t=${t}`} download>Descargar todos los paquetes del {t}T ›</a>}

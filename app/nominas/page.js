@@ -35,6 +35,10 @@ export default async function Nominas({ searchParams }) {
   const plazo111 = fechaTexto(limiteTrimestre(t, anio, 20));
   const { anios, anio: anioHistorial, meses } = historialNominas(N, anio, (await searchParams)?.anio);
 
+  const indiceAnio = anios.indexOf(anioHistorial);
+  const anterior = anios[indiceAnio + 1];
+  const siguiente = anios[indiceAnio - 1];
+
   return (
     <main className="pagina mk-look">
       <Volver href="/mas">Más</Volver>
@@ -43,10 +47,10 @@ export default async function Nominas({ searchParams }) {
       {activos.length > 0 && (
         <section className="tarjeta bloque nomina-mes">
           <p className="rotulo-claro">Nóminas de {nombreMes(mes)}</p>
-          <div className="dos-valores">
+          {delMes.length ? <div className="dos-valores">
             <div><small>Netos a pagar</small><p className="grande">{eur(r2(delMes.reduce((s, x) => s + x.neto, 0)))}</p></div>
             <div><small>Coste empresa</small><p className="grande">{eur(r2(delMes.reduce((s, x) => s + x.coste, 0)))}</p></div>
-          </div>
+          </div> : <p className="nota">Todavía no has hecho las de este mes.</p>}
           {faltan > 0
             ? <GenerarMes mes={mes} texto={delMes.length ? `Hacer las ${faltan} que faltan` : `Hacer las nóminas de ${nombreMes(mes).split(' ')[0]}`} />
             : <p className="nota">✓ {delMes.length === 1 ? 'Hecha la nómina' : `Hechas las ${delMes.length} nóminas`} de este mes. Se apuntan solas como gasto.</p>}
@@ -108,14 +112,14 @@ export default async function Nominas({ searchParams }) {
         </>
       )}
 
-      <h2>Historial de nóminas</h2>
-      <form action="/nominas" method="get" className="bloque">
-        <label htmlFor="anio-nominas">Año del historial</label>{' '}
-        <select id="anio-nominas" name="anio" defaultValue={anioHistorial} key={anioHistorial} className="campo">
-          {anios.map((a) => <option key={a} value={a}>{a}</option>)}
-        </select>{' '}
-        <button type="submit" className="boton sec">Ver año</button>
-      </form>
+      <header className="cabecera modelos-cab nom-historial">
+        <h2>Historial de nóminas</h2>
+        <nav className="anios">
+          {anterior ? <Ir href={`/nominas?anio=${anterior}`} tipo="cifras" aria-label="Año anterior">‹</Ir> : <span className="off">‹</span>}
+          <strong>{anioHistorial}</strong>
+          {siguiente ? <Ir href={`/nominas?anio=${siguiente}`} tipo="cifras" aria-label="Año siguiente">›</Ir> : <span className="off">›</span>}
+        </nav>
+      </header>
       {!meses.length && <Vacio compacto tipo="resultados" icono="usuarios" titulo={`Sin nóminas en ${anioHistorial}`} />}
       {meses.map((m) => (
         <div key={m}>

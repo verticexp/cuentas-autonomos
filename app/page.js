@@ -15,7 +15,7 @@ import { importes, limiteTrimestre, r2 } from '@/lib/calculos';
 import { plazo420 } from '@/lib/igic';
 import { sinFuncion } from '@/lib/planes';
 import { actividadesDe, fiscalDe, hecho303, modelosDe, nombresActividad } from '@/lib/empresa';
-import { eur, fechaCorta, fechaTexto, hoy } from '@/lib/formato';
+import { eur, fechaCorta, fechaTexto, hoy, pctCorto } from '@/lib/formato';
 import SinBD from '@/components/SinBD';
 import { Presentado } from '@/components/Acciones';
 import Grafica from '@/components/Grafica';
@@ -169,8 +169,11 @@ export default async function Resumen({ searchParams }) {
             {anio < anioActual ? <Ir href={`/?anio=${anio + 1}`} tipo="cifras" aria-label="Año siguiente">›</Ir> : <span className="off">›</span>}
           </nav>}
         </div>
-        <h1 className="inicio-hola">Hola, {String(u.nombre || '').split(' ')[0] || 'equipo'}</h1>
-        <p className="inicio-sub">{sinDatos ? (siguientePaso?.id === 'factura' ? 'Empieza por tu primera factura: tarda un minuto.' : 'Vamos a dejarlo todo listo.') : esteAnio ? 'Así va tu año.' : `Así cerraste ${anio}.`}</p>
+        {/* La gestoría dentro de las cuentas de un cliente: no se saluda a sí misma ni le habla de «tu año» (son las del cliente) */}
+        {u.viaDespacho
+          ? <><h1 className="inicio-hola">{u.empresaNombre}</h1><p className="inicio-sub">{sinDatos ? 'Todavía no ha apuntado nada.' : esteAnio ? 'Así va su año.' : `Así cerró ${anio}.`}</p></>
+          : <><h1 className="inicio-hola">Hola, {String(u.nombre || '').split(' ')[0] || 'equipo'}</h1>
+            <p className="inicio-sub">{sinDatos ? (siguientePaso?.id === 'factura' ? 'Empieza por tu primera factura: tarda un minuto.' : 'Vamos a dejarlo todo listo.') : esteAnio ? 'Así va tu año.' : `Así cerraste ${anio}.`}</p></>}
         {!u.despacho && u.misEmpresas?.length > 1 && <CambiarEmpresa empresas={u.misEmpresas} actual={u.empresa} variante="chip" />}
       </header>
 
@@ -207,7 +210,7 @@ export default async function Resumen({ searchParams }) {
         </section>
       )}
 
-      <Ir href="/asistente" className="asi-entrada"><svg viewBox="0 0 24 24" aria-hidden><path d="M4 5h16v11H9l-5 4zM8 10h8M8 13h5" /></svg>{sinDatos ? 'Pregúntame cómo hacer tu primera factura' : 'Pregunta por tus cuentas'}</Ir>
+      <Ir href="/asistente" className="asi-entrada"><svg viewBox="0 0 24 24" aria-hidden><path d="M4 5h16v11H9l-5 4zM8 10h8M8 13h5" /></svg>{u.viaDespacho ? 'Pregunta por sus cuentas' : sinDatos ? 'Pregúntame cómo hacer tu primera factura' : 'Pregunta por tus cuentas'}</Ir>
 
       <nav className="accesos" aria-label="Accesos">
         {accesos.map((a) => (
@@ -306,7 +309,7 @@ export default async function Resumen({ searchParams }) {
 
           <section className="grupo">
             <h2 className="grupo-t">Por actividad</h2>
-            <div className="grupo-c">
+            <div className="grupo-c envolver">
               {r.porActividad.map((a) => (
                 <div key={a.actividad} className="celda">
                   <Ico n="actividad" />
@@ -325,7 +328,8 @@ export default async function Resumen({ searchParams }) {
                 // El trimestre en curso (y los que faltan) aún no se pueden presentar: «En curso», sin selector.
                 const abierto = anio === anioActual && q.t >= tHoy;
                 return (
-                <div key={q.t} className={`trim trimestre${anio === anioActual && q.t > tHoy ? ' futuro' : ''}`}>
+                // El trimestre en curso ya sale arriba en la tarjeta de Impuestos: en el móvil no se repite aquí (app/movil.css).
+                <div key={q.t} className={`trim trimestre${anio === anioActual && q.t > tHoy ? ' futuro' : ''}${verHacienda && anio === anioActual && q.t === tHoy ? ' en-tarjeta' : ''}`}>
                   <div className="trim-cab"><h3>{q.t}T {anio}</h3>{abierto && <span className="estado-txt e-curso">{q.t === tHoy ? 'En curso · apuntado hasta hoy' : 'Aún no ha empezado'}</span>}</div>
                   <div className="trim-cifras">
                     {c303 && <p><span>{foral ? nombreIndirecto(q) : igic ? modeloIndirecto : q.t === r.trimestres[0]?.t ? <Termino id="m303">Modelo 303</Termino> : 'Modelo 303'}</span><strong>{q.ivaDevolucion > 0 ? `${eur(q.ivaDevolucion)} a devolver` : q.m303 < 0 ? `${eur(-q.m303)} a compensar` : eur(q.ivaIngresar)}</strong></p>}
@@ -374,7 +378,7 @@ export default async function Resumen({ searchParams }) {
                           {c['04'] > 0 && <>{fila('04', 'Base al 10 %', c['04'])}{fila('06', 'Cuota al 10 %', c['06'])}</>}
                           {fila('07', 'Base al 21 %', c['07'])}
                           {fila('09', 'Cuota al 21 %', c['09'])}
-                          {c.otros.flatMap((o) => [fila('—', `Base al ${o.pct} % (revisar casilla)`, o.base), fila('—', `Cuota al ${o.pct} % (revisar casilla)`, o.iva)])}
+                          {c.otros.flatMap((o) => [fila('—', `Base al ${pctCorto(o.pct)} (revisar casilla)`, o.base), fila('—', `Cuota al ${pctCorto(o.pct)} (revisar casilla)`, o.iva)])}
                           {(c['14'] !== 0 || c['15'] !== 0) && <>{fila('14', 'Rectificativas: base', c['14'])}{fila('15', 'Rectificativas: cuota', c['15'])}</>}
                           {[['16', '18', '0,5'], ['19', '21', '1,4'], ['22', '24', '5,2']].filter(([b]) => c[b]).flatMap(([b, q, r]) => [fila(b, `Recargo ${r} %: base`, c[b]), fila(q, `Recargo ${r} %: cuota`, c[q])])}
                           {(c['25'] || c['26']) ? <>{fila('25', 'Recargo de rectificativas: base', c['25'])}{fila('26', 'Recargo de rectificativas: cuota', c['26'])}</> : null}
@@ -463,7 +467,7 @@ export default async function Resumen({ searchParams }) {
 
           <section className="grupo">
             <h2 className="grupo-t">{sinDatos ? 'Tus próximos plazos' : 'Tus modelos'}</h2>
-            <div className="grupo-c">
+            <div className="grupo-c envolver">
               {/* Sin datos, solo los trimestrales de cada día (D8-19): el 347, el 390 o la renta son ruido el primer día. */}
               {modelosDe(fiscal).filter((m) => !sinDatos || ['303', '420', '130', '131'].includes(m.id)).map((m) => ({ ...m, prox: proximoPlazoDe(fiscal, m.id, h, { cuotaIS: u.cuotaIS }) })).map((m) => ({ ...m, cuando: m.prox ? `${m.prox === h ? 'Hoy es el último día' : `Próximo: ${fechaTexto(m.prox)}${m.prox.slice(0, 4) !== h.slice(0, 4) ? ` de ${m.prox.slice(0, 4)}` : ''}`}` : m.cuando })).map((m) => (
                 m.calcula

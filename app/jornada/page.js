@@ -28,6 +28,8 @@ export default async function RegistroJornada({ searchParams }) {
   const q = await searchParams;
   const mesHoy = hoy.slice(0, 7);
   const mes = /^\d{4}-(0[1-9]|1[0-2])$/.test(q.mes || '') && q.mes <= mesHoy ? q.mes : mesHoy;
+  const persona = gestor && typeof q.persona === 'string' && empleados.some((e) => e.id === q.persona) ? q.persona : null;
+  const filtroPersona = persona ? `&persona=${encodeURIComponent(persona)}` : '';
   const todos = (await leer(u, 'jornada')) || [];
   const visibles = gestor ? todos : todos.filter((f) => f.empleado === yo.id);
   const delMes = visibles.filter((f) => f.fecha.startsWith(mes)).sort((a, b) => b.entrada.localeCompare(a.entrada));
@@ -40,7 +42,38 @@ export default async function RegistroJornada({ searchParams }) {
   const previo = abierto ? (() => { let s = 0, ini = abierto.entrada; for (const p of abierto.pausas) { s += Math.round((Date.parse(`${p.inicio}:00Z`) - Date.parse(`${ini}:00Z`)) / 60000); ini = p.fin || p.inicio; } return s; })() : 0;
   const quienes = gestor ? empleados.filter((e) => (e.alta.slice(0, 7) <= mes && (!e.baja || e.baja.slice(0, 7) >= mes)) || delMes.some((f) => f.empleado === e.id)).sort((a, b) => a.nombre.localeCompare(b.nombre)) : [yo];
   const hasta = mes === mesHoy ? hoy : undefined;
-  const dias = [...new Set(delMes.map((f) => f.fecha))];
+  const fichajes = persona ? delMes.filter((f) => f.empleado === persona) : delMes;
+  const dias = [...new Set(fichajes.map((f) => f.fecha))].sort((a, b) => b.localeCompare(a));
+  const plegar = gestor && !persona && dias.length > 7;
+
+  const verDias = (fechas) => fechas.map((d) => (
+    <section key={d} className="grupo">
+      <h2 className="grupo-t">{fechaTexto(d)}</h2>
+      <ul className="grupo-lista jor-dia">
+        {fichajes.filter((f) => f.fecha === d).map((f) => {
+          const m = minutos(f);
+          return (
+            <li key={f.id}>
+              <div className="fila">
+                <span className="txt">
+                  {gestor && !persona && <strong>{porId[f.empleado]?.nombre || 'Empleado borrado'}</strong>}
+                  <span className="jor-horas">{horaDe(f.entrada)} – {f.salida ? horaDe(f.salida) : <em>sin salida</em>}</span>
+                  {(f.pausas?.length > 0 || f.cambios?.length > 0 || f.manual) && (
+                    <small>
+                      {f.pausas?.length > 0 && `Pausas ${f.pausas.map((p) => `${horaDe(p.inicio)}–${p.fin ? horaDe(p.fin) : '…'}`).join(', ')}`}
+                      {(f.cambios?.length > 0 || f.manual) && <span className="jor-corregida">{f.cambios?.length ? `Corregida: ${f.cambios.at(-1).motivo}` : `A mano: ${f.manual}`}</span>}
+                    </small>
+                  )}
+                </span>
+                <span className="imp">{m === null ? '—' : `${hhmm(m)} h`}</span>
+              </div>
+              {gestor && f.salida && <EditarJornada f={f} />}
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  ));
 
   return (
     <main className="pagina mk-look jornada">
@@ -50,19 +83,24 @@ export default async function RegistroJornada({ searchParams }) {
       {yo && <div id="fichar-jornada"><Fichar estado={estado} desde={desde} hoyMin={hoyMin + previo} ahora={ahora} /></div>}
 
       <nav className="jor-meses" aria-label="Mes">
-        <Ir href={`/jornada?mes=${masMes(mes, -1)}`} tipo="cifras" aria-label="Mes anterior">‹</Ir>
+        <Ir href={`/jornada?mes=${masMes(mes, -1)}${filtroPersona}`} tipo="cifras" aria-label="Mes anterior">‹</Ir>
         <strong>{nombreMes(mes)}</strong>
-        {mes < mesHoy ? <Ir href={`/jornada?mes=${masMes(mes, 1)}`} tipo="cifras" aria-label="Mes siguiente">›</Ir> : <span className="off">›</span>}
+        {mes < mesHoy ? <Ir href={`/jornada?mes=${masMes(mes, 1)}${filtroPersona}`} tipo="cifras" aria-label="Mes siguiente">›</Ir> : <span className="off">›</span>}
       </nav>
 
       <section className="grupo">
         <ul className="grupo-lista jor-resumen">
           {quienes.map((e) => {
             const r = resumenMes(visibles, e, mes, hasta);
-            return (
-              <li key={e.id} className="fila">
+            const contenido = (
+              <>
                 <span className="txt"><strong>{e.nombre}</strong><small>{r.dias === 1 ? '1 día' : `${r.dias} días`} · su jornada {hhmm(r.teoricos)} h{mes === mesHoy ? ' hasta hoy' : ''}{r.abiertos ? ' · fichaje abierto' : ''}</small></span>
                 <span className="imp">{hhmm(r.trabajados)} h<small className={r.diferencia > 0 ? 'jor-extra' : ''}>{r.diferencia > 0 ? `+${hhmm(r.diferencia)} h extra` : r.diferencia < 0 ? `faltan ${hhmm(-r.diferencia)} h` : 'justas'}</small></span>
+              </>
+            );
+            return (
+              <li key={e.id} className={gestor ? undefined : 'fila'}>
+                {gestor ? <Ir href={`/jornada?mes=${mes}${persona === e.id ? '' : `&persona=${encodeURIComponent(e.id)}`}`} className={`fila${persona === e.id ? ' activa' : ''}`} aria-current={persona === e.id ? 'true' : undefined}>{contenido}</Ir> : contenido}
               </li>
             );
           })}
@@ -74,34 +112,14 @@ export default async function RegistroJornada({ searchParams }) {
 
       {gestor && empleados.length > 0 && <div id="anadir-jornada"><NuevaJornada empleados={empleados.filter((e) => !e.baja || e.baja >= `${mes}-01`)} hoy={mes === mesHoy ? hoy : `${mes}-01`} /></div>}
 
-      {dias.map((d) => (
-        <section key={d} className="grupo">
-          <h2 className="grupo-t">{fechaTexto(d)}</h2>
-          <ul className="grupo-lista jor-dia">
-            {delMes.filter((f) => f.fecha === d).map((f) => {
-              const m = minutos(f);
-              return (
-                <li key={f.id}>
-                  <div className="fila">
-                    <span className="txt">
-                      {gestor && <strong>{porId[f.empleado]?.nombre || 'Empleado borrado'}</strong>}
-                      <span className="jor-horas">{horaDe(f.entrada)} – {f.salida ? horaDe(f.salida) : <em>sin salida</em>}</span>
-                      {(f.pausas?.length > 0 || f.cambios?.length > 0 || f.manual) && (
-                        <small>
-                          {f.pausas?.length > 0 && `Pausas ${f.pausas.map((p) => `${horaDe(p.inicio)}–${p.fin ? horaDe(p.fin) : '…'}`).join(', ')}`}
-                          {(f.cambios?.length > 0 || f.manual) && <span className="jor-corregida">{f.cambios?.length ? `Corregida: ${f.cambios.at(-1).motivo}` : `A mano: ${f.manual}`}</span>}
-                        </small>
-                      )}
-                    </span>
-                    <span className="imp">{m === null ? '—' : `${hhmm(m)} h`}</span>
-                  </div>
-                  {gestor && f.salida && <EditarJornada f={f} />}
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      ))}
+      {persona && <Ir href={`/jornada?mes=${mes}`} className="jor-todos">Ver todo el equipo</Ir>}
+      {verDias(plegar ? dias.slice(0, 7) : dias)}
+      {plegar && (
+        <details className="jor-anteriores plegable">
+          <summary>Ver los {dias.length - 7} días anteriores</summary>
+          {verDias(dias.slice(7))}
+        </details>
+      )}
       {!dias.length && <Vacio icono="plazo" titulo={yo ? 'Registra tu jornada' : 'Apunta la jornada de tu equipo'} accion={{ href: yo ? '#fichar-jornada' : empleados.length ? '#anadir-jornada' : '/nominas#anadir-empleado', texto: yo ? 'Ir al fichaje' : empleados.length ? 'Añadir jornada' : 'Ir a Equipo y nóminas' }} secundaria={mes !== mesHoy && { href: '/jornada', texto: 'Ver este mes' }}>{yo ? 'Ficha la entrada al empezar y la salida al acabar.' : 'Añade su email en Nóminas para que cada persona pueda fichar.'}</Vacio>}
     </main>
   );

@@ -2,7 +2,7 @@
 
 import { useId, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { eur, fechaTexto } from '@/lib/formato';
+import { eur, fechaTexto, pctCorto } from '@/lib/formato';
 
 const NOMBRES = { shopify: 'Shopify', woocommerce: 'WooCommerce', sumup: 'SumUp', square: 'Square', generico: 'Excel o CSV' };
 
@@ -63,7 +63,7 @@ export default function ImportarVentas({ actividades }) {
               <label key={x.fecha} className={`tarjeta caja-dia${x.repetido ? ' repetido' : ''}`}>
                 <span><input type="checkbox" checked={elegidos.has(x.fecha)} onChange={() => cambiar(x.fecha)} /> <strong>{fechaTexto(x.fecha)} {x.fecha.slice(0, 4)}</strong>
                   <small>{x.pedidos} {x.pedidos === 1 ? 'venta' : 'ventas'} · efectivo {eur(x.efectivo)} · tarjeta {eur(x.tarjeta)}{x.otros ? ` · otros ${eur(x.otros)}` : ''}</small>
-                  <small>{x.porIva.map((t) => `${t.pct} %: ${eur(t.total)}`).join(' · ')}{x.unidades.length ? ` · ${x.unidades.reduce((s, y) => s + y.cantidad, 0)} uds. del catálogo` : ''}{x.repetido ? ' · ya importado' : ''}</small>
+                  <small>{x.porIva.map((t) => `${pctCorto(t.pct)}: ${eur(t.total)}`).join(' · ')}{x.unidades.length ? ` · ${x.unidades.reduce((s, y) => s + y.cantidad, 0)} uds. del catálogo` : ''}{x.repetido ? ' · ya importado' : ''}</small>
                 </span>
                 <b>{eur(x.total)}</b>
               </label>

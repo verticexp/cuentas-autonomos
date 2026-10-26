@@ -5,7 +5,7 @@ import { PUBLICO } from '../lib/rutasPublicas.js';
 test('las rutas públicas siguen abiertas sin sesión', () => {
   for (const r of ['/', '/login', '/registro', '/precios', '/funciones/facturas', '/p/abc', '/portal/abc', '/pagar/abc', '/api/portal/pdf',
     '/api/abierta/abc', '/api/pagar', '/api/presupuestos/aceptar', '/api/stripe/webhook', '/api/buzon', '/api/trabajos', '/api/passkey', '/api/confirmar',
-    '/api/invitacion/aceptar', '/sw', '/manifest.webmanifest', '/robots.txt', '/favicon.ico', '/apple-icon', '/.well-known/apple-app-site-association', '/correo/logo.png', '/inicio-ios/1179x2556.png']) {
+    '/api/invitacion/aceptar', '/api/invitacion/gestoria', '/invitacion/gestoria/DEMO-FERRER', '/sw', '/manifest.webmanifest', '/robots.txt', '/favicon.ico', '/apple-icon', '/.well-known/apple-app-site-association', '/correo/logo.png', '/inicio-ios/1179x2556.png']) {
     assert.ok(PUBLICO.test(r), r);
   }
 });
