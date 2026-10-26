@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
 import { calcularDieta, KM, limiteDia } from '@/lib/dietas';
-import { eur } from '@/lib/formato';
+import { eur, pctCorto } from '@/lib/formato';
 import '@/app/dietas.css';
 import useEnvio from './useEnvio';
 
@@ -63,7 +63,7 @@ export default function Dietas({ hoy, actividades, autonomo }) {
         <p className="dieta-calculo" role="status">
           {c.tipo === 'km' ? <>Límite exento: {String(c.km).replace('.', ',')} km × {String(KM).replace('.', ',')} € = <strong>{eur(c.limite)}</strong>{c.exento < c.limite ? <> · exento {eur(c.exento)}</> : null}</>
             : <>Límite: {eur(limiteDia(d))} al día × {c.dias} = <strong>{eur(Math.round(c.limiteDia * c.dias * 100) / 100)}</strong></>}
-          {titular ? <> · Deducible <strong>{eur(c.deducible)}</strong> (base {eur(c.base)} + IVA {c.ivaPct} %)</> : <> · Gasto {eur(c.base)}</>}
+          {titular ? <> · Deducible <strong>{eur(c.deducible)}</strong> (base {eur(c.base)} + IVA {pctCorto(c.ivaPct)})</> : <> · Gasto {eur(c.base)}</>}
           {c.exceso > 0 && <span className="rojo"> · {titular ? `${eur(c.exceso)} no deducible` : `${eur(c.exceso)} de más: va en su nómina con retención`}</span>}
         </p>
       )}

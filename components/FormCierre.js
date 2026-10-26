@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
 import { navegar } from '@/lib/transicion';
 import { leerImporte, r2 } from '@/lib/calculos';
-import { eur } from '@/lib/formato';
+import { eur, pctCorto } from '@/lib/formato';
 import '@/app/lineas.css';
 import '@/app/filtros.css';
 
@@ -77,7 +77,7 @@ export default function FormCierre({ hoy, actividades, productos = [], cierre = 
             <select className="campo" value={t.pct} onChange={(e) => ponerIva(i, 'pct', Number(e.target.value))} aria-label={`Tipo de ${igic ? 'IGIC' : 'IVA'}`}>
               {[Number(t.pct), ...libres].map((n) => <option key={n} value={n}>{igic ? 'IGIC' : 'IVA'} {n} %</option>)}
             </select>
-            <input className="campo" inputMode="decimal" placeholder="0,00" value={t.total} onChange={(e) => ponerIva(i, 'total', e.target.value)} aria-label={`Total al ${t.pct} %`} required={i === 0} />
+            <input className="campo" inputMode="decimal" placeholder="0,00" value={t.total} onChange={(e) => ponerIva(i, 'total', e.target.value)} aria-label={`Total al ${pctCorto(t.pct)}`} required={i === 0} />
             {x.porIva.length > 1 && <button type="button" className="linea-quitar" aria-label="Quitar" onClick={() => poner('porIva', x.porIva.filter((_, j) => j !== i))}>×</button>}
           </div>
         ))}

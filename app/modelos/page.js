@@ -22,7 +22,7 @@ import { borradorRenta, borradorSociedades, modelo115, modelo180, modelo190, mod
 import { SUBCLAVES_296, nombrePais } from '@/lib/noResidentes';
 import CuotaIS, { ImporteAnio } from '@/components/CuotaIS';
 import { Presentado, Presentado202, PresentadoRet } from '@/components/Acciones';
-import { eur, fechaTexto, hoy, textoResumenModelos, textoSituacion } from '@/lib/formato';
+import { eur, fechaTexto, hoy, pctCorto, textoResumenModelos, textoSituacion } from '@/lib/formato';
 import { conPagoDomiciliable, finDomiciliacion } from '@/lib/domiciliacion';
 import PresentarAhora from '@/components/PresentarAhora';
 import CalendarioFiscal from '@/components/CalendarioFiscal';
@@ -381,7 +381,7 @@ export default async function Modelos({ searchParams }) {
               return <div key={t} className="tarjeta"><h3>{t}T {anio}</h3>
                 <Importe texto={c.devolucion ? 'A devolver' : c['45'] < 0 ? 'A compensar' : 'A ingresar'} v={c.devolucion || (c['45'] < 0 ? -c['45'] : c.ingresar)} />
                 <Plegable><Casillas sinNumeros={Boolean(foralT)} filas={Array.from({ length: 47 }, (_, i) => String(i + 1).padStart(2, '0')).filter((k) => c[k] !== 0).map((k) => [`${k} · ${ETIQUETAS420[k]}`, [2, 5, 8, 11, 14, 17].includes(Number(k)) ? `${String(c[k]).replace('.', ',')} %` : c[k], ['25', '40', '45'].includes(k)])} /></Plegable>
-                {c.demasiadosTipos && <p className="nota">Hay más de seis tipos. Revisa cómo declarar los tipos restantes con tu gestor: {c.otros.map((d) => `${d.pct} %: base ${eur(d.base)}, cuota ${eur(d.cuota)}`).join('; ')}.</p>}
+                {c.demasiadosTipos && <p className="nota">Hay más de seis tipos. Revisa cómo declarar los tipos restantes con tu gestor: {c.otros.map((d) => `${pctCorto(d.pct)}: base ${eur(d.base)}, cuota ${eur(d.cuota)}`).join('; ')}.</p>}
                 <p className="nota">Hasta el {fechaTexto(plazo420(anio, t))}{t === 4 ? ` de ${anio + 1}` : ''}.</p>
                 <p className="descargas"><a href={SEDE_ATC} target="_blank" rel="noopener noreferrer">Abrir la Sede de la Agencia Tributaria Canaria</a></p>
                 <Presentado soloLectura={soloLectura} modelo="420" anio={anio} t={t} importe={0} pagado={t === 4 && u.pres303?.[anio]?.[4] === 'devolucion' ? 'devolucion' : p303(t)} con130={false} situacion={situacionTrimestre(t, anio, h, 31)} plazo={fechaTexto(plazo420(anio, t))} devolucion={t === 4 && (c.pendiente > 0 || c.devolucion > 0)} />
@@ -415,7 +415,7 @@ export default async function Modelos({ searchParams }) {
                   c['01'] && ['01 · Base al 4 %', c['01']], c['03'] && ['03 · Cuota al 4 %', c['03']],
                   c['04'] && ['04 · Base al 10 %', c['04']], c['06'] && ['06 · Cuota al 10 %', c['06']],
                   ['07 · Base al 21 %', c['07']], ['09 · Cuota al 21 %', c['09']],
-                  ...c.otros.flatMap((o) => [[`— · Base al ${o.pct} % (revisar casilla)`, o.base], [`— · Cuota al ${o.pct} % (revisar casilla)`, o.iva]]),
+                  ...c.otros.flatMap((o) => [[`— · Base al ${pctCorto(o.pct)} (revisar casilla)`, o.base], [`— · Cuota al ${pctCorto(o.pct)} (revisar casilla)`, o.iva]]),
                   c['10'] && ['10 · Compras a la UE (adquisiciones intracomunitarias): base', c['10']], c['11'] && ['11 · Compras a la UE: cuota', c['11']],
                   c['12'] && ['12 · Inversión del sujeto pasivo (servicios de fuera de la UE y otras): base', c['12']], c['13'] && ['13 · Inversión del sujeto pasivo: cuota', c['13']],
                   c['14'] && ['14 · Rectificativas: base', c['14']], c['15'] && ['15 · Rectificativas: cuota', c['15']],
@@ -612,11 +612,11 @@ export default async function Modelos({ searchParams }) {
         return (
         <ModeloPlegable id="m202" num={pg.num} nombre="Pago fraccionado de Sociedades" detalle={pyme ? 'No lo pagan las micro y pequeñas empresas' : `Hasta el ${fecha}`} dato={pago ? importeFila(pago) : undefined}>
           <h2 className="grupo-t">{pg.num} · Pago fraccionado del Impuesto sobre Sociedades</h2>
-          <p className="grupo-pie arriba">{pg.sobre === 'cuota' ? `El ${pg.pct} % de la cuota efectiva del último Impuesto sobre Sociedades, menos las retenciones, hasta el ${fecha}.` : `El ${pg.pct} % de la base imponible del último periodo, menos las retenciones, hasta el ${fecha}. No lo pagan las micro y pequeñas empresas.`}</p>
+          <p className="grupo-pie arriba">{pg.sobre === 'cuota' ? `El ${pctCorto(pg.pct)} de la cuota efectiva del último Impuesto sobre Sociedades, menos las retenciones, hasta el ${fecha}.` : `El ${pctCorto(pg.pct)} de la base imponible del último periodo, menos las retenciones, hasta el ${fecha}. No lo pagan las micro y pequeñas empresas.`}</p>
           {pg.sobre === 'cuota' && <div className="tarjetas"><CuotaIS foral soloLectura={soloLectura} anio={anio - 1} valor={cuota ?? null} uso="el pago de octubre" /></div>}
           <div className="tarjeta">
             {pyme ? <p className="nota">Con {eur(is.incn)} de cifra de negocios eres micro o pequeña empresa: no lo pagas (si además cumples los requisitos de plantilla y activo).</p>
-              : pago !== null ? <Casillas filas={[[pg.sobre === 'cuota' ? `Cuota de ${anio - 1}` : `Base imponible de ${anio - 1}`, pg.sobre === 'cuota' ? cuota : anterior.base], [`${pg.pct} % · A ingresar`, pago, true]]} />
+              : pago !== null ? <Casillas filas={[[pg.sobre === 'cuota' ? `Cuota de ${anio - 1}` : `Base imponible de ${anio - 1}`, pg.sobre === 'cuota' ? cuota : anterior.base], [`${pctCorto(pg.pct)} · A ingresar`, pago, true]]} />
               : <p className="nota">{pg.sobre === 'cuota' ? `Falta la cuota del Impuesto sobre Sociedades de ${anio - 1}.` : `No hay datos de ${anio - 1} en Fisquo para calcularlo.`}</p>}
           </div>
         </ModeloPlegable>

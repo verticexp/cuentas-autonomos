@@ -8,7 +8,7 @@ import Vacio from '@/components/Vacio';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
-import { eur } from '@/lib/formato';
+import { eur, pctCorto } from '@/lib/formato';
 import '@/app/catalogo.css';
 import useEnvio from './useEnvio';
 
@@ -73,7 +73,7 @@ export default function Catalogo({ productos, editar, inventario = false, igic =
           {productos.map((x) => (
             <li key={x.id}>
               <button type="button" className="cat-info" disabled={!editar} aria-describedby={!editar ? "cat-permisos-ayuda" : undefined} onClick={() => editar && setP({ ...x, precio: String(x.precio).replace('.', ',') })}>
-                <strong>{x.nombre}</strong><small>{inventario && !x.servicio && x.sku ? `${x.sku} · ` : ''}{igic ? 'IGIC' : 'IVA'} {x.ivaPct}%{inventario && x.servicio ? ' · servicio' : ''}</small>
+                <strong>{x.nombre}</strong><small>{inventario && !x.servicio && x.sku ? `${x.sku} · ` : ''}{igic ? 'IGIC' : 'IVA'} {pctCorto(x.ivaPct)}{inventario && x.servicio ? ' · servicio' : ''}</small>
               </button>
               <span className="cat-precio">{eur(x.precio)}</span>
               {editar && <button type="button" className="cat-quitar" aria-label={`Quitar ${x.nombre}`} onClick={() => quitar(x.id)}>×</button>}

@@ -6,7 +6,7 @@ import { navegar } from '@/lib/transicion';
 import { llamar } from './Acciones';
 import { CAUSAS_FINIQUITO } from '@/lib/finiquito';
 import { calculoNomina } from '@/lib/nominas';
-import { eur } from '@/lib/formato';
+import { eur, pctCorto } from '@/lib/formato';
 
 export default function FiniquitoNomina({ empleado, hoy, existente }) {
   const router = useRouter();
@@ -38,7 +38,7 @@ export default function FiniquitoNomina({ empleado, hoy, existente }) {
     {resultado && <section className="tarjeta bloque" aria-label="Resultado del finiquito" aria-live="polite">
       <dl className="nomina-desglose">
         {resultado.finiquito.lineas.map((l) => <div key={l.concepto} style={{ display: 'contents' }}><dt>{l.concepto}</dt><dd>{eur(l.importe)}</dd></div>)}
-        <dt>Retención IRPF ({resultado.irpfPct} %)</dt><dd>−{eur(c.irpf)}</dd>
+        <dt>Retención IRPF ({pctCorto(resultado.irpfPct)})</dt><dd>−{eur(c.irpf)}</dd>
         <dt>Seguridad Social del trabajador</dt><dd>−{eur(c.ssTrabajador)}</dd>
         <dt><strong>Líquido a pagar</strong></dt><dd><strong>{eur(c.neto)}</strong></dd>
       </dl>

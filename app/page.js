@@ -15,7 +15,7 @@ import { importes, limiteTrimestre, r2 } from '@/lib/calculos';
 import { plazo420 } from '@/lib/igic';
 import { sinFuncion } from '@/lib/planes';
 import { actividadesDe, fiscalDe, hecho303, modelosDe, nombresActividad } from '@/lib/empresa';
-import { eur, fechaCorta, fechaTexto, hoy } from '@/lib/formato';
+import { eur, fechaCorta, fechaTexto, hoy, pctCorto } from '@/lib/formato';
 import SinBD from '@/components/SinBD';
 import { Presentado } from '@/components/Acciones';
 import Grafica from '@/components/Grafica';
@@ -374,7 +374,7 @@ export default async function Resumen({ searchParams }) {
                           {c['04'] > 0 && <>{fila('04', 'Base al 10 %', c['04'])}{fila('06', 'Cuota al 10 %', c['06'])}</>}
                           {fila('07', 'Base al 21 %', c['07'])}
                           {fila('09', 'Cuota al 21 %', c['09'])}
-                          {c.otros.flatMap((o) => [fila('—', `Base al ${o.pct} % (revisar casilla)`, o.base), fila('—', `Cuota al ${o.pct} % (revisar casilla)`, o.iva)])}
+                          {c.otros.flatMap((o) => [fila('—', `Base al ${pctCorto(o.pct)} (revisar casilla)`, o.base), fila('—', `Cuota al ${pctCorto(o.pct)} (revisar casilla)`, o.iva)])}
                           {(c['14'] !== 0 || c['15'] !== 0) && <>{fila('14', 'Rectificativas: base', c['14'])}{fila('15', 'Rectificativas: cuota', c['15'])}</>}
                           {[['16', '18', '0,5'], ['19', '21', '1,4'], ['22', '24', '5,2']].filter(([b]) => c[b]).flatMap(([b, q, r]) => [fila(b, `Recargo ${r} %: base`, c[b]), fila(q, `Recargo ${r} %: cuota`, c[q])])}
                           {(c['25'] || c['26']) ? <>{fila('25', 'Recargo de rectificativas: base', c['25'])}{fila('26', 'Recargo de rectificativas: cuota', c['26'])}</> : null}

@@ -7,7 +7,7 @@ import Ir from './Ir';
 import Vacio from './Vacio';
 import { confirmar } from './Confirmar';
 import { entrarEn } from './PanelDespacho';
-import { ESTADOS_TEXTO } from './despachoTextos';
+import { ESTADOS_TEXTO, accionParaDespacho } from './despachoTextos';
 import { navegar } from '@/lib/transicion';
 import { eur, fechaCorta, fechaHora } from '@/lib/formato';
 import VistaDocumento from './VistaDocumento';
@@ -256,7 +256,7 @@ export default function ClienteDespacho({ cliente, anio, t, hoy, rol, estado, li
 
     <section className="grupo" aria-labelledby="desp-reg">
       <h2 className="grupo-t" id="desp-reg">Lo que ha hecho el despacho</h2>
-      {accesos.length ? <ul className="grupo-lista">{accesos.slice(0, 15).map((a, i) => <li key={i} className="fila"><span className="txt">{a.accion}{a.detalle ? ` · ${a.detalle}` : ''}<small>{a.nombre}</small></span><span className="v nota">{horaDe(a.fecha)}</span></li>)}</ul> : <Vacio compacto icono="actividad" titulo="El despacho aún no ha hecho nada">Aquí quedará anotado lo que hagáis en las cuentas de este cliente.</Vacio>}
+      {accesos.length ? <ul className="grupo-lista">{accesos.slice(0, 15).map((a, i) => <li key={i} className="fila"><span className="txt">{accionParaDespacho(a.accion)}{a.detalle ? ` · ${a.detalle}` : ''}<small>{a.nombre}</small></span><span className="v nota">{horaDe(a.fecha)}</span></li>)}</ul> : <Vacio compacto icono="actividad" titulo="El despacho aún no ha hecho nada">Aquí quedará anotado lo que hagáis en las cuentas de este cliente.</Vacio>}
       <p className="grupo-pie">El cliente ve esta misma lista en Ajustes › Tu gestoría.</p>
     </section>
   </>;

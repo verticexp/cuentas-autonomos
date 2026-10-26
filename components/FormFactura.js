@@ -13,7 +13,7 @@ import { requisitosIncobrable } from '@/lib/incobrables';
 import '@/app/lineas.css';
 import '@/app/catalogo.css';
 import '@/app/factura-movil.css';
-import { eur, fechaCorta } from '@/lib/formato';
+import { eur, fechaCorta, pctCorto } from '@/lib/formato';
 import { IDIOMAS_FACTURA, MONEDAS, formatoDoc } from '@/lib/idiomas';
 import { TIPOS_IGIC } from '@/lib/igic';
 import { NOMBRES_UE, TIPOS_UE, tiposPais } from '@/lib/oss';
@@ -540,10 +540,10 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
             {f.margen ? <div><dt>IVA del margen (no sale en la factura)</dt><dd>{dinero(t.iva)}</dd></div> : <>
               <div><dt>Base</dt><dd>{dinero(t.base)}</dd></div>
               {t.compensacion ? <div><dt>Compensación {aTexto(f.compensacion)} %</dt><dd>{dinero(t.compensacion)}</dd></div>
-                : tipos.length > 1 ? tipos.map((x) => <div key={x.pct}><dt>{impuesto} {x.pct} %</dt><dd>{dinero(x.iva)}</dd></div>) : <div><dt>{impuesto}</dt><dd>{dinero(t.iva)}</dd></div>}
+                : tipos.length > 1 ? tipos.map((x) => <div key={x.pct}><dt>{impuesto} {pctCorto(x.pct)}</dt><dd>{dinero(x.iva)}</dd></div>) : <div><dt>{impuesto}</dt><dd>{dinero(t.iva)}</dd></div>}
             </>}
             {t.recargo > 0 && <div><dt>Recargo de equivalencia</dt><dd>{dinero(t.recargo)}</dd></div>}
-            {Number(f.irpfPct) > 0 && <div><dt>IRPF {f.irpfPct} %</dt><dd>−{dinero(t.irpf)}</dd></div>}
+            {Number(f.irpfPct) > 0 && <div><dt>IRPF {pctCorto(Number(f.irpfPct))}</dt><dd>−{dinero(t.irpf)}</dd></div>}
           </dl>
           <p className="ff-total"><span>Total</span><b key={t.total}>{dinero(t.total)}</b></p>
           {enEuros !== null && <p className="nota">En euros: {eur(enEuros)}</p>}
