@@ -7,7 +7,6 @@ import { PUBLICO } from '../lib/rutasPublicas.js';
 import { desvioApp } from '../lib/app.js';
 import { PLANES } from '../components/web/datos.js';
 import * as social from '../data/web-social.js';
-import { EMPRESA_LEGAL } from '../data/empresa-legal.js';
 import { GUIAS, PUBLICOS, REVISION_GUIAS, guia } from '../data/web-guias.js';
 import { FECHA_VERIFICACION, RIVALES } from '../data/web-comparativas.js';
 import { casosValidos, gestoriasValidas, notaValida, opinionesValidas, pruebaSocial } from '../lib/webSocial.js';
@@ -38,8 +37,8 @@ test('prueba social: una entrada incompleta o con una ruta peligrosa no llega a 
 });
 
 test('identidad legal: vacía no publica nada y necesita titular, NIF y domicilio', () => {
-  assert.equal(EMPRESA_LEGAL.titular, '');
-  assert.equal(identidadLegal(), null);
+  // La sociedad real ya está; la declaración espera a la fecha y el lugar de la firma.
+  assert.deepEqual([identidadLegal().nif, identidadLegal().registro], ['B05814041', null]);
   assert.equal(datosDeclaracion(undefined, {}), null);
   assert.equal(identidadLegal({ titular: 'Fisquo SL', nif: '', domicilio: 'Calle 1' }), null);
   assert.equal(identidadLegal({ titular: 'Fisquo SL', nif: 'B00000000', domicilio: '   ' }), null);
@@ -57,8 +56,8 @@ test('declaración responsable: sin NIF o sin titular sigue «completándose»; 
   assert.equal(datosDeclaracion({ ...completa, declaracion: { fecha: '', lugar: 'Valencia' } }, {}), null);
   // Las variables FISQUO_* de siempre siguen valiendo de respaldo.
   const env = { FISQUO_RAZON: 'R', FISQUO_NIF: 'N', FISQUO_DIRECCION: 'D', FISQUO_DECLARACION_FECHA: 'F', FISQUO_DECLARACION_LUGAR: 'L' };
-  assert.equal(datosDeclaracion(EMPRESA_LEGAL, env).razon, 'R');
-  assert.equal(datosDeclaracion(EMPRESA_LEGAL, { ...env, FISQUO_NIF: '' }), null);
+  assert.equal(datosDeclaracion({}, env).razon, 'R');
+  assert.equal(datosDeclaracion({}, { ...env, FISQUO_NIF: '' }), null);
 });
 
 test('rutas nuevas: públicas sin sesión, ocultas en la app de iOS y sin abrir nombres parecidos', () => {
@@ -72,7 +71,7 @@ test('sitemap: incluye guías, comparativas y demo; /aviso-legal solo si hay dat
   const { default: sitemap } = await import('../app/sitemap.js');
   const urls = sitemap().map((x) => x.url);
   for (const r of ['/demo', '/guias', '/comparativa', ...GUIAS.map((g) => `/guias/${g.slug}`), '/comparativa/holded', '/comparativa/quipu']) assert.ok(urls.includes(`https://www.fisquo.com${r}`), r);
-  assert.ok(!urls.some((u) => u.endsWith('/aviso-legal')));
+  assert.ok(urls.includes('https://www.fisquo.com/aviso-legal')); // ya hay titular, NIF y domicilio
   assert.equal(new Set(urls).size, urls.length);
 });
 
