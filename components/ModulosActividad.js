@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
+import useEnvio from './useEnvio';
 
 // Datos de módulos de una actividad para un año (lib/estimacionObjetiva.js): lo que sale de la Orden de módulos con los
 // datos-base a 1 de enero. Con ellos Fisquo calcula el 131 y, en el régimen simplificado, el IVA de cada trimestre.
@@ -14,6 +15,7 @@ const TIPOS = [
 const texto = (v) => (v === undefined || v === null ? '' : String(v).replace('.', ','));
 
 export default function ModulosActividad({ anio, actividad, nombre, datos, simplificado = false, soloLectura = false }) {
+  const [enviando, envolver] = useEnvio();
   const router = useRouter();
   const [d, setD] = useState({ tipo: datos?.tipo || 'datos', rendimiento: texto(datos?.rendimiento), asalariados: texto(datos?.asalariados ?? 0), joven: Boolean(datos?.joven), cuota: texto(datos?.iva?.cuota), ingreso: texto(datos?.iva?.ingreso), minima: texto(datos?.iva?.minima) });
   const [msg, setMsg] = useState('');
@@ -27,7 +29,7 @@ export default function ModulosActividad({ anio, actividad, nombre, datos, simpl
     return <p className="nota"><strong>{nombre}</strong>: {datos ? `${TIPOS.find(([k]) => k === datos.tipo)?.[1]}${datos.tipo === 'datos' ? ` · rendimiento neto ${texto(datos.rendimiento)} € · personal asalariado ${texto(datos.asalariados)}` : ''}` : 'sin datos de módulos'}. Lo cambia quien tiene el permiso «Contabilidad».</p>;
   }
   return (
-    <form className="formulario tarjeta bloque modulos-actividad" onSubmit={guardar}>
+    <form className="formulario tarjeta bloque modulos-actividad" onSubmit={envolver(guardar)}>
       <p><strong>{nombre}</strong> · {anio}</p>
       <label>Tipo de actividad
         <select className="campo" value={d.tipo} onChange={(e) => poner('tipo', e.target.value)}>
@@ -51,7 +53,7 @@ export default function ModulosActividad({ anio, actividad, nombre, datos, simpl
           <label>Cuota mínima (% de la cuota devengada)<input className="campo" inputMode="decimal" value={d.minima} onChange={(e) => poner('minima', e.target.value)} placeholder="20" /></label>
         </>
       )}
-      <div className="fila-act"><button className="boton sec pequeno">Guardar</button>{msg && <span className={msg === 'Guardado' ? 'nota' : 'error'} role="status">{msg}</span>}</div>
+      <div className="fila-act"><button className="boton sec pequeno" disabled={enviando}>Guardar</button>{msg && <span className={msg === 'Guardado' ? 'nota' : 'error'} role="status">{msg}</span>}</div>
     </form>
   );
 }

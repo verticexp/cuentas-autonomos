@@ -1,6 +1,6 @@
 import { requerirDespacho } from '@/lib/despachoPagina';
 import { conversaciones } from '@/lib/mensajesDespacho';
-import { hoy } from '@/lib/formato';
+import { diaDe, fechaCorta, hoy, hora } from '@/lib/formato';
 import Ir from '@/components/Ir';
 import Vacio from '@/components/Vacio';
 import '@/app/mk.css';
@@ -9,7 +9,7 @@ import '@/app/despacho.css';
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Mensajes · Mi despacho' };
 
-const cuando = (iso, dia) => (iso.slice(0, 10) === dia ? new Date(iso).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : new Date(iso).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }));
+const cuando = (iso, dia) => (diaDe(iso) === dia ? hora(iso) : fechaCorta(diaDe(iso)));
 
 // Mensajes: una conversación por cliente, como una app de mensajería. Arriba, las que tienen algo sin leer.
 export default async function Mensajes() {

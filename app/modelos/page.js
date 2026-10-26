@@ -226,7 +226,7 @@ export default async function Modelos({ searchParams }) {
   const tRef = (hecho) => T.find((t) => !hecho(t) && situacion(t).estado !== 'curso' && (situacion(t).estado !== 'fuera' || conDatos(t))) ?? T.find((t) => !hecho(t) && situacion(t).estado === 'curso');
   // Estado corto para la fila (la tarjeta del trimestre ya lleva el texto entero).
   const corto = ({ estado, dias }, fecha) => (estado === 'fuera' ? `fuera de plazo · venció el ${fecha}`
-    : `${estado === 'curso' ? 'en curso' : 'toca presentarlo'} · ${estado === 'listo' && dias === 0 ? 'hasta hoy' : estado === 'listo' && dias === 1 ? 'hasta mañana' : `hasta el ${fecha}`}`);
+    : `${estado === 'curso' ? 'en curso' : 'toca presentarlo'} · ${estado === 'listo' && dias === 0 ? 'hoy es el último día' : estado === 'listo' && dias === 1 ? 'hasta mañana' : `hasta el ${fecha}`}`);
   const filaTrim = (t, extra) => {
     if (!t) return { estado: 'hecho', detalle: 'Todos los trimestres presentados' };
     const s = situacion(t);
@@ -320,7 +320,7 @@ export default async function Modelos({ searchParams }) {
       <Volver href="/">Resumen</Volver>
       <header className="cabecera modelos-cab">
         <h1 className="titulo">Impuestos</h1>
-        <nav className="anios">
+        <nav className="anios" aria-label="Año">
           <Ir href={`/modelos?anio=${anio - 1}`} tipo="cifras" aria-label="Año anterior">‹</Ir>
           <strong>{anio}</strong>
           {anio < actual ? <Ir href={`/modelos?anio=${anio + 1}`} tipo="cifras" aria-label="Año siguiente">›</Ir> : <span className="off">›</span>}
@@ -337,7 +337,7 @@ export default async function Modelos({ searchParams }) {
           <ul className="grupo-lista proximos">
             {proximos.map((m) => (
               <li key={`${m.fecha}-${m.concepto}`}><div className="fila">
-                <span className="txt"><strong>{m.concepto}</strong><small>Hasta el {fechaTexto(m.fecha)}{m.fecha.slice(0, 4) !== String(anio) ? ` de ${m.fecha.slice(0, 4)}` : ''}{m.estimado ? ' · previsión del trimestre entero' : ''}{!dForal && !igic && conPagoDomiciliable(m.concepto) && finDomiciliacion(m.fecha) >= h ? ` · domiciliado, hasta el ${fechaTexto(finDomiciliacion(m.fecha))}` : ''}</small></span>
+                <span className="txt"><strong>{m.concepto}</strong><small>Hasta el {fechaTexto(m.fecha)}{m.fecha.slice(0, 4) !== String(anio) ? ` de ${m.fecha.slice(0, 4)}` : ''}{m.estimado ? ' · previsión del trimestre' : ''}{!dForal && !igic && conPagoDomiciliable(m.concepto) && finDomiciliacion(m.fecha) >= h ? ` · domiciliado, hasta el ${fechaTexto(finDomiciliacion(m.fecha))}` : ''}</small></span>
                 <span className="imp">{eur(-m.importe)}</span>
               </div></li>
             ))}
@@ -429,7 +429,7 @@ export default async function Modelos({ searchParams }) {
                   c['34'] && ['34 · Importaciones de bienes de inversión: base', c['34']], c['35'] && ['35 · Importaciones de bienes de inversión: cuota', c['35']],
                   c['36'] && ['36 · Compras a la UE: base deducible', c['36']], c['37'] && ['37 · Compras a la UE: cuota deducible', c['37']],
                   c['38'] && ['38 · Bienes de inversión de la UE: base', c['38']], c['39'] && ['39 · Bienes de inversión de la UE: cuota', c['39']],
-                  c['40'] && ['40 · Abonos de proveedores: base', c['40']], c['41'] && ['41 · Abonos de proveedores: cuota', c['41']],
+                  c['40'] && ['40 · Rectificativas de proveedores: base', c['40']], c['41'] && ['41 · Rectificativas de proveedores: cuota', c['41']],
                   c['42'] && ['42 · Compensaciones del régimen agrario', c['42']],
                   c.prorrata && [c.prorrata.especial ? 'Prorrata especial aplicada a lo común' : 'Prorrata aplicada', `${c.prorrata.provisional} %`],
                   c['44'] && [`44 · Regularización de la prorrata (definitiva: ${c.prorrata.definitiva} %)`, c['44']],
@@ -815,7 +815,7 @@ export default async function Modelos({ searchParams }) {
                 {m.operadores.length || m.rectificaciones.length ? <><Casillas sinNumeros={Boolean(foralT)} filas={[...m.operadores.map((c) => [`${c.nif} · ${c.nombre} (${c.clave})`, c.base]), ['Total', m.total, true],
                   // Rectificaciones de periodos ya declarados: la nueva base de ese periodo y la que se declaró.
                   ...m.rectificaciones.map((r) => [`Corrige ${/T$/.test(r.periodo) ? `el ${r.periodo} de ${r.ejercicio}` : nombreMes(`${r.ejercicio}-${r.periodo}`)}: ${r.nif} · ${r.nombre} (${r.clave})`, `${eur(r.base)} (antes ${eur(r.anterior)})`])]} /><p className="nota">Hasta el {fechaTexto(m.plazo)}.</p></> : <p className="nota">Sin operaciones: no se presenta.</p>}
-                {m.negativos.length > 0 && <p className="nota">Los abonos de {m.negativos.map((c) => `${c.nombre} (${eur(c.base)})`).join(', ')} restan más de lo que hay en el trimestre: en el 349 no puede quedar nada en negativo. Si corrigen una operación de otro trimestre, van como rectificación de ese trimestre: hazlo con una factura rectificativa de la original o revísalo con tu gestor.</p>}
+                {m.negativos.length > 0 && <p className="nota">Las rectificativas de {m.negativos.map((c) => `${c.nombre} (${eur(c.base)})`).join(', ')} restan más de lo que hay en el trimestre: en el 349 no puede quedar nada en negativo. Si corrigen una operación de otro trimestre, van como rectificación de ese trimestre: hazlo con una factura rectificativa de la original o revísalo con tu gestor.</p>}
                 {(m.operadores.length > 0 || m.rectificaciones.length > 0) && !m.negativos.length && <Fichero foral={foralT} boe modelo="349" anio={anio} t={/T$/.test(m.periodo) ? Number(m.periodo[0]) : Math.ceil(Number(m.periodo) / 3)} mes={/T$/.test(m.periodo) ? null : Number(m.periodo)} nif={u.emisor?.nif} />}
               </div>
             ))}
@@ -1010,5 +1010,5 @@ export const metadata = { title: 'Impuestos' };
 function EmitidasDespues({ facturas }) {
   if (!facturas.length) return null;
   const nums = facturas.slice(0, 5).map((f) => numeroFactura(f)).join(', ');
-  return <p className="nota aviso-rect">{facturas.length === 1 ? 'Cuenta en este trimestre una factura emitida después' : `Cuentan en este trimestre ${facturas.length} facturas emitidas después`}, por su fecha de operación: {nums}{facturas.length > 5 ? ` y ${facturas.length - 5} más` : ''}. Si al presentarlo no {facturas.length === 1 ? 'la' : 'las'} incluiste, presenta una autoliquidación rectificativa de este 303 (aquí debajo, «Preparar la rectificativa»).</p>;
+  return <p className="nota aviso-rect">{facturas.length === 1 ? 'Cuenta en este trimestre una factura emitida después' : `Cuentan en este trimestre ${facturas.length} facturas emitidas después`}, por su fecha de la operación: {nums}{facturas.length > 5 ? ` y ${facturas.length - 5} más` : ''}. Si al presentarlo no {facturas.length === 1 ? 'la' : 'las'} incluiste, presenta una autoliquidación rectificativa de este 303 (aquí debajo, «Preparar la rectificativa»).</p>;
 }

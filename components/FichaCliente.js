@@ -58,7 +58,7 @@ export function FormularioFicha({ datos = {}, id, proveedor = false, editar = tr
       <label htmlFor={nombre}>{etiqueta}</label>
       {tipo === 'select' ? <select {...props}><option value="">Sin definir</option>{FORMAS.map((v) => <option key={v.id} value={v.id}>{v.nombre}</option>)}</select>
         : tipo === 'textarea' ? <textarea {...props} rows={4} maxLength={500} /> : <input {...props} type={tipo} />}
-      <div id={`${nombre}-nota`}>{ayuda && <small className="ficha-ayuda">{ayuda}</small>}{errores[k] && <p className="error">{errores[k]}</p>}</div>
+      <div id={`${nombre}-nota`}>{ayuda && <small className="ficha-ayuda">{ayuda}</small>}{errores[k] && <p className="error" role="alert">{errores[k]}</p>}</div>
     </div>;
   };
   return <form className="formulario ficha-form" onSubmit={enviar}>

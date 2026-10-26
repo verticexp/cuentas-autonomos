@@ -53,7 +53,7 @@ export default function ImportarVentas({ actividades }) {
     <section className="bloque">
       <p className="nota">Exporta las ventas o los pedidos desde Shopify, WooCommerce, SumUp o Square (o cualquier Excel con fecha, producto, cantidad e importe) y súbelo. Cada día se guarda como un cierre de caja; los productos se emparejan con tu catálogo por referencia (SKU), código de barras o nombre.</p>
       <label className="boton sec">{ocupado && !previa ? 'Leyendo…' : 'Elegir archivo (.csv o .xlsx)'}<input type="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden onChange={subir} disabled={ocupado} /></label>
-      {msg && <p className={msg.startsWith('✓') ? 'nota' : 'error'}>{msg}</p>}
+      {msg && <p className={msg.startsWith('✓') ? 'nota' : 'error'} role={msg.startsWith('✓') ? 'status' : 'alert'}>{msg}</p>}
       {previa && (
         <>
           <p className="rotulo">{NOMBRES[previa.formato] || previa.formato} · {previa.dias.length} {previa.dias.length === 1 ? 'día' : 'días'}</p>

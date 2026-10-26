@@ -5,7 +5,7 @@ import { llamar } from './Acciones';
 
 const b64 = (s) => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - (s.length % 4)) % 4)), (c) => c.charCodeAt(0));
 
-// Ajustes → Avisos en el móvil: activa las notificaciones push en este dispositivo.
+// Ajustes → Avisos: activa las notificaciones push en este dispositivo.
 export default function AvisosPush({ listo }) {
   const [estado, setEstado] = useState('cargando'); // cargando | no | ios | bloqueado | off | on
   const [msg, setMsg] = useState('');
@@ -55,7 +55,7 @@ export default function AvisosPush({ listo }) {
             : estado === 'bloqueado' ? <p className="nota">Has bloqueado los avisos de Fisquo: actívalos en los ajustes del navegador o del móvil.</p>
               : estado === 'on' ? <><p className="nota">Activados en este dispositivo.</p><button type="button" className="borrar" onClick={desactivar}>Desactivar en este dispositivo</button></>
                 : estado === 'off' ? <button type="button" className="boton" onClick={activar}>Activar avisos en este dispositivo</button> : null}
-      {msg && <p className="error">{msg}</p>}
+      {msg && <p className="error" role="alert">{msg}</p>}
     </section>
   );
 }

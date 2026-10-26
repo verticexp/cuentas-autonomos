@@ -40,7 +40,6 @@ import '@/app/mk.css';
 
 export const dynamic = 'force-dynamic';
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-const diaMes = (f) => new Date(`${f}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
 
 export default async function Gastos({ searchParams }) {
   const u = await requerir('gastos');
@@ -125,7 +124,7 @@ export default async function Gastos({ searchParams }) {
       <Ir href={`/gastos/${encodeURIComponent(g.id)}`} className="fila">
         <span className="txt">
           <strong>{enAgenda && g.proveedor ? g.proveedor : g.concepto}</strong>
-          <small>{enAgenda ? `${g.proveedor && g.proveedor !== g.concepto ? `${g.concepto} · ` : ''}factura del ${diaMes(g.fecha)}${g.numero ? ` · nº ${g.numero}` : ''}` : <>{g.proveedor && g.proveedor !== g.concepto ? `${g.proveedor} · ` : ''}{diaMes(g.fecha)}{actividades.length > 1 ? ` · ${NOMBRES[g.actividad] || g.actividad}` : ''}{importes(g).iva ? ` · IVA ${eur(importes(g).iva)}` : ''}</>}</small>
+          <small>{enAgenda ? `${g.proveedor && g.proveedor !== g.concepto ? `${g.concepto} · ` : ''}factura del ${fechaCorta(g.fecha)}${g.numero ? ` · nº ${g.numero}` : ''}` : <>{g.proveedor && g.proveedor !== g.concepto ? `${g.proveedor} · ` : ''}{fechaCorta(g.fecha)}{actividades.length > 1 ? ` · ${NOMBRES[g.actividad] || g.actividad}` : ''}{importes(g).iva ? ` · IVA ${eur(importes(g).iva)}` : ''}</>}</small>
         </span>
         <span className="imp-col">
           <span className="imp">{eur(enAgenda ? aPagar(g) : g.base)}</span>

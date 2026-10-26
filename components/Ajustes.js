@@ -35,7 +35,7 @@ function Formulario({ titulo, inicial, enviar, refrescar = true, children }) {
   };
   return (
     <form className="formulario aj-form" onSubmit={guardar}>
-      <h3>{titulo}</h3>
+      <h3 aria-level={2}>{titulo}</h3>
       {children(datos, (k, v) => setDatos((x) => ({ ...x, [k]: v })))}
       {msg && <p role="status" className={msg === 'Guardado' ? 'nota aj-pie guardado' : msg === 'Guardando…' ? 'nota aj-pie' : 'error aj-pie'}>{msg === 'Guardado' ? '✓ Guardado' : msg}</p>}
       <button className="boton" disabled={!cambiado || msg === 'Guardando…'}>Guardar</button>

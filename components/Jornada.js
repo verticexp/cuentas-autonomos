@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
+import useEnvio from './useEnvio';
 
 const hora = (m) => (m ? m.slice(11, 16) : '');
 // Fecha + hora → «AAAA-MM-DDTHH:MM». Si la hora es anterior a la de referencia, es del día siguiente (turnos de noche).
@@ -47,13 +48,14 @@ export function Fichar({ estado, desde, hoyMin, ahora }) {
           <button className="boton sec" disabled={ocupado} onClick={() => accion('salir')}>Fichar salida</button>
         </>}
       </div>
-      {msg && <p className="rojo jor-msg">{msg}</p>}
+      {msg && <p className="rojo jor-msg" role="alert">{msg}</p>}
     </section>
   );
 }
 
 // Formulario de una jornada: horas de entrada y salida, pausas y el motivo (obligatorio: queda en el registro).
 function FormJornada({ inicial, empleados, enviar, cancelar, boton }) {
+  const [enviando, envolver] = useEnvio();
   const [d, setD] = useState(inicial);
   const [msg, setMsg] = useState('');
   const pon = (k, v) => setD({ ...d, [k]: v });
@@ -64,7 +66,7 @@ function FormJornada({ inicial, empleados, enviar, cancelar, boton }) {
     try { await enviar({ empleado: d.empleado, entrada, salida: momento(d.fecha, d.salida, entrada), pausas, motivo: d.motivo }); } catch (e) { setMsg(e.message); }
   };
   return (
-    <form className="formulario tarjeta jor-form" onSubmit={ok}>
+    <form className="formulario tarjeta jor-form" onSubmit={envolver(ok)}>
       {empleados && (
         <select className="campo" value={d.empleado} onChange={(e) => pon('empleado', e.target.value)} required aria-label="Empleado">
           <option value="">Elige a quién</option>
@@ -85,10 +87,10 @@ function FormJornada({ inicial, empleados, enviar, cancelar, boton }) {
       ))}
       <button type="button" className="jor-anadir" onClick={() => pon('pausas', [...d.pausas, { inicio: '', fin: '' }])}>+ Añadir pausa</button>
       <label>Motivo (queda en el registro)<input className="campo" value={d.motivo} onChange={(e) => pon('motivo', e.target.value)} placeholder="Ej. se olvidó de fichar la salida" required minLength={3} /></label>
-      {msg && <p className="error">{msg}</p>}
+      {msg && <p className="error" role="alert">{msg}</p>}
       <div className="dos-col">
         <button type="button" className="boton sec" onClick={cancelar}>Cancelar</button>
-        <button className="boton">{boton}</button>
+        <button className="boton" disabled={enviando}>{boton}</button>
       </div>
     </form>
   );

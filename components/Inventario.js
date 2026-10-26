@@ -116,7 +116,7 @@ export function RecibirPedido({ pedido, hoy, igic = false }) {
         <label>{igic ? 'IGIC' : 'IVA'}<select className="campo" value={x.ivaPct} onChange={(e) => setX({ ...x, ivaPct: Number(e.target.value) })}>{(igic ? TIPOS_IGIC : [21, 10, 4, 0]).map((n) => <option key={n} value={n}>{n}%</option>)}</select></label>
       </div>
       {error && <p className="error" role="alert">{error}</p>}
-      {msg && <p className="error">{msg}</p>}
+      {msg && <p className="error" role="alert">{msg}</p>}
       <button className="boton" disabled={ocupado}>{ocupado ? 'Guardando…' : 'Apuntar la compra'}</button>
     </form>
   );

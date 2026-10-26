@@ -48,7 +48,7 @@ export default async function Albaranes({ searchParams }) {
         {hay && puedeOperar && <Ir href={`/albaranes/nuevo?tipo=${ver === 'pedidos' ? 'pedido' : 'albaran'}`} tipo="subir" className="boton pequeno">{ver === 'pedidos' ? 'Nuevo pedido' : 'Nuevo albarán'}</Ir>}
       </header>
       {hay && <p className="resumen-linea"><span>Pedidos abiertos <strong>{abiertos.length}</strong></span><span>Por facturar <strong>{eur(sinFacturar.reduce((s, a) => s + baseDoc(a), 0))}</strong></span></p>}
-      {hay && <nav className="segmentado">{VISTAS.map(([v, n]) => <Ir key={v} href={`/albaranes?ver=${v}`} tipo="fundido" className={v === ver ? 'activo' : ''}>{n}{v === 'albaranes' && sinFacturar.length ? ` (${sinFacturar.length})` : ''}</Ir>)}</nav>}
+      {hay && <nav className="segmentado" aria-label="Vista de pedidos y albaranes">{VISTAS.map(([v, n]) => <Ir key={v} href={`/albaranes?ver=${v}`} tipo="fundido" className={v === ver ? 'activo' : ''}>{n}{v === 'albaranes' && sinFacturar.length ? ` (${sinFacturar.length})` : ''}</Ir>)}</nav>}
 
       {ver === 'pedidos' && (pedidos.length ? (
         <ul className="grupo-lista">
@@ -73,4 +73,4 @@ export default async function Albaranes({ searchParams }) {
   );
 }
 
-export const metadata = { title: 'Albaranes' };
+export const metadata = { title: 'Pedidos y albaranes' };

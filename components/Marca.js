@@ -72,7 +72,7 @@ export default function Marca({ marca, nombre }) {
         </label>
         {logo && <button type="button" className="borrar" onClick={() => { setLogo(null); guardar({ logo: null }); }}>Quitar logo</button>}
       </div>
-      {msg && <p className={msg === 'Guardado' || msg === 'Guardando…' ? 'nota' : 'error'}>{msg}</p>}
+      {msg && <p className={msg === 'Guardado' || msg === 'Guardando…' ? 'nota' : 'error'} role={msg === 'Guardado' || msg === 'Guardando…' ? 'status' : 'alert'}>{msg}</p>}
     </section>
   );
 }

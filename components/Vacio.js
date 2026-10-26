@@ -14,11 +14,13 @@ function Accion({ valor, secundaria = false }) {
   return valor;
 }
 
-export default function Vacio({ icono = 'datos', titulo, children, accion, secundaria, tipo = 'vacio', compacto = false }) {
+// nivel: el nivel del encabezado (h2 por defecto, el que sigue al título de la pantalla; h3 si va dentro de una sección con su h2).
+export default function Vacio({ icono = 'datos', titulo, children, accion, secundaria, tipo = 'vacio', compacto = false, nivel = 2 }) {
+  const Titulo = `h${nivel}`;
   return <div className={`${styles.vacio}${compacto ? ` ${styles.compacto}` : ''}`} data-tipo={tipo}>
     <span className={styles.icono} aria-hidden="true">{typeof icono === 'string' ? <Ico n={icono} /> : icono}</span>
     <div className={styles.contenido}>
-      <h3 className={styles.titulo}>{titulo}</h3>
+      <Titulo className={styles.titulo}>{titulo}</Titulo>
       {children && <div className={styles.texto}>{children}</div>}
       {(accion || secundaria) && <div className={styles.acciones}><Accion valor={accion} /><Accion valor={secundaria} secundaria /></div>}
     </div>

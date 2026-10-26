@@ -26,7 +26,7 @@ export default async function Bienvenida({ searchParams }) {
       {!editar && (
         <header className="bienvenida-cab">
           <Logo className="logo-bienvenida" />
-          <form method="post" action="/api/logout"><button type="submit" className="enlace">Salir</button></form>
+          <form method="post" action="/api/logout"><button type="submit" className="enlace">Cerrar sesión</button></form>
         </header>
       )}
       <Cuestionario

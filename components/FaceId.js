@@ -53,7 +53,7 @@ export default function FaceId({ lista, bloqueo = false, app = false }) {
       )}
       {!app && disponible === false && <p className="nota">Este dispositivo no tiene Face ID ni huella.</p>}
       {!app && disponible && <button type="button" className="boton" onClick={activar}>Activar en este dispositivo</button>}
-      {msg && <p className={msg.startsWith('Listo') ? 'nota' : 'error'}>{msg}</p>}
+      {msg && <p className={msg.startsWith('Listo') ? 'nota' : 'error'} role={msg.startsWith('Listo') ? 'status' : 'alert'}>{msg}</p>}
     </section>
   );
 }

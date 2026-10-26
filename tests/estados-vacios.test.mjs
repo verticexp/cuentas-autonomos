@@ -22,8 +22,8 @@ test('Cartera: las cifras solo aparecen con efectos y la explicación está pleg
 test('Análisis: conserva navegación si existen datos en otros años', () => {
   const s = leer('app/analisis/page.js');
   assert.match(s, /const hayDatos = !sinDatos \|\| \[facturas, gastos, nominas, manuales, capital, productos, ajustes, albaranes\]\.some/);
-  assert.match(s, /hayDatos && <nav className="anios">/);
-  assert.match(s, /hayDatos && <nav className="segmentado cont-periodo">/);
+  assert.match(s, /hayDatos && <nav className="anios" aria-label="Año">/);
+  assert.match(s, /hayDatos && <nav className="segmentado cont-periodo" aria-label="Periodo">/);
   assert.match(s, /sinDatos \? <Vacio/);
 });
 
@@ -32,7 +32,7 @@ test('Albaranes: sin documentos queda el primer vacío, sin contadores ni pesta�
   assert.match(s, /const hay = docs.length > 0/);
   assert.match(s, /const ver = hay && VISTAS.some[\s\S]*: 'pedidos'/);
   assert.match(s, /hay && <p className="resumen-linea">/);
-  assert.match(s, /hay && <nav className="segmentado">/);
+  assert.match(s, /hay && <nav className="segmentado" aria-label="Vista de pedidos y albaranes">/);
   assert.match(s, /hay && puedeOperar && <Ir/);
 });
 

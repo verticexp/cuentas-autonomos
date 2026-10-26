@@ -41,7 +41,7 @@ export default function DosPasos({ activa = null }) {
 
   return (
     <section className="tarjeta formulario dos-pasos">
-      <h3>Verificación en dos pasos</h3>
+      <h3 aria-level={2}>Verificación en dos pasos</h3>
       {codigos ? (
         <>
           <p className="nota"><strong>Guarda estos códigos de recuperación</strong> en un sitio seguro (un gestor de contraseñas o impresos). Si pierdes el móvil, entrarás con uno de ellos; cada uno sirve una vez y no se volverán a enseñar.</p>

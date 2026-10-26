@@ -44,7 +44,7 @@ export default async function RegistroJornada({ searchParams }) {
 
   return (
     <main className="pagina mk-look jornada">
-      <Volver href={gestor ? '/nominas' : '/ajustes'}>{gestor ? 'Nóminas' : 'Ajustes'}</Volver>
+      <Volver href={gestor ? '/nominas' : '/ajustes'}>{gestor ? 'Equipo y nóminas' : 'Ajustes'}</Volver>
       <h1 className="titulo">Registro de jornada</h1>
 
       {yo && <div id="fichar-jornada"><Fichar estado={estado} desde={desde} hoyMin={hoyMin + previo} ahora={ahora} /></div>}
@@ -66,7 +66,7 @@ export default async function RegistroJornada({ searchParams }) {
               </li>
             );
           })}
-          {!quienes.length && <li><Vacio compacto icono="usuarios" titulo="Añade a tu equipo" accion={{ href: '/nominas#anadir-empleado', texto: 'Ir a Nóminas' }} /></li>}
+          {!quienes.length && <li><Vacio compacto icono="usuarios" titulo="Añade a tu equipo" accion={{ href: '/nominas#anadir-empleado', texto: 'Ir a Equipo y nóminas' }} /></li>}
         </ul>
         <a className="boton sec ancho jor-exportar" href={`/api/jornada/exportar?mes=${mes}`}>Descargar el registro (Excel)</a>
         <p className="grupo-pie">Listo para la Inspección de Trabajo: cada jornada con entrada, salida, pausas y correcciones. Se guarda 4 años.</p>
@@ -102,7 +102,7 @@ export default async function RegistroJornada({ searchParams }) {
           </ul>
         </section>
       ))}
-      {!dias.length && <Vacio icono="plazo" titulo={yo ? 'Registra tu jornada' : 'Apunta la jornada de tu equipo'} accion={{ href: yo ? '#fichar-jornada' : empleados.length ? '#anadir-jornada' : '/nominas#anadir-empleado', texto: yo ? 'Ir al fichaje' : empleados.length ? 'Añadir jornada' : 'Ir a Nóminas' }} secundaria={mes !== mesHoy && { href: '/jornada', texto: 'Ver este mes' }}>{yo ? 'Ficha la entrada al empezar y la salida al acabar.' : 'Añade su email en Nóminas para que cada persona pueda fichar.'}</Vacio>}
+      {!dias.length && <Vacio icono="plazo" titulo={yo ? 'Registra tu jornada' : 'Apunta la jornada de tu equipo'} accion={{ href: yo ? '#fichar-jornada' : empleados.length ? '#anadir-jornada' : '/nominas#anadir-empleado', texto: yo ? 'Ir al fichaje' : empleados.length ? 'Añadir jornada' : 'Ir a Equipo y nóminas' }} secundaria={mes !== mesHoy && { href: '/jornada', texto: 'Ver este mes' }}>{yo ? 'Ficha la entrada al empezar y la salida al acabar.' : 'Añade su email en Nóminas para que cada persona pueda fichar.'}</Vacio>}
     </main>
   );
 }

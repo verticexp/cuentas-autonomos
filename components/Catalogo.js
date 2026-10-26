@@ -10,9 +10,11 @@ import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
 import { eur } from '@/lib/formato';
 import '@/app/catalogo.css';
+import useEnvio from './useEnvio';
 
 // Página del catálogo: añadir, editar y quitar productos o servicios.
 export default function Catalogo({ productos, editar, inventario = false, igic = false }) {
+  const [enviando, envolver] = useEnvio();
   const router = useRouter();
   const vacio = { nombre: '', precio: '', ivaPct: igic ? 7 : 21 };
   const [p, setP] = useState(vacio);
@@ -30,7 +32,7 @@ export default function Catalogo({ productos, editar, inventario = false, igic =
   return (
     <>
       {editar && (
-        <form id="anadir-catalogo" className="formulario tarjeta catalogo-form" onSubmit={guardar}>
+        <form id="anadir-catalogo" className="formulario tarjeta catalogo-form" onSubmit={envolver(guardar)}>
           <h3>{p.id ? 'Editar' : 'Añadir'}</h3>
           <label>Nombre<input className="campo" required placeholder="Sesión DJ 4 horas" value={p.nombre} onChange={(e) => poner('nombre', e.target.value)} /></label>
           <div className="dos-col">
@@ -61,7 +63,7 @@ export default function Catalogo({ productos, editar, inventario = false, igic =
           {error && <p className="error" role="alert">{error}</p>}
           <div className={p.id ? 'dos-col' : ''}>
             {p.id && <button type="button" className="boton sec" onClick={() => setP(vacio)}>Cancelar</button>}
-            <button className="boton">{p.id ? 'Guardar cambios' : 'Añadir al catálogo'}</button>
+            <button className="boton" disabled={enviando}>{p.id ? 'Guardar cambios' : 'Añadir al catálogo'}</button>
           </div>
         </form>
       )}

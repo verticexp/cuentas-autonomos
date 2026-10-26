@@ -7,9 +7,9 @@ import { useRouter } from 'next/navigation';
 import { DESCUENTO, PLANES } from '@/components/web/datos';
 import { diasPrueba, esFundador, TIPOS, VERSION_PLAN } from '@/lib/prueba';
 import CupoEscaneo from '@/components/CupoEscaneo';
+import { eurPrecio } from '@/lib/formato';
 import styles from './ElegirPlan.module.css';
 
-const euros = (n) => n.toLocaleString('es-ES', { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 });
 
 // Ajustes › Tu plan: contratar con Stripe Checkout, cambiar de plan y gestionar el pago en el portal de Stripe
 // (app/api/suscripcion). En la app de iOS no se enseña la compra (lib/app.js); solo el administrador puede cambiarlo.
@@ -102,15 +102,15 @@ export default function ElegirPlan({ plan, tipoEmpresa, uso, admin, app }) {
           <label className={periodo === 'anio' ? styles.seleccionado : ''}><input type="radio" name="periodo-plan" value="anio" checked={periodo === 'anio'} onChange={() => setPeriodo('anio')} />Anual <span>−{DESCUENTO} %</span></label></div>
         </fieldset>
       </div>
-      <div className={styles.planes} aria-label="Planes disponibles">
+      <div className={styles.planes} role="region" tabIndex={0} aria-label="Planes disponibles">
         {PLANES[tipo].map((p) => {
           const anual = Math.round(p.p * 12 * (100 - DESCUENTO)) / 100;
           const elegido = esActual(p.n);
           return <article key={p.n} className={`${styles.plan} ${p.fuerte ? styles.destacado : ''}`} aria-labelledby={`plan-${p.n}`}>
             <div className={styles.planPrincipal}><div className={styles.planCabecera}><h3 id={`plan-${p.n}`}>{p.n}</h3>{p.fuerte && <span className={styles.recomendado}>Recomendado</span>}</div>
             <p className={styles.para}>{p.fuerte ? 'Operaciones, previsión y análisis en un solo plan' : p.para}</p>
-            <p className={styles.precio}><strong>{euros(periodo === 'anio' ? anual / 12 : p.p)} €</strong><span>/mes</span></p>
-            <p className={styles.facturacion}>{periodo === 'anio' ? `${euros(anual)} € facturados al año` : 'Facturación mensual'} · sin IVA</p>
+            <p className={styles.precio}><strong>{eurPrecio(periodo === 'anio' ? anual / 12 : p.p)}</strong><span>/mes</span></p>
+            <p className={styles.facturacion}>{periodo === 'anio' ? `${eurPrecio(anual)} facturados al año` : 'Facturación mensual'} · sin IVA</p>
             {fundador || despacho ? <p className={styles.incluido}><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m3 8 3 3 7-7" /></svg>{fundador ? 'Incluido en tu plan Fundador' : elegido ? 'Tu plan actual, incluido por tu gestoría' : 'Lo gestiona tu gestoría'}</p> : elegido ? <p className={styles.planElegido}>Tu plan actual</p> : admin ? <button type="button" className={`${styles.botonPlan} ${p.fuerte ? styles.botonPro : ''}`} disabled={ocupado} onClick={() => elegir(p.n)}>{paga ? `Cambiar a ${p.n}` : `Elegir ${p.n}`}</button> : <p className={styles.soloAdmin}>Gestionado por el administrador</p>}
             </div><div className={styles.funciones}>
               <p>{p.herencia ? `Todo lo de ${p.herencia}, más:` : 'Lo esencial para tu día a día:'}</p>

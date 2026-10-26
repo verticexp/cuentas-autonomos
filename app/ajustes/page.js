@@ -16,6 +16,7 @@ export default async function Page() {
   return (
     <main className="pagina mk-look ajustes-raiz">
       <div className="aj-solo-ordenador">
+        <h1 className="solo-lectores">Tu cuenta</h1>
         <div className="aj-cuenta">
           <Avatar nombre={u.nombre} size={88} />
           <strong>{u.nombre}</strong>

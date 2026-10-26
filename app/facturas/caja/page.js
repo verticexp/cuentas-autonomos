@@ -36,7 +36,7 @@ export default async function Caja({ searchParams }) {
     <main className="pagina mk-look caja">
       <Volver href={cierre ? `/facturas/${cierre.id}` : '/facturas'}>{cierre ? 'Cierre' : 'Facturas'}</Volver>
       <h1 className="titulo">{cierre?.caja ? `Corregir el cierre ${numeroFactura(cierre)}` : 'Caja'}</h1>
-      {!cierre && <nav className="segmentado"><Ir href="/facturas/caja" tipo="fundido" className={ver === 'cierre' ? 'activo' : ''}>Cierre del día</Ir><Ir href="/facturas/caja?ver=importar" tipo="fundido" className={ver === 'importar' ? 'activo' : ''}>Importar del TPV</Ir></nav>}
+      {!cierre && <nav className="segmentado" aria-label="Vista de caja"><Ir href="/facturas/caja" tipo="fundido" className={ver === 'cierre' ? 'activo' : ''}>Cierre del día</Ir><Ir href="/facturas/caja?ver=importar" tipo="fundido" className={ver === 'importar' ? 'activo' : ''}>Importar del TPV</Ir></nav>}
       {ver === 'cierre' || cierre ? (
         <>
           <div id="nuevo-cierre"><FormCierre igic={igic} hoy={hoy()} actividades={actividades} productos={lista} cierre={cierre?.caja ? cierre : null} ivaDefecto={actividades[0].ivaPct ?? (igic ? 7 : 21)} proyectos={nombresProyectos(facturas)} /></div>

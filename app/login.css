@@ -26,9 +26,9 @@
 .registro-trampa { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
 .registro-opciones { display: flex; flex-direction: column; gap: 8px; }
 .login .registro-opcion { display: flex; flex-direction: row; align-items: flex-start; gap: 12px; margin: 0; padding: 14px 16px; text-align: left; border-radius: 12px; background: var(--surface); color: var(--ink); border: 1px solid var(--line); box-shadow: none; font-weight: 400; cursor: pointer; transition: border-color 160ms ease-out, background-color 160ms ease-out; }
-.login .registro-opcion.elegida { border-color: var(--green, #218255); background: color-mix(in srgb, var(--green, #218255) 8%, var(--surface)); }
+.login .registro-opcion.elegida { border-color: var(--in); background: color-mix(in srgb, var(--in) 8%, var(--surface)); }
 .registro-opcion-texto { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
-.login .registro-opcion input[type="radio"], .login .registro-periodo input[type="radio"] { appearance: auto; position: static; flex: 0 0 20px; width: 20px; height: 20px; min-height: 20px; margin: 2px 0 0; padding: 0; border: 0; border-radius: 50%; box-shadow: none; accent-color: var(--green, #218255); cursor: pointer; }
+.login .registro-opcion input[type="radio"], .login .registro-periodo input[type="radio"] { appearance: auto; position: static; flex: 0 0 20px; width: 20px; height: 20px; min-height: 20px; margin: 2px 0 0; padding: 0; border: 0; border-radius: 50%; box-shadow: none; accent-color: var(--in); cursor: pointer; }
 .login .registro-opcion:has(input:focus-visible), .login .registro-periodo label:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 3px; }
 .registro-opcion strong { font-size: 16px; font-weight: 600; }
 .registro-opcion small { font-size: 13px; color: var(--muted); }
@@ -40,7 +40,7 @@
 .login .registro-atras:hover { background: none; text-decoration: underline; }
 .login .registro-periodo { display: flex; flex-wrap: wrap; gap: 8px; }
 .login .registro-periodo label { display: flex; align-items: center; justify-content: center; flex: 1 1 140px; gap: 8px; margin: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); cursor: pointer; font-size: 14px; font-weight: 500; transition: border-color 160ms ease-out, background-color 160ms ease-out; }
-.login .registro-periodo label.elegida { border-color: var(--green, #218255); background: color-mix(in srgb, var(--green, #218255) 8%, var(--surface)); }
+.login .registro-periodo label.elegida { border-color: var(--in); background: color-mix(in srgb, var(--in) 8%, var(--surface)); }
 .login .registro-periodo input[type="radio"] { margin: 0; }
 /* Altura natural: teclado, errores y ayuda no disparan transiciones de layout.
    La entrada entre pasos se controla con WAAPI; el contenido es visible por defecto. */
@@ -50,7 +50,7 @@
 /* El título recibe foco para anunciar el paso, pero no es una opción seleccionable. */
 .login .registro .login-titulo:focus { outline: none; }
 .login .registro-error:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; border-radius: 3px; }
-.login .registro [aria-invalid="true"] { outline: 2px solid var(--danger, #b42318); outline-offset: 2px; }
+.login .registro [aria-invalid="true"] { outline: 2px solid var(--out); outline-offset: 2px; }
 .registro-error p { margin: 0; }
 .login .registro-corregir { width: auto; min-height: 44px; margin: 0; padding: 8px 0; border: 0; background: none; color: inherit; box-shadow: none; font: inherit; text-decoration: underline; }
 .login .registro-corregir:hover { background: none; }
@@ -61,7 +61,7 @@
 #registro-email-error:empty { display: none; }
 @media (hover: hover) and (pointer: fine) {
   .login .registro-opcion:hover, .login .registro-periodo label:hover { border-color: var(--muted); }
-  .login .registro-opcion.elegida:hover, .login .registro-periodo label.elegida:hover { border-color: var(--green, #218255); }
+  .login .registro-opcion.elegida:hover, .login .registro-periodo label.elegida:hover { border-color: var(--in); }
 }
 @media (max-width: 640px) {
   .login .registro-plan-cab b { white-space: nowrap; }

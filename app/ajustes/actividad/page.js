@@ -1,4 +1,5 @@
 import Vacio from '@/components/Vacio';
+import { fechaHora } from '@/lib/formato';
 import { requerir } from '@/lib/auth';
 import { leerAuditoria } from '@/lib/auditoria';
 import Volver from '@/components/Volver';
@@ -8,7 +9,7 @@ import '@/app/mk.css';
 
 export const dynamic = 'force-dynamic';
 
-const cuando = (f) => new Date(f).toLocaleString('es-ES', { timeZone: 'Europe/Madrid', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+const cuando = fechaHora;
 
 // Registro de actividad de la empresa (lib/auditoria.js): solo para su administrador.
 export default async function Actividad() {

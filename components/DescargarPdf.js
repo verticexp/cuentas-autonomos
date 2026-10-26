@@ -33,7 +33,7 @@ export default function DescargarPdf({ id, nombre, url = `/api/facturas/pdf?id=$
   return (
     <div style={{ textAlign: 'right' }}>
       <button className="boton pequeno" onClick={bajar} disabled={generando}>{generando ? estado : 'Descargar PDF'}</button>
-      {estado && !generando && <p className="error">{estado}</p>}
+      {estado && !generando && <p className="error" role="alert">{estado}</p>}
     </div>
   );
 }

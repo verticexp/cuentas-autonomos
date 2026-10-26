@@ -7,7 +7,7 @@ export default function SinAcceso({ texto = 'Esta pantalla es solo para el admin
       <div className="vacio">
         <p>No tienes acceso</p>
         <p>{texto}</p>
-        <Ir href="/" className="boton">Ir al inicio</Ir>
+        <Ir href="/" className="boton">Ir al Resumen</Ir>
       </div>
     </main>
   );

@@ -125,7 +125,7 @@ export default function Bloqueo({ email, servidor = true }) {
         <input id="bloqueo-email" name="email" type="email" autoComplete="username webauthn" defaultValue={email} required />
         <label htmlFor="bloqueo-password">Contraseña</label>
         <CampoPassword ref={pass} id="bloqueo-password" />
-        {error && <p className="error">{error}</p>}
+        {error && <p className="error" role="alert">{error}</p>}
         <button type="submit" disabled={enviando || saliendo}>{saliendo ? 'Dentro' : enviando ? 'Comprobando…' : 'Entrar'}</button>
         <EntrarLlave auto alEntrar={(r) => entro(r?.cambio)} />
       </form>}
