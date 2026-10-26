@@ -51,4 +51,4 @@ export default async function PaginaRemesas() {
   );
 }
 
-export const metadata = { title: 'Remesas' };
+export const metadata = { title: 'Remesas SEPA' };

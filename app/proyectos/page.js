@@ -8,7 +8,7 @@ import { costeGasto, importes, numeroFactura, r2 } from '@/lib/calculos';
 import { amortizacionesAnio } from '@/lib/amortizaciones';
 import { fiscalDe, usa303 } from '@/lib/empresa';
 import { limpiarProyecto, rentabilidad } from '@/lib/proyectos';
-import { eur, fechaCorta, hoy } from '@/lib/formato';
+import { eur, fechaCorta, hoy, pctCorto } from '@/lib/formato';
 import SinBD from '@/components/SinBD';
 import Volver from '@/components/Volver';
 import Ir from '@/components/Ir';
@@ -47,7 +47,7 @@ export default async function Proyectos({ searchParams }) {
     <main className="pagina mk-look modelos contabilidad">
       <Volver href={elegido ? url({ p: null }) : '/'}>{elegido ? 'Proyectos' : 'Resumen'}</Volver>
       <h1 className="titulo">{elegido ? elegido.proyecto : 'Proyectos y centros de coste'}</h1>
-      <nav className="anios inv-anios">
+      <nav className="anios inv-anios" aria-label="Año">
         {!todo && <Ir href={url({ anio: anio - 1 })} tipo="cifras" aria-label="Año anterior">‹</Ir>}
         <strong>{todo ? 'Desde el principio' : anio}</strong>
         {!todo && (anio < Number(h.slice(0, 4)) ? <Ir href={url({ anio: anio + 1 })} tipo="cifras" aria-label="Año siguiente">›</Ir> : <span className="off">›</span>)}
@@ -59,7 +59,7 @@ export default async function Proyectos({ searchParams }) {
           <div className="cont-resumen">
             <div><span>Ingresos</span><strong>{eur(elegido.ingresos)}</strong></div>
             <div><span>Gastos</span><strong>{eur(elegido.gastos)}</strong></div>
-            <div><span>Margen</span><strong className={elegido.margen < 0 ? 'inv-rojo' : ''}>{eur(elegido.margen)}{elegido.ingresos ? ` · ${elegido.margenPct.toLocaleString('es-ES')} %` : ''}</strong></div>
+            <div><span>Margen</span><strong className={elegido.margen < 0 ? 'inv-rojo' : ''}>{eur(elegido.margen)}{elegido.ingresos ? ` · ${pctCorto(elegido.margenPct)}` : ''}</strong></div>
           </div>
           <section className="bloque">
             <h2 className="grupo-t">Facturas y cierres</h2>
@@ -75,7 +75,7 @@ export default async function Proyectos({ searchParams }) {
               {r.proyectos.map((p) => (
                 <li key={p.proyecto}><Link href={url({ p: p.proyecto })} className="fila">
                   <span className="txt"><strong>{p.proyecto}</strong><small>Ingresos {eur(p.ingresos)} · gastos {eur(p.gastos)} · {p.facturas} {p.facturas === 1 ? 'factura' : 'facturas'}, {p.apuntes} {p.apuntes === 1 ? 'gasto' : 'gastos'}</small></span>
-                  <span className="imp-col"><span className={`imp${p.margen < 0 ? ' inv-rojo' : ''}`}>{eur(p.margen)}</span><small className="nota">{p.gastos ? (p.ingresos > 0 ? `margen ${p.margenPct.toLocaleString('es-ES')} %` : 'margen') : 'sin gastos asignados'}</small></span>
+                  <span className="imp-col"><span className={`imp${p.margen < 0 ? ' inv-rojo' : ''}`}>{eur(p.margen)}</span><small className="nota">{p.gastos ? (p.ingresos > 0 ? `margen ${pctCorto(p.margenPct)}` : 'margen') : 'sin gastos asignados'}</small></span>
                 </Link></li>
               ))}
               <li><div className="fila"><span className="txt"><strong>Sin proyecto (generales)</strong><small>Ingresos {eur(r.general.ingresos)} · gastos {eur(r.general.gastos)}</small></span><span className={`imp${r.general.margen < 0 ? ' inv-rojo' : ''}`}>{eur(r.general.margen)}</span></div></li>

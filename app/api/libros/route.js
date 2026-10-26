@@ -2,7 +2,7 @@ import { DETALLE } from '@/lib/permisos';
 import { concurrencia, respuesta429 } from '@/lib/limite';
 import { leer } from '@/lib/redis';
 import { usuarioApi } from '@/lib/api';
-import { actividadesDe, fiscalDe } from '@/lib/empresa';
+import { actividadesDe, fiscalDe, reccDe } from '@/lib/empresa';
 import { librosRegistro, librosXlsx } from '@/lib/librosRegistro';
 import { hoy } from '@/lib/formato';
 import { auditar } from '@/lib/auditoria';
@@ -24,7 +24,7 @@ export async function GET(req) {
     // Informe de capacidad E01: el año y los bienes de inversión; todo el histórico solo si hay que valorar el
     // inventario a cierre (variación de existencias de un año cerrado de un autónomo con productos con stock).
     const inventario = fiscalDe(u).tipo !== 'sociedad' && `${anio}-12-31` < h && (productos || []).some((p) => !p.servicio);
-    const { facturas, gastos } = inventario ? { facturas: await leer(u, 'facturas'), gastos: await leer(u, 'gastos') } : await delosAnios(u, [anio]);
+    const { facturas, gastos } = inventario ? { facturas: await leer(u, 'facturas'), gastos: await leer(u, 'gastos') } : await delosAnios(u, reccDe(fiscalDe(u)) ? [anio - 1, anio] : [anio]); // con el criterio de caja, los cobros de este año de las facturas del anterior
     const l = librosRegistro({ facturas: facturas || [], gastos: gastos || [], nominas: nominas || [], productos: productos || [], ajustes: ajustes || [], albaranes: albaranes || [], fiscal: fiscalDe(u), actividades: actividadesDe(u),
       empresa: { nombre: u.emisor?.nombre || u.empresaNombre || '', nif: u.emisor?.nif || '' } }, anio, h);
     await auditar(u, 'Libros registro', `Descarga de ${anio}`);

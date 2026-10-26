@@ -5,11 +5,11 @@
 .caja-cobro label { font-size: 14px; }
 .caja-dias { display: grid; gap: .5rem; margin: 1rem 0; }
 .caja-dia { display: flex; justify-content: space-between; gap: .75rem; align-items: flex-start; padding: .75rem 1rem; }
-.caja-dia small { display: block; color: var(--gris, #6b7280); }
+.caja-dia small { display: block; color: var(--muted); }
 .caja-dia.repetido { opacity: .55; }
-.caja-aviso { font-size: 14px; color: var(--gris, #6b7280); }
+.caja-aviso { font-size: 14px; color: var(--muted); }
 @media (max-width: 520px) { .caja-cobro { grid-template-columns: 1fr 1fr; } .caja-iva { grid-template-columns: 7.5rem 1fr auto; } }
-.caja-auto { color: var(--muted, #6b7280); font-weight: 400; }
+.caja-auto { color: var(--muted); font-weight: 400; }
 /* Móvil, en el mostrador: total del día fijo arriba y campos y botones grandes para teclear con una mano */
 .caja-total { display: none; }
 @media (max-width: 1023.98px) {

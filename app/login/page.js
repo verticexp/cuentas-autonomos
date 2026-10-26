@@ -12,7 +12,7 @@ import { AYUDA_CONTRASENA } from '@/lib/contrasena';
 import '@/app/legal.css';
 
 export const dynamic = 'force-dynamic';
-const ERRORES = { 1: 'Email o contraseña incorrectos.', bloqueado: 'Demasiados intentos. Espera 15 minutos.' };
+const ERRORES = { 1: 'Email o contraseña incorrectos.', bloqueado: 'Demasiados intentos. Espera 15 minutos.', caducado: 'Ha pasado demasiado tiempo. Vuelve a escribir tu email y contraseña.' };
 
 export default async function Login({ searchParams }) {
   if (!redis) return <SinBD />;
@@ -30,7 +30,7 @@ export default async function Login({ searchParams }) {
           <form method="post" action="/api/registro">
             <h1><Logo className="logo-login" /></h1>
             <p className="nota">Crea la cuenta de administrador.</p>
-            {error && <p className="error">{ERRORES[error] || mensajeSeguro(error)}</p>}
+            {error && <p className="error" role="alert">{ERRORES[error] || mensajeSeguro(error)}</p>}
             <label htmlFor="nombre">Nombre</label><input id="nombre" name="nombre" required />
             <label htmlFor="email">Email</label>
             <input id="email" name="email" type="email" autoComplete="username" required />

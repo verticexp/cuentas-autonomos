@@ -35,7 +35,7 @@
 /* El nombre se ve entero; el valor ocupa lo que sobra y se corta con «…» si no cabe. */
 .mas-fila .txt { flex: 1 1 auto; min-width: 0; font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .celda.mas-fila + .celda::before { left: 57px; }
-.mas-ico { flex: none; width: 29px; height: 29px; border-radius: 7px; display: grid; place-items: center; background: var(--tono-solido, #8E8E93); color: #fff; }
+.mas-ico { flex: none; width: 29px; height: 29px; border-radius: 7px; display: grid; place-items: center; background: var(--tono-solido, var(--gris)); color: #fff; }
 .mas-ico svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 /* El valor de la derecha (como «Wi-Fi  Casa» en el iPhone): gris; en rojo o ámbar si apremia. */
 .mas-fila .txt:has(+ .mas-valor) { flex: 0 1 auto; }
@@ -49,6 +49,6 @@
 .mas-tile .mas-ico { width: 40px; height: 40px; border-radius: 10px; }
 .mas-tile .mas-ico svg { width: 23px; height: 23px; }
 .mas-nombre { max-width: 100%; font-size: 11px; font-weight: 500; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.mas-punto { position: absolute; top: 8px; right: 10px; width: 9px; height: 9px; border-radius: 50%; background: var(--tono-solido, #FF3B30); }
+.mas-punto { position: absolute; top: 8px; right: 10px; width: 9px; height: 9px; border-radius: 50%; background: var(--tono-solido, var(--out)); }
 @media (prefers-reduced-motion: reduce) { .mas-tile, .mas-ajustes { transition: none; } }
 @media (min-width: 1024px) { .mas-favoritos { grid-template-columns: repeat(4, minmax(0, 120px)); } }

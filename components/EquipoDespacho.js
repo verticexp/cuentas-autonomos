@@ -38,7 +38,7 @@ export default function EquipoDespacho({ equipo, titular, yo, sinAsignar = null,
     {sinAsignar?.clientes > 0 && <li className="fila"><span className="txt"><strong>Sin asignar</strong><small>Asígnalos en la ficha de cada cliente, en «Quién lo lleva».</small><Carga c={sinAsignar} trimestre={trimestre} /></span></li>}
     </ul>
     {titular && <form className="formulario tarjeta" onSubmit={invitar}>
-      <h3>Invitar a alguien del despacho</h3>
+      <h2 className="tarjeta-titulo">Invitar a alguien del despacho</h2>
       <label>Nombre<input className="campo" value={d.nombre} maxLength={60} onChange={(e) => setD({ ...d, nombre: e.target.value })} required /></label>
       <label>Email<input className="campo" type="email" autoComplete="off" value={d.email} maxLength={254} onChange={(e) => setD({ ...d, email: e.target.value })} required /></label>
       <label>Rol<select className="campo" value={d.rol} onChange={(e) => setD({ ...d, rol: e.target.value })}><option value="gestor">Gestor: ve y revisa clientes</option><option value="titular">Titular: además, equipo, licencias y datos del despacho</option></select></label>

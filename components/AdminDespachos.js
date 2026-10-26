@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react';
 import { llamar } from './Acciones';
 import { confirmar } from './Confirmar';
+import { eur } from '@/lib/formato';
 
-const euros = (c) => (c / 100).toLocaleString('es-ES', { maximumFractionDigits: 0 }) + ' €';
+const euros = (c) => eur(c / 100);
 
 // Panel /admin: los despachos asociados y el alta de uno nuevo (con su titular y su código).
 export default function AdminDespachos() {

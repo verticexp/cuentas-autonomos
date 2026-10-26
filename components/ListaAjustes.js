@@ -147,7 +147,7 @@ export default async function ListaAjustes({ u }) {
       {fichar && <Grupo titulo="Tu jornada"><Fila href="/jornada" ico="reloj" tono="violeta" titulo="Fichar" /></Grupo>}
 
       <Grupo titulo="Seguridad y avisos">
-        <Fila href="/ajustes/seguridad" ico="seguridad" tono="violeta" titulo={app ? 'Contraseña y bloqueo' : 'Face ID y contraseña'} valor={app ? '' : llaves ? 'Activado' : 'No'} />
+        <Fila href="/ajustes/seguridad" ico="seguridad" tono="violeta" titulo="Seguridad" valor={u.dosPasos?.secreto ? 'Dos pasos' : !app && llaves ? 'Face ID' : ''} />
         {!app && <Fila href="/ajustes/avisos" ico="avisos" tono="rojo" titulo="Avisos" valor={avisos ? 'Activados' : 'No'} />}
         {admin && <Fila href="/ajustes/actividad" ico="registro" tono="violeta" titulo="Actividad" />}
       </Grupo>

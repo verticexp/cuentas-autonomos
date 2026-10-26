@@ -11,7 +11,7 @@ export default function Asistente({ listo, ejemplos, inicial = '' }) {
   const [texto, setTexto] = useState('');
   const [pensando, setPensando] = useState(false);
   const fin = useRef(null);
-  useEffect(() => { if (mensajes.length) fin.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, [mensajes, pensando]);
+  useEffect(() => { if (mensajes.length) fin.current?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'end' }); }, [mensajes, pensando]);
 
   const enviar = async (pregunta) => {
     const p = pregunta.trim();

@@ -82,9 +82,10 @@ function Hoja({ titulo, texto, aceptar, cancelar, peligro, entrada, etiqueta, va
     };
   }, [cerrar, entrada, peligro, soloLectura]);
   return createPortal(
-    <div className="hoja confirmar-hoja" ref={capa}>
+    // El rol de diálogo va en el contenedor: un <form> no admite role="dialog" ni "alertdialog" (axe: aria-allowed-role).
+    <div className="hoja confirmar-hoja" ref={capa} role={aviso || peligro ? 'alertdialog' : 'dialog'} aria-modal="true" aria-labelledby={`${id}-titulo`} aria-describedby={texto ? `${id}-texto` : undefined}>
       <button type="button" className="hoja-fondo" aria-label={entrada && !soloLectura ? 'Cancelar' : 'Cerrar diálogo'} tabIndex={-1} onClick={cancelarHoja} />
-      <form ref={panel} className="hoja-panel formulario" role={aviso || peligro ? 'alertdialog' : 'dialog'} aria-modal="true" aria-labelledby={`${id}-titulo`} aria-describedby={texto ? `${id}-texto` : undefined}
+      <form ref={panel} className="hoja-panel formulario"
         onSubmit={(e) => { e.preventDefault(); cerrar(entrada ? contenido : true); }}>
         <span className="hoja-asa" aria-hidden="true" />
         <h2 className="hoja-t" id={`${id}-titulo`}>{titulo}</h2>

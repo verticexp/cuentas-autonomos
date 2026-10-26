@@ -11,6 +11,7 @@ import { DESCUENTO, PLANES } from '@/components/web/datos';
 import { datosFiscalesRegistro, PRUEBA_DIAS, PROVINCIAS, provinciaDeCp, TIPOS, TIPOS_ALTA } from '@/lib/prueba';
 import { irALaApp, useTrasArranque } from '@/lib/arranque';
 import { validarContrasena } from '@/lib/contrasena';
+import { eurPrecio } from '@/lib/formato';
 
 const DETALLE = { aut: 'Trabajas por tu cuenta, con o sin empleados', pym: 'Una sociedad con su equipo' };
 // Orden del alta: primero la cuenta (lo más rápido), luego el negocio, los datos fiscales y revisar. El plan no se pide:
@@ -20,8 +21,7 @@ const ETIQUETAS = ['Tu cuenta', 'Negocio', 'Datos fiscales', 'Revisar'];
 const PASO = { cuenta: 1, negocio: 2, fiscal: 3, revisar: 4 };
 // El servidor numera sus pasos con el orden de antes (1 negocio, 2 fiscal, 3 plan y código, 4 cuenta, 5 condiciones).
 const DEL_SERVIDOR = { 1: PASO.negocio, 2: PASO.fiscal, 3: PASO.revisar, 4: PASO.cuenta, 5: PASO.revisar };
-const importe = (p) => p.toLocaleString('es-ES', { minimumFractionDigits: Number.isInteger(p) ? 0 : 2, maximumFractionDigits: 2 });
-const precio = (p, periodo) => periodo === 'anio' ? `${importe(p * 12 * (100 - DESCUENTO) / 100)} €/año` : `${importe(p)} €/mes`;
+const precio = (p, periodo) => periodo === 'anio' ? `${eurPrecio(p * 12 * (100 - DESCUENTO) / 100)}/año` : `${eurPrecio(p)}/mes`;
 function enfocarVisible(elemento) {
   if (!elemento) return;
   elemento.focus({ preventScroll: true });
@@ -277,7 +277,7 @@ export default function FormRegistro({ inicial = {}, sesion = null, recomendacio
           <dt>{TIPOS[tipo]}</dt><dd>{fiscales.razon}<br />{fiscales.nif}</dd>
           <dt>Dirección fiscal</dt><dd>{fiscales.direccion}<br />{fiscales.cp} {fiscales.ciudad}<br />{fiscales.provincia}{fiscales.telefono && <><br />{fiscales.telefono}</>}</dd>
           <dt>Prueba</dt><dd>{gratis === 90 ? '3 meses gratis con tu código' : gratis ? '2 meses gratis por venir recomendado' : `${PRUEBA_DIAS} días gratis`}, con todo incluido y sin tarjeta.<br />
-            {inicial.plan && elegido ? `Después, plan ${plan} (${precio(elegido.p, periodo)} sin IVA). Podrás cambiarlo cuando quieras.` : desde !== null ? `Al acabar eliges tu plan, desde ${importe(desde)} €/mes sin IVA.` : ''}</dd>
+            {inicial.plan && elegido ? `Después, plan ${plan} (${precio(elegido.p, periodo)} sin IVA). Podrás cambiarlo cuando quieras.` : desde !== null ? `Al acabar eliges tu plan, desde ${eurPrecio(desde)}/mes sin IVA.` : ''}</dd>
         </dl>
         {!recomendacion && (verCodigo ? <div className="registro-codigo">
           <label htmlFor="codigo">Código promocional</label>

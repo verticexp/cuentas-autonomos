@@ -36,6 +36,7 @@ import { accionesHoy } from '@/lib/hoy';
 import { resumen as resumenBandeja } from '@/lib/bandeja';
 import { proximoPlazoDe } from '@/lib/avisos';
 import YaPresentado from '@/components/YaPresentado';
+import VienesDeOtroPrograma from '@/components/VienesDeOtroPrograma';
 
 export const dynamic = 'force-dynamic';
 // Solo los modelos definidos en el glosario reciben ayuda.
@@ -159,7 +160,7 @@ export default async function Resumen({ searchParams }) {
       <header className={`inicio${facturado > 0 ? '' : ' sin-saldo'}`}>
         <div className="inicio-barra">
           <Logo />
-          {!sinDatos && <nav className="anios">
+          {!sinDatos && <nav className="anios" aria-label="Año">
             <Ir href={`/?anio=${anio - 1}`} tipo="cifras" aria-label="Año anterior">‹</Ir>
             <strong>{anio}</strong>
             {anio < anioActual ? <Ir href={`/?anio=${anio + 1}`} tipo="cifras" aria-label="Año siguiente">›</Ir> : <span className="off">›</span>}
@@ -228,24 +229,27 @@ export default async function Resumen({ searchParams }) {
         </section>
       )}
 
+      {/* Cuenta nueva: quien viene de otro programa puede traer sus clientes, facturas y gastos desde aquí. */}
+      {sinDatos && puede(u, 'empresa') && <VienesDeOtroPrograma />}
+
       {hayTarjetas && (
         <div className="hcards">
           {verHacienda && (
             <Ir href={`/modelos?anio=${debe ? plazo.anio : anioActual}`} className={`hcard ir${urgente ? ' urgente' : ''}`} style={{ '--c': urgente ? 'var(--out)' : 'var(--hacienda)' }}>
-              <h2 className="hcard-t"><Ico n="hacienda" solo />Hacienda<span>{debe ? `${plazo.t}T ${plazo.anio}` : `${tHoy}T ${anioActual}`}</span></h2>
+              <h2 className="hcard-t"><Ico n="hacienda" solo />Impuestos<span>{debe ? `${plazo.t}T ${plazo.anio}` : `${tHoy}T ${anioActual}`}</span></h2>
               {debe ? (
                 <>
                   <p className="hcard-v"><Cifra v={aPagar} /><small>€ a pagar</small></p>
                   <p className={`hcard-s${urgente ? ' rojo' : ''}`}>{plazo.dias === 0 ? <strong>{debe.irpfForal?.deOficio && !debe.pend303 ? 'Hoy es el día del pago de oficio' : 'Hoy es el último día para presentarlo'}</strong> : plazo.dias === 1 ? <strong>Mañana acaba el plazo</strong> : `Hasta el ${fechaTexto(plazo.fecha)} · quedan ${plazo.dias} días`}</p>
                   <p className="hcard-s">{[debe.pend303 ? `${nombreIndirecto(debe)}: ${debe.m303 < 0 ? `${eur(-debe.m303)} a compensar` : eur(debe.ivaIngresar)}` : !foral && c303 && `${modeloIndirecto} presentado`, debe.pend130 ? `${nombreIrpf(debe)}: ${importeIrpf(debe)}${igic && plazo.t === 4 ? ` · hasta el ${hastaT(4, plazo.anio)}` : ''}` : !foral && c130 && 'Modelo 130 presentado'].filter(Boolean).join(' · ')}</p>
                   {foral && <p className="hcard-s">{plazosPago(debe)}</p>}
-                  <p className="hcard-s">Del {tHoy}T llevas {eur(apartado)} para apartar.</p>
+                  <p className="hcard-s">Del {tHoy}T llevas {eur(apartado)} para apartar, con lo apuntado hasta hoy.</p>
                   {lineaOtros && <p className="hcard-s">{lineaOtros}</p>}
                 </>
               ) : (
                 <>
                   <p className="hcard-v"><Cifra v={apartado} /><small>€ para apartar</small></p>
-                  <p className="hcard-s">{[c303 && `${impuesto}${igic ? ' (420)' : ''} ${eur(qAhora.ivaIngresar)}`, c130 && `IRPF ${importeIrpf(qAhora)}`].filter(Boolean).join(' + ')} · {foral ? plazosPago(qAhora) : igic && tHoy === 4 ? [c303 && `420: hasta el ${fechaTexto(plazo420(anioActual, 4))} de ${anioActual + 1}`, c130 && `130: hasta el ${hastaT(4, anioActual)}`].filter(Boolean).join('; ') : <>se paga hasta el {hastaT(tHoy, anioActual)}</>}</p>
+                  <p className="hcard-s">Apuntado hasta hoy: {[c303 && `${impuesto}${igic ? ' (420)' : ''} ${eur(qAhora.ivaIngresar)}`, c130 && `IRPF ${importeIrpf(qAhora)}`].filter(Boolean).join(' + ')} · {foral ? plazosPago(qAhora) : igic && tHoy === 4 ? [c303 && `420: hasta el ${fechaTexto(plazo420(anioActual, 4))} de ${anioActual + 1}`, c130 && `130: hasta el ${hastaT(4, anioActual)}`].filter(Boolean).join('; ') : <>se paga hasta el {hastaT(tHoy, anioActual)}</>}</p>
                   {lineaOtros && <p className="hcard-s">{lineaOtros}</p>}
                 </>
               )}
@@ -311,7 +315,7 @@ export default async function Resumen({ searchParams }) {
           </section>
 
           <section className="grupo res-trim">
-            <h2 className="grupo-t">Hacienda por trimestre</h2>
+            <h2 className="grupo-t">Impuestos por trimestre</h2>
             <p className="grupo-pie arriba">Orientativo; confírmalo con tu gestor.{foral ? ' Marca cada modelo por separado. El pago fraccionado del IRPF sigue las reglas de tu Hacienda foral.' : c130 ? ` Marca el ${igic ? '420' : '303'} y el 130 de cada trimestre por separado. Un 130 presentado se descuenta en los siguientes aunque no lo hayas pagado (esa deuda va aparte).` : ' Marca cada trimestre cuando lo presentes.'}</p>
             <div className="trims">
               {r.trimestres.map((q) => {
@@ -319,7 +323,7 @@ export default async function Resumen({ searchParams }) {
                 const abierto = anio === anioActual && q.t >= tHoy;
                 return (
                 <div key={q.t} className={`trim trimestre${anio === anioActual && q.t > tHoy ? ' futuro' : ''}`}>
-                  <div className="trim-cab"><h3>{q.t}T {anio}</h3>{abierto && <span className="estado-txt e-curso">{q.t === tHoy ? 'En curso' : 'Aún no ha empezado'}</span>}</div>
+                  <div className="trim-cab"><h3>{q.t}T {anio}</h3>{abierto && <span className="estado-txt e-curso">{q.t === tHoy ? 'En curso · apuntado hasta hoy' : 'Aún no ha empezado'}</span>}</div>
                   <div className="trim-cifras">
                     {c303 && <p><span>{foral ? nombreIndirecto(q) : igic ? modeloIndirecto : q.t === r.trimestres[0]?.t ? <Termino id="m303">Modelo 303</Termino> : 'Modelo 303'}</span><strong>{q.ivaDevolucion > 0 ? `${eur(q.ivaDevolucion)} a devolver` : q.m303 < 0 ? `${eur(-q.m303)} a compensar` : eur(q.ivaIngresar)}</strong></p>}
                     {c303 && !abierto && <Presentado soloLectura={!puede(u, 'contabilidad')} modelo={igic ? '420' : '303'} anio={anio} t={q.t} importe={0} pagado={q.t === 4 && u.pres303?.[anio]?.[4] === 'devolucion' ? 'devolucion' : hecho303(u.pres303, u.pagos130, anio, q.t)} con130={false} />}
@@ -460,7 +464,7 @@ export default async function Resumen({ searchParams }) {
               {/* Sin datos, solo los trimestrales de cada día (D8-19): el 347, el 390 o la renta son ruido el primer día. */}
               {modelosDe(fiscal).filter((m) => !sinDatos || ['303', '420', '130', '131'].includes(m.id)).map((m) => ({ ...m, prox: proximoPlazoDe(fiscal, m.id, h, { cuotaIS: u.cuotaIS }) })).map((m) => ({ ...m, cuando: m.prox ? `${m.prox === h ? 'Hoy es el último día' : `Próximo: ${fechaTexto(m.prox)}${m.prox.slice(0, 4) !== h.slice(0, 4) ? ` de ${m.prox.slice(0, 4)}` : ''}`}` : m.cuando })).map((m) => (
                 m.calcula
-                  ? <div key={m.id} className="celda ir"><span className="modelo-num"><NumeroModelo modelo={m} /></span><Ir href={`/modelos?anio=${anio}#m${m.id}`} tipo="adelante" className="txt enlace-modelo" aria-label={`Modelo ${m.id}: ${m.nombre}`}>{m.nombre}<small>{m.cuando}</small></Ir><span className="v">{m.id === '100' ? 'Borrador' : 'Lo calcula Fisquo'}</span></div>
+                  ? <div key={m.id} className="celda ir"><span className="modelo-num"><NumeroModelo modelo={m} /></span><Ir href={`/modelos?anio=${anio}#m${m.id}`} tipo="adelante" className="txt enlace-modelo" aria-label={`Modelo ${m.id}: ${m.nombre}${m.cuando ? `. ${m.cuando}` : ''}`}>{m.nombre} <small>{m.cuando}</small></Ir><span className="v">{m.id === '100' ? 'Borrador' : 'Lo calcula Fisquo'}</span></div>
                   : <div key={m.id} className="celda"><span className="modelo-num"><NumeroModelo modelo={m} /></span><span className="txt">{m.nombre}<small>{m.cuando}</small></span>{m.calcula && <span className="v">Lo calcula Fisquo</span>}</div>
               ))}
             </div>

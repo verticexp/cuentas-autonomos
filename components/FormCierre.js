@@ -127,7 +127,7 @@ export default function FormCierre({ hoy, actividades, productos = [], cierre = 
       <label>Nota (opcional)<input className="campo" value={x.nota} onChange={(e) => poner('nota', e.target.value)} placeholder="Ej.: descuadre de 2 € en caja" /></label>
 
       <div className="totales solo-pc"><strong>Total del día {eur(total)}</strong></div>
-      {error && <p className="error">{error}</p>}
+      {error && <p className="error" role="alert">{error}</p>}
       {(!cuadra || !total) && <p id={ayudaId} className="nota">{!total ? 'Añade el importe vendido para guardar el cierre.' : 'Los cobros deben sumar el total vendido.'}</p>}
       <button className="boton" disabled={enviando || !cuadra || !total} aria-describedby={!cuadra || !total ? ayudaId : undefined}>{enviando ? 'Guardando…' : cierre ? 'Guardar cambios' : 'Apuntar el cierre'}</button>
     </form>

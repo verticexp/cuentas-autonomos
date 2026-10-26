@@ -2,7 +2,7 @@ import { leer, leerUno, guardar } from '@/lib/redis';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { fiscalDe } from '@/lib/empresa';
 import { generarAsientos } from '@/lib/asientos';
-import { cuentasAnuales, SECCIONES } from '@/lib/cuentasAnuales';
+import { csvPymes, cuentasAnuales, SECCIONES } from '@/lib/cuentasAnuales';
 import { cuentasAnualesPdf } from '@/lib/cuentasAnualesPdf';
 import { hoy } from '@/lib/formato';
 import { auditar } from '@/lib/auditoria';
@@ -17,12 +17,20 @@ export async function GET(req) {
   const { u, res } = await usuarioApi({ permiso: 'resumen' });
   if (res) return res;
   if (await pasado('pdf', u.id, 120, 600)) return respuesta429(600, 'Has descargado demasiados PDF. Espera 10 minutos antes de descargar más.');
-  const anio = Number(req.nextUrl.searchParams.get('anio')) || Number(hoy().slice(0, 4)) - 1;
+  const q = req.nextUrl.searchParams;
+  const anio = q.has('anio') ? Number(q.get('anio')) : Number(hoy().slice(0, 4)) - 1;
+  if (!Number.isInteger(anio) || anio < 2000 || anio > 2100) return error('Año no válido');
+  const formato = q.get('formato') || 'pdf';
+  if (!['pdf', 'pymes'].includes(formato)) return error('Formato no válido');
   const [facturas, gastosLeidos, nominasLeidas, manuales, guardado, productos, ajustes, albaranes] = await Promise.all([leer(u, 'facturas'), leer(u, 'gastos'), leer(u, 'nominas'), leer(u, 'asientos'), leerUno(u, 'cuentasAnuales', String(anio)), leer(u, 'productos'), leer(u, 'stock'), leer(u, 'albaranes')]);
   // Sin el permiso «Nóminas», las de cada persona van juntas por mes (lib/nominas.js, Codex H2).
   const gastos = gastosQueVe(u, gastosLeidos), nominas = nominasQueVe(u, nominasLeidas);
   const asientos = generarAsientos({ facturas, gastos, nominas: nominas || [], manuales: manuales || [], fiscal: fiscalDe(u), pagos130: u.pagos130 || {}, pres303: u.pres303 || {}, pres369: u.pres369 || {}, pres123: u.pres123 || {}, pres111: u.pres111 || {}, pres115: u.pres115 || {}, pagadosHacienda: u.pagadosHacienda || {}, prorrata: u.prorrata || {}, capital: (await leer(u, 'capital')) || [], pagos202: u.pagos202 || {}, cuotaIS: u.cuotaIS || {}, binsPrevias: u.binsPrevias || {}, fondosPropios: u.fondosPropios || {}, productos: productos || [], ajustes: ajustes || [], albaranes: albaranes || [] }, hoy());
   const c = cuentasAnuales({ asientos, gastos, nominas: nominas || [], empresa: u, anio, guardado: guardado || {} });
+  if (formato === 'pymes') {
+    await auditar(u, 'Cuentas anuales', `Descarga del CSV PYMES de ${anio}`);
+    return new Response(csvPymes(c), { headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="balance-pyg-pymes-${anio}.csv"`, 'Cache-Control': 'no-store' } });
+  }
   const nombre = `cuentas-anuales-${anio}.pdf`;
   await auditar(u, 'Cuentas anuales', `Descarga del PDF de ${anio}`);
   return new Response(await cuentasAnualesPdf(c), { headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="${nombre}"` } });

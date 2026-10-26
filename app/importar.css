@@ -30,3 +30,10 @@
 .importar-detalle div { display: flex; gap: 8px; justify-content: space-between; border-top: 1px solid var(--line); padding-top: 4px; }
 .importar-detalle dt { color: var(--muted); }
 .importar-detalle dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
+
+/* De dónde vienes: qué exportar de cada programa (lib/importarOrigen.js) */
+.importar-origen .importar-tipos { margin-bottom: 4px; }
+.importar-guia { margin-top: 10px; font-size: 14px; }
+.importar-guia ol { margin: 8px 0; padding-left: 22px; display: grid; gap: 6px; }
+.importar-guia p { margin: 0; }
+.importar-guia .nota { margin-top: 8px; }

@@ -54,6 +54,15 @@ export default async function Nominas({ searchParams }) {
         </section>
       )}
 
+      <section className="tarjeta bloque">
+        <h2>Bases para la gestoría</h2>
+        <form action="/api/nominas/bases" method="get" className="formulario">
+          <label>Mes de las bases<input className="campo" type="month" name="mes" defaultValue={mes} required /></label>
+          <button className="boton sec">Descargar bases del mes</button>
+        </form>
+        <p className="nota">CSV para que la gestoría prepare la liquidación en SILTRA / Sistema RED. Fisquo no envía nada a la Seguridad Social. Se incluyen el número de horas extra y su base en euros; los atrasos y las vacaciones del finiquito necesitan sus liquidaciones complementarias.</p>
+      </section>
+
       {m111.perceptores > 0 && (
         <section className="tarjeta bloque">
           <h3>Modelo 111 · {t}T {anio}</h3>
@@ -115,7 +124,7 @@ export default async function Nominas({ searchParams }) {
             {N.filter((n) => n.mes === m).map((n) => (
               <li key={n.id}>
                 <Ir href={`/nominas/${n.id}`} className="fila">
-                  <span className="txt"><strong>{n.empleadoNombre}</strong><small>Bruto {eur(n.bruto)} · IRPF {eur(calculoNomina(n).irpf)}</small></span>
+                  <span className="txt"><strong>{n.empleadoNombre}</strong><small>{n.tipo === 'finiquito' ? 'Finiquito · ' : ''}Bruto {eur(calculoNomina(n).totalDevengado ?? n.bruto)} · IRPF {eur(calculoNomina(n).irpf)}</small></span>
                   <span className={`imp ${n.pagada ? '' : 'pend'}`}>{eur(calculoNomina(n).neto)}<small>{n.pagada ? 'Pagada' : 'Por pagar'}</small></span>
                 </Ir>
               </li>

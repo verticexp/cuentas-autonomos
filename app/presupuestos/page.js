@@ -37,7 +37,7 @@ export default async function Presupuestos() {
               <FilaFactura href={`/presupuestos/${p.id}`}>
                 <span className="txt">
                   <strong data-vt="cliente">{p.cliente.nombre}</strong>
-                  <small>{numeroPresupuesto(p)}{p.evento?.fecha ? ` · evento el ${fechaTexto(p.evento.fecha)}` : ''}</small>
+                  <small>{numeroPresupuesto(p)}{p.evento?.fecha ? ` · fecha de la operación: ${fechaTexto(p.evento.fecha)}` : ''}</small>
                 </span>
                 <span className="imp-col">
                   <span className="imp" data-vt="total">{eur(importes(p).total)}</span>

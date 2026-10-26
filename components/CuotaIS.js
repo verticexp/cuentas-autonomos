@@ -29,7 +29,7 @@ export function ImporteAnio({ campo, anio, valor, titulo, ayuda, sugerido = null
         <input className="campo" inputMode="decimal" placeholder={etiqueta} value={v} onChange={(e) => setV(e.target.value)} aria-label={`${titulo}: ${etiqueta.toLowerCase()}`} />
         <button className="boton sec">Guardar</button>
       </div>}
-      {msg && <p className="error">{msg}</p>}
+      {msg && <p className="error" role="alert">{msg}</p>}
     </Caja>
   );
 }

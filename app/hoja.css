@@ -16,7 +16,7 @@
 .hoja-fila:focus-visible, .hoja-cerrar:focus-visible { outline: 2px solid var(--marca); outline-offset: 2px; }
 .hoja-fila .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .hoja-fila .txt strong { font-size: 17px; font-weight: 650; }
-.hoja-fila .txt small { color: var(--muted); font-size: 13px; margin-top: 1px; }
+.hoja-fila .txt small { color: color-mix(in srgb, var(--muted) 70%, var(--ink)); font-size: 13px; margin-top: 1px; }
 .hoja-ico { flex: none; width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; background: var(--surface-2); color: var(--ico, var(--marca)); }
 .hoja-ico svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 /* La primera (lo que más usa esta empresa) destaca */

@@ -45,6 +45,11 @@
 .bienvenida .alta-renta .alta-campos { padding: 0; }
 /* Qué falta para seguir, encima de los botones (el botón desactivado no lo explica solo). */
 .cuestionario-falta { margin: 4px 0 0; }
+/* Subtítulo dentro de un paso (paso 1: a qué te dedicas) y lo elegido, en una línea, encima del último botón. */
+.bienvenida .alta-sub { margin: 24px 0 0; font-size: 17px; font-weight: 650; line-height: 1.3; }
+.bienvenida .alta-sub-texto { margin: 4px 0 8px; }
+.bienvenida .opciones + .alta-campo { margin-top: 18px; }
+.bienvenida .alta-resumen-linea { margin: 24px 0 0; padding: 12px 14px; border-radius: 12px; background: var(--relleno); color: var(--ink); font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
 /* Segmentos con una segunda línea corta (7 % · Nuevo autónomo). */
 .segmentado button small { display: block; font-size: 11px; font-weight: 400; color: var(--muted); margin-top: 1px; white-space: nowrap; }
 /* Regímenes especiales y situaciones poco frecuentes, plegados (D8-06). */

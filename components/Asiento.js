@@ -7,6 +7,7 @@ import { parseImporte } from '@/lib/importe';
 
 const num = (v) => parseImporte(v) || 0;
 import { r2 } from '@/lib/redondeo';
+import { eur, eurSin } from '@/lib/formato';
 import { CUENTAS_PERSONAL, NOMBRES_PERSONAL, asientosPersonal, totalesPersonal } from '@/lib/personal';
 
 // Asiento apuntado a mano: fecha, concepto y líneas al debe o al haber. No se guarda si no cuadra.
@@ -50,7 +51,7 @@ export function NuevoAsiento({ hoy, cuentas }) {
         </div>
       ))}
       <button type="button" className="boton sec pequeno" onClick={() => setA({ ...a, lineas: [...a.lineas, vacia] })}>Añadir línea</button>
-      <p className={`nota${d !== h ? ' rojo' : ''}`}>Debe {d.toLocaleString('es-ES', { minimumFractionDigits: 2 })} · Haber {h.toLocaleString('es-ES', { minimumFractionDigits: 2 })}{d !== h ? ` · descuadre de ${Math.abs(r2(d - h)).toLocaleString('es-ES', { minimumFractionDigits: 2 })}` : ' · cuadra'}</p>
+      <p className={`nota${d !== h ? ' rojo' : ''}`}>Debe {eurSin(d)} · Haber {eurSin(h)}{d !== h ? ` · descuadre de ${eurSin(Math.abs(r2(d - h)))}` : ' · cuadra'}</p>
       {error && <p className="error" role="alert">{error}</p>}
       {(d !== h || !d) && <p id={ayudaId} className="nota">{!d ? 'Añade un importe al debe y al haber.' : 'El debe y el haber deben coincidir.'}</p>}
       <div className="gasto-guardar">
@@ -116,7 +117,6 @@ export function AsientoPersonal({ hoy }) {
   const otro = (i, k, v) => setA({ ...a, otros: a.otros.map((o, j) => (j === i ? { ...o, [k]: v } : o)) });
   const t = totalesPersonal(a);
   const previa = asientosPersonal(a);
-  const eur = (v) => v.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   const enviar = async (e) => {
     e.preventDefault();
@@ -161,7 +161,7 @@ export function AsientoPersonal({ hoy }) {
         <table className="cont-lineas personal-resumen">
           <thead><tr><th>Asiento</th><th>Debe</th><th>Haber</th></tr></thead>
           <tbody>
-            {previa.asientos?.[0].lineas.map((l) => <tr key={l.cuenta}><td className={l.haber ? 'haber' : ''}>{l.cuenta} {NOMBRES_PERSONAL[l.cuenta] || ''}</td><td>{l.debe ? eur(l.debe) : ''}</td><td>{l.haber ? eur(l.haber) : ''}</td></tr>)}
+            {previa.asientos?.[0].lineas.map((l) => <tr key={l.cuenta}><td className={l.haber ? 'haber' : ''}>{l.cuenta} {NOMBRES_PERSONAL[l.cuenta] || ''}</td><td>{l.debe ? eurSin(l.debe) : ''}</td><td>{l.haber ? eurSin(l.haber) : ''}</td></tr>)}
           </tbody>
         </table>
       )}

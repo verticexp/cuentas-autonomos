@@ -100,6 +100,8 @@ export default async function Factura({ params }) {
         </dl>
         <div className="fh-pie">
           <span className={`fh-estado e-${estado.toLowerCase()}`}>{estado}{!f.cobrada && ` · vence el ${fechaTexto(vencimiento(f, u.emisor?.plazo))}`}</span>
+          {/* Lo que el cliente dijo desde su portal (estados de la factura electrónica, Ley 18/2022). */}
+          {f.estadoCliente && <span className={`fh-estado ${f.estadoCliente.estado === 'rechazada' ? 'e-vencida' : 'e-cobrada'}`}>{f.estadoCliente.estado === 'rechazada' ? `El cliente la rechazó el ${fechaTexto(f.estadoCliente.fecha.slice(0, 10))}: ${f.estadoCliente.motivo}` : `El cliente la dio por conforme el ${fechaTexto(f.estadoCliente.fecha.slice(0, 10))}`}</span>}
           <span>Emitida el {fechaTexto(f.fecha)}</span>
         </div>
         {editar && <div className="fh-cobrada"><Cobro id={f.id} cobrada={Boolean(f.cobrada)} total={i.total} pagado={pagadoDe(f)} pendiente={Math.max(0, pendienteDe(f))} cobro={f.cobro ? { fecha: f.cobro.fecha, metodo: f.cobro.metodo } : null} deshacer={deshacerDe(f)} hoy={hoy()} desde={f.fecha} secundario={sinEnviar} formaInicial={f.formaCobro === 'efectivo' ? 'efectivo' : ''} /></div>}
@@ -142,7 +144,7 @@ export default async function Factura({ params }) {
         const irpf = usa130(fiscal) ? a.irpf : 0;
         return <p className="aviso-plazo"><strong>De esta factura, aparta {eur(iva + irpf)} para Hacienda</strong><span>{[usa303(fiscal) && `IVA ${eur(iva)}`, usa130(fiscal) && `IRPF que te faltará en el 130 ≈ ${eur(irpf)}${margen !== undefined ? ` (con tu beneficio real: ${Math.round(a.margen * 100)} % de lo facturado)` : ''}`].filter(Boolean).join(' + ')}</span></p>;
       })()}
-      {f.cobro?.metodo === 'stripe' && <p className="nota">Pagada con tarjeta o Bizum el {fechaTexto(f.cobro.fecha.slice(0, 10))} ({eur(f.cobro.importe)}).</p>}
+      {f.cobro?.metodo === 'stripe' && <p className="nota">Cobrada con tarjeta o Bizum el {fechaTexto(f.cobro.fecha.slice(0, 10))} ({eur(f.cobro.importe)}).</p>}
       {f.rectifica && <p className="nota">Rectifica la factura {f.rectifica.numero}.</p>}
       {f.verifactu && <p className={f.verifactu.estado === 'Incorrecto' ? 'error' : 'nota'}>{`Verifactu${f.verifactu.modo === 'pruebas' ? ' (pruebas)' : ''}: ${
         { Correcto: `registrada en la AEAT${f.verifactu.csv ? ` (CSV ${f.verifactu.csv})` : ''}.`, AceptadoConErrores: `registrada en la AEAT con avisos: ${f.verifactu.error}`, Incorrecto: `la AEAT la ha rechazado: ${f.verifactu.error}` }[f.verifactu.estado]

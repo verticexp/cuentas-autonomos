@@ -42,7 +42,7 @@ export default async function Mes({ params }) {
       <Volver href={`/?anio=${y}`}>Resumen</Volver>
       <header className="cabecera">
         <h1 className="titulo">{MESES[m - 1]} {y}</h1>
-        <nav className="anios">
+        <nav className="anios" aria-label="Mes">
           <Ir tipo="cifras" href={`/mes/${otro(-1)}`} aria-label="Mes anterior">‹</Ir>
           <Ir tipo="cifras" href={`/mes/${otro(1)}`} aria-label="Mes siguiente">›</Ir>
         </nav>

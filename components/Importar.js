@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { eur, fechaCorta } from '@/lib/formato';
 import { saldoDe as saldo } from '@/lib/calculos';
 import Vacio from './Vacio';
+import { ORIGENES, guiaDe } from '@/lib/importarOrigen';
 import '@/app/importar.css';
 
 const TIPOS = [['clientes', 'Clientes'], ['facturas', 'Facturas'], ['gastos', 'Gastos'], ['productos', 'Productos'], ['saldos', 'Saldos'], ['bienes', 'Bienes']];
@@ -33,9 +34,12 @@ function resumen(tipo, d) {
   return [`${d.importada} · ${d.cliente.nombre}`, `${fechaCorta(d.fecha)} · ${eur(d.base)} + IVA ${d.ivaPct} %${d.irpfPct ? ` − IRPF ${d.irpfPct} %` : ''} · ${d.cobrada ? 'cobrada' : d.pagos?.length ? `cobrada en parte (pendiente ${eur(saldo(d))})` : 'pendiente'}`];
 }
 
-// Importar desde Holded o Excel: se elige qué, se sube el archivo, se revisa la vista previa y se guarda.
-export default function Importar() {
+// Importar desde Holded, Quipu u otro programa o Excel: se elige de dónde se viene y qué, se sube el archivo, se revisa la
+// vista previa y se guarda. origen: el que trae la tarjeta «¿Vienes de otro programa?» (lib/importarOrigen.js).
+export default function Importar({ origen: origenInicial = null }) {
   const ayudaId = useId();
+  const [origen, setOrigen] = useState(origenInicial);
+  const guia = guiaDe(origen);
   const [tipo, setTipo] = useState('clientes');
   const [archivo, setArchivo] = useState(null);
   const [vista, setVista] = useState(null);
@@ -98,8 +102,22 @@ export default function Importar() {
   const obligatorio = (k) => elegir.requeridos.some((r) => r.split('|').includes(k));
   const cambiar = (t) => { if (enCurso.current) return; setTipo(t); reiniciar(); };
   const hecho = vista && 'guardados' in vista;
+  const nombreTipo = TIPOS.find((t) => t[0] === tipo)[1].toLowerCase();
+  const filaDe = tipo === 'clientes' ? 'cliente' : tipo === 'productos' ? 'producto' : tipo === 'facturas' ? 'factura' : 'gasto';
   return (
     <div className="importar">
+      <section className="formulario tarjeta importar-origen" aria-labelledby={`${ayudaId}-origen`}>
+        <h3 id={`${ayudaId}-origen`}>¿De dónde vienes?</h3>
+        <div className="tipo importar-tipos" role="group" aria-labelledby={`${ayudaId}-origen`}>{ORIGENES.map((o) => <button type="button" key={o.id} aria-pressed={origen === o.id} className={origen === o.id ? 'activo' : ''} onClick={() => setOrigen(o.id)}>{o.corto}</button>)}</div>
+        {guia ? (
+          <div className="importar-guia">
+            <p><strong>{guia.titulo}</strong></p>
+            <ol>{guia.pasos.map((x) => <li key={x}>{x}</li>)}</ol>
+            <p className="nota">{guia.nota}</p>
+          </div>
+        ) : <p className="nota">Elige tu programa y te decimos qué exportar. Si no está en la lista, vale cualquier Excel o CSV.</p>}
+      </section>
+
       <section className="formulario tarjeta">
         <h3>Qué quieres importar</h3>
         <div className="tipo importar-tipos">{TIPOS.map(([k, n]) => <button type="button" disabled={ocupado} key={k} className={tipo === k ? 'activo' : ''} onClick={() => cambiar(k)}>{n}</button>)}</div>
@@ -108,7 +126,7 @@ export default function Importar() {
             ? 'Para traer la contabilidad de otro programa (Holded, A3, Sage, Contasol…): exporta el balance de sumas y saldos a Excel a la fecha del cambio y súbelo. Pasa a ser el asiento de apertura; lo anterior a esa fecha no se vuelve a contabilizar. Puedes traer también las facturas sin cobrar y los gastos sin pagar: cuando se cobren o paguen, se apuntará solo el cobro o el pago.'
             : 'Exporta el libro o inventario de bienes de inversión con la fecha de compra, el valor y lo ya amortizado a la fecha del cambio. Fisquo sigue amortizándolos desde ahí, con el mismo % si lo trae el archivo.'}</p>
           <label className="asiento-campo">Fecha de los saldos (la del cambio de programa)<input className="campo" type="date" disabled={ocupado} value={fecha} onChange={(e) => { if (enCurso.current) return; setFecha(e.target.value); reiniciar(); }} /></label>
-        </> : <p className="nota">Desde Holded: exporta {TIPOS.find((t) => t[0] === tipo)[1].toLowerCase()} a Excel y súbelo tal cual. También vale tu propio Excel o CSV: una fila de títulos y debajo una fila por cada {tipo === 'clientes' ? 'cliente' : tipo === 'productos' ? 'producto' : tipo === 'facturas' ? 'factura' : 'gasto'}.</p>}
+        </> : <p className="nota">{origen === 'otro' ? 'Exporta' : `Desde ${guia?.nombre || 'Holded'}: exporta`} {nombreTipo} a Excel o CSV y súbelo tal cual. {origen === 'otro' ? 'Una' : 'También vale tu propio Excel o CSV: una'} fila de títulos y debajo una fila por cada {filaDe}.</p>}
         <details className="importar-ayuda">
           <summary>Cómo preparar el archivo</summary>
           <ul>{AYUDA[tipo].map(([n, otros, req]) => <li key={n}>{req ? <strong>{n}</strong> : n}{otros ? ` ${otros.startsWith('o ') ? `(${otros})` : `· ${otros}`}` : ''}{req ? ' · obligatoria' : ''}</li>)}</ul>

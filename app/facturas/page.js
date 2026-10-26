@@ -9,7 +9,7 @@ import Pestanas from '@/components/Pestanas';
 import { importes, numeroFactura, r2, vencida } from '@/lib/calculos';
 import { actividadesDe, nombresActividad } from '@/lib/empresa';
 import FilaFactura from '@/components/FilaFactura';
-import { eur, hoy } from '@/lib/formato';
+import { eur, fechaCorta, hoy } from '@/lib/formato';
 import SinBD from '@/components/SinBD';
 import { puede } from '@/lib/permisos';
 import Deslizable from '@/components/Deslizable';
@@ -23,7 +23,6 @@ import '@/app/mk.css';
 import '@/app/tabla-facturas.css';
 
 export const dynamic = 'force-dynamic';
-const diaMes = (f) => new Date(`${f}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
 export default async function Facturas({ searchParams }) {
@@ -164,7 +163,7 @@ export default async function Facturas({ searchParams }) {
                             {/* En el móvil, el número, la fecha y la actividad van en una línea; en el ordenador, en columnas. */}
                             <span className="txt">
                               <strong data-vt="cliente">{f.cliente.nombre}</strong>
-                              <small className="tf-meta"><span className="tf-num">{f.caja ? 'Cierre de caja · ' : ''}{numeroFactura(f)}</span><span className="tf-fecha">{diaMes(f.fecha)}</span>{!a && Object.keys(ACTIVIDADES).length > 1 && <span className="tf-act">{ACTIVIDADES[f.actividad]}</span>}</small>
+                              <small className="tf-meta"><span className="tf-num">{f.caja ? 'Cierre de caja · ' : ''}{numeroFactura(f)}</span><span className="tf-fecha">{fechaCorta(f.fecha)}</span>{!a && Object.keys(ACTIVIDADES).length > 1 && <span className="tf-act">{ACTIVIDADES[f.actividad]}</span>}</small>
                             </span>
                             <span className="tf-base solo-pc">{eur(importes(f).base)}</span>
                             <span className="imp-col">

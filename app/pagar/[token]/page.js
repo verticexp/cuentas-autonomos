@@ -39,7 +39,7 @@ export default async function Pagar({ params, searchParams }) {
       </section>
       {f.cobrada ? <p className="pago-ok">✓ Esta factura ya está pagada. ¡Gracias!</p> : (
         <>
-          {error && <p className="error">{mensajeSeguro(error)}</p>}
+          {error && <p className="error" role="alert">{mensajeSeguro(error)}</p>}
           {cobroFacturasListo(empresa) && t.total > 0 && (
             <form action="/api/pagar" method="post">
               <input type="hidden" name="token" value={token} />

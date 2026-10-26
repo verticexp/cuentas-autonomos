@@ -6,8 +6,9 @@ import { clave, leer, leerUno, redis } from '@/lib/redis';
 import { actividadesDe, fiscalDe } from '@/lib/empresa';
 import { informe } from '@/lib/contabilidad';
 import { CUENTAS } from '@/lib/asientos';
-import { cuentasAnuales, ESTRUCTURA_BALANCE, LINEAS_PYG, SECCIONES } from '@/lib/cuentasAnuales';
+import { cuentasAnuales, ESTRUCTURA_BALANCE, filasPygOficial, SECCIONES, TOTALES_BALANCE } from '@/lib/cuentasAnuales';
 import { librosRegistro } from '@/lib/librosRegistro';
+import CuadreBanco from '@/components/contabilidad/CuadreBanco';
 import FormCuentasAnuales from '@/components/CuentasAnuales';
 import { eur, fechaCorta, hoy } from '@/lib/formato';
 import Volver from '@/components/Volver';
@@ -26,7 +27,7 @@ import { gastosQueVe, nominasQueVe, veSueldos } from '@/lib/nominas';
 export const dynamic = 'force-dynamic';
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 const ORIGEN = { factura: (id) => `/facturas/${encodeURIComponent(id)}`, gasto: (id) => `/gastos/${encodeURIComponent(id)}`, nomina: (id) => `/nominas/${encodeURIComponent(id)}` };
-const TIPO = { apertura: 'Apertura', manual: 'Manual', amortizacion: 'Amortización', impuesto: 'Impuestos', cierre: 'Cierre', regularizacion: 'Cierre', factura: 'Factura', gasto: 'Gasto', nomina: 'Nómina' };
+const TIPO = { apertura: 'Apertura', manual: 'Manual', amortizacion: 'Amortización', impuesto: 'Impuestos', cierre: 'Cierre', regularizacion: 'Regularización', 'cierre-contable': 'Cierre contable', 'apertura-contable': 'Apertura contable', factura: 'Factura', gasto: 'Gasto', nomina: 'Nómina' };
 
 // Una partida con su desglose plegado; las cifras del año anterior, al lado.
 function Partida({ p, ant }) {
@@ -62,7 +63,9 @@ export default async function Contabilidad({ searchParams }) {
   const p = /^[1-4]$/.test(sp.p || '') ? sp.p : '';
   const cuenta = /^\d{1,9}$/.test(sp.cuenta || '') ? sp.cuenta : '572';
   const libros = ver === 'libros' && librosRegistro({ facturas, gastos, nominas: nominas || [], productos: productos || [], ajustes: ajustes || [], albaranes: albaranes || [], fiscal, actividades: actividadesDe(u), empresa: { nombre: u.emisor?.nombre || '', nif: u.emisor?.nif || '' } }, anio, h);
-  const d = informe({ facturas, gastos, nominas: nominas || [], manuales: manuales || [], saldo, fiscal, pagos130: u.pagos130 || {}, pres303: u.pres303 || {}, pres369: u.pres369 || {}, pres123: u.pres123 || {}, pres111: u.pres111 || {}, pres115: u.pres115 || {}, pagadosHacienda: u.pagadosHacienda || {}, prorrata: u.prorrata || {}, capital: (await leer(u, 'capital')) || [], pagos202: u.pagos202 || {}, cuotaIS: u.cuotaIS || {}, binsPrevias: u.binsPrevias || {}, fondosPropios: u.fondosPropios || {}, productos: productos || [], ajustes: ajustes || [], albaranes: albaranes || [] }, anio, p, h, { cuenta: ver === 'mayor' ? cuenta : '' });
+  // Los movimientos del banco, solo para el cuadre con la 572 (components/contabilidad/CuadreBanco.js): en las vistas que lo enseñan.
+  const movimientos = sociedad && ['balance', 'diario', 'mayor'].includes(ver) ? await leer(u, 'banco') : [];
+  const d = informe({ facturas, gastos, nominas: nominas || [], manuales: manuales || [], saldo, movimientos: movimientos || [], bancoConectado: Boolean(u.banco?.conectado), fiscal, pagos130: u.pagos130 || {}, pres303: u.pres303 || {}, pres369: u.pres369 || {}, pres123: u.pres123 || {}, pres111: u.pres111 || {}, pres115: u.pres115 || {}, pagadosHacienda: u.pagadosHacienda || {}, prorrata: u.prorrata || {}, capital: (await leer(u, 'capital')) || [], pagos202: u.pagos202 || {}, cuotaIS: u.cuotaIS || {}, binsPrevias: u.binsPrevias || {}, fondosPropios: u.fondosPropios || {}, productos: productos || [], ajustes: ajustes || [], albaranes: albaranes || [] }, anio, p, h, { cuenta: ver === 'mayor' ? cuenta : '' });
   const mesPorDefecto = String(Number(d.fecha.slice(5, 7))).padStart(2, '0');
   const mes = /^(0[1-9]|1[0-2])$/.test(sp.mes || '') ? sp.mes : mesPorDefecto;
   const url = (c) => { const q = new URLSearchParams(Object.entries({ anio, ver, p, ...c }).filter(([, v]) => v)); return `/contabilidad?${q}`; };
@@ -72,11 +75,20 @@ export default async function Contabilidad({ searchParams }) {
   const visibles = (ids) => A.partidas.filter((x) => ids.includes(x.id) && (x.importe || ant(x.id) || x.id === 'cifra'));
   const totalLibro = (k) => d.libro.reduce((s, b) => s + b[k], 0);
   const escribe = puede(u, 'contabilidad');
+  // Sin ningún asiento (cuenta nueva) o sin asientos en el año que se mira: una explicación y lo que lo llena, no tablas a cero.
+  const sinAsientos = !d.asientos.length, anioVacio = !d.diario.length;
+  const vacioContable = (todo) => (
+    <Vacio icono="contabilidad" titulo={sinAsientos ? 'Aún no hay nada que contabilizar' : `Sin asientos en ${anio}`}
+      accion={puede(u, 'facturar') && { href: '/facturas/nueva', texto: 'Nueva factura' }} secundaria={puede(u, 'gastar') && { href: '/gastos#apuntar-gasto', texto: 'Añadir gasto' }}>
+      {sinAsientos ? 'La contabilidad se hace sola: cada factura, gasto, nómina, cobro y pago genera su asiento, y aquí verás ' + todo + '.' : `Cuando haya facturas, gastos o nóminas de ${anio}, aquí verás ${todo}. Cambia de año con las flechas de arriba.`}
+    </Vacio>
+  );
   const ca = ver === 'anuales' && sociedad && cuentasAnuales({ asientos: d.asientos, gastos, nominas: nominas || [], empresa: u, anio, guardado: (await leerUno(u, 'cuentasAnuales', String(anio))) || {} });
   const cerrado = anio < actual;
-  // Filas del balance oficial con importe en alguno de los dos años (las masas, siempre).
+  // Filas del balance oficial con importe en alguno de los dos años (las masas, siempre). Todas las casillas, también las
+  // que valen cero, van en el CSV del modelo PYMES.
   const filasBalance = (nodos, nivel = 0) => nodos.flatMap((n) => ((ca.bal[0].v[n.id] || ca.bal[1].v[n.id] || nivel === 0) ? [{ ...n, nivel }, ...(n.hijos ? filasBalance(n.hijos, nivel + 1) : [])] : []));
-  const FilaOf = ({ t, a, b, nivel = 0, fuerte }) => <div className={`cont-fila${fuerte ? ' cont-total' : ''}`} style={{ paddingLeft: nivel * 10 }}><span className="cont-n">{t}</span><span className="cont-cifras"><span>{eur(a)}</span><small>{eur(b)}</small></span></div>;
+  const FilaOf = ({ t, codigo, a, b, nivel = 0, fuerte }) => <div className={`cont-fila${fuerte ? ' cont-total' : ''}`} style={{ paddingLeft: nivel * 10 }}><span className="cont-n"><small className="cont-casilla">{codigo}</small>{t}</span><span className="cont-cifras"><span>{eur(a)}</span><small>{eur(b)}</small></span></div>;
 
   return (
     <main className="pagina mk-look modelos contabilidad">
@@ -93,7 +105,8 @@ export default async function Contabilidad({ searchParams }) {
         {vistas.map(([v, n]) => <Ir key={v} href={url({ ver: v, p: '' })} tipo="fundido" className={v === ver ? 'activo' : ''}>{n}</Ir>)}
       </Deslizable>
 
-      {ver === 'pyg' && <>
+      {ver === 'pyg' && anioVacio && <section className="bloque">{vacioContable('tu cuenta de resultados')}</section>}
+      {ver === 'pyg' && !anioVacio && <>
         <nav className="segmentado cont-periodo">
           {['', '1', '2', '3', '4'].map((x) => <Ir key={x} href={url({ p: x })} tipo="fundido" className={x === p ? 'activo' : ''}>{x ? `${x}T` : 'Año'}</Ir>)}
         </nav>
@@ -112,7 +125,8 @@ export default async function Contabilidad({ searchParams }) {
         </section>
       </>}
 
-      {ver === 'balance' && (
+      {ver === 'balance' && sinAsientos && <section className="bloque">{vacioContable('el balance')}</section>}
+      {ver === 'balance' && !sinAsientos && (
         <section className="bloque">
           <div className="tarjetas cont-balance">
             {[['Activo', d.bal.activo, d.bal.total], ['Patrimonio neto y pasivo', d.bal.pasivo, d.bal.totalPasivo]].map(([t, lado, total]) => (
@@ -122,10 +136,12 @@ export default async function Contabilidad({ searchParams }) {
               </div>
             ))}
           </div>
-          {d.banco && Math.abs(d.banco.diferencia) >= 0.01 && <p className="cont-alerta">El banco de la contabilidad (cuenta 572) da {eur(d.banco.contable)} y en tu banco hay {eur(d.banco.real)}: faltan {eur(Math.abs(d.banco.diferencia))} por apuntar (préstamos, aportaciones, retiradas, cobros o pagos que no están en Fisquo). Apúntalos en el diario o revisa la apertura.</p>}
+
           <p className="grupo-pie">A {fechaCorta(d.bal.fecha)}, modelo abreviado. Sale de la suma de todos los <Termino id="asiento">asientos</Termino>, así que siempre cuadra. Toca cada masa para ver sus cuentas.</p>
         </section>
       )}
+
+      {sociedad && ['balance', 'diario', 'mayor'].includes(ver) && <CuadreBanco datos={d.banco} />}
 
       {ver === 'diario' && (
         <section className="bloque">
@@ -153,12 +169,14 @@ export default async function Contabilidad({ searchParams }) {
               </table>
             </article>
           ))}
-          {!d.diario.some((a) => a.fecha.slice(5, 7) === mes) && <Vacio icono="contabilidad" tipo="resultados" titulo="Sin asientos en este mes" accion={{ href: url({ mes: null, p: null }), texto: 'Ver el último mes' }}>Cada factura, gasto, nómina, cobro y pago genera el suyo.</Vacio>}
+          {anioVacio && <>{vacioContable('el libro diario')}</>}
+          {!anioVacio && !d.diario.some((a) => a.fecha.slice(5, 7) === mes) && <Vacio icono="contabilidad" tipo="resultados" titulo="Sin asientos en este mes" accion={{ href: url({ mes: null, p: null }), texto: 'Ver el último mes' }}>Cada factura, gasto, nómina, cobro y pago genera el suyo.</Vacio>}
           <p className="grupo-pie">Libro diario de {anio}: {d.diario.length} <Termino id="asiento">asientos</Termino>. Fisquo los genera solos de tus facturas (y sus cobros), gastos (y sus pagos), nóminas, <Termino id="amortizacion">amortizaciones</Termino>, liquidaciones de IVA y retenciones de los trimestres marcados como presentados, y el cierre de cada año. Los apuntados a mano se pueden borrar.</p>
         </section>
       )}
 
-      {ver === 'sumas' && (
+      {ver === 'sumas' && anioVacio && <section className="bloque">{vacioContable('las sumas y saldos de cada cuenta')}</section>}
+      {ver === 'sumas' && !anioVacio && (
         <section className="bloque">
           <ul className="grupo-lista cont-sumas">
             {d.sumas.filas.map((x) => (
@@ -197,7 +215,7 @@ export default async function Contabilidad({ searchParams }) {
               </div></li>
             ))}
           </ul>
-          {!d.mayor.movs.length && <Vacio compacto tipo="resultados" icono="contabilidad" titulo={`Sin movimientos en ${anio}`} accion={{ href: '#cuenta-mayor', texto: 'Ver otra cuenta' }} />}
+          {!d.mayor.movs.length && (sinAsientos ? vacioContable('el libro mayor de cada cuenta') : <Vacio compacto tipo="resultados" icono="contabilidad" titulo={`Sin movimientos en ${anio}`} accion={{ href: '#cuenta-mayor', texto: 'Ver otra cuenta' }} />)}
           <p className="grupo-pie">Libro mayor: cada apunte de la cuenta (y sus subcuentas), del más reciente al más antiguo, con el saldo después de cada uno (debe − haber){d.mayor.movs.length > 300 ? '. Se ven los 300 últimos; el Excel los tiene todos' : ''}.</p>
           </> : <Vacio compacto icono="contabilidad" titulo="Esa cuenta no existe en el plan contable" accion={{ href: '#cuenta-mayor', texto: 'Elegir cuenta' }} />}
         </section>
@@ -236,6 +254,11 @@ export default async function Contabilidad({ searchParams }) {
 
       {libros && (
         <section className="bloque">
+          {!libros.resumen.ingresos && !libros.resumen.gastos && !libros.resumen.bienes ? (
+            <Vacio icono="contabilidad" titulo={`Aún no hay nada que anotar en ${anio}`} accion={puede(u, 'facturar') && { href: '/facturas/nueva', texto: 'Nueva factura' }} secundaria={puede(u, 'gastar') && { href: '/gastos#apuntar-gasto', texto: 'Añadir gasto' }}>
+              Los libros registro se rellenan solos con cada factura emitida, cada gasto y cada bien de inversión que apuntes. Cuando los haya, aquí verás el resumen y podrás descargarlos con el formato de la AEAT.
+            </Vacio>
+          ) : <>
           <div className="cont-resumen">
             <div><span>Ingresos</span><strong>{eur(libros.totales.ingresos)}</strong></div>
             <div><span>Gastos deducibles</span><strong>{eur(libros.totales.gastos)}</strong></div>
@@ -250,6 +273,7 @@ export default async function Contabilidad({ searchParams }) {
           </div>
           {libros.sinIae && <p className="cont-alerta">Falta el epígrafe del IAE de alguna actividad: ponlo en Ajustes › Actividades e impuestos para que salga en los libros.</p>}
           <a className="boton cont-excel" href={`/api/libros?anio=${anio}`} download>Descargar los libros registro de {anio}</a>
+          </>}
           <p className="grupo-pie">{sociedad
             ? 'Libros registro del IVA con el formato electrónico de la AEAT (un Excel por libro, con el nombre que pide Hacienda). Como sociedad, además llevas la contabilidad completa: la tienes en las demás pestañas.'
             : 'Es lo que te pide la ley si estás en estimación directa: los libros registro del IVA y del IRPF, unificados y con el formato electrónico de la AEAT (un Excel por libro, con el nombre que pide Hacienda). Sirven para un requerimiento y se pueden importar en el Pre303. En Resultados ves tu beneficio real del año, que te puede pedir el banco.'}</p>
@@ -273,34 +297,33 @@ export default async function Contabilidad({ searchParams }) {
           <p className="grupo-pie">El depósito es de un mes desde la aprobación: la fecha es la máxima si la junta se celebra el último día.</p>
         </section>
 
-        <section className="bloque">
+        {sinAsientos && <section className="bloque">{vacioContable('el balance y la cuenta de pérdidas y ganancias de las cuentas anuales')}</section>}
+        {!sinAsientos && <section className="bloque">
           <h2 className="grupo-t">Balance de pymes a 31-12-{anio}</h2>
           <div className="tarjeta cont-tabla">
             <div className="cont-fila cont-cab"><span className="cont-n">Activo</span><span className="cont-cifras"><span>{anio}</span><small>{anio - 1}</small></span></div>
-            {filasBalance(ESTRUCTURA_BALANCE.activo).map((n) => <FilaOf key={n.id} t={n.t} a={ca.bal[0].v[n.id]} b={ca.bal[1].v[n.id]} nivel={n.nivel} fuerte={n.nivel === 0} />)}
-            <FilaOf t="TOTAL ACTIVO" a={ca.bal[0].activo} b={ca.bal[1].activo} fuerte />
+            {filasBalance(ESTRUCTURA_BALANCE.activo).map((n) => <FilaOf key={n.id} codigo={n.codigo} t={n.t} a={ca.bal[0].v[n.id]} b={ca.bal[1].v[n.id]} nivel={n.nivel} fuerte={n.nivel === 0} />)}
+            <FilaOf {...TOTALES_BALANCE[0]} a={ca.bal[0].activo} b={ca.bal[1].activo} fuerte />
           </div>
           <div className="tarjeta cont-tabla">
             <div className="cont-fila cont-cab"><span className="cont-n">Patrimonio neto y pasivo</span><span className="cont-cifras"><span>{anio}</span><small>{anio - 1}</small></span></div>
-            {filasBalance(ESTRUCTURA_BALANCE.pasivo).map((n) => <FilaOf key={n.id} t={n.t} a={ca.bal[0].v[n.id]} b={ca.bal[1].v[n.id]} nivel={n.nivel} fuerte={n.nivel === 0} />)}
-            <FilaOf t="TOTAL PATRIMONIO NETO Y PASIVO" a={ca.bal[0].pasivo} b={ca.bal[1].pasivo} fuerte />
+            {filasBalance(ESTRUCTURA_BALANCE.pasivo).map((n) => <FilaOf key={n.id} codigo={n.codigo} t={n.t} a={ca.bal[0].v[n.id]} b={ca.bal[1].v[n.id]} nivel={n.nivel} fuerte={n.nivel === 0} />)}
+            <FilaOf {...TOTALES_BALANCE[1]} a={ca.bal[0].pasivo} b={ca.bal[1].pasivo} fuerte />
           </div>
-        </section>
+        </section>}
 
-        <section className="bloque">
+        {!sinAsientos && <section className="bloque">
           <h2 className="grupo-t">Pérdidas y ganancias de pymes de {anio}</h2>
           <div className="tarjeta cont-tabla">
-            {LINEAS_PYG.flatMap((l) => [
-              ...(l.id === 13 ? [<FilaOf key="A" t="A) Resultado de explotación" a={ca.pyg[0].A} b={ca.pyg[1].A} fuerte />] : []),
-              ...(l.id === 18 ? [<FilaOf key="B" t="B) Resultado financiero" a={ca.pyg[0].B} b={ca.pyg[1].B} fuerte />, <FilaOf key="C" t="C) Resultado antes de impuestos" a={ca.pyg[0].C} b={ca.pyg[1].C} fuerte />] : []),
-              ...(ca.pyg[0].v[l.id] || ca.pyg[1].v[l.id] ? [<FilaOf key={l.id} t={l.t} a={ca.pyg[0].v[l.id]} b={ca.pyg[1].v[l.id]} nivel={1} />] : []),
-            ])}
-            <FilaOf t="D) Resultado del ejercicio" a={ca.pyg[0].D} b={ca.pyg[1].D} fuerte />
+            <div className="cont-fila cont-cab"><span className="cont-n">Concepto y casilla</span><span className="cont-cifras"><span>{anio}</span><small>{anio - 1}</small></span></div>
+            {filasPygOficial().filter((l) => !l.p || ca.pyg[0].v[l.id] || ca.pyg[1].v[l.id]).map((l) => <FilaOf key={l.id} codigo={l.codigo} t={l.t} a={l.p ? ca.pyg[0].v[l.id] : ca.pyg[0][l.id]} b={l.p ? ca.pyg[1].v[l.id] : ca.pyg[1][l.id]} nivel={String(l.id).includes('.') ? 2 : l.p ? 1 : 0} fuerte={!l.p} />)}
           </div>
-        </section>
+        </section>}
 
         <section className="bloque">
           {escribe && <FormCuentasAnuales anio={anio} datos={ca.datos} memoria={ca.memoria} borrador={ca.borrador} secciones={SECCIONES} />}
+          <a className="boton sec cont-excel" href={`/api/cuentas-anuales?anio=${anio}&formato=pymes`} download>Balance y PyG con las casillas del modelo PYMES (CSV)</a>
+          <p className="grupo-pie">Para pasar las cifras al programa de depósito del Registro Mercantil (D2) o a la gestoría. Fisquo no deposita nada. Sin un vencimiento conocido, clientes y proveedores figuran a corto plazo.</p>
           <a className="boton cont-excel" href={`/api/cuentas-anuales?anio=${anio}`} download>Descargar las cuentas anuales (PDF)</a>
           <p className="grupo-pie">El PDF lleva la portada, el balance y la cuenta de pérdidas y ganancias de pymes con {anio - 1} al lado, el estado de cambios en el patrimonio neto, la memoria, la hoja de formulación para que la firmen los administradores y el certificado de aprobación de la junta. Para depositarlas, el Registro pide sus modelos oficiales (los del Colegio de Registradores o la aplicación D2): copia estas cifras, que siguen los mismos epígrafes, o pásale el PDF a tu gestor.</p>
         </section>

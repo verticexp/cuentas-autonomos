@@ -10,9 +10,10 @@
      --in-boton y --out-boton son rellenos con texto blanco; --aviso (ámbar) e --info (azul) completan los avisos. */
   --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --verde: #0F1F1B; --menta: #E6F2EC; --crema: #FAFAF8; --gris: #8A8F8C;
-  --paper: #F3F4F1; --surface: #FFFFFF; --surface-2: #FFFFFF; --ink: #0F1F1B; --muted: #646B67; --line: rgba(15, 31, 27, 0.12);
+  --paper: #F3F4F1; --surface: #FFFFFF; --surface-2: #FFFFFF; --ink: #0F1F1B; --muted: #606763; --line: rgba(15, 31, 27, 0.12);
   --in: #1A7A4B; --out: #C8382D; --hacienda: #B54E17; --irpf: #C46A1C; --aviso: #8A6500; --info: #0062D1;
   --in-boton: #1A7A4B; --out-boton: #C8382D;
+  --ambar: #E9A23B; /* ámbar para fondos y barras de aviso (no para texto: ahí, --aviso); igual en claro y oscuro */
   --relleno: rgba(15, 31, 27, 0.06); --ico: #1F5A44;
   /* Borde de los campos: ≥ 3:1 frente a --surface y --paper (WCAG 1.4.11), para que se vea dónde se escribe. */
   --borde-campo: rgba(15, 31, 27, 0.52);
@@ -28,6 +29,8 @@
     --in: #5CC98F; --out: #FF6B5E; --hacienda: #FF9F5A; --irpf: #FFC46B; --aviso: #E8B931; --info: #4BA3FF; --in-boton: #1E7A4D; --out-boton: #C0352B;
     --relleno: rgba(255, 255, 255, 0.065); --menta: #252A28; --ico: #9FD8BD; --borde-campo: rgba(255, 255, 255, 0.4); color-scheme: dark; }
 * { box-sizing: border-box; margin: 0; }
+/* Texto solo para lectores de pantalla: un encabezado que la pantalla ya muestra de otra forma. */
+.solo-lectores { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
 /* Los títulos que reciben el foco por programa (tabIndex -1, para anunciar un paso o una pantalla) no son una opción
    seleccionable: sin recuadro de foco (se veía alrededor de «¿A qué te dedicas?» al abrir la bienvenida). */
 :is(h1, h2, h3)[tabindex="-1"]:focus { outline: none; }
@@ -59,7 +62,7 @@ fieldset { min-width: 0; }
 .tarjetas { display: grid; gap: 14px; }
 @media (min-width: 820px) { .tarjetas { grid-template-columns: 1fr 1fr; } }
 .tarjeta { background: var(--surface); border-radius: 22px; padding: 18px; }
-.tarjeta h3 { font-size: 16px; font-weight: 700; margin-bottom: 14px; }
+.tarjeta h3, .tarjeta .tarjeta-titulo { font-size: 16px; font-weight: 700; margin-bottom: 14px; } /* .tarjeta-titulo: el mismo título como h2, cuando la pantalla no tiene un h2 antes */
 .tarjeta .nota { margin-bottom: 0; }
 
 .fila { width: 100%; display: flex; align-items: center; gap: 14px; padding: 14px 16px; text-align: left; }

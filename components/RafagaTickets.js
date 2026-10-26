@@ -14,6 +14,7 @@ import { preparar, subir } from '@/lib/justificanteCliente';
 import CupoEscaneo from './CupoEscaneo';
 import { escanearNativo, escanerDisponible } from '@/lib/escanerNativo';
 import { vibrar } from '@/lib/haptica';
+import { eur } from '@/lib/formato';
 import { NO_IA, permisoIA } from '@/lib/permisoIA';
 import '@/app/rafaga.css';
 
@@ -213,8 +214,8 @@ export default function RafagaTickets({ hoy, actividades, igic = false }) {
                     <img src={it.foto} alt={`Ticket ${i + 1}`} />
                     <div className="rafaga-datos">
                       {it.estado === 'leyendo' && <p className="rafaga-estado" role="status">Leyendo el ticket {i + 1}…</p>}
-                      {it.estado === 'error' && <><p className="error">{it.error}</p><div className="rafaga-acc"><button type="button" className="boton sec pequeno" onClick={() => reintentar(it)}>Reintentar</button><button type="button" className="boton sec pequeno" onClick={() => poner(it.id, { estado: 'descartado' })}>Descartar</button></div></>}
-                      {it.estado === 'guardado' && <p className="rafaga-estado ok">✓ Guardado: {it.g.concepto} · {it.g.base} €</p>}
+                      {it.estado === 'error' && <><p className="error" role="alert">{it.error}</p><div className="rafaga-acc"><button type="button" className="boton sec pequeno" onClick={() => reintentar(it)}>Reintentar</button><button type="button" className="boton sec pequeno" onClick={() => poner(it.id, { estado: 'descartado' })}>Descartar</button></div></>}
+                      {it.estado === 'guardado' && <p className="rafaga-estado ok">✓ Guardado: {it.g.concepto} · {eur(Number(it.g.base))}</p>}
                       {it.estado === 'guardado' && it.aviso && <p className="nota">{it.aviso}</p>}
                       {it.estado === 'descartado' && <p className="rafaga-estado">Descartado</p>}
                       {['leido', 'guardando', 'duplicado'].includes(it.estado) && (
@@ -233,7 +234,7 @@ export default function RafagaTickets({ hoy, actividades, igic = false }) {
                           </select>
                           {it.varios && <p className="nota">Tiene varios tipos de {igic ? 'IGIC' : 'IVA'}: apúntalo a mano en «A mano» para repartir bien la base.</p>}
                           {it.avisos?.map((a) => <p key={a} className="nota">{a}.</p>)}
-                          {it.error && <p className="error">{it.error}</p>}
+                          {it.error && <p className="error" role="alert">{it.error}</p>}
                           {it.estado === 'duplicado' && (
                             <div className="nota" role="alert">
                               <strong>Puede que ya esté apuntado</strong>

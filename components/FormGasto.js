@@ -298,7 +298,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
   return (
     <form id="apuntar-gasto" tabIndex={-1} className="formulario tarjeta" onSubmit={enviar}>
       <fieldset disabled={enviando || procesando || Boolean(archivoPendiente)} style={{ border: 0, padding: 0, margin: 0, minWidth: 0, gap: 12 }}>
-      <h3>{gasto ? 'Editar gasto' : documento ? 'Revisar factura' : movimiento ? 'Gasto del banco' : 'Añadir gasto deducible'}</h3>
+      <h3 aria-level={2}>{gasto ? 'Editar gasto' : documento ? 'Revisar factura' : movimiento ? 'Gasto del banco' : 'Añadir gasto deducible'}</h3>
       {movimiento && <p className="nota">Cargo del {fechaCorta(movimiento.fecha)} por {eur(Math.abs(movimiento.importe))} ({movimiento.concepto}). Sube la factura para que Fisquo lea la base y el {impuesto}; al guardar queda emparejado con el banco.</p>}
       {actividades.length > 1 && <Deslizable className={`tipo ${actividades.length === 2 ? 'dos' : 'varias'}`}>
         {actividades.map(({ id, nombre }) => (
@@ -624,5 +624,5 @@ function AvisoPresentado({ g, gasto, presentados }) {
   const sale = antes && antes !== ahora && presentados.includes(antes);
   if (!entra && !sale) return null;
   const nombre = (k) => `${k.split('-')[1]}T ${k.split('-')[0]}`;
-  return <p className="nota aviso-rect">{entra ? `Este gasto cuenta en el ${nombre(ahora)}, que ya está presentado` : `Este gasto sale del ${nombre(antes)}, que ya está presentado`}: habrá que corregir ese 303, pidiendo su rectificación si sale menos a pagar o con una complementaria si sale más.</p>;
+  return <p className="nota aviso-rect">{entra ? `Este gasto cuenta en el ${nombre(ahora)}, que ya está presentado` : `Este gasto sale del ${nombre(antes)}, que ya está presentado`}: habrá que corregir ese 303 con una autoliquidación rectificativa (Impuestos te la prepara).</p>;
 }

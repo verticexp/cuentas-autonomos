@@ -92,7 +92,7 @@ textarea.campo { font: inherit; line-height: 1.4; resize: vertical; }
   .ajustes-lista .mas-ico { width: 24px; height: 24px; border-radius: 6px; }
   .ajustes-lista .mas-ico svg { width: 15px; height: 15px; }
   .ajustes-lista .mas-fila:hover { background: var(--relleno); }
-  .ajustes-lista .mas-fila.activa { background: var(--marca); color: var(--sobre, #fff); }
+  .ajustes-lista .mas-fila.activa { background: var(--marca); color: var(--sobre); }
   .ajustes-lista .mas-fila.activa .mas-valor { color: inherit; opacity: 0.8; }
   .ajustes-lista .aj-cuenta-fila { margin-bottom: 14px; padding: 8px; border-radius: 10px; }
   .ajustes-lista .aj-cuenta-fila::after { display: none; }

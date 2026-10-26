@@ -24,9 +24,9 @@ export default function CambiarEmpresa({ empresas = [], actual, variante = 'list
   const nombreActual = empresas.find((x) => x.id === actual)?.nombre || 'Mi empresa';
 
   const lista = (
-    <div className={`emp-lista${ocupado ? ' ocupado' : ''}`} role="listbox" aria-label="Empresas">
+    <div className={`emp-lista${ocupado ? ' ocupado' : ''}`} role="group" aria-label="Empresas">
       {empresas.map((x) => (
-        <button key={x.id} type="button" role="option" aria-selected={x.id === actual} className={`emp-opcion${x.id === actual ? ' activa' : ''}`} onClick={() => cambiar(x.id)}>
+        <button key={x.id} type="button" aria-current={x.id === actual ? 'true' : undefined} className={`emp-opcion${x.id === actual ? ' activa' : ''}`} onClick={() => cambiar(x.id)}>
           <span className="emp-inicial" aria-hidden>{x.nombre.trim()[0]?.toUpperCase() || '·'}</span>
           <span className="emp-nombre">{x.nombre}</span>
           {x.id === actual && <svg viewBox="0 0 24 24" aria-hidden><path d="M5 12l5 5 9-10" /></svg>}
@@ -35,7 +35,7 @@ export default function CambiarEmpresa({ empresas = [], actual, variante = 'list
       <a className="emp-opcion emp-anadir solo-web" href="/registro?nueva=1">
         <span className="emp-inicial" aria-hidden>+</span><span className="emp-nombre">Añadir empresa</span>
       </a>
-      {msg && <p className="rojo emp-msg">{msg}</p>}
+      {msg && <p className="rojo emp-msg" role="alert">{msg}</p>}
     </div>
   );
 

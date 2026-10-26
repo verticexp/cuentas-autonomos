@@ -28,7 +28,7 @@ export default function Rend130({ anio, valor, sugerido, minoracion, soloLectura
         <input className="campo" inputMode="decimal" placeholder={sugerido !== null ? String(sugerido).replace('.', ',') : 'Rendimiento neto'} value={v} onChange={(e) => setV(e.target.value)} aria-label={`Rendimiento neto de ${anio}`} />
         <button className="boton sec">Guardar</button>
       </div>}
-      {msg && <p className="error">{msg}</p>}
+      {msg && <p className="error" role="alert">{msg}</p>}
     </Caja>
   );
 }

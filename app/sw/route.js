@@ -1,4 +1,5 @@
-// Service worker de la PWA: muestra avisos y guarda temporalmente los archivos compartidos.
+// Service worker de la PWA: muestra avisos, guarda temporalmente los archivos compartidos y, sin conexión, enseña la página
+// «Sin conexión» (app/sin-conexion) en lugar del error del navegador. Nunca guarda pantallas con datos.
 const SW = `self.addEventListener('push', (e) => {
   let d = {};
   try { d = e.data.json(); } catch {}
@@ -11,6 +12,19 @@ self.addEventListener('notificationclick', (e) => {
     const w = ls.find((c) => c.url.startsWith(self.location.origin));
     return w ? w.focus().then((c) => c.navigate(url)) : self.clients.openWindow(url);
   }));
+});
+const OFFLINE = 'fisquo-sin-conexion-v1';
+self.addEventListener('install', (e) => {
+  e.waitUntil(caches.open(OFFLINE).then((c) => c.add(new Request('/sin-conexion', { cache: 'reload' }))).catch(() => {}));
+  self.skipWaiting();
+});
+self.addEventListener('activate', (e) => {
+  e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k.startsWith('fisquo-sin-conexion') && k !== OFFLINE).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
+});
+// Navegar sin red: la página guardada «Sin conexión» (con botón para reintentar), no la del navegador.
+self.addEventListener('fetch', (e) => {
+  if (e.request.mode !== 'navigate' || e.request.method !== 'GET') return;
+  e.respondWith(fetch(e.request).catch(async () => (await caches.match('/sin-conexion', { cacheName: OFFLINE })) || Response.error()));
 });
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);

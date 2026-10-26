@@ -134,7 +134,7 @@ html[data-entrada] .tabbar { animation: entrada-barra 0.5s var(--vt-curva) 0.15s
 .aviso-prueba { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 0 0 12px; padding: 10px 14px; border-radius: 12px; background: var(--relleno); font-size: 14px; color: var(--ink); }
 .aviso-prueba { line-height: 1.45; }
 .aviso-prueba span { flex: 1 1 260px; }
-.aviso-prueba.pronto { background: color-mix(in srgb, #E8A33D 18%, var(--surface)); }
+.aviso-prueba.pronto { background: color-mix(in srgb, var(--ambar) 18%, var(--surface)); }
 .aviso-prueba a { font-weight: 600; color: var(--ink); white-space: nowrap; }
 .elegir-plan .segmentado button { flex: 1; margin: 0; padding: 6px 4px; border: 0; border-radius: 7px; background: none; box-shadow: none; font-size: 13px; font-weight: 500; color: var(--ink); }
 .elegir-plan .segmentado button.activo { background: var(--surface); font-weight: 600; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12); }
@@ -149,12 +149,12 @@ html[data-entrada] .tabbar { animation: entrada-barra 0.5s var(--vt-curva) 0.15s
 .plan-pagado { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .plan-pagado p { margin: 0; }
 .plan-pagado .boton { margin: 0; }
-.plan-uso { padding: 12px 14px; border-radius: 12px; background: color-mix(in srgb, #E8A33D 14%, var(--surface)); font-size: 14px; }
+.plan-uso { padding: 12px 14px; border-radius: 12px; background: color-mix(in srgb, var(--ambar) 14%, var(--surface)); font-size: 14px; }
 .plan-uso p { margin: 0; }
 .plan-uso ul { margin: 6px 0 8px; padding-left: 18px; }
 .plan-uso .enlace { padding: 0; border: 0; background: none; font: inherit; font-weight: 600; color: var(--ink); text-decoration: underline; cursor: pointer; }
 /* Solo lectura al acabar la prueba (app/layout.js) */
-.aviso-lectura { position: sticky; top: 0; z-index: 30; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; padding: 8px 16px; padding-top: max(8px, env(safe-area-inset-top)); background: color-mix(in srgb, #E8A33D 22%, var(--surface)); font-size: 14px; color: var(--ink); text-align: center; }
+.aviso-lectura { position: sticky; top: 0; z-index: 30; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; padding: 8px 16px; padding-top: max(8px, env(safe-area-inset-top)); background: color-mix(in srgb, var(--ambar) 22%, var(--surface)); font-size: 14px; color: var(--ink); text-align: center; }
 .aviso-lectura a { font-weight: 600; color: var(--ink); }
 
 /* Registro en pasos (components/FormRegistro.js) */

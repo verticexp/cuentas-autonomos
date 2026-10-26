@@ -127,12 +127,13 @@ export default function TabBar({ permisos = [], empresas = [], empresa, admin = 
 
   return (
     <>
-    <div className={`tabbar${SIN_BARRA.test(path) ? ' tabbar-chat' : ''}`} data-teclado={teclado || undefined} data-cliente={despacho === 'cliente' || undefined}>
+    <div role="region" aria-label="Navegación de Fisquo" className={`tabbar${SIN_BARRA.test(path) ? ' tabbar-chat' : ''}`} data-teclado={teclado || undefined} data-cliente={despacho === 'cliente' || undefined}>
       <Link href="/" className="tabbar-logo" aria-label="Fisquo, resumen" onClick={(e) => { e.preventDefault(); ir('/'); }}><Logo /></Link>
       {empresa && !despacho && <CambiarEmpresa empresas={empresas.filter((x) => !x.cliente)} actual={empresa} variante="lateral" />}
       <nav
         ref={nav}
         className="tabs"
+        aria-label="Principal"
         onPointerDown={(e) => {
           const h = tabEn(e.clientX, e.clientY);
           if (!h) return;

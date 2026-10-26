@@ -6,6 +6,7 @@ import { crearSesion, desbloqueo, opcionesCookie, opcionesDesbloqueo, usuarioAct
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { MUCHOS, ipDe, pasado } from '@/lib/limite';
 import { auditar } from '@/lib/auditoria';
+import { apuntarAcceso } from '@/lib/accesos';
 
 // Face ID / Touch ID con llaves de acceso (passkeys). La cara nunca sale del móvil:
 // el iPhone firma un reto y aquí se comprueba la firma con la clave pública guardada al activarlo.
@@ -107,7 +108,7 @@ export async function POST(req) {
     const token = !u || cambio ? await crearSesion(dueno) : c.get('t')?.value;
     // Sin sesión: la cuenta ya no existe o cambió su contraseña justo ahora.
     if (!token) return error('No se ha podido entrar. Vuelve a intentarlo.', 401);
-    if (!u || cambio) c.set('t', token, opcionesCookie);
+    if (!u || cambio) { c.set('t', token, opcionesCookie); await apuntarAcceso(dueno, req, 'Face ID o huella'); }
     c.set('d', await desbloqueo(token), opcionesDesbloqueo);
     return Response.json({ ok: true, cambio });
   }

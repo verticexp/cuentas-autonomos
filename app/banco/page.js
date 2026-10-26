@@ -14,6 +14,8 @@ import { totalDe } from '@/lib/proveedores';
 import { gastosQueVe, veSueldos } from '@/lib/nominas';
 import { DETALLE, puede } from '@/lib/permisos';
 import { historialBanco } from '@/lib/historialBanco';
+import { aplicarReglas, conReglas, ordenar, resumenRegla } from '@/lib/reglasBanco';
+import { eur } from '@/lib/formato';
 import Volver from '@/components/Volver';
 import SinBD from '@/components/SinBD';
 import Banco from '@/components/Banco';
@@ -34,7 +36,7 @@ const ERRORES = {
 
 export default async function PaginaBanco({ searchParams }) {
   const u = await requerir(DETALLE);
-  const [movs, cuentas] = await Promise.all([leer(u, 'banco'), leer(u, 'bancos')]);
+  const [movs, cuentas, reglasGuardadas] = await Promise.all([leer(u, 'banco'), leer(u, 'bancos'), leer(u, 'bancoReglas')]);
   if (!movs) return <SinBD />;
   const q = await searchParams;
   const lista = movs.sort((a, b) => b.fecha.localeCompare(a.fecha) || a.id.localeCompare(b.id));
@@ -44,7 +46,16 @@ export default async function PaginaBanco({ searchParams }) {
   const emparejadosVisibles = historial.grupos.emparejados.items;
   const enlazados = (tipo) => emparejadosVisibles.filter((m) => m.enlace?.tipo === tipo).map((m) => m.enlace.id);
   const [fEnl, gEnl] = await Promise.all([documentos(u, 'facturas', enlazados('factura')), documentos(u, 'gastos', enlazados('gasto'))]);
-  const sug = sugerencias(lista, facturas, gastos, u);
+  // Las reglas del banco (lib/reglasBanco.js): las de gasto prestan su proveedor al cargo para que sugerencias lo empareje; las de
+  // ignorar se enseñan aparte, como propuesta de apartar el movimiento.
+  const reglas = ordenar(reglasGuardadas || []);
+  const sug = sugerencias(conReglas(lista, reglas), facturas, gastos, u);
+  const delMovimiento = aplicarReglas(lista, reglas);
+  const frase = (r) => r && { id: r.id, accion: r.accion, contiene: r.contiene, proveedor: r.proveedor, ...resumenRegla(r, eur) };
+  const usos = new Map();
+  for (const m of lista) if (m.regla) usos.set(m.regla, (usos.get(m.regla) || 0) + 1);
+  const listaReglas = [...reglas].sort((a, b) => String(a.creada || '').localeCompare(String(b.creada || '')))
+    .map((r) => ({ id: r.id, accion: r.accion, signo: r.signo, contiene: r.contiene, min: r.min, max: r.max, proveedor: r.proveedor, categoria: r.categoria, ...resumenRegla(r, eur), usos: usos.get(r.id) || 0 }));
   const fPorId = Object.fromEntries(unir(facturas, fEnl).map((f) => [f.id, f]));
   const gPorId = Object.fromEntries(gastosQueVe(u, unir(gastos, gEnl)).filter((g) => !g.agrupado).map((g) => [g.id, g]));
   const sociedad = esSociedad(fiscalDe(u));
@@ -59,6 +70,7 @@ export default async function PaginaBanco({ searchParams }) {
   };
   const pendientes = historial.grupos.pendientes.items.map((m) => ({
     ...m, sugerencia: sug[m.id] ? { ...destino(sug[m.id].tipo, sug[m.id].id), segura: sug[m.id].segura, motivo: sug[m.id].motivo, yaCobrada: Boolean(sug[m.id].yaCobrada), importeSug: sug[m.id].importe } : null,
+    regla: frase(delMovimiento.gasto.get(m.id) || delMovimiento.ignorar.get(m.id)) || null,
     opciones: opciones(m, facturas, gastos, lista, u),
     clase: clasificar(m, { autonomo: fiscalDe(u).tipo === 'autonomo' }), clases: clasesPara(m),
   }));
@@ -83,7 +95,7 @@ export default async function PaginaBanco({ searchParams }) {
         cuentas={(cuentas || []).sort((a, b) => (a.conectada || a.subido || '').localeCompare(b.conectada || b.subido || ''))}
         pendientes={pendientes} emparejados={emparejados} ignorados={ignorados} automaticos={automaticos} aviso={aviso}
         historial={{ ...historial, grupos: Object.fromEntries(Object.entries(historial.grupos).map(([k, { items, ...p }]) => [k, p])) }}
-        cuentasFiltro={[...cuentasFiltro].map(([id, nombre]) => ({ id, nombre }))}
+        cuentasFiltro={[...cuentasFiltro].map(([id, nombre]) => ({ id, nombre }))} reglas={listaReglas}
         listo={directo} permisos={{ facturar: puede(u, 'facturar'), gastar: puede(u, 'gastar'), empresa: puede(u, 'empresa') }}
       />
     </main>

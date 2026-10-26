@@ -125,10 +125,10 @@ button:focus-visible, input:focus-visible, a:focus-visible, select:focus-visible
 .perfil small { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; }
 .muestra-factura { display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 10px; background: #fff; color: #3F3F3F; border: 0.5px solid var(--line); border-top: 3px solid var(--c); }
 .muestra-factura img { max-width: 96px; max-height: 44px; object-fit: contain; }
-.muestra-factura .sin-logo { width: 72px; height: 40px; border-radius: 6px; border: 1px dashed #C7C7CC; display: grid; place-items: center; font-size: 12px; color: #8E8E93; }
+.muestra-factura .sin-logo { width: 72px; height: 40px; border-radius: 6px; border: 1px dashed #C7C7CC; display: grid; place-items: center; font-size: 12px; color: #6E6E73; }
 .muestra-factura div { display: flex; flex-direction: column; min-width: 0; }
 .muestra-factura strong { color: var(--c); font-size: 17px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.muestra-factura small { color: #8E8E93; font-size: 13px; }
+.muestra-factura small { color: #6E6E73; font-size: 13px; }
 .colores { display: flex; flex-wrap: wrap; gap: 12px; }
 .colores button, .color-libre { width: 32px; height: 32px; border-radius: 50%; position: relative; }
 .colores .activo { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--ink); }
@@ -138,6 +138,12 @@ button:focus-visible, input:focus-visible, a:focus-visible, select:focus-visible
 .logo-botones label.boton { cursor: pointer; }
 .marca { margin-bottom: 20px; }
 .faceid { margin-bottom: 20px; }
+/* Verificación en dos pasos y accesos (Ajustes › Seguridad) */
+.dos-pasos, .ultimos-accesos { margin-bottom: 20px; }
+.dos-pasos .falta { color: var(--aviso); font-weight: 600; }
+.qr-dos-pasos { display: block; width: 220px; height: 220px; margin: 8px 0 12px; border-radius: 12px; background: #fff; padding: 8px; }
+.clave-dos-pasos, .codigos-recuperacion code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.04em; user-select: all; overflow-wrap: anywhere; }
+.codigos-recuperacion { list-style: none; padding: 0; margin: 8px 0 12px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 16px; }
 .dispositivos { list-style: none; padding: 0; margin: 0 -16px; }
 .dispositivos li { display: flex; align-items: center; gap: 12px; padding: 8px 16px; position: relative; }
 .dispositivos li + li::before { content: ''; position: absolute; top: 0; left: 16px; right: 0; height: 0.5px; background: var(--line); }
@@ -538,3 +544,6 @@ button.enlace:disabled { opacity: 0.5; cursor: not-allowed; }
 .como-se-calcula > summary::-webkit-details-marker, .gastos-mas > summary::-webkit-details-marker { display: none; }
 .como-se-calcula > summary::after, .gastos-mas > summary::after { content: ''; flex: none; width: 7px; height: 7px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg) translateY(-2px); opacity: 0.6; transition: transform 0.2s ease; }
 .como-se-calcula[open] > summary::after, .gastos-mas[open] > summary::after { transform: rotate(-135deg) translateY(-2px); }
+/* Sin red (components/SinRed.js) y página «Sin conexión» (app/sin-conexion). */
+.sin-red { position: fixed; left: 50%; transform: translateX(-50%); top: calc(env(safe-area-inset-top) + 8px); z-index: 30; margin: 0; padding: 8px 14px; max-width: calc(100vw - 32px); border-radius: 12px; background: var(--ink); color: var(--paper); font-size: 13px; text-align: center; box-shadow: 0 4px 16px rgb(0 0 0 / 0.18); }
+.sin-conexion { max-width: 420px; margin: 0 auto; padding-top: 18vh; text-align: center; display: grid; gap: 14px; justify-items: center; }

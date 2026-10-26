@@ -3,9 +3,10 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
+import { fechaHora } from '@/lib/formato';
 import '@/app/envios.css';
 
-const cuando = (iso) => new Date(iso).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Madrid' });
+const cuando = fechaHora;
 
 // Envía la factura en PDF por email y enseña cada envío con si el cliente lo ha abierto.
 // principal: la factura aún no se ha enviado y mandarla es lo siguiente (botón principal en vez de secundario).
@@ -33,7 +34,7 @@ export default function EnviarFactura({ id, email, asunto, mensaje, envios = [],
           {asuntoFijo && <p className="envios-nota">Durante la prueba el asunto es el de tu plantilla.</p>}
           <label>Mensaje<textarea className="campo" rows={5} value={d.mensaje} onChange={(e) => poner('mensaje', e.target.value)} /></label>
           <p className="envios-nota">Va con la factura en PDF adjunta.</p>
-          {estado && estado !== 'enviando' && <p className="error">{estado}</p>}
+          {estado && estado !== 'enviando' && <p className="error" role="alert">{estado}</p>}
           <div className="dos-col">
             <button type="button" className="boton sec" onClick={() => setAbierto(false)}>Cancelar</button>
             <button className="boton" disabled={estado === 'enviando'}>{estado === 'enviando' ? 'Enviando…' : 'Enviar'}</button>

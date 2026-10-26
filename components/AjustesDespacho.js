@@ -5,12 +5,14 @@ import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
 import { eur, fechaCorta } from '@/lib/formato';
 import Ir from './Ir';
+import useEnvio from './useEnvio';
 
 const euros = (c) => eur(c / 100);
 
 // Ajustes de Mi despacho, como los Ajustes de la app: invitar a clientes (un solo enlace), Fisquo en tu cuota, los datos
 // del despacho y lo que hace cada uno. Lo largo va plegado.
 export default function AjustesDespacho({ despacho, titular, licencias, tarifa, oferta, nombres, diasGratis, stripe, sesion, enlace }) {
+  const [enviando, envolver] = useEnvio();
   const router = useRouter();
   const [d, setD] = useState({ nombre: despacho.nombre, nif: despacho.nif, email: despacho.email, soloAsignados: despacho.soloAsignados, empresaPropia: despacho.empresaPropia });
   const [editar, setEditar] = useState(false);
@@ -96,11 +98,11 @@ export default function AjustesDespacho({ despacho, titular, licencias, tarifa, 
         {titular && <label className="celda desp-interruptor"><span className="txt">También llevo las cuentas del despacho en Fisquo<small>Facturas a tus clientes, gastos e impuestos del propio despacho, en «Mi empresa». Si no, entras siempre directo a Mi despacho.</small></span>
           <input type="checkbox" role="switch" checked={d.empresaPropia} onChange={(e) => { setD({ ...d, empresaPropia: e.target.checked }); guardar({ empresaPropia: e.target.checked }, false); }} /></label>}
         {titular && <button type="button" className="celda ir desp-celda-boton" onClick={() => { setEditar(true); setMsg(''); }}><span className="txt">Cambiar los datos</span></button>}
-      </div> : <form className="formulario tarjeta" onSubmit={(e) => { e.preventDefault(); guardar({ nombre: d.nombre, nif: d.nif, email: d.email }); }}>
+      </div> : <form className="formulario tarjeta" onSubmit={envolver(async (e) => { e.preventDefault(); await guardar({ nombre: d.nombre, nif: d.nif, email: d.email }); })}>
         <label>Nombre<input className="campo" value={d.nombre} maxLength={120} onChange={(e) => setD({ ...d, nombre: e.target.value })} required /></label>
         <label>NIF<input className="campo" value={d.nif} maxLength={20} onChange={(e) => setD({ ...d, nif: e.target.value })} /></label>
         <label>Email de contacto<input className="campo" type="email" value={d.email} maxLength={254} onChange={(e) => setD({ ...d, email: e.target.value })} /></label>
-        <div className="desp-acciones"><button className="boton">Guardar</button><button type="button" className="boton sec" onClick={() => setEditar(false)}>Cancelar</button></div>
+        <div className="desp-acciones"><button className="boton" disabled={enviando}>Guardar</button><button type="button" className="boton sec" onClick={() => setEditar(false)}>Cancelar</button></div>
       </form>}
       {msg && <p role="status" className={msg.startsWith('✓') || msg === 'Guardando…' ? 'grupo-pie' : 'error'}>{msg}</p>}
     </section>

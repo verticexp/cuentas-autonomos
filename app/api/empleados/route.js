@@ -3,7 +3,8 @@ import { guardar, borrar, leer, leerUno } from '@/lib/redis';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { r2 } from '@/lib/calculos';
 import { importeEscrito } from '@/lib/validacion';
-import { SS_EMPRESA, SS_TRABAJADOR, limpiarCotizacion, limpiarDatos145 } from '@/lib/nominas';
+import { SS_EMPRESA, SS_TRABAJADOR, limpiarCotizacion, limpiarDatos145, fechaNominaValida } from '@/lib/nominas';
+import { comprobarCierre } from '@/lib/cierres';
 import { sinHueco } from '@/lib/planes';
 
 export const dynamic = 'force-dynamic';
@@ -20,7 +21,8 @@ function limpio(b, antes = {}) {
   if (!nombre) return { error: 'Falta el nombre' };
   if (!Number.isFinite(sueldo) || sueldo <= 0 || sueldo > MAX_SUELDO || !bruto) return { error: 'Escribe un sueldo bruto mayor que 0 y de hasta 1.000.000 € (por ejemplo, 1.500,50).' };
   if (!Number.isFinite(horaExtra) || horaExtra < 0 || horaExtra > MAX_PRECIO_HORA_EXTRA) return { error: 'Escribe un precio por hora extra entre 0 y 1.000.000 € (por ejemplo, 15,50).' };
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(b.alta || '')) return { error: 'Fecha de alta no válida' };
+  if (!fechaNominaValida(b.alta)) return { error: 'Fecha de alta no válida' };
+  if (b.baja && (!fechaNominaValida(b.baja) || b.baja < b.alta)) return { error: 'La baja debe ser una fecha válida e igual o posterior al alta' };
   if (b.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(b.email).trim())) return { error: 'Email no válido' };
   // Nómina completa (lib/nominas.js): datos de cotización y, para el IRPF automático, los del modelo 145.
   const nif = String(b.nif || '').trim().toUpperCase().slice(0, 15);
@@ -35,7 +37,7 @@ function limpio(b, antes = {}) {
       nif,
       puesto: String(b.puesto || '').trim().slice(0, 60),
       alta: b.alta,
-      baja: /^\d{4}-\d{2}-\d{2}$/.test(b.baja || '') ? b.baja : '',
+      baja: b.baja || '',
       bruto,
       irpfPct: pct(b.irpfPct, 12),
       ssTrabajadorPct: pct(b.ssTrabajadorPct, SS_TRABAJADOR),
@@ -48,6 +50,8 @@ function limpio(b, antes = {}) {
       datos145: datos145 || undefined,
       // Número de afiliación a la Seguridad Social (para RED).
       naf: String(b.naf || '').replace(/\D/g, '').slice(0, 12),
+      // La provincia del 190 (lib/modelos.js modelo190) sale de aquí.
+      cp: /^\d{5}$/.test(String(b.cp || '').trim()) ? String(b.cp).trim() : '',
     },
   };
 }
@@ -73,6 +77,13 @@ export async function PATCH(req) {
   const antes = b.id && (await leerUno(u, 'empleados', b.id));
   if (!antes) return error('Ese empleado ya no existe', 404);
   const r = limpio(b, antes);
+  if (r.e && (r.e.alta !== antes.alta || r.e.baja !== antes.baja)) {
+    const nominas = (await leer(u, 'nominas')) || [];
+    if (nominas.some((n) => n.empleado === antes.id && n.tipo === 'finiquito')) return error('La baja tiene un finiquito guardado; corrige primero el finiquito', 409);
+    const fechas = nominas.filter((n) => n.empleado === antes.id).map((n) => `${n.mes}-01`);
+    const cerrado = await comprobarCierre(u, ...fechas, r.e.alta, ...(r.e.baja ? [r.e.baja] : []));
+    if (cerrado) return error(cerrado, 409);
+  }
   if (r.error) return error(r.error);
   if (await emailRepetido(u, r.e)) return error('Otro empleado ya tiene ese email');
   await guardar(u, 'empleados', r.e);

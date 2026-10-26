@@ -14,8 +14,9 @@ const pasos = (nums, hacienda) => [
 // Tarjeta de arriba de Impuestos: el trimestre que toca presentar, con sus importes, una lista de pasos
 // (se recuerda en este dispositivo), un botón para copiar o compartir el resumen y el enlace a la Sede de cada modelo.
 // `importes`: [{ num, modelo, href, texto, aeat?, plazo? }], todos los modelos que vencen con el trimestre (lib/presentar.js);
-// `plazo`, solo si vence otro día (el 111 y el 115 del 4T); `aeat`, la página de la Sede si la hay.
-export default function PresentarAhora({ t, anio, aviso, importes, texto, hacienda }) {
+// `plazo`, solo si vence otro día (el 111 y el 115 del 4T); `aeat`, la página de la Sede si la hay. domiciliar: hasta cuándo
+// se puede domiciliar el pago (lib/domiciliacion.js), en texto.
+export default function PresentarAhora({ t, anio, aviso, importes, texto, hacienda, domiciliar = '' }) {
   const clave = `presentar:${anio}:${t}`;
   const [hechos, setHechos] = useState([]);
   const [msg, setMsg] = useState('');
@@ -36,6 +37,7 @@ export default function PresentarAhora({ t, anio, aviso, importes, texto, hacien
       <h2 className="grupo-t" id="presentar-t">Toca presentar el {t}T {anio}</h2>
       <div className="tarjeta">
         <p className="presentar-plazo">{aviso}</p>
+        {domiciliar && <p className="nota">{domiciliar}</p>}
         <ul className="presentar-importes">
           {importes.map((m) => <li key={m.num}><a href={m.href}><span>{m.modelo}{m.plazo && <small> · hasta el {m.plazo}</small>}</span><strong>{m.texto}</strong></a></li>)}
         </ul>

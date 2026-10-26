@@ -6,7 +6,7 @@ import AdminCorreoPrueba from '@/components/AdminCorreoPrueba';
 import '@/app/admin/admin.css';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Correos' };
+export const metadata = { title: 'Correos de Fisquo' };
 
 export default async function CorreosAdmin() {
   await requerirAdmin();

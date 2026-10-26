@@ -5,10 +5,11 @@ import { llamar } from './Acciones';
 import { confirmar } from './Confirmar';
 import { FACTURA_EJEMPLO } from '@/lib/apiEjemplo';
 import Vacio from './Vacio';
+import { fechaHora } from '@/lib/formato';
 
 const NOMBRES = { 'facturas:leer': 'Ver facturas', 'facturas:escribir': 'Crear facturas', 'gastos:leer': 'Ver gastos', 'clientes:leer': 'Ver clientes' };
 const EVENTOS = { 'factura.creada': 'Factura creada', 'factura.cobrada': 'Factura cobrada', 'gasto.creado': 'Gasto creado' };
-const fecha = (v) => v ? new Date(v).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) : 'Sin uso';
+const fecha = (v) => (v ? fechaHora(v) : 'Sin uso');
 const alternar = (lista, valor) => lista.includes(valor) ? lista.filter((x) => x !== valor) : [...lista, valor];
 // Factura de ejemplo para crearla desde Zapier, Make o n8n (los mismos campos que el formulario; la actividad es opcional).
 const EJEMPLO = JSON.stringify(FACTURA_EJEMPLO, null, 2);
@@ -34,7 +35,7 @@ export default function AjustesApi({ inicial, alcances, eventos }) {
     await recargar();
   });
   const revocar = (tipo, id) => ejecutar(async () => {
-    if (!(await confirmar({ titulo: tipo === 'clave' ? 'Revocar clave' : 'Eliminar webhook', texto: tipo === 'clave' ? 'La integración dejará de tener acceso con esta clave.' : 'Se cancelarán también las entregas pendientes a este destino.', aceptar: tipo === 'clave' ? 'Revocar clave' : 'Eliminar webhook', peligro: true }))) return;
+    if (!(await confirmar({ titulo: tipo === 'clave' ? 'Revocar clave' : 'Borrar webhook', texto: tipo === 'clave' ? 'La integración dejará de tener acceso con esta clave.' : 'Se cancelarán también las entregas pendientes a este destino.', aceptar: tipo === 'clave' ? 'Revocar clave' : 'Borrar webhook', peligro: true }))) return;
     await llamar(`/api/ajustes/api?${tipo}=${encodeURIComponent(id)}`, { method: 'DELETE' });
     await recargar();
   });
@@ -81,7 +82,7 @@ export default function AjustesApi({ inicial, alcances, eventos }) {
         {!datos.webhooks.length && <Vacio compacto icono="aviso" titulo="Todavía no hay webhooks">Un webhook avisa a otro programa cuando creas o cobras una factura. Añade su dirección en el formulario de abajo.</Vacio>}
         {datos.webhooks.map((w) => <div className="celda" key={w.id}>
           <span className="txt" style={{ minWidth: 0, overflowWrap: 'anywhere' }}><strong>{w.url}</strong><small>{w.eventos.map((e) => EVENTOS[e]).join(', ')} · {w.activo ? 'Activo' : 'Inactivo'}</small><small>Creado: {fecha(w.creado)}</small></span>
-          <button className="borrar" type="button" disabled={ocupado} aria-label={`Eliminar webhook ${w.url}`} onClick={() => revocar('webhook', w.id)}>Eliminar</button>
+          <button className="borrar" type="button" disabled={ocupado} aria-label={`Borrar webhook ${w.url}`} onClick={() => revocar('webhook', w.id)}>Borrar</button>
         </div>)}
       </div>
       <p className="grupo-pie">Hasta 5 destinos HTTPS públicos. Cada entrega lleva una firma HMAC-SHA256. El receptor debe comprobar la firma sobre el cuerpo original y evitar duplicados por el id del evento.</p>

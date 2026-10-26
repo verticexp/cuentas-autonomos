@@ -11,6 +11,10 @@ import Ajustes from '@/components/Ajustes';
 import Controlat from '@/components/Controlat';
 import Marca from '@/components/Marca';
 import FaceId from '@/components/FaceId';
+import DosPasos from '@/components/DosPasos';
+import AccesosRecientes from '@/components/AccesosRecientes';
+import { accesosDe } from '@/lib/accesos';
+import { diaDe } from '@/lib/formato';
 import ElegirPlan from '@/components/ElegirPlan';
 import estilosPlan from '@/components/ElegirPlan.module.css';
 import AvisosPush from '@/components/AvisosPush';
@@ -21,6 +25,7 @@ import Verifactu from '@/components/Verifactu';
 import { certificadoListo } from '@/lib/verifactuEnvio';
 import { leer } from '@/lib/redis';
 import Importar from '@/components/Importar';
+import { origenValido } from '@/lib/importarOrigen';
 import { actividadesDe, fiscalDe, serieSimplificada } from '@/lib/empresa';
 import { numeroPrevisto } from '@/lib/facturas';
 import { todasFichas } from '@/lib/indices';
@@ -56,7 +61,7 @@ export const dynamic = 'force-dynamic';
 
 const TITULOS = {
   perfil: 'Tu perfil', facturacion: 'Datos de la empresa', marca: 'Diseño de factura', series: 'Series y numeración', cobros: 'Cobros', envio: 'Email de envío', gestoria: 'Tu gestoría',
-  seguridad: 'Face ID y contraseña', drive: 'Google Drive', controlat: "Controla'T", avisos: 'Avisos en el móvil', importar: 'Importar datos',
+  seguridad: 'Seguridad', drive: 'Google Drive', controlat: "Controla'T", avisos: 'Avisos', importar: 'Importar datos',
   verifactu: 'Verifactu', plan: 'Tu plan', apariencia: 'Apariencia', ayuda: 'Ayuda y contacto', recomienda: 'Recomienda Fisquo', api: 'API y webhooks',
 };
 const DE_EMPRESA = ['plan', 'facturacion', 'marca', 'series', 'cobros', 'envio', 'gestoria', 'drive', 'controlat', 'importar', 'verifactu', 'api'];
@@ -102,7 +107,7 @@ export default async function Seccion({ params, searchParams }) {
   return (
     <main className={`pagina mk-look${seccion === 'plan' ? ` ${estilosPlan.pagina}` : ''}`}>
       <Volver href="/ajustes">Ajustes</Volver>
-      <h1 className="titulo">{app && seccion === 'seguridad' ? 'Contraseña y bloqueo' : TITULOS[seccion]}</h1>
+      <h1 className="titulo">{TITULOS[seccion]}</h1>
       {seccion === 'marca' && <Marca marca={u.marca} nombre={u.emisor?.nombre} />}
       {seccion === 'series' && <Series {...await datosSeries(u, Number(ahoraMadrid().slice(0, 4)))} />}
       {seccion === 'gestoria' && <TuDespacho {...await datosTuDespacho(u)} codigo={typeof (await searchParams)?.codigo === 'string' ? (await searchParams).codigo : ''} />}
@@ -112,6 +117,7 @@ export default async function Seccion({ params, searchParams }) {
       {seccion === 'ayuda' && <Ayuda contacto={CONTACTO} app={app} />}
       {seccion === 'envio' && <EmailEnvio inicial={u.envio || {}} empresa={u.emisor || {}} />}
       {seccion === 'seguridad' && <FaceId lista={llaves} bloqueo={Boolean(u.bloqueoPantalla)} app={app} />}
+      {seccion === 'seguridad' && u.pass && <DosPasos activa={u.dosPasos?.secreto ? { desde: u.dosPasos.desde ? diaDe(u.dosPasos.desde) : null, quedan: (u.dosPasos.recuperacion || []).length } : null} />}
       {seccion === 'plan' && <ElegirPlan plan={u.plan} tipoEmpresa={fiscalDe(u).tipo === 'sociedad' ? 'pym' : 'aut'} uso={usoPlan} admin={u.rol === 'admin'} app={app} />}
       {seccion === 'recomienda' && await (async () => {
         const resumen = await resumenRecomendaciones(u.empresa);
@@ -119,7 +125,7 @@ export default async function Seccion({ params, searchParams }) {
       })()}
       {seccion === 'controlat' && <Controlat activo={Boolean(u.controlat)} />}
       {seccion === 'avisos' && <AvisosPush listo={pushListo()} />}
-      {seccion === 'importar' && <Importar />}
+      {seccion === 'importar' && await (async () => { const origen = origenValido((await searchParams)?.origen); return <Importar key={origen || 'sin-origen'} origen={origen} />; })()}
       {seccion === 'verifactu' && await (async () => {
         const regs = await leer(u, 'registros');
         const facturas = await documentos(u, 'facturas', [...new Set((regs || []).map((r) => r.factura))]);
@@ -132,11 +138,12 @@ export default async function Seccion({ params, searchParams }) {
         <section className="grupo">
           <div className="grupo-c">
             <div className="celda"><span className="txt">Email<small>{u.email}</small></span></div>
-            <a href="/ajustes/seguridad" className="celda ir"><span className="txt">Face ID y contraseña</span></a>
+            <a href="/ajustes/seguridad" className="celda ir"><span className="txt">Seguridad<small>Contraseña, Face ID, verificación en dos pasos y accesos</small></span></a>
           </div>
           <p className="grupo-pie">Para cambiar tu email, escríbenos desde Ayuda y contacto.</p>
         </section>
       )}
+      {seccion === 'seguridad' && <AccesosRecientes lista={await accesosDe(u.id)} />}
       {seccion === 'seguridad' && <form method="post" action="/api/logout?todas=1"><button className="borrar ancho">Cerrar sesión en todos los dispositivos</button></form>}
     </main>
   );

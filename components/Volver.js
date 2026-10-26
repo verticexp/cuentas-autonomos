@@ -9,9 +9,9 @@ import { salirSinGuardar } from './useCambiosSinGuardar';
 // Cómo se llama cada pantalla a la que se puede volver (para el botón: «‹ Más», «‹ Facturas»…).
 const NOMBRES = {
   '/': 'Resumen', '/mas': 'Más', '/facturas': 'Facturas', '/gastos': 'Gastos', '/ajustes': 'Ajustes', '/presupuestos': 'Presupuestos',
-  '/tesoreria': 'Tesorería', '/banco': 'Banco', '/inventario': 'Inventario', '/albaranes': 'Pedidos y albaranes', '/nominas': 'Nóminas',
-  '/proyectos': 'Proyectos', '/cartera': 'Cartera', '/analisis': 'Análisis', '/contabilidad': 'Contabilidad', '/modelos': 'Impuestos', '/asistente': 'Fisquo', '/usuarios': 'Usuarios',
-  '/jornada': 'Jornada', '/facturas/recurrentes': 'Recurrentes', '/facturas/caja': 'Caja', '/facturas/catalogo': 'Catálogo',
+  '/tesoreria': 'Tesorería', '/banco': 'Banco', '/inventario': 'Inventario', '/albaranes': 'Pedidos y albaranes', '/nominas': 'Equipo y nóminas',
+  '/proyectos': 'Proyectos', '/cartera': 'Cartera de cobros', '/analisis': 'Análisis', '/contabilidad': 'Contabilidad', '/modelos': 'Impuestos', '/asistente': 'Pregunta a Fisquo', '/usuarios': 'Usuarios',
+  '/jornada': 'Registro de jornada', '/facturas/recurrentes': 'Facturas recurrentes', '/facturas/caja': 'Caja', '/facturas/catalogo': 'Catálogo',
   '/gastos/proveedores': 'Proveedores', '/gastos/bandeja': 'Por revisar', '/clientes': 'Clientes', '/ajustes/gestoria': 'Tu gestoría', '/tu-gestoria': 'Mensajes', '/despacho': 'Mi despacho', '/despacho/mensajes': 'Mensajes', '/despacho/plazos': 'Plazos',
 };
 

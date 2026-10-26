@@ -5,4 +5,4 @@
 .alb-facturar { position: sticky; bottom: 1rem; padding: 1rem; display: grid; gap: .5rem; box-shadow: 0 8px 24px rgb(0 0 0 / .12); }
 .alb-lineas li { display: flex; justify-content: space-between; gap: .75rem; padding: .6rem 0; border-bottom: 1px solid var(--line); }
 .alb-lineas small { display: block; color: var(--muted); }
-.alb-lineas .falta { color: #b45309; }
+.alb-lineas .falta { color: var(--hacienda); }

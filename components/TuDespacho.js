@@ -4,13 +4,13 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
 import { confirmar } from './Confirmar';
-import { fechaCorta } from '@/lib/formato';
+import { fechaCorta, fechaHora } from '@/lib/formato';
 import Ir from './Ir';
 import Vacio from './Vacio';
 import PeticionesCliente from './PeticionesCliente';
 import '@/app/despacho.css';
 
-const horaDe = (iso) => new Date(iso).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+const horaDe = fechaHora;
 
 // Ajustes › Tu gestoría: el despacho que lleva tus cuentas en Fisquo (lib/despachos.js). Le das acceso con su código,
 // ves lo que hace y le respondes; puedes quitárselo cuando quieras.

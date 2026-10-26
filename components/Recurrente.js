@@ -28,7 +28,7 @@ export function RepetirFactura({ factura, dia, existente }) {
       <p className="nota">Se creará una factura igual, con el número siguiente, cada mes a partir del que viene.</p>
       <label>Día del mes<input className="campo" type="number" min="1" max="28" value={d.dia} onChange={(e) => setD((x) => ({ ...x, dia: e.target.value }))} /></label>
       <label className="check"><input type="checkbox" checked={d.enviar} onChange={(e) => setD((x) => ({ ...x, enviar: e.target.checked }))} /> Enviarla por email al cliente</label>
-      {estado && estado !== 'guardando' && <p className="error">{estado}</p>}
+      {estado && estado !== 'guardando' && <p className="error" role="alert">{estado}</p>}
       <div className="dos-col">
         <button type="button" className="boton sec" onClick={() => setAbierto(false)}>Cancelar</button>
         <button className="boton" disabled={estado === 'guardando'}>Repetir</button>

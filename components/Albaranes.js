@@ -51,7 +51,7 @@ export function FacturarAlbaranes({ grupos, hoy, actividades }) {
             <label>Fecha de la factura<input className="campo" type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} /></label>
             {actividades.length > 1 && <label>Actividad<select className="campo" value={actividad} onChange={(e) => setActividad(e.target.value)}>{actividades.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}</select></label>}
           </div>
-          {msg && <p className="error">{msg}</p>}
+          {msg && <p className="error" role="alert">{msg}</p>}
           <button type="button" className="boton" disabled={ocupado} onClick={facturar}>{ocupado ? 'Facturando…' : `Facturar ${elegidos.size} ${elegidos.size === 1 ? 'albarán' : 'albaranes'} (${eur(total)} sin IVA)`}</button>
         </div>
       )}

@@ -1,22 +1,26 @@
 import { requerirAdmin } from '@/lib/auth';
+import { eur, fechaCorta } from '@/lib/formato';
 import { redis } from '@/lib/redis';
 import { actividadReciente, ultimaActividad } from '@/lib/actividad';
 import { ESTADOS, ORIGENES, resumenAdmin } from '@/lib/admin';
+import { textoDias } from '@/lib/embudo';
+import { embudoDe } from '@/lib/embudoServidor';
 import { emailListo } from '@/lib/email';
 import { avisosRemitente, dkimResend, leerRemitente } from '@/lib/adminAjustes';
 import Volver from '@/components/Volver';
 import AdminEmpresas from '@/components/AdminEmpresas';
 import AdminDespachos from '@/components/AdminDespachos';
+import AdminDosPasos from '@/components/AdminDosPasos';
 import { PRUEBA_DIAS } from '@/lib/prueba';
 import { PRUEBA_GESTORIA_DIAS } from '@/lib/gestorias';
 import { RECOMENDACION_DIAS } from '@/lib/recomendaciones';
 import '@/app/admin/admin.css';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Administración' };
+export const metadata = { title: 'Panel de Fisquo' };
 
-const euros = (c) => (c / 100).toLocaleString('es-ES', { maximumFractionDigits: 0 }) + ' €';
-const fecha = (d) => new Date(`${d}T12:00:00Z`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+const euros = (c) => eur(c / 100);
+const fecha = fechaCorta;
 
 // Barras sencillas (sin librería): cada barra lleva su valor en el título y en texto para lectores de pantalla.
 function Barras({ datos, etiqueta, valor, titulo }) {
@@ -38,6 +42,8 @@ export default async function Admin() {
   const [empresas, usuarios, actividad, ultima] = await Promise.all([redis.hgetall('empresas'), redis.hgetall('usuarios'), actividadReciente(30), ultimaActividad()]);
   const r = resumenAdmin({ empresas: Object.values(empresas || {}), usuarios: Object.values(usuarios || {}), actividad, ultima });
   const k = r.kpis;
+  // Embudo de activación (lib/embudo.js): solo índices y contadores, no documentos.
+  const embudo = await embudoDe({ filas: r.filas, empresas: empresas || {}, ultima });
   const remitente = process.env.RESEND_FROM || '';
   const rem = leerRemitente(remitente || 'Fisquo <no-reply@fisquo.com>');
   const dkim = await dkimResend(rem.dominio);
@@ -56,7 +62,7 @@ export default async function Admin() {
 
     <nav className="adm-accesos" aria-label="Accesos directos">
       <a href="/admin/correos"><strong>Correos</strong><span>Verlos y enviarte una prueba</span></a>
-      <a href="#adm-ajustes"><strong>Configuración</strong><span>Remitente, dominio y cobros</span></a>
+      <a href="#adm-ajustes"><strong>Ajustes</strong><span>Remitente, dominio y cobros</span></a>
       <a href="#adm-empresas"><strong>Empresas</strong><span>Planes, pruebas y Fundador</span></a>
       <a href="/usuarios"><strong>Usuarios</strong><span>Dar de alta una empresa</span></a>
     </nav>
@@ -74,6 +80,24 @@ export default async function Admin() {
       <Barras titulo="Altas por semana (12 semanas)" datos={r.altas} etiqueta={(d) => fecha(d.desde)} valor={(d) => d.n} />
       <Barras titulo="Personas que entran cada día (30 días)" datos={r.diario} etiqueta={(d) => fecha(d.dia)} valor={(d) => d.usuarios} />
     </section>
+
+    {embudo && <section className="adm-caja adm-embudo" aria-labelledby="adm-embudo-t">
+      <h2 id="adm-embudo-t">Activación de las altas</h2>
+      <p className="adm-pie">De las empresas que se dan de alta, cuántas llegan a cada paso. Cuenta cada una en un paso solo si ha hecho también los anteriores; «% previo» es sobre el paso de arriba y los días son la mediana desde el alta.</p>
+      <div className="adm-embudo-rejilla">
+        {embudo.map((v) => <table key={v.id} className="adm-embudo-tabla">
+          <caption>{v.nombre}</caption>
+          <thead><tr><th scope="col">Paso</th><th scope="col">Empresas</th><th scope="col">% previo</th><th scope="col">Mediana</th></tr></thead>
+          <tbody>{v.pasos.map((p) => <tr key={p.id}>
+            <th scope="row">{p.nombre}<span className="adm-embudo-barra" aria-hidden><i style={{ width: `${p.pctAltas ?? 0}%` }} /></span></th>
+            <td>{p.n}</td>
+            <td>{p.pctPrevio === null ? '' : `${p.pctPrevio} %`}</td>
+            <td title={p.id !== 'alta' && p.n > p.conDia ? `${p.conDia} de ${p.n} con día conocido` : undefined}>{p.id === 'alta' ? '' : textoDias(p.mediana)}</td>
+          </tr>)}</tbody>
+        </table>)}
+      </div>
+      <p className="adm-pie">Factura y gasto: el día de la más antigua (si es anterior al alta, cuenta 0 días). Banco: el día en que se subió el extracto o se conectó la cuenta. Modelo: cuando se marcó como presentado; los que no guardan el día (el 130 a cero, el 202) cuentan en el embudo pero no en la mediana.</p>
+    </section>}
 
     <section className="adm-dos">
       <div className="adm-caja">
@@ -121,7 +145,13 @@ export default async function Admin() {
       <AdminDespachos />
     </section>
 
-    <section id="adm-ajustes" className="adm-dos" aria-label="Configuración">
+    <section className="adm-caja" aria-labelledby="adm-dos-pasos-t">
+      <h2 id="adm-dos-pasos-t">Soporte: verificación en dos pasos</h2>
+      <p className="adm-pie">Para quien ha perdido el móvil y los códigos de recuperación, después de comprobar que es el titular.</p>
+      <AdminDosPasos />
+    </section>
+
+    <section id="adm-ajustes" className="adm-dos" aria-label="Ajustes">
       <div className="adm-caja">
         <h2>Correos automáticos</h2>
         <ul className="adm-lista">
