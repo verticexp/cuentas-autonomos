@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Las tres baterías de punta a punta (verificar, regresiones e integridad) contra la app ya compilada (next build), cada
-# una con su base de datos vacía. Todo simulado y local: Redis (tests/apoyo/upstash-mem.mjs), Stripe, correo e IA
+# Las cuatro baterías de punta a punta (verificar, regresiones, integridad y accesibilidad) contra la app ya compilada
+# (next build), cada una con su base de datos vacía. Todo simulado y local: Redis (tests/apoyo/upstash-mem.mjs), Stripe, correo e IA
 # (tests/e2e/*-local.py). Nunca contra la app de verdad. Lo usa .github/workflows/e2e.yml; en local:
 #   npx next build && bash tests/e2e/ci.sh            (APP_PORT y REDIS_PORT cambian los puertos de la app y de Redis)
 set -uo pipefail
@@ -48,6 +48,8 @@ PUSH="VAPID_PUBLIC_KEY=${VAPID_PUB} VAPID_PRIVATE_KEY=${VAPID_PRIV} PUSH_PRUEBAS
 bateria verificar "${COMUN} ${PUSH}" "CRON_SECRET=cron-pruebas RESEND_URL=http://127.0.0.1:8078/emails STRIPE_URL=http://127.0.0.1:8077 STRIPE_WEBHOOK_SECRET=whsec_pruebas_local ANTHROPIC_API_KEY=x ANTHROPIC_URL=http://127.0.0.1:8076/v1/messages PUSH_PRUEBAS=1 VAPID_PUBLIC_KEY=${VAPID_PUB}" tests/e2e/verificar.mjs
 bateria regresiones "${COMUN}" "STRIPE_WEBHOOK_SECRET=whsec_pruebas_local" tests/e2e/regresiones.mjs
 bateria integridad "${COMUN} VERIFICAR_EMAIL=off BLOQUEO_SERVIDOR=activo" "STRIPE_WEBHOOK_SECRET=whsec_pruebas_local" tests/e2e/integridad.mjs
+# Accesibilidad: axe-core sobre el HTML de las pantallas clave (jsdom), sin color-contrast (lo cubre tests/contraste.test.mjs).
+bateria accesibilidad "${COMUN}" "A11Y_ESTRICTO=1" tests/e2e/accesibilidad.mjs
 
 if [ "${fallos}" -gt 0 ]; then echo "${fallos} baterías con fallos"; exit 1; fi
-echo "Las tres baterías e2e, en verde"
+echo "Las cuatro baterías e2e, en verde"

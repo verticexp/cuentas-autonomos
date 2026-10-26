@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import '@/app/ticket.css';
+import { fechaCorta } from '@/lib/formato';
 
 export default function CupoEscaneo({ inicial = null }) {
   const [cupo, setCupo] = useState(inicial);
@@ -30,7 +31,7 @@ export default function CupoEscaneo({ inicial = null }) {
   if (cargando && !cupo) return <p className="nota" role="status">Consultando páginas disponibles…</p>;
   if (error && !cupo) return <p className="nota" role="status">No se ha podido consultar el cupo. <button type="button" className="enlace" disabled={cargando} onClick={cargar}>Reintentar</button></p>;
   if (!cupo) return null;
-  const renovacion = cupo.renueva ? new Date(`${cupo.renueva}T12:00:00`).toLocaleDateString('es-ES') : '';
+  const renovacion = cupo.renueva ? fechaCorta(cupo.renueva) : '';
   const urgente = cupo.agotado || cupo.porcentaje >= 80;
   return <details className={`ticket-cupo${urgente ? ' ticket-cupo-aviso' : ''}`} open={urgente || undefined}>
     <summary>{cupo.prueba ? <><span className="solo-web">Lectura con IA: {cupo.usadas} de {cupo.limite} páginas gratis en tu prueba</span><span className="solo-app">{cupo.usadas} de {cupo.limite} páginas usadas</span></> : <span>{`${cupo.usadas} de ${cupo.limite} páginas este mes`}</span>} <span aria-hidden="true">ⓘ</span><span className="ticket-cupo-ayuda"> · Ver detalles del cupo</span></summary>

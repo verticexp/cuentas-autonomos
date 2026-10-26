@@ -9,11 +9,11 @@ import Link from 'next/link';
 import CupoEscaneo from '@/components/CupoEscaneo';
 import BancoReglas, { FormRegla } from '@/components/BancoReglas';
 import GuiaExtracto from '@/components/GuiaExtracto';
-import { eur, fechaCorta } from '@/lib/formato';
+import { eur, fechaCorta, fechaHora } from '@/lib/formato';
 import { encaja, reglaDesde } from '@/lib/reglasBanco';
 
 const iban = (s) => (s ? `•••• ${s.replace(/\s/g, '').slice(-4)}` : '');
-const cuando = (iso) => { const d = new Date(iso); return `${fechaCorta(d.toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' }))} ${d.toLocaleTimeString('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit' })}`; };
+const cuando = fechaHora;
 const diasHasta = (iso) => Math.ceil((Date.parse(iso) - Date.now()) / 864e5);
 
 async function llamar(url, opciones) {
@@ -72,7 +72,7 @@ function QueEs({ m, accion, regla, children }) {
       <label className="bco-quees-t">Fisquo cree que es
         <select className="campo" value={clase} onChange={(e) => setClase(e.target.value)}>{m.clases.map(([k, t]) => <option key={k} value={k}>{t}</option>)}</select>
       </label>
-      {clase === 'prestamo' && m.importe < 0 && <input className="campo" inputMode="decimal" placeholder="De esta cuota, intereses (opcional)" value={intereses} onChange={(e) => setIntereses(e.target.value.replace(',', '.'))} />}
+      {clase === 'prestamo' && m.importe < 0 && <input className="campo" inputMode="decimal" aria-label="De esta cuota, intereses (opcional)" placeholder="De esta cuota, intereses (opcional)" value={intereses} onChange={(e) => setIntereses(e.target.value.replace(',', '.'))} />}
       <p className="bco-nota">{AYUDA[clase]}</p>
       <div className="bco-botones">
         {clase === 'gasto'
@@ -177,8 +177,8 @@ function Conectar({ cerrar }) {
         <button type="button" className={tipo === 'personal' ? 'activo' : ''} onClick={() => setTipo('personal')}>Cuenta personal</button>
         <button type="button" className={tipo === 'business' ? 'activo' : ''} onClick={() => setTipo('business')}>Cuenta de empresa</button>
       </div>
-      <input className="campo" placeholder="Busca tu banco" value={busca} onChange={(e) => setBusca(e.target.value)} />
-      {msg && <p className="rojo bco-nota">{msg}</p>}
+      <input className="campo" aria-label="Busca tu banco" placeholder="Busca tu banco" value={busca} onChange={(e) => setBusca(e.target.value)} />
+      {msg && <p className="rojo bco-nota" role="alert">{msg}</p>}
       {bancos === null && !msg && <p className="bco-nota">Cargando bancos…</p>}
       <ul className="bco-bancos">
         {vistos.map((b) => <li key={b.nombre}><button onClick={() => ir(b.nombre)}>{b.nombre}</button></li>)}

@@ -63,7 +63,7 @@ export default function Verifactu({ modo, admin, listo, faltaEmisor, fisquo, cue
         </div>
       )}
       {!admin && <p className="nota">Solo el administrador de la empresa puede activarlo.</p>}
-      {msg && <p className="error">{msg}</p>}
+      {msg && <p className="error" role="alert">{msg}</p>}
     </div>
   );
 }

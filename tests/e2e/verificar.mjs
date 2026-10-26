@@ -223,7 +223,7 @@ if (process.env.RESEND_URL && process.env.STRIPE_URL) {
     const vuelta = n(await (await fetch(`${enlace}?sesion=${ses.id}`)).text());
     ok('al volver pagada, lo dice', () => assert.ok(vuelta.includes('ya está pagada')));
     const det2 = n(await texto(`/facturas/${venc.id}`, yo));
-    ok('y la factura queda cobrada', () => assert.ok(det2.includes('Pagada con tarjeta o Bizum') && det2.includes('Cobrada')));
+    ok('y la factura queda cobrada', () => assert.ok(det2.includes('Cobrada con tarjeta o Bizum') && det2.includes('Cobrada')));
     const r3 = await cron();
     ok('una cobrada ya no recibe recordatorios', () => assert.equal(r3.enviados, 0));
     // Aviso de Stripe (webhook) firmado, para otra factura: la marca cobrada aunque el cliente no vuelva.
@@ -244,7 +244,7 @@ if (process.env.RESEND_URL && process.env.STRIPE_URL) {
     ok('un aviso sin firma buena se rechaza', () => assert.equal(falso.status, 400));
     const wh = await fetch(`${BASE}/api/stripe`, { method: 'POST', body: evento, headers: { 'stripe-signature': firma } });
     const det3 = n(await texto(`/facturas/${otra.id}`, yo));
-    ok('el aviso firmado de Stripe la marca cobrada', () => assert.ok(wh.status === 200 && det3.includes('Pagada con tarjeta o Bizum')));
+    ok('el aviso firmado de Stripe la marca cobrada', () => assert.ok(wh.status === 200 && det3.includes('Cobrada con tarjeta o Bizum')));
   }
 } else console.log('  (sin RESEND_URL y STRIPE_URL: se salta)');
 
@@ -1752,7 +1752,7 @@ console.log('Accesos del resumen');
 console.log('Páginas de error');
 {
   const noHay = await (await pedir('/facturas/no-existe-esta', { cookie: yo })).text();
-  ok('una factura que no existe: «Esta página no existe», con vuelta a Facturas y al inicio (no el 404 en inglés)', () => assert.ok(noHay.includes('Esta página no existe') && noHay.includes('Volver a Facturas') && noHay.includes('Ir al inicio') && !noHay.includes('could not be found')));
+  ok('una factura que no existe: «Esta página no existe», con vuelta a Facturas y al Resumen (no el 404 en inglés)', () => assert.ok(noHay.includes('Esta página no existe') && noHay.includes('Volver a Facturas') && noHay.includes('Ir al Resumen') && !noHay.includes('could not be found')));
   const web = await (await pedir('/funciones/inventada')).text(); // con loading.js llega dentro del HTML en streaming
   ok('también en la web pública, con su cabecera', () => assert.ok(web.includes('Puede que la página se haya movido') && !web.includes('could not be found')));
   const sinPermiso = await (await pedir('/ajustes/facturacion', { cookie: otro })).text();

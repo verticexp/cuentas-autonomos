@@ -9,7 +9,7 @@ import { datosStock } from '@/lib/stockServidor';
 import { enCamino, numeroDoc, totalPedidoProv } from '@/lib/albaranes';
 import { fiscalDe, usaIgic } from '@/lib/empresa';
 import { inventario, quePedir } from '@/lib/inventario';
-import { eur, fechaCorta, hoy } from '@/lib/formato';
+import { eur, fechaCorta, hoy, pctCorto } from '@/lib/formato';
 import Volver from '@/components/Volver';
 import Ir from '@/components/Ir';
 import SinBD from '@/components/SinBD';
@@ -62,7 +62,7 @@ export default async function Inventario({ searchParams }) {
         <div><span>Productos</span><strong>{inv.productos.length}</strong></div>
         <div><span>Bajo mínimo</span><strong className={inv.bajos.length ? 'inv-rojo' : ''}>{inv.bajos.length}</strong></div>
       </div>
-      <nav className="segmentado">{VISTAS.map(([v, n]) => <Ir key={v} href={url({ ver: v })} tipo="fundido" className={v === ver ? 'activo' : ''}>{n}</Ir>)}</nav>
+      <nav className="segmentado" aria-label="Vista del inventario">{VISTAS.map(([v, n]) => <Ir key={v} href={url({ ver: v })} tipo="fundido" className={v === ver ? 'activo' : ''}>{n}</Ir>)}</nav>
 
       {ver === 'stock' && (
         <section className="bloque">
@@ -116,7 +116,7 @@ export default async function Inventario({ searchParams }) {
 
       {ver === 'informes' && (
         <section className="bloque">
-          <nav className="anios inv-anios">
+          <nav className="anios inv-anios" aria-label="Año">
             <Ir href={url({ anio: anio - 1 })} tipo="cifras" aria-label="Año anterior">‹</Ir><strong>{anio}</strong>
             {anio < Number(h.slice(0, 4)) ? <Ir href={url({ anio: anio + 1 })} tipo="cifras" aria-label="Año siguiente">›</Ir> : <span className="off">›</span>}
           </nav>
@@ -125,7 +125,7 @@ export default async function Inventario({ searchParams }) {
           {!top('ventas').length && <Vacio compacto icono="beneficio" titulo={`Sin ventas de productos en ${anio}`} />}
           <h2 className="grupo-t">Margen por producto</h2>
           {!top('margen').length && <Vacio compacto icono="beneficio" titulo={`Sin ventas con coste en ${anio}`} />}
-          <ul className="grupo-lista">{top('margen').map((p) => <li key={p.id}><Ir href={`/inventario/${p.id}`} className="fila"><span className="txt"><strong>{p.nombre}</strong><small>Ventas {eur(p.ingresos)} · coste {eur(p.costeVentas)}</small></span><span className="imp-col"><span className="imp">{eur(p.margen)}</span><small className="nota">{p.margenPct.toLocaleString('es-ES')} %</small></span></Ir></li>)}</ul>
+          <ul className="grupo-lista">{top('margen').map((p) => <li key={p.id}><Ir href={`/inventario/${p.id}`} className="fila"><span className="txt"><strong>{p.nombre}</strong><small>Ventas {eur(p.ingresos)} · coste {eur(p.costeVentas)}</small></span><span className="imp-col"><span className="imp">{eur(p.margen)}</span><small className="nota">{pctCorto(p.margenPct)}</small></span></Ir></li>)}</ul>
           {inv.productos.some((p) => p.consumo > 0) && <>
             <h2 className="grupo-t">Consumo en servicios</h2>
             <ul className="grupo-lista">{top('costeConsumo').map((p) => <li key={p.id}><Ir href={`/inventario/${p.id}`} className="fila"><span className="txt"><strong>{p.nombre}</strong><small>{ud(p.consumo)} ud. gastadas en servicios</small></span><span className="imp">{eur(p.costeConsumo)}</span></Ir></li>)}</ul>

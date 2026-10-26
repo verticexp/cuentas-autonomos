@@ -160,7 +160,7 @@ function Fila({ d, puedeGastar, ocupado, accion }) {
     <span className="txt">
       <strong>{titulo}</strong>
       <small>{detalle || d.nombre}</small>
-      {d.error && <small className="bandeja-error">{d.error}</small>}
+      {d.error && <small className="bandeja-error" role="alert">{d.error}</small>}
       <span className="bandeja-chips">
         {d.cuadra && <span className="chip-ok">Cuadra</span>}
         {d.duplicados?.length > 0 && <span className="chip-aviso">¿Ya apuntada?</span>}

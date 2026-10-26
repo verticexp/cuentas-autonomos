@@ -303,7 +303,7 @@ export default function Cuestionario({ inicial, editar, conFacturas, puedeFactur
 
   return (
     <div className="cuestionario" aria-busy={guardando}>
-      {editar ? <p className="nota" role="status">Configuración del negocio · Paso {paso + 1} de {pasos.length}</p> : <ProgresoAlta paso={paso + 1} total={pasos.length} etiqueta={`Casi listo · ${p.corto}`} />}
+      {editar ? <p className="nota" role="status">Actividades e impuestos · Paso {paso + 1} de {pasos.length}</p> : <ProgresoAlta paso={paso + 1} total={pasos.length} etiqueta={`Casi listo · ${p.corto}`} />}
       {paso === 0 && !editar && <p className="hola">Tu cuenta ya está creada. Son {pasos.length} pasos rápidos y todo se puede cambiar después en Ajustes.</p>}
       <div className="paso" key={paso}>
         <h1 className="titulo" ref={tituloRef} tabIndex={-1}>{p.titulo}</h1>

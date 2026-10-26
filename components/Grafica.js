@@ -36,7 +36,7 @@ export default function Grafica({ meses, anio, actual }) {
         <div className="graf-eje" aria-hidden>{maximo > 0 ? <><span>{corta(tope)}</span><span>{corta(tope / 2)}</span><span>0</span></> : null}</div>
         <div className="graf-barras" role="group" aria-label={`Facturado y gastos por mes de ${anio}`}>
           {meses.map((x, i) => (
-            <button key={i} type="button" className={i === sel ? 'activo' : ''} style={{ '--i': i }} onClick={() => setSel(i)} aria-label={`${NOMBRES[i]}: facturado ${eur(x.ing)}, gastos ${eur(x.gas)}`} aria-pressed={i === sel}>
+            <button key={i} type="button" className={i === sel ? 'activo' : ''} style={{ '--i': i }} onClick={() => setSel(i)} aria-label={`${NOMBRES[i].slice(0, 3)}. ${NOMBRES[i]}: facturado ${eur(x.ing)}, gastos ${eur(x.gas)}`} aria-pressed={i === sel}>
               <span className="graf-pila">
                 <span className="graf-b in" style={{ height: `${(Math.max(0, x.ing) / tope) * 100}%` }} />
                 <span className="graf-b out" style={{ height: `${(Math.max(0, x.gas) / tope) * 100}%` }} />

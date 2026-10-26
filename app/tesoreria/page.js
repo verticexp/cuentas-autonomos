@@ -47,7 +47,7 @@ export default async function Tesoreria({ searchParams }) {
       {!p.movimientos.length && <SaldoBanco saldo={saldo ? saldo.importe : null} fecha={saldo?.fecha} banco={Boolean(saldo?.banco)} editable={puede(u, 'facturar') || puede(u, 'gastar')} />}
       {p.movimientos.length > 0 && <>
       {esSociedad(fiscalDe(u)) && (puede(u, 'facturar') || puede(u, 'gastar')) && <Ir href="/tesoreria/remesas" className="grupo-pie">Remesas SEPA ›</Ir>}
-      <nav className="segmentado">
+      <nav className="segmentado" aria-label="Meses de la previsión">
         {HORIZONTES.map((h) => <Ir key={h} href={`/tesoreria?meses=${h}`} tipo="fundido" className={h === n ? 'activo' : ''}>{h} meses</Ir>)}
       </nav>
 
@@ -103,7 +103,7 @@ export default async function Tesoreria({ searchParams }) {
       ))}
       </>}
 
-      <details className="como-se-calcula"><summary>Cómo se calcula</summary><p className="grupo-pie arriba">Cobros: facturas sin cobrar a su vencimiento (las vencidas, hoy) y las recurrentes. Pagos: gastos pendientes a su vencimiento (los vencidos, hoy) y los que se repiten cada uno de los 3 últimos meses. Hacienda: {usaIgic(fiscalDe(u)) ? 'IGIC (420)' : '303'}, 130, 115 y 111 de los trimestres sin marcar como presentados. Es una previsión: revísala de vez en cuando.</p></details>
+      <details className="como-se-calcula"><summary>Cómo se calcula</summary><p className="grupo-pie arriba">Cobros: facturas sin cobrar a su vencimiento (las vencidas, hoy) y las recurrentes. Pagos: gastos pendientes a su vencimiento (los vencidos, hoy) y los que se repiten cada uno de los 3 últimos meses. Hacienda: {usaIgic(fiscalDe(u)) ? 'IGIC (420)' : '303'}, 130, 115 y 111 de los trimestres sin marcar como presentados; el del trimestre en curso es una previsión con lo apuntado hasta hoy. Revísala de vez en cuando.</p></details>
     </main>
   );
 }

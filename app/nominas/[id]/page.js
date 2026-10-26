@@ -20,7 +20,7 @@ export default async function Nomina({ params }) {
   if (!n) notFound();
   return (
     <main className="pagina mk-look">
-      <Volver href="/nominas">Nóminas</Volver>
+      <Volver href="/nominas">Equipo y nóminas</Volver>
       <header className="cabecera"><h1 className="titulo">{n.empleadoNombre}</h1></header>
       <p className="nota">{n.tipo === 'finiquito' ? 'Finiquito' : 'Nómina'} de {nombreMes(n.mes)}</p>
       {n.horas && (

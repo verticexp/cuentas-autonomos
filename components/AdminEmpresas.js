@@ -8,8 +8,9 @@ import { useRouter } from 'next/navigation';
 import { ESTADOS, ORIGENES } from '@/lib/admin';
 import { PLANES } from '@/components/web/datos';
 import { TIPOS_ALTA } from '@/lib/prueba';
+import { eur } from '@/lib/formato';
 
-const euros = (c) => (c / 100).toLocaleString('es-ES', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + ' €';
+const euros = (c) => eur(c / 100);
 
 // Panel /admin: todas las empresas, con búsqueda, filtro por estado y las acciones de app/api/admin.
 export default function AdminEmpresas({ filas }) {

@@ -30,7 +30,7 @@ export default async function Login({ searchParams }) {
           <form method="post" action="/api/registro">
             <h1><Logo className="logo-login" /></h1>
             <p className="nota">Crea la cuenta de administrador.</p>
-            {error && <p className="error">{ERRORES[error] || mensajeSeguro(error)}</p>}
+            {error && <p className="error" role="alert">{ERRORES[error] || mensajeSeguro(error)}</p>}
             <label htmlFor="nombre">Nombre</label><input id="nombre" name="nombre" required />
             <label htmlFor="email">Email</label>
             <input id="email" name="email" type="email" autoComplete="username" required />

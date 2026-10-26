@@ -61,7 +61,7 @@ export function FormEmpleado({ empleado, hoy }) {
         {!e.cotizacion && <label>SS trabajador %<input className="campo" inputMode="decimal" value={e.ssTrabajadorPct} onChange={(x) => poner('ssTrabajadorPct', x.target.value)} /></label>}
         {!e.cotizacion && <label>SS empresa %<input className="campo" inputMode="decimal" value={e.ssEmpresaPct} onChange={(x) => poner('ssEmpresaPct', x.target.value)} /></label>}
       </div>
-      {completa?.error && <p className="error">{completa.error}</p>}
+      {completa?.error && <p className="error" role="alert">{completa.error}</p>}
       {c.bruto > 0 && <p className="nota nomina-calculo">Cobra <strong>{eur(c.neto)}</strong> netos · a la empresa le cuesta <strong>{eur(c.coste)}</strong> al mes{completa && !completa.error ? ` · IRPF ${String(completa.irpfPct).replace('.', ',')} %${completa.detalle.irpf.calculado !== null ? ' (calculado)' : ''}` : ''}</p>}
       {!e.cotizacion && <p className="nota">Los % de Seguridad Social son los generales; tu gestoría te dice el exacto (sobre todo el de la empresa, que depende de la actividad). Con la nómina completa, Fisquo calcula bases y cuotas.</p>}
       <p className="rotulo" style={{ margin: '6px 0 0' }}>Registro de jornada</p>
@@ -70,7 +70,7 @@ export function FormEmpleado({ empleado, hoy }) {
         <label>Horas a la semana<input className="campo" inputMode="decimal" value={e.horasSemana ?? 40} onChange={(x) => poner('horasSemana', x.target.value)} /></label>
         <label>Precio hora extra (€)<input className="campo" inputMode="decimal" placeholder="Si se pagan" value={e.precioHoraExtra || ''} onChange={(x) => poner('precioHoraExtra', x.target.value)} /></label>
       </div>
-      {error && <p className="error">{error}</p>}
+      {error && <p className="error" role="alert">{error}</p>}
       <div className="dos-col">
         {nuevo && <button type="button" className="boton sec" onClick={() => setAbierto(false)}>Cancelar</button>}
         <button className="boton" disabled={enviando}>{enviando ? 'Guardando…' : nuevo ? 'Añadir' : 'Guardar cambios'}</button>

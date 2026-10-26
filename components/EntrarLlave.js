@@ -36,7 +36,7 @@ export default function EntrarLlave({ alEntrar = () => { location.href = '/'; },
         <svg viewBox="0 0 24 24" aria-hidden><circle cx="8" cy="12" r="4" /><path d="M12 12h9M18 12v3M21 12v2" /></svg>
         Entrar con {nombre}
       </button>
-      {error && <p className="error">{error}</p>}
+      {error && <p className="error" role="alert">{error}</p>}
     </div>
   );
 }

@@ -6,9 +6,11 @@ import { llamar } from './Acciones';
 import { calcularDieta, KM, limiteDia } from '@/lib/dietas';
 import { eur } from '@/lib/formato';
 import '@/app/dietas.css';
+import useEnvio from './useEnvio';
 
 // Kilometraje y dietas: se apunta como gasto con lo exento (o deducible) ya calculado.
 export default function Dietas({ hoy, actividades, autonomo }) {
+  const [enviando, envolver] = useEnvio();
   const router = useRouter();
   const vacio = { tipo: 'km', quien: autonomo ? 'titular' : 'empleado', fecha: hoy, actividad: actividades[0].id, km: '', dias: '1', pernocta: false, extranjero: false, pagado: '', ivaPct: 10, electronico: true, persona: '', motivo: '' };
   const [d, setD] = useState(vacio);
@@ -28,7 +30,7 @@ export default function Dietas({ hoy, actividades, autonomo }) {
   };
   const tipos = [['km', 'Kilometraje'], ['manutencion', 'Dietas y comidas']];
   return (
-    <form className="formulario tarjeta dietas" onSubmit={enviar}>
+    <form className="formulario tarjeta dietas" onSubmit={envolver(enviar)}>
       <h3>Kilometraje y dietas</h3>
       <div className="tipo dos">{tipos.map(([k, n]) => <button type="button" key={k} className={d.tipo === k ? 'activo' : ''} onClick={() => poner('tipo', k)}>{n}</button>)}</div>
       {autonomo && d.tipo === 'manutencion' && (
@@ -67,7 +69,7 @@ export default function Dietas({ hoy, actividades, autonomo }) {
       )}
       {c?.error && <p className="nota">{c.error}</p>}
       {msg && <p className={msg.startsWith('✓') ? 'nota' : 'error'}>{msg}</p>}
-      <button className="boton">Apuntar como gasto</button>
+      <button className="boton" disabled={enviando}>Apuntar como gasto</button>
       <p className="nota dieta-norma">Importes de 2026: {String(KM).replace('.', ',')} €/km; comidas 26,67 € al día (53,34 € con noche) en España y 48,08 € (91,35 €) en el extranjero. Art. 9 del Reglamento del IRPF; para el autónomo, art. 30.2.5ª de la Ley. Guarda los justificantes del viaje.</p>
     </form>
   );

@@ -59,7 +59,7 @@ export function Responder({ token }) {
   return (
     <div className="formulario">
       <label>Tu nombre<input className="campo" value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Nombre y apellidos" /></label>
-      {error && <p className="error">{error}</p>}
+      {error && <p className="error" role="alert">{error}</p>}
       {!nombre.trim() && <p id={ayudaId} className="nota">Escribe tu nombre para aceptar o rechazar el presupuesto.</p>}
       <button type="button" className="boton" onClick={() => responder(true)} disabled={!nombre.trim()} aria-describedby={!nombre.trim() ? ayudaId : undefined}>Aceptar presupuesto</button>
       <button type="button" className="borrar" onClick={() => responder(false)} disabled={!nombre.trim()} aria-describedby={!nombre.trim() ? ayudaId : undefined}>Rechazar</button>

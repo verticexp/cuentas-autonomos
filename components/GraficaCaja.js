@@ -29,7 +29,7 @@ export default function GraficaCaja({ meses, conSaldo }) {
         {meses.map((x, i) => {
           const alto = (Math.abs(x.saldo) / total) * 100;
           return (
-            <button key={x.mes} type="button" className={`${i === sel ? 'activo' : ''}${x.saldo < 0 ? ' neg' : ''}${x.hacienda ? ' hac' : ''}`} style={{ '--i': i }} onClick={() => setSel(i)} aria-pressed={i === sel} aria-label={`${mayus(x.nombre)}: ${eur(x.saldo)}`}>
+            <button key={x.mes} type="button" className={`${i === sel ? 'activo' : ''}${x.saldo < 0 ? ' neg' : ''}${x.hacienda ? ' hac' : ''}`} style={{ '--i': i }} onClick={() => setSel(i)} aria-pressed={i === sel} aria-label={`${x.nombre.slice(0, 3)}. ${mayus(x.nombre)}: ${eur(x.saldo)}`}>
               <span className="caja-col"><i style={x.saldo < 0 ? { top: `${cero}%`, height: `${alto}%` } : { bottom: `${100 - cero}%`, height: `${alto}%` }} /></span>
               <small>{x.nombre.slice(0, 3)}</small>
             </button>

@@ -13,7 +13,7 @@ import { requisitosIncobrable } from '@/lib/incobrables';
 import '@/app/lineas.css';
 import '@/app/catalogo.css';
 import '@/app/factura-movil.css';
-import { eur } from '@/lib/formato';
+import { eur, fechaCorta } from '@/lib/formato';
 import { IDIOMAS_FACTURA, MONEDAS, formatoDoc } from '@/lib/idiomas';
 import { TIPOS_IGIC } from '@/lib/igic';
 import { NOMBRES_UE, TIPOS_UE, tiposPais } from '@/lib/oss';
@@ -75,7 +75,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
       'aria-describedby': claves.length ? claves.map((k) => `${idCampo(k)}-error`).join(' ') : undefined };
   };
   const mensaje = (campo, adicionales = []) => clavesCampo(campo, adicionales).map((k) => errores[k]
-    ? <span className="ff-error-campo" id={`${idCampo(k)}-error`} key={k}>{errores[k]}</span> : null);
+    ? <span className="ff-error-campo" id={`${idCampo(k)}-error`} key={k} role="alert">{errores[k]}</span> : null);
   const limpiarErrores = (...claves) => setErrores((actuales) => Object.fromEntries(
     Object.entries(actuales).filter(([k]) => !claves.some((c) => k === c || k.startsWith(`${c}.`)))
   ));
@@ -371,7 +371,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
       {!orig && f.accesoria === 'inversion' && bienes.length > 0 && <label className="ff-det">Qué bien vendes (se da de baja y deja de amortizarse)
         <select className="campo" value={f.bien || ''} onChange={(e) => poner('bien', e.target.value || undefined)}>
           <option value="">No está en Fisquo (lo compré antes de usarlo)</option>
-          {bienes.map((b) => <option key={b.id} value={b.id}>{b.proveedor || 'Sin proveedor'} · {b.fecha.split('-').reverse().join('/')} · {eur(b.base)}</option>)}
+          {bienes.map((b) => <option key={b.id} value={b.id}>{b.proveedor || 'Sin proveedor'} · {fechaCorta(b.fecha)} · {eur(b.base)}</option>)}
         </select>
       </label>}
       <label className="ff-det">Proyecto, obra o local (opcional)
@@ -412,7 +412,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
             {[...r.errores, ...r.avisos].map((t) => <p key={t}><strong>{t}</strong></p>)}
             <p>Para recuperar el IVA de un impagado hace falta:</p>
             <ul>{r.requisitos.map((t) => <li key={t}>{t}</li>)}</ul>
-            {!r.errores.length && <p>Con esta fecha, el modelo 952 se presenta hasta el {r.limite952.split('-').reverse().join('/')}.</p>}
+            {!r.errores.length && <p>Con esta fecha, el modelo 952 se presenta hasta el {fechaCorta(r.limite952)}.</p>}
             <p>Si facturaste más de 6 millones el año pasado, la espera es de un año desde la factura, no de seis meses.</p>
             <label className="check"><input type="checkbox" checked={Boolean(f.reclamado)} onChange={(e) => poner('reclamado', e.target.checked)} /> He reclamado el cobro por vía judicial, con requerimiento notarial o por otro medio fehaciente que admita la ley</label>
           </div>;
@@ -507,7 +507,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
           <label htmlFor={idCampo('divisa.cambio')}>Tipo de cambio: 1 € = … {f.divisa.moneda}</label>
           <input {...atributos('divisa.cambio')} className="campo" inputMode="decimal" value={aTexto(f.divisa.cambio ?? '')} onChange={(e) => ponerDivisa({ cambio: e.target.value, fuente: 'manual', fecha: undefined, pedido: undefined })} placeholder="Ej.: 1,0812" />
           {mensaje('divisa.cambio')}
-          <p className="nota">{f.divisa.fuente === 'BCE' ? `El del Banco Central Europeo del ${f.divisa.fecha?.split('-').reverse().join('/')}, el oficial para el ${impuesto}.` : 'Escrito a mano.'} {f.divisa.fuente === 'manual' && <button type="button" className="enlace" onClick={() => ponerDivisa({ fuente: undefined, pedido: undefined })}>Usar el del BCE</button>} Los precios van en {f.divisa.moneda}; Fisquo guarda también su valor en euros para el {impuesto} y la contabilidad.</p>
+          <p className="nota">{f.divisa.fuente === 'BCE' ? `El del Banco Central Europeo del ${f.divisa.fecha ? fechaCorta(f.divisa.fecha) : ''}, el oficial para el ${impuesto}.` : 'Escrito a mano.'} {f.divisa.fuente === 'manual' && <button type="button" className="enlace" onClick={() => ponerDivisa({ fuente: undefined, pedido: undefined })}>Usar el del BCE</button>} Los precios van en {f.divisa.moneda}; Fisquo guarda también su valor en euros para el {impuesto} y la contabilidad.</p>
         </div>
       )}
 
@@ -529,7 +529,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
       {/* En el ordenador, la factura se va dibujando al lado mientras se rellena */}
       <aside className="ff-vista" aria-label="Vista previa">
         <div className="ff-papel">
-          <div className="ff-papel-cab"><b>Factura {nueva ? numeroNueva : numeroFactura(f)}</b><small>{f.fecha ? new Date(`${f.fecha}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }) : ''}</small></div>
+          <div className="ff-papel-cab"><b>Factura {nueva ? numeroNueva : numeroFactura(f)}</b><small>{f.fecha ? fechaCorta(f.fecha) : ''}</small></div>
           <div className="ff-para"><small>Para</small><b>{f.cliente.nombre || 'Tu cliente'}</b>{f.cliente.nif && <small>{f.cliente.nif}</small>}</div>
           <ul className="ff-lineas">
             {f.lineas.map((l, i) => (
@@ -567,5 +567,5 @@ function AvisoPresentado({ f, factura, presentados }) {
   if (!entra && !sale) return null;
   const nombre = (k) => `${k.split('-')[1]}T ${k.split('-')[0]}`;
   const porOperacion = f.evento?.fecha && f.evento.fecha < f.fecha;
-  return <p className="nota aviso-rect">{entra ? `Esta factura cuenta en el ${nombre(ahora)}${porOperacion ? ' por su fecha de operación' : ''}, que ya está presentado` : `Esta factura sale del ${nombre(antes)}, que ya está presentado`}: habrá que corregir ese 303 con una autoliquidación rectificativa (Impuestos te la prepara).</p>;
+  return <p className="nota aviso-rect">{entra ? `Esta factura cuenta en el ${nombre(ahora)}${porOperacion ? ' por su fecha de la operación' : ''}, que ya está presentado` : `Esta factura sale del ${nombre(antes)}, que ya está presentado`}: habrá que corregir ese 303 con una autoliquidación rectificativa (Impuestos te la prepara).</p>;
 }

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
-import { eur, fechaCorta } from '@/lib/formato';
+import { diaDe, eur, fechaConDia, fechaCorta, hoy as hoyMadrid, hora } from '@/lib/formato';
 import VistaDocumento from './VistaDocumento';
 import AccionesDocumento from './AccionesDocumento';
 import '@/app/chat.css';
@@ -20,16 +20,15 @@ import '@/app/chat.css';
 // factura o el gasto de una pregunta la abre sin salir del chat (components/VistaDocumento.js).
 // comprobar: URL (GET) que devuelve los hilos ({ hilos } o { comentarios }) para ver si hay algo nuevo sin recargar la
 // pantalla entera: recargarla cada 30 segundos costaba unas 100 consultas a la base de datos cada vez.
-const hora = (iso) => new Date(iso).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
 // Cuántos mensajes hay, el último y cuántos están en preguntas resueltas: si cambia algo, hay que recargar.
 const firma = (lista) => `${lista.length}|${lista.reduce((m, x) => (x.fecha > m ? x.fecha : m), '')}|${lista.filter((x) => x.resuelto).length}`;
 const ESPERA = 60000;
 function dia(iso, hoy) {
-  const d = iso.slice(0, 10);
+  const d = diaDe(iso);
   if (d === hoy) return 'Hoy';
   const ayer = new Date(Date.parse(`${hoy}T12:00:00Z`) - 864e5).toISOString().slice(0, 10);
   if (d === ayer) return 'Ayer';
-  const t = new Date(`${d}T12:00:00`).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+  const t = fechaConDia(d);
   return t[0].toUpperCase() + t.slice(1);
 }
 
@@ -44,7 +43,7 @@ export default function Chat({ mensajes, lado, leidoAntes = '', enviar, leer, co
   const [error, setError] = useState('');
   const lista = useRef(null);
   const caja = useRef(null);
-  const hoy = new Date().toISOString().slice(0, 10);
+  const hoy = hoyMadrid();
   // La raya de «Nuevos» se queda donde estaba al abrir, aunque al marcarlo leído la página se recargue.
   const [leidoAlAbrir] = useState(leidoAntes);
   // Solo se animan los mensajes que llegan con la conversación abierta (antes, todos se movían en cada recarga).

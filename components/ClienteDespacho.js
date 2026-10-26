@@ -9,12 +9,12 @@ import { confirmar } from './Confirmar';
 import { entrarEn } from './PanelDespacho';
 import { ESTADOS_TEXTO } from './despachoTextos';
 import { navegar } from '@/lib/transicion';
-import { eur, fechaCorta } from '@/lib/formato';
+import { eur, fechaCorta, fechaHora } from '@/lib/formato';
 import VistaDocumento from './VistaDocumento';
 import AccionesDocumento from './AccionesDocumento';
 
 const fechaDe = (iso) => fechaCorta(String(iso || '').slice(0, 10));
-const horaDe = (iso) => new Date(iso).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+const horaDe = fechaHora;
 const ENTRAR = [['/modelos', 'Impuestos', 'Modelos del trimestre y del año'], ['/facturas', 'Facturas', 'Emitidas, cobros y rectificativas'], ['/gastos', 'Gastos', 'Con sus justificantes'], ['/contabilidad', 'Contabilidad', 'Diario, balance y resultados'], ['/contabilidad?ver=libros', 'Libros registro', 'Los libros de IVA e IRPF']];
 
 // mensajes: { ultimo, noLeidos, preguntas } de la conversación con el cliente (components/Chat.js, en Mensajes).

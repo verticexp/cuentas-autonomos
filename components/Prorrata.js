@@ -40,7 +40,7 @@ export default function Prorrata({ anio, especial = false, guardado, provisional
         <input className="campo" inputMode="numeric" placeholder={String(provisional)} value={v} onChange={(e) => setV(e.target.value)} aria-label={`Prorrata provisional de ${anio} (%)`} />
         <button className="boton sec">Guardar</button>
       </div>}
-      {msg && <p className="error">{msg}</p>}
+      {msg && <p className="error" role="alert">{msg}</p>}
     </Caja>
   );
 }

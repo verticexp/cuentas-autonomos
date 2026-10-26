@@ -4,8 +4,10 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
 import { tarifaPlana } from '@/lib/cuotas';
+import useEnvio from './useEnvio';
 
 export default function Cuotas({ desde }) {
+  const [enviando, envolver] = useEnvio();
   const router = useRouter();
   const [d, setD] = useState({ importe: String(tarifaPlana(Number(desde.slice(0, 4)))).replace('.', ','), desde });
   const [msg, setMsg] = useState('');
@@ -19,15 +21,15 @@ export default function Cuotas({ desde }) {
     } catch (err) { setMsg(err.message); }
   };
   return (
-    <form className="formulario tarjeta" onSubmit={enviar}>
+    <form className="formulario tarjeta" onSubmit={envolver(enviar)}>
       <h3>Cuota de autónomos</h3>
       <p className="nota" style={{ margin: 0 }}>Añade la cuota de cada mes como gasto deducible (sin IVA). Si ya estaba (también la que viene del banco), se actualiza, no se duplica. Por defecto, la tarifa plana del año; cámbiala si pagas otra.</p>
       <div className="dos-col">
         <label>Cuota mensual<input className="campo" inputMode="decimal" value={d.importe} onChange={(e) => setD({ ...d, importe: e.target.value })} required /></label>
         <label>Desde el mes<input className="campo" type="month" value={d.desde} onChange={(e) => setD({ ...d, desde: e.target.value })} required /></label>
       </div>
-      {msg && <p className={msg.startsWith('✓') ? 'nota' : 'error'}>{msg}</p>}
-      <button className="boton">Añadir cuotas hasta este mes</button>
+      {msg && <p className={msg.startsWith('✓') ? 'nota' : 'error'} role={msg.startsWith('✓') ? 'status' : 'alert'}>{msg}</p>}
+      <button className="boton" disabled={enviando}>Añadir cuotas hasta este mes</button>
     </form>
   );
 }

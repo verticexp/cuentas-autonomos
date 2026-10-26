@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { diasPrueba, planDe } from '@/lib/prueba';
+import { eurPrecio } from '@/lib/formato';
 
 // «Te quedan N días de prueba · Elegir plan» en Resumen (lib/prueba.js), la última semana. Sin plan o ya pagado no sale;
 // los días que quedan se ven siempre en Ajustes › Tu plan.
@@ -9,7 +10,7 @@ export default function AvisoPrueba({ plan, enlace = true, app = false }) {
   if (dias === null || dias > 7) return null;
   if (app) return dias === 0 ? <p className="aviso-prueba pronto"><span>Tu periodo de prueba ha terminado. Puedes consultar y exportar todos tus datos.</span></p> : null;
   const precio = planDe(plan.tipo, plan.nombre)?.p;
-  const cuota = precio ? ` El plan ${plan.nombre} cuesta ${precio.toLocaleString('es-ES')} € al mes, sin IVA y sin permanencia.` : '';
+  const cuota = precio ? ` El plan ${plan.nombre} cuesta ${eurPrecio(precio)} al mes, sin IVA y sin permanencia.` : '';
   // Antes de que ocurra: sin tarjeta no se cobra nada, y qué pasa si no se elige plan.
   const texto = dias === 0 ? 'Tu prueba ha terminado. No se ha cobrado nada. Tus datos siguen aquí para verlos y exportarlos; para crear y editar, elige un plan.'
     : dias === 1 ? `Hoy es tu último día de prueba. Mañana tu cuenta pasa a solo lectura: verás y exportarás todo, pero no podrás crear ni editar hasta elegir plan.${cuota}`

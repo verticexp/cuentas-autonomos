@@ -18,7 +18,7 @@ export default async function Invitacion({ params, searchParams }) {
       <form method="post" action="/api/invitacion">
         <h1>Hola, {u.nombre}</h1>
         <p className="nota">Elige una contraseña para entrar con {u.email}.</p>
-        {error && <p className="error">{mensajeSeguro(error)}</p>}
+        {error && <p className="error" role="alert">{mensajeSeguro(error)}</p>}
         <input type="hidden" name="codigo" value={codigo} />
         {v && <input type="hidden" name="v" value={String(v)} />}
         <label htmlFor="password">Contraseña</label>

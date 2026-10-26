@@ -1,4 +1,5 @@
 import { requerirAdmin } from '@/lib/auth';
+import { eur, fechaCorta } from '@/lib/formato';
 import { redis } from '@/lib/redis';
 import { actividadReciente, ultimaActividad } from '@/lib/actividad';
 import { ESTADOS, ORIGENES, resumenAdmin } from '@/lib/admin';
@@ -15,10 +16,10 @@ import { RECOMENDACION_DIAS } from '@/lib/recomendaciones';
 import '@/app/admin/admin.css';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Administración' };
+export const metadata = { title: 'Panel de Fisquo' };
 
-const euros = (c) => (c / 100).toLocaleString('es-ES', { maximumFractionDigits: 0 }) + ' €';
-const fecha = (d) => new Date(`${d}T12:00:00Z`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+const euros = (c) => eur(c / 100);
+const fecha = fechaCorta;
 
 // Barras sencillas (sin librería): cada barra lleva su valor en el título y en texto para lectores de pantalla.
 function Barras({ datos, etiqueta, valor, titulo }) {
@@ -60,7 +61,7 @@ export default async function Admin() {
 
     <nav className="adm-accesos" aria-label="Accesos directos">
       <a href="/admin/correos"><strong>Correos</strong><span>Verlos y enviarte una prueba</span></a>
-      <a href="#adm-ajustes"><strong>Configuración</strong><span>Remitente, dominio y cobros</span></a>
+      <a href="#adm-ajustes"><strong>Ajustes</strong><span>Remitente, dominio y cobros</span></a>
       <a href="#adm-empresas"><strong>Empresas</strong><span>Planes, pruebas y Fundador</span></a>
       <a href="/usuarios"><strong>Usuarios</strong><span>Dar de alta una empresa</span></a>
     </nav>
@@ -143,7 +144,7 @@ export default async function Admin() {
       <AdminDespachos />
     </section>
 
-    <section id="adm-ajustes" className="adm-dos" aria-label="Configuración">
+    <section id="adm-ajustes" className="adm-dos" aria-label="Ajustes">
       <div className="adm-caja">
         <h2>Correos automáticos</h2>
         <ul className="adm-lista">

@@ -1,6 +1,8 @@
 // Ajustes › Seguridad › Últimos accesos (lib/accesos.js): las últimas entradas a la cuenta de esta persona, para ver si
 // alguien ha entrado sin ella.
-const cuando = (f) => new Date(f).toLocaleString('es-ES', { timeZone: 'Europe/Madrid', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+import { fechaHora } from '@/lib/formato';
+
+const cuando = fechaHora;
 
 export default function AccesosRecientes({ lista = [] }) {
   return (
