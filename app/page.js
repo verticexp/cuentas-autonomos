@@ -306,7 +306,7 @@ export default async function Resumen({ searchParams }) {
 
           <section className="grupo">
             <h2 className="grupo-t">Por actividad</h2>
-            <div className="grupo-c">
+            <div className="grupo-c envolver">
               {r.porActividad.map((a) => (
                 <div key={a.actividad} className="celda">
                   <Ico n="actividad" />
@@ -325,7 +325,8 @@ export default async function Resumen({ searchParams }) {
                 // El trimestre en curso (y los que faltan) aún no se pueden presentar: «En curso», sin selector.
                 const abierto = anio === anioActual && q.t >= tHoy;
                 return (
-                <div key={q.t} className={`trim trimestre${anio === anioActual && q.t > tHoy ? ' futuro' : ''}`}>
+                // El trimestre en curso ya sale arriba en la tarjeta de Impuestos: en el móvil no se repite aquí (app/movil.css).
+                <div key={q.t} className={`trim trimestre${anio === anioActual && q.t > tHoy ? ' futuro' : ''}${verHacienda && anio === anioActual && q.t === tHoy ? ' en-tarjeta' : ''}`}>
                   <div className="trim-cab"><h3>{q.t}T {anio}</h3>{abierto && <span className="estado-txt e-curso">{q.t === tHoy ? 'En curso · apuntado hasta hoy' : 'Aún no ha empezado'}</span>}</div>
                   <div className="trim-cifras">
                     {c303 && <p><span>{foral ? nombreIndirecto(q) : igic ? modeloIndirecto : q.t === r.trimestres[0]?.t ? <Termino id="m303">Modelo 303</Termino> : 'Modelo 303'}</span><strong>{q.ivaDevolucion > 0 ? `${eur(q.ivaDevolucion)} a devolver` : q.m303 < 0 ? `${eur(-q.m303)} a compensar` : eur(q.ivaIngresar)}</strong></p>}
@@ -463,7 +464,7 @@ export default async function Resumen({ searchParams }) {
 
           <section className="grupo">
             <h2 className="grupo-t">{sinDatos ? 'Tus próximos plazos' : 'Tus modelos'}</h2>
-            <div className="grupo-c">
+            <div className="grupo-c envolver">
               {/* Sin datos, solo los trimestrales de cada día (D8-19): el 347, el 390 o la renta son ruido el primer día. */}
               {modelosDe(fiscal).filter((m) => !sinDatos || ['303', '420', '130', '131'].includes(m.id)).map((m) => ({ ...m, prox: proximoPlazoDe(fiscal, m.id, h, { cuotaIS: u.cuotaIS }) })).map((m) => ({ ...m, cuando: m.prox ? `${m.prox === h ? 'Hoy es el último día' : `Próximo: ${fechaTexto(m.prox)}${m.prox.slice(0, 4) !== h.slice(0, 4) ? ` de ${m.prox.slice(0, 4)}` : ''}`}` : m.cuando })).map((m) => (
                 m.calcula

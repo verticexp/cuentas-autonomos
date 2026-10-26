@@ -14,6 +14,8 @@ body { --marca: var(--acento, #0F1F1B); --sobre: #fff; font-size: 17px; letter-s
 .pagina { padding-left: 16px; padding-right: 16px; animation: none; }
 .titulo { font-size: 34px; font-weight: 700; letter-spacing: 0.01em; line-height: 1.2; margin: 6px 0 14px; }
 .cabecera { margin-bottom: 10px; }
+/* El botón de la cabecera no se parte en dos líneas («Nuevo / pedido»): el que se ajusta es el título */
+.cabecera > .boton { flex: none; white-space: nowrap; }
 .nota, .rotulo { font-size: 15px; }
 
 /* Botones: el relleno del color de marca solo para la acción principal */
@@ -335,6 +337,8 @@ a.fila:active { transform: scale(0.985); }
 /* En el ordenador, las actividades bajan de línea en vez de quedar cortadas por los lados */
 @media (min-width: 1024px) { .tipo.varias { display: grid; grid-auto-flow: row; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 2px; overflow: visible; } }
 .txt small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Donde la línea pequeña lleva cifras o fechas que hay que leer enteras, se parte en vez de cortarse con «…» */
+.envolver .txt small { white-space: normal; }
 
 /* Botones bajo la factura o el presupuesto: el principal a lo ancho y el resto en dos columnas iguales */
 .acciones-factura { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: stretch; }

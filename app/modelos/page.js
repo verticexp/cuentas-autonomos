@@ -39,6 +39,8 @@ import '@/app/mk.css';
 import { datosImpuestos } from '@/lib/datosImpuestos';
 import { puede } from '@/lib/permisos';
 
+// Los tres pagos del 202 por su nombre, no «3P»
+const PAGO_202 = { 1: '1.er pago', 2: '2.º pago', 3: '3.er pago' };
 export const dynamic = 'force-dynamic';
 const T = [1, 2, 3, 4];
 // Sede de la Agencia Tributaria Canaria (420 y 425).
@@ -629,8 +631,8 @@ export default async function Modelos({ searchParams }) {
         // El próximo pago por hacer; sin la cuota del año del que sale, se avisa de que falta.
         const x = pagos.find((y) => y.fecha >= h && (y.cuota === null || (y.pago > 0 && !u.pagos202?.[anio]?.[y.p])));
         const fila = !x ? { detalle: 'Sin pagos pendientes este año' }
-          : x.cuota === null ? { estado: 'listo', detalle: `${x.p}P · falta la cuota del Impuesto sobre Sociedades de ${x.de}` }
-          : { detalle: `${x.p}P · hasta el ${conAnio(x.fecha, 0)}` };
+          : x.cuota === null ? { estado: 'listo', detalle: `${PAGO_202[x.p]} · falta la cuota del Impuesto sobre Sociedades de ${x.de}` }
+          : { detalle: `${PAGO_202[x.p]} · hasta el ${conAnio(x.fecha, 0)}` };
         // Art. 40.3: 5/7 del tipo redondeado por defecto (con 10 M o más, 19/20 por exceso) sobre la base de los 3, 9 y 11 meses.
         const fin = { 1: '31 de marzo', 2: '30 de septiembre', 3: '30 de noviembre' };
         return (
@@ -644,7 +646,7 @@ export default async function Modelos({ searchParams }) {
           </div>}
           <div className="tarjetas">
             {pagos.map((x) => (
-              <div key={x.p} className="tarjeta"><div className="trim-cab"><h3>{x.p}P {anio} · {x.mes}</h3>{x.pago > 0 && <Presentado202 soloLectura={soloLectura} anio={anio} p={x.p} importe={x.pago} pagado={u.pagos202?.[anio]?.[x.p]} />}</div>
+              <div key={x.p} className="tarjeta"><div className="trim-cab"><h3>{PAGO_202[x.p]} {anio} · {x.mes}</h3>{x.pago > 0 && <Presentado202 soloLectura={soloLectura} anio={anio} p={x.p} importe={x.pago} pagado={u.pagos202?.[anio]?.[x.p]} />}</div>
                 {x.modalidad === '40.3' ? <Casillas filas={[
                   ['13 · Base imponible previa', x.basePrevia], x.compensacion > 0 && ['14 · Bases negativas de años anteriores', menos(x.compensacion)], [`16 · Base hasta el ${fin[x.p]}`, x.base],
                   ...x.tramos.map((t) => [`${t.pct} % de ${eur(t.base)}`, t.cuota]),

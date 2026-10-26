@@ -105,7 +105,8 @@ function Pendiente({ m, permisos, accion, contar, guardarRegla }) {
       <div className="bco-mov-fila">
         <span className="bco-fecha">{fechaCorta(m.fecha).slice(0, 5)}</span>
         <span className="bco-txt"><strong>{m.contraparte ? fraseBanco(m.contraparte, { nombre: true }) : fraseBanco(m.concepto)}</strong>{m.contraparte && <small>{fraseBanco(m.concepto)}</small>}
-          {puedeAqui && !r && !creando && <button type="button" className="bco-regla-boton" onClick={() => setCreando(true)}>Crear regla con esto</button>}</span>
+          {/* Con una pareja segura basta con confirmar: la regla se ofrece en lo dudoso y en lo que no tiene pareja */}
+          {puedeAqui && !r && !creando && !s?.segura && <button type="button" className="bco-regla-boton" onClick={() => setCreando(true)}>Crear regla con esto</button>}</span>
         <Importe v={m.importe} />
       </div>
       {s && (

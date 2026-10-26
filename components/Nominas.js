@@ -41,10 +41,9 @@ export function FormEmpleado({ empleado, hoy }) {
     <form className="formulario tarjeta" onSubmit={enviar}>
       {nuevo && <h3>Nuevo empleado</h3>}
       <label>Nombre y apellidos<input className="campo" placeholder="Nombre y apellidos" value={e.nombre} onChange={(x) => poner('nombre', x.target.value)} required /></label>
-      <div className="dos-col">
-        <label>DNI / NIE<input spellCheck={false} autoCorrect="off" autoCapitalize="characters" className="campo" placeholder="DNI / NIE" value={e.nif} onChange={(x) => poner('nif', x.target.value)} /></label>
-        <label>Puesto<input className="campo" placeholder="Puesto" value={e.puesto} onChange={(x) => poner('puesto', x.target.value)} /></label>
-      </div>
+      {/* El puesto suele ser largo («Coordinadora de eventos»): en media columna no se leía entero */}
+      <label>Puesto<input className="campo" placeholder="Puesto" value={e.puesto} onChange={(x) => poner('puesto', x.target.value)} /></label>
+      <label>DNI / NIE<input spellCheck={false} autoCorrect="off" autoCapitalize="characters" className="campo" placeholder="DNI / NIE" value={e.nif} onChange={(x) => poner('nif', x.target.value)} /></label>
       <div className="dos-col">
         <label>Alta<input className="campo" type="date" value={e.alta} onChange={(x) => poner('alta', x.target.value)} required /></label>
         <label>Baja (si ya no está)<input className="campo" type="date" value={e.baja} onChange={(x) => poner('baja', x.target.value)} /></label>

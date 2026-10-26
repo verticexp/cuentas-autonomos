@@ -32,7 +32,7 @@ export default function EfectoCobro({ id, forma, formas, requiere, recibido, fec
         <button type="button" disabled={ocupado} className={`estado ${recibido ? 'ok' : 'pend'}`} onClick={() => enviar({ recibido: !recibido })}>
           {recibido ? `Recibido${fecha ? ` el ${fecha}` : ''}` : 'Pendiente de recibir'}
         </button>
-      ) : forma ? <span className="car-recibido">Recibido · no hace falta recibirlo</span> : null}
+      ) : null /* transferencia, tarjeta o domiciliación: no hay papel que recibir, así que nada que marcar */}
       {error && <p className="error" role="alert">{error}</p>}
     </div>
   );
