@@ -33,14 +33,16 @@ export default function Gestoria({ gestoria, trimestres, invitar, emailListo, ap
 
   return (
     <>
-      <form className="formulario tarjeta" onSubmit={envolver(guardar)}>
-        <h3>Datos de tu gestoría</h3>
-        <label>Nombre (opcional)<input className="campo" value={d.nombre} maxLength={120} onChange={(e) => setD({ ...d, nombre: e.target.value })} placeholder="Gestoría López" /></label>
-        <label>Email<input autoComplete="email" className="campo" type="email" value={d.email} maxLength={254} onChange={(e) => setD({ ...d, email: e.target.value })} placeholder="tu@gestoria.es" /></label>
-        <label className="check ges-auto"><input type="checkbox" checked={d.auto} onChange={(e) => setD({ ...d, auto: e.target.checked })} disabled={!emailListo} aria-describedby={!emailListo ? "ges-email-ayuda" : undefined} />
-          <span>Mandarle el paquete solo al acabar cada trimestre<small>El día 5 de enero, abril, julio y octubre: facturas, gastos con sus justificantes, nóminas e impuestos del trimestre.</small></span></label>
-        {!emailListo && <p id="ges-email-ayuda" className="nota">El envío automático necesita que esté configurado el correo de Fisquo.</p>}
-        {msg && <p role="status" className={msg === 'Guardado' ? 'nota guardado' : msg === 'Guardando…' ? 'nota' : 'error'}>{msg === 'Guardado' ? '✓ Guardado' : msg}</p>}
+      <form className="formulario aj-form" onSubmit={envolver(guardar)}>
+        <h3 aria-level={2}>Datos de tu gestoría</h3>
+        <div className="aj-grupo">
+          <label>Nombre (opcional)<input className="campo" value={d.nombre} maxLength={120} onChange={(e) => setD({ ...d, nombre: e.target.value })} placeholder="Gestoría López" /></label>
+          <label>Email<input autoComplete="email" className="campo" type="email" value={d.email} maxLength={254} onChange={(e) => setD({ ...d, email: e.target.value })} placeholder="tu@gestoria.es" /></label>
+          <label className="check ges-auto"><input type="checkbox" checked={d.auto} onChange={(e) => setD({ ...d, auto: e.target.checked })} disabled={!emailListo} aria-describedby={!emailListo ? "ges-email-ayuda" : undefined} />
+            <span>Mandarle el paquete solo al acabar cada trimestre<small>El día 5 de enero, abril, julio y octubre: facturas, gastos con sus justificantes, nóminas e impuestos del trimestre.</small></span></label>
+          {!emailListo && <p id="ges-email-ayuda" className="nota">El envío automático necesita que esté configurado el correo de Fisquo.</p>}
+        </div>
+        {msg && <p role="status" className={msg === 'Guardado' ? 'nota aj-pie guardado' : msg === 'Guardando…' ? 'nota aj-pie' : 'error aj-pie'}>{msg === 'Guardado' ? '✓ Guardado' : msg}</p>}
         <button className="boton" disabled={enviando}>Guardar</button>
       </form>
 
