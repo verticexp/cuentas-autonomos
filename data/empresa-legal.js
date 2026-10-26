@@ -1,5 +1,5 @@
-// Identidad legal de quien está detrás de Fisquo (LSSI, art. 10, y declaración responsable de Verifactu). Está VACÍA a
-// propósito: no se publica ningún dato que no sea real. Con titular, NIF y domicilio rellenos:
+// Identidad legal de quien está detrás de Fisquo (LSSI, art. 10, privacidad, condiciones y declaración responsable de
+// Verifactu). Solo datos reales: lo que no se tenga se deja vacío. Con titular, NIF y domicilio rellenos:
 //  · el pie de la web enseña «titular · NIF · domicilio» y un enlace a /aviso-legal,
 //  · /aviso-legal deja de dar 404 y publica los datos,
 //  · /declaracion-responsable publica la declaración completa si además se rellenan la fecha y el lugar de firma.
@@ -16,9 +16,9 @@
 //  · declaracion: fecha y lugar de firma de la declaración responsable de Verifactu (p. ej. fecha: '2 de febrero de
 //    2027', lugar: 'Valencia'). Solo se rellenan cuando la persona que representa a la entidad firma de verdad.
 export const EMPRESA_LEGAL = {
-  titular: '',
-  nif: '',
-  domicilio: '',
+  titular: 'Xiverno Tecnologías y Eventos, S.L.',
+  nif: 'B05814041',
+  domicilio: 'Calle Aragó, 6, 1.º 1.ª, 08150 Parets del Vallès (Barcelona)',
   email: '',
   registro: null,
   declaracion: { fecha: '', lugar: '' },
