@@ -43,8 +43,8 @@ export async function POST(req) {
   if (!d) return error('No hay ningún despacho con ese código', 404);
   const r = await unirCliente(u.empresa, d, 'cliente');
   if (r.error) return error(r.error, r.status || 400);
-  await auditar(u, 'Acceso dado a la gestoría', d.nombre);
-  return Response.json({ ok: true, despacho: { id: d.id, nombre: d.nombre } });
+  if (!r.ya) await auditar(u, 'Acceso pedido a la gestoría', `${d.nombre} · hasta que lo acepte no ve nada`);
+  return Response.json({ ok: true, despacho: { id: d.id, nombre: d.nombre }, pendiente: Boolean(r.empresa.despachoCliente?.pendiente) });
 }
 
 // Quitarle el acceso al despacho. Si pagaba tu plan, tienes un mes para elegir el tuyo.
@@ -63,7 +63,7 @@ export async function DELETE() {
 export async function PATCH(req) {
   const { u, res } = await cliente({ permiso: 'resumen' });
   if (res) return res;
-  if (!u.despachoCliente) return error('No tienes ninguna gestoría con acceso', 404);
+  if (!u.despachoCliente || u.despachoCliente.pendiente) return error('No tienes ninguna gestoría con acceso', 404);
   const b = await cuerpo(req);
   // { leer: true }: el cliente ha abierto la conversación.
   if (b.leer === true) { await marcarLeido(u.empresa, 'cliente'); return Response.json({ ok: true }); }
@@ -75,7 +75,7 @@ export async function PATCH(req) {
 export async function PUT(req) {
   const { u, res } = await cliente({ permiso: 'resumen' });
   if (res) return res;
-  if (!u.despachoCliente) return error('No tienes ninguna gestoría con acceso', 404);
+  if (!u.despachoCliente || u.despachoCliente.pendiente) return error('No tienes ninguna gestoría con acceso', 404);
   if (await pasado('mensajes', `${u.empresa}:${u.id}`, 120, 3600)) return respuesta429(600, 'Has enviado muchos mensajes seguidos. Espera un poco.');
   const b = await cuerpo(req);
   const r = await escribir(u.empresa, u, 'cliente', { texto: b.texto, hilo: b.hilo ? String(b.hilo) : undefined, despacho: u.despachoCliente.id });

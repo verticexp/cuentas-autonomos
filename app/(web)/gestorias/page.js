@@ -12,7 +12,7 @@ export const metadata = { title: 'Programa para gestorías · Fisquo', descripti
 const PASOS = [
   ['Te apuntas', 'Nos dejas tus datos y te escribimos para conocer tu gestoría.'],
   ['Recibes tu código', 'Te damos tu panel Mi despacho, gratis, y un código propio para tus clientes.'],
-  ['Se lo pasas a tus clientes', 'Con tu código tienen 3 meses gratis y te dan acceso a sus cuentas: llegan a tu panel con ingresos y gastos ordenados.'],
+  ['Se lo pasas a tus clientes', 'Con tu código tienen 3 meses gratis y te piden acceso a sus cuentas: los aceptas y llegan a tu panel con ingresos y gastos ordenados.'],
 ];
 
 const VENTAJAS = [

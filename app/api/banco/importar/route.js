@@ -6,6 +6,7 @@ import { leerHoja } from '@/lib/hoja';
 import { aCuenta, cuentaDeExtracto, esNorma43, leerNorma43, leerTablaBanco, periodoExtracto } from '@/lib/banco';
 import { actualizarSaldo, autoconciliar, guardarMovimientos } from '@/lib/bancoServidor';
 import { hoy } from '@/lib/formato';
+import { auditar } from '@/lib/auditoria';
 import { MUCHOS, pasado, concurrencia, respuesta429 } from '@/lib/limite';
 import { consumirEscaneos, cupoEscaneos, paginasIA, registrarConsumoIA, respuestaCupo } from '@/lib/cuotasIA';
 import { iaLista, leerExtracto, validarEntradaIA } from '@/lib/ticket';
@@ -96,5 +97,6 @@ export async function POST(req) {
   const saldo = conSaldo ? await actualizarSaldo(u) : null;
   let auto = 0;
   if (g.nuevos) { try { auto = (await autoconciliar(u)).hechos; } catch { /* El extracto ya se ha guardado. */ } }
+  if (g.nuevos) await auditar(u, 'Extracto del banco importado', `${g.nuevos} ${g.nuevos === 1 ? 'movimiento nuevo' : 'movimientos nuevos'}`);
   return Response.json({ ok: true, ...g, errores: r.errores || 0, saldo, auto, ...(cuenta ? { cuenta: { id: cuenta.id, nombre: previas[cuenta.id]?.nombre || cuenta.nombre } } : {}), ...(cupo ? { cupo } : {}) });
 }

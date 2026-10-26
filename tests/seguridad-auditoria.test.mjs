@@ -363,3 +363,38 @@ test('Canarias: configuración real valida actividades IGIC y el 420 usa pres303
   assert.ok(presentada.pagadosHacienda['2026-1-420']);
   assert.equal(presentada.pagadosHacienda['2026-1-303'], undefined);
 });
+
+test('despachos: dos gestorías con clientes distintos no se ven entre sí, ni las solicitudes sin aceptar', async () => {
+  const D = await import('../lib/despachos.js');
+  const emp = (id, datos = {}) => R.redis.hset('empresas', { [id]: { id, nombre: id, ...datos } });
+  for (const id of ['propiaA', 'propiaB', 'cA', 'cB', 'cP']) await emp(id);
+  const dA = (await D.crearDespacho({ nombre: 'Asesoría A', codigo: 'ASESA', titular: 'ta', empresa: 'propiaA' })).despacho;
+  const dB = (await D.crearDespacho({ nombre: 'Asesoría B', codigo: 'ASESB', titular: 'tb', empresa: 'propiaB' })).despacho;
+  dA.miembros.ga = { rol: 'gestor' };
+  await R.redis.hset('despachos', { [dA.id]: dA });
+  for (const [c, d] of [['cA', dA], ['cB', dB]]) { await D.unirCliente(c, d); await D.aceptarCliente(c, d.id); }
+  await D.unirCliente('cP', dA); // solicitud sin aceptar
+  const ta = { id: 'ta', empresa: 'propiaA', despacho: dA.id };
+  const ga = { id: 'ga', empresa: 'propiaA', despacho: dA.id };
+  const tb = { id: 'tb', empresa: 'propiaB', despacho: dB.id };
+  const entra = async (u, pedida) => { const r = await A.conEmpresa(u, pedida); return [r.empresa, r.viaDespacho?.id || null]; };
+
+  assert.deepEqual(await entra(ga, 'cA'), ['cA', dA.id]);
+  assert.deepEqual(await entra(tb, 'cB'), ['cB', dB.id]);
+  // Pedir el cliente de la otra gestoría (cookie «e» puesta a mano) deja en la empresa propia, sin perfil Gestoría.
+  assert.deepEqual(await entra(ga, 'cB'), ['propiaA', null]);
+  assert.deepEqual(await entra(ta, 'cB'), ['propiaA', null]);
+  assert.deepEqual(await entra(tb, 'cA'), ['propiaB', null]);
+  // La solicitud sin aceptar no la ve nadie, tampoco el titular.
+  assert.deepEqual(await entra(ta, 'cP'), ['propiaA', null]);
+  assert.deepEqual(await entra(ga, 'cP'), ['propiaA', null]);
+  assert.deepEqual((await D.clientesVisibles(dA, 'ta')).map((x) => x.id), ['cA']);
+  assert.deepEqual((await D.clientesVisibles(dB, 'tb')).map((x) => x.id), ['cB']);
+  // Aceptada, ya entra; y si el cliente se va a la otra gestoría, la primera deja de verlo al momento.
+  await D.aceptarCliente('cP', dA.id);
+  assert.deepEqual(await entra(ga, 'cP'), ['cP', dA.id]);
+  await D.separarCliente('cP', dA.id);
+  await D.unirCliente('cP', dB); await D.aceptarCliente('cP', dB.id);
+  assert.deepEqual(await entra(ga, 'cP'), ['propiaA', null]);
+  assert.deepEqual(await entra(tb, 'cP'), ['cP', dB.id]);
+});

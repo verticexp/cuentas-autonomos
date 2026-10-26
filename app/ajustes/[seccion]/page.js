@@ -77,6 +77,8 @@ async function datosSeries(u, anio) {
 // Tu gestoría en Fisquo (lib/despachos.js): su vínculo, lo que ha hecho y la conversación (la marca leída el chat al verse).
 async function datosTuDespacho(u) {
   if (!u.despachoCliente || u.viaDespacho) return { despacho: null };
+  // Aún sin aceptar: no hay registro, mensajes ni peticiones (el despacho no ve nada).
+  if (u.despachoCliente.pendiente) return { despacho: u.despachoCliente };
   const [accesos, hilos, leido, peticiones] = await Promise.all([leerAccesos(u.empresa, 60), comentariosDe(u.empresa, { despacho: u.despachoCliente.id }), leidoDe(u.empresa), peticionesDe(u.empresa, { despacho: u.despachoCliente.id, ctx: u })]);
   return { despacho: u.despachoCliente, accesos, ultimo: mensajesDe(hilos).at(-1) || null, noLeidos: noLeidos(hilos, leido, 'cliente'), peticiones: pendientes(peticiones) };
 }

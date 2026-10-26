@@ -63,10 +63,19 @@ async function despacho(datos = {}) {
   assert.ok(r.despacho, JSON.stringify(r));
   return r.despacho;
 }
+// Unir y aceptar (el titular acepta la solicitud): un cliente ya activo.
+async function unir(id, d, por) {
+  const r = await D.unirCliente(id, d, por);
+  if (r.empresa && !r.ya) {
+    const x = await D.aceptarCliente(id, typeof d === 'object' ? d.id : d);
+    return x.empresa ? { empresa: x.empresa } : x;
+  }
+  return r;
+}
 async function cliente(datos = {}) {
   const d = await despacho();
   await empresa('e1', datos);
-  const r = await D.unirCliente('e1', d);
+  const r = await unir('e1', d);
   assert.ok(r.empresa, JSON.stringify(r));
   return d;
 }
@@ -97,18 +106,43 @@ test('despachos: crea, normaliza y busca el código; un duplicado conserva el or
   assert.equal(await D.despachoPorCodigo('no válido'), null);
 });
 
-test('despachos: unirCliente guarda vínculo y conjunto; repetir es idempotente', async () => {
+test('despachos: unirCliente deja una solicitud que nadie del despacho ve hasta que el titular la acepta', async () => {
   const d = await despacho();
   await empresa();
-  const { empresa: e } = await D.unirCliente('e1', d.id, 'codigo');
-  assert.equal(e.despachoCliente.id, d.id);
-  assert.equal(e.despachoCliente.nombre, d.nombre);
-  assert.equal(e.despachoCliente.por, 'codigo');
-  assert.ok(Number.isFinite(Date.parse(e.despachoCliente.desde)));
+  const { empresa: p } = await D.unirCliente('e1', d.id, 'codigo');
+  assert.equal(p.despachoCliente.id, d.id);
+  assert.equal(p.despachoCliente.nombre, d.nombre);
+  assert.equal(p.despachoCliente.por, 'codigo');
+  assert.equal(p.despachoCliente.pendiente, true);
+  assert.ok(Number.isFinite(Date.parse(p.despachoCliente.desde)));
+  // Pendiente: fuera de los clientes, sin acceso para nadie, y en las solicitudes del titular.
+  assert.equal(await redis.scard('despacho-clientes:' + d.id), 0);
+  assert.equal(D.puedeVerCliente(d, 'titular', p), false);
+  assert.equal(await D.accesoDespacho({ id: 'titular', despacho: d.id }, p), null);
+  assert.deepEqual(await D.clientesVisibles(d, 'titular'), []);
+  assert.deepEqual((await D.solicitudesDe(d)).map((s) => [s.id, s.por]), [['e1', 'codigo']]);
+  assert.deepEqual(await D.unirCliente('e1', d), { empresa: p, ya: true });
+  // Aceptada: cliente normal.
+  error(await D.aceptarCliente('e1', 'ajeno'), /solicitud ya no existe/, 404);
+  const { empresa: e } = await D.aceptarCliente('e1', d.id);
+  assert.equal(e.despachoCliente.pendiente, undefined);
   assert.deepEqual(await redis.hget('empresas', 'e1'), e);
   assert.deepEqual(await redis.smembers('despacho-clientes:' + d.id), ['e1']);
-  assert.deepEqual(await D.unirCliente('e1', d), { empresa: e, ya: true });
+  assert.deepEqual(await D.solicitudesDe(d), []);
+  assert.equal(D.puedeVerCliente(d, 'titular', e), true);
+  assert.deepEqual(await D.aceptarCliente('e1', d.id), { empresa: e, ya: true });
   assert.equal(await redis.scard('despacho-clientes:' + d.id), 1);
+});
+
+test('despachos: rechazar una solicitud la quita sin dejar rastro en el despacho; tope de solicitudes', async () => {
+  const d = await despacho();
+  await empresa();
+  await D.unirCliente('e1', d);
+  await D.separarCliente('e1', d.id);
+  assert.equal((await redis.hget('empresas', 'e1')).despachoCliente, undefined);
+  assert.deepEqual(await D.solicitudesDe(d), []);
+  for (let i = 0; i < D.MAX_PENDIENTES; i++) await redis.sadd('despacho-pendientes:' + d.id, 'x' + i);
+  error(await D.unirCliente('e1', d), /muchas solicitudes/, 409);
 });
 
 test('despachos: rechaza otro despacho, empresa propia, baja o inexistente sin añadir vínculos', async () => {
@@ -187,7 +221,7 @@ test('despachos: clientesVisibles filtra cartera, bajas, referencias ajenas e in
   d.miembros.gestor = { rol: 'gestor' };
   for (const [id, gestor] of [['e1', 'gestor'], ['e2', 'otro'], ['e3', undefined]]) {
     await empresa(id);
-    await D.unirCliente(id, d);
+    await unir(id, d);
     await D.cambiarVinculo(id, d.id, (v) => ({ vinculo: { ...v, gestor } }));
   }
   await empresa('baja', { baja: true, despachoCliente: { id: d.id } });
@@ -443,7 +477,7 @@ test('licencias: incluir rechaza tarjeta activa o fundador y conserva empresa y 
     ['fundador', { fundador: true }, /ya tiene Fisquo gratis/],
   ]) {
     await empresa(id, { plan });
-    await D.unirCliente(id, d);
+    await unir(id, d);
     const antes = await redis.hget('empresas', id);
     error(await L.incluirLicencia(id, d, HOY), patron, 409);
     assert.deepEqual(await redis.hget('empresas', id), antes);

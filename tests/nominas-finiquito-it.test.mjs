@@ -177,7 +177,7 @@ function entorno({ cerrado = false, denegado = false, existentes = [junio] } = {
     '@/lib/enlacesBanco': {}, '@/lib/api': { usuarioApi: async (op) => { permisos.push(op.permiso); return denegado ? { res: new Response('', { status: 403 }) } : { u: { empresa: 'uno' } }; }, cuerpo: async (r) => r.json(), error: (s, status = 400) => Response.json({ error: s }, { status }) },
     '@/lib/calculos': calculos, '@/lib/empresa': { actividadesDe: () => [], actividadValida: () => '' }, '@/lib/nominas': nominas,
     '@/lib/finiquito': { calcularFiniquito }, '@/lib/jornada': { extrasNomina: () => null, resumenMes: () => ({}) },
-    '@/lib/trabajos': { secundarios: async () => {} }, '@/lib/formato': { hoy: () => '2026-08-31' }, '@/lib/usoPlan': { usarFuncion: async () => null }, '@/lib/cerrojo': { conCerrojo: async (_, fn) => fn(), Ocupado },
+    '@/lib/trabajos': { secundarios: async () => {} }, '@/lib/auditoria': { auditar: async () => {} }, '@/lib/formato': { hoy: () => '2026-08-31' }, '@/lib/usoPlan': { usarFuncion: async () => null }, '@/lib/cerrojo': { conCerrojo: async (_, fn) => fn(), Ocupado },
   };
   const ruta = cargarRuta('../app/api/nominas/route.js', dependencias);
   const req = (body) => new Request('http://localhost/api/nominas', { method: 'POST', body: JSON.stringify(body) });
