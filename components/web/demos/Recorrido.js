@@ -125,7 +125,7 @@ const PERFILES = {
         { id: 'd', fecha: '02/10', t: 'Compra tarjeta Amazon', s: 'Sin factura todavía', v: -86.9, clase: 'Un gasto: falta su factura', ayuda: 'Apúntalo con su factura: Fisquo lee la base y el IVA y lo deja emparejado.', accion: 'Añadir con su factura', hecho: 'Se añade con su factura' },
       ],
     },
-    gestoria: { facturas: 42, gastos: 73, nominas: 3, modelos: 'Modelos 303 y 111', modelosS: 'Casillas calculadas del trimestre', acceso: 'Entra con su propio usuario y ve facturas, gastos, nóminas e impuestos (también el 202) y la contabilidad. Una gestoría no cuenta como usuario de tu plan.' },
+    gestoria: { facturas: 42, gastos: 73, nominas: 3, modelos: 'Modelos 303, 111 y 202', modelosS: 'Casillas calculadas del trimestre', acceso: 'Entra con su propio usuario y ve facturas, gastos, nóminas, impuestos y la contabilidad. Una gestoría no cuenta como usuario de tu plan.' },
   },
 };
 
