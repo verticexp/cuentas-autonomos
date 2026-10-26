@@ -8,15 +8,29 @@ export function Reintentar() {
   return <button type="button" className="boton" onClick={() => location.reload()}>Reintentar</button>;
 }
 
+// navigator.onLine no basta: el WebView de la app de iOS dice «sin red» teniéndola. Antes de avisar se pregunta al
+// servidor (una petición pequeña y sin caché); sin respuesta, sí es que no hay red.
+const responde = () => fetch('/manifest.webmanifest', { method: 'HEAD', cache: 'no-store' }).then(() => true, () => false);
+
 export default function SinRed() {
   const [sinRed, setSinRed] = useState(false);
   useEffect(() => {
-    const poner = () => setSinRed(!navigator.onLine);
-    poner();
-    addEventListener('online', poner);
-    addEventListener('offline', poner);
-    return () => { removeEventListener('online', poner); removeEventListener('offline', poner); };
+    let vivo = true;
+    const mirar = async () => {
+      const red = navigator.onLine || await responde();
+      if (vivo) setSinRed(!red);
+    };
+    mirar();
+    addEventListener('online', mirar);
+    addEventListener('offline', mirar);
+    return () => { vivo = false; removeEventListener('online', mirar); removeEventListener('offline', mirar); };
   }, []);
+  // Con el aviso puesto, se vuelve a mirar cada 15 segundos: en la app el evento «online» puede no llegar.
+  useEffect(() => {
+    if (!sinRed) return undefined;
+    const t = setInterval(() => { responde().then((red) => { if (red) setSinRed(false); }); }, 15000);
+    return () => clearInterval(t);
+  }, [sinRed]);
   if (!sinRed) return null;
   return <p className="sin-red" role="status">Sin conexión: lo que ves puede no estar al día y los cambios no se guardarán hasta que vuelva.</p>;
 }
