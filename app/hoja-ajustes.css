@@ -1,0 +1,49 @@
+/* La hoja de Ajustes en el móvil, como en iOS (app/ajustes/layout.js, components/HojaAjustes.js, lib/hojaAjustes.js): sube encima de
+   la app y se desplaza por dentro, con su cabecera siempre arriba. Detrás, la pantalla de la que se vino (.aj-fondo, una
+   copia quieta), encogida y oscurecida: asoma por arriba bajo la barra de estado y recupera su tamaño al arrastrar la hoja
+   hacia abajo. Va con los estilos de toda la app (app/layout.js) porque la pantalla de espera de la hoja (lib/transicion.js
+   ponerEspera) sale antes de que lleguen los de Ajustes. En /ajustes se ve la lista; en cada ajuste, solo esa pantalla. */
+:root {
+  --hoja-fondo: #000000; /* lo de detrás de la pantalla encogida: negro en los dos temas, como en iOS */
+  --aj-cima: calc(env(safe-area-inset-top, 0px) + 14px); /* dónde empieza la hoja */
+  --fondo-y: calc(env(safe-area-inset-top, 0px) + 4px); /* dónde empieza la pantalla encogida de detrás (asoma 10 px) */
+  --fondo-radio: 12px;
+}
+
+@media (max-width: 1023.98px) {
+  html:has(.aj-marco), html:has(.aj-marco) body { overflow: hidden; overscroll-behavior: none; }
+  body:has(.aj-marco) { background: var(--hoja-fondo); }
+  /* Con el teclado fuera, la hoja llega hasta él (components/HojaAjustes.js pone --vv-alto). */
+  .aj-marco, .hoja-espera { position: fixed; z-index: 2; top: var(--aj-cima); left: 0; right: 0; height: calc(var(--vv-alto, 100dvh) - var(--aj-cima)); overflow: hidden; border-radius: 12px 12px 0 0; background: var(--paper); }
+  .aj-desliza { position: absolute; inset: 0; overflow-y: auto; overscroll-behavior: contain; }
+  html[data-hoja-saliendo] .aj-marco { pointer-events: none; }
+  /* La pantalla de detrás. Encogida como la deja la transición «hoja» (app/diseno.css vt-al-fondo) y con los mismos valores que
+     lib/hojaAjustes.js FONDO, que la lleva hasta su tamaño al arrastrar. Nada de dentro se anima ni tiene nombre de transición. */
+  .aj-fondo { position: fixed; inset: 0; z-index: 1; overflow: hidden; contain: layout paint; pointer-events: none; background: var(--paper); transform-origin: 50% 0; transform: translate3d(0, var(--fondo-y), 0) scale(0.92); filter: brightness(0.72); border-radius: var(--fondo-radio); }
+  .aj-fondo *, .aj-fondo *::before, .aj-fondo *::after { animation: none !important; transition: none !important; view-transition-name: none !important; }
+  .aj-fondo-lienzo { min-height: 100%; }
+  .aj-marco:not(:has(.ajustes-raiz)) .ajustes-lista, .aj-marco:has(.ajustes-raiz) .aj-detalle { display: none; }
+  .ajustes-lista { max-width: 640px; margin: 0 auto; padding: 0 16px calc(env(safe-area-inset-bottom, 0px) + 40px); }
+  .aj-detalle .mk-look .tarjeta { box-shadow: none; border: 0; border-radius: 12px; }
+  .aj-detalle .pagina { padding-top: 12px; padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 40px); }
+  .aj-solo-ordenador, .aj-titulo-ordenador { display: none; }
+  .aj-hoja-cab { position: sticky; top: 0; z-index: 5; margin: 0 -16px 8px; padding: 8px 16px; background: color-mix(in srgb, var(--paper) 82%, transparent); -webkit-backdrop-filter: blur(20px) saturate(1.8); backdrop-filter: blur(20px) saturate(1.8); }
+  .aj-hoja-barra { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; min-height: 40px; }
+  .aj-hoja-barra h1 { margin: 0; font-family: inherit; font-size: 17px; font-weight: 600; letter-spacing: 0; }
+  .aj-hoja-barra .aj-ok { justify-self: end; display: flex; align-items: center; justify-content: flex-end; min-width: 44px; min-height: 44px; margin: -2px 0; padding: 0 0 0 16px; color: var(--marca); font-size: 17px; font-weight: 600; text-decoration: none; }
+  /* Entre un ajuste y otro (y al abrirla) se mueve solo la hoja: la pantalla de detrás se queda quieta (app/diseno.css). */
+  html[data-vt=hoja] .aj-marco, html[data-vt=hoja] .hoja-espera, html[data-vt-hoja] .aj-marco { view-transition-name: hoja; }
+
+  /* Pantallas de espera (lib/transicion.js ponerEspera) con la forma de la hoja: al abrirla, la hoja con la pantalla de
+     detrás; de un ajuste a otro, solo dentro de la hoja (y se mueve con ella). */
+  .espera-pantalla.espera-hoja { background: var(--hoja-fondo); }
+  .hoja-espera .pagina { max-width: 640px; margin: 0 auto; padding: 0 16px; }
+  .hoja-espera .aj-hoja-barra .aj-ok { color: var(--marca); }
+  .hoja-e-cuenta { width: 72px; height: 72px; margin: 4px auto 96px; border-radius: 50%; }
+  .espera-pantalla.espera-en-hoja { position: absolute; z-index: 6; }
+  .espera-en-hoja .pagina { padding-top: 12px; }
+}
+@media (min-width: 1024px) {
+  .aj-fondo { display: none; }
+  .aj-desliza { display: contents; }
+}

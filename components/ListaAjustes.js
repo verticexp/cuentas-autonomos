@@ -96,9 +96,8 @@ export default async function ListaAjustes({ u }) {
   const plan = esFundador(u.plan) ? 'Fundador' : dias === 0 ? 'Prueba terminada' : dias !== null ? `Prueba: ${dias} ${dias === 1 ? 'día' : 'días'}` : `${TIPOS[u.plan.tipo]} ${u.plan.nombre}`;
   return (
     <nav className="ajustes-lista mk-look" aria-label="Ajustes">
-      {/* Móvil: la cabecera de la hoja, con su asa y «OK». Ordenador: el título de la columna. */}
+      {/* Móvil: la cabecera de la hoja, con «OK» (sin asa, como las hojas de iOS con barra). Ordenador: el título de la columna. */}
       <div className="aj-hoja-cab">
-        <span className="aj-asa" aria-hidden />
         <div className="aj-hoja-barra"><span aria-hidden /><h1>Ajustes</h1><CerrarAjustes /></div>
       </div>
       <p className="titulo aj-titulo-ordenador">Ajustes</p>

@@ -374,6 +374,14 @@ html[data-llega-tarde] .pagina { animation: llega-tarde 0.22s var(--salida) both
 .espera-pantalla { position: fixed; inset: 0; z-index: 6; overflow: hidden; background: var(--paper); pointer-events: auto; transition: opacity 0.22s var(--salida); }
 .espera-pantalla.saliendo { opacity: 0; pointer-events: none; }
 .volver-e { height: 22px; width: 96px; margin: 2px 0 16px; border-radius: 8px; }
+/* La de una factura o un presupuesto abiertos desde la lista: su cabecera de verdad (con el cliente y el total de la fila)
+   y el resto en esqueleto, con las medidas de la pantalla que llega para que al fundirse no salte nada. */
+.espera-abrir .factura-hero .esqueleto { margin: 0; border-radius: 6px; }
+.fh-e-num { display: inline-block; width: 38%; height: 13px; vertical-align: middle; }
+.espera-abrir .factura-hero .fh-e-desglose { height: 37px; margin: 10px 0; }
+.espera-abrir .factura-hero .fh-e-pie { width: 60%; height: 15px; margin-top: 12px; }
+.espera-abrir .factura-hero .fh-e-cobro { height: 44px; margin-top: 14px; border-radius: 12px; }
+.fh-e-boton { height: 50px; border-radius: 999px; }
 html[data-espera] .titulo-compacto { opacity: 0; visibility: hidden; transition: none; }
 .segmentado.vt a.activo { view-transition-name: segmento; }
 ::view-transition-group(segmento) { animation-duration: 0.32s; animation-timing-function: var(--vt-curva); }
@@ -399,12 +407,28 @@ html[data-vt=subir]::view-transition-old(root) { animation: 0.5s var(--vt-curva)
 html[data-vt=subir]::view-transition-new(root) { animation: 0.5s var(--vt-curva) both vt-hoja; box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.14); }
 html[data-vt=cerrar]::view-transition-old(root) { animation: 0.42s var(--vt-curva) both vt-hoja-baja; z-index: 1; box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.14); }
 html[data-vt=cerrar]::view-transition-new(root) { animation: 0.42s var(--vt-curva) both vt-desatenuar; }
-/* Ajustes: una hoja de tarjeta; la pantalla de detrás se encoge y se oscurece, como en iOS. */
-html[data-vt=hoja]::view-transition-old(root) { animation: 0.46s var(--vt-curva) both vt-al-fondo; }
-html[data-vt=hoja]::view-transition-new(root) { animation: 0.46s var(--vt-curva) both vt-hoja; }
-/* Cerrar una hoja (el «OK» de Ajustes): baja y la pantalla de detrás vuelve a su sitio */
+/* Ajustes: una hoja de tarjeta; la pantalla de detrás se encoge y se oscurece, como en iOS (app/hoja-ajustes.css). La de
+   antes se encoge encima de lo nuevo, que ya tiene detrás su copia encogida igual (.aj-fondo): al acabar coinciden y no se
+   nota el cambio. La hoja (su propia capa, «hoja») sube desde abajo. */
+html[data-vt=hoja]::view-transition-old(root) { animation: 0.5s var(--vt-curva) both vt-al-fondo; transform-origin: 50% 0; z-index: 1; mix-blend-mode: normal; }
+html[data-vt=hoja]::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+html[data-vt=hoja]::view-transition-new(hoja) { animation: 0.5s var(--vt-curva) both vt-hoja-sube; }
+/* Cerrar la hoja sin su copia detrás (con «reducir movimiento» es un fundido): baja y la pantalla de detrás vuelve a su sitio.
+   Lo normal lo anima lib/transicion.js cerrarHoja sin transición de vista, siguiendo al dedo. */
 html[data-vt=bajar]::view-transition-old(root) { animation: 0.4s var(--vt-curva) both vt-hoja-baja; z-index: 1; }
-html[data-vt=bajar]::view-transition-new(root) { animation: 0.4s var(--vt-curva) both vt-del-fondo; }
+html[data-vt=bajar]::view-transition-new(root) { animation: 0.4s var(--vt-curva) both vt-del-fondo; transform-origin: 50% 0; }
+/* De un ajuste a otro dentro de la hoja (lib/transicion.js, data-vt-hoja): lo de detrás y el marco no se mueven; lo de
+   dentro entra y sale como cualquier pantalla, recortado por la hoja. */
+html[data-vt-hoja][data-vt]::view-transition-old(root), html[data-vt-hoja][data-vt]::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+::view-transition-group(hoja) { overflow: hidden; border-radius: 12px 12px 0 0; }
+html[data-vt-hoja][data-vt=adelante]::view-transition-old(hoja) { animation: 0.42s var(--vt-curva) both vt-apartar; }
+html[data-vt-hoja][data-vt=adelante]::view-transition-new(hoja) { animation: 0.42s var(--vt-curva) both vt-llegar; }
+html[data-vt-hoja][data-vt=atras]::view-transition-old(hoja) { animation: 0.36s var(--vt-curva) both vt-irse; z-index: 1; }
+html[data-vt-hoja][data-vt=atras]::view-transition-new(hoja) { animation: 0.36s var(--vt-curva) both vt-volver; }
+html[data-vt-hoja][data-vt=gesto]::view-transition-old(hoja) { animation: 0.28s var(--vt-curva) both vt-irse-gesto; z-index: 1; }
+html[data-vt-hoja][data-vt=gesto]::view-transition-new(hoja) { animation: 0.28s var(--vt-curva) both vt-volver-gesto; }
+html[data-vt-hoja][data-vt=fundido]::view-transition-old(hoja) { animation: 0.16s var(--salida) both vt-fuera; }
+html[data-vt-hoja][data-vt=fundido]::view-transition-new(hoja) { animation: 0.22s var(--salida) both vt-dentro; }
 /* Pestañas: un desliz corto hacia el lado de la pestaña tocada */
 /* Barra de abajo: en iOS cambiar de pestaña no desliza nada. La nueva aparece encima de la de antes con un fundido corto
    (sin mezclar las dos: así no hay destello). */
@@ -438,10 +462,11 @@ html[data-vt=cifras]::view-transition-group(root) { animation-duration: 0.24s; }
 @keyframes vt-volver-gesto { from { transform: translateX(calc((var(--vt-x, 0px) - 100vw) * 0.3)); filter: brightness(0.9); } }
 @keyframes vt-atenuar { to { filter: brightness(0.86); } }
 @keyframes vt-desatenuar { from { filter: brightness(0.86); } }
-@keyframes vt-al-fondo { to { transform: scale(0.93); filter: brightness(0.75); border-radius: 18px; } }
+@keyframes vt-al-fondo { to { transform: translate3d(0, var(--fondo-y), 0) scale(0.92); filter: brightness(0.72); border-radius: var(--fondo-radio); } }
+@keyframes vt-hoja-sube { from { transform: translateY(100vh); } }
 @keyframes vt-hoja { from { transform: translateY(100%); } }
 @keyframes vt-hoja-baja { to { transform: translateY(100%); } }
-@keyframes vt-del-fondo { from { transform: scale(0.93); filter: brightness(0.75); border-radius: 18px; } }
+@keyframes vt-del-fondo { from { transform: translate3d(0, var(--fondo-y), 0) scale(0.92); filter: brightness(0.72); border-radius: var(--fondo-radio); } }
 @keyframes vt-tab-a-izq { to { transform: translateX(-24px); opacity: 0; } }
 @keyframes vt-tab-desde-der { from { transform: translateX(24px); opacity: 0; } }
 @keyframes vt-tab-a-der { to { transform: translateX(24px); opacity: 0; } }
