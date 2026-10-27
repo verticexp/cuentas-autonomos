@@ -22,8 +22,8 @@ test('Cartera: las cifras solo aparecen con efectos y la explicación está pleg
 test('Análisis: conserva navegación si existen datos en otros años', () => {
   const s = leer('app/analisis/page.js');
   assert.match(s, /const hayDatos = !sinDatos \|\| \[facturas, gastos, nominas, manuales, capital, productos, ajustes, albaranes\]\.some/);
-  assert.match(s, /hayDatos && <nav className="anios" aria-label="Año">/);
-  assert.match(s, /hayDatos && <nav className="segmentado cont-periodo" aria-label="Periodo">/);
+  assert.match(s, /hayDatos && <nav className="anios" aria-label=(?:"Año"|\{tr\('Año'\)\})>/);
+  assert.match(s, /hayDatos && <nav className="segmentado cont-periodo" aria-label=(?:"Periodo"|\{tr\('Periodo'\)\})>/);
   assert.match(s, /sinDatos \? <Vacio/);
 });
 
@@ -39,8 +39,8 @@ test('Albaranes: sin documentos queda el primer vacío, sin contadores ni pesta�
 test('Inventario: desactivado termina antes de cargar el módulo; sin productos no hay informes', () => {
   const s = leer('app/inventario/page.js');
   assert.match(s, /if \(!fiscalDe\(u\).inventario\) return/);
-  assert.match(s, /titulo="El inventario está desactivado"/);
-  assert.match(s, /href: '\/bienvenida\?editar=1', texto: 'Activar inventario'/);
+  assert.match(s, /titulo=(?:"El inventario está desactivado"|\{tr\('El inventario está desactivado'\)\})/);
+  assert.match(s, /href: '\/bienvenida\?editar=1', texto: (?:'Activar inventario'|tr\('Activar inventario'\))/);
   assert.ok(s.indexOf('El inventario está desactivado') < s.indexOf('datosStock(u)'));
   assert.match(s, /!inv\.productos\.length \? <Vacio[\s\S]*: <>[\s\S]*className="cont-resumen"[\s\S]*Descargar en Excel[\s\S]*<\/>}/);
 });
@@ -62,7 +62,7 @@ test('Banco: conserva filtros con resultados vacíos solo si hay historial', () 
 for (const archivo of ['tesoreria', 'cartera', 'analisis', 'inventario']) {
   test(`${archivo}: explicación técnica cerrada`, () => {
     const s = leer(`app/${archivo}/page.js`);
-    assert.match(s, /<details className="como-se-calcula"><summary>Cómo se calcula<\/summary>/);
+    assert.match(s, /<details className="como-se-calcula"><summary>(?:Cómo se calcula|\{tr\('Cómo se calcula'\)\})<\/summary>/);
     assert.doesNotMatch(s, /<details className="como-se-calcula"[^>]*\bopen/);
   });
 }
