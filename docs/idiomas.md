@@ -44,9 +44,9 @@ El idioma de la app es el del iPhone o el navegador (cabecera `Accept-Language`)
   Esborra, Edita, Baixa, Puja, Torna-ho a provar. Cometes « ». «S'està desant…» para los gerundios de espera.
 - **Inglés:** británico (*catalogue*, *favourites*, *licence*), en tono cercano y claro, con contracciones (*you're*,
   *can't*) y mayúscula solo al principio de la frase (*Save changes*, no *Save Changes*).
-- **Nombres oficiales españoles, tal cual:** Modelo 303, IRPF, IVA, IGIC, NIF, Verifactu, AEAT, Seguridad Social. En
+- **Nombres oficiales españoles, tal cual:** Modelo 303, IRPF, IGIC, NIF, Verifactu, AEAT, Seguridad Social. En
   inglés, si hace falta, con una aclaración corta la primera vez: «Modelo 303 (VAT return)». «Hacienda» es «Hisenda» en
-  catalán y «the tax office» o «AEAT» en inglés.
+  catalán y «the tax office» o «AEAT» en inglés. El IVA es «IVA» en catalán y «VAT» en inglés (el mismo impuesto).
 
 ## Glosario
 
