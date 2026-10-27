@@ -117,18 +117,18 @@ export default function FormCierre({ hoy, fecha = hoy, fondo = null, actividades
       </div>
 
       <fieldset>
-        <legend>{tr('Vendido (con {impuesto})', { impuesto: igic ? 'IGIC' : 'IVA' })}</legend>
+        <legend>{tr('Vendido (con {impuesto})', { impuesto: igic ? 'IGIC' : tr('IVA') })}</legend>
         {x.porIva.map((t, i) => (
           <div className="caja-iva" key={i}>
-            <select className="campo" value={t.pct} onChange={(e) => ponerIva(i, 'pct', Number(e.target.value))} aria-label={tr('Tipo de {impuesto}', { impuesto: (igic ? "IGIC" : "IVA") })}>
-              {[Number(t.pct), ...libres].map((n) => <option key={n} value={n}>{(igic ? "IGIC" : "IVA")} {n} %</option>)}
+            <select className="campo" value={t.pct} onChange={(e) => ponerIva(i, 'pct', Number(e.target.value))} aria-label={tr('Tipo de {impuesto}', { impuesto: (igic ? 'IGIC' : tr('IVA')) })}>
+              {[Number(t.pct), ...libres].map((n) => <option key={n} value={n}>{(igic ? 'IGIC' : tr('IVA'))} {n} %</option>)}
             </select>
             <input className="campo" inputMode="decimal" placeholder={"0,00"} value={t.total} onChange={(e) => ponerIva(i, 'total', e.target.value)} aria-label={tr('Total al {porcentaje}', { porcentaje: pctCorto(t.pct) })} required={i === 0} />
             {x.porIva.length > 1 && <button type="button" className="linea-quitar" aria-label={tr('Quitar')} onClick={() => poner('porIva', x.porIva.filter((_, j) => j !== i))}>×</button>}
           </div>
         ))}
         {libres.length > 0 && <button type="button" className="boton sec pequeno" onClick={() => poner('porIva', [...x.porIva, { pct: libres[0], total: '' }])}>{(igic ? tr('+ Otro tipo de IGIC') : tr('+ Otro tipo de IVA'))}</button>}
-        <p className="nota">{tr('Del informe Z o del cierre del TPV: el total de cada tipo de {impuesto}, impuestos incluidos.', { impuesto: igic ? 'IGIC' : 'IVA' })}</p>
+        <p className="nota">{tr('Del informe Z o del cierre del TPV: el total de cada tipo de {impuesto}, impuestos incluidos.', { impuesto: igic ? 'IGIC' : tr('IVA') })}</p>
       </fieldset>
 
       <fieldset>
@@ -194,7 +194,7 @@ export default function FormCierre({ hoy, fecha = hoy, fondo = null, actividades
             </div>
           ))}
           <button type="button" className="boton sec pequeno" onClick={() => poner('unidades', [...x.unidades, { producto: conStock[0].id, cantidad: '1' }])}>{tr('+ Producto vendido')}</button>
-          <p className="nota">{tr('Restan del stock y cuentan en «Más vendidos» y en el margen (valoradas a su precio sin {impuesto}).', { impuesto: igic ? 'IGIC' : 'IVA' })}</p>
+          <p className="nota">{tr('Restan del stock y cuentan en «Más vendidos» y en el margen (valoradas a su precio sin {impuesto}).', { impuesto: igic ? 'IGIC' : tr('IVA') })}</p>
         </fieldset>
       )}
 

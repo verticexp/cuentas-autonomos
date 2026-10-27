@@ -40,7 +40,7 @@ const numero = (v) => leerImporte(v) || 0;
 // presentados: trimestres ya presentados ('AAAA-T', lib/empresa.js trimestresPresentados), para avisar si la factura los cambia.
 export default function FormFactura({ factura, clientes, numeros, hoy, rectifica: orig, plantilla, clienteInicial = null, notaDefecto = '', actividades, productos = [], stock = null, proyectos = [], riesgos = {}, bienes = [], recargo = false, oss = false, margenes = [], reagp = false, igic = false, limiteSimplificada = 400, presentados = [] }) {
   const tr = useT();
-  const impuesto = igic ? 'IGIC' : 'IVA';
+  const impuesto = igic ? 'IGIC' : tr('IVA');
   const operaciones = igic ? { exenta: { nombre: 'Exenta de IGIC' }, exportacion: { nombre: 'Exportación de bienes' }, 'servicios-fuera': { nombre: 'No sujeta por localización' }, isp: { nombre: 'Inversión del sujeto pasivo (lo declara el cliente)' } } : TIPOS_OPERACION;
   // IVA y retención de cada actividad, para rellenar la factura nueva.
   const defecto = (id) => { const a = actividades.find((x) => x.id === id) || actividades[0]; return { ivaPct: a.ivaPct, irpfPct: a.irpfPct }; };

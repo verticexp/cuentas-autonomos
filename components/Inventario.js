@@ -41,7 +41,7 @@ export function Ajuste({ producto, hoy, coste, consumo = false, igic = false }) 
         <input className="campo" type="date" value={x.fecha} onChange={poner('fecha')} aria-label={tr('Fecha')} />
       </div>
       {x.motivo === 'recuento' && <label className="check"><input type="checkbox" checked={x.como === 'consumo'} onChange={(e) => setX({ ...x, como: e.target.checked ? 'consumo' : '' })} /> {tr('Si falta, es material gastado en servicios (consumo, no pérdida)')}</label>}
-      {entra && <input className="campo" inputMode="decimal" placeholder={tr('Coste por unidad sin {impuesto}', { impuesto: igic ? 'IGIC' : 'IVA' })} value={x.coste} onChange={poner('coste')} aria-label={tr('Coste por unidad')} />}
+      {entra && <input className="campo" inputMode="decimal" placeholder={tr('Coste por unidad sin {impuesto}', { impuesto: igic ? 'IGIC' : tr('IVA') })} value={x.coste} onChange={poner('coste')} aria-label={tr('Coste por unidad')} />}
       <input className="campo" aria-label={tr('Nota del movimiento (opcional)')} placeholder={tr('Nota (opcional)')} value={x.nota} onChange={poner('nota')} />
       {msg && <p className={msg.startsWith('✓') ? 'nota' : 'error'}>{tr(msg)}</p>}
       <button className="boton" disabled={enviando}>{enviando ? tr('Guardando…') : tr('Apuntar')}</button>
@@ -115,10 +115,10 @@ export function RecibirPedido({ pedido, hoy, igic = false }) {
           <input className="campo" inputMode="decimal" value={l.coste} onChange={(e) => ponerLinea(i, 'coste', e.target.value)} aria-label={tr('Coste por unidad de {concepto}', { concepto: l.concepto })} />
         </div>
       ))}
-      <p className="nota">{tr('Unidades que han llegado y coste por unidad sin {impuesto} (el de la factura o el albarán del proveedor).', { impuesto: igic ? 'IGIC' : 'IVA' })}</p>
+      <p className="nota">{tr('Unidades que han llegado y coste por unidad sin {impuesto} (el de la factura o el albarán del proveedor).', { impuesto: igic ? 'IGIC' : tr('IVA') })}</p>
       <div className="dos-col">
         <label>{tr('Fecha')}<input className="campo" type="date" value={x.fecha} onChange={(e) => setX({ ...x, fecha: e.target.value })} /></label>
-        <label>{igic ? 'IGIC' : 'IVA'}<select className="campo" value={x.ivaPct} onChange={(e) => setX({ ...x, ivaPct: Number(e.target.value) })}>{(igic ? TIPOS_IGIC : [21, 10, 4, 0]).map((n) => <option key={n} value={n}>{n}%</option>)}</select></label>
+        <label>{igic ? 'IGIC' : tr('IVA')}<select className="campo" value={x.ivaPct} onChange={(e) => setX({ ...x, ivaPct: Number(e.target.value) })}>{(igic ? TIPOS_IGIC : [21, 10, 4, 0]).map((n) => <option key={n} value={n}>{n}%</option>)}</select></label>
       </div>
       {error && <p className="error" role="alert">{tr(error)}</p>}
       {msg && <p className="error" role="alert">{tr(msg)}</p>}

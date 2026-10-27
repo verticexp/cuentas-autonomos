@@ -62,7 +62,7 @@ export default async function Caja({ searchParams }) {
       {ver === 'cierre' || cierre ? (
         <>
           <div id="nuevo-cierre"><FormCierre key={cierre?.id || fecha} igic={igic} hoy={h} fecha={fecha} fondo={fondo} actividades={actividades} productos={lista} cierre={cierre?.caja ? cierre : null} ivaDefecto={actividades[0].ivaPct ?? (igic ? 7 : 21)} proyectos={nombresProyectos(facturas)} /></div>
-          <p className="grupo-pie">{tr('Para tiendas con TPV o caja registradora: cada cierre es una factura simplificada de resumen (serie Z) que cuenta en el {impuesto}, la contabilidad (el efectivo en caja, la tarjeta en el banco) y los libros registro. No va a Verifactu: los tiques ya los registra tu TPV.', { impuesto: igic ? 'IGIC' : 'IVA' })}</p>
+          <p className="grupo-pie">{tr('Para tiendas con TPV o caja registradora: cada cierre es una factura simplificada de resumen (serie Z) que cuenta en el {impuesto}, la contabilidad (el efectivo en caja, la tarjeta en el banco) y los libros registro. No va a Verifactu: los tiques ya los registra tu TPV.', { impuesto: igic ? 'IGIC' : tr('IVA') })}</p>
         </>
       ) : ver === 'tarjeta' ? (
         <CajaTarjeta u={u} hoy={h} conBanco={puede(u, DETALLE) && puede(u, 'gastar')} />

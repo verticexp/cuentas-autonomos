@@ -51,7 +51,7 @@ export default function Catalogo({ productos, editar, inventario = false, igic =
           <label>{tr('Nombre')}<input className="campo" required placeholder={tr('Sesión DJ 4 horas')} value={p.nombre} onChange={(e) => poner('nombre', e.target.value)} /></label>
           <div className="dos-col">
             <label>{(igic ? tr('Precio sin IGIC') : tr('Precio sin IVA'))}<input className="campo" inputMode="decimal" required placeholder={"0,00"} value={p.precio} onChange={(e) => poner('precio', e.target.value)} /></label>
-            <label>{(igic ? "IGIC" : "IVA")}
+            <label>{(igic ? 'IGIC' : tr('IVA'))}
               <select className="campo" value={p.ivaPct} onChange={(e) => poner('ivaPct', Number(e.target.value))}>
                 {(igic ? TIPOS_IGIC : [21, 10, 4, 0]).map((n) => <option key={n} value={n}>{n}%</option>)}
               </select>
