@@ -2,6 +2,7 @@ import Vacio from '@/components/Vacio';
 import { usarFuncion } from '@/lib/usoPlan';
 import SinPlan from '@/components/SinPlan';
 import Link from 'next/link';
+import { textos } from '@/lib/idiomaServidor';
 import { requerir } from '@/lib/auth';
 import { leer, redis } from '@/lib/redis';
 import { costeGasto, importes, numeroFactura, r2 } from '@/lib/calculos';
@@ -23,6 +24,7 @@ const igual = (a, b) => limpiarProyecto(a).toLowerCase() === limpiarProyecto(b).
 // Rentabilidad por proyecto, obra o centro de coste (un local, un cliente grande…): lo facturado menos lo gastado en cada uno.
 export default async function Proyectos({ searchParams }) {
   const u = await requerir('resumen');
+  const tr = await textos();
   if (await usarFuncion(u, 'proyectos')) return <SinPlan usuario={u} funcion="proyectos" />;
   if (!redis) return <SinBD />;
   const sp = await searchParams;
@@ -46,25 +48,25 @@ export default async function Proyectos({ searchParams }) {
   return (
     <main className="pagina mk-look modelos contabilidad">
       <Volver href={elegido ? url({ p: null }) : '/'}>{elegido ? 'Proyectos' : 'Resumen'}</Volver>
-      <h1 className="titulo">{elegido ? elegido.proyecto : 'Proyectos y centros de coste'}</h1>
-      <nav className="anios inv-anios" aria-label="Año">
-        {!todo && <Ir href={url({ anio: anio - 1 })} tipo="cifras" aria-label="Año anterior">‹</Ir>}
-        <strong>{todo ? 'Desde el principio' : anio}</strong>
-        {!todo && (anio < Number(h.slice(0, 4)) ? <Ir href={url({ anio: anio + 1 })} tipo="cifras" aria-label="Año siguiente">›</Ir> : <span className="off">›</span>)}
-        <Link href={url({ anio: todo ? h.slice(0, 4) : 'todo' })} className="nota">{todo ? 'Por años' : 'Todos los años'}</Link>
+      <h1 className="titulo">{elegido ? elegido.proyecto : tr('Proyectos y centros de coste')}</h1>
+      <nav className="anios inv-anios" aria-label={tr('Año')}>
+        {!todo && <Ir href={url({ anio: anio - 1 })} tipo="cifras" aria-label={tr('Año anterior')}>‹</Ir>}
+        <strong>{todo ? tr('Desde el principio') : anio}</strong>
+        {!todo && (anio < Number(h.slice(0, 4)) ? <Ir href={url({ anio: anio + 1 })} tipo="cifras" aria-label={tr('Año siguiente')}>›</Ir> : <span className="off">›</span>)}
+        <Link href={url({ anio: todo ? h.slice(0, 4) : 'todo' })} className="nota">{todo ? tr('Por años') : tr('Todos los años')}</Link>
       </nav>
 
       {elegido ? (
         <>
           <div className="cont-resumen">
-            <div><span>Ingresos</span><strong>{eur(elegido.ingresos)}</strong></div>
-            <div><span>Gastos</span><strong>{eur(elegido.gastos)}</strong></div>
-            <div><span>Margen</span><strong className={elegido.margen < 0 ? 'inv-rojo' : ''}>{eur(elegido.margen)}{elegido.ingresos ? ` · ${pctCorto(elegido.margenPct)}` : ''}</strong></div>
+            <div><span>{tr('Ingresos')}</span><strong>{eur(elegido.ingresos)}</strong></div>
+            <div><span>{tr('Gastos')}</span><strong>{eur(elegido.gastos)}</strong></div>
+            <div><span>{tr('Margen')}</span><strong className={elegido.margen < 0 ? 'inv-rojo' : ''}>{eur(elegido.margen)}{elegido.ingresos ? ` · ${pctCorto(elegido.margenPct)}` : ''}</strong></div>
           </div>
           <section className="bloque">
-            <h2 className="grupo-t">Facturas y cierres</h2>
-            <ul className="grupo-lista">{facturas.filter((f) => delAnio(f) && igual(f.proyecto, elegido.proyecto)).sort((a, b) => b.fecha.localeCompare(a.fecha)).map((f) => <li key={f.id}><Link href={`/facturas/${f.id}`} className="fila"><span className="txt"><strong>{f.caja ? 'Cierre de caja' : f.cliente?.nombre}</strong><small>{numeroFactura(f)} · {fechaCorta(f.fecha)}</small></span><span className="imp">{eur(f.base)}</span></Link></li>)}</ul>
-            <h2 className="grupo-t">Gastos</h2>
+            <h2 className="grupo-t">{tr('Facturas y cierres')}</h2>
+            <ul className="grupo-lista">{facturas.filter((f) => delAnio(f) && igual(f.proyecto, elegido.proyecto)).sort((a, b) => b.fecha.localeCompare(a.fecha)).map((f) => <li key={f.id}><Link href={`/facturas/${f.id}`} className="fila"><span className="txt"><strong>{f.caja ? tr('Cierre de caja') : f.cliente?.nombre}</strong><small>{numeroFactura(f)} · {fechaCorta(f.fecha)}</small></span><span className="imp">{eur(f.base)}</span></Link></li>)}</ul>
+            <h2 className="grupo-t">{tr('Gastos')}</h2>
             <ul className="grupo-lista">{(gastos || []).filter((g) => delAnio(g) && !g.inversion && igual(g.proyecto, elegido.proyecto)).sort((a, b) => b.fecha.localeCompare(a.fecha)).map((g) => { const i = importes(g); return <li key={g.id}><Link href={`/gastos/${g.id}`} className="fila"><span className="txt"><strong>{g.concepto}</strong><small>{g.proveedor ? `${g.proveedor} · ` : ''}{fechaCorta(g.fecha)}</small></span><span className="imp">{eur(ivaCoste ? i.base + i.iva : i.base)}</span></Link></li>; })}</ul>
           </section>
         </>
@@ -74,20 +76,22 @@ export default async function Proyectos({ searchParams }) {
             <ul className="grupo-lista">
               {r.proyectos.map((p) => (
                 <li key={p.proyecto}><Link href={url({ p: p.proyecto })} className="fila">
-                  <span className="txt"><strong>{p.proyecto}</strong><small>Ingresos {eur(p.ingresos)} · gastos {eur(p.gastos)} · {p.facturas} {p.facturas === 1 ? 'factura' : 'facturas'}, {p.apuntes} {p.apuntes === 1 ? 'gasto' : 'gastos'}</small></span>
-                  <span className="imp-col"><span className={`imp${p.margen < 0 ? ' inv-rojo' : ''}`}>{eur(p.margen)}</span><small className="nota">{p.gastos ? (p.ingresos > 0 ? `margen ${pctCorto(p.margenPct)}` : 'margen') : 'sin gastos asignados'}</small></span>
+                  <span className="txt"><strong>{p.proyecto}</strong><small>{tr('Ingresos {ingresos} · gastos {gastos} · {facturas}, {apuntes}', { ingresos: eur(p.ingresos), gastos: eur(p.gastos), facturas: p.facturas === 1 ? tr('{n} factura', { n: p.facturas }) : tr('{n} facturas', { n: p.facturas }), apuntes: p.apuntes === 1 ? tr('{n} gasto', { n: p.apuntes }) : tr('{n} gastos', { n: p.apuntes }) })}</small></span>
+                  <span className="imp-col"><span className={`imp${p.margen < 0 ? ' inv-rojo' : ''}`}>{eur(p.margen)}</span><small className="nota">{p.gastos ? (p.ingresos > 0 ? tr('margen {pct}', { pct: pctCorto(p.margenPct) }) : tr('margen')) : tr('sin gastos asignados')}</small></span>
                 </Link></li>
               ))}
-              <li><div className="fila"><span className="txt"><strong>Sin proyecto (generales)</strong><small>Ingresos {eur(r.general.ingresos)} · gastos {eur(r.general.gastos)}</small></span><span className={`imp${r.general.margen < 0 ? ' inv-rojo' : ''}`}>{eur(r.general.margen)}</span></div></li>
-              {(nominasCoste > 0 || amortizacion > 0) && <li><div className="fila"><span className="txt"><strong>Sin repartir por proyecto</strong><small>{[nominasCoste > 0 && `Nóminas ${eur(nominasCoste)}`, amortizacion > 0 && `amortización ${eur(amortizacion)}`].filter(Boolean).join(' · ')}</small></span><span className="imp inv-rojo">{eur(-r2(nominasCoste + amortizacion))}</span></div></li>}
-              <li><div className="fila"><span className="txt"><strong>Resultado de la empresa</strong><small>{todo ? 'Todos los años' : Number(h.slice(0, 4)) === anio ? `De enero a hoy, como en Contabilidad` : `Año ${anio}, como en Contabilidad`}</small></span><strong className={`imp${resultado < 0 ? ' inv-rojo' : ''}`}>{eur(resultado)}</strong></div></li>
+              <li><div className="fila"><span className="txt"><strong>{tr('Sin proyecto (generales)')}</strong><small>{tr('Ingresos {ingresos} · gastos {gastos}', { ingresos: eur(r.general.ingresos), gastos: eur(r.general.gastos) })}</small></span><span className={`imp${r.general.margen < 0 ? ' inv-rojo' : ''}`}>{eur(r.general.margen)}</span></div></li>
+              {(nominasCoste > 0 || amortizacion > 0) && <li><div className="fila"><span className="txt"><strong>{tr('Sin repartir por proyecto')}</strong><small>{[nominasCoste > 0 && tr('Nóminas {importe}', { importe: eur(nominasCoste) }), amortizacion > 0 && tr('amortización {importe}', { importe: eur(amortizacion) })].filter(Boolean).join(' · ')}</small></span><span className="imp inv-rojo">{eur(-r2(nominasCoste + amortizacion))}</span></div></li>}
+              <li><div className="fila"><span className="txt"><strong>{tr('Resultado de la empresa')}</strong><small>{todo ? tr('Todos los años') : Number(h.slice(0, 4)) === anio ? tr('De enero a hoy, como en Contabilidad') : tr('Año {anio}, como en Contabilidad', { anio })}</small></span><strong className={`imp${resultado < 0 ? ' inv-rojo' : ''}`}>{eur(resultado)}</strong></div></li>
             </ul>
-          ) : <Vacio icono="cliente" tipo={todo ? 'vacio' : 'resultados'} titulo="Mira lo que gana cada proyecto" accion={{ href: '/facturas/nueva', texto: 'Nueva factura' }} secundaria={!todo && { href: '/proyectos?anio=todo', texto: 'Ver todos los años' }}>Al hacer una factura, un cierre de caja o apuntar un gasto, escribe su proyecto, obra o local («Obra Calle Mayor», «Tienda Centro»…). Aquí verás lo que gana cada uno.</Vacio>}
-          <p className="grupo-pie">Ingresos y gastos sin IVA{ivaCoste ? ' (los gastos, con el IVA, porque no lo recuperas)' : ''}. Las nóminas y la amortización de los bienes de inversión no se reparten por proyecto: van aparte, antes del resultado de la empresa.</p>
+          ) : <Vacio icono="cliente" tipo={todo ? 'vacio' : 'resultados'} titulo={tr('Mira lo que gana cada proyecto')} accion={{ href: '/facturas/nueva', texto: tr('Nueva factura') }} secundaria={!todo && { href: '/proyectos?anio=todo', texto: tr('Ver todos los años') }}>{tr('Al hacer una factura, un cierre de caja o apuntar un gasto, escribe su proyecto, obra o local («Obra Calle Mayor», «Tienda Centro»…). Aquí verás lo que gana cada uno.')}</Vacio>}
+          <p className="grupo-pie">{ivaCoste ? tr('Ingresos y gastos sin IVA (los gastos, con el IVA, porque no lo recuperas). Las nóminas y la amortización de los bienes de inversión no se reparten por proyecto: van aparte, antes del resultado de la empresa.') : tr('Ingresos y gastos sin IVA. Las nóminas y la amortización de los bienes de inversión no se reparten por proyecto: van aparte, antes del resultado de la empresa.')}</p>
         </section>
       )}
     </main>
   );
 }
 
-export const metadata = { title: 'Proyectos' };
+export async function generateMetadata() {
+  return { title: (await textos())('Proyectos') };
+}
