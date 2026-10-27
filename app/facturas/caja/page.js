@@ -13,6 +13,8 @@ import SinBD from '@/components/SinBD';
 import Volver from '@/components/Volver';
 import FormCierre from '@/components/FormCierre';
 import ImportarVentas from '@/components/ImportarVentas';
+import CajaTarjeta from '@/components/CajaTarjeta';
+import { DETALLE, puede } from '@/lib/permisos';
 import { nombresProyectos } from '@/lib/proyectos';
 import '@/app/caja.css';
 import '@/app/mk.css';
@@ -33,7 +35,7 @@ export default async function Caja({ searchParams }) {
   const igic = usaIgic(fiscalDe(u));
   const recientes = await documentos(u, 'facturas', fichas.filter((f) => f.k).sort((a, b) => b.o - a.o).slice(0, 7).map((f) => f.id));
   const lista = (productos || []).sort((a, b) => a.nombre.localeCompare(b.nombre));
-  const ver = sp.ver === 'importar' ? 'importar' : 'cierre';
+  const ver = ['importar', 'tarjeta'].includes(sp.ver) ? sp.ver : 'cierre';
   // Días sin cierre (lib/caja.js): los que se suelen abrir, de las dos últimas semanas, sin los marcados como «no abrí».
   const h = hoy();
   const cerrados = Object.keys((await redis.hgetall(clave(u, 'cajaCerrados'))) || {});
@@ -45,7 +47,7 @@ export default async function Caja({ searchParams }) {
     <main className="pagina mk-look caja">
       <Volver href={cierre ? `/facturas/${cierre.id}` : '/facturas'}>{cierre ? 'Cierre' : 'Facturas'}</Volver>
       <h1 className="titulo">{cierre?.caja ? `Corregir el cierre ${numeroFactura(cierre)}` : 'Caja'}</h1>
-      {!cierre && <nav className="segmentado" aria-label="Vista de caja"><Ir href="/facturas/caja" tipo="fundido" className={ver === 'cierre' ? 'activo' : ''}>Cierre del día</Ir><Ir href="/facturas/caja?ver=importar" tipo="fundido" className={ver === 'importar' ? 'activo' : ''}>Importar del TPV</Ir></nav>}
+      {!cierre && <nav className="segmentado" aria-label="Vista de caja"><Ir href="/facturas/caja" tipo="fundido" className={ver === 'cierre' ? 'activo' : ''}>Cierre del día</Ir><Ir href="/facturas/caja?ver=tarjeta" tipo="fundido" className={ver === 'tarjeta' ? 'activo' : ''}>Tarjeta y efectivo</Ir><Ir href="/facturas/caja?ver=importar" tipo="fundido" className={ver === 'importar' ? 'activo' : ''}>Importar</Ir></nav>}
       {sinCerrar.length > 0 && ver === 'cierre' && (
         <section className="bloque caja-sin" id="sin-cerrar">
           <h2 className="grupo-t">{sinCerrar.length === 1 ? 'Un día sin cierre' : `${sinCerrar.length} días sin cierre`}</h2>
@@ -60,10 +62,12 @@ export default async function Caja({ searchParams }) {
           <div id="nuevo-cierre"><FormCierre key={cierre?.id || fecha} igic={igic} hoy={h} fecha={fecha} fondo={fondo} actividades={actividades} productos={lista} cierre={cierre?.caja ? cierre : null} ivaDefecto={actividades[0].ivaPct ?? (igic ? 7 : 21)} proyectos={nombresProyectos(facturas)} /></div>
           <p className="grupo-pie">Para tiendas con TPV o caja registradora: cada cierre es una factura simplificada de resumen (serie Z) que cuenta en el {igic ? 'IGIC' : 'IVA'}, la contabilidad (el efectivo en caja, la tarjeta en el banco) y los libros registro. No va a Verifactu: los tiques ya los registra tu TPV.</p>
         </>
+      ) : ver === 'tarjeta' ? (
+        <CajaTarjeta u={u} hoy={h} conBanco={puede(u, DETALLE) && puede(u, 'gastar')} />
       ) : (
         <ImportarVentas actividades={actividades} />
       )}
-      {!cierre && (
+      {!cierre && ver !== 'tarjeta' && (
         <section className="bloque">
           <h2 className="grupo-t">Últimos cierres</h2>
           {!recientes.length && <Vacio compacto icono="factura" titulo="Aún no hay cierres" accion={{ href: '/facturas/caja#nuevo-cierre', texto: 'Añadir cierre' }} />}
