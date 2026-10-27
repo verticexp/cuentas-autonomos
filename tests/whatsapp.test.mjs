@@ -222,3 +222,16 @@ test('la IA puede consultar cifras y corregir gastos', () => {
   assert.equal(accionDe(uso('consultar', { pregunta: '  ' })).accion, 'responder');
   assert.equal(accionDe(uso('cambiar_gasto', { base: 40 })).accion, 'cambiar_gasto');
 });
+
+test('conversación natural: sin herramienta, el texto es la respuesta; con herramienta, acompaña a la acción', () => {
+  const texto = (t) => ({ type: 'text', text: t });
+  assert.deepEqual(accionDe([texto('¡Buenas, Marc! ¿Qué te preparo hoy?')]), { accion: 'responder', mensaje: '¡Buenas, Marc! ¿Qué te preparo hoy?' });
+  // Pregunta para aclarar algo: también es texto.
+  assert.equal(accionDe([texto('¿Los 300 € son con IVA o sin IVA?')]).mensaje, '¿Los 300 € son con IVA o sin IVA?');
+  // Texto + herramienta: la frase acompaña, salvo que la herramienta traiga la suya.
+  const lineas = [{ concepto: 'Sesión', precio: 300 }];
+  assert.equal(accionDe([texto('Hecho, mira:'), { type: 'tool_use', name: 'preparar_factura', input: { tipo: 'factura', cliente: 'Pepe', lineas } }]).mensaje, 'Hecho, mira:');
+  assert.equal(accionDe([texto('x'), { type: 'tool_use', name: 'preparar_factura', input: { tipo: 'factura', cliente: 'Pepe', lineas, mensaje: 'Ahí va 👇' } }]).mensaje, 'Ahí va 👇');
+  // Sin nada útil, una repregunta amable.
+  assert.match(accionDe([]).mensaje, /no te he pillado/);
+});
