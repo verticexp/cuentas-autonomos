@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
 import { accionDe } from '../lib/whatsappIA.js';
+import { cambiarGasto, resumenGasto } from '../lib/whatsapp.js';
 import { aplicarCambios, buscarCliente, cuerpoFactura, entregaDe, firmaValida, mensajesDe, resumenBorrador, siNo, telefonosAutorizados } from '../lib/whatsapp.js';
 import { limpiar } from '../lib/facturas.js';
 
@@ -171,4 +172,66 @@ test('con IGIC se aceptan sus tipos (7 %) y no los del IVA (21 %)', async () => 
   const lineas = [{ concepto: 'a', precio: 10, ivaPct: 7 }, { concepto: 'b', precio: 10, ivaPct: 21 }];
   const b = cuerpoFactura({ cliente: 'X', lineas }, { actividad: { ivaPct: 7, irpfPct: 0 }, hoy: '2026-10-27', tipos: TIPOS_IGIC });
   assert.deepEqual(b.lineas.map((l) => l.ivaPct), [7, 7]);
+});
+
+test('fotos y PDF de gastos llegan como archivo; otros documentos no', () => {
+  const aviso = { entry: [{ changes: [{ value: { messages: [
+    { id: 'f1', from: '34600111222', type: 'image', image: { id: 'img1', caption: 'el de la gasolinera' } },
+    { id: 'f2', from: '34600111222', type: 'document', document: { id: 'doc1', mime_type: 'application/pdf', filename: 'Factura Endesa.pdf' } },
+    { id: 'f3', from: '34600111222', type: 'document', document: { id: 'doc2', mime_type: 'application/zip', filename: 'x.zip' } },
+  ] } }] }] };
+  assert.deepEqual(mensajesDe(aviso), [
+    { id: 'f1', de: '34600111222', archivo: { id: 'img1', nombre: 'ticket-whatsapp.jpg' }, texto: 'el de la gasolinera' },
+    { id: 'f2', de: '34600111222', archivo: { id: 'doc1', nombre: 'Factura Endesa.pdf' } },
+    { id: 'f3', de: '34600111222', otro: true },
+  ]);
+});
+
+test('resumen del gasto leído: importes, pagado o no, avisos y posibles repetidos', () => {
+  const p = { proveedor: 'Repsol', proveedorNif: 'A12345678', concepto: 'Gasolina', fecha: '2026-10-26', base: 50, ivaPct: 21, irpfPct: null, avisos: [] };
+  const t = resumenGasto(p);
+  assert.match(t, /\*Repsol\* \(A12345678\)/);
+  assert.match(t, /26\/10\/2026/);
+  assert.match(t, /60,50/); // 50 + 10,50
+  assert.match(t, /como pagado/);
+  assert.match(t, /¿Lo apunto así\?/);
+  const t2 = resumenGasto({ ...p, pendiente: true, avisos: ['Los importes leídos no cuadran'] }, { duplicados: [{}] });
+  assert.match(t2, /pendiente de pagar/);
+  assert.match(t2, /⚠️ Los importes leídos no cuadran/);
+  assert.match(t2, /ya lo tengas apuntado \(hay uno parecido\)/);
+  assert.match(resumenGasto({ ...p, base: null }), /No he podido leer el importe[\s\S]*¿Cuánto es, sin IVA\?/);
+  // Varios tipos de IVA: se suman por tipo.
+  assert.match(resumenGasto({ ...p, base: 100, desglose: [{ ivaPct: 21, base: 60 }, { ivaPct: 10, base: 40 }] }), /116,60/);
+});
+
+test('corregir el gasto por el chat: solo lo pedido, y lo corregido ya no avisa', () => {
+  const p = { proveedor: 'Repsol', concepto: 'Gasolina', fecha: '2026-10-26', fechaDudosa: true, base: 50, ivaPct: 21, desglose: [{ ivaPct: 21, base: 50 }], avisos: ['x'] };
+  const n = cambiarGasto(p, { base: 45.5, fecha: '2026-10-25', pendiente: true });
+  assert.deepEqual([n.base, n.fecha, n.pendiente, n.fechaDudosa, n.desglose, n.avisos], [45.5, '2026-10-25', true, undefined, undefined, []]);
+  assert.equal(n.proveedor, 'Repsol');
+  assert.equal(cambiarGasto(p, { ivaPct: 10 }).ivaPct, 10);
+  assert.equal(cambiarGasto(p, { ivaPct: 33 }).ivaPct, 21);
+  assert.equal(cambiarGasto(p, { base: -3 }).base, 50);
+  assert.equal(cambiarGasto(p, { proveedor: '  ' }).proveedor, 'Repsol');
+  assert.equal(p.base, 50); // la propuesta original no se toca
+});
+
+test('la IA puede consultar cifras y corregir gastos', () => {
+  const uso = (name, input) => [{ type: 'tool_use', name, input }];
+  assert.deepEqual(accionDe(uso('consultar', { pregunta: '¿Quién me debe dinero?' })).datos, { pregunta: '¿Quién me debe dinero?' });
+  assert.equal(accionDe(uso('consultar', { pregunta: '  ' })).accion, 'responder');
+  assert.equal(accionDe(uso('cambiar_gasto', { base: 40 })).accion, 'cambiar_gasto');
+});
+
+test('conversación natural: sin herramienta, el texto es la respuesta; con herramienta, acompaña a la acción', () => {
+  const texto = (t) => ({ type: 'text', text: t });
+  assert.deepEqual(accionDe([texto('¡Buenas, Marc! ¿Qué te preparo hoy?')]), { accion: 'responder', mensaje: '¡Buenas, Marc! ¿Qué te preparo hoy?' });
+  // Pregunta para aclarar algo: también es texto.
+  assert.equal(accionDe([texto('¿Los 300 € son con IVA o sin IVA?')]).mensaje, '¿Los 300 € son con IVA o sin IVA?');
+  // Texto + herramienta: la frase acompaña, salvo que la herramienta traiga la suya.
+  const lineas = [{ concepto: 'Sesión', precio: 300 }];
+  assert.equal(accionDe([texto('Hecho, mira:'), { type: 'tool_use', name: 'preparar_factura', input: { tipo: 'factura', cliente: 'Pepe', lineas } }]).mensaje, 'Hecho, mira:');
+  assert.equal(accionDe([texto('x'), { type: 'tool_use', name: 'preparar_factura', input: { tipo: 'factura', cliente: 'Pepe', lineas, mensaje: 'Ahí va 👇' } }]).mensaje, 'Ahí va 👇');
+  // Sin nada útil, una repregunta amable.
+  assert.match(accionDe([]).mensaje, /no te he pillado/);
 });
