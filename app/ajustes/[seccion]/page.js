@@ -48,6 +48,10 @@ import { webhooksDe } from '@/lib/webhooks';
 import Apariencia from '@/components/Apariencia';
 import Ayuda from '@/components/Ayuda';
 import EmailEnvio from '@/components/EmailEnvio';
+import ConectarWhatsApp from '@/components/ConectarWhatsApp';
+import { sinFuncion } from '@/lib/planes';
+import { whatsappListo } from '@/lib/whatsapp';
+import { numeroFisquo, telefonoBonito, telefonoDe } from '@/lib/whatsappVinculo';
 import '@/app/ajustes.css';
 
 import '@/app/mk.css';
@@ -62,7 +66,7 @@ export const dynamic = 'force-dynamic';
 const TITULOS = {
   perfil: 'Tu perfil', facturacion: 'Datos de la empresa', marca: 'Diseño de factura', series: 'Series y numeración', cobros: 'Cobros', envio: 'Email de envío', gestoria: 'Tu gestoría',
   seguridad: 'Seguridad', drive: 'Google Drive', controlat: "Controla'T", avisos: 'Avisos', importar: 'Importar datos',
-  verifactu: 'Verifactu', plan: 'Tu plan', apariencia: 'Apariencia', ayuda: 'Ayuda y contacto', recomienda: 'Recomienda Fisquo', api: 'API y webhooks',
+  verifactu: 'Verifactu', whatsapp: 'WhatsApp', plan: 'Tu plan', apariencia: 'Apariencia', ayuda: 'Ayuda y contacto', recomienda: 'Recomienda Fisquo', api: 'API y webhooks',
 };
 const DE_EMPRESA = ['plan', 'facturacion', 'marca', 'series', 'cobros', 'envio', 'gestoria', 'drive', 'controlat', 'importar', 'verifactu', 'api'];
 
@@ -98,6 +102,7 @@ export default async function Seccion({ params, searchParams }) {
   if (DE_EMPRESA.includes(seccion) && !puede(u, 'empresa')) return <SinAcceso texto="Para cambiar esto necesitas el permiso «Datos de la empresa». Pídeselo al administrador." />;
   // Drive y la gestoría reciben cada factura y gasto (app/api/cuenta): elegir adónde van exige poder verlos.
   if (['gestoria', 'drive'].includes(seccion) && !puede(u, DETALLE)) return <SinAcceso texto="Para elegir adónde se envían las facturas y los gastos necesitas poder ver el resumen, las facturas y los gastos. Pídeselo al administrador." />;
+  if (seccion === 'whatsapp' && !puede(u, 'facturar')) return <SinAcceso texto="Fisquo por WhatsApp crea facturas y presupuestos: necesitas el permiso para facturar. Pídeselo al administrador." />;
   if (seccion === 'recomienda' && u.rol !== 'admin') return <SinAcceso texto="Solo el administrador de la empresa puede recomendar Fisquo con el enlace de la empresa." />;
   const llaves = seccion === 'seguridad'
     ? Object.entries((await redis.hgetall(`passkeys:${u.id}`)) || {}).map(([id, k]) => ({ id, nombre: k.nombre, creada: k.creada, usada: k.usada || null }))
@@ -127,6 +132,11 @@ export default async function Seccion({ params, searchParams }) {
       })()}
       {seccion === 'controlat' && <Controlat activo={Boolean(u.controlat)} />}
       {seccion === 'avisos' && <AvisosPush listo={pushListo()} />}
+      {seccion === 'whatsapp' && await (async () => {
+        const tel = await telefonoDe(u.id);
+        const numero = numeroFisquo();
+        return <ConectarWhatsApp telefono={tel ? telefonoBonito(tel) : null} plan={app ? null : sinFuncion(u.plan, 'whatsapp')} listo={whatsappListo()} numero={numero ? telefonoBonito(numero) : null} />;
+      })()}
       {seccion === 'importar' && await (async () => { const origen = origenValido((await searchParams)?.origen); return <Importar key={origen || 'sin-origen'} origen={origen} />; })()}
       {seccion === 'verifactu' && await (async () => {
         const regs = await leer(u, 'registros');
