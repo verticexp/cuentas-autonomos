@@ -1,4 +1,5 @@
 import Ir from '@/components/Ir';
+import { cuentasArqueo, SALIDAS_CAJA } from '@/lib/caja';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { normalizarIdFactura } from '@/lib/idFactura';
@@ -55,6 +56,7 @@ export default async function Factura({ params }) {
   const estado = f.cobrada ? 'Cobrada' : vencida(f, u.emisor?.plazo, hoy()) ? 'Vencida' : 'Pendiente';
   if (f.caja) {
     const nombres = Object.fromEntries((productos || []).map((p) => [p.id, p.nombre]));
+    const arq = cuentasArqueo(f);
     return (
       <main className="pagina mk-look">
         <Volver href="/facturas">Facturas</Volver>
@@ -71,7 +73,13 @@ export default async function Factura({ params }) {
             <div><dt>Tarjeta</dt><dd>{eur(f.caja.tarjeta)}</dd></div>
             {f.caja.otros > 0 && <div><dt>Otros</dt><dd>{eur(f.caja.otros)}</dd></div>}
           </dl>
+          {arq && <dl className="fh-desglose">
+            <div><dt>Debería haber</dt><dd>{eur(arq.esperado)}</dd></div>
+            <div><dt>Contado</dt><dd>{eur(arq.contado)}</dd></div>
+            <div><dt>{!arq.descuadre ? 'Arqueo' : arq.descuadre > 0 ? 'Sobrante' : 'Faltante'}</dt><dd className={arq.descuadre ? 'rojo' : ''}>{!arq.descuadre ? 'Cuadra' : eur(Math.abs(arq.descuadre))}</dd></div>
+          </dl>}
         </section>
+        {f.caja.arqueo?.salidas?.length > 0 && <p className="nota">Salió del cajón: {f.caja.arqueo.salidas.map((x) => `${SALIDAS_CAJA[x.tipo]}${x.concepto ? ` (${x.concepto})` : ''} ${eur(x.importe)}`).join(' · ')}. Fondo al abrir: {eur(f.caja.arqueo.fondo)}.</p>}
         {editar && <div className="acciones-factura">
           <Ir href={`/facturas/caja?id=${encodeURIComponent(f.id)}`} className="boton sec">Corregir</Ir>
           <Borrar url={`/api/facturas?id=${encodeURIComponent(f.id)}`} pregunta={`¿Borrar el cierre de caja ${numeroFactura(f)}?`} volver="/facturas" />

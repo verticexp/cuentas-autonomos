@@ -30,3 +30,15 @@
   .caja-form .linea-quitar { width: 44px; height: 44px; }
   .caja-cobro { align-items: end; }
 }
+/* Días sin cierre: el día a la izquierda y «Apuntar» / «No abrí» a la derecha */
+.caja-sin-dia { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
+.caja-sin-dia small { text-transform: capitalize; }
+.caja-sin-acc { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+/* Arqueo: lo que debería haber, lo contado y el descuadre */
+.caja-arqueo-res { display: grid; gap: 2px; margin-top: .5rem; font-variant-numeric: tabular-nums; }
+.caja-arqueo-res .ok { color: var(--in); font-weight: 700; }
+.caja-arqueo-res .falta { color: var(--out); font-weight: 700; }
+.caja-salida { display: grid; grid-template-columns: 13.5rem 1fr 7rem auto; gap: .5rem; align-items: center; margin-bottom: .5rem; }
+@media (max-width: 520px) { .caja-salida { grid-template-columns: 1fr 6.5rem auto; } .caja-salida .caja-salida-c { grid-column: 1 / -1; grid-row: 2; } }
+.caja-z { display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem; }
+.caja-z-avisos { margin: 0 0 1rem; padding-left: 1.1rem; color: var(--aviso); font-size: 14px; }
