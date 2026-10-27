@@ -1,11 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useT } from '@/components/Idioma';
 
 // Aviso fijo cuando el móvil o el ordenador se queda sin red (eventos online/offline): lo que se ve puede no estar al día
 // y lo que se guarde no llegará hasta que vuelva. reintentar: el botón de la página «Sin conexión» (app/sin-conexion).
 export function Reintentar() {
-  return <button type="button" className="boton" onClick={() => location.reload()}>Reintentar</button>;
+  const tr = useT();
+  return <button type="button" className="boton" onClick={() => location.reload()}>{tr('Reintentar')}</button>;
 }
 
 // navigator.onLine no basta: el WebView de la app de iOS dice «sin red» teniéndola. Antes de avisar se pregunta al
@@ -13,6 +15,7 @@ export function Reintentar() {
 const responde = () => fetch('/manifest.webmanifest', { method: 'HEAD', cache: 'no-store' }).then(() => true, () => false);
 
 export default function SinRed() {
+  const tr = useT();
   const [sinRed, setSinRed] = useState(false);
   useEffect(() => {
     let vivo = true;
@@ -32,5 +35,5 @@ export default function SinRed() {
     return () => clearInterval(t);
   }, [sinRed]);
   if (!sinRed) return null;
-  return <p className="sin-red" role="status">Sin conexión: lo que ves puede no estar al día y los cambios no se guardarán hasta que vuelva.</p>;
+  return <p className="sin-red" role="status">{tr('Sin conexión: lo que ves puede no estar al día y los cambios no se guardarán hasta que vuelva.')}</p>;
 }
