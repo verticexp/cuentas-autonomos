@@ -174,8 +174,9 @@ final class DelegadoWeb: NSObject, WKNavigationDelegate, WKUIDelegate, WKDownloa
 
     func download(_ download: WKDownload, didFailWithError error: Error, resumeData: Data?) {
         destinos.removeValue(forKey: ObjectIdentifier(download))
-        let aviso = UIAlertController(title: "No se ha podido descargar", message: "Revisa la conexión y vuelve a intentarlo.", preferredStyle: .alert)
-        aviso.addAction(UIAlertAction(title: "Aceptar", style: .default))
+        // En el idioma del iPhone (es.lproj, ca.lproj, en.lproj/Localizable.strings).
+        let aviso = UIAlertController(title: NSLocalizedString("No se ha podido descargar", comment: ""), message: NSLocalizedString("Revisa la conexión y vuelve a intentarlo.", comment: ""), preferredStyle: .alert)
+        aviso.addAction(UIAlertAction(title: NSLocalizedString("Aceptar", comment: ""), style: .default))
         arriba?.present(aviso, animated: true)
     }
 }
