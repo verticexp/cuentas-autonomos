@@ -146,7 +146,9 @@ test('la hoja de Ajustes se desplaza por dentro, sin asa y con la pantalla de an
   const css = await leer('app/hoja-ajustes.css');
   // El marco se queda quieto bajo la barra de estado y lo de dentro se desplaza: Next no puede subir la página entera
   // (dejaba «‹ Ajustes» bajo la hora y una franja negra abajo).
-  assert.match(css, /\.aj-marco, \.hoja-espera \{ position: fixed;[^}]*top: var\(--aj-cima\);[^}]*overflow: hidden;/);
+  assert.match(css, /\.aj-marco, \.hoja-espera \{ position: fixed;[^}]*top: var\(--aj-cima\);[^}]*height: calc\(var\(--vv-alto, 100dvh\) - var\(--aj-cima\)\);[^}]*overflow: hidden;/);
+  // Con el teclado fuera, lo que queda a la vista (iOS desplaza la ventana y la hoja se metía bajo la hora).
+  assert.match(await leer('components/HojaAjustes.js'), /html\.style\.setProperty\('--vv-alto', `\$\{Math\.round\(vv\.height\)\}px`\);/);
   assert.match(css, /\.aj-desliza \{ position: absolute; inset: 0; overflow-y: auto; overscroll-behavior: contain; \}/);
   assert.match(css, /html:has\(\.aj-marco\), html:has\(\.aj-marco\) body \{ overflow: hidden;/);
   assert.match(await leer('app/layout.js'), /import '\.\/hoja-ajustes\.css';/); // la espera de la hoja sale antes que los estilos de Ajustes

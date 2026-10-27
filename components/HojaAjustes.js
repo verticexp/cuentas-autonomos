@@ -1,6 +1,6 @@
 'use client';
 
-import { useLayoutEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { destinoHoja, instalarHistorial } from '@/lib/transicion';
 import { fondoDe, fondoGenerico } from '@/lib/hojaAjustes';
@@ -10,6 +10,8 @@ import { fondoDe, fondoGenerico } from '@/lib/hojaAjustes';
 //   (lib/hojaAjustes.js) o, si no la hay (se abrió Ajustes directamente o se recargó), un esqueleto.
 // - La hoja se desplaza por dentro (app/ajustes.css): cada ajuste que se abre empieza arriba del todo y, al volver a la
 //   lista, está donde se dejó. Next desplazaba la página entera hasta el ajuste y la hoja quedaba subida bajo la hora.
+// - Con el teclado fuera, la hoja llega hasta el teclado y la ventana no se mueve: iOS la desplazaba para enseñar el campo y
+//   la hoja se metía bajo la hora. Lo que se escribe se ve encima del teclado, dentro de la hoja.
 let alturaLista = 0;
 
 export default function HojaAjustes() {
@@ -29,6 +31,44 @@ export default function HojaAjustes() {
     const recordar = () => { if (dondeIba.current === '/ajustes') alturaLista = hoja.scrollTop; };
     hoja?.addEventListener('scroll', recordar, { passive: true });
     return () => hoja?.removeEventListener('scroll', recordar);
+  }, []);
+
+  useEffect(() => {
+    const vv = window.visualViewport;
+    const movil = matchMedia('(max-width: 1023.98px)');
+    if (!vv) return undefined;
+    const html = document.documentElement;
+    let marco = 0;
+    const ajustar = () => {
+      cancelAnimationFrame(marco);
+      // La ventana no se desplaza (todo está en la hoja): si iOS la sube para enseñar el campo, vuelve a su sitio.
+      if (movil.matches && scrollY !== 0) scrollTo(0, 0);
+      marco = requestAnimationFrame(() => {
+        if (movil.matches && scrollY !== 0) scrollTo(0, 0);
+        const teclado = movil.matches && vv.height < screen.height * 0.85;
+        if (!teclado) { html.style.removeProperty('--vv-alto'); return; }
+        html.style.setProperty('--vv-alto', `${Math.round(vv.height)}px`);
+        // El campo, a la vista dentro de la hoja (no con scrollIntoView: también desplazaría la ventana).
+        const hoja = ref.current?.parentElement.querySelector('.aj-desliza');
+        const campo = document.activeElement;
+        if (!hoja?.contains(campo)) return;
+        const r = campo.getBoundingClientRect(), h = hoja.getBoundingClientRect();
+        if (r.bottom > h.bottom - 16) hoja.scrollTop += r.bottom - h.bottom + 16;
+        else if (r.top < h.top + 56) hoja.scrollTop -= h.top + 56 - r.top;
+      });
+    };
+    vv.addEventListener('resize', ajustar);
+    vv.addEventListener('scroll', ajustar);
+    addEventListener('scroll', ajustar, { passive: true });
+    document.addEventListener('focusin', ajustar);
+    return () => {
+      cancelAnimationFrame(marco);
+      vv.removeEventListener('resize', ajustar);
+      vv.removeEventListener('scroll', ajustar);
+      removeEventListener('scroll', ajustar);
+      document.removeEventListener('focusin', ajustar);
+      html.style.removeProperty('--vv-alto');
+    };
   }, []);
 
   useLayoutEffect(() => {
