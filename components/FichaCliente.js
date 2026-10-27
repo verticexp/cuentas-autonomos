@@ -4,19 +4,23 @@ import { confirmar as confirmarAccion } from './Confirmar';
 
 import { useId, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { volverA } from '@/lib/transicion';
+import useCambiosSinGuardar from './useCambiosSinGuardar';
 import { FORMAS, valoresDe } from '@/lib/terceros';
 import { eur } from '@/lib/formato';
+import { IDIOMAS_FACTURA, MONEDAS } from '@/lib/idiomas';
 
 export function FormularioFicha({ datos = {}, id, proveedor = false, editar = true, puedeRiesgo = false, comerciales = [], zonas = [], borrar = false }) {
   const router = useRouter();
   const prefijo = useId();
   const ocupado = useRef(false);
-  const campos = ['nombre', 'nif', 'pais', 'direccion', 'ciudad', 'email', 'telefono', 'formaCobro', 'formaPago', 'plazo', 'comercial', 'zona', 'riesgoMax', 'notas'];
+  const campos = ['nombre', 'nif', 'pais', 'direccion', 'ciudad', 'email', 'telefono', 'formaCobro', 'formaPago', 'plazo', 'comercial', 'zona', 'riesgoMax', 'idioma', 'moneda', 'notas'];
   const [f, setF] = useState(() => Object.fromEntries(campos.map((k) => [k, datos[k] ?? ''])));
   const [error, setError] = useState('');
   const [errores, setErrores] = useState({});
   const [aviso, setAviso] = useState('');
   const [enviando, setEnviando] = useState(false);
+  const sinGuardar = useCambiosSinGuardar(f);
   const url = proveedor ? '/api/proveedores/ficha' : '/api/clientes';
   const lista = proveedor ? '/gastos/proveedores' : '/clientes';
   const enviar = async (e, eliminar = false) => {
@@ -37,8 +41,10 @@ export function FormularioFicha({ datos = {}, id, proveedor = false, editar = tr
         return;
       }
       if (!r.ok) { setErrores(d.errores || {}); throw new Error(d.error || 'No se ha podido guardar la ficha'); }
-      if (eliminar) router.push(lista);
-      else if (!id) router.push(`${lista}/${encodeURIComponent((proveedor ? d.ficha : d.cliente).id)}`);
+      await sinGuardar.guardado();
+      // Borrada: de vuelta a la lista; creada: su ficha en lugar del formulario vacío. Así «atrás» no lleva a ninguno de los dos.
+      if (eliminar) { volverA(router, lista, 'atras', true); return; }
+      if (!id) router.replace(`${lista}/${encodeURIComponent((proveedor ? d.ficha : d.cliente).id)}`);
       else setAviso('Guardado');
       router.refresh();
     } catch (err) { setError(err.message); }
@@ -52,7 +58,7 @@ export function FormularioFicha({ datos = {}, id, proveedor = false, editar = tr
       <label htmlFor={nombre}>{etiqueta}</label>
       {tipo === 'select' ? <select {...props}><option value="">Sin definir</option>{FORMAS.map((v) => <option key={v.id} value={v.id}>{v.nombre}</option>)}</select>
         : tipo === 'textarea' ? <textarea {...props} rows={4} maxLength={500} /> : <input {...props} type={tipo} />}
-      <div id={`${nombre}-nota`}>{ayuda && <small className="ficha-ayuda">{ayuda}</small>}{errores[k] && <p className="error">{errores[k]}</p>}</div>
+      <div id={`${nombre}-nota`}>{ayuda && <small className="ficha-ayuda">{ayuda}</small>}{errores[k] && <p className="error" role="alert">{errores[k]}</p>}</div>
     </div>;
   };
   return <form className="formulario ficha-form" onSubmit={enviar}>
@@ -70,6 +76,8 @@ export function FormularioFicha({ datos = {}, id, proveedor = false, editar = tr
       {campo('comercial', 'Comercial', { list: `${prefijo}-comerciales`, maxLength: 80 })}
       {campo('zona', 'Zona', { list: `${prefijo}-zonas`, maxLength: 80 })}
       {!proveedor && campo('riesgoMax', 'Riesgo máximo (€)', { inputMode: 'decimal', ayuda: `Vacío = sin límite · 0 = solo al contado. No se podrán emitir facturas que lo superen.${!puedeRiesgo ? ' Solo quien administra la empresa puede cambiarlo.' : ''}` })}
+      {!proveedor && <div className="ficha-campo"><label htmlFor={`${prefijo}-idioma`}>Idioma de sus facturas</label><select id={`${prefijo}-idioma`} className="campo" value={f.idioma || 'es'} disabled={!editar || enviando} onChange={(e) => setF((x) => ({ ...x, idioma: e.target.value }))}>{IDIOMAS_FACTURA.map((x) => <option key={x.id} value={x.id}>{x.nombre}</option>)}</select></div>}
+      {!proveedor && <div className="ficha-campo"><label htmlFor={`${prefijo}-moneda`}>Moneda de sus facturas</label><select id={`${prefijo}-moneda`} className="campo" value={f.moneda || 'EUR'} disabled={!editar || enviando} onChange={(e) => setF((x) => ({ ...x, moneda: e.target.value }))}>{MONEDAS.map((m) => <option key={m} value={m}>{m === 'EUR' ? 'Euros (EUR)' : m}</option>)}</select><div><small className="ficha-ayuda">La factura nueva sale en este idioma y esta moneda (con el cambio del BCE).</small></div></div>}
       {campo('notas', 'Notas', { tipo: 'textarea' })}
     </div>
     <datalist id={`${prefijo}-comerciales`}>{comerciales.map((v) => <option key={v} value={v} />)}</datalist>

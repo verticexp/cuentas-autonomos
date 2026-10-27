@@ -40,3 +40,8 @@
   .jor-meses { justify-content: flex-start; }
 }
 .jornada > .boton.ancho { margin-bottom: 20px; }
+
+.jor-resumen .fila.activa { background: var(--relleno); }
+/* «Ver los N días anteriores»: una fila que se toca, no un título de día más */
+.jor-anteriores > summary { margin: 4px 0 20px; padding: 0 16px; border-radius: var(--r-m); background: var(--surface); font-weight: 600; }
+.jor-todos { display: inline-flex; align-items: center; min-height: 44px; color: var(--ink); }

@@ -66,6 +66,8 @@ test('E01: datos de antes del índice se indexan solos y las páginas recorren t
   assert.deepEqual(pend, orden(fs.filter((f) => !f.cobrada)));
   // Un documento añadido por fuera hace que el índice no cuadre y se reconstruye.
   srv.base.run(['hset', `cuentas:facturas:${u.empresa}`, '2026-500', JSON.stringify(factura(500))]);
+  // Lo escrito por fuera de la app se nota a los pocos segundos (lib/indices.js VIGENCIA_MS); aquí, ya.
+  I.olvidarIndices();
   assert.equal(await I.contar(u, 'facturas'), 174);
 });
 
@@ -144,4 +146,23 @@ test('E05: el número previsto en «Nueva factura» es el que sale al emitir', a
   const datos = { fecha: '2026-10-14', actividad: 'servicios', cliente: { nombre: 'Cliente', nif: '12345678Z' }, concepto: 'x', base: 10, ivaPct: 21, irpfPct: 0 };
   assert.equal((await F.crearFactura(u, datos)).factura.numero, 13);
   assert.equal(await F.numeroPrevisto(u, '', 2026), 14);
+});
+
+test('E01: varias lecturas a la vez con el índice desactualizado lo reconstruyen una sola vez', async () => {
+  const u = empresa();
+  const fs = Array.from({ length: 60 }, (_, i) => factura(i + 1));
+  for (const f of fs) srv.base.run(['hset', `cuentas:facturas:${u.empresa}`, f.id, JSON.stringify(f)]);
+  // Como una pantalla del despacho: la lista, un rango y las pendientes, a la vez.
+  const cmds = await registrar(() => Promise.all([I.contar(u, 'facturas'), I.leerRango(u, 'facturas', '2026-01-01', '2026-12-31'), I.fichasMarcadas(u, 'facturas', 'p'), I.contar(u, 'facturas')]));
+  const evals = cmds.filter((c) => String(c[0]).toLowerCase() === 'eval' && String(c[1]).includes('local function quitar'));
+  assert.equal(evals.length, 1, `una reconstrucción (60 documentos caben en un lote), no ${evals.length}`);
+  assert.equal(await I.contar(u, 'facturas'), 60);
+});
+
+test('E01: un índice ya comprobado no se vuelve a comprobar en cada lectura', async () => {
+  const u = empresa();
+  await R.redis.hset(R.clave(u, 'facturas'), Object.fromEntries(Array.from({ length: 20 }, (_, i) => [`2026-${i + 1}`, factura(i + 1)])));
+  await I.asegurar(u, 'facturas');
+  const cmds = await registrar(async () => { for (let i = 0; i < 20; i++) await I.asegurar(u, 'facturas'); });
+  assert.equal(cmds.length, 0, 'veinte lecturas seguidas: ninguna comprobación más');
 });

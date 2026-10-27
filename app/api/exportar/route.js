@@ -1,17 +1,19 @@
 import { usuarioApi } from '@/lib/api';
-import { importes, numeroFactura, trimestre } from '@/lib/calculos';
+import { importes, numeroFactura, tipoIvaTexto, trimestre } from '@/lib/calculos';
 import { pctDeducible } from '@/lib/ivaDeducible';
 import { actividadesDe, nombresActividad } from '@/lib/empresa';
 import { fechaCorta } from '@/lib/formato';
 import { auditar } from '@/lib/auditoria';
 import { leerRango } from '@/lib/indices';
+import { gastosQueVe } from '@/lib/nominas';
 
 export const dynamic = 'force-dynamic';
 
 const num = (n) => n.toFixed(2).replace('.', ',');
-// Un texto que empieza por = + - @ Excel lo ejecuta como fórmula: se le antepone un apóstrofo (los importes no pasan por aquí).
-const texto = (v) => (/^[=+\-@\t\r]/.test(String(v)) ? `'${v}` : String(v));
-const celda = (v) => { const s = typeof v === 'string' && !/^-?\d+(,\d+)?$/.test(v) ? texto(v) : String(v); return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+// Un texto que empieza por = + - @ Excel lo ejecuta como fórmula: se le antepone un apóstrofo. Los importes («-12,50»,
+// también los negativos de las rectificativas) no pasan por aquí: tienen que seguir siendo números en Excel.
+const texto = (v) => (/^[\s\x00-\x1f]*[=+\-@]|^[\t\r\n]/.test(String(v)) ? `'${v}` : String(v));
+const celda = (v) => { const s = typeof v === 'string' && !/^-?\d+(,\d+)?$/.test(v) ? texto(v) : String(v); return /[;"\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
 const csv = (filas) => '\uFEFF' + filas.map((f) => f.map(celda).join(';')).join('\r\n');
 
 // CSV para Excel (separador «;», coma decimal). ?tipo=facturas|gastos&anio=2026&t=3 (sin t: todo el año)
@@ -23,15 +25,17 @@ export async function GET(req) {
   const ACTIVIDADES = nombresActividad(actividadesDe(u));
   const anio = Number(q.get('anio')) || new Date().getFullYear();
   const t = Number(q.get('t')) || 0;
-  const lista = (await leerRango(u, tipo, `${anio}-01-01`, `${anio}-12-31`))
+  const leidos = (await leerRango(u, tipo, `${anio}-01-01`, `${anio}-12-31`))
     .filter((x) => x.fecha.startsWith(`${anio}-`) && (!t || trimestre(x.fecha) === t))
     .sort((a, b) => a.fecha.localeCompare(b.fecha));
+  // Sin el permiso «Nóminas», las nóminas van juntas por mes (Codex H2).
+  const lista = tipo === 'gastos' ? gastosQueVe(u, leidos) : leidos;
 
   const filas = tipo === 'facturas'
     ? [['Número', 'Fecha', 'Cliente', 'NIF', 'Actividad', 'Concepto', 'Base', 'IVA %', 'Cuota IVA', 'IRPF %', 'Retención', 'Total', 'Cobrada', 'Rectifica'],
       ...lista.map((f) => { const i = importes(f); return [numeroFactura(f), fechaCorta(f.fecha), f.cliente.nombre, f.cliente.nif, ACTIVIDADES[f.actividad], f.concepto, num(i.base), f.ivaPct, num(i.iva), f.irpfPct, num(i.irpf), num(i.total), f.cobrada ? 'Sí' : 'No', f.rectifica?.numero || '']; })]
     : [['Fecha', 'Concepto', 'Actividad', 'Base', 'IVA %', 'Cuota IVA', '% IVA deducible', 'Total', 'Retención'],
-      ...lista.map((g) => { const i = importes(g); return [fechaCorta(g.fecha), g.concepto, ACTIVIDADES[g.actividad], num(i.base), g.ivaPct, num(i.iva), pctDeducible(g), num(i.total), num(i.irpf)]; })];
+      ...lista.map((g) => { const i = importes(g); return [fechaCorta(g.fecha), g.concepto, ACTIVIDADES[g.actividad], num(i.base), tipoIvaTexto(g), num(i.iva), pctDeducible(g), num(i.total), num(i.irpf)]; })];
 
   const nombre = `${tipo}-${anio}${t ? `-${t}T` : ''}.csv`;
   await auditar(u, 'Exportación a Excel', `${nombre} · ${lista.length} ${tipo}`);

@@ -1,3 +1,4 @@
+import { fiscalDe, usaIgic } from '@/lib/empresa';
 import { leerUno } from '@/lib/redis';
 import Vacio from '@/components/Vacio';
 import { sinFuncion } from '@/lib/planes';
@@ -10,7 +11,7 @@ import { datosStock } from '@/lib/stockServidor';
 import { MOTIVOS, inventario } from '@/lib/inventario';
 import { numeroFactura } from '@/lib/calculos';
 import { numeroDoc } from '@/lib/albaranes';
-import { eur, fechaCorta, hoy } from '@/lib/formato';
+import { eur, fechaCorta, hoy, pctCorto } from '@/lib/formato';
 import Volver from '@/components/Volver';
 import { Ajuste } from '@/components/Inventario';
 import { Borrar } from '@/components/Acciones';
@@ -25,7 +26,7 @@ const TIPO = { venta: 'Venta', devolucion: 'Devolución', compra: 'Compra', ajus
 
 export default async function Producto({ params }) {
   const u = await requerir('facturas');
-  if (u.plan?.version === 2 && sinFuncion(u.plan, 'inventario')) return <SinPlan usuario={u} funcion="inventario" />;
+  if (u.plan?.version >= 2 && sinFuncion(u.plan, 'inventario')) return <SinPlan usuario={u} funcion="inventario" />;
   const id = (await params).id;
   const datos = await datosStock(u);
   const { facturas, gastos, albaranes } = datos;
@@ -55,9 +56,9 @@ export default async function Producto({ params }) {
         <div><span>Valor</span><strong>{eur(p.valor)}</strong></div>
       </div>
       {p.bajo && <p className="cont-alerta">{p.agotado ? 'Agotado' : `Bajo mínimo (${ud(p.minimo)})`}: está en <Link href="/inventario?ver=pedir">Qué pedir</Link>.</p>}
-      <p className="grupo-pie">Este año: {ud(p.ventas)} vendidas por {eur(p.ingresos)}, margen {eur(p.margen)}{p.ingresos ? ` (${p.margenPct.toLocaleString('es-ES')} %)` : ''}.{p.consumo > 0 ? ` Consumidas en servicios: ${ud(p.consumo)} (${eur(p.costeConsumo)} a coste).` : ''} Precio de venta {eur(p.precio)}.</p>
+      <p className="grupo-pie">Este año: {ud(p.ventas)} vendidas por {eur(p.ingresos)}, margen {eur(p.margen)}{p.ingresos ? ` (${pctCorto(p.margenPct)})` : ''}.{p.consumo > 0 ? ` Consumidas en servicios: ${ud(p.consumo)} (${eur(p.costeConsumo)} a coste).` : ''} Precio de venta {eur(p.precio)}.</p>
 
-      {puede(u, 'gastar') && <div id="ajustar-stock"><Ajuste producto={p.id} hoy={h} coste={p.costeMedio} consumo={p.consumo > 0} /></div>}
+      {puede(u, 'gastar') && <div id="ajustar-stock"><Ajuste igic={usaIgic(fiscalDe(u))} producto={p.id} hoy={h} coste={p.costeMedio} consumo={p.consumo > 0} /></div>}
 
       <section className="bloque">
         <h2 className="grupo-t">Movimientos</h2>
@@ -86,7 +87,7 @@ export default async function Producto({ params }) {
 
 export async function generateMetadata({ params }) {
   const u = await requerir('facturas');
-  if (u.plan?.version === 2 && sinFuncion(u.plan, 'inventario')) return { title: 'Inventario' };
+  if (u.plan?.version >= 2 && sinFuncion(u.plan, 'inventario')) return { title: 'Inventario' };
   const d = await leerUno(u, 'productos', (await params).id);
   return { title: d?.nombre || 'Producto' };
 }

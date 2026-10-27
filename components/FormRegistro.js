@@ -6,10 +6,12 @@ import CampoPassword from '@/components/CampoPassword';
 import Logo from '@/components/Logo';
 import Link from '@/components/web/EnlacePublico';
 import ProgresoAlta from '@/components/ProgresoAlta';
+import usePasosEnHistorial from '@/components/usePasosEnHistorial';
 import { DESCUENTO, PLANES } from '@/components/web/datos';
 import { datosFiscalesRegistro, PRUEBA_DIAS, PROVINCIAS, provinciaDeCp, TIPOS, TIPOS_ALTA } from '@/lib/prueba';
 import { irALaApp, useTrasArranque } from '@/lib/arranque';
 import { validarContrasena } from '@/lib/contrasena';
+import { eurPrecio } from '@/lib/formato';
 
 const DETALLE = { aut: 'Trabajas por tu cuenta, con o sin empleados', pym: 'Una sociedad con su equipo' };
 // Orden del alta: primero la cuenta (lo más rápido), luego el negocio, los datos fiscales y revisar. El plan no se pide:
@@ -19,8 +21,7 @@ const ETIQUETAS = ['Tu cuenta', 'Negocio', 'Datos fiscales', 'Revisar'];
 const PASO = { cuenta: 1, negocio: 2, fiscal: 3, revisar: 4 };
 // El servidor numera sus pasos con el orden de antes (1 negocio, 2 fiscal, 3 plan y código, 4 cuenta, 5 condiciones).
 const DEL_SERVIDOR = { 1: PASO.negocio, 2: PASO.fiscal, 3: PASO.revisar, 4: PASO.cuenta, 5: PASO.revisar };
-const importe = (p) => p.toLocaleString('es-ES', { minimumFractionDigits: Number.isInteger(p) ? 0 : 2, maximumFractionDigits: 2 });
-const precio = (p, periodo) => periodo === 'anio' ? `${importe(p * 12 * (100 - DESCUENTO) / 100)} €/año` : `${importe(p)} €/mes`;
+const precio = (p, periodo) => periodo === 'anio' ? `${eurPrecio(p * 12 * (100 - DESCUENTO) / 100)}/año` : `${eurPrecio(p)}/mes`;
 function enfocarVisible(elemento) {
   if (!elemento) return;
   elemento.focus({ preventScroll: true });
@@ -60,7 +61,7 @@ export default function FormRegistro({ inicial = {}, sesion = null, recomendacio
   const conTeclado = useRef(false);
   const emailActual = useRef('');
   const seguridad = validarContrasena(password, cuenta);
-  function atras() { if (enviando || comprobando) return; setError(null); cambiarPaso(Math.max(primero, paso - 1)); }
+  function atras() { if (enviando || comprobando) return; setError(null); historial.atras(); }
   function cambiarPaso(n) { setDireccion(n > paso ? 1 : -1); setPaso(n); }
   useLayoutEffect(() => {
     const anterior = pasoAnterior.current;
@@ -105,6 +106,10 @@ export default function FormRegistro({ inicial = {}, sesion = null, recomendacio
   const form = useRef(null);
   const errorRef = useRef(null);
   const pasoVisto = useRef(paso);
+  const historial = usePasosEnHistorial({
+    paso, base: primero, total: PASO.revisar + 1, bloqueado: enviando || comprobando,
+    cambiarPaso,
+  });
 
   useEffect(() => {
     const bloque = form.current?.querySelector(`[data-paso="${paso}"]`);
@@ -165,7 +170,7 @@ export default function FormRegistro({ inicial = {}, sesion = null, recomendacio
       crear();
       return;
     }
-    cambiarPaso(paso + 1);
+    historial.avanzar(paso + 1);
   }
 
   async function crear() {
@@ -180,7 +185,7 @@ export default function FormRegistro({ inicial = {}, sesion = null, recomendacio
     const campo = /recomendaci[oó]n/i.test(mensaje) ? undefined : /promocional|c[oó]digo de recomendaci[oó]n/i.test(mensaje) ? 'codigo' : /nif|cif|hacienda/i.test(mensaje) ? 'nif' : /postal/i.test(mensaje) ? 'cp' : /provincia/i.test(mensaje) ? 'provincia' : /direcci[oó]n/i.test(mensaje) ? 'direccion' : /ciudad/i.test(mensaje) ? 'ciudad' : /tel[eé]fono/i.test(mensaje) ? 'telefono' : /fiscal|raz[oó]n social/i.test(mensaje) ? 'razon' : /email/i.test(mensaje) ? 'email' : /contraseña/i.test(mensaje) ? 'password' : /nombre/i.test(mensaje) ? 'nombre' : /condiciones/i.test(mensaje) ? 'acepto' : /periodo/i.test(mensaje) ? 'periodo' : /plan/i.test(mensaje) ? 'plan' : /tipo/i.test(mensaje) ? 'tipo' : undefined;
     setError({ mensaje, campo });
     const destino = DEL_SERVIDOR[j?.paso] || (/nif|cif|hacienda|empresa|fiscal|postal|provincia/i.test(j?.error || '') ? PASO.fiscal : /email|contraseña|nombre/i.test(j?.error || '') ? PASO.cuenta : null);
-    if (destino && destino >= primero) cambiarPaso(destino);
+    if (destino && destino >= primero) historial.saltar(destino);
   }
 
   function campoFiscal(e) {
@@ -272,7 +277,7 @@ export default function FormRegistro({ inicial = {}, sesion = null, recomendacio
           <dt>{TIPOS[tipo]}</dt><dd>{fiscales.razon}<br />{fiscales.nif}</dd>
           <dt>Dirección fiscal</dt><dd>{fiscales.direccion}<br />{fiscales.cp} {fiscales.ciudad}<br />{fiscales.provincia}{fiscales.telefono && <><br />{fiscales.telefono}</>}</dd>
           <dt>Prueba</dt><dd>{gratis === 90 ? '3 meses gratis con tu código' : gratis ? '2 meses gratis por venir recomendado' : `${PRUEBA_DIAS} días gratis`}, con todo incluido y sin tarjeta.<br />
-            {inicial.plan && elegido ? `Después, plan ${plan} (${precio(elegido.p, periodo)} sin IVA). Podrás cambiarlo cuando quieras.` : desde !== null ? `Al acabar eliges tu plan, desde ${importe(desde)} €/mes sin IVA.` : ''}</dd>
+            {inicial.plan && elegido ? `Después, plan ${plan} (${precio(elegido.p, periodo)} sin IVA). Podrás cambiarlo cuando quieras.` : desde !== null ? `Al acabar eliges tu plan, desde ${eurPrecio(desde)}/mes sin IVA.` : ''}</dd>
         </dl>
         {!recomendacion && (verCodigo ? <div className="registro-codigo">
           <label htmlFor="codigo">Código promocional</label>
@@ -294,7 +299,8 @@ export default function FormRegistro({ inicial = {}, sesion = null, recomendacio
         <p>{error.mensaje}</p>
         {error.campo && <button type="button" className="registro-corregir" onClick={() => enfocarVisible(form.current?.querySelector(`[data-paso="${paso}"] [name="${error.campo}"]`))}>Revisar campo</button>}
       </div>}
-      <button type="submit" disabled={enviando || comprobando || (paso === PASO.negocio && !tipo)}>
+      {/* Sin elegir el tipo de negocio el botón sigue activo: al pulsarlo, siguiente() dice qué falta (auditoría D8-11). */}
+      <button type="submit" disabled={enviando || comprobando}>
         {comprobando ? (paso === PASO.cuenta ? 'Comprobando email…' : 'Comprobando…') : paso < PASO.revisar ? 'Continuar' : enviando ? 'Creando…' : sesion ? 'Crear empresa' : 'Crear cuenta'}
       </button>
       {paso === PASO.negocio && !tipo && <p className="nota registro-falta" id="registro-falta">Elige una opción para seguir.</p>}

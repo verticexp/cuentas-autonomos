@@ -1,5 +1,7 @@
 'use client';
 
+import { TIPOS_IGIC } from '@/lib/igic';
+
 import { confirmar as confirmarAccion } from './Confirmar';
 
 import { useEffect, useId, useRef, useState } from 'react';
@@ -11,6 +13,8 @@ import { fotograma, reducir } from '@/lib/reducirImagen';
 import { preparar, subir } from '@/lib/justificanteCliente';
 import CupoEscaneo from './CupoEscaneo';
 import { escanearNativo, escanerDisponible } from '@/lib/escanerNativo';
+import { vibrar } from '@/lib/haptica';
+import { eur } from '@/lib/formato';
 import { NO_IA, permisoIA } from '@/lib/permisoIA';
 import '@/app/rafaga.css';
 
@@ -20,7 +24,7 @@ import '@/app/rafaga.css';
 const MAX = 8;
 const aTexto = (n) => String(n ?? '').replace('.', ',');
 
-export default function RafagaTickets({ hoy, actividades }) {
+export default function RafagaTickets({ hoy, actividades, igic = false }) {
   const router = useRouter();
   const ayudaId = useId();
   const [abierta, setAbierta] = useState(false);
@@ -84,7 +88,7 @@ export default function RafagaTickets({ hoy, actividades }) {
   const disparar = () => {
     const v = video.current;
     if (!v?.videoWidth || fotos.length >= cupo) return;
-    navigator.vibrate?.(8);
+    vibrar('golpe');
     setFotos((f) => [...f, fotograma(v)]);
   };
   const escanear = async () => {
@@ -113,7 +117,7 @@ export default function RafagaTickets({ hoy, actividades }) {
         finally { window.dispatchEvent(new Event('fisquo:escaneos')); }
         const t = d.gasto;
         const g = { fecha: t.fecha, actividad, proveedor: t.proveedor || '', proveedorNif: t.nif || '', concepto: t.concepto || t.proveedor || '', base: t.base !== '' ? aTexto(t.base) : '', ivaPct: t.ivaPct, irpfPct: t.irpfPct || 0,
-          ...(!Number(t.ivaPct) && nifUE(t.nif) ? { origen: 'ue' } : {}) };
+          ...(!igic && !Number(t.ivaPct) && nifUE(t.nif) ? { origen: 'ue' } : {}) };
         poner(it.id, { estado: 'leido', g, avisos: Array.isArray(t.avisos) ? t.avisos : [], varios: Boolean(t.varios) });
       } catch (err) { poner(it.id, { estado: 'error', error: err.message }); }
     }
@@ -210,8 +214,8 @@ export default function RafagaTickets({ hoy, actividades }) {
                     <img src={it.foto} alt={`Ticket ${i + 1}`} />
                     <div className="rafaga-datos">
                       {it.estado === 'leyendo' && <p className="rafaga-estado" role="status">Leyendo el ticket {i + 1}…</p>}
-                      {it.estado === 'error' && <><p className="error">{it.error}</p><div className="rafaga-acc"><button type="button" className="boton sec pequeno" onClick={() => reintentar(it)}>Reintentar</button><button type="button" className="boton sec pequeno" onClick={() => poner(it.id, { estado: 'descartado' })}>Descartar</button></div></>}
-                      {it.estado === 'guardado' && <p className="rafaga-estado ok">✓ Guardado: {it.g.concepto} · {it.g.base} €</p>}
+                      {it.estado === 'error' && <><p className="error" role="alert">{it.error}</p><div className="rafaga-acc"><button type="button" className="boton sec pequeno" onClick={() => reintentar(it)}>Reintentar</button><button type="button" className="boton sec pequeno" onClick={() => poner(it.id, { estado: 'descartado' })}>Descartar</button></div></>}
+                      {it.estado === 'guardado' && <p className="rafaga-estado ok">✓ Guardado: {it.g.concepto} · {eur(Number(it.g.base))}</p>}
                       {it.estado === 'guardado' && it.aviso && <p className="nota">{it.aviso}</p>}
                       {it.estado === 'descartado' && <p className="rafaga-estado">Descartado</p>}
                       {['leido', 'guardando', 'duplicado'].includes(it.estado) && (
@@ -219,25 +223,25 @@ export default function RafagaTickets({ hoy, actividades }) {
                           <input className="campo" placeholder="Concepto" value={it.g.concepto} onChange={(e) => ponerG(it.id, 'concepto', e.target.value)} aria-label={`Concepto del ticket ${i + 1}`} />
                           <input className="campo" placeholder="Proveedor (opcional)" value={it.g.proveedor} onChange={(e) => ponerG(it.id, 'proveedor', e.target.value)} aria-label={`Proveedor del ticket ${i + 1}`} />
                           <div className="rafaga-fila">
-                            <input className="campo" inputMode="decimal" placeholder="Base sin IVA" value={it.g.base} onChange={(e) => ponerG(it.id, 'base', e.target.value)} aria-label={`Base del ticket ${i + 1}`} />
-                            <select className="campo" value={it.g.ivaPct} onChange={(e) => ponerG(it.id, 'ivaPct', Number(e.target.value))} aria-label={`IVA del ticket ${i + 1}`}>
-                              {[21, 10, 4, 0].map((n) => <option key={n} value={n}>IVA {n}%</option>)}
+                            <input className="campo" inputMode="decimal" placeholder={`Base sin ${igic ? 'IGIC' : 'IVA'}`} value={it.g.base} onChange={(e) => ponerG(it.id, 'base', e.target.value)} aria-label={`Base del ticket ${i + 1}`} />
+                            <select className="campo" value={it.g.ivaPct} onChange={(e) => ponerG(it.id, 'ivaPct', Number(e.target.value))} aria-label={`${igic ? 'IGIC' : 'IVA'} del ticket ${i + 1}`}>
+                              {(igic ? TIPOS_IGIC : [21, 10, 4, 0]).map((n) => <option key={n} value={n}>{igic ? 'IGIC' : 'IVA'} {n}%</option>)}
                             </select>
                             <input className="campo" type="date" max={hoy} value={it.g.fecha} onChange={(e) => ponerG(it.id, 'fecha', e.target.value)} aria-label={`Fecha del ticket ${i + 1}`} />
                           </div>
                           <select className="campo" value={it.g.irpfPct || 0} onChange={(e) => ponerG(it.id, 'irpfPct', Number(e.target.value))} aria-label={`IRPF del ticket ${i + 1}`}>
                             <option value={0}>Sin retención de IRPF</option><option value={15}>IRPF 15 %</option><option value={7}>IRPF 7 %</option>
                           </select>
-                          {it.varios && <p className="nota">Tiene varios tipos de IVA: apúntalo a mano en «A mano» para repartir bien la base.</p>}
+                          {it.varios && <p className="nota">Tiene varios tipos de {igic ? 'IGIC' : 'IVA'}: apúntalo a mano en «A mano» para repartir bien la base.</p>}
                           {it.avisos?.map((a) => <p key={a} className="nota">{a}.</p>)}
-                          {it.error && <p className="error">{it.error}</p>}
+                          {it.error && <p className="error" role="alert">{it.error}</p>}
                           {it.estado === 'duplicado' && (
                             <div className="nota" role="alert">
                               <strong>Puede que ya esté apuntado</strong>
                               <ul>{it.duplicados.map((d) => <li key={d.id}>{d.motivo}</li>)}</ul>
                             </div>
                           )}
-                          {it.varios && <p id={`${ayudaId}-${it.id}-varios`} className="nota">Este ticket tiene varios tipos de IVA: añádelo desde el formulario de gastos.</p>}
+                          {it.varios && <p id={`${ayudaId}-${it.id}-varios`} className="nota">Este ticket tiene varios tipos de {igic ? 'IGIC' : 'IVA'}: añádelo desde el formulario de gastos.</p>}
                           <div className="rafaga-acc">
                             {it.estado === 'duplicado'
                               ? <button type="button" className="boton pequeno" onClick={() => guardar(it, true)}>Es otro gasto: guardarlo</button>

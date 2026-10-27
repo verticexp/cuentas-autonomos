@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto';
 import { leerUno, guardar, borrar } from '@/lib/redis';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { hoy } from '@/lib/formato';
-import { diaValido, plantillaDe } from '@/lib/recurrentes';
+import { diaValido, mesAnterior, plantillaDe } from '@/lib/recurrentes';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,7 +25,10 @@ export async function PATCH(req) {
   const b = await cuerpo(req);
   const r = b.id && (await leerUno(u, 'recurrentes', b.id));
   if (!r) return error('Ya no existe', 404);
-  await guardar(u, 'recurrentes', { ...r, ...('activa' in b ? { activa: Boolean(b.activa) } : {}), ...('dia' in b ? { dia: diaValido(b.dia) } : {}), ...('enviar' in b ? { enviar: Boolean(b.enviar) } : {}) });
+  // Al reanudarla, los meses en pausa no se rellenan: el anterior cuenta como hecho y se olvida un fallo de antes.
+  const reanuda = b.activa && !r.activa;
+  const anterior = mesAnterior(hoy().slice(0, 7));
+  await guardar(u, 'recurrentes', { ...r, ...('activa' in b ? { activa: Boolean(b.activa) } : {}), ...(reanuda ? { ultima: (r.ultima || '') > anterior ? r.ultima : anterior, fallo: undefined } : {}), ...('dia' in b ? { dia: diaValido(b.dia) } : {}), ...('enviar' in b ? { enviar: Boolean(b.enviar) } : {}) });
   return Response.json({ ok: true });
 }
 

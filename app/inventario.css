@@ -1,5 +1,4 @@
 /* Inventario (app/inventario) */
-.inv-rojo { color: var(--out); }
 .inv-sale { color: var(--muted); }
 .inv-anios { justify-content: flex-start; margin-bottom: 8px; }
 .inv-pedido { padding: 14px 16px; margin-bottom: 12px; }

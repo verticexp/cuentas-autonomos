@@ -1,17 +1,21 @@
 import '@/app/legal.css';
+import VolverLegal from '@/components/VolverLegal';
 import { VERSION } from '@/lib/verifactuEnvio';
+import { datosDeclaracion } from '@/lib/webLegal';
 
 export const metadata = { title: 'Declaración responsable' };
 
 // Declaración responsable del sistema informático de facturación (RD 1007/2023, art. 13; Orden HAC/1177/2024, art. 15),
-// según el ejemplo 1 de la AEAT (producto de uso solo VERI*FACTU). Los datos del productor salen de las variables
-// FISQUO_RAZON, FISQUO_NIF, FISQUO_DIRECCION, FISQUO_DECLARACION_FECHA y FISQUO_DECLARACION_LUGAR: sin ellas, no se publica.
+// según el ejemplo 1 de la AEAT (producto de uso solo VERI*FACTU). Los datos del productor (titular, NIF, domicilio, fecha
+// y lugar de firma) salen de data/empresa-legal.js; las variables FISQUO_RAZON, FISQUO_NIF, FISQUO_DIRECCION,
+// FISQUO_DECLARACION_FECHA y FISQUO_DECLARACION_LUGAR sirven de respaldo. Si falta cualquiera, no se publica el texto: la
+// página dice que se está completando.
 export default function Declaracion() {
-  const d = { razon: process.env.FISQUO_RAZON, nif: process.env.FISQUO_NIF, direccion: process.env.FISQUO_DIRECCION, fecha: process.env.FISQUO_DECLARACION_FECHA, lugar: process.env.FISQUO_DECLARACION_LUGAR };
-  if (Object.values(d).some((v) => !v)) {
+  const d = datosDeclaracion(undefined, process.env);
+  if (!d) {
     return (
       <main className="legal">
-        <a className="legal-volver" href="/">Fisquo</a>
+        <VolverLegal />
         <h1>Declaración responsable del sistema informático de facturación</h1>
         <p>La declaración responsable de Fisquo se está completando. Para cualquier duda: <a href="mailto:corporate@fisquo.com">corporate@fisquo.com</a>.</p>
       </main>
@@ -19,13 +23,15 @@ export default function Declaracion() {
   }
   return (
     <main className="legal">
-      <a className="legal-volver" href="/">Fisquo</a>
+      <VolverLegal />
       <h1>Declaración responsable del sistema informático de facturación</h1>
+      <p className="legal-fecha">Sistema Fisquo · versión {VERSION}</p>
+      <p>La entidad productora del sistema informático de facturación que se identifica a continuación realiza esta declaración responsable en cumplimiento del artículo 13 del Reglamento aprobado por el Real Decreto 1007/2023, de 5 de diciembre, y del artículo 15 de la Orden HAC/1177/2024, de 17 de octubre, siguiendo el modelo de la Agencia Tributaria para productos que se usan solo en la modalidad «VERI*FACTU».</p>
       <h2>1.a) Nombre del sistema informático</h2>
       <p>Fisquo</p>
       <h2>1.b) Código identificador del sistema informático</h2>
       <p>NT</p>
-      <h2>1.c) Versión</h2>
+      <h2>1.c) Identificador completo de la versión</h2>
       <p>{VERSION}</p>
       <h2>1.d) Componentes y funcionalidades</h2>
       <p>Aplicación web en la nube (con aplicación para móvil que la abre) para facturar y gestionar la facturación: expedir facturas y rectificativas, consultarlas, exportarlas y llevar gastos, impuestos y tesorería. No se instala en los equipos del usuario: funciona en los servidores de la entidad productora y se usa desde el navegador.</p>
@@ -47,7 +53,7 @@ export default function Declaracion() {
       <h2>1.l) Fecha y lugar de suscripción</h2>
       <p>{d.fecha}, en {d.lugar}.</p>
       <h2>Anexo · Otras formas de contacto</h2>
-      <p><a href="mailto:corporate@fisquo.com">corporate@fisquo.com</a></p>
+      <p><a href={`mailto:${d.email}`}>{d.email}</a></p>
     </main>
   );
 }

@@ -5,13 +5,17 @@ import { eur, fechaTexto, hoy } from '@/lib/formato';
 import { ESTADOS, estadoDe, numeroPresupuesto } from '@/lib/presupuestos';
 import { portalDe } from '@/lib/portal';
 import '@/app/portal.css';
+import { enDivisa, formatoDoc, textosFactura, tituloDoc } from '@/lib/idiomas';
+import { faltanDatosFactura } from '@/lib/empresa';
+import Vacio from '@/components/Vacio';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Tus documentos', robots: { index: false } };
 
 // Portal del cliente: sin cuenta, con su enlace ve todas sus facturas y presupuestos, los descarga y paga.
-export default async function Portal({ params }) {
+export default async function Portal({ params, searchParams }) {
   const { token } = await params;
+  const { hecho, error } = (await searchParams) || {};
   const d = await portalDe(token);
   // Las páginas no pueden fijar un 429: el endpoint público devuelve el límite sin leer documentos.
   if (d instanceof Response) redirect(`/api/portal/limite?espera=${d.headers.get('Retry-After')}`);
@@ -19,7 +23,7 @@ export default async function Portal({ params }) {
   const { cliente, empresa, facturas, presupuestos } = d;
   const e = empresa.emisor || {};
   const h = hoy();
-  const pdf = Boolean(e.nif && e.iban);
+  const pdf = faltanDatosFactura(e).length === 0;
   const porPagar = facturas.filter((f) => !f.cobrada && importes(f).total > 0);
   const pendiente = porPagar.reduce((s, f) => s + saldoDe(f), 0);
   const t = encodeURIComponent(token);
@@ -34,29 +38,44 @@ export default async function Portal({ params }) {
         <div className="fh-pie"><span>{porPagar.length ? `Pendiente de pago · ${porPagar.length} ${porPagar.length === 1 ? 'factura' : 'facturas'}` : 'No tienes nada pendiente'}</span></div>
       </section>
 
+      {hecho && <p className="nota" role="status">{hecho === 'rechazada' ? 'Hemos avisado a la empresa de que rechazas la factura.' : 'Gracias: la empresa ya sabe que la factura está conforme.'}</p>}
+      {error && <p className="error" role="alert">{String(error).slice(0, 200)}</p>}
       <h2 className="portal-t">Facturas</h2>
       {facturas.length ? <ul className="grupo-lista portal-lista">
         {facturas.map((f) => {
           const est = f.cobrada ? 'cobrada' : vencida(f, e.plazo, h) ? 'vencida' : 'pendiente';
-          const pagar = cobroFacturasListo() && !f.cobrada && importes(f).total > 0;
+          const pagar = cobroFacturasListo(empresa) && !f.cobrada && importes(f).total > 0;
           return (
             <li key={f.id} className="portal-doc">
               <span className="txt">
-                <strong>Factura {numeroFactura(f)}</strong>
+                {/* «Factura simplificada» si va sin NIF del cliente, como en su PDF (lib/idiomas.js tituloDoc). */}
+                <strong>{tituloDoc(f, textosFactura('es'))} {numeroFactura(f)}</strong>
                 <small>{fechaTexto(f.fecha)}{f.concepto ? ` · ${f.concepto}` : ''}</small>
               </span>
               <span className="imp-col">
-                <span className="imp">{eur(importes(f).total)}</span>
+                {/* En la moneda en que se facturó (lib/idiomas.js). */}
+                <span className="imp">{formatoDoc(f).dinero(importes(enDivisa(f)).total)}</span>
                 <span className={`estado-txt e-${est}`}>{est === 'cobrada' ? 'Pagada' : est === 'vencida' ? 'Vencida' : 'Pendiente'}</span>
               </span>
               <span className="portal-acc">
                 {pdf && <a className="boton pequeno sec" href={`/api/portal/pdf?t=${t}&id=${encodeURIComponent(f.id)}`}>PDF</a>}
                 {pagar && <form action="/api/portal/pagar" method="post"><input type="hidden" name="t" value={token} /><input type="hidden" name="id" value={f.id} /><button className="boton pequeno">Pagar</button></form>}
               </span>
+              {/* Estados de la factura electrónica entre empresas (Ley 18/2022): conforme o rechazada, con su motivo. */}
+              {!f.cobrada && (f.estadoCliente ? <small className="portal-estado">{f.estadoCliente.estado === 'aceptada' ? `Marcaste esta factura como conforme el ${fechaTexto(f.estadoCliente.fecha.slice(0, 10))}.` : `La rechazaste el ${fechaTexto(f.estadoCliente.fecha.slice(0, 10))}: ${f.estadoCliente.motivo}`}</small> : (
+                <details className="portal-estado">
+                  <summary>¿Está bien esta factura?</summary>
+                  <form action="/api/portal/estado" method="post" className="fila-act"><input type="hidden" name="t" value={token} /><input type="hidden" name="id" value={f.id} /><input type="hidden" name="estado" value="aceptada" /><button className="boton pequeno sec">Sí, está conforme</button></form>
+                  <form action="/api/portal/estado" method="post"><input type="hidden" name="t" value={token} /><input type="hidden" name="id" value={f.id} /><input type="hidden" name="estado" value="rechazada" />
+                    <label>Si no, dinos qué falla<textarea className="campo" name="motivo" rows={2} maxLength={300} required placeholder="Ej.: el importe no coincide con el presupuesto" /></label>
+                    <button className="boton pequeno sec">Rechazar la factura</button>
+                  </form>
+                </details>
+              ))}
             </li>
           );
         })}
-      </ul> : <p className="nota">Todavía no hay facturas.</p>}
+      </ul> : <Vacio compacto icono="factura" titulo="Todavía no hay facturas">Cuando te emitan una, la verás aquí para descargarla y, si se puede, pagarla.</Vacio>}
 
       {presupuestos.length > 0 && <>
         <h2 className="portal-t">Presupuestos</h2>

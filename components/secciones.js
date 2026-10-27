@@ -28,8 +28,8 @@ export const EXTRA = [
     { href: '/proyectos', permiso: 'resumen', nombre: 'Proyectos', detalle: 'Rentabilidad de cada trabajo', palabras: 'trabajos obras encargos', icono: <path d="M3 7h18v13H3zM8 7V4h8v3M3 12h18" /> },
   ] },
   { titulo: 'Equipo', tono: 'violeta', enlaces: [
-    { href: '/nominas', permiso: 'nominas', nombre: 'Equipo y nóminas', detalle: 'Empleados, nóminas y modelo 111', palabras: 'empleados trabajadores sueldos', icono: <><rect x="3" y="6" width="18" height="13" rx="2" /><circle cx="9" cy="12" r="2.2" /><path d="M5.8 16.5c.5-1.3 1.7-2 3.2-2s2.7.7 3.2 2M15 11h3M15 14h2" /></> },
-    { href: '/jornada', permiso: 'nominas', nombre: 'Registro de jornada', detalle: 'Fichajes y horas del equipo', palabras: 'fichar fichajes horas', icono: <><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></> },
+    { href: '/nominas', permiso: 'nominas', equipo: true, nombre: 'Equipo y nóminas', detalle: 'Empleados, nóminas y modelo 111', palabras: 'empleados trabajadores sueldos', icono: <><rect x="3" y="6" width="18" height="13" rx="2" /><circle cx="9" cy="12" r="2.2" /><path d="M5.8 16.5c.5-1.3 1.7-2 3.2-2s2.7.7 3.2 2M15 11h3M15 14h2" /></> },
+    { href: '/jornada', permiso: 'nominas', equipo: true, nombre: 'Registro de jornada', detalle: 'Fichajes y horas del equipo', palabras: 'fichar fichajes horas', icono: <><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></> },
   ] },
 ];
 
@@ -39,12 +39,16 @@ export const ASISTENTE = { href: '/asistente', nombre: 'Pregunta a Fisquo', icon
 const TODAS = [...EXTRA.flatMap((g) => g.enlaces), ASISTENTE];
 // La pantalla extra en la que se está (la más concreta), para marcarla.
 export const extraDe = (path) => TODAS.filter((e) => path === e.href || path.startsWith(`${e.href}/`)).sort((a, b) => b.href.length - a.href.length)[0]?.href ?? null;
+// Si la pantalla misma está en la barra lateral: en el ordenador su «‹ atrás» sobra (components/Volver.js).
+export const esSeccion = (path) => TODAS.some((e) => e.href === path);
 
 // Los grupos con solo lo que esta persona puede ver (permisos) y lo que esta empresa usa (inventario). Con la forma de la
 // empresa (fiscal), las pantallas del autónomo llevan su nombre (lib/modulos.js PARA_AUTONOMO: «Libros registro»…); faltan: { href: plan } de lib/modulos.js, el plan
 // que incluye cada pantalla que el suyo no tiene (se enseña al lado del nombre).
-export const gruposVisibles = (permisos = [], inventario = false, { fiscal, faltan = {} } = {}) => EXTRA
+// equipo: si la empresa tiene trabajadores (lo dijo al empezar o ya ha dado de alta a alguien); sin ellos, «Equipo» no sale
+// y el menú del primer día es más corto (auditoría U-7 y D8-28).
+export const gruposVisibles = (permisos = [], inventario = false, { fiscal, faltan = {}, equipo = true } = {}) => EXTRA
   .map((g) => ({ ...g, enlaces: g.enlaces
-    .filter((e) => (!e.permiso || [].concat(e.permiso).every((p) => permisos.includes(p))) && (!e.inventario || inventario))
+    .filter((e) => (!e.permiso || [].concat(e.permiso).every((p) => permisos.includes(p))) && (!e.inventario || inventario) && (!e.equipo || equipo))
     .map((e) => ({ ...e, ...(fiscal?.tipo && !esSociedad(fiscal) ? PARA_AUTONOMO[e.href] : {}), ...(faltan[e.href] ? { plan: faltan[e.href] } : {}) })) }))
   .filter((g) => g.enlaces.length > 0);

@@ -37,6 +37,13 @@ test('lee un Excel comprimido con textos compartidos, celdas vacías, fechas y l
     'xl/worksheets/hoja.xml': '<worksheet><sheetData><row r="1"><c r="A1" t="s"><v>0</v></c><c r="C1" t="s"><v>1</v></c></row><row r="2"/><row r="3"><c r="A3" t="s"><v>2</v></c><c r="B3" t="inlineStr"><is><t>x</t></is></c><c r="C3"><v>45658</v></c></row></sheetData></worksheet>',
   });
   assert.deepEqual(leerHoja(b), [['Num', '', 'Fecha'], ['Café & Co', 'x', 45658]]);
+  // Con vacias: la fila 2 (vacía) se conserva, y las que faltan en el XML también (r salta de 3 a 6).
+  assert.deepEqual(leerHoja(b, { vacias: true }), [['Num', '', 'Fecha'], [], ['Café & Co', 'x', 45658]]);
+  const hueco = zipDeflate({ 'xl/worksheets/sheet1.xml': '<worksheet><sheetData><row r="1"><c r="A1" t="inlineStr"><is><t>a</t></is></c></row><row r="4"><c r="A4" t="inlineStr"><is><t>b</t></is></c></row><row r="7"><c r="A7" t="inlineStr"><is><t>c</t></is></c></row></sheetData></worksheet>' });
+  const h = leerHoja(hueco, { vacias: true });
+  assert.deepEqual(h.slice(0, 4), [['a'], [], [], ['b']]);
+  assert.ok(h.length < 60);
+  assert.deepEqual(leerHoja(hueco), [['a'], ['b'], ['c']]);
   assert.equal(leerFecha(45658), '2025-01-01');
 });
 
@@ -93,7 +100,7 @@ test('clientes por nombre o NIF, con CP y población', () => {
 
 test('gastos por fecha, importe y concepto; productos por nombre', () => {
   const g = previa('gastos', [['Fecha', 'Proveedor', 'Concepto', 'Base imponible', '% IVA', 'Estado'], ['2026-02-01', 'Sonido SL', 'Altavoces', 200, '21%', 'Pagado'], ['2026-02-02', 'Gasolinera', '', 50, 0.21, 'Pendiente']],
-    [{ fecha: '2026-02-01', concepto: 'altavoces', base: 200, ivaPct: 21 }]);
+    [{ fecha: '2026-02-01', concepto: 'altavoces', proveedor: 'Sonido SL', base: 200, ivaPct: 21 }]);
   assert.deepEqual(g.items.map((x) => x.estado), ['duplicado', 'nuevo']);
   assert.deepEqual(g.items[1].datos, { fecha: '2026-02-02', concepto: 'Gasolinera', base: 50, ivaPct: 21, proveedor: 'Gasolinera', pendiente: true });
   const p = previa('productos', [['Producto', 'Precio', 'IVA'], ['Hora de DJ', '120,50', 21], ['hora de dj', 1, 21], ['Sin precio', '', 21]], []);
@@ -173,4 +180,9 @@ test('IVA deducible en parte: columna «% IVA deducible» (50, «0,5» o celda d
   const p = previa('gastos', [['Fecha', 'Concepto', 'Base', '% IVA', '% IVA deducible'], ['2026-02-01', 'Coche', 1000, 21, 50], ['2026-02-02', 'Luz', 100, 21, 1],
     ['2026-02-03', 'Móvil', 100, 21, '0,5'], ['2026-02-04', 'X', 100, 21, 150], ['2026-02-05', 'Y', 100, 21, '']], []);
   assert.deepEqual(p.items.map((x) => x.datos?.deduciblePct ?? x.error ?? 100), [50, 100, 50, 'El % de IVA deducible tiene que estar entre 0 y 100', 100]);
+});
+
+test('gastos (auditoría C1-23): un % deducible de Excel como fracción numérica (0,125) es el 12,5 %, no 125', () => {
+  const g = previa('gastos', [['Fecha', 'Concepto', 'Base imponible', '% IVA', '% IVA deducible'], ['2026-02-01', 'Coche', 100, 21, 0.125], ['2026-02-02', 'Furgoneta', 100, 21, '50%']], []);
+  assert.deepEqual(g.items.map((x) => [x.estado, x.datos?.deduciblePct]), [['nuevo', 12.5], ['nuevo', 50]]);
 });

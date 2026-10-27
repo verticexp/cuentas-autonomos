@@ -21,7 +21,11 @@
 .grupo-lista { list-style: none; padding: 0; margin-top: 16px; background: var(--surface); border-radius: 20px; overflow: hidden; }
 .grupo-lista li + li { border-top: 1px solid var(--line); }
 .grupo-lista a.fila { text-decoration: none; }
-.num { flex: none; font-weight: 700; color: var(--muted); font-size: 14px; width: 64px; }
+/* Número de factura en la lista del mes, en su columna y sin partirse en dos líneas («Z2026-» y «013»). En el móvil va
+   en la línea de debajo, como en Facturas, para dejar sitio al nombre del cliente. */
+.num { flex: none; font-weight: 700; color: var(--muted); font-size: 14px; width: 92px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.num-movil { display: none; }
+@media (max-width: 559.98px) { .fila > .num { display: none; } .num-movil { display: inline; } }
 .imp.pend { color: var(--out); }
 
 .formulario { display: flex; flex-direction: column; gap: 12px; }
@@ -38,13 +42,16 @@
 .totales { display: flex; flex-wrap: wrap; gap: 6px 16px; justify-content: space-between; background: var(--surface); border-radius: 14px; padding: 14px 16px; }
 .tarjeta.formulario { margin-bottom: 8px; }
 .tarjeta.formulario h3 { margin-bottom: 0; }
-.tarjeta.formulario .campo, .tarjeta.formulario .tipo { background: var(--paper); }
+.tarjeta.formulario .campo, .tarjeta.formulario .tipo { background-color: var(--paper); }
 
 .acciones-factura { display: flex; gap: 10px; align-items: center; margin-bottom: 24px; }
 .borrar { color: var(--out); font-weight: 600; padding: 8px 14px; border-radius: 999px; background: color-mix(in srgb, var(--out) 12%, transparent); }
 .estado { padding: 8px 14px; border-radius: 999px; font-weight: 600; }
-.estado.ok { background: color-mix(in srgb, var(--in) 15%, transparent); color: var(--in); }
-.estado.pend { background: color-mix(in srgb, var(--out) 12%, transparent); color: var(--out); }
+/* background-color (no el atajo «background»): así el selector conserva la flecha de select.estado (app/movil.css).
+   «Pendiente» no es una alarma: en ámbar de Hacienda; en rojo solo cuando el plazo ya pasó (.fuera). */
+.estado.ok { background-color: color-mix(in srgb, var(--in) 15%, transparent); color: var(--in); }
+.estado.pend { background-color: color-mix(in srgb, var(--hacienda) 13%, transparent); color: var(--hacienda); }
+.estado.pend.fuera { background-color: color-mix(in srgb, var(--out) 12%, transparent); color: var(--out); }
 
 /* Factura imprimible (misma plantilla que las de 2026) */
 .pdf-fondo { background: #d9dbe0; min-height: 100%; padding: 16px 0 40px; }
@@ -80,19 +87,22 @@
 
 .boton.sec { background: var(--surface); color: var(--ink); }
 .ancho { display: block; width: 100%; margin-top: 12px; padding: 14px; text-align: center; }
-.enlace { display: flex; flex-direction: column; gap: 8px; }
+.enlace-invitacion { display: flex; flex-direction: column; gap: 8px; }
 .grupo-lista li.fila .borrar { flex: none; }
 .login .nota { margin: 0 0 6px; }
 
-.aviso-plazo { display: flex; flex-direction: column; gap: 2px; background: color-mix(in srgb, #E9A23B 18%, var(--surface)); border-radius: 16px; padding: 14px 16px; margin-bottom: 14px; text-decoration: none; }
+.aviso-plazo { display: flex; flex-direction: column; gap: 2px; background: color-mix(in srgb, var(--ambar) 18%, var(--surface)); border-radius: 16px; padding: 14px 16px; margin-bottom: 14px; text-decoration: none; }
 .aviso-plazo span { color: var(--muted); font-size: 15px; }
 .aviso-plazo.rojo { background: color-mix(in srgb, var(--out) 14%, var(--surface)); }
 .barra-limite { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; margin-top: 10px; }
 .barra-limite span { display: block; height: 100%; background: var(--in); border-radius: 4px; }
-.barra-limite span.cerca { background: #E9A23B; }
+.barra-limite span.cerca { background: var(--ambar); }
 .barra-limite span.pasado { background: var(--out); }
 .grande small { font-size: 15px; font-weight: 500; letter-spacing: 0; }
 .descargas { color: var(--muted); font-size: 14px; margin: 10px 0 0; }
 .descargas a { color: var(--ink); font-weight: 600; }
 .acciones-factura { flex-wrap: wrap; }
 .trimestre .cabecera { margin-bottom: 10px; } .trimestre .cabecera h3 { margin: 0; } .trimestre .estado { padding: 6px 12px; font-size: 13px; }
+/* «¿Ya lo has presentado?»: el botón con el mismo margen que la fila, y el plazo entero en dos líneas si no cabe. */
+.grupo-lista .ya-presentado { padding: 0 16px 12px; flex-wrap: wrap; }
+.grupo-lista li:has(.ya-presentado) .txt small { white-space: normal; }

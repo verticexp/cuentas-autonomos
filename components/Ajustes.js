@@ -3,29 +3,42 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
+import useCambiosSinGuardar from './useCambiosSinGuardar';
+import { AYUDA_CONTRASENA } from '@/lib/contrasena';
+import '@/app/ajustes-formularios.css';
 
 const CAMPOS = [
   ['nombre', 'Nombre o razón social (sale en la factura)'],
   ['nif', 'NIF'],
   ['direccion', 'Dirección'],
   ['ciudad', 'Ciudad y CP'],
-  ['iban', 'IBAN'],
 ];
 
-function Formulario({ titulo, inicial, enviar, children }) {
+// refrescar: tras guardar, se pide de nuevo la pantalla (la lista de Ajustes enseña lo guardado en sus filas).
+function Formulario({ titulo, inicial, enviar, refrescar = true, children }) {
+  const router = useRouter();
   const [datos, setDatos] = useState(inicial);
+  // «Guardar», como el «OK» de iOS: solo se puede tocar si algo ha cambiado desde lo último guardado.
+  const [original, setOriginal] = useState(inicial);
   const [msg, setMsg] = useState('');
+  const cambiado = JSON.stringify(datos) !== JSON.stringify(original);
+  // «¿Salir sin guardar?» al cerrar la hoja (CerrarAjustes, ArrastrarAjustes) o con el atrás del sistema. Se registra si hay
+  // cambios (no los datos: al guardar a veces se vacían, como la contraseña) y, guardado, solo se suelta la entrada de aviso.
+  const sinGuardar = useCambiosSinGuardar(cambiado);
   const guardar = async (e) => {
     e.preventDefault();
     setMsg('Guardando…');
-    try { await enviar(datos, setDatos); setMsg('Guardado'); } catch (err) { setMsg(err.message); }
+    let final = datos;
+    try { await enviar(datos, (x) => { final = x; setDatos(x); }); setOriginal(final); setMsg('Guardado'); } catch (err) { setMsg(err.message); return; }
+    await sinGuardar.soltar(); // la entrada de aviso se quita antes de refrescar
+    if (refrescar) router.refresh();
   };
   return (
-    <form className="formulario tarjeta" onSubmit={guardar}>
-      <h3>{titulo}</h3>
+    <form className="formulario aj-form" onSubmit={guardar}>
+      <h3 aria-level={2}>{titulo}</h3>
       {children(datos, (k, v) => setDatos((x) => ({ ...x, [k]: v })))}
-      {msg && <p role="status" className={msg === 'Guardado' ? 'nota guardado' : msg === 'Guardando…' ? 'nota' : 'error'}>{msg === 'Guardado' ? '✓ Guardado' : msg}</p>}
-      <button className="boton">Guardar</button>
+      {msg && <p role="status" className={msg === 'Guardado' ? 'nota aj-pie guardado' : msg === 'Guardando…' ? 'nota aj-pie' : 'error aj-pie'}>{msg === 'Guardado' ? '✓ Guardado' : msg}</p>}
+      <button className="boton" disabled={!cambiado || msg === 'Guardando…'}>Guardar</button>
     </form>
   );
 }
@@ -48,26 +61,30 @@ function ProbarDrive({ error }) {
   );
 }
 
-export default function Ajustes({ seccion, emisor, drive, driveError, sociedad, nombre }) {
-  const router = useRouter();
+// extra: otra tarjeta de la sección en la misma rejilla (el cobro con tarjeta en Cobros).
+export default function Ajustes({ seccion, emisor, drive, driveError, sociedad, nombre, extra = null }) {
   return (
     <div className="tarjetas bloque">
       {seccion === 'facturacion' && <Formulario
-        titulo="Datos de la empresa"
+        titulo="Lo que sale en tus facturas"
         inicial={emisor}
-        enviar={async (d) => { await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify(d) }); router.refresh(); }}
+        enviar={async (d) => { await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify(d) }); }}
       >
         {(d, poner) => (
           <>
+            <div className="aj-grupo">
             {CAMPOS.map(([k, n]) => (
               <label key={k}>{n}<input {...(k === 'nif' ? { autoCapitalize: 'characters', autoCorrect: 'off', spellCheck: false } : {})} className="campo" value={d[k] || ''} onChange={(e) => poner(k, e.target.value)} required /></label>
             ))}
+            <label>IBAN (opcional: sale en tus facturas para que te paguen por transferencia)<input autoCapitalize="characters" autoCorrect="off" spellCheck={false} className="campo" value={d.iban || ''} onChange={(e) => poner('iban', e.target.value)} placeholder="ES00 0000 0000 0000 0000 0000" /></label>
             <label>Email de contacto (opcional)<input autoComplete="email" className="campo" type="email" value={d.email || ''} onChange={(e) => poner('email', e.target.value)} placeholder="facturas@tuempresa.es" /></label>
             <label>Teléfono (opcional)<input inputMode="tel" autoComplete="tel" className="campo" type="tel" value={d.telefono || ''} onChange={(e) => poner('telefono', e.target.value)} /></label>
             <label>Web (opcional)<input className="campo" value={d.web || ''} onChange={(e) => poner('web', e.target.value)} placeholder="tuempresa.es" /></label>
+            <label>Código de cuenta de cotización (opcional, si tienes trabajadores)<input className="campo" inputMode="numeric" value={d.ccc || ''} onChange={(e) => poner('ccc', e.target.value)} placeholder="0111 28 123456789" /></label>
             {sociedad && <label>Datos del Registro Mercantil<input className="campo" value={d.registro || ''} onChange={(e) => poner('registro', e.target.value)} placeholder="Registro Mercantil de Madrid, tomo 1234, folio 56, hoja M-78901" /></label>}
-            {sociedad && <p className="nota">Las sociedades deben ponerlos en sus facturas y documentos. Salen al pie de cada factura.</p>}
             {!sociedad && <label>Límite de rendimiento neto anual (tarifa plana; SMI 2026: 17094)<input className="campo" type="number" min="0" placeholder="Vacío si no tienes tarifa plana" value={d.limite || ''} onChange={(e) => poner('limite', e.target.value)} /></label>}
+            </div>
+            {sociedad && <p className="nota">Las sociedades deben ponerlos en sus facturas y documentos. Salen al pie de cada factura.</p>}
             <p className="nota">El email, el teléfono y la web salen en tus facturas, debajo de tu dirección.</p>
           </>
         )}
@@ -75,27 +92,31 @@ export default function Ajustes({ seccion, emisor, drive, driveError, sociedad, 
       {seccion === 'cobros' && <Formulario
         titulo="Cómo te pagan"
         inicial={{ plazo: emisor.plazo ?? 30, recordatorios: emisor.recordatorios || '', bizum: emisor.bizum || '', otroPago: emisor.otroPago || '' }}
-        enviar={async (d) => { await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify({ cobros: d }) }); router.refresh(); }}
+        enviar={async (d) => { await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify({ cobros: d }) }); }}
       >
         {(d, poner) => (
           <>
+            <div className="aj-grupo">
             <label>Plazo de pago (días)<input className="campo" type="number" min="0" max="365" value={d.plazo} onChange={(e) => poner('plazo', e.target.value)} /></label>
-            <p className="nota">Transferencia al IBAN de tus datos de empresa{emisor.iban ? ` (…${String(emisor.iban).replace(/\s/g, '').slice(-4)})` : ''}: sale siempre en la factura.</p>
             <label>Bizum (opcional)<input autoComplete="tel" className="campo" type="tel" inputMode="tel" value={d.bizum} onChange={(e) => poner('bizum', e.target.value)} placeholder="600 000 000" /></label>
             <label>Otra forma de pago (opcional)<input className="campo" value={d.otroPago} onChange={(e) => poner('otroPago', e.target.value)} placeholder="Efectivo, domiciliación, pagaré…" /></label>
             <label>Recordar por email las facturas vencidas cada (días)<input className="campo" type="number" min="0" max="60" placeholder="0 o vacío: no enviar recordatorios" value={d.recordatorios} onChange={(e) => poner('recordatorios', e.target.value)} /></label>
+            </div>
+            <p className="nota">Transferencia al IBAN de tus datos de empresa{emisor.iban ? ` (…${String(emisor.iban).replace(/\s/g, '').slice(-4)})` : ''}: sale siempre en la factura.</p>
           </>
         )}
       </Formulario>}
       {seccion === 'marca' && <Formulario
         titulo="Textos de la factura"
         inicial={{ pie: emisor.pie || '', notaDefecto: emisor.notaDefecto || '' }}
-        enviar={async (d) => { await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify({ diseno: d }) }); router.refresh(); }}
+        enviar={async (d) => { await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify({ diseno: d }) }); }}
       >
         {(d, poner) => (
           <>
+            <div className="aj-grupo">
             <label>Nota que llevan las facturas nuevas (se puede cambiar en cada una)<textarea className="campo" rows={3} maxLength={500} value={d.notaDefecto} onChange={(e) => poner('notaDefecto', e.target.value)} placeholder="Gracias por tu confianza." /></label>
             <label>Pie de página (textos legales)<textarea className="campo" rows={4} maxLength={500} value={d.pie} onChange={(e) => poner('pie', e.target.value)} placeholder="Ej.: protección de datos, condiciones de pago o «Operación exenta de IVA según el art. 20 de la Ley 37/1992»." /></label>
+            </div>
             <p className="nota">El pie sale abajo en todas las facturas y presupuestos. Las facturas ya emitidas no cambian.</p>
           </>
         )}
@@ -103,41 +124,47 @@ export default function Ajustes({ seccion, emisor, drive, driveError, sociedad, 
       {seccion === 'perfil' && <Formulario
         titulo="Tu nombre"
         inicial={{ nombre: nombre || '' }}
-        enviar={async (d) => { await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify({ perfil: d }) }); router.refresh(); }}
+        enviar={async (d) => { await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify({ perfil: d }) }); }}
       >
         {(d, poner) => (
           <>
-            <input className="campo" value={d.nombre} onChange={(e) => poner('nombre', e.target.value)} maxLength={80} autoComplete="name" required aria-label="Tu nombre" />
+            <div className="aj-grupo"><label><input className="campo" value={d.nombre} onChange={(e) => poner('nombre', e.target.value)} maxLength={80} autoComplete="name" required aria-label="Tu nombre" /></label></div>
             <p className="nota">Es como te ven las demás personas de tu empresa. El nombre de la empresa, en Datos de la empresa.</p>
           </>
         )}
       </Formulario>}
       {seccion === 'drive' && <Formulario
-        titulo="Google Drive"
+        titulo="Conexión con tu Drive"
         inicial={{ url: drive?.url || '', token: drive?.token || '' }}
-        enviar={async (d) => { await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify({ drive: d }) }); router.refresh(); }}
+        enviar={async (d) => { await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify({ drive: d }) }); }}
       >
         {(d, poner) => (
           <>
             <p className="nota">Cada factura y gasto nuevo se guarda en tu Drive: el PDF en su carpeta y una fila en tus libros de Google Sheets.</p>
+            <div className="aj-grupo">
             <label>URL de la aplicación web de Apps Script<input className="campo" placeholder="https://script.google.com/macros/s/…/exec" value={d.url} onChange={(e) => poner('url', e.target.value)} /></label>
             <label>Clave (la misma que pusiste en el script)<input className="campo" type="password" autoComplete="off" value={d.token} onChange={(e) => poner('token', e.target.value)} /></label>
+            </div>
             {drive?.url && <ProbarDrive error={driveError} />}
           </>
         )}
       </Formulario>}
       {seccion === 'seguridad' && <Formulario
         titulo="Cambiar contraseña"
+        refrescar={false}
         inicial={{ actual: '', nueva: '' }}
         enviar={async (d, set) => { await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify(d) }); set({ actual: '', nueva: '' }); }}
       >
         {(d, poner) => (
           <>
+            <div className="aj-grupo">
             <label>Contraseña actual<input className="campo" type="password" placeholder="Contraseña actual" autoComplete="current-password" value={d.actual} onChange={(e) => poner('actual', e.target.value)} required /></label>
-            <label>Nueva contraseña<input className="campo" type="password" placeholder="Nueva (mínimo 8)" autoComplete="new-password" minLength={8} value={d.nueva} onChange={(e) => poner('nueva', e.target.value)} required /></label>
+            <label>Nueva contraseña<input className="campo" type="password" placeholder="Nueva contraseña" autoComplete="new-password" minLength={10} value={d.nueva} onChange={(e) => poner('nueva', e.target.value)} required /><small className="nota">{AYUDA_CONTRASENA}</small></label>
+            </div>
           </>
         )}
       </Formulario>}
+      {extra}
     </div>
   );
 }

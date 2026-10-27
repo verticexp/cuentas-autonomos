@@ -14,6 +14,8 @@ body { --marca: var(--acento, #0F1F1B); --sobre: #fff; font-size: 17px; letter-s
 .pagina { padding-left: 16px; padding-right: 16px; animation: none; }
 .titulo { font-size: 34px; font-weight: 700; letter-spacing: 0.01em; line-height: 1.2; margin: 6px 0 14px; }
 .cabecera { margin-bottom: 10px; }
+/* El botón de la cabecera no se parte en dos líneas («Nuevo / pedido»): el que se ajusta es el título */
+.cabecera > .boton { flex: none; white-space: nowrap; }
 .nota, .rotulo { font-size: 15px; }
 
 /* Botones: el relleno del color de marca solo para la acción principal */
@@ -25,10 +27,12 @@ body { --marca: var(--acento, #0F1F1B); --sobre: #fff; font-size: 17px; letter-s
 a { color: var(--marca); }
 button:focus-visible, input:focus-visible, a:focus-visible, select:focus-visible { outline: 2px solid var(--marca); outline-offset: 2px; }
 .volver { color: var(--marca); font-weight: 400; font-size: 17px; }
+/* En el ordenador, la pantalla que ya está en la barra lateral no lleva «‹ atrás» (components/Volver.js) */
+@media (min-width: 1024px) { .volver.volver-movil { display: none; } }
 
 /* Tarjetas antiguas: pasan a ser grupos lisos */
 .tarjeta { background: var(--surface); border-radius: 12px; padding: 14px 16px; box-shadow: none; }
-.tarjeta h3 { font-size: 17px; font-weight: 600; margin-bottom: 10px; }
+.tarjeta h3, .tarjeta .tarjeta-titulo { font-size: 17px; font-weight: 600; margin-bottom: 10px; }
 .tarjetas { gap: 20px; }
 .bloque { margin-bottom: 28px; }
 .grande { font-size: 22px; font-weight: 600; letter-spacing: 0; }
@@ -43,7 +47,7 @@ button:focus-visible, input:focus-visible, a:focus-visible, select:focus-visible
 .grupo-pie { color: var(--muted); font-size: 13px; line-height: 1.35; margin: 7px 16px 0; }
 .grupo-pie.arriba { margin: -2px 0 10px; }
 .celda { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 11px 16px; position: relative; color: var(--ink); text-decoration: none; }
-.celda + .celda::before, .grupo-lista li + li::before { content: ''; position: absolute; top: 0; left: 16px; right: 0; height: 0.5px; background: var(--line); }
+.celda + .celda::before, .grupo-lista li + li::before { content: ''; position: absolute; top: 0; left: 16px; right: 0; height: 0.5px; background: var(--line); z-index: 2; }
 .celda .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .celda .txt small { color: var(--muted); font-size: 13px; margin-top: 2px; }
 .celda .v { flex: none; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -109,8 +113,9 @@ button:focus-visible, input:focus-visible, a:focus-visible, select:focus-visible
   :root:not([data-tema="claro"]) .tipo .activo, :root:not([data-tema="claro"]) .tipo.dos .activo { background: #303236; }
 }
 :root[data-tema="oscuro"] .tipo .activo, :root[data-tema="oscuro"] .tipo.dos .activo { background: #303236; }
-.campo, .login input { border-radius: 10px; border: 0; background: var(--surface); font-size: 17px; }
-.tarjeta.formulario .campo, .tarjeta.formulario .tipo { background: var(--relleno); }
+/* background-color (no el atajo «background»): los select conservan su flecha (app/movil.css). Borde con contraste suficiente. */
+.campo, .login input { border-radius: 10px; border: 1px solid var(--borde-campo); background-color: var(--surface); font-size: 17px; }
+.tarjeta.formulario .campo, .tarjeta.formulario .tipo { background-color: var(--relleno); }
 .formulario label, .formulario legend { font-size: 13px; }
 .estado { border-radius: 999px; font-size: 15px; font-weight: 500; }
 .aviso-plazo { border-radius: 12px; background: var(--surface); }
@@ -124,10 +129,10 @@ button:focus-visible, input:focus-visible, a:focus-visible, select:focus-visible
 .perfil small { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; }
 .muestra-factura { display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 10px; background: #fff; color: #3F3F3F; border: 0.5px solid var(--line); border-top: 3px solid var(--c); }
 .muestra-factura img { max-width: 96px; max-height: 44px; object-fit: contain; }
-.muestra-factura .sin-logo { width: 72px; height: 40px; border-radius: 6px; border: 1px dashed #C7C7CC; display: grid; place-items: center; font-size: 12px; color: #8E8E93; }
+.muestra-factura .sin-logo { width: 72px; height: 40px; border-radius: 6px; border: 1px dashed #C7C7CC; display: grid; place-items: center; font-size: 12px; color: #6E6E73; }
 .muestra-factura div { display: flex; flex-direction: column; min-width: 0; }
 .muestra-factura strong { color: var(--c); font-size: 17px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.muestra-factura small { color: #8E8E93; font-size: 13px; }
+.muestra-factura small { color: #6E6E73; font-size: 13px; }
 .colores { display: flex; flex-wrap: wrap; gap: 12px; }
 .colores button, .color-libre { width: 32px; height: 32px; border-radius: 50%; position: relative; }
 .colores .activo { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--ink); }
@@ -137,6 +142,12 @@ button:focus-visible, input:focus-visible, a:focus-visible, select:focus-visible
 .logo-botones label.boton { cursor: pointer; }
 .marca { margin-bottom: 20px; }
 .faceid { margin-bottom: 20px; }
+/* Verificación en dos pasos y accesos (Ajustes › Seguridad) */
+.dos-pasos, .ultimos-accesos { margin-bottom: 20px; }
+.dos-pasos .falta { color: var(--aviso); font-weight: 600; }
+.qr-dos-pasos { display: block; width: 220px; height: 220px; margin: 8px 0 12px; border-radius: 12px; background: #fff; padding: 8px; }
+.clave-dos-pasos, .codigos-recuperacion code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.04em; user-select: all; overflow-wrap: anywhere; }
+.codigos-recuperacion { list-style: none; padding: 0; margin: 8px 0 12px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 16px; }
 .dispositivos { list-style: none; padding: 0; margin: 0 -16px; }
 .dispositivos li { display: flex; align-items: center; gap: 12px; padding: 8px 16px; position: relative; }
 .dispositivos li + li::before { content: ''; position: absolute; top: 0; left: 16px; right: 0; height: 0.5px; background: var(--line); }
@@ -180,10 +191,12 @@ fieldset.solo-ver { border: 0; padding: 0; margin: 0; min-width: 0; }
 fieldset.solo-ver:disabled .boton, fieldset.solo-ver:disabled button[type="submit"] { display: none; }
 fieldset.solo-ver:disabled .campo { opacity: 1; color: var(--ink); -webkit-text-fill-color: var(--ink); }
 
-/* Barra de pestañas */
+/* Barra de pestañas. En el iPhone queda justo encima de la raya de inicio, como las de Apple: la zona segura (34 px) ya deja
+   aire de sobra, así que se mete 12 px en ella; sin zona segura (Android, Safari con su barra), 12 px del borde. */
+:root { --barra-abajo: max(12px, calc(env(safe-area-inset-bottom, 0px) - 12px)); }
 .tabbar {
   position: fixed; z-index: 8; left: 50%; transform: translateX(-50%);
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+  bottom: var(--barra-abajo);
   width: min(calc(100% - 24px), 480px);
   display: flex; align-items: center; gap: 6px;
 }
@@ -202,6 +215,10 @@ fieldset.solo-ver:disabled .campo { opacity: 1; color: var(--ink); -webkit-text-
   -webkit-touch-callout: none; transition: background-color 0.2s var(--salida), color 0.2s var(--salida);
 }
 .tabs a svg { flex: none; width: 25px; height: 25px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+/* Número de facturas por revisar sobre la pestaña Gastos (components/TabBar.js); en la barra lateral, al final. */
+.tabs a { position: relative; }
+.tabs a .tab-n { position: absolute; top: 3px; left: calc(50% + 5px); min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--in-boton); color: #fff; font-size: 11px; font-weight: 700; line-height: 18px; text-align: center; }
+@media (min-width: 1024px) { .tabs a .tab-n { position: static; margin-left: auto; } }
 .tabs a span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .tabs a.activo { color: var(--marca); background: var(--relleno); }
 .tabs a:active { transform: none; }
@@ -251,12 +268,14 @@ fieldset.solo-ver:disabled .campo { opacity: 1; color: var(--ink); -webkit-text-
 /* Cuestionario de bienvenida */
 .cuestionario { display: flex; flex-direction: column; gap: 14px; padding-bottom: 120px; }
 .bienvenida ~ .tabbar, body:has(.bienvenida) .tabbar { display: none; }
+/* Sin la barra lateral, tampoco su hueco: el cuestionario quedaba 124 px a la derecha del centro en el ordenador. */
+@media (min-width: 1024px) { body:has(.bienvenida):has(.tabbar) { padding-left: 0; } } /* gana a body:has(.tabbar) de pulido.css */
 .progreso { display: flex; gap: 6px; margin-top: 8px; }
 .progreso span { flex: 1; height: 4px; border-radius: 2px; background: var(--relleno); transition: background-color 0.3s ease; }
 .progreso span.hecho { background: var(--marca); }
 .hola { color: var(--muted); font-size: 15px; }
 .paso { display: flex; flex-direction: column; gap: 12px; animation: paso 0.32s cubic-bezier(0.2, 0.8, 0.2, 1); }
-@keyframes paso { from { opacity: 0; transform: translateX(24px); filter: blur(3px); } }
+@keyframes paso { from { opacity: 0; transform: translateX(24px); } }
 .paso .titulo { margin-bottom: 0; }
 .opciones { display: flex; flex-direction: column; background: var(--surface); border-radius: 12px; overflow: hidden; }
 .opcion { display: flex; align-items: center; gap: 12px; padding: 13px 16px; text-align: left; position: relative; border-radius: 0; color: var(--ink); }
@@ -274,9 +293,13 @@ fieldset.solo-ver:disabled .campo { opacity: 1; color: var(--ink); -webkit-text-
 .actividad-form .campo { background: var(--relleno); }
 .fila-act { display: flex; gap: 10px; align-items: center; }
 .fila-act .campo { flex: 1; }
+/* Solo botones: si no caben, pasan a la línea siguiente enteros en vez de partir el texto («Activar / Verifactu») */
+.fila-act:not(:has(.campo)) { flex-wrap: wrap; }
+.fila-act:not(:has(.campo)) > .boton { white-space: nowrap; }
 .quitar { color: var(--out); font-size: 15px; padding: 6px; }
 .mini-t { font-size: 13px; color: var(--muted); margin-top: 4px; }
 .mini-t.fuera { margin: 2px 0 -4px 16px; }
+.mini-t small { font-size: inherit; }
 .sino input[type="checkbox"] { appearance: none; -webkit-appearance: none; width: 51px; height: 31px; border-radius: 16px; background: var(--relleno); position: relative; flex: none; transition: background-color 0.25s var(--salida); cursor: pointer; }
 .sino input[type="checkbox"]::after { content: ''; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 3px 8px rgba(0,0,0,.15), 0 3px 1px rgba(0,0,0,.06); transition: transform 0.3s var(--vt-curva); }
 .sino input[type="checkbox"]:checked { background: var(--in); }
@@ -288,7 +311,7 @@ fieldset.solo-ver:disabled .campo { opacity: 1; color: var(--ink); -webkit-text-
 
 /* Factura: cabecera que nace de la fila de la lista */
 .factura-hero { background: var(--surface); border-radius: 16px; padding: 16px 18px 14px; margin: 6px 0 16px; animation: hero 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); }
-@keyframes hero { from { opacity: 0; transform: translateY(12px) scale(0.98); filter: blur(4px); } }
+@keyframes hero { from { opacity: 0; transform: translateY(12px) scale(0.98); } }
 html:active-view-transition .factura-hero { animation: none; }
 .fh-num { color: var(--muted); font-size: 13px; font-weight: 500; }
 .fh-cliente { font-size: 22px; font-weight: 600; line-height: 1.2; margin-top: 2px; width: fit-content; }
@@ -316,12 +339,13 @@ a.fila:active { transform: scale(0.985); }
 /* En el ordenador, las actividades bajan de línea en vez de quedar cortadas por los lados */
 @media (min-width: 1024px) { .tipo.varias { display: grid; grid-auto-flow: row; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 2px; overflow: visible; } }
 .txt small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Donde la línea pequeña lleva cifras o fechas que hay que leer enteras, se parte en vez de cortarse con «…» */
+.envolver .txt small { white-space: normal; }
 
 /* Botones bajo la factura o el presupuesto: el principal a lo ancho y el resto en dos columnas iguales */
 .acciones-factura { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: stretch; }
 .acciones-factura > * { width: 100%; text-align: center; justify-content: center; }
 .acciones-factura > :first-child, .acciones-factura > .borrar { grid-column: 1 / -1; }
-.acciones-factura > :nth-last-child(2):nth-child(even) { grid-column: 1 / -1; }
 .celda .txt small.aviso { color: var(--out); }
 .celda .txt { white-space: normal; }
 /* En las pantallas de Ajustes el título ya dice qué es: fuera el de la primera tarjeta */
@@ -337,6 +361,20 @@ a.fila:active { transform: scale(0.985); }
 ::view-transition-group(tabs) { border-radius: 999px; }
 ::view-transition-group(mas) { border-radius: 50%; }
 ::view-transition-old(tabs), ::view-transition-new(tabs), ::view-transition-old(mas), ::view-transition-new(mas) { animation-duration: 0.2s; }
+/* Al entrar en una conversación (sin barra) o salir de ella, la barra va con su pantalla: se aparta con ella y la otra la tapa
+   (lib/transicion.js, SIN_BARRA). Con su propia capa quedaba encima de la conversación y se desvanecía: un destello abajo. */
+html[data-vt-barra] .tabs, html[data-vt-barra] .tabbar .mas { view-transition-name: none; }
+/* Pantalla que llega tarde, cuando ya se soltó la transición (lib/transicion.js): fundido corto en vez de aparecer de golpe. */
+html[data-llega-tarde] .pagina { animation: llega-tarde 0.22s var(--salida) both; }
+@keyframes llega-tarde { from { opacity: 0; } }
+/* Pantalla de espera (lib/transicion.js ponerEspera): ocupa el sitio de la nueva mientras llega, debajo de la barra de
+   pestañas (z-index 8, sigue pulsable); al llegar, se funde. Mientras, la barra de título compacta de la de antes no se ve.
+   Recoge los toques: sin eso, un segundo toque abría otra factura de la pantalla de antes, oculta debajo. Al fundirse
+   (.saliendo) los deja pasar, porque ya es la pantalla nueva la que hay debajo. */
+.espera-pantalla { position: fixed; inset: 0; z-index: 6; overflow: hidden; background: var(--paper); pointer-events: auto; transition: opacity 0.22s var(--salida); }
+.espera-pantalla.saliendo { opacity: 0; pointer-events: none; }
+.volver-e { height: 22px; width: 96px; margin: 2px 0 16px; border-radius: 8px; }
+html[data-espera] .titulo-compacto { opacity: 0; visibility: hidden; transition: none; }
 .segmentado.vt a.activo { view-transition-name: segmento; }
 ::view-transition-group(segmento) { animation-duration: 0.32s; animation-timing-function: var(--vt-curva); }
 /* Textos que viajan de la fila a la cabecera: la caja mide lo que el texto, así no se deforma al crecer */
@@ -351,14 +389,43 @@ html[data-vt=adelante]::view-transition-old(root) { animation: 0.42s var(--vt-cu
 html[data-vt=adelante]::view-transition-new(root) { animation: 0.42s var(--vt-curva) both vt-llegar; }
 html[data-vt=atras]::view-transition-old(root) { animation: 0.36s var(--vt-curva) both vt-irse; z-index: 1; }
 html[data-vt=atras]::view-transition-new(root) { animation: 0.36s var(--vt-curva) both vt-volver; }
+/* Deslizar desde el borde para volver (components/GestoAtras.js): sigue desde donde se soltó el dedo (--vt-x) */
+html[data-vt=gesto]::view-transition-old(root) { animation: 0.28s var(--vt-curva) both vt-irse-gesto; z-index: 1; }
+html[data-vt=gesto]::view-transition-new(root) { animation: 0.28s var(--vt-curva) both vt-volver-gesto; }
 /* Nueva factura o presupuesto: sube como una hoja */
-html[data-vt=subir]::view-transition-old(root) { animation: 0.46s var(--vt-curva) both vt-al-fondo; }
-html[data-vt=subir]::view-transition-new(root) { animation: 0.46s var(--vt-curva) both vt-hoja; }
+/* Formulario de crear (nueva factura, presupuesto, albarán): a pantalla completa, sube desde abajo y la de detrás se
+   oscurece un poco; al salir («‹ Atrás», cancelar) baja, como un modal de iOS. */
+html[data-vt=subir]::view-transition-old(root) { animation: 0.5s var(--vt-curva) both vt-atenuar; }
+html[data-vt=subir]::view-transition-new(root) { animation: 0.5s var(--vt-curva) both vt-hoja; box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.14); }
+html[data-vt=cerrar]::view-transition-old(root) { animation: 0.42s var(--vt-curva) both vt-hoja-baja; z-index: 1; box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.14); }
+html[data-vt=cerrar]::view-transition-new(root) { animation: 0.42s var(--vt-curva) both vt-desatenuar; }
+/* Ajustes: una hoja de tarjeta; la pantalla de detrás se encoge y se oscurece, como en iOS. */
+html[data-vt=hoja]::view-transition-old(root) { animation: 0.46s var(--vt-curva) both vt-al-fondo; }
+html[data-vt=hoja]::view-transition-new(root) { animation: 0.46s var(--vt-curva) both vt-hoja; }
+/* Cerrar una hoja (el «OK» de Ajustes): baja y la pantalla de detrás vuelve a su sitio */
+html[data-vt=bajar]::view-transition-old(root) { animation: 0.4s var(--vt-curva) both vt-hoja-baja; z-index: 1; }
+html[data-vt=bajar]::view-transition-new(root) { animation: 0.4s var(--vt-curva) both vt-del-fondo; }
 /* Pestañas: un desliz corto hacia el lado de la pestaña tocada */
-html[data-vt=tab-der]::view-transition-old(root) { animation: 0.24s var(--vt-curva) both vt-tab-a-izq; }
-html[data-vt=tab-der]::view-transition-new(root) { animation: 0.3s var(--vt-curva) both vt-tab-desde-der; }
-html[data-vt=tab-izq]::view-transition-old(root) { animation: 0.24s var(--vt-curva) both vt-tab-a-der; }
-html[data-vt=tab-izq]::view-transition-new(root) { animation: 0.3s var(--vt-curva) both vt-tab-desde-izq; }
+/* Barra de abajo: en iOS cambiar de pestaña no desliza nada. La nueva aparece encima de la de antes con un fundido corto
+   (sin mezclar las dos: así no hay destello). */
+@media (max-width: 1023.98px) {
+  html[data-vt^=tab-]::view-transition-old(root) { animation: none; mix-blend-mode: normal; }
+  html[data-vt^=tab-]::view-transition-new(root) { animation: 0.18s var(--salida) both vt-dentro; mix-blend-mode: normal; }
+}
+/* Pestañas de una pantalla (components/Pestanas.js): la cabecera y las pestañas se quedan quietas, la pastilla viaja hasta la
+   tocada (la pinta la caja de la transición: no se deforma aunque las pestañas no midan igual), el texto cambia de color y lo de
+   debajo se desliza un poco hacia ese lado, como con la barra */
+html[data-vt^=pestana] .pestanas-indicador { view-transition-name: pestanas-indicador; }
+html[data-vt^=pestana] .pestana { view-transition-name: var(--pestana); }
+html[data-vt^=pestana] .pestanas-panel { view-transition-name: pestanas-panel; }
+html[data-vt^=pestana]::view-transition-old(root), html[data-vt^=pestana]::view-transition-new(root) { animation: none; }
+::view-transition-group(pestanas-indicador) { animation-duration: 0.3s; animation-timing-function: var(--vt-curva); border-radius: var(--r-pastilla); background: var(--pastilla, var(--surface)); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); }
+::view-transition-old(pestanas-indicador), ::view-transition-new(pestanas-indicador) { display: none; }
+::view-transition-group(pestanas-panel) { animation-duration: 0.3s; animation-timing-function: var(--vt-curva); }
+html[data-vt=pestana-der]::view-transition-old(pestanas-panel) { animation: 0.24s var(--vt-curva) both vt-tab-a-izq; }
+html[data-vt=pestana-der]::view-transition-new(pestanas-panel) { animation: 0.3s var(--vt-curva) both vt-tab-desde-der; }
+html[data-vt=pestana-izq]::view-transition-old(pestanas-panel) { animation: 0.24s var(--vt-curva) both vt-tab-a-der; }
+html[data-vt=pestana-izq]::view-transition-new(pestanas-panel) { animation: 0.3s var(--vt-curva) both vt-tab-desde-izq; }
 html[data-vt=fundido]::view-transition-old(root) { animation: 0.16s var(--salida) both vt-fuera; }
 html[data-vt=fundido]::view-transition-new(root) { animation: 0.22s var(--salida) both vt-dentro; }
 /* Cambiar de año: no se mueve nada, solo cambian las cifras */
@@ -367,8 +434,14 @@ html[data-vt=cifras]::view-transition-group(root) { animation-duration: 0.24s; }
 @keyframes vt-llegar { from { transform: translateX(100%); box-shadow: -10px 0 30px rgba(0, 0, 0, 0.12); } }
 @keyframes vt-irse { to { transform: translateX(100%); box-shadow: -10px 0 30px rgba(0, 0, 0, 0.12); } }
 @keyframes vt-volver { from { transform: translateX(-30%); filter: brightness(0.9); } }
+@keyframes vt-irse-gesto { from { transform: translateX(var(--vt-x, 0px)); box-shadow: -10px 0 30px rgba(0, 0, 0, 0.12); } to { transform: translateX(100%); box-shadow: -10px 0 30px rgba(0, 0, 0, 0.12); } }
+@keyframes vt-volver-gesto { from { transform: translateX(calc((var(--vt-x, 0px) - 100vw) * 0.3)); filter: brightness(0.9); } }
+@keyframes vt-atenuar { to { filter: brightness(0.86); } }
+@keyframes vt-desatenuar { from { filter: brightness(0.86); } }
 @keyframes vt-al-fondo { to { transform: scale(0.93); filter: brightness(0.75); border-radius: 18px; } }
 @keyframes vt-hoja { from { transform: translateY(100%); } }
+@keyframes vt-hoja-baja { to { transform: translateY(100%); } }
+@keyframes vt-del-fondo { from { transform: scale(0.93); filter: brightness(0.75); border-radius: 18px; } }
 @keyframes vt-tab-a-izq { to { transform: translateX(-24px); opacity: 0; } }
 @keyframes vt-tab-desde-der { from { transform: translateX(24px); opacity: 0; } }
 @keyframes vt-tab-a-der { to { transform: translateX(24px); opacity: 0; } }
@@ -459,3 +532,28 @@ html[data-arranque=visto] #arranque { display: none; }
   .colores button::after { content: ""; position: absolute; inset: -6px; }
   .color-libre input { inset: -6px; width: 44px; height: 44px; }
 }
+
+/* Entradas, salidas y pagos a Hacienda con su color en Banco, Tesorería y el Resumen (antes solo en tesoreria.css: en Banco
+   salían en negro según por dónde se llegara, auditoría D4-16). El signo sigue delante: el color no va solo. */
+.teso-in { color: var(--in); } .teso-out { color: var(--out); } .teso-hac { color: var(--hacienda); }
+/* Importes en negativo de Inventario y Proyectos (Proyectos no carga inventario.css y sus márgenes negativos salían en negro). */
+.inv-rojo { color: var(--out); }
+/* Acciones secundarias dentro de un texto o un formulario («La factura lleva varios tipos de IVA», «Reintentar»…): con
+   aspecto de enlace, no de texto suelto (auditoría D8-23). Antes la clase chocaba con la caja de invitaciones de Usuarios. */
+button.enlace { color: var(--marca); text-decoration: underline; text-underline-offset: 3px; padding: 6px 0; min-height: 32px; text-align: left; }
+button.enlace:disabled { opacity: 0.5; cursor: not-allowed; }
+/* Un botón principal desactivado (guardando, comprobando…) se ve apagado en los dos temas: antes, en oscuro o en el alta,
+   parecía activo y no respondía (auditoría D8-05 y D8-11). */
+.boton:disabled, .login button[type="submit"]:disabled { opacity: 0.45; cursor: not-allowed; filter: none; }
+
+/* Notas técnicas («Cómo se calcula»): a mano si se piden, sin ocupar la pantalla ni el estado vacío (auditoría D8-30). */
+.como-se-calcula { margin-top: 24px; color: var(--muted); font-size: 15px; }
+.como-se-calcula > summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-weight: 500; }
+/* Plegables de texto («Cómo se calcula», «Más herramientas»): con su flecha, para que se vea que se abren. */
+.como-se-calcula > summary, .gastos-mas > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+.como-se-calcula > summary::-webkit-details-marker, .gastos-mas > summary::-webkit-details-marker { display: none; }
+.como-se-calcula > summary::after, .gastos-mas > summary::after { content: ''; flex: none; width: 7px; height: 7px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg) translateY(-2px); opacity: 0.6; transition: transform 0.2s ease; }
+.como-se-calcula[open] > summary::after, .gastos-mas[open] > summary::after { transform: rotate(-135deg) translateY(-2px); }
+/* Sin red (components/SinRed.js) y página «Sin conexión» (app/sin-conexion). */
+.sin-red { position: fixed; left: 50%; transform: translateX(-50%); top: calc(env(safe-area-inset-top) + 8px); z-index: 30; margin: 0; padding: 8px 14px; max-width: calc(100vw - 32px); border-radius: 12px; background: var(--ink); color: var(--paper); font-size: 13px; text-align: center; box-shadow: 0 4px 16px rgb(0 0 0 / 0.18); }
+.sin-conexion { max-width: 420px; margin: 0 auto; padding-top: 18vh; text-align: center; display: grid; gap: 14px; justify-items: center; }

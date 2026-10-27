@@ -92,9 +92,9 @@ test('una cuota corrupta corta la reserva en vez de permitir una llamada sin med
 
 test('preflight gratuito: usa el contador y rechaza documentos de densidad excesiva antes de inferencia', async () => {
   let llamadas=0;
-  globalThis.fetch=async(url,op)=>{assert.match(String(url),/\/messages\/count_tokens$/);assert.equal(JSON.parse(op.body).max_tokens,undefined);llamadas++;return Response.json({input_tokens:6001});};
+  globalThis.fetch=async(url,op)=>{assert.match(String(url),/\/messages\/count_tokens$/);assert.equal(JSON.parse(op.body).max_tokens,undefined);llamadas++;return Response.json({input_tokens:8001});};
   assert.equal((await T.validarEntradaIA('YQ==','application/pdf',1)).status,400);
-  assert.equal((await T.validarEntradaIA('YQ==','application/pdf',2)).inputTokens,6001);
+  assert.equal((await T.validarEntradaIA('YQ==','application/pdf',2)).inputTokens,8001); // 8.000 por página con Haiku 5.5 (cuenta un 30 % más)
   assert.equal(llamadas,2);
   globalThis.fetch=async()=>Response.json({error:{message:'no disponible'}},{status:503});
   assert.equal((await T.validarEntradaIA('YQ==','image/png',1)).status,503);
@@ -108,3 +108,11 @@ test('añadir tarjeta durante la prueba no reinicia la bolsa ni la amplía antes
   const c=await C.cupoEscaneos(u,hoy);assert.equal(c.limite,50);assert.equal(c.usadas,4);assert.equal(c.prueba,true);
   u.plan.estado='active';assert.equal((await C.cupoEscaneos(u,hoy)).limite,500);
 });
+
+test('tarifa estimada: Haiku 5.5 según la longitud del prompt; Haiku 4.5 como antes; otros, sin estimar', () => {
+  assert.deepEqual(C.tarifaIA('claude-haiku-5-5', { input_tokens: 2000, output_tokens: 600 }), [0.1, 0.5]);
+  assert.deepEqual(C.tarifaIA('claude-haiku-5-5', { input_tokens: 90000, cache_read_input_tokens: 20000 }), [0.5, 2.5]);
+  assert.deepEqual(C.tarifaIA('claude-haiku-4-5-20251001', {}), [1, 5]);
+  assert.equal(C.tarifaIA('claude-opus-5-5', {}), null);
+});
+

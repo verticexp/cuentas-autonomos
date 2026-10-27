@@ -1,0 +1,30 @@
+name: E2E
+# Las cuatro baterías de punta a punta, accesibilidad incluida (tests/e2e/ci.sh), en cada PR y en main: hasta el 21-10-2026 solo se pasaban a mano y
+# llevaban días rotas sin que nadie lo viera. Todo simulado (Redis, Stripe, correo e IA): sin secretos ni servicios reales.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Compilar
+        run: npx next build
+      - name: Baterías e2e
+        run: bash tests/e2e/ci.sh

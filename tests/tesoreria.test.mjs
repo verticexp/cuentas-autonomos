@@ -21,7 +21,8 @@ test('previsión: cobros a su vencimiento, pagos, Hacienda y saldo', () => {
     fac('3', '2026-09-25', 200, { cobrada: true }),
     fac('4', '2026-07-10', 2000, { cobrada: true }),
   ];
-  const G = [gas('p', '2026-09-30', 100, { proveedor: 'Imprenta', pendiente: true })];
+  // Vencido el 30-09 (lib/pagos.js): se cuenta hoy.
+  const G = [gas('p', '2026-09-30', 100, { proveedor: 'Imprenta', pendiente: true, vence: '2026-09-30' })];
   const R = [{ id: 'r', activa: true, dia: 15, ultima: '2026-10', plantilla: { cliente: { nombre: 'Fijo' }, concepto: 'Cuota', base: 100, ivaPct: 21, irpfPct: 0 } }];
   const p = prevision({ facturas: F, gastos: G, recurrentes: R, fiscal, plazo: 30, saldo: { importe: 1000 }, hoy: '2026-10-05', meses: 1 });
   assert.equal(p.hasta, '2026-11-30');
@@ -56,20 +57,27 @@ test('Hacienda: un trimestre marcado como presentado no se vuelve a contar; el 1
 
 test('recurrentes: el mes que aún no se ha creado entra a su vencimiento; el saldo mínimo', () => {
   const R = [{ id: 'r', activa: true, dia: 1, ultima: '2026-10', plantilla: { cliente: { nombre: 'Fijo' }, concepto: 'Cuota', base: 100, ivaPct: 21, irpfPct: 0 } }, { id: 'x', activa: false, dia: 1, plantilla: { base: 999, ivaPct: 0 } }];
-  const G = [gas('p', '2026-10-10', 1000, { proveedor: 'Grande', pendiente: true, ivaPct: 0 })];
+  const G = [gas('p', '2026-10-10', 1000, { proveedor: 'Grande', pendiente: true, ivaPct: 0, vence: '2026-10-10' })];
   const p = prevision({ recurrentes: R, gastos: G, fiscal: { tipo: 'sociedad', iva: 'exento' }, plazo: 0, saldo: { importe: 500 }, hoy: '2026-10-05', meses: 2 });
   assert.deepEqual(p.movimientos.map((m) => [m.fecha, m.importe, m.saldo]), [['2026-10-10', -1000, -500], ['2026-11-01', 121, -379], ['2026-12-01', 121, -258]]);
   assert.deepEqual(p.minimo, { saldo: -500, fecha: '2026-10-10' });
 });
 
-test('Hacienda: el 115 del 4T se paga el 20 de enero; el 303 y el 130, el 30', () => {
+test('Hacienda: el 115 del 4T se paga el 20 de enero; el 303 y el 130, el 30 (el lunes 1 de febrero en 2027: el 30 es sábado)', () => {
   const G = [gas('a', '2026-11-05', 1000, { alquiler: true, concepto: 'Alquiler local' })];
   const F = [fac('1', '2026-11-10', 3000)];
   const p = prevision({ facturas: F, gastos: G, fiscal, hoy: '2026-12-15', meses: 2, actividades: [] });
   const h = Object.fromEntries(p.movimientos.filter((m) => m.tipo === 'hacienda').map((m) => [m.concepto.split(' ')[0], m.fecha]));
   assert.equal(h.Alquiler, '2027-01-20');
-  assert.equal(h.IVA, '2027-01-30');
+  assert.equal(h.IVA, '2027-02-01');
 });
+
+// Auditoría completa (21-10-2026, revisión de Codex): los plazos en fin de semana pasan al lunes, como en Impuestos.
+test('Hacienda: un plazo en domingo pasa al lunes (2T de 2025: 21 de julio)', () => {
+  const p = prevision({ facturas: [fac('1', '2025-05-10', 3000)], gastos: [], fiscal, hoy: '2025-07-01', meses: 1, actividades: [] });
+  assert.ok(p.movimientos.some((m) => m.concepto.startsWith('IVA (303) del 2T') && m.fecha === '2025-07-21'), JSON.stringify(p.movimientos.map((m) => [m.concepto, m.fecha])));
+});
+
 
 test('Hacienda: el 202 de una sociedad, el 20 de octubre y de diciembre', () => {
   const p = prevision({ facturas: [], gastos: [], fiscal: { tipo: 'sociedad', iva: 'general' }, cuotaIS: { 2025: 1000 }, hoy: '2026-10-08', meses: 3, actividades: [] });
@@ -80,4 +88,13 @@ test('Hacienda: el 202 de una sociedad, el 20 de octubre y de diciembre', () => 
 test('Hacienda: un 202 marcado como presentado ya no se cuenta', () => {
   const p = prevision({ facturas: [], gastos: [], fiscal: { tipo: 'sociedad', iva: 'general' }, cuotaIS: { 2025: 1000 }, pagos202: { 2026: { 2: 180 } }, hoy: '2026-10-08', meses: 3, actividades: [] });
   assert.deepEqual(p.movimientos.filter((m) => m.concepto.includes('202')).map((m) => m.fecha), ['2026-12-21']);
+});
+
+test('previsión (auditoría C1-17): la retención de un gasto pendiente va al 111 del trimestre en que se prevé pagarlo', () => {
+  const fiscalRet = { tipo: 'autonomo', iva: 'general', trabajadores: true };
+  // Gasto profesional de agosto con retención de 150 €, pendiente y con vencimiento el 1 de noviembre.
+  const G = [gas('g1', '2026-08-10', 1000, { irpfPct: 15, pendiente: true, vence: '2026-11-01', proveedor: 'Abogada', proveedorNif: 'B12345674' })];
+  const p = prevision({ facturas: [], gastos: G, fiscal: fiscalRet, hoy: '2026-09-15', meses: 6 });
+  const ret = p.movimientos.filter((m) => m.tipo === 'hacienda' && /^Retenciones/.test(m.concepto));
+  assert.deepEqual(ret.map((m) => [m.concepto, m.importe]), [['Retenciones (111) del 4T', -150]]);
 });

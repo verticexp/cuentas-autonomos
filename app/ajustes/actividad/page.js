@@ -1,4 +1,5 @@
 import Vacio from '@/components/Vacio';
+import { fechaHora } from '@/lib/formato';
 import { requerir } from '@/lib/auth';
 import { leerAuditoria } from '@/lib/auditoria';
 import Volver from '@/components/Volver';
@@ -8,7 +9,7 @@ import '@/app/mk.css';
 
 export const dynamic = 'force-dynamic';
 
-const cuando = (f) => new Date(f).toLocaleString('es-ES', { timeZone: 'Europe/Madrid', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+const cuando = fechaHora;
 
 // Registro de actividad de la empresa (lib/auditoria.js): solo para su administrador.
 export default async function Actividad() {
@@ -19,7 +20,7 @@ export default async function Actividad() {
     <main className="pagina mk-look">
       <Volver href="/ajustes">Ajustes</Volver>
       <h1 className="titulo">Actividad</h1>
-      <p className="resumen-linea">Quién ha cambiado permisos, datos de la empresa o la contraseña, y quién ha borrado o exportado facturas y gastos.</p>
+      <p className="resumen-linea">Quién ha cambiado permisos, datos de la empresa o la contraseña, quién ha borrado o exportado facturas y gastos, y lo que ha hecho tu gestoría en tus cuentas.</p>
       {lista.length ? (
         <ul className="grupo-lista">
           {lista.map((a, i) => (
@@ -27,7 +28,7 @@ export default async function Actividad() {
               <span className="txt">
                 <strong>{a.accion}</strong>
                 {a.detalle && <small>{a.detalle}</small>}
-                <small>{a.nombre} · {cuando(a.fecha)}</small>
+                <small>{a.nombre}{a.despacho ? ` (${a.despacho}, tu gestoría)` : ''} · {cuando(a.fecha)}</small>
               </span>
             </li>
           ))}

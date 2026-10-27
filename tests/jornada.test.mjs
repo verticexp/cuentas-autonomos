@@ -35,7 +35,8 @@ test('jornada: lo escrito a mano tiene que tener sentido', () => {
 });
 
 test('jornada: horas del mes frente a su jornada, y horas extra en la nómina', () => {
-  assert.equal(laborables('2026-10-01', '2026-10-31'), 22);
+  // El lunes 12 es la Fiesta Nacional: 21 laborables (antes los festivos contaban como jornada).
+  assert.equal(laborables('2026-10-01', '2026-10-31'), 21);
   const e = { id: 'e1', alta: '2026-10-14', horasSemana: 20, precioHoraExtra: 15 };
   const F = [
     { id: 'a', empleado: 'e1', fecha: '2026-10-14', entrada: '2026-10-14T09:00', salida: '2026-10-14T19:00', pausas: [] },
@@ -52,6 +53,31 @@ test('jornada: horas del mes frente a su jornada, y horas extra en la nómina', 
   assert.equal(extrasNomina(resumenMes([], e, '2026-10'), e), null);
   // Mes entero (sin «hasta»): del miércoles 14 al 31 de octubre hay 13 laborables.
   assert.equal(resumenMes(F, e, '2026-10').teoricos, 13 * 4 * 60);
+});
+
+// Auditoría completa (21-10-2026, revisión de Codex).
+test('jornada: los cambios de hora cuentan los minutos de verdad', () => {
+  const f = (d) => ({ entrada: `${d}T01:30`, salida: `${d}T03:30`, pausas: [] });
+  assert.equal(minutos(f('2026-03-29')), 60); // a las 02:00 pasan a ser las 03:00
+  assert.equal(minutos(f('2026-10-25')), 180); // a las 03:00 vuelven a ser las 02:00
+  assert.equal(minutos(f('2026-10-24')), 120);
+});
+
+test('jornada: los festivos nacionales no cuentan como jornada y dejan ver las horas extra', () => {
+  assert.equal(laborables('2026-01-01', '2026-01-31'), 20); // sin el 1 y el 6 de enero
+  const e = { id: 'e1', alta: '2025-01-01', horasSemana: 40, precioHoraExtra: 15 };
+  const F = Array.from({ length: 21 }, (_, i) => ({ id: `f${i}`, empleado: 'e1', fecha: '2026-01-02', entrada: '2026-01-02T08:00', salida: '2026-01-02T16:00', pausas: [] }));
+  const r = resumenMes(F, e, '2026-01');
+  assert.deepEqual([r.teoricos / 60, r.trabajados / 60, r.extra / 60], [160, 168, 8]);
+  assert.equal(extrasNomina(r, e).importe, 120);
+});
+
+test('jornada: a mano, ni fechas que no existen ni más pausas de las que caben', () => {
+  assert.match(validar({ entrada: '2026-02-30T09:00', salida: '2026-02-30T17:00' }).error, /fecha que exista/);
+  assert.match(validar({ entrada: '2026-02-27T09:00', salida: '2026-02-27T25:00' }).error, /fecha que exista/);
+  const pausas = Array.from({ length: 11 }, (_, i) => ({ inicio: `2026-02-27T${String(9 + Math.floor(i / 2)).padStart(2, '0')}:${i % 2 ? '30' : '00'}`, fin: `2026-02-27T${String(9 + Math.floor(i / 2)).padStart(2, '0')}:${i % 2 ? '35' : '05'}` }));
+  assert.match(validar({ entrada: '2026-02-27T08:00', salida: '2026-02-27T17:00', pausas }).error, /Como mucho 10 pausas/);
+  assert.equal(validar({ entrada: '2026-02-27T08:00', salida: '2026-02-27T17:00', pausas: pausas.slice(0, 10) }).pausas.length, 10);
 });
 
 test('jornada: filas para la Inspección, con las correcciones', () => {

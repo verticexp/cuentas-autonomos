@@ -25,7 +25,8 @@ export default async function Albaranes({ searchParams }) {
   if (!docs) return <SinBD />;
   const puedeOperar = !sinFuncion(u.plan, 'albaranes');
   const sp = await searchParams;
-  const ver = VISTAS.some(([v]) => v === sp.ver) ? sp.ver : 'pedidos';
+  const hay = docs.length > 0;
+  const ver = hay && VISTAS.some(([v]) => v === sp.ver) ? sp.ver : 'pedidos';
   const orden = (a, b) => b.fecha.localeCompare(a.fecha) || b.numero - a.numero;
   const pedidos = docs.filter((d) => d.tipo === 'pedido').map((p) => ({ ...p, ...estadoPedido(p, docs) })).sort(orden);
   const albaranes = docs.filter((d) => d.tipo === 'albaran').sort(orden);
@@ -44,10 +45,10 @@ export default async function Albaranes({ searchParams }) {
       <Volver href="/facturas">Facturas</Volver>
       <header className="cabecera">
         <h1 className="titulo">Pedidos y albaranes</h1>
-        {puedeOperar && <Ir href={`/albaranes/nuevo?tipo=${ver === 'pedidos' ? 'pedido' : 'albaran'}`} tipo="subir" className="boton pequeno">{ver === 'pedidos' ? 'Nuevo pedido' : 'Nuevo albarán'}</Ir>}
+        {hay && puedeOperar && <Ir href={`/albaranes/nuevo?tipo=${ver === 'pedidos' ? 'pedido' : 'albaran'}`} tipo="subir" className="boton pequeno">{ver === 'pedidos' ? 'Nuevo pedido' : 'Nuevo albarán'}</Ir>}
       </header>
-      <p className="resumen-linea"><span>Pedidos abiertos <strong>{abiertos.length}</strong></span><span>Por facturar <strong>{eur(sinFacturar.reduce((s, a) => s + baseDoc(a), 0))}</strong></span></p>
-      <nav className="segmentado">{VISTAS.map(([v, n]) => <Link key={v} href={`/albaranes?ver=${v}`} className={v === ver ? 'activo' : ''}>{n}{v === 'albaranes' && sinFacturar.length ? ` (${sinFacturar.length})` : ''}</Link>)}</nav>
+      {hay && <p className="resumen-linea"><span>Pedidos abiertos <strong>{abiertos.length}</strong></span><span>Por facturar <strong>{eur(sinFacturar.reduce((s, a) => s + baseDoc(a), 0))}</strong></span></p>}
+      {hay && <nav className="segmentado" aria-label="Vista de pedidos y albaranes">{VISTAS.map(([v, n]) => <Ir key={v} href={`/albaranes?ver=${v}`} tipo="fundido" className={v === ver ? 'activo' : ''}>{n}{v === 'albaranes' && sinFacturar.length ? ` (${sinFacturar.length})` : ''}</Ir>)}</nav>}
 
       {ver === 'pedidos' && (pedidos.length ? (
         <ul className="grupo-lista">
@@ -72,4 +73,4 @@ export default async function Albaranes({ searchParams }) {
   );
 }
 
-export const metadata = { title: 'Albaranes' };
+export const metadata = { title: 'Pedidos y albaranes' };

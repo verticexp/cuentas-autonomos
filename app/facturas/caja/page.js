@@ -1,10 +1,11 @@
 import Vacio from '@/components/Vacio';
 import Link from 'next/link';
+import Ir from '@/components/Ir';
 import { requerir } from '@/lib/auth';
 import { leer, leerUno, redis } from '@/lib/redis';
 import { numeroFactura } from '@/lib/calculos';
 import { totalCierre } from '@/lib/caja';
-import { actividadesDe } from '@/lib/empresa';
+import { actividadesDe, fiscalDe, usaIgic } from '@/lib/empresa';
 import { eur, fechaTexto, hoy } from '@/lib/formato';
 import SinBD from '@/components/SinBD';
 import Volver from '@/components/Volver';
@@ -27,6 +28,7 @@ export default async function Caja({ searchParams }) {
   const facturas = fichas.map((f) => ({ proyecto: f.pr }));
   const cierre = sp.id ? await leerUno(u, 'facturas', String(sp.id)) : null;
   const actividades = actividadesDe(u);
+  const igic = usaIgic(fiscalDe(u));
   const recientes = await documentos(u, 'facturas', fichas.filter((f) => f.k).sort((a, b) => b.o - a.o).slice(0, 7).map((f) => f.id));
   const lista = (productos || []).sort((a, b) => a.nombre.localeCompare(b.nombre));
   const ver = sp.ver === 'importar' ? 'importar' : 'cierre';
@@ -34,11 +36,11 @@ export default async function Caja({ searchParams }) {
     <main className="pagina mk-look caja">
       <Volver href={cierre ? `/facturas/${cierre.id}` : '/facturas'}>{cierre ? 'Cierre' : 'Facturas'}</Volver>
       <h1 className="titulo">{cierre?.caja ? `Corregir el cierre ${numeroFactura(cierre)}` : 'Caja'}</h1>
-      {!cierre && <nav className="segmentado"><Link href="/facturas/caja" className={ver === 'cierre' ? 'activo' : ''}>Cierre del día</Link><Link href="/facturas/caja?ver=importar" className={ver === 'importar' ? 'activo' : ''}>Importar del TPV</Link></nav>}
+      {!cierre && <nav className="segmentado" aria-label="Vista de caja"><Ir href="/facturas/caja" tipo="fundido" className={ver === 'cierre' ? 'activo' : ''}>Cierre del día</Ir><Ir href="/facturas/caja?ver=importar" tipo="fundido" className={ver === 'importar' ? 'activo' : ''}>Importar del TPV</Ir></nav>}
       {ver === 'cierre' || cierre ? (
         <>
-          <div id="nuevo-cierre"><FormCierre hoy={hoy()} actividades={actividades} productos={lista} cierre={cierre?.caja ? cierre : null} ivaDefecto={actividades[0].ivaPct ?? 21} proyectos={nombresProyectos(facturas)} /></div>
-          <p className="grupo-pie">Para tiendas con TPV o caja registradora: cada cierre es una factura simplificada de resumen (serie Z) que cuenta en el IVA, la contabilidad (el efectivo en caja, la tarjeta en el banco) y los libros registro. No va a Verifactu: los tiques ya los registra tu TPV.</p>
+          <div id="nuevo-cierre"><FormCierre igic={igic} hoy={hoy()} actividades={actividades} productos={lista} cierre={cierre?.caja ? cierre : null} ivaDefecto={actividades[0].ivaPct ?? (igic ? 7 : 21)} proyectos={nombresProyectos(facturas)} /></div>
+          <p className="grupo-pie">Para tiendas con TPV o caja registradora: cada cierre es una factura simplificada de resumen (serie Z) que cuenta en el {igic ? 'IGIC' : 'IVA'}, la contabilidad (el efectivo en caja, la tarjeta en el banco) y los libros registro. No va a Verifactu: los tiques ya los registra tu TPV.</p>
         </>
       ) : (
         <ImportarVentas actividades={actividades} />
@@ -56,4 +58,4 @@ export default async function Caja({ searchParams }) {
   );
 }
 
-export const metadata = { title: 'Cierre de caja' };
+export const metadata = { title: 'Caja' };

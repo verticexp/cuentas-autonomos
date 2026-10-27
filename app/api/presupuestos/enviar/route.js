@@ -1,7 +1,9 @@
 import { leerUno } from '@/lib/redis';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { emailValido } from '@/lib/email';
-import { MENSAJE_PRUEBA, cupoEnvio, enviarPresupuesto } from '@/lib/envio';
+import { MENSAJE_PRUEBA, enviarPresupuesto } from '@/lib/envio';
+import { limiteEnvios } from '@/lib/limite';
+import { diasPrueba } from '@/lib/prueba';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,8 +16,9 @@ export async function POST(req) {
   if (!p) return error('Ese presupuesto ya no existe', 404);
   const para = String(b.para || '').trim().toLowerCase();
   if (!emailValido(para)) return error('Escribe un email válido');
-  const { prueba, error: tope } = await cupoEnvio(u);
-  if (tope) return error(tope, 429);
+  const limite = await limiteEnvios(u);
+  if (limite) return error(limite.error, limite.status);
+  const prueba = diasPrueba(u.plan) > 0;
   // En el mes de prueba, el asunto de la plantilla y un mensaje más corto (como en las facturas).
   const asunto = prueba ? undefined : b.asunto;
   const mensaje = prueba ? String(b.mensaje || '').slice(0, MENSAJE_PRUEBA) : b.mensaje;

@@ -52,6 +52,12 @@ test('categorías: a mano, nóminas y por el concepto', () => {
   assert.equal(categoriaDe({ concepto: 'Nómina Ana', nomina: 'n1' }), '640');
   assert.equal(categoriaDe({ concepto: 'Cosa rara' }), '629');
   assert.equal(categoriaDe({ concepto: 'Gestoría', categoria: '627' }), '627');
+  // Auditoría completa (21-10-2026): «oficina» y «diseñ» mandaban el material de oficina a alquileres y el software a profesionales.
+  assert.equal(categoriaDe({ concepto: 'Material de oficina', proveedor: 'Papelería Ruiz' }), '629');
+  assert.equal(categoriaDe({ concepto: 'Licencias de software de diseño', proveedor: 'Adobe Systems' }), '629');
+  assert.equal(categoriaDe({ concepto: 'Diseño del logotipo', proveedor: 'Marta Soler' }), '623');
+  assert.equal(categoriaDe({ concepto: 'Octubre', proveedor: 'Inmobiliaria Gràcia S.L.' }), '621');
+  assert.equal(categoriaDe({ concepto: 'Envío de muestras', proveedor: 'Oficina de Correos' }), '624');
   assert.ok(pareceBien({ concepto: 'Equipo de sonido nuevo (altavoces)', base: 3000 }));
   assert.ok(!pareceBien({ concepto: 'Cables', base: 3000 }));
 });
@@ -231,4 +237,48 @@ test('libros registro con el formato de la AEAT', async () => {
   assert.deepEqual(bie[0].slice(5, 17), ['23', 'b1', 'Portátil', '01/01/2026', '1000,00', '1000,00', '01', '26,00', '0,00', '260,00', '260,00', '740,00']);
   assert.equal(l.totales.ingresos, 1500);
   assert.equal(l.totales.gastos, 600); // 40 + 300 + 260
+});
+
+// Auditoría C1-09, C1-10 y C1-11 (23-10-2026).
+const saldoCuenta = (A, pref, hasta) => r2(A.filter((a) => a.fecha <= hasta).reduce((s, a) => s + a.lineas.filter((l) => l.cuenta.startsWith(pref)).reduce((x, l) => x + l.debe - l.haber, 0), 0));
+
+test('contabilidad, criterio de caja: lo no cobrado se devenga el 31-12 del año siguiente aunque ese año no tenga documentos', () => {
+  const fiscal = { tipo: 'sociedad', iva: 'general', recc: { desde: '2026-01-01' } };
+  const F = [{ id: 'f1', numero: 1, anio: 2026, fecha: '2026-12-10', actividad: 'a', cliente: { nombre: 'C', nif: 'B12345674' }, concepto: 'x', base: 100, ivaPct: 21, irpfPct: 0, cobrada: false }];
+  const A = generarAsientos({ facturas: F, fiscal }, '2028-01-15');
+  // Diciembre de 2026: el IVA espera en la 4779; el 31-12-2027 pasa a la 477 (y se liquida), sin quedarse colgado.
+  assert.equal(saldoCuenta(A, '4779', '2026-12-31'), -21);
+  assert.equal(saldoCuenta(A, '4779', '2027-12-31'), 0);
+});
+
+test('contabilidad: el IVA a compensar de la apertura (4700) se usa en la primera liquidación', () => {
+  const fiscal = { tipo: 'sociedad', iva: 'general' };
+  const apertura = { id: 'ap', fecha: '2026-01-01', apertura: true, concepto: 'Asiento de apertura', lineas: [{ cuenta: '4700', debe: 1000, haber: 0 }, { cuenta: '572', debe: 500, haber: 0 }, { cuenta: '100', debe: 0, haber: 1500 }] };
+  const F = [{ id: 'f1', numero: 1, anio: 2026, fecha: '2026-02-10', actividad: 'a', cliente: { nombre: 'C', nif: 'B12345674' }, concepto: 'x', base: 100, ivaPct: 21, irpfPct: 0, cobrada: true }];
+  const A = generarAsientos({ facturas: F, manuales: [apertura], fiscal, pres303: { 2026: { 1: true } } }, '2026-05-01');
+  // 21 € de IVA del 1T: salen de los 1.000 € a compensar, sin pago por el banco.
+  assert.ok(!A.some((a) => a.concepto === 'Pago del IVA (303) del 1T 2026'));
+  assert.equal(saldoCuenta(A, '4700', '2026-05-01'), 979);
+});
+
+test('contabilidad: el pago a Hacienda va el día en que se marcó como pagado; las retenciones de una sociedad, también', () => {
+  const fiscal = { tipo: 'sociedad', iva: 'general', trabajadores: true };
+  const F = [{ id: 'f1', numero: 1, anio: 2026, fecha: '2026-07-10', actividad: 'a', cliente: { nombre: 'C', nif: 'B12345674' }, concepto: 'x', base: 1000, ivaPct: 21, irpfPct: 0, cobrada: true }];
+  const G = [{ id: 'g1', fecha: '2026-08-02', actividad: 'a', concepto: 'Asesoría', base: 200, ivaPct: 21, irpfPct: 15, proveedor: 'Gestoría', proveedorNif: 'B87654321', pagado: '2026-08-02' }];
+  const datos = { facturas: F, gastos: G, fiscal, pres303: { 2026: { 3: true } }, pagadosHacienda: { '2026-3-303': { fecha: '2026-10-15' }, '2026-3-111': { fecha: '2026-10-14' } } };
+  const A = generarAsientos(datos, '2026-10-16');
+  assert.ok(A.some((a) => a.concepto === 'Pago del IVA (303) del 3T 2026' && a.fecha === '2026-10-15'));
+  assert.ok(A.some((a) => a.concepto === 'Pago de retenciones (111) del 3T 2026' && a.fecha === '2026-10-14'));
+  // Sin marca de pago, el último día del plazo.
+  assert.ok(generarAsientos({ ...datos, pagadosHacienda: {} }, '2026-10-21').some((a) => a.concepto === 'Pago del IVA (303) del 3T 2026' && a.fecha === '2026-10-20'));
+});
+
+test('contabilidad (auditoría C1-25): las ventas de productos con stock van a la 700 y los servicios a la 705', () => {
+  const fiscal = { tipo: 'sociedad', iva: 'general' };
+  const productos = [{ id: 'aaaaaaaaaaaa', nombre: 'Altavoz', precio: 300 }, { id: 'bbbbbbbbbbbb', nombre: 'Montaje', precio: 100, servicio: true }];
+  const F = [{ id: 'f1', numero: 1, anio: 2026, fecha: '2026-03-10', actividad: 'a', cliente: { nombre: 'C', nif: 'B12345674' }, concepto: 'Venta', ivaPct: 21, irpfPct: 0, cobrada: false, base: 400,
+    lineas: [{ concepto: 'Altavoz', cantidad: 1, precio: 300, dto: 0, ivaPct: 21, producto: 'aaaaaaaaaaaa' }, { concepto: 'Montaje', cantidad: 1, precio: 100, dto: 0, ivaPct: 21, producto: 'bbbbbbbbbbbb' }] }];
+  const a = generarAsientos({ facturas: F, fiscal, productos }, '2026-12-31').find((x) => x.origen?.id === 'f1');
+  const haber = (c) => a.lineas.filter((l) => l.cuenta === c).reduce((s, l) => s + l.haber, 0);
+  assert.deepEqual([haber('700'), haber('705')], [300, 100]);
 });

@@ -171,16 +171,66 @@ test('F08: una recurrente que falla no se da por hecha y se reintenta; dos pasad
   assert.equal(r.ultima, '2026-10');
   assert.equal(r.fallo, undefined);
   // El email falló (una o dos veces, si la otra pasada también lo intentó): se reintenta después sin emitir otra factura.
-  assert.ok(r.envio.intentos >= 1);
+  assert.ok(r.envios[0].intentos >= 1);
   falla = false;
   const z = await procesarRecurrente(u, 'r1', '2026-10-04', { enviar });
   assert.equal(z.creada, undefined);
-  assert.deepEqual(enviados, [r.envio.factura]);
-  assert.equal((await R.leerUno(u, 'recurrentes', 'r1')).envio, undefined);
+  assert.deepEqual(enviados, [r.envios[0].factura]);
+  assert.equal((await R.leerUno(u, 'recurrentes', 'r1')).envios, undefined);
   assert.equal((await todas(u)).length, 1);
   // Y el mes que viene, la siguiente.
   assert.ok((await procesarRecurrente(u, 'r1', '2026-11-01', { enviar })).creada);
   assert.equal((await todas(u)).length, 2);
+});
+
+// Auditoría completa (21-10-2026, revisión de Codex): con el día 28, un fallo en febrero no se reintentaba en marzo hasta el 28
+// y entonces se creaba marzo: febrero se perdía sin aviso. Y el email pendiente de un mes lo pisaba el del siguiente.
+test('F08: un mes que falla se recupera en cuanto se arregla, antes de crear el siguiente', async () => {
+  const { procesarRecurrente } = await import('../lib/recurrentesServidor.js');
+  const u = empresa({ verifactu: 'pruebas' });
+  const plantilla = { actividad: 'servicios', cliente: { nombre: 'Sin NIF', nif: '' }, concepto: 'Cuota', base: 50, ivaPct: 21, irpfPct: 0 };
+  await R.guardar(u, 'recurrentes', { id: 'r3', activa: true, dia: 28, plantilla, ultima: '2026-01' });
+  assert.match((await procesarRecurrente(u, 'r3', '2026-02-28')).fallo, /NIF/);
+  // El 3 de marzo ya está arreglado: sale febrero (aunque aún no sea día 28) y marzo espera a su día.
+  await R.guardar(u, 'recurrentes', { ...(await R.leerUno(u, 'recurrentes', 'r3')), plantilla: { ...plantilla, cliente: { nombre: 'Con NIF', nif: '12345678Z' } } });
+  const m3 = await procesarRecurrente(u, 'r3', '2026-03-03');
+  assert.equal(m3.creadas?.length, 1);
+  assert.equal((await R.leerUno(u, 'recurrentes', 'r3')).ultima, '2026-02');
+  assert.equal((await procesarRecurrente(u, 'r3', '2026-03-28')).creadas?.length, 1);
+  assert.equal((await R.leerUno(u, 'recurrentes', 'r3')).ultima, '2026-03');
+  assert.equal((await todas(u)).length, 2);
+});
+
+test('F08: si el cron no pasó el día del mes, el siguiente lo recupera; y en pausa no se rellena', async () => {
+  const { procesarRecurrente } = await import('../lib/recurrentesServidor.js');
+  const u = empresa();
+  const plantilla = { actividad: 'servicios', cliente: { nombre: 'Ana', nif: '12345678Z' }, concepto: 'Cuota', base: 50, ivaPct: 21, irpfPct: 0 };
+  await R.guardar(u, 'recurrentes', { id: 'r4', activa: true, dia: 28, plantilla, ultima: '2026-01' });
+  // Nadie pasó el 28 de febrero: el 1 de marzo sale febrero.
+  assert.equal((await procesarRecurrente(u, 'r4', '2026-03-01')).creadas?.length, 1);
+  assert.equal((await R.leerUno(u, 'recurrentes', 'r4')).ultima, '2026-02');
+  // En pausa nada; dos meses más tarde se reanuda (app/api/recurrentes pone `ultima` en el mes anterior): solo sale el actual.
+  await R.guardar(u, 'recurrentes', { ...(await R.leerUno(u, 'recurrentes', 'r4')), activa: false });
+  assert.equal((await procesarRecurrente(u, 'r4', '2026-04-28')).creadas, undefined);
+  await R.guardar(u, 'recurrentes', { ...(await R.leerUno(u, 'recurrentes', 'r4')), activa: true, ultima: '2026-05' });
+  assert.equal((await procesarRecurrente(u, 'r4', '2026-06-28')).creadas?.length, 1);
+  assert.equal((await todas(u)).length, 2);
+});
+
+test('F08: el email pendiente de un mes no lo pisa la factura del siguiente', async () => {
+  const { procesarRecurrente } = await import('../lib/recurrentesServidor.js');
+  const u = empresa();
+  await R.guardar(u, 'recurrentes', { id: 'r5', activa: true, dia: 1, enviar: true, ultima: '2026-09', plantilla: { actividad: 'servicios', cliente: { nombre: 'Ana', nif: '12345678Z' }, concepto: 'Cuota', base: 50, ivaPct: 21, irpfPct: 0 } });
+  const enviados = [];
+  let falla = true;
+  const enviar = async (_, f) => (falla ? { error: 'buzón caído' } : (enviados.push(f.fecha), {}));
+  await procesarRecurrente(u, 'r5', '2026-10-01', { enviar });
+  await procesarRecurrente(u, 'r5', '2026-11-01', { enviar });
+  assert.equal((await R.leerUno(u, 'recurrentes', 'r5')).envios.length, 2);
+  falla = false;
+  await procesarRecurrente(u, 'r5', '2026-11-02', { enviar });
+  assert.deepEqual(enviados.sort(), ['2026-10-01', '2026-11-01']);
+  assert.equal((await R.leerUno(u, 'recurrentes', 'r5')).envios, undefined);
 });
 
 test('F08: un corte entre emitir y apuntar el mes no duplica la factura al reintentar', async () => {

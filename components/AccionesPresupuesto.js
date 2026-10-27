@@ -59,7 +59,7 @@ export function Responder({ token }) {
   return (
     <div className="formulario">
       <label>Tu nombre<input className="campo" value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Nombre y apellidos" /></label>
-      {error && <p className="error">{error}</p>}
+      {error && <p className="error" role="alert">{error}</p>}
       {!nombre.trim() && <p id={ayudaId} className="nota">Escribe tu nombre para aceptar o rechazar el presupuesto.</p>}
       <button type="button" className="boton" onClick={() => responder(true)} disabled={!nombre.trim()} aria-describedby={!nombre.trim() ? ayudaId : undefined}>Aceptar presupuesto</button>
       <button type="button" className="borrar" onClick={() => responder(false)} disabled={!nombre.trim()} aria-describedby={!nombre.trim() ? ayudaId : undefined}>Rechazar</button>
@@ -68,7 +68,8 @@ export function Responder({ token }) {
 }
 
 // Cambia el enlace público (portal o presupuesto): el anterior deja de funcionar. Para cuando se ha reenviado por error.
-export function CambiarEnlace({ datos, pregunta }) {
+// etiqueta: qué enlace cambia («del presupuesto», «del portal»), para no tener dos botones iguales en la misma pantalla.
+export function CambiarEnlace({ datos, pregunta, etiqueta = 'Cambiar enlace' }) {
   const router = useRouter();
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
@@ -79,5 +80,5 @@ export function CambiarEnlace({ datos, pregunta }) {
     try { await llamar('/api/enlaces', { method: 'POST', body: JSON.stringify(datos) }); router.refresh(); } catch (e) { setError(e.message); }
     setEnviando(false);
   };
-  return <><button type="button" className="boton sec" disabled={enviando} onClick={cambiar}>{enviando ? 'Cambiando…' : 'Cambiar enlace'}</button>{error && <span className="error" role="alert">{error}</span>}</>;
+  return <><button type="button" className="boton sec" disabled={enviando} onClick={cambiar}>{enviando ? 'Cambiando…' : etiqueta}</button>{error && <span className="error" role="alert">{error}</span>}</>;
 }

@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import { requerir } from '@/lib/auth';
 import { importes, numeroFactura, pendienteDe, r2 } from '@/lib/calculos';
 import { actividadesDe, nombresActividad } from '@/lib/empresa';
+import { gastosQueVe } from '@/lib/nominas';
 import { eur, fechaCorta } from '@/lib/formato';
 import Volver from '@/components/Volver';
 
@@ -22,7 +23,7 @@ export default async function Mes({ params }) {
   // Solo ese mes (informe de capacidad E01).
   const [facturas, gastos] = await Promise.all([leerRango(u, 'facturas', `${mes}-01`, `${mes}-31`), leerRango(u, 'gastos', `${mes}-01`, `${mes}-31`)]);
   const F = (facturas || []).filter((f) => f.fecha.startsWith(mes)).sort((a, b) => a.fecha.localeCompare(b.fecha));
-  const G = (gastos || []).filter((g) => g.fecha.startsWith(mes)).sort((a, b) => a.fecha.localeCompare(b.fecha));
+  const G = gastosQueVe(u, gastos || []).filter((g) => g.fecha.startsWith(mes)).sort((a, b) => a.fecha.localeCompare(b.fecha));
   const suma = (l, k) => r2(l.map(importes).reduce((s, x) => s + x[k], 0));
   const [y, m] = mes.split('-').map(Number);
   const otro = (d) => new Date(Date.UTC(y, m - 1 + d, 1)).toISOString().slice(0, 7);
@@ -41,7 +42,7 @@ export default async function Mes({ params }) {
       <Volver href={`/?anio=${y}`}>Resumen</Volver>
       <header className="cabecera">
         <h1 className="titulo">{MESES[m - 1]} {y}</h1>
-        <nav className="anios">
+        <nav className="anios" aria-label="Mes">
           <Ir tipo="cifras" href={`/mes/${otro(-1)}`} aria-label="Mes anterior">‹</Ir>
           <Ir tipo="cifras" href={`/mes/${otro(1)}`} aria-label="Mes siguiente">›</Ir>
         </nav>
@@ -84,7 +85,7 @@ export default async function Mes({ params }) {
                 <span className="num">{numeroFactura(f)}</span>
                 <span className="txt">
                   <strong>{f.cliente.nombre}</strong>
-                  <small>{fechaCorta(f.fecha)} · {ACTIVIDADES[f.actividad]}{f.cobrada ? '' : ' · Pendiente'}</small>
+                  <small><span className="num-movil">{numeroFactura(f)} · </span>{fechaCorta(f.fecha)} · {ACTIVIDADES[f.actividad]}{f.cobrada ? '' : ' · Pendiente'}</small>
                 </span>
                 <span className={`imp ${f.cobrada ? '' : 'pend'}`}>{eur(importes(f).total)}</span>
               </Ir>

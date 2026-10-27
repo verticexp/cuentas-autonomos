@@ -220,8 +220,10 @@ export const SEGMENTOS = [
   },
   {
     id: 'business', ruta: '/business', icono: 'edificio', n: 'Business',
-    titulo: 'Control financiero para grupos y equipos grandes',
-    sub: 'Una propuesta a medida para varias sociedades o equipos: acordamos contigo el alcance, los accesos y un precio cerrado antes de empezar.',
+    // Para quien lleva varias sociedades (un grupo familiar, una pequeña holding, varias tiendas), no para grandes empresas:
+    // Fisquo no envía al SII, obligatorio por encima de 6 millones (auditoría D1-27).
+    titulo: 'Varias empresas, un solo Fisquo',
+    sub: 'Para quien lleva varias sociedades —un grupo familiar, una pequeña holding, varias tiendas— o un equipo grande: datos separados por empresa, accesos a medida y un precio cerrado antes de empezar.',
     dolores: [
       ['Varias sociedades, varias herramientas', 'Un alcance acordado para tus sociedades, con datos separados y accesos definidos.'],
       ['Accesos que nadie controla', 'Roles y permisos por área, e invitaciones que caducan.'],
@@ -335,7 +337,18 @@ export const COMPARATIVA = {
 
 export const PERSONALIZADO = ['Alcance para varias sociedades o equipos', 'Usuarios y empleados según acuerdo', 'Implantación y servicios definidos contigo', 'Precio cerrado por contacto'];
 
+// Lo que más frena a quien aún no conoce Fisquo: qué pasa con sus datos y con la IA. Solo lo que es cierto: los
+// servidores, en vercel.json (fra1); la copia, en .github/workflows/copia.yml; la IA, en la política de privacidad y
+// lib/permisoIA.js; la revisión, en la bandeja de gastos (lo leído espera en «Por revisar»).
+export const CONFIANZA = [
+  { i: 'llave', t: 'Servidores en Fráncfort', d: 'La app funciona en servidores de Alemania, todo viaja cifrado y cada noche se hace una copia cifrada.' },
+  { i: 'asistente', t: 'La IA no aprende con tus datos', d: 'Solo lee lo que tú le das, el ticket que subes o lo que preguntas, y nada se usa para entrenar modelos.' },
+  { i: 'tic', t: 'Tú das el visto bueno', d: 'Lo que lee la IA te lo enseña para que lo revises antes de guardarlo. Y si prefieres, lo rellenas a mano.' },
+  { i: 'documento', t: 'Te los llevas cuando quieras', d: 'Facturas en PDF, registros en CSV y el paquete trimestral en Excel. Sin permanencia.' },
+];
+
 export const FAQ_GENERAL = [
+  ['¿Mis datos están seguros?', 'La app funciona en servidores de Fráncfort (Alemania), todo viaja cifrado y cada noche se hace una copia cifrada. Tus datos no se venden ni se usan para entrenar inteligencia artificial, y te los llevas cuando quieras en PDF, CSV o Excel.'],
   ['¿Puedo traer mis datos de otro programa?', 'Sí. Fisquo importa clientes, facturas y gastos desde Holded o cualquier Excel, y para la contabilidad, el balance de sumas y saldos y los bienes de inversión de Holded, A3, Sage o Contasol. Sigues donde lo dejaste.'],
   ['¿Controla el stock?', 'Sí, si vendes productos: cada factura resta y cada compra suma, con stock mínimo, qué pedir a cada proveedor, margen por producto y el valor del almacén a coste medio.'],
   ['¿Fisquo lleva la contabilidad?', 'Sí, por partida doble y con el plan contable de pymes: libro diario, mayor, pérdidas y ganancias, balance, amortizaciones y cuentas anuales, generados con lo que ya apuntas.'],
@@ -347,7 +360,9 @@ export const FAQ_GENERAL = [
 
 export const FAQ_PRECIOS = [
   ['¿Los precios llevan IVA y son por empresa?', 'Los precios no incluyen IVA y corresponden a una empresa por suscripción. Para varias sociedades, Business ofrece alcance y precio cerrado por contacto.'],
-  ['¿Necesito tarjeta para la prueba?', 'No. Puedes probar Fisquo durante 30 días sin tarjeta.'],
+  ['¿Necesito tarjeta para la prueba?', 'No. Puedes probar Fisquo durante 30 días sin tarjeta. Si tu gestoría trabaja con Fisquo, con su código la prueba dura 3 meses: un trimestre entero.'],
+  ['Ya pago a una gestoría. ¿Para qué quiero Fisquo?', 'Fisquo no sustituye a tu gestoría: le deja el trabajo hecho. Apuntas facturas y gastos durante el trimestre, sabes cuánto apartar para Hacienda y tu gestoría entra gratis con su propio acceso para revisar y presentar.'],
+  ['¿Qué hace la IA con mis tickets y mis datos?', 'Solo lee lo que tú le das: el ticket o la factura que subes y lo que preguntas al asistente. El proveedor de IA es Anthropic y tus datos no se usan para entrenar ningún modelo. Lo que lee te lo enseña para que lo revises antes de guardarlo (salvo los proveedores que tú marques de confianza), y si prefieres puedes rellenarlo todo a mano.'],
   ['¿Mi gestoría consume un usuario?', 'No. Los seis planes incluyen 1 acceso separado para tu gestoría, además de los usuarios internos del plan.'],
   ['¿Qué diferencia hay entre Pro, Plus y Business?', 'Pro añade operaciones, previsión y análisis a Esencial. Plus conserva las funciones de Pro y amplía el equipo; en Autónomos añade nóminas, jornada y rentabilidad por proyecto, y en Pymes incorporación guiada. Business es una oferta a medida para varias sociedades o equipos, con alcance y precio acordados por contacto.'],
   ['¿Cuántas páginas de lectura IA incluye cada plan?', 'Autónomos: 50 en Esencial, 200 en Pro y 500 en Plus. Pymes: 200 en Esencial, 600 en Pro y 1.500 en Plus. La cuota se comparte por empresa con la gestoría, se renueva cada mes natural también en pago anual y no se acumula. La prueba incluye 50 páginas en total; la cuota mensual del plan empieza con el periodo de pago. Una imagen cuenta una página y cada página del PDF una lectura, hasta 10 páginas y 3 MB por PDF. Volver a enviar una lectura consume otra página. Cuentan las lecturas enviadas a la IA aunque no guardes el gasto.'],

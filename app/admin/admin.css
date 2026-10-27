@@ -71,3 +71,17 @@
 #adm-ajustes, #adm-empresas { scroll-margin-top: 16px; }
 .adm-cambiar { display: flex; align-items: center; gap: 8px; font-size: 14px; flex-wrap: wrap; }
 .adm-cambiar .campo { width: auto; min-width: 220px; max-width: 100%; }
+
+/* Activación de las altas (lib/embudo.js) */
+.adm-embudo { margin: 10px 0; }
+.adm-embudo-rejilla { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.adm-embudo-tabla { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+.adm-embudo-tabla caption { text-align: left; font-weight: 600; font-size: 15px; padding-bottom: 6px; }
+.adm-embudo-tabla th, .adm-embudo-tabla td { padding: 6px 0; border-bottom: 1px solid var(--line); text-align: right; vertical-align: top; }
+.adm-embudo-tabla thead th { color: var(--muted); font-size: 13px; font-weight: 500; }
+.adm-embudo-tabla tbody th { text-align: left; font-weight: 400; padding-right: 8px; }
+.adm-embudo-tabla th:first-child, .adm-embudo-tabla td:first-child { text-align: left; }
+.adm-embudo-tabla td { padding-left: 8px; white-space: nowrap; }
+.adm-embudo-tabla td:nth-child(2) { font-weight: 600; }
+.adm-embudo-barra { display: block; height: 4px; margin-top: 4px; border-radius: 4px; background: var(--relleno); overflow: hidden; }
+.adm-embudo-barra i { display: block; height: 100%; background: var(--marca); border-radius: 4px; }

@@ -8,10 +8,11 @@ import FormEntrar from '@/components/FormEntrar';
 import PanelMarca from '@/components/PanelMarca';
 import { TrasArranque } from '@/lib/arranque';
 import { mensajeSeguro } from '@/lib/mensajes';
+import { AYUDA_CONTRASENA } from '@/lib/contrasena';
 import '@/app/legal.css';
 
 export const dynamic = 'force-dynamic';
-const ERRORES = { 1: 'Email o contraseña incorrectos.', bloqueado: 'Demasiados intentos. Espera 15 minutos.' };
+const ERRORES = { 1: 'Email o contraseña incorrectos.', bloqueado: 'Demasiados intentos. Espera 15 minutos.', caducado: 'Ha pasado demasiado tiempo. Vuelve a escribir tu email y contraseña.' };
 
 export default async function Login({ searchParams }) {
   if (!redis) return <SinBD />;
@@ -29,12 +30,13 @@ export default async function Login({ searchParams }) {
           <form method="post" action="/api/registro">
             <h1><Logo className="logo-login" /></h1>
             <p className="nota">Crea la cuenta de administrador.</p>
-            {error && <p className="error">{ERRORES[error] || mensajeSeguro(error)}</p>}
+            {error && <p className="error" role="alert">{ERRORES[error] || mensajeSeguro(error)}</p>}
             <label htmlFor="nombre">Nombre</label><input id="nombre" name="nombre" required />
             <label htmlFor="email">Email</label>
             <input id="email" name="email" type="email" autoComplete="username" required />
             <label htmlFor="password">Contraseña</label>
-            <input id="password" name="password" type="password" autoComplete="new-password" minLength={8} required />
+            <input id="password" name="password" type="password" autoComplete="new-password" minLength={10} aria-describedby="password-ayuda" required />
+            <p className="nota" id="password-ayuda">{AYUDA_CONTRASENA}</p>
             <button type="submit">Crear cuenta</button>
           </form>
         </TrasArranque>

@@ -78,3 +78,15 @@ test('libros registro: cuota soportada 210, cuota deducible 105 y gasto deducibl
 });
 
 const r = (n) => Math.round(n * 100) / 100;
+
+test('libros registro (auditoría C1-12): el gasto deducible del IRPF es el del 130, solo la parte afecta a la actividad', () => {
+  // Base 100 €, IVA 21 % deducible al 50 % y nada afecto en el IRPF: el 130 cuenta 0 € de gasto, el libro también.
+  const g = { id: 'mixto', fecha: '2026-03-10', actividad: 'a', concepto: 'Teléfono', proveedor: 'Tel', proveedorNif: 'B12345674', base: 100, ivaPct: 21, deduciblePct: 50, afectoPct: 0 };
+  const datos = { facturas: [fac], gastos: [g], fiscal, actividades: [{ id: 'a', nombre: 'Servicios' }], empresa: { nombre: 'Prueba', nif: '12345678Z' } };
+  assert.equal(librosRegistro(datos, 2026, '2026-12-31').totales.gastos, 0);
+  assert.equal(resumenAnual([fac], [g], 2026).trimestres[0].gastos, 0);
+  // Afecto al 50 % con el IVA deducible al 50 %: la mitad de la base; el IVA no deducido es el de la parte privada (costeAfecto).
+  const g50 = { ...g, afectoPct: 50 };
+  assert.equal(librosRegistro({ ...datos, gastos: [g50] }, 2026, '2026-12-31').totales.gastos, 50);
+  assert.equal(resumenAnual([fac], [g50], 2026).trimestres[0].gastos, 50);
+});

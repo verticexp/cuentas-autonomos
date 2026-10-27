@@ -17,8 +17,9 @@ export default async function Empleado({ params }) {
   if (!e) notFound();
   return (
     <main className="pagina mk-look">
-      <Volver href="/nominas">Nóminas</Volver>
+      <Volver href="/nominas">Equipo y nóminas</Volver>
       <header className="cabecera"><h1 className="titulo">{e.nombre}</h1></header>
+      <p><a className="boton sec" href={`/nominas/empleado/${e.id}/finiquito`}>{e.baja ? 'Calcular o ver finiquito' : 'Dar de baja y calcular finiquito'}</a></p>
       <FormEmpleado empleado={e} hoy={hoy()} />
       <p className="nota">Si deja la empresa, pon la fecha de baja en vez de borrarlo: así se queda su historial.</p>
       <div className="acciones-factura"><Borrar url={`/api/empleados?id=${e.id}`} pregunta={`¿Borrar a ${e.nombre}? Sus nóminas ya hechas se quedan.`} volver="/nominas" /></div>

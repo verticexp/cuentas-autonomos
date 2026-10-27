@@ -5,12 +5,13 @@ import { sumarMeses, requisitosIncobrable } from '../lib/incobrables.js';
 const original = { fechaOriginal: '2026-01-15', base: 100 };
 
 test('incobrable dentro de plazo y en ambos extremos', () => {
-  for (const fechaRectificativa of ['2026-07-15', '2026-10-20', '2027-01-15']) {
+  // Una pyme elige seis meses o un año (art. 80.Cuatro): de los 6 a los 18 meses de la factura (auditoría del 21-10-2026).
+  for (const fechaRectificativa of ['2026-07-15', '2026-10-20', '2027-01-15', '2027-01-16', '2027-07-15']) {
     const r = requisitosIncobrable({ ...original, fechaRectificativa });
     assert.deepEqual(r.errores, []);
     assert.deepEqual(r.avisos, []);
     assert.equal(r.desde, '2026-07-15');
-    assert.equal(r.hasta, '2027-01-15');
+    assert.equal(r.hasta, '2027-07-15');
     assert.deepEqual(r.requisitos, [
       'Haber reclamado el cobro al cliente por vía judicial o con requerimiento notarial (o por otro medio fehaciente cuando la ley lo admite).',
       'Que el impago conste en los libros registro.',
@@ -24,8 +25,8 @@ test('incobrable antes de tiempo o fuera de plazo', () => {
   assert.deepEqual(requisitosIncobrable({ ...original, fechaRectificativa: '2026-07-14' }).errores, [
     'Aún no es un crédito incobrable: hasta el 15/07/2026 no pasan seis meses desde la factura (art. 80.Cuatro de la Ley del IVA).',
   ]);
-  assert.deepEqual(requisitosIncobrable({ ...original, fechaRectificativa: '2027-01-16' }).errores, [
-    'Fuera de plazo: la rectificativa por impago se emite entre el 15/07/2026 y el 15/01/2027 (los seis meses siguientes, art. 80.Cuatro).',
+  assert.deepEqual(requisitosIncobrable({ ...original, fechaRectificativa: '2027-07-16' }).errores, [
+    'Fuera de plazo: la rectificativa por impago se emite entre el 15/07/2026 y el 15/07/2027 (los seis meses siguientes a los seis meses o al año que elijas, art. 80.Cuatro).',
   ]);
 });
 
@@ -43,7 +44,8 @@ test('sumar meses ajusta el fin de mes y los años bisiestos', () => {
   assert.equal(sumarMeses('2024-02-29', 12), '2025-02-28');
   const r = requisitosIncobrable({ fechaOriginal: '2026-08-31', fechaRectificativa: '2027-02-28', base: 100 });
   assert.equal(r.desde, '2027-02-28');
-  assert.equal(r.hasta, '2027-08-28');
+  // Con la opción de un año: acaba el 31-8-2027 y seis meses después es el 29-2-2028 (bisiesto).
+  assert.equal(r.hasta, '2028-02-29');
   assert.deepEqual(r.errores, []);
 });
 

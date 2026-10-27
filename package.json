@@ -5,7 +5,7 @@
     "dev": "next dev",
     "build": "npm test && next build",
     "start": "next start",
-    "test": "node --test tests/*.test.mjs",
+    "test": "env -u KV_REST_API_URL -u KV_REST_API_TOKEN -u UPSTASH_REDIS_REST_URL -u UPSTASH_REDIS_REST_TOKEN -u CONTROLAT_KV_REST_API_URL -u CONTROLAT_KV_REST_API_TOKEN -u CONTROLAT_KV_KV_REST_API_URL -u CONTROLAT_KV_KV_REST_API_TOKEN -u VERIFACTU_P12 -u VERIFACTU_P12_CLAVE -u VERIFACTU_URL -u VERIFACTU_SELLO node --test tests/*.test.mjs",
     "verificar": "node tests/e2e/verificar.mjs"
   },
   "dependencies": {
@@ -19,5 +19,12 @@
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "web-push": "3.6.7"
+  },
+  "overrides": {
+    "zod": "^4.6.6"
+  },
+  "devDependencies": {
+    "axe-core": "^4.14.0",
+    "jsdom": "^30.1.3"
   }
 }

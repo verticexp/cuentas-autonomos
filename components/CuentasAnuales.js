@@ -41,7 +41,7 @@ export default function CuentasAnuales({ anio, datos, memoria, borrador, seccion
       {secciones.map(([n, t]) => (
         <details key={n} className="ca-seccion">
           <summary>{n}. {t}{x.memoria[n].includes('[') ? <span className="ca-falta"> · por revisar</span> : ''}</summary>
-          <textarea className="campo" rows={6} value={x.memoria[n]} onChange={(e) => ponerMem(n, e.target.value)} />
+          <textarea className="campo" rows={6} aria-label={`Memoria: ${n}. ${t}`} value={x.memoria[n]} onChange={(e) => ponerMem(n, e.target.value)} />
           {x.memoria[n].trim() !== String(borrador[n]).trim() && <button type="button" className="boton sec pequeno" onClick={() => ponerMem(n, borrador[n])}>Volver al texto de Fisquo</button>}
         </details>
       ))}

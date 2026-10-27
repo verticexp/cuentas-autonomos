@@ -7,9 +7,9 @@ import { useRouter } from 'next/navigation';
 import { DESCUENTO, PLANES } from '@/components/web/datos';
 import { diasPrueba, esFundador, TIPOS, VERSION_PLAN } from '@/lib/prueba';
 import CupoEscaneo from '@/components/CupoEscaneo';
+import { eurPrecio } from '@/lib/formato';
 import styles from './ElegirPlan.module.css';
 
-const euros = (n) => n.toLocaleString('es-ES', { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 });
 
 // Ajustes › Tu plan: contratar con Stripe Checkout, cambiar de plan y gestionar el pago en el portal de Stripe
 // (app/api/suscripcion). En la app de iOS no se enseña la compra (lib/app.js); solo el administrador puede cambiarlo.
@@ -25,6 +25,8 @@ export default function ElegirPlan({ plan, tipoEmpresa, uso, admin, app }) {
   const paga = Boolean(actual?.pagado && actual?.suscripcion);
   // Fundador (lib/prueba.js): gratis de por vida; ve los mismos planes que los clientes, sin poder contratarlos.
   const fundador = esFundador(actual);
+  // Lo paga su gestoría (lib/licencias.js): no contrata nada mientras dure.
+  const despacho = actual?.porDespacho || null;
 
   async function llamar(datos) {
     setEstado('enviando');
@@ -55,7 +57,7 @@ export default function ElegirPlan({ plan, tipoEmpresa, uso, admin, app }) {
   if (app) return dias === 0 ? <p className="nota">Tu periodo de prueba ha terminado. Puedes consultar y exportar todos tus datos.</p> : null;
   const ocupado = estado === 'enviando';
   const esActual = (n) => actual?.tipo === tipo && actual?.nombre === n && (actual.periodo || 'mes') === periodo;
-  const estadoPlan = fundador ? 'Gratis de por vida' : paga ? actual.estado === 'past_due' ? 'Revisar pago' : actual.estado === 'trialing' ? 'Prueba con tarjeta' : 'Activo'
+  const estadoPlan = fundador ? 'Gratis de por vida' : despacho ? 'Incluido por tu gestoría' : paga ? actual.estado === 'past_due' ? 'Revisar pago' : actual.estado === 'trialing' ? 'Prueba con tarjeta' : 'Activo'
     : dias === 0 ? 'Prueba finalizada' : dias > 0 ? `Prueba · ${dias} días` : actual?.nombre ? 'Pendiente de activación' : 'Condiciones anteriores';
 
   return <div className={styles.contenido} aria-busy={ocupado}>
@@ -64,12 +66,12 @@ export default function ElegirPlan({ plan, tipoEmpresa, uso, admin, app }) {
       <section className={styles.actual} aria-labelledby="plan-actual">
         <div className={styles.cabeceraActual}><h2 id="plan-actual">Tu suscripción</h2><span className={styles.estado}>{estadoPlan}</span></div>
         <p className={styles.nombreActual}>{fundador ? 'Plan Fundador' : `${TIPOS[actual.tipo]} ${actual.nombre}`}</p>
-        <p className={styles.detalleActual}>{fundador ? 'Todas las funciones, sin límites de usuarios ni cuotas. Abajo tienes los planes que ven los clientes nuevos.' : paga ? `Facturación ${actual.periodo === 'anio' ? 'anual' : 'mensual'} · una empresa por suscripción`
-          : dias === 0 ? 'Tus datos siguen disponibles para consultar y exportar. Elige un plan para volver a crear y editar.'
-          : dias > 0 ? 'Prueba sin compromiso. Revisa los planes antes de activar tu suscripción.'
+        <p className={styles.detalleActual}>{fundador ? 'Todas las funciones, sin límites de usuarios ni cuotas. Abajo tienes los planes que ven los clientes nuevos.' : despacho ? `Lo paga ${despacho.nombre} dentro de lo que te cobra. Si deja de incluirlo, tendrás tiempo para elegir tu plan.` : paga ? `Facturación ${actual.periodo === 'anio' ? 'anual' : 'mensual'} · una empresa por suscripción`
+          : dias === 0 ? 'Tu cuenta está en solo lectura: puedes consultar y exportar todos tus datos. Elige un plan y vuelves a crear y editar al momento, sin perder nada.'
+          : dias > 0 ? 'Prueba sin tarjeta: no se cobra nada si no activas un plan. Si al acabar no has elegido, tu cuenta pasa a solo lectura: ves y exportas todo, pero no puedes crear ni editar.'
           : 'Consulta las opciones disponibles para tu empresa.'}</p>
         {paga && actual.estado === 'past_due' && <p className={styles.alerta}>El último cobro ha fallado. Revisa tu método de pago.</p>}
-        {admin && !fundador && <div className={styles.gestion}>
+        {admin && !fundador && !despacho && <div className={styles.gestion}>
           {paga ? <button type="button" className={styles.botonGestion} disabled={ocupado} onClick={() => llamar({ portal: true })}>Gestionar facturación <span aria-hidden="true">↗</span></button>
             : actual?.nombre && <button type="button" className={styles.botonGestion} disabled={ocupado} onClick={() => llamar({ tipo: actual.tipo, nombre: actual.nombre, periodo: actual.periodo || 'mes' })}>Activar {actual.nombre} · pago {actual.periodo === 'anio' ? 'anual' : 'mensual'}</button>}
           {paga && <span>Tarjeta, facturas y cancelación</span>}
@@ -100,16 +102,16 @@ export default function ElegirPlan({ plan, tipoEmpresa, uso, admin, app }) {
           <label className={periodo === 'anio' ? styles.seleccionado : ''}><input type="radio" name="periodo-plan" value="anio" checked={periodo === 'anio'} onChange={() => setPeriodo('anio')} />Anual <span>−{DESCUENTO} %</span></label></div>
         </fieldset>
       </div>
-      <div className={styles.planes} aria-label="Planes disponibles">
+      <div className={styles.planes} role="region" tabIndex={0} aria-label="Planes disponibles">
         {PLANES[tipo].map((p) => {
           const anual = Math.round(p.p * 12 * (100 - DESCUENTO)) / 100;
           const elegido = esActual(p.n);
           return <article key={p.n} className={`${styles.plan} ${p.fuerte ? styles.destacado : ''}`} aria-labelledby={`plan-${p.n}`}>
             <div className={styles.planPrincipal}><div className={styles.planCabecera}><h3 id={`plan-${p.n}`}>{p.n}</h3>{p.fuerte && <span className={styles.recomendado}>Recomendado</span>}</div>
             <p className={styles.para}>{p.fuerte ? 'Operaciones, previsión y análisis en un solo plan' : p.para}</p>
-            <p className={styles.precio}><strong>{euros(periodo === 'anio' ? anual / 12 : p.p)} €</strong><span>/mes</span></p>
-            <p className={styles.facturacion}>{periodo === 'anio' ? `${euros(anual)} € facturados al año` : 'Facturación mensual'} · sin IVA</p>
-            {fundador ? <p className={styles.incluido}><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m3 8 3 3 7-7" /></svg>Incluido en tu plan Fundador</p> : elegido ? <p className={styles.planElegido}>Tu plan actual</p> : admin ? <button type="button" className={`${styles.botonPlan} ${p.fuerte ? styles.botonPro : ''}`} disabled={ocupado} onClick={() => elegir(p.n)}>{paga ? `Cambiar a ${p.n}` : `Elegir ${p.n}`}</button> : <p className={styles.soloAdmin}>Gestionado por el administrador</p>}
+            <p className={styles.precio}><strong>{eurPrecio(periodo === 'anio' ? anual / 12 : p.p)}</strong><span>/mes</span></p>
+            <p className={styles.facturacion}>{periodo === 'anio' ? `${eurPrecio(anual)} facturados al año` : 'Facturación mensual'} · sin IVA</p>
+            {fundador || despacho ? <p className={styles.incluido}><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m3 8 3 3 7-7" /></svg>{fundador ? 'Incluido en tu plan Fundador' : elegido ? 'Tu plan actual, incluido por tu gestoría' : 'Lo gestiona tu gestoría'}</p> : elegido ? <p className={styles.planElegido}>Tu plan actual</p> : admin ? <button type="button" className={`${styles.botonPlan} ${p.fuerte ? styles.botonPro : ''}`} disabled={ocupado} onClick={() => elegir(p.n)}>{paga ? `Cambiar a ${p.n}` : `Elegir ${p.n}`}</button> : <p className={styles.soloAdmin}>Gestionado por el administrador</p>}
             </div><div className={styles.funciones}>
               <p>{p.herencia ? `Todo lo de ${p.herencia}, más:` : 'Lo esencial para tu día a día:'}</p>
               <ul>{p.l.map((t) => <li key={t}><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m3 8 3 3 7-7" /></svg><span>{t}</span></li>)}</ul>
@@ -120,8 +122,9 @@ export default function ElegirPlan({ plan, tipoEmpresa, uso, admin, app }) {
     </section>
     <aside className={styles.business}><div><h2>¿Gestionas varias empresas?</h2><p>Fisquo Business adapta el alcance y la capacidad a tu equipo.</p></div><a className={styles.enlace} href="/business">Consultar Business <span aria-hidden="true">→</span></a></aside>
     <details className={styles.detalles}><summary>Condiciones de contratación y lecturas IA</summary>
-      <p>Precios sin IVA y sin permanencia. El pago anual tiene un descuento del {DESCUENTO} % y se cobra en un solo pago al año. El importe final y las condiciones se muestran al contratar.</p>
-      <p>La prueba incluye 50 páginas en total. El cobro puede comenzar al contratar si quedan menos de dos días de prueba; revisa la fecha que aparece en el pago.</p>
+      <p>Los precios que ves son sin IVA y sin permanencia; al contratar se añade el IVA y ves el importe final antes de pagar. El pago anual tiene un descuento del {DESCUENTO} % y se cobra en un solo pago al año.</p>
+      <p>La prueba no pide tarjeta e incluye 50 páginas en total de lectura IA. Si contratas cuando quedan menos de dos días, el primer cobro es al contratar; la fecha aparece en el pago.</p>
+      <p>Si la prueba termina sin plan, la cuenta pasa a solo lectura: tus datos no se borran, puedes consultarlos y exportarlos, y todo se reactiva al elegir un plan.</p>
       <p>La cuota de lectura IA se comparte por empresa con el equipo y la gestoría. Se renueva cada mes natural, también con pago anual, y no se acumula. Las páginas enviadas a la IA cuentan aunque no guardes el gasto. Al agotarlas, puedes seguir introduciendo gastos a mano o solicitar una ampliación sin cargos automáticos.</p>
       {paga && <p>Los cambios de plan ajustan la diferencia en tu próxima factura.</p>}
     </details>

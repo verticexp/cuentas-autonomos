@@ -11,7 +11,12 @@ export async function POST(req) {
   if (res) return res;
   const d = datosDe(u, await cuerpo(req));
   if (d.error) return error(d.error);
-  return Response.json({ ok: true, presupuesto: await crearPresupuesto(u, d) });
+  try {
+    return Response.json({ ok: true, presupuesto: await crearPresupuesto(u, d) });
+  } catch (e) {
+    if (e instanceof Ocupado) return error(e.message, 409);
+    throw e;
+  }
 }
 
 // Solo se puede cambiar mientras está pendiente; «aceptado» a mano es para cuando el cliente dice que sí por teléfono.
@@ -46,10 +51,19 @@ export async function DELETE(req) {
   const { u, res } = await usuarioApi({ permiso: 'facturar' });
   if (res) return res;
   const id = req.nextUrl.searchParams.get('id');
-  const p = id && (await leerUno(u, 'presupuestos', id));
-  if (!p) return error('Ese presupuesto ya no existe', 404);
-  if (p.facturas?.length) return error('Tiene facturas: no se puede borrar');
-  await borrar(u, 'presupuestos', id);
-  await redis.hdel('presupuesto-enlaces', p.token);
-  return Response.json({ ok: true });
+  if (!id) return error('Ese presupuesto ya no existe', 404);
+  // Mismo cerrojo que facturarlo o responderlo: no se borra uno que se está facturando en ese momento.
+  try {
+    return await conCerrojo(`presupuesto:${u.empresa || u.id}:${id}`, async () => {
+      const p = await leerUno(u, 'presupuestos', id);
+      if (!p) return error('Ese presupuesto ya no existe', 404);
+      if (p.facturas?.length) return error('Tiene facturas: no se puede borrar');
+      await borrar(u, 'presupuestos', id);
+      await redis.hdel('presupuesto-enlaces', p.token);
+      return Response.json({ ok: true });
+    });
+  } catch (e) {
+    if (e instanceof Ocupado) return error(e.message, 409);
+    throw e;
+  }
 }

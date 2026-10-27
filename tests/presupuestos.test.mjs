@@ -23,8 +23,10 @@ test('la señal se descuenta del resto y el presupuesto queda facturado', () => 
   assert.equal(baseResto({ ...p, senalPct: 0 }), 2500);
 });
 
-test('texto del evento', () => {
-  assert.equal(textoEvento({ evento: { fecha: '2026-06-12', lugar: 'Hotel Arts' } }), 'Evento del 12/06/2026 en Hotel Arts');
+test('texto del evento: fecha de la operación (art. 6.1.f) si no es la del documento, y su lugar', () => {
+  assert.equal(textoEvento({ evento: { fecha: '2026-06-12', lugar: 'Hotel Arts' } }), 'Fecha de la operación: 12/06/2026 · Lugar: Hotel Arts');
+  assert.equal(textoEvento({ fecha: '2026-06-12', evento: { fecha: '2026-06-12', lugar: 'Hotel Arts' } }), 'Lugar: Hotel Arts');
+  assert.equal(textoEvento({ fecha: '2026-06-01', evento: { fecha: '2026-06-12', lugar: '' } }), 'Fecha de la operación: 12/06/2026');
   assert.equal(textoEvento({ evento: { fecha: '', lugar: '' } }), '');
   assert.equal(textoEvento({}), '');
 });

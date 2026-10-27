@@ -16,9 +16,10 @@ test('membresías: añadir otra empresa no cambia la principal ni su rol', () =>
   assert.deepEqual([u.empresa, u.rol, u.permisos], ['e1', 'miembro', ['gastos', 'gastar']]);
   // Permisos distintos en cada empresa.
   assert.deepEqual(permisosDe(membresias(u).e1), ['gastos', 'gastar']);
-  assert.equal(permisosDe(membresias(u).e2).length, 8);
+  assert.equal(permisosDe(membresias(u).e2).length, 9); // también «Contabilidad» (oct. 2026)
   const v = conMembresia(u, 'e1', { rol: 'miembro', permisos: ['facturas'] });
-  assert.deepEqual([v.rol, v.permisos, v.empresas.e1], ['miembro', ['facturas'], { rol: 'miembro', permisos: ['facturas'] }]);
+  // Lo que se guarda ahora lleva la versión de los permisos (pv, lib/permisos.js).
+  assert.deepEqual([v.rol, v.permisos, v.empresas.e1], ['miembro', ['facturas'], { rol: 'miembro', permisos: ['facturas'], pv: 2 }]);
 });
 
 test('membresías: quitar la principal pasa a la otra', () => {

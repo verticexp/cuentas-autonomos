@@ -1,9 +1,10 @@
+import { cierresDe, fechaEnCierre } from '@/lib/cierres';
 import { concurrencia, rafaga, respuesta429 } from '@/lib/limite';
 import { randomBytes } from 'node:crypto';
 import { leer, redis, clave, borrar, guardar } from '@/lib/redis';
 import { error, usuarioApi } from '@/lib/api';
 import { puede } from '@/lib/permisos';
-import { actividadesDe } from '@/lib/empresa';
+import { actividadesDe, fiscalDe, usaIgic } from '@/lib/empresa';
 import { leerHoja } from '@/lib/hoja';
 import { TIPOS, mapaManual, previa } from '@/lib/importar';
 import { columnasSinUsar, sugerirColumnas } from '@/lib/columnasIA';
@@ -44,7 +45,7 @@ export async function POST(req) {
     if (!archivo || typeof archivo === 'string' || !archivo.size) return error('Elige un archivo .xlsx o .csv');
     if (archivo.size > MAX_MB * 1024 * 1024) return error(`El archivo pasa de ${MAX_MB} MB`);
     let filas;
-    try { filas = leerHoja(Buffer.from(await archivo.arrayBuffer())); } catch { return error('No se puede leer el archivo: guárdalo como .xlsx o .csv'); }
+    try { filas = leerHoja(Buffer.from(await archivo.arrayBuffer()), { vacias: true }); } catch { return error('No se puede leer el archivo: guárdalo como .xlsx o .csv'); }
     if (filas.length > MAX_FILAS + 10) return error(`Demasiadas filas: como máximo ${MAX_FILAS} por archivo`);
     // Columnas elegidas a mano en la vista previa (y siempre al guardar, para guardar justo lo que se ha revisado).
     let manual = null;
@@ -52,14 +53,17 @@ export async function POST(req) {
       try { manual = mapaManual(tipo, filas, JSON.parse(String(form.get('columnas')))); } catch { manual = null; }
       if (!manual) return error('Las columnas elegidas no son válidas: vuelve a ver la vista previa');
     }
+    // Filas quitadas a mano o saltadas que se quieren importar igualmente (números de fila, como en Excel).
+    const numeros = (k) => { try { const l = JSON.parse(String(form.get(k) || '[]')); return Array.isArray(l) ? l.filter(Number.isInteger).slice(0, MAX_FILAS + 10) : []; } catch { return []; } };
+    const revision = { quitar: numeros('quitar'), incluir: numeros('incluir') };
     const ya = await existentes(u, tipo);
-    let p = previa(tipo, filas, ya, manual);
+    let p = previa(tipo, filas, ya, manual, revision, { igic: usaIgic(fiscalDe(u)) });
     // Sin elección manual, si quedan títulos sin reconocer y campos sin asignar, la IA sugiere a qué corresponden.
     const libres = p.campos.some((k) => !(k in p.mapa)) && columnasSinUsar(p.cabecera, p.mapa).length;
     if (!manual && form.get('guardar') !== '1' && libres && iaLista() && !(await rafaga('importar-ia', u.empresa, 20, 3600))) {
       const ia = await sugerirColumnas({ tipo, cabecera: p.cabecera, ejemplos: p.ejemplos, mapa: p.mapa });
       const sugeridas = Object.keys(ia.campos || {});
-      if (sugeridas.length) p = { ...previa(tipo, filas, ya, { fila: p.fila, mapa: { ...p.mapa, ...ia.campos } }), sugeridas };
+      if (sugeridas.length) p = { ...previa(tipo, filas, ya, { fila: p.fila, mapa: { ...p.mapa, ...ia.campos } }, revision, { igic: usaIgic(fiscalDe(u)) }), sugeridas };
     }
     if (p.error) return Response.json(p, { status: 400 });
     // Saldos y bienes van a una fecha de corte: la del cambio de programa (por defecto, la de la apertura que ya haya).
@@ -79,10 +83,26 @@ export async function POST(req) {
       return Response.json({ ...p, guardados: lineas.length });
     }
     const act = actividadesDe(u)[0]?.id;
+    // Clientes que ya existían: se rellenan sus campos vacíos sobre la versión guardada ahora mismo.
+    const completar = p.items.filter((x) => x.estado === 'completar');
+    if (completar.length) {
+      const actuales = new Map(((await leer(u, 'clientes')) || []).map((c) => [c.id, c]));
+      const cambios = Object.fromEntries(completar.filter((x) => actuales.has(x.id)).map((x) => {
+        const c = actuales.get(x.id);
+        return [x.id, { ...c, ...Object.fromEntries(Object.entries(x.completa).filter(([k]) => !String(c[k] ?? '').trim())) }];
+      }));
+      if (Object.keys(cambios).length) await redis.hset(clave(u, 'clientes'), cambios);
+      p.completados = Object.keys(cambios).length;
+    }
     const nuevos = p.items.filter((x) => x.estado === 'nuevo').map((x) => crear[tipo](x.datos, act, corte));
     if (tipo === 'facturas') {
       try { await guardarImportadas(u, nuevos); } catch (e) { if (e instanceof RiesgoSuperado) return error(e.message); console.error('[api/importar]', e); return error('No se pudieron guardar las facturas'); }
-    } else for (let i = 0; i < nuevos.length; i += 200) {
+    } else {
+      // Un trimestre cerrado por la gestoría (lib/cierres.js) no recibe gastos importados.
+      const cerrado = (HASH[tipo] || tipo) === 'gastos' && fechaEnCierre(await cierresDe(u), ...nuevos.map((x) => x.fecha));
+      if (cerrado) return error(cerrado, 409);
+    }
+    if (tipo !== 'facturas') for (let i = 0; i < nuevos.length; i += 200) {
       await redis.hset(clave(u, HASH[tipo] || tipo), Object.fromEntries(nuevos.slice(i, i + 200).map((x) => [x.id, x])));
     }
     // Los clientes de las facturas importadas quedan en la agenda (sin pisar los que ya hay).

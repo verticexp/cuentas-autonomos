@@ -3,6 +3,7 @@ import { bloquearPorEmail, exigirDesbloqueo, usuarioActual } from '@/lib/auth';
 import { puede } from '@/lib/permisos';
 import { actividadesDe, fiscalDe } from '@/lib/empresa';
 import Cuestionario from '@/components/Cuestionario';
+import Logo from '@/components/Logo';
 
 import '@/app/mk.css';
 import { todasFichas } from '@/lib/indices';
@@ -21,6 +22,13 @@ export default async function Bienvenida({ searchParams }) {
   const conFacturas = [...new Set((await todasFichas(u, 'facturas')).map((f) => f.a))];
   return (
     <main className="pagina mk-look bienvenida">
+      {/* Con la marca y una salida (auditoría D8-09): mientras la cuenta está a medias, todo lleva aquí. */}
+      {!editar && (
+        <header className="bienvenida-cab">
+          <Logo className="logo-bienvenida" />
+          <form method="post" action="/api/logout"><button type="submit" className="enlace">Cerrar sesión</button></form>
+        </header>
+      )}
       <Cuestionario
         editar={editar}
         puedeFacturar={puede(u, 'facturar')}
@@ -35,4 +43,7 @@ export default async function Bienvenida({ searchParams }) {
   );
 }
 
-export const metadata = { title: 'Bienvenida' };
+// Desde Ajustes («Actividades e impuestos») abre lo mismo para editarlo: la pestaña dice lo que es.
+export async function generateMetadata({ searchParams }) {
+  return { title: (await searchParams)?.editar ? 'Actividades e impuestos' : 'Bienvenida' };
+}

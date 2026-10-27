@@ -28,15 +28,26 @@ test('el albarán solo sale con inventario', () => {
 
 test('cada atajo pide su permiso', () => {
   assert.deepEqual(ids({ permisos: ['facturas', 'facturar'], fiscal: {} }), ['factura', 'presupuesto', 'cierre']);
-  assert.deepEqual(ids({ permisos: ['gastos', 'gastar'], fiscal: {} }), ['ticket']);
+  // Con permiso de apuntar gastos: hacer la foto del ticket o subir las facturas que ya están en el móvil.
+  assert.deepEqual(ids({ permisos: ['gastos', 'gastar'], fiscal: {} }), ['ticket', 'facturas']);
   assert.deepEqual(ids({ permisos: ['resumen', 'facturas', 'gastos'], fiscal: {} }), []);
   assert.deepEqual(ids({}), []);
 });
 
-test('en presupuestos, el presupuesto va primero; en el resto, el orden normal', () => {
+test('en la pantalla de cada cosa, lo suyo va primero; en el resto, el orden normal', () => {
   assert.equal(ids({ permisos: TODOS, fiscal: {}, en: '/presupuestos' })[0], 'presupuesto');
   assert.equal(ids({ permisos: TODOS, fiscal: {}, en: '/presupuestos/abc' })[0], 'presupuesto');
-  assert.equal(ids({ permisos: TODOS, fiscal: {}, en: '/facturas' })[0], 'ticket');
+  assert.equal(ids({ permisos: TODOS, fiscal: {}, en: '/facturas' })[0], 'factura');
+  // Una sociedad con inventario (como la demo) empieza por el cierre de caja, salvo en Facturas o Gastos
+  const tienda = { tipo: 'sociedad', inventario: true };
+  assert.equal(ids({ permisos: TODOS, fiscal: tienda, en: '/' })[0], 'cierre');
+  assert.equal(ids({ permisos: TODOS, fiscal: tienda, en: '/facturas?estado=vencidas' })[0], 'factura');
+  assert.equal(ids({ permisos: TODOS, fiscal: tienda, en: '/facturas/caja' })[0], 'cierre');
+  assert.equal(ids({ permisos: TODOS, fiscal: { tipo: 'sociedad' }, en: '/gastos' })[0], 'ticket');
+  assert.equal(ids({ permisos: TODOS, fiscal: tienda, en: '/albaranes/abc' })[0], 'albaran');
+  assert.equal(ids({ permisos: TODOS, fiscal: {}, en: '/facturasx' })[0], 'ticket');
+  // Sin inventario no hay albarán, y en Albaranes el orden no se toca
+  assert.deepEqual(ids({ permisos: TODOS, fiscal: {}, en: '/albaranes' }), ids({ permisos: TODOS, fiscal: {} }));
   // Sin permiso para presupuestos no aparece ni pasa a primero
   assert.ok(!ids({ permisos: ['gastos', 'gastar'], fiscal: {}, en: '/presupuestos' }).includes('presupuesto'));
 });

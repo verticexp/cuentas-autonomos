@@ -4,6 +4,7 @@ import Precios from '@/components/web/Precios';
 import Pantalla from '@/components/web/demos/Pantallas';
 import { Cta, Encabezado, Faq, Flecha } from '@/components/web/Bloques';
 import { FAQ_GENERAL, funcion, segmento } from '@/components/web/datos';
+import { GUIAS } from '@/data/web-guias';
 
 const VISUAL = { aut: 'factura', pym: 'equipo', business: 'empresas' };
 
@@ -14,7 +15,7 @@ export default function Solucion({ id }) {
     <>
       <section className="web-hero-pag web-hero-sol">
         <div>
-          <p className="web-chip-seg web-entra"><Icono n={s.icono} />Fisquo para {s.n.toLowerCase()}</p>
+          <p className="web-chip-seg web-entra"><Icono n={s.icono} />{s.n === 'Business' ? 'Fisquo Business' : `Fisquo para ${s.n.toLowerCase()}`}</p>
           <h1 className="web-entra" style={{ '--d': '60ms' }}>{s.titulo}</h1>
           <p className="web-sub web-entra" style={{ '--d': '120ms' }}>{s.sub}</p>
           <div className="web-cta web-entra" style={{ '--d': '180ms' }}>
@@ -40,7 +41,7 @@ export default function Solucion({ id }) {
       </section>
 
       <section className="web-sec">
-        <Encabezado kicker="Funciones clave" titulo={id === 'business' ? 'Funciones para definir tu propuesta' : `Lo que más usan los ${s.n.toLowerCase()}`} />
+        <Encabezado kicker="Funciones clave" titulo={id === 'business' ? 'Qué incluye tu propuesta' : `Lo que más usan los ${s.n.toLowerCase()}`} />
         <div className="web-relacionadas cuatro">
           {s.funciones.map((slug, k) => {
             const f = funcion(slug);
@@ -70,6 +71,22 @@ export default function Solucion({ id }) {
             <p className="web-centro"><Link href="/precios" className="web-enlace">Ver la comparativa completa<Flecha /></Link></p>
           </>
         )}
+      </section>
+
+      {/* Guías del público de esta página (data/web-guias.js): de autónomos o de sociedades, más las que valen para los dos. */}
+      <section className="web-sec">
+        <Encabezado kicker="Guías fiscales" titulo={id === 'aut' ? 'Los impuestos del autónomo, explicados' : 'Los impuestos de tu sociedad, explicados'} sub="Con la norma citada y la fecha de revisión." />
+        <div className="web-relacionadas cuatro">
+          {[...GUIAS.filter((g) => g.para === (id === 'aut' ? 'autonomos' : 'pymes')), ...GUIAS.filter((g) => g.para === 'todos')].slice(0, 4).map((g, i) => (
+            <Link key={g.slug} href={`/guias/${g.slug}`} data-foco data-r className="web-fcard" style={{ '--d': `${i * 70}ms` }}>
+              <span className="web-fcard-ico"><Icono n="documento" /></span>
+              <h3>{g.corto}</h3>
+              <p>{g.resumen}</p>
+              <span className="web-enlace">Leer la guía<Flecha /></span>
+            </Link>
+          ))}
+        </div>
+        <p className="web-centro"><Link href="/guias" className="web-enlace">Todas las guías<Flecha /></Link></p>
       </section>
 
       <Faq preguntas={FAQ_GENERAL} />

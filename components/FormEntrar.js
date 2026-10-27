@@ -7,6 +7,7 @@ import BotonesSociales from '@/components/BotonesSociales';
 import EntrarLlave from '@/components/EntrarLlave';
 import Logo from '@/components/Logo';
 import CampoPassword from '@/components/CampoPassword';
+import FormCodigo from '@/components/FormCodigo';
 import { enfocar, irALaApp, useTrasArranque } from '@/lib/arranque';
 
 // El formulario público ya se ve en el HTML inicial. Si falla, el error aparece aquí y el email se conserva.
@@ -14,6 +15,8 @@ export default function FormEntrar({ errorInicial = '' }) {
   const listo = useTrasArranque();
   const [error, setError] = useState(errorInicial);
   const [enviando, setEnviando] = useState(false);
+  // Con la verificación en dos pasos, tras la contraseña se pide el código (components/FormCodigo.js).
+  const [codigo, setCodigo] = useState(false);
   const email = useRef(null);
   const pass = useRef(null);
 
@@ -24,6 +27,7 @@ export default function FormEntrar({ errorInicial = '' }) {
     setEnviando(true); setError('');
     const r = await fetch('/api/login', { method: 'POST', headers: { Accept: 'application/json' }, body: new FormData(e.currentTarget) }).catch(() => null);
     const d = await r?.json().catch(() => ({}));
+    if (r?.ok && d?.segundoPaso) { setEnviando(false); setCodigo(true); return; }
     if (r?.ok) { irALaApp(); return; }
     setEnviando(false);
     setError(d?.error || 'No se ha podido comprobar. Revisa la conexión.');
@@ -31,8 +35,10 @@ export default function FormEntrar({ errorInicial = '' }) {
     pass.current.focus();
   }
 
+  if (codigo) return <FormCodigo alVolver={(msg) => { setCodigo(false); setError(msg); }} />;
   return (
     <form method="post" action="/api/login" onSubmit={entrar}>
+      <input type="hidden" name="inicio" value="1" />
       <h1><Logo className="logo-login" /></h1>
       <p className="login-titulo">Inicia sesión</p>
       <BotonesSociales />

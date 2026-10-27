@@ -24,8 +24,9 @@ export async function GET(req) {
 }
 
 // Mandar el paquete de un trimestre a la gestoría de la empresa (Ajustes › Tu gestoría). { anio, t }
+// Lleva cada factura, gasto y justificante: además de «Datos de la empresa», hay que poder verlos (como al descargarlo).
 export async function POST(req) {
-  const { u, res } = await usuarioApi({ permiso: 'empresa' });
+  const { u, res } = await usuarioApi({ permiso: ['empresa', ...DETALLE] });
   if (res) return res;
   const b = await cuerpo(req);
   const { anio, t } = periodo(b?.anio, b?.t);

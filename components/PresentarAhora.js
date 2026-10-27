@@ -2,19 +2,21 @@
 
 import { useEffect, useState } from 'react';
 
-// Pasos para presentar; el de la Sede nombra el modelo si solo se presenta uno.
-const pasos = (nums) => [
+// Pasos para presentar; el de la Sede nombra el modelo si solo se presenta uno. hacienda: la Hacienda foral (Navarra y País
+// Vasco), donde se presentan en su lugar.
+const pasos = (nums, hacienda) => [
   'Revisa que las facturas y gastos del trimestre estén todos en Fisquo.',
   'Comprueba estos importes con tu gestor.',
-  nums.length === 1 ? `Presenta el modelo ${nums[0]} en la Sede de la AEAT.` : 'Presenta los modelos en la Sede de la AEAT.',
+  hacienda ? `Presenta ${nums.length === 1 ? `el modelo ${nums[0]}` : 'los modelos'} en la sede de la ${hacienda}.` : nums.includes('420') ? 'Presenta el 420 en la Sede de la Agencia Tributaria Canaria y los demás modelos en la AEAT.' : nums.length === 1 ? `Presenta el modelo ${nums[0]} en la Sede de la AEAT.` : 'Presenta los modelos en la Sede de la AEAT.',
   'Vuelve aquí y marca el trimestre como presentado.',
 ];
 
 // Tarjeta de arriba de Impuestos: el trimestre que toca presentar, con sus importes, una lista de pasos
 // (se recuerda en este dispositivo), un botón para copiar o compartir el resumen y el enlace a la Sede de cada modelo.
 // `importes`: [{ num, modelo, href, texto, aeat?, plazo? }], todos los modelos que vencen con el trimestre (lib/presentar.js);
-// `plazo`, solo si vence otro día (el 111 y el 115 del 4T); `aeat`, la página de la Sede si la hay.
-export default function PresentarAhora({ t, anio, aviso, importes, texto }) {
+// `plazo`, solo si vence otro día (el 111 y el 115 del 4T); `aeat`, la página de la Sede si la hay. domiciliar: hasta cuándo
+// se puede domiciliar el pago (lib/domiciliacion.js), en texto.
+export default function PresentarAhora({ t, anio, aviso, importes, texto, hacienda, domiciliar = '' }) {
   const clave = `presentar:${anio}:${t}`;
   const [hechos, setHechos] = useState([]);
   const [msg, setMsg] = useState('');
@@ -35,18 +37,19 @@ export default function PresentarAhora({ t, anio, aviso, importes, texto }) {
       <h2 className="grupo-t" id="presentar-t">Toca presentar el {t}T {anio}</h2>
       <div className="tarjeta">
         <p className="presentar-plazo">{aviso}</p>
+        {domiciliar && <p className="nota">{domiciliar}</p>}
         <ul className="presentar-importes">
           {importes.map((m) => <li key={m.num}><a href={m.href}><span>{m.modelo}{m.plazo && <small> · hasta el {m.plazo}</small>}</span><strong>{m.texto}</strong></a></li>)}
         </ul>
         <ol className="presentar-pasos">
-          {pasos(importes.map((m) => m.num)).map((p, i) => (
+          {pasos(importes.map((m) => m.num), hacienda).map((p, i) => (
             <li key={i}><label><input type="checkbox" checked={hechos.includes(i)} onChange={() => marcar(i)} /><span>{p}</span></label></li>
           ))}
         </ol>
         <div className="presentar-acc">
           <button type="button" className="boton" onClick={compartir}>Compartir resumen</button>
           {importes.filter((m) => m.aeat).map((m) => (
-            <a key={m.num} className="boton secundario" href={m.aeat} target="_blank" rel="noopener noreferrer">Presentar el {m.num} en la AEAT</a>
+            <a key={m.num} className="boton secundario" href={m.aeat} target="_blank" rel="noopener noreferrer">Presentar el {m.num} en la {m.sede || 'AEAT'}</a>
           ))}
         </div>
         <p className="nota" role="status" aria-live="polite">{msg}</p>

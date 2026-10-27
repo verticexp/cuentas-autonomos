@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { alPulsar, instalarHistorial, navegar, posicion } from '@/lib/transicion';
+import { SIN_BARRA, alPulsar, instalarHistorial, navegar, posicion, subirArriba, volverHasta } from '@/lib/transicion';
+import { vibrar } from '@/lib/haptica';
 import Logo from '@/components/Logo';
 import CambiarEmpresa from '@/components/CambiarEmpresa';
 import { ASISTENTE, extraDe, gruposVisibles } from '@/components/secciones';
@@ -26,26 +27,12 @@ const TABS = [
 // Iconos de la hoja del «+» (móvil).
 const ICONO_ATAJO = {
   ticket: <path d="M4 8V6a2 2 0 012-2h2M16 4h2a2 2 0 012 2v2M20 16v2a2 2 0 01-2 2h-2M8 20H6a2 2 0 01-2-2v-2M4 12h16" />,
+  facturas: <path d="M12 15V4M8 8l4-4 4 4M5 14v4a2 2 0 002 2h10a2 2 0 002-2v-4" />,
   factura: <path d="M7 3h7l4 4v14H7zM14 3v4h4M10 12h5M10 16h5" />,
   cierre: <><rect x="3" y="9" width="18" height="11" rx="2" /><path d="M7 9V5h10v4M7 14h4M15 14h2" /></>,
   albaran: <path d="M7 3h10l3 3v15H4V3zM8 9h8M8 13h8M8 17h5" />,
   presupuesto: <path d="M6 3h12v18H6zM9 8h6M9 12h6M9 16h3" />,
 };
-
-// Vibración suave: Android con vibrate; iPhone (iOS 18+) con el truco del interruptor nativo.
-let interruptor;
-function vibrar() {
-  if (navigator.vibrate) { navigator.vibrate(8); return; }
-  if (!interruptor) {
-    interruptor = document.createElement('label');
-    interruptor.style.display = 'none';
-    const i = document.createElement('input');
-    i.type = 'checkbox'; i.setAttribute('switch', '');
-    interruptor.appendChild(i);
-    document.body.appendChild(interruptor);
-  }
-  interruptor.click();
-}
 
 // Pantallas de Ajustes que no cuelgan de /ajustes.
 const DE_AJUSTES = ['/usuarios', '/bienvenida'];
@@ -57,7 +44,11 @@ const seccion = (path) => (path === '/' ? '/' : path.startsWith('/presupuestos')
   : ['/facturas', '/gastos'].some((h) => path.startsWith(h)) ? TABS.find((t) => t.href !== '/' && path.startsWith(t.href))?.href ?? null
   : deMas(path) ? '/mas' : null);
 
-export default function TabBar({ permisos = [], empresas = [], empresa, admin = false, inventario = false, fiscal = {}, faltan = {} }) {
+// porRevisar: facturas que esperan en Gastos › Por revisar (lib/bandeja.js): su número va sobre la pestaña Gastos.
+// despacho: la persona es de un despacho (lib/despachos.js), en su propia empresa ('empresa') o dentro de un cliente
+// ('cliente'). Cómo volver y cambiar de cuenta lo lleva la barra de arriba (components/SelectorCuenta.js), no esta; dentro de
+// un cliente, la barra se tiñe del color de «estás en las cuentas de otro».
+export default function TabBar({ permisos = [], empresas = [], empresa, admin = false, inventario = false, equipo = true, fiscal = {}, faltan = {}, porRevisar = 0, despacho = null }) {
   const tabs = TABS.filter((t) => !t.permiso || permisos.includes(t.permiso));
   const path = usePathname();
   const router = useRouter();
@@ -117,8 +108,11 @@ export default function TabBar({ permisos = [], empresas = [], empresa, admin = 
 
   const orden = (h) => tabs.findIndex((t) => t.href === h);
   // En el ordenador, como el resto de la barra lateral: sin deslizar la página entera (con la barra dentro parecía recargarse).
+  // La pestaña en la que ya se está, como en iOS: en su pantalla, sube arriba del todo; desde una de dentro (una factura, un
+  // proveedor), vuelve a ella.
   const ir = (h) => {
-    if (h === path) return;
+    if (h === path) { subirArriba(); return; }
+    if (movil && h === activo) { volverHasta(router, h); return; }
     activoRef.current = h;
     if (movil) navegar(router, h, orden(h) > orden(activo) ? 'tab-der' : 'tab-izq'); else router.push(h);
     setActivo(h);
@@ -133,12 +127,13 @@ export default function TabBar({ permisos = [], empresas = [], empresa, admin = 
 
   return (
     <>
-    <div className="tabbar" data-teclado={teclado || undefined}>
+    <div role="region" aria-label="Navegación de Fisquo" className={`tabbar${SIN_BARRA.test(path) ? ' tabbar-chat' : ''}`} data-teclado={teclado || undefined} data-cliente={despacho === 'cliente' || undefined}>
       <Link href="/" className="tabbar-logo" aria-label="Fisquo, resumen" onClick={(e) => { e.preventDefault(); ir('/'); }}><Logo /></Link>
-      {empresa && <CambiarEmpresa empresas={empresas} actual={empresa} variante="lateral" />}
+      {empresa && !despacho && <CambiarEmpresa empresas={empresas.filter((x) => !x.cliente)} actual={empresa} variante="lateral" />}
       <nav
         ref={nav}
         className="tabs"
+        aria-label="Principal"
         onPointerDown={(e) => {
           const h = tabEn(e.clientX, e.clientY);
           if (!h) return;
@@ -156,10 +151,11 @@ export default function TabBar({ permisos = [], empresas = [], empresa, admin = 
       >
         {tabs.map((t) => (
           <Link key={t.href} href={t.href} prefetch draggable={false} data-href={t.href}
-            className={marcado === t.href ? 'activo' : ''} aria-current={activo === t.href ? 'page' : undefined} aria-label={t.nombre}
+            className={marcado === t.href ? 'activo' : ''} aria-current={activo === t.href ? 'page' : undefined} aria-label={t.href === '/gastos' && porRevisar > 0 ? `${t.nombre}, ${porRevisar} por revisar` : t.nombre}
             onClick={(e) => { e.preventDefault(); if (e.detail === 0) ir(t.href); }}>
             <svg viewBox="0 0 24 24" aria-hidden>{t.icono}</svg>
             <span>{t.nombre}</span>
+            {t.href === '/gastos' && porRevisar > 0 && <b className="tab-n" aria-hidden>{porRevisar > 99 ? '99+' : porRevisar}</b>}
           </Link>
         ))}
       </nav>
@@ -175,7 +171,7 @@ export default function TabBar({ permisos = [], empresas = [], empresa, admin = 
           return (
             <>
               <div className="tabs-grupo">{enlace({ ...ASISTENTE, plan: faltan[ASISTENTE.href] })}</div>
-              {gruposVisibles(permisos, inventario, { fiscal, faltan }).map((g) => (
+              {gruposVisibles(permisos, inventario, { fiscal, faltan, equipo }).map((g) => (
                 <div key={g.titulo} className="tabs-grupo" data-tono={g.tono}>
                   <p className="tabs-grupo-t">{g.titulo}</p>
                   {g.enlaces.map(enlace)}

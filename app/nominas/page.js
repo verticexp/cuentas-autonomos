@@ -1,8 +1,8 @@
 import Vacio from '@/components/Vacio';
 import { requerir } from '@/lib/auth';
 import { leer } from '@/lib/redis';
-import { r2, trimestre } from '@/lib/calculos';
-import { eur, fechaCorta, hoy } from '@/lib/formato';
+import { r2, trimestre, limiteTrimestre } from '@/lib/calculos';
+import { eur, fechaCorta, fechaTexto, hoy } from '@/lib/formato';
 import { historialNominas, equipoPorFecha } from '@/lib/historialNominas';
 import { calculoNomina, modelo111, nombreMes } from '@/lib/nominas';
 import { FormEmpleado, GenerarMes } from '@/components/Nominas';
@@ -28,29 +28,44 @@ export default async function Nominas({ searchParams }) {
   const N = (nominas || []).sort((a, b) => b.mes.localeCompare(a.mes) || a.empleadoNombre.localeCompare(b.empleadoNombre));
   const delMes = N.filter((n) => n.mes === mes).map(calculoNomina);
   const faltan = activos.filter((e) => !N.some((n) => n.mes === mes && n.empleado === e.id)).length;
+  const completas = N.filter((n) => n.mes === mes && n.detalle).length;
   const t = trimestre(h);
   const m111 = modelo111(N, anio, t);
-  // Plazo del 111: del 1 al 20 del mes siguiente al trimestre (el 4T, hasta el 20 de enero).
-  const plazo111 = t === 4 ? `20 de enero de ${anio + 1}` : `20 de ${['abril', 'julio', 'octubre'][t - 1]}`;
+  // El día 20 siguiente al trimestre, avanzando al próximo hábil cuando corresponda.
+  const plazo111 = fechaTexto(limiteTrimestre(t, anio, 20));
   const { anios, anio: anioHistorial, meses } = historialNominas(N, anio, (await searchParams)?.anio);
+
+  const indiceAnio = anios.indexOf(anioHistorial);
+  const anterior = anios[indiceAnio + 1];
+  const siguiente = anios[indiceAnio - 1];
 
   return (
     <main className="pagina mk-look">
-      <Volver href="/ajustes">Ajustes</Volver>
+      <Volver href="/mas">Más</Volver>
       <header className="cabecera"><h1 className="titulo">Equipo y nóminas</h1></header>
 
       {activos.length > 0 && (
         <section className="tarjeta bloque nomina-mes">
           <p className="rotulo-claro">Nóminas de {nombreMes(mes)}</p>
-          <div className="dos-valores">
+          {delMes.length ? <div className="dos-valores">
             <div><small>Netos a pagar</small><p className="grande">{eur(r2(delMes.reduce((s, x) => s + x.neto, 0)))}</p></div>
             <div><small>Coste empresa</small><p className="grande">{eur(r2(delMes.reduce((s, x) => s + x.coste, 0)))}</p></div>
-          </div>
+          </div> : <p className="nota">Todavía no has hecho las de este mes.</p>}
           {faltan > 0
             ? <GenerarMes mes={mes} texto={delMes.length ? `Hacer las ${faltan} que faltan` : `Hacer las nóminas de ${nombreMes(mes).split(' ')[0]}`} />
             : <p className="nota">✓ {delMes.length === 1 ? 'Hecha la nómina' : `Hechas las ${delMes.length} nóminas`} de este mes. Se apuntan solas como gasto.</p>}
+          {completas > 0 && <p className="nota"><a className="enlace-claro" href={`/api/nominas/red?mes=${mes}`} download>Datos para RED del mes (Excel)</a>: bases de cotización y conceptos de la Tabla 84 para la liquidación y el CRA. El envío por SILTRA lo hace quien tiene la autorización RED (tú o tu gestoría).</p>}
         </section>
       )}
+
+      <section className="tarjeta bloque">
+        <h2 className="tarjeta-titulo">Bases para la gestoría</h2>
+        <form action="/api/nominas/bases" method="get" className="formulario">
+          <label>Mes de las bases<input className="campo" type="month" name="mes" defaultValue={mes} required /></label>
+          <button className="boton sec">Descargar bases del mes</button>
+        </form>
+        <p className="nota">CSV para que la gestoría prepare la liquidación en SILTRA / Sistema RED. Fisquo no envía nada a la Seguridad Social. Se incluyen el número de horas extra y su base en euros; los atrasos y las vacaciones del finiquito necesitan sus liquidaciones complementarias.</p>
+      </section>
 
       {m111.perceptores > 0 && (
         <section className="tarjeta bloque">
@@ -97,31 +112,7 @@ export default async function Nominas({ searchParams }) {
         </>
       )}
 
-      <h2>Historial de nóminas</h2>
-      <form action="/nominas" method="get" className="bloque">
-        <label htmlFor="anio-nominas">Año del historial</label>{' '}
-        <select id="anio-nominas" name="anio" defaultValue={anioHistorial} key={anioHistorial} className="campo">
-          {anios.map((a) => <option key={a} value={a}>{a}</option>)}
-        </select>{' '}
-        <button type="submit" className="boton sec">Ver año</button>
-      </form>
-      {!meses.length && <Vacio compacto tipo="resultados" icono="usuarios" titulo={`Sin nóminas en ${anioHistorial}`} />}
-      {meses.map((m) => (
-        <div key={m}>
-          <p className="rotulo">{nombreMes(m)}</p>
-          <ul className="grupo-lista bloque">
-            {N.filter((n) => n.mes === m).map((n) => (
-              <li key={n.id}>
-                <Ir href={`/nominas/${n.id}`} className="fila">
-                  <span className="txt"><strong>{n.empleadoNombre}</strong><small>Bruto {eur(n.bruto)} · IRPF {eur(calculoNomina(n).irpf)}</small></span>
-                  <span className={`imp ${n.pagada ? '' : 'pend'}`}>{eur(calculoNomina(n).neto)}<small>{n.pagada ? 'Pagada' : 'Por pagar'}</small></span>
-                </Ir>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))}
-
+      {/* Junto al equipo, no al final de todo el historial de nóminas */}
       {antiguos.length > 0 && (
         <>
           <p className="rotulo">Ya no están</p>
@@ -132,8 +123,33 @@ export default async function Nominas({ searchParams }) {
           </ul>
         </>
       )}
+
+      <header className="cabecera modelos-cab nom-historial">
+        <h2>Historial de nóminas</h2>
+        <nav className="anios">
+          {anterior ? <Ir href={`/nominas?anio=${anterior}`} tipo="cifras" aria-label="Año anterior">‹</Ir> : <span className="off">‹</span>}
+          <strong>{anioHistorial}</strong>
+          {siguiente ? <Ir href={`/nominas?anio=${siguiente}`} tipo="cifras" aria-label="Año siguiente">›</Ir> : <span className="off">›</span>}
+        </nav>
+      </header>
+      {!meses.length && <Vacio compacto tipo="resultados" icono="usuarios" titulo={`Sin nóminas en ${anioHistorial}`} />}
+      {meses.map((m) => (
+        <div key={m}>
+          <p className="rotulo">{nombreMes(m).replace(/^./, (c) => c.toUpperCase())}</p>
+          <ul className="grupo-lista bloque">
+            {N.filter((n) => n.mes === m).map((n) => (
+              <li key={n.id}>
+                <Ir href={`/nominas/${n.id}`} className="fila">
+                  <span className="txt"><strong>{n.empleadoNombre}</strong><small>{n.tipo === 'finiquito' ? 'Finiquito · ' : ''}Bruto {eur(calculoNomina(n).totalDevengado ?? n.bruto)} · IRPF {eur(calculoNomina(n).irpf)}</small></span>
+                  <span className={`imp ${n.pagada ? '' : 'pend'}`}>{eur(calculoNomina(n).neto)}<small>{n.pagada ? 'Pagada' : 'Por pagar'}</small></span>
+                </Ir>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
     </main>
   );
 }
 
-export const metadata = { title: 'Nóminas' };
+export const metadata = { title: 'Equipo y nóminas' };

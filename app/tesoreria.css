@@ -9,8 +9,7 @@
 .teso-cifra { background: var(--surface); border-radius: 12px; padding: 10px 14px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .teso-cifra span { color: var(--muted); font-size: 13px; }
 .teso-cifra strong { font-size: 20px; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.teso-in { color: var(--in); } .teso-out { color: var(--out); } .teso-hac { color: var(--hacienda); }
-.teso-alerta { background: color-mix(in srgb, var(--out) 12%, var(--surface)); color: var(--out); border-radius: 12px; padding: 10px 14px; font-size: 15px; margin: 0 0 20px; }
+.teso-alerta { background: color-mix(in srgb, var(--out) 12%, var(--surface)); color: color-mix(in srgb, var(--out) 85%, var(--ink)); border-radius: 12px; padding: 10px 14px; font-size: 15px; margin: 0 0 20px; }
 .teso-mes .txt small { white-space: normal; }
 .teso-barra { flex: none; width: 64px; height: 6px; border-radius: 3px; background: var(--relleno); overflow: hidden; }
 .teso-barra span { display: block; height: 100%; background: var(--in); border-radius: 3px; }
@@ -33,8 +32,9 @@
 @media (min-width: 1024px) {
   .teso-cifras { grid-template-columns: repeat(4, 1fr); }
   .hcards:has(> :nth-child(3)) { grid-template-columns: repeat(3, 1fr); }
-  .hcards:has(> :nth-child(3)) .hcard-v { font-size: 28px; white-space: nowrap; }
-  .hcards:has(> :nth-child(3)) .hcard-v small { font-size: 15px; }
+  .hcards:has(> :nth-child(3)) .hcard-v { font-size: 28px; }
+  /* La etiqueta («€ para apartar») baja entera de línea si no cabe al lado del importe: antes se cortaba con tres tarjetas. */
+  .hcards:has(> :nth-child(3)) .hcard-v small { font-size: 15px; display: inline-block; white-space: nowrap; }
   .teso-barra { width: 160px; }
   .teso-saldo { display: flex; align-items: center; gap: 24px; }
   .teso-saldo label { margin: 0; flex: 1; }

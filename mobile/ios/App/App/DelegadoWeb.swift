@@ -15,6 +15,7 @@ final class DelegadoWeb: NSObject, WKNavigationDelegate, WKUIDelegate, WKDownloa
     private weak var presentador: UIViewController?
     private var destinos: [ObjectIdentifier: URL] = [:]
     var alTerminarCarga: (() -> Void)?
+    var alEmpezarPagina: (() -> Void)?
 
     init(capacitor: WebViewDelegationHandler, servidor: URL?, presentador: UIViewController) {
         self.capacitor = capacitor
@@ -71,6 +72,12 @@ final class DelegadoWeb: NSObject, WKNavigationDelegate, WKUIDelegate, WKDownloa
 
     func webView(_ webView: WKWebView, navigationResponse: WKNavigationResponse, didBecome download: WKDownload) {
         download.delegate = self
+    }
+
+    // Llega la página nueva, antes de que corra su JavaScript: lo que dejó dicho la anterior (GestoAtras) ya no vale.
+    func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
+        (capacitor as WKNavigationDelegate).webView?(webView, didCommit: navigation)
+        if webView === presentador?.view { alEmpezarPagina?() }
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {

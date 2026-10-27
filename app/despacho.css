@@ -1,0 +1,359 @@
+/* Mi despacho (app/despacho): la lista de clientes de una gestoría, la ficha de cada cliente, plazos, equipo y ajustes.
+   Usa las piezas de la app (grupo, grupo-c, celda, grupo-lista, fila, buscar, chips, pestañas): esto solo añade lo propio. */
+
+.despacho .sr, .barra-despacho .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* Cabeceras. */
+.desp-cabecera { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 4px 12px; }
+.desp-titulo { min-width: 0; flex: 1 1 300px; }
+.desp-cabecera .desp-select { margin-bottom: 12px; }
+.desp-cabecera .titulo { margin-bottom: 8px; }
+.desp-sub { margin: -4px 0 14px; color: var(--muted); font-size: 15px; }
+.desp-linea { align-items: baseline; }
+.desp-linea a { color: var(--muted); text-decoration: none; }
+.desp-linea a:hover { color: var(--ink); }
+
+/* Selector compacto (trimestre): una pastilla como los filtros de la app. */
+.desp-select { position: relative; flex: none; display: inline-flex; }
+.desp-select select { appearance: none; -webkit-appearance: none; height: 42px; margin: 0; padding: 0 36px 0 16px; border: 0; border-radius: 12px; background: var(--surface); color: var(--ink); font: inherit; font-size: 16px; font-weight: 600; cursor: pointer; }
+.desp-select::after { content: ''; position: absolute; right: 16px; top: 50%; width: 7px; height: 7px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: translateY(-70%) rotate(45deg); pointer-events: none; }
+.desp-select select:focus-visible { outline: 2px solid var(--marca); outline-offset: 2px; }
+
+/* Lista de clientes. */
+.desp-herramientas { display: flex; align-items: center; gap: 10px; margin: 14px 0 0; }
+.desp-herramientas .buscar { flex: 1; margin: 0; }
+.desp-chips { margin: 10px 0 0; }
+.desp-chips button { margin: 0; padding: 7px 14px; border: 0; border-radius: 999px; background: var(--relleno); box-shadow: none; color: var(--ink); font: inherit; font-size: 15px; font-weight: 400; cursor: pointer; }
+.desp-chips button.activo { background: var(--marca); color: var(--sobre); }
+.desp-vacio { margin-top: 18px; }
+
+/* Cada fila: cliente (nombre, datos y lo pendiente), estado, IVA e IRPF. Alto fijo: las cifras llegan después y aparecen
+   con un fundido en su hueco, sin mover nada. */
+.desp-cols { display: none; }
+.desp-lista { margin-top: 14px; }
+.desp-lista .fila.desp-fila { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'txt estado' 'iva irpf'; align-items: start; column-gap: 12px; row-gap: 8px; padding: 13px 16px; text-decoration: none; }
+.desp-fila .txt { grid-area: txt; min-width: 0; display: flex; flex-direction: column; }
+/* En el móvil, la etiqueta de estado va al lado del nombre: el nombre y los avisos se parten en vez de cortarse
+   («Bar La Plaça (Núri…»); con sitio, en columnas, una línea con «…» */
+.desp-fila .txt strong { white-space: normal; overflow: visible; overflow-wrap: anywhere; font-weight: 600; }
+.desp-fila .txt small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); margin-top: 2px; min-height: 1.35em; }
+.desp-fila .txt small.desp-avisos { white-space: normal; }
+.desp-col-estado { grid-area: estado; }
+/* En el móvil, IVA e IRPF en una línea: «IVA 1.946,33 €   IRPF 5.181,69 €». */
+.desp-num { display: flex; align-items: baseline; gap: 6px; min-height: 1.4em; font-variant-numeric: tabular-nums; font-size: 15px; }
+.desp-num[data-t="IVA"] { grid-area: iva; }
+.desp-num[data-t="IRPF"] { grid-area: irpf; justify-self: end; }
+.desp-num small { display: none; }
+.desp-num::before { content: attr(data-t); color: var(--muted); font-size: 13px; }
+.desp-num.listo, .desp-avisos.listo { animation: desp-aparece 0.35s ease-out; }
+@keyframes desp-aparece { from { opacity: 0; } }
+.desp-nada { color: var(--muted); font-size: 14px; }
+.desp-avisos b { color: var(--hacienda); font-weight: 600; }
+.desp-hueco { display: inline-block; width: 64px; height: 0.85em; margin-top: 0.3em; border-radius: 5px; background: var(--relleno); animation: desp-latido 1.2s ease-in-out infinite; }
+@keyframes desp-latido { 50% { opacity: 0.5; } }
+@media (prefers-reduced-motion: reduce) { .desp-hueco, .desp-num.listo, .desp-avisos.listo { animation: none; } }
+
+/* Con sitio (según el ancho de la lista, no de la ventana): columnas alineadas con su cabecera, como Facturas. */
+.desp-panel { container-type: inline-size; }
+@container (min-width: 640px) {
+  .desp-cols { display: grid; grid-template-columns: minmax(0, 1fr) 168px 112px 112px 12px; column-gap: 14px; margin: 20px 0 -6px; padding: 0 16px; color: var(--muted); font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+  .desp-cols span:nth-child(3), .desp-cols span:nth-child(4) { text-align: right; }
+  .desp-lista .fila.desp-fila { grid-template-columns: minmax(0, 1fr) 168px 112px 112px 12px; grid-template-areas: 'txt estado iva irpf flecha'; column-gap: 14px; }
+  .desp-lista .fila.desp-fila { align-items: center; }
+  .desp-fila .txt strong, .desp-fila .txt small.desp-avisos { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .desp-num { flex-direction: column; align-items: flex-end; justify-content: center; gap: 0; min-height: 2.7em; text-align: right; font-size: inherit; }
+  .desp-num[data-t="IRPF"] { justify-self: stretch; }
+  .desp-num small { display: block; color: var(--muted); font-size: 12px; }
+  .desp-num::before { display: none; }
+  .desp-fila::after { content: ''; grid-area: flecha; width: 7px; height: 7px; border-right: 2px solid var(--muted); border-top: 2px solid var(--muted); transform: rotate(45deg); opacity: 0.55; }
+}
+
+/* Estado del trimestre de cada cliente: una pastilla de color suave, como el estado de las facturas. */
+.desp-estado { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; background: var(--relleno); color: var(--muted); font-size: 13px; font-weight: 600; white-space: nowrap; }
+.desp-estado::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.desp-estado.e-listo { color: var(--hacienda); background: color-mix(in srgb, var(--hacienda) 7%, transparent); }
+.desp-estado.e-revisado { color: var(--info); background: color-mix(in srgb, var(--info) 7%, transparent); }
+.desp-estado.e-cambios { color: var(--out); background: color-mix(in srgb, var(--out) 7%, transparent); }
+.desp-estado.e-presentado { color: var(--in); background: color-mix(in srgb, var(--in) 7%, transparent); }
+
+/* Ficha de un cliente. */
+.desp-trimestre { flex-wrap: wrap; padding-top: 14px; padding-bottom: 14px; }
+.desp-trimestre .txt { gap: 6px; flex: 1 1 260px; }
+.desp-trimestre .txt small { line-height: 1.4; white-space: normal; overflow: visible; text-overflow: clip; }
+.desp-trimestre .boton, .desp-acciones .boton { margin: 0; padding: 10px 18px; font-size: 15px; }
+.desp-pendiente .txt { color: var(--hacienda); }
+.desp-acciones { display: flex; flex-wrap: wrap; gap: 8px; }
+.desp-cifras { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 18px 0 0; }
+.desp-cifras > div { min-width: 0; padding: 14px 16px; border-radius: 12px; background: var(--surface); }
+.desp-cifras dt { color: var(--muted); font-size: 13px; }
+.desp-cifras dd { margin: 4px 0 0; font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.desp-cifras dd small { display: block; margin-top: 2px; color: var(--muted); font-size: 13px; font-weight: 400; white-space: normal; }
+@media (max-width: 700px) { .desp-cifras { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* Una celda que es un botón (entrar en sus cuentas, dejar de llevarlo): como las celdas que son enlace. */
+button.celda.desp-celda-boton { width: 100%; margin: 0; border: 0; border-radius: 0; background: none; box-shadow: none; font: inherit; font-weight: 400; text-align: left; cursor: pointer; }
+button.celda.desp-celda-boton:hover { background: var(--relleno); }
+button.celda.desp-celda-boton:disabled { opacity: 0.5; cursor: default; }
+.desp-mini { flex: none; margin: 0 !important; min-height: 0; height: 34px; padding: 0 14px !important; font-size: 14px !important; display: inline-flex; align-items: center; }
+.desp-select-celda { flex: none; max-width: 55%; height: 34px; margin: 0; padding: 0 10px; border: 0; border-radius: 8px; background: var(--relleno); color: var(--ink); font: inherit; font-size: 15px; }
+.desp-exportar { gap: 12px; }
+.desp-exportar-campos { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; }
+.desp-exportar-campos label { display: flex; flex-direction: column; gap: 4px; flex: 1 1 120px; margin: 0; color: var(--muted); font-size: 13px; }
+.desp-exportar-campos .campo { margin: 0; }
+.desp-exportar-campos .boton { flex: 0 0 auto; align-self: stretch; margin: 0; padding: 0 20px; display: inline-flex; align-items: center; font-size: 15px; }
+.desp-exportar-campos label:has(.campo) + .boton, .desp-exportar-campos .boton { margin-top: 20px; }
+.despacho textarea { font: inherit; }
+.desp-preguntar .boton { margin-top: 4px; }
+.desp-docs .fila { display: flex; align-items: center; }
+.desp-docs .fila .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.desp-docs .fila .txt strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.desp-docs .fila .txt small { color: var(--muted); }
+.desp-docs .imp { flex: none; color: var(--muted); }
+.desp-hilo { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.desp-hilo > li { padding: 12px 16px; border-radius: 12px; background: var(--surface); }
+.desp-hilo > li.resuelto { opacity: 0.7; }
+.desp-hilo .doc { display: block; margin-bottom: 6px; color: var(--muted); font-size: 13px; }
+.desp-hilo .msg { margin: 8px 0 0; white-space: pre-wrap; line-height: 1.4; }
+.desp-hilo .msg b { font-weight: 600; }
+.desp-hilo .msg small { color: var(--muted); }
+.desp-hilo form { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px; margin-top: 12px; }
+.desp-hilo form textarea { flex: 1 1 240px; min-height: 42px; margin: 0; }
+.desp-hilo form .boton { margin: 0; height: 42px; padding: 0 18px; font-size: 15px; display: inline-flex; align-items: center; }
+.desp-registro { list-style: none; margin: 0; padding: 0; font-size: 14px; }
+.desp-registro li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 0.5px solid var(--line); }
+.desp-registro li:last-child { border-bottom: 0; }
+.desp-registro li small { color: var(--muted); white-space: nowrap; }
+.desp-registro li .boton { margin: 0; flex: none; }
+
+/* Ajustes › Tu gestoría (lado del cliente): el código del despacho y la confirmación. */
+.desp-codigo { display: flex; gap: 8px; margin: 12px 0 8px; }
+.desp-codigo .campo { flex: 1; margin: 0; }
+.desp-codigo .boton { flex: none; margin: 0; padding: 0 20px; font-size: 15px; }
+.desp-codigo-ok { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin: 8px 0; }
+.desp-codigo-ok .boton { margin: 0; padding: 10px 18px; font-size: 15px; }
+.despacho .grupo-lista .fila:not(.desp-fila) { display: flex; align-items: center; }
+.despacho .grupo-lista .fila:not(.desp-fila) > .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.despacho .grupo-lista .fila:not(.desp-fila) > .txt small { color: var(--muted); }
+.desp-equipo-acc { flex: none; align-items: center; }
+
+/* Plazos. */
+.desp-plazos { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.desp-plazos > li { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 14px; padding: 14px 16px; border-radius: 12px; background: var(--surface); }
+.desp-plazos time { font-weight: 600; line-height: 1.3; }
+.desp-plazos time small { display: block; color: var(--muted); font-size: 13px; font-weight: 400; }
+.desp-plazos h3 { margin: 0 0 4px; font-size: 16px; }
+.desp-plazos p { margin: 0; color: var(--muted); font-size: 14px; }
+.desp-plazos .falta { color: var(--hacienda); font-weight: 600; }
+.desp-plazos .falta a, .desp-plazos p a { color: inherit; }
+.desp-plazos > li.vencido { box-shadow: inset 3px 0 0 var(--out); }
+.desp-plazos > li.vencido time small, .desp-plazos > li.vencido .falta { color: var(--out); }
+
+/* Licencias. */
+.desp-licencias { width: 100%; border-collapse: collapse; font-size: 15px; }
+.desp-licencias th, .desp-licencias td { padding: 8px 6px; border-bottom: 0.5px solid var(--line); text-align: left; vertical-align: top; }
+.desp-licencias .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.desp-check small { display: block; margin-top: 2px; color: var(--muted); font-size: 13px; }
+
+/* Aire entre bloques. */
+.despacho .grupo, .despacho .formulario.tarjeta { margin-top: 26px; }
+.despacho .desp-sub + .grupo-lista, .despacho .desp-sub + .desp-plazos { margin-top: 16px; }
+
+/* Mi empresa y Cerrar sesión: en el ordenador van en la barra lateral; en el móvil, al final de Despacho. */
+.desp-solo-movil { display: none; }
+@media (max-width: 1023.98px) { .desp-solo-movil { display: block; } }
+
+/* Mensajes: la bandeja (una fila por cliente) y la conversación. */
+.desp-conversaciones { margin-top: 14px; }
+.desp-conversaciones .fila.desp-conversacion { display: flex; align-items: center; gap: 12px; padding: 12px 16px; text-decoration: none; }
+.desp-avatar { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--relleno); color: var(--ink); font-weight: 700; }
+.desp-conversacion .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.desp-conversacion .txt strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.desp-conversacion .txt small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); margin-top: 2px; }
+.desp-conversacion.nueva .txt small { color: var(--ink); font-weight: 600; }
+.desp-conversacion-v { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; color: var(--muted); font-size: 13px; }
+.desp-conversacion-v b { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: var(--in-boton); color: #fff; font-size: 12px; line-height: 20px; text-align: center; }
+.desp-conversacion.nueva time { color: var(--in); font-weight: 600; }
+.desp-chat-pagina .chat { margin-top: 12px; }
+/* Tarjeta de mensajes en la ficha del cliente. */
+.desp-mensajes-ficha .txt small { white-space: normal; }
+.desp-burbuja-mini { display: inline-block; max-width: 100%; margin-top: 6px; padding: 6px 10px; border-radius: 12px 12px 12px 4px; background: var(--relleno); color: var(--ink); font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.desp-burbuja-mini.mia { border-radius: 12px 12px 4px 12px; background: var(--marca); color: var(--sobre); }
+/* Aviso en el Resumen del cliente: su gestoría le ha escrito (components/AvisoMensajes.js). */
+.aviso-mensajes { display: flex; align-items: center; gap: 12px; margin: 0 0 14px; padding: 12px 16px; border-radius: 14px; background: var(--surface); color: var(--ink); text-decoration: none; box-shadow: inset 3px 0 0 var(--in-boton); }
+.aviso-mensajes .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.aviso-mensajes .txt small { color: var(--muted); font-size: 13px; margin-top: 2px; }
+.aviso-mensajes-ico { flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--in-boton); color: #fff; }
+.aviso-mensajes-ico svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
+.aviso-mensajes::after { content: ''; flex: none; width: 7px; height: 7px; border-right: 2px solid var(--muted); border-top: 2px solid var(--muted); transform: rotate(45deg); opacity: 0.55; }
+/* Ajustes del despacho. */
+.desp-enlace { padding: 10px 12px; border-radius: 10px; background: var(--relleno); font-size: 14px; overflow-wrap: anywhere; }
+.desp-enlace code { font-family: inherit; }
+.celda .desp-acciones .boton { margin: 0; padding: 10px 18px; font-size: 15px; }
+.celda .v b { color: var(--ink); font-weight: 600; }
+.desp-plegable { display: block; }
+.desp-plegable summary { cursor: pointer; color: var(--ink); list-style: none; display: flex; align-items: center; justify-content: space-between; }
+.desp-plegable summary::-webkit-details-marker { display: none; }
+.desp-plegable summary::after { content: ''; width: 7px; height: 7px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(45deg); opacity: 0.6; transition: transform 0.2s; }
+.desp-plegable[open] summary::after { transform: rotate(-135deg); }
+.desp-plegable p, .desp-plegable ul { margin: 10px 0 0; color: var(--muted); font-size: 14px; line-height: 1.45; }
+.desp-plegable ul { padding-left: 18px; }
+.desp-interruptor { cursor: pointer; }
+.desp-interruptor input { flex: none; width: 44px; height: 26px; margin: 0; }
+.desp-solo-movil form { display: block; }
+.despacho .celda .txt small { white-space: normal; }
+
+/* Lo que la gestoría le pide al cliente (components/PeticionesCliente.js): en Ajustes › Tu gestoría y encima del chat. */
+.peticiones { display: flex; flex-direction: column; gap: 8px; margin: 0 0 16px; }
+.peticiones ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.peticiones li { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; background: var(--surface); border-left: 3px solid var(--aviso, var(--marca)); }
+.peticiones li .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.peticiones li .txt strong { overflow-wrap: anywhere; }
+.peticiones li .txt small { color: var(--muted); font-size: 13px; }
+.peticiones-botones { flex: none; display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+.peticiones-botones .boton { min-height: 40px; padding: 0 14px; }
+.peticiones-t { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 44px; margin: 0; padding: 0 14px; border: 0; border-radius: 12px; background: color-mix(in srgb, var(--aviso, var(--marca)) 16%, var(--surface)); box-shadow: none; color: var(--ink); font: inherit; font-weight: 700; text-align: left; cursor: pointer; }
+.desp-chat-pagina .peticiones { margin: 0; }
+@media (max-width: 1023.98px) {
+  .desp-chat-pagina .peticiones { flex: none; max-height: 40dvh; overflow-y: auto; padding: 8px 8px 0; background: var(--paper); }
+  .peticiones li { flex-wrap: wrap; }
+  .peticiones-botones { width: 100%; justify-content: stretch; }
+  .peticiones-botones .boton { flex: 1; }
+}
+
+/* Ficha del cliente: el cierre del trimestre paso a paso (components/ClienteDespacho.js). */
+.desp-estado-linea { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 0 4px 10px; }
+.desp-estado-linea small { color: var(--muted); font-size: 14px; }
+.desp-pasos { list-style: none; margin: 0; padding: 4px 14px; border-radius: 16px; background: var(--surface); }
+.desp-pasos > li { display: flex; gap: 12px; padding: 12px 0; border-bottom: 0.5px solid var(--line); }
+.desp-pasos > li:last-child { border-bottom: 0; }
+.desp-paso-n { flex: none; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--relleno); color: var(--muted); font-size: 14px; font-weight: 700; }
+.desp-pasos > li.hecho .desp-paso-n { background: var(--in-boton); color: #fff; }
+.desp-paso { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.desp-paso strong { font-size: 16px; }
+.desp-pasos > li.hecho .desp-paso strong { color: var(--muted); }
+.desp-paso small { color: var(--muted); font-size: 14px; line-height: 1.4; }
+.desp-paso-lista { margin: 0; padding-left: 18px; color: var(--ink); font-size: 14px; line-height: 1.5; }
+.desp-paso .desp-acciones { display: flex; flex-wrap: wrap; gap: 8px; }
+/* La lista de facturas y gastos: tocar la fila abre la vista previa (components/VistaDocumento.js). */
+.desp-docs .fila { gap: 10px; }
+.desp-doc-ver { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; margin: 0; padding: 0; border: 0; background: none; box-shadow: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.desp-doc-ver .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.desp-doc-ver .txt strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.desp-doc-ver .txt small { color: var(--muted); }
+.desp-doc-ver::after { content: ''; flex: none; width: 7px; height: 7px; border-right: 2px solid var(--muted); border-top: 2px solid var(--muted); transform: rotate(45deg); opacity: 0.55; }
+.desp-doc-ver:focus-visible { outline: 2px solid var(--marca); outline-offset: 2px; border-radius: 8px; }
+/* Pedir un documento y lo que se le ha pedido. */
+.desp-pedir { display: flex; gap: 8px; margin: 0 0 10px; }
+.desp-pedir .campo { flex: 1; min-width: 0; margin: 0; }
+.desp-peticiones .fila { gap: 10px; }
+.desp-peticiones .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.desp-peticiones .txt small { color: var(--muted); }
+
+/* Hoy (app/despacho/hoy): cuatro cifras arriba que llevan a su sección y listas cortas con su botón de ir. */
+.desp-hoy-cifras { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 0 0 18px; }
+.desp-hoy-cifras a { display: flex; flex-direction: column; gap: 2px; padding: 12px; border-radius: 14px; background: var(--surface); color: var(--muted); text-decoration: none; }
+.desp-hoy-cifras a b { font-size: 26px; line-height: 1.1; color: var(--muted); font-variant-numeric: tabular-nums; }
+.desp-hoy-cifras a span { font-size: 13px; line-height: 1.25; }
+.desp-hoy-cifras a.activa b { color: var(--ink); }
+.desp-hoy-fila .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.desp-hoy-fila .txt strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.desp-hoy-fila .txt small { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.desp-hoy-fila.vencido .txt strong { color: var(--out); }
+.desp-hoy-n { position: static; flex: none; }
+.desp-hoy-cuando { flex: none; color: var(--muted); font-size: 13px; }
+@media (max-width: 600px) { .desp-hoy-cifras { grid-template-columns: repeat(2, 1fr); } }
+
+/* Mensajes guardados (components/PlantillasDespacho.js) y escribir a varios (components/EscribirVarios.js). */
+.desp-plantillas { margin-bottom: 14px; }
+.desp-plantillas .fila { align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.desp-plantillas .txt { flex: 1; min-width: 200px; display: flex; flex-direction: column; }
+.desp-plantillas .txt small { color: var(--muted); white-space: pre-wrap; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.desp-plantillas .formulario { width: 100%; }
+.desp-varios-clientes { display: flex; flex-direction: column; gap: 2px; max-height: 50dvh; overflow-y: auto; padding: 6px; border-radius: 14px; background: var(--surface); }
+.desp-varios-clientes label { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 8px; border-radius: 10px; cursor: pointer; }
+.desp-varios-clientes label:hover { background: var(--relleno); }
+.desp-varios-clientes input { width: 20px; height: 20px; margin: 0; }
+.desp-varios-clientes small { color: var(--muted); margin-left: auto; }
+.desp-chips-plantillas { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.desp-chips-plantillas button { min-height: 36px; margin: 0; padding: 0 12px; border: 0; border-radius: 18px; background: var(--relleno); box-shadow: none; color: var(--ink); font: inherit; font-size: 14px; cursor: pointer; }
+/* Carga de cada persona del equipo (components/EquipoDespacho.js). */
+.desp-carga { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.desp-carga span { padding: 3px 9px; border-radius: 10px; background: var(--relleno); color: var(--muted); font-size: 13px; }
+.desp-carga span.aviso { background: color-mix(in srgb, var(--aviso, var(--marca)) 18%, var(--surface)); color: var(--ink); }
+/* Facturación del despacho (app/despacho/facturacion). */
+.desp-facturacion .fila { gap: 12px; }
+.desp-facturacion .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.desp-facturacion .txt small { color: var(--muted); }
+.desp-facturacion .v { display: flex; flex-direction: column; align-items: flex-end; text-align: right; }
+.desp-facturacion .v small { color: var(--muted); font-size: 13px; }
+.desp-aviso-mini { align-self: flex-start; margin-top: 4px; padding: 2px 8px; border-radius: 8px; background: color-mix(in srgb, var(--aviso, var(--marca)) 18%, var(--surface)); color: var(--ink) !important; font-size: 12px; }
+
+/* Selector de cuenta de la gente de un despacho (components/SelectorCuenta.js): una pastilla y su menú, como en las apps de
+   Apple. Arriba de cada pantalla fuera del panel va con «‹ Mi despacho» (.barra-despacho), en lugar de la franja oscura. */
+:root { --cliente-tono: #A34F00; }
+@media (prefers-color-scheme: dark) { :root:not([data-tema="claro"]) { --cliente-tono: #FFB15C; } }
+:root[data-tema="oscuro"] { --cliente-tono: #FFB15C; }
+.sel-cuenta { position: relative; min-width: 0; }
+.sel-cuenta.abierto { z-index: 40; }
+.sel-pastilla { display: inline-flex; align-items: center; gap: 7px; max-width: 100%; height: 34px; margin: 0; padding: 0 10px 0 5px; border: 0; border-radius: 17px; background: var(--surface); box-shadow: none; color: var(--ink); font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.sel-pastilla:active { background: var(--relleno); }
+.sel-pastilla:focus-visible { outline: 2px solid var(--marca); outline-offset: 2px; }
+/* Zona táctil de 44 px (la pastilla mide 34) sin cambiar cómo se ve */
+.sel-pastilla, .barra-despacho-volver { position: relative; }
+.sel-pastilla::after, .barra-despacho-volver::after { content: ''; position: absolute; inset: -5px -4px; }
+.sel-nombre { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sel-flecha { flex: none; width: 15px; height: 15px; fill: none; stroke: var(--muted); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; transition: transform 0.2s var(--salida); }
+.sel-cuenta.abierto .sel-flecha { transform: rotate(180deg); }
+.sel-casa { flex: none; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--marca); color: var(--sobre); }
+.sel-casa svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; }
+.sel-menu { position: absolute; z-index: 40; top: calc(100% + 8px); left: 0; width: 290px; max-width: calc(100vw - 32px); overflow: hidden; border-radius: 14px; background: color-mix(in srgb, var(--surface) 94%, transparent); -webkit-backdrop-filter: blur(24px) saturate(1.8); backdrop-filter: blur(24px) saturate(1.8); box-shadow: 0 0 0 0.5px var(--line), 0 12px 40px rgb(0 0 0 / 0.2); transform-origin: top left; animation: sel-abrir 0.18s var(--salida); }
+.sel-derecha .sel-menu { left: auto; right: 0; transform-origin: top right; }
+@keyframes sel-abrir { from { opacity: 0; transform: scale(0.94); } }
+@media (prefers-reduced-motion: reduce) { .sel-menu { animation: none; } .sel-flecha { transition: none; } }
+.sel-bloque + .sel-bloque { border-top: 6px solid var(--relleno); }
+.sel-bloque form { display: block; }
+.sel-op { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; min-height: 44px; margin: 0; padding: 8px 14px; border: 0; border-radius: 0; background: none; box-shadow: none; color: var(--ink); font: inherit; font-size: 16px; text-align: left; text-decoration: none; cursor: pointer; position: relative; }
+.sel-bloque > :is(.sel-op, form) + :is(.sel-op, form) { box-shadow: inset 0 0.5px 0 var(--line); }
+.sel-op:hover, .sel-op:active, .sel-op:focus-visible { background: var(--relleno); }
+.sel-op:focus-visible { outline: 2px solid var(--marca); outline-offset: -2px; }
+.sel-menu:focus { outline: none; }
+.sel-op.activa { cursor: default; font-weight: 600; }
+.sel-op.activa:hover { background: none; }
+.sel-op > svg, .sel-marca { flex: none; width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.sel-marca { stroke: var(--marca); stroke-width: 2.4; }
+.sel-izq { display: flex; align-items: center; gap: 10px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sel-op small { flex: none; color: var(--muted); font-size: 13px; }
+.sel-t { margin: 0; padding: 10px 14px 2px; color: var(--muted); font-size: 13px; }
+.sel-msg { margin: 0; padding: 10px 14px; color: var(--out); font-size: 14px; }
+
+.barra-despacho { position: relative; z-index: 30; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 16px; padding-top: max(6px, env(safe-area-inset-top)); background: none; }
+/* Sin fondo propio: se ve el de la pantalla. Con la barra, la pantalla empieza justo debajo: el hueco del notch ya lo deja la
+   barra (si no, se sumaba dos veces). No se queda fija al desplazar (como la miga «‹ Mail» de iOS): así no tapa las cabeceras
+   fijas de Caja o de los filtros. */
+body:has(.barra-despacho) .pagina { padding-top: 8px; }
+@media (max-width: 899px) { body:has(.barra-despacho) .inicio { margin-top: 4px; } }
+.barra-despacho form { display: contents; }
+.barra-despacho-volver { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 34px; margin: 0; padding: 0; border: 0; background: none; box-shadow: none; color: var(--marca); font: inherit; font-size: 16px; font-weight: 600; text-decoration: none; cursor: pointer; }
+.barra-despacho .sel-cuenta { display: flex; justify-content: flex-end; }
+.sel-n { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: var(--out); color: #fff; font-size: 12px; line-height: 20px; text-align: center; }
+/* Dentro de un cliente, la pastilla lleva el color de «estás en las cuentas de otro» (también la barra de pestañas). */
+html[data-entrada-cliente] .barra-despacho-volver { visibility: hidden; }
+.barra-despacho[data-cliente] .sel-pastilla { box-shadow: inset 0 0 0 1.5px var(--cliente-tono); }
+@media (max-width: 1023.98px) {
+  .tabbar[data-cliente] .tabs { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--cliente-tono) 55%, transparent); }
+  .tabbar[data-cliente] .tabs a.activo { color: var(--cliente-tono); }
+}
+/* La hoja de Ajustes del móvil tapa la app: el selector se queda debajo. */
+@media (max-width: 1023.98px) { body:has(.aj-marco) .barra-despacho { display: none; } }
+@media (min-width: 1024px) {
+  .barra-despacho { padding: 10px 40px; }
+  body:has(.barra-despacho) .pagina { padding-top: 12px; }
+  body:has(.barra-despacho) .ajustes-lista { padding-top: 12px; }
+}
+
+/* Solicitudes de clientes nuevos (components/SolicitudesDespacho.js) */
+.despacho .grupo-lista .fila .desp-mini + .desp-mini { margin-left: 8px !important; }
+/* Lista de clientes de hasta 800 px (el ordenador de 1024): estado y cifras algo más estrechos para que quepa el nombre
+   del cliente (se cortaba en «Iñaki Etxeberria Consult…»). */
+@container (min-width: 640px) and (max-width: 799.98px) {
+  .desp-cols, .desp-lista .fila.desp-fila { grid-template-columns: minmax(0, 1fr) 156px 96px 96px 12px; }
+}

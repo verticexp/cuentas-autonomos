@@ -23,7 +23,7 @@ export default function VerifactuFactura({ factura, admin }) {
   };
   const anular = async () => {
     const motivo = await pedirTexto({ titulo: 'Anular el registro', etiqueta: 'Motivo de anulación', aceptar: 'Anular registro', peligro: true, texto: 'Anular el registro solo si la factura se expidió por error (no existió). Si existió y estaba mal, haz una rectificativa.\n\n¿Por qué se anula?' });
-    if (motivo) hacer({ accion: 'anular', id: factura.id, motivo }, () => { volverA(router, '/facturas'); router.refresh(); });
+    if (motivo) hacer({ accion: 'anular', id: factura.id, motivo }, () => volverA(router, '/facturas', 'atras', true));
   };
   return (
     <section className="bloque">

@@ -12,6 +12,7 @@ import { apuntarCliente, PRUEBA_GESTORIA_DIAS } from '@/lib/gestorias';
 import { NO_VALIDO, resolverCodigo } from '@/lib/codigoPromocional';
 import { apuntarRecomendada, empresaPorCodigo, normalizarRef, RECOMENDACION_DIAS } from '@/lib/recomendaciones';
 import { enEmpresa } from '@/lib/membresias';
+import { despachoPorCodigo, unirCliente } from '@/lib/despachos';
 
 // Alta de una cuenta con su empresa. La primera de todas es la del administrador de Fisquo (formulario de app/login);
 // las demás llegan desde /registro con tipo de negocio y plan, y empiezan el mes de prueba (lib/prueba.js).
@@ -92,6 +93,12 @@ export async function POST(req) {
       empresaNueva = sesion ? r.id : r.usuario?.empresa;
       if (!r.error) await redis.hset('empresa-nif', { [emisor.nif]: empresaNueva });
       if (!r.error && gestoria) await apuntarCliente(gestoria.codigo, empresaNueva);
+      // Si el código es de un despacho asociado (lib/despachos.js), el despacho lleva sus cuentas desde el primer día: el
+      // registro lo avisa y el cliente puede quitarle el acceso en Ajustes › Tu gestoría.
+      if (!r.error && gestoria) {
+        const d = await despachoPorCodigo(gestoria.codigo);
+        if (d) await unirCliente(empresaNueva, d, 'codigo').catch((e) => console.warn('[registro] despacho', e.message));
+      }
       if (!r.error && plan.recomendacion) await apuntarRecomendada(plan.recomendacion.codigo, empresaNueva);
     } finally {
       await redis.eval("if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end", [cerrojo], [propietario]).catch(() => {});

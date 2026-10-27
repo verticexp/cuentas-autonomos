@@ -1,7 +1,7 @@
 import { mensajePlan } from '@/lib/app';
 import { randomBytes } from 'crypto';
-import { borrarEmpresa, borrarUsuario, crearUsuario } from '@/lib/auth';
-import { redis } from '@/lib/redis';
+import { borrarEmpresa, cambiarUsuario, crearUsuario, quitarDeEmpresa } from '@/lib/auth';
+import { mismoId, redis } from '@/lib/redis';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { limpiarPermisos, perfilDe, puede } from '@/lib/permisos';
 import { conMembresia, enEmpresa, membresias } from '@/lib/membresias';
@@ -10,6 +10,7 @@ import { enviarInvitacion } from '@/lib/invitacion';
 import { auditar } from '@/lib/auditoria';
 import { sinPlaza } from '@/lib/planes';
 import { conCerrojo } from '@/lib/cerrojo';
+import { pasado, respuesta429 } from '@/lib/limite';
 
 const enlace = (req, codigo) => new URL(`/invitacion/${codigo}`, req.url).toString();
 // Crea la respuesta con el enlace (que el administrador ve siempre) y le manda la invitación por email.
@@ -43,6 +44,7 @@ export async function POST(req) {
     const { u, res } = await usuarioApi({ admin: true });
     if (res) return res;
     if (!String(b.empresaNueva).trim()) return error('Falta el nombre de la empresa');
+    if (await pasado('usuarios-invitar', u.empresa || u.id, 30, 3600)) return respuesta429(3600, 'Has enviado demasiadas invitaciones. Espera una hora antes de invitar a más personas.');
     const r = await crearUsuario({ nombre: b.nombre, email: b.email, empresaNombre: b.empresaNueva, rol: 'admin' });
     if (r.error) return error(r.error);
     return invitar(req, u, r.usuario, String(b.empresaNueva).trim(), r.codigo);
@@ -52,18 +54,25 @@ export async function POST(req) {
   // Invitar o reenviar invitaciones: solo el administrador de la empresa (no quien solo tiene el permiso de usuarios).
   if (u.rol !== 'admin') return error('Solo el administrador de la empresa puede invitar a personas', 403);
   if (b.reenviar) {
+    if (await pasado('usuarios-reenviar', u.empresa, 10, 3600)) return respuesta429(3600, 'Has reenviado demasiadas invitaciones. Espera una hora antes de reenviar otra.');
     const o = await deMiEmpresa(u, b.reenviar);
     if (!o || o.pass) return error('Esa persona ya tiene acceso');
     if (esAdminDe(o, u.empresa) && u.rol !== 'admin') return error('Solo un administrador de la empresa puede dar o quitar el acceso de administrador', 403);
-    const todas = (await redis.hgetall('invitaciones')) || {};
-    const viejas = Object.keys(todas).filter((c) => todas[c] === o.id);
-    if (viejas.length) await redis.hdel('invitaciones', ...viejas);
+    // Bajo el cerrojo de la persona: si la acepta a la vez, no queda un código nuevo para una cuenta ya activa.
     const codigo = randomBytes(18).toString('base64url');
-    await redis.hset('invitaciones', { [codigo]: o.id });
-    await redis.hset('usuarios', { [o.id]: { ...o, creado: new Date().toISOString() } });
+    const sigue = await cambiarUsuario(o.id, async (x) => {
+      if (x.pass) return null;
+      const todas = (await redis.hgetall('invitaciones')) || {};
+      const viejas = Object.keys(todas).filter((c) => mismoId(todas[c], o.id));
+      if (viejas.length) await redis.hdel('invitaciones', ...viejas);
+      await redis.hset('invitaciones', { [codigo]: o.id });
+      return { ...x, creado: new Date().toISOString() };
+    });
+    if (!sigue) return error('Esa persona ya tiene acceso');
     await auditar(u, 'Invitación reenviada', o.email);
     return invitar(req, u, o, nombreEmpresa(u), codigo);
   }
+  if (await pasado('usuarios-invitar', u.empresa, 30, 3600)) return respuesta429(3600, 'Has enviado demasiadas invitaciones. Espera una hora antes de invitar a más personas.');
   // Las invitaciones pendientes ya reservan plaza. El cerrojo evita rebasar el cupo con dos altas simultáneas.
   return conCerrojo(`usuarios:${u.empresa}`, async () => {
     const personas = Object.values((await redis.hgetall('usuarios')) || {}).filter((x) => enEmpresa(x, u.empresa)).map((x) => ({ id: x.id, ...membresias(x)[u.empresa] }));
@@ -102,10 +111,9 @@ export async function PATCH(req) {
     const personas = Object.values((await redis.hgetall('usuarios')) || {}).filter((x) => enEmpresa(x, u.empresa)).map((x) => ({ id: x.id, ...membresias(x)[u.empresa] }));
     const sinPlan = sinPlaza(u.plan, personas, papel(u, b), o.id);
     if (sinPlan) return error(mensajePlan(sinPlan, req.headers.get('user-agent')), 403);
-    // Leer de nuevo bajo el cerrojo para conservar otras membresías y evitar sobrescribir un cambio concurrente.
-    const actual = await deMiEmpresa(u, o.id);
-    if (!actual) return error('Esa persona no está en tu empresa', 404);
-    await redis.hset('usuarios', { [o.id]: conMembresia(actual, u.empresa, papel(u, b)) });
+    // Su ficha se vuelve a leer bajo su cerrojo: se conservan sus otras empresas tal como estén en ese momento.
+    const hecho = await cambiarUsuario(o.id, (x) => (enEmpresa(x, u.empresa) ? conMembresia(x, u.empresa, papel(u, b)) : null));
+    if (!hecho) return error('Esa persona no está en tu empresa', 404);
     await auditar(u, 'Permisos cambiados', `${o.email} · ${quePapel(papel(u, b))}`);
     return Response.json({ ok: true });
   });
@@ -127,8 +135,7 @@ export async function DELETE(req) {
   if (!o || o.id === u.id) return error('No se puede quitar');
   if (esAdminDe(o, u.empresa) && u.rol !== 'admin') return error('Solo un administrador de la empresa puede dar o quitar el acceso de administrador', 403);
   // Si tiene otras empresas, solo pierde el acceso a esta; si no, se borra su cuenta.
-  if (Object.keys(membresias(o)).length > 1) await redis.hset('usuarios', { [o.id]: conMembresia(o, u.empresa, null) });
-  else await borrarUsuario(o.id);
+  await quitarDeEmpresa(o.id, u.empresa);
   await auditar(u, 'Acceso quitado', o.email);
   return Response.json({ ok: true });
 }

@@ -43,6 +43,9 @@ html[data-vt=abrir] .fh-total { view-transition-name: factura-total; }
   ::view-transition-group(tabs), ::view-transition-group(mas) { border-radius: 0; -webkit-backdrop-filter: none; backdrop-filter: none; }
   ::view-transition-group(mas) { border-radius: 999px; }
   .pagina { max-width: 880px; padding: 36px 40px 64px; }
+  /* Todas las pantallas empiezan en el mismo sitio: el borde izquierdo de la más ancha (Facturas, 1120 px) centrada. Antes
+     cada una se centraba con su ancho (820, 880, 1040, 1120, 1200) y el título saltaba al cambiar de sección. */
+  body:has(.tabbar) > .pagina:not(.desp-chat-pagina) { margin-left: max(0px, calc((100% - 1120px) / 2)); margin-right: auto; }
   .inicio { margin: 0; --cima: 24px; border-radius: 28px; }
   .hcards { display: grid; grid-template-columns: 1fr 1fr; }
   .accesos { display: none; }
@@ -66,6 +69,11 @@ html[data-vt=abrir] .fh-total { view-transition-name: factura-total; }
   /* Sin la fila que se convierte en la cabecera de la factura: en pantalla ancha cruzaba media pantalla */
   html[data-vt=abrir] .factura-hero, html[data-vt=abrir] .fh-cliente, html[data-vt=abrir] .fh-total { view-transition-name: none; }
   html[data-vt] .pagina [style*="view-transition-name"] { view-transition-name: none !important; }
+  /* Pestañas de una pantalla: la cabecera y las pestañas se quedan (la pastilla sí viaja, dentro de su carril) y lo de debajo
+     cambia con el mismo fundido que las pantallas */
+  html[data-vt^=pestana]::view-transition-old(root), html[data-vt^=pestana]::view-transition-new(root) { animation: none; }
+  html[data-vt^=pestana]::view-transition-old(pestanas-panel) { animation: 0.12s var(--salida) both vt-fuera; }
+  html[data-vt^=pestana]::view-transition-new(pestanas-panel) { animation: 0.24s var(--salida) both vt-escritorio; }
 }
 @keyframes vt-escritorio { from { opacity: 0; transform: translateY(6px); } }
 
@@ -127,7 +135,9 @@ html[data-entrada] .tabbar { animation: entrada-barra 0.5s var(--vt-curva) 0.15s
 }
 /* Mes de prueba (components/AvisoPrueba.js) y Ajustes › Tu plan (components/ElegirPlan.js) */
 .aviso-prueba { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 0 0 12px; padding: 10px 14px; border-radius: 12px; background: var(--relleno); font-size: 14px; color: var(--ink); }
-.aviso-prueba.pronto { background: color-mix(in srgb, #E8A33D 18%, var(--surface)); }
+.aviso-prueba { line-height: 1.45; }
+.aviso-prueba span { flex: 1 1 260px; }
+.aviso-prueba.pronto { background: color-mix(in srgb, var(--ambar) 18%, var(--surface)); }
 .aviso-prueba a { font-weight: 600; color: var(--ink); white-space: nowrap; }
 .elegir-plan .segmentado button { flex: 1; margin: 0; padding: 6px 4px; border: 0; border-radius: 7px; background: none; box-shadow: none; font-size: 13px; font-weight: 500; color: var(--ink); }
 .elegir-plan .segmentado button.activo { background: var(--surface); font-weight: 600; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12); }
@@ -142,12 +152,12 @@ html[data-entrada] .tabbar { animation: entrada-barra 0.5s var(--vt-curva) 0.15s
 .plan-pagado { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .plan-pagado p { margin: 0; }
 .plan-pagado .boton { margin: 0; }
-.plan-uso { padding: 12px 14px; border-radius: 12px; background: color-mix(in srgb, #E8A33D 14%, var(--surface)); font-size: 14px; }
+.plan-uso { padding: 12px 14px; border-radius: 12px; background: color-mix(in srgb, var(--ambar) 14%, var(--surface)); font-size: 14px; }
 .plan-uso p { margin: 0; }
 .plan-uso ul { margin: 6px 0 8px; padding-left: 18px; }
 .plan-uso .enlace { padding: 0; border: 0; background: none; font: inherit; font-weight: 600; color: var(--ink); text-decoration: underline; cursor: pointer; }
 /* Solo lectura al acabar la prueba (app/layout.js) */
-.aviso-lectura { position: sticky; top: 0; z-index: 30; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; padding: 8px 16px; padding-top: max(8px, env(safe-area-inset-top)); background: color-mix(in srgb, #E8A33D 22%, var(--surface)); font-size: 14px; color: var(--ink); text-align: center; }
+.aviso-lectura { position: sticky; top: 0; z-index: 30; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; padding: 8px 16px; padding-top: max(8px, env(safe-area-inset-top)); background: color-mix(in srgb, var(--ambar) 22%, var(--surface)); font-size: 14px; color: var(--ink); text-align: center; }
 .aviso-lectura a { font-weight: 600; color: var(--ink); }
 
 /* Registro en pasos (components/FormRegistro.js) */
@@ -193,6 +203,12 @@ html[data-entrada] .tabbar { animation: entrada-barra 0.5s var(--vt-curva) 0.15s
 :root { interpolate-size: allow-keywords; }
 details::details-content { block-size: 0; overflow: clip; opacity: 0; transition: block-size 0.32s var(--vt-curva), opacity 0.2s var(--salida), content-visibility 0.32s allow-discrete; }
 details[open]::details-content { block-size: auto; opacity: 1; }
+/* La flecha de plegar de toda la app (la de Ayuda): hacia abajo cerrado, hacia arriba abierto. En un <details class="plegable">
+   la pone el summary; en un botón que pliega, un <span class="chevron"> dentro del botón con aria-expanded. */
+details.plegable > summary { list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; cursor: pointer; }
+details.plegable > summary::-webkit-details-marker { display: none; }
+details.plegable > summary::after, .chevron { content: ''; flex: none; width: 7px; height: 7px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: translateY(-2px) rotate(45deg); transition: transform 0.2s; }
+details.plegable[open] > summary::after, [aria-expanded="true"] > .chevron { transform: translateY(2px) rotate(225deg); }
 /* Una .nota dentro del título de un plegable va en la misma línea: sin el margen de párrafo, que la montaba sobre el texto al partirse */
 summary .nota { margin: 0; }
 /* Los campos y botones se resaltan suave al enfocarlos */
@@ -200,3 +216,12 @@ summary .nota { margin: 0; }
 input.campo:focus-visible, select.campo:focus-visible, textarea.campo:focus-visible { border-color: var(--ink); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ink) 10%, transparent); outline: none; }
 .campos .campo:focus-visible { box-shadow: none; border-color: var(--line); background: var(--relleno); }
 @media (prefers-reduced-motion: reduce) { details::details-content { transition: none; } }
+
+/* Zonas de toque de 44 px como mínimo (HIG de Apple) en pantallas táctiles. Los enlaces y botones de texto pequeños se ven
+   igual: un ::after transparente amplía la zona. Las casillas con texto y los selectores de estado crecen de verdad. */
+@media (pointer: coarse) {
+  :is(.resumen-fijo-t a, .resumen-linea a, a.grupo-pie, .jor-editar, .bco-regla-boton) { position: relative; }
+  :is(.resumen-fijo-t a, .resumen-linea a, a.grupo-pie, .jor-editar, .bco-regla-boton)::after { content: ''; position: absolute; inset: -12px -4px; }
+  :is(.formulario .check, .formulario label:not(.sino):has(> input[type="checkbox"]:first-child), .remesas .rem-check, .cat-servicio) { min-height: 44px; }
+  select.estado { min-height: 44px; }
+}

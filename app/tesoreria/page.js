@@ -4,7 +4,7 @@ import SinPlan from '@/components/SinPlan';
 import { requerir } from '@/lib/auth';
 import { DETALLE, puede } from '@/lib/permisos';
 import { clave, leer, redis } from '@/lib/redis';
-import { actividadesDe, fiscalDe } from '@/lib/empresa';
+import { actividadesDe, fiscalDe, usaIgic } from '@/lib/empresa';
 import { esSociedad } from '@/lib/modulos';
 import { prevision } from '@/lib/tesoreria';
 import { eur, fechaCorta, fechaTexto, hoy } from '@/lib/formato';
@@ -19,6 +19,8 @@ import '@/app/banco.css';
 
 import '@/app/mk.css';
 import { delosAnios } from '@/lib/indices';
+import { veSueldos } from '@/lib/nominas';
+import YaPresentado from '@/components/YaPresentado';
 
 export const dynamic = 'force-dynamic';
 const HORIZONTES = [3, 6, 12];
@@ -26,14 +28,14 @@ const TIPO = { cobro: 'Cobro', pago: 'Pago', hacienda: 'Hacienda' };
 
 export default async function Tesoreria({ searchParams }) {
   const u = await requerir('resumen');
-  if (u.plan?.version === 2 && sinFuncion(u.plan, 'tesoreria')) return <SinPlan usuario={u} funcion="tesoreria" />;
+  if (u.plan?.version >= 2 && sinFuncion(u.plan, 'tesoreria')) return <SinPlan usuario={u} funcion="tesoreria" />;
   if (!redis) return <SinBD />;
   // Informe de capacidad E01: lo pendiente, este año y el anterior (impuestos y gastos habituales) y los bienes; como el Resumen.
   const y = Number(hoy().slice(0, 4));
-  const [{ facturas, gastos }, recurrentes, nominas, saldo, movs, empleados] = await Promise.all([delosAnios(u, Array.from({ length: 5 }, (_, i) => y - i), { pendientes: true }), leer(u, 'recurrentes'), leer(u, 'nominas'), redis.get(clave(u, 'saldo')), leer(u, 'banco'), leer(u, 'empleados')]);
+  const [{ facturas, gastos }, recurrentes, nominas, saldo, movs, empleados, capital] = await Promise.all([usaIgic(fiscalDe(u)) ? Promise.all([leer(u, 'facturas'), leer(u, 'gastos')]).then(([facturas, gastos]) => ({ facturas: facturas || [], gastos: gastos || [] })) : delosAnios(u, Array.from({ length: 5 }, (_, i) => y - i), { pendientes: true }), leer(u, 'recurrentes'), leer(u, 'nominas'), redis.get(clave(u, 'saldo')), leer(u, 'banco'), leer(u, 'empleados'), leer(u, 'capital')]);
   const sinRevisar = (movs || []).filter((m) => m.estado === 'pendiente').length;
   const n = HORIZONTES.includes(Number((await searchParams).meses)) ? Number((await searchParams).meses) : 3;
-  const p = prevision({ facturas, gastos, recurrentes: recurrentes || [], nominas: nominas || [], empleados: empleados || [], fiscal: fiscalDe(u), pagos130: u.pagos130 || {}, pres303: u.pres303 || {}, prorrata: u.prorrata || {}, rend130: u.rend130 || {}, cuotaIS: u.cuotaIS || {}, pagos202: u.pagos202 || {}, pagadosHacienda: u.pagadosHacienda || {}, plazo: u.emisor?.plazo, saldo,
+  const p = prevision({ facturas, gastos, recurrentes: recurrentes || [], nominas: nominas || [], empleados: empleados || [], agruparSueldos: !veSueldos(u), fiscal: fiscalDe(u), pagos130: u.pagos130 || {}, pres303: u.pres303 || {}, pres111: u.pres111 || {}, pres115: u.pres115 || {}, pres123: u.pres123 || {}, pres216: u.pres216 || {}, pres369: u.pres369 || {}, capital: capital || [], pagos131: u.pagos131 || {}, modulos: u.modulos || {}, prorrata: u.prorrata || {}, rend130: u.rend130 || {}, cuotaIS: u.cuotaIS || {}, pagos202: u.pagos202 || {}, pagadosHacienda: u.pagadosHacienda || {}, plazo: u.emisor?.plazo, saldo,
     actividades: actividadesDe(u).map((a) => a.id), hoy: hoy(), meses: n });
   const alto = Math.max(1, ...p.meses.map((m) => Math.abs(m.saldo)), Math.abs(p.inicial));
 
@@ -41,8 +43,11 @@ export default async function Tesoreria({ searchParams }) {
     <main className="pagina mk-look tesoreria">
       <Volver href="/">Resumen</Volver>
       <h1 className="titulo">Tesorería</h1>
+      {!p.movimientos.length && <Vacio icono="cobrar" titulo="Aún no hay nada previsto" accion={{ href: '/facturas/nueva', texto: 'Nueva factura' }} secundaria={{ href: '/gastos#apuntar-gasto', texto: 'Añadir gasto' }}>Aquí verás qué dinero entra y sale en los próximos meses</Vacio>}
+      {!p.movimientos.length && <SaldoBanco saldo={saldo ? saldo.importe : null} fecha={saldo?.fecha} banco={Boolean(saldo?.banco)} editable={puede(u, 'facturar') || puede(u, 'gastar')} />}
+      {p.movimientos.length > 0 && <>
       {esSociedad(fiscalDe(u)) && (puede(u, 'facturar') || puede(u, 'gastar')) && <Ir href="/tesoreria/remesas" className="grupo-pie">Remesas SEPA ›</Ir>}
-      <nav className="segmentado">
+      <nav className="segmentado" aria-label="Meses de la previsión">
         {HORIZONTES.map((h) => <Ir key={h} href={`/tesoreria?meses=${h}`} tipo="fundido" className={h === n ? 'activo' : ''}>{h} meses</Ir>)}
       </nav>
 
@@ -90,15 +95,15 @@ export default async function Tesoreria({ searchParams }) {
                   <span className="teso-imp"><span className={x.importe > 0 ? 'teso-in' : x.tipo === 'hacienda' ? 'teso-hac' : 'teso-out'}>{x.importe > 0 ? '+' : '−'}{eur(Math.abs(x.importe))}</span><small>{eur(x.saldo)}</small></span>
                 </>
               );
+              if (x.pregunta) return <li key={i}><div className="fila">{fila}</div><YaPresentado pregunta={x.pregunta} importe={-x.importe} puede={puede(u, 'contabilidad')} /></li>;
               return <li key={i}>{x.url ? <Ir href={x.url} className="fila">{fila}</Ir> : <div className="fila">{fila}</div>}</li>;
             })}
           </ul>
         </section>
       ))}
+      </>}
 
-      {!p.movimientos.length && <Vacio icono="cobrar" titulo="Aún no hay nada previsto" accion={{ href: '/facturas/nueva', texto: 'Nueva factura' }} secundaria={{ href: '/gastos#apuntar-gasto', texto: 'Añadir gasto' }}>Aquí verás las facturas por cobrar, los gastos pendientes y habituales y lo que toca pagar a Hacienda.</Vacio>}
-
-      <p className="grupo-pie arriba">Cobros: facturas sin cobrar a su vencimiento (las vencidas, hoy) y las recurrentes. Pagos: gastos pendientes y los que se repiten cada uno de los 3 últimos meses. Hacienda: 303, 130, 115 y 111 de los trimestres sin marcar como presentados. Es una previsión: revísala de vez en cuando.</p>
+      <details className="como-se-calcula"><summary>Cómo se calcula</summary><p className="grupo-pie arriba">Cobros: facturas sin cobrar a su vencimiento (las vencidas, hoy) y las recurrentes. Pagos: gastos pendientes a su vencimiento (los vencidos, hoy) y los que se repiten cada uno de los 3 últimos meses. Hacienda: {usaIgic(fiscalDe(u)) ? 'IGIC (420)' : '303'}, 130, 115 y 111 de los trimestres sin marcar como presentados; el del trimestre en curso es una previsión con lo apuntado hasta hoy. Revísala de vez en cuando.</p></details>
     </main>
   );
 }

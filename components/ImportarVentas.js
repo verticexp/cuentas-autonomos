@@ -2,7 +2,7 @@
 
 import { useId, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { eur, fechaTexto } from '@/lib/formato';
+import { eur, fechaTexto, pctCorto } from '@/lib/formato';
 
 const NOMBRES = { shopify: 'Shopify', woocommerce: 'WooCommerce', sumup: 'SumUp', square: 'Square', generico: 'Excel o CSV' };
 
@@ -53,7 +53,7 @@ export default function ImportarVentas({ actividades }) {
     <section className="bloque">
       <p className="nota">Exporta las ventas o los pedidos desde Shopify, WooCommerce, SumUp o Square (o cualquier Excel con fecha, producto, cantidad e importe) y súbelo. Cada día se guarda como un cierre de caja; los productos se emparejan con tu catálogo por referencia (SKU), código de barras o nombre.</p>
       <label className="boton sec">{ocupado && !previa ? 'Leyendo…' : 'Elegir archivo (.csv o .xlsx)'}<input type="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden onChange={subir} disabled={ocupado} /></label>
-      {msg && <p className={msg.startsWith('✓') ? 'nota' : 'error'}>{msg}</p>}
+      {msg && <p className={msg.startsWith('✓') ? 'nota' : 'error'} role={msg.startsWith('✓') ? 'status' : 'alert'}>{msg}</p>}
       {previa && (
         <>
           <p className="rotulo">{NOMBRES[previa.formato] || previa.formato} · {previa.dias.length} {previa.dias.length === 1 ? 'día' : 'días'}</p>
@@ -63,7 +63,7 @@ export default function ImportarVentas({ actividades }) {
               <label key={x.fecha} className={`tarjeta caja-dia${x.repetido ? ' repetido' : ''}`}>
                 <span><input type="checkbox" checked={elegidos.has(x.fecha)} onChange={() => cambiar(x.fecha)} /> <strong>{fechaTexto(x.fecha)} {x.fecha.slice(0, 4)}</strong>
                   <small>{x.pedidos} {x.pedidos === 1 ? 'venta' : 'ventas'} · efectivo {eur(x.efectivo)} · tarjeta {eur(x.tarjeta)}{x.otros ? ` · otros ${eur(x.otros)}` : ''}</small>
-                  <small>{x.porIva.map((t) => `${t.pct} %: ${eur(t.total)}`).join(' · ')}{x.unidades.length ? ` · ${x.unidades.reduce((s, y) => s + y.cantidad, 0)} uds. del catálogo` : ''}{x.repetido ? ' · ya importado' : ''}</small>
+                  <small>{x.porIva.map((t) => `${pctCorto(t.pct)}: ${eur(t.total)}`).join(' · ')}{x.unidades.length ? ` · ${x.unidades.reduce((s, y) => s + y.cantidad, 0)} uds. del catálogo` : ''}{x.repetido ? ' · ya importado' : ''}</small>
                 </span>
                 <b>{eur(x.total)}</b>
               </label>

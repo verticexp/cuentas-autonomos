@@ -109,6 +109,8 @@ export default function Bloqueo({ email, servidor = true }) {
     const r = await fetch('/api/login', { method: 'POST', headers: { Accept: 'application/json' }, body: new FormData(e.currentTarget) }).catch(() => null);
     const d = await r?.json().catch(() => ({}));
     setEnviando(false);
+    // Otra cuenta con verificación en dos pasos: el código se pide en su página (app/login/dos-pasos).
+    if (r?.ok && d?.segundoPaso) { location.assign('/login/dos-pasos?bloqueo=1'); return; }
     if (r?.ok) { pass.current.value = ''; entro(otra); } else setError(d?.error || 'No se ha podido comprobar. Revisa la conexión.');
   }
 
@@ -123,7 +125,7 @@ export default function Bloqueo({ email, servidor = true }) {
         <input id="bloqueo-email" name="email" type="email" autoComplete="username webauthn" defaultValue={email} required />
         <label htmlFor="bloqueo-password">Contraseña</label>
         <CampoPassword ref={pass} id="bloqueo-password" />
-        {error && <p className="error">{error}</p>}
+        {error && <p className="error" role="alert">{error}</p>}
         <button type="submit" disabled={enviando || saliendo}>{saliendo ? 'Dentro' : enviando ? 'Comprobando…' : 'Entrar'}</button>
         <EntrarLlave auto alEntrar={(r) => entro(r?.cambio)} />
       </form>}

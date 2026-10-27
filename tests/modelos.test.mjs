@@ -23,19 +23,25 @@ test('115 y 180: 19 % de las rentas del alquiler', () => {
 
 test('349: clientes de la UE por NIF-IVA, sumados por trimestre', () => {
   assert.equal(nifUE('12345678Z'), ''); assert.equal(nifUE('ES12345678Z'), ''); assert.equal(nifUE('fr 12345678901'), 'FR12345678901');
-  assert.deepEqual(modelo349(F, 2026, 2), { operadores: [{ nif: 'DE123456789', nombre: 'Berlin GmbH', clave: 'S', base: 2500 }], total: 2500 });
+  assert.deepEqual(modelo349(F, 2026, 2), { operadores: [{ nif: 'DE123456789', nombre: 'Berlin GmbH', clave: 'S', base: 2500 }], total: 2500, rectificaciones: [], totalRectificaciones: 0, negativos: [], mensual: null });
   assert.equal(modelo349(F, 2026, 1).total, 0);
 });
 
 test('390: suma de los cuatro 303', () => {
   const c = modelo390(F, G, 2026);
-  assert.deepEqual([c.base21, c.cuota21, c.base10, c.cuota10, c.sinIva, c.deducible, c.resultado, c.volumen], [1000, 210, 400, 40, 2500, 399, -149, 3900]);
+  // Casillas del 390: 05-06 y 03-04 régimen ordinario, 103 servicios a la UE, 108 volumen de operaciones.
+  assert.deepEqual([c.c['05'], c.c['06'], c.c['03'], c.c['04'], c.c['103'], c.deducible, c.resultado, c.c['108']], [1000, 210, 400, 40, 2500, 399, -149, 3900]);
   assert.deepEqual(c.trimestres, [-63, -126, 40, 0]);
 });
 
 test('190: por trabajador', () => {
   const N = [{ empleado: 'e', empleadoNombre: 'Eva', mes: '2026-01', bruto: 2000, irpfPct: 10 }, { empleado: 'e', mes: '2026-02', bruto: 2000, irpfPct: 10 }, { empleado: 'e', mes: '2025-12', bruto: 9, irpfPct: 10 }];
-  assert.deepEqual(modelo190(N, [{ id: 'e', nombre: 'Eva Gil', nif: '1X' }], 2026), { perceptores: [{ nombre: 'Eva Gil', nif: '1X', clave: 'A', percepciones: 4000, retenciones: 400 }], percepciones: 4000, retenciones: 400 });
+  assert.deepEqual(modelo190(N, [{ id: 'e', nombre: 'Eva Gil', nif: '1X' }], 2026), { perceptores: [{ nombre: 'Eva Gil', nif: '1X', clave: 'A', subclave: '', percepciones: 4000, retenciones: 400, gastosDeducibles: 0, contrato: 1 }], percepciones: 4000, retenciones: 400 });
+  // Un proveedor en módulos con el 1 % y un agricultor con el 2 %: clave H; un profesional con el 15 %: clave G.
+  const G190 = [{ fecha: '2026-03-01', pagado: '2026-03-01', base: 1000, ivaPct: 21, irpfPct: 1, proveedor: 'Carpintería', proveedorNif: 'B1' },
+    { fecha: '2026-03-02', pagado: '2026-03-02', base: 500, ivaPct: 10, irpfPct: 2, proveedor: 'Granja', proveedorNif: 'B2' },
+    { fecha: '2026-03-03', pagado: '2026-03-03', base: 300, ivaPct: 21, irpfPct: 15, proveedor: 'Gestoría', proveedorNif: 'B3' }];
+  assert.deepEqual(modelo190([], [], 2026, G190).perceptores.map((p) => [p.nombre, p.clave, p.retenciones]), [['Carpintería', 'H', 10], ['Granja', 'H', 10], ['Gestoría', 'G', 45]]);
 });
 
 test('renta: escala, mínimo personal, retenciones y pagos del 130', () => {
@@ -78,7 +84,7 @@ test('202: 18 % de la cuota del último Impuesto sobre Sociedades presentado', (
   assert.equal(modelo202({}, 2026)[1].cuota, null);
 });
 
-test('347: más de 3.005,06 € con IVA por cliente (B) y proveedor (A), por trimestres; sin 349, retenciones ni fuera de la UE', () => {
+test('347: más de 3.005,06 € con IVA por cliente (B) y proveedor (A), por trimestres; sin 349 ni retenciones', () => {
   const F = [
     { fecha: '2026-02-01', base: 2000, ivaPct: 21, irpfPct: 0, cliente: { nombre: 'Grande SL', nif: 'B12345678' } },
     { fecha: '2026-05-01', base: 1000, ivaPct: 21, irpfPct: 0, cliente: { nombre: 'Grande SL', nif: 'b-12345678' } },
@@ -86,6 +92,7 @@ test('347: más de 3.005,06 € con IVA por cliente (B) y proveedor (A), por tri
     { fecha: '2026-03-02', base: 2400, ivaPct: 21, irpfPct: 0, cliente: { nombre: 'Justa SL', nif: 'B11111111' } }, // 2.904 €: no
     { fecha: '2026-03-03', base: 9000, ivaPct: 21, irpfPct: 15, cliente: { nombre: 'Con retención', nif: 'B22222222' } },
     { fecha: '2026-03-04', base: 9000, ivaPct: 0, irpfPct: 0, cliente: { nombre: 'Berlin', nif: 'DE123456789' } },
+    // Sin país en la ficha: su identificador no es un NIF español y la factura va sin IVA, así que es extranjero.
     { fecha: '2026-03-05', base: 9000, ivaPct: 0, irpfPct: 0, cliente: { nombre: 'New York Inc', nif: '12-3456789' } },
   ];
   const G = [
@@ -95,9 +102,11 @@ test('347: más de 3.005,06 € con IVA por cliente (B) y proveedor (A), por tri
     { fecha: '2026-04-04', base: 5000, ivaPct: 21 },
   ];
   const m = modelo347(F, G, 2026);
-  assert.deepEqual(m.ventas.map((o) => [o.nif, o.total, o.trimestres]), [['B12345678', 3630, [2420, 1210, 0, 0]], ['B87654321', 3509, [3509, 0, 0, 0]]]);
+  // Art. 33.2.g RGAT: el servicio a EE. UU. sí se declara; el identificador extranjero no va en el NIF español.
+  assert.deepEqual(m.ventas.map((o) => [o.nif, o.total, o.trimestres]), [['', 9000, [9000, 0, 0, 0]], ['B12345678', 3630, [2420, 1210, 0, 0]], ['B87654321', 3509, [3509, 0, 0, 0]]]);
   assert.deepEqual(m.compras.map((o) => [o.nif, o.total]), [['B33333333', 3630]]);
-  assert.equal(m.sinNif.length, 0);
+  // El extranjero sin país en su ficha sale en la lista de los que hay que completar: el 347 pide su país.
+  assert.deepEqual(m.sinNif.map((o) => o.nombre), ['New York Inc']);
 });
 
 test('Impuesto sobre Sociedades: tipos por tamaño y año, y pagos del 202', () => {

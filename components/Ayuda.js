@@ -14,7 +14,7 @@ const PREGUNTAS = [
   { p: '¿Qué es Verifactu y tengo que activarlo?', r: 'Es el sistema de Hacienda para que cada factura quede registrada y lleve un código QR. Actívalo en Ajustes › Verifactu; puedes probarlo antes en modo pruebas.', href: '/ajustes/verifactu', ir: 'Verifactu' },
   { p: '¿Cómo le paso las cuentas a mi gestoría?', r: 'En Ajustes › Tu gestoría puedes mandarle el paquete de cada trimestre (Excel, PDF y justificantes) o invitarla a Fisquo con su propio usuario.', href: '/ajustes/gestoria', ir: 'Tu gestoría' },
   { p: 'Vengo de otro programa o de un Excel', r: 'En Ajustes › Importar datos subes clientes, facturas, gastos y productos desde Holded o desde un Excel. Si ya llevabas numeración este año, sigue con ella en Series y numeración.', href: '/ajustes/importar', ir: 'Importar datos' },
-  { p: '¿Cómo cobro con tarjeta o Bizum?', r: 'Al enviar una factura por email, Fisquo añade un enlace de pago si está activado. En Ajustes › Cobros pones tu Bizum y otras formas de pago para que salgan en la factura.', href: '/ajustes/cobros', ir: 'Cobros' },
+  { p: '¿Cómo cobro con tarjeta o Bizum?', r: 'El pago con tarjeta desde la factura llegará pronto. Mientras, en Ajustes › Cobros pones tu cuenta, tu Bizum y otras formas de pago para que salgan en cada factura, y al cobrar la marcas como cobrada (o se empareja sola con el extracto del banco).', href: '/ajustes/cobros', ir: 'Cobros' },
   { p: '¿Quién más puede entrar en mi empresa?', r: 'En Ajustes › Usuarios y permisos invitas a quien quieras y eliges qué ve: facturar, gastos, nóminas… Cada persona entra con su email.', href: '/usuarios', ir: 'Usuarios' },
   { p: '¿Puedo llevarme mis datos?', r: 'Sí, cuando quieras: en Ajustes › Descargar todos los datos tienes un .zip con todo. Tus datos son tuyos.', href: null },
 ];
@@ -47,22 +47,25 @@ export default function Ayuda({ contacto, app = false }) {
         </div>
       </section>
 
-      <form className="formulario tarjeta" onSubmit={enviar}>
-        <h3>Escríbenos</h3>
-        <label>Sobre qué
-          <select className="campo" value={d.tema} onChange={(e) => setD({ ...d, tema: e.target.value })}>{temas.map((t) => <option key={t} value={t}>{app && t === 'Mi plan o mi factura de Fisquo' ? 'Mi cuenta' : t}</option>)}</select>
-        </label>
-        <label>Mensaje<textarea className="campo" rows={5} maxLength={3000} value={d.mensaje} onChange={(e) => setD({ ...d, mensaje: e.target.value })} placeholder="Cuéntanos qué necesitas o qué ha pasado" required /></label>
-        {msg && <p role="status" className={msg === 'Enviado' ? 'nota guardado' : msg === 'Enviando…' ? 'nota' : 'error'}>{msg === 'Enviado' ? '✓ Enviado: te respondemos a tu email, normalmente en el día.' : msg}</p>}
+      <form className="formulario aj-form" onSubmit={enviar}>
+        <h3 aria-level={2}>Escríbenos</h3>
+        <div className="aj-grupo">
+          <label>Sobre qué
+            <select className="campo" value={d.tema} onChange={(e) => setD({ ...d, tema: e.target.value })}>{temas.map((t) => <option key={t} value={t}>{app && t === 'Mi plan o mi factura de Fisquo' ? 'Mi cuenta' : t}</option>)}</select>
+          </label>
+          <label>Mensaje<textarea className="campo" rows={5} maxLength={3000} value={d.mensaje} onChange={(e) => setD({ ...d, mensaje: e.target.value })} placeholder="Cuéntanos qué necesitas o qué ha pasado" required /></label>
+        </div>
+        {msg && <p role="status" className={msg === 'Enviado' ? 'nota aj-pie guardado' : msg === 'Enviando…' ? 'nota aj-pie' : 'error aj-pie'}>{msg === 'Enviado' ? '✓ Enviado: te respondemos a tu email, normalmente en el día.' : msg}</p>}
         <button className="boton" disabled={msg === 'Enviando…'}>Enviar</button>
-        <p className="nota">También en <a href={`mailto:${contacto}`}>{contacto}</a>.</p>
+        <p className="nota aj-pie">También en <a href={`mailto:${contacto}`}>{contacto}</a>.</p>
       </form>
 
       <section className="grupo">
         <div className="grupo-c">
-          <a href="/condiciones" className="celda ir"><span className="txt">Condiciones de uso</span></a>
-          <a href="/privacidad" className="celda ir"><span className="txt">Privacidad</span></a>
-          <a href="/seguridad" className="celda ir"><span className="txt">Seguridad de tus datos</span></a>
+          <Ir href="/condiciones" className="celda ir"><span className="txt">Condiciones de uso</span></Ir>
+          <Ir href="/privacidad" className="celda ir"><span className="txt">Privacidad</span></Ir>
+          {/* Es de la web pública: dentro de la app de iOS lleva al resumen (lib/app.js) */}
+          <a href="/seguridad" className="celda ir solo-web"><span className="txt">Seguridad de tus datos</span></a>
         </div>
       </section>
     </>

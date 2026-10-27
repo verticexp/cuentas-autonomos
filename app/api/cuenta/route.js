@@ -3,20 +3,22 @@ import { cookies } from 'next/headers';
 import { congelarInstantaneas, saltarNumeracion } from '@/lib/facturas';
 import { actualizarUsuario, cambiarPassword, desbloqueo, opcionesCookie, opcionesDesbloqueo } from '@/lib/auth';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
-import { puede } from '@/lib/permisos';
+import { DETALLE, puede } from '@/lib/permisos';
 import { colorValido, logoValido } from '@/lib/marca';
-import { actividadesDe, fiscalDe, limpiarActividades, limpiarFiscal } from '@/lib/empresa';
-import { clave, leer, redis } from '@/lib/redis';
+import { actividadesDe, fiscalDe, limpiarActividades, limpiarFiscal, usaIgic } from '@/lib/empresa';
+import { clave, leer, mismoId, redis } from '@/lib/redis';
 import { auditar } from '@/lib/auditoria';
 import { contrasenaCambiada } from '@/lib/avisosCorreo';
 import { leerImporte } from '@/lib/calculos';
+import { limpiarModulos } from '@/lib/estimacionObjetiva';
 import { hoy } from '@/lib/formato';
 import { todasFichas } from '@/lib/indices';
 import { cambioDeForma, normalizarNif } from '@/lib/formaJuridica';
 
 const CAMPOS = ['nombre', 'nif', 'direccion', 'ciudad', 'iban'];
 // Más datos del emisor (Ajustes): salen en la factura y se congelan con ella como los de arriba. [campo, largo máximo]
-const CONTACTO = [['email', 120], ['telefono', 30], ['web', 120], ['registro', 200]];
+// ccc: código de cuenta de cotización a la Seguridad Social (lo usan los datos para RED de las nóminas).
+const CONTACTO = [['email', 120], ['telefono', 30], ['web', 120], ['registro', 200], ['ccc', 20]];
 const COBROS = [['bizum', 20], ['otroPago', 120]];
 const DISENO = [['pie', 500], ['notaDefecto', 500]];
 const texto = (v, max) => String(v ?? '').trim().slice(0, max);
@@ -33,7 +35,7 @@ async function comprobarForma(u, emisor, fiscalTipo) {
   const antes = normalizarNif(u.emisor?.nif), ahora = normalizarNif(emisor.nif);
   if (ahora && ahora !== antes) {
     const otra = await redis.hget('empresa-nif', ahora);
-    if (otra && otra !== u.empresa) return { error: 'Ya hay otra cuenta de Fisquo con ese NIF. Escríbenos a corporate@fisquo.com si es tuya.' };
+    if (otra && !mismoId(otra, u.empresa)) return { error: 'Ya hay otra cuenta de Fisquo con ese NIF. Escríbenos a corporate@fisquo.com si es tuya.' };
   }
   return r;
 }
@@ -42,7 +44,7 @@ async function comprobarForma(u, emisor, fiscalTipo) {
 async function guardarForma(u, emisor, plan) {
   const antes = normalizarNif(u.emisor?.nif), ahora = normalizarNif(emisor.nif);
   if (ahora !== antes) {
-    if (antes && (await redis.hget('empresa-nif', antes)) === u.empresa) await redis.hdel('empresa-nif', antes);
+    if (antes && mismoId(await redis.hget('empresa-nif', antes), u.empresa)) await redis.hdel('empresa-nif', antes);
     if (ahora) await redis.hset('empresa-nif', { [ahora]: u.empresa });
   }
   const emp = await redis.hget('empresas', u.empresa);
@@ -66,8 +68,9 @@ export async function PATCH(req) {
     && Object.keys(b).every((k) => ['bloqueoPantalla', 'actual', 'nueva', 'perfil'].includes(k));
   const { u, res } = await usuarioApi({ cuentaPersonal });
   if (res) return res;
+  // Marcar modelos como presentados y los datos que deciden los impuestos piden «Contabilidad» (Codex H3).
   const sin = (p) => !puede(u, p) && error('No tienes permiso para esto. Pídeselo al administrador de tu empresa.', 403);
-  // Bloqueo de pantalla opcional (Ajustes › Face ID y contraseña): personal, no de la empresa.
+  // Bloqueo de pantalla opcional (Ajustes › Seguridad): personal, no de la empresa.
   if ('bloqueoPantalla' in b) {
     await actualizarUsuario(u, { bloqueoPantalla: Boolean(b.bloqueoPantalla) });
     return Response.json({ ok: true });
@@ -80,7 +83,7 @@ export async function PATCH(req) {
     return Response.json({ ok: true });
   }
   if (b.presentado) {
-    if (sin('resumen')) return sin('resumen');
+    if (sin('contabilidad')) return sin('contabilidad');
     const { anio, t, importe } = b.presentado;
     if (!Number.isInteger(anio) || anio < 2000 || anio > 2100 || ![1, 2, 3, 4].includes(t)) return error('Trimestre no válido');
     const pagos = { ...(u.pagos130 || {}) };
@@ -90,15 +93,55 @@ export async function PATCH(req) {
     await actualizarUsuario(u, { pagos130: pagos, pagadosHacienda: marcarPagado(u, `${anio}-${t}-130`, importe !== null && Number(importe) > 0) });
     return Response.json({ ok: true });
   }
+  // 131 (módulos): lo ingresado en cada trimestre, como el 130 (negativo si sale «a deducir»).
+  if (b.presentado131) {
+    if (sin('contabilidad')) return sin('contabilidad');
+    const { anio, t, importe } = b.presentado131;
+    if (!Number.isInteger(anio) || anio < 2000 || anio > 2100 || ![1, 2, 3, 4].includes(t)) return error('Trimestre no válido');
+    const pagos = { ...(u.pagos131 || {}) };
+    pagos[anio] = { ...(pagos[anio] || {}) };
+    if (importe === null) delete pagos[anio][t];
+    else pagos[anio][t] = Math.round((Number(importe) || 0) * 100) / 100;
+    await actualizarUsuario(u, { pagos131: pagos, pagadosHacienda: marcarPagado(u, `${anio}-${t}-131`, importe !== null && Number(importe) > 0) });
+    return Response.json({ ok: true });
+  }
+  // Datos de módulos de una actividad en un año (lib/estimacionObjetiva.js); datos null los quita.
+  if (b.modulos) {
+    if (sin('contabilidad')) return sin('contabilidad');
+    const { anio, actividad, datos } = b.modulos;
+    if (!Number.isInteger(anio) || anio < 2000 || anio > 2100) return error('Año no válido');
+    if (!actividadesDe(u).some((a) => a.id === actividad)) return error('Esa actividad no existe');
+    const limpio = datos === null ? null : limpiarModulos(datos);
+    if (limpio?.error) return error(limpio.error);
+    const todos = { ...(u.modulos || {}) };
+    todos[anio] = { ...(todos[anio] || {}) };
+    if (limpio === null) delete todos[anio][actividad]; else todos[anio][actividad] = limpio;
+    await actualizarUsuario(u, { modulos: todos });
+    return Response.json({ ok: true });
+  }
   if (b.presentado303) {
-    if (sin('resumen')) return sin('resumen');
+    if (sin('contabilidad')) return sin('contabilidad');
     const { anio, t, hecho, devolucion } = b.presentado303;
     if (!Number.isInteger(anio) || anio < 2000 || anio > 2100 || ![1, 2, 3, 4].includes(t)) return error('Trimestre no válido');
     // En el 4T, el saldo a favor se puede pedir en devolución (art. 115 LIVA): ya no se compensa el año siguiente.
-    if (devolucion && t !== 4) return error('La devolución solo se pide en el 303 del 4T');
+    if (devolucion && t !== 4) return error('La devolución solo se pide en el 4T');
     const pres = { ...(u.pres303 || {}) };
     pres[anio] = { ...(pres[anio] || {}), [t]: hecho && devolucion ? 'devolucion' : Boolean(hecho) };
-    await actualizarUsuario(u, { pres303: pres, pagadosHacienda: marcarPagado(u, `${anio}-${t}-303`, Boolean(hecho)) });
+    await actualizarUsuario(u, { pres303: pres, pagadosHacienda: marcarPagado(u, `${anio}-${t}-${usaIgic(fiscalDe(u)) ? '420' : '303'}`, Boolean(hecho)) });
+    return Response.json({ ok: true });
+  }
+  // 111 y 115 marcados aparte; hecho null quita la marca (vuelven a contar como presentados con el 303 y el 130). El 123,
+  // el 216 y el 369 solo cuentan como presentados con su marca.
+  if (b.presentadoRet) {
+    if (sin('contabilidad')) return sin('contabilidad');
+    const { modelo, anio, t, hecho } = b.presentadoRet;
+    if (!['111', '115', '123', '216', '369'].includes(modelo)) return error('Modelo no válido');
+    if (!Number.isInteger(anio) || anio < 2000 || anio > 2100 || ![1, 2, 3, 4].includes(t)) return error('Trimestre no válido');
+    const k = `pres${modelo}`;
+    const datos = { ...(u[k] || {}) };
+    datos[anio] = { ...(datos[anio] || {}) };
+    if (hecho === null || hecho === undefined) delete datos[anio][t]; else datos[anio][t] = Boolean(hecho);
+    await actualizarUsuario(u, { [k]: datos, pagadosHacienda: marcarPagado(u, `${anio}-${t}-${modelo}`, Boolean(hecho)) });
     return Response.json({ ok: true });
   }
   // Verifactu: 'pruebas', 'real' o null (sin activar). Solo el administrador. En real se mantiene todo el año natural.
@@ -116,7 +159,7 @@ export async function PATCH(req) {
   }
   // Pago del 202 de un periodo (1, 2 o 3) presentado y pagado; null lo vuelve a pendiente.
   if (b.presentado202) {
-    if (sin('resumen')) return sin('resumen');
+    if (sin('contabilidad')) return sin('contabilidad');
     const { anio, p, importe } = b.presentado202;
     if (!Number.isInteger(anio) || anio < 2000 || anio > 2100 || ![1, 2, 3].includes(p)) return error('Periodo no válido');
     const pagos = { ...(u.pagos202 || {}) };
@@ -129,7 +172,7 @@ export async function PATCH(req) {
   // del año siguiente) y la cuota del Impuesto sobre Sociedades (base del 202).
   // Prorrata provisional del IVA de un año (art. 105 LIVA): un entero de 0 a 100; null la quita (Fisquo usa la del año anterior).
   if (b.prorrata) {
-    if (sin('resumen')) return sin('resumen');
+    if (sin('contabilidad')) return sin('contabilidad');
     const { anio, pct } = b.prorrata;
     if (!Number.isInteger(anio) || anio < 2000 || anio > 2100) return error('Año no válido');
     const valor = pct === null || pct === '' ? null : Number(String(pct).replace(',', '.').replace('%', '').trim());
@@ -140,17 +183,49 @@ export async function PATCH(req) {
     await auditar(u, `Prorrata provisional del IVA de ${anio}`, valor === null ? 'quitada' : `${valor} %`);
     return Response.json({ ok: true });
   }
-  const porAnio = ['rend130', 'cuotaIS'].find((k) => b[k]);
-  if (porAnio) {
-    if (sin('resumen')) return sin('resumen');
-    const { anio, importe } = b[porAnio];
+  // Prorrata especial de un año (art. 103.Dos.1.º LIVA, lib/calculos.js): true o false. Va dentro de prorrata.especial.
+  if (b.prorrataEspecial) {
+    if (sin('contabilidad')) return sin('contabilidad');
+    const { anio, especial } = b.prorrataEspecial;
     if (!Number.isInteger(anio) || anio < 2000 || anio > 2100) return error('Año no válido');
+    const datos = { ...(u.prorrata || {}), especial: { ...(u.prorrata?.especial || {}) } };
+    if (especial === true) datos.especial[anio] = true; else delete datos.especial[anio];
+    await actualizarUsuario(u, { prorrata: datos });
+    await auditar(u, `Prorrata del IVA de ${anio}`, especial === true ? 'especial' : 'general');
+    return Response.json({ ok: true });
+  }
+  // Saldo del IVA a compensar de antes de Fisquo (lib/calculos.js liquidaciones303): { importe, anio, t } o null.
+  if (b.saldoIva !== undefined) {
+    if (sin('contabilidad')) return sin('contabilidad');
+    if (b.saldoIva === null) {
+      await actualizarUsuario(u, { saldoIva: null });
+      await auditar(u, 'Saldo del IVA a compensar de antes de Fisquo', 'quitado');
+      return Response.json({ ok: true });
+    }
+    const { anio, t } = b.saldoIva;
+    const importe = leerImporte(String(b.saldoIva.importe ?? ''));
+    if (!Number.isInteger(anio) || anio < 2000 || anio > 2100 || ![1, 2, 3, 4].includes(t)) return error('Trimestre no válido');
+    if (!Number.isFinite(importe) || importe <= 0 || importe > 1e9) return error('Escribe el saldo a compensar (la casilla 87 de tu último 303)');
+    const saldoIva = { importe: Math.round(importe * 100) / 100, anio, t };
+    await actualizarUsuario(u, { saldoIva });
+    await auditar(u, 'Saldo del IVA a compensar de antes de Fisquo', `${saldoIva.importe} € tras el ${t}T ${anio}`);
+    return Response.json({ ok: true });
+  }
+  // También, en el Impuesto sobre Sociedades (lib/modelos.js borradorSociedades): las bases imponibles negativas pendientes
+  // de antes de Fisquo por año de origen (art. 26 LIS) y el incremento de los fondos propios del año (reserva de
+  // capitalización, art. 25 LIS), que no pueden ser negativos.
+  const porAnio = ['rend130', 'cuotaIS', 'binsPrevias', 'fondosPropios'].find((k) => b[k]);
+  if (porAnio) {
+    if (sin('contabilidad')) return sin('contabilidad');
+    const { anio, importe } = b[porAnio];
+    if (!Number.isInteger(anio) || anio < 1990 || anio > 2100 || (porAnio !== 'binsPrevias' && anio < 2000)) return error('Año no válido');
     const valor = importe === null || importe === '' ? null : leerImporte(String(importe));
     if (valor !== null && !Number.isFinite(valor)) return error('Importe no válido');
+    if (valor !== null && valor < 0 && ['binsPrevias', 'fondosPropios'].includes(porAnio)) return error('Escribe el importe en positivo');
     const datos = { ...(u[porAnio] || {}) };
     if (valor === null) delete datos[anio]; else datos[anio] = valor;
     await actualizarUsuario(u, { [porAnio]: datos });
-    await auditar(u, porAnio === 'rend130' ? `Rendimiento de ${anio} para el 130` : `Cuota del Impuesto sobre Sociedades de ${anio}`, valor === null ? 'quitado' : String(valor));
+    await auditar(u, { rend130: `Rendimiento de ${anio} para el 130`, cuotaIS: `Cuota del Impuesto sobre Sociedades de ${anio}`, binsPrevias: `Base imponible negativa pendiente de ${anio}`, fondosPropios: `Incremento de los fondos propios de ${anio}` }[porAnio], valor === null ? 'quitado' : String(valor));
     return Response.json({ ok: true });
   }
   if (b.marca) {
@@ -169,7 +244,7 @@ export async function PATCH(req) {
     const c = b.configuracion;
     const conFacturas = new Set((await todasFichas(u, 'facturas')).map((f) => f.a));
     const antes = Array.isArray(u.actividades) && u.actividades.length ? u.actividades : (u.pendiente ? [] : actividadesDe(u));
-    const a = limpiarActividades(c.actividades, antes, conFacturas);
+    const a = limpiarActividades(c.actividades, antes, conFacturas, { igic: usaIgic(limpiarFiscal(c.fiscal)) });
     if (a.error) return error(a.error);
     const e = c.emisor || {};
     if (!String(e.nombre || '').trim()) return error('Falta el nombre o la razón social');
@@ -184,8 +259,12 @@ export async function PATCH(req) {
     await guardarForma(u, emisor, forma.plan);
     return Response.json({ ok: true, actividades: a.actividades });
   }
+  // Drive y la gestoría reciben cada factura y gasto: elegir adónde van exige poder verlos (si no, «Datos de la empresa»
+  // bastaría para mandárselos a uno mismo).
+  const sinDetalle = () => DETALLE.some((p) => !puede(u, p)) && error('Para elegir adónde se envían las facturas y los gastos necesitas poder verlos. Pídeselo al administrador.', 403);
   if (b.drive) {
     if (sin('empresa')) return sin('empresa');
+    if (sinDetalle()) return sinDetalle();
     const url = String(b.drive.url || '').trim();
     if (url && !/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(url)) return error('La URL debe ser la de la aplicación web de Apps Script (acaba en /exec)');
     await actualizarUsuario(u, { drive: url ? { url, token: String(b.drive.token || '').trim().slice(0, 100) } : null });
@@ -208,7 +287,7 @@ export async function PATCH(req) {
     const antes = actividadesDe(u);
     const conFacturas = new Set((await todasFichas(u, 'facturas')).map((f) => f.a));
     const lista = antes.map((a) => (typeof b.series[a.id] === 'string' ? { ...a, serie: b.series[a.id] } : a));
-    const r = limpiarActividades(lista, antes, conFacturas);
+    const r = limpiarActividades(lista, antes, conFacturas, { igic: usaIgic(fiscalDe(u)) });
     if (r.error) return error(r.error);
     await actualizarUsuario(u, { actividades: r.actividades });
     await auditar(u, 'Series cambiadas', r.actividades.map((a) => `${a.nombre}: ${a.serie || 'sin letra'}`).join(' · '));
@@ -253,11 +332,13 @@ export async function PATCH(req) {
   }
   // Tu gestoría: a quién se manda el paquete trimestral y si se manda solo al acabar cada trimestre.
   if (b.gestoria) {
+    if (sinDetalle()) return sinDetalle();
     const g = b.gestoria;
     const email = texto(g.email, 254).toLowerCase();
     if (!emailValido(email)) return error('El email de la gestoría no es válido');
     if (g.auto && !email) return error('Para mandar el paquete solo hace falta el email de la gestoría');
-    await actualizarUsuario(u, { gestoria: email ? { nombre: texto(g.nombre, 120), email, auto: Boolean(g.auto) } : null });
+    // sueldos: si quien la pone ve las nóminas; si no, el envío automático las lleva juntas por mes (lib/gestoriaEnvio.js).
+    await actualizarUsuario(u, { gestoria: email ? { nombre: texto(g.nombre, 120), email, auto: Boolean(g.auto), sueldos: puede(u, 'nominas') } : null });
     await auditar(u, email ? 'Gestoría cambiada' : 'Gestoría quitada', email || '');
     return Response.json({ ok: true });
   }

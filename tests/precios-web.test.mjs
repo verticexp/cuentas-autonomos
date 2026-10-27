@@ -68,3 +68,19 @@ test('ruta histórica redirige permanentemente a Business y CTA anual conserva p
   assert.doesNotMatch(precios, /SEGMENTOS\.map|El más elegido/);
   assert.match(FAQ_PRECIOS.flat().join(' '), /30 días sin tarjeta/);
 });
+
+test('lo que la web promete sobre la prueba y los datos coincide con el código', async () => {
+  const { ESCANEOS_PRUEBA } = await import('../lib/cuotasIAConfig.js');
+  const { CONFIANZA, FAQ_GENERAL } = await import('../components/web/datos.js');
+  const gestorias = await readFile(new URL('../lib/gestorias.js', import.meta.url), 'utf8');
+  const vercel = JSON.parse(await readFile(new URL('../vercel.json', import.meta.url), 'utf8'));
+  const pagina = await readFile(new URL('../app/(web)/precios/page.js', import.meta.url), 'utf8');
+  // «3 meses» con el código de una gestoría y «50 páginas» en la prueba.
+  assert.match(gestorias, /PRUEBA_GESTORIA_DIAS = 90;/);
+  assert.match(FAQ_PRECIOS.flat().join(' '), /con su código la prueba dura 3 meses/);
+  assert.match(pagina, new RegExp(`${ESCANEOS_PRUEBA} páginas de lectura IA`));
+  // «Servidores en Fráncfort»: la región de Vercel.
+  assert.deepEqual(vercel.regions, ['fra1']);
+  assert.match(CONFIANZA.map((c) => c.t).join(' '), /Fráncfort/);
+  assert.match(FAQ_GENERAL.flat().join(' '), /Fráncfort/);
+});

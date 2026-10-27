@@ -5,7 +5,7 @@ import { leerHoja } from '@/lib/hoja';
 import { limpiarDia, ventasDesdeFilas } from '@/lib/importarVentas';
 import { limpiarCierre } from '@/lib/caja';
 import { guardarCierre } from '@/lib/facturas';
-import { actividadesDe, actividadValida } from '@/lib/empresa';
+import { actividadesDe, actividadValida, fiscalDe, usaIgic } from '@/lib/empresa';
 import { auditar } from '@/lib/auditoria';
 import { leerRango } from '@/lib/indices';
 
@@ -20,6 +20,7 @@ const FORMATOS = ['shopify', 'woocommerce', 'sumup', 'square', 'generico'];
 export async function POST(req) {
   const { u, res } = await usuarioApi({ permiso: 'facturar' });
   if (res) return res;
+  const igic = usaIgic(fiscalDe(u));
   const resultado = await concurrencia('importar', u.empresa, 1, 300000, async () => {
     // Informe de capacidad E01: solo las facturas de las fechas que llegan (no el histórico).
     let facturas = [];
@@ -33,8 +34,8 @@ export async function POST(req) {
       if (archivo.size > MAX_MB * 1024 * 1024) return error(`El archivo pasa de ${MAX_MB} MB`);
       let filas;
       try { filas = leerHoja(Buffer.from(await archivo.arrayBuffer())); } catch { return error('No se puede leer el archivo: guárdalo como .csv o .xlsx'); }
-      const ivaPct = actividadesDe(u)[0].ivaPct ?? 21;
-      const p = ventasDesdeFilas(filas, (await leer(u, 'productos')) || [], { ivaPct });
+      const ivaPct = actividadesDe(u)[0].ivaPct ?? (igic ? 7 : 21);
+      const p = ventasDesdeFilas(filas, (await leer(u, 'productos')) || [], { ivaPct, igic });
       if (p.error) return error(p.error);
       if (p.dias.length > MAX_DIAS) return error(`Demasiados días: como mucho ${MAX_DIAS} por archivo`);
       await cargar(p.dias.map((d) => d.fecha));
@@ -43,7 +44,7 @@ export async function POST(req) {
 
     const b = await cuerpo(req);
     const formato = FORMATOS.includes(b.formato) ? b.formato : 'generico';
-    const dias = (Array.isArray(b.dias) ? b.dias.slice(0, MAX_DIAS) : []).map(limpiarDia).filter(Boolean);
+    const dias = (Array.isArray(b.dias) ? b.dias.slice(0, MAX_DIAS) : []).map((d) => limpiarDia(d, { igic })).filter(Boolean);
     if (!dias.length) return error('No hay días que importar');
     await cargar(dias.map((d) => d.fecha));
     const productos = (await leer(u, 'productos')) || [];
@@ -52,7 +53,7 @@ export async function POST(req) {
     const errores = [];
     for (const d of dias.sort((a, c) => a.fecha.localeCompare(c.fecha))) {
       if (yaImportado(formato, d.fecha)) { saltados++; continue; }
-      const datos = limpiarCierre({ ...d, actividad, importado: formato, nota: d.pedidos ? `${d.pedidos} ${d.pedidos === 1 ? 'venta' : 'ventas'} importadas de ${formato}` : '' }, productos);
+      const datos = limpiarCierre({ ...d, actividad, importado: formato, nota: d.pedidos ? `${d.pedidos} ${d.pedidos === 1 ? 'venta' : 'ventas'} importadas de ${formato}` : '' }, productos, { igic });
       if (datos.error) { errores.push(`${d.fecha}: ${datos.error}`); continue; }
       const r = await guardarCierre(u, { ...datos, actividad }, null, { idem: `imp:${formato}:${d.fecha}` });
       if (r.error) { errores.push(`${d.fecha}: ${r.error}`); continue; }

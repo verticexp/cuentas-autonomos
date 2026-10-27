@@ -1,0 +1,33 @@
+/* Vista previa de una factura o un gasto (components/VistaDocumento.js): hoja desde abajo en el móvil y ventana en el
+   centro en el ordenador (app/hoja.css esconde las hojas normales en el ordenador; esta no). */
+.hoja.doc-hoja { display: flex; z-index: 50; }
+.doc-hoja .hoja-panel { display: flex; flex-direction: column; gap: 12px; outline: none; }
+.doc-cabecera { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.doc-cabecera .hoja-t { margin-bottom: 2px; overflow-wrap: anywhere; }
+.doc-sub { margin: 0 4px; color: var(--muted); font-size: 14px; }
+.doc-x { flex: none; width: 36px; height: 36px; margin: 0; padding: 0; border: 0; border-radius: 50%; background: var(--relleno); box-shadow: none; color: var(--muted); font-size: 22px; line-height: 1; cursor: pointer; }
+.doc-cargando { height: 260px; border-radius: 16px; background: var(--relleno); animation: doc-late 1.2s ease-in-out infinite; }
+@keyframes doc-late { 50% { opacity: 0.55; } }
+.doc-archivo { overflow: hidden; border-radius: 14px; background: var(--relleno); }
+.doc-archivo img { display: block; width: 100%; max-height: 52dvh; object-fit: contain; background: #fff; }
+.doc-archivo iframe { display: block; width: 100%; height: 52dvh; border: 0; background: #fff; }
+.doc-sin { margin: 0; padding: 22px 16px; color: var(--muted); text-align: center; }
+.doc-concepto { margin: 0 4px; font-weight: 600; overflow-wrap: anywhere; }
+.doc-lineas { list-style: none; margin: 0; padding: 0 4px; display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+.doc-lineas li { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); }
+.doc-lineas li span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); }
+.doc-cifras { margin: 0; padding: 4px 14px; border-radius: 14px; background: var(--relleno); }
+.doc-cifras div { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 0.5px solid var(--line); }
+.doc-cifras div:last-child { border-bottom: 0; }
+.doc-cifras dt { color: var(--muted); }
+.doc-cifras dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.doc-cifras .total dd, .doc-cifras .total dt { color: var(--ink); font-weight: 700; }
+.doc-botones { display: flex; flex-wrap: wrap; gap: 8px; }
+.doc-botones > * { flex: 1 1 auto; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+@media (prefers-reduced-motion: reduce) { .doc-cargando { animation: none; } }
+@media (min-width: 1024px) {
+  .hoja.doc-hoja { align-items: center; padding: 24px; }
+  .doc-hoja .hoja-panel { width: min(100%, 720px); max-height: 92dvh; border: 0.5px solid var(--line); border-radius: 24px; padding: 20px 24px 24px; }
+  .doc-hoja .hoja-asa { display: none; }
+  .doc-archivo iframe, .doc-archivo img { height: 56vh; max-height: none; }
+}

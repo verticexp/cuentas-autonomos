@@ -3,9 +3,10 @@ import { clave, guardar, leer, redis } from '@/lib/redis';
 import { error, usuarioApi } from '@/lib/api';
 import { puede } from '@/lib/permisos';
 import { leerHoja } from '@/lib/hoja';
-import { aCuenta, cuentaDeExtracto, esNorma43, leerNorma43, leerTablaBanco } from '@/lib/banco';
+import { aCuenta, cuentaDeExtracto, esNorma43, leerNorma43, leerTablaBanco, periodoExtracto } from '@/lib/banco';
 import { actualizarSaldo, autoconciliar, guardarMovimientos } from '@/lib/bancoServidor';
 import { hoy } from '@/lib/formato';
+import { auditar } from '@/lib/auditoria';
 import { MUCHOS, pasado, concurrencia, respuesta429 } from '@/lib/limite';
 import { consumirEscaneos, cupoEscaneos, paginasIA, registrarConsumoIA, respuestaCupo } from '@/lib/cuotasIA';
 import { iaLista, leerExtracto, validarEntradaIA } from '@/lib/ticket';
@@ -86,12 +87,16 @@ export async function POST(req) {
     const antes = previas[c.id];
     const nuevo = c.saldo !== null && (!antes?.fechaSaldo || (c.fechaSaldo || '') >= antes.fechaSaldo);
     if (nuevo) conSaldo = true;
+    // Qué días cubre este extracto (lib/banco.js periodoExtracto): el aviso del día 3 no pide un mes que ya está subido.
+    const periodo = periodoExtracto({ desde: c.desde, hasta: c.hasta, movimientos: r.movimientos.filter((m) => m.cuenta === c.id) }, hoy());
     await guardar(u, 'bancos', { ...(antes || {}), id: c.id, nombre: antes?.nombre || c.nombre, origen: 'extracto', subido: hoy(),
       ...(c.iban && !antes?.iban ? { iban: c.iban } : {}),
-      ...(nuevo ? { saldo: c.saldo, fechaSaldo: c.fechaSaldo } : {}) });
+      ...(nuevo ? { saldo: c.saldo, fechaSaldo: c.fechaSaldo } : {}),
+      ...(periodo ? { extractos: [...(antes?.extractos || []), periodo].slice(-36) } : {}) });
   }
   const saldo = conSaldo ? await actualizarSaldo(u) : null;
   let auto = 0;
   if (g.nuevos) { try { auto = (await autoconciliar(u)).hechos; } catch { /* El extracto ya se ha guardado. */ } }
+  if (g.nuevos) await auditar(u, 'Extracto del banco importado', `${g.nuevos} ${g.nuevos === 1 ? 'movimiento nuevo' : 'movimientos nuevos'}`);
   return Response.json({ ok: true, ...g, errores: r.errores || 0, saldo, auto, ...(cuenta ? { cuenta: { id: cuenta.id, nombre: previas[cuenta.id]?.nombre || cuenta.nombre } } : {}), ...(cupo ? { cupo } : {}) });
 }

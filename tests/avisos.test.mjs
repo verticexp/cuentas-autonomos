@@ -37,7 +37,8 @@ test('calendario: todos los plazos del año según cómo trabaja', () => {
   ].sort((a, b) => aut.findIndex((p) => p.fecha === a[0]) - aut.findIndex((p) => p.fecha === b[0])));
   const soc = plazosFiscales({ tipo: 'sociedad', iva: 'general' }, 2028, { cuotaIS: { 2026: 0, 2027: 500 } });
   assert.deepEqual(soc.map((p) => [p.fecha, p.texto]).filter(([f]) => ['2028-04-20', '2028-04-30', '2028-07-25', '2028-07-30', '2028-10-20', '2028-12-20', '2028-02-29'].includes(f)), [
-    ['2028-02-29', '347 (si pasas de 3.005,06 € con alguien)'], ['2028-04-20', '303 del 1T'], ['2028-10-20', '303 del 3T y 202'],
-    ['2028-04-30', 'legalizar los libros en el Registro Mercantil'], ['2028-07-25', '200 (Impuesto sobre Sociedades)'], ['2028-07-30', 'depositar las cuentas anuales'], ['2028-12-20', '202'],
+    // Por fecha (plazosFiscales devuelve el calendario ordenado).
+    ['2028-02-29', '347 (si pasas de 3.005,06 € con alguien)'], ['2028-04-20', '303 del 1T'], ['2028-04-30', 'legalizar los libros en el Registro Mercantil'],
+    ['2028-07-25', '200 (Impuesto sobre Sociedades)'], ['2028-07-30', 'depositar las cuentas anuales'], ['2028-10-20', '303 del 3T y 202'], ['2028-12-20', '202'],
   ]);
 });

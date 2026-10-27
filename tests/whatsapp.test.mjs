@@ -120,7 +120,9 @@ test('presupuestos: la IA los marca y el resumen habla de presupuesto, validez y
   const actividad = { id: 'dj', ivaPct: 21, irpfPct: 15 };
   const b = cuerpoFactura({ cliente: 'Ana', lineas, validez: 30 }, { actividad, hoy: '2026-10-21' });
   assert.equal(b.validez, 30);
-  const datos = { ...limpiar(b, [{ id: 'dj', nombre: 'DJ', serie: '', ivaPct: 21, irpfPct: 15 }]), validez: 30 };
+  const limpio = limpiar(b, [{ id: 'dj', nombre: 'DJ', serie: '', ivaPct: 21, irpfPct: 15 }], false, { presupuesto: true });
+  assert.ok(!limpio.error, limpio.error);
+  const datos = { ...limpio, validez: 30 };
   const txt = resumenBorrador(datos, 'ana@x.es', { nombre: 'Marc' }, 'presupuesto');
   assert.match(txt, /^Presupuesto con fecha 21\/10\/2026, válido 30 días/);
   assert.match(txt, /se lo mando a ana@x\.es/);
@@ -157,4 +159,16 @@ test('planes: WhatsApp no va en Esencial; tope de documentos al mes según el pl
   assert.equal(topeWhatsapp({ fundador: true }), TOPE_WHATSAPP_LIBRE);
   // Las suscripciones de antes no pierden nada y ganan WhatsApp donde tenían el asistente.
   assert.equal(sinFuncion({ tipo: 'aut', nombre: 'Pro', pagado: true }, 'whatsapp'), null);
+});
+
+test('factura sin NIF del cliente por encima de 400 €: se avisa y se pide el NIF, como en el formulario', () => {
+  const b = cuerpoFactura({ cliente: 'Ana', lineas: [{ concepto: 'Boda', precio: 900 }] }, { actividad: { id: 'dj', ivaPct: 21, irpfPct: 15 }, hoy: '2026-10-27' });
+  assert.match(limpiar(b, [{ id: 'dj', nombre: 'DJ', serie: '', ivaPct: 21, irpfPct: 15 }]).error, /NIF/);
+});
+
+test('con IGIC se aceptan sus tipos (7 %) y no los del IVA (21 %)', async () => {
+  const { TIPOS_IGIC } = await import('../lib/igic.js');
+  const lineas = [{ concepto: 'a', precio: 10, ivaPct: 7 }, { concepto: 'b', precio: 10, ivaPct: 21 }];
+  const b = cuerpoFactura({ cliente: 'X', lineas }, { actividad: { ivaPct: 7, irpfPct: 0 }, hoy: '2026-10-27', tipos: TIPOS_IGIC });
+  assert.deepEqual(b.lineas.map((l) => l.ivaPct), [7, 7]);
 });

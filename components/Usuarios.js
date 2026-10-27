@@ -8,6 +8,7 @@ import { llamar } from './Acciones';
 import Avatar from './Avatar';
 import { PERFILES, PERMISOS, limpiarPermisos } from '@/lib/permisos';
 import '@/app/invitaciones.css';
+import useEnvio from './useEnvio';
 
 // Perfil de serie o permisos a medida.
 function ElegirPermisos({ rol, permisos, cambiar }) {
@@ -44,11 +45,11 @@ function Enlace({ r }) {
   const [copiado, setCopiado] = useState(false);
   const url = r.enlace;
   return (
-    <div className="enlace">
+    <div className="enlace-invitacion">
       {r.enviado && <p className="invit-enviada" role="status">Invitación enviada a {r.email}.</p>}
       {r.aviso && <p className="invit-aviso" role="alert"><strong>La invitación está lista, pero el email no ha salido.</strong> {r.aviso}. Cópiale el enlace y envíaselo tú.</p>}
       <p className="nota">{r.enviado ? 'También puedes copiarle el enlace' : 'Envíale este enlace para que elija su contraseña'} (vale 7 días y una sola vez):</p>
-      <input className="campo" readOnly value={url} onFocus={(e) => e.target.select()} />
+      <input className="campo" readOnly aria-label="Enlace de la invitación" value={url} onFocus={(e) => e.target.select()} />
       <button type="button" className="boton sec" onClick={() => { navigator.clipboard.writeText(url); setCopiado(true); }}>{copiado ? 'Copiado' : 'Copiar enlace'}</button>
     </div>
   );
@@ -117,6 +118,8 @@ function Persona({ o, yo, soyAdmin, onCambio }) {
 }
 
 export default function Usuarios({ lista, yo, empresa, empresas, miEmpresa, soyAdmin, inicial = null }) {
+  const [invitando, envolverInvitar] = useEnvio();
+  const [creando, envolverEmpresa] = useEnvio();
   const router = useRouter();
   const [d, setD] = useState(inicial || { nombre: '', email: '', rol: 'miembro', permisos: PERFILES[1].permisos });
   // Si llega con la invitación ya rellenada (Ajustes › Tu gestoría), el formulario a la vista.
@@ -158,14 +161,14 @@ export default function Usuarios({ lista, yo, empresa, empresas, miEmpresa, soyA
             {lista.map((o) => <Persona key={o.id} o={o} yo={yo} soyAdmin={soyAdmin} onCambio={() => router.refresh()} />)}
           </ul>
 
-          {soyAdmin && <form id="invitar" className="formulario tarjeta bloque" onSubmit={invitar} style={{ marginTop: 16 }}>
+          {soyAdmin && <form id="invitar" className="formulario tarjeta bloque" onSubmit={envolverInvitar(invitar)} style={{ marginTop: 16 }}>
             <h3>Invitar a alguien</h3>
             <label>Nombre<input className="campo" placeholder="Nombre" value={d.nombre} onChange={(e) => setD({ ...d, nombre: e.target.value })} required /></label>
             <label>Email<input autoComplete="email" className="campo" type="email" placeholder="Email" value={d.email} onChange={(e) => setD({ ...d, email: e.target.value })} required /></label>
             <p className="rotulo" style={{ margin: '4px 0 0' }}>Qué podrá hacer</p>
             <ElegirPermisos rol={d.rol} permisos={d.permisos} cambiar={(rol, permisos) => setD({ ...d, rol, permisos: rol === 'admin' ? [] : limpiarPermisos(permisos) })} />
             {error && <p className="error" role="alert">{error}</p>}
-            <button className="boton">Crear y enviar invitación</button>
+            <button className="boton" disabled={invitando}>Crear y enviar invitación</button>
             {enlace && <Enlace r={enlace} />}
             {yaTiene && <p className="nota">{yaTiene}</p>}
           </form>}
@@ -192,12 +195,12 @@ export default function Usuarios({ lista, yo, empresa, empresas, miEmpresa, soyA
             ))}
           </ul>
           {errorEmpresa && <p className="error" role="alert">{errorEmpresa}</p>}
-          <form className="formulario tarjeta" onSubmit={crearEmpresa} style={{ marginTop: 16 }}>
+          <form className="formulario tarjeta" onSubmit={envolverEmpresa(crearEmpresa)} style={{ marginTop: 16 }}>
             <h3>Dar de alta una empresa</h3>
             <label>Nombre de la empresa<input className="campo" placeholder="Nombre de la empresa" value={nueva.empresaNueva} onChange={(e) => setNueva({ ...nueva, empresaNueva: e.target.value })} required /></label>
             <label>Nombre de su administrador<input className="campo" placeholder="Nombre de su administrador" value={nueva.nombre} onChange={(e) => setNueva({ ...nueva, nombre: e.target.value })} required /></label>
             <label>Email del administrador<input autoComplete="email" className="campo" type="email" placeholder="Email del administrador" value={nueva.email} onChange={(e) => setNueva({ ...nueva, email: e.target.value })} required /></label>
-            <button className="boton">Crear empresa e invitación</button>
+            <button className="boton" disabled={creando}>Crear empresa e invitación</button>
             {enlaceEmpresa && <Enlace r={enlaceEmpresa} />}
           </form>
         </section>

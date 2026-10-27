@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { apartar, margenIrpf, casillas303, desglose, importes, minoracion130, origenGasto, siguienteNumero, resumenAnual, leerImporte, numeroFactura, proximoPlazo, vencimiento, vencida } from '../lib/calculos.js';
+import { apartar, margenIrpf, casillas303, desglose, importes, liquidaciones303, minoracion130, origenGasto, siguienteNumero, resumenAnual, leerImporte, numeroFactura, proximoPlazo, vencimiento, vencida } from '../lib/calculos.js';
 
 const { facturas, gastos } = JSON.parse(readFileSync(new URL('../data/inicial.json', import.meta.url)));
 
@@ -99,6 +99,15 @@ test('facturas recurrentes: una al mes, el día elegido', async () => {
   assert.equal(tocaRecurrente(r, '2026-10-20'), true); // si un día falló, sale después
   assert.equal(tocaRecurrente({ ...r, ultima: '2026-10' }, '2026-10-20'), false);
   assert.equal(tocaRecurrente({ ...r, activa: false }, '2026-10-20'), false);
+  // El mes anterior sin crear (falló o el cron no pasó su día) toca ya, aunque aún no sea el día de este mes.
+  const { mesesPendientes } = await import('../lib/recurrentes.js');
+  assert.deepEqual(mesesPendientes({ activa: true, dia: 28, ultima: '2026-01' }, '2026-03-01'), ['2026-02']);
+  assert.deepEqual(mesesPendientes({ activa: true, dia: 28, ultima: '2026-01' }, '2026-03-28'), ['2026-02', '2026-03']);
+  assert.deepEqual(mesesPendientes({ activa: true, dia: 5, ultima: '2025-12' }, '2026-01-05'), ['2026-01']);
+  assert.deepEqual(mesesPendientes({ activa: true, dia: 5, ultima: '2025-11' }, '2026-01-05'), ['2025-12', '2026-01']);
+  assert.deepEqual(mesesPendientes({ activa: true, dia: 5 }, '2026-01-05'), ['2026-01']);
+  // Con más de un mes sin crear no se rellena: solo el actual (nada de varias facturas de golpe).
+  assert.deepEqual(mesesPendientes({ activa: true, dia: 1, ultima: '2000-01' }, '2026-10-01'), ['2026-10']);
   assert.equal(diaValido(31), 28); assert.equal(diaValido(0), 1);
   assert.deepEqual(Object.keys(plantillaDe({ id: 'x', numero: 3, fecha: '2026-01-01', cliente: {}, base: 1, ivaPct: 21, irpfPct: 0, cobrada: true, envios: [] })), ['cliente', 'base', 'ivaPct', 'irpfPct']);
 });
@@ -138,6 +147,15 @@ test('303: lo facturado sin IVA a empresas de otros países de la UE va en la ca
   assert.deepEqual([c['59'], c.sinIva, c['07']], [500, 800, 100]);
 });
 
+test('303: los servicios a Irlanda del Norte (XI) van a la 120; sus bienes, a la 59', () => {
+  const F = [
+    { fecha: '2026-04-02', base: 500, ivaPct: 0, operacion: 'servicios-ue', cliente: { nif: 'XI123456789' } },
+    { fecha: '2026-04-03', base: 300, ivaPct: 0, operacion: 'intracomunitaria', cliente: { nif: 'XI123456789' } },
+  ];
+  const c = casillas303(F, [], 2026, 2);
+  assert.deepEqual([c['59'], c['120']], [300, 500]);
+});
+
 test('303: gastos de proveedores de la UE (10-11 y 36-37) y de fuera (12-13 y 28-29), sin cambiar el resultado', () => {
   const F = [{ fecha: '2026-07-02', base: 1000, ivaPct: 21 }];
   const G = [
@@ -166,6 +184,37 @@ test('130, casilla 13: minoración según el rendimiento del año anterior', () 
   assert.deepEqual([poco[1].c07, poco[1].negPrev, poco[1].m130], [380, 43, 237]);
   // Sin minoración, todo igual que antes.
   assert.deepEqual(resumenAnual(F, [], 2026, { 1: 190, 2: 190 }).trimestres.map((q) => q.m130), [190, 190, 0, 0]);
+});
+
+test('130, casilla 05: un trimestre presentado y sin pagar también se descuenta en el siguiente', () => {
+  // 10.000 € en el 1T y otros 10.000 € en el 2T, sin gastos ni retenciones. 1T: 03 = 9.500, 07 = 19 = 1.900.
+  const F = [{ fecha: '2026-02-01', base: 10000, ivaPct: 21, irpfPct: 0 }, { fecha: '2026-05-01', base: 10000, ivaPct: 21, irpfPct: 0 }];
+  const sinPagar = resumenAnual(F, [], 2026, { 1: 0 }).trimestres[1];
+  assert.deepEqual([sinPagar.rendAcum, sinPagar.pagosPrev, sinPagar.c07, sinPagar.m130], [19000, 1900, 1900, 1900]);
+  assert.deepEqual(resumenAnual(F, [], 2026, { 1: 1900 }).trimestres[1].m130, 1900);
+  // Sin presentar, el 1T no se descuenta: el 2T lo lleva todo.
+  assert.equal(resumenAnual(F, [], 2026, {}).trimestres[1].m130, 3800);
+  // Pagado, cuenta lo declarado entonces aunque después cambien los datos del 1T (una factura más de 1.000 €).
+  const despues = resumenAnual([...F, { fecha: '2026-03-01', base: 1000, ivaPct: 21, irpfPct: 0 }], [], 2026, { 1: 1900 }).trimestres[1];
+  assert.deepEqual([despues.pagosPrev, despues.c07], [1900, 2090]);
+});
+
+test('130, casilla 19: con la minoración y sin beneficio sale negativa, a deducir en los siguientes', () => {
+  const r = resumenAnual([{ fecha: '2026-05-01', base: 2000, ivaPct: 21, irpfPct: 0 }], [], 2026, { 1: 0 }, [], { minoracion: 100 }).trimestres;
+  assert.deepEqual([r[0].c19, r[0].m130], [-100, 0]);
+  assert.deepEqual([r[1].negPrev, r[1].c19, r[1].m130], [100, 180, 180]);
+});
+
+test('303: el saldo a compensar de antes de Fisquo se descuenta, y lo caducado (cuatro años) ya no', () => {
+  const F = [{ fecha: '2026-02-01', base: 5714.29, ivaPct: 21 }]; // 1.200 € de IVA en el 1T 2026
+  const sin = liquidaciones303(F, [], 2026)[0];
+  assert.deepEqual([sin.anterior, sin.ingresar], [0, 1200]);
+  const con = liquidaciones303(F, [], 2026, undefined, { saldoInicial: { importe: 3000, anio: 2025, t: 4 } });
+  assert.deepEqual([con[0].anterior, con[0].compensado, con[0].ingresar, con[0].pendiente], [3000, 1200, 0, 1800]);
+  assert.deepEqual(con[0].origen, { anio: 2025, t: 4 });
+  // Un saldo del 1T 2022 se compensa hasta el 303 del 1T 2026 (plazo 20-4-2026); en el 2T 2026 ya no.
+  const viejo = liquidaciones303([{ fecha: '2026-05-01', base: 1000, ivaPct: 21 }], [], 2026, undefined, { saldoInicial: { importe: 500, anio: 2022, t: 1 } });
+  assert.deepEqual([viejo[0].pendiente, viejo[1].caducado, viejo[1].anterior, viejo[1].ingresar], [500, 500, 0, 210]);
 });
 
 test('margen para apartar: rendimiento ÷ ingresos acumulados hasta el trimestre', () => {

@@ -47,12 +47,12 @@ export default async function Cartera({ searchParams }) {
       <h1 className="titulo">Cartera de cobros</h1>
       {d.efectos.length > 0 && <a className="grupo-pie car-excel" href="/api/cartera" download>Descargar en Excel ›</a>}
 
-      <div className="teso-cifras">
+      {d.efectos.length > 0 && <div className="teso-cifras">
         <div className="teso-cifra"><span>Pendiente de cobro</span><strong className="teso-in">{eur(d.total)}</strong></div>
         <div className="teso-cifra"><span>Vencido</span><strong className={d.vencido ? 'teso-out' : ''}>{eur(d.vencido)}</strong></div>
         <div className="teso-cifra"><span>Por vencer</span><strong>{eur(d.aVencer)}</strong></div>
         <div className="teso-cifra"><span>{d.pmv !== null && d.pmv < 0 ? 'Vencimiento medio' : 'Vence de media en'}</span><strong>{d.pmv === null ? '—' : d.pmv < 0 ? `hace ${Math.round(-d.pmv)} d` : `${Math.round(d.pmv)} d`}</strong></div>
-      </div>
+      </div>}
 
       {d.efectos.length === 0 ? (
         <Vacio icono="cobrar" titulo="Nada pendiente de cobro" accion={editable && { href: '/facturas/nueva', texto: 'Nueva factura' }}>Cuando emitas una factura y no esté cobrada, aparecerá aquí ordenada por su vencimiento.</Vacio>
@@ -115,7 +115,7 @@ export default async function Cartera({ searchParams }) {
       </>}
 
       {d.abonos.n > 0 && <p className="grupo-pie arriba">Además hay {d.abonos.n} {d.abonos.n === 1 ? 'factura rectificativa pendiente' : 'facturas rectificativas pendientes'} por {eur(-d.abonos.importe)} que se te descuentan o devuelves: no cuentan en la cartera.</p>}
-      <p className="grupo-pie arriba">Facturas emitidas sin cobrar, a su fecha de vencimiento; si se cobró una parte, solo lo que falta. Los cobros nuevos (a mano, por el banco o por Stripe) la actualizan solos. Forma de cobro: la que elijas en cada efecto o, si no, la de la ficha del cliente. Cheque, confirming y pagaré se marcan cuando los recibes; el resto cuenta como recibido.</p>
+      <details className="como-se-calcula"><summary>Cómo se calcula</summary><p className="grupo-pie arriba">Facturas emitidas sin cobrar, a su fecha de vencimiento; si se cobró una parte, solo lo que falta. Los cobros nuevos (a mano, por el banco o por Stripe) la actualizan solos. Forma de cobro: la que elijas en cada efecto o, si no, la de la ficha del cliente. Cheque, confirming y pagaré se marcan cuando los recibes; el resto cuenta como recibido.</p></details>
     </main>
   );
 }

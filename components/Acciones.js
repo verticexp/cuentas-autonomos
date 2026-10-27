@@ -24,8 +24,8 @@ export function Borrar({ url, pregunta, volver }) {
     if (!(await confirmarAccion({ titulo: 'Borrar', texto: pregunta, aceptar: 'Borrar', peligro: true }))) return;
     try {
       await llamar(url, { method: 'DELETE' });
-      if (volver) volverA(router, volver);
-      router.refresh();
+      if (volver) volverA(router, volver, 'atras', true);
+      else router.refresh();
     } catch (e) { setError(e.message); }
   };
   return <><button type="button" className="borrar" onClick={borrar}>Borrar</button>{error && <span className="error" role="alert">{error}</span>}</>;
@@ -55,13 +55,14 @@ export function EstadoTrimestre({ hecho, situacion, plazo, nota }) {
 // para no quitarle el foco a quien usa el teclado.
 // modelo="303": solo el 303 (pendiente o presentado), guardado aparte del 130; `pagado` es entonces true o false.
 // devolucion: en el 303 del 4T con saldo a favor, la opción de presentarlo pidiendo la devolución (pagado === 'devolucion').
-export function Presentado({ anio, t, importe, pagado, con130 = true, situacion, plazo, modelo, devolucion = false }) {
+// soloLectura: sin el permiso «Contabilidad», el estado sin selector.
+export function Presentado({ anio, t, importe, pagado, con130 = true, situacion, plazo, modelo, devolucion = false, soloLectura = false }) {
   const router = useRouter();
   const [error, setError] = useState('');
   const [guardando, empezar] = useTransition();
   const ocupado = useRef(false);
   const [confirmado, setConfirmado] = useState(false);
-  const servidor = modelo === '303' ? (pagado === 'devolucion' ? 'devolucion' : pagado ? 'sinpagar' : 'pendiente') : pagado === undefined || pagado === null ? 'pendiente' : pagado > 0 && con130 ? 'pagado' : 'sinpagar';
+  const servidor = ['303', '420'].includes(modelo) ? (pagado === 'devolucion' ? 'devolucion' : pagado ? 'sinpagar' : 'pendiente') : pagado === undefined || pagado === null ? 'pendiente' : pagado > 0 && con130 ? 'pagado' : 'sinpagar';
   // Lo ya guardado manda hasta que el refresco trae ese mismo valor: así ni la franja ni el selector vuelven
   // un instante al estado anterior si la transición termina antes de que lleguen los datos nuevos.
   const [guardado, setGuardado] = useState(null);
@@ -78,7 +79,7 @@ export function Presentado({ anio, t, importe, pagado, con130 = true, situacion,
     empezar(async () => {
       elegir(v);
       try {
-        await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify(modelo === '303' ? { presentado303: { anio, t, hecho: v !== 'pendiente', ...(v === 'devolucion' ? { devolucion: true } : {}) } } : { presentado: { anio, t, importe: imp } }) });
+        await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify(['303', '420'].includes(modelo) ? { presentado303: { anio, t, hecho: v !== 'pendiente', ...(v === 'devolucion' ? { devolucion: true } : {}) } } : modelo === '131' ? { presentado131: { anio, t, importe: imp } } : { presentado: { anio, t, importe: imp } }) });
         setGuardado(v);
         setConfirmado(v !== 'pendiente');
         empezar(() => router.refresh());
@@ -86,7 +87,7 @@ export function Presentado({ anio, t, importe, pagado, con130 = true, situacion,
     });
   };
   const selector = (
-    <select className={`estado ${elegido === 'pagado' || (!con130 && elegido !== 'pendiente') ? 'ok' : 'pend'}`} value={elegido} onChange={cambiar} aria-label={`Estado del ${modelo || (con130 ? '130' : '303')} del ${t}T ${anio}`} aria-disabled={guardando || undefined} aria-busy={guardando || undefined}>
+    <select className={`estado ${elegido === 'pagado' || (!con130 && elegido !== 'pendiente') ? 'ok' : `pend${situacion?.estado === 'fuera' ? ' fuera' : ''}`}`} value={elegido} onChange={cambiar} aria-label={`Estado del ${modelo || (con130 ? '130' : '303')} del ${t}T ${anio}`} aria-disabled={guardando || undefined} aria-busy={guardando || undefined}>
       <option value="pendiente">Pendiente</option>
       {con130 ? <>
         <option value="pagado">Presentado y 130 pagado</option>
@@ -94,6 +95,10 @@ export function Presentado({ anio, t, importe, pagado, con130 = true, situacion,
       </> : <><option value="sinpagar">{devolucion ? 'Presentado, a compensar' : 'Presentado'}</option>{(devolucion || elegido === 'devolucion') && <option value="devolucion">Presentado, pido la devolución</option>}</>}
     </select>
   );
+  if (soloLectura) {
+    const texto = { pendiente: 'Pendiente', pagado: 'Presentado y 130 pagado', sinpagar: con130 ? 'Presentado, 130 sin pagar' : 'Presentado', devolucion: 'Presentado, con devolución' }[valor];
+    return situacion ? <EstadoTrimestre hecho={valor !== 'pendiente'} situacion={situacion} plazo={plazo} /> : <span className={`estado-txt ${valor === 'pendiente' ? 'e-pendiente' : 'e-ok'}`}>{texto}</span>;
+  }
   // Sin situación (Resumen): solo el selector, como antes.
   if (!situacion) return <>{selector}{error && <span className="error" role="alert">{error}</span>}</>;
   const hecho = valor !== 'pendiente';
@@ -115,7 +120,7 @@ export function Presentado({ anio, t, importe, pagado, con130 = true, situacion,
 }
 
 // Pago del 202 (sociedades): pendiente o presentado y pagado. Lo pagado se resta del Impuesto sobre Sociedades.
-export function Presentado202({ anio, p, importe, pagado }) {
+export function Presentado202({ anio, p, importe, pagado, soloLectura = false }) {
   const router = useRouter();
   const [error, setError] = useState('');
   const cambiar = async (e) => {
@@ -126,10 +131,33 @@ export function Presentado202({ anio, p, importe, pagado }) {
     } catch (err) { setError(err.message); }
   };
   const hecho = pagado !== undefined && pagado !== null;
+  if (soloLectura) return <span className={`estado-txt ${hecho ? 'e-ok' : 'e-pendiente'}`}>{hecho ? 'Presentado y pagado' : 'Pendiente'}</span>;
   return (
     <><select className={`estado ${hecho ? 'ok' : 'pend'}`} value={hecho ? 'pagado' : 'pendiente'} onChange={cambiar} aria-label={`Pago ${p} del 202`}>
       <option value="pendiente">Pendiente</option>
       <option value="pagado">Presentado y pagado</option>
+    </select>{error && <span className="error" role="alert">{error}</span>}</>
+  );
+}
+
+// 111 y 115: presentado o pendiente con su propia marca (lib/empresa.js marcaRet; sin ella, como el trimestre). También el
+// 123, el 216 y el 369, que solo cuentan como presentados con ella.
+// soloLectura: sin el permiso «Contabilidad», el estado sin selector.
+export function PresentadoRet({ modelo, anio, t, hecho, soloLectura = false }) {
+  const router = useRouter();
+  const [error, setError] = useState('');
+  if (soloLectura) return <span className={`estado-txt ${hecho ? 'e-ok' : 'e-pendiente'}`}>{hecho ? 'Presentado' : 'Pendiente'}</span>;
+  const cambiar = async (e) => {
+    setError('');
+    try {
+      await llamar('/api/cuenta', { method: 'PATCH', body: JSON.stringify({ presentadoRet: { modelo, anio, t, hecho: e.target.value === 'hecho' } }) });
+      router.refresh();
+    } catch (err) { setError(err.message); }
+  };
+  return (
+    <><select className={`estado ${hecho ? 'ok' : 'pend'}`} value={hecho ? 'hecho' : 'pendiente'} onChange={cambiar} aria-label={`Estado del ${modelo} del ${t}T ${anio}`}>
+      <option value="pendiente">Pendiente</option>
+      <option value="hecho">Presentado</option>
     </select>{error && <span className="error" role="alert">{error}</span>}</>
   );
 }

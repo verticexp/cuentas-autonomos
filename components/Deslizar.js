@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
 import { navegar } from '@/lib/transicion';
+import { vibrar } from '@/lib/haptica';
 import { avisarCobro } from './AvisoDeshacer';
 import '@/app/deslizar.css';
 
@@ -73,12 +74,12 @@ export default function Deslizar({ id, acciones = [], href, children }) {
 
   const hacer = async (accion) => {
     if (trabajando) return;
-    if (accion === 'enviar') { navigator.vibrate?.(6); navegar(router, href, 'adelante'); return; }
+    if (accion === 'enviar') { vibrar(); navegar(router, href, 'adelante'); return; }
     setError(''); setTrabajando(true);
     try {
       if (accion === 'cobrada') { await llamar('/api/facturas', { method: 'PATCH', body: JSON.stringify({ id, accion: 'cobrar' }) }); avisarCobro(id); }
       if (accion === 'pagada') await llamar('/api/gastos', { method: 'PATCH', body: JSON.stringify({ id, pagado: true }) });
-      navigator.vibrate?.(8);
+      vibrar('exito');
       setX(0);
       router.refresh();
     } catch (err) { setError(err.message); setX(0); } finally { setTrabajando(false); }

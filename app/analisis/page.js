@@ -17,6 +17,7 @@ import '@/app/modelos.css';
 import '@/app/contabilidad.css';
 import '@/app/analisis.css';
 import '@/app/mk.css';
+import { gastosQueVe, nominasQueVe } from '@/lib/nominas';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,7 +41,9 @@ const Fila = ({ n, v, ant, fuerte, sub }) => (
 export default async function Analisis({ searchParams }) {
   const u = await requerir('resumen');
   if (await usarFuncion(u, 'analisis')) return <SinPlan usuario={u} funcion="analisis" />;
-  const [facturas, gastos, nominas, manuales, saldo, productos, ajustes, albaranes] = await Promise.all([leer(u, 'facturas'), leer(u, 'gastos'), leer(u, 'nominas'), leer(u, 'asientos'), redis?.get(clave(u, 'saldo')), leer(u, 'productos'), leer(u, 'stock'), leer(u, 'albaranes')]);
+  const [facturas, gastosLeidos, nominasLeidas, manuales, saldo, productos, ajustes, albaranes] = await Promise.all([leer(u, 'facturas'), leer(u, 'gastos'), leer(u, 'nominas'), leer(u, 'asientos'), redis?.get(clave(u, 'saldo')), leer(u, 'productos'), leer(u, 'stock'), leer(u, 'albaranes')]);
+  // Sin el permiso «Nóminas», las de cada persona van juntas por mes (lib/nominas.js, Codex H2).
+  const gastos = gastosQueVe(u, gastosLeidos), nominas = nominasQueVe(u, nominasLeidas);
   if (!facturas) return <SinBD />;
   const sp = await searchParams;
   const h = hoy();
@@ -48,7 +51,8 @@ export default async function Analisis({ searchParams }) {
   const anio = Number(sp.anio) || actual;
   const p = /^[1-4]$/.test(sp.p || '') ? sp.p : '';
   const fiscal = fiscalDe(u);
-  const d = informe({ facturas, gastos, nominas: nominas || [], manuales: manuales || [], saldo, fiscal, pagos130: u.pagos130 || {}, pres303: u.pres303 || {}, pagos202: u.pagos202 || {}, cuotaIS: u.cuotaIS || {}, productos: productos || [], ajustes: ajustes || [], albaranes: albaranes || [] }, anio, p, h);
+  const capital = (await leer(u, 'capital')) || [];
+  const d = informe({ facturas, gastos, nominas: nominas || [], manuales: manuales || [], saldo, fiscal, pagos130: u.pagos130 || {}, pres303: u.pres303 || {}, pres369: u.pres369 || {}, pres123: u.pres123 || {}, pres111: u.pres111 || {}, pres115: u.pres115 || {}, pagadosHacienda: u.pagadosHacienda || {}, prorrata: u.prorrata || {}, capital, pagos202: u.pagos202 || {}, cuotaIS: u.cuotaIS || {}, binsPrevias: u.binsPrevias || {}, fondosPropios: u.fondosPropios || {}, productos: productos || [], ajustes: ajustes || [], albaranes: albaranes || [] }, anio, p, h);
   // El balance, al cierre del periodo (o a hoy si aún no ha acabado).
   const bal = balanceContable(d.asientos, d.per.hasta > h ? h : d.per.hasta, { sociedad: fiscal.tipo === 'sociedad' });
   const a = analisis({ pyg: d.actual, anterior: d.anterior, bal, per: d.per, hoy: h, facturas, gastos });
@@ -59,27 +63,29 @@ export default async function Analisis({ searchParams }) {
   const ratio = (id) => a.ratios.find((r) => r.id === id);
   const variacion = (k) => (B && B[k] ? Math.round(((a[k] - B[k]) / Math.abs(B[k])) * 100) : null);
   const sinDatos = d.sinDatos;
+  // Los datos de cualquier año permiten volver a un periodo con actividad.
+  const hayDatos = !sinDatos || [facturas, gastos, nominas, manuales, capital, productos, ajustes, albaranes].some((lista) => lista?.length > 0) || Boolean(saldo?.importe);
 
   return (
     <main className="pagina mk-look modelos analisis">
       <Volver href="/">Resumen</Volver>
       <header className="cabecera modelos-cab">
         <h1 className="titulo">Análisis</h1>
-        <nav className="anios">
+        {hayDatos && <nav className="anios" aria-label="Año">
           <Ir href={url({ anio: anio - 1 })} tipo="cifras" aria-label="Año anterior">‹</Ir>
           <strong>{anio}</strong>
           {anio < actual ? <Ir href={url({ anio: anio + 1 })} tipo="cifras" aria-label="Año siguiente">›</Ir> : <span className="off">›</span>}
-        </nav>
+        </nav>}
       </header>
-      <nav className="segmentado cont-periodo">
+      {hayDatos && <nav className="segmentado cont-periodo" aria-label="Periodo">
         {['', '1', '2', '3', '4'].map((x) => <Ir key={x} href={url({ p: x })} tipo="fundido" className={x === p ? 'activo' : ''}>{x ? `${x}T` : 'Año'}</Ir>)}
-      </nav>
+      </nav>}
 
       {sinDatos ? <Vacio icono="beneficio" tipo={p || anio !== actual ? 'resultados' : 'vacio'} titulo="Aún no hay nada que analizar" accion={{ href: '/facturas/nueva', texto: 'Nueva factura' }} secundaria={p || anio !== actual ? { href: '/analisis', texto: 'Quitar filtros' } : { href: '/gastos#apuntar-gasto', texto: 'Añadir gasto' }}>Apunta tus ventas y gastos para comparar lo que ganas y lo que gastas.</Vacio> : <>
         <div className="teso-cifras">
-          <div className="teso-cifra"><span>Margen bruto</span><strong>{eur(a.margenBruto)}</strong><small className="ana-pie">{a.margenBrutoPct === null ? '' : `${num.format(a.margenBrutoPct)} % de las ventas`}</small></div>
-          <div className="teso-cifra"><span>EBITDA</span><strong className={a.ebitda < 0 ? 'teso-out' : ''}>{eur(a.ebitda)}</strong><small className="ana-pie">{a.ebitdaPct === null ? '' : `${num.format(a.ebitdaPct)} % de las ventas`}</small></div>
-          <div className="teso-cifra"><span>Resultado</span><strong className={a.resultado < 0 ? 'teso-out' : ''}>{eur(a.resultado)}</strong><small className="ana-pie">{a.netoPct === null ? '' : `${num.format(a.netoPct)} % de las ventas`}</small></div>
+          <div className="teso-cifra"><span>Margen bruto</span><strong>{eur(a.margenBruto)}</strong><small className="ana-pie">{a.margenBrutoPct === null ? '' : `${pct(a.margenBrutoPct)} de las ventas`}</small></div>
+          <div className="teso-cifra"><span>EBITDA</span><strong className={a.ebitda < 0 ? 'teso-out' : ''}>{eur(a.ebitda)}</strong><small className="ana-pie">{a.ebitdaPct === null ? '' : `${pct(a.ebitdaPct)} de las ventas`}</small></div>
+          <div className="teso-cifra"><span>Resultado</span><strong className={a.resultado < 0 ? 'teso-out' : ''}>{eur(a.resultado)}</strong><small className="ana-pie">{a.netoPct === null ? '' : `${pct(a.netoPct)} de las ventas`}</small></div>
           <div className="teso-cifra final"><span>Punto de equilibrio</span><strong>{e.ventasEquilibrio === null ? '—' : eur(e.ventasEquilibrio)}</strong><small className="ana-pie">{e.estado === 'superado' ? 'Ya lo has superado' : e.estado === 'por-debajo' ? `Te faltan ${eur(e.faltan)}` : e.estado === 'sin-fijos' ? 'Sin costes fijos' : 'Sin margen para calcularlo'}</small></div>
         </div>
         {d.parcial && <p className="grupo-pie">El periodo no ha terminado: son las cifras hasta el {fechaCorta(h)}{B ? `, comparadas con el mismo tramo de ${anio - 1}` : ''}.</p>}
@@ -113,11 +119,11 @@ export default async function Analisis({ searchParams }) {
         <section className="bloque">
           <h2 className="grupo-t">Punto de equilibrio</h2>
           <div className="tarjeta ana-pe">
-            {e.estado === 'imposible' && <p className="ana-txt">Con el margen bruto de este periodo ({e.margenContribucionPct === null ? 'sin ventas' : `${num.format(e.margenContribucionPct)} %`}) no se puede calcular: no hay margen con el que cubrir los costes fijos. Hace falta vender con margen positivo.</p>}
+            {e.estado === 'imposible' && <p className="ana-txt">Con el margen bruto de este periodo ({e.margenContribucionPct === null ? 'sin ventas' : `${pct(e.margenContribucionPct)}`}) no se puede calcular: no hay margen con el que cubrir los costes fijos. Hace falta vender con margen positivo.</p>}
             {e.estado === 'sin-fijos' && <p className="ana-txt">No hay costes fijos en este periodo, así que cualquier venta con margen ya deja beneficio.</p>}
             {(e.estado === 'superado' || e.estado === 'por-debajo') && <>
               <p className="ana-txt">Necesitas vender <strong>{eur(e.ventasEquilibrio)}</strong> en este periodo ({eur(e.mensual)} al mes) para no perder dinero.{' '}
-                {e.estado === 'superado' ? <>Llevas <strong>{eur(a.ventas)}</strong>: estás <strong className="teso-in">{eur(e.margenSeguridad)}</strong> por encima ({num.format(e.margenSeguridadPct)} % de margen de seguridad).</> : <>Llevas <strong>{eur(a.ventas)}</strong>: te faltan <strong className="teso-out">{eur(e.faltan)}</strong>.</>}</p>
+                {e.estado === 'superado' ? <>Llevas <strong>{eur(a.ventas)}</strong>: estás <strong className="teso-in">{eur(e.margenSeguridad)}</strong> por encima ({pct(e.margenSeguridadPct)} de margen de seguridad).</> : <>Llevas <strong>{eur(a.ventas)}</strong>: te faltan <strong className="teso-out">{eur(e.faltan)}</strong>.</>}</p>
               <span className="ana-barra" aria-hidden><span className={e.estado === 'superado' ? '' : 'neg'} style={{ width: `${Math.min(100, Math.round((a.ventas / Math.max(1, e.ventasEquilibrio)) * 100))}%` }} /></span>
             </>}
             <dl>
@@ -162,7 +168,7 @@ export default async function Analisis({ searchParams }) {
         </>}
       </>}
 
-      <p className="grupo-pie arriba">{esSociedad(fiscal) ? <>Todo sale de la <Ir href="/contabilidad">contabilidad</Ir> de Fisquo, así que cuadra con ella.</> : <>Todo sale de tus facturas y gastos, así que cuadra con tus <Ir href="/contabilidad">libros registro</Ir>.</>} Para ver lo que te deben los clientes, por fechas de vencimiento, abre la <Ir href="/cartera">cartera de cobros</Ir>.</p>
+      <details className="como-se-calcula"><summary>Cómo se calcula</summary><p className="grupo-pie arriba">{esSociedad(fiscal) ? <>Todo sale de la <Ir href="/contabilidad">contabilidad</Ir> de Fisquo, así que cuadra con ella.</> : <>Todo sale de tus facturas y gastos, así que cuadra con tus <Ir href="/contabilidad">libros registro</Ir>.</>} Para ver lo que te deben los clientes, por fechas de vencimiento, abre la <Ir href="/cartera">cartera de cobros</Ir>.</p></details>
     </main>
   );
 }

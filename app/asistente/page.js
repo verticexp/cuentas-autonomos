@@ -23,7 +23,7 @@ const EJEMPLOS = {
 
 export default async function PaginaAsistente({ searchParams }) {
   const u = await requerir();
-  if (u.plan?.version === 2 && sinFuncion(u.plan, 'asistente')) return <SinPlan usuario={u} funcion="asistente" />;
+  if (u.plan?.version >= 2 && sinFuncion(u.plan, 'asistente')) return <SinPlan usuario={u} funcion="asistente" />;
   const h = herramientasPara(u).map((x) => x.name);
   // ?pregunta=…: llega desde el buscador de «Más» y se envía sola al abrir.
   const { pregunta } = await searchParams;

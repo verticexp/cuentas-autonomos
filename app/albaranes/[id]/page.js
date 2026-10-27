@@ -5,7 +5,7 @@ import { requerir } from '@/lib/auth';
 import { leer, leerUno } from '@/lib/redis';
 import { baseDoc, estadoPedido, numeroDoc } from '@/lib/albaranes';
 import { baseLinea, numeroFactura } from '@/lib/calculos';
-import { eur, fechaTexto, hoy } from '@/lib/formato';
+import { eur, fechaTexto, hoy, pctCorto } from '@/lib/formato';
 import { inventario } from '@/lib/inventario';
 import { datosStock } from '@/lib/stockServidor';
 import Volver from '@/components/Volver';
@@ -67,7 +67,7 @@ export default async function Doc({ params }) {
       ) : (
         <section className="bloque">
           <h2 className="grupo-t">Líneas</h2>
-          <ul className="alb-lineas">{d.lineas.map((l, i) => <li key={i}><span>{l.concepto}<small>{ud(l.cantidad)} × {eur(l.precio)}{l.dto ? ` · −${l.dto} %` : ''} · IVA {l.ivaPct} %</small></span><b>{eur(baseLinea(l))}</b></li>)}</ul>
+          <ul className="alb-lineas">{d.lineas.map((l, i) => <li key={i}><span>{l.concepto}<small>{ud(l.cantidad)} × {eur(l.precio)}{l.dto ? ` · −${pctCorto(l.dto)}` : ''} · IVA {pctCorto(l.ivaPct)}</small></span><b>{eur(baseLinea(l))}</b></li>)}</ul>
           {d.nota && <p className="nota">{d.nota}</p>}
         </section>
       )}

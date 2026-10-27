@@ -1,5 +1,7 @@
 'use client';
 
+import { TIPOS_IGIC } from '@/lib/igic';
+
 import { confirmar as confirmarAccion } from './Confirmar';
 
 import { useId, useRef, useState } from 'react';
@@ -10,7 +12,7 @@ import { estadoPedidoProv } from '../lib/albaranes.js';
 const MOTIVOS = [['recuento', 'Recuento: he contado y hay…'], ['inicial', 'Stock inicial'], ['rotura', 'Rotura o merma'], ['perdida', 'Pérdida o robo'], ['regalo', 'Muestra o regalo'], ['consumo', 'Consumo: gastado en un servicio'], ['otro', 'Otro (con signo: −2 sale, 5 entra)']];
 
 // Ajustar el stock de un producto a mano: contarlo, darlo de alta al empezar o sacar lo roto.
-export function Ajuste({ producto, hoy, coste, consumo = false }) {
+export function Ajuste({ producto, hoy, coste, consumo = false, igic = false }) {
   const router = useRouter();
   const [x, setX] = useState({ motivo: 'recuento', como: consumo ? 'consumo' : '', cantidad: '', coste: coste ? String(coste).replace('.', ',') : '', fecha: hoy, nota: '' });
   const [msg, setMsg] = useState('');
@@ -37,8 +39,8 @@ export function Ajuste({ producto, hoy, coste, consumo = false }) {
         <input className="campo" type="date" value={x.fecha} onChange={poner('fecha')} aria-label="Fecha" />
       </div>
       {x.motivo === 'recuento' && <label className="check"><input type="checkbox" checked={x.como === 'consumo'} onChange={(e) => setX({ ...x, como: e.target.checked ? 'consumo' : '' })} /> Si falta, es material gastado en servicios (consumo, no pérdida)</label>}
-      {entra && <input className="campo" inputMode="decimal" placeholder="Coste por unidad sin IVA" value={x.coste} onChange={poner('coste')} aria-label="Coste por unidad" />}
-      <input className="campo" placeholder="Nota (opcional)" value={x.nota} onChange={poner('nota')} />
+      {entra && <input className="campo" inputMode="decimal" placeholder={`Coste por unidad sin ${igic ? 'IGIC' : 'IVA'}`} value={x.coste} onChange={poner('coste')} aria-label="Coste por unidad" />}
+      <input className="campo" aria-label="Nota del movimiento (opcional)" placeholder="Nota (opcional)" value={x.nota} onChange={poner('nota')} />
       {msg && <p className={msg.startsWith('✓') ? 'nota' : 'error'}>{msg}</p>}
       <button className="boton" disabled={enviando}>{enviando ? 'Guardando…' : 'Apuntar'}</button>
     </form>
@@ -70,13 +72,13 @@ export function HacerPedido({ proveedor, items, hoy }) {
 }
 
 // Recibir un pedido a proveedor: lo que ha llegado y a qué coste. Se apunta el gasto (pendiente de pago) con su stock.
-export function RecibirPedido({ pedido, hoy }) {
+export function RecibirPedido({ pedido, hoy, igic = false }) {
   const router = useRouter();
   const [error, setError] = useState('');
   const estado = estadoPedidoProv(pedido);
   const idem = useRef(null);
   const [abierto, setAbierto] = useState(false);
-  const [x, setX] = useState({ fecha: hoy, ivaPct: 21, lineas: estado.lineas.filter((l) => l.pendiente > 0).map((l) => ({ linea: l.linea, producto: l.producto, concepto: l.concepto, cantidad: String(l.pendiente).replace('.', ','), coste: String(l.coste).replace('.', ',') })) });
+  const [x, setX] = useState({ fecha: hoy, ivaPct: igic ? 7 : 21, lineas: estado.lineas.filter((l) => l.pendiente > 0).map((l) => ({ linea: l.linea, producto: l.producto, concepto: l.concepto, cantidad: String(l.pendiente).replace('.', ','), coste: String(l.coste).replace('.', ',') })) });
   const [msg, setMsg] = useState('');
   const [ocupado, setOcupado] = useState(false);
   const ponerLinea = (i, k, v) => setX((y) => ({ ...y, lineas: y.lineas.map((l, j) => (j === i ? { ...l, [k]: v } : l)) }));
@@ -108,13 +110,13 @@ export function RecibirPedido({ pedido, hoy }) {
           <input className="campo" inputMode="decimal" value={l.coste} onChange={(e) => ponerLinea(i, 'coste', e.target.value)} aria-label={`Coste por unidad de ${l.concepto}`} />
         </div>
       ))}
-      <p className="nota">Unidades que han llegado y coste por unidad sin IVA (el de la factura o el albarán del proveedor).</p>
+      <p className="nota">Unidades que han llegado y coste por unidad sin {igic ? 'IGIC' : 'IVA'} (el de la factura o el albarán del proveedor).</p>
       <div className="dos-col">
         <label>Fecha<input className="campo" type="date" value={x.fecha} onChange={(e) => setX({ ...x, fecha: e.target.value })} /></label>
-        <label>IVA<select className="campo" value={x.ivaPct} onChange={(e) => setX({ ...x, ivaPct: Number(e.target.value) })}>{[21, 10, 4, 0].map((n) => <option key={n} value={n}>{n}%</option>)}</select></label>
+        <label>{igic ? 'IGIC' : 'IVA'}<select className="campo" value={x.ivaPct} onChange={(e) => setX({ ...x, ivaPct: Number(e.target.value) })}>{(igic ? TIPOS_IGIC : [21, 10, 4, 0]).map((n) => <option key={n} value={n}>{n}%</option>)}</select></label>
       </div>
       {error && <p className="error" role="alert">{error}</p>}
-      {msg && <p className="error">{msg}</p>}
+      {msg && <p className="error" role="alert">{msg}</p>}
       <button className="boton" disabled={ocupado}>{ocupado ? 'Guardando…' : 'Apuntar la compra'}</button>
     </form>
   );

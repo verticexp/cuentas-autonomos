@@ -43,3 +43,6 @@
 
 /* Plan que incluye una pantalla que el plan de la empresa no tiene (lib/modulos.js planesQueFaltan): menú lateral y «Más». */
 .plan-chip { flex: none; font-size: 11px; font-weight: 600; letter-spacing: 0.02em; line-height: 1; padding: 4px 7px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+
+/* Pestañas que en el móvil no van abajo (Equipo de Mi despacho, desde Ajustes). */
+@media (max-width: 1023.98px) { .tabs a.tab-ordenador { display: none; } }

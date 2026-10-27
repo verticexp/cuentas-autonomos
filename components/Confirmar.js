@@ -47,8 +47,11 @@ function Hoja({ titulo, texto, aceptar, cancelar, peligro, entrada, etiqueta, va
   const [contenido, setContenido] = useState(valor || '');
   const cancelarHoja = () => cerrar(entrada ? null : false);
   useEffect(() => {
-    const overflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    // Lo de debajo no se desplaza ni se mueve de sitio. En html y no en body: con el overflow-x de html (app/globals.css), el
+    // de body no pasa a la ventana, y la página subía arriba del todo (y ahí se quedaba al seguir editando un formulario largo).
+    const raiz = document.documentElement;
+    const overflow = raiz.style.overflow;
+    raiz.style.overflow = 'hidden';
     const hermanos = [...document.body.children].filter((el) => el !== capa.current);
     const previos = hermanos.map((el) => [el, el.inert]);
     hermanos.forEach((el) => { el.inert = true; });
@@ -64,19 +67,25 @@ function Hoja({ titulo, texto, aceptar, cancelar, peligro, entrada, etiqueta, va
       else if (!e.shiftKey && (document.activeElement === ultimo || !panel.current.contains(document.activeElement))) { e.preventDefault(); primero?.focus(); }
     };
     const enfocar = (e) => { if (!panel.current.contains(e.target)) controles()[0]?.focus(); };
+    // Si se sale de la pantalla con el diálogo abierto (gesto de volver de Safari, botón atrás), se cancela: vive fuera de
+    // la página y, si no, se quedaría encima de la siguiente con lo de debajo inerte.
+    const salir = () => cerrar(entrada ? null : false);
     document.addEventListener('keydown', teclas, true);
     document.addEventListener('focusin', enfocar);
+    window.addEventListener('popstate', salir);
     return () => {
       document.removeEventListener('keydown', teclas, true);
       document.removeEventListener('focusin', enfocar);
+      window.removeEventListener('popstate', salir);
       previos.forEach(([el, inert]) => { el.inert = inert; });
-      document.body.style.overflow = overflow;
+      raiz.style.overflow = overflow;
     };
   }, [cerrar, entrada, peligro, soloLectura]);
   return createPortal(
-    <div className="hoja confirmar-hoja" ref={capa}>
+    // El rol de diálogo va en el contenedor: un <form> no admite role="dialog" ni "alertdialog" (axe: aria-allowed-role).
+    <div className="hoja confirmar-hoja" ref={capa} role={aviso || peligro ? 'alertdialog' : 'dialog'} aria-modal="true" aria-labelledby={`${id}-titulo`} aria-describedby={texto ? `${id}-texto` : undefined}>
       <button type="button" className="hoja-fondo" aria-label={entrada && !soloLectura ? 'Cancelar' : 'Cerrar diálogo'} tabIndex={-1} onClick={cancelarHoja} />
-      <form ref={panel} className="hoja-panel formulario" role={aviso || peligro ? 'alertdialog' : 'dialog'} aria-modal="true" aria-labelledby={`${id}-titulo`} aria-describedby={texto ? `${id}-texto` : undefined}
+      <form ref={panel} className="hoja-panel formulario"
         onSubmit={(e) => { e.preventDefault(); cerrar(entrada ? contenido : true); }}>
         <span className="hoja-asa" aria-hidden="true" />
         <h2 className="hoja-t" id={`${id}-titulo`}>{titulo}</h2>

@@ -139,14 +139,18 @@ test('el desglose manda sobre el fallback del total neto', () => {
 test('extractos: conserva margen para las líneas de una página sin permitir salida ilimitada', async () => {
   const { leerExtracto } = await import('../lib/ticket.js');
   const original = globalThis.fetch;
-  const limites = [];
+  const limites = [], cuerpos = [];
   globalThis.fetch = async (_url, opciones) => {
-    limites.push(JSON.parse(opciones.body).max_tokens);
-    return Response.json({ model: 'claude-haiku-4-5-20251001', usage: { input_tokens: 1000, output_tokens: 100 }, content: [{ text: '{"movimientos":[]}' }] });
+    const b = JSON.parse(opciones.body);
+    limites.push(b.max_tokens); cuerpos.push(b);
+    // Haiku 5.5 puede empezar con un bloque de pensamiento (vacío por defecto): se lee el texto, no la posición.
+    return Response.json({ model: 'claude-haiku-5-5', usage: { input_tokens: 1000, output_tokens: 100 }, content: [{ type: 'thinking', thinking: '', signature: 'x' }, { type: 'text', text: '{"movimientos":[]}' }] });
   };
   try { for (const paginas of [1, 2, 10]) assert.ok((await leerExtracto('YQ==', paginas)).filas); }
   finally { globalThis.fetch = original; }
-  assert.deepEqual(limites, [4000, 8000, 16000]);
+  // 4.000 por página y 2.000 de margen para lo que piense, hasta 32.000.
+  assert.deepEqual(limites, [6000, 10000, 32000]);
+  assert.deepEqual([cuerpos[0].model, cuerpos[0].output_config], ['claude-haiku-5-5', { effort: 'low' }]);
 });
 
 

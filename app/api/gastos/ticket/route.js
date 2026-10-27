@@ -1,8 +1,10 @@
-import { contarVentana, rafaga, concurrencia, respuesta429 } from '@/lib/limite';
+import { contarVentana, rafaga, respuesta429 } from '@/lib/limite';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { hoy } from '@/lib/formato';
-import { iaLista, leerTicket, limpiarTicket, validarEntradaIA } from '@/lib/ticket';
-import { consumirEscaneos, cupoEscaneos, MAX_BYTES_IA, paginasIA, registrarConsumoIA, respuestaCupo } from '@/lib/cuotasIA';
+import { iaLista } from '@/lib/ticket';
+import { cupoEscaneos, MAX_BYTES_IA, respuestaCupo } from '@/lib/cuotasIA';
+import { leerConCupo } from '@/lib/lecturaIA';
+import { conHabitual } from '@/lib/proveedorHabitual';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -25,29 +27,13 @@ export async function POST(req) {
   if (!m) return error('Sube una foto (JPG, PNG o WebP) o un PDF');
   if (m[4].length > Math.ceil(MAX_BYTES_IA / 3) * 4) return error('El archivo es demasiado grande (máx. 3 MB)');
   if (await rafaga('ticket', u.id, 10, 60)) return respuesta429(60, 'Has enviado demasiadas fotos seguidas. Espera un minuto y prueba de nuevo.');
-  const archivo = await paginasIA(Buffer.from(m[4], 'base64'), m[1]);
-  if (archivo.error) return error(archivo.error);
   const n = await contarVentana(`tickets:${u.id}:${hoy()}`, 2 * 86400);
   if (n > POR_DIA) return respuesta429(86400, 'Has llegado al límite de lecturas de hoy. Mañana puedes continuar.');
-  let reserva;
   try {
-    const r = await concurrencia('ticket', u.empresa, 3, 30000, () =>
-      concurrencia('ia', 'global', 20, 60000, async () => {
-        const cupo = await cupoEscaneos(u);
-        if (archivo.paginas > cupo.restantes) { reserva = { error: 'No quedan suficientes páginas de lectura IA. Puedes registrar el gasto a mano o solicitar una ampliación.', cupo }; return { sinCupo: true }; }
-        const preparacion = await validarEntradaIA(m[4], m[1], archivo.paginas);
-        if (preparacion.error) return { ...preparacion, sinEnvio: true, cupo };
-        reserva = await consumirEscaneos(u, archivo.paginas);
-        if (reserva.error) return { sinCupo: true };
-        // No se reintenta automáticamente: una conexión interrumpida puede haber generado un cargo.
-        const lectura = await leerTicket(m[4], m[1]);
-        await registrarConsumoIA(reserva, lectura.consumo);
-        return lectura;
-      }));
-    if (r?.ocupado) return respuesta429(5, 'La lectura de tickets está ocupada. Espera unos segundos y prueba de nuevo.');
-    if (r.sinCupo) return respuestaCupo(reserva);
-    if (r.sinEnvio) return Response.json({ error: r.error, cupo: r.cupo }, { status: r.status });
-    if (r.error) return Response.json({ error: r.error, cupo: reserva.cupo }, { status: 502 });
-    return Response.json({ ok: true, gasto: limpiarTicket(r.datos, hoy()), cupo: reserva.cupo });
+    const r = await leerConCupo(u, m[4], m[1]);
+    if (r.ocupado) return respuesta429(5, r.error);
+    if (r.sinCupo) return respuestaCupo(r);
+    if (r.error) return Response.json({ error: r.error, ...(r.cupo ? { cupo: r.cupo } : {}) }, { status: r.status });
+    return Response.json({ ok: true, gasto: r.gasto, cupo: r.cupo, ...(await conHabitual(u, r.gasto)) });
   } catch { return error('No se ha podido completar la lectura. Puedes registrar el gasto a mano y consultar tu consumo antes de reintentar.', 503); }
 }

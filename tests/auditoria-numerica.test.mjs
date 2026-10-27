@@ -82,7 +82,7 @@ test('N08: las pérdidas dejan la casilla 07 del 130 con signo, sin un pago nega
 
 test('N09: el 390 incluye la base deducible de compras intracomunitarias', () => {
   const r = modelo390([], [gasto('ue', 100, { alquiler: false, ivaPct: 0, proveedorNif: 'DE123456789' })], 2026);
-  assert.equal(r.baseDed, 100);
+  assert.equal((r.c['597'] || 0) + (r.c['56'] || 0), 100);
   assert.equal(r.deducible, 21);
 });
 
@@ -102,7 +102,8 @@ test('N11: el IVA negativo anterior reduce lo que se aparta y prevé pagar', () 
 
 test('N12: el cuadre bancario no mezcla efectivo de caja con saldo del banco', () => {
   const manuales = [{ id: 'apertura', fecha: '2026-01-01', apertura: true, concepto: 'Apertura', lineas: [{ cuenta: '572', debe: 1000, haber: 0 }, { cuenta: '570', debe: 100, haber: 0 }, { cuenta: '100', debe: 0, haber: 1100 }] }];
-  const d = informe({ manuales, fiscal, saldo: { importe: 1000, fecha: '2026-01-01' } }, 2026, '', '2026-01-01');
+  // Saldo procedente del banco (saldoTotal): el cuadre se oculta si no hay banco ni extractos.
+  const d = informe({ manuales, fiscal, saldo: { importe: 1000, fecha: '2026-01-01', banco: true } }, 2026, '', '2026-01-01');
   assert.equal(d.banco.diferencia, 0);
 });
 

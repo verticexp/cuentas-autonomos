@@ -7,8 +7,9 @@
 @media (min-width: 1024px) {
   /* La tabla necesita más ancho que el resto de pantallas. */
   .pagina.ancha { max-width: 1120px; }
-  .tf-lista, .tf-cab { --tf-cols: minmax(0, 2.2fr) 112px 64px 112px 112px 96px; }
-  .tf-lista.con-act, .tf-cab.con-act { --tf-cols: minmax(0, 2fr) 112px 64px minmax(0, 1.2fr) 112px 112px 96px; }
+  /* La fecha (dd/mm/aaaa) mide 76 px a 14 px: con 64 se cortaba en «24/10/2…». */
+  .tf-lista, .tf-cab { --tf-cols: minmax(0, 2.2fr) 100px 84px 104px 112px 96px; }
+  .tf-lista.con-act, .tf-cab.con-act { --tf-cols: minmax(0, 2fr) 100px 84px minmax(0, 1.2fr) 104px 112px 96px; }
   .tf-cab { display: grid; grid-template-columns: var(--tf-cols); column-gap: 16px; padding: 0 16px; margin: 14px 0 -4px; font-size: 12px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; color: var(--muted); }
   .tf-cab .tf-n { text-align: right; }
   .tf-lista .fila { display: grid; grid-template-columns: var(--tf-cols); align-items: center; column-gap: 16px; }
@@ -17,7 +18,17 @@
   .tf-lista .fila strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .tf-lista .tf-num, .tf-lista .tf-fecha, .tf-lista .tf-act { min-width: 0; font-size: 14px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .tf-lista .tf-fecha { font-variant-numeric: tabular-nums; }
+  /* En la columna del número solo cabe el número: que es un cierre de caja ya lo dice «Ventas del día». */
+  .tf-lista .tf-caja { display: none; }
   .tf-lista .tf-base, .tf-lista .imp { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .tf-lista .tf-base { font-size: 15px; color: var(--muted); }
   .tf-lista .estado-txt { justify-self: start; }
+  /* [data-vt] { width: fit-content } (app/diseno.css) encoge el total: se alinea a la derecha de su columna. */
+  .tf-lista .imp { justify-self: end; }
+}
+/* Hasta 1280 px no caben siete columnas (a 1024 el cliente se quedaba en 44 px): sin la actividad, que ya está en los
+   filtros de arriba, ni la base de cada factura (la del mes sigue en su cabecera). */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .tf-lista, .tf-cab, .tf-lista.con-act, .tf-cab.con-act { --tf-cols: minmax(0, 1fr) 100px 84px 112px 96px; }
+  .tf-lista .tf-act, .tf-lista .tf-base, .tf-cab .tf-c-act, .tf-cab .tf-c-base { display: none; }
 }

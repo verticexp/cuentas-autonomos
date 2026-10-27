@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { redis } from '@/lib/redis';
-import { opcionesCookie, usuarioActual } from '@/lib/auth';
+import { cambiarUsuario, opcionesCookie, usuarioActual } from '@/lib/auth';
 import { conMembresia, enEmpresa, membresias } from '@/lib/membresias';
 import { sinPlaza } from '@/lib/planes';
 import { conCerrojo } from '@/lib/cerrojo';
@@ -27,7 +27,7 @@ export async function GET(req) {
       const personas = Object.values((await redis.hgetall('usuarios')) || {}).filter((x) => enEmpresa(x, inv.empresa)).map((x) => ({ id: x.id, ...membresias(x)[inv.empresa] }));
       const papel = { rol: inv.rol, permisos: inv.permisos };
       if (sinPlaza(emp.plan, personas, papel)) return ir('/?invitacion=sin-plaza');
-      await redis.hset('usuarios', { [o.id]: conMembresia(o, inv.empresa, papel) });
+      await cambiarUsuario(o.id, (x) => (enEmpresa(x, inv.empresa) ? null : conMembresia(x, inv.empresa, papel)));
       await auditar({ id: o.id, nombre: o.nombre, empresa: inv.empresa }, 'Invitación aceptada', o.email);
     }
     const r = ir('/');

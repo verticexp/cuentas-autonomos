@@ -2,11 +2,12 @@ import { DETALLE } from '@/lib/permisos';
 import { concurrencia, respuesta429 } from '@/lib/limite';
 import { leer } from '@/lib/redis';
 import { usuarioApi } from '@/lib/api';
-import { actividadesDe, fiscalDe } from '@/lib/empresa';
+import { actividadesDe, fiscalDe, reccDe } from '@/lib/empresa';
 import { librosRegistro, librosXlsx } from '@/lib/librosRegistro';
 import { hoy } from '@/lib/formato';
 import { auditar } from '@/lib/auditoria';
 import { delosAnios } from '@/lib/indices';
+import { nominasQueVe } from '@/lib/nominas';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,11 +18,13 @@ export async function GET(req) {
   const resultado = await concurrencia('exportar', u.empresa, 1, 300000, async () => {
     const h = hoy();
     const anio = Number(req.nextUrl.searchParams.get('anio')) || Number(h.slice(0, 4));
-    const [nominas, productos, ajustes, albaranes] = await Promise.all([leer(u, 'nominas'), leer(u, 'productos'), leer(u, 'stock'), leer(u, 'albaranes')]);
+    const [nominasLeidas, productos, ajustes, albaranes] = await Promise.all([leer(u, 'nominas'), leer(u, 'productos'), leer(u, 'stock'), leer(u, 'albaranes')]);
+    // Sin el permiso «Nóminas», las de cada persona van juntas por mes (Codex H2).
+    const nominas = nominasQueVe(u, nominasLeidas);
     // Informe de capacidad E01: el año y los bienes de inversión; todo el histórico solo si hay que valorar el
     // inventario a cierre (variación de existencias de un año cerrado de un autónomo con productos con stock).
     const inventario = fiscalDe(u).tipo !== 'sociedad' && `${anio}-12-31` < h && (productos || []).some((p) => !p.servicio);
-    const { facturas, gastos } = inventario ? { facturas: await leer(u, 'facturas'), gastos: await leer(u, 'gastos') } : await delosAnios(u, [anio]);
+    const { facturas, gastos } = inventario ? { facturas: await leer(u, 'facturas'), gastos: await leer(u, 'gastos') } : await delosAnios(u, reccDe(fiscalDe(u)) ? [anio - 1, anio] : [anio]); // con el criterio de caja, los cobros de este año de las facturas del anterior
     const l = librosRegistro({ facturas: facturas || [], gastos: gastos || [], nominas: nominas || [], productos: productos || [], ajustes: ajustes || [], albaranes: albaranes || [], fiscal: fiscalDe(u), actividades: actividadesDe(u),
       empresa: { nombre: u.emisor?.nombre || u.empresaNombre || '', nif: u.emisor?.nif || '' } }, anio, h);
     await auditar(u, 'Libros registro', `Descarga de ${anio}`);

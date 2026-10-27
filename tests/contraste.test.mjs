@@ -67,6 +67,35 @@ for (const [tema, f] of Object.entries(TEMAS)) {
     assert.ok(contraste(c('ink'), c('surface')) / muted >= 2.5, `${tema}: --ink y --muted demasiado parecidos`);
   });
 
+  // Los chips, los filtros y las etiquetas de los campos de factura pintan texto sobre --relleno (translúcido): sobre --paper sale
+  // más oscuro que --surface, y ahí --muted se quedaba en 4,4:1 (lo midió axe en el navegador, 26-10-2026).
+  test(`contraste (${tema}): texto principal y secundario sobre --relleno`, () => {
+    for (const fondo of ['surface', 'paper']) {
+      const relleno = c('relleno', f[fondo]);
+      for (const texto of ['ink', 'muted']) exige(c(texto), relleno, 4.5, `--${texto} sobre --relleno sobre --${fondo}`);
+    }
+  });
+
+  // Las filas de las hojas (+ «Crear», filtros) llevan --relleno encima de --surface-2: ahí --muted solo llegaba a 3,9:1 en oscuro.
+  test(`contraste (${tema}): letra pequeña de las filas de las hojas (app/hoja.css)`, () => {
+    const relleno = c('relleno', f['surface-2']);
+    exige(mezcla(c('muted'), c('ink'), 0.7), relleno, 4.5, '.hoja-fila small sobre --relleno sobre --surface-2');
+  });
+
+  test(`contraste (${tema}): estado «Fuera de plazo» (--out con un 15 % de --ink sobre su tinte al 10 %)`, () => {
+    for (const fondo of ['surface', 'paper']) {
+      const base = c(fondo), tinta = c('out', base);
+      exige(mezcla(tinta, c('ink'), 0.85), mezcla(tinta, base, 0.1), 4.5, `.pres-fuera sobre --${fondo}`);
+    }
+  });
+
+  test(`contraste (${tema}): avisos en rojo sobre su tinte (--out al 12 %, texto con un 15 % de --ink)`, () => {
+    for (const fondo of ['surface', 'paper']) {
+      const base = c(fondo), tinta = c('out', base);
+      exige(mezcla(tinta, c('ink'), 0.85), mezcla(tinta, base, 0.12), 4.5, `.teso-alerta sobre --${fondo}`);
+    }
+  });
+
   test(`contraste (${tema}): etiquetas de estado (texto con un 15 % de --ink sobre su fondo al 13 %)`, () => {
     for (const color of ['in', 'hacienda', 'out']) {
       for (const fondo of ['surface', 'paper']) {
@@ -103,3 +132,14 @@ test('contraste: el bloque oscuro automático y el forzado tienen las mismas fic
   assert.ok(m);
   assert.deepEqual(fichasDe(m[1]), bloque(globals, ':root[data-tema="oscuro"]'));
 });
+
+// Auditoría 23-10-2026: los campos se veían sin borde (1,1:1); --borde-campo da ≥ 3:1 frente a lo que lo rodea (WCAG 1.4.11).
+for (const [tema, f] of Object.entries(TEMAS)) {
+  test(`contraste (${tema}): el borde de los campos se distingue del fondo y del propio campo`, () => {
+    for (const fondo of ['surface', 'paper']) {
+      const borde = rgb(f['borde-campo'], f[fondo]);
+      const r = contraste(borde, rgb(f[fondo]));
+      assert.ok(r >= 3, `${tema}: --borde-campo sobre --${fondo} a ${r.toFixed(2)}:1`);
+    }
+  });
+}

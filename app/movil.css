@@ -1,10 +1,21 @@
 .volver { display: inline-flex; align-items: center; gap: 4px; padding: 6px 0; margin-bottom: 8px; color: var(--muted); font-weight: 600; font-size: 15px; text-decoration: none; }
+/* Con el dedo, «‹ Atrás» se toca en 44 px de alto y algo más de ancho, sin mover el texto de su sitio */
+@media (pointer: coarse) { .volver { min-height: 44px; padding: 0 12px 0 10px; margin: -5px 0 3px -10px; } }
 /* iOS: los campos de fecha tienen un ancho mínimo propio que se sale de la pantalla */
 .campo, .formulario label, .dos-col > * { min-width: 0; max-width: 100%; }
 input[type="date"].campo, input[type="month"].campo { -webkit-appearance: none; appearance: none; display: block; width: 100%; min-height: 50px; text-align: left; }
 input[type="date"].campo::-webkit-date-and-time-value { text-align: left; }
 select.campo { -webkit-appearance: none; appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%); background-position: calc(100% - 20px) 50%, calc(100% - 15px) 50%; background-size: 5px 5px; background-repeat: no-repeat; padding-right: 36px; }
 select.estado { border: 0; font: inherit; font-weight: 600; font-size: 13px; padding: 6px 28px 6px 12px; -webkit-appearance: none; appearance: none; background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%); background-position: calc(100% - 14px) 52%, calc(100% - 9px) 52%; background-size: 5px 5px; background-repeat: no-repeat; max-width: 60%; }
+/* App de iOS y web guardada en la pantalla de inicio: como en una app, mantener pulsado un botón, un enlace o una imagen no
+   abre el menú de enlace («Abrir», «Copiar», «Compartir») ni selecciona su texto, y nada se levanta para arrastrarlo. El texto
+   de las pantallas y de los campos se sigue pudiendo seleccionar y copiar (un IBAN, un número de factura). */
+html[data-app] :is(a, button, summary, [role="button"], [role="tab"]) { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; -webkit-user-drag: none; }
+html[data-app] :is(img, svg) { -webkit-touch-callout: none; -webkit-user-drag: none; }
+@media (display-mode: standalone) and (pointer: coarse) {
+  :is(a, button, summary, [role="button"], [role="tab"]) { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; -webkit-user-drag: none; }
+  :is(img, svg) { -webkit-touch-callout: none; -webkit-user-drag: none; }
+}
 /* Respuesta inmediata al tocar */
 .fila, .boton, .chips a, .tabbar a, .volver, .estado, .borrar { -webkit-tap-highlight-color: transparent; transition: background-color .12s cubic-bezier(0.23, 1, 0.32, 1), transform .12s cubic-bezier(0.23, 1, 0.32, 1), opacity .12s cubic-bezier(0.23, 1, 0.32, 1); }
 a.fila:active, li.fila:active { background: var(--line); }
@@ -48,10 +59,22 @@ html, body { overscroll-behavior-y: none; }
    Darle su propia capa de composición (y a la base del botón +) hace que WebKit la mantenga clavada durante el scroll. */
 .tabs, .tabbar .mas { will-change: transform; }
 @media (max-width: 1023.98px) {
-  .tabbar[data-teclado] { display: none; }
+  /* Con el teclado fuera (formularios) o dentro de una conversación (.tabbar-chat, chat.css), la barra baja y se funde en
+     vez de desaparecer de golpe; al volver, sube igual. Escondida no se puede tocar ni enfocar (visibility). */
+  .tabbar { transition: opacity 0.22s var(--salida), transform 0.3s var(--vt-curva), visibility 0s; }
+  .tabbar[data-teclado], .tabbar.tabbar-chat {
+    opacity: 0; transform: translateX(-50%) translateY(calc(100% + 24px)); visibility: hidden; pointer-events: none;
+    transition: opacity 0.18s var(--salida), transform 0.24s var(--vt-curva), visibility 0s linear 0.24s;
+  }
+  @media (prefers-reduced-motion: reduce) { .tabbar[data-teclado], .tabbar.tabbar-chat { transform: translateX(-50%); } }
   /* También protege los campos en horizontal, donde el notch ocupa un lateral. */
   .pagina.gastos-formulario, .pagina.modelos:not(.contabilidad):not(.analisis) {
     padding-left: max(16px, env(safe-area-inset-left, 0px));
     padding-right: max(16px, env(safe-area-inset-right, 0px));
   }
+}
+
+/* Resumen: el trimestre en curso ya está en la tarjeta de Impuestos de arriba; en el móvil, la lista de trimestres no lo repite */
+@media (max-width: 1023.98px) {
+  .res-trim .trim.en-tarjeta { display: none; }
 }

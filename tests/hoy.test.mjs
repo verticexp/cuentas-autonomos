@@ -36,8 +36,9 @@ test('tesorería: solo si el saldo previsto es negativo', () => {
   assert.deepEqual(ids({ teso: { fecha: '2026-11-03', saldo: 0 } }), []);
   const [t] = accionesHoy({ teso: { fecha: '2026-11-03', saldo: -250 } });
   assert.equal(t.id, 'tesoreria');
-  assert.match(t.titulo, /3/);
-  assert.match(t.detalle, /250/);
+  // Es el punto más bajo de la previsión (no el día en que se entra en negativo): fecha e importe en el título.
+  assert.match(t.titulo, /3 de noviembre.*250/);
+  assert.match(t.detalle, /más bajo/);
 });
 
 test('orden por urgencia: Hacienda inminente, tesorería, vencidas y, al final, Hacienda con margen', () => {

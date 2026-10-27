@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
+import useCambiosSinGuardar from './useCambiosSinGuardar';
 import Deslizable from './Deslizable';
 import { baseLinea, importes, leerImporte, r2 } from '@/lib/calculos';
 import '@/app/lineas.css';
@@ -25,6 +26,7 @@ export default function FormPresupuesto({ presupuesto, clientes, actividades, ho
     : { actividad: actividades[0].id, fecha: hoy, cliente: VACIO, lineas: [lineaVacia()], nota: '', evento: { fecha: '', lugar: '' }, senalPct: 30, validez: 15, ...defecto(actividades[0].id) });
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
+  const sinGuardar = useCambiosSinGuardar(p);
   const poner = (k, v) => setP((x) => ({ ...x, [k]: v }));
   const ponerCliente = (k, v) => poner('cliente', { ...p.cliente, [k]: v });
   const elegido = clientes.find((x) => x.nombre.toUpperCase() === p.cliente.nombre.trim().toUpperCase())?.id || '';
@@ -41,6 +43,7 @@ export default function FormPresupuesto({ presupuesto, clientes, actividades, ho
     setEnviando(true); setError('');
     try {
       const d = await llamar('/api/presupuestos', { method: nuevo ? 'POST' : 'PATCH', body: JSON.stringify({ ...p, lineas: p.lineas.map((l) => ({ ...l, ivaPct: p.ivaPct })) }) });
+      await sinGuardar.guardado();
       router.replace(`/presupuestos/${nuevo ? d.presupuesto.id : p.id}`);
       router.refresh();
     } catch (err) { setError(err.message); setEnviando(false); }
@@ -67,8 +70,8 @@ export default function FormPresupuesto({ presupuesto, clientes, actividades, ho
         <label>Código postal y ciudad<input className="campo" placeholder="Ciudad y CP" value={p.cliente.ciudad} onChange={(e) => ponerCliente('ciudad', e.target.value)} /></label>
       </fieldset>
       <div className="dos-col">
-        <label>Fecha del evento<input className="campo" type="date" value={p.evento?.fecha || ''} onChange={(e) => poner('evento', { ...p.evento, fecha: e.target.value })} /></label>
-        <label>Lugar<input className="campo" placeholder="Hotel Arts" value={p.evento?.lugar || ''} onChange={(e) => poner('evento', { ...p.evento, lugar: e.target.value })} /></label>
+        <label>Fecha de la operación (servicio o entrega, opcional)<input className="campo" type="date" value={p.evento?.fecha || ''} onChange={(e) => poner('evento', { ...p.evento, fecha: e.target.value })} /></label>
+        <label>Lugar (opcional)<input className="campo" placeholder="Ej.: C/ Mayor, 1, Valencia" value={p.evento?.lugar || ''} onChange={(e) => poner('evento', { ...p.evento, lugar: e.target.value })} /></label>
       </div>
       <fieldset className="lineas">
         <legend>Conceptos</legend>

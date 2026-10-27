@@ -31,22 +31,24 @@ export default function EmailEnvio({ inicial = {}, empresa = {} }) {
     } catch (err) { setMsg(err.message); }
   };
   return (
-    <form className="formulario tarjeta" onSubmit={guardar}>
-      <h3>Email de las facturas</h3>
-      <label>Asunto<input className="campo" value={datos.asunto} placeholder={asuntoFactura(EJEMPLO, emisor)} disabled={guardando} onChange={(e) => poner('asunto', e.target.value)} /></label>
-      <label>Mensaje<textarea className="campo" rows={6} value={datos.mensaje} placeholder={mensajeFactura(EJEMPLO, emisor)} disabled={guardando} onChange={(e) => poner('mensaje', e.target.value)} /></label>
-      <label>Firma<textarea className="campo" rows={3} value={datos.firma} placeholder={emisor.nombre || 'Nombre de la empresa'} disabled={guardando} onChange={(e) => poner('firma', e.target.value)} /></label>
-      <p className="nota">Deja los campos vacíos para usar los textos por defecto. Puedes usar estos marcadores:</p>
-      <ul className="nota">
+    <form className="formulario aj-form" onSubmit={guardar}>
+      <h3 aria-level={2}>Email de las facturas</h3>
+      <div className="aj-grupo">
+        <label>Asunto<input className="campo" value={datos.asunto} placeholder={asuntoFactura(EJEMPLO, emisor)} disabled={guardando} onChange={(e) => poner('asunto', e.target.value)} /></label>
+        <label>Mensaje<textarea className="campo" rows={6} value={datos.mensaje} placeholder={mensajeFactura(EJEMPLO, emisor)} disabled={guardando} onChange={(e) => poner('mensaje', e.target.value)} /></label>
+        <label>Firma<textarea className="campo" rows={3} value={datos.firma} placeholder={emisor.nombre || 'Nombre de la empresa'} disabled={guardando} onChange={(e) => poner('firma', e.target.value)} /></label>
+      </div>
+      <p className="nota aj-pie">Deja los campos vacíos para usar los textos por defecto. Puedes usar estos marcadores:</p>
+      <ul className="nota aj-pie">
         {CAMPOS_PLANTILLA.map(([campo, explicacion]) => <li key={campo}><code>{campo}</code>: {explicacion}</li>)}
       </ul>
-      <section aria-label="Vista previa del email" style={{ overflowWrap: 'anywhere' }}>
+      <section className="aj-vista-previa" aria-label="Vista previa del email" style={{ overflowWrap: 'anywhere' }}>
         <h4>Vista previa</h4>
         <p className="nota">Factura de ejemplo · vencimiento a 30 días</p>
         <p><strong>Asunto:</strong> {asuntoFactura(EJEMPLO, emisor, datos)}</p>
         <p style={{ whiteSpace: 'pre-wrap' }}>{mensajeFactura(EJEMPLO, emisor, datos)}</p>
       </section>
-      {msg && <p role="status" className={msg === 'Guardado' ? 'nota guardado' : guardando ? 'nota' : 'error'}>{msg === 'Guardado' ? '✓ Guardado' : msg}</p>}
+      {msg && <p role="status" className={msg === 'Guardado' ? 'nota aj-pie guardado' : guardando ? 'nota aj-pie' : 'error aj-pie'}>{msg === 'Guardado' ? '✓ Guardado' : msg}</p>}
       <button className="boton" disabled={guardando}>Guardar</button>
       <button type="button" className="boton sec" disabled={guardando} onClick={() => { setDatos({ asunto: '', mensaje: '', firma: '' }); setMsg(''); }}>Volver a los textos por defecto</button>
     </form>

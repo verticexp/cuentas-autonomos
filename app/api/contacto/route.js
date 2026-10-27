@@ -3,6 +3,7 @@ import { emailValido } from '@/lib/email';
 import { enviarCorreo } from '@/lib/correos';
 import { ipDe, MUCHOS, pasado } from '@/lib/limite';
 import { redis } from '@/lib/redis';
+import { cuerpo } from '@/lib/api';
 
 // Formulario «Pedir acceso» de la web pública (components/web/FormContacto.js): guarda la solicitud y avisa por email.
 // CONTACTO_EMAIL cambia el destinatario (por defecto, el email de empresa).
@@ -11,7 +12,7 @@ const CAMPOS = { nombre: 80, email: 120, empresa: 120, tipo: 40, plan: 60, vengo
 const ETIQUETAS = { nombre: 'Nombre', email: 'Email', empresa: 'Empresa', tipo: 'Tipo de negocio', plan: 'Plan', vengo: 'Usa ahora', mensaje: 'Mensaje' };
 
 export async function POST(req) {
-  const d = await req.json().catch(() => ({}));
+  const d = await cuerpo(req);
   // Campo trampa: invisible para personas, los bots lo rellenan. Se responde «ok» sin hacer nada.
   if (d.web) return NextResponse.json({ ok: true });
   if (await pasado('contacto', ipDe(req), 5, 3600)) return NextResponse.json({ error: MUCHOS }, { status: 429 });

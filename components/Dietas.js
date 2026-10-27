@@ -4,11 +4,13 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
 import { calcularDieta, KM, limiteDia } from '@/lib/dietas';
-import { eur } from '@/lib/formato';
+import { eur, pctCorto } from '@/lib/formato';
 import '@/app/dietas.css';
+import useEnvio from './useEnvio';
 
 // Kilometraje y dietas: se apunta como gasto con lo exento (o deducible) ya calculado.
 export default function Dietas({ hoy, actividades, autonomo }) {
+  const [enviando, envolver] = useEnvio();
   const router = useRouter();
   const vacio = { tipo: 'km', quien: autonomo ? 'titular' : 'empleado', fecha: hoy, actividad: actividades[0].id, km: '', dias: '1', pernocta: false, extranjero: false, pagado: '', ivaPct: 10, electronico: true, persona: '', motivo: '' };
   const [d, setD] = useState(vacio);
@@ -28,7 +30,7 @@ export default function Dietas({ hoy, actividades, autonomo }) {
   };
   const tipos = [['km', 'Kilometraje'], ['manutencion', 'Dietas y comidas']];
   return (
-    <form className="formulario tarjeta dietas" onSubmit={enviar}>
+    <form className="formulario tarjeta dietas" onSubmit={envolver(enviar)}>
       <h3>Kilometraje y dietas</h3>
       <div className="tipo dos">{tipos.map(([k, n]) => <button type="button" key={k} className={d.tipo === k ? 'activo' : ''} onClick={() => poner('tipo', k)}>{n}</button>)}</div>
       {autonomo && d.tipo === 'manutencion' && (
@@ -38,8 +40,8 @@ export default function Dietas({ hoy, actividades, autonomo }) {
         </div>
       )}
       {actividades.length > 1 && <select aria-label="Actividad" className="campo" value={d.actividad} onChange={(e) => poner('actividad', e.target.value)}>{actividades.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}</select>}
-      {!titular && <label>Trabajador (opcional)<input className="campo" placeholder="Trabajador (opcional)" value={d.persona} onChange={(e) => poner('persona', e.target.value)} /></label>}
-      <label>Motivo o destino (opcional)<input className="campo" placeholder="Motivo o destino (opcional)" value={d.motivo} onChange={(e) => poner('motivo', e.target.value)} /></label>
+      {!titular && <label>Trabajador (opcional)<input className="campo" placeholder="Nombre y apellidos" value={d.persona} onChange={(e) => poner('persona', e.target.value)} /></label>}
+      <label>Motivo o destino (opcional)<input className="campo" placeholder="Ej.: visita a un cliente en Girona" value={d.motivo} onChange={(e) => poner('motivo', e.target.value)} /></label>
       {d.tipo === 'km' ? (
         <div className="dos-col">
           <label>Kilómetros<input className="campo" inputMode="decimal" placeholder="0" value={d.km} onChange={(e) => poner('km', e.target.value)} required /></label>
@@ -59,15 +61,15 @@ export default function Dietas({ hoy, actividades, autonomo }) {
       <label>Fecha<input className="campo" type="date" value={d.fecha} onChange={(e) => poner('fecha', e.target.value)} required /></label>
       {c && !c.error && (
         <p className="dieta-calculo" role="status">
-          {c.tipo === 'km' ? <>Exento: {String(c.km).replace('.', ',')} km × {String(KM).replace('.', ',')} € = <strong>{eur(c.exento)}</strong></>
+          {c.tipo === 'km' ? <>Límite exento: {String(c.km).replace('.', ',')} km × {String(KM).replace('.', ',')} € = <strong>{eur(c.limite)}</strong>{c.exento < c.limite ? <> · exento {eur(c.exento)}</> : null}</>
             : <>Límite: {eur(limiteDia(d))} al día × {c.dias} = <strong>{eur(Math.round(c.limiteDia * c.dias * 100) / 100)}</strong></>}
-          {titular ? <> · Deducible <strong>{eur(c.deducible)}</strong> (base {eur(c.base)} + IVA {c.ivaPct} %)</> : <> · Gasto {eur(c.base)}</>}
+          {titular ? <> · Deducible <strong>{eur(c.deducible)}</strong> (base {eur(c.base)} + IVA {pctCorto(c.ivaPct)})</> : <> · Gasto {eur(c.base)}</>}
           {c.exceso > 0 && <span className="rojo"> · {titular ? `${eur(c.exceso)} no deducible` : `${eur(c.exceso)} de más: va en su nómina con retención`}</span>}
         </p>
       )}
       {c?.error && <p className="nota">{c.error}</p>}
       {msg && <p className={msg.startsWith('✓') ? 'nota' : 'error'}>{msg}</p>}
-      <button className="boton">Apuntar como gasto</button>
+      <button className="boton" disabled={enviando}>Apuntar como gasto</button>
       <p className="nota dieta-norma">Importes de 2026: {String(KM).replace('.', ',')} €/km; comidas 26,67 € al día (53,34 € con noche) en España y 48,08 € (91,35 €) en el extranjero. Art. 9 del Reglamento del IRPF; para el autónomo, art. 30.2.5ª de la Ley. Guarda los justificantes del viaje.</p>
     </form>
   );

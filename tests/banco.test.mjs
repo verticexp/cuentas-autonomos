@@ -12,7 +12,8 @@ test('banco: Norma 43 con cargos, abonos, conceptos complementarios y saldo fina
   assert.ok(esNorma43(txt));
   assert.ok(!esNorma43('Fecha;Concepto;Importe\n'));
   const r = leerNorma43(txt);
-  assert.deepEqual(r.cuentas, [{ id: 'n43-210004180200051332', nombre: 'SONORA EVENTOS', numero: '210004180200051332', saldo: 2089, fechaSaldo: '2026-09-03' }]);
+  // desde y hasta: las fechas de la cabecera (lo que cubre el extracto, para el aviso de subirlo).
+  assert.deepEqual(r.cuentas, [{ id: 'n43-210004180200051332', nombre: 'SONORA EVENTOS', numero: '210004180200051332', saldo: 2089, fechaSaldo: '2026-09-03', desde: '2026-09-02', hasta: '2026-09-03' }]);
   assert.deepEqual(r.movimientos.map((m) => [m.fecha, m.importe]), [['2026-09-02', 1210], ['2026-09-03', -60.5], ['2026-09-03', -60.5]]);
   assert.equal(r.movimientos[0].contraparte, 'HOTEL MIRADOR DEL PORT SA');
   assert.match(r.movimientos[0].concepto, /HOTEL MIRADOR.*FRA 07-2026/);

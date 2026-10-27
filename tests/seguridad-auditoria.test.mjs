@@ -288,7 +288,8 @@ test('S7: dentro de cuota el portal y el PDF siguen devolviendo los documentos d
   await R.redis.hset('portal-enlaces', { valido: { empresa: 'e', cliente: 'CLIENTE' } });
   const P = await cargar('lib/portal.js');
   assert.equal((await P.portalDe('valido', req('/portal/valido', undefined, 'GET'))).facturas[0].id, 'F1');
-  estado.identidadDoc = async () => ({ emisor: { nif: 'B12345678', iban: 'ES1' } });
+  estado.identidadDoc = async () => ({ emisor: { nombre: 'Empresa', nif: 'B12345678', direccion: 'C/ Uno, 1', iban: 'ES1' } });
+  estado.faltanDatosFactura = (await import('../lib/empresa.js')).faltanDatosFactura;
   estado.facturaPdf = async () => Buffer.from('%PDF-prueba');
   const pdf = await cargar('app/api/portal/pdf/route.js');
   const r = await pdf.GET(req('/api/portal/pdf?t=valido&id=F1', undefined, 'GET'));
@@ -299,7 +300,7 @@ test('S7: dentro de cuota el portal y el PDF siguen devolviendo los documentos d
 // lib/empresa.js va simulada en este archivo: S8 y S9 necesitan la de verdad para el cuestionario.
 async function empresaReal() {
   const E = await import('../lib/empresa.js');
-  Object.assign(estado, { fiscalDe: E.fiscalDe, actividadesDe: E.actividadesDe, limpiarActividades: E.limpiarActividades, limpiarFiscal: E.limpiarFiscal });
+  Object.assign(estado, { fiscalDe: E.fiscalDe, actividadesDe: E.actividadesDe, limpiarActividades: E.limpiarActividades, limpiarFiscal: E.limpiarFiscal, usaIgic: E.usaIgic });
 }
 
 // 8: una sociedad no puede quedarse en un plan de autónomo cambiando sus datos después del alta (lib/formaJuridica.js).
@@ -336,4 +337,64 @@ test('S9: pagando un plan de autónomo no se pasa a sociedad, y un NIF de otra c
   r = await ruta.PATCH(req('/api/cuenta', { nombre: 'Ana', nif: '87654321X' }, 'PATCH'));
   assert.equal(r.status, 400); assert.match((await r.json()).error, /otra cuenta de Fisquo/);
   assert.equal((await R.redis.hget('empresas', 'e')).plan.tipo, 'aut');
+});
+
+test('Canarias: configuración real valida actividades IGIC y el 420 usa pres303 con pago identificado como 420', async () => {
+  await empresaReal();
+  const emisor = { nombre: 'Canarias SL', nif: 'B12345674' };
+  const u = await usuario({}, { plan: { tipo: 'pym', nombre: 'Pro', version: 3, periodo: 'mes', hasta: '2099-01-01' }, emisor, fiscal: { tipo: 'sociedad', iva: 'general' } });
+  await sesion(u); cabeceras('/api/cuenta', 'PATCH');
+  const ruta = await cargar('app/api/cuenta/route.js');
+  const configuracion = { fiscal: { tipo: 'sociedad', territorio: 'canarias', iva: 'general', intracom: true, oss: true }, emisor, actividades: [{ nombre: 'Servicios', ivaPct: 7, irpfPct: 0 }] };
+  let r = await ruta.PATCH(req('/api/cuenta', { configuracion }, 'PATCH'));
+  assert.equal(r.status, 200, JSON.stringify(await r.clone().json()));
+  const empresa = await R.redis.hget('empresas', 'e');
+  assert.equal(empresa.fiscal.territorio, 'canarias');
+  assert.equal(empresa.fiscal.intracom, false);
+  assert.equal(empresa.fiscal.oss, undefined);
+  assert.equal(empresa.actividades[0].ivaPct, 7);
+  r = await ruta.PATCH(req('/api/cuenta', { configuracion: { ...configuracion, actividades: [{ nombre: 'Servicios', ivaPct: 21 }] } }, 'PATCH'));
+  assert.equal(r.status, 400);
+  assert.match((await r.json()).error, /IGIC/);
+  r = await ruta.PATCH(req('/api/cuenta', { presentado303: { anio: 2026, t: 1, hecho: true } }, 'PATCH'));
+  assert.equal(r.status, 200);
+  const presentada = await R.redis.hget('empresas', 'e');
+  assert.equal(presentada.pres303[2026][1], true);
+  assert.ok(presentada.pagadosHacienda['2026-1-420']);
+  assert.equal(presentada.pagadosHacienda['2026-1-303'], undefined);
+});
+
+test('despachos: dos gestorías con clientes distintos no se ven entre sí, ni las solicitudes sin aceptar', async () => {
+  const D = await import('../lib/despachos.js');
+  const emp = (id, datos = {}) => R.redis.hset('empresas', { [id]: { id, nombre: id, ...datos } });
+  for (const id of ['propiaA', 'propiaB', 'cA', 'cB', 'cP']) await emp(id);
+  const dA = (await D.crearDespacho({ nombre: 'Asesoría A', codigo: 'ASESA', titular: 'ta', empresa: 'propiaA' })).despacho;
+  const dB = (await D.crearDespacho({ nombre: 'Asesoría B', codigo: 'ASESB', titular: 'tb', empresa: 'propiaB' })).despacho;
+  dA.miembros.ga = { rol: 'gestor' };
+  await R.redis.hset('despachos', { [dA.id]: dA });
+  for (const [c, d] of [['cA', dA], ['cB', dB]]) { await D.unirCliente(c, d); await D.aceptarCliente(c, d.id); }
+  await D.unirCliente('cP', dA); // solicitud sin aceptar
+  const ta = { id: 'ta', empresa: 'propiaA', despacho: dA.id };
+  const ga = { id: 'ga', empresa: 'propiaA', despacho: dA.id };
+  const tb = { id: 'tb', empresa: 'propiaB', despacho: dB.id };
+  const entra = async (u, pedida) => { const r = await A.conEmpresa(u, pedida); return [r.empresa, r.viaDespacho?.id || null]; };
+
+  assert.deepEqual(await entra(ga, 'cA'), ['cA', dA.id]);
+  assert.deepEqual(await entra(tb, 'cB'), ['cB', dB.id]);
+  // Pedir el cliente de la otra gestoría (cookie «e» puesta a mano) deja en la empresa propia, sin perfil Gestoría.
+  assert.deepEqual(await entra(ga, 'cB'), ['propiaA', null]);
+  assert.deepEqual(await entra(ta, 'cB'), ['propiaA', null]);
+  assert.deepEqual(await entra(tb, 'cA'), ['propiaB', null]);
+  // La solicitud sin aceptar no la ve nadie, tampoco el titular.
+  assert.deepEqual(await entra(ta, 'cP'), ['propiaA', null]);
+  assert.deepEqual(await entra(ga, 'cP'), ['propiaA', null]);
+  assert.deepEqual((await D.clientesVisibles(dA, 'ta')).map((x) => x.id), ['cA']);
+  assert.deepEqual((await D.clientesVisibles(dB, 'tb')).map((x) => x.id), ['cB']);
+  // Aceptada, ya entra; y si el cliente se va a la otra gestoría, la primera deja de verlo al momento.
+  await D.aceptarCliente('cP', dA.id);
+  assert.deepEqual(await entra(ga, 'cP'), ['cP', dA.id]);
+  await D.separarCliente('cP', dA.id);
+  await D.unirCliente('cP', dB); await D.aceptarCliente('cP', dB.id);
+  assert.deepEqual(await entra(ga, 'cP'), ['propiaA', null]);
+  assert.deepEqual(await entra(tb, 'cP'), ['cP', dB.id]);
 });

@@ -72,7 +72,7 @@ test('fuera de plazo cuando el límite ya pasó', () => {
 test('texto del estado: en curso, listo (hoy, mañana o con fecha), fuera de plazo', () => {
   assert.equal(textoSituacion({ estado: 'curso', dias: 103 }, '30 de enero de 2027'), 'En curso · se presenta hasta el 30 de enero de 2027');
   assert.equal(textoSituacion({ estado: 'listo', dias: 1 }, '20 de octubre'), 'Listo para presentar · hasta mañana, 20 de octubre');
-  assert.equal(textoSituacion({ estado: 'listo', dias: 0 }, '20 de octubre'), 'Listo para presentar · hasta hoy, 20 de octubre');
+  assert.equal(textoSituacion({ estado: 'listo', dias: 0 }, '20 de octubre'), 'Listo para presentar · hoy es el último día, 20 de octubre');
   assert.equal(textoSituacion({ estado: 'listo', dias: 12 }, '20 de octubre'), 'Listo para presentar · hasta el 20 de octubre');
   assert.equal(textoSituacion({ estado: 'listo', dias: 1 }, '20 de octubre', 'se marca en el 130'), 'Listo para presentar · hasta mañana, 20 de octubre · se marca en el 130');
   assert.equal(textoSituacion({ estado: 'fuera', dias: -91 }, '20 de julio'), 'Fuera de plazo · venció el 20 de julio');
