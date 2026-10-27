@@ -14,6 +14,9 @@ import '@/app/portal.css';
 import FormPresupuesto from '@/components/FormPresupuesto';
 import Volver from '@/components/Volver';
 import Conceptos from '@/components/Conceptos';
+import EnviarFactura from '@/components/EnviarFactura';
+import { asuntoPresupuesto, mensajePresupuesto } from '@/lib/envio';
+import { diasPrueba } from '@/lib/prueba';
 
 import '@/app/mk.css';
 import '@/app/factura-detalle.css';
@@ -52,12 +55,15 @@ export default async function Presupuesto({ params }) {
       {p.facturas.length > 0 && <p className="nota">Facturas: {p.facturas.map((f, n) => <span key={f.id}>{n ? ', ' : ''}<Link href={`/facturas/${f.id}`}>{f.numero}</Link> ({f.tipo === 'senal' ? 'señal' : senal ? 'resto' : 'total'})</span>)}</p>}
       {/* Como en la factura: lo de cada día arriba; el portal, cambiar el enlace y borrar, en «Más opciones» (Borrar al final). */}
       {editar && <div className="acciones-factura">
-        {estado === 'pendiente' && <Compartir ruta={`/p/${p.token}`} texto={`Presupuesto ${numeroPresupuesto(p)}`} />}
+        {estado === 'pendiente' && <Compartir ruta={`/p/${p.token}`} texto={`Presupuesto ${numeroPresupuesto(p)}`} etiqueta="Compartir enlace" />}
         {estado === 'pendiente' && <MarcarAceptado id={p.id} />}
         {['pendiente', 'aceptado'].includes(estado) && p.senalPct > 0 && !senal && <Facturar id={p.id} tipo="senal">Facturar señal ({eur(baseSenal(p))})</Facturar>}
         {['pendiente', 'aceptado'].includes(estado) && <Facturar id={p.id} tipo="resto">{senal ? `Facturar el resto (${eur(baseResto(p))})` : 'Facturar todo'}</Facturar>}
         <Link href={`/p/${p.token}`} className="boton sec">Ver como el cliente</Link>
       </div>}
+      {((editar && estado === 'pendiente') || p.envios?.length > 0) && <EnviarFactura id={p.id} email={p.cliente.email} envios={p.envios} editar={editar && estado === 'pendiente'}
+        ruta="/api/presupuestos/enviar" doc="presupuesto" seguimiento={false} principal={!p.envios?.length}
+        asunto={asuntoPresupuesto(p, u)} mensaje={mensajePresupuesto(p, u)} asuntoFijo={diasPrueba(u.plan) > 0} />}
       {(editar || portal) && <details className="mas-opciones">
         <summary>Más opciones</summary>
         <div className="mas-opciones-c">

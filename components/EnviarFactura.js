@@ -8,9 +8,11 @@ import '@/app/envios.css';
 
 const cuando = fechaHora;
 
-// Envía la factura en PDF por email y enseña cada envío con si el cliente lo ha abierto.
-// principal: la factura aún no se ha enviado y mandarla es lo siguiente (botón principal en vez de secundario).
-export default function EnviarFactura({ id, email, asunto, mensaje, envios = [], editar, asuntoFijo = false, principal = false }) {
+// Envía la factura (o el presupuesto) en PDF por email y enseña cada envío. De las facturas se sabe si el cliente lo ha
+// abierto; de los presupuestos, no (seguimiento=false).
+// principal: aún no se ha enviado y mandarlo es lo siguiente (botón principal en vez de secundario).
+export default function EnviarFactura({ id, email, asunto, mensaje, envios = [], editar, asuntoFijo = false, principal = false, ruta = '/api/facturas/enviar', doc = 'factura', seguimiento = true }) {
+  const pres = doc === 'presupuesto';
   const router = useRouter();
   const [abierto, setAbierto] = useState(false);
   const [d, setD] = useState({ para: email || '', asunto, mensaje });
@@ -20,7 +22,7 @@ export default function EnviarFactura({ id, email, asunto, mensaje, envios = [],
     e.preventDefault();
     setEstado('enviando');
     try {
-      await llamar('/api/facturas/enviar', { method: 'POST', body: JSON.stringify({ id, ...d }) });
+      await llamar(ruta, { method: 'POST', body: JSON.stringify({ id, ...d }) });
       setEstado(''); setAbierto(false); router.refresh();
     } catch (err) { setEstado(err.message); }
   };
@@ -33,7 +35,7 @@ export default function EnviarFactura({ id, email, asunto, mensaje, envios = [],
           <label>Asunto<input className="campo" value={d.asunto} readOnly={asuntoFijo} onChange={(e) => poner('asunto', e.target.value)} /></label>
           {asuntoFijo && <p className="envios-nota">Durante la prueba el asunto es el de tu plantilla.</p>}
           <label>Mensaje<textarea className="campo" rows={5} value={d.mensaje} onChange={(e) => poner('mensaje', e.target.value)} /></label>
-          <p className="envios-nota">Va con la factura en PDF adjunta.</p>
+          <p className="envios-nota">{pres ? 'Va con el presupuesto en PDF adjunto y un botón para aceptarlo.' : 'Va con la factura en PDF adjunta.'}</p>
           {estado && estado !== 'enviando' && <p className="error" role="alert">{estado}</p>}
           <div className="dos-col">
             <button type="button" className="boton sec" onClick={() => setAbierto(false)}>Cancelar</button>
@@ -44,9 +46,9 @@ export default function EnviarFactura({ id, email, asunto, mensaje, envios = [],
       {envios.length > 0 && (
         <ul className="envios-lista">
           {[...envios].reverse().map((x) => (
-            <li key={x.token}>
-              <span>{x.tipo === 'recordatorio' ? 'Recordatorio a' : 'Enviada a'} {x.para}<small>{cuando(x.fecha)}</small></span>
-              <span className={`envio-estado ${x.abierta ? 'ok' : ''}`}>{x.abierta ? `Abierta · ${cuando(x.abierta)}` : 'Sin abrir'}</span>
+            <li key={x.token || x.fecha}>
+              <span>{x.tipo === 'recordatorio' ? 'Recordatorio a' : pres ? 'Enviado a' : 'Enviada a'} {x.para}<small>{cuando(x.fecha)}</small></span>
+              {seguimiento && <span className={`envio-estado ${x.abierta ? 'ok' : ''}`}>{x.abierta ? `Abierta · ${cuando(x.abierta)}` : 'Sin abrir'}</span>}
             </li>
           ))}
         </ul>
