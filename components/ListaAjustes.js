@@ -121,7 +121,7 @@ export default async function ListaAjustes({ u }) {
           <Fila href="/bienvenida?editar=1" ico="actividad" tono="azul" titulo="Actividades e impuestos" valor={fiscalDe(u).tipo === 'sociedad' ? 'Sociedad' : 'Autónomo'} />
           {(puede(u, 'usuarios') || u.admin) && <Fila href="/usuarios" ico="usuarios" tono="azul" titulo="Usuarios y permisos" />}
           {puede(u, DETALLE) && <Fila href="/ajustes/gestoria" ico="gestoria" tono="azul" titulo="Tu gestoría" valor={u.gestoria?.email ? u.gestoria.nombre || u.gestoria.email : ''} />}
-          {!app && <Fila href="/ajustes/plan" ico="plan" tono="azul" titulo="Tu plan" valor={plan} aviso={dias !== null && dias <= 7} />}
+          <Fila href="/ajustes/plan" ico="plan" tono="azul" titulo="Tu plan" valor={plan} aviso={dias !== null && dias <= 7} />
           {!app && u.rol === 'admin' && <Fila href="/ajustes/recomienda" ico="regalo" tono="azul" titulo="Recomienda Fisquo" valor="1 mes gratis" />}
         </Grupo>
       )}

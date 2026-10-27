@@ -54,11 +54,28 @@ export default function ElegirPlan({ plan, tipoEmpresa, uso, admin, app }) {
   }
 
   const dias = diasPrueba(actual);
-  if (app) return dias === 0 ? <p className="nota">Tu periodo de prueba ha terminado. Puedes consultar y exportar todos tus datos.</p> : null;
   const ocupado = estado === 'enviando';
   const esActual = (n) => actual?.tipo === tipo && actual?.nombre === n && (actual.periodo || 'mes') === periodo;
   const estadoPlan = fundador ? 'Gratis de por vida' : despacho ? 'Incluido por tu gestoría' : paga ? actual.estado === 'past_due' ? 'Revisar pago' : actual.estado === 'trialing' ? 'Prueba con tarjeta' : 'Activo'
     : dias === 0 ? 'Prueba finalizada' : dias > 0 ? `Prueba · ${dias} días` : actual?.nombre ? 'Pendiente de activación' : 'Condiciones anteriores';
+
+  // En la app de iOS, solo el plan y su estado: sin precios, botones de pago ni enlaces para contratar (norma 3.1.1).
+  if (app) return <div className={styles.contenido}>
+    <div className={styles.resumen}>
+      <section className={styles.actual} aria-labelledby="plan-actual">
+        <div className={styles.cabeceraActual}><h2 id="plan-actual">Tu suscripción</h2><span className={styles.estado}>{estadoPlan}</span></div>
+        <p className={styles.nombreActual}>{fundador ? 'Plan Fundador' : actual?.nombre ? `${TIPOS[actual.tipo]} ${actual.nombre}` : 'Periodo de prueba'}</p>
+        <p className={styles.detalleActual}>{fundador ? 'Todas las funciones, sin límites de usuarios ni cuotas.' : despacho ? `Incluido por ${despacho.nombre}.` : paga ? `Facturación ${actual.periodo === 'anio' ? 'anual' : 'mensual'} · una empresa por suscripción`
+          : dias === 0 ? 'Tu periodo de prueba ha terminado. Puedes consultar y exportar todos tus datos.'
+          : dias > 0 ? `Te ${dias === 1 ? 'queda 1 día' : `quedan ${dias} días`} de prueba con todas las funciones.` : ''}</p>
+        {paga && actual.estado === 'past_due' && <p className={styles.alerta}>El último cobro ha fallado.</p>}
+      </section>
+      <section className={styles.consumo} aria-labelledby="plan-consumo">
+        <h2 id="plan-consumo">Lectura de facturas y tickets</h2>
+        <CupoEscaneo />
+      </section>
+    </div>
+  </div>;
 
   return <div className={styles.contenido} aria-busy={ocupado}>
     <p className={styles.intro}>Gestiona tu suscripción y elige el alcance que necesita tu empresa.</p>

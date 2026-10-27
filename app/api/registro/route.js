@@ -13,6 +13,7 @@ import { NO_VALIDO, resolverCodigo } from '@/lib/codigoPromocional';
 import { apuntarRecomendada, empresaPorCodigo, normalizarRef, RECOMENDACION_DIAS } from '@/lib/recomendaciones';
 import { enEmpresa } from '@/lib/membresias';
 import { despachoPorCodigo, unirCliente } from '@/lib/despachos';
+import { leerAlta } from '@/lib/socialServidor';
 
 // Alta de una cuenta con su empresa. La primera de todas es la del administrador de Fisquo (formulario de app/login);
 // las demás llegan desde /registro con tipo de negocio y plan, y empiezan el mes de prueba (lib/prueba.js).
@@ -38,7 +39,17 @@ export async function POST(req) {
   const primera = !sesion && !(await hayUsuarios())
     && (!enVercel || (Boolean(process.env.ADMIN_EMAIL) && String(form.get('email') || '').trim().toLowerCase() === process.env.ADMIN_EMAIL.trim().toLowerCase()));
   const cuenta = { nombre: form.get('nombre'), email: form.get('email'), password: String(form.get('password') || ''), admin: primera };
-  if (!sesion) {
+  // Alta con Google o Apple (app/api/login/social/vuelta): sin contraseña, con el email que da el proveedor si lo ha
+  // verificado (si no, el que escriba, que se confirma por correo como siempre).
+  const idAlta = req.cookies?.get('alta-social')?.value;
+  const alta = !sesion && !primera && idAlta ? await leerAlta(idAlta) : null;
+  if (alta) {
+    if (alta.email) cuenta.email = alta.email;
+    delete cuenta.password;
+    cuenta.social = { [alta.proveedor]: { sub: alta.sub, ...(alta.refresh ? { refresh: alta.refresh, nativo: Boolean(alta.nativo) } : {}) } };
+    cuenta.emailVerificado = Boolean(alta.email);
+  }
+  if (!sesion && !alta) {
     const seguridad = await validarContrasenaSegura(cuenta.password, cuenta);
     if (!seguridad.ok) return fallo(seguridad.error, 400, 4);
     const correo = await emailReal(cuenta.email);
@@ -111,10 +122,15 @@ export async function POST(req) {
     return res;
   }
 
-  await enviarConfirmacion({ para: r.usuario.email, nombre: r.usuario.nombre, url: new URL(`/api/confirmar?t=${await tokenEmail(r.usuario.id)}`, req.url).toString() });
+  if (alta) {
+    await redis.hset('social-usuario', { [`${alta.proveedor}:${alta.sub}`]: r.usuario.id });
+    await redis.del(`social-alta:${idAlta}`);
+  }
+  if (!r.usuario.emailVerificado) await enviarConfirmacion({ para: r.usuario.email, nombre: r.usuario.nombre, url: new URL(`/api/confirmar?t=${await tokenEmail(r.usuario.id)}`, req.url).toString() });
   const token = await crearSesion(r.usuario.id);
   const res = json ? NextResponse.json({ ok: true }) : NextResponse.redirect(new URL(primera ? '/ajustes' : '/', req.url), 303);
   res.cookies.set('t', token, opcionesCookie);
   res.cookies.set('d', await desbloqueo(token), opcionesDesbloqueo);
+  if (alta) res.cookies.delete('alta-social');
   return res;
 }

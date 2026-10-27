@@ -38,6 +38,7 @@ const fuente = `
   export const validarContrasenaSegura = async () => ({ ok: true });
   export const emailReal = async () => ({ ok: true });
   export const comprobarNif = async () => ({ estado: 'ok' });
+  export const leerAlta = async () => null;
   export const pasado = async () => false;
   export const ipDe = () => 'pruebas';
   export const MUCHOS = 'Demasiadas peticiones';
@@ -58,7 +59,7 @@ const fuente = `
     return { usuario: { id: 'usuario-' + estado.altas.length, empresa, email: cuenta.email, nombre: cuenta.nombre } };
   }
 `;
-const dobles = new Set(['@/lib/api', '@/lib/auth', '@/lib/contrasenaFiltrada', '@/lib/emailReal', '@/lib/censoAeat', '@/lib/limite', '@/lib/invitacion']);
+const dobles = new Set(['@/lib/api', '@/lib/auth', '@/lib/contrasenaFiltrada', '@/lib/emailReal', '@/lib/censoAeat', '@/lib/limite', '@/lib/invitacion', '@/lib/socialServidor']);
 const hooks = registerHooks({
   resolve(spec, context, next) {
     if (dobles.has(spec)) return { url: 'data:text/javascript,' + encodeURIComponent(fuente), shortCircuit: true };

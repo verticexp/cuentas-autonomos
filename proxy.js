@@ -9,7 +9,10 @@ export function proxy(req) {
   // vale Sec-Fetch-Site, que pone el navegador. Sin Origin (Stripe, crons) pasa: esas rutas comprueban su firma o secreto.
   const origen = req.headers.get('origin');
   const mismoSitio = origen === 'null' && req.headers.get('sec-fetch-site') === 'same-origin';
-  if (!['GET', 'HEAD'].includes(req.method) && origen && !mismoSitio && URL.parse(origen)?.host !== req.nextUrl.host) {
+  // La única excepción: «Continuar con Apple» vuelve con un POST desde appleid.apple.com (form_post); esa ruta comprueba
+  // el state de su cookie y la firma del token de Apple (app/api/login/social/vuelta).
+  const vueltaApple = origen === 'https://appleid.apple.com' && req.nextUrl.pathname === '/api/login/social/vuelta';
+  if (!['GET', 'HEAD'].includes(req.method) && origen && !mismoSitio && !vueltaApple && URL.parse(origen)?.host !== req.nextUrl.host) {
     return NextResponse.json({ error: 'Origen no permitido' }, { status: 403 });
   }
   // App de iOS: sin web pública ni precios (lib/app.js).

@@ -11,7 +11,7 @@ import FormCodigo from '@/components/FormCodigo';
 import { enfocar, irALaApp, useTrasArranque } from '@/lib/arranque';
 
 // El formulario público ya se ve en el HTML inicial. Si falla, el error aparece aquí y el email se conserva.
-export default function FormEntrar({ errorInicial = '' }) {
+export default function FormEntrar({ errorInicial = '', listos = {} }) {
   const listo = useTrasArranque();
   const [error, setError] = useState(errorInicial);
   const [enviando, setEnviando] = useState(false);
@@ -41,8 +41,8 @@ export default function FormEntrar({ errorInicial = '' }) {
       <input type="hidden" name="inicio" value="1" />
       <h1><Logo className="logo-login" /></h1>
       <p className="login-titulo">Inicia sesión</p>
-      <BotonesSociales />
-      <p className="separador solo-web"><span>o con tu email</span></p>
+      <BotonesSociales listos={listos} alError={setError} />
+      {(listos.google || listos.apple) && <p className="separador"><span>o con tu email</span></p>}
       {error && <p className="error" role="alert">{error}</p>}
       <label htmlFor="email">Email</label>
       <input ref={email} id="email" name="email" type="email" autoComplete="username webauthn" required />
