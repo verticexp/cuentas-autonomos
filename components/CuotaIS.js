@@ -4,10 +4,12 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
 import { eur } from '@/lib/formato';
+import { useT } from '@/components/Idioma';
 
 // Un importe de un año que guarda la empresa en /api/cuenta (cuotaIS, binsPrevias o fondosPropios).
 // anioEditable: el año también se escribe (bases negativas de antes de Fisquo).
 export function ImporteAnio({ campo, anio, valor, titulo, ayuda, sugerido = null, textoSugerido, soloLectura = false, anioEditable = false, etiqueta = 'Importe' }) {
+  const tr = useT();
   const router = useRouter();
   const [v, setV] = useState(valor === null || valor === undefined ? '' : String(valor).replace('.', ','));
   const [y, setY] = useState(anio ? String(anio) : '');
@@ -21,15 +23,15 @@ export function ImporteAnio({ campo, anio, valor, titulo, ayuda, sugerido = null
   const Caja = soloLectura ? 'div' : 'form';
   return (
     <Caja className="formulario tarjeta" onSubmit={soloLectura ? undefined : (e) => { e.preventDefault(); guardar(v.trim() === '' ? null : v); }}>
-      <p><strong>{titulo}</strong></p>
-      <p className="nota">{ayuda}{valor !== null && valor !== undefined ? ` Guardado: ${eur(valor)}.` : ''}</p>
-      {sugerido !== null && sugerido !== undefined && <p className="nota">{textoSugerido || 'Con lo que hay en Fisquo sale'} {eur(sugerido)}.{!soloLectura && sugerido !== valor && <> <button type="button" className="enlace" onClick={() => { setV(String(sugerido).replace('.', ',')); guardar(String(sugerido)); }}>Usar este importe</button></>}</p>}
-      {soloLectura ? <p className="nota">Lo cambia quien tiene el permiso «Contabilidad».</p> : <div className="fila-act">
-        {anioEditable && <input className="campo" inputMode="numeric" placeholder="Año" value={y} onChange={(e) => setY(e.target.value)} aria-label="Año" />}
-        <input className="campo" inputMode="decimal" placeholder={etiqueta} value={v} onChange={(e) => setV(e.target.value)} aria-label={`${titulo}: ${etiqueta.toLowerCase()}`} />
-        <button className="boton sec">Guardar</button>
+      <p><strong>{tr(titulo)}</strong></p>
+      <p className="nota">{tr(ayuda)}{valor !== null && valor !== undefined ? ` ${tr('Guardado: {importe}.', { importe: eur(valor) })}` : ''}</p>
+      {sugerido !== null && sugerido !== undefined && <p className="nota">{tr(textoSugerido || 'Con lo que hay en Fisquo sale')} {eur(sugerido)}.{!soloLectura && sugerido !== valor && <> <button type="button" className="enlace" onClick={() => { setV(String(sugerido).replace('.', ',')); guardar(String(sugerido)); }}>{tr('Usar este importe')}</button></>}</p>}
+      {soloLectura ? <p className="nota">{tr('Lo cambia quien tiene el permiso «Contabilidad».')}</p> : <div className="fila-act">
+        {anioEditable && <input className="campo" inputMode="numeric" placeholder={tr('Año')} value={y} onChange={(e) => setY(e.target.value)} aria-label={tr('Año')} />}
+        <input className="campo" inputMode="decimal" placeholder={tr(etiqueta)} value={v} onChange={(e) => setV(e.target.value)} aria-label={`${tr(titulo)}: ${tr(etiqueta).toLowerCase()}`} />
+        <button className="boton sec">{tr('Guardar')}</button>
       </div>}
-      {msg && <p className="error" role="alert">{msg}</p>}
+      {msg && <p className="error" role="alert">{tr(msg)}</p>}
     </Caja>
   );
 }
