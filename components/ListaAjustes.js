@@ -7,6 +7,7 @@ import { DETALLE, perfilDe, puede } from '@/lib/permisos';
 import Avatar from '@/components/Avatar';
 import { fiscalDe, actividadesDe } from '@/lib/empresa';
 import { modoDe } from '@/lib/verifactu';
+import { whatsappListo } from '@/lib/whatsapp';
 import CambiarEmpresa from '@/components/CambiarEmpresa';
 import FilaAjuste from '@/components/FilaAjuste';
 import CerrarAjustes from '@/components/CerrarAjustes';
@@ -29,6 +30,7 @@ const I = {
   verifactu: <path d="M12 3l8 4v5c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V7zM8.5 12l2.5 2.5L16 9.5" />,
   banco: <path d="M3 10l9-6 9 6M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18" />,
   drive: <path d="M7 18h10.5a4 4 0 0 0 .6-7.95A6 6 0 0 0 6.6 9.1 4.5 4.5 0 0 0 7 18z" />,
+  whatsapp: <path d="M4.5 19.5l1.2-3.6A8 8 0 1 1 8.3 18.4zM9 9.5c0 3 2.5 5.5 5.5 5.5l1.2-1.2-1.8-1-1 .8a4 4 0 0 1-2.5-2.5l.8-1-1-1.8z" />,
   conexion: <path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" />,
   seguridad: <><rect x="5" y="10.5" width="14" height="10" rx="2" /><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3" /></>,
   avisos: <path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0" />,
@@ -80,7 +82,7 @@ export function CuentaYEmpresas({ u, app }) {
 // (app/ajustes/layout.js). Solo configuración: las pantallas de trabajo (nóminas, jornada, Pregunta a Fisquo…) están en «Más».
 export default async function ListaAjustes({ u }) {
   const app = esApp((await headers()).get('user-agent'));
-  const [llaves, avisos] = await Promise.all([redis.hgetall(`passkeys:${u.id}`).then((x) => Object.keys(x || {}).length), redis.hlen(`push:${u.id}`)]);
+  const [llaves, avisos, whatsapp] = await Promise.all([redis.hgetall(`passkeys:${u.id}`).then((x) => Object.keys(x || {}).length), redis.hlen(`push:${u.id}`), redis.get(`whatsapp:de:${u.id}`)]);
   const empresa = puede(u, 'empresa');
   const admin = u.rol === 'admin';
   const e = u.emisor || {};
@@ -140,6 +142,7 @@ export default async function ListaAjustes({ u }) {
           {puede(u, DETALLE) && <Fila href="/banco" ico="banco" tono="ambar" titulo="Bancos" />}
           {puede(u, DETALLE) && <Fila href="/ajustes/drive" ico="drive" tono="ambar" titulo="Google Drive" valor={u.drive?.url ? (u.driveError ? 'Con errores' : 'Conectado') : 'No'} aviso={Boolean(u.drive?.url && u.driveError)} />}
           {(u.admin || u.controlat) && <Fila href="/ajustes/controlat" ico="conexion" tono="ambar" titulo="Controla'T" valor={u.controlat ? 'Sí' : 'No'} />}
+          {puede(u, 'facturar') && whatsappListo() && <Fila href="/ajustes/whatsapp" ico="whatsapp" tono="ambar" titulo="WhatsApp" valor={whatsapp ? 'Conectado' : 'No'} />}
           {puede(u, 'empresa') && <Fila href="/ajustes/api" ico="conexion" tono="ambar" titulo="API y webhooks" />}
         </Grupo>
       )}

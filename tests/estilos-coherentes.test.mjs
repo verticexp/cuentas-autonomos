@@ -34,6 +34,7 @@ const EXCEPCIONES = [
   { archivo: 'app/v2.css', selector: /\.ff-/, motivo: PAPEL },
   { archivo: 'app/documento-vista.css', selector: /doc-archivo/, motivo: 'El documento subido (imagen o PDF) se ve sobre blanco, como en el papel' },
   { archivo: 'app/diseno.css', selector: /qr-dos-pasos/, motivo: 'Un QR necesita fondo blanco para leerse' },
+  { archivo: 'app/ajustes.css', selector: /wa-qr/, motivo: 'Un QR necesita fondo blanco para leerse (Ajustes › WhatsApp)' },
   { archivo: 'app/diseno.css', selector: /color-libre/, motivo: 'Rueda de color para elegir la marca' },
   { archivo: 'app/diseno.css', selector: /sino input\[type="checkbox"\]::after/, motivo: 'La bola del interruptor es blanca en los dos temas, como la de iOS' },
   { archivo: 'app/diseno.css', selector: /\.arr-barra|\.logo-marca|\.inicio/, motivo: 'Cabecera y arranque en verde oscuro fijo: el texto crema no cambia con el tema' },
