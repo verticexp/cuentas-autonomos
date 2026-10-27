@@ -27,9 +27,9 @@ test('en la app, registro redirige con y sin query, según la sesión', () => {
   }
 });
 
-test('en la app con sesión, recomendaciones y avisos vuelven a Ajustes; Tu plan se ve', () => {
-  for (const ruta of ['/ajustes/plan', '/ajustes/plan?sesion=123']) assert.equal(desvioApp({ ua: APP, ruta, conSesion: true }), null, ruta);
-  for (const ruta of ['/ajustes/recomienda', '/ajustes/recomienda/', '/ajustes/avisos']) {
+test('en la app con sesión, recomendaciones vuelven a Ajustes; Tu plan y Avisos se ven', () => {
+  for (const ruta of ['/ajustes/plan', '/ajustes/plan?sesion=123', '/ajustes/avisos']) assert.equal(desvioApp({ ua: APP, ruta, conSesion: true }), null, ruta);
+  for (const ruta of ['/ajustes/recomienda', '/ajustes/recomienda/']) {
     assert.equal(desvioApp({ ua: APP, ruta, conSesion: true }), '/ajustes', ruta);
     assert.equal(desvioApp({ ua: APP, ruta, conSesion: false }), null, ruta);
   }
