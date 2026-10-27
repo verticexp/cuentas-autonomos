@@ -1,3 +1,5 @@
+import { conHuecos } from '@/lib/huecos';
+import { textos } from '@/lib/idiomaServidor';
 import Link from 'next/link';
 import Vacio from './Vacio';
 import CuadreTarjeta from './CuadreTarjeta';
@@ -16,6 +18,7 @@ const pct = (c, t) => (t ? `${(Math.round((c / t) * 1000) / 10).toLocaleString('
 // propuestasTarjeta) y el efectivo del cajón según los arqueos (saldoCaja). Lee los cierres de los últimos 90 días y, si
 // hay tarjeta por cuadrar o cuadrada, los movimientos del banco. conBanco: si puede ver y cuadrar el banco.
 export default async function CajaTarjeta({ u, hoy, conBanco }) {
+  const tr = await textos();
   const cierres = (await leerRango(u, 'facturas', masDias(hoy, -DIAS), hoy)).filter((f) => f.caja && !f.rectifica);
   const conTarjeta = cierres.filter((f) => f.caja.tarjeta > 0);
   const movs = conBanco && conTarjeta.length ? (await leer(u, 'banco')) || [] : [];
@@ -38,76 +41,76 @@ export default async function CajaTarjeta({ u, hoy, conBanco }) {
   return (
     <>
       <section className="bloque" id="tarjeta">
-        <h2 className="grupo-t">Tarjeta y banco</h2>
-        {!conBanco && <p className="grupo-pie arriba">Para cuadrar la tarjeta con el banco hace falta ver facturas y gastos: pídeselo al administrador.</p>}
-        {conBanco && !conTarjeta.length && <Vacio compacto icono="factura" titulo="Sin cobros con tarjeta">Cuando apuntes cierres con tarjeta, aquí verás si el banco los ha ingresado.</Vacio>}
-        {conBanco && conTarjeta.length > 0 && !movs.length && <p className="grupo-pie arriba">Sube el extracto o conecta el banco en <Link href="/banco">Banco</Link> para cuadrar la tarjeta con sus ingresos.</p>}
+        <h2 className="grupo-t">{tr('Tarjeta y banco')}</h2>
+        {!conBanco && <p className="grupo-pie arriba">{tr('Para cuadrar la tarjeta con el banco hace falta ver facturas y gastos: pídeselo al administrador.')}</p>}
+        {conBanco && !conTarjeta.length && <Vacio compacto icono="factura" titulo={tr('Sin cobros con tarjeta')}>{tr('Cuando apuntes cierres con tarjeta, aquí verás si el banco los ha ingresado.')}</Vacio>}
+        {conBanco && conTarjeta.length > 0 && !movs.length && <p className="grupo-pie arriba">{conHuecos(tr('Sube el extracto o conecta el banco en {banco} para cuadrar la tarjeta con sus ingresos.'), { banco: <Link href="/banco">{tr('Banco')}</Link> })}</p>}
         {propuestas.length > 0 && (
           <>
-            <h3 className="caja-sub">Para cuadrar</h3>
+            <h3 className="caja-sub">{tr('Para cuadrar')}</h3>
             <ul className="grupo-lista">
               {propuestas.map((p) => (
                 <li key={p.mov} className="fila caja-cuadre">
                   <span className="txt">
-                    <strong>Ingreso del {fechaTexto(p.fecha)} · {eur(p.importe)}</strong>
-                    <small>{p.concepto || 'Sin concepto'}</small>
-                    <small>Tarjeta del {listaDias(p.dias)}: {eur(p.tarjeta)}{p.comision ? ` · comisión ${eur(p.comision)} (${pct(p.comision, p.tarjeta)})` : ' · sin comisión'}</small>
+                    <strong>{tr('Ingreso del {fecha} · {importe}', { fecha: tr(fechaTexto(p.fecha)), importe: eur(p.importe) })}</strong>
+                    <small>{(p.concepto || tr('Sin concepto'))}</small>
+                    <small>{(p.comision ? tr('Tarjeta del {dias}: {tarjeta} · comisión {importe} ({porcentaje})', { dias: listaDias(p.dias), tarjeta: eur(p.tarjeta), importe: eur(p.comision), porcentaje: pct(p.comision, p.tarjeta) }) : tr('Tarjeta del {dias}: {tarjeta} · sin comisión', { dias: listaDias(p.dias), tarjeta: eur(p.tarjeta) }))}</small>
                   </span>
                   <CuadreTarjeta mov={p.mov} cierres={p.cierres} />
                 </li>
               ))}
             </ul>
-            <p className="grupo-pie">Al cuadrar, la comisión del TPV se apunta como gasto (comisiones bancarias, sin IVA) y el ingreso queda emparejado en Banco.</p>
+            <p className="grupo-pie">{tr('Al cuadrar, la comisión del TPV se apunta como gasto (comisiones bancarias, sin IVA) y el ingreso queda emparejado en Banco.')}</p>
           </>
         )}
         {conBanco && sinIngreso.length > 0 && (
           <>
-            <h3 className="caja-sub">Tarjeta sin ingreso del banco</h3>
+            <h3 className="caja-sub">{tr('Tarjeta sin ingreso del banco')}</h3>
             <ul className="grupo-lista">
               {sinIngreso.slice(0, 10).map((f) => <li key={f.id}><Link href={`/facturas/${f.id}`} className="fila"><span className="txt"><strong>{fechaTexto(f.fecha)}</strong><small>{numeroFactura(f)}</small></span><span className="imp">{eur(f.caja.tarjeta)}</span></Link></li>)}
             </ul>
-            <p className="grupo-pie">Más de tres días sin un ingreso que case (con hasta un 4 % de comisión). Si ya llegó, comprueba que el extracto del banco está al día.</p>
+            <p className="grupo-pie">{tr('Más de tres días sin un ingreso que case (con hasta un 4 % de comisión). Si ya llegó, comprueba que el extracto del banco está al día.')}</p>
           </>
         )}
         {ingresos.length > 0 && porCuadrar.length > 0 && <CuadreManual movs={ingresos} cierres={porCuadrar} />}
         {cuadrados.length > 0 && (
           <>
-            <h3 className="caja-sub">Cuadrado</h3>
+            <h3 className="caja-sub">{tr('Cuadrado')}</h3>
             <ul className="grupo-lista">
               {cuadrados.map((m) => {
                 const dias = (m.enlace.cierres || []).map((id) => porId.get(id)?.fecha).filter(Boolean).sort();
                 return (
                   <li key={m.id} className="fila caja-cuadre">
                     <span className="txt">
-                      <strong>Ingreso del {fechaTexto(m.fecha)} · {eur(m.importe)}</strong>
-                      <small>{dias.length ? `Tarjeta del ${listaDias(dias)}` : `${(m.enlace.cierres || []).length} cierres`}: {eur(m.enlace.tarjeta)}{m.enlace.comision ? ` · comisión ${eur(m.enlace.comision)}` : ''}</small>
+                      <strong>{tr('Ingreso del {fecha} · {importe}', { fecha: tr(fechaTexto(m.fecha)), importe: eur(m.importe) })}</strong>
+                      <small>{(dias.length ? (m.enlace.comision ? tr('Tarjeta del {dias}: {tarjeta} · comisión {importe}', { dias: listaDias(dias), tarjeta: eur(m.enlace.tarjeta), importe: eur(m.enlace.comision) }) : tr('Tarjeta del {dias}: {tarjeta}', { dias: listaDias(dias), tarjeta: eur(m.enlace.tarjeta) })) : (m.enlace.comision ? tr('{cantidad} cierres: {tarjeta} · comisión {importe}', { cantidad: (m.enlace.cierres || []).length, tarjeta: eur(m.enlace.tarjeta), importe: eur(m.enlace.comision) }) : tr('{cantidad} cierres: {tarjeta}', { cantidad: (m.enlace.cierres || []).length, tarjeta: eur(m.enlace.tarjeta) })))}</small>
                     </span>
                     <CuadreTarjeta mov={m.id} deshacer />
                   </li>
                 );
               })}
             </ul>
-            {comisiones > 0 && <p className="grupo-pie">Comisiones del TPV en estos ingresos: {eur(comisiones)} ({pct(comisiones, tarjetaCuadrada)} de la tarjeta).</p>}
+            {comisiones > 0 && <p className="grupo-pie">{tr('Comisiones del TPV en estos ingresos: {importe} ({porcentaje} de la tarjeta).', { importe: eur(comisiones), porcentaje: pct(comisiones, tarjetaCuadrada) })}</p>}
           </>
         )}
       </section>
 
       <section className="bloque" id="efectivo">
-        <h2 className="grupo-t">Efectivo en caja</h2>
+        <h2 className="grupo-t">{tr('Efectivo en caja')}</h2>
         {!saldo.ultimo ? (
-          <Vacio compacto icono="factura" titulo="Aún no hay arqueos" accion={{ href: '/facturas/caja#nuevo-cierre', texto: 'Apuntar un cierre' }}>Marca «Contar el efectivo del cajón» al apuntar el cierre y aquí verás cuánto hay y los descuadres.</Vacio>
+          <Vacio compacto icono="factura" titulo={tr('Aún no hay arqueos')} accion={{ href: '/facturas/caja#nuevo-cierre', texto: tr('Apuntar un cierre') }}>{tr('Marca «Contar el efectivo del cajón» al apuntar el cierre y aquí verás cuánto hay y los descuadres.')}</Vacio>
         ) : (
           <>
             <div className="caja-saldo">
-              <div><small>En el cajón</small><strong>{eur(saldo.ultimo.contado)}</strong><small>contado el {fechaTexto(saldo.ultimo.fecha)}</small></div>
-              <div><small>Descuadre este mes</small><strong className={Math.abs(descuadreMes) >= 0.01 ? (descuadreMes < 0 ? 'falta' : 'ok') : ''}>{Math.abs(descuadreMes) < 0.01 ? 'Cuadra' : `${descuadreMes < 0 ? 'Faltan' : 'Sobran'} ${eur(Math.abs(descuadreMes))}`}</strong><small>{delMes.length} {delMes.length === 1 ? 'arqueo' : 'arqueos'}</small></div>
+              <div><small>{tr('En el cajón')}</small><strong>{eur(saldo.ultimo.contado)}</strong><small>{tr('contado el {fecha}', { fecha: tr(fechaTexto(saldo.ultimo.fecha)) })}</small></div>
+              <div><small>{tr('Descuadre este mes')}</small><strong className={Math.abs(descuadreMes) >= 0.01 ? (descuadreMes < 0 ? 'falta' : 'ok') : ''}>{(Math.abs(descuadreMes) < 0.01 ? tr('Cuadra') : tr(descuadreMes < 0 ? 'Faltan {importe}' : 'Sobran {importe}', { importe: eur(Math.abs(descuadreMes)) }))}</strong><small>{(delMes.length === 1 ? tr('{cantidad} arqueo', { cantidad: delMes.length }) : tr('{cantidad} arqueos', { cantidad: delMes.length }))}</small></div>
             </div>
             <ul className="grupo-lista">
               {[...saldo.dias].reverse().slice(0, 14).map((d) => (
-                <li key={d.id}><Link href={`/facturas/${d.id}`} className="fila"><span className="txt"><strong>{fechaTexto(d.fecha)}</strong><small>Fondo {eur(d.fondo)} · efectivo {eur(d.efectivo)}{d.salidas ? ` · salidas ${eur(d.salidas)}` : ''} · debería haber {eur(d.esperado)}</small></span><span className={`imp${d.descuadre ? (d.descuadre < 0 ? ' caja-menos' : ' caja-mas') : ''}`}>{d.descuadre ? `${d.descuadre > 0 ? '+' : '−'}${eur(Math.abs(d.descuadre))}` : eur(d.contado)}</span></Link></li>
+                <li key={d.id}><Link href={`/facturas/${d.id}`} className="fila"><span className="txt"><strong>{fechaTexto(d.fecha)}</strong><small>{(d.salidas ? tr('Fondo {fondo} · efectivo {efectivo} · salidas {salidas} · debería haber {esperado}', { fondo: eur(d.fondo), efectivo: eur(d.efectivo), salidas: eur(d.salidas), esperado: eur(d.esperado) }) : tr('Fondo {fondo} · efectivo {efectivo} · debería haber {esperado}', { fondo: eur(d.fondo), efectivo: eur(d.efectivo), esperado: eur(d.esperado) }))}</small></span><span className={`imp${d.descuadre ? (d.descuadre < 0 ? ' caja-menos' : ' caja-mas') : ''}`}>{(d.descuadre ? `${d.descuadre > 0 ? '+' : '−'}${eur(Math.abs(d.descuadre))}` : eur(d.contado))}</span></Link></li>
               ))}
             </ul>
-            <p className="grupo-pie">De los últimos {DIAS} días: faltaron {eur(Math.abs(saldo.faltante))} y sobraron {eur(saldo.sobrante)} en total. A la derecha, lo contado o el descuadre del día.</p>
+            <p className="grupo-pie">{tr('De los últimos {cantidad} días: faltaron {faltante} y sobraron {sobrante} en total. A la derecha, lo contado o el descuadre del día.', { cantidad: DIAS, faltante: eur(Math.abs(saldo.faltante)), sobrante: eur(saldo.sobrante) })}</p>
           </>
         )}
       </section>

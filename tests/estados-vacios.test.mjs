@@ -32,7 +32,7 @@ test('Albaranes: sin documentos queda el primer vacÃ­o, sin contadores ni pestaÃ
   assert.match(s, /const hay = docs.length > 0/);
   assert.match(s, /const ver = hay && VISTAS.some[\s\S]*: 'pedidos'/);
   assert.match(s, /hay && <p className="resumen-linea">/);
-  assert.match(s, /hay && <nav className="segmentado" aria-label="Vista de pedidos y albaranes">/);
+  assert.match(s, /hay && <nav className="segmentado" aria-label=\{tr\(["']Vista de pedidos y albaranes["']\)\}>/);
   assert.match(s, /hay && puedeOperar && <Ir/);
 });
 

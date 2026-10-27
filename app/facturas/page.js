@@ -1,3 +1,5 @@
+import { conHuecos } from '@/lib/huecos';
+import { textos } from '@/lib/idiomaServidor';
 import Vacio from '@/components/Vacio';
 import Link from 'next/link';
 import { enviarLuego } from '@/lib/verifactuEnvio';
@@ -26,6 +28,7 @@ export const dynamic = 'force-dynamic';
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
 export default async function Facturas({ searchParams }) {
+  const tr = await textos();
   const u = await requerir('facturas');
   enviarLuego(u); // Verifactu: si quedó algo por enviar (control de flujo de la AEAT), ahora
   // Informe de capacidad E01: la lista va por páginas sobre el índice (lib/indices.js), sin descargar el histórico.
@@ -70,26 +73,26 @@ export default async function Facturas({ searchParams }) {
     <main className="pagina mk-look ancha">
       <AvisoDeshacer />
       <header className="cabecera">
-        <h1 className="titulo">Facturas</h1>
+        <h1 className="titulo">{tr('Facturas')}</h1>
         {/* Sin ninguna factura, el botón va dentro del vacío (uno solo). */}
         {/* En el móvil ya está el «+» de la barra: aquí solo en el ordenador. */}
-        {puede(u, 'facturar') && total > 0 && <Ir href="/facturas/nueva" tipo="subir" className="boton pequeno solo-pc">Nueva factura</Ir>}
+        {puede(u, 'facturar') && total > 0 && <Ir href="/facturas/nueva" tipo="subir" className="boton pequeno solo-pc">{tr('Nueva factura')}</Ir>}
       </header>
 
       {/* Lo emitido y lo pendiente, como en Gastos: siempre a la vista, también en el móvil. */}
-      {total > 0 && <Pestanas etiqueta="Facturas" items={[
-        { href: url({ estado: null, desde: null }), texto: 'Facturas', activo: !['pendientes', 'vencidas'].includes(estado) },
-        { href: url({ estado: 'pendientes', desde: null }), texto: 'Sin cobrar', n: nSinCobrar, activo: estado === 'pendientes' },
-        { href: url({ estado: 'vencidas', desde: null }), texto: 'Vencidas', n: vencidas.length, tono: 'rojo', activo: estado === 'vencidas' },
+      {total > 0 && <Pestanas etiqueta={tr('Facturas')} items={[
+        { href: url({ estado: null, desde: null }), texto: tr('Facturas'), activo: !['pendientes', 'vencidas'].includes(estado) },
+        { href: url({ estado: 'pendientes', desde: null }), texto: tr('Sin cobrar'), n: nSinCobrar, activo: estado === 'pendientes' },
+        { href: url({ estado: 'vencidas', desde: null }), texto: tr('Vencidas'), n: vencidas.length, tono: 'rojo', activo: estado === 'vencidas' },
       ]} />}
 
       {total > 0 && (
         <p className="resumen-linea solo-pc">
-          <span>Por cobrar <strong>{eur(porCobrar)}</strong></span>
-          {vencidas.length > 0 && <Ir href={url({ estado: estado === 'vencidas' ? null : 'vencidas' })} tipo={estado === 'vencidas' ? 'pestana-izq' : 'pestana-der'} scroll={false} className="rojo">{vencidas.length === 1 ? '1 vencida' : `${vencidas.length} vencidas`}</Ir>}
+          <span>{conHuecos(tr('Por cobrar {importe}'), { importe: <strong>{eur(porCobrar)}</strong> })}</span>
+          {vencidas.length > 0 && <Ir href={url({ estado: estado === 'vencidas' ? null : 'vencidas' })} tipo={estado === 'vencidas' ? 'pestana-izq' : 'pestana-der'} scroll={false} className="rojo">{(vencidas.length === 1 ? tr('1 vencida') : tr('{cantidad} vencidas', { cantidad: vencidas.length }))}</Ir>}
           {/* Catálogo, Inventario, Pedidos y Caja ya están en la barra lateral: aquí solo lo propio de las facturas. */}
-          {recurrentes?.length > 0 && <Link href="/facturas/recurrentes" className="rec-enlace">{recurrentes.length === 1 ? '1 recurrente' : `${recurrentes.length} recurrentes`} ›</Link>}
-          {puede(u, 'resumen') && <a href={`/api/efactura?anio=${h.slice(0, 4)}`} className="rec-enlace" download>Estado de pagos (Excel) ›</a>}
+          {recurrentes?.length > 0 && <Link href="/facturas/recurrentes" className="rec-enlace">{(recurrentes.length === 1 ? tr('1 recurrente ›') : tr('{cantidad} recurrentes ›', { cantidad: recurrentes.length }))}</Link>}
+          {puede(u, 'resumen') && <a href={`/api/efactura?anio=${h.slice(0, 4)}`} className="rec-enlace" download>{tr('Estado de pagos (Excel) ›')}</a>}
         </p>
       )}
 
@@ -98,44 +101,44 @@ export default async function Facturas({ searchParams }) {
           {/* Móvil: resumen fijo arriba y un botón «Filtrar» (en el ordenador siguen la línea de arriba y las fichas de abajo) */}
           <div className="resumen-fijo solo-movil">
             <p className="resumen-fijo-t">
-              <span>Por cobrar <strong>{eur(porCobrar)}</strong></span>
-              {vencidas.length > 0 && <Ir href={url({ estado: estado === 'vencidas' ? null : 'vencidas' })} tipo={estado === 'vencidas' ? 'pestana-izq' : 'pestana-der'} scroll={false} className="rojo">{vencidas.length === 1 ? '1 vencida' : `${vencidas.length} vencidas`}</Ir>}
+              <span>{conHuecos(tr('Por cobrar {importe}'), { importe: <strong>{eur(porCobrar)}</strong> })}</span>
+              {vencidas.length > 0 && <Ir href={url({ estado: estado === 'vencidas' ? null : 'vencidas' })} tipo={estado === 'vencidas' ? 'pestana-izq' : 'pestana-der'} scroll={false} className="rojo">{(vencidas.length === 1 ? tr('1 vencida') : tr('{cantidad} vencidas', { cantidad: vencidas.length }))}</Ir>}
             </p>
-            <HojaFiltro titulo="Filtrar facturas" activos={ACTIVIDADES[a] ? 1 : 0}>
+            <HojaFiltro titulo={tr('Filtrar facturas')} activos={ACTIVIDADES[a] ? 1 : 0}>
               {Object.keys(ACTIVIDADES).length > 1 && (
                 <section className="filtro-grupo">
-                  <h3>Actividad</h3>
+                  <h3>{tr('Actividad')}</h3>
                   <ul className="filtro-ops">
-                    <li><Link href={url({ a: null })} className="filtro-op" aria-current={!ACTIVIDADES[a] ? 'true' : undefined}>Todas</Link></li>
+                    <li><Link href={url({ a: null })} className="filtro-op" aria-current={!ACTIVIDADES[a] ? 'true' : undefined}>{tr('Todas')}</Link></li>
                     {Object.entries(ACTIVIDADES).map(([id, n]) => <li key={id}><Link href={url({ a: id })} className="filtro-op" aria-current={a === id ? 'true' : undefined}>{n}</Link></li>)}
                   </ul>
                 </section>
               )}
               {(recurrentes?.length > 0 || puede(u, 'resumen')) && (
                 <section className="filtro-grupo">
-                  <h3>Más</h3>
+                  <h3>{tr('Más')}</h3>
                   <ul className="filtro-ops">
-                    {recurrentes?.length > 0 && <li><Link href="/facturas/recurrentes" className="filtro-op">Facturas recurrentes<small>{recurrentes.length}</small></Link></li>}
-                    {puede(u, 'resumen') && <li><a href={`/api/efactura?anio=${h.slice(0, 4)}`} className="filtro-op" download>Estado de pagos (descargar)</a></li>}
+                    {recurrentes?.length > 0 && <li><Link href="/facturas/recurrentes" className="filtro-op">{tr('Facturas recurrentes')}<small>{recurrentes.length}</small></Link></li>}
+                    {puede(u, 'resumen') && <li><a href={`/api/efactura?anio=${h.slice(0, 4)}`} className="filtro-op" download>{tr('Estado de pagos (descargar)')}</a></li>}
                   </ul>
                 </section>
               )}
             </HojaFiltro>
           </div>
           {ACTIVIDADES[a] && (
-            <div className="filtros-activos solo-movil" aria-label="Filtros activos">
-              <Link href={url({ a: null })} aria-label={`Quitar el filtro ${ACTIVIDADES[a]}`}>{ACTIVIDADES[a]}</Link>
+            <div className="filtros-activos solo-movil" aria-label={tr('Filtros activos')}>
+              <Link href={url({ a: null })} aria-label={tr('Quitar el filtro {actividad}', { actividad: ACTIVIDADES[a] })}>{ACTIVIDADES[a]}</Link>
             </div>
           )}
         </>
       )}
 
-      {total > 5 && <Buscar action="/facturas" q={q} ocultos={{ a, estado }} placeholder="Buscar facturas" etiqueta="Buscar por cliente, número o concepto" />}
+      {total > 5 && <Buscar action="/facturas" q={q} ocultos={{ a, estado }} placeholder={tr('Buscar facturas')} etiqueta={tr('Buscar por cliente, número o concepto')} />}
 
       {/* La actividad (si hay varias); el estado va en las pestañas de arriba. */}
       {Object.keys(ACTIVIDADES).length > 1 && (
         <Deslizable className="chips solo-pc">
-          <Link href={url({ a: null })} className={!ACTIVIDADES[a] ? 'activo' : ''}>Todas las actividades</Link>
+          <Link href={url({ a: null })} className={!ACTIVIDADES[a] ? 'activo' : ''}>{tr('Todas las actividades')}</Link>
           {Object.entries(ACTIVIDADES).map(([id, n]) => <Link key={id} href={url({ a: id })} className={a === id ? 'activo' : ''}>{n}</Link>)}
         </Deslizable>
       )}
@@ -144,14 +147,14 @@ export default async function Facturas({ searchParams }) {
       <div className="pestanas-panel">
         {grupos.length > 0 && (
           <div className={`tf-cab solo-pc${!a && Object.keys(ACTIVIDADES).length > 1 ? ' con-act' : ''}`} aria-hidden>
-            <span>Cliente</span><span>Número</span><span>Fecha</span>{!a && Object.keys(ACTIVIDADES).length > 1 && <span className="tf-c-act">Actividad</span>}<span className="tf-n tf-c-base">Base</span><span className="tf-n">Total</span><span>Estado</span>
+            <span>{tr('Cliente')}</span><span>{tr('Número')}</span><span>{tr('Fecha')}</span>{!a && Object.keys(ACTIVIDADES).length > 1 && <span className="tf-c-act">{tr('Actividad')}</span>}<span className="tf-n tf-c-base">{tr('Base')}</span><span className="tf-n">{tr('Total')}</span><span>{tr('Estado')}</span>
           </div>
         )}
         {grupos.map((g) => {
           const [y, m] = g.m.split('-');
           return (
             <section key={g.m} className="grupo-mes">
-              <h2><span>{MESES[m - 1]} {y !== h.slice(0, 4) ? y : ''}</span><small>Base {eur(r2(totalMes[g.m] || 0))}</small></h2>
+              <h2><span>{tr(MESES[m - 1])} {(y !== h.slice(0, 4) ? y : "")}</span><small>{tr('Base {importe}', { importe: eur(r2(totalMes[g.m] || 0)) })}</small></h2>
               <ul className={`grupo-lista tf-lista${!a && Object.keys(ACTIVIDADES).length > 1 ? ' con-act' : ''}`}>
                 {g.facturas.map((f) => {
                   const e = estadoDe(f);
@@ -163,12 +166,12 @@ export default async function Facturas({ searchParams }) {
                             {/* En el móvil, el número, la fecha y la actividad van en una línea; en el ordenador, en columnas. */}
                             <span className="txt">
                               <strong data-vt="cliente">{f.cliente.nombre}</strong>
-                              <small className="tf-meta"><span className="tf-num">{f.caja && <span className="tf-caja">Cierre de caja · </span>}{numeroFactura(f)}</span><span className="tf-fecha">{fechaCorta(f.fecha)}</span>{!a && Object.keys(ACTIVIDADES).length > 1 && <span className="tf-act">{ACTIVIDADES[f.actividad]}</span>}</small>
+                              <small className="tf-meta"><span className="tf-num">{f.caja ? conHuecos(tr('{cierre} · {numero}'), { cierre: <span className="tf-caja">{tr('Cierre de caja')}</span>, numero: numeroFactura(f) }) : numeroFactura(f)}</span><span className="tf-fecha">{fechaCorta(f.fecha)}</span>{!a && Object.keys(ACTIVIDADES).length > 1 && <span className="tf-act">{ACTIVIDADES[f.actividad]}</span>}</small>
                             </span>
                             <span className="tf-base solo-pc">{eur(importes(f).base)}</span>
                             <span className="imp-col">
                               <span className="imp" data-vt="total">{eur(importes(f).total)}</span>
-                              <span className={`estado-txt e-${e}`}>{e === 'cobrada' ? (importes(f).total < 0 ? 'Devuelta' : 'Cobrada') : importes(f).total < 0 ? 'A devolver' : e === 'vencida' ? 'Vencida' : 'Pendiente'}</span>
+                              <span className={`estado-txt e-${e}`}>{(e === 'cobrada' ? (importes(f).total < 0 ? tr('Devuelta') : tr('Cobrada')) : (importes(f).total < 0 ? tr('A devolver') : (e === 'vencida' ? tr('Vencida') : tr('Pendiente'))))}</span>
                             </span>
                           </FilaFactura>
                         );
@@ -185,15 +188,15 @@ export default async function Facturas({ searchParams }) {
           );
         })}
 
-        {pag.siguiente && <p className="grupo-pie"><Link href={url({ desde: pag.siguiente })} className="boton sec">Ver más</Link></p>}
+        {pag.siguiente && <p className="grupo-pie"><Link href={url({ desde: pag.siguiente })} className="boton sec">{tr('Ver más')}</Link></p>}
 
         {!lista.length && (
-          total || buscado || estado || a || desde ? <Vacio tipo="resultados" icono="factura" titulo={buscado ? `Ninguna factura con «${q}»` : 'Ninguna factura con este filtro'} accion={{ href: buscado ? url({ q: null, desde: null }) : '/facturas', texto: buscado ? 'Quitar búsqueda' : 'Ver todas' }} />
-          : <Vacio icono="factura" titulo="Crea tu primera factura" accion={puede(u, 'facturar') && { href: '/facturas/nueva', texto: 'Crear la primera' }} secundaria={puede(u, 'facturar') && { href: '/facturas/caja', texto: 'Apuntar cierre de caja' }}>Se numeran solas, con el IVA y el IRPF calculados, y las descargas en PDF con tu logo.</Vacio>
+          total || buscado || estado || a || desde ? <Vacio tipo="resultados" icono="factura" titulo={(buscado ? tr('Ninguna factura con «{busqueda}»', { busqueda: q }) : tr('Ninguna factura con este filtro'))} accion={{ href: buscado ? url({ q: null, desde: null }) : '/facturas', texto: buscado ? tr('Quitar búsqueda') : tr('Ver todas') }} />
+          : <Vacio icono="factura" titulo={tr('Crea tu primera factura')} accion={puede(u, 'facturar') && { href: '/facturas/nueva', texto: tr('Crear la primera') }} secundaria={puede(u, 'facturar') && { href: '/facturas/caja', texto: tr('Apuntar cierre de caja') }}>{tr('Se numeran solas, con el IVA y el IRPF calculados, y las descargas en PDF con tu logo.')}</Vacio>
         )}
       </div>
     </main>
   );
 }
 
-export const metadata = { title: 'Facturas' };
+export async function generateMetadata() { return { title: (await textos())("Facturas") }; }

@@ -1,5 +1,7 @@
 'use client';
 
+import { useT } from '@/components/Idioma';
+
 import { confirmar as confirmarAccion } from './Confirmar';
 
 import { useOptimistic, useRef, useState, useTransition } from 'react';
@@ -17,22 +19,24 @@ async function llamar(url, opciones) {
 }
 
 export function Borrar({ url, pregunta, volver }) {
+  const tr = useT();
   const router = useRouter();
   const [error, setError] = useState('');
   const borrar = async () => {
     setError('');
-    if (!(await confirmarAccion({ titulo: 'Borrar', texto: pregunta, aceptar: 'Borrar', peligro: true }))) return;
+    if (!(await confirmarAccion({ titulo: tr('Borrar'), texto: tr(pregunta), aceptar: tr('Borrar'), peligro: true }))) return;
     try {
       await llamar(url, { method: 'DELETE' });
       if (volver) volverA(router, volver, 'atras', true);
       else router.refresh();
     } catch (e) { setError(e.message); }
   };
-  return <><button type="button" className="borrar" onClick={borrar}>Borrar</button>{error && <span className="error" role="alert">{error}</span>}</>;
+  return <><button type="button" className="borrar" onClick={borrar}>{tr('Borrar')}</button>{error && <span className="error" role="alert">{tr(error)}</span>}</>;
 }
 
 export function Imprimir() {
-  return <button type="button" className="boton" onClick={() => window.print()}>Descargar PDF</button>;
+  const tr = useT();
+  return <button type="button" className="boton" onClick={() => window.print()}>{tr('Descargar PDF')}</button>;
 }
 
 // Icono de cada estado (`situacion` = { estado: 'curso' | 'listo' | 'fuera', dias }, de situacionTrimestre en lib/calculos.js).
@@ -40,10 +44,11 @@ const PUNTO = { hecho: '✓', fuera: '!', listo: '', curso: '' };
 
 // Franja de estado (solo lectura): la usa la tarjeta del 303 cuando el trimestre se marca en el 130.
 export function EstadoTrimestre({ hecho, situacion, plazo, nota }) {
+  const tr = useT();
   const clave = hecho ? 'hecho' : situacion.estado;
   return (
     <div className={`pres pres-${clave}`}>
-      <p className="pres-estado"><span className="pres-txt"><span className="pres-punto" aria-hidden="true">{PUNTO[clave]}</span>{hecho ? 'Presentado' : textoSituacion(situacion, plazo, nota)}</span></p>
+      <p className="pres-estado"><span className="pres-txt"><span className="pres-punto" aria-hidden="true">{PUNTO[clave]}</span>{(hecho ? tr('Presentado') : tr(textoSituacion(situacion, plazo, nota)))}</span></p>
     </div>
   );
 }
@@ -57,6 +62,7 @@ export function EstadoTrimestre({ hecho, situacion, plazo, nota }) {
 // devolucion: en el 303 del 4T con saldo a favor, la opción de presentarlo pidiendo la devolución (pagado === 'devolucion').
 // soloLectura: sin el permiso «Contabilidad», el estado sin selector.
 export function Presentado({ anio, t, importe, pagado, con130 = true, situacion, plazo, modelo, devolucion = false, soloLectura = false }) {
+  const tr = useT();
   const router = useRouter();
   const [error, setError] = useState('');
   const [guardando, empezar] = useTransition();
@@ -87,20 +93,20 @@ export function Presentado({ anio, t, importe, pagado, con130 = true, situacion,
     });
   };
   const selector = (
-    <select className={`estado ${elegido === 'pagado' || (!con130 && elegido !== 'pendiente') ? 'ok' : `pend${situacion?.estado === 'fuera' ? ' fuera' : ''}`}`} value={elegido} onChange={cambiar} aria-label={`Estado del ${modelo || (con130 ? '130' : '303')} del ${t}T ${anio}`} aria-disabled={guardando || undefined} aria-busy={guardando || undefined}>
-      <option value="pendiente">Pendiente</option>
+    <select className={`estado ${elegido === 'pagado' || (!con130 && elegido !== 'pendiente') ? 'ok' : `pend${situacion?.estado === 'fuera' ? ' fuera' : ''}`}`} value={elegido} onChange={cambiar} aria-label={tr('Estado del {modelo} del {trimestre}T {anio}', { modelo: (modelo || (con130 ? "130" : "303")), trimestre: t, anio: anio })} aria-disabled={guardando || undefined} aria-busy={guardando || undefined}>
+      <option value="pendiente">{tr('Pendiente')}</option>
       {con130 ? <>
-        <option value="pagado">Presentado y 130 pagado</option>
-        <option value="sinpagar">Presentado, 130 sin pagar</option>
-      </> : <><option value="sinpagar">{devolucion ? 'Presentado, a compensar' : 'Presentado'}</option>{(devolucion || elegido === 'devolucion') && <option value="devolucion">Presentado, pido la devolución</option>}</>}
+        <option value="pagado">{tr('Presentado y 130 pagado')}</option>
+        <option value="sinpagar">{tr('Presentado, 130 sin pagar')}</option>
+      </> : <><option value="sinpagar">{(devolucion ? tr('Presentado, a compensar') : tr('Presentado'))}</option>{(devolucion || elegido === 'devolucion') && <option value="devolucion">{tr('Presentado, pido la devolución')}</option>}</>}
     </select>
   );
   if (soloLectura) {
     const texto = { pendiente: 'Pendiente', pagado: 'Presentado y 130 pagado', sinpagar: con130 ? 'Presentado, 130 sin pagar' : 'Presentado', devolucion: 'Presentado, con devolución' }[valor];
-    return situacion ? <EstadoTrimestre hecho={valor !== 'pendiente'} situacion={situacion} plazo={plazo} /> : <span className={`estado-txt ${valor === 'pendiente' ? 'e-pendiente' : 'e-ok'}`}>{texto}</span>;
+    return situacion ? <EstadoTrimestre hecho={valor !== 'pendiente'} situacion={situacion} plazo={plazo} /> : <span className={`estado-txt ${valor === 'pendiente' ? 'e-pendiente' : 'e-ok'}`}>{tr(texto)}</span>;
   }
   // Sin situación (Resumen): solo el selector, como antes.
-  if (!situacion) return <>{selector}{error && <span className="error" role="alert">{error}</span>}</>;
+  if (!situacion) return <>{selector}{error && <span className="error" role="alert">{tr(error)}</span>}</>;
   const hecho = valor !== 'pendiente';
   const clave = hecho ? 'hecho' : situacion.estado;
   const texto = guardando ? 'Guardando…' : hecho ? (confirmado ? `Hecho: ${t}T ${anio} presentado` : `${t}T ${anio} presentado`) : textoSituacion(situacion, plazo);
@@ -110,17 +116,18 @@ export function Presentado({ anio, t, importe, pagado, con130 = true, situacion,
     <div className={`pres pres-${clave}`} data-busy={guardando || undefined}>
       <p className="pres-estado" role="status" aria-live="polite">
         <span key={guardando ? 'g' : `${clave}-${confirmado}`} className="pres-txt">
-          <span className="pres-punto" aria-hidden="true">{guardando ? '' : PUNTO[clave]}</span>{texto}
+          <span className="pres-punto" aria-hidden="true">{(guardando ? "" : PUNTO[clave])}</span>{tr(texto)}
         </span>
       </p>
       {selector}
-      {error && <p className="error" role="alert">{error}</p>}
+      {error && <p className="error" role="alert">{tr(error)}</p>}
     </div>
   );
 }
 
 // Pago del 202 (sociedades): pendiente o presentado y pagado. Lo pagado se resta del Impuesto sobre Sociedades.
 export function Presentado202({ anio, p, importe, pagado, soloLectura = false }) {
+  const tr = useT();
   const router = useRouter();
   const [error, setError] = useState('');
   const cambiar = async (e) => {
@@ -131,12 +138,12 @@ export function Presentado202({ anio, p, importe, pagado, soloLectura = false })
     } catch (err) { setError(err.message); }
   };
   const hecho = pagado !== undefined && pagado !== null;
-  if (soloLectura) return <span className={`estado-txt ${hecho ? 'e-ok' : 'e-pendiente'}`}>{hecho ? 'Presentado y pagado' : 'Pendiente'}</span>;
+  if (soloLectura) return <span className={`estado-txt ${hecho ? 'e-ok' : 'e-pendiente'}`}>{(hecho ? tr('Presentado y pagado') : tr('Pendiente'))}</span>;
   return (
-    <><select className={`estado ${hecho ? 'ok' : 'pend'}`} value={hecho ? 'pagado' : 'pendiente'} onChange={cambiar} aria-label={`Pago ${p} del 202`}>
-      <option value="pendiente">Pendiente</option>
-      <option value="pagado">Presentado y pagado</option>
-    </select>{error && <span className="error" role="alert">{error}</span>}</>
+    <><select className={`estado ${hecho ? 'ok' : 'pend'}`} value={hecho ? 'pagado' : 'pendiente'} onChange={cambiar} aria-label={tr('Pago {pago} del 202', { pago: p })}>
+      <option value="pendiente">{tr('Pendiente')}</option>
+      <option value="pagado">{tr('Presentado y pagado')}</option>
+    </select>{error && <span className="error" role="alert">{tr(error)}</span>}</>
   );
 }
 
@@ -144,9 +151,10 @@ export function Presentado202({ anio, p, importe, pagado, soloLectura = false })
 // 123, el 216 y el 369, que solo cuentan como presentados con ella.
 // soloLectura: sin el permiso «Contabilidad», el estado sin selector.
 export function PresentadoRet({ modelo, anio, t, hecho, soloLectura = false }) {
+  const tr = useT();
   const router = useRouter();
   const [error, setError] = useState('');
-  if (soloLectura) return <span className={`estado-txt ${hecho ? 'e-ok' : 'e-pendiente'}`}>{hecho ? 'Presentado' : 'Pendiente'}</span>;
+  if (soloLectura) return <span className={`estado-txt ${hecho ? 'e-ok' : 'e-pendiente'}`}>{(hecho ? tr('Presentado') : tr('Pendiente'))}</span>;
   const cambiar = async (e) => {
     setError('');
     try {
@@ -155,10 +163,10 @@ export function PresentadoRet({ modelo, anio, t, hecho, soloLectura = false }) {
     } catch (err) { setError(err.message); }
   };
   return (
-    <><select className={`estado ${hecho ? 'ok' : 'pend'}`} value={hecho ? 'hecho' : 'pendiente'} onChange={cambiar} aria-label={`Estado del ${modelo} del ${t}T ${anio}`}>
-      <option value="pendiente">Pendiente</option>
-      <option value="hecho">Presentado</option>
-    </select>{error && <span className="error" role="alert">{error}</span>}</>
+    <><select className={`estado ${hecho ? 'ok' : 'pend'}`} value={hecho ? 'hecho' : 'pendiente'} onChange={cambiar} aria-label={tr('Estado del {modelo} del {trimestre}T {anio}', { modelo: modelo, trimestre: t, anio: anio })}>
+      <option value="pendiente">{tr('Pendiente')}</option>
+      <option value="hecho">{tr('Presentado')}</option>
+    </select>{error && <span className="error" role="alert">{tr(error)}</span>}</>
   );
 }
 

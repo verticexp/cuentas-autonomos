@@ -1,5 +1,8 @@
 'use client';
 
+import { conHuecos } from '@/lib/huecos';
+import { useT } from '@/components/Idioma';
+
 import Termino from '@/components/Termino';
 import { confirmar } from '@/components/Confirmar';
 import useCambiosSinGuardar from '@/components/useCambiosSinGuardar';
@@ -36,6 +39,7 @@ const numero = (v) => leerImporte(v) || 0;
 // limiteSimplificada: hasta dónde llega la factura sin NIF del cliente en esta empresa (lib/empresa.js limiteSimplificada).
 // presentados: trimestres ya presentados ('AAAA-T', lib/empresa.js trimestresPresentados), para avisar si la factura los cambia.
 export default function FormFactura({ factura, clientes, numeros, hoy, rectifica: orig, plantilla, clienteInicial = null, notaDefecto = '', actividades, productos = [], stock = null, proyectos = [], riesgos = {}, bienes = [], recargo = false, oss = false, margenes = [], reagp = false, igic = false, limiteSimplificada = 400, presentados = [] }) {
+  const tr = useT();
   const impuesto = igic ? 'IGIC' : 'IVA';
   const operaciones = igic ? { exenta: { nombre: 'Exenta de IGIC' }, exportacion: { nombre: 'Exportación de bienes' }, 'servicios-fuera': { nombre: 'No sujeta por localización' }, isp: { nombre: 'Inversión del sujeto pasivo (lo declara el cliente)' } } : TIPOS_OPERACION;
   // IVA y retención de cada actividad, para rellenar la factura nueva.
@@ -75,7 +79,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
       'aria-describedby': claves.length ? claves.map((k) => `${idCampo(k)}-error`).join(' ') : undefined };
   };
   const mensaje = (campo, adicionales = []) => clavesCampo(campo, adicionales).map((k) => errores[k]
-    ? <span className="ff-error-campo" id={`${idCampo(k)}-error`} key={k} role="alert">{errores[k]}</span> : null);
+    ? <span className="ff-error-campo" id={`${idCampo(k)}-error`} key={k} role="alert">{tr(errores[k])}</span> : null);
   const limpiarErrores = (...claves) => setErrores((actuales) => Object.fromEntries(
     Object.entries(actuales).filter(([k]) => !claves.some((c) => k === c || k.startsWith(`${c}.`)))
   ));
@@ -228,7 +232,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
       let d = await r.json().catch(() => ({}));
       // La fecha no sigue el orden de la serie: se avisa y, si la persona lo confirma, se guarda igualmente.
       if (r.status === 409 && d.ordenFechas) {
-        const seguir = await confirmar({ titulo: 'La fecha no sigue el orden de la serie', texto: `${d.error} Hacienda pide que número y fecha vayan en el mismo orden. Si es un error, cambia la fecha; si no, puedes guardarla igualmente.`, aceptar: 'Guardar igualmente', cancelar: 'Cambiar la fecha' });
+        const seguir = await confirmar({ titulo: tr('La fecha no sigue el orden de la serie'), texto: tr('{error} Hacienda pide que número y fecha vayan en el mismo orden. Si es un error, cambia la fecha; si no, puedes guardarla igualmente.', { error: tr(d.error) }), aceptar: tr('Guardar igualmente'), cancelar: tr('Cambiar la fecha') });
         if (!seguir) { setEnviando(false); enviandoRef.current = false; setErrores({ fecha: d.error }); return; }
         r = await mandar({ forzarOrden: true });
         d = await r.json().catch(() => ({}));
@@ -253,75 +257,75 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
   return (
     <form ref={formulario} className={`formulario ff${nueva ? ' ff-nuevo' : ''}`} onSubmit={enviar}>
       <div className={`ff-campos${detalles ? ' det-abierto' : ''}`}>
-      <p className="rotulo">{nueva ? `Se numerará como ${numeroNueva}` : `Factura ${numeroFactura(f)}`}{orig ? <> · <Termino id="rectificativa">Rectificativa</Termino> de la {numeroFactura(orig)} (pon el importe que corrige: en negativo si anula)</> : ''}</p>
+      <p className="rotulo">{orig ? conHuecos(tr(nueva ? 'Se numerará como {numero} · {rectificativa} de la {original} (pon el importe que corrige: en negativo si anula)' : 'Factura {numero} · {rectificativa} de la {original} (pon el importe que corrige: en negativo si anula)'), { numero: nueva ? numeroNueva : numeroFactura(f), rectificativa: <Termino id="rectificativa">{tr('Rectificativa')}</Termino>, original: numeroFactura(orig) }) : (nueva ? tr('Se numerará como {numero}', { numero: numeroNueva }) : tr('Factura {numero}', { numero: numeroFactura(f) }))}</p>
       {actividades.length > 1 && <Deslizable className={`tipo ${actividades.length === 2 ? 'dos' : 'varias'}`}>
         {actividades.map(({ id, nombre }) => (
           <button type="button" key={id} className={f.actividad === id ? 'activo' : ''} onClick={() => cambiarActividad(id)}>{nombre}</button>
         ))}
       </Deslizable>}
 
-      <label>Fecha<input {...atributos('fecha')} className="campo" type="date" value={f.fecha} onChange={(e) => poner('fecha', e.target.value)} required />{mensaje('fecha')}</label>
+      <label>{tr('Fecha')}<input {...atributos('fecha')} className="campo" type="date" value={f.fecha} onChange={(e) => poner('fecha', e.target.value)} required />{mensaje('fecha')}</label>
       <AvisoPresentado f={f} factura={factura} presentados={presentados} />
 
       <fieldset>
-        <legend>Cliente</legend>
+        <legend>{tr('Cliente')}</legend>
         {nueva && (
           <div className="ff-m ff-cli">
             {eligiendo && !nuevoCli ? (
               <div className="ff-cli-busca">
-                <input spellCheck={false} autoCorrect="off" autoCapitalize="characters" type="search" className="campo" placeholder="Buscar cliente por nombre o NIF" value={buscando} onChange={(e) => setBuscando(e.target.value)} aria-label="Buscar cliente" autoComplete="off" enterKeyHint="search" />
+                <input spellCheck={false} autoCorrect="off" autoCapitalize="characters" type="search" className="campo" placeholder={tr('Buscar cliente por nombre o NIF')} value={buscando} onChange={(e) => setBuscando(e.target.value)} aria-label={tr('Buscar cliente')} autoComplete="off" enterKeyHint="search" />
                 <ul className="ff-cli-res">
-                  {resultados.map((c) => <li key={c.id}><button type="button" onClick={() => elegirBuscado(c.id)}><strong>{c.nombre}</strong><small>{[c.nif || 'Sin NIF', c.ciudad].filter(Boolean).join(' · ')}</small></button></li>)}
-                  <li><button type="button" className="ff-cli-nuevo" onClick={clienteNuevo}>+ Cliente nuevo{buscando.trim() ? `: «${buscando.trim()}»` : ''}</button></li>
+                  {resultados.map((c) => <li key={c.id}><button type="button" onClick={() => elegirBuscado(c.id)}><strong>{c.nombre}</strong><small>{[c.nif || tr('Sin NIF'), c.ciudad].filter(Boolean).join(' · ')}</small></button></li>)}
+                  <li><button type="button" className="ff-cli-nuevo" onClick={clienteNuevo}>{(buscando.trim() ? tr('+ Cliente nuevo: «{cliente}»', { cliente: buscando.trim() }) : tr('+ Cliente nuevo'))}</button></li>
                 </ul>
-                {cambiando && f.cliente.nombre.trim() && <button type="button" className="ff-cli-enlace" onClick={() => { setCambiando(false); setBuscando(''); }}>Dejar a {f.cliente.nombre}</button>}
+                {cambiando && f.cliente.nombre.trim() && <button type="button" className="ff-cli-enlace" onClick={() => { setCambiando(false); setBuscando(''); }}>{tr('Dejar a {cliente}', { cliente: f.cliente.nombre })}</button>}
               </div>
             ) : nuevoCli ? (
               <div className="ff-cli-sel">
-                <span className="txt"><strong>Cliente nuevo</strong><small>Rellena sus datos</small></span>
-                <button type="button" className="ff-cli-enlace" onClick={() => { setNuevoCli(false); setDatosCli(false); elegirCliente(''); }}>Elegir uno guardado</button>
+                <span className="txt"><strong>{tr('Cliente nuevo')}</strong><small>{tr('Rellena sus datos')}</small></span>
+                <button type="button" className="ff-cli-enlace" onClick={() => { setNuevoCli(false); setDatosCli(false); elegirCliente(''); }}>{tr('Elegir uno guardado')}</button>
               </div>
             ) : (
               <>
                 <div className="ff-cli-sel">
-                  <span className="txt"><strong>{f.cliente.nombre}</strong><small>{[f.cliente.nif, f.cliente.ciudad].filter(Boolean).join(' · ') || 'Sin NIF'}</small></span>
-                  <button type="button" className="ff-cli-enlace" onClick={() => { setCambiando(true); setBuscando(''); }}>Cambiar</button>
+                  <span className="txt"><strong>{f.cliente.nombre}</strong><small>{([f.cliente.nif, f.cliente.ciudad].filter(Boolean).join(' · ') || tr('Sin NIF'))}</small></span>
+                  <button type="button" className="ff-cli-enlace" onClick={() => { setCambiando(true); setBuscando(''); }}>{tr('Cambiar')}</button>
                 </div>
-                <button type="button" className="ff-cli-enlace" aria-expanded={datosCli} onClick={() => setDatosCli((v) => !v)}>{datosCli ? 'Ocultar sus datos' : 'Ver o editar sus datos'}</button>
+                <button type="button" className="ff-cli-enlace" aria-expanded={datosCli} onClick={() => setDatosCli((v) => !v)}>{(datosCli ? tr('Ocultar sus datos') : tr('Ver o editar sus datos'))}</button>
               </>
             )}
           </div>
         )}
         <div className={`ff-datos-cliente${camposAbiertos ? ' abierto' : ''}`}>
-          <label className="ff-etiqueta-oculta" htmlFor={idCampo('cliente-selector')}>Elegir cliente</label>
+          <label className="ff-etiqueta-oculta" htmlFor={idCampo('cliente-selector')}>{tr('Elegir cliente')}</label>
           <select id={idCampo('cliente-selector')} className="campo ff-sel-cli" value={elegido || (f.cliente.nombre.trim() ? '__sin_ficha__' : '')} onChange={(e) => elegirCliente(e.target.value)}>
-            {!elegido && f.cliente.nombre.trim() && <option value="__sin_ficha__" disabled>{etiquetaClienteFactura(f.cliente)} (sin ficha seleccionada)</option>}
-            <option value="">+ Cliente nuevo</option>
+            {!elegido && f.cliente.nombre.trim() && <option value="__sin_ficha__" disabled>{tr('{cliente} (sin ficha seleccionada)', { cliente: etiquetaClienteFactura(f.cliente) })}</option>}
+            <option value="">{tr('+ Cliente nuevo')}</option>
             {ordenados.map((c) => <option key={c.id} value={c.id}>{etiquetaClienteFactura(c)}</option>)}
           </select>
-          <label className="ff-etiqueta" htmlFor={idCampo('cliente.nombre')}>Nombre o razón social</label>
-          <input {...atributos('cliente.nombre')} className="campo" placeholder="Ej.: Talleres García S.L." value={f.cliente.nombre} onChange={(e) => ponerCliente('nombre', e.target.value)} required />{mensaje('cliente.nombre')}
+          <label className="ff-etiqueta" htmlFor={idCampo('cliente.nombre')}>{tr('Nombre o razón social')}</label>
+          <input {...atributos('cliente.nombre')} className="campo" placeholder={tr('Ej.: Talleres García S.L.')} value={f.cliente.nombre} onChange={(e) => ponerCliente('nombre', e.target.value)} required />{mensaje('cliente.nombre')}
           <label className="ff-etiqueta" htmlFor={idCampo('cliente.nif')}>NIF</label>
-          <input spellCheck={false} autoCorrect="off" autoCapitalize="characters" {...atributos('cliente.nif')} className="campo" placeholder="Ej.: B12345678" value={f.cliente.nif} onChange={(e) => ponerCliente('nif', e.target.value)} />{mensaje('cliente.nif')}
-          <label className="ff-etiqueta" htmlFor={idCampo('cliente.pais')}>País (si no es España)</label>
-          <input spellCheck={false} autoCorrect="off" autoCapitalize="characters" {...atributos('cliente.pais')} className="campo" placeholder="País del NIF si no es ES (US, PT, FR…)" maxLength={2} value={f.cliente.pais || ''} onChange={(e) => ponerCliente('pais', e.target.value.toUpperCase())} />{mensaje('cliente.pais')}
-          <label className="ff-etiqueta" htmlFor={idCampo('cliente.direccion')}>Dirección</label>
-          <input {...atributos('cliente.direccion')} className="campo" placeholder="Ej.: Calle Mayor, 1" value={f.cliente.direccion} onChange={(e) => ponerCliente('direccion', e.target.value)} />{mensaje('cliente.direccion')}
-          <label className="ff-etiqueta" htmlFor={idCampo('cliente.ciudad')}>Código postal y ciudad</label>
-          <input {...atributos('cliente.ciudad')} className="campo" placeholder="Ej.: 08001 Barcelona" value={f.cliente.ciudad} onChange={(e) => ponerCliente('ciudad', e.target.value)} />{mensaje('cliente.ciudad')}
-          <label className="ff-etiqueta" htmlFor={idCampo('cliente.email')}>Email</label>
-          <input autoComplete="email" {...atributos('cliente.email')} className="campo" type="email" placeholder="Ej.: cliente@empresa.es" value={f.cliente.email || ''} onChange={(e) => ponerCliente('email', e.target.value)} />{mensaje('cliente.email')}
+          <input spellCheck={false} autoCorrect="off" autoCapitalize="characters" {...atributos('cliente.nif')} className="campo" placeholder={tr('Ej.: B12345678')} value={f.cliente.nif} onChange={(e) => ponerCliente('nif', e.target.value)} />{mensaje('cliente.nif')}
+          <label className="ff-etiqueta" htmlFor={idCampo('cliente.pais')}>{tr('País (si no es España)')}</label>
+          <input spellCheck={false} autoCorrect="off" autoCapitalize="characters" {...atributos('cliente.pais')} className="campo" placeholder={tr('País del NIF si no es ES (US, PT, FR…)')} maxLength={2} value={f.cliente.pais || ''} onChange={(e) => ponerCliente('pais', e.target.value.toUpperCase())} />{mensaje('cliente.pais')}
+          <label className="ff-etiqueta" htmlFor={idCampo('cliente.direccion')}>{tr('Dirección')}</label>
+          <input {...atributos('cliente.direccion')} className="campo" placeholder={tr('Ej.: Calle Mayor, 1')} value={f.cliente.direccion} onChange={(e) => ponerCliente('direccion', e.target.value)} />{mensaje('cliente.direccion')}
+          <label className="ff-etiqueta" htmlFor={idCampo('cliente.ciudad')}>{tr('Código postal y ciudad')}</label>
+          <input {...atributos('cliente.ciudad')} className="campo" placeholder={tr('Ej.: 08001 Barcelona')} value={f.cliente.ciudad} onChange={(e) => ponerCliente('ciudad', e.target.value)} />{mensaje('cliente.ciudad')}
+          <label className="ff-etiqueta" htmlFor={idCampo('cliente.email')}>{tr('Email')}</label>
+          <input autoComplete="email" {...atributos('cliente.email')} className="campo" type="email" placeholder={tr('Ej.: cliente@empresa.es')} value={f.cliente.email || ''} onChange={(e) => ponerCliente('email', e.target.value)} />{mensaje('cliente.email')}
         </div>
         {(resumen || riesgo) && (
           <div className={`ff-ficha${riesgo && !riesgo.ok ? ' excede' : ''}`}>
-            {resumen && <p className="ff-ficha-resumen">{resumen}</p>}
+            {resumen && <p className="ff-ficha-resumen">{[ficha.formaCobro && tr(nombreForma(ficha.formaCobro)), Number.isInteger(ficha.plazo) && (ficha.plazo ? tr('{n} días', { n: ficha.plazo }) : tr('al contado')), ficha.comercial && tr('Comercial: {nombre}', { nombre: ficha.comercial }), ficha.zona && tr('Zona: {nombre}', { nombre: ficha.zona })].filter(Boolean).join(' · ')}</p>}
             {riesgo && (
               <>
-                <p className="ff-riesgo-cifras"><span>Riesgo <b>{eur(riesgo.riesgo)}</b> de {eur(riesgo.limite)}</span><span>Disponible <b>{eur(riesgo.disponible)}</b></span></p>
+                <p className="ff-riesgo-cifras"><span>{conHuecos(tr('Riesgo {riesgo} de {limite}'), { riesgo: <b>{eur(riesgo.riesgo)}</b>, limite: eur(riesgo.limite) })}</span><span>{conHuecos(tr('Disponible {importe}'), { importe: <b>{eur(riesgo.disponible)}</b> })}</span></p>
                 <div className="ff-riesgo-barra" aria-hidden="true"><i style={{ width: `${riesgo.limite > 0 ? Math.min(100, Math.round((riesgo.nuevo / riesgo.limite) * 100)) : 100}%` }} /></div>
                 {riesgo.ok
-                  ? riesgo.nuevo !== riesgo.riesgo && <p className="ff-riesgo-nota">Con esta factura: {eur(riesgo.nuevo)}</p>
-                  : <p className="error" role="alert">{riesgo.error}</p>}
+                  ? riesgo.nuevo !== riesgo.riesgo && <p className="ff-riesgo-nota">{tr('Con esta factura: {importe}', { importe: eur(riesgo.nuevo) })}</p>
+                  : <p className="error" role="alert">{tr(riesgo.error)}</p>}
               </>
             )}
           </div>
@@ -329,76 +333,71 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
       </fieldset>
 
       <div className={`dos-col ff-det ff-evento${verEvento || f.evento?.fecha || f.evento?.lugar ? ' abierto' : ''}`}>
-        <label>Fecha de la operación (servicio o entrega), si no es la de la factura (opcional)<input className="campo" type="date" value={f.evento?.fecha || ''} onChange={(e) => poner('evento', { ...f.evento, fecha: e.target.value })} /></label>
-        <label>Lugar (opcional)<input className="campo" placeholder="Ej.: C/ Mayor, 1, Valencia" value={f.evento?.lugar || ''} onChange={(e) => poner('evento', { ...f.evento, lugar: e.target.value })} /></label>
+        <label>{tr('Fecha de la operación (servicio o entrega), si no es la de la factura (opcional)')}<input className="campo" type="date" value={f.evento?.fecha || ''} onChange={(e) => poner('evento', { ...f.evento, fecha: e.target.value })} /></label>
+        <label>{tr('Lugar (opcional)')}<input className="campo" placeholder={tr('Ej.: C/ Mayor, 1, Valencia')} value={f.evento?.lugar || ''} onChange={(e) => poner('evento', { ...f.evento, lugar: e.target.value })} /></label>
       </div>
       <fieldset className="lineas">
-        <legend>Conceptos</legend>
+        <legend>{tr('Conceptos')}</legend>
         {f.lineas.map((l, i) => (
           <div className="linea" key={i}>
             <div className="linea-cab">
-              <label className="ff-etiqueta-oculta" htmlFor={idCampo(`lineas.${i}.concepto`)}>Concepto</label>
-              <input {...atributos(`lineas.${i}.concepto`)} className="campo" placeholder="Ej.: Reparación de la instalación (2 horas)" value={l.concepto} onChange={(e) => ponerLinea(i, 'concepto', e.target.value)} required />
-              {f.lineas.length > 1 && <button type="button" className="linea-quitar" aria-label="Quitar línea" onClick={() => quitarLinea(i)}>×</button>}
+              <label className="ff-etiqueta-oculta" htmlFor={idCampo(`lineas.${i}.concepto`)}>{tr('Concepto')}</label>
+              <input {...atributos(`lineas.${i}.concepto`)} className="campo" placeholder={tr('Ej.: Reparación de la instalación (2 horas)')} value={l.concepto} onChange={(e) => ponerLinea(i, 'concepto', e.target.value)} required />
+              {f.lineas.length > 1 && <button type="button" className="linea-quitar" aria-label={tr('Quitar línea')} onClick={() => quitarLinea(i)}>×</button>}
             </div>
             {mensaje(`lineas.${i}.concepto`)}
             <div className="linea-nums">
-              <label>Cantidad<input {...atributos(`lineas.${i}.cantidad`)} className="campo" inputMode="decimal" value={l.cantidad} onChange={(e) => ponerLinea(i, 'cantidad', e.target.value)} />{mensaje(`lineas.${i}.cantidad`)}</label>
-              <label>Precio<input {...atributos(`lineas.${i}.precio`, i === 0 ? ['base'] : [])} className="campo" inputMode="decimal" placeholder="0,00" value={l.precio} onChange={(e) => ponerLinea(i, 'precio', e.target.value)} />{mensaje(`lineas.${i}.precio`, i === 0 ? ['base'] : [])}</label>
-              <label>Dto. %<input {...atributos(`lineas.${i}.dto`)} className="campo" inputMode="decimal" placeholder="0" value={l.dto} onChange={(e) => ponerLinea(i, 'dto', e.target.value)} />{mensaje(`lineas.${i}.dto`)}</label>
-              {f.margen && <label>Coste<input className="campo" inputMode="decimal" placeholder="0,00" value={l.coste ?? ''} onChange={(e) => ponerLinea(i, 'coste', e.target.value)} aria-describedby={idCampo('margen-nota')} /></label>}
+              <label>{tr('Cantidad')}<input {...atributos(`lineas.${i}.cantidad`)} className="campo" inputMode="decimal" value={l.cantidad} onChange={(e) => ponerLinea(i, 'cantidad', e.target.value)} />{mensaje(`lineas.${i}.cantidad`)}</label>
+              <label>{tr('Precio')}<input {...atributos(`lineas.${i}.precio`, i === 0 ? ['base'] : [])} className="campo" inputMode="decimal" placeholder={"0,00"} value={l.precio} onChange={(e) => ponerLinea(i, 'precio', e.target.value)} />{mensaje(`lineas.${i}.precio`, i === 0 ? ['base'] : [])}</label>
+              <label>{tr('Dto. %')}<input {...atributos(`lineas.${i}.dto`)} className="campo" inputMode="decimal" placeholder={"0"} value={l.dto} onChange={(e) => ponerLinea(i, 'dto', e.target.value)} />{mensaje(`lineas.${i}.dto`)}</label>
+              {f.margen && <label>{tr('Coste')}<input className="campo" inputMode="decimal" placeholder={"0,00"} value={l.coste ?? ''} onChange={(e) => ponerLinea(i, 'coste', e.target.value)} aria-describedby={idCampo('margen-nota')} /></label>}
               <label>{impuesto}
                 <select {...atributos(`lineas.${i}.ivaPct`, i === 0 ? ['ivaPct'] : [])} className="campo" value={l.ivaPct} onChange={(e) => ponerLinea(i, 'ivaPct', Number(e.target.value))}>
                   {[...new Set(igic ? TIPOS_IGIC : f.oss?.pais ? tiposPais(f.oss.pais) : [21, 10, 4, 0, Number(l.ivaPct)])].map((n) => <option key={n} value={n}>{String(n).replace('.', ',')}%</option>)}
                 </select>{mensaje(`lineas.${i}.ivaPct`, i === 0 ? ['ivaPct'] : [])}
               </label>
             </div>
-            <p className="linea-total">{stock && nueva && !orig && l.producto && stock[l.producto] !== undefined && <span className={`linea-stock${stock[l.producto] < nums[i].cantidad ? ' falta' : ''}`}>{stock[l.producto] < nums[i].cantidad ? `Solo quedan ${stock[l.producto]}` : `Quedan ${stock[l.producto]}`}</span>}{dinero(baseLinea(nums[i]))}</p>
+            <p className="linea-total">{stock && nueva && !orig && l.producto && stock[l.producto] !== undefined && <span className={`linea-stock${stock[l.producto] < nums[i].cantidad ? ' falta' : ''}`}>{(stock[l.producto] < nums[i].cantidad ? tr('Solo quedan {cantidad}', { cantidad: stock[l.producto] }) : tr('Quedan {cantidad}', { cantidad: stock[l.producto] }))}</span>}{dinero(baseLinea(nums[i]))}</p>
           </div>
         ))}
-        {productos.length > 0 && <div className="catalogo-chips" aria-label="Añadir del catálogo">{productos.map((p) => <button type="button" key={p.id} onClick={() => delCatalogo(p)}>+ {p.nombre}</button>)}</div>}
+        {productos.length > 0 && <div className="catalogo-chips" aria-label={tr('Añadir del catálogo')}>{productos.map((p) => <button type="button" key={p.id} onClick={() => delCatalogo(p)}>+ {p.nombre}</button>)}</div>}
         {mensaje('lineas')}
-        <button {...atributos('lineas')} type="button" className="boton sec" onClick={anadirLinea}>+ Añadir otro concepto</button>
+        <button {...atributos('lineas')} type="button" className="boton sec" onClick={anadirLinea}>{tr('+ Añadir otro concepto')}</button>
       </fieldset>
 
-      {!orig && <label className="ff-det">Qué vendes
-        <select className="campo" value={f.accesoria || ''} onChange={(e) => poner('accesoria', e.target.value || undefined)}>
-          <option value="">Lo de mi actividad</option>
-          <option value="inversion">Un bien de inversión de la actividad (maquinaria, vehículo, equipo…)</option>
-          <option value="inmueble">Un inmueble o una operación financiera que no es habitual</option>
+      {!orig && <label className="ff-det">{tr('Qué vendes')}<select className="campo" value={f.accesoria || ''} onChange={(e) => poner('accesoria', e.target.value || undefined)}>
+          <option value="">{tr('Lo de mi actividad')}</option>
+          <option value="inversion">{tr('Un bien de inversión de la actividad (maquinaria, vehículo, equipo…)')}</option>
+          <option value="inmueble">{tr('Un inmueble o una operación financiera que no es habitual')}</option>
         </select>
       </label>}
-      {!orig && f.accesoria === 'inversion' && bienes.length > 0 && <label className="ff-det">Qué bien vendes (se da de baja y deja de amortizarse)
-        <select className="campo" value={f.bien || ''} onChange={(e) => poner('bien', e.target.value || undefined)}>
-          <option value="">No está en Fisquo (lo compré antes de usarlo)</option>
-          {bienes.map((b) => <option key={b.id} value={b.id}>{b.proveedor || 'Sin proveedor'} · {fechaCorta(b.fecha)} · {eur(b.base)}</option>)}
+      {!orig && f.accesoria === 'inversion' && bienes.length > 0 && <label className="ff-det">{tr('Qué bien vendes (se da de baja y deja de amortizarse)')}<select className="campo" value={f.bien || ''} onChange={(e) => poner('bien', e.target.value || undefined)}>
+          <option value="">{tr('No está en Fisquo (lo compré antes de usarlo)')}</option>
+          {bienes.map((b) => <option key={b.id} value={b.id}>{(b.proveedor || tr('Sin proveedor'))} · {fechaCorta(b.fecha)} · {eur(b.base)}</option>)}
         </select>
       </label>}
-      <label className="ff-det">Proyecto, obra o local (opcional)
-        <input className="campo" list="proyectos-factura" value={f.proyecto || ''} onChange={(e) => poner('proyecto', e.target.value)} placeholder="Para ver la rentabilidad de cada uno" maxLength={60} />
+      <label className="ff-det">{tr('Proyecto, obra o local (opcional)')}<input className="campo" list="proyectos-factura" value={f.proyecto || ''} onChange={(e) => poner('proyecto', e.target.value)} placeholder={tr('Para ver la rentabilidad de cada uno')} maxLength={60} />
       </label>
       <datalist id="proyectos-factura">{proyectos.map((p) => <option key={p} value={p} />)}</datalist>
 
-      {(nums.some((l) => l.ivaPct === 0) || errores.operacion) && <label>¿Por qué va sin {impuesto}?
-        {/* A un cliente de España sin IVA hay que decir el motivo (auditoría U-17): exenta, inversión del sujeto pasivo… cambian
+      {(nums.some((l) => l.ivaPct === 0) || errores.operacion) && <label>{tr('¿Por qué va sin {impuesto}?', { impuesto: impuesto })}{/* A un cliente de España sin IVA hay que decir el motivo (auditoría U-17): exenta, inversión del sujeto pasivo… cambian
             la prorrata y el 303. De la UE o de fuera, el de su NIF sirve por defecto. */}
         <select {...atributos('operacion')} className="campo" value={f.operacion || ''} required={!igic && !clienteExtranjero} onChange={(e) => poner('operacion', e.target.value || undefined)}>
-          <option value="">{igic ? 'Tipo cero (sin otra operación)' : clienteExtranjero ? `Según el cliente: ${operaciones[nifUE(nifCli) ? 'servicios-ue' : 'servicios-fuera']?.nombre}` : 'Elige el motivo'}</option>
-          {Object.entries(operaciones).map(([k, t]) => <option key={k} value={k}>{t.nombre}</option>)}
+          <option value="">{(igic ? tr('Tipo cero (sin otra operación)') : (clienteExtranjero ? tr('Según el cliente: {operacion}', { operacion: tr(operaciones[nifUE(nifCli) ? 'servicios-ue' : 'servicios-fuera']?.nombre) }) : tr('Elige el motivo')))}</option>
+          {Object.entries(operaciones).map(([k, t]) => <option key={k} value={k}>{tr(t.nombre)}</option>)}
         </select>{mensaje('operacion')}
       </label>}
 
-      {orig && <label>Motivo de la rectificación
-        <select className="campo" value={f.motivoRectificacion || ''} onChange={(e) => poner('motivoRectificacion', e.target.value)}>
-          <option value="">Otras causas (R4)</option>
-          <option value="devolucion">Devolución, descuento, anulación o cambio de precio (R1, art. 80 Uno, Dos y Seis)</option>
-          <option value="errorFactura">Error al hacer la factura: importe, tipo de {impuesto} o dato equivocado (R4)</option>
-          <option value="errorDerecho">Error fundado de derecho (R1)</option>
-          <option value="concurso">Concurso del cliente (R2, art. 80 Tres)</option>
-          <option value="incobrable">Crédito incobrable: el cliente no paga (R3, art. 80 Cuatro)</option>
+      {orig && <label>{tr('Motivo de la rectificación')}<select className="campo" value={f.motivoRectificacion || ''} onChange={(e) => poner('motivoRectificacion', e.target.value)}>
+          <option value="">{tr('Otras causas (R4)')}</option>
+          <option value="devolucion">{tr('Devolución, descuento, anulación o cambio de precio (R1, art. 80 Uno, Dos y Seis)')}</option>
+          <option value="errorFactura">{tr('Error al hacer la factura: importe, tipo de {impuesto} o dato equivocado (R4)', { impuesto: impuesto })}</option>
+          <option value="errorDerecho">{tr('Error fundado de derecho (R1)')}</option>
+          <option value="concurso">{tr('Concurso del cliente (R2, art. 80 Tres)')}</option>
+          <option value="incobrable">{tr('Crédito incobrable: el cliente no paga (R3, art. 80 Cuatro)')}</option>
         </select>
         {/* La causa sale impresa en la rectificativa (art. 15 del Reglamento de facturación, lib/idiomas.js textoRectifica). */}
-        {!f.motivoRectificacion && <small className="nota">Con «Otras causas», escribe la causa en la nota: sale impresa como motivo de la rectificación.</small>}
+        {!f.motivoRectificacion && <small className="nota">{tr('Con «Otras causas», escribe la causa en la nota: sale impresa como motivo de la rectificación.')}</small>}
       </label>}
       {orig && (() => {
         // Lo que cambia según el motivo (informe de la asesoría, 20-10-2026): dónde va en el 303 y en el IRPF.
@@ -409,145 +408,138 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
         if (!igic && motivo === 'incobrable') {
           const r = requisitosIncobrable({ fechaOriginal: orig.fecha, fechaRectificativa: f.fecha, base: orig.base });
           return <div className="nota aviso-rect">
-            {[...r.errores, ...r.avisos].map((t) => <p key={t}><strong>{t}</strong></p>)}
-            <p>Para recuperar el IVA de un impagado hace falta:</p>
-            <ul>{r.requisitos.map((t) => <li key={t}>{t}</li>)}</ul>
-            {!r.errores.length && <p>Con esta fecha, el modelo 952 se presenta hasta el {fechaCorta(r.limite952)}.</p>}
-            <p>Si facturaste más de 6 millones el año pasado, la espera es de un año desde la factura, no de seis meses.</p>
-            <label className="check"><input type="checkbox" checked={Boolean(f.reclamado)} onChange={(e) => poner('reclamado', e.target.checked)} /> He reclamado el cobro por vía judicial, con requerimiento notarial o por otro medio fehaciente que admita la ley</label>
+            {[...r.errores, ...r.avisos].map((t) => <p key={t}><strong>{tr(t)}</strong></p>)}
+            <p>{tr('Para recuperar el IVA de un impagado hace falta:')}</p>
+            <ul>{r.requisitos.map((t) => <li key={t}>{tr(t)}</li>)}</ul>
+            {!r.errores.length && <p>{tr('Con esta fecha, el modelo 952 se presenta hasta el {fecha}.', { fecha: tr(fechaCorta(r.limite952)) })}</p>}
+            <p>{tr('Si facturaste más de 6 millones el año pasado, la espera es de un año desde la factura, no de seis meses.')}</p>
+            <label className="check"><input type="checkbox" checked={Boolean(f.reclamado)} onChange={(e) => poner('reclamado', e.target.checked)} />{(" " + tr('He reclamado el cobro por vía judicial, con requerimiento notarial o por otro medio fehaciente que admita la ley'))}</label>
           </div>;
         }
-        if (!igic && motivo === 'errorFactura' && cuota > 0 && otroT) return <p className="nota aviso-rect">Sube el IVA por un error: no va en el 303 de este trimestre, sino en una autoliquidación rectificativa del {trimestre(orig.fecha)}T {orig.fecha.slice(0, 4)}, con recargo por presentarla tarde (art. 27 LGT) e intereses si procede (art. 89.Cinco de la Ley del IVA). Fisquo la cuenta en ese trimestre.{otroAnio ? ` En el IRPF cuenta en ${orig.fecha.slice(0, 4)}.` : ''}</p>;
-        if (['errorFactura', 'errorDerecho'].includes(motivo) && otroAnio) return <p className="nota aviso-rect">Corrige un error de una factura de {orig.fecha.slice(0, 4)}: en el IRPF cuenta en ese año (su declaración de la renta), no en el 130 de {f.fecha.slice(0, 4)}.</p>;
-        if (!igic && !motivo && cuota > 0 && otroT) return <p className="nota aviso-rect">Sube el IVA de una factura de otro trimestre: elige el motivo. Si es un error al facturar, va en una autoliquidación rectificativa de ese trimestre, no en este.</p>;
+        if (!igic && motivo === 'errorFactura' && cuota > 0 && otroT) return <p className="nota aviso-rect">{(otroAnio ? tr('Sube el IVA por un error: no va en el 303 de este trimestre, sino en una autoliquidación rectificativa del {trimestre}T {anio}, con recargo por presentarla tarde (art. 27 LGT) e intereses si procede (art. 89.Cinco de la Ley del IVA). Fisquo la cuenta en ese trimestre. En el IRPF cuenta en {anio}.', { trimestre: trimestre(orig.fecha), anio: orig.fecha.slice(0, 4) }) : tr('Sube el IVA por un error: no va en el 303 de este trimestre, sino en una autoliquidación rectificativa del {trimestre}T {anio}, con recargo por presentarla tarde (art. 27 LGT) e intereses si procede (art. 89.Cinco de la Ley del IVA). Fisquo la cuenta en ese trimestre.', { trimestre: trimestre(orig.fecha), anio: orig.fecha.slice(0, 4) }))}</p>;
+        if (['errorFactura', 'errorDerecho'].includes(motivo) && otroAnio) return <p className="nota aviso-rect">{tr('Corrige un error de una factura de {anioOriginal}: en el IRPF cuenta en ese año (su declaración de la renta), no en el 130 de {anioActual}.', { anioOriginal: orig.fecha.slice(0, 4), anioActual: f.fecha.slice(0, 4) })}</p>;
+        if (!igic && !motivo && cuota > 0 && otroT) return <p className="nota aviso-rect">{tr('Sube el IVA de una factura de otro trimestre: elige el motivo. Si es un error al facturar, va en una autoliquidación rectificativa de ese trimestre, no en este.')}</p>;
         return null;
       })()}
 
       <div className="ff-det termino-campo">
-        <span id={idCampo('irpf-etiqueta')}><Termino id="retencion">Retención de IRPF</Termino></span>
+        <span id={idCampo('irpf-etiqueta')}><Termino id="retencion">{tr('Retención de IRPF')}</Termino></span>
         <select aria-labelledby={idCampo('irpf-etiqueta')} {...atributos('irpfPct')} className="campo" value={f.irpfPct} onChange={(e) => poner('irpfPct', Number(e.target.value))}>
           {[...new Set([15, 7, 0, Number(f.irpfPct) || 0])].map((n) => <option key={n} value={n}>{n}%</option>)}
         </select>{mensaje('irpfPct')}
-        {!orig && Number(f.irpfPct) > 0 && clientePersona && f.cliente.nombre.trim() && <p className="nota">Si es un particular (no autónomo ni empresa), la factura va sin retención. <button type="button" className="enlace" onClick={() => poner('irpfPct', 0)}>Quitar la retención</button></p>}
-        {clienteExtranjero && Number(f.irpfPct) === 0 && <p className="nota">Sin retención: el cliente es de fuera de España.</p>}
+        {!orig && Number(f.irpfPct) > 0 && clientePersona && f.cliente.nombre.trim() && <p className="nota">{(tr('Si es un particular (no autónomo ni empresa), la factura va sin retención.') + " ")}<button type="button" className="enlace" onClick={() => poner('irpfPct', 0)}>{tr('Quitar la retención')}</button></p>}
+        {clienteExtranjero && Number(f.irpfPct) === 0 && <p className="nota">{tr('Sin retención: el cliente es de fuera de España.')}</p>}
       </div>
       {/* Sin NIF del cliente solo cabe la factura simplificada (art. 4 del Reglamento de facturación): hasta 400 €, o 3.000 €
           en los sectores del art. 4.1.c que la empresa marca en Ajustes. Por encima, el servidor la rechaza (lib/validacion.js). */}
-      {!orig && !nifCli && !f.oss?.pais && !clientePais && f.cliente.nombre.trim() && t.total + t.irpf > limiteSimplificada && <p className="error" role="alert">Sin el NIF del cliente solo cabe la factura simplificada, y esta llega hasta {limiteSimplificada === 3000 ? '3.000' : limiteSimplificada} € IVA incluido (art. 4 del Reglamento de facturación). Pídele su NIF o DNI y añádelo.{limiteSimplificada < 3000 && ' Si vendes al por menor, en hostelería u otro sector del art. 4.1.c, el límite es de 3.000 €: márcalo en Ajustes › Actividades e impuestos.'}</p>}
+      {!orig && !nifCli && !f.oss?.pais && !clientePais && f.cliente.nombre.trim() && t.total + t.irpf > limiteSimplificada && <p className="error" role="alert">{tr(limiteSimplificada < 3000 ? 'Sin el NIF del cliente solo cabe la factura simplificada, y esta llega hasta {limite} € IVA incluido (art. 4 del Reglamento de facturación). Pídele su NIF o DNI y añádelo. Si vendes al por menor, en hostelería u otro sector del art. 4.1.c, el límite es de 3.000 €: márcalo en Ajustes › Actividades e impuestos.' : 'Sin el NIF del cliente solo cabe la factura simplificada, y esta llega hasta {limite} € IVA incluido (art. 4 del Reglamento de facturación). Pídele su NIF o DNI y añádelo.', { limite: limiteSimplificada === 3000 ? '3.000' : limiteSimplificada })}</p>}
 
-      {!igic && (recargo || f.recargo) && <div className="check ff-det termino-check"><input id={idCampo('recargo')} aria-labelledby={idCampo('recargo-etiqueta')} type="checkbox" checked={Boolean(f.recargo)} onChange={(e) => poner('recargo', e.target.checked)} /><span id={idCampo('recargo-etiqueta')}><label htmlFor={idCampo('recargo')}>Cliente en </label><Termino id="recargo">recargo de equivalencia</Termino><label htmlFor={idCampo('recargo')}> (comercio minorista: 5,2 % con el 21 %, 1,4 % con el 10 %, 0,5 % con el 4 %)</label></span></div>}
+      {!igic && (recargo || f.recargo) && <div className="check ff-det termino-check"><input id={idCampo('recargo')} aria-labelledby={idCampo('recargo-etiqueta')} type="checkbox" checked={Boolean(f.recargo)} onChange={(e) => poner('recargo', e.target.checked)} /><span id={idCampo('recargo-etiqueta')}>{conHuecos(tr('Cliente en {recargo} (comercio minorista: 5,2 % con el 21 %, 1,4 % con el 10 %, 0,5 % con el 4 %)'), { recargo: <Termino id="recargo">{tr('recargo de equivalencia')}</Termino> }).map((parte, i) => i === 1 ? parte : <label key={i} htmlFor={idCampo('recargo')}>{parte}</label>)}</span></div>}
 
       {!igic && (margenes.length > 0 || f.margen) && (
         <div className="ff-det">
-          <label>Régimen de la factura
-            <select className="campo" value={f.margen || ''} onChange={(e) => setF((x) => ({ ...x, margen: e.target.value || undefined, ...(e.target.value ? { recargo: false, oss: undefined, divisa: undefined } : { cuotasIncluidas: undefined }) }))}>
-              <option value="">General: IVA sobre el precio</option>
-              {(margenes.includes('rebu') || f.margen === 'rebu') && <option value="rebu">Bienes usados, arte o antigüedades (REBU): IVA sobre el margen</option>}
-              {(margenes.includes('reav') || f.margen === 'reav') && <option value="reav">Agencia de viajes (REAV): IVA sobre el margen</option>}
+          <label>{tr('Régimen de la factura')}<select className="campo" value={f.margen || ''} onChange={(e) => setF((x) => ({ ...x, margen: e.target.value || undefined, ...(e.target.value ? { recargo: false, oss: undefined, divisa: undefined } : { cuotasIncluidas: undefined }) }))}>
+              <option value="">{tr('General: IVA sobre el precio')}</option>
+              {(margenes.includes('rebu') || f.margen === 'rebu') && <option value="rebu">{tr('Bienes usados, arte o antigüedades (REBU): IVA sobre el margen')}</option>}
+              {(margenes.includes('reav') || f.margen === 'reav') && <option value="reav">{tr('Agencia de viajes (REAV): IVA sobre el margen')}</option>}
             </select>
           </label>
-          {f.margen && <p className="nota" id={idCampo('margen-nota')}>Pon en cada línea el precio final y lo que te costó{f.margen === 'reav' ? ' (los servicios del viaje que compraste para el cliente)' : ''}. La factura no desglosa el IVA: va dentro del margen y lleva la mención del régimen.</p>}
-          {f.margen === 'reav' && <label className="check"><input type="checkbox" checked={Boolean(f.cuotasIncluidas)} onChange={(e) => poner('cuotasIncluidas', e.target.checked || undefined)} /> El cliente es una empresa y pide las «cuotas de IVA incluidas en el precio» (6 % del total)</label>}
+          {f.margen && <p className="nota" id={idCampo('margen-nota')}>{(f.margen === 'reav' ? tr('Pon en cada línea el precio final y lo que te costó (los servicios del viaje que compraste para el cliente). La factura no desglosa el IVA: va dentro del margen y lleva la mención del régimen.') : tr('Pon en cada línea el precio final y lo que te costó. La factura no desglosa el IVA: va dentro del margen y lleva la mención del régimen.'))}</p>}
+          {f.margen === 'reav' && <label className="check"><input type="checkbox" checked={Boolean(f.cuotasIncluidas)} onChange={(e) => poner('cuotasIncluidas', e.target.checked || undefined)} />{(" " + tr('El cliente es una empresa y pide las «cuotas de IVA incluidas en el precio» (6 % del total)'))}</label>}
         </div>
       )}
       {(reagp || f.compensacion) && (
-        <label className="ff-det">Compensación del régimen de la agricultura (REAGP)
-          <select className="campo" value={f.compensacion || ''} onChange={(e) => { const c = Number(e.target.value) || undefined; setF((x) => ({ ...x, compensacion: c, ...(c ? { lineas: x.lineas.map((l) => ({ ...l, ivaPct: 0 })) } : {}) })); }}>
-            <option value="">Sin compensación (venta a un particular)</option>
-            <option value="12">12 %: agricultura o forestal</option>
-            <option value="10.5">10,5 %: ganadería o pesca</option>
+        <label className="ff-det">{tr('Compensación del régimen de la agricultura (REAGP)')}<select className="campo" value={f.compensacion || ''} onChange={(e) => { const c = Number(e.target.value) || undefined; setF((x) => ({ ...x, compensacion: c, ...(c ? { lineas: x.lineas.map((l) => ({ ...l, ivaPct: 0 })) } : {}) })); }}>
+            <option value="">{tr('Sin compensación (venta a un particular)')}</option>
+            <option value="12">{tr('12 %: agricultura o forestal')}</option>
+            <option value="10.5">{tr('10,5 %: ganadería o pesca')}</option>
           </select>
           {mensaje('compensacion')}
         </label>
       )}
       {!igic && (oss || f.oss) && (
-        <label className="ff-det">Venta a un particular de otro país de la UE
-          <select className="campo" value={f.oss?.pais || ''} onChange={(e) => {
+        <label className="ff-det">{tr('Venta a un particular de otro país de la UE')}<select className="campo" value={f.oss?.pais || ''} onChange={(e) => {
             const pais = e.target.value;
             limpiarErrores('oss.pais');
             // Con el IVA de su país (el general, si el tipo de la línea no existe allí), sin retención ni recargo.
             setF((x) => ({ ...x, oss: pais ? { pais, ...(x.oss?.bienes ? { bienes: true } : {}) } : undefined, ...(pais ? { irpfPct: 0, recargo: false } : {}),
               lineas: x.lineas.map((l) => (pais && !tiposPais(pais).includes(Number(l.ivaPct)) ? { ...l, ivaPct: TIPOS_UE[pais].general } : !pais && ![21, 10, 4, 0].includes(Number(l.ivaPct)) ? { ...l, ivaPct: defecto(x.actividad).ivaPct } : l)) }));
           }}>
-            <option value="">No: IVA español</option>
-            {Object.entries(NOMBRES_UE).sort((a, b) => a[1].localeCompare(b[1], 'es')).map(([k, n]) => <option key={k} value={k}>{n}: IVA de allí (ventanilla única)</option>)}
+            <option value="">{tr('No: IVA español')}</option>
+            {Object.entries(NOMBRES_UE).sort((a, b) => a[1].localeCompare(b[1], 'es')).map(([k, n]) => <option key={k} value={k}>{tr('{pais}: IVA de allí (ventanilla única)', { pais: tr(n) })}</option>)}
           </select>
           {mensaje('oss.pais')}
-          {f.oss?.pais && <span className="nota">Con el IVA de {NOMBRES_UE[f.oss.pais]}: no va en el 303, sino en el modelo 369.</span>}
+          {f.oss?.pais && <span className="nota">{tr('Con el IVA de {pais}: no va en el 303, sino en el modelo 369.', { pais: tr(NOMBRES_UE[f.oss.pais]) })}</span>}
         </label>
       )}
       {!igic && f.oss?.pais && (
         // El 369 separa las prestaciones de servicios (apartado 3) de las entregas de bienes enviados desde España (apartado 4).
-        <label className="ff-det">Qué vendes por la ventanilla única
-          <select className="campo" value={f.oss.bienes ? 'bienes' : 'servicios'} onChange={(e) => setF((x) => ({ ...x, oss: { pais: x.oss.pais, ...(e.target.value === 'bienes' ? { bienes: true } : {}) } }))}>
-            <option value="servicios">Servicios</option>
-            <option value="bienes">Bienes que envías desde España</option>
+        <label className="ff-det">{tr('Qué vendes por la ventanilla única')}<select className="campo" value={f.oss.bienes ? 'bienes' : 'servicios'} onChange={(e) => setF((x) => ({ ...x, oss: { pais: x.oss.pais, ...(e.target.value === 'bienes' ? { bienes: true } : {}) } }))}>
+            <option value="servicios">{tr('Servicios')}</option>
+            <option value="bienes">{tr('Bienes que envías desde España')}</option>
           </select>
         </label>
       )}
 
-      <label className="ff-det">Nota en la factura (opcional)
-        <input className="campo" placeholder={`Ej.: operación exenta de ${impuesto}, inversión del sujeto pasivo`} value={f.nota || ''} onChange={(e) => poner('nota', e.target.value)} />
+      <label className="ff-det">{tr('Nota en la factura (opcional)')}<input className="campo" placeholder={tr('Ej.: operación exenta de {impuesto}, inversión del sujeto pasivo', { impuesto: impuesto })} value={f.nota || ''} onChange={(e) => poner('nota', e.target.value)} />
       </label>
 
       <div className="dos-col ff-det">
-        <label>Idioma de la factura
-          <select className="campo" value={f.idioma || 'es'} onChange={(e) => poner('idioma', e.target.value === 'es' ? undefined : e.target.value)}>
-            {IDIOMAS_FACTURA.map((x) => <option key={x.id} value={x.id}>{x.nombre}</option>)}
+        <label>{tr('Idioma de la factura')}<select className="campo" value={f.idioma || 'es'} onChange={(e) => poner('idioma', e.target.value === 'es' ? undefined : e.target.value)}>
+            {IDIOMAS_FACTURA.map((x) => <option key={x.id} value={x.id}>{tr(x.nombre)}</option>)}
           </select>
         </label>
-        <label>Moneda
-          <select className="campo" value={f.divisa?.moneda || 'EUR'} onChange={(e) => (e.target.value === 'EUR' ? poner('divisa', undefined) : poner('divisa', { moneda: e.target.value }))}>
-            {MONEDAS.map((m) => <option key={m} value={m}>{m === 'EUR' ? 'Euros (EUR)' : m}</option>)}
+        <label>{tr('Moneda')}<select className="campo" value={f.divisa?.moneda || 'EUR'} onChange={(e) => (e.target.value === 'EUR' ? poner('divisa', undefined) : poner('divisa', { moneda: e.target.value }))}>
+            {MONEDAS.map((m) => <option key={m} value={m}>{(m === 'EUR' ? tr('Euros (EUR)') : m)}</option>)}
           </select>
         </label>
       </div>
       {enOtra && (
         <div className="ff-det">
-          <label htmlFor={idCampo('divisa.cambio')}>Tipo de cambio: 1 € = … {f.divisa.moneda}</label>
-          <input {...atributos('divisa.cambio')} className="campo" inputMode="decimal" value={aTexto(f.divisa.cambio ?? '')} onChange={(e) => ponerDivisa({ cambio: e.target.value, fuente: 'manual', fecha: undefined, pedido: undefined })} placeholder="Ej.: 1,0812" />
+          <label htmlFor={idCampo('divisa.cambio')}>{tr('Tipo de cambio: 1 € = … {moneda}', { moneda: f.divisa.moneda })}</label>
+          <input {...atributos('divisa.cambio')} className="campo" inputMode="decimal" value={aTexto(f.divisa.cambio ?? '')} onChange={(e) => ponerDivisa({ cambio: e.target.value, fuente: 'manual', fecha: undefined, pedido: undefined })} placeholder={tr('Ej.: 1,0812')} />
           {mensaje('divisa.cambio')}
-          <p className="nota">{f.divisa.fuente === 'BCE' ? `El del Banco Central Europeo del ${f.divisa.fecha ? fechaCorta(f.divisa.fecha) : ''}, el oficial para el ${impuesto}.` : 'Escrito a mano.'} {f.divisa.fuente === 'manual' && <button type="button" className="enlace" onClick={() => ponerDivisa({ fuente: undefined, pedido: undefined })}>Usar el del BCE</button>} Los precios van en {f.divisa.moneda}; Fisquo guarda también su valor en euros para el {impuesto} y la contabilidad.</p>
+          <p className="nota">{conHuecos(tr(f.divisa.fuente === 'BCE' ? 'El del Banco Central Europeo del {fecha}, el oficial para el {impuesto}. {accion} Los precios van en {moneda}; Fisquo guarda también su valor en euros para el {impuesto} y la contabilidad.' : 'Escrito a mano. {accion} Los precios van en {moneda}; Fisquo guarda también su valor en euros para el {impuesto} y la contabilidad.'), { fecha: f.divisa.fecha ? fechaCorta(f.divisa.fecha) : '', impuesto, accion: f.divisa.fuente === 'manual' && <button type="button" className="enlace" onClick={() => ponerDivisa({ fuente: undefined, pedido: undefined })}>{tr('Usar el del BCE')}</button>, moneda: f.divisa.moneda })}</p>
         </div>
       )}
 
-      {nueva && <button type="button" className="ff-m ff-det-boton" aria-expanded={detalles} onClick={() => setDetalles((v) => !v)}>{detalles ? 'Ocultar detalles' : 'Detalles: IRPF, nota, proyecto, idioma y moneda'}</button>}
-      {nueva && detalles && !verEvento && !f.evento?.fecha && !f.evento?.lugar && <button type="button" className="ff-m ff-evento-boton" onClick={() => setVerEvento(true)}>+ Fecha de la operación y lugar</button>}
+      {nueva && <button type="button" className="ff-m ff-det-boton" aria-expanded={detalles} onClick={() => setDetalles((v) => !v)}>{(detalles ? tr('Ocultar detalles') : tr('Detalles: IRPF, nota, proyecto, idioma y moneda'))}</button>}
+      {nueva && detalles && !verEvento && !f.evento?.fecha && !f.evento?.lugar && <button type="button" className="ff-m ff-evento-boton" onClick={() => setVerEvento(true)}>{tr('+ Fecha de la operación y lugar')}</button>}
 
-      <label className="check"><input type="checkbox" checked={f.cobrada} onChange={(e) => poner('cobrada', e.target.checked)} /> Ya está cobrada</label>
+      <label className="check"><input type="checkbox" checked={f.cobrada} onChange={(e) => poner('cobrada', e.target.checked)} />{(" " + tr('Ya está cobrada'))}</label>
 
       <div className="ff-pie">
         <div className="totales">
-          <span>Base {dinero(t.base)}</span>{tipos.length > 1 ? tipos.map((x) => <span key={x.pct}>{impuesto} {x.pct} % {dinero(x.iva)}</span>) : <span>{impuesto} {dinero(t.iva)}</span>}{t.irpf > 0 && <span>IRPF −{dinero(t.irpf)}</span>}<strong>Total {dinero(t.total)}</strong>{enEuros !== null && <span>En euros {eur(enEuros)}</span>}
+          <span>{tr('Base {importe}', { importe: dinero(t.base) })}</span>{tipos.length > 1 ? tipos.map((x) => <span key={x.pct}>{impuesto} {x.pct} % {dinero(x.iva)}</span>) : <span>{impuesto} {dinero(t.iva)}</span>}{t.irpf > 0 && <span>{tr('IRPF −{importe}', { importe: dinero(t.irpf) })}</span>}<strong>{tr('Total {total}', { total: dinero(t.total) })}</strong>{enEuros !== null && <span>{tr('En euros {importe}', { importe: eur(enEuros) })}</span>}
         </div>
 
-        {error && <p className="error" role="alert">{error}</p>}
-        <button className="boton" disabled={enviando}>{enviando ? 'Guardando…' : nueva ? 'Crear factura' : 'Guardar cambios'}</button>
+        {error && <p className="error" role="alert">{tr(error)}</p>}
+        <button className="boton" disabled={enviando}>{(enviando ? tr('Guardando…') : (nueva ? tr('Crear factura') : tr('Guardar cambios')))}</button>
       </div>
       </div>
 
       {/* En el ordenador, la factura se va dibujando al lado mientras se rellena */}
-      <aside className="ff-vista" aria-label="Vista previa">
+      <aside className="ff-vista" aria-label={tr('Vista previa')}>
         <div className="ff-papel">
-          <div className="ff-papel-cab"><b>Factura {nueva ? numeroNueva : numeroFactura(f)}</b><small>{f.fecha ? fechaCorta(f.fecha) : ''}</small></div>
-          <div className="ff-para"><small>Para</small><b>{f.cliente.nombre || 'Tu cliente'}</b>{f.cliente.nif && <small>{f.cliente.nif}</small>}</div>
+          <div className="ff-papel-cab"><b>{(nueva ? tr('Factura {numero}', { numero: numeroNueva }) : tr('Factura {numero}', { numero: numeroFactura(f) }))}</b><small>{(f.fecha ? fechaCorta(f.fecha) : "")}</small></div>
+          <div className="ff-para"><small>{tr('Para')}</small><b>{(f.cliente.nombre || tr('Tu cliente'))}</b>{f.cliente.nif && <small>{f.cliente.nif}</small>}</div>
           <ul className="ff-lineas">
             {f.lineas.map((l, i) => (
-              <li key={i}><span>{l.concepto || 'Concepto'}<small>{aTexto(nums[i].cantidad)} × {dinero(nums[i].precio)}{nums[i].dto ? ` · −${aTexto(nums[i].dto)} %` : ''}</small></span><b>{dinero(baseLinea(nums[i]))}</b></li>
+              <li key={i}><span>{(l.concepto || tr('Concepto'))}<small>{aTexto(nums[i].cantidad)} × {dinero(nums[i].precio)}{(nums[i].dto ? ` · −${aTexto(nums[i].dto)} %` : "")}</small></span><b>{dinero(baseLinea(nums[i]))}</b></li>
             ))}
           </ul>
           <dl className="ff-tot">
-            {f.margen ? <div><dt>IVA del margen (no sale en la factura)</dt><dd>{dinero(t.iva)}</dd></div> : <>
-              <div><dt>Base</dt><dd>{dinero(t.base)}</dd></div>
-              {t.compensacion ? <div><dt>Compensación {aTexto(f.compensacion)} %</dt><dd>{dinero(t.compensacion)}</dd></div>
+            {f.margen ? <div><dt>{tr('IVA del margen (no sale en la factura)')}</dt><dd>{dinero(t.iva)}</dd></div> : <>
+              <div><dt>{tr('Base')}</dt><dd>{dinero(t.base)}</dd></div>
+              {t.compensacion ? <div><dt>{tr('Compensación {porcentaje} %', { porcentaje: aTexto(f.compensacion) })}</dt><dd>{dinero(t.compensacion)}</dd></div>
                 : tipos.length > 1 ? tipos.map((x) => <div key={x.pct}><dt>{impuesto} {pctCorto(x.pct)}</dt><dd>{dinero(x.iva)}</dd></div>) : <div><dt>{impuesto}</dt><dd>{dinero(t.iva)}</dd></div>}
             </>}
-            {t.recargo > 0 && <div><dt>Recargo de equivalencia</dt><dd>{dinero(t.recargo)}</dd></div>}
-            {Number(f.irpfPct) > 0 && <div><dt>IRPF {pctCorto(Number(f.irpfPct))}</dt><dd>−{dinero(t.irpf)}</dd></div>}
+            {t.recargo > 0 && <div><dt>{tr('Recargo de equivalencia')}</dt><dd>{dinero(t.recargo)}</dd></div>}
+            {Number(f.irpfPct) > 0 && <div><dt>{tr('IRPF {porcentaje}', { porcentaje: pctCorto(Number(f.irpfPct)) })}</dt><dd>−{dinero(t.irpf)}</dd></div>}
           </dl>
-          <p className="ff-total"><span>Total</span><b key={t.total}>{dinero(t.total)}</b></p>
-          {enEuros !== null && <p className="nota">En euros: {eur(enEuros)}</p>}
-          {f.cobrada && <span className="estado-txt e-cobrada">Cobrada</span>}
+          <p className="ff-total"><span>{tr('Total')}</span><b key={t.total}>{dinero(t.total)}</b></p>
+          {enEuros !== null && <p className="nota">{tr('En euros: {importe}', { importe: eur(enEuros) })}</p>}
+          {f.cobrada && <span className="estado-txt e-cobrada">{tr('Cobrada')}</span>}
         </div>
       </aside>
     </form>
@@ -559,6 +551,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
 const trimestreIva = (x) => { const d = x?.fecha && fechaIva(x); return /^\d{4}-\d{2}-\d{2}$/.test(d || '') ? `${d.slice(0, 4)}-${trimestre(d)}` : null; };
 const totalDe = (x) => { try { return r2(importes(x).total); } catch { return null; } };
 function AvisoPresentado({ f, factura, presentados }) {
+  const tr = useT();
   // Las rectificativas ya dicen en qué autoliquidación van (aviso-rect de arriba).
   if (!presentados.length || f.rectifica) return null;
   const ahora = trimestreIva(f), antes = trimestreIva(factura);
@@ -567,5 +560,5 @@ function AvisoPresentado({ f, factura, presentados }) {
   if (!entra && !sale) return null;
   const nombre = (k) => `${k.split('-')[1]}T ${k.split('-')[0]}`;
   const porOperacion = f.evento?.fecha && f.evento.fecha < f.fecha;
-  return <p className="nota aviso-rect">{entra ? `Esta factura cuenta en el ${nombre(ahora)}${porOperacion ? ' por su fecha de la operación' : ''}, que ya está presentado` : `Esta factura sale del ${nombre(antes)}, que ya está presentado`}: habrá que corregir ese 303 con una autoliquidación rectificativa (Impuestos te la prepara).</p>;
+  return <p className="nota aviso-rect">{entra ? tr(porOperacion ? 'Esta factura cuenta en el {periodo} por su fecha de la operación, que ya está presentado: habrá que corregir ese 303 con una autoliquidación rectificativa (Impuestos te la prepara).' : 'Esta factura cuenta en el {periodo}, que ya está presentado: habrá que corregir ese 303 con una autoliquidación rectificativa (Impuestos te la prepara).', { periodo: nombre(ahora) }) : tr('Esta factura sale del {periodo}, que ya está presentado: habrá que corregir ese 303 con una autoliquidación rectificativa (Impuestos te la prepara).', { periodo: nombre(antes) })}</p>;
 }
