@@ -29,6 +29,7 @@ import { NO_IA, permisoIA } from '@/lib/permisoIA';
 import { ACEPTA, subirVarias } from '@/lib/bandejaCliente';
 import useCambiosSinGuardar, { salirSinGuardar } from './useCambiosSinGuardar';
 import Link from 'next/link';
+import { useT } from '@/components/Idioma';
 import '@/app/ticket.css';
 
 // «Cancelar» el gasto a medio apuntar (en la lista de gastos, el formulario se pliega): no es salir, es descartarlo.
@@ -66,7 +67,10 @@ const CAMPOS_HABITUALES = ['categoria', 'deduciblePct', 'afectoPct', 'actividad'
 // pantalla; correo: { listo, direccion } de la dirección para reenviárselas (lib/buzon.js).
 // documento: una factura de la bandeja (lib/bandeja.js) para revisar y aprobar; siguiente: la que va después.
 export default function FormGasto({ hoy, gasto, actividades, alquiler = false, plegado = false, destacar = false, regimen = 'autonomo', cupoInicial = null, movimiento = null, productos = [], proyectos = [], igic = false, especial = false, recargo = false, documento = null, siguiente = null , correo = null, presentados = [] }) {
-  const impuesto = igic ? 'IGIC' : 'IVA';
+  const tr = useT();
+  const impuesto = igic ? 'IGIC' : tr('IVA');
+  // Los errores de archivos subidos llegan como «nombre.pdf: motivo»: se traduce el motivo.
+  const errorArchivo = (e) => { const i = String(e).indexOf(': '); return i < 0 ? tr(e) : `${e.slice(0, i)}: ${tr(e.slice(i + 2))}`; };
   const router = useRouter();
   const prefijo = useId();
   const camaraInput = useRef(null);
@@ -109,7 +113,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
     if (lista.length === 1 && r.ids.length === 1) { router.push(`/gastos/bandeja/${encodeURIComponent(r.ids[0])}`); return; }
     // Varias: a la pestaña «Por revisar», donde se ven leerse. Si alguna falló, se queda aquí con el porqué.
     if (r.ids.length && !r.errores.length) { router.push('/gastos?ver=revisar'); router.refresh(); return; }
-    setSubida({ texto: r.ids.length ? `${r.ids.length === 1 ? '1 factura subida' : `${r.ids.length} facturas subidas`}: se están leyendo en «Por revisar».` : '', errores: r.errores });
+    setSubida({ texto: r.ids.length ? tr('{subidas}: se están leyendo en «Por revisar».', { subidas: r.ids.length === 1 ? tr('1 factura subida') : tr('{n} facturas subidas', { n: r.ids.length }) }) : '', errores: r.errores });
     router.refresh();
   };
   useEffect(() => {
@@ -137,14 +141,14 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
   const reintentarArchivo = async () => {
     setEnviando(true);
     const fallo = await subir(archivoPendiente.id, archivoPendiente.blob);
-    setAvisoArchivo(fallo ? `Gasto guardado sin el justificante: ${fallo}. Reintenta guardar el archivo.` : 'Justificante guardado.');
+    setAvisoArchivo(fallo ? tr('Gasto guardado sin el justificante: {fallo}. Reintenta guardar el archivo.', { fallo: tr(fallo) }) : tr('Justificante guardado.'));
     if (!fallo) { setUltimoGuardado({ id: archivoPendiente.id, archivo: true }); setArchivoPendiente(null); router.refresh(); }
     setEnviando(false);
   };
   const avisoAdjunto = <>
     {avisoArchivo && <p className="nota" role="alert">{avisoArchivo}</p>}
-    {ultimoGuardado && !archivoPendiente && <p className="gasto-confirmacion" role="status">{ultimoGuardado.archivo ? 'Gasto y justificante guardados.' : 'Gasto guardado.'} <a href={`/gastos/${encodeURIComponent(ultimoGuardado.id)}`}>{ultimoGuardado.archivo ? 'Ver gasto y justificante' : 'Ver gasto'}</a></p>}
-    {archivoPendiente && <div className="gasto-guardar"><button type="button" className="boton sec" disabled={enviando} onClick={reintentarArchivo}>Reintentar guardar justificante</button><a className="boton sec" href={`/gastos/${encodeURIComponent(archivoPendiente.id)}`}>Ver gasto guardado</a></div>}
+    {ultimoGuardado && !archivoPendiente && <p className="gasto-confirmacion" role="status">{ultimoGuardado.archivo ? tr('Gasto y justificante guardados.') : tr('Gasto guardado.')} <a href={`/gastos/${encodeURIComponent(ultimoGuardado.id)}`}>{ultimoGuardado.archivo ? tr('Ver gasto y justificante') : tr('Ver gasto')}</a></p>}
+    {archivoPendiente && <div className="gasto-guardar"><button type="button" className="boton sec" disabled={enviando} onClick={reintentarArchivo}>{tr('Reintentar guardar justificante')}</button><a className="boton sec" href={`/gastos/${encodeURIComponent(archivoPendiente.id)}`}>{tr('Ver gasto guardado')}</a></div>}
   </>;
   // En la app de iOS, el escáner de documentos nativo (lib/escanerNativo.js); si no lo hay, la cámara del <input>.
   const abrirCamara = async () => {
@@ -169,13 +173,13 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
         base: String(t.base).replace('.', ','), ivaPct: t.ivaPct, fecha: t.fecha || x.fecha, numero: t.numero || '', ...([1, 2, 7, 15].includes(Number(t.irpfPct)) ? { irpfPct: Number(t.irpfPct) } : {}),
         ...(t.vencimiento && t.vencimiento >= (t.fecha || '') ? { vence: t.vencimiento, ...(t.vencimiento >= hoy ? { pendiente: true } : {}) } : {}), efactura: t.formato, ...(!Number(t.ivaPct) && nifUE(t.proveedor?.nif) ? { origen: 'ue' } : {}),
         porTipo: varios ? aFormulario(t.desglose.filter((d) => d.base)) : undefined }));
-      setLeyendo(`Factura electrónica ${t.numero || ''} leída${varios ? `, con varios tipos de ${impuesto} por separado` : ''}. Revisa los datos antes de guardar.`);
+      setLeyendo(varios ? tr('Factura electrónica {numero} leída, con varios tipos de {impuesto} por separado. Revisa los datos antes de guardar.', { numero: t.numero || '', impuesto }) : tr('Factura electrónica {numero} leída. Revisa los datos antes de guardar.', { numero: t.numero || '' }));
       return;
     }
     const pdf = archivo.type === 'application/pdf';
     if (pdf && archivo.size > 5e6) { setError('El PDF es demasiado grande (máx. 5 MB)'); return; }
     setProcesando(true);
-    setLeyendo(pdf ? 'Leyendo la factura…' : 'Leyendo el ticket…'); setError('');
+    setLeyendo(pdf ? tr('Leyendo la factura…') : tr('Leyendo el ticket…')); setError('');
     try {
       const imagen = pdf ? await new Promise((ok, mal) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = mal; r.readAsDataURL(archivo); }) : await reducir(archivo);
       const j = await preparar(archivo, pdf ? null : imagen);
@@ -198,9 +202,9 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
       if (d.habitual?.deduciblePct !== undefined && ![100, 50, 0].includes(d.habitual.deduciblePct)) setPctOtro(true);
       setHabitualAplicado(d.habitual || null);
       const avisos = Array.isArray(t.avisos) ? t.avisos : [];
-      const detalle = t.varios ? `Tiene varios tipos de ${impuesto}: están por separado, con la base de cada uno.` : '';
-      setLeyendo(['Revisa los datos antes de guardar.', ...avisos, detalle].filter(Boolean).join(' '));
-    } catch (err) { setLeyendo('Revisa o rellena los datos antes de guardar.'); setError(err.message); }
+      const detalle = t.varios ? tr('Tiene varios tipos de {impuesto}: están por separado, con la base de cada uno.', { impuesto }) : '';
+      setLeyendo([tr('Revisa los datos antes de guardar.'), ...avisos.map((a) => tr(a)), detalle].filter(Boolean).join(' '));
+    } catch (err) { setLeyendo(tr('Revisa o rellena los datos antes de guardar.')); setError(err.message); }
     finally { setProcesando(false); }
   };
 
@@ -247,7 +251,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
         setAdjunto(null);
         if (fallo) {
           setArchivoPendiente({ id: d.gasto.id, blob: adjunto.blob });
-          fallo = `Gasto guardado sin el justificante: ${fallo}. Reintenta guardar el archivo sin volver a crear el gasto.`;
+          fallo = tr('Gasto guardado sin el justificante: {fallo}. Reintenta guardar el archivo sin volver a crear el gasto.', { fallo: tr(fallo) });
         }
       }
       // Guardado: se vuelve a la lista o el formulario se vacía para el siguiente.
@@ -269,27 +273,27 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
         onDragOver={(e) => { if (e.dataTransfer?.types?.includes('Files')) { e.preventDefault(); setEncima(true); } }} onDragLeave={() => setEncima(false)}
         onDrop={(e) => { if (!e.dataTransfer?.files?.length) return; e.preventDefault(); setEncima(false); subirFacturas([...e.dataTransfer.files]); }}>
         <div className="gasto-rapido-txt">
-          <strong>{hecho ? '✓ Gasto añadido' : encima ? 'Suelta aquí tus facturas' : 'Añadir gastos'}</strong>
-          <small>Haz una foto al ticket o sube tus facturas, una o varias<span className="solo-pc"> (también arrastrándolas aquí)</span>. Fisquo las lee por ti.</small>
+          <strong>{hecho ? tr('✓ Gasto añadido') : encima ? tr('Suelta aquí tus facturas') : tr('Añadir gastos')}</strong>
+          <small>{tr('Haz una foto al ticket o sube tus facturas, una o varias')}<span className="solo-pc"> {tr('(también arrastrándolas aquí)')}</span>{tr('. Fisquo las lee por ti.')}</small>
         </div>
-        {error && <p className="error" role="alert">{error}</p>}
+        {error && <p className="error" role="alert">{tr(error)}</p>}
         {avisoAdjunto}
-        {subida?.texto && <p className="gasto-confirmacion" role="status">{subida.texto} <Link href="/gastos?ver=revisar">Ver ›</Link></p>}
-        {subida?.errores?.length > 0 && <div className="nota" role="alert"><strong>No se han podido subir:</strong><ul>{subida.errores.map((x) => <li key={x}>{x}</li>)}</ul></div>}
+        {subida?.texto && <p className="gasto-confirmacion" role="status">{subida.texto} <Link href="/gastos?ver=revisar">{tr('Ver ›')}</Link></p>}
+        {subida?.errores?.length > 0 && <div className="nota" role="alert"><strong>{tr('No se han podido subir:')}</strong><ul>{subida.errores.map((x) => <li key={x}>{errorArchivo(x)}</li>)}</ul></div>}
         <div className="gasto-rapido-botones">
-          <button type="button" id="escanear-ticket" className="boton gasto-escanear" onClick={abrirCamara}><svg viewBox="0 0 24 24" aria-hidden><path d="M4 8V6a2 2 0 012-2h2M16 4h2a2 2 0 012 2v2M20 16v2a2 2 0 01-2 2h-2M8 20H6a2 2 0 01-2-2v-2M4 12h16" /></svg>Escanear ticket</button><input ref={camaraInput} type="file" accept="image/*" capture="environment" onChange={foto} hidden />
+          <button type="button" id="escanear-ticket" className="boton gasto-escanear" onClick={abrirCamara}><svg viewBox="0 0 24 24" aria-hidden><path d="M4 8V6a2 2 0 012-2h2M16 4h2a2 2 0 012 2v2M20 16v2a2 2 0 01-2 2h-2M8 20H6a2 2 0 01-2-2v-2M4 12h16" /></svg>{tr('Escanear ticket')}</button><input ref={camaraInput} type="file" accept="image/*" capture="environment" onChange={foto} hidden />
           {!gasto && !movimiento && <RafagaTickets igic={igic} hoy={hoy} actividades={actividades} />}
-          <button type="button" className="boton sec" disabled={Boolean(subida?.total)} onClick={() => facturasInput.current?.click()}>{subida?.total ? `Subiendo ${subida.hechos} de ${subida.total}…` : 'Subir facturas'}</button><input ref={facturasInput} type="file" multiple accept={ACEPTA} onChange={(e) => { const l = [...e.target.files]; e.target.value = ''; subirFacturas(l); }} hidden />
-          <button id="apuntar-gasto" type="button" className="boton sec" onClick={() => { setAbierto(true); setHecho(false); }}>Apuntar a mano</button>
+          <button type="button" className="boton sec" disabled={Boolean(subida?.total)} onClick={() => facturasInput.current?.click()}>{subida?.total ? tr('Subiendo {hechos} de {total}…', { hechos: subida.hechos, total: subida.total }) : tr('Subir facturas')}</button><input ref={facturasInput} type="file" multiple accept={ACEPTA} onChange={(e) => { const l = [...e.target.files]; e.target.value = ''; subirFacturas(l); }} hidden />
+          <button id="apuntar-gasto" type="button" className="boton sec" onClick={() => { setAbierto(true); setHecho(false); }}>{tr('Apuntar a mano')}</button>
         </div>
         {correo?.direccion && (
           <p className="gasto-correo">
-            <span>O reenvíalas por correo a</span> <code>{correo.direccion}</code>
-            <button type="button" className="enlace" onClick={async () => { try { await navigator.clipboard.writeText(correo.direccion); setCopiado(true); setTimeout(() => setCopiado(false), 2000); } catch { /* se ve en pantalla */ } }}>{copiado ? 'Copiada' : 'Copiar'}</button>
-            <Link href="/gastos?ver=revisar#correo">Que lleguen solas ›</Link>
+            <span>{tr('O reenvíalas por correo a')}</span> <code>{correo.direccion}</code>
+            <button type="button" className="enlace" onClick={async () => { try { await navigator.clipboard.writeText(correo.direccion); setCopiado(true); setTimeout(() => setCopiado(false), 2000); } catch { /* se ve en pantalla */ } }}>{copiado ? tr('Copiada') : tr('Copiar')}</button>
+            <Link href="/gastos?ver=revisar#correo">{tr('Que lleguen solas ›')}</Link>
           </p>
         )}
-        {correo?.listo && !correo.direccion && <p className="gasto-correo"><Link href="/gastos?ver=revisar#correo">Recíbelas también por correo, sin descargarlas ›</Link></p>}
+        {correo?.listo && !correo.direccion && <p className="gasto-correo"><Link href="/gastos?ver=revisar#correo">{tr('Recíbelas también por correo, sin descargarlas ›')}</Link></p>}
         <CupoEscaneo inicial={cupoInicial} />
       </div>
     );
@@ -298,242 +302,242 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
   return (
     <form id="apuntar-gasto" tabIndex={-1} className="formulario tarjeta" onSubmit={enviar}>
       <fieldset disabled={enviando || procesando || Boolean(archivoPendiente)} style={{ border: 0, padding: 0, margin: 0, minWidth: 0, gap: 12 }}>
-      <h3 aria-level={2}>{gasto ? 'Editar gasto' : documento ? 'Revisar factura' : movimiento ? 'Gasto del banco' : 'Añadir gasto deducible'}</h3>
-      {movimiento && <p className="nota">Cargo del {fechaCorta(movimiento.fecha)} por {eur(Math.abs(movimiento.importe))} ({movimiento.concepto}). Sube la factura para que Fisquo lea la base y el {impuesto}; al guardar queda emparejado con el banco.</p>}
+      <h3 aria-level={2}>{gasto ? tr('Editar gasto') : documento ? tr('Revisar factura') : movimiento ? tr('Gasto del banco') : tr('Añadir gasto deducible')}</h3>
+      {movimiento && <p className="nota">{tr('Cargo del {fecha} por {importe} ({concepto}). Sube la factura para que Fisquo lea la base y el {impuesto}; al guardar queda emparejado con el banco.', { fecha: fechaCorta(movimiento.fecha), importe: eur(Math.abs(movimiento.importe)), concepto: movimiento.concepto, impuesto })}</p>}
       {actividades.length > 1 && <Deslizable className={`tipo ${actividades.length === 2 ? 'dos' : 'varias'}`}>
         {actividades.map(({ id, nombre }) => (
           <button type="button" key={id} className={g.actividad === id ? 'activo' : ''} onClick={() => poner('actividad', id)}>{nombre}</button>
         ))}
       </Deslizable>}
       {!gasto && !documento && <div className="ticket-ia">
-        <p className="ticket-ia-t">Rellénalo con IA</p>
-        <p className="ticket-ia-txt">Haz una foto del ticket o sube la factura que te han enviado (imagen o PDF de hasta 3 MB y 10 páginas). Fisquo lee también el IRPF.</p>
+        <p className="ticket-ia-t">{tr('Rellénalo con IA')}</p>
+        <p className="ticket-ia-txt">{tr('Haz una foto del ticket o sube la factura que te han enviado (imagen o PDF de hasta 3 MB y 10 páginas). Fisquo lee también el IRPF.')}</p>
         <div className="ticket-ia-botones">
-          <button id="escanear-ticket" type="button" className="boton sec ticket-foto" onClick={abrirCamara}>Escanear ticket</button><input ref={camaraInput} type="file" accept="image/*" capture="environment" onChange={foto} hidden />
-          <button type="button" className="boton sec ticket-foto" onClick={() => facturaInput.current?.click()}>Subir factura</button><input ref={facturaInput} type="file" accept="image/*,application/pdf,.xml,.xsig,text/xml,application/xml" onChange={foto} hidden />
+          <button id="escanear-ticket" type="button" className="boton sec ticket-foto" onClick={abrirCamara}>{tr('Escanear ticket')}</button><input ref={camaraInput} type="file" accept="image/*" capture="environment" onChange={foto} hidden />
+          <button type="button" className="boton sec ticket-foto" onClick={() => facturaInput.current?.click()}>{tr('Subir factura')}</button><input ref={facturaInput} type="file" accept="image/*,application/pdf,.xml,.xsig,text/xml,application/xml" onChange={foto} hidden />
         </div>
         <CupoEscaneo inicial={cupoInicial} />
       </div>}
       {leyendo && <p className="nota ticket-nota" role="status">{leyendo}</p>}
-      {documento?.propuesta?.avisos?.length > 0 && <p className="nota ticket-nota" role="status">{documento.propuesta.avisos.join(' ')}</p>}
-      {habitualAplicado?.proveedor && <p className="nota" role="status">Categoría, {impuesto} deducible y actividad como en el último gasto de {habitualAplicado.proveedor}{habitualAplicado.fecha ? ` (${fechaCorta(habitualAplicado.fecha)})` : ''}. Cámbialos si esta vez es distinto.</p>}
-      {adjunto && <div className="gasto-adjunto" role="status"><strong>{adjunto.blob.type === 'application/pdf' ? 'PDF adjunto' : 'Foto adjunta'}</strong><span>{adjunto.nombre}</span><small>Se guardará junto con este gasto al pulsar Añadir.</small></div>}
+      {documento?.propuesta?.avisos?.length > 0 && <p className="nota ticket-nota" role="status">{documento.propuesta.avisos.map((a) => tr(a)).join(' ')}</p>}
+      {habitualAplicado?.proveedor && <p className="nota" role="status">{tr('Categoría, {impuesto} deducible y actividad como en el último gasto de {proveedor}{fecha}. Cámbialos si esta vez es distinto.', { impuesto, proveedor: habitualAplicado.proveedor, fecha: habitualAplicado.fecha ? ` (${fechaCorta(habitualAplicado.fecha)})` : '' })}</p>}
+      {adjunto && <div className="gasto-adjunto" role="status"><strong>{adjunto.blob.type === 'application/pdf' ? tr('PDF adjunto') : tr('Foto adjunta')}</strong><span>{adjunto.nombre}</span><small>{tr('Se guardará junto con este gasto al pulsar Añadir.')}</small></div>}
       {gasto && <Justificante gasto={gasto} />}
-      <label>Proveedor (opcional)<input className="campo" placeholder="Proveedor (opcional)" value={g.proveedor || ''} onChange={(e) => poner('proveedor', e.target.value)} /></label>
-      {g.proveedor && <label>NIF del proveedor (opcional)<input spellCheck={false} autoCorrect="off" autoCapitalize="characters" className="campo" placeholder="NIF del proveedor (opcional)" value={g.proveedorNif || ''} onChange={(e) => poner('proveedorNif', e.target.value)} /></label>}
-      {(g.proveedor || g.numero) && <label>Nº de factura (opcional)<input spellCheck={false} autoCorrect="off" className="campo" placeholder="Nº de factura (opcional)" value={g.numero || ''} onChange={(e) => poner('numero', e.target.value)} maxLength={40} /></label>}
-      <label>Concepto<input className="campo" placeholder="Concepto" value={g.concepto} onChange={(e) => poner('concepto', e.target.value)} required /></label>
+      <label>{tr('Proveedor (opcional)')}<input className="campo" placeholder={tr('Proveedor (opcional)')} value={g.proveedor || ''} onChange={(e) => poner('proveedor', e.target.value)} /></label>
+      {g.proveedor && <label>{tr('NIF del proveedor (opcional)')}<input spellCheck={false} autoCorrect="off" autoCapitalize="characters" className="campo" placeholder={tr('NIF del proveedor (opcional)')} value={g.proveedorNif || ''} onChange={(e) => poner('proveedorNif', e.target.value)} /></label>}
+      {(g.proveedor || g.numero) && <label>{tr('Nº de factura (opcional)')}<input spellCheck={false} autoCorrect="off" className="campo" placeholder={tr('Nº de factura (opcional)')} value={g.numero || ''} onChange={(e) => poner('numero', e.target.value)} maxLength={40} /></label>}
+      <label>{tr('Concepto')}<input className="campo" placeholder={tr('Concepto')} value={g.concepto} onChange={(e) => poner('concepto', e.target.value)} required /></label>
       {g.porTipo ? (
         // Una factura con varios tipos (comida al 10 % y bebida al 21 %): la base de cada tipo; la del gasto es su suma.
         <div className="gasto-tipos">
-          <p className="mini-t">Base de cada tipo de {impuesto} <small>(en total {eur(gn.base)})</small></p>
+          <p className="mini-t">{tr('Base de cada tipo de {impuesto}', { impuesto })} <small>{tr('(en total {importe})', { importe: eur(gn.base) })}</small></p>
           {g.porTipo.map((t, i) => (
             <div key={i} className="gasto-tipo">
-              <label>Base sin {impuesto}<input className="campo" inputMode="decimal" placeholder={`Base sin ${impuesto}`} value={t.base} onChange={(e) => poner('porTipo', g.porTipo.map((x, j) => (j === i ? { ...x, base: e.target.value } : x)))} required /></label>
+              <label>{tr('Base sin {impuesto}', { impuesto })}<input className="campo" inputMode="decimal" placeholder={tr('Base sin {impuesto}', { impuesto })} value={t.base} onChange={(e) => poner('porTipo', g.porTipo.map((x, j) => (j === i ? { ...x, base: e.target.value } : x)))} required /></label>
               <label>{impuesto}<select className="campo" value={t.ivaPct} onChange={(e) => poner('porTipo', g.porTipo.map((x, j) => (j === i ? { ...x, ivaPct: Number(e.target.value) } : x)))}>
                 {[...new Set([...tiposImpuesto, t.ivaPct])].map((n) => <option key={n} value={n}>{impuesto} {String(n).replace('.', ',')}%</option>)}
               </select></label>
-              {g.porTipo.length > 2 && <button type="button" className="linea-quitar" aria-label="Quitar este tipo" onClick={() => poner('porTipo', g.porTipo.filter((_, j) => j !== i))}>×</button>}
+              {g.porTipo.length > 2 && <button type="button" className="linea-quitar" aria-label={tr('Quitar este tipo')} onClick={() => poner('porTipo', g.porTipo.filter((_, j) => j !== i))}>×</button>}
             </div>
           ))}
           <div className="gasto-tipos-botones">
-            {g.porTipo.length < 6 && tiposImpuesto.some((n) => !g.porTipo.some((t) => t.ivaPct === n)) && <button type="button" className="boton sec pequeno" onClick={() => poner('porTipo', [...g.porTipo, { ivaPct: tiposImpuesto.find((n) => !g.porTipo.some((t) => t.ivaPct === n)), base: '' }])}>+ Otro tipo</button>}
-            <button type="button" className="enlace" onClick={() => setG((x) => { const n = numerico(x); return { ...x, porTipo: undefined, base: String(n.base || '').replace('.', ','), ivaPct: n.ivaPct }; })}>Un solo tipo de {impuesto}</button>
+            {g.porTipo.length < 6 && tiposImpuesto.some((n) => !g.porTipo.some((t) => t.ivaPct === n)) && <button type="button" className="boton sec pequeno" onClick={() => poner('porTipo', [...g.porTipo, { ivaPct: tiposImpuesto.find((n) => !g.porTipo.some((t) => t.ivaPct === n)), base: '' }])}>{tr('+ Otro tipo')}</button>}
+            <button type="button" className="enlace" onClick={() => setG((x) => { const n = numerico(x); return { ...x, porTipo: undefined, base: String(n.base || '').replace('.', ','), ivaPct: n.ivaPct }; })}>{tr('Un solo tipo de {impuesto}', { impuesto })}</button>
           </div>
         </div>
       ) : <>
         <div className="dos-col">
-          <label>Base sin {impuesto}<input className="campo" inputMode="decimal" placeholder={`Base sin ${impuesto}`} value={g.base} onChange={(e) => poner('base', e.target.value)} required /></label>
+          <label>{tr('Base sin {impuesto}', { impuesto })}<input className="campo" inputMode="decimal" placeholder={tr('Base sin {impuesto}', { impuesto })} value={g.base} onChange={(e) => poner('base', e.target.value)} required /></label>
           <label>{impuesto}<select className="campo" value={g.ivaPct} onChange={(e) => poner('ivaPct', Number(e.target.value))}>
             {tiposImpuesto.map((n) => <option key={n} value={n}>{impuesto} {n}%</option>)}
           </select></label>
         </div>
         {!g.inversion && !g.isp && !g.importacion && !g.compensacion && !['ue', 'fuera', 'isp'].includes(g.origen) && !gasto?.pedidoProv && (
-          <button type="button" className="enlace" onClick={() => poner('porTipo', [{ ivaPct: Number(g.ivaPct), base: g.base }, { ivaPct: tiposImpuesto.find((n) => n !== Number(g.ivaPct)), base: '' }])}>La factura lleva varios tipos de {impuesto}</button>
+          <button type="button" className="enlace" onClick={() => poner('porTipo', [{ ivaPct: Number(g.ivaPct), base: g.base }, { ivaPct: tiposImpuesto.find((n) => n !== Number(g.ivaPct)), base: '' }])}>{tr('La factura lleva varios tipos de {impuesto}', { impuesto })}</button>
         )}
       </>}
       {!g.noResidente && (
-        <select className="campo" value={g.irpfPct || 0} onChange={(e) => poner('irpfPct', Number(e.target.value))} aria-label="Retención de IRPF">
-          <option value={0}>Sin retención</option>
-          <option value={15}>Le retengo el 15 % (profesional)</option>
-          <option value={7}>Le retengo el 7 % (profesional que empieza)</option>
-          <option value={2}>Le retengo el 2 % (agricultor o ganadero)</option>
-          <option value={1}>Le retengo el 1 % (empresario en módulos)</option>
+        <select className="campo" value={g.irpfPct || 0} onChange={(e) => poner('irpfPct', Number(e.target.value))} aria-label={tr('Retención de IRPF')}>
+          <option value={0}>{tr('Sin retención')}</option>
+          <option value={15}>{tr('Le retengo el 15 % (profesional)')}</option>
+          <option value={7}>{tr('Le retengo el 7 % (profesional que empieza)')}</option>
+          <option value={2}>{tr('Le retengo el 2 % (agricultor o ganadero)')}</option>
+          <option value={1}>{tr('Le retengo el 1 % (empresario en módulos)')}</option>
           {/* Art. 75.2.b RIRPF (lib/modelos.js SUBCLAVES_190, clave I): no en el alquiler del local, que lleva la suya. */}
           {!(g.alquiler || g.alquilerSinRetencion) && <>
-            <option value={19}>Le retengo el 19 % (alquiler de una máquina o de un negocio, propiedad industrial…)</option>
-            <option value={24}>Le retengo el 24 % (derechos de imagen)</option>
+            <option value={19}>{tr('Le retengo el 19 % (alquiler de una máquina o de un negocio, propiedad industrial…)')}</option>
+            <option value={24}>{tr('Le retengo el 24 % (derechos de imagen)')}</option>
           </>}
         </select>
       )}
-      {Number(g.irpfPct) > 0 && !g.noResidente && <p className="nota">Le pagas la factura menos la retención, y esa retención la ingresas tú en el 111.</p>}
+      {Number(g.irpfPct) > 0 && !g.noResidente && <p className="nota">{tr('Le pagas la factura menos la retención, y esa retención la ingresas tú en el 111.')}</p>}
       {/* Solo donde puede tocar: NIF de otro país, NIE o NIF de entidad extranjera (X, Y, Z, N) o el alquiler del local. */}
       {(g.proveedor && (g.noResidente || nifExtranjero(g.proveedorNif) || /^(ES)?[NXYZ]/.test(String(g.proveedorNif || '').toUpperCase().replace(/[\s.-]/g, '')) || g.alquiler)) ? <NoResidente g={g} poner={poner} prefijo={prefijo} /> : null}
       {Number(g.irpfPct) > 0 && !g.alquiler && !g.noResidente && (() => {
         // Subclave del 190 (lib/modelos.js): solo si a ese % le corresponde más de una; si no, se dice cuál es.
         const opciones = Object.entries(SUBCLAVES_190).filter(([, s]) => s.pct === Number(g.irpfPct));
         return opciones.length > 1 ? (
-          <select className="campo" value={clave190De(g)} onChange={(e) => poner('clave190', e.target.value)} aria-label="Qué es, para el modelo 190">
-            {opciones.map(([k, s]) => <option key={k} value={k}>{s.nombre} · 190 {k}</option>)}
+          <select className="campo" value={clave190De(g)} onChange={(e) => poner('clave190', e.target.value)} aria-label={tr('Qué es, para el modelo 190')}>
+            {opciones.map(([k, s]) => <option key={k} value={k}>{tr(s.nombre)} · 190 {k}</option>)}
           </select>
-        ) : opciones.length === 1 && <p className="nota">En el 190 va con la clave {opciones[0][0]}: {opciones[0][1].nombre}.</p>;
+        ) : opciones.length === 1 && <p className="nota">{tr('En el 190 va con la clave {clave}: {nombre}.', { clave: opciones[0][0], nombre: tr(opciones[0][1].nombre) })}</p>;
       })()}
-      {Number(g.irpfPct) > 0 && !g.alquiler && clave190De(g)[0] === 'I' && <p className="nota">Solo si para quien cobra es parte de su actividad económica (va en el 111 con los profesionales, casillas 07 a 09). Si no lo es, por ejemplo un particular que te alquila una máquina, es capital mobiliario: apúntalo en Impuestos, en los pagos de dividendos e intereses («Otros rendimientos del capital», modelos 123 y 193).</p>}
+      {Number(g.irpfPct) > 0 && !g.alquiler && clave190De(g)[0] === 'I' && <p className="nota">{tr('Solo si para quien cobra es parte de su actividad económica (va en el 111 con los profesionales, casillas 07 a 09). Si no lo es, por ejemplo un particular que te alquila una máquina, es capital mobiliario: apúntalo en Impuestos, en los pagos de dividendos e intereses («Otros rendimientos del capital», modelos 123 y 193).')}</p>}
       {(conIva(gn) || origenGasto(gn)) && <>
-        <select className="campo" value={pctOtro ? 'otro' : String(pctDeducible(g))} aria-label={`${impuesto} que te deduces`}
+        <select className="campo" value={pctOtro ? 'otro' : String(pctDeducible(g))} aria-label={tr('{impuesto} que te deduces', { impuesto })}
           onChange={(e) => {
             const v = e.target.value; setPctOtro(v === 'otro'); poner('deduciblePct', v === 'otro' ? '' : v === '100' ? undefined : Number(v));
             // Un turismo de uso mixto deduce el 50 % del IVA, pero en el IRPF, para la AEAT, nada: así sale por defecto.
             if (regimen !== 'sociedad' && !gasto && v === '50') { poner('afectoPct', 0); setVerAfecto(true); setAfectoOtro(false); }
           }}>
-          <option value="100">Me deduzco todo el {impuesto}</option>
-          <option value="50">Me deduzco el 50 % (coche, uso mixto)</option>
-          <option value="0">No me deduzco el {impuesto}</option>
-          <option value="otro">Me deduzco otro porcentaje…</option>
+          <option value="100">{tr('Me deduzco todo el {impuesto}', { impuesto })}</option>
+          <option value="50">{tr('Me deduzco el 50 % (coche, uso mixto)')}</option>
+          <option value="0">{tr('No me deduzco el {impuesto}', { impuesto })}</option>
+          <option value="otro">{tr('Me deduzco otro porcentaje…')}</option>
         </select>
-        {pctOtro && <label>% del {impuesto} que te deduces<input className="campo" inputMode="decimal" value={g.deduciblePct ?? ''} onChange={(e) => poner('deduciblePct', e.target.value)} placeholder="Ej.: 30" /></label>}
-        {pctDeducible(g) === 100 && Number(g.ivaPct) > 0 && !g.proveedorNif && <p className="nota">¿Es un ticket sin tu NIF? Su {impuesto} no se deduce sin factura con tu NIF: pide factura con tu NIF o elige «No me deduzco el {impuesto}».</p>}
-        {pctDeducible(g) < 100 && <p className="nota">Solo se deduce el {impuesto} de la parte que usas para tu actividad (un turismo se presume al 50 %). El {impuesto} que no te deduces cuenta como gasto{g.inversion ? ' y se amortiza con el bien' : ''} en la parte que uses para la actividad.</p>}
+        {pctOtro && <label>{tr('% del {impuesto} que te deduces', { impuesto })}<input className="campo" inputMode="decimal" value={g.deduciblePct ?? ''} onChange={(e) => poner('deduciblePct', e.target.value)} placeholder={tr('Ej.: 30')} /></label>}
+        {pctDeducible(g) === 100 && Number(g.ivaPct) > 0 && !g.proveedorNif && <p className="nota">{tr('¿Es un ticket sin tu NIF? Su {impuesto} no se deduce sin factura con tu NIF: pide factura con tu NIF o elige «No me deduzco el {impuesto}».', { impuesto })}</p>}
+        {pctDeducible(g) < 100 && <p className="nota">{tr('Solo se deduce el {impuesto} de la parte que usas para tu actividad (un turismo se presume al 50 %). El {impuesto} que no te deduces cuenta como gasto{amortiza} en la parte que uses para la actividad.', { impuesto, amortiza: g.inversion ? ` ${tr('y se amortiza con el bien')}` : '' })}</p>}
       </>}
       {regimen !== 'sociedad' && (verAfecto || pctDeducible(g) < 100 ? (() => {
         const p = pctDeducible(g), a = g.afectoPct === undefined || g.afectoPct === null || g.afectoPct === '' ? null : pctAfecto(g);
         const vivienda = Math.round(p * 30) / 100;
         const valor = afectoOtro ? 'otro' : a === null ? '100' : a === 0 ? '0' : p < 100 && a === p ? 'iva' : p < 100 && a === vivienda ? 'vivienda' : a === 100 ? '100' : 'otro';
         return <>
-          <select className="campo" value={valor} aria-label="Parte que cuenta como gasto en el IRPF"
+          <select className="campo" value={valor} aria-label={tr('Parte que cuenta como gasto en el IRPF')}
             onChange={(e) => { const v = e.target.value; setAfectoOtro(v === 'otro'); poner('afectoPct', v === '100' ? undefined : v === 'iva' ? p : v === 'vivienda' ? vivienda : v === 'otro' ? (a ?? '') : Number(v)); }}>
-            <option value="100">En el IRPF cuenta entero (solo lo uso para la actividad)</option>
-            {p < 100 && <option value="iva">En el IRPF, la misma parte que en el {impuesto} ({String(p).replace('.', ',')} %)</option>}
-            {p < 100 && <option value="vivienda">Suministros de casa con despacho: el 30 % de esa parte ({String(vivienda).replace('.', ',')} %)</option>}
-            <option value="0">En el IRPF no cuenta (turismo sin uso exclusivo, gasto personal)</option>
-            <option value="otro">En el IRPF cuenta otro porcentaje…</option>
+            <option value="100">{tr('En el IRPF cuenta entero (solo lo uso para la actividad)')}</option>
+            {p < 100 && <option value="iva">{tr('En el IRPF, la misma parte que en el {impuesto} ({pct} %)', { impuesto, pct: String(p).replace('.', ',') })}</option>}
+            {p < 100 && <option value="vivienda">{tr('Suministros de casa con despacho: el 30 % de esa parte ({pct} %)', { pct: String(vivienda).replace('.', ',') })}</option>}
+            <option value="0">{tr('En el IRPF no cuenta (turismo sin uso exclusivo, gasto personal)')}</option>
+            <option value="otro">{tr('En el IRPF cuenta otro porcentaje…')}</option>
           </select>
-          {valor === 'otro' && <label>% que cuenta en el IRPF<input className="campo" inputMode="decimal" value={g.afectoPct ?? ''} onChange={(e) => poner('afectoPct', e.target.value)} placeholder="Ej.: 30" /></label>}
-          <p className="nota">El 130 y la renta solo restan la parte del gasto que es de tu actividad. Un coche que también usas para lo tuyo, para Hacienda no cuenta en el IRPF aunque te deduzcas la mitad del {impuesto}; los suministros de casa con despacho, el 30 % de la parte del despacho.{gn.base > 0 ? ` En el IRPF restas ${eur(costeAfecto(gn))}.` : ''}</p>
+          {valor === 'otro' && <label>{tr('% que cuenta en el IRPF')}<input className="campo" inputMode="decimal" value={g.afectoPct ?? ''} onChange={(e) => poner('afectoPct', e.target.value)} placeholder={tr('Ej.: 30')} /></label>}
+          <p className="nota">{tr('El 130 y la renta solo restan la parte del gasto que es de tu actividad. Un coche que también usas para lo tuyo, para Hacienda no cuenta en el IRPF aunque te deduzcas la mitad del {impuesto}; los suministros de casa con despacho, el 30 % de la parte del despacho.', { impuesto })}{gn.base > 0 ? ` ${tr('En el IRPF restas {importe}.', { importe: eur(costeAfecto(gn)) })}` : ''}</p>
         </>;
-      })() : <button type="button" className="enlace" onClick={() => setVerAfecto(true)}>¿Lo usas también para lo tuyo? Indica la parte que es de tu actividad</button>)}
-      {gn.base > 0 && <dl className="gasto-importes" aria-label="Importes del gasto">
-        <div><dt>Base imponible</dt><dd>{eur(calculo.base)}</dd></div>
+      })() : <button type="button" className="enlace" onClick={() => setVerAfecto(true)}>{tr('¿Lo usas también para lo tuyo? Indica la parte que es de tu actividad')}</button>)}
+      {gn.base > 0 && <dl className="gasto-importes" aria-label={tr('Importes del gasto')}>
+        <div><dt>{tr('Base imponible')}</dt><dd>{eur(calculo.base)}</dd></div>
         <div><dt>{impuesto}</dt><dd>{eur(calculo.iva)}</dd></div>
-        {pctDeducible(g) < 100 && conIva(gn) && <div><dt>{impuesto} que te deduces</dt><dd>{eur(partirIva(g, calculo.iva).deducible)}</dd></div>}
-        <div><dt>{g.noResidente ? 'Retención (no residente)' : 'Retención de IRPF'}</dt><dd>{calculo.irpf ? '−' : ''}{eur(calculo.irpf)}</dd></div>
-        <div className="gasto-total"><dt>Total a pagar</dt><dd>{eur(calculo.total)}</dd></div>
+        {pctDeducible(g) < 100 && conIva(gn) && <div><dt>{tr('{impuesto} que te deduces', { impuesto })}</dt><dd>{eur(partirIva(g, calculo.iva).deducible)}</dd></div>}
+        <div><dt>{g.noResidente ? tr('Retención (no residente)') : tr('Retención de IRPF')}</dt><dd>{calculo.irpf ? '−' : ''}{eur(calculo.irpf)}</dd></div>
+        <div className="gasto-total"><dt>{tr('Total a pagar')}</dt><dd>{eur(calculo.total)}</dd></div>
       </dl>}
       {igic && <>
-        <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.isp)} onChange={(e) => poner('isp', e.target.checked)} />Inversión del sujeto pasivo (lo autoliquido)</label>
-        <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.importacion)} onChange={(e) => poner('importacion', e.target.checked)} />Importación (IGIC pagado en aduana, con el DUA)</label>
+        <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.isp)} onChange={(e) => poner('isp', e.target.checked)} />{tr('Inversión del sujeto pasivo (lo autoliquido)')}</label>
+        <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.importacion)} onChange={(e) => poner('importacion', e.target.checked)} />{tr('Importación (IGIC pagado en aduana, con el DUA)')}</label>
       </>}
       {!igic && !Number(g.ivaPct) && !g.porTipo && (
-        <select className="campo" value={g.origen || (nifUE(g.proveedorNif) ? 'ue' : 'es')} onChange={(e) => poner('origen', e.target.value)} aria-label="De dónde es el proveedor">
-          <option value="es">Proveedor de España</option>
-          <option value="ue">Proveedor de otro país de la UE</option>
-          <option value="fuera">Proveedor de fuera de la UE</option>
-          <option value="isp">Proveedor de España con inversión del sujeto pasivo (su factura lo dice: obras, chatarra, oro…)</option>
+        <select className="campo" value={g.origen || (nifUE(g.proveedorNif) ? 'ue' : 'es')} onChange={(e) => poner('origen', e.target.value)} aria-label={tr('De dónde es el proveedor')}>
+          <option value="es">{tr('Proveedor de España')}</option>
+          <option value="ue">{tr('Proveedor de otro país de la UE')}</option>
+          <option value="fuera">{tr('Proveedor de fuera de la UE')}</option>
+          <option value="isp">{tr('Proveedor de España con inversión del sujeto pasivo (su factura lo dice: obras, chatarra, oro…)')}</option>
         </select>
       )}
       {!igic && origenGasto(gn) && <>
-        <label>IVA que declaras por esta compra<select className="campo" value={tipoAutoliquidado(g)} onChange={(e) => poner('ivaAuto', Number(e.target.value))}>
-          <option value={21}>21 % (general)</option>
-          <option value={10}>10 % (alimentos, productos sanitarios…)</option>
-          <option value={4}>4 % (libros, pan, leche…)</option>
+        <label>{tr('IVA que declaras por esta compra')}<select className="campo" value={tipoAutoliquidado(g)} onChange={(e) => poner('ivaAuto', Number(e.target.value))}>
+          <option value={21}>{tr('21 % (general)')}</option>
+          <option value={10}>{tr('10 % (alimentos, productos sanitarios…)')}</option>
+          <option value={4}>{tr('4 % (libros, pan, leche…)')}</option>
         </select></label>
-        <p className="nota">Ese IVA lo declaras tú en el 303 y te lo deduces a la vez: no cambia lo que pagas, pero tiene que salir en las dos partes.{g.origen !== 'fuera' && !nifUE(g.proveedorNif) ? ' Pon su NIF-IVA (por ejemplo, IE6388047V): también va en el 349.' : ''}</p>
+        <p className="nota">{tr('Ese IVA lo declaras tú en el 303 y te lo deduces a la vez: no cambia lo que pagas, pero tiene que salir en las dos partes.')}{g.origen !== 'fuera' && !nifUE(g.proveedorNif) ? ` ${tr('Pon su NIF-IVA (por ejemplo, IE6388047V): también va en el 349.')}` : ''}</p>
       </>}
-      <label>Fecha<input className="campo" type="date" value={g.fecha} onChange={(e) => poner('fecha', e.target.value)} required /></label>
+      <label>{tr('Fecha')}<input className="campo" type="date" value={g.fecha} onChange={(e) => poner('fecha', e.target.value)} required /></label>
       <AvisoPresentado g={g} gasto={gasto} presentados={presentados} />
-      <label>Proyecto, obra o local (opcional)<input className="campo" list="proyectos-gasto" value={g.proyecto || ''} onChange={(e) => poner('proyecto', e.target.value)} placeholder="Ej.: Obra Calle Mayor" maxLength={60} /></label>
+      <label>{tr('Proyecto, obra o local (opcional)')}<input className="campo" list="proyectos-gasto" value={g.proyecto || ''} onChange={(e) => poner('proyecto', e.target.value)} placeholder={tr('Ej.: Obra Calle Mayor')} maxLength={60} /></label>
       <datalist id="proyectos-gasto">{proyectos.map((p) => <option key={p} value={p} />)}</datalist>
-      {documento?.banco && <label className="gasto-pendiente"><input type="checkbox" checked={conBanco} onChange={(e) => setConBanco(e.target.checked)} />Es el cargo del banco del {fechaCorta(documento.banco.fecha)} por {eur(Math.abs(documento.banco.importe))}{documento.banco.concepto ? ` (${documento.banco.concepto})` : ''}: emparejarlo</label>}
-      {!(documento?.banco && conBanco) && <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.pendiente)} onChange={(e) => poner('pendiente', e.target.checked)} />Aún no lo he pagado</label>}
+      {documento?.banco && <label className="gasto-pendiente"><input type="checkbox" checked={conBanco} onChange={(e) => setConBanco(e.target.checked)} />{tr('Es el cargo del banco del {fecha} por {importe}{concepto}: emparejarlo', { fecha: fechaCorta(documento.banco.fecha), importe: eur(Math.abs(documento.banco.importe)), concepto: documento.banco.concepto ? ` (${documento.banco.concepto})` : '' })}</label>}
+      {!(documento?.banco && conBanco) && <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.pendiente)} onChange={(e) => poner('pendiente', e.target.checked)} />{tr('Aún no lo he pagado')}</label>}
       {g.pendiente && !(documento?.banco && conBanco) && <>
-        <label>Vence el<input className="campo" type="date" value={g.vence || ''} min={g.fecha} onChange={(e) => poner('vence', e.target.value)} /></label>
-        {!g.vence && <p className="nota">Si no lo pones, vence en el plazo de pago de la ficha del proveedor o, sin él, a los 30 días (el plazo legal).</p>}
+        <label>{tr('Vence el')}<input className="campo" type="date" value={g.vence || ''} min={g.fecha} onChange={(e) => poner('vence', e.target.value)} /></label>
+        {!g.vence && <p className="nota">{tr('Si no lo pones, vence en el plazo de pago de la ficha del proveedor o, sin él, a los 30 días (el plazo legal).')}</p>}
       </>}
-      {(alquiler || g.alquiler || g.alquilerSinRetencion) && <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.alquiler || g.alquilerSinRetencion)} onChange={(e) => setG((x) => ({ ...x, alquiler: e.target.checked, alquilerSinRetencion: undefined, ...(e.target.checked ? {} : { inmueble: undefined }), ...(e.target.checked && [19, 24].includes(Number(x.irpfPct)) ? { irpfPct: 0 } : {}) }))} />Es el alquiler del local{g.noResidente ? ' (el arrendador no reside en España: su retención va al 216)' : ''}</label>}
+      {(alquiler || g.alquiler || g.alquilerSinRetencion) && <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.alquiler || g.alquilerSinRetencion)} onChange={(e) => setG((x) => ({ ...x, alquiler: e.target.checked, alquilerSinRetencion: undefined, ...(e.target.checked ? {} : { inmueble: undefined }), ...(e.target.checked && [19, 24].includes(Number(x.irpfPct)) ? { irpfPct: 0 } : {}) }))} />{tr('Es el alquiler del local')}{g.noResidente ? ` ${tr('(el arrendador no reside en España: su retención va al 216)')}` : ''}</label>}
       {/* Alquiler del local: con la retención del 19 % (115 y 180) o sin ella por una de las causas del art. 75.3.h RIRPF
           (al 347, como arrendamiento de local); y el inmueble, para el 180 por arrendador e inmueble (lib/modelos.js). */}
       {(g.alquiler || g.alquilerSinRetencion) && !g.noResidente && <>
-        <label>Retención del alquiler<select className="campo" value={g.alquilerSinRetencion || ''} onChange={(e) => setG((x) => ({ ...x, alquiler: !e.target.value, alquilerSinRetencion: e.target.value || undefined, ...(e.target.value ? { irpfPct: 0 } : {}) }))}>
-          <option value="">Le retengo el 19 % (lo ingreso con el 115)</option>
-          {Object.entries(CAUSAS_SIN_RETENCION).map(([k, n]) => <option key={k} value={k}>Sin retención: {n}</option>)}
+        <label>{tr('Retención del alquiler')}<select className="campo" value={g.alquilerSinRetencion || ''} onChange={(e) => setG((x) => ({ ...x, alquiler: !e.target.value, alquilerSinRetencion: e.target.value || undefined, ...(e.target.value ? { irpfPct: 0 } : {}) }))}>
+          <option value="">{tr('Le retengo el 19 % (lo ingreso con el 115)')}</option>
+          {Object.entries(CAUSAS_SIN_RETENCION).map(([k, n]) => <option key={k} value={k}>{tr('Sin retención: {causa}', { causa: tr(n) })}</option>)}
         </select></label>
         {g.alquilerSinRetencion
-          ? <p className="nota">Sin retención no va al 115 ni al 180, pero sí al 347 (si con ese arrendador pasas de 3.005,06 € en el año), marcado como alquiler de local. {g.alquilerSinRetencion === 'menos900' ? 'Si en el año acabas pagándole más de 900 €, ya hay que retener: cambia esto en los siguientes recibos.' : g.alquilerSinRetencion === 'epigrafe861' ? 'Guarda el certificado que te da el arrendador: sin él, hay que retener.' : 'Si dudas, pregúntalo a tu gestoría: sin causa, el alquiler del local lleva siempre el 19 %.'}</p>
-          : <p className="nota">El 19 % lo ingresas cada trimestre con el 115 y en enero va en el 180. No se retiene si el arrendador no llega a 900 € al año contigo, si está en el epígrafe 861 del IAE con cuota (y te da el certificado) o si es una vivienda para un empleado o un leasing: elígelo arriba.</p>}
-        <label>Dónde está el local<select className="campo" value={g.inmueble?.situacion || ''} onChange={(e) => poner('inmueble', e.target.value ? { ...(g.inmueble || {}), situacion: Number(e.target.value), ...(e.target.value === '4' ? { refCatastral: '' } : {}) } : undefined)}>
-          <option value="">Sin indicar</option>
-          {Object.entries(SITUACIONES_INMUEBLE).map(([k, n]) => <option key={k} value={k}>{n}</option>)}
+          ? <p className="nota">{tr('Sin retención no va al 115 ni al 180, pero sí al 347 (si con ese arrendador pasas de 3.005,06 € en el año), marcado como alquiler de local.')} {g.alquilerSinRetencion === 'menos900' ? tr('Si en el año acabas pagándole más de 900 €, ya hay que retener: cambia esto en los siguientes recibos.') : g.alquilerSinRetencion === 'epigrafe861' ? tr('Guarda el certificado que te da el arrendador: sin él, hay que retener.') : tr('Si dudas, pregúntalo a tu gestoría: sin causa, el alquiler del local lleva siempre el 19 %.')}</p>
+          : <p className="nota">{tr('El 19 % lo ingresas cada trimestre con el 115 y en enero va en el 180. No se retiene si el arrendador no llega a 900 € al año contigo, si está en el epígrafe 861 del IAE con cuota (y te da el certificado) o si es una vivienda para un empleado o un leasing: elígelo arriba.')}</p>}
+        <label>{tr('Dónde está el local')}<select className="campo" value={g.inmueble?.situacion || ''} onChange={(e) => poner('inmueble', e.target.value ? { ...(g.inmueble || {}), situacion: Number(e.target.value), ...(e.target.value === '4' ? { refCatastral: '' } : {}) } : undefined)}>
+          <option value="">{tr('Sin indicar')}</option>
+          {Object.entries(SITUACIONES_INMUEBLE).map(([k, n]) => <option key={k} value={k}>{tr(n)}</option>)}
         </select></label>
-        {g.inmueble?.situacion && Number(g.inmueble.situacion) !== 4 && <label>Referencia catastral<input className="campo" value={g.inmueble.refCatastral || ''} onChange={(e) => poner('inmueble', { ...g.inmueble, refCatastral: e.target.value.toUpperCase() })} maxLength={24} placeholder="20 letras y números, en el recibo del IBI" /></label>}
+        {g.inmueble?.situacion && Number(g.inmueble.situacion) !== 4 && <label>{tr('Referencia catastral')}<input className="campo" value={g.inmueble.refCatastral || ''} onChange={(e) => poner('inmueble', { ...g.inmueble, refCatastral: e.target.value.toUpperCase() })} maxLength={24} placeholder={tr('20 letras y números, en el recibo del IBI')} /></label>}
       </>}
       {/* Sociedades, gastos sin IVA (impuestos, multas, donativos): no deducible en el Impuesto sobre Sociedades (art. 15 LIS,
           lib/categorias.js noDeducibleIS). Sin tocarlo, lo que propone Fisquo por el concepto. */}
-      {(g.noDeducibleIS !== undefined || !conIva(gn)) && <label className="gasto-pendiente"><input type="checkbox" checked={g.noDeducibleIS ?? Boolean(regimen === 'sociedad' ? noDeducibleIS(gn) : noDeducibleIRPF(gn))} onChange={(e) => poner('noDeducibleIS', e.target.checked)} />{regimen === 'sociedad' ? 'No es deducible en el Impuesto sobre Sociedades (el propio impuesto, multas, sanciones, recargos, donativos)' : 'No es deducible en el IRPF (el propio IRPF, multas, sanciones, recargos, donativos)'}</label>}
-      {!igic && (recargo || g.recargo) && conIva(gn) && !origenGasto(gn) && <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.recargo)} onChange={(e) => poner('recargo', e.target.checked || undefined)} />Su factura lleva recargo de equivalencia (no se deduce: es más coste de la compra)</label>}
-      {!igic && (conIva(gn) || g.recc) && <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.recc)} onChange={(e) => poner('recc', e.target.checked)} />Su factura dice «Régimen especial del criterio de caja» (el IVA se deduce al pagarla)</label>}
-      {!igic && (conIva(gn) || g.importacion) && <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.importacion)} onChange={(e) => poner('importacion', e.target.checked)} />Importación de fuera de la UE: el IVA lo he pagado en la aduana (DUA)</label>}
-      {!igic && (especial || g.usoProrrata) && conIva(gn) && <label>Uso en la prorrata especial<select className="campo" value={g.usoProrrata || ''} onChange={(e) => poner('usoProrrata', e.target.value || undefined)}>
-        <option value="">Común a operaciones con IVA y exentas (con el porcentaje)</option>
-        <option value="gravadas">Solo para operaciones con IVA (se deduce entero)</option>
-        <option value="exentas">Solo para operaciones exentas (no se deduce)</option>
+      {(g.noDeducibleIS !== undefined || !conIva(gn)) && <label className="gasto-pendiente"><input type="checkbox" checked={g.noDeducibleIS ?? Boolean(regimen === 'sociedad' ? noDeducibleIS(gn) : noDeducibleIRPF(gn))} onChange={(e) => poner('noDeducibleIS', e.target.checked)} />{regimen === 'sociedad' ? tr('No es deducible en el Impuesto sobre Sociedades (el propio impuesto, multas, sanciones, recargos, donativos)') : tr('No es deducible en el IRPF (el propio IRPF, multas, sanciones, recargos, donativos)')}</label>}
+      {!igic && (recargo || g.recargo) && conIva(gn) && !origenGasto(gn) && <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.recargo)} onChange={(e) => poner('recargo', e.target.checked || undefined)} />{tr('Su factura lleva recargo de equivalencia (no se deduce: es más coste de la compra)')}</label>}
+      {!igic && (conIva(gn) || g.recc) && <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.recc)} onChange={(e) => poner('recc', e.target.checked)} />{tr('Su factura dice «Régimen especial del criterio de caja» (el IVA se deduce al pagarla)')}</label>}
+      {!igic && (conIva(gn) || g.importacion) && <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(g.importacion)} onChange={(e) => poner('importacion', e.target.checked)} />{tr('Importación de fuera de la UE: el IVA lo he pagado en la aduana (DUA)')}</label>}
+      {!igic && (especial || g.usoProrrata) && conIva(gn) && <label>{tr('Uso en la prorrata especial')}<select className="campo" value={g.usoProrrata || ''} onChange={(e) => poner('usoProrrata', e.target.value || undefined)}>
+        <option value="">{tr('Común a operaciones con IVA y exentas (con el porcentaje)')}</option>
+        <option value="gravadas">{tr('Solo para operaciones con IVA (se deduce entero)')}</option>
+        <option value="exentas">{tr('Solo para operaciones exentas (no se deduce)')}</option>
       </select></label>}
       {!igic && ((Number(g.ivaPct) === 0 && !g.porTipo) || g.compensacion) && (
-        <label className="gasto-pendiente">Compra a un agricultor, ganadero o pescador del régimen especial (REAGP)
+        <label className="gasto-pendiente">{tr('Compra a un agricultor, ganadero o pescador del régimen especial (REAGP)')}
           <select className="campo" value={g.compensacion || ''} onChange={(e) => poner('compensacion', Number(e.target.value) || undefined)}>
-            <option value="">No</option>
-            <option value="12">Sí, con compensación del 12 % (agricultura o forestal)</option>
-            <option value="10.5">Sí, con compensación del 10,5 % (ganadería o pesca)</option>
+            <option value="">{tr('No')}</option>
+            <option value="12">{tr('Sí, con compensación del 12 % (agricultura o forestal)')}</option>
+            <option value="10.5">{tr('Sí, con compensación del 10,5 % (ganadería o pesca)')}</option>
           </select>
         </label>
       )}
-      {!g.porTipo && <div className="gasto-pendiente termino-check"><input id={`${prefijo}-inversion`} aria-labelledby={`${prefijo}-inversion-etiqueta`} type="checkbox" checked={Boolean(g.inversion)} onChange={(e) => poner('inversion', e.target.checked ? { tipo: 'otros' } : undefined)} /><span id={`${prefijo}-inversion-etiqueta`}><label htmlFor={`${prefijo}-inversion`}>Es un </label><Termino id="bienInversion">bien de inversión</Termino><label htmlFor={`${prefijo}-inversion`}> (lo usarás varios años)</label></span></div>}
+      {!g.porTipo && <div className="gasto-pendiente termino-check"><input id={`${prefijo}-inversion`} aria-labelledby={`${prefijo}-inversion-etiqueta`} type="checkbox" checked={Boolean(g.inversion)} onChange={(e) => poner('inversion', e.target.checked ? { tipo: 'otros' } : undefined)} /><span id={`${prefijo}-inversion-etiqueta`}><label htmlFor={`${prefijo}-inversion`}>{tr('Es un')} </label><Termino id="bienInversion">{tr('bien de inversión')}</Termino><label htmlFor={`${prefijo}-inversion`}> {tr('(lo usarás varios años)')}</label></span></div>}
       {g.inversion ? <>
-        <select className="campo" value={g.inversion.tipo} onChange={(e) => poner('inversion', { tipo: e.target.value })} aria-label="Tipo de bien">
-          {TIPOS_BIEN.map((t) => <option key={t.id} value={t.id}>{t.nombre} · {t[regimen === 'sociedad' ? 'sociedad' : 'autonomo']} % al año</option>)}
+        <select className="campo" value={g.inversion.tipo} onChange={(e) => poner('inversion', { tipo: e.target.value })} aria-label={tr('Tipo de bien')}>
+          {TIPOS_BIEN.map((t) => <option key={t.id} value={t.id}>{tr(t.nombre)} · {t[regimen === 'sociedad' ? 'sociedad' : 'autonomo']} {tr('% al año')}</option>)}
         </select>
         <p className="nota">{parseImporte(g.base) > 0 && parseImporte(g.base) <= LIMITE_LIBERTAD
-          ? 'Como no pasa de 300 €, se resta entero este año.'
-          : `No se resta entero: se amortiza un ${coeficiente(g, regimen)} % al año desde la fecha de compra.`} {pctDeducible(g) < 100 ? `La parte deducible del ${impuesto}` : `El ${impuesto}`} sí la deduces entera en el {igic ? '420' : '303'} de este trimestre.</p>
+          ? tr('Como no pasa de 300 €, se resta entero este año.')
+          : tr('No se resta entero: se amortiza un {pct} % al año desde la fecha de compra.', { pct: coeficiente(g, regimen) })} {pctDeducible(g) < 100 ? tr('La parte deducible del {impuesto}', { impuesto }) : tr('El {impuesto}', { impuesto })} {tr('sí la deduces entera en el {modelo} de este trimestre.', { modelo: igic ? '420' : '303' })}</p>
       </> : (
-        <select className="campo" value={g.categoria || ''} onChange={(e) => poner('categoria', e.target.value || undefined)} aria-label="Categoría">
-          <option value="">{categoria(categoriaDe({ ...g, categoria: undefined })).nombre} (automática)</option>
-          {CATEGORIAS.map((c) => <option key={c.id} value={c.id}>{c.id} · {c.nombre}</option>)}
+        <select className="campo" value={g.categoria || ''} onChange={(e) => poner('categoria', e.target.value || undefined)} aria-label={tr('Categoría')}>
+          <option value="">{tr(categoria(categoriaDe({ ...g, categoria: undefined })).nombre)} {tr('(automática)')}</option>
+          {CATEGORIAS.map((c) => <option key={c.id} value={c.id}>{c.id} · {tr(c.nombre)}</option>)}
         </select>
       )}
       {gasto?.pedidoProv && g.stock?.length > 0 && (
-        <p className="nota">Viene de recibir un pedido: sus unidades y costes se corrigen en el pedido (borra este gasto y vuelve a recibirlo).</p>
+        <p className="nota">{tr('Viene de recibir un pedido: sus unidades y costes se corrigen en el pedido (borra este gasto y vuelve a recibirlo).')}</p>
       )}
       {productos.length > 0 && !g.inversion && !gasto?.pedidoProv && (
         <div className="gasto-stock">
-          <p className="mini-t">Productos que entran al almacén <small>(opcional)</small></p>
+          <p className="mini-t">{tr('Productos que entran al almacén')} <small>{tr('(opcional)')}</small></p>
           {(g.stock || []).map((l, i) => (
             <div key={i} className="gasto-stock-linea">
-              <select className="campo" value={l.producto} onChange={(e) => poner('stock', g.stock.map((x, j) => (j === i ? { ...x, producto: e.target.value, coste: x.coste || String(productos.find((p) => p.id === e.target.value)?.coste || '').replace('.', ',') } : x)))} aria-label="Producto">
+              <select className="campo" value={l.producto} onChange={(e) => poner('stock', g.stock.map((x, j) => (j === i ? { ...x, producto: e.target.value, coste: x.coste || String(productos.find((p) => p.id === e.target.value)?.coste || '').replace('.', ',') } : x)))} aria-label={tr('Producto')}>
                 {productos.map((p) => <option key={p.id} value={p.id}>{p.nombre}{p.sku ? ` · ${p.sku}` : ''}</option>)}
               </select>
-              <input className="campo" inputMode="decimal" placeholder="Unidades" value={l.cantidad} onChange={(e) => poner('stock', g.stock.map((x, j) => (j === i ? { ...x, cantidad: e.target.value } : x)))} aria-label="Unidades" />
-              <input className="campo" inputMode="decimal" placeholder="Coste/ud" value={l.coste} onChange={(e) => poner('stock', g.stock.map((x, j) => (j === i ? { ...x, coste: e.target.value } : x)))} aria-label={`Coste por unidad sin ${impuesto}`} />
-              <button type="button" className="linea-quitar" aria-label="Quitar" onClick={() => poner('stock', g.stock.filter((_, j) => j !== i))}>×</button>
+              <input className="campo" inputMode="decimal" placeholder={tr('Unidades')} value={l.cantidad} onChange={(e) => poner('stock', g.stock.map((x, j) => (j === i ? { ...x, cantidad: e.target.value } : x)))} aria-label={tr('Unidades')} />
+              <input className="campo" inputMode="decimal" placeholder={tr('Coste/ud')} value={l.coste} onChange={(e) => poner('stock', g.stock.map((x, j) => (j === i ? { ...x, coste: e.target.value } : x)))} aria-label={tr('Coste por unidad sin {impuesto}', { impuesto })} />
+              <button type="button" className="linea-quitar" aria-label={tr('Quitar')} onClick={() => poner('stock', g.stock.filter((_, j) => j !== i))}>×</button>
             </div>
           ))}
-          <button type="button" className="boton sec pequeno" onClick={() => poner('stock', [...(g.stock || []), { producto: productos[0].id, cantidad: '1', coste: String(productos[0].coste || '').replace('.', ',') }])}>+ Producto</button>
+          <button type="button" className="boton sec pequeno" onClick={() => poner('stock', [...(g.stock || []), { producto: productos[0].id, cantidad: '1', coste: String(productos[0].coste || '').replace('.', ',') }])}>{tr('+ Producto')}</button>
         </div>
       )}
-      {!g.porTipo && pareceBien(gn) && <p className="nota">¿Es un equipo que vas a usar varios años? Márcalo como bien de inversión: se resta repartido en varios años, como pide Hacienda.</p>}
-      {error && <p className="error" role="alert">{error}</p>}
+      {!g.porTipo && pareceBien(gn) && <p className="nota">{tr('¿Es un equipo que vas a usar varios años? Márcalo como bien de inversión: se resta repartido en varios años, como pide Hacienda.')}</p>}
+      {error && <p className="error" role="alert">{tr(error)}</p>}
       {avisoDuplicados && <div className="nota" role="alert">
-        <strong>Puede que este gasto ya esté apuntado</strong>
-        <p>Revisa los gastos coincidentes antes de guardarlo de nuevo.</p>
-        <ul>{avisoDuplicados.duplicados.map((d) => <li key={d.id}><a href={`/gastos/${encodeURIComponent(d.id)}`} target="_blank" rel="noopener noreferrer">{d.motivo}</a></li>)}</ul>
+        <strong>{tr('Puede que este gasto ya esté apuntado')}</strong>
+        <p>{tr('Revisa los gastos coincidentes antes de guardarlo de nuevo.')}</p>
+        <ul>{avisoDuplicados.duplicados.map((d) => <li key={d.id}><a href={`/gastos/${encodeURIComponent(d.id)}`} target="_blank" rel="noopener noreferrer">{tr(d.motivo)}</a></li>)}</ul>
         <div className="gasto-guardar">
-          <button type="button" className="boton" disabled={enviando} onClick={() => enviar(null, avisoDuplicados.datos)}>{enviando ? 'Guardando…' : 'Es otro gasto: guardarlo'}</button>
-          <button type="button" className="boton sec" disabled={enviando} onClick={() => { setAvisoDuplicados(null); setError(''); }}>Cancelar</button>
+          <button type="button" className="boton" disabled={enviando} onClick={() => enviar(null, avisoDuplicados.datos)}>{enviando ? tr('Guardando…') : tr('Es otro gasto: guardarlo')}</button>
+          <button type="button" className="boton sec" disabled={enviando} onClick={() => { setAvisoDuplicados(null); setError(''); }}>{tr('Cancelar')}</button>
         </div>
       </div>}
       {!avisoDuplicados && <div className="gasto-guardar">
-        <button className="boton" disabled={enviando}>{enviando ? 'Guardando…' : gasto ? 'Guardar cambios' : documento ? 'Aprobar y guardar el gasto' : 'Añadir'}</button>
-        {plegado && !gasto && <button type="button" className="boton sec" onClick={() => salirSinGuardar(() => { setAbierto(false); setG(vacio); setLeyendo(''); setError(''); setAdjunto(null); }, DESCARTAR)}>Cancelar</button>}
-        {movimiento && <button type="button" className="boton sec" onClick={() => salirSinGuardar(() => atras(router, '/gastos'))}>Cancelar</button>}
+        <button className="boton" disabled={enviando}>{enviando ? tr('Guardando…') : gasto ? tr('Guardar cambios') : documento ? tr('Aprobar y guardar el gasto') : tr('Añadir')}</button>
+        {plegado && !gasto && <button type="button" className="boton sec" onClick={() => salirSinGuardar(() => { setAbierto(false); setG(vacio); setLeyendo(''); setError(''); setAdjunto(null); }, { titulo: tr(DESCARTAR.titulo), texto: tr(DESCARTAR.texto), aceptar: tr(DESCARTAR.aceptar) })}>{tr('Cancelar')}</button>}
+        {movimiento && <button type="button" className="boton sec" onClick={() => salirSinGuardar(() => atras(router, '/gastos'))}>{tr('Cancelar')}</button>}
       </div>}
       </fieldset>
       {avisoAdjunto}
@@ -543,6 +547,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
 
 // En la ficha del gasto: ver el justificante guardado, o adjuntarlo o sustituirlo a mano (foto o PDF, máx. 5 MB).
 function Justificante({ gasto }) {
+  const tr = useT();
   const router = useRouter();
   const archivoInput = useRef(null);
   const [estado, setEstado] = useState('');
@@ -554,28 +559,28 @@ function Justificante({ gasto }) {
     e.target.value = '';
     if (!archivo) return;
     if (!/^image\//.test(archivo.type) && archivo.type !== 'application/pdf') { setError('Sube una foto (JPG, PNG o WebP) o un PDF'); return; }
-    if (tiene && !(await confirmarAccion({ titulo: 'Sustituir justificante', texto: '¿Sustituir el justificante que ya tiene este gasto?', aceptar: 'Sustituir', peligro: true }))) return;
-    setError(''); setEstado('Guardando el justificante…');
+    if (tiene && !(await confirmarAccion({ titulo: tr('Sustituir justificante'), texto: tr('¿Sustituir el justificante que ya tiene este gasto?'), aceptar: tr('Sustituir'), peligro: true }))) return;
+    setError(''); setEstado(tr('Guardando el justificante…'));
     try {
       const j = await preparar(archivo);
       if (j.error) throw new Error(j.error);
       const fallo = await subir(gasto.id, j.blob);
       if (fallo) throw new Error(fallo);
-      setEstado(tiene ? 'Justificante sustituido.' : 'Justificante guardado.');
+      setEstado(tiene ? tr('Justificante sustituido.') : tr('Justificante guardado.'));
       router.refresh();
     } catch (err) { setEstado(''); setError(err.message || 'No se ha podido guardar el justificante'); }
   };
   return (
     <div className="gasto-justificante">
-      <p className="mini-t">Justificante {tiene && <small>({gasto.archivo.tipo === 'application/pdf' ? 'PDF' : gasto.archivo.tipo === 'application/xml' ? 'factura electrónica' : 'foto'} · {Math.max(1, Math.round(gasto.archivo.tamano / 1024)).toLocaleString('es-ES')} KB)</small>}</p>
-      {!tiene && <p className="nota">Este gasto no tiene guardada la foto del ticket ni el PDF de la factura.</p>}
+      <p className="mini-t">{tr('Justificante')} {tiene && <small>({gasto.archivo.tipo === 'application/pdf' ? 'PDF' : gasto.archivo.tipo === 'application/xml' ? tr('factura electrónica') : tr('foto')} · {Math.max(1, Math.round(gasto.archivo.tamano / 1024)).toLocaleString('es-ES')} KB)</small>}</p>
+      {!tiene && <p className="nota">{tr('Este gasto no tiene guardada la foto del ticket ni el PDF de la factura.')}</p>}
       <div className="gasto-guardar">
-        {tiene && <a className="boton sec" href={url} target="_blank" rel="noopener">{gasto.archivo.tipo === 'application/xml' ? 'Descargar el XML' : 'Ver justificante'}</a>}
-        <button type="button" className="boton sec" onClick={() => archivoInput.current?.click()}>{tiene ? 'Sustituir' : 'Adjuntar justificante'}</button>
+        {tiene && <a className="boton sec" href={url} target="_blank" rel="noopener">{gasto.archivo.tipo === 'application/xml' ? tr('Descargar el XML') : tr('Ver justificante')}</a>}
+        <button type="button" className="boton sec" onClick={() => archivoInput.current?.click()}>{tiene ? tr('Sustituir') : tr('Adjuntar justificante')}</button>
       </div>
       <input ref={archivoInput} type="file" accept="image/*,application/pdf" onChange={elegir} hidden />
-      {estado && <p className="nota" role="status">{estado}</p>}
-      {error && <p className="error" role="alert">{error}</p>}
+      {estado && <p className="nota" role="status">{tr(estado)}</p>}
+      {error && <p className="error" role="alert">{tr(error)}</p>}
     </div>
   );
 }
@@ -585,6 +590,7 @@ function Justificante({ gasto }) {
 // general (24 %, o 19 % en la UE y el EEE), el límite del convenio con su país (con su certificado de residencia fiscal;
 // 0 si lo deja exento) o ninguna, si la ley lo deja exento (art. 14 TRLIRNR).
 function NoResidente({ g, poner, prefijo }) {
+  const tr = useT();
   const nr = g.noResidente || null;
   const cambiar = (c) => {
     const x = { ...nr, ...c };
@@ -593,22 +599,22 @@ function NoResidente({ g, poner, prefijo }) {
   };
   const general = nr ? tipoGeneral(nr.pais, nr.clave) : 24;
   return <>
-    <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(nr)} onChange={(e) => poner('noResidente', e.target.checked ? propuestaNoResidente(g) : false)} />No reside en España (retención de no residentes: modelos 216 y 296)</label>
+    <label className="gasto-pendiente"><input type="checkbox" checked={Boolean(nr)} onChange={(e) => poner('noResidente', e.target.checked ? propuestaNoResidente(g) : false)} />{tr('No reside en España (retención de no residentes: modelos 216 y 296)')}</label>
     {nr && <>
       <div className="dos-col">
-        <label>País de residencia<input className="campo" list={`${prefijo}-paises`} spellCheck={false} autoCorrect="off" autoCapitalize="characters" maxLength={2} placeholder="FR, US, PT…" value={nr.pais || ''} onChange={(e) => cambiar({ pais: e.target.value.toUpperCase() })} required /></label>
-        <label>Qué le pagas<select className="campo" value={nr.clave || (g.alquiler ? 14 : 19)} onChange={(e) => cambiar({ clave: Number(e.target.value) })}>
-          {[...new Set([...CLAVES_GASTO, Number(nr.clave) || 19])].map((k) => <option key={k} value={k}>{CLAVES_296[k]}</option>)}
+        <label>{tr('País de residencia')}<input className="campo" list={`${prefijo}-paises`} spellCheck={false} autoCorrect="off" autoCapitalize="characters" maxLength={2} placeholder="FR, US, PT…" value={nr.pais || ''} onChange={(e) => cambiar({ pais: e.target.value.toUpperCase() })} required /></label>
+        <label>{tr('Qué le pagas')}<select className="campo" value={nr.clave || (g.alquiler ? 14 : 19)} onChange={(e) => cambiar({ clave: Number(e.target.value) })}>
+          {[...new Set([...CLAVES_GASTO, Number(nr.clave) || 19])].map((k) => <option key={k} value={k}>{tr(CLAVES_296[k])}</option>)}
         </select></label>
       </div>
-      <datalist id={`${prefijo}-paises`}>{Object.entries(PAISES).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</datalist>
-      <label>Retención<select className="campo" value={nr.motivo || 'general'} onChange={(e) => { const v = e.target.value; poner('noResidente', v === 'general' ? { ...nr, motivo: undefined, pct: general } : v === 'exenta' ? { ...nr, motivo: 'exenta', pct: 0 } : { ...nr, motivo: 'convenio', pct: '' }); }}>
-        <option value="general">El {general} % (tipo general{ueEee(nr.pais) ? ' para residentes en la UE o el EEE' : [1, 2].includes(Number(nr.clave)) ? ' de dividendos e intereses' : ''})</option>
-        <option value="convenio">La del convenio con su país (con su certificado de residencia)</option>
-        <option value="exenta">Ninguna: renta exenta por la ley</option>
+      <datalist id={`${prefijo}-paises`}>{Object.entries(PAISES).map(([k, n]) => <option key={k} value={k}>{tr(n)}</option>)}</datalist>
+      <label>{tr('Retención')}<select className="campo" value={nr.motivo || 'general'} onChange={(e) => { const v = e.target.value; poner('noResidente', v === 'general' ? { ...nr, motivo: undefined, pct: general } : v === 'exenta' ? { ...nr, motivo: 'exenta', pct: 0 } : { ...nr, motivo: 'convenio', pct: '' }); }}>
+        <option value="general">{tr('El {pct} % (tipo general{detalle})', { pct: general, detalle: ueEee(nr.pais) ? ` ${tr('para residentes en la UE o el EEE')}` : [1, 2].includes(Number(nr.clave)) ? ` ${tr('de dividendos e intereses')}` : '' })}</option>
+        <option value="convenio">{tr('La del convenio con su país (con su certificado de residencia)')}</option>
+        <option value="exenta">{tr('Ninguna: renta exenta por la ley')}</option>
       </select></label>
-      {nr.motivo === 'convenio' && <label>% de retención del convenio (0 si lo deja exento)<input className="campo" inputMode="decimal" value={nr.pct ?? ''} onChange={(e) => poner('noResidente', { ...nr, pct: e.target.value })} placeholder="Ej.: 10" required /></label>}
-      <p className="nota">Esta retención no va en el {g.alquiler ? '115' : '111'}: la ingresas con el 216 del trimestre en que le pagas y en enero va en el 296, también si no le retienes nada. Para aplicar el convenio (menos retención o ninguna, como los beneficios de una empresa o un profesional sin establecimiento en España) guarda su certificado de residencia fiscal del año.</p>
+      {nr.motivo === 'convenio' && <label>{tr('% de retención del convenio (0 si lo deja exento)')}<input className="campo" inputMode="decimal" value={nr.pct ?? ''} onChange={(e) => poner('noResidente', { ...nr, pct: e.target.value })} placeholder={tr('Ej.: 10')} required /></label>}
+      <p className="nota">{tr('Esta retención no va en el {modelo}: la ingresas con el 216 del trimestre en que le pagas y en enero va en el 296, también si no le retienes nada. Para aplicar el convenio (menos retención o ninguna, como los beneficios de una empresa o un profesional sin establecimiento en España) guarda su certificado de residencia fiscal del año.', { modelo: g.alquiler ? '115' : '111' })}</p>
     </>}
   </>;
 }
@@ -618,11 +624,12 @@ function NoResidente({ g, poner, prefijo }) {
 const trimestreDe = (x) => (/^\d{4}-\d{2}-\d{2}$/.test(x?.fecha || '') ? `${x.fecha.slice(0, 4)}-${trimestre(x.fecha)}` : null);
 const totalGasto = (x) => { try { return r2(importes(x).total); } catch { return null; } };
 function AvisoPresentado({ g, gasto, presentados }) {
+  const tr = useT();
   if (!presentados.length) return null;
   const ahora = trimestreDe(g), antes = trimestreDe(gasto);
   const entra = ahora && presentados.includes(ahora) && (!gasto || ahora !== antes || totalGasto(g) !== totalGasto(gasto));
   const sale = antes && antes !== ahora && presentados.includes(antes);
   if (!entra && !sale) return null;
   const nombre = (k) => `${k.split('-')[1]}T ${k.split('-')[0]}`;
-  return <p className="nota aviso-rect">{entra ? `Este gasto cuenta en el ${nombre(ahora)}, que ya está presentado` : `Este gasto sale del ${nombre(antes)}, que ya está presentado`}: habrá que corregir ese 303 con una autoliquidación rectificativa (Impuestos te la prepara).</p>;
+  return <p className="nota aviso-rect">{entra ? tr('Este gasto cuenta en el {trimestre}, que ya está presentado: habrá que corregir ese 303 con una autoliquidación rectificativa (Impuestos te la prepara).', { trimestre: nombre(ahora) }) : tr('Este gasto sale del {trimestre}, que ya está presentado: habrá que corregir ese 303 con una autoliquidación rectificativa (Impuestos te la prepara).', { trimestre: nombre(antes) })}</p>;
 }

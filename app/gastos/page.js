@@ -33,6 +33,7 @@ import { buzonDe, confirmacionVigente, direccionDe } from '@/lib/buzon';
 import Bandeja from '@/components/Bandeja';
 import BuzonCorreo from '@/components/BuzonCorreo';
 import Pestanas from '@/components/Pestanas';
+import { textos } from '@/lib/idiomaServidor';
 import '@/app/pestanas.css';
 import '@/app/proveedores.css';
 
@@ -43,6 +44,7 @@ const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', '
 
 export default async function Gastos({ searchParams }) {
   const u = await requerir('gastos');
+  const tr = await textos();
   // Informe de capacidad E01: la lista va por páginas sobre el índice; el año, lo pendiente y los bienes de inversión se
   // leen aparte (lib/indices.js), y la conciliación solo con lo que puede casar (candidatosConciliacion).
   if (!redis) return <SinBD />;
@@ -124,13 +126,13 @@ export default async function Gastos({ searchParams }) {
       <Ir href={`/gastos/${encodeURIComponent(g.id)}`} className="fila">
         <span className="txt">
           <strong>{enAgenda && g.proveedor ? g.proveedor : g.concepto}</strong>
-          <small>{enAgenda ? `${g.proveedor && g.proveedor !== g.concepto ? `${g.concepto} · ` : ''}factura del ${fechaCorta(g.fecha)}${g.numero ? ` · nº ${g.numero}` : ''}` : <>{g.proveedor && g.proveedor !== g.concepto ? `${g.proveedor} · ` : ''}{fechaCorta(g.fecha)}{actividades.length > 1 ? ` · ${NOMBRES[g.actividad] || g.actividad}` : ''}{importes(g).iva ? ` · IVA ${eur(importes(g).iva)}` : ''}</>}</small>
+          <small>{enAgenda ? `${g.proveedor && g.proveedor !== g.concepto ? `${g.concepto} · ` : ''}${tr('factura del {fecha}', { fecha: fechaCorta(g.fecha) })}${g.numero ? ` · ${tr('nº {numero}', { numero: g.numero })}` : ''}` : <>{g.proveedor && g.proveedor !== g.concepto ? `${g.proveedor} · ` : ''}{fechaCorta(g.fecha)}{actividades.length > 1 ? ` · ${NOMBRES[g.actividad] || g.actividad}` : ''}{importes(g).iva ? ` · ${tr('IVA')} ${eur(importes(g).iva)}` : ''}</>}</small>
         </span>
         <span className="imp-col">
           <span className="imp">{eur(enAgenda ? aPagar(g) : g.base)}</span>
-          {!enAgenda && g.archivo?.clave && <span className="estado-txt">{g.archivo.tipo === 'application/pdf' ? 'PDF adjunto' : g.archivo.tipo === 'application/xml' ? 'Factura electrónica' : 'Foto adjunta'}</span>}
-          {g.pendiente && <span className={`estado-txt ${e === 'vencido' ? 'e-vencida' : 'e-pendiente'}`}>{textoVence(g, h, fechaCorta)}</span>}
-          {g.inversion && <span className="estado-txt">Bien de inversión</span>}
+          {!enAgenda && g.archivo?.clave && <span className="estado-txt">{g.archivo.tipo === 'application/pdf' ? tr('PDF adjunto') : g.archivo.tipo === 'application/xml' ? tr('Factura electrónica') : tr('Foto adjunta')}</span>}
+          {g.pendiente && <span className={`estado-txt ${e === 'vencido' ? 'e-vencida' : 'e-pendiente'}`}>{tr(textoVence(g, h, fechaCorta))}</span>}
+          {g.inversion && <span className="estado-txt">{tr('Bien de inversión')}</span>}
         </span>
       </Ir>
     );
@@ -143,22 +145,22 @@ export default async function Gastos({ searchParams }) {
   return (
     <main className="pagina mk-look gastos gastos-formulario">
       <header className="cabecera">
-        <h1 className="titulo">Gastos</h1>
+        <h1 className="titulo">{tr('Gastos')}</h1>
       </header>
-      {!movimiento && <Pestanas etiqueta="Gastos" items={[
-        { href: '/gastos', texto: 'Gastos', activo: vista === 'gastos' },
-        { href: '/gastos?ver=revisar', texto: 'Por revisar', n: porRevisar.resumen.pendientes, tono: 'aviso', activo: vista === 'revisar' },
-        { href: '/gastos?estado=sinpagar', texto: 'Por pagar', n: agenda.n, tono: agenda.vencidos ? 'rojo' : undefined, activo: vista === 'pagar' },
+      {!movimiento && <Pestanas etiqueta={tr('Gastos')} items={[
+        { href: '/gastos', texto: tr('Gastos'), activo: vista === 'gastos' },
+        { href: '/gastos?ver=revisar', texto: tr('Por revisar'), n: porRevisar.resumen.pendientes, tono: 'aviso', activo: vista === 'revisar' },
+        { href: '/gastos?estado=sinpagar', texto: tr('Por pagar'), n: agenda.n, tono: agenda.vencidos ? 'rojo' : undefined, activo: vista === 'pagar' },
       ]} />}
 
       {/* Lo de cada pestaña: al cambiar de una a otra, solo se mueve esto (components/Pestanas.js). */}
       <div className="pestanas-panel">
         {/* Por revisar: las facturas subidas, reenviadas por correo o compartidas, hasta que se aprueban (lib/bandeja.js). */}
         {vista === 'revisar' && <>
-          {aviso === 'banco' && <p className="nota" role="status">Gasto guardado, pero el cargo del banco ya no casaba: emparéjalo desde Gastos › Cargos del banco sin gasto.</p>}
-          <p className="nota">Aquí llegan las facturas que subes o reenvías por correo. Fisquo las lee y esperan a que las revises: nada se guarda como gasto hasta que lo apruebas.</p>
+          {aviso === 'banco' && <p className="nota" role="status">{tr('Gasto guardado, pero el cargo del banco ya no casaba: emparéjalo desde Gastos › Cargos del banco sin gasto.')}</p>}
+          <p className="nota">{tr('Aquí llegan las facturas que subes o reenvías por correo. Fisquo las lee y esperan a que las revises: nada se guarda como gasto hasta que lo apruebas.')}</p>
           <Bandeja inicial={porRevisar.docs} resumenInicial={porRevisar.resumen} puedeGastar={puede(u, 'gastar')} />
-          {!porRevisar.docs.length && <Vacio icono="gasto" titulo="No tienes facturas por revisar">Sube arriba las facturas que te llegan (PDF, fotos o facturas electrónicas, todas a la vez) {correo.listo ? 'o reenvíalas a tu dirección de correo' : ''} y aparecerán aquí.</Vacio>}
+          {!porRevisar.docs.length && <Vacio icono="gasto" titulo={tr('No tienes facturas por revisar')}>{tr('Sube arriba las facturas que te llegan (PDF, fotos o facturas electrónicas, todas a la vez)')} {correo.listo ? tr('o reenvíalas a tu dirección de correo') : ''} {tr('y aparecerán aquí.')}</Vacio>}
           <BuzonCorreo inicial={{ listo: correo.listo, direccion: correo.direccion, remitentes: buzon?.remitentes || [], confirmacion: confirmacionVigente(buzon) }} admin={Boolean(u.admin)} puedeGastar={puede(u, 'gastar')} />
         </>}
 
@@ -166,18 +168,18 @@ export default async function Gastos({ searchParams }) {
         {vista === 'pagar' && <>
           {agenda.vencidos > 0 && (
             <Deslizable className="chips">
-              <Link href="/gastos?estado=sinpagar" className={estado !== 'vencidos' ? 'activo' : ''}>Todo lo pendiente · {agenda.n}</Link>
-              <Link href="/gastos?estado=vencidos" className={`${estado === 'vencidos' ? 'activo ' : ''}rojo`}>Vencidos · {agenda.vencidos}</Link>
+              <Link href="/gastos?estado=sinpagar" className={estado !== 'vencidos' ? 'activo' : ''}>{tr('Todo lo pendiente')} · {agenda.n}</Link>
+              <Link href="/gastos?estado=vencidos" className={`${estado === 'vencidos' ? 'activo ' : ''}rojo`}>{tr('Vencidos')} · {agenda.vencidos}</Link>
             </Deslizable>
           )}
-          {agenda.n > 0 && <p className="resumen-linea"><span>Por pagar <strong>{eur(agenda.total)}</strong></span>{agenda.totalVencido > 0 && <span className="prov-debe">Vencido <strong>{eur(agenda.totalVencido)}</strong></span>}</p>}
+          {agenda.n > 0 && <p className="resumen-linea"><span>{tr('Por pagar')} <strong>{eur(agenda.total)}</strong></span>{agenda.totalVencido > 0 && <span className="prov-debe">{tr('Vencido')} <strong>{eur(agenda.totalVencido)}</strong></span>}</p>}
           {agenda.grupos.filter((gr) => estado !== 'vencidos' || gr.id === 'vencido').map((gr) => (
             <section key={gr.id} className="grupo-mes">
-              <h2><span className={gr.id === 'vencido' ? 'rojo' : ''}>{gr.titulo}</span><small>{eur(gr.total)}</small></h2>
+              <h2><span className={gr.id === 'vencido' ? 'rojo' : ''}>{tr(gr.titulo)}</span><small>{eur(gr.total)}</small></h2>
               <ul className="grupo-lista">{gr.gastos.map((g) => <li key={g.id}>{fila(g, { agenda: true })}</li>)}</ul>
             </section>
           ))}
-          {!agenda.n && <Vacio tipo="resultados" icono="gasto" titulo="No tienes nada por pagar" accion={{ href: '/gastos', texto: 'Ver los gastos' }}>Los gastos que marques como «Aún no lo he pagado» salen aquí, ordenados por su vencimiento.</Vacio>}
+          {!agenda.n && <Vacio tipo="resultados" icono="gasto" titulo={tr('No tienes nada por pagar')} accion={{ href: '/gastos', texto: tr('Ver los gastos') }}>{tr('Los gastos que marques como «Aún no lo he pagado» salen aquí, ordenados por su vencimiento.')}</Vacio>}
         </>}
 
         {vista === 'gastos' && <>
@@ -187,20 +189,20 @@ export default async function Gastos({ searchParams }) {
           {/* Si hay facturas esperando, se dice aquí también, bien a la vista. */}
           {!movimiento && porRevisar.resumen.pendientes > 0 && (
             <Ir href="/gastos?ver=revisar" tipo="pestana-der" scroll={false} className="aviso-revisar">
-              <span><strong>{porRevisar.resumen.pendientes === 1 ? 'Tienes 1 factura por revisar' : `Tienes ${porRevisar.resumen.pendientes} facturas por revisar`}</strong>
-                <small>{porRevisar.resumen.cuadran ? (porRevisar.resumen.cuadran === 1 ? '1 cuadra y se puede aprobar con un toque' : `${porRevisar.resumen.cuadran} cuadran y se pueden aprobar de golpe`) : 'Ábrelas para revisarlas y guardarlas como gasto'}</small></span>
-              <span className="aviso-revisar-ir">Revisar ›</span>
+              <span><strong>{porRevisar.resumen.pendientes === 1 ? tr('Tienes 1 factura por revisar') : tr('Tienes {n} facturas por revisar', { n: porRevisar.resumen.pendientes })}</strong>
+                <small>{porRevisar.resumen.cuadran ? (porRevisar.resumen.cuadran === 1 ? tr('1 cuadra y se puede aprobar con un toque') : tr('{n} cuadran y se pueden aprobar de golpe', { n: porRevisar.resumen.cuadran })) : tr('Ábrelas para revisarlas y guardarlas como gasto')}</small></span>
+              <span className="aviso-revisar-ir">{tr('Revisar ›')}</span>
             </Ir>
           )}
 
           {(delAnio.length > 0 || hayProveedores) && (
             <p className="resumen-linea">
               {delAnio.length > 0 && <>
-              <span>Este año, sin IVA <strong>{eur(r2(delAnio.reduce((s, g) => s + g.base, 0)))}</strong></span>
-              <span>IVA que recuperas <strong>{eur(r2(delAnio.reduce((s, g) => s + importes(g).iva - (origenGasto(g) ? 0 : partirIva(g, importes(g).iva).noDeducible), 0)))}</strong></span>
+              <span>{tr('Este año, sin IVA')} <strong>{eur(r2(delAnio.reduce((s, g) => s + g.base, 0)))}</strong></span>
+              <span>{tr('IVA que recuperas')} <strong>{eur(r2(delAnio.reduce((s, g) => s + importes(g).iva - (origenGasto(g) ? 0 : partirIva(g, importes(g).iva).noDeducible), 0)))}</strong></span>
               </>}
-              {puede(u, DETALLE) && nBienes > 0 && <Link href="/contabilidad?ver=bienes" className="prov-enlace">Bienes de inversión ›</Link>}
-              {hayProveedores && <Link href="/gastos/proveedores" className="prov-enlace">Proveedores{debes > 0 ? ` · debes ${eur(r2(debes))}` : ''} ›</Link>}
+              {puede(u, DETALLE) && nBienes > 0 && <Link href="/contabilidad?ver=bienes" className="prov-enlace">{tr('Bienes de inversión ›')}</Link>}
+              {hayProveedores && <Link href="/gastos/proveedores" className="prov-enlace">{tr('Proveedores')}{debes > 0 ? ` · ${tr('debes {importe}', { importe: eur(r2(debes)) })}` : ''} ›</Link>}
             </p>
           )}
 
@@ -208,13 +210,13 @@ export default async function Gastos({ searchParams }) {
 
           {!sinFuncion(u.plan, 'revision') && puede(u, 'gastar') && !movimiento && revision.total > 0 && <RevisionGastos items={revision.items} total={revision.total} />}
 
-          {total > 5 && <Buscar action="/gastos" q={q} placeholder="Buscar gastos" etiqueta="Buscar por proveedor o concepto" />}
+          {total > 5 && <Buscar action="/gastos" q={q} placeholder={tr('Buscar gastos')} etiqueta={tr('Buscar por proveedor o concepto')} />}
 
           {grupos.map((gr) => {
             const [y, m] = gr.m.split('-');
             return (
               <section key={gr.m} className="grupo-mes">
-                <h2><span>{MESES[m - 1]} {y !== h.slice(0, 4) ? y : ''}</span><small>{eur(r2(totalMes[gr.m] || 0))} sin IVA</small></h2>
+                <h2><span>{tr(MESES[m - 1])} {y !== h.slice(0, 4) ? y : ''}</span><small>{eur(r2(totalMes[gr.m] || 0))} {tr('sin IVA')}</small></h2>
                 <ul className="grupo-lista">
                   {gr.gastos.map((g) => <li key={g.id}>{fila(g)}</li>)}
                 </ul>
@@ -222,26 +224,26 @@ export default async function Gastos({ searchParams }) {
             );
           })}
 
-          {pag.siguiente && <p className="grupo-pie"><Link href={url({ desde: pag.siguiente })} className="boton sec">Ver más</Link></p>}
+          {pag.siguiente && <p className="grupo-pie"><Link href={url({ desde: pag.siguiente })} className="boton sec">{tr('Ver más')}</Link></p>}
 
           {/* Sin ningún gasto, el estado vacío es la tarjeta plegada del formulario (escanear, subir o apuntar a mano, D8-23). */}
-          {!lista.length && (hay || buscado || desde) && <Vacio tipo="resultados" icono="gasto" titulo={buscado ? `Ningún gasto con «${q}»` : 'Ningún gasto con este filtro'} accion={{ href: buscado ? url({ q: null, desde: null }) : '/gastos', texto: buscado ? 'Quitar búsqueda' : 'Ver todos' }} />}
+          {!lista.length && (hay || buscado || desde) && <Vacio tipo="resultados" icono="gasto" titulo={buscado ? tr('Ningún gasto con «{q}»', { q }) : tr('Ningún gasto con este filtro')} accion={{ href: buscado ? url({ q: null, desde: null }) : '/gastos', texto: buscado ? tr('Quitar búsqueda') : tr('Ver todos') }} />}
 
           <details className="gastos-mas" open={hay}>
-            <summary className="grupo-t">Más herramientas</summary>
+            <summary className="grupo-t">{tr('Más herramientas')}</summary>
             <details className="tarjeta bloque" open={false}>
-              <summary><strong>Deducciones que no deberías olvidar</strong> <span className="nota">· {pendientes ? `${pendientes} sin ningún gasto este año` : 'todas cubiertas'}</span></summary>
+              <summary><strong>{tr('Deducciones que no deberías olvidar')}</strong> <span className="nota">· {pendientes ? tr('{n} sin ningún gasto este año', { n: pendientes }) : tr('todas cubiertas')}</span></summary>
               <div style={{ marginTop: 12 }}>
                 {LISTA.map((d) => {
                   const ok = cubierta(d, delAnio);
                   return (
                     <div key={d.t} className="deduccion">
                       <span className={ok ? 'ok' : 'no'}>{ok ? '✓' : '○'}</span>
-                      <div><strong>{d.t}</strong><p>{d.d}</p></div>
+                      <div><strong>{tr(d.t)}</strong><p>{tr(d.d)}</p></div>
                     </div>
                   );
                 })}
-                <p className="nota">Solo cuenta lo que tenga factura a tu nombre y esté ligado a tu actividad. Ante la duda, confírmalo con tu gestor.</p>
+                <p className="nota">{tr('Solo cuenta lo que tenga factura a tu nombre y esté ligado a tu actividad. Ante la duda, confírmalo con tu gestor.')}</p>
               </div>
             </details>
             {puede(u, 'gastar') && <>
@@ -255,4 +257,6 @@ export default async function Gastos({ searchParams }) {
   );
 }
 
-export const metadata = { title: 'Gastos' };
+export async function generateMetadata() {
+  return { title: (await textos())('Gastos') };
+}

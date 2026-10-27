@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { confirmar } from './Confirmar';
 import { volverA } from '@/lib/transicion';
+import { useT } from '@/components/Idioma';
 
 const llamar = async (accion, id) => {
   const r = await fetch('/api/bandeja', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accion, id }) });
@@ -14,12 +15,13 @@ const llamar = async (accion, id) => {
 
 // En la revisión de una factura de la bandeja: descartarla o volver a leerla.
 export function AccionesDocumento({ id, estado, remitente = '' }) {
+  const tr = useT();
   const router = useRouter();
   const [ocupado, setOcupado] = useState(false);
   const [error, setError] = useState('');
   const hacer = async (accion) => {
-    if (accion === 'deshacer' && !(await confirmar({ titulo: 'Deshacer', texto: 'Se borra el gasto que se guardó solo y la factura vuelve a «Por revisar».', aceptar: 'Deshacer', peligro: true }))) return;
-    if (accion === 'descartar' && !(await confirmar({ titulo: 'Descartar factura', texto: estado === 'aprobado' ? 'Se quita de «Por revisar»; el gasto ya guardado no se toca.' : 'Se quita de «Por revisar» y se borra su archivo.', aceptar: 'Descartar', peligro: true }))) return;
+    if (accion === 'deshacer' && !(await confirmar({ titulo: tr('Deshacer'), texto: tr('Se borra el gasto que se guardó solo y la factura vuelve a «Por revisar».'), aceptar: tr('Deshacer'), peligro: true }))) return;
+    if (accion === 'descartar' && !(await confirmar({ titulo: tr('Descartar factura'), texto: estado === 'aprobado' ? tr('Se quita de «Por revisar»; el gasto ya guardado no se toca.') : tr('Se quita de «Por revisar» y se borra su archivo.'), aceptar: tr('Descartar'), peligro: true }))) return;
     setOcupado(true); setError('');
     try {
       await llamar(accion, id);
@@ -31,17 +33,18 @@ export function AccionesDocumento({ id, estado, remitente = '' }) {
   };
   return (
     <div className="gasto-guardar">
-      {['error', 'revisar', 'cuarentena'].includes(estado) && <button type="button" className="boton sec" disabled={ocupado} onClick={() => hacer('releer')}>{estado === 'cuarentena' ? 'Leerla con IA' : 'Leer otra vez'}</button>}
-      {estado === 'aprobado' && <button type="button" className="boton sec" disabled={ocupado} onClick={() => hacer('deshacer')}>Deshacer: borrar el gasto y revisarla</button>}
-      {estado === 'cuarentena' && remitente && <button type="button" className="boton sec" disabled={ocupado} onClick={() => hacer('permitir')}>Permitir siempre a {remitente}</button>}
-      {estado !== 'leyendo' && <button type="button" className="boton sec" disabled={ocupado} onClick={() => hacer('descartar')}>{estado === 'aprobado' ? 'Quitar de la lista' : 'Descartar'}</button>}
-      {error && <p className="error" role="alert">{error}</p>}
+      {['error', 'revisar', 'cuarentena'].includes(estado) && <button type="button" className="boton sec" disabled={ocupado} onClick={() => hacer('releer')}>{estado === 'cuarentena' ? tr('Leerla con IA') : tr('Leer otra vez')}</button>}
+      {estado === 'aprobado' && <button type="button" className="boton sec" disabled={ocupado} onClick={() => hacer('deshacer')}>{tr('Deshacer: borrar el gasto y revisarla')}</button>}
+      {estado === 'cuarentena' && remitente && <button type="button" className="boton sec" disabled={ocupado} onClick={() => hacer('permitir')}>{tr('Permitir siempre a {correo}', { correo: remitente })}</button>}
+      {estado !== 'leyendo' && <button type="button" className="boton sec" disabled={ocupado} onClick={() => hacer('descartar')}>{estado === 'aprobado' ? tr('Quitar de la lista') : tr('Descartar')}</button>}
+      {error && <p className="error" role="alert">{tr(error)}</p>}
     </div>
   );
 }
 
 // Mientras se lee: se pregunta cada pocos segundos y, al terminar, se recarga con lo leído.
 export function EsperarLectura({ id }) {
+  const tr = useT();
   const router = useRouter();
   useEffect(() => {
     const t = setInterval(async () => {
@@ -54,11 +57,12 @@ export function EsperarLectura({ id }) {
     }, 3000);
     return () => clearInterval(t);
   }, [id, router]);
-  return <p className="nota" role="status">Leyendo la factura… En unos segundos aparecen aquí los datos para revisarlos.</p>;
+  return <p className="nota" role="status">{tr('Leyendo la factura… En unos segundos aparecen aquí los datos para revisarlos.')}</p>;
 }
 
 // En la página del proveedor: que sus facturas de la bandeja que cuadran se aprueben solas.
 export function ConfianzaProveedor({ clave, proveedor, proveedorNif, inicial = false }) {
+  const tr = useT();
   const [activo, setActivo] = useState(inicial);
   const [ocupado, setOcupado] = useState(false);
   const [error, setError] = useState('');
@@ -73,9 +77,9 @@ export function ConfianzaProveedor({ clave, proveedor, proveedorNif, inicial = f
   };
   return (
     <div className="bloque">
-      <label className="gasto-pendiente"><input type="checkbox" checked={activo} disabled={ocupado} onChange={(e) => cambiar(e.target.checked)} />Aprobar solas sus facturas que lleguen a «Por revisar» cuando cuadren</label>
-      <p className="nota">Solo las que cuadran (base, IVA y total coinciden, con fecha clara y sin posibles duplicados), con la clasificación de su último gasto. Se ven un mes en «Por revisar» por si quieres deshacerlo.</p>
-      {error && <p className="error" role="alert">{error}</p>}
+      <label className="gasto-pendiente"><input type="checkbox" checked={activo} disabled={ocupado} onChange={(e) => cambiar(e.target.checked)} />{tr('Aprobar solas sus facturas que lleguen a «Por revisar» cuando cuadren')}</label>
+      <p className="nota">{tr('Solo las que cuadran (base, IVA y total coinciden, con fecha clara y sin posibles duplicados), con la clasificación de su último gasto. Se ven un mes en «Por revisar» por si quieres deshacerlo.')}</p>
+      {error && <p className="error" role="alert">{tr(error)}</p>}
     </div>
   );
 }
