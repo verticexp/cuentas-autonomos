@@ -28,14 +28,13 @@ Falta probarlo en un iPhone real (la cámara del simulador no existe).
 
 ## Lo que tienes que hacer tú
 
-1. **Cuenta de Apple Developer de la empresa** (99 $/año) con su D-U-N-S. Al tenerla, apunta el **Team ID**
-   (10 caracteres, en developer.apple.com › Membership).
-2. **Vercel › Production**: variable `APPLE_TEAM_ID` con ese Team ID y vuelve a desplegar. Activa
-   `https://www.fisquo.com/.well-known/apple-app-site-association`, necesario para que Face ID (llaves de acceso)
-   funcione dentro de la app en una versión posterior.
-3. **Xcode** (`cd mobile && npm install && npx cap sync ios && npx cap open ios`): en *Signing & Capabilities*
-   elige el equipo de la empresa. Con *Automatically manage signing* crea solo el App ID `com.fisquo.app` con
-   Associated Domains.
+1. ~~Cuenta de Apple Developer~~ hecho (27-10-2026): cuenta **Individual** a nombre de Marc Ramirez Delgado,
+   Team ID `M8D85NH9U7`. Cuando Xiverno SL tenga D-U-N-S, pedir a Apple el paso a organización (se conservan la app
+   y el Team ID).
+2. ~~`APPLE_TEAM_ID` en Vercel~~ hecho (Production y Preview).
+3. **Xcode** (`cd mobile && npm install && npx cap sync ios && npx cap open ios`): el equipo ya está en el proyecto
+   (`DEVELOPMENT_TEAM`). Basta con añadir el Apple ID en *Xcode › Settings › Accounts*; *Automatically manage signing*
+   crea el App ID `com.fisquo.app` con Associated Domains.
 4. **App Store Connect** › Mis apps › «+»: nombre «Fisquo: facturas e impuestos», idioma principal español,
    bundle `com.fisquo.app`, SKU `fisquo-ios`.
 5. **Cuenta de demostración en producción** para el revisor (ver `revision.md`): con datos, plan Fundador (no caduca)
