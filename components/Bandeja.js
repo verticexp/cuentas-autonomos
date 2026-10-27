@@ -153,7 +153,7 @@ function Fila({ d, puedeGastar, ocupado, accion }) {
   const titulo = p?.proveedor || p?.concepto || d.correo?.asunto || d.nombre;
   const detalle = [
     p?.fecha && fechaCorta(p.fecha),
-    d.correo ? `de ${d.correo.deNombre || d.correo.de}` : d.origen === 'compartido' ? 'compartida desde el móvil' : null,
+    d.correo ? `de ${d.correo.deNombre || d.correo.de}` : d.origen === 'compartido' ? 'compartida desde el móvil' : d.origen === 'whatsapp' ? 'enviada por WhatsApp' : null,
     d.tipo === 'application/xml' ? 'factura electrónica' : null,
   ].filter(Boolean).join(' · ');
   const contenido = <>
