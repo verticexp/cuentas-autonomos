@@ -398,3 +398,29 @@ test('despachos: dos gestorías con clientes distintos no se ven entre sí, ni l
   assert.deepEqual(await entra(ga, 'cP'), ['propiaA', null]);
   assert.deepEqual(await entra(tb, 'cP'), ['cP', dB.id]);
 });
+
+// Face ID nativo de la app (app/api/dispositivo): la credencial solo se guarda como huella, sirve para entrar sin
+// sesión, deja de valer al quitarla o al recuperar la contraseña (borrarLlaves) y fuera de la app no existe.
+test('Face ID nativo: alta con sesión, entrada sin ella, retirada y solo en la app', async () => {
+  const APP = 'Mozilla/5.0 (iPhone) AppleWebKit/605.1.15 Mobile/15E148 FisquoApp/1';
+  const deApp = (ruta, b, method = 'POST') => { const r = req(ruta, b, method); r.headers.set('user-agent', APP); return r; };
+  const u = await usuario(); await sesion(u); cabeceras('/api/dispositivo', 'POST');
+  const ruta = await cargar('app/api/dispositivo/route.js');
+  assert.equal((await ruta.POST(req('/api/dispositivo', { accion: 'alta' }))).status, 404, 'en el navegador no existe');
+  const alta = await (await ruta.POST(deApp('/api/dispositivo', { accion: 'alta', nombre: 'iPhone de prueba' }))).json();
+  assert.ok(alta.valor && alta.id);
+  const guardado = await R.redis.hget('dispositivos:u', alta.id);
+  assert.notEqual(guardado.huella, alta.valor, 'no se guarda la credencial, solo su huella');
+  // Sin sesión: entra y abre una nueva.
+  estado.cookies.clear(); estado.headers = new Headers();
+  const r = await ruta.POST(deApp('/api/dispositivo', { accion: 'entrar', valor: alta.valor }));
+  assert.equal(r.status, 200);
+  assert.ok(estado.cookies.get('t') && estado.cookies.get('d'));
+  assert.equal((await ruta.POST(deApp('/api/dispositivo', { accion: 'entrar', valor: 'x'.repeat(43) }))).status, 401);
+  // Al recuperar la contraseña se retira: la app recibe «retirada» y borra la suya.
+  await A.borrarLlaves('u');
+  const fuera = await ruta.POST(deApp('/api/dispositivo', { accion: 'entrar', valor: alta.valor }));
+  assert.equal(fuera.status, 401);
+  assert.equal((await fuera.json()).retirada, true);
+  assert.equal(await R.redis.hlen('dispositivo-credencial'), 0);
+});

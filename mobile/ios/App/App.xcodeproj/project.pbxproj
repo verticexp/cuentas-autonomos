@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		A9120C9D6F3B4E1A8700D251 /* AccesoPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9120C9D6F3B4E1A8700D252 /* AccesoPlugin.swift */; };
+		B7E31F4A2C8D4F0B9A61E301 /* BiometriaPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7E31F4A2C8D4F0B9A61E302 /* BiometriaPlugin.swift */; };
 		EAA03D65538004A9F00E51EE /* FisquoViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67F007CA9B4BDDEA0BC526F5 /* FisquoViewController.swift */; };
 		BE30F154C5E8AE45790CD397 /* DelegadoWeb.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D1A8A91BB052D33AC515876 /* DelegadoWeb.swift */; };
 		40F5802323D50EBF093FB0EB /* VisorWeb.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6674664CB3F660366394C11D /* VisorWeb.swift */; };
@@ -26,6 +27,7 @@
 
 /* Begin PBXFileReference section */
 		A9120C9D6F3B4E1A8700D252 /* AccesoPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccesoPlugin.swift; sourceTree = "<group>"; };
+		B7E31F4A2C8D4F0B9A61E302 /* BiometriaPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometriaPlugin.swift; sourceTree = "<group>"; };
 		67F007CA9B4BDDEA0BC526F5 /* FisquoViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FisquoViewController.swift; sourceTree = "<group>"; };
 		3D1A8A91BB052D33AC515876 /* DelegadoWeb.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DelegadoWeb.swift; sourceTree = "<group>"; };
 		6674664CB3F660366394C11D /* VisorWeb.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisorWeb.swift; sourceTree = "<group>"; };
@@ -85,6 +87,7 @@
 				6674664CB3F660366394C11D /* VisorWeb.swift */,
 				3EF50F239EFD060987FE5B9F /* EscanerPlugin.swift */,
 				A9120C9D6F3B4E1A8700D252 /* AccesoPlugin.swift */,
+				B7E31F4A2C8D4F0B9A61E302 /* BiometriaPlugin.swift */,
 				81B271E7FC41A532CBFA31FF /* PrivacyInfo.xcprivacy */,
 				554C5F735A3F59354808D975 /* App.entitlements */,
 				504EC30B1FED79650016851F /* Main.storyboard */,
@@ -185,6 +188,7 @@
 				40F5802323D50EBF093FB0EB /* VisorWeb.swift in Sources */,
 				2948E4A40034FB9CC633D311 /* EscanerPlugin.swift in Sources */,
 				A9120C9D6F3B4E1A8700D251 /* AccesoPlugin.swift in Sources */,
+				B7E31F4A2C8D4F0B9A61E301 /* BiometriaPlugin.swift in Sources */,
 				9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
