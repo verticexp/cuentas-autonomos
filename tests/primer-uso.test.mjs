@@ -92,6 +92,6 @@ test('Contabilidad: sin asientos hay una explicación y las acciones que la llen
 
 test('Mi despacho: escribir a varios sin clientes explica cómo conseguirlos', () => {
   const s = leer('app/despacho/mensajes/varios/page.js');
-  assert.match(s, /!filas\.length \? <Vacio icono="usuarios" titulo="Aún no tienes clientes a quienes escribir"/);
-  assert.match(s, /href: '\/despacho\/ajustes', texto: 'Invitar a un cliente'/);
+  assert.match(s, /!filas\.length \? <Vacio icono="usuarios" titulo=(?:"Aún no tienes clientes a quienes escribir"|\{tr\('Aún no tienes clientes a quienes escribir'\)\})/);
+  assert.match(s, /href: '\/despacho\/ajustes', texto: (?:'Invitar a un cliente'|tr\('Invitar a un cliente'\))/);
 });
