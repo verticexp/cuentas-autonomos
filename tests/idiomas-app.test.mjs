@@ -85,3 +85,9 @@ test('las fechas en texto de lib/formato.js salen en el idioma, también dentro 
   assert.equal(en('3 de marzo de 2026'), '3 March 2026');
   assert.equal(en('Plazo en 20 de octubre'), 'Plazo en 20 de octubre');
 });
+
+test('conHuecos mete cada elemento en su hueco y deja el resto del texto', async () => {
+  const { conHuecos } = await import('../lib/huecos.js');
+  const partes = conHuecos('Cobrado {a} de {b}', { a: 'X', b: { negrita: 'Y' } });
+  assert.deepEqual(partes.map((p) => p.props.children), ['Cobrado ', 'X', ' de ', { negrita: 'Y' }, '']);
+});
