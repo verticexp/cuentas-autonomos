@@ -46,13 +46,14 @@ test('Apple: la hoja nativa compara el SHA-256 del nonce y acepta email_verified
 
 test('el client_secret de Apple es un JWT ES256 válido para 5 minutos', () => {
   const { privateKey: k, publicKey: pub } = generateKeyPairSync('ec', { namedCurve: 'P-256' });
+  const previas = Object.fromEntries(['APPLE_TEAM_ID', 'APPLE_KEY_ID', 'APPLE_PRIVATE_KEY'].map((x) => [x, process.env[x]]));
   Object.assign(process.env, { APPLE_TEAM_ID: 'M8D85NH9U7', APPLE_KEY_ID: 'KEY123', APPLE_PRIVATE_KEY: k.export({ format: 'pem', type: 'pkcs8' }).replace(/\n/g, '\\n') });
   const t = secretoApple('com.fisquo.web', ahora);
   const [h, c, f] = t.split('.');
   assert.deepEqual(JSON.parse(Buffer.from(h, 'base64url')), { alg: 'ES256', kid: 'KEY123' });
   assert.deepEqual(JSON.parse(Buffer.from(c, 'base64url')), { iss: 'M8D85NH9U7', iat: ahora, exp: ahora + 300, aud: 'https://appleid.apple.com', sub: 'com.fisquo.web' });
   assert.ok(verify('sha256', Buffer.from(`${h}.${c}`), { key: pub, dsaEncoding: 'ieee-p1363' }, Buffer.from(f, 'base64url')));
-  for (const k of ['APPLE_TEAM_ID', 'APPLE_KEY_ID', 'APPLE_PRIVATE_KEY']) delete process.env[k];
+  for (const [x, v] of Object.entries(previas)) { if (v === undefined) delete process.env[x]; else process.env[x] = v; }
 });
 
 test('la URL de Apple pide form_post y la de Google elige cuenta; sin variables no hay botones', () => {
@@ -62,5 +63,10 @@ test('la URL de Apple pide form_post y la de Google elige cuenta; sin variables 
   const g = new URL(urlAutorizar('google', { state: 's', nonce: 'n', vuelta: 'https://x' }));
   assert.equal(g.searchParams.get('prompt'), 'select_account');
   assert.equal(g.searchParams.get('state'), 's');
-  assert.deepEqual(socialListo(), { google: false, apple: false });
+  // En el build de Vercel están las claves de verdad: se quitan solo para esta comprobación.
+  const claves = ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'APPLE_TEAM_ID', 'APPLE_SERVICES_ID', 'APPLE_KEY_ID', 'APPLE_PRIVATE_KEY'];
+  const antes = Object.fromEntries(claves.map((k) => [k, process.env[k]]));
+  for (const k of claves) delete process.env[k];
+  try { assert.deepEqual(socialListo(), { google: false, apple: false }); }
+  finally { for (const k of claves) if (antes[k] !== undefined) process.env[k] = antes[k]; }
 });
