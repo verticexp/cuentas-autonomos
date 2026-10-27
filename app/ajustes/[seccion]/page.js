@@ -118,7 +118,7 @@ export default async function Seccion({ params, searchParams }) {
       {seccion === 'apariencia' && <Apariencia inicial={(await cookies()).get('tema')?.value} />}
       {seccion === 'ayuda' && <Ayuda contacto={CONTACTO} app={app} />}
       {seccion === 'envio' && <EmailEnvio inicial={u.envio || {}} empresa={u.emisor || {}} />}
-      {seccion === 'seguridad' && <FaceId lista={llaves} bloqueo={Boolean(u.bloqueoPantalla)} app={app} />}
+      {seccion === 'seguridad' && <FaceId lista={llaves} bloqueo={Boolean(u.bloqueoPantalla)} />}
       {seccion === 'seguridad' && u.pass && <DosPasos activa={u.dosPasos?.secreto ? { desde: u.dosPasos.desde ? diaDe(u.dosPasos.desde) : null, quedan: (u.dosPasos.recuperacion || []).length } : null} />}
       {seccion === 'plan' && <ElegirPlan plan={u.plan} tipoEmpresa={fiscalDe(u).tipo === 'sociedad' ? 'pym' : 'aut'} uso={usoPlan} admin={u.rol === 'admin'} app={app} />}
       {seccion === 'recomienda' && await (async () => {

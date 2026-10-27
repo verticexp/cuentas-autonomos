@@ -3,11 +3,10 @@
 import { useEffect, useState } from 'react';
 import { MARCA, autofillDisponible, entrarConFaceId } from '@/lib/faceid';
 import { nombreBiometria } from '@/lib/biometria';
-import { esApp } from '@/lib/app';
 import '@/app/login.css';
 
 // «Entrar con Face ID» (o Touch ID, huella, Windows Hello: lib/biometria.js), y la llave en el autorrelleno del email.
-// En la app de iOS no sale: allí las llaves de acceso necesitan el dominio asociado de la cuenta de Apple Developer.
+// En la app de iOS funciona con el dominio asociado (webcredentials en App.entitlements y apple-app-site-association).
 // alEntrar(r): qué hacer al entrar. auto: en el dispositivo donde ya se usó, se lanza sola al abrir (como hasta ahora).
 export default function EntrarLlave({ alEntrar = () => { location.href = '/'; }, auto = false }) {
   const [ver, setVer] = useState(false);
@@ -21,7 +20,7 @@ export default function EntrarLlave({ alEntrar = () => { location.href = '/'; },
   }
 
   useEffect(() => {
-    if (!window.PublicKeyCredential || esApp(navigator.userAgent)) return;
+    if (!window.PublicKeyCredential) return;
     setNombre(nombreBiometria(navigator.userAgent));
     setVer(true);
     if (auto && localStorage.getItem(MARCA) && !location.search.includes('salir')) entrar();
