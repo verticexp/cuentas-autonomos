@@ -16,7 +16,7 @@ test('Tesorería: el vacío precede al saldo y los informes requieren movimiento
 test('Cartera: las cifras solo aparecen con efectos y la explicación está plegada', () => {
   const s = leer('app/cartera/page.js');
   assert.match(s, /d\.efectos\.length > 0 && <div className="teso-cifras">/);
-  assert.match(s, /<details className="como-se-calcula"><summary>Cómo se calcula<\/summary>[\s\S]*Forma de cobro:/);
+  assert.match(s, /<details className="como-se-calcula"><summary>(\{tr\('Cómo se calcula'\)\}|Cómo se calcula)<\/summary>[\s\S]*Forma de cobro:/);
 });
 
 test('Análisis: conserva navegación si existen datos en otros años', () => {
