@@ -8,6 +8,7 @@ import { actividadesDe, nombresActividad } from '@/lib/empresa';
 import { gastosQueVe } from '@/lib/nominas';
 import { eur, fechaCorta } from '@/lib/formato';
 import Volver from '@/components/Volver';
+import { textos } from '@/lib/idiomaServidor';
 
 import '@/app/mk.css';
 import { leerRango } from '@/lib/indices';
@@ -16,6 +17,7 @@ export const dynamic = 'force-dynamic';
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
 export default async function Mes({ params }) {
+  const tr = await textos();
   const u = await requerir('resumen');
   const ACTIVIDADES = nombresActividad(actividadesDe(u));
   const { mes } = await params;
@@ -39,44 +41,44 @@ export default async function Mes({ params }) {
 
   return (
     <main className="pagina mk-look">
-      <Volver href={`/?anio=${y}`}>Resumen</Volver>
+      <Volver href={`/?anio=${y}`}>{tr('Resumen')}</Volver>
       <header className="cabecera">
-        <h1 className="titulo">{MESES[m - 1]} {y}</h1>
-        <nav className="anios" aria-label="Mes">
-          <Ir tipo="cifras" href={`/mes/${otro(-1)}`} aria-label="Mes anterior">‹</Ir>
-          <Ir tipo="cifras" href={`/mes/${otro(1)}`} aria-label="Mes siguiente">›</Ir>
+        <h1 className="titulo">{tr(MESES[m - 1])} {y}</h1>
+        <nav className="anios" aria-label={tr('Mes')}>
+          <Ir tipo="cifras" href={`/mes/${otro(-1)}`} aria-label={tr('Mes anterior')}>‹</Ir>
+          <Ir tipo="cifras" href={`/mes/${otro(1)}`} aria-label={tr('Mes siguiente')}>›</Ir>
         </nav>
       </header>
 
       <div className="tarjeta bloque">
         <div className="dos-valores">
-          <div><small>Facturado</small><p className="grande">{eur(facturado)}</p></div>
-          <div><small>Gastos</small><p className="grande">{eur(gastado)}</p></div>
+          <div><small>{tr('Facturado')}</small><p className="grande">{eur(facturado)}</p></div>
+          <div><small>{tr('Gastos')}</small><p className="grande">{eur(gastado)}</p></div>
         </div>
         <dl className="mes-detalle">
           {Object.entries(ACTIVIDADES).map(([a, n]) => <Fragment key={a}><dt>{n}</dt><dd>{eur(suma(F.filter((f) => f.actividad === a), 'base'))}</dd></Fragment>)}
-          <dt>IVA cobrado</dt><dd>{eur(suma(F, 'iva'))}</dd>
-          <dt>IVA de gastos</dt><dd>−{eur(suma(G, 'iva'))}</dd>
-          <dt>Retenciones IRPF</dt><dd>{eur(suma(F, 'irpf'))}</dd>
-          {pendiente > 0 && <><dt>Pendiente de cobro</dt><dd>{eur(pendiente)}</dd></>}
-          <dt><strong>Rendimiento</strong></dt><dd><strong>{eur(facturado - gastado)}</strong></dd>
+          <dt>{tr('IVA cobrado')}</dt><dd>{eur(suma(F, 'iva'))}</dd>
+          <dt>{tr('IVA de gastos')}</dt><dd>−{eur(suma(G, 'iva'))}</dd>
+          <dt>{tr('Retenciones IRPF')}</dt><dd>{eur(suma(F, 'irpf'))}</dd>
+          {pendiente > 0 && <><dt>{tr('Pendiente de cobro')}</dt><dd>{eur(pendiente)}</dd></>}
+          <dt><strong>{tr('Rendimiento')}</strong></dt><dd><strong>{eur(facturado - gastado)}</strong></dd>
         </dl>
       </div>
 
       {u.controlat && (
         <div className="tarjeta bloque">
-          <h3>Nómina enviada a Controla'T</h3>
+          <h3>{tr("Nómina enviada a Controla'T")}</h3>
           <dl className="mes-detalle" style={{ marginTop: 0, paddingTop: 0, borderTop: 0 }}>
-            <dt>Facturado (sin IVA)</dt><dd>{eur(facturado)}</dd>
-            <dt>Gastos puntuales</dt><dd>−{eur(puntuales)}</dd>
-            <dt>IRPF: 20 % de {eur(beneficio)} de beneficio{cuotas ? ` (cuota de ${eur(cuotas)} incluida como gasto)` : ''}</dt><dd>−{eur(irpf)}</dd>
-            <dt><strong>Nómina</strong></dt><dd><strong>{nomina > 0 ? eur(nomina) : 'no se envía'}</strong></dd>
+            <dt>{tr('Facturado (sin IVA)')}</dt><dd>{eur(facturado)}</dd>
+            <dt>{tr('Gastos puntuales')}</dt><dd>−{eur(puntuales)}</dd>
+            <dt>{tr('IRPF: 20 % de {importe} de beneficio', { importe: eur(beneficio) })}{cuotas ? ` ${tr('(cuota de {importe} incluida como gasto)', { importe: eur(cuotas) })}` : ''}</dt><dd>−{eur(irpf)}</dd>
+            <dt><strong>{tr('Nómina')}</strong></dt><dd><strong>{nomina > 0 ? eur(nomina) : tr('no se envía')}</strong></dd>
           </dl>
         </div>
       )}
 
-      <p className="rotulo">{F.length ? `${F.length} ${F.length === 1 ? 'factura' : 'facturas'}` : 'Facturas del mes'}</p>
-      {!F.length && <Vacio compacto icono="factura" titulo="Sin facturas este mes" />}
+      <p className="rotulo">{F.length ? (F.length === 1 ? tr('{n} factura', { n: F.length }) : tr('{n} facturas', { n: F.length })) : tr('Facturas del mes')}</p>
+      {!F.length && <Vacio compacto icono="factura" titulo={tr('Sin facturas este mes')} />}
       {F.length > 0 && (
         <ul className="grupo-lista bloque">
           {F.map((f) => (
@@ -85,7 +87,7 @@ export default async function Mes({ params }) {
                 <span className="num">{numeroFactura(f)}</span>
                 <span className="txt">
                   <strong>{f.cliente.nombre}</strong>
-                  <small><span className="num-movil">{numeroFactura(f)} · </span>{fechaCorta(f.fecha)} · {ACTIVIDADES[f.actividad]}{f.cobrada ? '' : ' · Pendiente'}</small>
+                  <small><span className="num-movil">{numeroFactura(f)} · </span>{fechaCorta(f.fecha)} · {ACTIVIDADES[f.actividad]}{f.cobrada ? '' : ` · ${tr('Pendiente')}`}</small>
                 </span>
                 <span className={`imp ${f.cobrada ? '' : 'pend'}`}>{eur(importes(f).total)}</span>
               </Ir>
@@ -94,15 +96,15 @@ export default async function Mes({ params }) {
         </ul>
       )}
 
-      <p className="rotulo">{G.length ? `${G.length} ${G.length === 1 ? 'gasto' : 'gastos'}` : 'Gastos del mes'}</p>
-      {!G.length && <Vacio compacto icono="gasto" titulo="Sin gastos este mes" />}
+      <p className="rotulo">{G.length ? (G.length === 1 ? tr('{n} gasto', { n: G.length }) : tr('{n} gastos', { n: G.length })) : tr('Gastos del mes')}</p>
+      {!G.length && <Vacio compacto icono="gasto" titulo={tr('Sin gastos este mes')} />}
       {G.length > 0 && (
         <ul className="grupo-lista bloque">
           {G.map((g) => (
             <li key={g.id} className="fila">
               <span className="txt">
                 <strong>{g.concepto}</strong>
-                <small>{fechaCorta(g.fecha)} · {ACTIVIDADES[g.actividad]} · IVA {eur(importes(g).iva)}</small>
+                <small>{fechaCorta(g.fecha)} · {ACTIVIDADES[g.actividad]} · {tr('IVA {importe}', { importe: eur(importes(g).iva) })}</small>
               </span>
               <span className="imp">{eur(g.base)}</span>
             </li>
@@ -114,7 +116,8 @@ export default async function Mes({ params }) {
 }
 
 export async function generateMetadata({ params }) {
+  const tr = await textos();
   const { mes } = await params;
-  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) return { title: 'Resumen mensual' };
-  return { title: `${MESES[Number(mes.slice(5)) - 1]} ${mes.slice(0, 4)}` };
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) return { title: tr('Resumen mensual') };
+  return { title: `${tr(MESES[Number(mes.slice(5)) - 1])} ${mes.slice(0, 4)}` };
 }

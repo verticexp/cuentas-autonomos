@@ -1,14 +1,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useT } from '@/components/Idioma';
 
 // Pasos para presentar; el de la Sede nombra el modelo si solo se presenta uno. hacienda: la Hacienda foral (Navarra y País
 // Vasco), donde se presentan en su lugar.
-const pasos = (nums, hacienda) => [
-  'Revisa que las facturas y gastos del trimestre estén todos en Fisquo.',
-  'Comprueba estos importes con tu gestor.',
-  hacienda ? `Presenta ${nums.length === 1 ? `el modelo ${nums[0]}` : 'los modelos'} en la sede de la ${hacienda}.` : nums.includes('420') ? 'Presenta el 420 en la Sede de la Agencia Tributaria Canaria y los demás modelos en la AEAT.' : nums.length === 1 ? `Presenta el modelo ${nums[0]} en la Sede de la AEAT.` : 'Presenta los modelos en la Sede de la AEAT.',
-  'Vuelve aquí y marca el trimestre como presentado.',
+const pasos = (nums, hacienda, tr) => [
+  tr('Revisa que las facturas y gastos del trimestre estén todos en Fisquo.'),
+  tr('Comprueba estos importes con tu gestor.'),
+  hacienda ? (nums.length === 1 ? tr('Presenta el modelo {n} en la sede de la {hacienda}.', { n: nums[0], hacienda: tr(hacienda) }) : tr('Presenta los modelos en la sede de la {hacienda}.', { hacienda: tr(hacienda) })) : nums.includes('420') ? tr('Presenta el 420 en la Sede de la Agencia Tributaria Canaria y los demás modelos en la AEAT.') : nums.length === 1 ? tr('Presenta el modelo {n} en la Sede de la AEAT.', { n: nums[0] }) : tr('Presenta los modelos en la Sede de la AEAT.'),
+  tr('Vuelve aquí y marca el trimestre como presentado.'),
 ];
 
 // Tarjeta de arriba de Impuestos: el trimestre que toca presentar, con sus importes, una lista de pasos
@@ -17,6 +18,7 @@ const pasos = (nums, hacienda) => [
 // `plazo`, solo si vence otro día (el 111 y el 115 del 4T); `aeat`, la página de la Sede si la hay. domiciliar: hasta cuándo
 // se puede domiciliar el pago (lib/domiciliacion.js), en texto.
 export default function PresentarAhora({ t, anio, aviso, importes, texto, hacienda, domiciliar = '' }) {
+  const tr = useT();
   const clave = `presentar:${anio}:${t}`;
   const [hechos, setHechos] = useState([]);
   const [msg, setMsg] = useState('');
@@ -29,27 +31,27 @@ export default function PresentarAhora({ t, anio, aviso, importes, texto, hacien
   const compartir = async () => {
     try {
       if (navigator.share) await navigator.share({ text: texto });
-      else { await navigator.clipboard.writeText(texto); setMsg('Resumen copiado'); setTimeout(() => setMsg(''), 2500); }
-    } catch (e) { if (e?.name !== 'AbortError') setMsg('No se ha podido copiar'); }
+      else { await navigator.clipboard.writeText(texto); setMsg(tr('Resumen copiado')); setTimeout(() => setMsg(''), 2500); }
+    } catch (e) { if (e?.name !== 'AbortError') setMsg(tr('No se ha podido copiar')); }
   };
   return (
     <section className="bloque presentar-ahora" aria-labelledby="presentar-t">
-      <h2 className="grupo-t" id="presentar-t">Toca presentar el {t}T {anio}</h2>
+      <h2 className="grupo-t" id="presentar-t">{tr('Toca presentar el {t}T {anio}', { t, anio })}</h2>
       <div className="tarjeta">
-        <p className="presentar-plazo">{aviso}</p>
-        {domiciliar && <p className="nota">{domiciliar}</p>}
+        <p className="presentar-plazo">{tr(aviso)}</p>
+        {domiciliar && <p className="nota">{tr(domiciliar)}</p>}
         <ul className="presentar-importes">
-          {importes.map((m) => <li key={m.num}><a href={m.href}><span>{m.modelo}{m.plazo && <small> · hasta el {m.plazo}</small>}</span><strong>{m.texto}</strong></a></li>)}
+          {importes.map((m) => <li key={m.num}><a href={m.href}><span>{tr(m.modelo)}{m.plazo && <small> · {tr('hasta el {plazo}', { plazo: tr(m.plazo) })}</small>}</span><strong>{tr(m.texto)}</strong></a></li>)}
         </ul>
         <ol className="presentar-pasos">
-          {pasos(importes.map((m) => m.num), hacienda).map((p, i) => (
+          {pasos(importes.map((m) => m.num), hacienda, tr).map((p, i) => (
             <li key={i}><label><input type="checkbox" checked={hechos.includes(i)} onChange={() => marcar(i)} /><span>{p}</span></label></li>
           ))}
         </ol>
         <div className="presentar-acc">
-          <button type="button" className="boton" onClick={compartir}>Compartir resumen</button>
+          <button type="button" className="boton" onClick={compartir}>{tr('Compartir resumen')}</button>
           {importes.filter((m) => m.aeat).map((m) => (
-            <a key={m.num} className="boton secundario" href={m.aeat} target="_blank" rel="noopener noreferrer">Presentar el {m.num} en la {m.sede || 'AEAT'}</a>
+            <a key={m.num} className="boton secundario" href={m.aeat} target="_blank" rel="noopener noreferrer">{tr('Presentar el {n} en la {sede}', { n: m.num, sede: tr(m.sede || 'AEAT') })}</a>
           ))}
         </div>
         <p className="nota" role="status" aria-live="polite">{msg}</p>

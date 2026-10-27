@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
+import { useT } from '@/components/Idioma';
 
 // «¿Ya lo has presentado?» de un modelo cuyo plazo pasó sin marcarlo (lib/tesoreria.js): lo marca como presentado (el 130,
 // también como pagado por su importe) y la tesorería deja de contarlo. Sin el permiso «Contabilidad», solo lo dice.
@@ -19,10 +20,11 @@ const CUERPO = {
 };
 
 export default function YaPresentado({ pregunta, importe, puede }) {
+  const tr = useT();
   const router = useRouter();
   const [error, setError] = useState('');
   const [ocupado, empezar] = useTransition();
-  if (!puede) return <p className="nota">Lo marca quien tiene el permiso «Contabilidad».</p>;
+  if (!puede) return <p className="nota">{tr('Lo marca quien tiene el permiso «Contabilidad».')}</p>;
   const marcar = () => empezar(async () => {
     setError('');
     try {
@@ -32,8 +34,8 @@ export default function YaPresentado({ pregunta, importe, puede }) {
   });
   return (
     <div className="fila-act ya-presentado">
-      <button type="button" className="boton sec" onClick={marcar} disabled={ocupado}>{ocupado ? 'Guardando…' : 'Sí, ya está presentado'}</button>
-      {error && <span className="error" role="alert">{error}</span>}
+      <button type="button" className="boton sec" onClick={marcar} disabled={ocupado}>{ocupado ? tr('Guardando…') : tr('Sí, ya está presentado')}</button>
+      {error && <span className="error" role="alert">{tr(error)}</span>}
     </div>
   );
 }
