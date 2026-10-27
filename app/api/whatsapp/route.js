@@ -18,10 +18,15 @@ export async function GET(req) {
 export async function POST(req) {
   if (!redis || !whatsappListo()) return new Response('No configurado', { status: 503 });
   const cuerpo = await req.text();
-  if (!firmaValida(cuerpo, req.headers.get('x-hub-signature-256'), process.env.WHATSAPP_APP_SECRET)) return new Response('Firma no válida', { status: 401 });
+  if (!firmaValida(cuerpo, req.headers.get('x-hub-signature-256'), process.env.WHATSAPP_APP_SECRET)) {
+    console.warn('[whatsapp] aviso con firma no válida (¿WHATSAPP_APP_SECRET es el de esta app?)');
+    return new Response('Firma no válida', { status: 401 });
+  }
   let aviso;
   try { aviso = JSON.parse(cuerpo); } catch { return new Response('JSON no válido', { status: 400 }); }
   const mensajes = mensajesDe(aviso);
+  // Sin datos personales: solo cuántos llegan y el final del teléfono, para saber si Meta entrega y a quién.
+  if (mensajes.length) console.info(`[whatsapp] ${mensajes.length} mensaje(s) de …${mensajes.map((m) => m.de.slice(-3)).join(', …')}`);
   after(async () => {
     for (const m of mensajes) {
       try {
