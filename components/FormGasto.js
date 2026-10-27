@@ -1,5 +1,7 @@
 'use client';
 
+import { mostrarHecho } from '@/lib/hecho';
+
 import Termino from '@/components/Termino';
 
 import { confirmar as confirmarAccion } from './Confirmar';
@@ -217,6 +219,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
         if (r.status === 423 && d.bloqueada) window.location.replace(`/bloqueo?a=${encodeURIComponent(window.location.pathname + window.location.search)}`);
         if (r.status === 409 && Array.isArray(d.duplicados) && d.duplicados.length) { setAvisoDuplicados({ datos, duplicados: d.duplicados }); return; }
         if (!r.ok) throw new Error(d.error || 'No se ha podido aprobar la factura. Revisa la conexión e inténtalo otra vez.');
+        mostrarHecho('Gasto guardado');
         await sinGuardar.guardado();
         // A la siguiente por revisar en lugar de esta, o de vuelta a la lista: así «atrás» no pasa por las ya aprobadas.
         // Con el aviso si el banco no ha casado.
@@ -250,6 +253,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
           fallo = `Gasto guardado sin el justificante: ${fallo}. Reintenta guardar el archivo sin volver a crear el gasto.`;
         }
       }
+      if (!fallo) mostrarHecho('Gasto guardado');
       // Guardado: se vuelve a la lista o el formulario se vacía para el siguiente.
       await sinGuardar.soltar();
       setAvisoDuplicados(null);

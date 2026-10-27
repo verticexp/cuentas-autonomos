@@ -1,5 +1,7 @@
 'use client';
 
+import { mostrarHecho } from '@/lib/hecho';
+
 import Termino from '@/components/Termino';
 import { confirmar } from '@/components/Confirmar';
 import useCambiosSinGuardar from '@/components/useCambiosSinGuardar';
@@ -244,6 +246,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
         }
         throw new Error(d.error || 'No se ha podido guardar la factura. Revisa la conexión e inténtalo otra vez.');
       }
+      mostrarHecho(nueva ? 'Factura creada' : 'Factura guardada');
       await sinGuardar.guardado();
       if (nueva) navegar(router, `/facturas/${d.factura.id}`, 'fundido', undefined, true);
       router.refresh();

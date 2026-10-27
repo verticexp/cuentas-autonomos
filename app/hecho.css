@@ -1,0 +1,20 @@
+.hecho { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; pointer-events: none; padding: 20px; }
+.hecho-panel { position: relative; width: 180px; min-height: 180px; max-width: 100%; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 24px 16px; border: 1px solid var(--line); border-radius: 24px; background: var(--surface-2); background: color-mix(in srgb, var(--surface-2) 88%, transparent); color: var(--ink); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); box-shadow: 0 12px 40px rgba(0, 0, 0, .14); pointer-events: auto; animation: hecho-entrada 300ms cubic-bezier(.2, .8, .2, 1) both; }
+.hecho-cerrar { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; border-radius: inherit; padding: 0; margin: 0; background: transparent; cursor: pointer; }
+.hecho-marca, .hecho-texto, .hecho-detalle { pointer-events: none; }
+.hecho-marca { width: 72px; height: 72px; flex-shrink: 0; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.hecho-circulo, .hecho-trazo { stroke-dasharray: 1; stroke-dashoffset: 0; animation: hecho-dibujo 350ms ease-out both; }
+.hecho-trazo { animation-duration: 250ms; animation-delay: 350ms; }
+.hecho-texto { margin: 0; font-size: 16px; font-weight: 600; line-height: 1.3; text-align: center; overflow-wrap: anywhere; }
+.hecho-detalle { margin: 0; font-size: 13px; line-height: 1.4; color: var(--muted); text-align: center; overflow-wrap: anywhere; }
+.hecho-panel.hecho-saliendo { animation: hecho-salida 180ms ease-out both; }
+@keyframes hecho-entrada { from { opacity: 0; transform: scale(.9); } to { opacity: 1; transform: scale(1); } }
+@keyframes hecho-dibujo { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes hecho-salida { to { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .hecho-panel, .hecho-circulo, .hecho-trazo { animation: none; transform: none; stroke-dashoffset: 0; }
+  .hecho-panel.hecho-saliendo { animation: none; opacity: 0; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .hecho-panel { background: var(--surface-2); -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
