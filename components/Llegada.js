@@ -19,7 +19,9 @@ export default function Llegada() {
   // Llegó después de que la transición se soltara (lib/transicion.js): entra con un fundido corto en vez de aparecer de golpe.
   // Antes de pintar, para que no se vea un instante sin el fundido.
   useLayoutEffect(() => {
-    quitarEspera(); // la pantalla de espera (lib/transicion.js) deja ver la que ha llegado
+    // La pantalla de espera (lib/transicion.js) deja ver la que ha llegado; si lo que ha llegado es el esqueleto de carga, se
+    // queda encima (tiene la forma de lo que viene) hasta que llega lo de verdad (abajo, al irse .cargando).
+    if (!document.querySelector('.cargando')) quitarEspera();
     if (!window.__vtTarde) return undefined;
     window.__vtTarde = false;
     const html = document.documentElement;
@@ -33,6 +35,7 @@ export default function Llegada() {
     const mo = new MutationObserver(() => {
       if (document.querySelector('.cargando')) return;
       mo.disconnect();
+      quitarEspera(); // la espera con forma que tapaba el esqueleto (lib/transicion.js): ya está lo de verdad
       // La transición aún espera: entra la pantalla terminada. Ya entró el esqueleto: el contenido aparece con un fundido.
       if (window.__vtLista && !window.__vtLista.suelta) { window.__vtLista(); return; }
       const html = document.documentElement;

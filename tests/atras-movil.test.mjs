@@ -100,7 +100,8 @@ test('barra de título compacta: en todas las pantallas del móvil, sin tapar lo
 test('transiciones como en iOS: sin esperar al servidor, pestañas sin deslizar, modales que bajan al salir', async () => {
   const vt = await leer('lib/transicion.js');
   // En el móvil la pantalla nueva entra a los 100 ms como mucho: si no ha llegado, con una pantalla de espera.
-  assert.match(vt, /if \(aqui\(\) === desde\) ponerEspera\(tipo\);\s*soltar\(\);\s*\}, 100\);/);
+  // Sin llegar, o con el esqueleto de carga de Next en su sitio (que no tiene la forma de lo que viene).
+  assert.match(vt, /if \(aqui\(\) === desde \|\| document\.querySelector\('\.cargando'\)\) ponerEspera\(tipo, destino, desde\);\s*soltar\(\);\s*\}, 100\);/);
   assert.match(await leer('components/Llegada.js'), /quitarEspera\(\)/);
   // «Atrás» deshace como se entró: el formulario que subió baja; la hoja se cierra.
   assert.match(vt, /const SALIDA = \{ subir: 'cerrar', hoja: 'bajar' \};/);
@@ -121,24 +122,72 @@ test('la barra de título compacta no cambia estado en un efecto de diseño (err
   assert.doesNotMatch(await leer('components/TituloCompacto.js'), /useLayoutEffect\s*\(|import \{[^}]*useLayoutEffect/);
 });
 
-test('la hoja de Ajustes se cierra arrastrándola hacia abajo, entera, y deja el fondo como estaba', async () => {
-  assert.match(await leer('app/ajustes/layout.js'), /<ArrastrarAjustes \/>/);
+test('la hoja de Ajustes se cierra arrastrándola hacia abajo, entera, con la pantalla de detrás', async () => {
+  const layout = await leer('app/ajustes/layout.js');
+  assert.match(layout, /<ArrastrarAjustes \/>/);
+  assert.match(layout, /<HojaAjustes \/>/);
   const arrastre = await leer('components/ArrastrarAjustes.js');
-  // Desde cualquier pantalla de dentro se vuelve a la de antes de abrir Ajustes, como el «OK».
-  assert.match(arrastre, /salirDe\(router, '\/ajustes', '\/mas', 'bajar'\)/);
-  assert.match(await leer('components/CerrarAjustes.js'), /salirDe\(router, '\/ajustes', '\/mas', 'bajar'\)/);
-  // El fondo oscurecido de detrás de la hoja no se queda en la pantalla a la que se vuelve.
-  assert.match(arrastre, /return \(\) => \{\s*document\.body\.style\.removeProperty\('background'\)/);
+  // Desde cualquier pantalla de dentro se vuelve a la de antes de abrir Ajustes, como el «OK», siguiendo al dedo.
+  assert.match(arrastre, /cerrarHoja\(router, vel\)/);
+  assert.match(await leer('components/CerrarAjustes.js'), /cerrarHoja\(router\)/);
+  const vt = await leer('lib/transicion.js');
+  assert.match(vt, /export function cerrarHoja\(router, vel = 0\)/);
+  // Sin la copia de la pantalla de detrás (o con «reducir movimiento»), la transición de siempre.
+  assert.match(vt, /\{ salirDe\(router, '\/ajustes', '\/mas', 'bajar'\); return; \}/);
+  // La copia se queda delante como pantalla de espera hasta que la de verdad está pintada, a su misma altura.
+  assert.match(vt, /capa\.className = 'espera-pantalla espera-fondo';/);
+  assert.match(vt, /if \(capa\.dataset\.ruta === aqui\(\) && capa\.dataset\.y\) scrollTo\(0, Number\(capa\.dataset\.y\)\);/);
+  // Mientras se arrastra, la pantalla de detrás recupera su tamaño; detrás ya no hay un fondo negro pintado a mano.
+  assert.match(arrastre, /ponerFondo\(g\.fondo, Math\.min\(1, d \/ g\.alto\)\)/);
+  assert.doesNotMatch(arrastre, /document\.body\.style/);
+});
+
+test('la hoja de Ajustes se desplaza por dentro, sin asa y con la pantalla de antes detrás', async () => {
+  const css = await leer('app/hoja-ajustes.css');
+  // El marco se queda quieto bajo la barra de estado y lo de dentro se desplaza: Next no puede subir la página entera
+  // (dejaba «‹ Ajustes» bajo la hora y una franja negra abajo).
+  assert.match(css, /\.aj-marco, \.hoja-espera \{ position: fixed;[^}]*top: var\(--aj-cima\);[^}]*overflow: hidden;/);
+  assert.match(css, /\.aj-desliza \{ position: absolute; inset: 0; overflow-y: auto; overscroll-behavior: contain; \}/);
+  assert.match(css, /html:has\(\.aj-marco\), html:has\(\.aj-marco\) body \{ overflow: hidden;/);
+  assert.match(await leer('app/layout.js'), /import '\.\/hoja-ajustes\.css';/); // la espera de la hoja sale antes que los estilos de Ajustes
+  assert.doesNotMatch(await leer('components/ListaAjustes.js'), /aj-asa/);
+  // Cada ajuste empieza arriba; la lista, donde se dejó.
+  assert.match(await leer('components/HojaAjustes.js'), /hoja\.scrollTop = 0;|hoja\.scrollTop = y;/);
+  // La copia de la pantalla de antes: al entrar en Ajustes desde fuera, siempre como hoja.
+  const vt = await leer('lib/transicion.js');
+  assert.match(vt, /tipo = 'hoja';\s*capturarFondo\(\);/);
+  const copia = await leer('lib/hojaAjustes.js');
+  assert.match(copia, /removeAttribute\('id'\)/);
+  assert.match(copia, /classList\?\.remove\('cargando'\)/); // Llegada esperaría a que se fuera un esqueleto copiado
+  assert.match(css, /\.aj-fondo \*, \.aj-fondo \*::before, \.aj-fondo \*::after \{ animation: none !important; transition: none !important; view-transition-name: none !important; \}/);
+  // La transición «hoja»: la de antes se encoge encima de su copia ya encogida y la hoja sube con su propia capa.
+  const dis = await leer('app/diseno.css');
+  assert.match(dis, /html\[data-vt=hoja\]::view-transition-old\(root\) \{[^}]*vt-al-fondo; transform-origin: 50% 0; z-index: 1;/);
+  assert.match(dis, /html\[data-vt=hoja\]::view-transition-new\(hoja\) \{[^}]*vt-hoja-sube; \}/);
+  // De un ajuste a otro solo se mueve lo de dentro de la hoja.
+  assert.match(dis, /html\[data-vt-hoja\]\[data-vt\]::view-transition-old\(root\), html\[data-vt-hoja\]\[data-vt\]::view-transition-new\(root\) \{ animation: none;/);
 });
 
 test('cerrar la hoja de Ajustes con cambios sin guardar pregunta antes, también arrastrándola', async () => {
   // Los formularios de Ajustes se registran (sin eso, salirDe descartaba lo escrito sin avisar) y las dos salidas pasan por el aviso.
   assert.match(await leer('components/Ajustes.js'), /useCambiosSinGuardar\(cambiado\)/);
-  assert.match(await leer('components/CerrarAjustes.js'), /salirSinGuardar\(\(\) => salirDe\(router, '\/ajustes', '\/mas', 'bajar'\)\)/);
+  assert.match(await leer('components/CerrarAjustes.js'), /salirSinGuardar\(\(\) => cerrarHoja\(router\)\)/);
   const arrastre = await leer('components/ArrastrarAjustes.js');
-  assert.match(arrastre, /salirSinGuardar\(\(\) => \{\s*salirDe\(router, '\/ajustes', '\/mas', 'bajar'\);/);
-  // Si la persona se queda, la hoja vuelve a su sitio.
-  assert.match(arrastre, /\.then\(\(salio\) => \{ if \(!salio\) devolver\(marco\); \}\)/);
+  // Si la persona se queda, la hoja (y la pantalla de detrás) vuelven a su sitio.
+  assert.match(arrastre, /salirSinGuardar\(\(\) => cerrarHoja\(router, vel\)\)\.then\(\(salio\) => \{ if \(!salio\) devolver\(marco, fondo\); \}\)/);
+});
+
+test('al abrir una factura que tarda, la fila se convierte en la cabecera de la espera (no se queda suelta)', async () => {
+  assert.match(await leer('components/FilaFactura.js'), /abrirFila\(fila\);/);
+  const vt = await leer('lib/transicion.js');
+  // La fila suelta los nombres de la transición (los lleva la cabecera de la espera, con su cliente y su total).
+  assert.match(vt, /filaAbierta\.style\.removeProperty\('view-transition-name'\);/);
+  assert.match(vt, /capa\.querySelector\('\.fh-cliente'\)\.textContent = cliente;/);
+  assert.match(vt, /capa\.querySelector\('\.fh-total'\)\.textContent = total;/);
+  // Llegada la quita cuando llega lo de verdad, también si antes llegó el esqueleto de carga de Next.
+  const llegada = await leer('components/Llegada.js');
+  assert.match(llegada, /if \(!document\.querySelector\('\.cargando'\)\) quitarEspera\(\);/);
+  assert.match(llegada, /mo\.disconnect\(\);\s*quitarEspera\(\);/);
 });
 
 test('la pantalla de espera recoge los toques mientras dura y los suelta al fundirse', async () => {

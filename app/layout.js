@@ -3,6 +3,7 @@ import './globals.css';
 import './cuentas.css';
 import './movil.css';
 import './diseno.css';
+import './hoja-ajustes.css';
 import './pulido.css';
 import './v2.css';
 import { planesQueFaltan } from '@/lib/modulos';
