@@ -20,9 +20,7 @@ const capas = () => [...document.querySelectorAll('[aria-modal="true"], dialog[o
 // Adónde lleva el gesto: a la de su «‹ Atrás» (lib/transicion.js volverA retrocede si es lo de detrás) o al paso anterior
 // del formulario. null: esta pantalla no tiene gesto.
 function destino() {
-  // La hoja de Ajustes no: como en iOS, se cierra bajándola o con «OK» (components/ArrastrarAjustes.js); desde el borde se
-  // iba de lado entera, con la pantalla de detrás. Dentro de ella, su «‹ Ajustes» sí vuelve con el gesto.
-  const enlace = [...document.querySelectorAll('a.volver, a.legal-volver')].find(visible);
+  const enlace = [...document.querySelectorAll('a.volver, a.legal-volver, a.aj-ok')].find(visible); // aj-ok: cerrar la hoja de Ajustes
   if (enlace) return enlace.getAttribute('href');
   return anterior() && Number.isInteger(history.state?.__paso) ? location.pathname : null;
 }
