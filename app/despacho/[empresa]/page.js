@@ -13,14 +13,16 @@ import { peticionesDe } from '@/lib/peticionesDespacho';
 import { esCuota } from '@/lib/cuotas';
 import Volver from '@/components/Volver';
 import ClienteDespacho from '@/components/ClienteDespacho';
+import { textos } from '@/lib/idiomaServidor';
 import '@/app/mk.css';
 import '@/app/despacho.css';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Cliente · Mi despacho' };
+export async function generateMetadata() { return { title: (await textos())('Cliente · Mi despacho') }; }
 
 // Ficha de un cliente en Mi despacho: su trimestre, la revisión y el cierre, las descargas, las preguntas y quién lo lleva.
 export default async function ClienteDelDespacho({ params, searchParams }) {
+  const tr = await textos();
   const { empresa } = await params;
   const { e, ctx, d, rol, u } = await requerirCliente(empresa);
   const q = (await searchParams) || {};
@@ -36,7 +38,7 @@ export default async function ClienteDelDespacho({ params, searchParams }) {
   const cierre = await estadoCierre(ctx, anio, t, cierres);
   const docs = {
     facturas: facturas.slice(0, 300).map((f) => ({ id: f.id, texto: `${numeroFactura(f)} · ${f.cliente?.nombre || ''}`, fecha: f.fecha, base: Number(f.base) || 0, total: importes(f).total })),
-    gastos: gastos.slice(0, 300).map((g) => ({ id: g.id, texto: g.proveedor || g.concepto || 'Gasto', fecha: g.fecha, base: Number(g.base) || 0, total: importes(g).total, sinJustificante: !g.archivo && !g.nomina && !esCuota(g) && Number(g.base) > 0 })),
+    gastos: gastos.slice(0, 300).map((g) => ({ id: g.id, texto: g.proveedor || g.concepto || tr('Gasto'), fecha: g.fecha, base: Number(g.base) || 0, total: importes(g).total, sinJustificante: !g.archivo && !g.nomina && !esCuota(g) && Number(g.base) > 0 })),
     mas: Math.max(0, facturas.length - 300) + Math.max(0, gastos.length - 300),
   };
   const v = e.despachoCliente || {};

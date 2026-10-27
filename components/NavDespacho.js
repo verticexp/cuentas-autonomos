@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { SIN_BARRA, alPulsar, subirArriba, volverHasta } from '@/lib/transicion';
 import Logo from '@/components/Logo';
+import { useT } from '@/components/Idioma';
 import '@/app/lateral.css';
 
 // Barra de «Mi despacho» (app/despacho), en lugar de la de una empresa: en el móvil, las cuatro pestañas abajo; en el
@@ -25,6 +26,7 @@ const activa = (path, href) => (href === '/despacho' ? path === '/despacho' || /
 export default function NavDespacho({ nombre, noLeidos = 0, titular = false }) {
   const path = usePathname();
   const router = useRouter();
+  const tr = useT();
   // La pestaña en la que ya se está, como en iOS: en su pantalla sube arriba; desde una de dentro (la ficha de un cliente),
   // vuelve a ella. En el ordenador, la barra lateral lleva siempre a la pantalla.
   const pulsar = (t) => (e) => {
@@ -37,29 +39,29 @@ export default function NavDespacho({ nombre, noLeidos = 0, titular = false }) {
   };
   return (
     // Dentro de una conversación, en el móvil, la barra de abajo se esconde (como en WhatsApp): deja sitio para escribir.
-    <div role="region" aria-label="Navegación de Mi despacho" className={`tabbar tabbar-despacho${SIN_BARRA.test(path || '') ? ' tabbar-chat' : ''}`}>
-      <Link href="/despacho" className="tabbar-logo" aria-label={`${nombre}, clientes`}><Logo /></Link>
-      <nav className="tabs" aria-label="Mi despacho">
+    <div role="region" aria-label={tr('Navegación de Mi despacho')} className={`tabbar tabbar-despacho${SIN_BARRA.test(path || '') ? ' tabbar-chat' : ''}`}>
+      <Link href="/despacho" className="tabbar-logo" aria-label={tr('{nombre}, clientes', { nombre })}><Logo /></Link>
+      <nav className="tabs" aria-label={tr('Mi despacho')}>
         {TABS.map((t) => (
           <Link key={t.href} href={t.href} data-href={t.href} className={`${activa(path, t.href) ? 'activo' : ''}${t.soloOrdenador ? ' tab-ordenador' : ''}`} aria-current={activa(path, t.href) ? 'page' : undefined} onClick={pulsar(t)}>
             <svg viewBox="0 0 24 24" aria-hidden>{t.icono}</svg>
-            <span>{t.nombre}</span>
-            {t.href === '/despacho/mensajes' && noLeidos > 0 && <b className="tab-n" aria-label={`${noLeidos} sin leer`}>{noLeidos > 99 ? '99+' : noLeidos}</b>}
+            <span>{tr(t.nombre)}</span>
+            {t.href === '/despacho/mensajes' && noLeidos > 0 && <b className="tab-n" aria-label={tr('{n} sin leer', { n: noLeidos })}>{noLeidos > 99 ? '99+' : noLeidos}</b>}
           </Link>
         ))}
       </nav>
-      <nav className="tabs-extra" aria-label="Más">
+      <nav className="tabs-extra" aria-label={tr('Más')}>
         <div className="tabs-grupo">
           <p className="tabs-grupo-t">{nombre}</p>
           {titular && <Link href="/despacho/facturacion" className={(path || '').startsWith('/despacho/facturacion') ? 'activo' : ''} aria-current={(path || '').startsWith('/despacho/facturacion') ? 'page' : undefined}>
             <svg viewBox="0 0 24 24" aria-hidden><path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6" /></svg>
-            <span>Facturación</span>
+            <span>{tr('Facturación')}</span>
           </Link>}
         </div>
         <form method="post" action="/api/logout" className="tabs-salir">
           <button type="submit">
             <svg viewBox="0 0 24 24" aria-hidden><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l-5-5 5-5M5 12h11" /></svg>
-            <span>Cerrar sesión</span>
+            <span>{tr('Cerrar sesión')}</span>
           </button>
         </form>
       </nav>

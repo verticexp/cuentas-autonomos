@@ -7,6 +7,7 @@ import Vacio from '@/components/Vacio';
 import { navegar } from '@/lib/transicion';
 import { eur } from '@/lib/formato';
 import { ESTADOS_TEXTO } from '@/components/despachoTextos';
+import { useT } from '@/components/Idioma';
 
 // Lista de clientes de Mi despacho, como las listas de la app (Facturas, Gastos): una fila por cliente que abre su ficha.
 // Las cifras del trimestre (api/despacho/resumen) se piden de cuatro en cuatro al abrir la pantalla (la primera vez de un
@@ -28,26 +29,29 @@ export async function entrarEn(empresa, ir = '/') {
 
 // Importe del IVA o del IRPF: a pagar, a compensar o a devolver. null: no presenta ese modelo.
 function Cifra({ v }) {
-  if (!v) return <span className="desp-nada">No presenta</span>;
-  if (v.compensar > 0) return <>{eur(0)}<small>a compensar {eur(v.compensar)}</small></>;
-  if (v.devolver > 0) return <>{eur(0)}<small>a devolver {eur(v.devolver)}</small></>;
-  return <>{eur(v.importe)}<small>a ingresar</small></>;
+  const tr = useT();
+  if (!v) return <span className="desp-nada">{tr('No presenta')}</span>;
+  if (v.compensar > 0) return <>{eur(0)}<small>{tr('a compensar {importe}', { importe: eur(v.compensar) })}</small></>;
+  if (v.devolver > 0) return <>{eur(0)}<small>{tr('a devolver {importe}', { importe: eur(v.devolver) })}</small></>;
+  return <>{eur(v.importe)}<small>{tr('a ingresar')}</small></>;
 }
 
 function Avisos({ r }) {
+  const tr = useT();
   if (!r) return <span className="desp-hueco" aria-hidden />;
-  if (r.error) return <span>No se han podido calcular sus cifras</span>;
+  if (r.error) return <span>{tr('No se han podido calcular sus cifras')}</span>;
   const l = [
-    r.porRevisar > 0 && <b key="b">{r.porRevisar} por revisar</b>,
-    r.comentarios?.noLeidos > 0 && <b key="c">{r.comentarios.noLeidos === 1 ? '1 mensaje nuevo' : `${r.comentarios.noLeidos} mensajes nuevos`}</b>,
-    r.comentarios?.abiertos > 0 && !r.comentarios.noLeidos && <span key="p">{r.comentarios.abiertos === 1 ? '1 pregunta abierta' : `${r.comentarios.abiertos} preguntas abiertas`}</span>,
-    r.sinJustificante > 0 && <span key="j">{r.sinJustificante} sin justificante</span>,
+    r.porRevisar > 0 && <b key="b">{tr('{n} por revisar', { n: r.porRevisar })}</b>,
+    r.comentarios?.noLeidos > 0 && <b key="c">{r.comentarios.noLeidos === 1 ? tr('1 mensaje nuevo') : tr('{n} mensajes nuevos', { n: r.comentarios.noLeidos })}</b>,
+    r.comentarios?.abiertos > 0 && !r.comentarios.noLeidos && <span key="p">{r.comentarios.abiertos === 1 ? tr('1 pregunta abierta') : tr('{n} preguntas abiertas', { n: r.comentarios.abiertos })}</span>,
+    r.sinJustificante > 0 && <span key="j">{tr('{n} sin justificante', { n: r.sinJustificante })}</span>,
   ].filter(Boolean);
-  return l.length ? l.reduce((a, x, i) => (i ? [...a, ' · ', x] : [x]), []) : <span>Todo al día</span>;
+  return l.length ? l.reduce((a, x, i) => (i ? [...a, ' · ', x] : [x]), []) : <span>{tr('Todo al día')}</span>;
 }
 
 export default function PanelDespacho({ filas, equipo = [], anio, t, hoy }) {
   const router = useRouter();
+  const tr = useT();
   const [buscar, setBuscar] = useState('');
   const [gestor, setGestor] = useState('');
   const [resumen, setResumen] = useState({});
@@ -80,32 +84,32 @@ export default function PanelDespacho({ filas, equipo = [], anio, t, hoy }) {
   const cambiarPeriodo = (v) => { const [a, q] = v.split('-'); navegar(router, `/despacho?anio=${a}&t=${q}`, 'pestana-der', undefined, false, { scroll: false }); };
   const texto = buscar.trim().toLowerCase();
   const visibles = filas.filter((f) => (!texto || `${f.nombre} ${f.nif}`.toLowerCase().includes(texto)) && (!gestor || (gestor === '-' ? !f.gestor : f.gestor === gestor)));
-  const filtros = equipo.length > 1 ? [['', 'Todos'], ...equipo.map((x) => [x.id, (x.nombre || x.email).split(' ')[0]]), ['-', 'Sin asignar']] : [];
+  const filtros = equipo.length > 1 ? [['', tr('Todos')], ...equipo.map((x) => [x.id, (x.nombre || x.email).split(' ')[0]]), ['-', tr('Sin asignar')]] : [];
 
   return <div className="desp-panel">
     <div className="desp-herramientas">
       <div className="buscar" role="search">
         <svg viewBox="0 0 24 24" aria-hidden><circle cx="11" cy="11" r="6.5" /><path d="M16 16l4 4" /></svg>
-        <input type="search" placeholder="Buscar cliente" aria-label="Buscar cliente" value={buscar} onChange={(e) => setBuscar(e.target.value)} enterKeyHint="search" autoComplete="off" />
+        <input type="search" placeholder={tr('Buscar cliente')} aria-label={tr('Buscar cliente')} value={buscar} onChange={(e) => setBuscar(e.target.value)} enterKeyHint="search" autoComplete="off" />
       </div>
       <label className="desp-select">
-        <span className="sr">Trimestre</span>
+        <span className="sr">{tr('Trimestre')}</span>
         <select value={`${anio}-${t}`} onChange={(e) => cambiarPeriodo(e.target.value)}>
-          {periodos.map((p) => <option key={`${p.anio}-${p.t}`} value={`${p.anio}-${p.t}`}>{p.t}T {p.anio}</option>)}
+          {periodos.map((p) => <option key={`${p.anio}-${p.t}`} value={`${p.anio}-${p.t}`}>{tr('{t}T {anio}', { t: p.t, anio: p.anio })}</option>)}
         </select>
       </label>
     </div>
-    {filtros.length > 0 && <div className="chips desp-chips" role="group" aria-label="Filtrar por gestor">
+    {filtros.length > 0 && <div className="chips desp-chips" role="group" aria-label={tr('Filtrar por gestor')}>
       {filtros.map(([id, nombre]) => <button key={id || 'todos'} type="button" aria-pressed={gestor === id} className={gestor === id ? 'activo' : ''} onClick={() => setGestor(id)}>{nombre}</button>)}
     </div>}
 
-    <p className="sr" role="status">{visibles.length === filas.length ? '' : `${visibles.length} de ${filas.length} clientes`}</p>
+    <p className="sr" role="status">{visibles.length === filas.length ? '' : tr('{visibles} de {total} clientes', { visibles: visibles.length, total: filas.length })}</p>
     {visibles.length ? <>
-      <div className="desp-cols" aria-hidden><span>Cliente</span><span>Estado</span><span>IVA</span><span>IRPF</span></div>
+      <div className="desp-cols" aria-hidden><span>{tr('Cliente')}</span><span>{tr('Estado')}</span><span>{tr('IVA')}</span><span>{tr('IRPF')}</span></div>
       <ul className="grupo-lista desp-lista">{visibles.map((f) => {
         const r = resumen[f.id];
         const estado = r?.cambiosTrasCierre ? 'cambios' : f.estado;
-        const meta = [f.nif, f.tipo === 'sociedad' ? 'Sociedad' : 'Autónomo', f.territorio !== 'Territorio común' && f.territorio, f.gestor && nombres[f.gestor], f.licencia && 'En tu cuota'].filter(Boolean).join(' · ');
+        const meta = [f.nif, f.tipo === 'sociedad' ? tr('Sociedad') : tr('Autónomo'), f.territorio !== 'Territorio común' && tr(f.territorio), f.gestor && nombres[f.gestor], f.licencia && tr('En tu cuota')].filter(Boolean).join(' · ');
         return <li key={f.id}>
           <Ir prefetch={false} className="fila desp-fila" href={`/despacho/${encodeURIComponent(f.id)}?anio=${anio}&t=${t}`}>
             <span className="txt">
@@ -113,12 +117,12 @@ export default function PanelDespacho({ filas, equipo = [], anio, t, hoy }) {
               <small>{meta}</small>
               <small className={`desp-avisos${r ? ' listo' : ''}`}><Avisos r={r} /></small>
             </span>
-            <span className="desp-col-estado"><span className={`desp-estado e-${estado}`}>{ESTADOS_TEXTO[estado]}</span></span>
-            <span className={`desp-num${r ? ' listo' : ''}`} data-t="IVA">{r && !r.error ? <Cifra v={r.iva} /> : <><span className="desp-hueco" aria-hidden /><span className="sr">Calculando</span></>}</span>
-            <span className={`desp-num${r ? ' listo' : ''}`} data-t="IRPF">{r && !r.error ? <Cifra v={r.irpf} /> : <span className="desp-hueco" aria-hidden />}</span>
+            <span className="desp-col-estado"><span className={`desp-estado e-${estado}`}>{tr(ESTADOS_TEXTO[estado])}</span></span>
+            <span className={`desp-num${r ? ' listo' : ''}`} data-t={tr('IVA')}>{r && !r.error ? <Cifra v={r.iva} /> : <><span className="desp-hueco" aria-hidden /><span className="sr">{tr('Calculando')}</span></>}</span>
+            <span className={`desp-num${r ? ' listo' : ''}`} data-t={tr('IRPF')}>{r && !r.error ? <Cifra v={r.irpf} /> : <span className="desp-hueco" aria-hidden />}</span>
           </Ir>
         </li>;
       })}</ul>
-    </> : <Vacio compacto tipo="resultados" icono="usuarios" titulo={texto || gestor ? 'Ningún cliente con estos filtros' : 'Ningún cliente en esta lista'} accion={(texto || gestor) && <button type="button" className="boton sec" onClick={() => { setBuscar(''); setGestor(''); }}>Quitar filtros</button>} />}
+    </> : <Vacio compacto tipo="resultados" icono="usuarios" titulo={texto || gestor ? tr('Ningún cliente con estos filtros') : tr('Ningún cliente en esta lista')} accion={(texto || gestor) && <button type="button" className="boton sec" onClick={() => { setBuscar(''); setGestor(''); }}>{tr('Quitar filtros')}</button>} />}
   </div>;
 }

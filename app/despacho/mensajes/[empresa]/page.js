@@ -10,14 +10,16 @@ import Ir from '@/components/Ir';
 import Chat from '@/components/Chat';
 import Avatar from '@/components/Avatar';
 import { plantillasDe } from '@/lib/plantillasDespacho';
+import { textos } from '@/lib/idiomaServidor';
 import '@/app/mk.css';
 import '@/app/despacho.css';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Mensajes · Mi despacho' };
+export async function generateMetadata() { return { title: (await textos())('Mensajes · Mi despacho') }; }
 
 // La conversación con un cliente. Al abrirla, lo suyo queda leído (lo marca el chat al verse, no esta página). ?doc=gasto:id abre la pregunta sobre ese documento.
 export default async function Conversacion({ params, searchParams }) {
+  const tr = await textos();
   const { empresa } = await params;
   const { e, d, ctx } = await requerirCliente(empresa);
   const q = (await searchParams) || {};
@@ -29,21 +31,21 @@ export default async function Conversacion({ params, searchParams }) {
   const recientes = (l) => [...l].sort((a, b) => b.fecha.localeCompare(a.fecha)).slice(0, 150);
   const docs = {
     facturas: recientes(facturas.filter((f) => !f.caja)).map((f) => ({ id: f.id, texto: `${numeroFactura(f)} · ${f.cliente?.nombre || ''}`, fecha: f.fecha, total: importes(f).total })),
-    gastos: recientes(gastos).map((g) => ({ id: g.id, texto: g.proveedor || g.concepto || 'Gasto', fecha: g.fecha, total: importes(g).total })),
+    gastos: recientes(gastos).map((g) => ({ id: g.id, texto: g.proveedor || g.concepto || tr('Gasto'), fecha: g.fecha, total: importes(g).total })),
   };
-  const nombre = e.nombre || e.emisor?.nombre || 'el cliente';
+  const nombre = e.nombre || e.emisor?.nombre || tr('el cliente');
   const docInicial = typeof q.doc === 'string' && /^(factura|gasto):.{1,80}$/.test(q.doc) ? q.doc : '';
   return <main className="pagina mk-look despacho desp-chat-pagina">
     {/* Como en WhatsApp: en el móvil, la conversación ocupa la pantalla, con esta cabecera arriba y el cuadro de escribir abajo. */}
     <header className="chat-cabecera">
       <Volver href="/despacho/mensajes">Mensajes</Volver>
-      <Ir className="chat-quien" href={`/despacho/${encodeURIComponent(e.id)}`} aria-label={`${nombre}: ver su ficha`}>
+      <Ir className="chat-quien" href={`/despacho/${encodeURIComponent(e.id)}`} aria-label={tr('{nombre}: ver su ficha', { nombre })}>
         <Avatar nombre={nombre} size={36} />
-        <span><h1 className="chat-nombre">{nombre}</h1><small>Ver su ficha</small></span>
+        <span><h1 className="chat-nombre">{nombre}</h1><small>{tr('Ver su ficha')}</small></span>
       </Ir>
     </header>
     <Chat key={docInicial} mensajes={mensajesDe(hilos)} lado="despacho" leidoAntes={leido.despacho || ''} nombreOtro={nombre} docs={docs} docInicial={docInicial}
       enviar={{ url: '/api/despacho/comentarios', metodo: 'POST', extra: { empresa: e.id } }} leer={{ url: '/api/despacho/comentarios', metodo: 'PATCH', cuerpo: { empresa: e.id, leer: true } }} comprobar={`/api/despacho/comentarios?empresa=${encodeURIComponent(e.id)}`} vista={`/api/despacho/documento?empresa=${encodeURIComponent(e.id)}`} plantillas={plantillasDe(d)}
-      vacio={`Escribe a ${nombre}: le llega a su Fisquo y te contesta aquí. Para preguntar por una factura o un gasto, elígelo antes de escribir.`} />
+      vacio={tr('Escribe a {nombre}: le llega a su Fisquo y te contesta aquí. Para preguntar por una factura o un gasto, elígelo antes de escribir.', { nombre })} />
   </main>;
 }
