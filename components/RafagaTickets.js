@@ -16,6 +16,7 @@ import { escanearNativo, escanerDisponible } from '@/lib/escanerNativo';
 import { vibrar } from '@/lib/haptica';
 import { eur } from '@/lib/formato';
 import { NO_IA, permisoIA } from '@/lib/permisoIA';
+import { useT } from '@/components/Idioma';
 import '@/app/rafaga.css';
 
 // Modo ráfaga de Gastos: varios tickets seguidos con la cámara en vivo. Se hacen las fotos una tras otra, se leen de una
@@ -25,6 +26,7 @@ const MAX = 8;
 const aTexto = (n) => String(n ?? '').replace('.', ',');
 
 export default function RafagaTickets({ hoy, actividades, igic = false }) {
+  const tr = useT();
   const router = useRouter();
   const ayudaId = useId();
   const [abierta, setAbierta] = useState(false);
@@ -46,8 +48,8 @@ export default function RafagaTickets({ hoy, actividades, igic = false }) {
   const cupo = MAX - items.length; // fotos que aún caben (con las ya leídas)
   const cerrar = async () => {
     const sinGuardar = items.filter((x) => ['leyendo', 'leido', 'duplicado', 'error'].includes(x.estado)).length;
-    if (sinGuardar > 0 && !(await confirmarAccion({ titulo: 'Descartar tickets', texto: sinGuardar === 1 ? 'Hay 1 ticket sin guardar. ¿Salir y descartarlo?' : `Hay ${sinGuardar} tickets sin guardar. ¿Salir y descartarlos?`, aceptar: 'Salir y descartar', peligro: true }))) return;
-    if (fase === 'camara' && fotos.length > 0 && !(await confirmarAccion({ titulo: 'Descartar tickets', texto: 'Tienes fotos sin leer. ¿Salir y descartarlas?', aceptar: 'Salir y descartar', peligro: true }))) return;
+    if (sinGuardar > 0 && !(await confirmarAccion({ titulo: tr('Descartar tickets'), texto: sinGuardar === 1 ? tr('Hay 1 ticket sin guardar. ¿Salir y descartarlo?') : tr('Hay {n} tickets sin guardar. ¿Salir y descartarlos?', { n: sinGuardar }), aceptar: tr('Salir y descartar'), peligro: true }))) return;
+    if (fase === 'camara' && fotos.length > 0 && !(await confirmarAccion({ titulo: tr('Descartar tickets'), texto: tr('Tienes fotos sin leer. ¿Salir y descartarlas?'), aceptar: tr('Salir y descartar'), peligro: true }))) return;
     corrida.current += 1;
     setAbierta(false);
     if (items.some((x) => x.estado === 'guardado')) router.refresh();
@@ -142,7 +144,7 @@ export default function RafagaTickets({ hoy, actividades, igic = false }) {
       if (r.status === 409 && Array.isArray(d.duplicados) && d.duplicados.length) { poner(it.id, { estado: 'duplicado', duplicados: d.duplicados }); return false; }
       if (!r.ok) throw new Error(d.error || 'No se ha podido guardar el ticket. Revisa la conexión e inténtalo otra vez.');
       const fallo = j?.blob && d.gasto?.id ? await subir(d.gasto.id, j.blob, { alGuardar: true }) : '';
-      poner(it.id, { estado: 'guardado', aviso: fallo ? `Sin la foto: ${fallo}. Adjúntala desde la ficha del gasto.` : '' });
+      poner(it.id, { estado: 'guardado', aviso: fallo ? tr('Sin la foto: {fallo}. Adjúntala desde la ficha del gasto.', { fallo: tr(fallo) }) : '' });
       return true;
     } catch (err) { poner(it.id, { estado: 'leido', error: err.message }); return false; }
   };
@@ -155,53 +157,53 @@ export default function RafagaTickets({ hoy, actividades, igic = false }) {
 
   return (
     <>
-      <button ref={boton} type="button" className="boton sec rafaga-abrir" onClick={abrir} aria-haspopup="dialog">Varios tickets</button>
+      <button ref={boton} type="button" className="boton sec rafaga-abrir" onClick={abrir} aria-haspopup="dialog">{tr('Varios tickets')}</button>
       {abierta && createPortal(
-        <div className="rafaga" role="dialog" aria-modal="true" aria-label="Varios tickets seguidos" ref={panel}>
+        <div className="rafaga" role="dialog" aria-modal="true" aria-label={tr('Varios tickets seguidos')} ref={panel}>
           {fase === 'camara' ? (
             <>
               <div className="rafaga-visor">
-                <video ref={video} playsInline muted autoPlay aria-label="Cámara" />
-                {camara === 'esperando' && <p className="rafaga-aviso">Abriendo la cámara…</p>}
+                <video ref={video} playsInline muted autoPlay aria-label={tr('Cámara')} />
+                {camara === 'esperando' && <p className="rafaga-aviso">{tr('Abriendo la cámara…')}</p>}
                 {camara === 'nativo' && (
                   <div className="rafaga-aviso">
-                    <p>Escanea los tickets uno detrás de otro: cada página será un gasto.</p>
-                    <button type="button" className="boton" onClick={escanear}>{fotos.length ? 'Escanear más tickets' : 'Escanear tickets'}</button>
+                    <p>{tr('Escanea los tickets uno detrás de otro: cada página será un gasto.')}</p>
+                    <button type="button" className="boton" onClick={escanear}>{fotos.length ? tr('Escanear más tickets') : tr('Escanear tickets')}</button>
                   </div>
                 )}
                 {(camara === 'denegada' || camara === 'no') && (
                   <div className="rafaga-aviso">
-                    <p>{camara === 'denegada' ? 'Fisquo no tiene permiso para usar la cámara. Puedes darlo en los ajustes del navegador o elegir las fotos de tu galería.' : 'No se ha podido abrir la cámara. Elige las fotos de tu galería.'}</p>
-                    <label className="boton">Elegir fotos<input type="file" accept="image/*" multiple hidden onChange={delArchivo} /></label>
+                    <p>{camara === 'denegada' ? tr('Fisquo no tiene permiso para usar la cámara. Puedes darlo en los ajustes del navegador o elegir las fotos de tu galería.') : tr('No se ha podido abrir la cámara. Elige las fotos de tu galería.')}</p>
+                    <label className="boton">{tr('Elegir fotos')}<input type="file" accept="image/*" multiple hidden onChange={delArchivo} /></label>
                   </div>
                 )}
-                <button type="button" className="rafaga-x" onClick={cerrar} aria-label="Cancelar">×</button>
-                <p className="rafaga-cuenta" role="status">{fotos.length === 0 ? 'Haz una foto a cada ticket' : fotos.length === 1 ? '1 ticket' : `${fotos.length} tickets`}{fotos.length >= cupo ? ' (máximo)' : ''}</p>
+                <button type="button" className="rafaga-x" onClick={cerrar} aria-label={tr('Cancelar')}>×</button>
+                <p className="rafaga-cuenta" role="status">{fotos.length === 0 ? tr('Haz una foto a cada ticket') : fotos.length === 1 ? tr('1 ticket') : tr('{n} tickets', { n: fotos.length })}{fotos.length >= cupo ? ` ${tr('(máximo)')}` : ''}</p>
               </div>
               <div className="rafaga-barra">
                 <CupoEscaneo />
-                <ul className="rafaga-tiras" aria-label="Fotos hechas">
+                <ul className="rafaga-tiras" aria-label={tr('Fotos hechas')}>
                   {fotos.map((f, i) => (
-                    <li key={i}><img src={f} alt={`Ticket ${i + 1}`} /><button type="button" aria-label={`Quitar el ticket ${i + 1}`} onClick={() => setFotos((l) => l.filter((_, j) => j !== i))}>×</button></li>
+                    <li key={i}><img src={f} alt={tr('Ticket {n}', { n: i + 1 })} /><button type="button" aria-label={tr('Quitar el ticket {n}', { n: i + 1 })} onClick={() => setFotos((l) => l.filter((_, j) => j !== i))}>×</button></li>
                   ))}
                 </ul>
-                {(fotos.length === 0 || fotos.length >= cupo) && <p id={`${ayudaId}-fotos`} className="nota">{fotos.length === 0 ? 'Haz o elige una foto antes de leer el ticket.' : 'Has llegado al máximo de fotos: léelas o quita una para hacer otra.'}</p>}
+                {(fotos.length === 0 || fotos.length >= cupo) && <p id={`${ayudaId}-fotos`} className="nota">{fotos.length === 0 ? tr('Haz o elige una foto antes de leer el ticket.') : tr('Has llegado al máximo de fotos: léelas o quita una para hacer otra.')}</p>}
                 <div className="rafaga-mandos">
                   {camara === 'lista'
-                    ? <button type="button" className="rafaga-disparo" onClick={disparar} disabled={fotos.length >= cupo} aria-describedby={fotos.length >= cupo ? `${ayudaId}-fotos` : undefined} aria-label="Hacer foto"><span /></button>
+                    ? <button type="button" className="rafaga-disparo" onClick={disparar} disabled={fotos.length >= cupo} aria-describedby={fotos.length >= cupo ? `${ayudaId}-fotos` : undefined} aria-label={tr('Hacer foto')}><span /></button>
                     : null}
-                  <button type="button" className="boton" onClick={empezar} disabled={fotos.length === 0} aria-describedby={fotos.length === 0 ? `${ayudaId}-fotos` : undefined}>{fotos.length > 1 ? `Leer ${fotos.length} tickets` : 'Leer el ticket'}</button>
+                  <button type="button" className="boton" onClick={empezar} disabled={fotos.length === 0} aria-describedby={fotos.length === 0 ? `${ayudaId}-fotos` : undefined}>{fotos.length > 1 ? tr('Leer {n} tickets', { n: fotos.length }) : tr('Leer el ticket')}</button>
                 </div>
               </div>
             </>
           ) : (
             <div className="rafaga-rev">
               <header className="rafaga-cab">
-                <h2>{terminados ? 'Todo guardado' : `Revisa ${items.length === 1 ? 'el ticket' : 'los tickets'}`}</h2>
-                <button type="button" className="rafaga-x oscuro" onClick={cerrar} aria-label={terminados ? 'Cerrar' : 'Cancelar'}>×</button>
+                <h2>{terminados ? tr('Todo guardado') : items.length === 1 ? tr('Revisa el ticket') : tr('Revisa los tickets')}</h2>
+                <button type="button" className="rafaga-x oscuro" onClick={cerrar} aria-label={terminados ? tr('Cerrar') : tr('Cancelar')}>×</button>
               </header>
               {actividades.length > 1 && !terminados && (
-                <label className="rafaga-act">Actividad
+                <label className="rafaga-act">{tr('Actividad')}
                   <select className="campo" value={actividad} onChange={(e) => { setActividad(e.target.value); setItems((l) => l.map((x) => (x.g ? { ...x, g: { ...x.g, actividad: e.target.value } } : x))); }}>
                     {actividades.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}
                   </select>
@@ -211,42 +213,42 @@ export default function RafagaTickets({ hoy, actividades, igic = false }) {
               <ul className="rafaga-lista">
                 {items.map((it, i) => (
                   <li key={it.id} className={`rafaga-it e-${it.estado}`}>
-                    <img src={it.foto} alt={`Ticket ${i + 1}`} />
+                    <img src={it.foto} alt={tr('Ticket {n}', { n: i + 1 })} />
                     <div className="rafaga-datos">
-                      {it.estado === 'leyendo' && <p className="rafaga-estado" role="status">Leyendo el ticket {i + 1}…</p>}
-                      {it.estado === 'error' && <><p className="error" role="alert">{it.error}</p><div className="rafaga-acc"><button type="button" className="boton sec pequeno" onClick={() => reintentar(it)}>Reintentar</button><button type="button" className="boton sec pequeno" onClick={() => poner(it.id, { estado: 'descartado' })}>Descartar</button></div></>}
-                      {it.estado === 'guardado' && <p className="rafaga-estado ok">✓ Guardado: {it.g.concepto} · {eur(Number(it.g.base))}</p>}
+                      {it.estado === 'leyendo' && <p className="rafaga-estado" role="status">{tr('Leyendo el ticket {n}…', { n: i + 1 })}</p>}
+                      {it.estado === 'error' && <><p className="error" role="alert">{tr(it.error)}</p><div className="rafaga-acc"><button type="button" className="boton sec pequeno" onClick={() => reintentar(it)}>{tr('Reintentar')}</button><button type="button" className="boton sec pequeno" onClick={() => poner(it.id, { estado: 'descartado' })}>{tr('Descartar')}</button></div></>}
+                      {it.estado === 'guardado' && <p className="rafaga-estado ok">{tr('✓ Guardado: {concepto} · {importe}', { concepto: it.g.concepto, importe: eur(Number(it.g.base)) })}</p>}
                       {it.estado === 'guardado' && it.aviso && <p className="nota">{it.aviso}</p>}
-                      {it.estado === 'descartado' && <p className="rafaga-estado">Descartado</p>}
+                      {it.estado === 'descartado' && <p className="rafaga-estado">{tr('Descartado')}</p>}
                       {['leido', 'guardando', 'duplicado'].includes(it.estado) && (
                         <>
-                          <input className="campo" placeholder="Concepto" value={it.g.concepto} onChange={(e) => ponerG(it.id, 'concepto', e.target.value)} aria-label={`Concepto del ticket ${i + 1}`} />
-                          <input className="campo" placeholder="Proveedor (opcional)" value={it.g.proveedor} onChange={(e) => ponerG(it.id, 'proveedor', e.target.value)} aria-label={`Proveedor del ticket ${i + 1}`} />
+                          <input className="campo" placeholder={tr('Concepto')} value={it.g.concepto} onChange={(e) => ponerG(it.id, 'concepto', e.target.value)} aria-label={tr('Concepto del ticket {n}', { n: i + 1 })} />
+                          <input className="campo" placeholder={tr('Proveedor (opcional)')} value={it.g.proveedor} onChange={(e) => ponerG(it.id, 'proveedor', e.target.value)} aria-label={tr('Proveedor del ticket {n}', { n: i + 1 })} />
                           <div className="rafaga-fila">
-                            <input className="campo" inputMode="decimal" placeholder={`Base sin ${igic ? 'IGIC' : 'IVA'}`} value={it.g.base} onChange={(e) => ponerG(it.id, 'base', e.target.value)} aria-label={`Base del ticket ${i + 1}`} />
-                            <select className="campo" value={it.g.ivaPct} onChange={(e) => ponerG(it.id, 'ivaPct', Number(e.target.value))} aria-label={`${igic ? 'IGIC' : 'IVA'} del ticket ${i + 1}`}>
-                              {(igic ? TIPOS_IGIC : [21, 10, 4, 0]).map((n) => <option key={n} value={n}>{igic ? 'IGIC' : 'IVA'} {n}%</option>)}
+                            <input className="campo" inputMode="decimal" placeholder={tr('Base sin {impuesto}', { impuesto: igic ? 'IGIC' : tr('IVA') })} value={it.g.base} onChange={(e) => ponerG(it.id, 'base', e.target.value)} aria-label={tr('Base del ticket {n}', { n: i + 1 })} />
+                            <select className="campo" value={it.g.ivaPct} onChange={(e) => ponerG(it.id, 'ivaPct', Number(e.target.value))} aria-label={tr('{impuesto} del ticket {n}', { impuesto: igic ? 'IGIC' : tr('IVA'), n: i + 1 })}>
+                              {(igic ? TIPOS_IGIC : [21, 10, 4, 0]).map((n) => <option key={n} value={n}>{igic ? 'IGIC' : tr('IVA')} {n}%</option>)}
                             </select>
-                            <input className="campo" type="date" max={hoy} value={it.g.fecha} onChange={(e) => ponerG(it.id, 'fecha', e.target.value)} aria-label={`Fecha del ticket ${i + 1}`} />
+                            <input className="campo" type="date" max={hoy} value={it.g.fecha} onChange={(e) => ponerG(it.id, 'fecha', e.target.value)} aria-label={tr('Fecha del ticket {n}', { n: i + 1 })} />
                           </div>
-                          <select className="campo" value={it.g.irpfPct || 0} onChange={(e) => ponerG(it.id, 'irpfPct', Number(e.target.value))} aria-label={`IRPF del ticket ${i + 1}`}>
-                            <option value={0}>Sin retención de IRPF</option><option value={15}>IRPF 15 %</option><option value={7}>IRPF 7 %</option>
+                          <select className="campo" value={it.g.irpfPct || 0} onChange={(e) => ponerG(it.id, 'irpfPct', Number(e.target.value))} aria-label={tr('IRPF del ticket {n}', { n: i + 1 })}>
+                            <option value={0}>{tr('Sin retención de IRPF')}</option><option value={15}>IRPF 15 %</option><option value={7}>IRPF 7 %</option>
                           </select>
-                          {it.varios && <p className="nota">Tiene varios tipos de {igic ? 'IGIC' : 'IVA'}: apúntalo a mano en «A mano» para repartir bien la base.</p>}
-                          {it.avisos?.map((a) => <p key={a} className="nota">{a}.</p>)}
-                          {it.error && <p className="error" role="alert">{it.error}</p>}
+                          {it.varios && <p className="nota">{tr('Tiene varios tipos de {impuesto}: apúntalo a mano en «A mano» para repartir bien la base.', { impuesto: igic ? 'IGIC' : tr('IVA') })}</p>}
+                          {it.avisos?.map((a) => <p key={a} className="nota">{tr(a)}.</p>)}
+                          {it.error && <p className="error" role="alert">{tr(it.error)}</p>}
                           {it.estado === 'duplicado' && (
                             <div className="nota" role="alert">
-                              <strong>Puede que ya esté apuntado</strong>
-                              <ul>{it.duplicados.map((d) => <li key={d.id}>{d.motivo}</li>)}</ul>
+                              <strong>{tr('Puede que ya esté apuntado')}</strong>
+                              <ul>{it.duplicados.map((d) => <li key={d.id}>{tr(d.motivo)}</li>)}</ul>
                             </div>
                           )}
-                          {it.varios && <p id={`${ayudaId}-${it.id}-varios`} className="nota">Este ticket tiene varios tipos de {igic ? 'IGIC' : 'IVA'}: añádelo desde el formulario de gastos.</p>}
+                          {it.varios && <p id={`${ayudaId}-${it.id}-varios`} className="nota">{tr('Este ticket tiene varios tipos de {impuesto}: añádelo desde el formulario de gastos.', { impuesto: igic ? 'IGIC' : tr('IVA') })}</p>}
                           <div className="rafaga-acc">
                             {it.estado === 'duplicado'
-                              ? <button type="button" className="boton pequeno" onClick={() => guardar(it, true)}>Es otro gasto: guardarlo</button>
-                              : <button type="button" className="boton pequeno" disabled={it.estado === 'guardando' || it.varios} aria-describedby={it.varios ? `${ayudaId}-${it.id}-varios` : undefined} onClick={() => guardar(it)}>{it.estado === 'guardando' ? 'Guardando…' : 'Guardar'}</button>}
-                            <button type="button" className="boton sec pequeno" disabled={it.estado === 'guardando'} onClick={() => poner(it.id, { estado: 'descartado' })}>Descartar</button>
+                              ? <button type="button" className="boton pequeno" onClick={() => guardar(it, true)}>{tr('Es otro gasto: guardarlo')}</button>
+                              : <button type="button" className="boton pequeno" disabled={it.estado === 'guardando' || it.varios} aria-describedby={it.varios ? `${ayudaId}-${it.id}-varios` : undefined} onClick={() => guardar(it)}>{it.estado === 'guardando' ? tr('Guardando…') : tr('Guardar')}</button>}
+                            <button type="button" className="boton sec pequeno" disabled={it.estado === 'guardando'} onClick={() => poner(it.id, { estado: 'descartado' })}>{tr('Descartar')}</button>
                           </div>
                         </>
                       )}
@@ -256,11 +258,11 @@ export default function RafagaTickets({ hoy, actividades, igic = false }) {
               </ul>
               <div className="rafaga-pie">
                 {terminados
-                  ? <button type="button" className="boton" onClick={cerrar}>Cerrar</button>
+                  ? <button type="button" className="boton" onClick={cerrar}>{tr('Cerrar')}</button>
                   : <>
-                    {limpios.length === 0 && <p id={`${ayudaId}-limpios`} className="nota">Revisa los avisos y guarda cada ticket por separado.</p>}
-                    <button type="button" className="boton" disabled={limpios.length === 0} aria-describedby={limpios.length === 0 ? `${ayudaId}-limpios` : undefined} onClick={guardarLimpios}>{limpios.length === 0 ? 'Revisa cada ticket' : limpios.length === pendientes.length ? `Guardar los ${limpios.length}` : `Guardar los ${limpios.length} sin avisos`}</button>
-                    {cupo > 0 && <button type="button" className="boton sec" onClick={() => { setFotos([]); setFase('camara'); setCamara('esperando'); }}>Más fotos</button>}
+                    {limpios.length === 0 && <p id={`${ayudaId}-limpios`} className="nota">{tr('Revisa los avisos y guarda cada ticket por separado.')}</p>}
+                    <button type="button" className="boton" disabled={limpios.length === 0} aria-describedby={limpios.length === 0 ? `${ayudaId}-limpios` : undefined} onClick={guardarLimpios}>{limpios.length === 0 ? tr('Revisa cada ticket') : limpios.length === pendientes.length ? tr('Guardar los {n}', { n: limpios.length }) : tr('Guardar los {n} sin avisos', { n: limpios.length })}</button>
+                    {cupo > 0 && <button type="button" className="boton sec" onClick={() => { setFotos([]); setFase('camara'); setCamara('esperando'); }}>{tr('Más fotos')}</button>}
                   </>}
               </div>
             </div>
