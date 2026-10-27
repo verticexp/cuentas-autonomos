@@ -16,9 +16,9 @@ test('firma de Meta: vale la buena, no la manipulada ni sin secreto', () => {
 });
 
 test('teléfonos autorizados y mensajes de texto del aviso', () => {
-  const m = telefonosAutorizados('+34 600 111 222=u1, 0034611222333=u2,malo');
+  const m = telefonosAutorizados('+34 600 111 222=u1, 0034611222333=ana@fisquo.com,malo');
   assert.equal(m.get('34600111222'), 'u1');
-  assert.equal(m.get('34611222333'), 'u2');
+  assert.equal(m.get('34611222333'), 'ana@fisquo.com');
   assert.equal(m.size, 2);
   const aviso = { entry: [{ changes: [{ value: { messages: [
     { id: 'w1', from: '34600111222', type: 'text', text: { body: 'Factura a Pepe' } },
