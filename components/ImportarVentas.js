@@ -1,5 +1,7 @@
 'use client';
 
+import { useT } from '@/components/Idioma';
+
 import { useId, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { eur, fechaTexto, pctCorto } from '@/lib/formato';
@@ -8,6 +10,7 @@ const NOMBRES = { shopify: 'Shopify', woocommerce: 'WooCommerce', sumup: 'SumUp'
 
 // Importar ventas de un TPV o de una tienda online: sube el archivo, revisa los días y guarda un cierre de caja por día.
 export default function ImportarVentas({ actividades }) {
+  const tr = useT();
   const router = useRouter();
   const ayudaId = useId();
   const [previa, setPrevia] = useState(null);
@@ -51,28 +54,28 @@ export default function ImportarVentas({ actividades }) {
 
   return (
     <section className="bloque">
-      <p className="nota">Exporta las ventas o los pedidos desde Shopify, WooCommerce, SumUp o Square (o cualquier Excel con fecha, producto, cantidad e importe) y súbelo. Cada día se guarda como un cierre de caja; los productos se emparejan con tu catálogo por referencia (SKU), código de barras o nombre.</p>
-      <label className="boton sec">{ocupado && !previa ? 'Leyendo…' : 'Elegir archivo (.csv o .xlsx)'}<input type="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden onChange={subir} disabled={ocupado} /></label>
-      {msg && <p className={msg.startsWith('✓') ? 'nota' : 'error'} role={msg.startsWith('✓') ? 'status' : 'alert'}>{msg}</p>}
+      <p className="nota">{tr("Exporta las ventas o los pedidos desde Shopify, WooCommerce, SumUp o Square (o cualquier Excel con fecha, producto, cantidad e importe) y súbelo. Cada día se guarda como un cierre de caja; los productos se emparejan con tu catálogo por referencia (SKU), código de barras o nombre.")}</p>
+      <label className="boton sec">{(ocupado && !previa ? tr("Leyendo…") : tr("Elegir archivo (.csv o .xlsx)"))}<input type="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden onChange={subir} disabled={ocupado} /></label>
+      {msg && <p className={msg.startsWith('✓') ? 'nota' : 'error'} role={msg.startsWith('✓') ? 'status' : 'alert'}>{tr(msg)}</p>}
       {previa && (
         <>
-          <p className="rotulo">{NOMBRES[previa.formato] || previa.formato} · {previa.dias.length} {previa.dias.length === 1 ? 'día' : 'días'}</p>
-          {actividades.length > 1 && <label>Actividad<select className="campo" value={actividad} onChange={(e) => setActividad(e.target.value)}>{actividades.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}</select></label>}
+          <p className="rotulo">{tr(NOMBRES[previa.formato] || previa.formato)} · {previa.dias.length} {(previa.dias.length === 1 ? tr("día") : tr("días"))}</p>
+          {actividades.length > 1 && <label>{tr("Actividad")}<select className="campo" value={actividad} onChange={(e) => setActividad(e.target.value)}>{actividades.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}</select></label>}
           <div className="caja-dias">
             {previa.dias.map((x) => (
               <label key={x.fecha} className={`tarjeta caja-dia${x.repetido ? ' repetido' : ''}`}>
                 <span><input type="checkbox" checked={elegidos.has(x.fecha)} onChange={() => cambiar(x.fecha)} /> <strong>{fechaTexto(x.fecha)} {x.fecha.slice(0, 4)}</strong>
-                  <small>{x.pedidos} {x.pedidos === 1 ? 'venta' : 'ventas'} · efectivo {eur(x.efectivo)} · tarjeta {eur(x.tarjeta)}{x.otros ? ` · otros ${eur(x.otros)}` : ''}</small>
-                  <small>{x.porIva.map((t) => `${pctCorto(t.pct)}: ${eur(t.total)}`).join(' · ')}{x.unidades.length ? ` · ${x.unidades.reduce((s, y) => s + y.cantidad, 0)} uds. del catálogo` : ''}{x.repetido ? ' · ya importado' : ''}</small>
+                  <small>{x.pedidos} {(x.pedidos === 1 ? tr("venta") : tr("ventas"))}{(" " + tr("· efectivo") + " ")}{eur(x.efectivo)}{(" " + tr("· tarjeta") + " ")}{eur(x.tarjeta)}{(x.otros ? (" " + tr("· otros {v1}", { v1: eur(x.otros) })) : "")}</small>
+                  <small>{x.porIva.map((t) => `${pctCorto(t.pct)}: ${eur(t.total)}`).join(' · ')}{(x.unidades.length ? (" " + tr("· {v1} uds. del catálogo", { v1: x.unidades.reduce((s, y) => s + y.cantidad, 0) })) : "")}{(x.repetido ? (" " + tr("· ya importado")) : "")}</small>
                 </span>
                 <b>{eur(x.total)}</b>
               </label>
             ))}
           </div>
-          {previa.sinEmparejar?.length > 0 && <p className="caja-aviso">Sin emparejar con el catálogo (no restan stock): {previa.sinEmparejar.slice(0, 12).map((x) => `${x.descripcion || x.sku} (${x.cantidad})`).join(', ')}{previa.sinEmparejar.length > 12 ? '…' : ''}. Añade su referencia en el catálogo y vuelve a importar.</p>}
-          {previa.avisos?.length > 0 && <ul className="caja-aviso">{previa.avisos.slice(0, 8).map((a, i) => <li key={i}>{a}</li>)}</ul>}
-          {!elegidos.size && <p id={ayudaId} className="nota">Selecciona al menos un día para importarlo.</p>}
-          <button type="button" className="boton" disabled={ocupado || !elegidos.size} aria-describedby={!elegidos.size ? ayudaId : undefined} onClick={guardar}>{ocupado ? 'Guardando…' : `Importar ${elegidos.size} ${elegidos.size === 1 ? 'día' : 'días'} (${eur(total)})`}</button>
+          {previa.sinEmparejar?.length > 0 && <p className="caja-aviso">{(tr("Sin emparejar con el catálogo (no restan stock):") + " ")}{previa.sinEmparejar.slice(0, 12).map((x) => `${x.descripcion || x.sku} (${x.cantidad})`).join(', ')}{(previa.sinEmparejar.length > 12 ? "…" : "")}{tr(". Añade su referencia en el catálogo y vuelve a importar.")}</p>}
+          {previa.avisos?.length > 0 && <ul className="caja-aviso">{previa.avisos.slice(0, 8).map((a, i) => <li key={i}>{tr(a)}</li>)}</ul>}
+          {!elegidos.size && <p id={ayudaId} className="nota">{tr("Selecciona al menos un día para importarlo.")}</p>}
+          <button type="button" className="boton" disabled={ocupado || !elegidos.size} aria-describedby={!elegidos.size ? ayudaId : undefined} onClick={guardar}>{(ocupado ? tr("Guardando…") : (elegidos.size === 1 ? tr('Importar {n} día ({importe})', { n: elegidos.size, importe: eur(total) }) : tr('Importar {n} días ({importe})', { n: elegidos.size, importe: eur(total) })))}</button>
         </>
       )}
     </section>

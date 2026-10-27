@@ -1,5 +1,7 @@
 'use client';
 
+import { useT } from '@/components/Idioma';
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
@@ -18,6 +20,7 @@ const NOMBRE = { pedido: 'pedido', albaran: 'albarán' };
 // Pedido de un cliente o albarán de entrega: cliente y líneas (del catálogo, para el stock). El albarán resta el stock al
 // guardarlo; luego uno o varios albaranes se agrupan en una factura.
 export default function FormDoc({ tipo, doc = null, plantilla = null, clientes = [], productos = [], stock = null, hoy, ivaPct = 21, numero: num }) {
+  const tr = useT();
   const router = useRouter();
   const base = doc || plantilla;
   const [x, setX] = useState(() => ({
@@ -57,49 +60,49 @@ export default function FormDoc({ tipo, doc = null, plantilla = null, clientes =
 
   return (
     <form className="formulario" onSubmit={enviar}>
-      {num && <p className="rotulo">{doc ? `${tipo === 'pedido' ? 'Pedido' : 'Albarán'} ${num}` : `Se numerará como ${num}`}</p>}
+      {num && <p className="rotulo">{(doc ? `${tr(tipo === 'pedido' ? 'Pedido' : 'Albarán')} ${num}` : tr("Se numerará como {v1}", { v1: num }))}</p>}
       <div className="dos-col">
-        <label>Fecha<input className="campo" type="date" value={x.fecha} onChange={(e) => poner('fecha', e.target.value)} required /></label>
-        {tipo === 'pedido' && <label>Entrega prevista (opcional)<input className="campo" type="date" value={x.entrega} onChange={(e) => poner('entrega', e.target.value)} /></label>}
+        <label>{tr("Fecha")}<input className="campo" type="date" value={x.fecha} onChange={(e) => poner('fecha', e.target.value)} required /></label>
+        {tipo === 'pedido' && <label>{tr("Entrega prevista (opcional)")}<input className="campo" type="date" value={x.entrega} onChange={(e) => poner('entrega', e.target.value)} /></label>}
       </div>
       <fieldset disabled={Boolean(x.pedido) && tipo === 'albaran'}>
-        <legend>Cliente</legend>
-        {!x.pedido && <select aria-label="Elegir cliente" className="campo" value={elegido} onChange={(e) => elegirCliente(e.target.value)}>
-          <option value="">+ Cliente nuevo</option>
+        <legend>{tr("Cliente")}</legend>
+        {!x.pedido && <select aria-label={tr("Elegir cliente")} className="campo" value={elegido} onChange={(e) => elegirCliente(e.target.value)}>
+          <option value="">{tr("+ Cliente nuevo")}</option>
           {clientes.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>}
-        <label>Nombre o razón social<input className="campo" placeholder="Razón social" value={x.cliente.nombre} onChange={(e) => ponerCliente('nombre', e.target.value)} required /></label>
-        <label>NIF<input spellCheck={false} autoCorrect="off" autoCapitalize="characters" className="campo" placeholder="NIF / CIF" value={x.cliente.nif} onChange={(e) => ponerCliente('nif', e.target.value)} /></label>
-        <label>Dirección de entrega<input className="campo" placeholder="Dirección de entrega" value={x.cliente.direccion} onChange={(e) => ponerCliente('direccion', e.target.value)} /></label>
-        <label>Código postal y ciudad<input className="campo" placeholder="Ciudad y CP" value={x.cliente.ciudad} onChange={(e) => ponerCliente('ciudad', e.target.value)} /></label>
+        <label>{tr("Nombre o razón social")}<input className="campo" placeholder={tr("Razón social")} value={x.cliente.nombre} onChange={(e) => ponerCliente('nombre', e.target.value)} required /></label>
+        <label>NIF<input spellCheck={false} autoCorrect="off" autoCapitalize="characters" className="campo" placeholder={tr("NIF / CIF")} value={x.cliente.nif} onChange={(e) => ponerCliente('nif', e.target.value)} /></label>
+        <label>{tr("Dirección de entrega")}<input className="campo" placeholder={tr("Dirección de entrega")} value={x.cliente.direccion} onChange={(e) => ponerCliente('direccion', e.target.value)} /></label>
+        <label>{tr("Código postal y ciudad")}<input className="campo" placeholder={tr("Ciudad y CP")} value={x.cliente.ciudad} onChange={(e) => ponerCliente('ciudad', e.target.value)} /></label>
       </fieldset>
       <fieldset className="lineas">
-        <legend>Productos</legend>
+        <legend>{tr("Productos")}</legend>
         {x.lineas.map((l, i) => {
           const queda = stock && l.producto ? stock[l.producto] : undefined;
           return (
             <div className="linea" key={i}>
               <div className="linea-cab">
-                <input className="campo" placeholder="Concepto" aria-label="Concepto" value={l.concepto} onChange={(e) => ponerLinea(i, 'concepto', e.target.value)} required />
-                {x.lineas.length > 1 && <button type="button" className="linea-quitar" aria-label="Quitar línea" onClick={() => poner('lineas', x.lineas.filter((_, j) => j !== i))}>×</button>}
+                <input className="campo" placeholder={tr("Concepto")} aria-label={tr("Concepto")} value={l.concepto} onChange={(e) => ponerLinea(i, 'concepto', e.target.value)} required />
+                {x.lineas.length > 1 && <button type="button" className="linea-quitar" aria-label={tr("Quitar línea")} onClick={() => poner('lineas', x.lineas.filter((_, j) => j !== i))}>×</button>}
               </div>
               <div className="linea-nums">
-                <label>Cantidad<input className="campo" inputMode="decimal" value={l.cantidad} onChange={(e) => ponerLinea(i, 'cantidad', e.target.value)} /></label>
-                <label>Precio<input className="campo" inputMode="decimal" placeholder="0,00" value={l.precio} onChange={(e) => ponerLinea(i, 'precio', e.target.value)} /></label>
-                <label>Dto. %<input className="campo" inputMode="decimal" placeholder="0" value={l.dto} onChange={(e) => ponerLinea(i, 'dto', e.target.value)} /></label>
+                <label>{tr("Cantidad")}<input className="campo" inputMode="decimal" value={l.cantidad} onChange={(e) => ponerLinea(i, 'cantidad', e.target.value)} /></label>
+                <label>{tr("Precio")}<input className="campo" inputMode="decimal" placeholder={"0,00"} value={l.precio} onChange={(e) => ponerLinea(i, 'precio', e.target.value)} /></label>
+                <label>{tr("Dto. %")}<input className="campo" inputMode="decimal" placeholder={"0"} value={l.dto} onChange={(e) => ponerLinea(i, 'dto', e.target.value)} /></label>
                 <label>IVA<select className="campo" value={l.ivaPct} onChange={(e) => ponerLinea(i, 'ivaPct', Number(e.target.value))}>{[...new Set([21, 10, 4, 0, Number(l.ivaPct)])].map((n) => <option key={n} value={n}>{n}%</option>)}</select></label>
               </div>
-              <p className="linea-total">{queda !== undefined && tipo === 'albaran' && <span className={`linea-stock${queda < nums[i].cantidad ? ' falta' : ''}`}>{queda < nums[i].cantidad ? `Solo quedan ${queda}` : `Quedan ${queda}`}</span>}{eur(baseLinea(nums[i]))}</p>
+              <p className="linea-total">{queda !== undefined && tipo === 'albaran' && <span className={`linea-stock${queda < nums[i].cantidad ? ' falta' : ''}`}>{(queda < nums[i].cantidad ? tr("Solo quedan {v1}", { v1: queda }) : tr("Quedan {v1}", { v1: queda }))}</span>}{eur(baseLinea(nums[i]))}</p>
             </div>
           );
         })}
-        {!x.pedido && productos.length > 0 && <div className="catalogo-chips" aria-label="Añadir del catálogo">{productos.map((p) => <button type="button" key={p.id} onClick={() => delCatalogo(p)}>+ {p.nombre}</button>)}</div>}
-        {!x.pedido && <button type="button" className="boton sec" onClick={() => poner('lineas', [...x.lineas, lineaVacia(x.lineas.at(-1)?.ivaPct ?? ivaPct)])}>+ Añadir otra línea</button>}
+        {!x.pedido && productos.length > 0 && <div className="catalogo-chips" aria-label={tr("Añadir del catálogo")}>{productos.map((p) => <button type="button" key={p.id} onClick={() => delCatalogo(p)}>+ {p.nombre}</button>)}</div>}
+        {!x.pedido && <button type="button" className="boton sec" onClick={() => poner('lineas', [...x.lineas, lineaVacia(x.lineas.at(-1)?.ivaPct ?? ivaPct)])}>{tr("+ Añadir otra línea")}</button>}
       </fieldset>
-      <label>Nota (opcional)<input className="campo" value={x.nota} onChange={(e) => poner('nota', e.target.value)} placeholder={tipo === 'albaran' ? 'Ej.: entregado a Marta en recepción' : 'Ej.: entregar por la mañana'} /></label>
-      <div className="totales"><strong>Total sin IVA {eur(total)}</strong></div>
-      {error && <p className="error" role="alert">{error}</p>}
-      <button className="boton" disabled={enviando}>{enviando ? 'Guardando…' : doc ? 'Guardar cambios' : `Crear ${NOMBRE[tipo]}`}</button>
+      <label>{tr("Nota (opcional)")}<input className="campo" value={x.nota} onChange={(e) => poner('nota', e.target.value)} placeholder={(tipo === 'albaran' ? tr("Ej.: entregado a Marta en recepción") : tr("Ej.: entregar por la mañana"))} /></label>
+      <div className="totales"><strong>{(tr("Total sin IVA") + " ")}{eur(total)}</strong></div>
+      {error && <p className="error" role="alert">{tr(error)}</p>}
+      <button className="boton" disabled={enviando}>{(enviando ? tr("Guardando…") : (doc ? tr("Guardar cambios") : tr("Crear {v1}", { v1: tr(NOMBRE[tipo]) })))}</button>
     </form>
   );
 }

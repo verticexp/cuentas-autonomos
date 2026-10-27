@@ -1,5 +1,7 @@
 'use client';
 
+import { useT } from '@/components/Idioma';
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
@@ -7,6 +9,7 @@ import { vibrar } from '@/lib/haptica';
 
 // «Cuadrar» o «Deshacer» el cuadre de la tarjeta de unos cierres con el ingreso del banco (app/api/caja/tarjeta).
 export default function CuadreTarjeta({ mov, cierres = [], deshacer = false }) {
+  const tr = useT();
   const router = useRouter();
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState('');
@@ -21,8 +24,8 @@ export default function CuadreTarjeta({ mov, cierres = [], deshacer = false }) {
   };
   return (
     <span className="caja-cuadre-acc">
-      <button type="button" className={`boton pequeno${deshacer ? ' sec' : ''}`} onClick={enviar} disabled={enviando}>{enviando ? (deshacer ? 'Deshaciendo…' : 'Cuadrando…') : deshacer ? 'Deshacer' : 'Cuadrar'}</button>
-      {error && <small className="error" role="alert">{error}</small>}
+      <button type="button" className={`boton pequeno${deshacer ? ' sec' : ''}`} onClick={enviar} disabled={enviando}>{(enviando ? (deshacer ? tr("Deshaciendo…") : tr("Cuadrando…")) : (deshacer ? tr("Deshacer") : tr("Cuadrar")))}</button>
+      {error && <small className="error" role="alert">{tr(error)}</small>}
     </span>
   );
 }

@@ -1,10 +1,13 @@
 'use client';
 
+import { useT } from '@/components/Idioma';
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 // Forma de cobro de un efecto y, si es cheque, confirming o pagaré, si ya se ha recibido (app/cartera/page.js).
 export default function EfectoCobro({ id, forma, formas, requiere, recibido, fecha }) {
+  const tr = useT();
   const router = useRouter();
   const [error, setError] = useState('');
   const [ocupado, setOcupado] = useState(false);
@@ -22,18 +25,18 @@ export default function EfectoCobro({ id, forma, formas, requiere, recibido, fec
   return (
     <div className="car-efecto">
       <label className="car-forma">
-        <span className="car-etq">Forma de cobro</span>
+        <span className="car-etq">{tr("Forma de cobro")}</span>
         <select value={forma} disabled={ocupado} onChange={(e) => enviar({ forma: e.target.value })}>
-          <option value="">Sin indicar</option>
-          {formas.map((f) => <option key={f.id} value={f.id}>{f.nombre}</option>)}
+          <option value="">{tr("Sin indicar")}</option>
+          {formas.map((f) => <option key={f.id} value={f.id}>{tr(f.nombre)}</option>)}
         </select>
       </label>
       {requiere ? (
         <button type="button" disabled={ocupado} className={`estado ${recibido ? 'ok' : 'pend'}`} onClick={() => enviar({ recibido: !recibido })}>
-          {recibido ? `Recibido${fecha ? ` el ${fecha}` : ''}` : 'Pendiente de recibir'}
+          {(recibido ? tr("Recibido{v1}", { v1: (fecha ? (" " + tr("el {v1}", { v1: fecha })) : "") }) : tr("Pendiente de recibir"))}
         </button>
       ) : null /* transferencia, tarjeta o domiciliación: no hay papel que recibir, así que nada que marcar */}
-      {error && <p className="error" role="alert">{error}</p>}
+      {error && <p className="error" role="alert">{tr(error)}</p>}
     </div>
   );
 }

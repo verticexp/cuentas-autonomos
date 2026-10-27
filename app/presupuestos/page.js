@@ -1,3 +1,4 @@
+import { textos } from '@/lib/idiomaServidor';
 import Vacio from '@/components/Vacio';
 import Ir from '@/components/Ir';
 import { requerir } from '@/lib/auth';
@@ -15,6 +16,7 @@ import '@/app/mk.css';
 export const dynamic = 'force-dynamic';
 
 export default async function Presupuestos() {
+  const tr = await textos();
   const u = await requerir('facturas');
   const todos = await leer(u, 'presupuestos');
   if (!todos) return <SinBD />;
@@ -23,12 +25,12 @@ export default async function Presupuestos() {
   const abiertos = lista.filter((p) => ['pendiente', 'aceptado'].includes(estadoDe(p, h)));
   return (
     <main className="pagina mk-look">
-      <Volver href="/facturas">Facturas</Volver>
+      <Volver href="/facturas">{tr("Facturas")}</Volver>
       <header className="cabecera">
-        <h1 className="titulo">Presupuestos</h1>
-        {puede(u, 'facturar') && <Ir href="/presupuestos/nuevo" tipo="subir" className="boton pequeno">Nuevo</Ir>}
+        <h1 className="titulo">{tr("Presupuestos")}</h1>
+        {puede(u, 'facturar') && <Ir href="/presupuestos/nuevo" tipo="subir" className="boton pequeno">{tr("Nuevo")}</Ir>}
       </header>
-      {abiertos.length > 0 && <p className="resumen-linea"><span>Abiertos <strong>{eur(abiertos.reduce((s, p) => s + importes(p).base, 0))}</strong> sin IVA</span></p>}
+      {abiertos.length > 0 && <p className="resumen-linea"><span>{(tr("Abiertos") + " ")}<strong>{eur(abiertos.reduce((s, p) => s + importes(p).base, 0))}</strong>{(" " + tr("sin IVA"))}</span></p>}
       {lista.length > 0 && <ul className="grupo-lista">
         {lista.map((p) => {
           const [txt, clase] = ESTADOS[estadoDe(p, h)];
@@ -37,11 +39,11 @@ export default async function Presupuestos() {
               <FilaFactura href={`/presupuestos/${p.id}`}>
                 <span className="txt">
                   <strong data-vt="cliente">{p.cliente.nombre}</strong>
-                  <small>{numeroPresupuesto(p)}{p.evento?.fecha ? ` · fecha de la operación: ${fechaTexto(p.evento.fecha)}` : ''}</small>
+                  <small>{numeroPresupuesto(p)}{(p.evento?.fecha ? (" " + tr("· fecha de la operación: {v1}", { v1: fechaTexto(p.evento.fecha) })) : "")}</small>
                 </span>
                 <span className="imp-col">
                   <span className="imp" data-vt="total">{eur(importes(p).total)}</span>
-                  <span className={`estado-txt ${clase}`}>{txt}</span>
+                  <span className={`estado-txt ${clase}`}>{tr(txt)}</span>
                 </span>
               </FilaFactura>
             </li>
@@ -49,10 +51,10 @@ export default async function Presupuestos() {
         })}
       </ul>}
       {!lista.length && (
-        <Vacio icono="presupuesto" titulo="Prepara tu primer presupuesto" accion={puede(u, 'facturar') && { href: '/presupuestos/nuevo', texto: 'Crear presupuesto' }}>Envíaselo al cliente con un enlace: lo acepta desde el móvil y lo conviertes en factura con un toque.</Vacio>
+        <Vacio icono="presupuesto" titulo={tr("Prepara tu primer presupuesto")} accion={puede(u, 'facturar') && { href: '/presupuestos/nuevo', texto: tr('Crear presupuesto') }}>{tr("Envíaselo al cliente con un enlace: lo acepta desde el móvil y lo conviertes en factura con un toque.")}</Vacio>
       )}
     </main>
   );
 }
 
-export const metadata = { title: 'Presupuestos' };
+export async function generateMetadata() { return { title: (await textos())("Presupuestos") }; }

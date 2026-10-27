@@ -1,5 +1,7 @@
 'use client';
 
+import { useT } from '@/components/Idioma';
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
@@ -9,6 +11,7 @@ import { eur } from '@/lib/formato';
 
 // Elegir albaranes sin facturar de un cliente y hacer con ellos una factura.
 export function FacturarAlbaranes({ grupos, hoy, actividades }) {
+  const tr = useT();
   const router = useRouter();
   const [elegidos, setElegidos] = useState(new Set());
   const [fecha, setFecha] = useState(hoy);
@@ -38,8 +41,8 @@ export function FacturarAlbaranes({ grupos, hoy, actividades }) {
           <ul className="grupo-lista">
             {g.albaranes.map((a) => (
               <li key={a.id} className="alb-fila">
-                <input type="checkbox" aria-label={`Elegir ${a.numero}`} checked={elegidos.has(a.id)} onChange={() => cambiar(g, a.id)} />
-                <Link href={`/albaranes/${a.id}`} className="fila"><span className="txt"><strong>{a.numero}</strong><small>{a.fecha} · {a.resumen}</small></span><span className="imp">{eur(a.base)}</span></Link>
+                <input type="checkbox" aria-label={tr("Elegir {v1}", { v1: a.numero })} checked={elegidos.has(a.id)} onChange={() => cambiar(g, a.id)} />
+                <Link href={`/albaranes/${a.id}`} className="fila"><span className="txt"><strong>{a.numero}</strong><small>{a.fecha} · {tr(a.resumen)}</small></span><span className="imp">{eur(a.base)}</span></Link>
               </li>
             ))}
           </ul>
@@ -48,11 +51,11 @@ export function FacturarAlbaranes({ grupos, hoy, actividades }) {
       {elegidos.size > 0 && (
         <div className="tarjeta alb-facturar">
           <div className="dos-col">
-            <label>Fecha de la factura<input className="campo" type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} /></label>
-            {actividades.length > 1 && <label>Actividad<select className="campo" value={actividad} onChange={(e) => setActividad(e.target.value)}>{actividades.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}</select></label>}
+            <label>{tr("Fecha de la factura")}<input className="campo" type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} /></label>
+            {actividades.length > 1 && <label>{tr("Actividad")}<select className="campo" value={actividad} onChange={(e) => setActividad(e.target.value)}>{actividades.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}</select></label>}
           </div>
-          {msg && <p className="error" role="alert">{msg}</p>}
-          <button type="button" className="boton" disabled={ocupado} onClick={facturar}>{ocupado ? 'Facturando…' : `Facturar ${elegidos.size} ${elegidos.size === 1 ? 'albarán' : 'albaranes'} (${eur(total)} sin IVA)`}</button>
+          {msg && <p className="error" role="alert">{tr(msg)}</p>}
+          <button type="button" className="boton" disabled={ocupado} onClick={facturar}>{(ocupado ? tr("Facturando…") : (elegidos.size === 1 ? tr('Facturar {n} albarán ({importe} sin IVA)', { n: elegidos.size, importe: eur(total) }) : tr('Facturar {n} albaranes ({importe} sin IVA)', { n: elegidos.size, importe: eur(total) })))}</button>
         </div>
       )}
     </>
@@ -61,11 +64,12 @@ export function FacturarAlbaranes({ grupos, hoy, actividades }) {
 
 // Cerrar (o reabrir) un pedido que ya no se va a servir entero.
 export function CerrarPedido({ id, cerrado }) {
+  const tr = useT();
   const router = useRouter();
   const [error, setError] = useState('');
   const cambiar = async () => {
     setError('');
     try { await llamar('/api/albaranes', { method: 'POST', body: JSON.stringify({ accion: 'cerrar', id, cerrado: !cerrado }) }); router.refresh(); } catch (e) { setError(e.message); }
   };
-  return <><button type="button" className="boton sec" onClick={cambiar}>{cerrado ? 'Reabrir el pedido' : 'Cerrar el pedido'}</button>{error && <span className="error" role="alert">{error}</span>}</>;
+  return <><button type="button" className="boton sec" onClick={cambiar}>{(cerrado ? tr("Reabrir el pedido") : tr("Cerrar el pedido"))}</button>{error && <span className="error" role="alert">{tr(error)}</span>}</>;
 }

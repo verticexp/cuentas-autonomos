@@ -1,11 +1,14 @@
 'use client';
 
+import { useT } from '@/components/Idioma';
+
 import { useState } from 'react';
 
 // En el móvil (pantalla táctil) abre el menú de compartir con el PDF (Guardar en Archivos, Imprimir, WhatsApp, Mail…);
 // en el ordenador lo descarga directamente. Safari y Chrome de escritorio también tienen navigator.share con archivos,
 // y en el Mac abría el menú de compartir en vez de descargar: por eso se mira que el dispositivo sea táctil.
 export default function DescargarPdf({ id, nombre, url = `/api/facturas/pdf?id=${encodeURIComponent(id)}` }) {
+  const tr = useT();
   const [estado, setEstado] = useState('');
   const bajar = async () => {
     setEstado('Generando…');
@@ -32,8 +35,8 @@ export default function DescargarPdf({ id, nombre, url = `/api/facturas/pdf?id=$
   const generando = estado === 'Generando…';
   return (
     <div style={{ textAlign: 'right' }}>
-      <button className="boton pequeno" onClick={bajar} disabled={generando}>{generando ? estado : 'Descargar PDF'}</button>
-      {estado && !generando && <p className="error" role="alert">{estado}</p>}
+      <button className="boton pequeno" onClick={bajar} disabled={generando}>{(generando ? tr(estado) : tr("Descargar PDF"))}</button>
+      {estado && !generando && <p className="error" role="alert">{tr(estado)}</p>}
     </div>
   );
 }

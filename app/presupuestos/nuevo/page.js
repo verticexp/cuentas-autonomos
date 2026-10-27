@@ -1,3 +1,4 @@
+import { textos } from '@/lib/idiomaServidor';
 import { requerir } from '@/lib/auth';
 import { leer } from '@/lib/redis';
 import { siguienteNumero } from '@/lib/calculos';
@@ -13,6 +14,7 @@ import '@/app/mk.css';
 export const dynamic = 'force-dynamic';
 
 export default async function Nuevo() {
+  const tr = await textos();
   const u = await requerir('facturar');
   const [presupuestos, clientes] = await Promise.all([leer(u, 'presupuestos'), leer(u, 'clientes')]);
   if (!presupuestos) return <SinBD />;
@@ -20,11 +22,11 @@ export default async function Nuevo() {
   const anio = Number(h.slice(0, 4));
   return (
     <main className="pagina mk-look">
-      <Volver href="/presupuestos">Presupuestos</Volver>
-      <h1 className="titulo">Nuevo presupuesto</h1>
+      <Volver href="/presupuestos">{tr("Presupuestos")}</Volver>
+      <h1 className="titulo">{tr("Nuevo presupuesto")}</h1>
       <FormPresupuesto clientes={clientes} actividades={actividadesDe(u)} hoy={h} numero={numeroPresupuesto({ numero: siguienteNumero(presupuestos, anio, 'P'), anio })} />
     </main>
   );
 }
 
-export const metadata = { title: 'Nuevo presupuesto' };
+export async function generateMetadata() { return { title: (await textos())("Nuevo presupuesto") }; }

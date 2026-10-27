@@ -1,3 +1,4 @@
+import { textos } from '@/lib/idiomaServidor';
 import { sinFuncion } from '@/lib/planes';
 import SinPlan from '@/components/SinPlan';
 import { requerir } from '@/lib/auth';
@@ -16,6 +17,7 @@ export const dynamic = 'force-dynamic';
 
 // Pedido o albarán nuevo. ?pedido=ID: el albarán de lo que falta por servir de ese pedido.
 export default async function Nuevo({ searchParams }) {
+  const tr = await textos();
   const u = await requerir('facturar');
   if (sinFuncion(u.plan, 'albaranes')) return <SinPlan usuario={u} funcion="albaranes" />;
   const sp = await searchParams;
@@ -31,7 +33,7 @@ export default async function Nuevo({ searchParams }) {
   return (
     <main className="pagina mk-look">
       <Volver href={pedido ? `/albaranes/${pedido.id}` : `/albaranes${tipo === 'albaran' ? '?ver=albaranes' : ''}`} />
-      <h1 className="titulo">{tipo === 'pedido' ? 'Nuevo pedido' : pedido ? `Entrega del pedido ${numeroDoc(pedido)}` : 'Nuevo albarán'}</h1>
+      <h1 className="titulo">{(tipo === 'pedido' ? tr("Nuevo pedido") : (pedido ? tr("Entrega del pedido {v1}", { v1: numeroDoc(pedido) }) : tr("Nuevo albarán")))}</h1>
       <FormDoc tipo={tipo} plantilla={plantilla} clientes={clientes} productos={datos.productos.sort((a, b) => a.nombre.localeCompare(b.nombre))} stock={stock} hoy={h}
         ivaPct={actividadesDe(u)[0].ivaPct ?? 21} numero={numeroDoc({ tipo, anio, numero: siguiente(datos.albaranes, tipo, anio) })} />
     </main>
@@ -40,6 +42,7 @@ export default async function Nuevo({ searchParams }) {
 
 // La pestaña dice lo mismo que el título: la entrega de un pedido o un albarán (?tipo=albaran); si no, un pedido.
 export async function generateMetadata({ searchParams }) {
+  const tr = await textos();
   const sp = await searchParams;
-  return { title: sp.pedido ? 'Entrega de un pedido' : sp.tipo === 'albaran' ? 'Nuevo albarán' : 'Nuevo pedido' };
+  return { title: (sp.pedido ? tr("Entrega de un pedido") : (sp.tipo === 'albaran' ? tr("Nuevo albarán") : tr("Nuevo pedido"))) };
 }

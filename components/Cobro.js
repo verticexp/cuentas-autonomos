@@ -1,5 +1,7 @@
 'use client';
 
+import { useT } from '@/components/Idioma';
+
 import { useId, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
@@ -16,6 +18,7 @@ const aTexto = (n) => String(n).replace('.', ',');
 // deshacer: 'cobrada' | 'parcial' | null (lib/cobroManual.js deshacerDe). hoy y desde: AAAA-MM-DD (límites de la fecha).
 // secundario: la factura aún no se ha enviado y lo principal es mandarla (auditoría U-10); cobrar sigue a mano, en suave.
 export default function Cobro({ id, cobrada, total, pagado, pendiente, cobro, deshacer, hoy, desde, secundario = false, formaInicial = '' }) {
+  const tr = useT();
   const router = useRouter();
   const pref = useId();
   const [ocupado, setOcupado] = useState(false);
@@ -42,39 +45,39 @@ export default function Cobro({ id, cobrada, total, pagado, pendiente, cobro, de
   if (cobrada) {
     return (
       <div className="cobro cobro-hecho">
-        <p className="cobro-texto">✓ Cobrada{cobro?.fecha ? ` el ${fechaTexto(cobro.fecha.slice(0, 10))}` : ''}{VIA[cobro?.metodo] || ''}</p>
-        {deshacer === 'cobrada' && <button type="button" className="cobro-enlace" disabled={ocupado} onClick={quitar}>Deshacer</button>}
-        {error && <p className="error" role="alert">{error}</p>}
+        <p className="cobro-texto">{tr("✓ Cobrada")}{(cobro?.fecha ? (" " + tr("el {v1}", { v1: fechaTexto(cobro.fecha.slice(0, 10)) })) : "")}{VIA[cobro?.metodo] ? ' ' + tr(VIA[cobro.metodo].trim()) : ''}</p>
+        {deshacer === 'cobrada' && <button type="button" className="cobro-enlace" disabled={ocupado} onClick={quitar}>{tr("Deshacer")}</button>}
+        {error && <p className="error" role="alert">{tr(error)}</p>}
       </div>
     );
   }
   return (
     <div className="cobro">
-      {pagado > 0 && <p className="cobro-parcial">Cobrado {eur(pagado)} de {eur(total)} · faltan <strong>{eur(pendiente)}</strong></p>}
+      {pagado > 0 && <p className="cobro-parcial">{(tr("Cobrado") + " ")}{eur(pagado)}{(" " + tr("de") + " ")}{eur(total)}{(" " + tr("· faltan") + " ")}<strong>{eur(pendiente)}</strong></p>}
       <button type="button" className={`cobro-boton${secundario ? ' sec' : ''}`} disabled={ocupado} onClick={cobrarTodo}>
-        {ocupado ? 'Cobrando…' : pagado > 0 ? `✓ Cobrar lo que falta (${eur(pendiente)})` : '✓ Marcar como cobrada'}
+        {(ocupado ? tr("Cobrando…") : (pagado > 0 ? tr("✓ Cobrar lo que falta ({v1})", { v1: eur(pendiente) }) : tr("✓ Marcar como cobrada")))}
       </button>
       <div className="cobro-menores">
-        {pendiente > 0 && <button type="button" className="cobro-enlace" aria-expanded={abierto} aria-controls={`${pref}-form`} onClick={() => setAbierto((v) => !v)}>Cambiar fecha, importe o forma</button>}
-        {deshacer === 'parcial' && <button type="button" className="cobro-enlace" disabled={ocupado} onClick={quitar}>Deshacer el último cobro</button>}
+        {pendiente > 0 && <button type="button" className="cobro-enlace" aria-expanded={abierto} aria-controls={`${pref}-form`} onClick={() => setAbierto((v) => !v)}>{tr("Cambiar fecha, importe o forma")}</button>}
+        {deshacer === 'parcial' && <button type="button" className="cobro-enlace" disabled={ocupado} onClick={quitar}>{tr("Deshacer el último cobro")}</button>}
       </div>
       {abierto && (
         <form id={`${pref}-form`} className="cobro-form" onSubmit={cobrarConDatos}>
-          <label>¿Cuándo la cobraste?<input className="campo" type="date" value={fecha} min={desde} max={hoy} required onChange={(e) => setFecha(e.target.value)} /></label>
-          <label>Importe cobrado (€)<input className="campo" inputMode="decimal" value={importe} onChange={(e) => setImporte(e.target.value)} required /></label>
-          <label>¿Cómo te pagó?<select className="campo" value={forma} onChange={(e) => setForma(e.target.value)}>
-            <option value="">Transferencia, tarjeta u otra forma</option>
-            <option value="efectivo">Efectivo</option>
+          <label>{tr("¿Cuándo la cobraste?")}<input className="campo" type="date" value={fecha} min={desde} max={hoy} required onChange={(e) => setFecha(e.target.value)} /></label>
+          <label>{tr("Importe cobrado (€)")}<input className="campo" inputMode="decimal" value={importe} onChange={(e) => setImporte(e.target.value)} required /></label>
+          <label>{tr("¿Cómo te pagó?")}<select className="campo" value={forma} onChange={(e) => setForma(e.target.value)}>
+            <option value="">{tr("Transferencia, tarjeta u otra forma")}</option>
+            <option value="efectivo">{tr("Efectivo")}</option>
           </select></label>
-          {forma === 'efectivo' && <p className="nota">Si en el año cobras a un cliente más de 6.000 € en efectivo, el 347 lo declara aparte.</p>}
-          <p className="nota">Si cobras menos de lo que falta, la factura sigue pendiente por el resto.</p>
+          {forma === 'efectivo' && <p className="nota">{tr("Si en el año cobras a un cliente más de 6.000 € en efectivo, el 347 lo declara aparte.")}</p>}
+          <p className="nota">{tr("Si cobras menos de lo que falta, la factura sigue pendiente por el resto.")}</p>
           <div className="cobro-form-botones">
-            <button className="boton" disabled={ocupado}>{ocupado ? 'Guardando…' : 'Registrar cobro'}</button>
-            <button type="button" className="boton sec" onClick={() => setAbierto(false)}>Cancelar</button>
+            <button className="boton" disabled={ocupado}>{(ocupado ? tr("Guardando…") : tr("Registrar cobro"))}</button>
+            <button type="button" className="boton sec" onClick={() => setAbierto(false)}>{tr("Cancelar")}</button>
           </div>
         </form>
       )}
-      {error && <p className="error" role="alert">{error}</p>}
+      {error && <p className="error" role="alert">{tr(error)}</p>}
     </div>
   );
 }

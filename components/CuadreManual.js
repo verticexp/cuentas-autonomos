@@ -1,5 +1,7 @@
 'use client';
 
+import { useT } from '@/components/Idioma';
+
 import { useId, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
@@ -14,6 +16,7 @@ const pct = (c, t) => (t ? `${(Math.round((c / t) * 1000) / 10).toLocaleString('
 // un ingreso con otro concepto…), se elige el ingreso del banco y los cierres cuya tarjeta liquida. La comisión puede
 // llegar al 10 %. movs: ingresos pendientes { id, fecha, importe, concepto }; cierres: con tarjeta sin cuadrar { id, fecha, tarjeta, numero }.
 export default function CuadreManual({ movs = [], cierres = [] }) {
+  const tr = useT();
   const router = useRouter();
   const ayudaId = useId();
   const [mov, setMov] = useState('');
@@ -47,18 +50,17 @@ export default function CuadreManual({ movs = [], cierres = [] }) {
 
   return (
     <details className="caja-mano">
-      <summary>Cuadrar a mano</summary>
-      <p className="nota">Si Fisquo no propone el cuadre de un ingreso, elígelo aquí con los días cuya tarjeta liquida.</p>
-      <label>Ingreso del banco
-        <select className="campo" value={mov} onChange={(e) => cambiarMov(e.target.value)}>
-          <option value="">Elige un ingreso…</option>
-          {movs.map((x) => <option key={x.id} value={x.id}>{fechaTexto(x.fecha)} · {eur(x.importe)}{x.concepto ? ` · ${x.concepto.slice(0, 40)}` : ''}</option>)}
+      <summary>{tr("Cuadrar a mano")}</summary>
+      <p className="nota">{tr("Si Fisquo no propone el cuadre de un ingreso, elígelo aquí con los días cuya tarjeta liquida.")}</p>
+      <label>{tr("Ingreso del banco")}<select className="campo" value={mov} onChange={(e) => cambiarMov(e.target.value)}>
+          <option value="">{tr("Elige un ingreso…")}</option>
+          {movs.map((x) => <option key={x.id} value={x.id}>{fechaTexto(x.fecha)} · {eur(x.importe)}{(x.concepto ? ` · ${x.concepto.slice(0, 40)}` : "")}</option>)}
         </select>
       </label>
       {m && (
         posibles.length ? (
           <fieldset className="caja-mano-dias">
-            <legend>Tarjeta que liquida</legend>
+            <legend>{tr("Tarjeta que liquida")}</legend>
             {posibles.map((f) => (
               <label key={f.id} className="check caja-mano-dia">
                 <input type="checkbox" checked={elegidos.has(f.id)} onChange={() => alternar(f.id)} />
@@ -67,14 +69,14 @@ export default function CuadreManual({ movs = [], cierres = [] }) {
               </label>
             ))}
           </fieldset>
-        ) : <p className="nota">No hay cierres con tarjeta sin cuadrar del mes anterior al {fechaTexto(m.fecha)}.</p>
+        ) : <p className="nota">{(tr("No hay cierres con tarjeta sin cuadrar del mes anterior al") + " ")}{fechaTexto(m.fecha)}.</p>
       )}
       {m && elegidos.size > 0 && (
-        <p className="caja-mano-res" aria-live="polite">Tarjeta {eur(tarjeta)} · ingreso {eur(m.importe)}{!estado ? ` · ${comision > 0 ? `comisión ${eur(comision)} (${pct(comision, tarjeta)})` : 'sin comisión'}` : ''}</p>
+        <p className="caja-mano-res" aria-live="polite">{(tr("Tarjeta") + " ")}{eur(tarjeta)}{(" " + tr("· ingreso") + " ")}{eur(m.importe)}{!estado ? ` · ${comision > 0 ? tr('comisión {importe} ({porcentaje})', { importe: eur(comision), porcentaje: pct(comision, tarjeta) }) : tr('sin comisión')}` : ''}</p>
       )}
-      {estado && <p id={ayudaId} className={m && elegidos.size ? 'error' : 'nota'}>{estado}</p>}
-      {error && <p className="error" role="alert">{error}</p>}
-      <button type="button" className="boton" onClick={enviar} disabled={enviando || Boolean(estado)} aria-describedby={estado ? ayudaId : undefined}>{enviando ? 'Cuadrando…' : 'Cuadrar a mano'}</button>
+      {estado && <p id={ayudaId} className={m && elegidos.size ? 'error' : 'nota'}>{tr(estado)}</p>}
+      {error && <p className="error" role="alert">{tr(error)}</p>}
+      <button type="button" className="boton" onClick={enviar} disabled={enviando || Boolean(estado)} aria-describedby={estado ? ayudaId : undefined}>{(enviando ? tr("Cuadrando…") : tr("Cuadrar a mano"))}</button>
     </details>
   );
 }

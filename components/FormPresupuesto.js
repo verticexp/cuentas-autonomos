@@ -1,5 +1,7 @@
 'use client';
 
+import { useT } from '@/components/Idioma';
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
@@ -18,6 +20,7 @@ const lineasDe = (x) => (x.lineas?.length
   : [{ concepto: x.concepto || '', cantidad: '1', precio: aTexto(x.base) }]);
 
 export default function FormPresupuesto({ presupuesto, clientes, actividades, hoy, numero }) {
+  const tr = useT();
   const router = useRouter();
   const nuevo = !presupuesto;
   const defecto = (id) => { const a = actividades.find((x) => x.id === id) || actividades[0]; return { ivaPct: a.ivaPct, irpfPct: a.irpfPct }; };
@@ -51,44 +54,44 @@ export default function FormPresupuesto({ presupuesto, clientes, actividades, ho
 
   return (
     <form className="formulario" onSubmit={enviar}>
-      {nuevo && <p className="rotulo">Se numerará como {numero}</p>}
+      {nuevo && <p className="rotulo">{(tr("Se numerará como") + " ")}{numero}</p>}
       {actividades.length > 1 && <Deslizable className={`tipo ${actividades.length === 2 ? 'dos' : 'varias'}`}>
         {actividades.map(({ id, nombre }) => (
           <button type="button" key={id} className={p.actividad === id ? 'activo' : ''} onClick={() => setP((x) => ({ ...x, actividad: id, ...(nuevo ? defecto(id) : {}) }))}>{nombre}</button>
         ))}
       </Deslizable>}
-      <label>Fecha<input className="campo" type="date" value={p.fecha} onChange={(e) => poner('fecha', e.target.value)} required /></label>
+      <label>{tr("Fecha")}<input className="campo" type="date" value={p.fecha} onChange={(e) => poner('fecha', e.target.value)} required /></label>
       <fieldset>
-        <legend>Cliente</legend>
-        <select aria-label="Elegir cliente" className="campo" value={elegido} onChange={(e) => elegirCliente(e.target.value)}>
-          <option value="">+ Cliente nuevo</option>
+        <legend>{tr("Cliente")}</legend>
+        <select aria-label={tr("Elegir cliente")} className="campo" value={elegido} onChange={(e) => elegirCliente(e.target.value)}>
+          <option value="">{tr("+ Cliente nuevo")}</option>
           {[...clientes].sort((a, b) => a.nombre.localeCompare(b.nombre)).map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
-        <label>Nombre o razón social<input className="campo" placeholder="Nombre o razón social" value={p.cliente.nombre} onChange={(e) => ponerCliente('nombre', e.target.value)} required /></label>
-        <label>NIF<input spellCheck={false} autoCorrect="off" autoCapitalize="characters" className="campo" placeholder="NIF / CIF" value={p.cliente.nif} onChange={(e) => ponerCliente('nif', e.target.value)} /></label>
-        <label>Dirección<input className="campo" placeholder="Dirección" value={p.cliente.direccion} onChange={(e) => ponerCliente('direccion', e.target.value)} /></label>
-        <label>Código postal y ciudad<input className="campo" placeholder="Ciudad y CP" value={p.cliente.ciudad} onChange={(e) => ponerCliente('ciudad', e.target.value)} /></label>
+        <label>{tr("Nombre o razón social")}<input className="campo" placeholder={tr("Nombre o razón social")} value={p.cliente.nombre} onChange={(e) => ponerCliente('nombre', e.target.value)} required /></label>
+        <label>NIF<input spellCheck={false} autoCorrect="off" autoCapitalize="characters" className="campo" placeholder={tr("NIF / CIF")} value={p.cliente.nif} onChange={(e) => ponerCliente('nif', e.target.value)} /></label>
+        <label>{tr("Dirección")}<input className="campo" placeholder={tr("Dirección")} value={p.cliente.direccion} onChange={(e) => ponerCliente('direccion', e.target.value)} /></label>
+        <label>{tr("Código postal y ciudad")}<input className="campo" placeholder={tr("Ciudad y CP")} value={p.cliente.ciudad} onChange={(e) => ponerCliente('ciudad', e.target.value)} /></label>
       </fieldset>
       <div className="dos-col">
-        <label>Fecha de la operación (servicio o entrega, opcional)<input className="campo" type="date" value={p.evento?.fecha || ''} onChange={(e) => poner('evento', { ...p.evento, fecha: e.target.value })} /></label>
-        <label>Lugar (opcional)<input className="campo" placeholder="Ej.: C/ Mayor, 1, Valencia" value={p.evento?.lugar || ''} onChange={(e) => poner('evento', { ...p.evento, lugar: e.target.value })} /></label>
+        <label>{tr("Fecha de la operación (servicio o entrega, opcional)")}<input className="campo" type="date" value={p.evento?.fecha || ''} onChange={(e) => poner('evento', { ...p.evento, fecha: e.target.value })} /></label>
+        <label>{tr("Lugar (opcional)")}<input className="campo" placeholder={tr("Ej.: C/ Mayor, 1, Valencia")} value={p.evento?.lugar || ''} onChange={(e) => poner('evento', { ...p.evento, lugar: e.target.value })} /></label>
       </div>
       <fieldset className="lineas">
-        <legend>Conceptos</legend>
+        <legend>{tr("Conceptos")}</legend>
         {p.lineas.map((l, i) => (
           <div className="linea" key={i}>
             <div className="linea-cab">
-              <input className="campo" placeholder={i ? 'Concepto' : 'Sonido e iluminación para boda'} aria-label="Concepto" value={l.concepto} onChange={(e) => ponerLinea(i, 'concepto', e.target.value)} required />
-              {p.lineas.length > 1 && <button type="button" className="linea-quitar" aria-label="Quitar concepto" onClick={() => quitarLinea(i)}>×</button>}
+              <input className="campo" placeholder={(i ? tr("Concepto") : tr("Sonido e iluminación para boda"))} aria-label={tr("Concepto")} value={l.concepto} onChange={(e) => ponerLinea(i, 'concepto', e.target.value)} required />
+              {p.lineas.length > 1 && <button type="button" className="linea-quitar" aria-label={tr("Quitar concepto")} onClick={() => quitarLinea(i)}>×</button>}
             </div>
             <div className="linea-nums dos">
-              <label>Cantidad<input className="campo" inputMode="decimal" value={l.cantidad} onChange={(e) => ponerLinea(i, 'cantidad', e.target.value)} /></label>
-              <label>Precio (sin IVA)<input className="campo" inputMode="decimal" placeholder="0,00" value={l.precio} onChange={(e) => ponerLinea(i, 'precio', e.target.value)} required /></label>
+              <label>{tr("Cantidad")}<input className="campo" inputMode="decimal" value={l.cantidad} onChange={(e) => ponerLinea(i, 'cantidad', e.target.value)} /></label>
+              <label>{tr("Precio (sin IVA)")}<input className="campo" inputMode="decimal" placeholder={"0,00"} value={l.precio} onChange={(e) => ponerLinea(i, 'precio', e.target.value)} required /></label>
             </div>
             {p.lineas.length > 1 && <p className="linea-total">{eur(baseLinea(nums[i]))}</p>}
           </div>
         ))}
-        <button type="button" className="boton sec" onClick={anadirLinea}>+ Añadir otro concepto</button>
+        <button type="button" className="boton sec" onClick={anadirLinea}>{tr("+ Añadir otro concepto")}</button>
       </fieldset>
       <div className="dos-col">
         <label>IVA
@@ -99,19 +102,17 @@ export default function FormPresupuesto({ presupuesto, clientes, actividades, ho
         </label>
       </div>
       <div className="dos-col">
-        <label>Señal al aceptar
-          <select className="campo" value={p.senalPct} onChange={(e) => poner('senalPct', Number(e.target.value))}>{[0, 20, 30, 50].map((n) => <option key={n} value={n}>{n ? `${n}%` : 'Sin señal'}</option>)}</select>
+        <label>{tr("Señal al aceptar")}<select className="campo" value={p.senalPct} onChange={(e) => poner('senalPct', Number(e.target.value))}>{[0, 20, 30, 50].map((n) => <option key={n} value={n}>{(n ? `${n}%` : tr("Sin señal"))}</option>)}</select>
         </label>
-        <label>Válido durante
-          <select className="campo" value={p.validez} onChange={(e) => poner('validez', Number(e.target.value))}>{[7, 15, 30, 60].map((n) => <option key={n} value={n}>{n} días</option>)}</select>
+        <label>{tr("Válido durante")}<select className="campo" value={p.validez} onChange={(e) => poner('validez', Number(e.target.value))}>{[7, 15, 30, 60].map((n) => <option key={n} value={n}>{n}{(" " + tr("días"))}</option>)}</select>
         </label>
       </div>
-      <label>Condiciones (opcional)<input className="campo" placeholder="Incluye montaje y desmontaje" value={p.nota || ''} onChange={(e) => poner('nota', e.target.value)} /></label>
+      <label>{tr("Condiciones (opcional)")}<input className="campo" placeholder={tr("Incluye montaje y desmontaje")} value={p.nota || ''} onChange={(e) => poner('nota', e.target.value)} /></label>
       <div className="totales">
-        <span>Base {eur(t.base)}</span><span>IVA {eur(t.iva)}</span>{t.irpf > 0 && <span>IRPF −{eur(t.irpf)}</span>}<strong>Total {eur(t.total)}</strong>
+        <span>{(tr("Base") + " ")}{eur(t.base)}</span><span>{(tr("IVA") + " ")}{eur(t.iva)}</span>{t.irpf > 0 && <span>{tr("IRPF −")}{eur(t.irpf)}</span>}<strong>{(tr("Total") + " ")}{eur(t.total)}</strong>
       </div>
-      {error && <p className="error" role="alert">{error}</p>}
-      <button className="boton" disabled={enviando}>{enviando ? 'Guardando…' : nuevo ? 'Crear presupuesto' : 'Guardar cambios'}</button>
+      {error && <p className="error" role="alert">{tr(error)}</p>}
+      <button className="boton" disabled={enviando}>{(enviando ? tr("Guardando…") : (nuevo ? tr("Crear presupuesto") : tr("Guardar cambios")))}</button>
     </form>
   );
 }

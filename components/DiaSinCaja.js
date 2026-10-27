@@ -1,11 +1,14 @@
 'use client';
 
+import { useT } from '@/components/Idioma';
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
 
 // «No abrí»: marca un día sin cierre de caja como cerrado para que deje de avisarse (app/api/caja/cerrados).
 export default function DiaSinCaja({ fecha }) {
+  const tr = useT();
   const router = useRouter();
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState('');
@@ -16,8 +19,8 @@ export default function DiaSinCaja({ fecha }) {
   };
   return (
     <>
-      <button type="button" className="boton sec pequeno" onClick={marcar} disabled={enviando}>{enviando ? 'Marcando…' : 'No abrí'}</button>
-      {error && <small className="error" role="alert">{error}</small>}
+      <button type="button" className="boton sec pequeno" onClick={marcar} disabled={enviando}>{(enviando ? tr("Marcando…") : tr("No abrí"))}</button>
+      {error && <small className="error" role="alert">{tr(error)}</small>}
     </>
   );
 }
