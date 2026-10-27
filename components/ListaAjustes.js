@@ -82,7 +82,7 @@ export function CuentaYEmpresas({ u, app }) {
 // (app/ajustes/layout.js). Solo configuración: las pantallas de trabajo (nóminas, jornada, Pregunta a Fisquo…) están en «Más».
 export default async function ListaAjustes({ u }) {
   const app = esApp((await headers()).get('user-agent'));
-  const [llaves, avisos, whatsapp] = await Promise.all([Promise.all([redis.hlen(`passkeys:${u.id}`), redis.hlen(`dispositivos:${u.id}`)]).then(([a, b]) => Number(a) + Number(b)), redis.hlen(`push:${u.id}`), redis.get(`whatsapp:de:${u.id}`)]);
+  const [llaves, avisos, whatsapp] = await Promise.all([Promise.all([redis.hlen(`passkeys:${u.id}`), redis.hlen(`dispositivos:${u.id}`)]).then(([a, b]) => Number(a) + Number(b)), Promise.all([redis.hlen(`push:${u.id}`), redis.hlen(`apns:${u.id}`)]).then(([a, b]) => Number(a) + Number(b)), redis.get(`whatsapp:de:${u.id}`)]);
   const empresa = puede(u, 'empresa');
   const admin = u.rol === 'admin';
   const e = u.emisor || {};
@@ -150,7 +150,7 @@ export default async function ListaAjustes({ u }) {
 
       <Grupo titulo="Seguridad y avisos">
         <Fila href="/ajustes/seguridad" ico="seguridad" tono="violeta" titulo="Seguridad" valor={u.dosPasos?.secreto ? 'Dos pasos' : llaves ? 'Face ID' : ''} />
-        {!app && <Fila href="/ajustes/avisos" ico="avisos" tono="rojo" titulo="Avisos" valor={avisos ? 'Activados' : 'No'} />}
+        <Fila href="/ajustes/avisos" ico="avisos" tono="rojo" titulo="Avisos" valor={avisos ? 'Activados' : 'No'} />
         {admin && <Fila href="/ajustes/actividad" ico="registro" tono="violeta" titulo="Actividad" />}
       </Grupo>
 

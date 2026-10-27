@@ -19,6 +19,15 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return config
     }
 
+    // Notificaciones (AvisosPlugin.swift): el token de APNs de este iPhone, en hexadecimal.
+    func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        NotificationCenter.default.post(name: .fisquoTokenAPNs, object: deviceToken.map { String(format: "%02x", $0) }.joined())
+    }
+
+    func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        NotificationCenter.default.post(name: .fisquoErrorAPNs, object: error)
+    }
+
     // Enlaces que abren la app (universal links, cuando estén activados): los atiende Capacitor.
     func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
         ApplicationDelegateProxy.shared.application(app, open: url, options: options)
