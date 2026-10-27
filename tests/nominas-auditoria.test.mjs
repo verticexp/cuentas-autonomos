@@ -11,6 +11,9 @@ import { PDFDocument, PDFRawStream } from 'pdf-lib';
 import * as nominas from '../lib/nominas.js';
 import * as calculos from '../lib/calculos.js';
 import * as formato from '../lib/formato.js';
+import * as huecos from '../lib/huecos.js';
+import { traductor } from '../lib/i18n.js';
+import { mesEnIdioma } from '../lib/textos/mes.js';
 import { baseMensual, nominaCotizacion } from '../lib/cotizacion.js';
 import { retencionTrabajo } from '../lib/retencionIrpf.js';
 import { filasRecibo, reciboNominaPdf } from '../lib/reciboNomina.js';
@@ -138,14 +141,18 @@ function cargarJsx(ruta, sustituciones) {
   return modulo.exports;
 }
 
-const datosNomina = () => cargarJsx('../components/DatosNomina.js', { '@/lib/nominas': nominas });
+// El idioma de la app (components/Idioma.js, lib/idiomaServidor.js): en castellano, el texto tal cual y con sus huecos rellenos.
+const es = traductor(null, 'es');
+const idiomaCliente = { '@/components/Idioma': { useT: () => es }, '@/lib/huecos': huecos };
+const idiomaServidor = { '@/lib/idiomaServidor': { textos: async () => es, idiomaActual: async () => 'es' }, '@/lib/huecos': huecos, '@/lib/textos/mes': { mesEnIdioma } };
+const datosNomina = () => cargarJsx('../components/DatosNomina.js', { '@/lib/nominas': nominas, ...idiomaCliente });
 test('F2-11: solo las fichas nuevas tienen nómina completa marcada al abrir el formulario', () => {
   for (const e of [undefined, empleado({ cotizacion: undefined })]) {
     let estado = 0;
     const { FormEmpleado } = cargarJsx('../components/Nominas.js', {
       react: { ...React, useState: (inicial) => [estado++ === 1 ? true : inicial, () => {}] },
       'next/navigation': { useRouter: () => ({}) }, './Acciones': {}, '@/lib/transicion': {},
-      '@/lib/nominas': nominas, '@/lib/calculos': calculos, '@/lib/formato': formato, './DatosNomina': datosNomina(),
+      '@/lib/nominas': nominas, '@/lib/calculos': calculos, '@/lib/formato': formato, './DatosNomina': datosNomina(), ...idiomaCliente,
     });
     const html = renderToStaticMarkup(React.createElement(FormEmpleado, { empleado: e, hoy: '2026-10-23' }));
     assert.equal(/type="checkbox"[^>]*checked=""/.test(html), !e);
@@ -171,7 +178,7 @@ test('F2-19: el 111 se muestra con el próximo hábil, incluidos enero y el camb
       '@/lib/auth': { requerir: async () => ({}) }, '@/lib/redis': { leer: async (_, clave) => clave === 'nominas' ? [n] : [] },
       '@/lib/calculos': calculos, '@/lib/formato': { ...formato, hoy: () => hoy }, '@/lib/nominas': nominas,
       '@/lib/historialNominas': { equipoPorFecha: () => ({ actuales: [], futuras: [], bajas: [] }), historialNominas: (_, anio) => ({ anios: [anio], anio, meses: [] }) },
-      '@/components/Nominas': { FormEmpleado: Vacio, GenerarMes: Vacio }, '@/lib/jornada': {}, '../nominas.css': {}, '@/app/mk.css': {},
+      '@/components/Nominas': { FormEmpleado: Vacio, GenerarMes: Vacio }, '@/lib/jornada': {}, '../nominas.css': {}, '@/app/mk.css': {}, ...idiomaServidor,
     });
     const html = renderToStaticMarkup(await Pagina({ searchParams: Promise.resolve({}) }));
     assert.ok(html.includes(`Hasta el ${esperado}.`), html);
