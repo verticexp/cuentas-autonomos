@@ -5,6 +5,7 @@ import { redis } from '@/lib/redis';
 import SinBD from '@/components/SinBD';
 import FormCodigo from '@/components/FormCodigo';
 import PanelMarca from '@/components/PanelMarca';
+import { textos } from '@/lib/idiomaServidor';
 import '@/app/legal.css';
 
 export const dynamic = 'force-dynamic';
@@ -14,6 +15,7 @@ const ERRORES = { 1: 'El código no es correcto. Escribe el que se ve ahora en l
 // bloqueo con otra cuenta (?bloqueo=1). Sin el reto de /api/login no hay nada que hacer aquí.
 export default async function DosPasos({ searchParams }) {
   if (!redis) return <SinBD />;
+  const tr = await textos();
   if (!(await cookies()).get('reto')?.value) redirect('/login');
   const { error, bloqueo } = await searchParams;
   return (
@@ -21,10 +23,10 @@ export default async function DosPasos({ searchParams }) {
       <PanelMarca />
       <div className="form-entrar">
         <FormCodigo errorInicial={ERRORES[error] || ''} inicio={bloqueo !== '1'} />
-        <p className="nota login-legal"><a href="/privacidad">Privacidad</a> · <a href="/condiciones">Condiciones</a></p>
+        <p className="nota login-legal"><a href="/privacidad">{tr('Privacidad')}</a> · <a href="/condiciones">{tr('Condiciones')}</a></p>
       </div>
     </main></TransicionPublica>
   );
 }
 
-export const metadata = { title: 'Verificación en dos pasos' };
+export async function generateMetadata() { return { title: (await textos())('Verificación en dos pasos') }; }
