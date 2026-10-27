@@ -16,8 +16,8 @@ export default async function PaginaCatalogo() {
   const productos = ((await leer(u, 'productos')) || []).sort((a, b) => a.nombre.localeCompare(b.nombre));
   return (
     <main className="pagina mk-look">
-      <Volver href="/facturas">{tr("Facturas")}</Volver>
-      <h1 className="titulo">{tr("Catálogo")}</h1>
+      <Volver href="/facturas">{tr('Facturas')}</Volver>
+      <h1 className="titulo">{tr('Catálogo')}</h1>
       <Catalogo igic={usaIgic(fiscalDe(u))} productos={productos} editar={puede(u, 'facturar')} inventario={Boolean(fiscalDe(u).inventario)} />
     </main>
   );

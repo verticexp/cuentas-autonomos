@@ -24,19 +24,19 @@ export function Borrar({ url, pregunta, volver }) {
   const [error, setError] = useState('');
   const borrar = async () => {
     setError('');
-    if (!(await confirmarAccion({ titulo: tr("Borrar"), texto: tr(pregunta), aceptar: tr("Borrar"), peligro: true }))) return;
+    if (!(await confirmarAccion({ titulo: tr('Borrar'), texto: tr(pregunta), aceptar: tr('Borrar'), peligro: true }))) return;
     try {
       await llamar(url, { method: 'DELETE' });
       if (volver) volverA(router, volver, 'atras', true);
       else router.refresh();
     } catch (e) { setError(e.message); }
   };
-  return <><button type="button" className="borrar" onClick={borrar}>{tr("Borrar")}</button>{error && <span className="error" role="alert">{tr(error)}</span>}</>;
+  return <><button type="button" className="borrar" onClick={borrar}>{tr('Borrar')}</button>{error && <span className="error" role="alert">{tr(error)}</span>}</>;
 }
 
 export function Imprimir() {
   const tr = useT();
-  return <button type="button" className="boton" onClick={() => window.print()}>{tr("Descargar PDF")}</button>;
+  return <button type="button" className="boton" onClick={() => window.print()}>{tr('Descargar PDF')}</button>;
 }
 
 // Icono de cada estado (`situacion` = { estado: 'curso' | 'listo' | 'fuera', dias }, de situacionTrimestre en lib/calculos.js).
@@ -48,7 +48,7 @@ export function EstadoTrimestre({ hecho, situacion, plazo, nota }) {
   const clave = hecho ? 'hecho' : situacion.estado;
   return (
     <div className={`pres pres-${clave}`}>
-      <p className="pres-estado"><span className="pres-txt"><span className="pres-punto" aria-hidden="true">{PUNTO[clave]}</span>{(hecho ? tr("Presentado") : tr(textoSituacion(situacion, plazo, nota)))}</span></p>
+      <p className="pres-estado"><span className="pres-txt"><span className="pres-punto" aria-hidden="true">{PUNTO[clave]}</span>{(hecho ? tr('Presentado') : tr(textoSituacion(situacion, plazo, nota)))}</span></p>
     </div>
   );
 }
@@ -93,12 +93,12 @@ export function Presentado({ anio, t, importe, pagado, con130 = true, situacion,
     });
   };
   const selector = (
-    <select className={`estado ${elegido === 'pagado' || (!con130 && elegido !== 'pendiente') ? 'ok' : `pend${situacion?.estado === 'fuera' ? ' fuera' : ''}`}`} value={elegido} onChange={cambiar} aria-label={tr("Estado del {v1} del {v2}T {v3}", { v1: (modelo || (con130 ? "130" : "303")), v2: t, v3: anio })} aria-disabled={guardando || undefined} aria-busy={guardando || undefined}>
-      <option value="pendiente">{tr("Pendiente")}</option>
+    <select className={`estado ${elegido === 'pagado' || (!con130 && elegido !== 'pendiente') ? 'ok' : `pend${situacion?.estado === 'fuera' ? ' fuera' : ''}`}`} value={elegido} onChange={cambiar} aria-label={tr('Estado del {modelo} del {trimestre}T {anio}', { modelo: (modelo || (con130 ? "130" : "303")), trimestre: t, anio: anio })} aria-disabled={guardando || undefined} aria-busy={guardando || undefined}>
+      <option value="pendiente">{tr('Pendiente')}</option>
       {con130 ? <>
-        <option value="pagado">{tr("Presentado y 130 pagado")}</option>
-        <option value="sinpagar">{tr("Presentado, 130 sin pagar")}</option>
-      </> : <><option value="sinpagar">{(devolucion ? tr("Presentado, a compensar") : tr("Presentado"))}</option>{(devolucion || elegido === 'devolucion') && <option value="devolucion">{tr("Presentado, pido la devolución")}</option>}</>}
+        <option value="pagado">{tr('Presentado y 130 pagado')}</option>
+        <option value="sinpagar">{tr('Presentado, 130 sin pagar')}</option>
+      </> : <><option value="sinpagar">{(devolucion ? tr('Presentado, a compensar') : tr('Presentado'))}</option>{(devolucion || elegido === 'devolucion') && <option value="devolucion">{tr('Presentado, pido la devolución')}</option>}</>}
     </select>
   );
   if (soloLectura) {
@@ -138,11 +138,11 @@ export function Presentado202({ anio, p, importe, pagado, soloLectura = false })
     } catch (err) { setError(err.message); }
   };
   const hecho = pagado !== undefined && pagado !== null;
-  if (soloLectura) return <span className={`estado-txt ${hecho ? 'e-ok' : 'e-pendiente'}`}>{(hecho ? tr("Presentado y pagado") : tr("Pendiente"))}</span>;
+  if (soloLectura) return <span className={`estado-txt ${hecho ? 'e-ok' : 'e-pendiente'}`}>{(hecho ? tr('Presentado y pagado') : tr('Pendiente'))}</span>;
   return (
-    <><select className={`estado ${hecho ? 'ok' : 'pend'}`} value={hecho ? 'pagado' : 'pendiente'} onChange={cambiar} aria-label={tr("Pago {v1} del 202", { v1: p })}>
-      <option value="pendiente">{tr("Pendiente")}</option>
-      <option value="pagado">{tr("Presentado y pagado")}</option>
+    <><select className={`estado ${hecho ? 'ok' : 'pend'}`} value={hecho ? 'pagado' : 'pendiente'} onChange={cambiar} aria-label={tr('Pago {pago} del 202', { pago: p })}>
+      <option value="pendiente">{tr('Pendiente')}</option>
+      <option value="pagado">{tr('Presentado y pagado')}</option>
     </select>{error && <span className="error" role="alert">{tr(error)}</span>}</>
   );
 }
@@ -154,7 +154,7 @@ export function PresentadoRet({ modelo, anio, t, hecho, soloLectura = false }) {
   const tr = useT();
   const router = useRouter();
   const [error, setError] = useState('');
-  if (soloLectura) return <span className={`estado-txt ${hecho ? 'e-ok' : 'e-pendiente'}`}>{(hecho ? tr("Presentado") : tr("Pendiente"))}</span>;
+  if (soloLectura) return <span className={`estado-txt ${hecho ? 'e-ok' : 'e-pendiente'}`}>{(hecho ? tr('Presentado') : tr('Pendiente'))}</span>;
   const cambiar = async (e) => {
     setError('');
     try {
@@ -163,9 +163,9 @@ export function PresentadoRet({ modelo, anio, t, hecho, soloLectura = false }) {
     } catch (err) { setError(err.message); }
   };
   return (
-    <><select className={`estado ${hecho ? 'ok' : 'pend'}`} value={hecho ? 'hecho' : 'pendiente'} onChange={cambiar} aria-label={tr("Estado del {v1} del {v2}T {v3}", { v1: modelo, v2: t, v3: anio })}>
-      <option value="pendiente">{tr("Pendiente")}</option>
-      <option value="hecho">{tr("Presentado")}</option>
+    <><select className={`estado ${hecho ? 'ok' : 'pend'}`} value={hecho ? 'hecho' : 'pendiente'} onChange={cambiar} aria-label={tr('Estado del {modelo} del {trimestre}T {anio}', { modelo: modelo, trimestre: t, anio: anio })}>
+      <option value="pendiente">{tr('Pendiente')}</option>
+      <option value="hecho">{tr('Presentado')}</option>
     </select>{error && <span className="error" role="alert">{tr(error)}</span>}</>
   );
 }

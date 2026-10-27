@@ -48,7 +48,7 @@ export default async function Nueva({ searchParams }) {
   return (
     <main className="pagina mk-look">
       <Volver href={original || plantilla ? `/facturas/${(original || plantilla).id}` : '/facturas'} />
-      <h1 className="titulo">{(original ? tr("Factura rectificativa") : (plantilla ? tr("Duplicar factura") : tr("Nueva factura")))}</h1>
+      <h1 className="titulo">{(original ? tr('Factura rectificativa') : (plantilla ? tr('Duplicar factura') : tr('Nueva factura')))}</h1>
       <AvisoTicketBai fiscal={fiscalDe(u)} />
       <FormFactura presentados={trimestresPresentados(u)} clienteInicial={clienteInicial} igic={usaIgic(fiscalDe(u))} recargo={usa303(fiscalDe(u))} oss={usa303(fiscalDe(u)) && Boolean(fiscalDe(u).oss)} margenes={['rebu', 'reav'].filter((k) => fiscalDe(u)[k])} reagp={fiscalDe(u).iva === 'reagp'} limiteSimplificada={limiteSimplificada(fiscalDe(u))} clientes={clientes} hoy={h} rectifica={original} plantilla={plantilla || null} notaDefecto={u.emisor?.notaDefecto || ''} numeros={numeros} actividades={actividades} productos={(productos || []).sort((a, b) => a.nombre.localeCompare(b.nombre))} stock={stock} riesgos={riesgos} bienes={gFichas.filter((g) => g.in && g.b > 0).sort((a, b) => b.f.localeCompare(a.f)).map((g) => ({ id: g.id, proveedor: g.c, fecha: g.f, base: g.b }))} proyectos={nombresProyectos([...fFichas, ...gFichas].map((f) => ({ proyecto: f.pr })))} />
     </main>

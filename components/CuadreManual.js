@@ -50,17 +50,17 @@ export default function CuadreManual({ movs = [], cierres = [] }) {
 
   return (
     <details className="caja-mano">
-      <summary>{tr("Cuadrar a mano")}</summary>
-      <p className="nota">{tr("Si Fisquo no propone el cuadre de un ingreso, elígelo aquí con los días cuya tarjeta liquida.")}</p>
-      <label>{tr("Ingreso del banco")}<select className="campo" value={mov} onChange={(e) => cambiarMov(e.target.value)}>
-          <option value="">{tr("Elige un ingreso…")}</option>
+      <summary>{tr('Cuadrar a mano')}</summary>
+      <p className="nota">{tr('Si Fisquo no propone el cuadre de un ingreso, elígelo aquí con los días cuya tarjeta liquida.')}</p>
+      <label>{tr('Ingreso del banco')}<select className="campo" value={mov} onChange={(e) => cambiarMov(e.target.value)}>
+          <option value="">{tr('Elige un ingreso…')}</option>
           {movs.map((x) => <option key={x.id} value={x.id}>{fechaTexto(x.fecha)} · {eur(x.importe)}{(x.concepto ? ` · ${x.concepto.slice(0, 40)}` : "")}</option>)}
         </select>
       </label>
       {m && (
         posibles.length ? (
           <fieldset className="caja-mano-dias">
-            <legend>{tr("Tarjeta que liquida")}</legend>
+            <legend>{tr('Tarjeta que liquida')}</legend>
             {posibles.map((f) => (
               <label key={f.id} className="check caja-mano-dia">
                 <input type="checkbox" checked={elegidos.has(f.id)} onChange={() => alternar(f.id)} />
@@ -69,14 +69,14 @@ export default function CuadreManual({ movs = [], cierres = [] }) {
               </label>
             ))}
           </fieldset>
-        ) : <p className="nota">{(tr("No hay cierres con tarjeta sin cuadrar del mes anterior al") + " ")}{fechaTexto(m.fecha)}.</p>
+        ) : <p className="nota">{tr('No hay cierres con tarjeta sin cuadrar del mes anterior al {fecha}.', { fecha: tr(fechaTexto(m.fecha)) })}</p>
       )}
       {m && elegidos.size > 0 && (
-        <p className="caja-mano-res" aria-live="polite">{(tr("Tarjeta") + " ")}{eur(tarjeta)}{(" " + tr("· ingreso") + " ")}{eur(m.importe)}{!estado ? ` · ${comision > 0 ? tr('comisión {importe} ({porcentaje})', { importe: eur(comision), porcentaje: pct(comision, tarjeta) }) : tr('sin comisión')}` : ''}</p>
+        <p className="caja-mano-res" aria-live="polite">{(!estado ? (comision > 0 ? tr('Tarjeta {tarjeta} · ingreso {ingreso} · comisión {comision} ({porcentaje})', { tarjeta: eur(tarjeta), ingreso: eur(m.importe), comision: eur(comision), porcentaje: pct(comision, tarjeta) }) : tr('Tarjeta {tarjeta} · ingreso {ingreso} · sin comisión', { tarjeta: eur(tarjeta), ingreso: eur(m.importe) })) : tr('Tarjeta {tarjeta} · ingreso {ingreso}', { tarjeta: eur(tarjeta), ingreso: eur(m.importe) }))}</p>
       )}
       {estado && <p id={ayudaId} className={m && elegidos.size ? 'error' : 'nota'}>{tr(estado)}</p>}
       {error && <p className="error" role="alert">{tr(error)}</p>}
-      <button type="button" className="boton" onClick={enviar} disabled={enviando || Boolean(estado)} aria-describedby={estado ? ayudaId : undefined}>{(enviando ? tr("Cuadrando…") : tr("Cuadrar a mano"))}</button>
+      <button type="button" className="boton" onClick={enviar} disabled={enviando || Boolean(estado)} aria-describedby={estado ? ayudaId : undefined}>{(enviando ? tr('Cuadrando…') : tr('Cuadrar a mano'))}</button>
     </details>
   );
 }

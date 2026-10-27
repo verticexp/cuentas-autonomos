@@ -19,7 +19,7 @@ export default function DiaSinCaja({ fecha }) {
   };
   return (
     <>
-      <button type="button" className="boton sec pequeno" onClick={marcar} disabled={enviando}>{(enviando ? tr("Marcando…") : tr("No abrí"))}</button>
+      <button type="button" className="boton sec pequeno" onClick={marcar} disabled={enviando}>{(enviando ? tr('Marcando…') : tr('No abrí'))}</button>
       {error && <small className="error" role="alert">{tr(error)}</small>}
     </>
   );

@@ -25,7 +25,7 @@ export default function VerifactuFactura({ factura, admin }) {
     setOcupado(false);
   };
   const anular = async () => {
-    const motivo = await pedirTexto({ titulo: tr("Anular el registro"), etiqueta: tr("Motivo de anulación"), aceptar: tr("Anular registro"), peligro: true, texto: tr(`Anular el registro solo si la factura se expidió por error (no existió). Si existió y estaba mal, haz una rectificativa.
+    const motivo = await pedirTexto({ titulo: tr('Anular el registro'), etiqueta: tr('Motivo de anulación'), aceptar: tr('Anular registro'), peligro: true, texto: tr(`Anular el registro solo si la factura se expidió por error (no existió). Si existió y estaba mal, haz una rectificativa.
 
 ¿Por qué se anula?`) });
     if (motivo) hacer({ accion: 'anular', id: factura.id, motivo }, () => volverA(router, '/facturas', 'atras', true));
@@ -34,17 +34,17 @@ export default function VerifactuFactura({ factura, admin }) {
     <section className="bloque">
       {subsanable && (
         <form className="formulario tarjeta" onSubmit={(e) => { e.preventDefault(); hacer({ accion: 'subsanar', id: factura.id, cliente }, () => router.refresh()); }}>
-          <h3>{tr("Subsanar el registro")}</h3>
-          <p className="nota">{(v.estado === 'Incorrecto' ? tr("La AEAT lo ha rechazado") : tr("La AEAT lo ha aceptado con errores"))}{(v.codigo ? (" " + tr("(código {v1})", { v1: v.codigo })) : "")}{(v.error ? `: ${tr(v.error)}` : "")}{tr(". Corrige los datos del cliente y se enviará otra vez como subsanación. Si lo que está mal son los importes o los conceptos, haz una rectificativa.")}</p>
+          <h3>{tr('Subsanar el registro')}</h3>
+          <p className="nota">{(v.estado === 'Incorrecto' ? (v.codigo ? (v.error ? tr('La AEAT lo ha rechazado (código {codigo}): {error}. Corrige los datos del cliente y se enviará otra vez como subsanación. Si lo que está mal son los importes o los conceptos, haz una rectificativa.', { codigo: v.codigo, error: tr(v.error) }) : tr('La AEAT lo ha rechazado (código {codigo}). Corrige los datos del cliente y se enviará otra vez como subsanación. Si lo que está mal son los importes o los conceptos, haz una rectificativa.', { codigo: v.codigo })) : (v.error ? tr('La AEAT lo ha rechazado: {error}. Corrige los datos del cliente y se enviará otra vez como subsanación. Si lo que está mal son los importes o los conceptos, haz una rectificativa.', { error: tr(v.error) }) : tr('La AEAT lo ha rechazado. Corrige los datos del cliente y se enviará otra vez como subsanación. Si lo que está mal son los importes o los conceptos, haz una rectificativa.'))) : (v.codigo ? (v.error ? tr('La AEAT lo ha aceptado con errores (código {codigo}): {error}. Corrige los datos del cliente y se enviará otra vez como subsanación. Si lo que está mal son los importes o los conceptos, haz una rectificativa.', { codigo: v.codigo, error: tr(v.error) }) : tr('La AEAT lo ha aceptado con errores (código {codigo}). Corrige los datos del cliente y se enviará otra vez como subsanación. Si lo que está mal son los importes o los conceptos, haz una rectificativa.', { codigo: v.codigo })) : (v.error ? tr('La AEAT lo ha aceptado con errores: {error}. Corrige los datos del cliente y se enviará otra vez como subsanación. Si lo que está mal son los importes o los conceptos, haz una rectificativa.', { error: tr(v.error) }) : tr('La AEAT lo ha aceptado con errores. Corrige los datos del cliente y se enviará otra vez como subsanación. Si lo que está mal son los importes o los conceptos, haz una rectificativa.'))))}</p>
           <div className="dos-col">
-            <label>{tr("Cliente")}<input className="campo" value={cliente.nombre} onChange={(e) => setCliente({ ...cliente, nombre: e.target.value })} required /></label>
+            <label>{tr('Cliente')}<input className="campo" value={cliente.nombre} onChange={(e) => setCliente({ ...cliente, nombre: e.target.value })} required /></label>
             <label>NIF<input spellCheck={false} autoCorrect="off" autoCapitalize="characters" className="campo" value={cliente.nif} onChange={(e) => setCliente({ ...cliente, nif: e.target.value })} required /></label>
           </div>
-          <button className="boton" disabled={ocupado}>{(ocupado ? tr("Enviando…") : tr("Subsanar y reenviar"))}</button>
+          <button className="boton" disabled={ocupado}>{(ocupado ? tr('Enviando…') : tr('Subsanar y reenviar'))}</button>
         </form>
       )}
-      {v.subsanaciones > 0 && <p className="nota">{(tr("Subsanada") + " ")}{(v.subsanaciones === 1 ? tr("una vez") : tr("{v1} veces", { v1: v.subsanaciones }))}.</p>}
-      {admin && <button type="button" className="borrar" disabled={ocupado} onClick={anular}>{tr("Anular el registro (factura expedida por error)")}</button>}
+      {v.subsanaciones > 0 && <p className="nota">{(v.subsanaciones === 1 ? tr('Subsanada una vez.') : tr('Subsanada {cantidad} veces.', { cantidad: v.subsanaciones }))}</p>}
+      {admin && <button type="button" className="borrar" disabled={ocupado} onClick={anular}>{tr('Anular el registro (factura expedida por error)')}</button>}
       {msg && <p className="error" role="alert">{tr(msg)}</p>}
     </section>
   );

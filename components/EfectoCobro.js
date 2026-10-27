@@ -25,15 +25,15 @@ export default function EfectoCobro({ id, forma, formas, requiere, recibido, fec
   return (
     <div className="car-efecto">
       <label className="car-forma">
-        <span className="car-etq">{tr("Forma de cobro")}</span>
+        <span className="car-etq">{tr('Forma de cobro')}</span>
         <select value={forma} disabled={ocupado} onChange={(e) => enviar({ forma: e.target.value })}>
-          <option value="">{tr("Sin indicar")}</option>
+          <option value="">{tr('Sin indicar')}</option>
           {formas.map((f) => <option key={f.id} value={f.id}>{tr(f.nombre)}</option>)}
         </select>
       </label>
       {requiere ? (
         <button type="button" disabled={ocupado} className={`estado ${recibido ? 'ok' : 'pend'}`} onClick={() => enviar({ recibido: !recibido })}>
-          {(recibido ? tr("Recibido{v1}", { v1: (fecha ? (" " + tr("el {v1}", { v1: fecha })) : "") }) : tr("Pendiente de recibir"))}
+          {recibido ? (fecha ? tr('Recibido el {fecha}', { fecha }) : tr('Recibido')) : tr('Pendiente de recibir')}
         </button>
       ) : null /* transferencia, tarjeta o domiciliación: no hay papel que recibir, así que nada que marcar */}
       {error && <p className="error" role="alert">{tr(error)}</p>}

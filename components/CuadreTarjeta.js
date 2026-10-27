@@ -24,7 +24,7 @@ export default function CuadreTarjeta({ mov, cierres = [], deshacer = false }) {
   };
   return (
     <span className="caja-cuadre-acc">
-      <button type="button" className={`boton pequeno${deshacer ? ' sec' : ''}`} onClick={enviar} disabled={enviando}>{(enviando ? (deshacer ? tr("Deshaciendo…") : tr("Cuadrando…")) : (deshacer ? tr("Deshacer") : tr("Cuadrar")))}</button>
+      <button type="button" className={`boton pequeno${deshacer ? ' sec' : ''}`} onClick={enviar} disabled={enviando}>{(enviando ? (deshacer ? tr('Deshaciendo…') : tr('Cuadrando…')) : (deshacer ? tr('Deshacer') : tr('Cuadrar')))}</button>
       {error && <small className="error" role="alert">{tr(error)}</small>}
     </span>
   );

@@ -39,18 +39,18 @@ export default function Catalogo({ productos, editar, inventario = false, igic =
     try { await llamar('/api/productos', { method: 'POST', body: JSON.stringify(p) }); setP(vacio); if (p.id) setAbierto(false); router.refresh(); } catch (err) { setError(err.message); }
   };
   const quitar = async (id) => {
-    if (!(await confirmarAccion({ titulo: tr("Quitar del catálogo"), texto: tr("¿Quitar del catálogo? Las facturas ya hechas no cambian."), aceptar: tr("Quitar"), peligro: true }))) return;
+    if (!(await confirmarAccion({ titulo: tr('Quitar del catálogo'), texto: tr('¿Quitar del catálogo? Las facturas ya hechas no cambian.'), aceptar: tr('Quitar'), peligro: true }))) return;
     try { await llamar(`/api/productos?id=${id}`, { method: 'DELETE' }); router.refresh(); } catch (err) { setError(err.message); }
   };
   return (
     <>
-      {editar && !abierto && <button type="button" id="anadir-catalogo" className="boton sec ancho catalogo-nuevo" onClick={() => setAbierto(true)}>{tr("+ Añadir al catálogo")}</button>}
+      {editar && !abierto && <button type="button" id="anadir-catalogo" className="boton sec ancho catalogo-nuevo" onClick={() => setAbierto(true)}>{tr('+ Añadir al catálogo')}</button>}
       {editar && abierto && (
         <form ref={formulario} id="anadir-catalogo" className="formulario tarjeta catalogo-form" onSubmit={envolver(guardar)}>
-          <h3>{(p.id ? tr("Editar") : tr("Añadir"))}</h3>
-          <label>{tr("Nombre")}<input className="campo" required placeholder={tr("Sesión DJ 4 horas")} value={p.nombre} onChange={(e) => poner('nombre', e.target.value)} /></label>
+          <h3>{(p.id ? tr('Editar') : tr('Añadir'))}</h3>
+          <label>{tr('Nombre')}<input className="campo" required placeholder={tr('Sesión DJ 4 horas')} value={p.nombre} onChange={(e) => poner('nombre', e.target.value)} /></label>
           <div className="dos-col">
-            <label>{(tr("Precio sin") + " ")}{(igic ? "IGIC" : "IVA")}<input className="campo" inputMode="decimal" required placeholder={"0,00"} value={p.precio} onChange={(e) => poner('precio', e.target.value)} /></label>
+            <label>{(igic ? tr('Precio sin IGIC') : tr('Precio sin IVA'))}<input className="campo" inputMode="decimal" required placeholder={"0,00"} value={p.precio} onChange={(e) => poner('precio', e.target.value)} /></label>
             <label>{(igic ? "IGIC" : "IVA")}
               <select className="campo" value={p.ivaPct} onChange={(e) => poner('ivaPct', Number(e.target.value))}>
                 {(igic ? TIPOS_IGIC : [21, 10, 4, 0]).map((n) => <option key={n} value={n}>{n}%</option>)}
@@ -58,43 +58,43 @@ export default function Catalogo({ productos, editar, inventario = false, igic =
             </label>
           </div>
           {inventario && <>
-            <label className="cat-servicio"><input type="checkbox" checked={Boolean(p.servicio)} onChange={(e) => poner('servicio', e.target.checked)} />{tr("Es un servicio (no lleva stock)")}</label>
+            <label className="cat-servicio"><input type="checkbox" checked={Boolean(p.servicio)} onChange={(e) => poner('servicio', e.target.checked)} />{tr('Es un servicio (no lleva stock)')}</label>
             {!p.servicio && <>
               <div className="dos-col">
-                <label>{tr("Referencia")}<input className="campo" placeholder={tr("CAB-XLR-10")} value={p.sku || ''} onChange={(e) => poner('sku', e.target.value)} /></label>
-                <label>{(tr("Coste sin") + " ")}{(igic ? "IGIC" : "IVA")}<input className="campo" inputMode="decimal" placeholder={"0,00"} value={p.coste ?? ''} onChange={(e) => poner('coste', e.target.value)} /></label>
+                <label>{tr('Referencia')}<input className="campo" placeholder={tr('CAB-XLR-10')} value={p.sku || ''} onChange={(e) => poner('sku', e.target.value)} /></label>
+                <label>{(igic ? tr('Coste sin IGIC') : tr('Coste sin IVA'))}<input className="campo" inputMode="decimal" placeholder={"0,00"} value={p.coste ?? ''} onChange={(e) => poner('coste', e.target.value)} /></label>
               </div>
               <div className="dos-col">
-                <label>{tr("Stock mínimo")}<input className="campo" inputMode="decimal" placeholder={tr("Avisa al llegar aquí")} value={p.minimo ?? ''} onChange={(e) => poner('minimo', e.target.value)} /></label>
-                <label>{tr("Pedir hasta")}<input className="campo" inputMode="decimal" placeholder={tr("El doble del mínimo")} value={p.maximo ?? ''} onChange={(e) => poner('maximo', e.target.value)} /></label>
+                <label>{tr('Stock mínimo')}<input className="campo" inputMode="decimal" placeholder={tr('Avisa al llegar aquí')} value={p.minimo ?? ''} onChange={(e) => poner('minimo', e.target.value)} /></label>
+                <label>{tr('Pedir hasta')}<input className="campo" inputMode="decimal" placeholder={tr('El doble del mínimo')} value={p.maximo ?? ''} onChange={(e) => poner('maximo', e.target.value)} /></label>
               </div>
               <div className="dos-col">
-                <label>{tr("Proveedor habitual")}<input className="campo" placeholder={tr("Opcional")} value={p.proveedor || ''} onChange={(e) => poner('proveedor', e.target.value)} /></label>
-                <label>{tr("Código de barras")}<input className="campo" inputMode="numeric" placeholder={tr("Opcional")} value={p.codigo || ''} onChange={(e) => poner('codigo', e.target.value)} /></label>
+                <label>{tr('Proveedor habitual')}<input className="campo" placeholder={tr('Opcional')} value={p.proveedor || ''} onChange={(e) => poner('proveedor', e.target.value)} /></label>
+                <label>{tr('Código de barras')}<input className="campo" inputMode="numeric" placeholder={tr('Opcional')} value={p.codigo || ''} onChange={(e) => poner('codigo', e.target.value)} /></label>
               </div>
             </>}
           </>}
           {error && <p className="error" role="alert">{tr(error)}</p>}
           <div className="dos-col">
-            <button type="button" className="boton sec" onClick={cerrar}>{tr("Cancelar")}</button>
-            <button className="boton" disabled={enviando}>{(p.id ? tr("Guardar cambios") : tr("Añadir al catálogo"))}</button>
+            <button type="button" className="boton sec" onClick={cerrar}>{tr('Cancelar')}</button>
+            <button className="boton" disabled={enviando}>{(p.id ? tr('Guardar cambios') : tr('Añadir al catálogo'))}</button>
           </div>
         </form>
       )}
-      {!editar && <p id="cat-permisos-ayuda" className="nota">{tr("Solo tienes permiso para consultar el catálogo.")}</p>}
+      {!editar && <p id="cat-permisos-ayuda" className="nota">{tr('Solo tienes permiso para consultar el catálogo.')}</p>}
       {productos.length > 0 ? (
         <ul className="catalogo">
           {productos.map((x) => (
             <li key={x.id}>
               <button type="button" className="cat-info" disabled={!editar} aria-describedby={!editar ? "cat-permisos-ayuda" : undefined} onClick={() => editar && editarProducto(x)}>
-                <strong>{x.nombre}</strong><small>{(inventario && !x.servicio && x.sku ? `${x.sku} · ` : "")}{(igic ? "IGIC" : "IVA")} {pctCorto(x.ivaPct)}{(inventario && x.servicio ? (" " + tr("· servicio")) : "")}</small>
+                <strong>{x.nombre}</strong><small>{(inventario && !x.servicio && x.sku ? (igic ? (inventario && x.servicio ? tr('{referencia} · IGIC {porcentaje} · servicio', { referencia: x.sku, porcentaje: pctCorto(x.ivaPct) }) : tr('{referencia} · IGIC {porcentaje}', { referencia: x.sku, porcentaje: pctCorto(x.ivaPct) })) : (inventario && x.servicio ? tr('{referencia} · IVA {porcentaje} · servicio', { referencia: x.sku, porcentaje: pctCorto(x.ivaPct) }) : tr('{referencia} · IVA {porcentaje}', { referencia: x.sku, porcentaje: pctCorto(x.ivaPct) }))) : (igic ? (inventario && x.servicio ? tr('IGIC {porcentaje} · servicio', { porcentaje: pctCorto(x.ivaPct) }) : tr('IGIC {porcentaje}', { porcentaje: pctCorto(x.ivaPct) })) : (inventario && x.servicio ? tr('IVA {porcentaje} · servicio', { porcentaje: pctCorto(x.ivaPct) }) : tr('IVA {porcentaje}', { porcentaje: pctCorto(x.ivaPct) }))))}</small>
               </button>
               <span className="cat-precio">{eur(x.precio)}</span>
-              {editar && <button type="button" className="cat-quitar" aria-label={tr("Quitar {v1}", { v1: x.nombre })} onClick={() => quitar(x.id)}>×</button>}
+              {editar && <button type="button" className="cat-quitar" aria-label={tr('Quitar {producto}', { producto: x.nombre })} onClick={() => quitar(x.id)}>×</button>}
             </li>
           ))}
         </ul>
-      ) : <Vacio icono="datos" titulo={tr("Guarda lo que vendes a menudo")} accion={editar && { href: '#anadir-catalogo', texto: tr('Añadir al catálogo') }}>{tr("Añade tus productos o servicios para usarlos en la próxima factura.")}</Vacio>}
+      ) : <Vacio icono="datos" titulo={tr('Guarda lo que vendes a menudo')} accion={editar && { href: '#anadir-catalogo', texto: tr('Añadir al catálogo') }}>{tr('Añade tus productos o servicios para usarlos en la próxima factura.')}</Vacio>}
     </>
   );
 }

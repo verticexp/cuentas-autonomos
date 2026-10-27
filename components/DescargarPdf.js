@@ -35,7 +35,7 @@ export default function DescargarPdf({ id, nombre, url = `/api/facturas/pdf?id=$
   const generando = estado === 'Generando…';
   return (
     <div style={{ textAlign: 'right' }}>
-      <button className="boton pequeno" onClick={bajar} disabled={generando}>{(generando ? tr(estado) : tr("Descargar PDF"))}</button>
+      <button className="boton pequeno" onClick={bajar} disabled={generando}>{(generando ? tr(estado) : tr('Descargar PDF'))}</button>
       {estado && !generando && <p className="error" role="alert">{tr(estado)}</p>}
     </div>
   );

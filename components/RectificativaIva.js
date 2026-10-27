@@ -21,24 +21,24 @@ export default function RectificativaIva({ anio, t, c69, abierta = false }) {
   const url = `/api/aeat?${new URLSearchParams({ modelo: '303', anio: String(anio), t: String(t), rectificativa: '1', ingresado: String(r.c70), devuelto: String(r.c109), justificante: r.justificante, ...(baja ? { baja: '1' } : {}) })}`;
   return (
     <details className="rectificativa" open={abierta || undefined}>
-      <summary>{tr("¿Hay que corregirlo? Preparar la rectificativa")}</summary>
-      <p className="nota">{tr("Si cambió algo de este trimestre después de presentarlo, se corrige con una autoliquidación rectificativa (desde 2025 sustituye a la complementaria). Pon lo que ingresaste y el justificante del resguardo.")}</p>
+      <summary>{tr('¿Hay que corregirlo? Preparar la rectificativa')}</summary>
+      <p className="nota">{tr('Si cambió algo de este trimestre después de presentarlo, se corrige con una autoliquidación rectificativa (desde 2025 sustituye a la complementaria). Pon lo que ingresaste y el justificante del resguardo.')}</p>
       <div className="dos-col">
-        <label>{tr("Lo que ingresaste con la anterior (casilla 71)")}<input className="campo" inputMode="decimal" placeholder={"0,00"} value={ingresado} onChange={(e) => setIngresado(e.target.value)} /></label>
-        {t === 4 && <label>{tr("Lo que te devolvió Hacienda por ella (si te devolvió algo)")}<input className="campo" inputMode="decimal" placeholder={"0,00"} value={devuelto} onChange={(e) => setDevuelto(e.target.value)} /></label>}
-        <label>{tr("Número de justificante de la anterior (13 cifras)")}<input className="campo" inputMode="numeric" maxLength={13} value={justificante} onChange={(e) => setJustificante(e.target.value.replace(/\D/g, ''))} /></label>
+        <label>{tr('Lo que ingresaste con la anterior (casilla 71)')}<input className="campo" inputMode="decimal" placeholder={"0,00"} value={ingresado} onChange={(e) => setIngresado(e.target.value)} /></label>
+        {t === 4 && <label>{tr('Lo que te devolvió Hacienda por ella (si te devolvió algo)')}<input className="campo" inputMode="decimal" placeholder={"0,00"} value={devuelto} onChange={(e) => setDevuelto(e.target.value)} /></label>}
+        <label>{tr('Número de justificante de la anterior (13 cifras)')}<input className="campo" inputMode="numeric" maxLength={13} value={justificante} onChange={(e) => setJustificante(e.target.value.replace(/\D/g, ''))} /></label>
       </div>
-      <label className="check"><input type="checkbox" checked={baja} onChange={(e) => setBaja(e.target.checked)} />{(" " + tr("Domicilié el pago de la anterior y quiero darlo de baja o cambiarlo"))}</label>
+      <label className="check"><input type="checkbox" checked={baja} onChange={(e) => setBaja(e.target.checked)} />{(" " + tr('Domicilié el pago de la anterior y quiero darlo de baja o cambiarlo'))}</label>
       <dl className="desglose">
-        <div><dt>{tr("69 · Resultado con los datos de ahora")}</dt><dd>{eur(r.c69)}</dd></div>
-        <div><dt>{tr("70 · Ingresado con la anterior")}</dt><dd>{eur(r.c70)}</dd></div>
-        {r.c109 > 0 && <div><dt>{tr("109 · Devuelto por Hacienda")}</dt><dd>{eur(r.c109)}</dd></div>}
-        <div><dt>{tr("71 · Resultado de la rectificativa")}</dt><dd>{eur(r.c71)}</dd></div>
-        {r.c111 > 0 && <div><dt>{tr("111 · Pides que te devuelvan")}</dt><dd>{eur(r.c111)}</dd></div>}
+        <div><dt>{tr('69 · Resultado con los datos de ahora')}</dt><dd>{eur(r.c69)}</dd></div>
+        <div><dt>{tr('70 · Ingresado con la anterior')}</dt><dd>{eur(r.c70)}</dd></div>
+        {r.c109 > 0 && <div><dt>{tr('109 · Devuelto por Hacienda')}</dt><dd>{eur(r.c109)}</dd></div>}
+        <div><dt>{tr('71 · Resultado de la rectificativa')}</dt><dd>{eur(r.c71)}</dd></div>
+        {r.c111 > 0 && <div><dt>{tr('111 · Pides que te devuelvan')}</dt><dd>{eur(r.c111)}</dd></div>}
       </dl>
-      <p className="nota">{(r.aPagar > 0 ? tr("Falta por pagar {v1}: si la presentas tarde sin requerimiento, lleva el recargo del art. 27 de la Ley General Tributaria.", { v1: eur(r.aPagar) }) : (r.aDevolver > 0 ? tr("Pides que te devuelvan {v1} de lo que ingresaste de más{v2}.", { v1: eur(r.aDevolver), v2: (r.aCompensar > 0 ? (" " + tr("y quedan {v1} a compensar", { v1: eur(r.aCompensar) })) : "") }) : (r.aCompensar > 0 ? tr("Quedan {v1} a tu favor para compensar.", { v1: eur(r.aCompensar) }) : tr("No cambia lo que había que pagar."))))}</p>
-      {r.error ? <p className="nota">{(justificante ? tr(r.error) : tr("Escribe el justificante para descargar el fichero."))}</p>
-        : <a className="boton sec" href={url} download>{tr("Descargar el fichero de la rectificativa")}</a>}
+      <p className="nota">{r.aPagar > 0 ? tr('Falta por pagar {importe}: si la presentas tarde sin requerimiento, lleva el recargo del art. 27 de la Ley General Tributaria.', { importe: eur(r.aPagar) }) : r.aDevolver > 0 ? tr(r.aCompensar > 0 ? 'Pides que te devuelvan {devolucion} de lo que ingresaste de más y quedan {compensacion} a compensar.' : 'Pides que te devuelvan {devolucion} de lo que ingresaste de más.', { devolucion: eur(r.aDevolver), compensacion: eur(r.aCompensar) }) : r.aCompensar > 0 ? tr('Quedan {importe} a tu favor para compensar.', { importe: eur(r.aCompensar) }) : tr('No cambia lo que había que pagar.')}</p>
+      {r.error ? <p className="nota">{(justificante ? tr(r.error) : tr('Escribe el justificante para descargar el fichero.'))}</p>
+        : <a className="boton sec" href={url} download>{tr('Descargar el fichero de la rectificativa')}</a>}
     </details>
   );
 }

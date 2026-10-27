@@ -33,7 +33,7 @@ export default async function Nuevo({ searchParams }) {
   return (
     <main className="pagina mk-look">
       <Volver href={pedido ? `/albaranes/${pedido.id}` : `/albaranes${tipo === 'albaran' ? '?ver=albaranes' : ''}`} />
-      <h1 className="titulo">{(tipo === 'pedido' ? tr("Nuevo pedido") : (pedido ? tr("Entrega del pedido {v1}", { v1: numeroDoc(pedido) }) : tr("Nuevo albarán")))}</h1>
+      <h1 className="titulo">{(tipo === 'pedido' ? tr('Nuevo pedido') : (pedido ? tr('Entrega del pedido {numero}', { numero: numeroDoc(pedido) }) : tr('Nuevo albarán')))}</h1>
       <FormDoc tipo={tipo} plantilla={plantilla} clientes={clientes} productos={datos.productos.sort((a, b) => a.nombre.localeCompare(b.nombre))} stock={stock} hoy={h}
         ivaPct={actividadesDe(u)[0].ivaPct ?? 21} numero={numeroDoc({ tipo, anio, numero: siguiente(datos.albaranes, tipo, anio) })} />
     </main>
@@ -44,5 +44,5 @@ export default async function Nuevo({ searchParams }) {
 export async function generateMetadata({ searchParams }) {
   const tr = await textos();
   const sp = await searchParams;
-  return { title: (sp.pedido ? tr("Entrega de un pedido") : (sp.tipo === 'albaran' ? tr("Nuevo albarán") : tr("Nuevo pedido"))) };
+  return { title: (sp.pedido ? tr('Entrega de un pedido') : (sp.tipo === 'albaran' ? tr('Nuevo albarán') : tr('Nuevo pedido'))) };
 }

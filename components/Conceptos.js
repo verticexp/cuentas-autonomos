@@ -8,7 +8,7 @@ export default async function Conceptos({ lineas }) {
   const tr = await textos();
   if (!(lineas?.length > 1)) return null;
   return (
-    <ul className="conceptos" aria-label={tr("Conceptos")}>
+    <ul className="conceptos" aria-label={tr('Conceptos')}>
       {lineas.map((l, i) => (
         <li key={i}>
           <span>{l.concepto}{l.cantidad !== 1 && <small>{eurSin(l.cantidad).replace(/,00$/, '')} × {eur(l.precio)}</small>}</span>

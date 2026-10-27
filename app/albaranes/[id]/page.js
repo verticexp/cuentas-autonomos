@@ -1,3 +1,4 @@
+import { conHuecos } from '@/lib/huecos';
 import { textos } from '@/lib/idiomaServidor';
 import { sinFuncion } from '@/lib/planes';
 import Link from 'next/link';
@@ -39,26 +40,26 @@ export default async function Doc({ params }) {
   const editable = puedeOperar && !d.factura && !(d.tipo === 'pedido' && entregas.length);
   return (
     <main className="pagina mk-look">
-      <Volver href={`/albaranes${d.tipo === 'albaran' ? `?ver=${d.factura ? 'facturados' : 'albaranes'}` : ''}`}>{tr("Pedidos y albaranes")}</Volver>
+      <Volver href={`/albaranes${d.tipo === 'albaran' ? `?ver=${d.factura ? 'facturados' : 'albaranes'}` : ''}`}>{tr('Pedidos y albaranes')}</Volver>
       <section className="factura-hero">
-        <p className="fh-num">{(d.tipo === 'proveedor' ? tr("Pedido a proveedor") : (d.tipo === 'pedido' ? tr("Pedido") : tr("Albarán")))} {numeroDoc(d)}</p>
+        <p className="fh-num">{(d.tipo === 'proveedor' ? tr('Pedido a proveedor {numero}', { numero: numeroDoc(d) }) : (d.tipo === 'pedido' ? tr('Pedido {numero}', { numero: numeroDoc(d) }) : tr('Albarán {numero}', { numero: numeroDoc(d) })))}</p>
         <h1 className="fh-cliente">{d.cliente.nombre}</h1>
-        <p className="fh-total">{eur(baseDoc(d))} <small>{tr("sin IVA")}</small></p>
-        <div className="fh-pie"><span>{(est ? tr({ pendiente: 'Pendiente de servir', parcial: 'Servido en parte', servido: 'Servido', cerrado: 'Cerrado' }[est.estado]) : (d.factura ? tr("Facturado") : tr("Por facturar")))}</span><span>{fechaTexto(d.fecha)}</span></div>
+        <p className="fh-total">{conHuecos(tr('{importe} {sinImpuesto}'), { importe: eur(baseDoc(d)), sinImpuesto: <small>{tr('sin IVA')}</small> })}</p>
+        <div className="fh-pie"><span>{(est ? tr({ pendiente: 'Pendiente de servir', parcial: 'Servido en parte', servido: 'Servido', cerrado: 'Cerrado' }[est.estado]) : (d.factura ? tr('Facturado') : tr('Por facturar')))}</span><span>{fechaTexto(d.fecha)}</span></div>
       </section>
       <div className="acciones-factura">
-        <Ir href={`/albaranes/${d.id}/pdf`} className="boton">{tr("Ver / descargar PDF")}</Ir>
-        {puedeOperar && est && ['pendiente', 'parcial'].includes(est.estado) && <Ir href={`/albaranes/nuevo?pedido=${d.id}`} tipo="subir" className="boton">{tr("Entregar (hacer albarán)")}</Ir>}
+        <Ir href={`/albaranes/${d.id}/pdf`} className="boton">{tr('Ver / descargar PDF')}</Ir>
+        {puedeOperar && est && ['pendiente', 'parcial'].includes(est.estado) && <Ir href={`/albaranes/nuevo?pedido=${d.id}`} tipo="subir" className="boton">{tr('Entregar (hacer albarán)')}</Ir>}
         {puedeOperar && est && est.estado !== 'servido' && <CerrarPedido id={d.id} cerrado={Boolean(d.cerrado)} />}
-        {factura && <Link href={`/facturas/${factura.id}`} className="boton sec">{(tr("Ver la factura") + " ")}{numeroFactura(factura)}</Link>}
-        {puedeOperar && !d.factura && <Borrar url={`/api/albaranes?id=${d.id}`} pregunta={tr("¿Borrar {v1} {v2}?{v3}", { v1: (d.tipo === 'pedido' ? tr("el pedido") : tr("el albarán")), v2: numeroDoc(d), v3: (d.tipo === 'albaran' ? (" " + tr("Su mercancía vuelve al stock.")) : "") })} volver="/albaranes" />}
+        {factura && <Link href={`/facturas/${factura.id}`} className="boton sec">{tr('Ver la factura {numero}', { numero: numeroFactura(factura) })}</Link>}
+        {puedeOperar && !d.factura && <Borrar url={`/api/albaranes?id=${d.id}`} pregunta={d.tipo === 'pedido' ? tr('¿Borrar el pedido {numero}?', { numero: numeroDoc(d) }) : tr(d.tipo === 'albaran' ? '¿Borrar el albarán {numero}? Su mercancía vuelve al stock.' : '¿Borrar el albarán {numero}?', { numero: numeroDoc(d) })} volver="/albaranes" />}
       </div>
-      {pedido && <p className="nota">{(tr("Entrega del pedido") + " ")}<Link href={`/albaranes/${pedido.id}`}>{numeroDoc(pedido)}</Link>.</p>}
+      {pedido && <p className="nota">{conHuecos(tr('Entrega del pedido {numero}.'), { numero: <Link href={`/albaranes/${pedido.id}`}>{numeroDoc(pedido)}</Link> })}</p>}
       {est && (
         <section className="bloque">
-          <h2 className="grupo-t">{tr("Servido")}</h2>
-          <ul className="alb-lineas">{est.lineas.map((l, i) => <li key={i}><span>{l.concepto}<small>{(tr("pedido") + " ")}{ud(l.cantidad)}{(" " + tr("· servido") + " ")}{ud(l.servido)}</small></span><b className={l.pendiente ? 'falta' : ''}>{(l.pendiente ? tr("faltan {v1}", { v1: ud(l.pendiente) }) : "✓")}</b></li>)}</ul>
-          {entregas.length > 0 && <p className="nota">{(tr("Albaranes:") + " ")}{entregas.map((a, i) => <span key={a.id}>{(i ? ", " : "")}<Link href={`/albaranes/${a.id}`}>{numeroDoc(a)}</Link></span>)}</p>}
+          <h2 className="grupo-t">{tr('Servido')}</h2>
+          <ul className="alb-lineas">{est.lineas.map((l, i) => <li key={i}><span>{l.concepto}<small>{tr('pedido {cantidad} · servido {servido}', { cantidad: ud(l.cantidad), servido: ud(l.servido) })}</small></span><b className={l.pendiente ? 'falta' : ''}>{(l.pendiente ? tr('faltan {pendiente}', { pendiente: ud(l.pendiente) }) : "✓")}</b></li>)}</ul>
+          {entregas.length > 0 && <p className="nota">{conHuecos(tr('Albaranes: {albaranes}'), { albaranes: entregas.map((a, i) => <span key={a.id}>{i ? ', ' : ''}<Link href={`/albaranes/${a.id}`}>{numeroDoc(a)}</Link></span>) })}</p>}
         </section>
       )}
       {puedeOperar && d.tipo === 'albaran' && !d.factura && (
@@ -68,8 +69,8 @@ export default async function Doc({ params }) {
         <FormDoc tipo={d.tipo} doc={d} clientes={clientes} productos={datos.productos.sort((a, b) => a.nombre.localeCompare(b.nombre))} stock={stock} hoy={h} numero={numeroDoc(d)} />
       ) : (
         <section className="bloque">
-          <h2 className="grupo-t">{tr("Líneas")}</h2>
-          <ul className="alb-lineas">{d.lineas.map((l, i) => <li key={i}><span>{l.concepto}<small>{ud(l.cantidad)} × {eur(l.precio)}{(l.dto ? ` · −${pctCorto(l.dto)}` : "")}{(" " + tr("· IVA") + " ")}{pctCorto(l.ivaPct)}</small></span><b>{eur(baseLinea(l))}</b></li>)}</ul>
+          <h2 className="grupo-t">{tr('Líneas')}</h2>
+          <ul className="alb-lineas">{d.lineas.map((l, i) => <li key={i}><span>{l.concepto}<small>{(l.dto ? tr('{cantidad} × {importe} · −{descuento} · IVA {iva}', { cantidad: ud(l.cantidad), importe: eur(l.precio), descuento: pctCorto(l.dto), iva: pctCorto(l.ivaPct) }) : tr('{cantidad} × {importe} · IVA {iva}', { cantidad: ud(l.cantidad), importe: eur(l.precio), iva: pctCorto(l.ivaPct) }))}</small></span><b>{eur(baseLinea(l))}</b></li>)}</ul>
           {d.nota && <p className="nota">{d.nota}</p>}
         </section>
       )}
@@ -81,5 +82,5 @@ export async function generateMetadata({ params }) {
   const tr = await textos();
   const u = await requerir('facturar');
   const d = await leerUno(u, 'albaranes', (await params).id);
-  return { title: (d ? `${tr(d.tipo === 'proveedor' ? 'Pedido a proveedor' : d.tipo === 'pedido' ? 'Pedido' : 'Albarán')} ${numeroDoc(d)}` : tr("Albarán")) };
+  return { title: d ? tr(d.tipo === 'proveedor' ? 'Pedido a proveedor {numero}' : d.tipo === 'pedido' ? 'Pedido {numero}' : 'Albarán {numero}', { numero: numeroDoc(d) }) : tr('Albarán') };
 }

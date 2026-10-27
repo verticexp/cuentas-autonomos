@@ -22,8 +22,8 @@ export default async function Nuevo() {
   const anio = Number(h.slice(0, 4));
   return (
     <main className="pagina mk-look">
-      <Volver href="/presupuestos">{tr("Presupuestos")}</Volver>
-      <h1 className="titulo">{tr("Nuevo presupuesto")}</h1>
+      <Volver href="/presupuestos">{tr('Presupuestos')}</Volver>
+      <h1 className="titulo">{tr('Nuevo presupuesto')}</h1>
       <FormPresupuesto clientes={clientes} actividades={actividadesDe(u)} hoy={h} numero={numeroPresupuesto({ numero: siguienteNumero(presupuestos, anio, 'P'), anio })} />
     </main>
   );

@@ -19,9 +19,9 @@ export default function AccionesDocumento({ d, lado, empresa, alHacer }) {
       setEstado('Pidiendo…');
       try { await llamar('/api/despacho/peticiones', { method: 'POST', body: JSON.stringify({ empresa, tipo: 'ticket', gasto: d.id }) }); alHacer(); } catch (e) { setEstado(e.message); }
     };
-    return <><button type="button" className="boton" disabled={estado === 'Pidiendo…'} onClick={pedir}>{tr("Pedir el ticket")}</button>{estado && estado !== 'Pidiendo…' && <p className="error" role="alert">{tr(estado)}</p>}</>;
+    return <><button type="button" className="boton" disabled={estado === 'Pidiendo…'} onClick={pedir}>{tr('Pedir el ticket')}</button>{estado && estado !== 'Pidiendo…' && <p className="error" role="alert">{tr(estado)}</p>}</>;
   }
-  return <SubirArchivo texto={tr("Subir el ticket")} alElegir={async (archivo) => {
+  return <SubirArchivo texto={tr('Subir el ticket')} alElegir={async (archivo) => {
     const j = await preparar(archivo);
     if (j.error) throw new Error(j.error);
     const fallo = await subir(d.id, j.blob);

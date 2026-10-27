@@ -1,3 +1,4 @@
+import { conHuecos } from '@/lib/huecos';
 import { textos } from '@/lib/idiomaServidor';
 import Vacio from '@/components/Vacio';
 import Ir from '@/components/Ir';
@@ -25,12 +26,12 @@ export default async function Presupuestos() {
   const abiertos = lista.filter((p) => ['pendiente', 'aceptado'].includes(estadoDe(p, h)));
   return (
     <main className="pagina mk-look">
-      <Volver href="/facturas">{tr("Facturas")}</Volver>
+      <Volver href="/facturas">{tr('Facturas')}</Volver>
       <header className="cabecera">
-        <h1 className="titulo">{tr("Presupuestos")}</h1>
-        {puede(u, 'facturar') && <Ir href="/presupuestos/nuevo" tipo="subir" className="boton pequeno">{tr("Nuevo")}</Ir>}
+        <h1 className="titulo">{tr('Presupuestos')}</h1>
+        {puede(u, 'facturar') && <Ir href="/presupuestos/nuevo" tipo="subir" className="boton pequeno">{tr('Nuevo')}</Ir>}
       </header>
-      {abiertos.length > 0 && <p className="resumen-linea"><span>{(tr("Abiertos") + " ")}<strong>{eur(abiertos.reduce((s, p) => s + importes(p).base, 0))}</strong>{(" " + tr("sin IVA"))}</span></p>}
+      {abiertos.length > 0 && <p className="resumen-linea"><span>{conHuecos(tr('Abiertos {importe} sin IVA'), { importe: <strong>{eur(abiertos.reduce((s, p) => s + importes(p).base, 0))}</strong> })}</span></p>}
       {lista.length > 0 && <ul className="grupo-lista">
         {lista.map((p) => {
           const [txt, clase] = ESTADOS[estadoDe(p, h)];
@@ -39,7 +40,7 @@ export default async function Presupuestos() {
               <FilaFactura href={`/presupuestos/${p.id}`}>
                 <span className="txt">
                   <strong data-vt="cliente">{p.cliente.nombre}</strong>
-                  <small>{numeroPresupuesto(p)}{(p.evento?.fecha ? (" " + tr("· fecha de la operación: {v1}", { v1: fechaTexto(p.evento.fecha) })) : "")}</small>
+                  <small>{(p.evento?.fecha ? tr('{numero} · fecha de la operación: {fecha}', { numero: numeroPresupuesto(p), fecha: tr(fechaTexto(p.evento.fecha)) }) : numeroPresupuesto(p))}</small>
                 </span>
                 <span className="imp-col">
                   <span className="imp" data-vt="total">{eur(importes(p).total)}</span>
@@ -51,7 +52,7 @@ export default async function Presupuestos() {
         })}
       </ul>}
       {!lista.length && (
-        <Vacio icono="presupuesto" titulo={tr("Prepara tu primer presupuesto")} accion={puede(u, 'facturar') && { href: '/presupuestos/nuevo', texto: tr('Crear presupuesto') }}>{tr("Envíaselo al cliente con un enlace: lo acepta desde el móvil y lo conviertes en factura con un toque.")}</Vacio>
+        <Vacio icono="presupuesto" titulo={tr('Prepara tu primer presupuesto')} accion={puede(u, 'facturar') && { href: '/presupuestos/nuevo', texto: tr('Crear presupuesto') }}>{tr('Envíaselo al cliente con un enlace: lo acepta desde el móvil y lo conviertes en factura con un toque.')}</Vacio>
       )}
     </main>
   );

@@ -47,22 +47,22 @@ export default async function Caja({ searchParams }) {
   const fondo = fondoInicial(recientes, cierre?.fecha || fecha);
   return (
     <main className="pagina mk-look caja">
-      <Volver href={cierre ? `/facturas/${cierre.id}` : '/facturas'}>{(cierre ? tr("Cierre") : tr("Facturas"))}</Volver>
-      <h1 className="titulo">{(cierre?.caja ? tr("Corregir el cierre {v1}", { v1: numeroFactura(cierre) }) : tr("Caja"))}</h1>
-      {!cierre && <nav className="segmentado" aria-label={tr("Vista de caja")}><Ir href="/facturas/caja" tipo="fundido" className={ver === 'cierre' ? 'activo' : ''}>{tr("Cierre del día")}</Ir><Ir href="/facturas/caja?ver=tarjeta" tipo="fundido" className={ver === 'tarjeta' ? 'activo' : ''}>{tr("Tarjeta y efectivo")}</Ir><Ir href="/facturas/caja?ver=importar" tipo="fundido" className={ver === 'importar' ? 'activo' : ''}>{tr("Importar")}</Ir></nav>}
+      <Volver href={cierre ? `/facturas/${cierre.id}` : '/facturas'}>{(cierre ? tr('Cierre') : tr('Facturas'))}</Volver>
+      <h1 className="titulo">{(cierre?.caja ? tr('Corregir el cierre {numero}', { numero: numeroFactura(cierre) }) : tr('Caja'))}</h1>
+      {!cierre && <nav className="segmentado" aria-label={tr('Vista de caja')}><Ir href="/facturas/caja" tipo="fundido" className={ver === 'cierre' ? 'activo' : ''}>{tr('Cierre del día')}</Ir><Ir href="/facturas/caja?ver=tarjeta" tipo="fundido" className={ver === 'tarjeta' ? 'activo' : ''}>{tr('Tarjeta y efectivo')}</Ir><Ir href="/facturas/caja?ver=importar" tipo="fundido" className={ver === 'importar' ? 'activo' : ''}>{tr('Importar')}</Ir></nav>}
       {sinCerrar.length > 0 && ver === 'cierre' && (
         <section className="bloque caja-sin" id="sin-cerrar">
-          <h2 className="grupo-t">{(sinCerrar.length === 1 ? tr("Un día sin cierre") : tr("{v1} días sin cierre", { v1: sinCerrar.length }))}</h2>
+          <h2 className="grupo-t">{(sinCerrar.length === 1 ? tr('Un día sin cierre') : tr('{cantidad} días sin cierre', { cantidad: sinCerrar.length }))}</h2>
           <ul className="grupo-lista">
-            {sinCerrar.map((d) => <li key={d} className="fila caja-sin-dia"><span className="txt"><strong>{fechaTexto(d)}</strong><small>{tr(new Date(`${d}T12:00:00Z`).toLocaleDateString('es-ES', { weekday: 'long', timeZone: 'UTC' }))}</small></span><span className="caja-sin-acc"><Ir href={`/facturas/caja?fecha=${d}#nuevo-cierre`} tipo="fundido" className="boton pequeno">{tr("Apuntar")}</Ir><DiaSinCaja fecha={d} /></span></li>)}
+            {sinCerrar.map((d) => <li key={d} className="fila caja-sin-dia"><span className="txt"><strong>{fechaTexto(d)}</strong><small>{tr(new Date(`${d}T12:00:00Z`).toLocaleDateString('es-ES', { weekday: 'long', timeZone: 'UTC' }))}</small></span><span className="caja-sin-acc"><Ir href={`/facturas/caja?fecha=${d}#nuevo-cierre`} tipo="fundido" className="boton pequeno">{tr('Apuntar')}</Ir><DiaSinCaja fecha={d} /></span></li>)}
           </ul>
-          <p className="grupo-pie">{tr("Son los días en que sueles abrir y no tienen cierre. Si no abriste, márcalo y no se vuelve a avisar.")}</p>
+          <p className="grupo-pie">{tr('Son los días en que sueles abrir y no tienen cierre. Si no abriste, márcalo y no se vuelve a avisar.')}</p>
         </section>
       )}
       {ver === 'cierre' || cierre ? (
         <>
           <div id="nuevo-cierre"><FormCierre key={cierre?.id || fecha} igic={igic} hoy={h} fecha={fecha} fondo={fondo} actividades={actividades} productos={lista} cierre={cierre?.caja ? cierre : null} ivaDefecto={actividades[0].ivaPct ?? (igic ? 7 : 21)} proyectos={nombresProyectos(facturas)} /></div>
-          <p className="grupo-pie">{(tr("Para tiendas con TPV o caja registradora: cada cierre es una factura simplificada de resumen (serie Z) que cuenta en el") + " ")}{(igic ? "IGIC" : "IVA")}{tr(", la contabilidad (el efectivo en caja, la tarjeta en el banco) y los libros registro. No va a Verifactu: los tiques ya los registra tu TPV.")}</p>
+          <p className="grupo-pie">{tr('Para tiendas con TPV o caja registradora: cada cierre es una factura simplificada de resumen (serie Z) que cuenta en el {impuesto}, la contabilidad (el efectivo en caja, la tarjeta en el banco) y los libros registro. No va a Verifactu: los tiques ya los registra tu TPV.', { impuesto: igic ? 'IGIC' : 'IVA' })}</p>
         </>
       ) : ver === 'tarjeta' ? (
         <CajaTarjeta u={u} hoy={h} conBanco={puede(u, DETALLE) && puede(u, 'gastar')} />
@@ -71,10 +71,10 @@ export default async function Caja({ searchParams }) {
       )}
       {!cierre && ver !== 'tarjeta' && (
         <section className="bloque">
-          <h2 className="grupo-t">{tr("Últimos cierres")}</h2>
-          {!recientes.length && <Vacio compacto icono="factura" titulo={tr("Aún no hay cierres")} accion={{ href: '/facturas/caja#nuevo-cierre', texto: tr('Añadir cierre') }} />}
+          <h2 className="grupo-t">{tr('Últimos cierres')}</h2>
+          {!recientes.length && <Vacio compacto icono="factura" titulo={tr('Aún no hay cierres')} accion={{ href: '/facturas/caja#nuevo-cierre', texto: tr('Añadir cierre') }} />}
           <ul className="grupo-lista">
-            {recientes.map((f) => <li key={f.id}><Link href={`/facturas/${f.id}`} className="fila"><span className="txt"><strong>{fechaTexto(f.fecha)}</strong><small>{numeroFactura(f)}{(" " + tr("· efectivo") + " ")}{eur(f.caja.efectivo)}{(" " + tr("· tarjeta") + " ")}{eur(f.caja.tarjeta)}{(f.importado ? (" " + tr("· importado de {v1}", { v1: f.importado })) : "")}</small></span><span className="imp">{eur(totalCierre(f))}</span></Link></li>)}
+            {recientes.map((f) => <li key={f.id}><Link href={`/facturas/${f.id}`} className="fila"><span className="txt"><strong>{fechaTexto(f.fecha)}</strong><small>{(f.importado ? tr('{numero} · efectivo {efectivo} · tarjeta {tarjeta} · importado de {origen}', { numero: numeroFactura(f), efectivo: eur(f.caja.efectivo), tarjeta: eur(f.caja.tarjeta), origen: f.importado }) : tr('{numero} · efectivo {efectivo} · tarjeta {tarjeta}', { numero: numeroFactura(f), efectivo: eur(f.caja.efectivo), tarjeta: eur(f.caja.tarjeta) }))}</small></span><span className="imp">{eur(totalCierre(f))}</span></Link></li>)}
           </ul>
         </section>
       )}

@@ -31,18 +31,18 @@ export default function EnviarFactura({ id, email, asunto, mensaje, envios = [],
   };
   return (
     <section className="envios">
-      {editar && !abierto && <button type="button" className={`boton ancho${principal ? '' : ' sec'}`} onClick={() => setAbierto(true)}>{(envios.length ? tr("Volver a enviar por email") : (principal ? tr("Enviar al cliente por email") : tr("Enviar por email")))}</button>}
+      {editar && !abierto && <button type="button" className={`boton ancho${principal ? '' : ' sec'}`} onClick={() => setAbierto(true)}>{(envios.length ? tr('Volver a enviar por email') : (principal ? tr('Enviar al cliente por email') : tr('Enviar por email')))}</button>}
       {abierto && (
         <form className="formulario tarjeta" onSubmit={enviar}>
-          <label>{tr("Para")}<input className="campo" type="email" required value={d.para} onChange={(e) => poner('para', e.target.value)} placeholder={tr("cliente@empresa.com")} /></label>
-          <label>{tr("Asunto")}<input className="campo" value={d.asunto} readOnly={asuntoFijo} onChange={(e) => poner('asunto', e.target.value)} /></label>
-          {asuntoFijo && <p className="envios-nota">{tr("Durante la prueba el asunto es el de tu plantilla.")}</p>}
-          <label>{tr("Mensaje")}<textarea className="campo" rows={5} value={d.mensaje} onChange={(e) => poner('mensaje', e.target.value)} /></label>
-          <p className="envios-nota">{(pres ? tr("Va con el presupuesto en PDF adjunto y un botón para aceptarlo.") : tr("Va con la factura en PDF adjunta."))}</p>
+          <label>{tr('Para')}<input className="campo" type="email" required value={d.para} onChange={(e) => poner('para', e.target.value)} placeholder={tr('cliente@empresa.com')} /></label>
+          <label>{tr('Asunto')}<input className="campo" value={d.asunto} readOnly={asuntoFijo} onChange={(e) => poner('asunto', e.target.value)} /></label>
+          {asuntoFijo && <p className="envios-nota">{tr('Durante la prueba el asunto es el de tu plantilla.')}</p>}
+          <label>{tr('Mensaje')}<textarea className="campo" rows={5} value={d.mensaje} onChange={(e) => poner('mensaje', e.target.value)} /></label>
+          <p className="envios-nota">{(pres ? tr('Va con el presupuesto en PDF adjunto y un botón para aceptarlo.') : tr('Va con la factura en PDF adjunta.'))}</p>
           {estado && estado !== 'enviando' && <p className="error" role="alert">{tr(estado)}</p>}
           <div className="dos-col">
-            <button type="button" className="boton sec" onClick={() => setAbierto(false)}>{tr("Cancelar")}</button>
-            <button className="boton" disabled={estado === 'enviando'}>{(estado === 'enviando' ? tr("Enviando…") : tr("Enviar"))}</button>
+            <button type="button" className="boton sec" onClick={() => setAbierto(false)}>{tr('Cancelar')}</button>
+            <button className="boton" disabled={estado === 'enviando'}>{(estado === 'enviando' ? tr('Enviando…') : tr('Enviar'))}</button>
           </div>
         </form>
       )}
@@ -50,8 +50,8 @@ export default function EnviarFactura({ id, email, asunto, mensaje, envios = [],
         <ul className="envios-lista">
           {[...envios].reverse().map((x) => (
             <li key={x.token || x.fecha}>
-              <span>{(x.tipo === 'recordatorio' ? tr("Recordatorio a") : (pres ? tr("Enviado a") : tr("Enviada a")))} {x.para}<small>{cuando(x.fecha)}</small></span>
-              {seguimiento && <span className={`envio-estado ${x.abierta ? 'ok' : ''}`}>{(x.abierta ? tr("Abierta · {v1}", { v1: cuando(x.abierta) }) : tr("Sin abrir"))}</span>}
+              <span>{(x.tipo === 'recordatorio' ? tr('Recordatorio a {destinatario}', { destinatario: x.para }) : (pres ? tr('Enviado a {destinatario}', { destinatario: x.para }) : tr('Enviada a {destinatario}', { destinatario: x.para })))}<small>{cuando(x.fecha)}</small></span>
+              {seguimiento && <span className={`envio-estado ${x.abierta ? 'ok' : ''}`}>{(x.abierta ? tr('Abierta · {fecha}', { fecha: tr(cuando(x.abierta)) }) : tr('Sin abrir'))}</span>}
             </li>
           ))}
         </ul>

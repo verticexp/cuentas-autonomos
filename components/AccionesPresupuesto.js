@@ -20,7 +20,7 @@ export function Compartir({ ruta, texto, etiqueta = 'Enviar al cliente', classNa
       else { await navigator.clipboard.writeText(url); setHecho(true); }
     } catch { /* cancelado */ }
   };
-  return <button type="button" className={className} onClick={compartir}>{(hecho ? tr("Enlace copiado") : tr(etiqueta))}</button>;
+  return <button type="button" className={className} onClick={compartir}>{(hecho ? tr('Enlace copiado') : tr(etiqueta))}</button>;
 }
 
 export function Facturar({ id, tipo, children }) {
@@ -36,7 +36,7 @@ export function Facturar({ id, tipo, children }) {
       navegar(router, `/facturas/${d.factura.id}`, 'adelante');
     } catch (e) { setError(e.message); setEnviando(false); }
   };
-  return <><button type="button" className="boton sec" disabled={enviando} onClick={facturar}>{(enviando ? tr("Facturando…") : children)}</button>{error && <span className="error" role="alert">{tr(error)}</span>}</>;
+  return <><button type="button" className="boton sec" disabled={enviando} onClick={facturar}>{(enviando ? tr('Facturando…') : children)}</button>{error && <span className="error" role="alert">{tr(error)}</span>}</>;
 }
 
 export function MarcarAceptado({ id }) {
@@ -47,7 +47,7 @@ export function MarcarAceptado({ id }) {
     setError('');
     try { await llamar('/api/presupuestos', { method: 'PATCH', body: JSON.stringify({ id, estado: 'aceptado' }) }); router.refresh(); } catch (e) { setError(e.message); }
   };
-  return <><button type="button" className="boton sec" onClick={marcar}>{tr("Marcar como aceptado")}</button>{error && <span className="error" role="alert">{tr(error)}</span>}</>;
+  return <><button type="button" className="boton sec" onClick={marcar}>{tr('Marcar como aceptado')}</button>{error && <span className="error" role="alert">{tr(error)}</span>}</>;
 }
 
 // Lo que ve el cliente en el enlace público.
@@ -59,16 +59,16 @@ export function Responder({ token }) {
   const [error, setError] = useState('');
   const responder = async (acepta) => {
     setError('');
-    if (!acepta && !(await confirmarAccion({ titulo: tr("Rechazar presupuesto"), texto: tr("¿Rechazar el presupuesto?"), aceptar: tr("Rechazar"), peligro: true }))) return;
+    if (!acepta && !(await confirmarAccion({ titulo: tr('Rechazar presupuesto'), texto: tr('¿Rechazar el presupuesto?'), aceptar: tr('Rechazar'), peligro: true }))) return;
     try { await llamar('/api/presupuestos/aceptar', { method: 'POST', body: JSON.stringify({ token, nombre, acepta }) }); router.refresh(); } catch (e) { setError(e.message); }
   };
   return (
     <div className="formulario">
-      <label>{tr("Tu nombre")}<input className="campo" value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder={tr("Nombre y apellidos")} /></label>
+      <label>{tr('Tu nombre')}<input className="campo" value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder={tr('Nombre y apellidos')} /></label>
       {error && <p className="error" role="alert">{tr(error)}</p>}
-      {!nombre.trim() && <p id={ayudaId} className="nota">{tr("Escribe tu nombre para aceptar o rechazar el presupuesto.")}</p>}
-      <button type="button" className="boton" onClick={() => responder(true)} disabled={!nombre.trim()} aria-describedby={!nombre.trim() ? ayudaId : undefined}>{tr("Aceptar presupuesto")}</button>
-      <button type="button" className="borrar" onClick={() => responder(false)} disabled={!nombre.trim()} aria-describedby={!nombre.trim() ? ayudaId : undefined}>{tr("Rechazar")}</button>
+      {!nombre.trim() && <p id={ayudaId} className="nota">{tr('Escribe tu nombre para aceptar o rechazar el presupuesto.')}</p>}
+      <button type="button" className="boton" onClick={() => responder(true)} disabled={!nombre.trim()} aria-describedby={!nombre.trim() ? ayudaId : undefined}>{tr('Aceptar presupuesto')}</button>
+      <button type="button" className="borrar" onClick={() => responder(false)} disabled={!nombre.trim()} aria-describedby={!nombre.trim() ? ayudaId : undefined}>{tr('Rechazar')}</button>
     </div>
   );
 }
@@ -82,10 +82,10 @@ export function CambiarEnlace({ datos, pregunta, etiqueta = 'Cambiar enlace' }) 
   const [enviando, setEnviando] = useState(false);
   const cambiar = async () => {
     setError('');
-    if (!(await confirmarAccion({ titulo: tr("Cambiar enlace"), texto: tr(pregunta), aceptar: tr("Cambiar enlace"), peligro: true }))) return;
+    if (!(await confirmarAccion({ titulo: tr('Cambiar enlace'), texto: tr(pregunta), aceptar: tr('Cambiar enlace'), peligro: true }))) return;
     setEnviando(true);
     try { await llamar('/api/enlaces', { method: 'POST', body: JSON.stringify(datos) }); router.refresh(); } catch (e) { setError(e.message); }
     setEnviando(false);
   };
-  return <><button type="button" className="boton sec" disabled={enviando} onClick={cambiar}>{(enviando ? tr("Cambiando…") : tr(etiqueta))}</button>{error && <span className="error" role="alert">{tr(error)}</span>}</>;
+  return <><button type="button" className="boton sec" disabled={enviando} onClick={cambiar}>{(enviando ? tr('Cambiando…') : tr(etiqueta))}</button>{error && <span className="error" role="alert">{tr(error)}</span>}</>;
 }

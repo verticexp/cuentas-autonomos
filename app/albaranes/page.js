@@ -1,3 +1,4 @@
+import { conHuecos } from '@/lib/huecos';
 import { textos } from '@/lib/idiomaServidor';
 import Vacio from '@/components/Vacio';
 import { sinFuncion } from '@/lib/planes';
@@ -44,31 +45,31 @@ export default async function Albaranes({ searchParams }) {
 
   return (
     <main className="pagina mk-look">
-      <Volver href="/facturas">{tr("Facturas")}</Volver>
+      <Volver href="/facturas">{tr('Facturas')}</Volver>
       <header className="cabecera">
-        <h1 className="titulo">{tr("Pedidos y albaranes")}</h1>
-        {hay && puedeOperar && <Ir href={`/albaranes/nuevo?tipo=${ver === 'pedidos' ? 'pedido' : 'albaran'}`} tipo="subir" className="boton pequeno">{(ver === 'pedidos' ? tr("Nuevo pedido") : tr("Nuevo albarán"))}</Ir>}
+        <h1 className="titulo">{tr('Pedidos y albaranes')}</h1>
+        {hay && puedeOperar && <Ir href={`/albaranes/nuevo?tipo=${ver === 'pedidos' ? 'pedido' : 'albaran'}`} tipo="subir" className="boton pequeno">{(ver === 'pedidos' ? tr('Nuevo pedido') : tr('Nuevo albarán'))}</Ir>}
       </header>
-      {hay && <p className="resumen-linea"><span>{(tr("Pedidos abiertos") + " ")}<strong>{abiertos.length}</strong></span><span>{(tr("Por facturar") + " ")}<strong>{eur(sinFacturar.reduce((s, a) => s + baseDoc(a), 0))}</strong></span></p>}
-      {hay && <nav className="segmentado" aria-label={tr("Vista de pedidos y albaranes")}>{VISTAS.map(([v, n]) => <Ir key={v} href={`/albaranes?ver=${v}`} tipo="fundido" className={v === ver ? 'activo' : ''}>{tr(n)}{(v === 'albaranes' && sinFacturar.length ? ` (${sinFacturar.length})` : "")}</Ir>)}</nav>}
+      {hay && <p className="resumen-linea"><span>{conHuecos(tr('Pedidos abiertos {cantidad}'), { cantidad: <strong>{abiertos.length}</strong> })}</span><span>{conHuecos(tr('Por facturar {importe}'), { importe: <strong>{eur(sinFacturar.reduce((s, a) => s + baseDoc(a), 0))}</strong> })}</span></p>}
+      {hay && <nav className="segmentado" aria-label={tr('Vista de pedidos y albaranes')}>{VISTAS.map(([v, n]) => <Ir key={v} href={`/albaranes?ver=${v}`} tipo="fundido" className={v === ver ? 'activo' : ''}>{tr(n)}{(v === 'albaranes' && sinFacturar.length ? ` (${sinFacturar.length})` : "")}</Ir>)}</nav>}
 
       {ver === 'pedidos' && (pedidos.length ? (
         <ul className="grupo-lista">
           {pedidos.map((p) => (
             <li key={p.id}><Link href={`/albaranes/${p.id}`} className="fila">
-              <span className="txt"><strong>{p.cliente.nombre}</strong><small>{numeroDoc(p)} · {fechaCorta(p.fecha)}{(p.entrega ? (" " + tr("· entrega {v1}", { v1: fechaCorta(p.entrega) })) : "")} · {resumen(p, tr)}</small></span>
+              <span className="txt"><strong>{p.cliente.nombre}</strong><small>{p.entrega ? tr('{numero} · {fecha} · entrega {entrega} · {resumen}', { numero: numeroDoc(p), fecha: tr(fechaCorta(p.fecha)), entrega: tr(fechaCorta(p.entrega)), resumen: resumen(p, tr) }) : <>{numeroDoc(p)} · {fechaCorta(p.fecha)} · {resumen(p, tr)}</>}</small></span>
               <span className="imp-col"><span className="imp">{eur(baseDoc(p))}</span><span className={`estado-txt e-${p.estado === 'servido' ? 'cobrada' : p.estado === 'cerrado' ? 'cobrada' : 'pendiente'}`}>{tr(ESTADO[p.estado])}</span></span>
             </Link></li>
           ))}
         </ul>
-      ) : <Vacio icono="presupuesto" titulo={tr("Apunta tu primer pedido")} accion={puedeOperar && { href: '/albaranes/nuevo?tipo=pedido', texto: tr('Crear pedido') }}>{tr("Apunta lo que te piden; al entregarlo, haz el albarán desde el pedido (el stock sale entonces) y a final de mes factura todos los albaranes juntos.")}</Vacio>)}
+      ) : <Vacio icono="presupuesto" titulo={tr('Apunta tu primer pedido')} accion={puedeOperar && { href: '/albaranes/nuevo?tipo=pedido', texto: tr('Crear pedido') }}>{tr('Apunta lo que te piden; al entregarlo, haz el albarán desde el pedido (el stock sale entonces) y a final de mes factura todos los albaranes juntos.')}</Vacio>)}
 
       {puedeOperar && ver === 'albaranes' && (grupos.length ? <FacturarAlbaranes grupos={grupos} hoy={hoy()} actividades={actividadesDe(u)} />
-        : <Vacio icono="factura" titulo={tr("Nada por facturar")} accion={{ href: '/albaranes/nuevo?tipo=albaran', texto: tr('Crear albarán') }}>{tr("Los albaranes restan el stock al entregar. Elige varios del mismo cliente y haz una sola factura: no vuelve a restar el stock.")}</Vacio>)}
+        : <Vacio icono="factura" titulo={tr('Nada por facturar')} accion={{ href: '/albaranes/nuevo?tipo=albaran', texto: tr('Crear albarán') }}>{tr('Los albaranes restan el stock al entregar. Elige varios del mismo cliente y haz una sola factura: no vuelve a restar el stock.')}</Vacio>)}
 
-      {ver === 'facturados' && (!albaranes.some((a) => a.factura) ? <Vacio icono="factura" titulo={tr("Aún no has facturado ningún albarán")} accion={{ href: '/albaranes?ver=albaranes', texto: tr('Ver por facturar') }} /> :
+      {ver === 'facturados' && (!albaranes.some((a) => a.factura) ? <Vacio icono="factura" titulo={tr('Aún no has facturado ningún albarán')} accion={{ href: '/albaranes?ver=albaranes', texto: tr('Ver por facturar') }} /> :
         <ul className="grupo-lista">
-          {albaranes.filter((a) => a.factura).map((a) => <li key={a.id}><Link href={`/albaranes/${a.id}`} className="fila"><span className="txt"><strong>{a.cliente.nombre}</strong><small>{numeroDoc(a)} · {fechaCorta(a.fecha)} · {resumen(a, tr)}</small></span><span className="imp-col"><span className="imp">{eur(baseDoc(a))}</span><span className="estado-txt e-cobrada">{tr("Facturado")}</span></span></Link></li>)}
+          {albaranes.filter((a) => a.factura).map((a) => <li key={a.id}><Link href={`/albaranes/${a.id}`} className="fila"><span className="txt"><strong>{a.cliente.nombre}</strong><small>{numeroDoc(a)} · {fechaCorta(a.fecha)} · {resumen(a, tr)}</small></span><span className="imp-col"><span className="imp">{eur(baseDoc(a))}</span><span className="estado-txt e-cobrada">{tr('Facturado')}</span></span></Link></li>)}
         </ul>
       )}
     </main>
