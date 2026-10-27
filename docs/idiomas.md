@@ -31,6 +31,8 @@ El idioma de la app es el del iPhone o el navegador (cabecera `Accept-Language`)
    se ve tiene que quedar idéntico, espacios incluidos. Los huecos llevan nombres que digan qué son (`{importe}`, `{fecha}`),
    no `{v1}`.
 5. **Plurales:** cada forma, su entrada (`'{n} día'` y `'{n} días'`).
+   **Una palabra con dos sentidos** («Activo»: encendido, o el activo del balance): `tr('Activo', { contexto: 'balance' })`
+   y en el diccionario `"Activo@balance"`; sin esa entrada se usa la de «Activo».
 6. **Hooks:** `useT()` solo arriba de un componente. Una función auxiliar que no es componente recibe `tr` como parámetro.
 7. **No se traducen:** los PDF y documentos de factura (ya tienen su idioma por cliente), los correos y avisos push (aún
    no saben el idioma de quien los recibe), las exportaciones CSV/Excel y los ficheros para Hacienda, el panel `/admin`, los

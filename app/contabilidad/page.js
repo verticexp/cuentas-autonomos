@@ -170,7 +170,7 @@ export default async function Contabilidad({ searchParams }) {
             <article key={a.n} className="tarjeta cont-asiento">
               <header>
                 <span className="cont-num">{a.n}</span>
-                <span className="cont-n"><strong>{a.concepto}</strong><small>{fechaCorta(a.fecha)} · {tr(TIPO[a.origen?.tipo] || 'Automático')}</small></span>
+                <span className="cont-n"><strong>{a.concepto}</strong><small>{fechaCorta(a.fecha)} · {tr(TIPO[a.origen?.tipo] || 'Automático', { contexto: 'asiento' })}</small></span>
                 {a.origen && ORIGEN[a.origen.tipo] && (a.origen.tipo !== 'nomina' || veSueldos(u)) && <Ir href={ORIGEN[a.origen.tipo](a.origen.id)} className="cont-ver">{tr('Ver')}</Ir>}
                 {escribe && a.origen && ['manual', 'apertura'].includes(a.origen.tipo) && <Borrar url={`/api/asientos?id=${encodeURIComponent(a.origen.id)}`} pregunta={tr('¿Borrar el asiento «{concepto}»?', { concepto: a.concepto })} />}
               </header>
@@ -314,7 +314,7 @@ export default async function Contabilidad({ searchParams }) {
         {!sinAsientos && <section className="bloque">
           <h2 className="grupo-t">{tr('Balance de pymes al 31/12/{anio}', { anio })}</h2>
           <div className="tarjeta cont-tabla">
-            <div className="cont-fila cont-cab"><span className="cont-n">{tr('Activo')}</span><span className="cont-cifras"><span>{anio}</span><small>{anio - 1}</small></span></div>
+            <div className="cont-fila cont-cab"><span className="cont-n">{tr('Activo', { contexto: 'balance' })}</span><span className="cont-cifras"><span>{anio}</span><small>{anio - 1}</small></span></div>
             {filasBalance(ESTRUCTURA_BALANCE.activo).map((n) => <FilaOf key={n.id} codigo={n.codigo} t={n.t} a={ca.bal[0].v[n.id]} b={ca.bal[1].v[n.id]} nivel={n.nivel} fuerte={n.nivel === 0} />)}
             <FilaOf {...TOTALES_BALANCE[0]} a={ca.bal[0].activo} b={ca.bal[1].activo} fuerte />
           </div>

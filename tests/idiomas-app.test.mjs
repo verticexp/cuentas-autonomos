@@ -59,6 +59,8 @@ test('diccionarios: cada texto existe en el código, con traducción a los dos i
         assert.equal(tr, tr.trim(), `${zona}: espacios sobrantes en «${tr}»`);
       }
       // Los textos con huecos se escriben en el código con ${…}: basta con que estén sus trozos fijos.
+      // «Activo@balance»: la palabra con su contexto (lib/i18n.js); en el código está la palabra.
+      if (es.includes('@') && !es.includes(' ')) { assert.ok(codigo.includes(es.split('@')[0]), `${zona}: «${es}»`); continue; }
       const trozos = es.split(/\{\w+\}/).map((x) => x.trim()).filter((x) => x.length >= 3);
       const esta = huecos(es) ? (codigo.includes(es) || trozos.every((x) => codigo.includes(x))) : codigo.includes(es);
       assert.ok(esta, `${zona}: «${es}» no aparece en el código (¿ha cambiado el texto en castellano?)`);
@@ -90,4 +92,11 @@ test('conHuecos mete cada elemento en su hueco y deja el resto del texto', async
   const { conHuecos } = await import('../lib/huecos.js');
   const partes = conHuecos('Cobrado {a} de {b}', { a: 'X', b: { negrita: 'Y' } });
   assert.deepEqual(partes.map((p) => p.props.children), ['Cobrado ', 'X', ' de ', { negrita: 'Y' }, '']);
+});
+
+test('una palabra con contexto usa su traducción propia y, sin ella, la de siempre', () => {
+  const en = traductor(diccionario('en'), 'en');
+  assert.equal(en('Activo'), 'On');
+  assert.equal(en('Activo', { contexto: 'balance' }), 'Assets');
+  assert.equal(en('Facturas', { contexto: 'otro' }), 'Invoices');
 });
