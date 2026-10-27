@@ -5,6 +5,7 @@ import { herramientasPara } from '@/lib/asistente';
 import { iaLista } from '@/lib/ticket';
 import Volver from '@/components/Volver';
 import Asistente from '@/components/Asistente';
+import { textos } from '@/lib/idiomaServidor';
 import '@/app/asistente.css';
 
 import '@/app/mk.css';
@@ -23,6 +24,7 @@ const EJEMPLOS = {
 
 export default async function PaginaAsistente({ searchParams }) {
   const u = await requerir();
+  const tr = await textos();
   if (u.plan?.version >= 2 && sinFuncion(u.plan, 'asistente')) return <SinPlan usuario={u} funcion="asistente" />;
   const h = herramientasPara(u).map((x) => x.name);
   // ?pregunta=…: llega desde el buscador de «Más» y se envía sola al abrir.
@@ -31,11 +33,11 @@ export default async function PaginaAsistente({ searchParams }) {
   return (
     <main className="pagina mk-look asistente">
       <Volver href="/">Resumen</Volver>
-      <h1 className="titulo">Pregunta a Fisquo</h1>
-      <p className="asi-sub">Responde con las cifras que calcula la app, solo de {u.empresaNombre || 'tu empresa'} y de lo que tú puedes ver.</p>
+      <h1 className="titulo">{tr('Pregunta a Fisquo')}</h1>
+      <p className="asi-sub">{tr('Responde con las cifras que calcula la app, solo de {empresa} y de lo que tú puedes ver.', { empresa: u.empresaNombre || tr('tu empresa') })}</p>
       <Asistente listo={iaLista()} inicial={inicial} ejemplos={Object.keys(EJEMPLOS).filter((k) => h.includes(k)).map((k) => EJEMPLOS[k])} />
     </main>
   );
 }
 
-export const metadata = { title: 'Pregunta a Fisquo' };
+export async function generateMetadata() { return { title: (await textos())('Pregunta a Fisquo') }; }

@@ -6,6 +6,7 @@ import { llamar } from './Acciones';
 import { navegar } from '@/lib/transicion';
 import { vibrar } from '@/lib/haptica';
 import { avisarCobro } from './AvisoDeshacer';
+import { useT } from '@/components/Idioma';
 import '@/app/deslizar.css';
 
 // Fila de lista que se desliza a la izquierda (solo con el dedo) y deja ver sus acciones: nada se hace al soltar, sino al
@@ -21,6 +22,7 @@ const UMBRAL = 8; // desde cuántos px se decide si el gesto es horizontal o ver
 
 export default function Deslizar({ id, acciones = [], href, children }) {
   const router = useRouter();
+  const tr = useT();
   const lista = acciones.filter((a) => ACCIONES[a]);
   const total = lista.length * ANCHO;
   const [x, setX] = useState(0);
@@ -89,10 +91,10 @@ export default function Deslizar({ id, acciones = [], href, children }) {
     <><div ref={raiz} className={`desliz${abierto ? ' abierto' : ''}${x !== 0 ? ' mov' : ''}`} onPointerDown={alBajar} onPointerMove={alMover} onPointerUp={alSoltar} onPointerCancel={alSoltar} onClickCapture={alPulsar}>
       <div className="desliz-acciones" style={{ width: total }} aria-hidden={!abierto}>
         {lista.map((a) => (
-          <button key={a} type="button" className={`desliz-boton ${ACCIONES[a].tono}`} style={{ width: ANCHO }} tabIndex={abierto ? 0 : -1} disabled={trabajando} onClick={() => hacer(a)}>{trabajando && a !== 'enviar' ? '…' : ACCIONES[a].nombre}</button>
+          <button key={a} type="button" className={`desliz-boton ${ACCIONES[a].tono}`} style={{ width: ANCHO }} tabIndex={abierto ? 0 : -1} disabled={trabajando} onClick={() => hacer(a)}>{trabajando && a !== 'enviar' ? '…' : tr(ACCIONES[a].nombre)}</button>
         ))}
       </div>
       <div className="desliz-fila" style={{ transform: `translateX(${x}px)`, transition: arrastrando ? 'none' : undefined }}>{children}</div>
-    </div>{error && <p className="error" role="alert">{error}</p>}</>
+    </div>{error && <p className="error" role="alert">{tr(error)}</p>}</>
   );
 }

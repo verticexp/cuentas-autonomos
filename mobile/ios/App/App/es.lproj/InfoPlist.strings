@@ -1,0 +1,3 @@
+/* Textos de los permisos (Info.plist) en es. */
+"NSCameraUsageDescription" = "Fisquo usa la cámara para escanear tus tickets y facturas de gasto y leer sus importes.";
+"NSPhotoLibraryUsageDescription" = "Fisquo accede a las fotos que elijas para adjuntar tickets y facturas a tus gastos.";

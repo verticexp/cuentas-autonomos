@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
+import { useT } from '@/components/Idioma';
 import '@/app/cobro.css';
 
 const SEGUNDOS = 7;
@@ -16,6 +17,7 @@ export function avisarCobro(id) {
 
 export default function AvisoDeshacer() {
   const router = useRouter();
+  const tr = useT();
   const [aviso, setAviso] = useState(null);
   const [trabajando, setTrabajando] = useState(false);
   const [error, setError] = useState('');
@@ -42,9 +44,9 @@ export default function AvisoDeshacer() {
   };
   return createPortal(
     <div className="aviso-deshacer" role="status" aria-live="polite">
-      <span>{error || 'Factura cobrada'}</span>
-      {!error && <button type="button" disabled={trabajando} onClick={deshacer}>{trabajando ? '…' : 'Deshacer'}</button>}
-      <button type="button" className="aviso-cerrar" aria-label="Cerrar aviso" onClick={() => setAviso(null)}>×</button>
+      <span>{error ? tr(error) : tr('Factura cobrada')}</span>
+      {!error && <button type="button" disabled={trabajando} onClick={deshacer}>{trabajando ? '…' : tr('Deshacer')}</button>}
+      <button type="button" className="aviso-cerrar" aria-label={tr('Cerrar aviso')} onClick={() => setAviso(null)}>×</button>
     </div>,
     document.body,
   );

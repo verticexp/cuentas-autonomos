@@ -25,8 +25,11 @@ El idioma de la app es el del iPhone o el navegador (cabecera `Accept-Language`)
    mismo. Si el texto viene ya compuesto de otra parte (un mensaje de `lib/`, un error de la API), se traduce donde se
    pinta, `tr(msg)`, y en el diccionario va con huecos: `"Plazo en {n} días"`. Con huecos, el texto se reconoce ya
    compuesto solo si su parte fija tiene al menos 6 letras.
-4. **JSX con etiquetas dentro** (`<p>Hola <b>{x}</b>, ya está</p>`): se traducen los trozos por separado o se usa un hueco;
-   el texto en castellano que se ve tiene que quedar idéntico, espacios incluidos.
+4. **Frases enteras, nunca a trozos.** No se traduce «Cobrado» + «de» + «· faltan» por separado: cada idioma ordena la frase
+   a su manera. Se traduce la frase entera con huecos, `tr('Cobrado {pagado} de {total} · faltan {pendiente}', {...})`, y si
+   un hueco es un elemento (`<strong>`, un enlace) se monta con `conHuecos` de `lib/huecos.js`. El texto en castellano que
+   se ve tiene que quedar idéntico, espacios incluidos. Los huecos llevan nombres que digan qué son (`{importe}`, `{fecha}`),
+   no `{v1}`.
 5. **Plurales:** cada forma, su entrada (`'{n} día'` y `'{n} días'`).
 6. **Hooks:** `useT()` solo arriba de un componente. Una función auxiliar que no es componente recibe `tr` como parámetro.
 7. **No se traducen:** los PDF y documentos de factura (ya tienen su idioma por cliente), los correos y avisos push (aún
