@@ -1,4 +1,5 @@
 import TransicionPublica from '@/components/web/TransicionPublica';
+import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { hayUsuarios, usuarioActual } from '@/lib/auth';
 import { redis } from '@/lib/redis';
@@ -9,10 +10,12 @@ import PanelMarca from '@/components/PanelMarca';
 import { TrasArranque } from '@/lib/arranque';
 import { mensajeSeguro } from '@/lib/mensajes';
 import { AYUDA_CONTRASENA } from '@/lib/contrasena';
+import { socialListo } from '@/lib/social';
+import { esApp } from '@/lib/app';
 import '@/app/legal.css';
 
 export const dynamic = 'force-dynamic';
-const ERRORES = { 1: 'Email o contraseña incorrectos.', bloqueado: 'Demasiados intentos. Espera 15 minutos.', caducado: 'Ha pasado demasiado tiempo. Vuelve a escribir tu email y contraseña.' };
+const ERRORES = { 1: 'Email o contraseña incorrectos.', bloqueado: 'Demasiados intentos. Espera 15 minutos.', caducado: 'Ha pasado demasiado tiempo. Vuelve a escribir tu email y contraseña.', social: 'No se ha podido entrar con esa cuenta. Vuelve a intentarlo o entra con tu email.', cancelado: 'Has cancelado el inicio de sesión.' };
 
 export default async function Login({ searchParams }) {
   if (!redis) return <SinBD />;
@@ -40,7 +43,7 @@ export default async function Login({ searchParams }) {
             <button type="submit">Crear cuenta</button>
           </form>
         </TrasArranque>
-        ) : <FormEntrar errorInicial={error ? ERRORES[error] || mensajeSeguro(error) : ''} />}
+        ) : <FormEntrar errorInicial={error ? ERRORES[error] || mensajeSeguro(error) : ''} listos={{ ...socialListo(), app: esApp((await headers()).get('user-agent')) }} />}
         {/* Fuera del formulario: los enlaces legales salen siempre, también sin JavaScript. */}
         <p className="nota login-legal"><a href="/privacidad">Privacidad</a> · <a href="/condiciones">Condiciones</a></p>
       </div>

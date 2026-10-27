@@ -5,6 +5,7 @@ import Capacitor
 // Controlador principal: el WebView de Capacitor que carga www.fisquo.com, con lo que una app de iOS necesita además:
 // - ventanas nuevas y descargas resueltas dentro de la app (DelegadoWeb.swift), no en Safari, que no tiene la sesión;
 // - el escáner de documentos nativo para los tickets (EscanerPlugin.swift);
+// - el acceso con Apple y Google mediante la sesión nativa (AccesoPlugin.swift);
 // - deslizar desde el borde izquierdo para volver atrás, solo donde la pantalla tiene «‹ Atrás» y sin hojas encima, y nunca
 //   hacia delante (GestoAtras, abajo);
 // - la vibración del sistema al tocar las pestañas, cobrar o marcar como pagado (Haptica, abajo; lib/haptica.js);
@@ -41,6 +42,7 @@ class FisquoViewController: CAPBridgeViewController {
 
     override func capacitorDidLoad() {
         bridge?.registerPluginInstance(EscanerPlugin())
+        bridge?.registerPluginInstance(AccesoPlugin())
         guard let webView = webView, let capacitor = webView.navigationDelegate as? WebViewDelegationHandler else { return }
         let delegado = DelegadoWeb(capacitor: capacitor, servidor: bridge?.config.serverURL, presentador: self)
         delegado.alTerminarCarga = { [weak self] in self?.terminoCarga() }

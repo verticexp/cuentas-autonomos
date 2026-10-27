@@ -36,7 +36,9 @@ function enfocarVisible(elemento) {
 // Los campos permanecen montados para conservar lo escrito al cambiar de paso.
 // sesion: { nombre, email } si ya tiene cuenta y añade otra empresa: se salta el paso de la cuenta (1).
 // recomendacion: { codigo, nombre } si llega con el enlace de otra empresa (lib/recomendaciones.js): 2 meses gratis.
-export default function FormRegistro({ inicial = {}, sesion = null, recomendacion = null }) {
+// social: { proveedor, nombre, email } si viene de «Continuar con Google / Apple» sin cuenta: sin contraseña, y con el
+// email del proveedor (si lo ha verificado) fijo. listos: qué botones sociales están configurados (lib/social.js).
+export default function FormRegistro({ inicial = {}, sesion = null, recomendacion = null, social = null, listos = {} }) {
   const listo = useTrasArranque();
   const primero = sesion ? PASO.negocio : PASO.cuenta;
   const [paso, setPaso] = useState(primero);
@@ -52,7 +54,7 @@ export default function FormRegistro({ inicial = {}, sesion = null, recomendacio
   const [promo, setPromo] = useState(null);
   const codigoActual = useRef('');
   const [fiscales, setFiscales] = useState({ razon: '', nif: '', direccion: '', cp: '', ciudad: '', provincia: '', telefono: '' });
-  const [cuenta, setCuenta] = useState(sesion || {});
+  const [cuenta, setCuenta] = useState(sesion || (social ? { nombre: social.nombre, email: social.email } : {}));
   const [password, setPassword] = useState('');
   const [errorEmail, setErrorEmail] = useState('');
   const [comprobando, setComprobando] = useState(false);
@@ -146,7 +148,7 @@ export default function FormRegistro({ inicial = {}, sesion = null, recomendacio
     if (!comprobarPaso(paso)) return;
     if (paso === PASO.cuenta) {
       const d = new FormData(form.current);
-      const validacion = validarContrasena(d.get('password'), { email: d.get('email'), nombre: d.get('nombre') });
+      const validacion = social ? { ok: true } : validarContrasena(d.get('password'), { email: d.get('email'), nombre: d.get('nombre') });
       if (!validacion.ok) { setError({ mensaje: validacion.error, campo: 'password' }); return; }
       setCuenta({ nombre: d.get('nombre'), email: d.get('email') });
       setComprobando(true);
@@ -211,13 +213,14 @@ export default function FormRegistro({ inicial = {}, sesion = null, recomendacio
       {!sesion && <div hidden={paso !== PASO.cuenta} data-paso="1" className="registro-bloque">
         <h2 className="login-titulo" tabIndex={-1}>Crea tu cuenta</h2>
         <p className="nota">{gratis === 90 ? '3 meses gratis con todo incluido, con tu código.' : gratis ? '2 meses gratis con todo incluido, por venir recomendado.' : `${PRUEBA_DIAS} días gratis con todo incluido.`} Sin tarjeta.</p>
-        <BotonesSociales />
-        <p className="separador solo-web"><span>o con tu email</span></p>
+        {social ? <p className="nota registro-social" role="status">Con tu cuenta de {social.proveedor === 'apple' ? 'Apple' : 'Google'}{social.email ? ` (${social.email})` : ''}: no necesitas contraseña.</p>
+          : <><BotonesSociales listos={listos} />{(listos.google || listos.apple) && <p className="separador"><span>o con tu email</span></p>}</>}
         <label htmlFor="nombre">Tu nombre</label>
-        <input onChange={(e) => setCuenta((c) => ({ ...c, nombre: e.target.value }))} id="nombre" name="nombre" autoComplete="name" required maxLength={60} {...accesibilidad('nombre')} />
+        <input defaultValue={social?.nombre || undefined} onChange={(e) => setCuenta((c) => ({ ...c, nombre: e.target.value }))} id="nombre" name="nombre" autoComplete="name" required maxLength={60} {...accesibilidad('nombre')} />
         <label htmlFor="email">Email</label>
-        <input onChange={(e) => { emailActual.current = e.target.value; setCuenta((c) => ({ ...c, email: e.target.value })); setErrorEmail(''); }} onBlur={(e) => { if (e.target.validity.valid) comprobarEmail(e.target.value); }} id="email" name="email" type="email" autoComplete="email" required {...accesibilidad('email', errorEmail && error?.campo !== 'email' ? 'registro-email-error' : undefined)} aria-invalid={Boolean(errorEmail) || error?.campo === 'email' || undefined} />
+        <input onChange={(e) => { emailActual.current = e.target.value; setCuenta((c) => ({ ...c, email: e.target.value })); setErrorEmail(''); }} onBlur={(e) => { if (e.target.validity.valid) comprobarEmail(e.target.value); }} id="email" name="email" type="email" autoComplete="email" required defaultValue={social?.email || undefined} readOnly={Boolean(social?.email)} {...accesibilidad('email', errorEmail && error?.campo !== 'email' ? 'registro-email-error' : undefined)} aria-invalid={Boolean(errorEmail) || error?.campo === 'email' || undefined} />
         <p id="registro-email-error" className="error" role="status">{error?.campo !== 'email' && errorEmail}</p>
+        {!social && <>
         <label htmlFor="password">Contraseña</label>
         <CampoPassword id="password" autoComplete="new-password" minLength={10} value={password} onChange={(e) => setPassword(e.target.value)} {...accesibilidad('password', 'registro-seguridad')} required />
         {/* Con el campo vacío solo se enseñan las reglas, sin «Débil» en rojo antes de escribir nada. */}
@@ -226,6 +229,7 @@ export default function FormRegistro({ inicial = {}, sesion = null, recomendacio
           {password && <p className="nota">{['Débil', 'Débil', 'Aceptable', 'Buena', 'Muy buena'][seguridad.nivel]}</p>}
           {seguridad.faltan.length > 0 && <ul>{seguridad.faltan.map((f) => <li key={f}>{f}</li>)}</ul>}
         </div>
+        </>}
         {/* Trampa para bots: invisible para personas. */}
         <input name="web" tabIndex={-1} autoComplete="off" className="registro-trampa" aria-hidden />
       </div>}
