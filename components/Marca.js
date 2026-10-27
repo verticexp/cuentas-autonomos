@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
 import { COLORES, COLOR_BASE } from '@/lib/marca';
+import { useT } from '@/components/Idioma';
 
 // Reduce el logo a 600 px como mucho para que la factura cargue rápido.
 function prepararLogo(file) {
@@ -25,6 +26,7 @@ function prepararLogo(file) {
 }
 
 export default function Marca({ marca, nombre }) {
+  const tr = useT();
   const router = useRouter();
   const [color, setColor] = useState(marca?.color || COLOR_BASE);
   const [logo, setLogo] = useState(marca?.logo || null);
@@ -44,35 +46,35 @@ export default function Marca({ marca, nombre }) {
 
   return (
     <section className="tarjeta formulario marca">
-      <h3>Tu marca</h3>
-      <p className="nota">El color sale en tus facturas, presupuestos y páginas de cobro; el logo, arriba en cada PDF.</p>
+      <h3>{tr('Tu marca')}</h3>
+      <p className="nota">{tr('El color sale en tus facturas, presupuestos y páginas de cobro; el logo, arriba en cada PDF.')}</p>
 
       <div className="muestra-factura" style={{ '--c': color }}>
-        {logo ? <img src={logo} alt="Tu logo" /> : <span className="sin-logo">Tu logo</span>}
-        <div><strong>{nombre || 'Tu empresa'}</strong><small>Factura 01-2026</small></div>
+        {logo ? <img src={logo} alt={tr('Tu logo')} /> : <span className="sin-logo">{tr('Tu logo')}</span>}
+        <div><strong>{nombre || tr('Tu empresa')}</strong><small>{tr('Factura 01-2026')}</small></div>
       </div>
 
-      <div className="colores" role="radiogroup" aria-label="Color de tu marca">
+      <div className="colores" role="radiogroup" aria-label={tr('Color de tu marca')}>
         {COLORES.map((c) => (
           <button key={c} type="button" role="radio" aria-checked={color === c} aria-label={c} className={color === c ? 'activo' : ''} style={{ background: c }} onClick={() => elegir(c)} />
         ))}
-        <label className={`color-libre${COLORES.includes(color) ? '' : ' activo'}`} title="Otro color">
-          <input type="color" value={color} onChange={(e) => setColor(e.target.value)} onBlur={(e) => elegir(e.target.value.toUpperCase())} aria-label="Otro color" />
+        <label className={`color-libre${COLORES.includes(color) ? '' : ' activo'}`} title={tr('Otro color')}>
+          <input type="color" value={color} onChange={(e) => setColor(e.target.value)} onBlur={(e) => elegir(e.target.value.toUpperCase())} aria-label={tr('Otro color')} />
         </label>
       </div>
 
       <div className="logo-botones">
         <label className="boton sec">
-          {logo ? 'Cambiar logo' : 'Subir logo'}
+          {logo ? tr('Cambiar logo') : tr('Subir logo')}
           <input type="file" accept="image/png,image/jpeg" hidden onChange={async (e) => {
             const f = e.target.files?.[0];
             if (!f) return;
             try { const l = await prepararLogo(f); setLogo(l); guardar({ logo: l }); } catch (err) { setMsg(err.message); }
           }} />
         </label>
-        {logo && <button type="button" className="borrar" onClick={() => { setLogo(null); guardar({ logo: null }); }}>Quitar logo</button>}
+        {logo && <button type="button" className="borrar" onClick={() => { setLogo(null); guardar({ logo: null }); }}>{tr('Quitar logo')}</button>}
       </div>
-      {msg && <p className={msg === 'Guardado' || msg === 'Guardando…' ? 'nota' : 'error'} role={msg === 'Guardado' || msg === 'Guardando…' ? 'status' : 'alert'}>{msg}</p>}
+      {msg && <p className={msg === 'Guardado' || msg === 'Guardando…' ? 'nota' : 'error'} role={msg === 'Guardado' || msg === 'Guardando…' ? 'status' : 'alert'}>{tr(msg)}</p>}
     </section>
   );
 }

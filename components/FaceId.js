@@ -4,9 +4,11 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { MARCA, activarFaceId, faceIdDisponible, nombreDispositivo } from '@/lib/faceid';
 import { fechaCorta } from '@/lib/formato';
+import { useT } from '@/components/Idioma';
 
 // Ajustes → Face ID: activarlo en este dispositivo y ver en cuáles está.
 export default function FaceId({ lista, bloqueo = false }) {
+  const tr = useT();
   const router = useRouter();
   const [disponible, setDisponible] = useState(null);
   const [msg, setMsg] = useState('');
@@ -36,24 +38,24 @@ export default function FaceId({ lista, bloqueo = false }) {
   return (
     <section className="tarjeta formulario faceid">
       <h3>Face ID</h3>
-      <p className="nota">Con Face ID (o la huella) entras sin escribir la contraseña. Tu cara nunca sale del dispositivo.</p>
+      <p className="nota">{tr('Con Face ID (o la huella) entras sin escribir la contraseña. Tu cara nunca sale del dispositivo.')}</p>
       <label className="check">
         <input type="checkbox" checked={bloquear} onChange={cambiarBloqueo} />
-        Pedir Face ID o contraseña cada vez que abra Fisquo
+        {tr('Pedir Face ID o contraseña cada vez que abra Fisquo')}
       </label>
       {lista.length > 0 && (
         <ul className="dispositivos">
           {lista.map((k) => (
             <li key={k.id}>
-              <span className="txt"><strong>{k.nombre}</strong><small>Activado el {fechaCorta(k.creada.slice(0, 10))}{k.usada ? ` · último uso ${fechaCorta(k.usada.slice(0, 10))}` : ''}</small></span>
-              <button type="button" className="borrar" onClick={() => quitar(k.id)}>Quitar</button>
+              <span className="txt"><strong>{k.nombre}</strong><small>{tr('Activado el {fecha}', { fecha: fechaCorta(k.creada.slice(0, 10)) })}{k.usada ? ` · ${tr('último uso {fecha}', { fecha: fechaCorta(k.usada.slice(0, 10)) })}` : ''}</small></span>
+              <button type="button" className="borrar" onClick={() => quitar(k.id)}>{tr('Quitar')}</button>
             </li>
           ))}
         </ul>
       )}
-      {disponible === false && <p className="nota">Este dispositivo no tiene Face ID ni huella.</p>}
-      {disponible && <button type="button" className="boton" onClick={activar}>Activar en este dispositivo</button>}
-      {msg && <p className={msg.startsWith('Listo') ? 'nota' : 'error'} role={msg.startsWith('Listo') ? 'status' : 'alert'}>{msg}</p>}
+      {disponible === false && <p className="nota">{tr('Este dispositivo no tiene Face ID ni huella.')}</p>}
+      {disponible && <button type="button" className="boton" onClick={activar}>{tr('Activar en este dispositivo')}</button>}
+      {msg && <p className={msg.startsWith('Listo') ? 'nota' : 'error'} role={msg.startsWith('Listo') ? 'status' : 'alert'}>{tr(msg)}</p>}
     </section>
   );
 }
