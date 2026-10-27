@@ -5,12 +5,14 @@ import { PERFILES, perfilDe, permisosDe, puede } from '@/lib/permisos';
 import Usuarios from '@/components/Usuarios';
 import Volver from '@/components/Volver';
 import { membresias } from '@/lib/membresias';
+import { textos } from '@/lib/idiomaServidor';
 
 import '@/app/mk.css';
 
 export const dynamic = 'force-dynamic';
 
 export default async function Page({ searchParams }) {
+  const tr = await textos();
   const yo = await requerir();
   if (!puede(yo, 'usuarios') && !yo.admin) redirect('/ajustes');
   const [todos, empresas] = await Promise.all([redis.hgetall('usuarios'), yo.admin ? redis.hgetall('empresas') : null]);
@@ -29,11 +31,11 @@ export default async function Page({ searchParams }) {
   const inicial = gestoria ? { nombre: yo.gestoria?.nombre || '', email: yo.gestoria?.email || '', rol: 'miembro', permisos: gestoria.permisos } : null;
   return (
     <main className="pagina mk-look">
-      <Volver href="/ajustes">Ajustes</Volver>
-      <h1 className="titulo">Usuarios</h1>
+      <Volver href="/ajustes">{tr('Ajustes')}</Volver>
+      <h1 className="titulo">{tr('Usuarios')}</h1>
       <Usuarios lista={puede(yo, 'usuarios') ? lista : null} yo={yo.id} empresa={yo.empresaNombre} empresas={listaEmpresas} miEmpresa={yo.empresa} soyAdmin={yo.rol === 'admin'} inicial={inicial} />
     </main>
   );
 }
 
-export const metadata = { title: 'Usuarios' };
+export async function generateMetadata() { return { title: (await textos())('Usuarios') }; }

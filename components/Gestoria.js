@@ -5,10 +5,12 @@ import { useRouter } from 'next/navigation';
 import Ir from '@/components/Ir';
 import { llamar } from './Acciones';
 import useEnvio from './useEnvio';
+import { useT } from '@/components/Idioma';
 
 // Ajustes › Tu gestoría. gestoria: { nombre, email, auto } o null. trimestres: [{ anio, t }] del más reciente al más
 // antiguo (el primero, el último cerrado). invitar: si puede dar acceso a Fisquo (Usuarios). emailListo: si hay correo.
 export default function Gestoria({ gestoria, trimestres, invitar, emailListo, app = false }) {
+  const tr = useT();
   const [enviando, envolver] = useEnvio();
   const router = useRouter();
   const [d, setD] = useState({ nombre: gestoria?.nombre || '', email: gestoria?.email || '', auto: Boolean(gestoria?.auto) });
@@ -34,40 +36,40 @@ export default function Gestoria({ gestoria, trimestres, invitar, emailListo, ap
   return (
     <>
       <form className="formulario aj-form" onSubmit={envolver(guardar)}>
-        <h3 aria-level={2}>Datos de tu gestoría</h3>
+        <h3 aria-level={2}>{tr('Datos de tu gestoría')}</h3>
         <div className="aj-grupo">
-          <label>Nombre (opcional)<input className="campo" value={d.nombre} maxLength={120} onChange={(e) => setD({ ...d, nombre: e.target.value })} placeholder="Gestoría López" /></label>
-          <label>Email<input autoComplete="email" className="campo" type="email" value={d.email} maxLength={254} onChange={(e) => setD({ ...d, email: e.target.value })} placeholder="tu@gestoria.es" /></label>
+          <label>{tr('Nombre (opcional)')}<input className="campo" value={d.nombre} maxLength={120} onChange={(e) => setD({ ...d, nombre: e.target.value })} placeholder={tr('Gestoría López')} /></label>
+          <label>{tr('Email')}<input autoComplete="email" className="campo" type="email" value={d.email} maxLength={254} onChange={(e) => setD({ ...d, email: e.target.value })} placeholder="tu@gestoria.es" /></label>
           <label className="check ges-auto"><input type="checkbox" checked={d.auto} onChange={(e) => setD({ ...d, auto: e.target.checked })} disabled={!emailListo} aria-describedby={!emailListo ? "ges-email-ayuda" : undefined} />
-            <span>Mandarle el paquete solo al acabar cada trimestre<small>El día 5 de enero, abril, julio y octubre: facturas, gastos con sus justificantes, nóminas e impuestos del trimestre.</small></span></label>
-          {!emailListo && <p id="ges-email-ayuda" className="nota">El envío automático necesita que esté configurado el correo de Fisquo.</p>}
+            <span>{tr('Mandarle el paquete solo al acabar cada trimestre')}<small>{tr('El día 5 de enero, abril, julio y octubre: facturas, gastos con sus justificantes, nóminas e impuestos del trimestre.')}</small></span></label>
+          {!emailListo && <p id="ges-email-ayuda" className="nota">{tr('El envío automático necesita que esté configurado el correo de Fisquo.')}</p>}
         </div>
-        {msg && <p role="status" className={msg === 'Guardado' ? 'nota aj-pie guardado' : msg === 'Guardando…' ? 'nota aj-pie' : 'error aj-pie'}>{msg === 'Guardado' ? '✓ Guardado' : msg}</p>}
-        <button className="boton" disabled={enviando}>Guardar</button>
+        {msg && <p role="status" className={msg === 'Guardado' ? 'nota aj-pie guardado' : msg === 'Guardando…' ? 'nota aj-pie' : 'error aj-pie'}>{msg === 'Guardado' ? tr('✓ Guardado') : tr(msg)}</p>}
+        <button className="boton" disabled={enviando}>{tr('Guardar')}</button>
       </form>
 
       <section className="grupo">
-        <h2 className="grupo-t">Mandar el paquete ahora</h2>
+        <h2 className="grupo-t">{tr('Mandar el paquete ahora')}</h2>
         <div className="grupo-c relleno">
-          <label className="ges-trim">Trimestre
+          <label className="ges-trim">{tr('Trimestre')}
             <select className="campo" value={sel} onChange={(e) => { setSel(Number(e.target.value)); setEnvio(''); }}>
-              {trimestres.map((x, i) => <option key={`${x.anio}-${x.t}`} value={i}>{x.t}T {x.anio}</option>)}
+              {trimestres.map((x, i) => <option key={`${x.anio}-${x.t}`} value={i}>{tr('{t}T {anio}', { t: x.t, anio: x.anio })}</option>)}
             </select>
           </label>
           <div className="ges-botones">
-            <button type="button" className="boton" onClick={mandar} aria-describedby="ges-envio-ayuda" disabled={!guardada || !emailListo || envio.startsWith('Preparando')}>Mandar a la gestoría</button>
-            <a className="boton sec" href={`/api/paquete?anio=${trimestres[sel].anio}&t=${trimestres[sel].t}`} download>Descargar</a>
+            <button type="button" className="boton" onClick={mandar} aria-describedby="ges-envio-ayuda" disabled={!guardada || !emailListo || envio.startsWith('Preparando')}>{tr('Mandar a la gestoría')}</button>
+            <a className="boton sec" href={`/api/paquete?anio=${trimestres[sel].anio}&t=${trimestres[sel].t}`} download>{tr('Descargar')}</a>
           </div>
-          {envio && <p role="status" className={envio.startsWith('✓') || envio.startsWith('Preparando') ? 'nota' : 'error'}>{envio}</p>}
+          {envio && <p role="status" className={envio.startsWith('✓') || envio.startsWith('Preparando') ? 'nota' : 'error'}>{tr(envio)}</p>}
         </div>
-        <p id="ges-envio-ayuda" className="grupo-pie">{!emailListo ? 'El envío por email aún no está configurado: descárgalo y mándaselo tú.' : guardada ? `Le llega a ${gestoria.email} con tu email para responder (si lo has puesto en Datos de la empresa).` : 'Guarda antes el email de tu gestoría.'}</p>
+        <p id="ges-envio-ayuda" className="grupo-pie">{!emailListo ? tr('El envío por email aún no está configurado: descárgalo y mándaselo tú.') : guardada ? tr('Le llega a {email} con tu email para responder (si lo has puesto en Datos de la empresa).', { email: gestoria.email }) : tr('Guarda antes el email de tu gestoría.')}</p>
       </section>
 
       {invitar && (
         <section className="grupo">
-          <h2 className="grupo-t">Acceso a Fisquo</h2>
+          <h2 className="grupo-t">{tr('Acceso a Fisquo')}</h2>
           <div className="grupo-c">
-            <Ir href="/usuarios?invitar=gestoria" className="celda ir"><span className="txt">Invitar a tu gestoría<small>Entra con su propio usuario y ve facturas, gastos, nóminas e impuestos.{!app && ' Una gestoría no cuenta como usuario de tu plan.'}</small></span></Ir>
+            <Ir href="/usuarios?invitar=gestoria" className="celda ir"><span className="txt">{tr('Invitar a tu gestoría')}<small>{tr('Entra con su propio usuario y ve facturas, gastos, nóminas e impuestos.')}{!app && ` ${tr('Una gestoría no cuenta como usuario de tu plan.')}`}</small></span></Ir>
           </div>
         </section>
       )}
