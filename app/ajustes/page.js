@@ -5,6 +5,7 @@ import { requerir } from '@/lib/auth';
 import { perfilDe } from '@/lib/permisos';
 import Avatar from '@/components/Avatar';
 import { CuentaYEmpresas } from '@/components/ListaAjustes';
+import { textos } from '@/lib/idiomaServidor';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,17 +14,18 @@ export const dynamic = 'force-dynamic';
 export default async function Page() {
   const u = await requerir();
   const app = esApp((await headers()).get('user-agent'));
+  const tr = await textos();
   return (
     <main className="pagina mk-look ajustes-raiz">
       <div className="aj-solo-ordenador">
-        <h1 className="solo-lectores">Tu cuenta</h1>
+        <h1 className="solo-lectores">{tr('Tu cuenta')}</h1>
         <div className="aj-cuenta">
           <Avatar nombre={u.nombre} size={88} />
           <strong>{u.nombre}</strong>
-          <small>{u.email} · {perfilDe(u)} en {u.empresaNombre}</small>
+          <small>{u.email} · {tr('{perfil} en {empresa}', { perfil: tr(perfilDe(u)), empresa: u.empresaNombre })}</small>
         </div>
         <section className="grupo">
-          <div className="grupo-c"><Ir href="/ajustes/perfil" className="celda ir mas-fila"><span className="txt">Tu nombre</span><span className="mas-valor">{u.nombre}</span></Ir></div>
+          <div className="grupo-c"><Ir href="/ajustes/perfil" className="celda ir mas-fila"><span className="txt">{tr('Tu nombre')}</span><span className="mas-valor">{u.nombre}</span></Ir></div>
         </section>
         <CuentaYEmpresas u={u} app={app} />
       </div>
@@ -31,4 +33,6 @@ export default async function Page() {
   );
 }
 
-export const metadata = { title: 'Ajustes' };
+export async function generateMetadata() {
+  return { title: (await textos())('Ajustes') };
+}

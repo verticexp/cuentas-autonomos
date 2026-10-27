@@ -4,6 +4,7 @@ import Vacio from '@/components/Vacio';
 import { useEffect, useMemo, useState } from 'react';
 import Ir from '@/components/Ir';
 import { buscar } from '@/lib/navegacion';
+import { useT } from '@/components/Idioma';
 
 // Lo que más abre cada persona, contado en este dispositivo (solo para ordenar los favoritos; nunca sale del navegador).
 const CLAVE = 'fisquo-mas-usos';
@@ -17,18 +18,25 @@ const Icono = ({ e, tono }) => <span className="mas-ico" data-tono={tono}><svg v
 
 // Una línea, como en los Ajustes del iPhone: el nombre y, a la derecha, el aviso en gris (en rojo si apremia).
 function Fila({ e, tono }) {
+  const tr = useT();
   return (
     <Ir href={e.href} className="celda ir mas-fila" onClick={() => contar(e.href)}>
       <Icono e={e} tono={tono} />
       <span className="txt">{e.nombre}</span>
       {e.aviso && <span className="mas-valor" data-tono={e.aviso.tono}>{e.aviso.texto}</span>}
-      {e.plan && !e.aviso && <span className="plan-chip" title={`Incluido en el plan ${e.plan}`}>{e.plan}</span>}
+      {e.plan && !e.aviso && <span className="plan-chip" title={tr('Incluido en el plan {plan}', { plan: e.plan })}>{e.plan}</span>}
     </Ir>
   );
 }
 
 // grupos: los de components/secciones.js que esta persona puede ver, con el aviso de cada pantalla si lo hay.
-export default function MasLista({ grupos, asistente = true }) {
+export default function MasLista({ grupos: originales, asistente = true }) {
+  const tr = useT();
+  // Nombres, detalles y avisos en el idioma de la app; el buscador encuentra también por el nombre en castellano.
+  const grupos = useMemo(() => originales.map((g) => ({ ...g, nombre: tr(g.titulo), enlaces: g.enlaces.map((e) => ({
+    ...e, nombre: tr(e.nombre), detalle: tr(e.detalle), palabras: e.nombre === tr(e.nombre) ? e.palabras : `${e.palabras || ''} ${e.nombre} ${e.detalle || ''}`,
+    ...(e.aviso ? { aviso: { ...e.aviso, texto: tr(e.aviso.texto) } } : {}),
+  })) })), [originales, tr]);
   const [q, setQ] = useState('');
   const [usos, setUsos] = useState(null);
   useEffect(() => { setUsos(leerUsos()); }, []);
@@ -45,27 +53,27 @@ export default function MasLista({ grupos, asistente = true }) {
     <>
       <form className="mas-buscar" role="search" action="/asistente" onSubmit={(ev) => { if (!asistente || !q.trim() || hallados?.length) ev.preventDefault(); }}>
         <svg viewBox="0 0 24 24" aria-hidden><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
-        <input type="search" name="pregunta" value={q} onChange={(ev) => setQ(ev.target.value)} placeholder="Buscar" aria-label="Buscar pantallas" autoComplete="off" enterKeyHint="search" maxLength={500} />
+        <input type="search" name="pregunta" value={q} onChange={(ev) => setQ(ev.target.value)} placeholder={tr('Buscar')} aria-label={tr('Buscar pantallas')} autoComplete="off" enterKeyHint="search" maxLength={500} />
       </form>
 
       {hallados ? (
-        <section className="grupo" aria-label="Resultados">
+        <section className="grupo" aria-label={tr('Resultados')}>
           <div className="grupo-c">
             {hallados.map((e) => <Fila key={e.href} e={e} tono={e.tono} />)}
             {asistente && (
               <Ir href={`/asistente?pregunta=${encodeURIComponent(q.trim())}`} className="celda ir mas-fila">
                 <span className="mas-ico" data-tono="verde"><svg viewBox="0 0 24 24" aria-hidden><path d="M4 5h16v11H9l-5 4zM8 10h8M8 13h5" /></svg></span>
-                <span className="txt">Preguntar a Fisquo</span>
+                <span className="txt">{tr('Preguntar a Fisquo')}</span>
                 <span className="mas-valor">«{q.trim()}»</span>
               </Ir>
             )}
           </div>
-          {!hallados.length && !asistente && <Vacio compacto tipo="resultados" titulo="Ninguna pantalla con ese nombre" accion={<button type="button" className="boton sec" onClick={() => setQ('')}>Borrar búsqueda</button>} />}
+          {!hallados.length && !asistente && <Vacio compacto tipo="resultados" titulo={tr('Ninguna pantalla con ese nombre')} accion={<button type="button" className="boton sec" onClick={() => setQ('')}>{tr('Borrar búsqueda')}</button>} />}
         </section>
       ) : (
         <>
           {favoritos.length === FAVORITOS && (
-            <nav className="mas-favoritos" aria-label="Favoritos">
+            <nav className="mas-favoritos" aria-label={tr('Favoritos')}>
               {favoritos.map((e) => (
                 <Ir key={e.href} href={e.href} className="mas-tile" onClick={() => contar(e.href)}>
                   <Icono e={e} tono={e.tono} />
@@ -76,8 +84,8 @@ export default function MasLista({ grupos, asistente = true }) {
             </nav>
           )}
           {grupos.map((g) => (
-            <section key={g.titulo} className="grupo" aria-label={g.titulo}>
-              <h2 className="grupo-t">{g.titulo}</h2>
+            <section key={g.titulo} className="grupo" aria-label={g.nombre}>
+              <h2 className="grupo-t">{g.nombre}</h2>
               <div className="grupo-c">{g.enlaces.map((e) => <Fila key={e.href} e={e} tono={g.tono} />)}</div>
             </section>
           ))}

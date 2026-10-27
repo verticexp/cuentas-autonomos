@@ -46,6 +46,8 @@ import AjustesApi from '@/components/AjustesApi';
 import { alcancesDe, clavesDe } from '@/lib/apiPublica';
 import { webhooksDe } from '@/lib/webhooks';
 import Apariencia from '@/components/Apariencia';
+import IdiomaApp from '@/components/IdiomaApp';
+import { textos } from '@/lib/idiomaServidor';
 import Ayuda from '@/components/Ayuda';
 import EmailEnvio from '@/components/EmailEnvio';
 import ConectarWhatsApp from '@/components/ConectarWhatsApp';
@@ -66,7 +68,7 @@ export const dynamic = 'force-dynamic';
 const TITULOS = {
   perfil: 'Tu perfil', facturacion: 'Datos de la empresa', marca: 'Diseño de factura', series: 'Series y numeración', cobros: 'Cobros', envio: 'Email de envío', gestoria: 'Tu gestoría',
   seguridad: 'Seguridad', drive: 'Google Drive', controlat: "Controla'T", avisos: 'Avisos', importar: 'Importar datos',
-  verifactu: 'Verifactu', whatsapp: 'WhatsApp', plan: 'Tu plan', apariencia: 'Apariencia', ayuda: 'Ayuda y contacto', recomienda: 'Recomienda Fisquo', api: 'API y webhooks',
+  verifactu: 'Verifactu', whatsapp: 'WhatsApp', plan: 'Tu plan', apariencia: 'Apariencia', idioma: 'Idioma', ayuda: 'Ayuda y contacto', recomienda: 'Recomienda Fisquo', api: 'API y webhooks',
 };
 const DE_EMPRESA = ['plan', 'facturacion', 'marca', 'series', 'cobros', 'envio', 'gestoria', 'drive', 'controlat', 'importar', 'verifactu', 'api'];
 
@@ -99,11 +101,12 @@ export default async function Seccion({ params, searchParams }) {
   if (!TITULOS[seccion]) notFound();
   const u = await requerir();
   const app = esApp((await headers()).get('user-agent'));
-  if (DE_EMPRESA.includes(seccion) && !puede(u, 'empresa')) return <SinAcceso texto="Para cambiar esto necesitas el permiso «Datos de la empresa». Pídeselo al administrador." />;
+  const tr = await textos();
+  if (DE_EMPRESA.includes(seccion) && !puede(u, 'empresa')) return <SinAcceso texto={tr('Para cambiar esto necesitas el permiso «Datos de la empresa». Pídeselo al administrador.')} />;
   // Drive y la gestoría reciben cada factura y gasto (app/api/cuenta): elegir adónde van exige poder verlos.
-  if (['gestoria', 'drive'].includes(seccion) && !puede(u, DETALLE)) return <SinAcceso texto="Para elegir adónde se envían las facturas y los gastos necesitas poder ver el resumen, las facturas y los gastos. Pídeselo al administrador." />;
-  if (seccion === 'whatsapp' && !puede(u, 'facturar')) return <SinAcceso texto="Fisquo por WhatsApp crea facturas y presupuestos: necesitas el permiso para facturar. Pídeselo al administrador." />;
-  if (seccion === 'recomienda' && u.rol !== 'admin') return <SinAcceso texto="Solo el administrador de la empresa puede recomendar Fisquo con el enlace de la empresa." />;
+  if (['gestoria', 'drive'].includes(seccion) && !puede(u, DETALLE)) return <SinAcceso texto={tr('Para elegir adónde se envían las facturas y los gastos necesitas poder ver el resumen, las facturas y los gastos. Pídeselo al administrador.')} />;
+  if (seccion === 'whatsapp' && !puede(u, 'facturar')) return <SinAcceso texto={tr('Fisquo por WhatsApp crea facturas y presupuestos: necesitas el permiso para facturar. Pídeselo al administrador.')} />;
+  if (seccion === 'recomienda' && u.rol !== 'admin') return <SinAcceso texto={tr('Solo el administrador de la empresa puede recomendar Fisquo con el enlace de la empresa.')} />;
   const llaves = seccion === 'seguridad'
     ? Object.entries((await redis.hgetall(`passkeys:${u.id}`)) || {}).map(([id, k]) => ({ id, nombre: k.nombre, creada: k.creada, usada: k.usada || null }))
     : [];
@@ -113,14 +116,15 @@ export default async function Seccion({ params, searchParams }) {
     : null;
   return (
     <main className={`pagina mk-look${seccion === 'plan' ? ` ${estilosPlan.pagina}` : ''}`}>
-      <Volver href="/ajustes">Ajustes</Volver>
-      <h1 className="titulo">{TITULOS[seccion]}</h1>
+      <Volver href="/ajustes">{tr('Ajustes')}</Volver>
+      <h1 className="titulo">{tr(TITULOS[seccion])}</h1>
       {seccion === 'marca' && <Marca marca={u.marca} nombre={u.emisor?.nombre} />}
       {seccion === 'series' && <Series {...await datosSeries(u, Number(ahoraMadrid().slice(0, 4)))} />}
       {seccion === 'gestoria' && <TuDespacho {...await datosTuDespacho(u)} codigo={typeof (await searchParams)?.codigo === 'string' ? (await searchParams).codigo : ''} />}
       {seccion === 'gestoria' && <Gestoria gestoria={u.gestoria || null} trimestres={ultimosTrimestres(ahoraMadrid().slice(0, 10))} invitar={u.rol === 'admin'} emailListo={emailListo()} app={app} />}
       {seccion === 'api' && <AjustesApi key={u.empresa} inicial={{ claves: await clavesDe(u), webhooks: await webhooksDe(u) }} alcances={alcancesDe(u)} eventos={[...(puede(u, 'facturas') ? ['factura.creada', 'factura.cobrada'] : []), ...(puede(u, ['gastos', 'nominas']) ? ['gasto.creado'] : [])]} />}
       {seccion === 'apariencia' && <Apariencia inicial={(await cookies()).get('tema')?.value} />}
+      {seccion === 'idioma' && <IdiomaApp inicial={(await cookies()).get('idioma')?.value} />}
       {seccion === 'ayuda' && <Ayuda contacto={CONTACTO} app={app} />}
       {seccion === 'envio' && <EmailEnvio inicial={u.envio || {}} empresa={u.emisor || {}} />}
       {seccion === 'seguridad' && <FaceId lista={llaves} bloqueo={Boolean(u.bloqueoPantalla)} />}
@@ -149,18 +153,18 @@ export default async function Seccion({ params, searchParams }) {
       {seccion === 'perfil' && (
         <section className="grupo">
           <div className="grupo-c">
-            <div className="celda"><span className="txt">Email<small>{u.email}</small></span></div>
-            <a href="/ajustes/seguridad" className="celda ir"><span className="txt">Seguridad<small>Contraseña, Face ID, verificación en dos pasos y accesos</small></span></a>
+            <div className="celda"><span className="txt">{tr('Email')}<small>{u.email}</small></span></div>
+            <a href="/ajustes/seguridad" className="celda ir"><span className="txt">{tr('Seguridad')}<small>{tr('Contraseña, Face ID, verificación en dos pasos y accesos')}</small></span></a>
           </div>
-          <p className="grupo-pie">Para cambiar tu email, escríbenos desde Ayuda y contacto.</p>
+          <p className="grupo-pie">{tr('Para cambiar tu email, escríbenos desde Ayuda y contacto.')}</p>
         </section>
       )}
       {seccion === 'seguridad' && <AccesosRecientes lista={await accesosDe(u.id)} />}
-      {seccion === 'seguridad' && <form method="post" action="/api/logout?todas=1"><button className="borrar ancho">Cerrar sesión en todos los dispositivos</button></form>}
+      {seccion === 'seguridad' && <form method="post" action="/api/logout?todas=1"><button className="borrar ancho">{tr('Cerrar sesión en todos los dispositivos')}</button></form>}
     </main>
   );
 }
 
 export async function generateMetadata({ params }) {
-  return { title: TITULOS[(await params).seccion] || 'Ajustes' };
+  return { title: (await textos())(TITULOS[(await params).seccion] || 'Ajustes') };
 }

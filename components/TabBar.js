@@ -11,6 +11,7 @@ import { ASISTENTE, extraDe, gruposVisibles } from '@/components/secciones';
 import { atajosDe } from '@/lib/navegacion';
 import { useHojaDeslizable } from '@/components/useHojaDeslizable';
 import useTecladoFormulario from '@/components/useTecladoFormulario';
+import { useT } from '@/components/Idioma';
 import '@/app/empresas.css';
 import '@/app/lateral.css';
 import '@/app/hoja.css';
@@ -50,6 +51,7 @@ const seccion = (path) => (path === '/' ? '/' : path.startsWith('/presupuestos')
 // un cliente, la barra se tiñe del color de «estás en las cuentas de otro».
 export default function TabBar({ permisos = [], empresas = [], empresa, admin = false, inventario = false, equipo = true, fiscal = {}, faltan = {}, porRevisar = 0, despacho = null }) {
   const tabs = TABS.filter((t) => !t.permiso || permisos.includes(t.permiso));
+  const tr = useT();
   const path = usePathname();
   const router = useRouter();
   const [activo, setActivo] = useState(seccion(path));
@@ -127,13 +129,13 @@ export default function TabBar({ permisos = [], empresas = [], empresa, admin = 
 
   return (
     <>
-    <div role="region" aria-label="Navegación de Fisquo" className={`tabbar${SIN_BARRA.test(path) ? ' tabbar-chat' : ''}`} data-teclado={teclado || undefined} data-cliente={despacho === 'cliente' || undefined}>
-      <Link href="/" className="tabbar-logo" aria-label="Fisquo, resumen" onClick={(e) => { e.preventDefault(); ir('/'); }}><Logo /></Link>
+    <div role="region" aria-label={tr('Navegación de Fisquo')} className={`tabbar${SIN_BARRA.test(path) ? ' tabbar-chat' : ''}`} data-teclado={teclado || undefined} data-cliente={despacho === 'cliente' || undefined}>
+      <Link href="/" className="tabbar-logo" aria-label={tr('Fisquo, resumen')} onClick={(e) => { e.preventDefault(); ir('/'); }}><Logo /></Link>
       {empresa && !despacho && <CambiarEmpresa empresas={empresas.filter((x) => !x.cliente)} actual={empresa} variante="lateral" />}
       <nav
         ref={nav}
         className="tabs"
-        aria-label="Principal"
+        aria-label={tr('Principal')}
         onPointerDown={(e) => {
           const h = tabEn(e.clientX, e.clientY);
           if (!h) return;
@@ -151,21 +153,21 @@ export default function TabBar({ permisos = [], empresas = [], empresa, admin = 
       >
         {tabs.map((t) => (
           <Link key={t.href} href={t.href} prefetch draggable={false} data-href={t.href}
-            className={marcado === t.href ? 'activo' : ''} aria-current={activo === t.href ? 'page' : undefined} aria-label={t.href === '/gastos' && porRevisar > 0 ? `${t.nombre}, ${porRevisar} por revisar` : t.nombre}
+            className={marcado === t.href ? 'activo' : ''} aria-current={activo === t.href ? 'page' : undefined} aria-label={t.href === '/gastos' && porRevisar > 0 ? tr('{seccion}, {n} por revisar', { seccion: tr(t.nombre), n: porRevisar }) : tr(t.nombre)}
             onClick={(e) => { e.preventDefault(); if (e.detail === 0) ir(t.href); }}>
             <svg viewBox="0 0 24 24" aria-hidden>{t.icono}</svg>
-            <span>{t.nombre}</span>
+            <span>{tr(t.nombre)}</span>
             {t.href === '/gastos' && porRevisar > 0 && <b className="tab-n" aria-hidden>{porRevisar > 99 ? '99+' : porRevisar}</b>}
           </Link>
         ))}
       </nav>
-      <nav className="tabs-extra" aria-label="Más secciones">
+      <nav className="tabs-extra" aria-label={tr('Más secciones')}>
         {(() => {
           const enlace = (e) => (
             <Link key={e.href} href={e.href} prefetch={false} className={extraDe(path) === e.href ? 'activo' : ''} aria-current={extraDe(path) === e.href ? 'page' : undefined}>
               <svg viewBox="0 0 24 24" aria-hidden>{e.icono}</svg>
-              <span>{e.nombre}</span>
-              {e.plan && <small className="plan-chip" title={`Incluido en el plan ${e.plan}`}>{e.plan}</small>}
+              <span>{tr(e.nombre)}</span>
+              {e.plan && <small className="plan-chip" title={tr('Incluido en el plan {plan}', { plan: e.plan })}>{e.plan}</small>}
             </Link>
           );
           return (
@@ -173,7 +175,7 @@ export default function TabBar({ permisos = [], empresas = [], empresa, admin = 
               <div className="tabs-grupo">{enlace({ ...ASISTENTE, plan: faltan[ASISTENTE.href] })}</div>
               {gruposVisibles(permisos, inventario, { fiscal, faltan, equipo }).map((g) => (
                 <div key={g.titulo} className="tabs-grupo" data-tono={g.tono}>
-                  <p className="tabs-grupo-t">{g.titulo}</p>
+                  <p className="tabs-grupo-t">{tr(g.titulo)}</p>
                   {g.enlaces.map(enlace)}
                 </div>
               ))}
@@ -183,44 +185,44 @@ export default function TabBar({ permisos = [], empresas = [], empresa, admin = 
         <div className="tabs-grupo">
           <Link href="/ajustes" prefetch={false} className={deAjustes(path) ? 'activo' : ''} aria-current={deAjustes(path) ? 'page' : undefined}>
             <svg viewBox="0 0 24 24" aria-hidden><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" /></svg>
-            <span>Ajustes</span>
+            <span>{tr('Ajustes')}</span>
           </Link>
         </div>
         <form method="post" action="/api/logout" className="tabs-salir">
           <button type="submit">
             <svg viewBox="0 0 24 24" aria-hidden><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l-5-5 5-5M5 12h11" /></svg>
-            <span>Cerrar sesión</span>
+            <span>{tr('Cerrar sesión')}</span>
           </button>
         </form>
       </nav>
       {permisos.includes('facturar')
-        ? <Link ref={botonMas} href={nuevo} prefetch className={`mas${path === nuevo || (hoja && movil) ? ' abierta' : ''}`} aria-label={movil ? 'Crear' : path.startsWith('/presupuestos') ? 'Nuevo presupuesto' : 'Nueva factura'}
+        ? <Link ref={botonMas} href={nuevo} prefetch className={`mas${path === nuevo || (hoja && movil) ? ' abierta' : ''}`} aria-label={tr(movil ? 'Crear' : path.startsWith('/presupuestos') ? 'Nuevo presupuesto' : 'Nueva factura')}
           aria-haspopup={movil ? 'dialog' : undefined} aria-expanded={movil ? hoja : undefined}
           onClick={(e) => { if (movil && atajos.length > 0) { e.preventDefault(); if (hoja) cerrarHoja(); else abrirHoja(); return; } vibrar(); if (path !== nuevo) alPulsar(router, nuevo, 'subir')(e); }}>
           <svg viewBox="0 0 24 24" aria-hidden><path d="M12 5v14M5 12h14" /></svg>
-          <span className="mas-txt">{path.startsWith('/presupuestos') ? 'Nuevo presupuesto' : 'Nueva factura'}</span>
+          <span className="mas-txt">{tr(path.startsWith('/presupuestos') ? 'Nuevo presupuesto' : 'Nueva factura')}</span>
         </Link>
-        : atajos.length > 0 && <button ref={botonMas} type="button" className={`mas mas-solo-movil${hoja ? ' abierta' : ''}`} aria-label="Crear" aria-haspopup="dialog" aria-expanded={hoja} onClick={() => (hoja ? cerrarHoja() : abrirHoja())}>
+        : atajos.length > 0 && <button ref={botonMas} type="button" className={`mas mas-solo-movil${hoja ? ' abierta' : ''}`} aria-label={tr('Crear')} aria-haspopup="dialog" aria-expanded={hoja} onClick={() => (hoja ? cerrarHoja() : abrirHoja())}>
           <svg viewBox="0 0 24 24" aria-hidden><path d="M12 5v14M5 12h14" /></svg>
         </button>}
     </div>
     {hoja && movil && atajos.length > 0 && (
       <div className="hoja">
-        <button type="button" className="hoja-fondo" aria-label="Cerrar" tabIndex={-1} onClick={cerrarHoja} />
-        <div className="hoja-panel" role="dialog" aria-modal="true" aria-label="Crear" ref={panel}>
+        <button type="button" className="hoja-fondo" aria-label={tr('Cerrar')} tabIndex={-1} onClick={cerrarHoja} />
+        <div className="hoja-panel" role="dialog" aria-modal="true" aria-label={tr('Crear')} ref={panel}>
           <span className="hoja-asa" aria-hidden />
-          <p className="hoja-t">Crear</p>
+          <p className="hoja-t">{tr('Crear')}</p>
           <ul className="hoja-lista">
             {atajos.map((a, i) => (
               <li key={a.id}>
                 <Link href={a.href} prefetch={false} className={`hoja-fila${i === 0 ? ' principal' : ''}`} onClick={(e) => irAtajo(e, a.href)}>
                   <span className="hoja-ico"><svg viewBox="0 0 24 24" aria-hidden>{ICONO_ATAJO[a.id]}</svg></span>
-                  <span className="txt"><strong>{a.nombre}</strong><small>{a.detalle}</small></span>
+                  <span className="txt"><strong>{tr(a.nombre)}</strong><small>{tr(a.detalle)}</small></span>
                 </Link>
               </li>
             ))}
           </ul>
-          <button type="button" className="hoja-cerrar" onClick={cerrarHoja}>Cerrar</button>
+          <button type="button" className="hoja-cerrar" onClick={cerrarHoja}>{tr('Cerrar')}</button>
         </div>
       </div>
     )}

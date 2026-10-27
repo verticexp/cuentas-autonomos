@@ -89,3 +89,8 @@ textarea.campo { font: inherit; line-height: 1.4; resize: vertical; }
 .wa-codigo-texto { margin: 0; padding: 14px 16px; border-radius: 12px; background: var(--surface-2); color: var(--ink); font-family: var(--f-titulos, inherit); font-size: 24px; font-weight: 600; letter-spacing: .06em; text-align: center; user-select: all; }
 .wa-qr { display: flex; align-items: center; gap: 14px; }
 .wa-qr img { border-radius: 8px; background: #fff; flex: none; }
+
+/* Ajustes › Idioma (components/IdiomaApp.js): una fila por idioma con la marca a la derecha, como en los Ajustes del iPhone. */
+.aj-opcion { width: 100%; margin: 0; border: 0; border-radius: 0; background: none; box-shadow: none; font: inherit; font-size: 17px; color: var(--ink); text-align: left; cursor: pointer; }
+.aj-opcion:active { background: var(--relleno); }
+.aj-check { flex: none; width: 20px; height: 20px; fill: none; stroke: var(--marca); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }

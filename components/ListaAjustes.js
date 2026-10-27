@@ -13,6 +13,8 @@ import FilaAjuste from '@/components/FilaAjuste';
 import CerrarAjustes from '@/components/CerrarAjustes';
 import { miEmpleado } from '@/lib/jornadaServidor';
 import { ahoraMadrid } from '@/lib/jornada';
+import { idiomaActual, textos } from '@/lib/idiomaServidor';
+import { IDIOMAS_APP } from '@/lib/i18n';
 
 // Iconos de cada ajuste, en el color sólido de su grupo (app/mas.css [data-tono]), como en «Más».
 const I = {
@@ -34,6 +36,7 @@ const I = {
   conexion: <path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" />,
   seguridad: <><rect x="5" y="10.5" width="14" height="10" rx="2" /><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3" /></>,
   avisos: <path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0" />,
+  idioma: <><circle cx="12" cy="12" r="8.5" /><path d="M3.5 12h17M12 3.5c2.3 2.4 3.5 5.2 3.5 8.5s-1.2 6.1-3.5 8.5c-2.3-2.4-3.5-5.2-3.5-8.5s1.2-6.1 3.5-8.5z" /></>,
   apariencia: <><circle cx="12" cy="12" r="8.5" /><path d="M12 3.5v17a8.5 8.5 0 0 0 0-17z" fill="currentColor" /></>,
   importar: <path d="M12 3v12M7 10l5 5 5-5M4 17v3h16v-3" />,
   descargar: <path d="M4 7h16v13H4zM4 7l2-3h12l2 3M12 10v6M9 13l3 3 3-3" />,
@@ -63,16 +66,17 @@ const TEMA = { claro: 'Claro', oscuro: 'Oscuro' };
 export const empresasPropias = (u) => (u.misEmpresas || []).filter((x) => !x.cliente);
 
 // Tu cuenta y las empresas: en el móvil, al final de la hoja; en el ordenador, a la derecha de Ajustes (app/ajustes/page.js).
-export function CuentaYEmpresas({ u, app }) {
+export async function CuentaYEmpresas({ u, app }) {
   const propias = empresasPropias(u);
+  const tr = await textos();
   return (
     <>
       <section className="grupo">
-        <h2 className="grupo-t">{propias.length > 1 ? 'Tus empresas' : 'Más empresas'}</h2>
+        <h2 className="grupo-t">{tr(propias.length > 1 ? 'Tus empresas' : 'Más empresas')}</h2>
         <CambiarEmpresa empresas={propias} actual={u.viaDespacho ? null : u.empresa} />
-        <p className="grupo-pie">{app ? 'Cada empresa con sus datos, su numeración de facturas y sus permisos.' : 'Cada empresa con sus datos, su numeración de facturas, sus permisos y su propio plan, con su propia prueba gratis.'}</p>
+        <p className="grupo-pie">{tr(app ? 'Cada empresa con sus datos, su numeración de facturas y sus permisos.' : 'Cada empresa con sus datos, su numeración de facturas, sus permisos y su propio plan, con su propia prueba gratis.')}</p>
       </section>
-      <form method="post" action="/api/logout" className="grupo"><div className="grupo-c"><button type="submit" className="celda aj-salir">Cerrar sesión</button></div></form>
+      <form method="post" action="/api/logout" className="grupo"><div className="grupo-c"><button type="submit" className="celda aj-salir">{tr('Cerrar sesión')}</button></div></form>
     </>
   );
 }
@@ -82,6 +86,10 @@ export function CuentaYEmpresas({ u, app }) {
 // (app/ajustes/layout.js). Solo configuración: las pantallas de trabajo (nóminas, jornada, Pregunta a Fisquo…) están en «Más».
 export default async function ListaAjustes({ u }) {
   const app = esApp((await headers()).get('user-agent'));
+  const tr = await textos();
+  // Idioma: el elegido en Ajustes, o «Automático» si sigue al del aparato.
+  const idApp = await idiomaActual();
+  const idioma = (await cookies()).get('idioma')?.value ? IDIOMAS_APP.find((x) => x.id === idApp)?.nombre : tr('Automático');
   const [llaves, avisos, whatsapp] = await Promise.all([redis.hgetall(`passkeys:${u.id}`).then((x) => Object.keys(x || {}).length), redis.hlen(`push:${u.id}`), redis.get(`whatsapp:de:${u.id}`)]);
   const empresa = puede(u, 'empresa');
   const admin = u.rol === 'admin';
@@ -93,14 +101,14 @@ export default async function ListaAjustes({ u }) {
   const dias = diasPrueba(u.plan);
   // Quien ficha sin llevar las nóminas no tiene el registro de jornada en la barra lateral del ordenador: aquí, su «Fichar».
   const fichar = !puede(u, 'nominas') && (await miEmpleado(u, ahoraMadrid().slice(0, 10))).yo;
-  const plan = esFundador(u.plan) ? 'Fundador' : dias === 0 ? 'Prueba terminada' : dias !== null ? `Prueba: ${dias} ${dias === 1 ? 'día' : 'días'}` : `${TIPOS[u.plan.tipo]} ${u.plan.nombre}`;
+  const plan = esFundador(u.plan) ? 'Fundador' : dias === 0 ? 'Prueba terminada' : dias !== null ? `Prueba: ${dias} ${dias === 1 ? 'día' : 'días'}` : `${tr(TIPOS[u.plan.tipo])} ${u.plan.nombre}`;
   return (
-    <nav className="ajustes-lista mk-look" aria-label="Ajustes">
+    <nav className="ajustes-lista mk-look" aria-label={tr('Ajustes')}>
       {/* Móvil: la cabecera de la hoja, con «OK» (sin asa, como las hojas de iOS con barra). Ordenador: el título de la columna. */}
       <div className="aj-hoja-cab">
-        <div className="aj-hoja-barra"><span aria-hidden /><h1>Ajustes</h1><CerrarAjustes /></div>
+        <div className="aj-hoja-barra"><span aria-hidden /><h1>{tr('Ajustes')}</h1><CerrarAjustes /></div>
       </div>
-      <p className="titulo aj-titulo-ordenador">Ajustes</p>
+      <p className="titulo aj-titulo-ordenador">{tr('Ajustes')}</p>
 
       <Ir href="/ajustes/perfil" className="aj-cuenta aj-solo-movil">
         <Avatar nombre={u.nombre} size={72} />
@@ -109,61 +117,62 @@ export default async function ListaAjustes({ u }) {
       </Ir>
       <Ir href="/ajustes" tipo="fundido" className="celda ir aj-cuenta-fila aj-solo-ordenador">
         <Avatar nombre={u.nombre} size={40} />
-        <span className="txt"><strong>{u.nombre}</strong><small>{perfilDe(u)} en {u.empresaNombre}</small></span>
+        <span className="txt"><strong>{u.nombre}</strong><small>{tr('{perfil} en {empresa}', { perfil: tr(perfilDe(u)), empresa: u.empresaNombre })}</small></span>
       </Ir>
 
-      {!app && u.admin && <Grupo><Fila href="/admin" ico="panel" tono="azul" titulo="Panel de Fisquo" /></Grupo>}
+      {!app && u.admin && <Grupo><Fila href="/admin" ico="panel" tono="azul" titulo={tr('Panel de Fisquo')} /></Grupo>}
 
       {empresa && (
-        <Grupo titulo="Tu empresa">
-          <Fila href="/ajustes/facturacion" ico="empresa" tono="azul" titulo="Datos de la empresa" valor={datosCompletos ? e.nombre : 'Faltan datos'} aviso={!datosCompletos} />
-          <Fila href="/bienvenida?editar=1" ico="actividad" tono="azul" titulo="Actividades e impuestos" valor={fiscalDe(u).tipo === 'sociedad' ? 'Sociedad' : 'Autónomo'} />
-          {(puede(u, 'usuarios') || u.admin) && <Fila href="/usuarios" ico="usuarios" tono="azul" titulo="Usuarios y permisos" />}
-          {puede(u, DETALLE) && <Fila href="/ajustes/gestoria" ico="gestoria" tono="azul" titulo="Tu gestoría" valor={u.gestoria?.email ? u.gestoria.nombre || u.gestoria.email : ''} />}
-          <Fila href="/ajustes/plan" ico="plan" tono="azul" titulo="Tu plan" valor={plan} aviso={dias !== null && dias <= 7} />
-          {!app && u.rol === 'admin' && <Fila href="/ajustes/recomienda" ico="regalo" tono="azul" titulo="Recomienda Fisquo" valor="1 mes gratis" />}
+        <Grupo titulo={tr('Tu empresa')}>
+          <Fila href="/ajustes/facturacion" ico="empresa" tono="azul" titulo={tr('Datos de la empresa')} valor={datosCompletos ? e.nombre : tr('Faltan datos')} aviso={!datosCompletos} />
+          <Fila href="/bienvenida?editar=1" ico="actividad" tono="azul" titulo={tr('Actividades e impuestos')} valor={tr(fiscalDe(u).tipo === 'sociedad' ? 'Sociedad' : 'Autónomo')} />
+          {(puede(u, 'usuarios') || u.admin) && <Fila href="/usuarios" ico="usuarios" tono="azul" titulo={tr('Usuarios y permisos')} />}
+          {puede(u, DETALLE) && <Fila href="/ajustes/gestoria" ico="gestoria" tono="azul" titulo={tr('Tu gestoría')} valor={u.gestoria?.email ? u.gestoria.nombre || u.gestoria.email : ''} />}
+          <Fila href="/ajustes/plan" ico="plan" tono="azul" titulo={tr('Tu plan')} valor={tr(plan)} aviso={dias !== null && dias <= 7} />
+          {!app && u.rol === 'admin' && <Fila href="/ajustes/recomienda" ico="regalo" tono="azul" titulo={tr('Recomienda Fisquo')} valor={tr('1 mes gratis')} />}
         </Grupo>
       )}
-      {!empresa && puede(u, 'usuarios') && <Grupo titulo="Tu empresa"><Fila href="/usuarios" ico="usuarios" tono="azul" titulo="Usuarios y permisos" /></Grupo>}
+      {!empresa && puede(u, 'usuarios') && <Grupo titulo={tr('Tu empresa')}><Fila href="/usuarios" ico="usuarios" tono="azul" titulo={tr('Usuarios y permisos')} /></Grupo>}
 
       {empresa && (
-        <Grupo titulo="Facturas y cobros">
-          <Fila href="/ajustes/marca" ico="diseno" tono="verde" titulo="Diseño de factura" valor={u.marca?.logo ? 'Con logo' : 'Sin logo'} />
-          <Fila href="/ajustes/series" ico="series" tono="verde" titulo="Series y numeración" valor={series.join(', ')} />
-          <Fila href="/ajustes/cobros" ico="cobros" tono="verde" titulo="Cobros" valor={`${e.plazo ?? 30} días`} />
-          <Fila href="/ajustes/envio" ico="email" tono="verde" titulo="Email de envío" valor={u.envio?.asunto || u.envio?.mensaje ? 'Propio' : ''} />
-          <Fila href="/ajustes/verifactu" ico="verifactu" tono="verde" titulo="Verifactu" valor={modo === 'real' ? 'Activo' : modo === 'pruebas' ? 'En pruebas' : 'No'} />
+        <Grupo titulo={tr('Facturas y cobros')}>
+          <Fila href="/ajustes/marca" ico="diseno" tono="verde" titulo={tr('Diseño de factura')} valor={tr(u.marca?.logo ? 'Con logo' : 'Sin logo')} />
+          <Fila href="/ajustes/series" ico="series" tono="verde" titulo={tr('Series y numeración')} valor={series.map((x) => tr(x)).join(', ')} />
+          <Fila href="/ajustes/cobros" ico="cobros" tono="verde" titulo={tr('Cobros')} valor={tr('{n} días', { n: e.plazo ?? 30 })} />
+          <Fila href="/ajustes/envio" ico="email" tono="verde" titulo={tr('Email de envío')} valor={u.envio?.asunto || u.envio?.mensaje ? tr('Propio') : ''} />
+          <Fila href="/ajustes/verifactu" ico="verifactu" tono="verde" titulo={tr('Verifactu')} valor={tr(modo === 'real' ? 'Activo' : modo === 'pruebas' ? 'En pruebas' : 'No')} />
         </Grupo>
       )}
 
       {empresa && (puede(u, DETALLE) || u.admin || u.controlat || puede(u, 'empresa')) && (
-        <Grupo titulo="Conexiones">
-          {puede(u, DETALLE) && <Fila href="/banco" ico="banco" tono="ambar" titulo="Bancos" />}
-          {puede(u, DETALLE) && <Fila href="/ajustes/drive" ico="drive" tono="ambar" titulo="Google Drive" valor={u.drive?.url ? (u.driveError ? 'Con errores' : 'Conectado') : 'No'} aviso={Boolean(u.drive?.url && u.driveError)} />}
-          {(u.admin || u.controlat) && <Fila href="/ajustes/controlat" ico="conexion" tono="ambar" titulo="Controla'T" valor={u.controlat ? 'Sí' : 'No'} />}
-          {puede(u, 'facturar') && whatsappListo() && <Fila href="/ajustes/whatsapp" ico="whatsapp" tono="ambar" titulo="WhatsApp" valor={whatsapp ? 'Conectado' : 'No'} />}
-          {puede(u, 'empresa') && <Fila href="/ajustes/api" ico="conexion" tono="ambar" titulo="API y webhooks" />}
+        <Grupo titulo={tr('Conexiones')}>
+          {puede(u, DETALLE) && <Fila href="/banco" ico="banco" tono="ambar" titulo={tr('Bancos')} />}
+          {puede(u, DETALLE) && <Fila href="/ajustes/drive" ico="drive" tono="ambar" titulo={tr('Google Drive')} valor={tr(u.drive?.url ? (u.driveError ? 'Con errores' : 'Conectado') : 'No')} aviso={Boolean(u.drive?.url && u.driveError)} />}
+          {(u.admin || u.controlat) && <Fila href="/ajustes/controlat" ico="conexion" tono="ambar" titulo={tr("Controla'T")} valor={tr(u.controlat ? 'Sí' : 'No')} />}
+          {puede(u, 'facturar') && whatsappListo() && <Fila href="/ajustes/whatsapp" ico="whatsapp" tono="ambar" titulo={tr('WhatsApp')} valor={tr(whatsapp ? 'Conectado' : 'No')} />}
+          {puede(u, 'empresa') && <Fila href="/ajustes/api" ico="conexion" tono="ambar" titulo={tr('API y webhooks')} />}
         </Grupo>
       )}
 
-      {fichar && <Grupo titulo="Tu jornada"><Fila href="/jornada" ico="reloj" tono="violeta" titulo="Fichar" /></Grupo>}
+      {fichar && <Grupo titulo={tr('Tu jornada')}><Fila href="/jornada" ico="reloj" tono="violeta" titulo={tr('Fichar')} /></Grupo>}
 
-      <Grupo titulo="Seguridad y avisos">
-        <Fila href="/ajustes/seguridad" ico="seguridad" tono="violeta" titulo="Seguridad" valor={u.dosPasos?.secreto ? 'Dos pasos' : !app && llaves ? 'Face ID' : ''} />
-        {!app && <Fila href="/ajustes/avisos" ico="avisos" tono="rojo" titulo="Avisos" valor={avisos ? 'Activados' : 'No'} />}
-        {admin && <Fila href="/ajustes/actividad" ico="registro" tono="violeta" titulo="Actividad" />}
+      <Grupo titulo={tr('Seguridad y avisos')}>
+        <Fila href="/ajustes/seguridad" ico="seguridad" tono="violeta" titulo={tr('Seguridad')} valor={tr(u.dosPasos?.secreto ? 'Dos pasos' : !app && llaves ? 'Face ID' : '')} />
+        {!app && <Fila href="/ajustes/avisos" ico="avisos" tono="rojo" titulo={tr('Avisos')} valor={tr(avisos ? 'Activados' : 'No')} />}
+        {admin && <Fila href="/ajustes/actividad" ico="registro" tono="violeta" titulo={tr('Actividad')} />}
       </Grupo>
 
-      <Grupo titulo="App">
-        <Fila href="/ajustes/apariencia" ico="apariencia" tono="gris" titulo="Apariencia" valor={tema} />
-        {empresa && <Fila href="/ajustes/importar" ico="importar" tono="gris" titulo="Importar datos" />}
-        {admin && <Fila href="/api/exportar/todo" descarga ico="descargar" tono="gris" titulo="Descargar todos los datos" />}
-        <Fila href="/ajustes/ayuda" ico="ayuda" tono="gris" titulo="Ayuda y contacto" />
+      <Grupo titulo={tr('App')}>
+        <Fila href="/ajustes/apariencia" ico="apariencia" tono="gris" titulo={tr('Apariencia')} valor={tr(tema)} />
+        <Fila href="/ajustes/idioma" ico="idioma" tono="gris" titulo={tr('Idioma')} valor={idioma} />
+        {empresa && <Fila href="/ajustes/importar" ico="importar" tono="gris" titulo={tr('Importar datos')} />}
+        {admin && <Fila href="/api/exportar/todo" descarga ico="descargar" tono="gris" titulo={tr('Descargar todos los datos')} />}
+        <Fila href="/ajustes/ayuda" ico="ayuda" tono="gris" titulo={tr('Ayuda y contacto')} />
       </Grupo>
 
       {!u.admin && <Grupo>
-        {admin && <Fila href="/ajustes/baja" ico="baja" tono="rojo" titulo="Dar de baja la empresa" destructiva />}
-        <Fila href="/ajustes/eliminar-cuenta" ico="baja" tono="rojo" titulo="Eliminar mi cuenta" destructiva />
+        {admin && <Fila href="/ajustes/baja" ico="baja" tono="rojo" titulo={tr('Dar de baja la empresa')} destructiva />}
+        <Fila href="/ajustes/eliminar-cuenta" ico="baja" tono="rojo" titulo={tr('Eliminar mi cuenta')} destructiva />
       </Grupo>}
 
       <div className="aj-solo-movil"><CuentaYEmpresas u={u} app={app} /></div>

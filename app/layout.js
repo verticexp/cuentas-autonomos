@@ -32,6 +32,9 @@ import BarraDespacho from '@/components/SelectorCuenta';
 import SinRed from '@/components/SinRed';
 import { despachoDe, rolEn, usaEmpresaPropia } from '@/lib/despachos';
 import { noLeidosDespacho } from '@/lib/mensajesDespacho';
+import { idiomaActual, textos } from '@/lib/idiomaServidor';
+import { diccionario } from '@/lib/textos';
+import { ProveedorIdioma } from '@/components/Idioma';
 
 // Pantalla de arranque de la web guardada en la pantalla de inicio del iPhone: el mismo verde que la animación de inicio,
 // así no hay destello blanco al abrirla. iOS elige la de su tamaño (ancho y alto en puntos, escala); public/inicio-ios/.
@@ -97,8 +100,11 @@ export default async function RootLayout({ children }) {
   const enDespacho = Boolean(rolDespacho && /^\/despacho(\/|$)/.test(ruta.split('?')[0]));
   // La barra la elige components/Barra.js con la ruta del navegador: aquí van las dos (la del despacho, si es de uno).
   const mensajesNuevos = rolDespacho ? await noLeidosDespacho(despacho, u.id).catch(() => 0) : 0;
+  // Idioma de la app (lib/i18n.js): los componentes cliente lo leen de ProveedorIdioma; los del servidor, de lib/idiomaServidor.js.
+  const idioma = await idiomaActual();
+  const tr = await textos();
   return (
-    <html lang="es" data-tema={tema} data-app={app ? 'ios' : undefined} suppressHydrationWarning>
+    <html lang={idioma} data-tema={tema} data-app={app ? 'ios' : undefined} suppressHydrationWarning>
       <head>
         {INICIO_IOS.map(([an, al, e]) => (
           <link key={`${an}x${al}x${e}`} rel="apple-touch-startup-image" href={`/inicio-ios/${an * e}x${al * e}.png`}
@@ -107,6 +113,7 @@ export default async function RootLayout({ children }) {
         <script nonce={nonce} suppressHydrationWarning dangerouslySetInnerHTML={{ __html: YA_VISTO }} />
       </head>
       <body className={`${fuente.variable} ${titulos.variable}`} style={{ '--acento': COLOR_BASE }} data-marca="base">
+        <ProveedorIdioma idioma={idioma} dic={diccionario(idioma)}>
         <Arranque />
         <RegistrarSw />
         <GestoAtras />
@@ -115,7 +122,7 @@ export default async function RootLayout({ children }) {
         <script nonce={nonce} suppressHydrationWarning dangerouslySetInnerHTML={{ __html: 'window.__arranque=performance.now()' }} />
         {/* En Mi despacho no: el panel trabaja con su propio plan, no con el del cliente que tenga abierto (lib/planes.js LIBRES). */}
         {u && soloLectura(u.plan) && !ruta.startsWith('/ajustes/plan') && !/^\/despacho([/?]|$)/.test(ruta) && (
-          <p className="aviso-lectura" role="status"><span>{u.viaDespacho ? 'La prueba de este cliente ha terminado: puedes ver y exportar todo, pero no crear ni editar hasta que elija un plan o le des una licencia.' : app ? SOLO_LECTURA_APP : puede(u, 'empresa') ? 'Tu prueba ha terminado: puedes ver y exportar todo, pero no crear ni editar.' : 'La prueba de tu empresa ha terminado: puedes ver y exportar todo. Para crear o editar, pídele al administrador que elija un plan.'}</span>{!app && puede(u, 'empresa') && <a href="/ajustes/plan">Elegir plan</a>}</p>
+          <p className="aviso-lectura" role="status"><span>{tr(u.viaDespacho ? 'La prueba de este cliente ha terminado: puedes ver y exportar todo, pero no crear ni editar hasta que elija un plan o le des una licencia.' : app ? SOLO_LECTURA_APP : puede(u, 'empresa') ? 'Tu prueba ha terminado: puedes ver y exportar todo, pero no crear ni editar.' : 'La prueba de tu empresa ha terminado: puedes ver y exportar todo. Para crear o editar, pídele al administrador que elija un plan.')}</span>{!app && puede(u, 'empresa') && <a href="/ajustes/plan">{tr('Elegir plan')}</a>}</p>
         )}
         {/* La gente de un despacho, fuera del panel: «‹ Mi despacho» y el selector de cuenta (se esconde sola en el panel). */}
         {rolDespacho && <BarraDespacho actual={u.viaDespacho ? 'cliente' : 'empresa'} despacho={despacho.nombre} noLeidos={mensajesNuevos} usuario={u.id}
@@ -125,6 +132,7 @@ export default async function RootLayout({ children }) {
         {children}
         <Suspense><Barra despacho={rolDespacho ? { nombre: despacho.nombre, noLeidos: mensajesNuevos, titular: rolDespacho === 'titular' && usaEmpresaPropia(despacho) } : null} tabbar={u ? { despacho: rolDespacho ? (u.viaDespacho ? 'cliente' : usaEmpresaPropia(despacho) ? 'empresa' : 'cliente') : null, porRevisar, permisos: permisosDe(u), empresas: u.misEmpresas, empresa: u.empresa, admin: Boolean(u.admin), inventario: Boolean(u.fiscal?.inventario), equipo: Boolean(equipo), fiscal: { tipo: u.fiscal?.tipo, iva: u.fiscal?.iva }, faltan: planesQueFaltan(u.plan) } : null} /><Llegada /><BarraEstado /><TituloCompacto /></Suspense>
         {u?.bloqueoPantalla && <Bloqueo email={u.email} servidor={abierta} />}
+        </ProveedorIdioma>
       </body>
     </html>
   );
