@@ -42,3 +42,15 @@
 @media (max-width: 520px) { .caja-salida { grid-template-columns: 1fr 6.5rem auto; } .caja-salida .caja-salida-c { grid-column: 1 / -1; grid-row: 2; } }
 .caja-z { display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem; }
 .caja-z-avisos { margin: 0 0 1rem; padding-left: 1.1rem; color: var(--aviso); font-size: 14px; }
+/* Tarjeta y efectivo: cuadres con el banco y saldo del cajón */
+.caja-sub { font-size: 15px; font-weight: 700; margin: 1rem 0 .5rem; }
+.caja-cuadre { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
+.caja-cuadre .txt small { display: block; }
+.caja-cuadre-acc { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+.caja-saldo { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; margin-bottom: .75rem; }
+.caja-saldo > div { display: flex; flex-direction: column; gap: 2px; padding: .75rem 1rem; border-radius: 14px; background: var(--surface-2, var(--paper)); }
+.caja-saldo small { color: var(--muted); font-size: 13px; }
+.caja-saldo strong { font-size: 24px; font-variant-numeric: tabular-nums; }
+.caja-saldo .falta, .caja .imp.caja-menos { color: var(--out); }
+.caja-saldo .ok, .caja .imp.caja-mas { color: var(--in); }
+.caja-cuadre .txt strong, .caja-cuadre .txt small { white-space: normal; overflow: visible; text-overflow: clip; }

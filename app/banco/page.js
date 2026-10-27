@@ -63,6 +63,7 @@ export default async function PaginaBanco({ searchParams }) {
   const destino = (tipo, id) => {
     // El autónomo no tiene libro diario (lib/modulos.js): sus impuestos, a Impuestos; lo demás, a sus libros.
     if (tipo === 'auto') return { tipo, id, texto: `${CLASES[id]?.t || 'Impuestos o nóminas'} · lo contabiliza Fisquo`, url: sociedad ? '/contabilidad?ver=diario' : '/modelos' };
+    if (tipo === 'tpv') return { tipo, id, texto: 'Tarjeta de los cierres de caja · comisión en Gastos', url: '/facturas/caja?ver=tarjeta' };
     if (tipo === 'asiento') return { tipo, id, texto: 'Apuntado en la contabilidad', url: sociedad ? '/contabilidad?ver=diario' : '/contabilidad?ver=libros' };
     if (tipo === 'factura') { const f = fPorId[id]; return f && { tipo, id, texto: `Factura ${numeroFactura(f)} · ${f.cliente?.nombre || ''}`, importe: importes(f).total, fecha: f.fecha, url: `/facturas/${encodeURIComponent(id)}` }; }
     const g = gPorId[id];

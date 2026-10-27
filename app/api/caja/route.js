@@ -21,6 +21,11 @@ export async function POST(req) {
   const datos = limpiarCierre(b, (await leer(u, 'productos')) || [], { igic });
   if (datos.error) return error(datos.error);
   datos.actividad = actividadValida(actividadesDe(u), b.actividad || antes?.actividad);
+  // Un cierre cuya tarjeta ya cuadró con el banco conserva ese cuadre; cambiar la tarjeta lo rompería.
+  if (antes?.caja?.liquidacion) {
+    if (Math.abs(datos.caja.tarjeta - antes.caja.tarjeta) > 0.009 || datos.fecha !== antes.fecha) return error('La tarjeta de este cierre ya está cuadrada con un ingreso del banco: deshaz ese cuadre (en Caja o en Banco) antes de cambiar la tarjeta o el día', 409);
+    datos.caja.liquidacion = antes.caja.liquidacion;
+  }
   const { factura: f, error: e } = await guardarCierre(u, datos, antes, { idem: typeof b.idem === 'string' ? `caja:${b.idem}` : undefined });
   if (e) return error(e);
   await auditar(u, antes ? 'Cierre de caja corregido' : 'Cierre de caja', `${numeroFactura(f)} · ${f.fecha} · ${eur(f.caja.efectivo + f.caja.tarjeta + f.caja.otros)}`);
