@@ -1,18 +1,16 @@
 import Link from 'next/link';
 import Vacio from './Vacio';
 import CuadreTarjeta from './CuadreTarjeta';
+import CuadreManual from './CuadreManual';
 import { leer } from '@/lib/redis';
 import { leerRango } from '@/lib/indices';
 import { numeroFactura } from '@/lib/calculos';
-import { propuestasTarjeta, saldoCaja, tarjetaSinLiquidar } from '@/lib/caja';
+import { listaDias, propuestasTarjeta, saldoCaja, tarjetaPorCuadrar, tarjetaSinLiquidar } from '@/lib/caja';
 import { eur, fechaTexto } from '@/lib/formato';
 
 const DIAS = 90;
 const masDias = (f, n) => new Date(Date.parse(`${f}T12:00:00Z`) + n * 864e5).toISOString().slice(0, 10);
 const pct = (c, t) => (t ? `${(Math.round((c / t) * 1000) / 10).toLocaleString('es-ES')} %` : '');
-// «22 de octubre», «23 al 24 de octubre» o «30 de septiembre al 2 de octubre».
-const listaDias = (dias) => (dias.length === 1 ? fechaTexto(dias[0])
-  : `${dias[0].slice(0, 7) === dias.at(-1).slice(0, 7) ? Number(dias[0].slice(8)) : fechaTexto(dias[0])} al ${fechaTexto(dias.at(-1))}`);
 
 // «Tarjeta y efectivo» de Caja: la tarjeta de los cierres frente a los ingresos del banco que la liquidan (lib/caja.js
 // propuestasTarjeta) y el efectivo del cajón según los arqueos (saldoCaja). Lee los cierres de los últimos 90 días y, si
@@ -27,6 +25,10 @@ export default async function CajaTarjeta({ u, hoy, conBanco }) {
   const porId = new Map(cierres.map((f) => [f.id, f]));
   const cuadrados = movs.filter((m) => m.estado === 'emparejado' && m.enlace?.tipo === 'tpv' && m.fecha >= masDias(hoy, -DIAS))
     .sort((a, b) => b.fecha.localeCompare(a.fecha)).slice(0, 10);
+  // Para el cuadre a mano: los ingresos pendientes de los últimos 90 días y la tarjeta sin cuadrar (sin datos del banco de más).
+  const ingresos = movs.filter((m) => (!m.estado || m.estado === 'pendiente') && m.importe > 0 && m.fecha >= masDias(hoy, -DIAS))
+    .sort((a, b) => b.fecha.localeCompare(a.fecha)).map((m) => ({ id: m.id, fecha: m.fecha, importe: m.importe, concepto: m.concepto || m.contraparte || '' }));
+  const porCuadrar = tarjetaPorCuadrar(cierres).map((f) => ({ id: f.id, fecha: f.fecha, tarjeta: f.caja.tarjeta, numero: numeroFactura(f) }));
   const comisiones = cuadrados.reduce((s, m) => s + (m.enlace.comision || 0), 0);
   const tarjetaCuadrada = cuadrados.reduce((s, m) => s + (m.enlace.tarjeta || 0), 0);
   const saldo = saldoCaja(cierres);
@@ -67,6 +69,7 @@ export default async function CajaTarjeta({ u, hoy, conBanco }) {
             <p className="grupo-pie">Más de tres días sin un ingreso que case (con hasta un 4 % de comisión). Si ya llegó, comprueba que el extracto del banco está al día.</p>
           </>
         )}
+        {ingresos.length > 0 && porCuadrar.length > 0 && <CuadreManual movs={ingresos} cierres={porCuadrar} />}
         {cuadrados.length > 0 && (
           <>
             <h3 className="caja-sub">Cuadrado</h3>
