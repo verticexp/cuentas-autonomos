@@ -94,7 +94,7 @@ export default function FormPresupuesto({ presupuesto, clientes, actividades, ho
         <button type="button" className="boton sec" onClick={anadirLinea}>{tr('+ Añadir otro concepto')}</button>
       </fieldset>
       <div className="dos-col">
-        <label>IVA
+        <label>{tr('IVA')}
           <select className="campo" value={p.ivaPct} onChange={(e) => poner('ivaPct', Number(e.target.value))}>{[21, 10, 0].map((n) => <option key={n} value={n}>{n}%</option>)}</select>
         </label>
         <label>IRPF

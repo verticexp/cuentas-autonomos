@@ -89,7 +89,7 @@ export default function FormDoc({ tipo, doc = null, plantilla = null, clientes =
                 <label>{tr('Cantidad')}<input className="campo" inputMode="decimal" value={l.cantidad} onChange={(e) => ponerLinea(i, 'cantidad', e.target.value)} /></label>
                 <label>{tr('Precio')}<input className="campo" inputMode="decimal" placeholder={"0,00"} value={l.precio} onChange={(e) => ponerLinea(i, 'precio', e.target.value)} /></label>
                 <label>{tr('Dto. %')}<input className="campo" inputMode="decimal" placeholder={"0"} value={l.dto} onChange={(e) => ponerLinea(i, 'dto', e.target.value)} /></label>
-                <label>IVA<select className="campo" value={l.ivaPct} onChange={(e) => ponerLinea(i, 'ivaPct', Number(e.target.value))}>{[...new Set([21, 10, 4, 0, Number(l.ivaPct)])].map((n) => <option key={n} value={n}>{n}%</option>)}</select></label>
+                <label>{tr('IVA')}<select className="campo" value={l.ivaPct} onChange={(e) => ponerLinea(i, 'ivaPct', Number(e.target.value))}>{[...new Set([21, 10, 4, 0, Number(l.ivaPct)])].map((n) => <option key={n} value={n}>{n}%</option>)}</select></label>
               </div>
               <p className="linea-total">{queda !== undefined && tipo === 'albaran' && <span className={`linea-stock${queda < nums[i].cantidad ? ' falta' : ''}`}>{(queda < nums[i].cantidad ? tr('Solo quedan {cantidad}', { cantidad: queda }) : tr('Quedan {cantidad}', { cantidad: queda }))}</span>}{eur(baseLinea(nums[i]))}</p>
             </div>
