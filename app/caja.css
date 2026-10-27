@@ -54,3 +54,13 @@
 .caja-saldo .falta, .caja .imp.caja-menos { color: var(--out); }
 .caja-saldo .ok, .caja .imp.caja-mas { color: var(--in); }
 .caja-cuadre .txt strong, .caja-cuadre .txt small { white-space: normal; overflow: visible; text-overflow: clip; }
+/* Cuadrar a mano: un ingreso y los días cuya tarjeta liquida */
+.caja-mano { margin: 1rem 0; padding: .75rem 1rem; border-radius: 14px; background: var(--surface-2, var(--paper)); display: grid; gap: .6rem; }
+.caja-mano summary { cursor: pointer; font-weight: 700; min-height: 44px; display: flex; align-items: center; }
+.caja-mano[open] { gap: .75rem; }
+.caja-mano-dias { display: grid; gap: .25rem; border: 0; padding: 0; margin: 0; min-width: 0; }
+.caja-mano-dias legend { padding: 0; margin-bottom: .25rem; font-size: 14px; color: var(--muted); }
+.caja-mano-dia { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: .6rem; min-height: 44px; }
+.caja-mano-dia small { color: var(--muted); margin-left: .35rem; }
+.caja-mano-dia strong { font-variant-numeric: tabular-nums; }
+.caja-mano-res { font-weight: 700; font-variant-numeric: tabular-nums; margin: 0; }

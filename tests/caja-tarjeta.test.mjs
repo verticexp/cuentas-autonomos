@@ -4,7 +4,7 @@ import test, { after, before } from 'node:test';
 import assert from 'node:assert/strict';
 import './apoyo/cargador.mjs';
 import { arrancar } from './apoyo/upstash-mem.mjs';
-import { comisionValida, propuestasTarjeta, saldoCaja, tarjetaSinLiquidar } from '../lib/caja.js';
+import { COMISION_MAX_MANUAL, comisionValida, listaDias, propuestasTarjeta, saldoCaja, tarjetaPorCuadrar, tarjetaSinLiquidar } from '../lib/caja.js';
 import { cobrosExternos } from '../lib/banco.js';
 import { cuadreBanco } from '../lib/contabilidad.js';
 
@@ -103,4 +103,27 @@ test('servidor: sin comisión no hay gasto; la copia comprueba los enlaces de la
   const src = await import('node:fs').then((fs) => fs.readFileSync(new URL('../lib/copias.js', import.meta.url), 'utf8'));
   assert.match(src, /liquidación de tarjeta/);
   assert.equal(typeof C.verificarCopia, 'function');
+});
+
+test('a mano: días sueltos y hasta un 10 % de comisión; una propuesta sigue en el 4 %', async () => {
+  assert.equal(comisionValida(100, 92, COMISION_MAX_MANUAL), 8);
+  assert.equal(comisionValida(100, 89, COMISION_MAX_MANUAL), null);
+  const u = empresa();
+  await sembrar(u, { facturas: [cierre('z1', '2026-10-20', 100), cierre('z2', '2026-10-21', 50), cierre('z3', '2026-10-22', 100)], movs: [mov('m1', '2026-10-24', 184, 'INGRESO VARIOS'), mov('m2', '2026-10-24', 300)] });
+  assert.deepEqual(tarjetaPorCuadrar(await Promise.all(['z1', 'z2', 'z3'].map((id) => R.leerUno(u, 'facturas', id)))).map((f) => f.id), ['z3', 'z2', 'z1']);
+  // z1 y z3 (sin el 21): 200 € de tarjeta y 184 € de ingreso, un 8 %.
+  assert.match((await B.liquidarTarjeta(u, 'm1', ['z1', 'z3'])).error, /entre 0 y el 4 %/);
+  assert.deepEqual(await B.liquidarTarjeta(u, 'm1', ['z1', 'z3'], { manual: true }), { ok: true, comision: 16 });
+  assert.deepEqual((await R.leerUno(u, 'banco', 'm1')).enlace.cierres, ['z1', 'z3']);
+  // Un ingreso mayor que la tarjeta elegida pide el cierre que falta.
+  assert.match((await B.liquidarTarjeta(u, 'm2', ['z2'], { manual: true })).error, /mayor que la tarjeta.*añade el cierre/);
+});
+
+test('texto de los días: seguidos como rango, sueltos enumerados', () => {
+  assert.equal(listaDias(['2026-10-22']), '22 de octubre');
+  assert.equal(listaDias(['2026-10-23', '2026-10-24']), '23 al 24 de octubre');
+  assert.equal(listaDias(['2026-09-30', '2026-10-01', '2026-10-02']), '30 de septiembre al 2 de octubre');
+  assert.equal(listaDias(['2026-10-20', '2026-10-22']), '20 y 22 de octubre');
+  assert.equal(listaDias(['2026-10-20', '2026-10-22', '2026-10-25']), '20, 22 y 25 de octubre');
+  assert.equal(listaDias(['2026-09-29', '2026-10-02']), '29 de septiembre y 2 de octubre');
 });
