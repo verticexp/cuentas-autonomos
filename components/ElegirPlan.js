@@ -129,7 +129,7 @@ export default function ElegirPlan({ plan, tipoEmpresa, uso, admin, app }) {
       </div>
       {!sociedad && <p className={styles.condiciones}>{tipo === 'aut' ? tr('¿Facturas como sociedad (S.L., S.A.…)?') : tr('Planes para sociedades.')}{' '}<button type="button" className={styles.enlaceBoton} onClick={() => setTipo(tipo === 'aut' ? 'pym' : 'aut')}>{tipo === 'aut' ? tr('Ver planes de Pymes') : tr('Volver a los planes de Autónomos')}</button></p>}
       <div className={styles.controles}>
-        <fieldset className={styles.selector} disabled={ocupado}><legend>{tr('Forma de pago')}</legend>
+        <fieldset className={styles.selector} disabled={ocupado}><legend>{tr('Forma de pago', { contexto: 'plan' })}</legend>
           <div className={styles.opciones}><label className={periodo === 'mes' ? styles.seleccionado : ''}><input type="radio" name="periodo-plan" value="mes" checked={periodo === 'mes'} onChange={() => setPeriodo('mes')} />{tr('Mensual')}</label>
           <label className={periodo === 'anio' ? styles.seleccionado : ''}><input type="radio" name="periodo-plan" value="anio" checked={periodo === 'anio'} onChange={() => setPeriodo('anio')} />{tr('Anual')} <span>−{DESCUENTO} %</span></label></div>
         </fieldset>

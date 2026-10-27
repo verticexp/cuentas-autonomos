@@ -60,7 +60,8 @@ test('diccionarios: cada texto existe en el código, con traducción a los dos i
       }
       // Los textos con huecos se escriben en el código con ${…}: basta con que estén sus trozos fijos.
       // «Activo@balance»: la palabra con su contexto (lib/i18n.js); en el código está la palabra.
-      if (es.includes('@') && !es.includes(' ')) { assert.ok(codigo.includes(es.split('@')[0]), `${zona}: «${es}»`); continue; }
+      const ctx = /^(.+)@(\w+)$/.exec(es);
+      if (ctx) { assert.ok(codigo.includes(ctx[1]) && codigo.includes(`contexto: '${ctx[2]}'`), `${zona}: «${es}»`); continue; }
       const trozos = es.split(/\{\w+\}/).map((x) => x.trim()).filter((x) => x.length >= 3);
       const esta = huecos(es) ? (codigo.includes(es) || trozos.every((x) => codigo.includes(x))) : codigo.includes(es);
       assert.ok(esta, `${zona}: «${es}» no aparece en el código (¿ha cambiado el texto en castellano?)`);
