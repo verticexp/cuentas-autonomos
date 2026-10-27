@@ -3,21 +3,16 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { createRoot } from 'react-dom/client';
-import { traductor } from '@/lib/i18n';
+import { traductorActual } from '@/components/Idioma';
 import '@/app/hoja.css';
 
-// El diálogo vive en su propia raíz de React, fuera del proveedor de idioma (components/Idioma.js): el idioma lo lee del <html lang>
-// que pone el layout y el diccionario se carga solo si no es castellano.
-async function traductorActual() {
-  const id = document.documentElement.lang;
-  if (id !== 'ca' && id !== 'en') return traductor(null);
-  try { return traductor((await import('@/lib/textos/index.js')).diccionario(id)); } catch { return traductor(null); }
-}
+// El diálogo vive en su propia raíz de React, fuera del proveedor de idioma: traduce con traductorActual() (components/Idioma.js).
 
 // Serializar las peticiones evita superponer diálogos y perder la respuesta o el foco.
 let cola = Promise.resolve();
 function abrir(opciones) {
-  const resultado = cola.then(traductorActual).then((tr) => new Promise((resolver) => {
+  const resultado = cola.then(() => new Promise((resolver) => {
+    const tr = traductorActual();
     const origen = document.activeElement;
     const host = document.createElement('div');
     document.body.append(host);

@@ -1,7 +1,13 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { idiomaDe, traductor } from '@/lib/i18n';
-import { diccionario } from '@/lib/textos/index.js';
+
+// Sus pocos textos van aquí mismo (los mismos que lib/textos/comunes.js): importar los diccionarios metería todos en el
+// código que se descarga con cada página.
+const DIC = {
+  ca: {"Error de carga · Fisquo": "Error de càrrega · Fisquo", "No se ha podido cargar Fisquo": "No s'ha pogut carregar Fisquo", "Fisquo no se ha podido cargar. Tus datos están a salvo: vuelve a intentarlo en unos segundos.": "Fisquo no s'ha pogut carregar. Les teves dades estan segures: torna-ho a provar d'aquí a uns segons.", "Código: {codigo}": "Codi: {codigo}", "Reintentar": "Torna-ho a provar"},
+  en: {"Error de carga · Fisquo": "Loading error · Fisquo", "No se ha podido cargar Fisquo": "Fisquo couldn't be loaded", "Fisquo no se ha podido cargar. Tus datos están a salvo: vuelve a intentarlo en unos segundos.": "Fisquo couldn't be loaded. Your data is safe: please try again in a few seconds.", "Código: {codigo}": "Code: {codigo}", "Reintentar": "Try again"},
+};
 
 // Último recurso: falla el propio layout. Sin los estilos de la app, así que lleva los suyos mínimos. Tampoco hay proveedor de
 // idioma: se lee de la cookie de Ajustes o del navegador (como lib/idiomaServidor.js) al llegar al navegador; hasta entonces,
@@ -12,7 +18,7 @@ export default function GlobalError({ error, retry }) {
     const cookie = document.cookie.match(/(?:^|; )idioma=(\w+)/)?.[1];
     setIdioma(idiomaDe({ cookie, aceptados: (navigator.languages?.length ? navigator.languages : [navigator.language]).join(',') }));
   }, []);
-  const tr = traductor(diccionario(idioma));
+  const tr = traductor(DIC[idioma] || null, idioma);
   return (
     <html lang={idioma}>
       <title>{tr('Error de carga · Fisquo')}</title>

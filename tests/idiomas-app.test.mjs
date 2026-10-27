@@ -75,3 +75,13 @@ test('un texto no tiene dos traducciones distintas en dos zonas', () => {
     }
   }
 });
+
+test('las fechas en texto de lib/formato.js salen en el idioma, también dentro de un hueco', () => {
+  const ca = traductor(diccionario('ca'), 'ca'), en = traductor(diccionario('en'), 'en'), es = traductor(diccionario('es'), 'es');
+  assert.equal(es('20 de octubre'), '20 de octubre');
+  assert.equal(ca('20 de octubre'), '20 d’octubre');
+  assert.equal(ca('lunes, 26 de octubre'), 'dilluns, 26 d’octubre');
+  assert.equal(en('lunes, 26 de octubre'), 'Monday 26 October');
+  assert.equal(en('3 de marzo de 2026'), '3 March 2026');
+  assert.equal(en('Plazo en 20 de octubre'), 'Plazo en 20 de octubre');
+});
