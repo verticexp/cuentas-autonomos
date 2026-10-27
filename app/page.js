@@ -33,6 +33,8 @@ import '@/app/mk.css';
 import '@/app/hoy.css';
 import CambiarEmpresa from '@/components/CambiarEmpresa';
 import { accionesHoy } from '@/lib/hoy';
+import { diasSinCerrar } from '@/lib/caja';
+import { festivoNacional } from '@/lib/festivos';
 import { resumen as resumenBandeja } from '@/lib/bandeja';
 import { proximoPlazoDe } from '@/lib/avisos';
 import YaPresentado from '@/components/YaPresentado';
@@ -86,7 +88,7 @@ export default async function Resumen({ searchParams }) {
   const [nFacturas, nGastos, recurrentes, nominas, saldo, bandeja] = await Promise.all([contar(u, 'facturas'), contar(u, 'gastos'), leer(u, 'recurrentes'), leer(u, 'nominas'), redis.get(clave(u, 'saldo')), puede(u, 'gastos') ? leer(u, 'bandeja') : []]);
   // Facturas subidas o reenviadas que esperan a que alguien las revise (lib/bandeja.js): cuántas y cuántas cuadran.
   const porRevisar = resumenBandeja(bandeja || []);
-  const { P, teso, casillas } = await panelDe(u, { anio: anioPedido, hoy: h, recurrentes: recurrentes || [], nominas: nominas || [], saldo });
+  const { P, teso, casillas, cierres = [] } = await panelDe(u, { anio: anioPedido, hoy: h, recurrentes: recurrentes || [], nominas: nominas || [], saldo });
   const actividades = actividadesDe(u);
   const fiscal = fiscalDe(u);
   const ACTIVIDADES = nombresActividad(actividades);
@@ -135,7 +137,9 @@ export default async function Resumen({ searchParams }) {
   const verTeso = Boolean(teso) && !(u.plan?.version >= 2 && sinFuncion(u.plan, 'tesoreria'));
   // Por qué baja la previsión (auditoría U-16): el pago más grande hasta el día en que el saldo toca fondo.
   const causaMinimo = teso?.minimo?.saldo < 0 ? (teso.movimientos || []).filter((m) => m.importe < 0 && m.fecha <= teso.minimo.fecha).sort((a, b) => a.importe - b.importe)[0] : null;
-  const hayTarjetas = !sinDatos && (verHacienda || porCobrar > 0 || verPorPagar || porRevisar.pendientes > 0 || verTeso);
+  // Caja (lib/caja.js): los días en que se suele abrir y no tienen cierre. Los «no abrí» solo se leen si hay cierres.
+  const sinCerrar = cierres.length && puede(u, 'facturar') && esteAnio ? diasSinCerrar(cierres, h, { cerrados: Object.keys((await redis.hgetall(clave(u, 'cajaCerrados'))) || {}), festivo: festivoNacional }) : [];
+  const hayTarjetas = !sinDatos && (sinCerrar.length > 0 || verHacienda || porCobrar > 0 || verPorPagar || porRevisar.pendientes > 0 || verTeso);
   // Lo demás que viene para Hacienda en los próximos meses (retenciones, Sociedades, dividendos…), de la previsión de
   // Tesorería: la tarjeta enseña el IVA y el IRPF y, sin esto, parecía que era todo lo que había que apartar.
   const otrosHacienda = (teso?.movimientos || []).filter((m) => m.tipo === 'hacienda' && !m.vencido && !/^(IVA|IGIC|IRPF)\b/.test(m.concepto));
@@ -262,6 +266,14 @@ export default async function Resumen({ searchParams }) {
                   {lineaOtros && <p className="hcard-s">{lineaOtros}</p>}
                 </>
               )}
+            </Ir>
+          )}
+
+          {sinCerrar.length > 0 && (
+            <Ir href={sinCerrar.length === 1 ? `/facturas/caja?fecha=${sinCerrar[0]}#nuevo-cierre` : '/facturas/caja#sin-cerrar'} className="hcard ir" style={{ '--c': 'var(--aviso)' }}>
+              <h2 className="hcard-t"><Ico n="factura" solo />Caja<span>{sinCerrar.length === 1 ? '1 día' : `${sinCerrar.length} días`}</span></h2>
+              <p className="hcard-v">{sinCerrar.length}<small>{sinCerrar.length === 1 ? 'día sin cierre' : 'días sin cierre'}</small></p>
+              <p className="hcard-s">{sinCerrar.length === 1 ? `El ${fechaTexto(sinCerrar[0])}: apunta su cierre o márcalo como cerrado` : `Desde el ${fechaTexto(sinCerrar[0])}: apunta los cierres o marca los días que no abriste`}</p>
             </Ir>
           )}
 

@@ -20,6 +20,9 @@ class H(BaseHTTPRequestHandler):
             self.send_response(200); self.send_header('Content-Type', 'application/json'); self.end_headers(); self.wfile.write(out); return
         if 'tools' not in body:
             tiene_foto = body['messages'][0]['content'][0]['type'] in ('image', 'document')
+            # Informe Z del TPV (app/api/caja/z): siempre el mismo cierre.
+            if tiene_foto and 'informe Z' in texto_de(body['messages'][0]):
+                return self.responder([{'type': 'text', 'text': '{"fecha": "2026-09-12", "porIva": [{"pct": 10, "total": "312,40"}, {"pct": 21, "total": 45.6}], "total": 358, "efectivo": 120, "tarjeta": 238, "otros": null, "desde": "0451", "hasta": "0518", "devoluciones": null}'}])
             texto = 'Aquí está: {"proveedor": "Ferretería Sol", "nif": "B11111111", "fecha": "2026-09-12", "concepto": "Cables XLR", "base": null, "ivaPct": 21, "total": "60,50"}' if tiene_foto else 'nada'
             return self.responder([{'type': 'text', 'text': texto}])
         msgs = body['messages']
