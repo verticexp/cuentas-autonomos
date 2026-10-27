@@ -12,6 +12,7 @@ import { datosFiscalesRegistro, PRUEBA_DIAS, PROVINCIAS, provinciaDeCp, TIPOS, T
 import { irALaApp, useTrasArranque } from '@/lib/arranque';
 import { validarContrasena } from '@/lib/contrasena';
 import { eurPrecio } from '@/lib/formato';
+import { useT } from '@/components/Idioma';
 
 const DETALLE = { aut: 'Trabajas por tu cuenta, con o sin empleados', pym: 'Una sociedad con su equipo' };
 // Orden del alta: primero la cuenta (lo más rápido), luego el negocio, los datos fiscales y revisar. El plan no se pide:
@@ -21,7 +22,7 @@ const ETIQUETAS = ['Tu cuenta', 'Negocio', 'Datos fiscales', 'Revisar'];
 const PASO = { cuenta: 1, negocio: 2, fiscal: 3, revisar: 4 };
 // El servidor numera sus pasos con el orden de antes (1 negocio, 2 fiscal, 3 plan y código, 4 cuenta, 5 condiciones).
 const DEL_SERVIDOR = { 1: PASO.negocio, 2: PASO.fiscal, 3: PASO.revisar, 4: PASO.cuenta, 5: PASO.revisar };
-const precio = (p, periodo) => periodo === 'anio' ? `${eurPrecio(p * 12 * (100 - DESCUENTO) / 100)}/año` : `${eurPrecio(p)}/mes`;
+const precio = (p, periodo, tr) => periodo === 'anio' ? `${eurPrecio(p * 12 * (100 - DESCUENTO) / 100)}${tr('/año')}` : `${eurPrecio(p)}${tr('/mes')}`;
 function enfocarVisible(elemento) {
   if (!elemento) return;
   elemento.focus({ preventScroll: true });
@@ -39,6 +40,7 @@ function enfocarVisible(elemento) {
 // social: { proveedor, nombre, email } si viene de «Continuar con Google / Apple» sin cuenta: sin contraseña, y con el
 // email del proveedor (si lo ha verificado) fijo. listos: qué botones sociales están configurados (lib/social.js).
 export default function FormRegistro({ inicial = {}, sesion = null, recomendacion = null, social = null, listos = {} }) {
+  const tr = useT();
   const listo = useTrasArranque();
   const primero = sesion ? PASO.negocio : PASO.cuenta;
   const [paso, setPaso] = useState(primero);
@@ -134,7 +136,7 @@ export default function FormRegistro({ inicial = {}, sesion = null, recomendacio
     }
     const campos = form.current.querySelectorAll(`[data-paso="${n}"] input, [data-paso="${n}"] select`);
     for (const campo of campos) if (!campo.checkValidity()) {
-      const etiqueta = campo.type === 'checkbox' ? 'Condiciones' : campo.labels?.[0]?.textContent;
+      const etiqueta = campo.type === 'checkbox' ? tr('Condiciones') : campo.labels?.[0]?.textContent;
       setError({ mensaje: `${etiqueta ? `${etiqueta}: ` : ''}${campo.validationMessage}`, campo: campo.name });
       return false;
     }
@@ -204,30 +206,31 @@ export default function FormRegistro({ inicial = {}, sesion = null, recomendacio
   const total = sesion ? 3 : 4;
   // Días de prueba distintos del normal: 90 con código de gestoría, 60 recomendado (enlace o código).
   const gratis = promo?.dias || (recomendacion ? 60 : 0);
+  const recomienda = recomendacion ? tr('Te recomienda {nombre}: tienes 2 meses gratis en lugar de uno.', { nombre: '\u0001' }).split('\u0001') : [];
 
   return (
     <form ref={form} className="registro" onKeyDownCapture={() => { conTeclado.current = true; form.current.dataset.teclado = '1'; }} onPointerDownCapture={() => { conTeclado.current = false; delete form.current.dataset.teclado; }} onSubmit={siguiente} onChange={(e) => { if (error?.campo === e.target.name) setError(null); }} noValidate aria-busy={!listo || enviando || comprobando}>
       <h1><Logo className="logo-login" /></h1>
-      <ProgresoAlta paso={paso - primero + 1} total={total} etiqueta={ETIQUETAS[paso - 1]} />
+      <ProgresoAlta paso={paso - primero + 1} total={total} etiqueta={tr(ETIQUETAS[paso - 1])} />
       <div className="registro-contenido">
       {!sesion && <div hidden={paso !== PASO.cuenta} data-paso="1" className="registro-bloque">
-        <h2 className="login-titulo" tabIndex={-1}>Crea tu cuenta</h2>
-        <p className="nota">{gratis === 90 ? '3 meses gratis con todo incluido, con tu código.' : gratis ? '2 meses gratis con todo incluido, por venir recomendado.' : `${PRUEBA_DIAS} días gratis con todo incluido.`} Sin tarjeta.</p>
-        {social ? <p className="nota registro-social" role="status">Con tu cuenta de {social.proveedor === 'apple' ? 'Apple' : 'Google'}{social.email ? ` (${social.email})` : ''}: no necesitas contraseña.</p>
-          : <><BotonesSociales listos={listos} />{(listos.google || listos.apple) && <p className="separador"><span>o con tu email</span></p>}</>}
-        <label htmlFor="nombre">Tu nombre</label>
+        <h2 className="login-titulo" tabIndex={-1}>{tr('Crea tu cuenta')}</h2>
+        <p className="nota">{gratis === 90 ? tr('3 meses gratis con todo incluido, con tu código.') : gratis ? tr('2 meses gratis con todo incluido, por venir recomendado.') : tr('{n} días gratis con todo incluido.', { n: PRUEBA_DIAS })} {tr('Sin tarjeta.')}</p>
+        {social ? <p className="nota registro-social" role="status">{tr('Con tu cuenta de {proveedor}{email}: no necesitas contraseña.', { proveedor: social.proveedor === 'apple' ? 'Apple' : 'Google', email: social.email ? ` (${social.email})` : '' })}</p>
+          : <><BotonesSociales listos={listos} />{(listos.google || listos.apple) && <p className="separador"><span>{tr('o con tu email')}</span></p>}</>}
+        <label htmlFor="nombre">{tr('Tu nombre')}</label>
         <input defaultValue={social?.nombre || undefined} onChange={(e) => setCuenta((c) => ({ ...c, nombre: e.target.value }))} id="nombre" name="nombre" autoComplete="name" required maxLength={60} {...accesibilidad('nombre')} />
-        <label htmlFor="email">Email</label>
+        <label htmlFor="email">{tr('Email')}</label>
         <input onChange={(e) => { emailActual.current = e.target.value; setCuenta((c) => ({ ...c, email: e.target.value })); setErrorEmail(''); }} onBlur={(e) => { if (e.target.validity.valid) comprobarEmail(e.target.value); }} id="email" name="email" type="email" autoComplete="email" required defaultValue={social?.email || undefined} readOnly={Boolean(social?.email)} {...accesibilidad('email', errorEmail && error?.campo !== 'email' ? 'registro-email-error' : undefined)} aria-invalid={Boolean(errorEmail) || error?.campo === 'email' || undefined} />
-        <p id="registro-email-error" className="error" role="status">{error?.campo !== 'email' && errorEmail}</p>
+        <p id="registro-email-error" className="error" role="status">{error?.campo !== 'email' && tr(errorEmail)}</p>
         {!social && <>
-        <label htmlFor="password">Contraseña</label>
+        <label htmlFor="password">{tr('Contraseña')}</label>
         <CampoPassword id="password" autoComplete="new-password" minLength={10} value={password} onChange={(e) => setPassword(e.target.value)} {...accesibilidad('password', 'registro-seguridad')} required />
         {/* Con el campo vacío solo se enseñan las reglas, sin «Débil» en rojo antes de escribir nada. */}
         <div id="registro-seguridad" className={`registro-seguridad${password ? '' : ' vacia'}`} aria-live="polite">
           {password && <div className="registro-fuerza" aria-hidden>{[1, 2, 3, 4].map((n) => <span key={n} className={seguridad.nivel >= n ? 'lleno' : ''} />)}</div>}
-          {password && <p className="nota">{['Débil', 'Débil', 'Aceptable', 'Buena', 'Muy buena'][seguridad.nivel]}</p>}
-          {seguridad.faltan.length > 0 && <ul>{seguridad.faltan.map((f) => <li key={f}>{f}</li>)}</ul>}
+          {password && <p className="nota">{tr(['Débil', 'Débil', 'Aceptable', 'Buena', 'Muy buena'][seguridad.nivel])}</p>}
+          {seguridad.faltan.length > 0 && <ul>{seguridad.faltan.map((f) => <li key={f}>{tr(f)}</li>)}</ul>}
         </div>
         </>}
         {/* Trampa para bots: invisible para personas. */}
@@ -235,81 +238,81 @@ export default function FormRegistro({ inicial = {}, sesion = null, recomendacio
       </div>}
 
       <div hidden={paso !== PASO.negocio} data-paso="2" className="registro-bloque">
-        <h2 className="login-titulo" tabIndex={-1}>¿Qué tipo de negocio tienes?</h2>
-        <p className="nota registro-intro">{sesion ? `Vas a añadir otra empresa a tu cuenta (${sesion.email}). Tendrá su propio plan y su prueba gratis.` : 'Con esto preparamos tus impuestos y tus facturas.'}</p>
-        <div className="registro-opciones" role="radiogroup" aria-label="Tipo de negocio">
+        <h2 className="login-titulo" tabIndex={-1}>{tr('¿Qué tipo de negocio tienes?')}</h2>
+        <p className="nota registro-intro">{sesion ? tr('Vas a añadir otra empresa a tu cuenta ({email}). Tendrá su propio plan y su prueba gratis.', { email: sesion.email }) : tr('Con esto preparamos tus impuestos y tus facturas.')}</p>
+        <div className="registro-opciones" role="radiogroup" aria-label={tr('Tipo de negocio')}>
           {Object.entries(TIPOS_ALTA).map(([k, t]) => (
             <label key={k} className={`registro-opcion${tipo === k ? ' elegida' : ''}`}>
               <input type="radio" name="tipo" value={k} checked={tipo === k} onChange={() => setTipo(k)} {...accesibilidad('tipo')} />
-              <span className="registro-opcion-texto"><strong>{t}</strong><small>{DETALLE[k]}</small></span>
+              <span className="registro-opcion-texto"><strong>{tr(t)}</strong><small>{tr(DETALLE[k])}</small></span>
             </label>
           ))}
         </div>
         {recomendacion && <>
           <input type="hidden" name="ref" value={recomendacion.codigo} />
-          <p className="nota registro-recomendacion">Te recomienda <strong>{recomendacion.nombre}</strong>: tienes 2 meses gratis en lugar de uno.</p>
+          <p className="nota registro-recomendacion">{recomienda[0]}<strong>{recomendacion.nombre}</strong>{recomienda[1]}</p>
         </>}
-        <p className="nota">¿Llevas varias sociedades o un equipo mayor? <Link href="/business">Consulta Fisquo Business</Link>.</p>
+        <p className="nota">{tr('¿Llevas varias sociedades o un equipo mayor?')} <Link href="/business">{tr('Consulta Fisquo Business')}</Link>.</p>
       </div>
 
       <div hidden={paso !== PASO.fiscal} data-paso="3" className="registro-bloque">
-        <h2 className="login-titulo" tabIndex={-1}>Datos fiscales</h2>
-        <p className="nota">Escríbelos como aparecen en Hacienda: salen en tus facturas. Comprobaremos el NIF y el nombre fiscal.</p>
-        <label htmlFor="razon">{tipo === 'aut' ? 'Nombre y apellidos como en Hacienda' : 'Razón social'}</label>
+        <h2 className="login-titulo" tabIndex={-1}>{tr('Datos fiscales')}</h2>
+        <p className="nota">{tr('Escríbelos como aparecen en Hacienda: salen en tus facturas. Comprobaremos el NIF y el nombre fiscal.')}</p>
+        <label htmlFor="razon">{tipo === 'aut' ? tr('Nombre y apellidos como en Hacienda') : tr('Razón social')}</label>
         <input id="razon" name="razon" autoComplete={tipo === 'aut' ? 'name' : 'organization'} required maxLength={120} value={fiscales.razon} onChange={campoFiscal} {...accesibilidad('razon')} />
-        <label htmlFor="nif">{tipo === 'aut' ? 'NIF/NIE' : 'CIF'}</label>
+        <label htmlFor="nif">{tipo === 'aut' ? tr('NIF/NIE') : tr('CIF')}</label>
         <input id="nif" name="nif" autoCapitalize="characters" autoCorrect="off" spellCheck={false} required maxLength={20} value={fiscales.nif} onChange={campoFiscal} {...accesibilidad('nif')} />
-        <label htmlFor="direccion">Dirección fiscal (calle y número)</label>
+        <label htmlFor="direccion">{tr('Dirección fiscal (calle y número)')}</label>
         <input id="direccion" name="direccion" autoComplete="address-line1" required maxLength={160} value={fiscales.direccion} onChange={campoFiscal} {...accesibilidad('direccion')} />
-        <label htmlFor="cp">Código postal</label>
+        <label htmlFor="cp">{tr('Código postal')}</label>
         <input id="cp" name="cp" autoComplete="postal-code" inputMode="numeric" pattern="[0-9]{5}" required maxLength={5} value={fiscales.cp} onChange={campoFiscal} {...accesibilidad('cp')} />
-        <label htmlFor="ciudad">Ciudad</label>
+        <label htmlFor="ciudad">{tr('Ciudad')}</label>
         <input id="ciudad" name="ciudad" autoComplete="address-level2" required maxLength={80} value={fiscales.ciudad} onChange={campoFiscal} {...accesibilidad('ciudad')} />
-        <label htmlFor="provincia">Provincia</label>
+        <label htmlFor="provincia">{tr('Provincia')}</label>
         <select id="provincia" name="provincia" autoComplete="address-level1" required value={fiscales.provincia} onChange={campoFiscal} {...accesibilidad('provincia')}>
-          <option value="">Elige una provincia</option>
+          <option value="">{tr('Elige una provincia')}</option>
           {PROVINCIAS.map((p) => <option key={p} value={p}>{p}</option>)}
         </select>
-        <label htmlFor="telefono">Teléfono (opcional)</label>
+        <label htmlFor="telefono">{tr('Teléfono (opcional)')}</label>
         <input id="telefono" name="telefono" type="tel" inputMode="tel" autoComplete="tel" maxLength={30} value={fiscales.telefono} onChange={campoFiscal} {...accesibilidad('telefono')} />
       </div>
 
       <div hidden={paso !== PASO.revisar} data-paso="4" className="registro-bloque">
-        <h2 className="login-titulo" tabIndex={-1}>Revisar y crear</h2>
+        <h2 className="login-titulo" tabIndex={-1}>{tr('Revisar y crear')}</h2>
         <dl className="registro-resumen">
-          <dt>Tu cuenta</dt><dd>{cuenta.nombre}<br />{cuenta.email}</dd>
-          <dt>{TIPOS[tipo]}</dt><dd>{fiscales.razon}<br />{fiscales.nif}</dd>
-          <dt>Dirección fiscal</dt><dd>{fiscales.direccion}<br />{fiscales.cp} {fiscales.ciudad}<br />{fiscales.provincia}{fiscales.telefono && <><br />{fiscales.telefono}</>}</dd>
-          <dt>Prueba</dt><dd>{gratis === 90 ? '3 meses gratis con tu código' : gratis ? '2 meses gratis por venir recomendado' : `${PRUEBA_DIAS} días gratis`}, con todo incluido y sin tarjeta.<br />
-            {inicial.plan && elegido ? `Después, plan ${plan} (${precio(elegido.p, periodo)} sin IVA). Podrás cambiarlo cuando quieras.` : desde !== null ? `Al acabar eliges tu plan, desde ${eurPrecio(desde)}/mes sin IVA.` : ''}</dd>
+          <dt>{tr('Tu cuenta')}</dt><dd>{cuenta.nombre}<br />{cuenta.email}</dd>
+          <dt>{tr(TIPOS[tipo])}</dt><dd>{fiscales.razon}<br />{fiscales.nif}</dd>
+          <dt>{tr('Dirección fiscal')}</dt><dd>{fiscales.direccion}<br />{fiscales.cp} {fiscales.ciudad}<br />{fiscales.provincia}{fiscales.telefono && <><br />{fiscales.telefono}</>}</dd>
+          <dt>{tr('Prueba')}</dt><dd>{gratis === 90 ? tr('3 meses gratis con tu código') : gratis ? tr('2 meses gratis por venir recomendado') : tr('{n} días gratis', { n: PRUEBA_DIAS })}, {tr('con todo incluido y sin tarjeta.')}<br />
+            {inicial.plan && elegido ? tr('Después, plan {plan} ({precio} sin IVA). Podrás cambiarlo cuando quieras.', { plan, precio: precio(elegido.p, periodo, tr) }) : desde !== null ? tr('Al acabar eliges tu plan, desde {precio} sin IVA.', { precio: `${eurPrecio(desde)}${tr('/mes')}` }) : ''}</dd>
         </dl>
         {!recomendacion && (verCodigo ? <div className="registro-codigo">
-          <label htmlFor="codigo">Código promocional</label>
+          <label htmlFor="codigo">{tr('Código promocional')}</label>
           <input id="codigo" name="codigo" autoCapitalize="characters" autoComplete="off" autoCorrect="off" spellCheck={false} value={codigo} onChange={(e) => { setCodigo(e.target.value); setPromo(null); }} onBlur={(e) => comprobarCodigo(e.target.value)} {...accesibilidad('codigo', 'registro-codigo-ayuda')} />
-          <p id="registro-codigo-ayuda" className={promo ? 'nota registro-recomendacion' : 'nota'} role="status">{promo ? promo.texto : 'El de tu gestoría te da 3 meses gratis; el de otro cliente de Fisquo, 2.'}</p>
-        </div> : <button type="button" className="registro-corregir registro-ver-codigo" aria-expanded="false" onClick={() => { setVerCodigo(true); requestAnimationFrame(() => document.getElementById('codigo')?.focus()); }}>¿Tienes un código promocional?</button>)}
-        <p className="nota">La prueba incluye la lectura con IA de 50 páginas (tickets o facturas). Lo que incluye cada plan, en <a href="/precios" target="_blank" rel="noopener">Precios</a>.</p>
-        {!sesion && <p className="nota">Te enviaremos un email para confirmar que es tuyo.</p>}
-        <p className="nota registro-siguiente">Después de crear la cuenta, configuraremos las actividades y los impuestos de tu negocio.</p>
+          <p id="registro-codigo-ayuda" className={promo ? 'nota registro-recomendacion' : 'nota'} role="status">{promo ? tr(promo.texto) : tr('El de tu gestoría te da 3 meses gratis; el de otro cliente de Fisquo, 2.')}</p>
+        </div> : <button type="button" className="registro-corregir registro-ver-codigo" aria-expanded="false" onClick={() => { setVerCodigo(true); requestAnimationFrame(() => document.getElementById('codigo')?.focus()); }}>{tr('¿Tienes un código promocional?')}</button>)}
+        <p className="nota">{tr('La prueba incluye la lectura con IA de 50 páginas (tickets o facturas).')} {tr('Lo que incluye cada plan, en')} <a href="/precios" target="_blank" rel="noopener">{tr('Precios')}</a>.</p>
+        {!sesion && <p className="nota">{tr('Te enviaremos un email para confirmar que es tuyo.')}</p>}
+        <p className="nota registro-siguiente">{tr('Después de crear la cuenta, configuraremos las actividades y los impuestos de tu negocio.')}</p>
         <label className="registro-acepto" htmlFor="acepto">
           <input id="acepto" name="acepto" type="checkbox" value="1" required {...accesibilidad('acepto')} />
-          <span>Acepto las <a href="/condiciones" target="_blank" rel="noopener">condiciones</a> y la <a href="/privacidad" target="_blank" rel="noopener">política de privacidad</a></span>
+          <span>{tr('Acepto las')} <a href="/condiciones" target="_blank" rel="noopener">{tr('condiciones')}</a> {tr('y la')} <a href="/privacidad" target="_blank" rel="noopener">{tr('política de privacidad')}</a></span>
         </label>
       </div>
 
       </div>
 
       {error && <div id="registro-error" ref={errorRef} className="error registro-error" role="alert" tabIndex={-1}>
-        <p>{error.mensaje}</p>
-        {error.campo && <button type="button" className="registro-corregir" onClick={() => enfocarVisible(form.current?.querySelector(`[data-paso="${paso}"] [name="${error.campo}"]`))}>Revisar campo</button>}
+        <p>{tr(error.mensaje)}</p>
+        {error.campo && <button type="button" className="registro-corregir" onClick={() => enfocarVisible(form.current?.querySelector(`[data-paso="${paso}"] [name="${error.campo}"]`))}>{tr('Revisar campo')}</button>}
       </div>}
       {/* Sin elegir el tipo de negocio el botón sigue activo: al pulsarlo, siguiente() dice qué falta (auditoría D8-11). */}
       <button type="submit" disabled={enviando || comprobando}>
-        {comprobando ? (paso === PASO.cuenta ? 'Comprobando email…' : 'Comprobando…') : paso < PASO.revisar ? 'Continuar' : enviando ? 'Creando…' : sesion ? 'Crear empresa' : 'Crear cuenta'}
+        {comprobando ? (paso === PASO.cuenta ? tr('Comprobando email…') : tr('Comprobando…')) : paso < PASO.revisar ? tr('Continuar') : enviando ? tr('Creando…') : sesion ? tr('Crear empresa') : tr('Crear cuenta')}
       </button>
-      {paso === PASO.negocio && !tipo && <p className="nota registro-falta" id="registro-falta">Elige una opción para seguir.</p>}
-      {paso > primero && <button type="button" className="registro-atras" disabled={enviando || comprobando} onClick={atras}>Atrás</button>}
-      {paso === primero && (sesion ? <p className="nota login-cambiar"><a href="/ajustes">Volver a Fisquo</a></p> : <p className="nota login-cambiar">¿Ya tienes cuenta? <Link href="/login">Inicia sesión</Link></p>)}
+      {paso === PASO.negocio && !tipo && <p className="nota registro-falta" id="registro-falta">{tr('Elige una opción para seguir.')}</p>}
+      {paso > primero && <button type="button" className="registro-atras" disabled={enviando || comprobando} onClick={atras}>{tr('Atrás')}</button>}
+      {paso === primero && (sesion ? <p className="nota login-cambiar"><a href="/ajustes">{tr('Volver a Fisquo')}</a></p> : <p className="nota login-cambiar">{tr('¿Ya tienes cuenta?')} <Link href="/login">{tr('Inicia sesión')}</Link></p>)}
     </form>
   );
 }

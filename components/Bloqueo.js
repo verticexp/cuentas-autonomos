@@ -8,6 +8,7 @@ import CampoPassword from '@/components/CampoPassword';
 import PanelMarca from '@/components/PanelMarca';
 import { entrada } from '@/lib/transicion';
 import { enfocar, useTrasArranque } from '@/lib/arranque';
+import { useT } from '@/components/Idioma';
 
 // Bloqueo obligatorio: al abrir la app y al volver a ella, pide entrar como en cualquier app: email y contraseña,
 // o llave de acceso (Face ID, huella, Windows Hello o el móvil).
@@ -24,6 +25,7 @@ const SEGUIR = 5 * 60 * 1000;
 
 // servidor: false si el servidor no la da por desbloqueada (entonces sale el bloqueo aunque el navegador diga que no).
 export default function Bloqueo({ email, servidor = true }) {
+  const tr = useT();
   const [bloqueada, setBloqueada] = useState(true);
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
@@ -116,23 +118,23 @@ export default function Bloqueo({ email, servidor = true }) {
 
   if (!bloqueada) return null;
   return (
-    <main className={`login pantalla-bloqueo${saliendo ? ' saliendo' : ''}`} role="dialog" aria-modal="true" aria-label="Iniciar sesión en Fisquo">
+    <main className={`login pantalla-bloqueo${saliendo ? ' saliendo' : ''}`} role="dialog" aria-modal="true" aria-label={tr('Iniciar sesión en Fisquo')}>
       <PanelMarca />
       {listo && <form onSubmit={entrar} className="form-entrar">
         <h1><Logo className="logo-login" /></h1>
-        <p className="login-titulo">Desbloquea Fisquo</p>
-        <label htmlFor="bloqueo-email">Email</label>
+        <p className="login-titulo">{tr('Desbloquea Fisquo')}</p>
+        <label htmlFor="bloqueo-email">{tr('Email')}</label>
         <input id="bloqueo-email" name="email" type="email" autoComplete="username webauthn" defaultValue={email} required />
-        <label htmlFor="bloqueo-password">Contraseña</label>
+        <label htmlFor="bloqueo-password">{tr('Contraseña')}</label>
         <CampoPassword ref={pass} id="bloqueo-password" />
-        {error && <p className="error" role="alert">{error}</p>}
-        <button type="submit" disabled={enviando || saliendo}>{saliendo ? 'Dentro' : enviando ? 'Comprobando…' : 'Entrar'}</button>
+        {error && <p className="error" role="alert">{tr(error)}</p>}
+        <button type="submit" disabled={enviando || saliendo}>{saliendo ? tr('Dentro') : enviando ? tr('Comprobando…') : tr('Entrar')}</button>
         <EntrarLlave auto alEntrar={(r) => entro(r?.cambio)} />
       </form>}
       {/* Fuera del formulario de desbloqueo: los dos cierran la sesión (sin ella no se puede recuperar ni entrar con otra cuenta). */}
       {listo && <form method="post" action="/api/logout" className="nota login-ayuda">
-        <button type="submit" name="ir" value="recuperar">¿Has olvidado la contraseña?</button>
-        <button type="submit">Usar otra cuenta</button>
+        <button type="submit" name="ir" value="recuperar">{tr('¿Has olvidado la contraseña?')}</button>
+        <button type="submit">{tr('Usar otra cuenta')}</button>
       </form>}
     </main>
   );

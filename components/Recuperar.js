@@ -2,10 +2,12 @@
 
 import { useState } from 'react';
 import Logo from '@/components/Logo';
+import { useT } from '@/components/Idioma';
 
 const AVISO = 'Si existe una cuenta con ese email, te llegará un enlace';
 
 export default function Recuperar({ token = '' }) {
+  const tr = useT();
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState('');
   const [hecho, setHecho] = useState(false);
@@ -36,31 +38,31 @@ export default function Recuperar({ token = '' }) {
   return (
     <form onSubmit={enviar}>
       <Logo className="logo-login" />
-      <h1 className="login-titulo">{token ? 'Elige una nueva contraseña' : 'Recupera tu contraseña'}</h1>
-      {error && <p className="error" role="alert">{error}</p>}
+      <h1 className="login-titulo">{token ? tr('Elige una nueva contraseña') : tr('Recupera tu contraseña')}</h1>
+      {error && <p className="error" role="alert">{tr(error)}</p>}
       {hecho ? (
-        <p role="status">{token ? 'Contraseña cambiada. Hemos cerrado todas tus sesiones. Vuelve a iniciar sesión con la nueva contraseña.' : `${AVISO}. El enlace caduca en 30 minutos. Revisa también la carpeta de spam.`}</p>
+        <p role="status">{token ? tr('Contraseña cambiada. Hemos cerrado todas tus sesiones. Vuelve a iniciar sesión con la nueva contraseña.') : `${tr(AVISO)}. ${tr('El enlace caduca en 30 minutos. Revisa también la carpeta de spam.')}`}</p>
       ) : (
         <>
           {token ? (
             <>
-              <p className="nota" id="ayuda-password">Al menos 10 caracteres y distinta de la anterior.</p>
-              <label htmlFor="password">Nueva contraseña</label>
+              <p className="nota" id="ayuda-password">{tr('Al menos 10 caracteres y distinta de la anterior.')}</p>
+              <label htmlFor="password">{tr('Nueva contraseña')}</label>
               <input id="password" name="password" type="password" autoComplete="new-password" minLength={10} aria-describedby="ayuda-password" required />
-              <label htmlFor="repetir">Repite la nueva contraseña</label>
+              <label htmlFor="repetir">{tr('Repite la nueva contraseña')}</label>
               <input id="repetir" name="repetir" type="password" autoComplete="new-password" minLength={10} required />
             </>
           ) : (
             <>
-              <p className="nota" id="ayuda-email">{AVISO}.</p>
-              <label htmlFor="email">Email</label>
+              <p className="nota" id="ayuda-email">{tr(AVISO)}.</p>
+              <label htmlFor="email">{tr('Email')}</label>
               <input id="email" name="email" type="email" autoComplete="email" aria-describedby="ayuda-email" required />
             </>
           )}
-          <button type="submit" disabled={enviando}>{enviando ? 'Enviando…' : token ? 'Guardar contraseña' : 'Enviar enlace'}</button>
+          <button type="submit" disabled={enviando}>{enviando ? tr('Enviando…') : token ? tr('Guardar contraseña') : tr('Enviar enlace')}</button>
         </>
       )}
-      <p className="nota"><a href="/login" onClick={(e) => { e.preventDefault(); window.location.replace('/login'); }}>Volver a iniciar sesión</a></p>
+      <p className="nota"><a href="/login" onClick={(e) => { e.preventDefault(); window.location.replace('/login'); }}>{tr('Volver a iniciar sesión')}</a></p>
     </form>
   );
 }
