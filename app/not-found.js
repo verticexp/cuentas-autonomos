@@ -1,8 +1,9 @@
 import { headers } from 'next/headers';
 import Vacio from '@/components/Vacio';
+import { textos } from '@/lib/idiomaServidor';
 
 // absolute: sin la plantilla «%s · Fisquo» del layout (salía «No existe · Fisquo · Fisquo»).
-export const metadata = { title: { absolute: 'No existe · Fisquo' } };
+export async function generateMetadata() { return { title: { absolute: (await textos())('No existe · Fisquo') } }; }
 
 const SECCIONES = [
   ['/gastos/proveedores', 'Proveedores'], ['/facturas', 'Facturas'], ['/gastos', 'Gastos'],
@@ -14,11 +15,12 @@ const SECCIONES = [
 ];
 
 export default async function NoExiste() {
+  const tr = await textos();
   const ruta = ((await headers()).get('x-ruta') || '/').split('?')[0];
   const seccion = SECCIONES.find(([prefijo]) => ruta === prefijo || ruta.startsWith(`${prefijo}/`));
   return <main className="pagina">
-    <Vacio titulo="Esta página no existe" accion={seccion ? { href: seccion[0], texto: `Volver a ${seccion[1]}` } : { href: '/', texto: 'Ir al Resumen' }} secundaria={seccion && { href: '/', texto: 'Ir al Resumen' }}>
-      Puede que se haya borrado, que el enlace haya caducado o que la dirección no esté bien escrita.
+    <Vacio titulo={tr('Esta página no existe')} accion={seccion ? { href: seccion[0], texto: tr('Volver a {seccion}', { seccion: tr(seccion[1]) }) } : { href: '/', texto: tr('Ir al Resumen') }} secundaria={seccion && { href: '/', texto: tr('Ir al Resumen') }}>
+      {tr('Puede que se haya borrado, que el enlace haya caducado o que la dirección no esté bien escrita.')}
     </Vacio>
   </main>;
 }

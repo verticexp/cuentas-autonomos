@@ -1,12 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import { useT } from '@/components/Idioma';
 
 // Cambio rápido de empresa. Al cambiar se vuelve a cargar todo con la nueva empresa.
 // variante: «lista» (Ajustes), «lateral» (barra del ordenador) o «chip» (resumen, solo si hay varias).
 // Otra empresa se da de alta como cualquier cliente: /registro?nueva=1, con su plan y su prueba, sin repetir la cuenta.
 // Las empresas gratis (Fundador) solo las da de alta el administrador de Fisquo desde /admin.
 export default function CambiarEmpresa({ empresas = [], actual, variante = 'lista' }) {
+  const tr = useT();
   const [abierto, setAbierto] = useState(variante === 'lista');
   const [msg, setMsg] = useState('');
   const [ocupado, setOcupado] = useState(false);
@@ -24,7 +26,7 @@ export default function CambiarEmpresa({ empresas = [], actual, variante = 'list
   const nombreActual = empresas.find((x) => x.id === actual)?.nombre || 'Mi empresa';
 
   const lista = (
-    <div className={`emp-lista${ocupado ? ' ocupado' : ''}`} role="group" aria-label="Empresas">
+    <div className={`emp-lista${ocupado ? ' ocupado' : ''}`} role="group" aria-label={tr('Empresas')}>
       {empresas.map((x) => (
         <button key={x.id} type="button" aria-current={x.id === actual ? 'true' : undefined} className={`emp-opcion${x.id === actual ? ' activa' : ''}`} onClick={() => cambiar(x.id)}>
           <span className="emp-inicial" aria-hidden>{x.nombre.trim()[0]?.toUpperCase() || '·'}</span>
@@ -33,9 +35,9 @@ export default function CambiarEmpresa({ empresas = [], actual, variante = 'list
         </button>
       ))}
       <a className="emp-opcion emp-anadir solo-web" href="/registro?nueva=1">
-        <span className="emp-inicial" aria-hidden>+</span><span className="emp-nombre">Añadir empresa</span>
+        <span className="emp-inicial" aria-hidden>+</span><span className="emp-nombre">{tr('Añadir empresa')}</span>
       </a>
-      {msg && <p className="rojo emp-msg" role="alert">{msg}</p>}
+      {msg && <p className="rojo emp-msg" role="alert">{tr(msg)}</p>}
     </div>
   );
 
@@ -43,7 +45,7 @@ export default function CambiarEmpresa({ empresas = [], actual, variante = 'list
   return (
     <div className={`emp emp-${variante}${abierto ? ' abierto' : ''}`}>
       <button type="button" className="emp-actual" aria-expanded={abierto} onClick={() => setAbierto(!abierto)}>
-        <span className="emp-nombre">{nombreActual}</span>
+        <span className="emp-nombre">{tr(nombreActual)}</span>
         <svg viewBox="0 0 24 24" aria-hidden><path d="M7 10l5 5 5-5" /></svg>
       </button>
       {abierto && lista}

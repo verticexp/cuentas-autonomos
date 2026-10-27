@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { navegar } from '@/lib/transicion';
+import { useT } from '@/components/Idioma';
 import '@/app/pestanas.css';
 
 // Pestañas de una pantalla (Gastos, Facturas): lo que ya está y lo pendiente, siempre a la vista y con su número, en el
@@ -13,6 +14,7 @@ import '@/app/pestanas.css';
 // nombres de la transición son fijos.
 export default function Pestanas({ items, etiqueta }) {
   const router = useRouter();
+  const tr = useT();
   const activa = items.findIndex((x) => x.activo);
   const pulsar = (i) => (e) => {
     // cmd/ctrl-clic abre otra pestaña del navegador; con el teclado (detail 0) cambia sin animar; la activa no se desliza.
@@ -21,12 +23,12 @@ export default function Pestanas({ items, etiqueta }) {
     navegar(router, items[i].href, i > activa ? 'pestana-der' : 'pestana-izq', undefined, false, { scroll: false });
   };
   return (
-    <nav className="pestanas" aria-label={etiqueta}>
+    <nav className="pestanas" aria-label={tr(etiqueta)}>
       {activa >= 0 && <span className="pestanas-indicador" style={{ gridColumn: activa + 1 }} aria-hidden />}
       {items.map((x, i) => (
         <Link key={x.href} href={x.href} scroll={false} onClick={pulsar(i)} style={{ gridColumn: i + 1, '--pestana': `pestana-${i}` }}
           className={`pestana${x.activo ? ' activa' : ''}`} aria-current={x.activo ? 'page' : undefined}>
-          <span>{x.texto}</span>
+          <span>{tr(x.texto)}</span>
           {x.n > 0 && <span className={`pestana-n${x.tono ? ` tono-${x.tono}` : ''}`}>{x.n > 99 ? '99+' : x.n}</span>}
         </Link>
       ))}

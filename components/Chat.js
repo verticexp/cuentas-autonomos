@@ -6,6 +6,7 @@ import { llamar } from './Acciones';
 import { diaDe, eur, fechaConDia, fechaCorta, hoy as hoyMadrid, hora } from '@/lib/formato';
 import VistaDocumento from './VistaDocumento';
 import AccionesDocumento from './AccionesDocumento';
+import { useT } from '@/components/Idioma';
 import '@/app/chat.css';
 
 // Chat entre el despacho y su cliente (lib/comentariosDespacho.js): los mensajes en orden, los míos a la derecha, con la
@@ -23,17 +24,18 @@ import '@/app/chat.css';
 // Cuántos mensajes hay, el último y cuántos están en preguntas resueltas: si cambia algo, hay que recargar.
 const firma = (lista) => `${lista.length}|${lista.reduce((m, x) => (x.fecha > m ? x.fecha : m), '')}|${lista.filter((x) => x.resuelto).length}`;
 const ESPERA = 60000;
-function dia(iso, hoy) {
+function dia(iso, hoy, tr) {
   const d = diaDe(iso);
-  if (d === hoy) return 'Hoy';
+  if (d === hoy) return tr('Hoy');
   const ayer = new Date(Date.parse(`${hoy}T12:00:00Z`) - 864e5).toISOString().slice(0, 10);
-  if (d === ayer) return 'Ayer';
+  if (d === ayer) return tr('Ayer');
   const t = fechaConDia(d);
   return t[0].toUpperCase() + t.slice(1);
 }
 
 export default function Chat({ mensajes, lado, leidoAntes = '', enviar, leer, comprobar, vista, plantillas = [], docs = null, docInicial = '', nombreOtro, vacio }) {
   const router = useRouter();
+  const tr = useT();
   const [texto, setTexto] = useState('');
   const [doc, setDoc] = useState(docInicial);
   const [respondiendo, setRespondiendo] = useState(null);
@@ -119,7 +121,7 @@ export default function Chat({ mensajes, lado, leidoAntes = '', enviar, leer, co
   // El cuadro crece con el texto (hasta unas seis líneas).
   useEffect(() => { const t = caja.current; if (!t) return; t.style.height = 'auto'; t.style.height = `${Math.min(t.scrollHeight, 160)}px`; }, [texto]);
 
-  const opciones = docs ? [...docs.facturas.map((f) => ({ v: `factura:${f.id}`, t: `Factura ${f.texto} · ${eur(f.total)}` })), ...docs.gastos.map((g) => ({ v: `gasto:${g.id}`, t: `${fechaCorta(g.fecha)} · ${g.texto} · ${eur(g.total)}` }))] : [];
+  const opciones = docs ? [...docs.facturas.map((f) => ({ v: `factura:${f.id}`, t: tr('Factura {texto} · {total}', { texto: f.texto, total: eur(f.total) }) })), ...docs.gastos.map((g) => ({ v: `gasto:${g.id}`, t: `${fechaCorta(g.fecha)} · ${g.texto} · ${eur(g.total)}` }))] : [];
   const sobre = respondiendo ? respondiendo.doc?.texto : doc ? opciones.find((o) => o.v === doc)?.t : '';
 
   const mandar = async (e) => {
@@ -140,25 +142,25 @@ export default function Chat({ mensajes, lado, leidoAntes = '', enviar, leer, co
 
   let diaAnterior = '';
   return <div className="chat">
-    <div ref={lista} className="chat-mensajes" role="log" aria-label={`Mensajes con ${nombreOtro}`} tabIndex={0} onScroll={alDesplazar}>
+    <div ref={lista} className="chat-mensajes" role="log" aria-label={tr('Mensajes con {nombre}', { nombre: nombreOtro })} tabIndex={0} onScroll={alDesplazar}>
       {mensajes.length === 0 && <p className="chat-vacio">{vacio}</p>}
       {mensajes.map((m, i) => {
         const mio = m.lado === lado;
-        const cabecera = dia(m.fecha, hoy);
+        const cabecera = dia(m.fecha, hoy, tr);
         const nuevoDia = cabecera !== diaAnterior;
         diaAnterior = cabecera;
         return <div key={`${m.hilo}-${m.fecha}-${i}`} className={`chat-grupo${i >= vistos ? ' nueva' : ''}`}>
           {nuevoDia && <p className="chat-dia"><span>{cabecera}</span></p>}
-          {m.fecha === primeroNuevo && <p className="chat-nuevos"><span>Nuevos</span></p>}
+          {m.fecha === primeroNuevo && <p className="chat-nuevos"><span>{tr('Nuevos')}</span></p>}
           <div className={`chat-burbuja${mio ? ' mia' : ''}${m.resuelto && m.doc && m.doc.tipo !== 'informe' ? ' resuelta' : ''}`}>
             {m.doc && m.primero && <Sobre doc={m.doc} vista={vista} alVer={setVer}><svg viewBox="0 0 24 24" aria-hidden><path d="M7 3h7l4 4v14H7zM14 3v4h4" /></svg>{m.doc.texto}</Sobre>}
-            {m.doc && !m.primero && <Sobre doc={m.doc} vista={vista} alVer={setVer} respuesta>Sobre {m.doc.texto}</Sobre>}
-            {mio ? <span className="sr">Tú:</span> : <b className="chat-autor">{m.nombre || nombreOtro}</b>}
+            {m.doc && !m.primero && <Sobre doc={m.doc} vista={vista} alVer={setVer} respuesta>{tr('Sobre {doc}', { doc: m.doc.texto })}</Sobre>}
+            {mio ? <span className="sr">{tr('Tú:')}</span> : <b className="chat-autor">{m.nombre || nombreOtro}</b>}
             <p>{m.texto}</p>
             <span className="chat-pie">
-              {m.doc && m.doc.tipo !== 'informe' && m.primero && !m.resuelto && <button type="button" aria-label={`Responder sobre ${m.doc.texto}`} onClick={() => { setRespondiendo(m); setDoc(''); caja.current?.focus(); }}>Responder aquí</button>}
-              {m.doc && m.doc.tipo !== 'informe' && m.primero && lado === 'despacho' && <button type="button" aria-label={`${m.resuelto ? 'Reabrir' : 'Marcar como resuelta'} la pregunta sobre ${m.doc.texto}`} onClick={() => resolver(m, !m.resuelto)}>{m.resuelto ? 'Reabrir' : 'Marcar resuelta'}</button>}
-              {m.doc && m.doc.tipo !== 'informe' && m.primero && m.resuelto && <span>Resuelta</span>}
+              {m.doc && m.doc.tipo !== 'informe' && m.primero && !m.resuelto && <button type="button" aria-label={tr('Responder sobre {doc}', { doc: m.doc.texto })} onClick={() => { setRespondiendo(m); setDoc(''); caja.current?.focus(); }}>{tr('Responder aquí')}</button>}
+              {m.doc && m.doc.tipo !== 'informe' && m.primero && lado === 'despacho' && <button type="button" aria-label={m.resuelto ? tr('Reabrir la pregunta sobre {doc}', { doc: m.doc.texto }) : tr('Marcar como resuelta la pregunta sobre {doc}', { doc: m.doc.texto })} onClick={() => resolver(m, !m.resuelto)}>{m.resuelto ? tr('Reabrir') : tr('Marcar resuelta')}</button>}
+              {m.doc && m.doc.tipo !== 'informe' && m.primero && m.resuelto && <span>{tr('Resuelta')}</span>}
               <time dateTime={m.fecha}>{hora(m.fecha)}</time>
             </span>
           </div>
@@ -166,33 +168,33 @@ export default function Chat({ mensajes, lado, leidoAntes = '', enviar, leer, co
       })}
     </div>
     <form className="chat-escribir" onSubmit={mandar}>
-      {sobre && <p className="chat-contexto"><span>{respondiendo ? 'Respondiendo a' : 'Preguntas por'}: <b>{sobre}</b></span>
-        {vista && <button type="button" className="chat-ver" onClick={() => { const [tipo, docId] = respondiendo ? [respondiendo.doc.tipo, respondiendo.doc.id] : doc.split(':'); setVer({ tipo, id: docId }); }}>Ver</button>}
-        <button type="button" aria-label="Quitar el documento" onClick={() => { setRespondiendo(null); setDoc(''); }}>×</button></p>}
-      {guardados && <div className="chat-guardados" role="group" aria-label="Mensajes guardados">
+      {sobre && <p className="chat-contexto"><span>{respondiendo ? tr('Respondiendo a') : tr('Preguntas por')}: <b>{sobre}</b></span>
+        {vista && <button type="button" className="chat-ver" onClick={() => { const [tipo, docId] = respondiendo ? [respondiendo.doc.tipo, respondiendo.doc.id] : doc.split(':'); setVer({ tipo, id: docId }); }}>{tr('Ver')}</button>}
+        <button type="button" aria-label={tr('Quitar el documento')} onClick={() => { setRespondiendo(null); setDoc(''); }}>×</button></p>}
+      {guardados && <div className="chat-guardados" role="group" aria-label={tr('Mensajes guardados')}>
         {plantillas.map((p) => <button key={p.id} type="button" onClick={() => { setTexto(p.texto); setGuardados(false); caja.current?.focus(); }}><b>{p.titulo}</b><span>{p.texto}</span></button>)}
       </div>}
       <div className="chat-linea">
-        {plantillas.length > 0 && <button type="button" className="chat-adjuntar chat-boton-guardados" aria-expanded={guardados} aria-label="Mensajes guardados" title="Mensajes guardados" onClick={() => setGuardados(!guardados)}>
+        {plantillas.length > 0 && <button type="button" className="chat-adjuntar chat-boton-guardados" aria-expanded={guardados} aria-label={tr('Mensajes guardados')} title={tr('Mensajes guardados')} onClick={() => setGuardados(!guardados)}>
           <svg viewBox="0 0 24 24" aria-hidden><path d="M6 3h12v18l-6-4-6 4z" /></svg>
         </button>}
-        {docs && !respondiendo && !doc && opciones.length > 0 && <label className="chat-adjuntar" title="Preguntar por una factura o un gasto">
+        {docs && !respondiendo && !doc && opciones.length > 0 && <label className="chat-adjuntar" title={tr('Preguntar por una factura o un gasto')}>
           {/* Un documento con «?», no un clip: no adjunta un archivo, pregunta por una factura o un gasto que ya está en Fisquo */}
           <svg viewBox="0 0 24 24" aria-hidden><path d="M6 3h8l4 4v14H6z" /><path d="M14 3v4h4" /><path d="M9.8 11.2a2.2 2.2 0 1 1 3.1 2c-.6.3-.9.8-.9 1.4v.4M12 17.6v.1" /></svg>
-          <span className="sr">Preguntar por una factura o un gasto</span>
+          <span className="sr">{tr('Preguntar por una factura o un gasto')}</span>
           <select value="" onChange={(e) => setDoc(e.target.value)}>
-            <option value="">Preguntar por una factura o un gasto…</option>
-            {docs.facturas.length > 0 && <optgroup label="Facturas">{opciones.filter((o) => o.v.startsWith('factura')).map((o) => <option key={o.v} value={o.v}>{o.t}</option>)}</optgroup>}
-            {docs.gastos.length > 0 && <optgroup label="Gastos">{opciones.filter((o) => o.v.startsWith('gasto')).map((o) => <option key={o.v} value={o.v}>{o.t}</option>)}</optgroup>}
+            <option value="">{tr('Preguntar por una factura o un gasto…')}</option>
+            {docs.facturas.length > 0 && <optgroup label={tr('Facturas')}>{opciones.filter((o) => o.v.startsWith('factura')).map((o) => <option key={o.v} value={o.v}>{o.t}</option>)}</optgroup>}
+            {docs.gastos.length > 0 && <optgroup label={tr('Gastos')}>{opciones.filter((o) => o.v.startsWith('gasto')).map((o) => <option key={o.v} value={o.v}>{o.t}</option>)}</optgroup>}
           </select>
         </label>}
-        <textarea ref={caja} rows={1} value={texto} maxLength={2000} placeholder="Mensaje" aria-label="Mensaje" onChange={(e) => setTexto(e.target.value)} onFocus={() => { pegado.current = true; setTimeout(alFinal, 300); }}
+        <textarea ref={caja} rows={1} value={texto} maxLength={2000} placeholder={tr('Mensaje')} aria-label={tr('Mensaje')} onChange={(e) => setTexto(e.target.value)} onFocus={() => { pegado.current = true; setTimeout(alFinal, 300); }}
           onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing && window.matchMedia('(min-width: 1024px)').matches) mandar(e); }} />
-        <button className="chat-enviar" aria-label="Enviar" disabled={!texto.trim() || ocupado}>
+        <button className="chat-enviar" aria-label={tr('Enviar')} disabled={!texto.trim() || ocupado}>
           <svg viewBox="0 0 24 24" aria-hidden><path d="M4 12l16-8-6 16-2.5-6.5z" /></svg>
         </button>
       </div>
-      {error && <p className="error" role="alert">{error}</p>}
+      {error && <p className="error" role="alert">{tr(error)}</p>}
     </form>
     {vista && <VistaDocumento base={vista} doc={ver} alCerrar={() => setVer(null)}
       acciones={(d, cerrar) => <AccionesDocumento d={d} lado={lado} empresa={enviar.extra?.empresa} alHacer={() => { cerrar(); router.refresh(); }} />} />}
@@ -201,13 +203,14 @@ export default function Chat({ mensajes, lado, leidoAntes = '', enviar, leer, co
 
 // La cita de la factura o el gasto de una pregunta: con vista previa, se toca para verlo.
 function Sobre({ doc, vista, alVer, respuesta = false, children }) {
+  const tr = useT();
   const clase = `chat-sobre${respuesta ? ' respuesta' : ''}`;
   // El informe del trimestre (api/…/informe): se abre el PDF.
   if (vista && doc.tipo === 'informe' && /^\d{4}-[1-4]$/.test(doc.id)) {
     const [anio, t] = doc.id.split('-');
     const url = `${vista.replace('/documento', '/informe')}${vista.includes('?') ? '&' : '?'}anio=${anio}&t=${t}`;
-    return <a className={`${clase} toca`} href={url} target="_blank" rel="noopener">{children}<span className="chat-sobre-ver" aria-hidden>Abrir ›</span></a>;
+    return <a className={`${clase} toca`} href={url} target="_blank" rel="noopener">{children}<span className="chat-sobre-ver" aria-hidden>{tr('Abrir ›')}</span></a>;
   }
   if (!vista || !['factura', 'gasto'].includes(doc.tipo)) return <span className={clase}>{children}</span>;
-  return <button type="button" className={`${clase} toca`} onClick={() => alVer({ tipo: doc.tipo, id: doc.id })} aria-label={`Ver ${doc.texto}`}>{children}<span className="chat-sobre-ver" aria-hidden>Ver ›</span></button>;
+  return <button type="button" className={`${clase} toca`} onClick={() => alVer({ tipo: doc.tipo, id: doc.id })} aria-label={tr('Ver {doc}', { doc: doc.texto })}>{children}<span className="chat-sobre-ver" aria-hidden>{tr('Ver ›')}</span></button>;
 }
