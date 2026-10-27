@@ -6,8 +6,11 @@ import { useRouter } from 'next/navigation';
 import { llamar } from '@/components/Acciones';
 import { eur, fechaCorta } from '@/lib/formato';
 import { formatoIban } from '@/lib/sepa';
+import { conHuecos } from '@/lib/huecos';
+import { useT } from '@/components/Idioma';
 
 function Cuenta({ grupo, cuenta, cobros, hoy, bloqueado, ejecutar }) {
+  const tr = useT();
   const [abierto, abrir] = useState(false);
   const guardar = async (e) => {
     e.preventDefault();
@@ -20,19 +23,19 @@ function Cuenta({ grupo, cuenta, cobros, hoy, bloqueado, ejecutar }) {
   };
   return (
     <div className="rem-cuenta">
-      {cuenta && <p className="grupo-pie">{formatoIban(cuenta.iban)}{cobros && ` · Mandato ${cuenta.mandato.referencia} · ${cuenta.usado ? 'Recurrente' : 'Primer cobro'}`}</p>}
-      {!abierto ? <button type="button" className="boton sec" disabled={bloqueado} onClick={() => abrir(true)}>{cuenta ? 'Editar cuenta' : cobros ? 'Añadir domiciliación' : 'Añadir IBAN'}</button> : (
+      {cuenta && <p className="grupo-pie">{formatoIban(cuenta.iban)}{cobros && ` · ${tr('Mandato {referencia} · {tipo}', { referencia: cuenta.mandato.referencia, tipo: tr(cuenta.usado ? 'Recurrente' : 'Primer cobro') })}`}</p>}
+      {!abierto ? <button type="button" className="boton sec" disabled={bloqueado} onClick={() => abrir(true)}>{tr(cuenta ? 'Editar cuenta' : cobros ? 'Añadir domiciliación' : 'Añadir IBAN')}</button> : (
         <form className="formulario" onSubmit={guardar}>
           <fieldset disabled={bloqueado}>
-            <legend>{cobros ? 'Cuenta y mandato firmado' : 'Cuenta del proveedor'}</legend>
+            <legend>{tr(cobros ? 'Cuenta y mandato firmado' : 'Cuenta del proveedor')}</legend>
             <label>IBAN<input className="campo" name="iban" defaultValue={cuenta?.iban || ''} required autoComplete="off" maxLength={42} spellCheck={false} /></label>
-            <label>BIC (opcional)<input className="campo" name="bic" defaultValue={cuenta?.bic || ''} maxLength={11} autoComplete="off" spellCheck={false} /></label>
+            <label>{tr('BIC (opcional)')}<input className="campo" name="bic" defaultValue={cuenta?.bic || ''} maxLength={11} autoComplete="off" spellCheck={false} /></label>
             {cobros && <>
-              <label>Referencia del mandato (opcional)<input className="campo" name="referencia" defaultValue={cuenta?.mandato.referencia || ''} maxLength={35} aria-describedby={`ref-${grupo.id}`} /></label>
-              <p id={`ref-${grupo.id}`} className="grupo-pie">Si la dejas vacía, se genera con el NIF o el nombre y la fecha de firma.</p>
-              <label>Fecha de firma del mandato<input className="campo" type="date" name="fecha" defaultValue={cuenta?.mandato.fecha || ''} max={hoy} required /></label>
+              <label>{tr('Referencia del mandato (opcional)')}<input className="campo" name="referencia" defaultValue={cuenta?.mandato.referencia || ''} maxLength={35} aria-describedby={`ref-${grupo.id}`} /></label>
+              <p id={`ref-${grupo.id}`} className="grupo-pie">{tr('Si la dejas vacía, se genera con el NIF o el nombre y la fecha de firma.')}</p>
+              <label>{tr('Fecha de firma del mandato')}<input className="campo" type="date" name="fecha" defaultValue={cuenta?.mandato.fecha || ''} max={hoy} required /></label>
             </>}
-            <div className="rem-acciones"><button className="boton" type="submit">Guardar {cobros ? 'domiciliación' : 'cuenta'}</button><button className="boton sec" type="button" onClick={() => abrir(false)}>Cancelar</button></div>
+            <div className="rem-acciones"><button className="boton" type="submit">{tr(cobros ? 'Guardar domiciliación' : 'Guardar cuenta')}</button><button className="boton sec" type="button" onClick={() => abrir(false)}>{tr('Cancelar')}</button></div>
           </fieldset>
         </form>
       )}
@@ -41,6 +44,7 @@ function Cuenta({ grupo, cuenta, cobros, hoy, bloqueado, ejecutar }) {
 }
 
 function Lote({ tipo, documentos, cuentas, fechaInicial, hoy, emisorListo, bloqueado, ejecutar, resumen }) {
+  const tr = useT();
   const ayudaId = useId();
   const cobros = tipo === 'cobros';
   const [seleccion, seleccionar] = useState([]);
@@ -82,30 +86,30 @@ function Lote({ tipo, documentos, cuentas, fechaInicial, hoy, emisorListo, bloqu
   };
   return (
     <>
-      {!documentos.length ? <Vacio icono={cobros ? 'factura' : 'gasto'} titulo={cobros ? 'Ninguna factura por cobrar' : 'Ningún gasto pendiente de pago'} accion={{ href: cobros ? '/facturas/nueva' : '/gastos#apuntar-gasto', texto: cobros ? 'Nueva factura' : 'Añadir gasto' }} /> : <>
+      {!documentos.length ? <Vacio icono={cobros ? 'factura' : 'gasto'} titulo={tr(cobros ? 'Ninguna factura por cobrar' : 'Ningún gasto pendiente de pago')} accion={{ href: cobros ? '/facturas/nueva' : '/gastos#apuntar-gasto', texto: tr(cobros ? 'Nueva factura' : 'Añadir gasto') }} /> : <>
         <label className="rem-check rem-todos"><input type="checkbox" disabled={bloqueado || !elegibles.length} checked={elegibles.length > 0 && elegidos.length === elegibles.length}
-          onChange={(e) => seleccionar(e.target.checked ? elegibles.map((d) => d.id) : [])} />Seleccionar todos los disponibles</label>
+          onChange={(e) => seleccionar(e.target.checked ? elegibles.map((d) => d.id) : [])} />{tr('Seleccionar todos los disponibles')}</label>
         {[...grupos.values()].map((grupo) => <section className="grupo" key={grupo.id}>
           <h2 className="grupo-t">{grupo.nombre}</h2>
           {grupo.id ? <Cuenta grupo={grupo} cuenta={porCuenta.get(grupo.id)} cobros={cobros} hoy={hoy} bloqueado={bloqueado} ejecutar={ejecutar} />
-            : <p className="nota">Añade {cobros ? 'el cliente a la factura' : 'el proveedor al gasto'} para incluirlo en una remesa.</p>}
+            : <p className="nota">{tr(cobros ? 'Añade el cliente a la factura para incluirlo en una remesa.' : 'Añade el proveedor al gasto para incluirlo en una remesa.')}</p>}
           <ul className="grupo-lista">
             {grupo.docs.map((d) => <li key={d.id}><label className="fila rem-documento">
               <input type="checkbox" disabled={bloqueado || !apto(d)} checked={apto(d) && seleccion.includes(d.id)} onChange={(e) => cambiar(d.id, e.target.checked)} />
-              <span className="txt"><strong>{d.concepto}</strong><small>{d.fecha ? fechaCorta(d.fecha) : ''}{!Number.isFinite(d.importe) || d.importe <= 0 ? ' · Importe no válido para SEPA' : !porCuenta.has(d.grupo) ? ' · Falta la cuenta bancaria' : ''}</small></span>
+              <span className="txt"><strong>{d.concepto}</strong><small>{d.fecha ? fechaCorta(d.fecha) : ''}{!Number.isFinite(d.importe) || d.importe <= 0 ? ` · ${tr('Importe no válido para SEPA')}` : !porCuenta.has(d.grupo) ? ` · ${tr('Falta la cuenta bancaria')}` : ''}</small></span>
               <span className="imp">{eur(d.importe)}</span>
             </label></li>)}
           </ul>
         </section>)}
         <form className="tarjeta formulario rem-descarga" onSubmit={descargar}>
           <fieldset disabled={bloqueado}>
-            <legend>Preparar {cobros ? 'cobros' : 'pagos'}</legend>
-            <p className="rem-total">{elegidos.length} {cobros ? 'recibos' : 'pagos'} seleccionados · <strong>{eur(elegidos.reduce((s, d) => s + d.importe, 0))}</strong></p>
-            <label>Fecha de {cobros ? 'cobro' : 'ejecución'}<input className="campo" type="date" value={fecha} min={hoy} required onChange={(e) => ponerFecha(e.target.value)} /></label>
-            <label className="check rem-check"><input type="checkbox" checked={marcar} onChange={(e) => ponerMarcar(e.target.checked)} />Marcar como {cobros ? 'cobradas' : 'pagados'}</label>
-            <p className="grupo-pie">{marcar ? 'Se marcarán al generar el archivo. Activa esta opción solo si tu banco ya ha confirmado los cobros o pagos.' : 'Los documentos seguirán pendientes después de descargar el archivo. Confirma los cobros o pagos cuando tu banco los ejecute.'}</p>
-            {(!elegidos.length || !emisorListo) && <p id={ayudaId} className="nota">{!emisorListo ? 'Completa tus datos de facturación en Ajustes para descargar.' : 'Selecciona al menos un documento con cuenta bancaria e importe válido.'}</p>}
-            <button className="boton" disabled={!elegidos.length || !emisorListo || bloqueado} aria-describedby={!elegidos.length || !emisorListo ? ayudaId : undefined}>{bloqueado ? 'Preparando…' : 'Descargar remesa (XML)'}</button>
+            <legend>{tr(cobros ? 'Preparar cobros' : 'Preparar pagos')}</legend>
+            <p className="rem-total">{conHuecos(tr(cobros ? '{n} recibos seleccionados · {total}' : '{n} pagos seleccionados · {total}'), { n: elegidos.length, total: <strong>{eur(elegidos.reduce((s, d) => s + d.importe, 0))}</strong> })}</p>
+            <label>{tr(cobros ? 'Fecha de cobro' : 'Fecha de ejecución')}<input className="campo" type="date" value={fecha} min={hoy} required onChange={(e) => ponerFecha(e.target.value)} /></label>
+            <label className="check rem-check"><input type="checkbox" checked={marcar} onChange={(e) => ponerMarcar(e.target.checked)} />{tr(cobros ? 'Marcar como cobradas' : 'Marcar como pagados')}</label>
+            <p className="grupo-pie">{tr(marcar ? 'Se marcarán al generar el archivo. Activa esta opción solo si tu banco ya ha confirmado los cobros o pagos.' : 'Los documentos seguirán pendientes después de descargar el archivo. Confirma los cobros o pagos cuando tu banco los ejecute.')}</p>
+            {(!elegidos.length || !emisorListo) && <p id={ayudaId} className="nota">{tr(!emisorListo ? 'Completa tus datos de facturación en Ajustes para descargar.' : 'Selecciona al menos un documento con cuenta bancaria e importe válido.')}</p>}
+            <button className="boton" disabled={!elegidos.length || !emisorListo || bloqueado} aria-describedby={!elegidos.length || !emisorListo ? ayudaId : undefined}>{tr(bloqueado ? 'Preparando…' : 'Descargar remesa (XML)')}</button>
           </fieldset>
         </form>
       </>}
@@ -115,6 +119,7 @@ function Lote({ tipo, documentos, cuentas, fechaInicial, hoy, emisorListo, bloqu
 
 export default function Remesas({ puedeCobrar, puedePagar, facturas, gastos, domiciliaciones, cuentasProv, historial, hoy, fechaCobro, emisorCobros, emisorPagos }) {
   const router = useRouter();
+  const tr = useT();
   const [tab, ponerTab] = useState(puedeCobrar ? 'cobros' : 'pagos');
   const [ocupado, ponerOcupado] = useState(false);
   const enCurso = useRef(false);
@@ -128,20 +133,20 @@ export default function Remesas({ puedeCobrar, puedePagar, facturas, gastos, dom
     try { await tarea(); } catch (e) { ponerError(e.message || 'No se ha podido completar la operación'); }
     finally { router.refresh(); enCurso.current = false; ponerOcupado(false); }
   };
-  const tabs = [...(puedeCobrar ? [['cobros', 'Cobrar a clientes']] : []), ...(puedePagar ? [['pagos', 'Pagar a proveedores']] : []), ['historial', 'Historial']];
+  const tabs = [...(puedeCobrar ? [['cobros', tr('Cobrar a clientes')]] : []), ...(puedePagar ? [['pagos', tr('Pagar a proveedores')]] : []), ['historial', tr('Historial')]];
   return (
     <>
-      <nav className="segmentado" aria-label="Tipo de remesa">{tabs.map(([id, texto]) => <button key={id} type="button" className={tab === id ? 'activo' : ''} aria-pressed={tab === id} disabled={ocupado} onClick={() => ponerTab(id)}>{texto}</button>)}</nav>
-      {error && <p className="error" role="alert">{error}</p>}
+      <nav className="segmentado" aria-label={tr('Tipo de remesa')}>{tabs.map(([id, texto]) => <button key={id} type="button" className={tab === id ? 'activo' : ''} aria-pressed={tab === id} disabled={ocupado} onClick={() => ponerTab(id)}>{texto}</button>)}</nav>
+      {error && <p className="error" role="alert">{tr(error)}</p>}
       {resultado && <div className="tarjeta rem-resultado" role="status">
-        <p>Archivo descargado: {resultado.numero} {resultado.tipo === 'cobros' ? 'recibos' : 'pagos'} · <strong>{eur(resultado.total)}</strong></p>
-        {resultado.errores?.length > 0 && <><p>Documentos excluidos:</p><ul>{resultado.errores.map((e, i) => <li key={i}>{e.id}: {e.error}</li>)}</ul></>}
+        <p>{conHuecos(tr(resultado.tipo === 'cobros' ? 'Archivo descargado: {n} recibos · {total}' : 'Archivo descargado: {n} pagos · {total}'), { n: resultado.numero, total: <strong>{eur(resultado.total)}</strong> })}</p>
+        {resultado.errores?.length > 0 && <><p>{tr('Documentos excluidos:')}</p><ul>{resultado.errores.map((e, i) => <li key={i}>{e.id}: {tr(e.error)}</li>)}</ul></>}
       </div>}
       {tab === 'historial' ? <>
-        <p className="grupo-pie">Últimas 50 remesas generadas. Comprueba su ejecución en tu banco.</p>
+        <p className="grupo-pie">{tr('Últimas 50 remesas generadas. Comprueba su ejecución en tu banco.')}</p>
         {historial.length ? <ul className="grupo-lista">{historial.map((r) => <li key={r.id} className="fila">
-          <span className="txt"><strong>{r.tipo === 'cobros' ? 'Cobros' : 'Pagos'} · {fechaCorta(r.fecha)}</strong><small>{r.numero} operaciones · Creada el {fechaCorta(r.creada.slice(0, 10))}</small></span><span className="imp">{eur(r.total)}</span>
-        </li>)}</ul> : <Vacio icono="cobrar" titulo="Aún no hay remesas" accion={<button type="button" className="boton" disabled={ocupado} onClick={() => ponerTab(puedeCobrar ? 'cobros' : 'pagos')}>{puedeCobrar ? 'Elegir cobros' : 'Elegir pagos'}</button>}>Selecciona los cobros o pagos que quieres enviar al banco.</Vacio>}
+          <span className="txt"><strong>{tr(r.tipo === 'cobros' ? 'Cobros' : 'Pagos')} · {fechaCorta(r.fecha)}</strong><small>{tr('{n} operaciones · Creada el {fecha}', { n: r.numero, fecha: fechaCorta(r.creada.slice(0, 10)) })}</small></span><span className="imp">{eur(r.total)}</span>
+        </li>)}</ul> : <Vacio icono="cobrar" titulo={tr('Aún no hay remesas')} accion={<button type="button" className="boton" disabled={ocupado} onClick={() => ponerTab(puedeCobrar ? 'cobros' : 'pagos')}>{tr(puedeCobrar ? 'Elegir cobros' : 'Elegir pagos')}</button>}>{tr('Selecciona los cobros o pagos que quieres enviar al banco.')}</Vacio>}
       </> : <Lote key={tab} tipo={tab} documentos={tab === 'cobros' ? facturas : gastos} cuentas={tab === 'cobros' ? domiciliaciones : cuentasProv}
         fechaInicial={tab === 'cobros' ? fechaCobro : hoy} hoy={hoy} emisorListo={tab === 'cobros' ? emisorCobros : emisorPagos} bloqueado={ocupado} ejecutar={ejecutar} resumen={ponerResultado} />}
     </>
