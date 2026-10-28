@@ -31,7 +31,7 @@ public class AvisosPlugin: CAPPlugin, CAPBridgedPlugin, UNUserNotificationCenter
             self?.esperando = []
         })
         observadores.append(NotificationCenter.default.addObserver(forName: .fisquoErrorAPNs, object: nil, queue: .main) { [weak self] n in
-            let texto = (n.object as? Error)?.localizedDescription ?? "No se ha podido registrar el iPhone para los avisos"
+            let texto = (n.object as? Error)?.localizedDescription ?? NSLocalizedString("No se ha podido registrar el iPhone para los avisos", comment: "")
             self?.esperando.forEach { $0.reject(texto, "error") }
             self?.esperando = []
         })

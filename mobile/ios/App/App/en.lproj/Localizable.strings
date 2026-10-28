@@ -2,3 +2,9 @@
 "No se ha podido descargar" = "Couldn't download";
 "Revisa la conexión y vuelve a intentarlo." = "Check your connection and try again.";
 "Aceptar" = "OK";
+"Entrar en Fisquo" = "Sign in to Fisquo";
+"Falta la credencial" = "Missing credential";
+"Este iPhone no permite guardar con Face ID" = "This iPhone can't save with Face ID";
+"Credencial no válida" = "Invalid credential";
+"No hay Face ID activado en este iPhone" = "Face ID isn't turned on on this iPhone";
+"No se ha podido registrar el iPhone para los avisos" = "Couldn't register this iPhone for notifications";

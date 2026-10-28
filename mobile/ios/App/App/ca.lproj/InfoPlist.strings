@@ -1,3 +1,4 @@
 /* Textos de los permisos (Info.plist) en ca. */
 "NSCameraUsageDescription" = "Fisquo fa servir la càmera per escanejar els tiquets i les factures de despesa i llegir-ne els imports.";
 "NSPhotoLibraryUsageDescription" = "Fisquo accedeix a les fotos que triïs per adjuntar tiquets i factures a les teves despeses.";
+"NSFaceIDUsageDescription" = "Per entrar a Fisquo i desbloquejar-lo amb Face ID, sense escriure la contrasenya.";
