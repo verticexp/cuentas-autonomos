@@ -55,6 +55,26 @@
 			</array>
 		</dict>
 	</dict>
+	<!-- «Compartir» → Fisquo: facturas en PDF, fotos y facturas electrónicas (CompartirPlugin.swift). -->
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Factura</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.adobe.pdf</string>
+				<string>public.image</string>
+				<string>public.xml</string>
+			</array>
+		</dict>
+	</array>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<false/>
 	<key>UIApplicationShortcutItems</key>
 	<array>
 		<dict>

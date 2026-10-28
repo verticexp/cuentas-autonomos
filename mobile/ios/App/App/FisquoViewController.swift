@@ -7,6 +7,7 @@ import Capacitor
 // - el escáner de documentos nativo para los tickets (EscanerPlugin.swift);
 // - el acceso con Apple y Google mediante la sesión nativa (AccesoPlugin.swift);
 // - las notificaciones nativas de los avisos (AvisosPlugin.swift);
+// - recibir facturas con «Compartir» desde otras apps (CompartirPlugin.swift);
 // - Face ID nativo para entrar y desbloquear, con una credencial en el llavero (BiometriaPlugin.swift);
 // - deslizar desde el borde izquierdo para volver atrás, solo donde la pantalla tiene «‹ Atrás» y sin hojas encima, y nunca
 //   hacia delante (GestoAtras, abajo);
@@ -46,6 +47,7 @@ class FisquoViewController: CAPBridgeViewController {
         bridge?.registerPluginInstance(EscanerPlugin())
         bridge?.registerPluginInstance(AccesoPlugin())
         bridge?.registerPluginInstance(AvisosPlugin())
+        bridge?.registerPluginInstance(CompartirPlugin())
         bridge?.registerPluginInstance(BiometriaPlugin())
         guard let webView = webView, let capacitor = webView.navigationDelegate as? WebViewDelegationHandler else { return }
         let delegado = DelegadoWeb(capacitor: capacitor, servidor: bridge?.config.serverURL, presentador: self)
