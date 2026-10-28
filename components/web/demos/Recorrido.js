@@ -3,6 +3,8 @@
 import Link from '@/components/web/EnlacePublico';
 import { useEffect, useRef, useState } from 'react';
 import Icono from '@/components/web/Icono';
+import { useT } from '@/components/Idioma';
+import { conHuecos } from '@/lib/huecos';
 
 // Recorrido de la página /demo: cinco pantallas que copian las de la app (components/TabBar.js, app/diseno.css, app/v2.css,
 // app/banco.css, app/modelos.css y las pantallas de Facturas, Gastos, Impuestos, Banco y Tu gestoría) con datos ficticios,
@@ -34,16 +36,17 @@ const PESTANAS = [['resumen', 'Resumen'], ['facturas', 'Facturas'], ['gastos', '
 // ventana. `activa`: pestaña marcada (sin ella, la pantalla es un formulario y no lleva barra, como en la app); `pie`: la
 // barra de abajo de los formularios.
 function Movil({ titulo, activa, pie, children }) {
+  const tr = useT();
   return (
     <div className="dmo-marco">
-      <div className="dmo-tel" role="group" aria-label={`Pantalla de ejemplo: ${titulo}`}>
-        <div className="dmo-estado-barra" aria-hidden><span>9:41</span><span className="dmo-ejemplo">Ejemplo</span></div>
+      <div className="dmo-tel" role="group" aria-label={tr('Pantalla de ejemplo: {titulo}', { titulo: tr(titulo) })}>
+        <div className="dmo-estado-barra" aria-hidden><span>9:41</span><span className="dmo-ejemplo">{tr('Ejemplo')}</span></div>
         <div className={`dmo-cuerpo${pie ? ' con-pie' : ''}`}>{children}</div>
         {pie && <div className="dmo-pie-f">{pie}</div>}
         {activa && (
           <div className="dmo-barra" aria-hidden>
             <div className="dmo-tabs">
-              {PESTANAS.map(([id, t]) => <span key={id} className={id === activa ? 'activo' : undefined}><Ico n={id} />{t}</span>)}
+              {PESTANAS.map(([id, t]) => <span key={id} className={id === activa ? 'activo' : undefined}><Ico n={id} />{tr(t)}</span>)}
             </div>
             <span className="dmo-fab"><Ico n="mas1" /></span>
           </div>
@@ -53,16 +56,25 @@ function Movil({ titulo, activa, pie, children }) {
   );
 }
 
-const Volver = ({ children }) => <span className="dmo-volver" aria-hidden>‹ {children}</span>;
-const Pastilla = ({ tipo, children }) => <span className={`dmo-pastilla ${tipo}`}>{children}</span>;
+function Volver({ children }) {
+  const tr = useT();
+  return <span className="dmo-volver" aria-hidden>‹ {tr(children)}</span>;
+}
+function Pastilla({ tipo, children }) {
+  const tr = useT();
+  return <span className={`dmo-pastilla ${tipo}`}>{tr(children)}</span>;
+}
 // Una celda de lista como la de la app: lo principal, su detalle y el importe a la derecha.
-const Fila = ({ t, s, v, mas, children }) => (
-  <li className="dmo-fila">
-    <span className="dmo-txt-c"><b>{t}</b>{s && <small>{s}</small>}</span>
-    {children}
-    {v && <span className={`dmo-v${mas ? ' mas' : ''}`}>{v}</span>}
-  </li>
-);
+function Fila({ t, s, v, mas, children }) {
+  const tr = useT();
+  return (
+    <li className="dmo-fila">
+      <span className="dmo-txt-c"><b>{tr(t)}</b>{s && <small>{tr(s)}</small>}</span>
+      {children}
+      {v && <span className={`dmo-v${mas ? ' mas' : ''}`}>{v}</span>}
+    </li>
+  );
+}
 
 // ───────────────────────── Datos de ejemplo de cada perfil ─────────────────────────
 // Todas las sumas cuadran: factura (base + IVA − IRPF), gasto (base + IVA), 303, 130 / 111 / 202 y el banco, que empareja
@@ -132,6 +144,7 @@ const PERFILES = {
 // ───────────────────────── 1 · Factura ─────────────────────────
 // Nueva factura (como app/facturas/nueva): elegir el IVA recalcula el total. «Crear factura» lleva a la ficha de la factura.
 function PantallaFactura({ d }) {
+  const tr = useT();
   const f = d.factura;
   const [iva, setIva] = useState(21);
   const [hecha, setHecha] = useState(false);
@@ -143,58 +156,58 @@ function PantallaFactura({ d }) {
   if (hecha) {
     return (
       <Movil titulo={`Factura ${f.num}`} activa="facturas">
-        <p className="oculto" role="status">Factura {f.num} creada y registrada</p>
+        <p className="oculto" role="status">{tr('Factura {num} creada y registrada', { num: f.num })}</p>
         <Volver>Facturas</Volver>
         <div className="dmo-tarjeta dmo-ficha">
-          <small>Factura {f.num}</small>
+          <small>{tr('Factura {num}', { num: f.num })}</small>
           <b className="dmo-ficha-cli">{f.cliente}</b>
           <p className="dmo-ficha-imp">{eur(total)}</p>
           <dl className="dmo-desglose">
-            <div><dt>Base</dt><dd>{eur(f.base)}</dd></div>
-            <div><dt>IVA {iva} %</dt><dd>{eur(cuota)}</dd></div>
-            {f.irpf > 0 && <div><dt>IRPF {f.irpf} %</dt><dd>{con(-irpf)}</dd></div>}
+            <div><dt>{tr('Base')}</dt><dd>{eur(f.base)}</dd></div>
+            <div><dt>{tr('IVA {pct} %', { pct: iva })}</dt><dd>{eur(cuota)}</dd></div>
+            {f.irpf > 0 && <div><dt>{tr('IRPF {pct} %', { pct: f.irpf })}</dt><dd>{con(-irpf)}</dd></div>}
           </dl>
           <div className="dmo-ficha-estado">
             {cobrada ? <Pastilla tipo="ok">Cobrada</Pastilla> : <Pastilla tipo="aviso">Pendiente</Pastilla>}
-            <span>Emitida el {f.emitida}</span>
+            <span>{tr('Emitida el {fecha}', { fecha: tr(f.emitida) })}</span>
           </div>
-          {!cobrada && <button type="button" className="dmo-boton suave verde" onClick={() => setCobrada(true)}>✓ Marcar como cobrada</button>}
+          {!cobrada && <button type="button" className="dmo-boton suave verde" onClick={() => setCobrada(true)}>{tr('✓ Marcar como cobrada')}</button>}
         </div>
-        <p className="dmo-registrada"><Ico n="tic" />Numerada sin saltos y registrada</p>
-        <span className="dmo-boton" aria-hidden>Enviar al cliente por email</span>
-        <span className="dmo-boton suave" aria-hidden>Ver / descargar PDF</span>
-        <button type="button" className="dmo-enlace" onClick={() => { setHecha(false); setCobrada(false); }}>Hacer otra factura</button>
+        <p className="dmo-registrada"><Ico n="tic" />{tr('Numerada sin saltos y registrada')}</p>
+        <span className="dmo-boton" aria-hidden>{tr('Enviar al cliente por email')}</span>
+        <span className="dmo-boton suave" aria-hidden>{tr('Ver / descargar PDF')}</span>
+        <button type="button" className="dmo-enlace" onClick={() => { setHecha(false); setCobrada(false); }}>{tr('Hacer otra factura')}</button>
       </Movil>
     );
   }
   return (
     <Movil titulo="Nueva factura" pie={
       <>
-        <div className="dmo-totales" aria-live="polite"><b>Total {eur(total)}</b><small>Base {eur(f.base)} · IVA {eur(cuota)}</small></div>
-        <button type="button" className="dmo-boton" onClick={() => setHecha(true)}>Crear factura</button>
+        <div className="dmo-totales" aria-live="polite"><b>{tr('Total {importe}', { importe: eur(total) })}</b><small>{tr('Base {base} · IVA {iva}', { base: eur(f.base), iva: eur(cuota) })}</small></div>
+        <button type="button" className="dmo-boton" onClick={() => setHecha(true)}>{tr('Crear factura')}</button>
       </>
     }>
       <Volver>Atrás</Volver>
-      <h3 className="dmo-h1">Nueva factura</h3>
-      <p className="dmo-rotulo">Se numerará como {f.num}</p>
-      <div className="dmo-eti"><span>Fecha</span><div className="dmo-campo">{f.fecha}</div></div>
-      <div className="dmo-eti"><span>Cliente</span>
-        <div className="dmo-cli"><span className="dmo-txt-c"><b>{f.cliente}</b><small>{f.nif} · {f.ciudad}</small></span><span className="dmo-cambiar">Cambiar</span></div>
+      <h3 className="dmo-h1">{tr('Nueva factura')}</h3>
+      <p className="dmo-rotulo">{tr('Se numerará como {numero}', { numero: f.num })}</p>
+      <div className="dmo-eti"><span>{tr('Fecha')}</span><div className="dmo-campo">{f.fecha}</div></div>
+      <div className="dmo-eti"><span>{tr('Cliente')}</span>
+        <div className="dmo-cli"><span className="dmo-txt-c"><b>{f.cliente}</b><small>{f.nif} · {f.ciudad}</small></span><span className="dmo-cambiar">{tr('Cambiar')}</span></div>
       </div>
-      <div className="dmo-eti"><span>Conceptos</span>
+      <div className="dmo-eti"><span>{tr('Conceptos')}</span>
         <div className="dmo-linea">
           <div className="dmo-campo blanco">{f.concepto}</div>
           <div className="dmo-nums">
-            <div className="dmo-eti"><span>Cantidad</span><div className="dmo-campo blanco">1</div></div>
-            <div className="dmo-eti"><span>Precio</span><div className="dmo-campo blanco">{f.base.toLocaleString('es-ES', { minimumFractionDigits: 2, useGrouping: 'always' })}</div></div>
-            <label className="dmo-eti"><span>IVA</span>
+            <div className="dmo-eti"><span>{tr('Cantidad')}</span><div className="dmo-campo blanco">1</div></div>
+            <div className="dmo-eti"><span>{tr('Precio')}</span><div className="dmo-campo blanco">{f.base.toLocaleString('es-ES', { minimumFractionDigits: 2, useGrouping: 'always' })}</div></div>
+            <label className="dmo-eti"><span>{tr('IVA')}</span>
               <select className="dmo-campo blanco" value={iva} onChange={(e) => setIva(Number(e.target.value))}>{[21, 10, 4].map((p) => <option key={p} value={p}>{p}%</option>)}</select>
             </label>
           </div>
           <p className="dmo-linea-total">{eur(f.base)}</p>
         </div>
       </div>
-      {f.irpf > 0 && <div className="dmo-eti"><span>Retención de IRPF</span><div className="dmo-campo">{f.irpf}%</div></div>}
+      {f.irpf > 0 && <div className="dmo-eti"><span>{tr('Retención de IRPF')}</span><div className="dmo-campo">{f.irpf}%</div></div>}
     </Movil>
   );
 }
@@ -202,6 +215,7 @@ function PantallaFactura({ d }) {
 // ───────────────────────── 2 · Gasto ─────────────────────────
 // Gastos (como app/gastos): «Escanear ticket» lee un ticket de ejemplo y rellena el gasto, que se revisa antes de guardar.
 function PantallaGasto({ d }) {
+  const tr = useT();
   const g = d.gasto;
   const iva = r2(g.base * 0.21);
   const total = r2(g.base + iva);
@@ -214,25 +228,25 @@ function PantallaGasto({ d }) {
     t.current = setTimeout(() => setEstado('leido'), 1100);
   };
   const Pestanas = () => (
-    <div className="dmo-pestanas" aria-hidden><span className="activa">Gastos</span><span>Por revisar</span><span>Por pagar</span></div>
+    <div className="dmo-pestanas" aria-hidden><span className="activa">{tr('Gastos')}</span><span>{tr('Por revisar')}</span><span>{tr('Por pagar')}</span></div>
   );
   if (estado === 'leido') {
     return (
       <Movil titulo="Nuevo gasto" activa="gastos">
-        <p className="oculto" role="status">Fisquo ha leído el ticket. Revisa los datos antes de guardar.</p>
-        <h3 className="dmo-h1">Gastos</h3>
+        <p className="oculto" role="status">{tr('Fisquo ha leído el ticket. Revisa los datos antes de guardar.')}</p>
+        <h3 className="dmo-h1">{tr('Gastos')}</h3>
         <Pestanas />
         <div className="dmo-tarjeta">
-          <h4 className="dmo-h2">Añadir gasto deducible</h4>
-          <div className="dmo-ia"><b>Leído con IA</b><small>Revisa los datos antes de guardar: puedes corregir cualquier campo.</small></div>
-          <div className="dmo-eti"><span>Proveedor</span><div className="dmo-campo">{g.proveedor}</div></div>
-          <div className="dmo-eti"><span>Concepto</span><div className="dmo-campo">{g.concepto}</div></div>
+          <h4 className="dmo-h2">{tr('Añadir gasto deducible')}</h4>
+          <div className="dmo-ia"><b>{tr('Leído con IA')}</b><small>{tr('Revisa los datos antes de guardar: puedes corregir cualquier campo.')}</small></div>
+          <div className="dmo-eti"><span>{tr('Proveedor')}</span><div className="dmo-campo">{g.proveedor}</div></div>
+          <div className="dmo-eti"><span>{tr('Concepto')}</span><div className="dmo-campo">{tr(g.concepto)}</div></div>
           <div className="dmo-dos">
-            <div className="dmo-eti"><span>Base sin IVA</span><div className="dmo-campo">{eur(g.base)}</div></div>
-            <div className="dmo-eti"><span>IVA</span><div className="dmo-campo">IVA 21%</div></div>
+            <div className="dmo-eti"><span>{tr('Base sin IVA')}</span><div className="dmo-campo">{eur(g.base)}</div></div>
+            <div className="dmo-eti"><span>{tr('IVA')}</span><div className="dmo-campo">{tr('IVA 21%')}</div></div>
           </div>
-          <p className="dmo-suma">Total con IVA <b>{eur(total)}</b></p>
-          <button type="button" className="dmo-boton" onClick={() => setEstado('guardado')}>Guardar gasto</button>
+          <p className="dmo-suma">{conHuecos(tr('Total con IVA {importe}'), { importe: <b>{eur(total)}</b> })}</p>
+          <button type="button" className="dmo-boton" onClick={() => setEstado('guardado')}>{tr('Guardar gasto')}</button>
         </div>
       </Movil>
     );
@@ -240,33 +254,33 @@ function PantallaGasto({ d }) {
   if (estado === 'guardado') {
     return (
       <Movil titulo="Gastos" activa="gastos">
-        <p className="oculto" role="status">Gasto guardado</p>
-        <h3 className="dmo-h1">Gastos</h3>
+        <p className="oculto" role="status">{tr('Gasto guardado')}</p>
+        <h3 className="dmo-h1">{tr('Gastos')}</h3>
         <Pestanas />
-        <p className="dmo-resumen-l">Con este gasto recuperas <b>{eur(iva)}</b> de IVA</p>
-        <div className="dmo-mes"><h4 className="dmo-h2">Septiembre</h4><small>Base {eur(g.base)}</small></div>
+        <p className="dmo-resumen-l">{conHuecos(tr('Con este gasto recuperas {importe} de IVA'), { importe: <b>{eur(iva)}</b> })}</p>
+        <div className="dmo-mes"><h4 className="dmo-h2">{tr('Septiembre')}</h4><small>{tr('Base {importe}', { importe: eur(g.base) })}</small></div>
         <ul className="dmo-lista">
-          <Fila t={g.proveedor} s={`${g.fecha} · ${g.concepto}`} v={eur(total)} />
+          <Fila t={g.proveedor} s={`${g.fecha} · ${tr(g.concepto)}`} v={eur(total)} />
         </ul>
-        <p className="dmo-pie-t">Ya cuenta en el IVA soportado del trimestre y en el rendimiento.</p>
-        <button type="button" className="dmo-enlace" onClick={() => setEstado('espera')}>Volver a empezar</button>
+        <p className="dmo-pie-t">{tr('Ya cuenta en el IVA soportado del trimestre y en el rendimiento.')}</p>
+        <button type="button" className="dmo-enlace" onClick={() => setEstado('espera')}>{tr('Volver a empezar')}</button>
       </Movil>
     );
   }
   return (
     <Movil titulo="Gastos" activa="gastos">
-      <h3 className="dmo-h1">Gastos</h3>
+      <h3 className="dmo-h1">{tr('Gastos')}</h3>
       <Pestanas />
       <div className="dmo-tarjeta" aria-busy={estado === 'leyendo'}>
-        <h4 className="dmo-h2">Añadir gastos</h4>
-        <p className="dmo-p">Haz una foto al ticket o sube tus facturas, una o varias. Fisquo las lee por ti.</p>
-        {estado === 'leyendo' && <p className="oculto" role="status">La IA está leyendo el ticket…</p>}
+        <h4 className="dmo-h2">{tr('Añadir gastos')}</h4>
+        <p className="dmo-p">{tr('Haz una foto al ticket o sube tus facturas, una o varias. Fisquo las lee por ti.')}</p>
+        {estado === 'leyendo' && <p className="oculto" role="status">{tr('La IA está leyendo el ticket…')}</p>}
         <div className={`dmo-ticket${estado === 'leyendo' ? ' leyendo' : ''}`} aria-hidden>
           <b>{g.proveedor}</b><span /><span /><span /><span className="corta" /><i />
         </div>
-        <button type="button" className="dmo-boton" onClick={leer} disabled={estado === 'leyendo'}><Ico n="ticket" className="dmo-i b" />{estado === 'leyendo' ? 'Leyendo el ticket…' : 'Escanear ticket'}</button>
-        <span className="dmo-boton suave" aria-hidden>Varios tickets</span>
-        <div className="dmo-dos"><span className="dmo-boton suave" aria-hidden>Subir facturas</span><span className="dmo-boton suave" aria-hidden>Apuntar a mano</span></div>
+        <button type="button" className="dmo-boton" onClick={leer} disabled={estado === 'leyendo'}><Ico n="ticket" className="dmo-i b" />{tr(estado === 'leyendo' ? 'Leyendo el ticket…' : 'Escanear ticket')}</button>
+        <span className="dmo-boton suave" aria-hidden>{tr('Varios tickets')}</span>
+        <div className="dmo-dos"><span className="dmo-boton suave" aria-hidden>{tr('Subir facturas')}</span><span className="dmo-boton suave" aria-hidden>{tr('Apuntar a mano')}</span></div>
       </div>
     </Movil>
   );
@@ -275,13 +289,14 @@ function PantallaGasto({ d }) {
 // ───────────────────────── 3 · Impuestos ─────────────────────────
 // Impuestos (como app/modelos): lo próximo y los modelos del trimestre, que se abren para ver sus casillas.
 function PantallaImpuestos({ d }) {
+  const tr = useT();
   const [abierto, setAbierto] = useState(null);
   return (
     <Movil titulo="Impuestos" activa="mas">
       <Volver>Resumen</Volver>
-      <div className="dmo-cab"><h3 className="dmo-h1">Impuestos</h3><span className="dmo-anios" aria-hidden><i>‹</i><b>2026</b><i className="off">›</i></span></div>
-      <p className="dmo-pie-t arriba">Calculados con lo que hay en Fisquo. Son orientativos: revísalos con tu gestor antes de presentarlos.</p>
-      <h4 className="dmo-h2">Lo próximo</h4>
+      <div className="dmo-cab"><h3 className="dmo-h1">{tr('Impuestos')}</h3><span className="dmo-anios" aria-hidden><i>‹</i><b>2026</b><i className="off">›</i></span></div>
+      <p className="dmo-pie-t arriba">{tr('Calculados con lo que hay en Fisquo. Son orientativos: revísalos con tu gestor antes de presentarlos.')}</p>
+      <h4 className="dmo-h2">{tr('Lo próximo')}</h4>
       <ul className="dmo-lista">
         {d.proximos.map(([t, s, v]) => <Fila key={t} t={t} s={s} v={eur(v)} />)}
       </ul>
@@ -291,20 +306,20 @@ function PantallaImpuestos({ d }) {
           <div key={m.id} className={`dmo-modelo${on ? ' abierto' : ''}`}>
             <button type="button" className="dmo-modelo-b" aria-expanded={on} aria-controls={`dmo-m-${m.id}`} onClick={() => setAbierto(on ? null : m.id)}>
               <span className="dmo-num">{m.id}</span>
-              <span className="dmo-txt-c"><b>{m.t}</b><small>{m.s}</small></span>
-              <span className="dmo-m-imp"><b>{eur(m.v)}</b><small>{m.nota}</small></span>
+              <span className="dmo-txt-c"><b>{tr(m.t)}</b><small>{tr(m.s)}</small></span>
+              <span className="dmo-m-imp"><b>{eur(m.v)}</b><small>{tr(m.nota)}</small></span>
               <Ico n="abajo" className="dmo-i flecha" />
             </button>
-            <div id={`dmo-m-${m.id}`} role="region" aria-label={`Casillas del modelo ${m.id}`} hidden={!on}>
+            <div id={`dmo-m-${m.id}`} role="region" aria-label={tr('Casillas del modelo {modelo}', { modelo: m.id })} hidden={!on}>
               <ul className="dmo-cas">
-                {m.casillas.map(([c, t, v, tipo]) => <li key={`${c}${t}`}><span>{c && <i>{c}</i>}{t}</span><b>{tipo === 'n' ? v : eur(v)}</b></li>)}
-                <li className="res"><span>{m.resultado[0] && <i>{m.resultado[0]}</i>}{m.resultado[1]}</span><b>{eur(m.resultado[2])}</b></li>
+                {m.casillas.map(([c, t, v, tipo]) => <li key={`${c}${t}`}><span>{c && <i>{c}</i>}{tr(t)}</span><b>{tipo === 'n' ? v : eur(v)}</b></li>)}
+                <li className="res"><span>{m.resultado[0] && <i>{m.resultado[0]}</i>}{tr(m.resultado[1])}</span><b>{eur(m.resultado[2])}</b></li>
               </ul>
             </div>
           </div>
         );
       })}
-      <p className="dmo-pie-t">Para apartar este trimestre: <b>{eur(d.aparta)}</b> ({d.modelos.filter((m) => m.id !== '202').map((m) => m.id).join(' + ')}).</p>
+      <p className="dmo-pie-t">{conHuecos(tr('Para apartar este trimestre: {importe} ({modelos}).'), { importe: <b>{eur(d.aparta)}</b>, modelos: d.modelos.filter((m) => m.id !== '202').map((m) => m.id).join(' + ') })}</p>
     </Movil>
   );
 }
@@ -312,6 +327,7 @@ function PantallaImpuestos({ d }) {
 // ───────────────────────── 4 · Banco ─────────────────────────
 // Banco (como app/banco): cada movimiento propone su pareja («Es esta»); se confirma uno a uno o todos los seguros.
 function PantallaBanco({ d }) {
+  const tr = useT();
   const b = d.banco;
   const [hechos, setHechos] = useState({}); // id → texto de lo que se ha hecho
   const marca = (id, txt) => setHechos((h) => ({ ...h, [id]: txt }));
@@ -322,56 +338,56 @@ function PantallaBanco({ d }) {
   const Cabecera = ({ m }) => (
     <div className="dmo-mov-fila">
       <span className="dmo-fecha">{m.fecha}</span>
-      <span className="dmo-txt-c"><b>{m.t}</b><small>{m.s}</small></span>
+      <span className="dmo-txt-c"><b>{tr(m.t)}</b><small>{tr(m.s)}</small></span>
       <Importe v={m.v} />
     </div>
   );
-  const Hecho = ({ txt }) => <p className="dmo-hecho"><Ico n="tic" />{txt}</p>;
+  const Hecho = ({ txt }) => <p className="dmo-hecho"><Ico n="tic" />{tr(txt)}</p>;
   return (
     <Movil titulo="Banco" activa="mas">
       <Volver>Tesorería</Volver>
       <h3 className="dmo-h1">Banco</h3>
-      <div className="dmo-saldo"><span className="dmo-txt-c"><small>Saldo</small><b>{eur(b.saldo)}</b></span><span className="dmo-boton suave peque" aria-hidden>Subir extracto</span></div>
+      <div className="dmo-saldo"><span className="dmo-txt-c"><small>{tr('Saldo')}</small><b>{eur(b.saldo)}</b></span><span className="dmo-boton suave peque" aria-hidden>{tr('Subir extracto')}</span></div>
       <div className="dmo-cab2">
-        <h4 className="dmo-h2" aria-live="polite">Por revisar <span>{pend}</span></h4>
-        {seguras.length > 0 && <button type="button" className="dmo-boton peque" onClick={() => setHechos((h) => ({ ...h, ...Object.fromEntries(seguras.map((m) => [m.id, 'Emparejado'])) }))}>Confirmar las {seguras.length} seguras</button>}
+        <h4 className="dmo-h2" aria-live="polite">{tr('Por revisar')} <span>{pend}</span></h4>
+        {seguras.length > 0 && <button type="button" className="dmo-boton peque" onClick={() => setHechos((h) => ({ ...h, ...Object.fromEntries(seguras.map((m) => [m.id, 'Emparejado'])) }))}>{tr('Confirmar las {n} seguras', { n: seguras.length })}</button>}
       </div>
-      <h5 className="dmo-sub">Por confirmar <span>{b.confirmables.length}</span></h5>
+      <h5 className="dmo-sub">{tr('Por confirmar')} <span>{b.confirmables.length}</span></h5>
       <ul className="dmo-blista">
         {b.confirmables.map((m) => (
           <li key={m.id} className="dmo-mov">
             <Cabecera m={m} />
             {hechos[m.id] ? <Hecho txt={hechos[m.id]} /> : (
               <>
-                <div className="dmo-sug segura"><span className="dmo-sug-t">{m.es[0]}</span><span className="dmo-sug-d">{m.es[1]}<small>{m.es[2]}</small></span></div>
+                <div className="dmo-sug segura"><span className="dmo-sug-t">{tr(m.es[0])}</span><span className="dmo-sug-d">{m.es[1]}<small>{m.es[2]}</small></span></div>
                 <div className="dmo-botones">
-                  <button type="button" className="dmo-boton peque" onClick={() => marca(m.id, 'Emparejado')} aria-label={`Confirmar el emparejamiento de ${m.t}`}>Confirmar</button>
-                  <button type="button" className="dmo-boton suave peque" onClick={() => marca(m.id, 'Ignorado')} aria-label={`Ignorar ${m.t}`}>Ignorar</button>
+                  <button type="button" className="dmo-boton peque" onClick={() => marca(m.id, 'Emparejado')} aria-label={tr('Confirmar el emparejamiento de {movimiento}', { movimiento: tr(m.t) })}>{tr('Confirmar')}</button>
+                  <button type="button" className="dmo-boton suave peque" onClick={() => marca(m.id, 'Ignorado')} aria-label={tr('Ignorar {movimiento}', { movimiento: tr(m.t) })}>{tr('Ignorar')}</button>
                 </div>
               </>
             )}
           </li>
         ))}
       </ul>
-      <h5 className="dmo-sub">Sin pareja <span>{b.sinPareja.length}</span></h5>
+      <h5 className="dmo-sub">{tr('Sin pareja')} <span>{b.sinPareja.length}</span></h5>
       <ul className="dmo-blista">
         {b.sinPareja.map((m) => (
           <li key={m.id} className="dmo-mov">
             <Cabecera m={m} />
             {hechos[m.id] ? <Hecho txt={hechos[m.id]} /> : (
               <div className="dmo-quees">
-                <div className="dmo-eti"><span>Fisquo cree que es</span><div className="dmo-campo sel">{m.clase}</div></div>
-                <p className="dmo-nota">{m.ayuda}</p>
+                <div className="dmo-eti"><span>{tr('Fisquo cree que es')}</span><div className="dmo-campo sel">{tr(m.clase)}</div></div>
+                <p className="dmo-nota">{tr(m.ayuda)}</p>
                 <div className="dmo-botones">
-                  <button type="button" className="dmo-boton peque" onClick={() => marca(m.id, m.hecho)} aria-label={`${m.accion}: ${m.t}`}>{m.accion}</button>
-                  <button type="button" className="dmo-boton suave peque" onClick={() => marca(m.id, 'Ignorado')} aria-label={`Ignorar ${m.t}`}>Ignorar</button>
+                  <button type="button" className="dmo-boton peque" onClick={() => marca(m.id, m.hecho)} aria-label={`${tr(m.accion)}: ${tr(m.t)}`}>{tr(m.accion)}</button>
+                  <button type="button" className="dmo-boton suave peque" onClick={() => marca(m.id, 'Ignorado')} aria-label={tr('Ignorar {movimiento}', { movimiento: tr(m.t) })}>{tr('Ignorar')}</button>
                 </div>
               </div>
             )}
           </li>
         ))}
       </ul>
-      {pend === 0 && <button type="button" className="dmo-enlace" onClick={() => setHechos({})}>Volver a empezar</button>}
+      {pend === 0 && <button type="button" className="dmo-enlace" onClick={() => setHechos({})}>{tr('Volver a empezar')}</button>}
     </Movil>
   );
 }
@@ -379,39 +395,40 @@ function PantallaBanco({ d }) {
 // ───────────────────────── 5 · Gestoría ─────────────────────────
 // Ajustes › Tu gestoría (como components/Gestoria.js): sus datos, mandar el paquete del trimestre y darle acceso a Fisquo.
 function PantallaGestoria({ d }) {
+  const tr = useT();
   const g = d.gestoria;
   const [enviado, setEnviado] = useState(false);
   return (
     <Movil titulo="Tu gestoría" activa="mas">
       <Volver>Ajustes</Volver>
-      <h3 className="dmo-h1">Tu gestoría</h3>
+      <h3 className="dmo-h1">{tr('Tu gestoría')}</h3>
       <div className="dmo-tarjeta">
-        <h4 className="dmo-h2 med">Datos de tu gestoría</h4>
-        <div className="dmo-eti"><span>Nombre</span><div className="dmo-campo gris">Gestoría Pons</div></div>
-        <div className="dmo-eti"><span>Email</span><div className="dmo-campo gris">gestoria@ejemplo.es</div></div>
+        <h4 className="dmo-h2 med">{tr('Datos de tu gestoría')}</h4>
+        <div className="dmo-eti"><span>{tr('Nombre')}</span><div className="dmo-campo gris">Gestoría Pons</div></div>
+        <div className="dmo-eti"><span>{tr('Email')}</span><div className="dmo-campo gris">gestoria@ejemplo.es</div></div>
       </div>
-      <h4 className="dmo-h2">Mandar el paquete ahora</h4>
+      <h4 className="dmo-h2">{tr('Mandar el paquete ahora')}</h4>
       <div className="dmo-tarjeta">
-        <div className="dmo-eti"><span>Trimestre</span><div className="dmo-campo gris sel">3T 2026</div></div>
-        {enviado ? <span className="dmo-boton gris" aria-hidden>Mandar a la gestoría</span> : <button type="button" className="dmo-boton" onClick={() => setEnviado(true)}>Mandar a la gestoría</button>}
-        <span className="dmo-boton suave" aria-hidden>Descargar</span>
-        {enviado && <p className="dmo-nota ok" role="status">✓ Enviado a gestoria@ejemplo.es</p>}
+        <div className="dmo-eti"><span>{tr('Trimestre')}</span><div className="dmo-campo gris sel">3T 2026</div></div>
+        {enviado ? <span className="dmo-boton gris" aria-hidden>{tr('Mandar a la gestoría')}</span> : <button type="button" className="dmo-boton" onClick={() => setEnviado(true)}>{tr('Mandar a la gestoría')}</button>}
+        <span className="dmo-boton suave" aria-hidden>{tr('Descargar')}</span>
+        {enviado && <p className="dmo-nota ok" role="status">{tr('✓ Enviado a {para}', { para: 'gestoria@ejemplo.es' })}</p>}
       </div>
       {enviado ? (
         <>
-          <h4 className="dmo-h2">Lo que lleva el paquete</h4>
+          <h4 className="dmo-h2">{tr('Lo que lleva el paquete')}</h4>
           <ul className="dmo-lista" aria-live="polite">
-            <Fila t="Facturas emitidas" s={`${g.facturas} documentos`}><Pastilla tipo="ok sin">✓</Pastilla></Fila>
-            <Fila t="Gastos con sus justificantes" s={`${g.gastos} documentos`}><Pastilla tipo="ok sin">✓</Pastilla></Fila>
-            {g.nominas > 0 && <Fila t="Nóminas" s={`${g.nominas} empleados`}><Pastilla tipo="ok sin">✓</Pastilla></Fila>}
+            <Fila t="Facturas emitidas" s={tr('{n} documentos', { n: g.facturas })}><Pastilla tipo="ok sin">✓</Pastilla></Fila>
+            <Fila t="Gastos con sus justificantes" s={tr('{n} documentos', { n: g.gastos })}><Pastilla tipo="ok sin">✓</Pastilla></Fila>
+            {g.nominas > 0 && <Fila t="Nóminas" s={tr('{n} empleados', { n: g.nominas })}><Pastilla tipo="ok sin">✓</Pastilla></Fila>}
             <Fila t={g.modelos} s={g.modelosS}><Pastilla tipo="ok sin">✓</Pastilla></Fila>
           </ul>
-          <p className="dmo-pie-t">En Excel y en PDF. Tu gestoría revisa y presenta como siempre, sin perseguirte por los papeles.</p>
-          <button type="button" className="dmo-enlace" onClick={() => setEnviado(false)}>Volver a empezar</button>
+          <p className="dmo-pie-t">{tr('En Excel y en PDF. Tu gestoría revisa y presenta como siempre, sin perseguirte por los papeles.')}</p>
+          <button type="button" className="dmo-enlace" onClick={() => setEnviado(false)}>{tr('Volver a empezar')}</button>
         </>
       ) : (
         <>
-          <h4 className="dmo-h2">Acceso a Fisquo</h4>
+          <h4 className="dmo-h2">{tr('Acceso a Fisquo')}</h4>
           <ul className="dmo-lista">
             <Fila t="Invitar a tu gestoría" s={g.acceso}><Ico n="derecha" className="dmo-i chev" /></Fila>
           </ul>
@@ -448,6 +465,7 @@ const pasos = (perfil) => {
 };
 
 export default function Recorrido() {
+  const tr = useT();
   const [perfil, setPerfil] = useState('aut');
   const [i, setI] = useState(0);
   const botones = useRef([]);
@@ -468,16 +486,16 @@ export default function Recorrido() {
   return (
     <div className="dmo">
       <div className="dmo-perfil">
-        <span id="dmo-perfil-t">Mira el ejemplo de</span>
+        <span id="dmo-perfil-t">{tr('Mira el ejemplo de')}</span>
         <div className="dmo-perfil-b" role="group" aria-labelledby="dmo-perfil-t">
-          {Object.entries(PERFILES).map(([k, x]) => <button key={k} type="button" aria-pressed={perfil === k} className={perfil === k ? 'on' : undefined} onClick={() => setPerfil(k)}>{x.nombre}</button>)}
+          {Object.entries(PERFILES).map(([k, x]) => <button key={k} type="button" aria-pressed={perfil === k} className={perfil === k ? 'on' : undefined} onClick={() => setPerfil(k)}>{tr(x.nombre)}</button>)}
         </div>
       </div>
 
-      <div className="dmo-pasos" role="tablist" aria-label="Pasos de la demo">
+      <div className="dmo-pasos" role="tablist" aria-label={tr('Pasos de la demo')}>
         {PASOS.map((x, k) => (
           <button key={x.id} id={`dmo-tab-${x.id}`} type="button" role="tab" aria-selected={k === i} aria-controls="dmo-panel" tabIndex={k === i ? 0 : -1} ref={(el) => { botones.current[k] = el; }} className={k === i ? 'on' : k < i ? 'hecho' : undefined} onKeyDown={(e) => teclas(e, k)} onClick={() => setI(k)}>
-            <span className="dmo-pasos-n" aria-hidden>{k + 1}</span><span className="dmo-pasos-t">{x.t}</span>
+            <span className="dmo-pasos-n" aria-hidden>{k + 1}</span><span className="dmo-pasos-t">{tr(x.t)}</span>
           </button>
         ))}
       </div>
@@ -485,27 +503,27 @@ export default function Recorrido() {
       <div id="dmo-panel" role="tabpanel" aria-labelledby={`dmo-tab-${p.id}`} className="dmo-escena">
         <div className="dmo-explica">
           <div className="dmo-explica-a">
-            <p className="web-kicker">Paso {i + 1} de {PASOS.length}</p>
-            <h2>{p.titulo}</h2>
-            <p className="dmo-d">{p.d}</p>
+            <p className="web-kicker">{tr('Paso {n} de {total}', { n: i + 1, total: PASOS.length })}</p>
+            <h2>{tr(p.titulo)}</h2>
+            <p className="dmo-d">{tr(p.d)}</p>
           </div>
           <div className="dmo-explica-b">
-            <ul className="web-lista">{p.puntos.map((x) => <li key={x}><Icono n="tic" /><span>{x}</span></li>)}</ul>
-            <Link href={p.href} className="web-enlace">Saber más sobre {p.sobre}<Icono n="flecha" className="ico web-flecha" /></Link>
+            <ul className="web-lista">{p.puntos.map((x) => <li key={x}><Icono n="tic" /><span>{tr(x)}</span></li>)}</ul>
+            <Link href={p.href} className="web-enlace">{tr('Saber más sobre {tema}', { tema: tr(p.sobre) })}<Icono n="flecha" className="ico web-flecha" /></Link>
           </div>
         </div>
         <div className="dmo-vis">
           <p.Pantalla key={`${perfil}-${p.id}`} d={d} />
-          <p className="dmo-aviso">Datos ficticios de ejemplo ({d.corto}). No se guarda nada.</p>
+          <p className="dmo-aviso">{tr('Datos ficticios de ejemplo ({perfil}). No se guarda nada.', { perfil: tr(d.corto) })}</p>
         </div>
       </div>
 
       <div className="dmo-nav">
-        <button type="button" className="web-btn web-btn-oscuro" onClick={() => ir(i - 1)} disabled={i === 0} aria-label={i === 0 ? 'Paso anterior' : `Paso anterior: ${PASOS[i - 1].t}`}>Anterior</button>
-        <p className="dmo-estado" role="status" aria-live="polite">Paso {i + 1} de {PASOS.length}: {p.t}</p>
+        <button type="button" className="web-btn web-btn-oscuro" onClick={() => ir(i - 1)} disabled={i === 0} aria-label={i === 0 ? tr('Paso anterior') : tr('Paso anterior: {paso}', { paso: tr(PASOS[i - 1].t) })}>{tr('Anterior')}</button>
+        <p className="dmo-estado" role="status" aria-live="polite">{tr('Paso {n} de {total}: {paso}', { n: i + 1, total: PASOS.length, paso: tr(p.t) })}</p>
         {ultimo
-          ? <Link href="/registro" className="web-btn">Empieza gratis<Icono n="flecha" className="ico web-flecha" /></Link>
-          : <button type="button" className="web-btn" onClick={() => ir(i + 1)} aria-label={`Siguiente paso: ${PASOS[i + 1].t}`}>Siguiente<Icono n="flecha" className="ico web-flecha" /></button>}
+          ? <Link href="/registro" className="web-btn">{tr('Empieza gratis')}<Icono n="flecha" className="ico web-flecha" /></Link>
+          : <button type="button" className="web-btn" onClick={() => ir(i + 1)} aria-label={tr('Siguiente paso: {paso}', { paso: tr(PASOS[i + 1].t) })}>{tr('Siguiente')}<Icono n="flecha" className="ico web-flecha" /></button>}
       </div>
     </div>
   );

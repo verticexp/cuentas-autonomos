@@ -2,12 +2,17 @@ import Icono from '@/components/web/Icono';
 import FormContacto from '@/components/web/FormContacto';
 import { CONTACTO } from '@/components/web/datos';
 import { OFERTA, TARIFA, TARIFA_LANZAMIENTO, plazasLibres } from '@/lib/licencias';
+import { textos } from '@/lib/idiomaServidor';
+import { conHuecos } from '@/lib/huecos';
 
 // Las plazas de la oferta de lanzamiento se recuentan cada 10 minutos.
 export const revalidate = 600;
 const euros = (cent) => `${String(cent / 100).replace('.', ',')} €`;
 
-export const metadata = { title: 'Programa para gestorías · Fisquo', description: 'Programa de gestorías partner: un panel con todos tus clientes, el trimestre revisado y cerrado, preguntas al cliente y exportación a A3, ContaPlus o ContaSol. Gratis para la gestoría y 3 meses gratis para sus clientes.' };
+export async function generateMetadata() {
+  const tr = await textos();
+  return { title: tr('Programa para gestorías · Fisquo'), description: tr('Programa de gestorías partner: un panel con todos tus clientes, el trimestre revisado y cerrado, preguntas al cliente y exportación a A3, ContaPlus o ContaSol. Gratis para la gestoría y 3 meses gratis para sus clientes.') };
+}
 
 const PASOS = [
   ['Te apuntas', 'Nos dejas tus datos y te escribimos para conocer tu gestoría.'],
@@ -25,22 +30,23 @@ const VENTAJAS = [
 ];
 
 export default async function Gestorias() {
+  const tr = await textos();
   const plazas = await plazasLibres().catch(() => null);
   return (
     <section className="web-contacto">
       <div className="web-contacto-txt">
-        <p className="web-kicker web-entra">Gestorías partner</p>
-        <h1 className="web-entra" style={{ '--d': '60ms' }}>Tus autónomos, con las cuentas al día <em>antes de que se las pidas</em></h1>
-        <p className="web-sub web-entra" style={{ '--d': '120ms' }}>Fisquo ayuda a tus clientes a llevar sus ingresos y gastos durante el trimestre. Tú recibes la información ordenada y dedicas el tiempo a asesorar.</p>
+        <p className="web-kicker web-entra">{tr('Gestorías partner')}</p>
+        <h1 className="web-entra" style={{ '--d': '60ms' }}>{conHuecos(tr('Tus autónomos, con las cuentas al día {resalte}'), { resalte: <em>{tr('antes de que se las pidas')}</em> })}</h1>
+        <p className="web-sub web-entra" style={{ '--d': '120ms' }}>{tr('Fisquo ayuda a tus clientes a llevar sus ingresos y gastos durante el trimestre. Tú recibes la información ordenada y dedicas el tiempo a asesorar.')}</p>
         <ol className="web-contacto-pasos">
-          {PASOS.map(([t, d], i) => <li key={t} className="web-entra" style={{ '--d': `${180 + i * 70}ms` }}><b>{t}</b><span>{d}</span></li>)}
+          {PASOS.map(([t, d], i) => <li key={t} className="web-entra" style={{ '--d': `${180 + i * 70}ms` }}><b>{tr(t)}</b><span>{tr(d)}</span></li>)}
         </ol>
         <ul className="web-gestorias-ventajas web-entra" style={{ '--d': '390ms' }}>
-          {VENTAJAS.map((v) => <li key={v}><Icono n="tic" />{v}</li>)}
+          {VENTAJAS.map((v) => <li key={v}><Icono n="tic" />{tr(v)}</li>)}
         </ul>
         {plazas !== 0 && <div className="web-gestorias-oferta web-entra" style={{ '--d': '420ms' }}>
-          <p><b>Oferta de lanzamiento{plazas ? `: quedan ${plazas} de ${OFERTA.plazas} plazas` : ` para las ${OFERTA.plazas} primeras gestorías`}</b></p>
-          <p>Si incluyes Fisquo en la cuota de tus clientes, pagas {euros(TARIFA_LANZAMIENTO.aut[0].cent)} al mes por autónomo y {euros(TARIFA_LANZAMIENTO.pym[0].cent)} por pyme (en lugar de {euros(TARIFA.aut[0].cent)} y {euros(TARIFA.pym[0].cent)}), sin IVA, durante {OFERTA.anios} años. Cada cliente tiene además sus 3 primeros meses gratis.</p>
+          <p><b>{plazas ? tr('Oferta de lanzamiento: quedan {plazas} de {total} plazas', { plazas, total: OFERTA.plazas }) : tr('Oferta de lanzamiento para las {total} primeras gestorías', { total: OFERTA.plazas })}</b></p>
+          <p>{tr('Si incluyes Fisquo en la cuota de tus clientes, pagas {autonomo} al mes por autónomo y {pyme} por pyme (en lugar de {autonomoNormal} y {pymeNormal}), sin IVA, durante {anios} años. Cada cliente tiene además sus 3 primeros meses gratis.', { autonomo: euros(TARIFA_LANZAMIENTO.aut[0].cent), pyme: euros(TARIFA_LANZAMIENTO.pym[0].cent), autonomoNormal: euros(TARIFA.aut[0].cent), pymeNormal: euros(TARIFA.pym[0].cent), anios: OFERTA.anios })}</p>
         </div>}
         <a className="web-contacto-mail web-entra" style={{ '--d': '440ms' }} href={`mailto:${CONTACTO}`}><Icono n="correo" />{CONTACTO}</a>
       </div>
