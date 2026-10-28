@@ -1,7 +1,12 @@
 import Icono from '@/components/web/Icono';
 import { Cta, Encabezado } from '@/components/web/Bloques';
+import { textos } from '@/lib/idiomaServidor';
+import { conHuecos } from '@/lib/huecos';
 
-export const metadata = { title: 'Cálculos verificados · Fisquo', description: 'Cómo se comprueban los cálculos fiscales de Fisquo: 1.000 empresas simuladas, recalculadas por otro camino y comparadas céntimo a céntimo antes de cada versión.' };
+export async function generateMetadata() {
+  const tr = await textos();
+  return { title: tr('Cálculos verificados · Fisquo'), description: tr('Cómo se comprueban los cálculos fiscales de Fisquo: 1.000 empresas simuladas, recalculadas por otro camino y comparadas céntimo a céntimo antes de cada versión.') };
+}
 
 const CIFRAS = [
   { n: 1000, t: 'empresas simuladas', d: 'Autónomos y sociedades ficticias' },
@@ -31,13 +36,14 @@ const COMPARA = [
   { i: 'reloj', t: 'Plazos', d: 'Los plazos de cada modelo nunca caen en fin de semana.' },
 ];
 
-export default function Verificado() {
+export default async function Verificado() {
+  const tr = await textos();
   return (
     <>
       <section className="web-hero-pag centro">
         <span className="web-fcard-ico grande web-entra"><Icono n="tic" /></span>
-        <h1 className="web-entra" style={{ '--d': '60ms' }}>Cada versión de Fisquo se comprueba <em>antes de publicarse.</em></h1>
-        <p className="web-sub web-entra" style={{ '--d': '120ms' }}>Antes de publicar cualquier cambio, Fisquo recalcula miles de operaciones por otro camino y las compara con las suyas. Así sabemos que los cálculos no se han roto.</p>
+        <h1 className="web-entra" style={{ '--d': '60ms' }}>{conHuecos(tr('Cada versión de Fisquo se comprueba {resalte}'), { resalte: <em>{tr('antes de publicarse.')}</em> })}</h1>
+        <p className="web-sub web-entra" style={{ '--d': '120ms' }}>{tr('Antes de publicar cualquier cambio, Fisquo recalcula miles de operaciones por otro camino y las compara con las suyas. Así sabemos que los cálculos no se han roto.')}</p>
       </section>
 
       <section className="web-sec web-sec-pegada">
@@ -45,7 +51,7 @@ export default function Verificado() {
           {CIFRAS.map((c, i) => (
             <div key={c.t} data-r style={{ '--d': `${i * 70}ms` }}>
               <b>{c.pre && <i>{c.pre}</i>}<span data-contar={c.n}>{c.n.toLocaleString('es-ES', { useGrouping: 'always' })}</span></b>
-              <p>{c.t}</p><small>{c.d}</small>
+              <p>{tr(c.t)}</p><small>{tr(c.d)}</small>
             </div>
           ))}
         </div>
@@ -54,12 +60,12 @@ export default function Verificado() {
       <section className="web-sec">
         <div className="web-mudanza" data-r>
           <div>
-            <p className="web-kicker">Cómo se comprueba</p>
-            <h2>1.000 empresas que no existen, con casos que sí pasan</h2>
-            <p>Una batería de pruebas simula 1.000 empresas ficticias, autónomos y sociedades. Cada una se recalcula por otro camino, en céntimos enteros, y se compara con lo que calcula Fisquo.</p>
+            <p className="web-kicker">{tr('Cómo se comprueba')}</p>
+            <h2>{tr('1.000 empresas que no existen, con casos que sí pasan')}</h2>
+            <p>{tr('Una batería de pruebas simula 1.000 empresas ficticias, autónomos y sociedades. Cada una se recalcula por otro camino, en céntimos enteros, y se compara con lo que calcula Fisquo.')}</p>
           </div>
           <ol>
-            {SIMULA.map((s) => <li key={s}><b>{s}</b></li>)}
+            {SIMULA.map((s) => <li key={s}><b>{tr(s)}</b></li>)}
           </ol>
         </div>
       </section>
@@ -70,7 +76,7 @@ export default function Verificado() {
           {COMPARA.map((m, k) => (
             <div key={m.t} data-foco data-r style={{ '--d': `${(k % 3) * 70}ms` }}>
               <span className="web-fcard-ico"><Icono n={m.i} /></span>
-              <b>{m.t}</b><p>{m.d}</p>
+              <b>{tr(m.t)}</b><p>{tr(m.d)}</p>
             </div>
           ))}
         </div>

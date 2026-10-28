@@ -1,22 +1,24 @@
 import Link from '@/components/web/EnlacePublico';
 import Icono from '@/components/web/Icono';
 import { CONFIANZA } from '@/components/web/datos';
+import { textos } from '@/lib/idiomaServidor';
 
 // Piezas comunes de las páginas públicas.
-
 export const Flecha = () => <Icono n="flecha" className="ico web-flecha" />;
 
-export function Encabezado({ kicker, titulo, sub, centro, claro }) {
+export async function Encabezado({ kicker, titulo, sub, centro, claro }) {
+  const tr = await textos();
   return (
     <div className={`web-enc${centro ? ' centro' : ''}${claro ? ' claro' : ''}`}>
-      {kicker && <p className="web-kicker" data-r>{kicker}</p>}
-      <h2 data-r style={{ '--d': '60ms' }}>{titulo}</h2>
-      {sub && <p className="web-enc-sub" data-r style={{ '--d': '120ms' }}>{sub}</p>}
+      {kicker && <p className="web-kicker" data-r>{tr(kicker)}</p>}
+      <h2 data-r style={{ '--d': '60ms' }}>{tr(titulo)}</h2>
+      {sub && <p className="web-enc-sub" data-r style={{ '--d': '120ms' }}>{tr(sub)}</p>}
     </div>
   );
 }
 
-export function Faq({ preguntas, titulo = 'Preguntas frecuentes' }) {
+export async function Faq({ preguntas, titulo = 'Preguntas frecuentes' }) {
+  const tr = await textos();
   return (
     <section className="web-sec web-faq">
       <div className="web-faq-in">
@@ -24,8 +26,8 @@ export function Faq({ preguntas, titulo = 'Preguntas frecuentes' }) {
         <div data-r>
           {preguntas.map(([q, a]) => (
             <details key={q}>
-              <summary>{q}<span className="web-faq-mas"><Icono n="mas" /></span></summary>
-              <div className="web-faq-r"><p>{a}</p></div>
+              <summary>{tr(q)}<span className="web-faq-mas"><Icono n="mas" /></span></summary>
+              <div className="web-faq-r"><p>{tr(a)}</p></div>
             </details>
           ))}
         </div>
@@ -34,22 +36,24 @@ export function Faq({ preguntas, titulo = 'Preguntas frecuentes' }) {
   );
 }
 
-export function Cta({ titulo = 'Empieza a ver tu dinero con claridad', sub = '30 días gratis, sin tarjeta y sin permanencia. Te ayudamos a traer tus datos.', otro = ['/precios', 'Ver precios'] }) {
+export async function Cta({ titulo = 'Empieza a ver tu dinero con claridad', sub = '30 días gratis, sin tarjeta y sin permanencia. Te ayudamos a traer tus datos.', otro = ['/precios', 'Ver precios'] }) {
+  const tr = await textos();
   return (
     <section className="web-cta-final" data-r>
       <div className="web-cta-brillo" aria-hidden />
-      <h2>{titulo}</h2>
-      <p>{sub}</p>
+      <h2>{tr(titulo)}</h2>
+      <p>{tr(sub)}</p>
       <div className="web-cta-btns">
-        <Link href="/registro" className="web-btn web-btn-grande">Empieza gratis <Flecha /></Link>
-        <Link href={otro[0]} className="web-btn web-btn-claro web-btn-grande">{otro[1]}</Link>
+        <Link href="/registro" className="web-btn web-btn-grande">{tr('Empieza gratis')} <Flecha /></Link>
+        <Link href={otro[0]} className="web-btn web-btn-claro web-btn-grande">{tr(otro[1])}</Link>
       </div>
     </section>
   );
 }
 
 // Lo que pasa con sus datos y con la IA, donde se decide (portada y precios); el detalle está en /seguridad.
-export function Confianza({ titulo = 'Tus números, a salvo y siempre tuyos' }) {
+export async function Confianza({ titulo = 'Tus números, a salvo y siempre tuyos' }) {
+  const tr = await textos();
   return (
     <section className="web-sec">
       <Encabezado kicker="Tus datos" titulo={titulo} sub="Es lo primero que nos preguntan antes de subir la primera factura. Esto es lo que hace Fisquo con ellos." />
@@ -57,15 +61,16 @@ export function Confianza({ titulo = 'Tus números, a salvo y siempre tuyos' }) 
         {CONFIANZA.map((c, k) => (
           <div key={c.t} data-foco data-r style={{ '--d': `${k * 70}ms` }}>
             <span className="web-fcard-ico"><Icono n={c.i} /></span>
-            <b>{c.t}</b><p>{c.d}</p>
+            <b>{tr(c.t)}</b><p>{tr(c.d)}</p>
           </div>
         ))}
       </div>
-      <p className="web-centro"><Link href="/seguridad" className="web-enlace">Cómo protege Fisquo tus datos<Flecha /></Link></p>
+      <p className="web-centro"><Link href="/seguridad" className="web-enlace">{tr('Cómo protege Fisquo tus datos')}<Flecha /></Link></p>
     </section>
   );
 }
 
-export function Lista({ items, className = 'web-lista' }) {
-  return <ul className={className}>{items.map((x) => <li key={x}><Icono n="tic" />{x}</li>)}</ul>;
+export async function Lista({ items, className = 'web-lista' }) {
+  const tr = await textos();
+  return <ul className={className}>{items.map((x) => <li key={x}><Icono n="tic" />{tr(x)}</li>)}</ul>;
 }

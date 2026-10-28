@@ -1,9 +1,11 @@
 import { Encabezado } from '@/components/web/Bloques';
 import { pruebaSocial } from '@/lib/webSocial';
+import { textos } from '@/lib/idiomaServidor';
 
 // Opiniones, casos, gestorías y nota del fundador. Todo sale de data/web-social.js y solo se pinta lo que tiene datos:
 // con el archivo vacío (hoy), este componente no devuelve nada. No añadir textos de relleno aquí.
-export default function PruebaSocial() {
+export default async function PruebaSocial() {
+  const tr = await textos();
   const s = pruebaSocial();
   if (!s.hay) return null;
   return (
@@ -43,8 +45,8 @@ export default function PruebaSocial() {
               <article key={`${c.empresa}-${i}`} data-foco data-r style={{ '--d': `${(i % 2) * 70}ms` }}>
                 <h3>{c.empresa}</h3>
                 {c.sector && <small>{c.sector}</small>}
-                <p><b>Antes</b>{c.problema}</p>
-                <p><b>Ahora</b>{c.resultado}</p>
+                <p><b>{tr('Antes')}</b>{c.problema}</p>
+                <p><b>{tr('Ahora')}</b>{c.resultado}</p>
               </article>
             ))}
           </div>
@@ -54,7 +56,7 @@ export default function PruebaSocial() {
       {s.gestorias.length > 0 && (
         <section className="web-sec">
           <div className="web-gestorias-logos" data-r>
-            <p>Gestorías que trabajan con Fisquo</p>
+            <p>{tr('Gestorías que trabajan con Fisquo')}</p>
             <ul>{s.gestorias.map((g, i) => <li key={`${g.nombre}-${i}`}>{g.logo ? <img src={g.logo} alt={g.nombre} height="32" loading="lazy" decoding="async" /> : g.nombre}</li>)}</ul>
           </div>
         </section>
