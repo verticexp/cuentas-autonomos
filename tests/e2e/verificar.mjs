@@ -1816,13 +1816,16 @@ console.log('Ajustes nuevos: perfil, empresa, cobros, diseño, email de envío, 
   // Desde el 24-10-2026 Ajustes enseña un valor corto a la derecha de cada fila (como el iPhone); el Bizum, en su pantalla.
   ok('Datos de la empresa conserva lo de Cobros, y Ajustes lo resume', () => assert.ok(sDatos === 200 && aj.includes('Cobros 45 días') && cob.includes('600 123 456') && aj.includes('Gestoría Prueba') && aj.includes('Email de envío Propio'), aj.slice(0, 400)));
   const [sNumMal] = await patch({ numeracion: { serie: 'NO', anio: Y, siguiente: 50 } });
-  const [sNum, rNum] = await patch({ numeracion: { serie: '', anio: Y, siguiente: 500 } });
-  const [sAtras] = await patch({ numeracion: { serie: '', anio: Y, siguiente: 10 } });
-  ok('Series: la siguiente factura puede saltar hacia delante, nunca hacia atrás', () => assert.deepEqual([sNumMal, sNum, rNum.siguiente, sAtras], [400, 200, 500, 400]));
-  const fNum = (await (await pedir('/api/facturas', { metodo: 'POST', cookie: yo, cuerpo: { fecha: hoy, cliente: { nombre: 'Cliente Salto', nif: 'B44444446', direccion: 'C/ Salto 1' }, concepto: 'Tras el salto', base: '10', ivaPct: 21 } })).json()).factura;
-  ok('y la siguiente factura lleva ese número', () => assert.equal(fNum?.numero, 500, JSON.stringify(fNum)));
+  // Desde la auditoría del 28-10-2026, saltar solo se puede en una serie y año sin facturas emitidas (dejaría un hueco):
+  // este año ya las hay; el que viene, no.
+  const [sHueco, rHueco] = await patch({ numeracion: { serie: '', anio: Y, siguiente: 500 } });
+  const [sAtras] = await patch({ numeracion: { serie: '', anio: Y, siguiente: 1 } });
+  const [sNum, rNum] = await patch({ numeracion: { serie: '', anio: Y + 1, siguiente: 500 } });
+  ok('Series: la siguiente factura puede saltar hacia delante en un año sin facturas, nunca hacia atrás ni dejando un hueco', () => assert.deepEqual([sNumMal, sHueco, /hueco/.test(rHueco.error || ''), sAtras, sNum, rNum.siguiente], [400, 400, true, 400, 200, 500]));
+  const fNum = (await (await pedir('/api/facturas', { metodo: 'POST', cookie: yo, cuerpo: { fecha: hoy, cliente: { nombre: 'Cliente Salto', nif: 'B44444446', direccion: 'C/ Salto 1' }, concepto: 'Tras el intento de salto', base: '10', ivaPct: 21 } })).json()).factura;
+  ok('y la siguiente factura de este año sigue la numeración', () => assert.ok(fNum?.numero > 1 && fNum.numero < 500, JSON.stringify(fNum)));
   const ser = n(await texto('/ajustes/series', yo));
-  ok('la pantalla de Series enseña el siguiente número', () => assert.ok(ser.includes(`501-${Y}`), ser.slice(0, 400)));
+  ok('la pantalla de Series enseña el siguiente número', () => assert.ok(ser.includes(`${String(fNum?.numero + 1).padStart(2, '0')}-${Y}`), ser.slice(0, 400)));
   if (process.env.RESEND_URL) {
     rmSync('/tmp/resend.json', { force: true });
     const env = await pedir('/api/paquete', { metodo: 'POST', cookie: yo, cuerpo: { anio: Y, t: 1 } });
