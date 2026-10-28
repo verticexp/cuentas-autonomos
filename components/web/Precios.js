@@ -86,7 +86,6 @@ export default function Precios({ inicial = 'aut', tabla = false, solo = false }
 
       <article data-foco className="web-medida">
         <div>
-          <span className="web-medida-ico"><Icono n="rayo" /></span>
           <h3>Business</h3>
           <p>{tr('¿Gestionas varias sociedades o necesitas otro equipo? Acordamos el alcance y un precio cerrado contigo.')}</p>
         </div>

@@ -22,7 +22,7 @@ export default async function PruebaSocial() {
 
       {s.opiniones.length > 0 && (
         <section className="web-sec">
-          <Encabezado kicker="Opiniones" titulo="Lo que cuentan quienes ya lo usan" />
+          <Encabezado titulo="Lo que cuentan quienes ya lo usan" />
           <div className="web-opiniones">
             {s.opiniones.map((o, i) => (
               <figure key={`${o.nombre}-${i}`} data-foco data-r style={{ '--d': `${(i % 3) * 70}ms` }}>
@@ -39,7 +39,7 @@ export default async function PruebaSocial() {
 
       {s.casos.length > 0 && (
         <section className="web-sec">
-          <Encabezado kicker="Casos" titulo="Cómo les ha cambiado el día a día" />
+          <Encabezado titulo="Cómo les ha cambiado el día a día" />
           <div className="web-casos">
             {s.casos.map((c, i) => (
               <article key={`${c.empresa}-${i}`} data-foco data-r style={{ '--d': `${(i % 2) * 70}ms` }}>

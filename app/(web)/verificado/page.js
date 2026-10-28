@@ -1,4 +1,3 @@
-import Icono from '@/components/web/Icono';
 import { Cta, Encabezado } from '@/components/web/Bloques';
 import { textos } from '@/lib/idiomaServidor';
 import { conHuecos } from '@/lib/huecos';
@@ -41,7 +40,6 @@ export default async function Verificado() {
   return (
     <>
       <section className="web-hero-pag centro">
-        <span className="web-fcard-ico grande web-entra"><Icono n="tic" /></span>
         <h1 className="web-entra" style={{ '--d': '60ms' }}>{conHuecos(tr('Cada versión de Fisquo se comprueba {resalte}'), { resalte: <em>{tr('antes de publicarse.')}</em> })}</h1>
         <p className="web-sub web-entra" style={{ '--d': '120ms' }}>{tr('Antes de publicar cualquier cambio, Fisquo recalcula miles de operaciones por otro camino y las compara con las suyas. Así sabemos que los cálculos no se han roto.')}</p>
       </section>
@@ -60,7 +58,6 @@ export default async function Verificado() {
       <section className="web-sec">
         <div className="web-mudanza" data-r>
           <div>
-            <p className="web-kicker">{tr('Cómo se comprueba')}</p>
             <h2>{tr('1.000 empresas que no existen, con casos que sí pasan')}</h2>
             <p>{tr('Una batería de pruebas simula 1.000 empresas ficticias, autónomos y sociedades. Cada una se recalcula por otro camino, en céntimos enteros, y se compara con lo que calcula Fisquo.')}</p>
           </div>
@@ -71,11 +68,10 @@ export default async function Verificado() {
       </section>
 
       <section className="web-sec">
-        <Encabezado kicker="Qué se compara" titulo="Lo que tiene que coincidir, céntimo a céntimo" sub="Más de 470.000 comprobaciones en cada versión, con cero diferencias." />
+        <Encabezado titulo="Lo que tiene que coincidir, céntimo a céntimo" sub="Más de 470.000 comprobaciones en cada versión, con cero diferencias." />
         <div className="web-extras tres">
           {COMPARA.map((m, k) => (
             <div key={m.t} data-foco data-r style={{ '--d': `${(k % 3) * 70}ms` }}>
-              <span className="web-fcard-ico"><Icono n={m.i} /></span>
               <b>{tr(m.t)}</b><p>{tr(m.d)}</p>
             </div>
           ))}
@@ -83,11 +79,11 @@ export default async function Verificado() {
       </section>
 
       <section className="web-sec">
-        <Encabezado kicker="Antes de publicar" titulo="Si una sola prueba falla, no sale" sub="Además de la batería de empresas, hay más de 1.400 pruebas automáticas y más de 440 comprobaciones de extremo a extremo, que usan la app como un cliente real. Nada se publica si una sola falla." />
+        <Encabezado titulo="Si una sola prueba falla, no sale" sub="Además de la batería de empresas, hay más de 1.400 pruebas automáticas y más de 440 comprobaciones de extremo a extremo, que usan la app como un cliente real. Nada se publica si una sola falla." />
       </section>
 
       <section className="web-sec">
-        <Encabezado kicker="Con honestidad" titulo="Lo que Fisquo no hace por ti" sub="Los modelos son borradores: conviene revisarlos con tu gestor antes de presentarlos, y Fisquo no los presenta por ti en la Agencia Tributaria. En el País Vasco las facturas tienen que salir de un programa con TicketBAI, y Fisquo aún no lo es." />
+        <Encabezado titulo="Lo que Fisquo no hace por ti" sub="Los modelos son borradores: conviene revisarlos con tu gestor antes de presentarlos, y Fisquo no los presenta por ti en la Agencia Tributaria. En el País Vasco las facturas tienen que salir de un programa con TicketBAI, y Fisquo aún no lo es." />
       </section>
 
       <Cta titulo="¿Quieres ver cómo calcula Fisquo?" sub="Pruébalo gratis y compara los modelos con los tuyos. Si tienes dudas, escríbenos." otro={['/contacto', 'Hablar con nosotros']} />

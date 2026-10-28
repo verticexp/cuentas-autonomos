@@ -17,7 +17,6 @@ export default function AvisoLegal() {
   return (
     <>
       <section className="web-hero-pag">
-        <p className="web-kicker web-entra">Información legal</p>
         <h1 className="web-entra" style={{ '--d': '60ms' }}>Aviso legal</h1>
         <p className="web-sub web-entra" style={{ '--d': '120ms' }}>Datos del titular de fisquo.com, en cumplimiento del artículo 10 de la Ley 34/2002, de servicios de la sociedad de la información y de comercio electrónico.</p>
       </section>

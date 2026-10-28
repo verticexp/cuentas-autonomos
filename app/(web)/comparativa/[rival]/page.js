@@ -43,7 +43,7 @@ export default async function PaginaComparativa({ params }) {
       </section>
 
       <section className="web-sec">
-        <Encabezado kicker="Precios publicados" titulo="Cuánto cuesta cada uno" sub={`Los importes de ${r.nombre} son los que publica en su web; revisa allí si llevan IVA y qué incluye cada plan. Los de Fisquo no incluyen IVA.`} />
+        <Encabezado titulo="Cuánto cuesta cada uno" sub={`Los importes de ${r.nombre} son los que publica en su web; revisa allí si llevan IVA y qué incluye cada plan. Los de Fisquo no incluyen IVA.`} />
         <div className="web-duo">
           <div data-foco data-r>
             <h3>Fisquo</h3>
@@ -68,7 +68,7 @@ export default async function PaginaComparativa({ params }) {
       </section>
 
       <section className="web-sec">
-        <Encabezado kicker="La pregunta de verdad" titulo="¿Cuál te conviene?" />
+        <Encabezado titulo="¿Cuál te conviene?" />
         <div className="web-conviene-par">
           <Conviene titulo={`Te conviene ${r.nombre} si…`} items={r.convieneRival} />
           <Conviene titulo="Te conviene Fisquo si…" items={r.convieneFisquo} destacado />
@@ -82,22 +82,19 @@ export default async function PaginaComparativa({ params }) {
       <Faq preguntas={r.faqs.map(([q, a]) => [q, rellenar(a)])} titulo={`Dudas sobre Fisquo y ${r.nombre}`} />
 
       <section className="web-sec">
-        <Encabezado kicker="Sigue comparando" titulo="Más para decidir" />
+        <Encabezado titulo="Más para decidir" />
         <div className="web-relacionadas">
           <Link href={`/comparativa/${otro.slug}`} data-foco data-r className="web-fcard">
-            <span className="web-fcard-ico"><Icono n="tienda" /></span>
             <h3>{otro.titulo}</h3>
             <p>{rellenar(otro.intro)}</p>
             <span className="web-enlace">Ver la comparativa<Flecha /></span>
           </Link>
           <Link href="/demo" data-foco data-r className="web-fcard" style={{ '--d': '70ms' }}>
-            <span className="web-fcard-ico"><Icono n="rayo" /></span>
             <h3>Recorre Fisquo sin registrarte</h3>
             <p>Cinco pasos con datos de ejemplo: factura, gasto leído con IA, impuestos, banco y gestoría.</p>
             <span className="web-enlace">Ver la demo<Flecha /></span>
           </Link>
           <Link href="/contacto" data-foco data-r className="web-fcard" style={{ '--d': '140ms' }}>
-            <span className="web-fcard-ico"><Icono n="importar" /></span>
             <h3>Cámbiate a Fisquo</h3>
             <p>Importa clientes, facturas, gastos, saldos contables y bienes de inversión. Te ayudamos a traer tus datos.</p>
             <span className="web-enlace">Quiero cambiarme<Flecha /></span>

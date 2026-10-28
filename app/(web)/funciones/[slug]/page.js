@@ -27,7 +27,6 @@ export default async function PaginaFuncion({ params }) {
     <>
       <section className="web-hero-pag">
         <nav className="web-migas web-entra" aria-label={tr('Estás en')}><Link href="/funciones">{tr('Funciones')}</Link><Icono n="chevron" /><span>{tr(f.nombre)}</span></nav>
-        <span className="web-fcard-ico grande web-entra" style={{ '--d': '40ms' }}><Icono n={f.icono} /></span>
         <h1 className="web-entra" style={{ '--d': '80ms' }}>{tr(f.titulo)}</h1>
         <p className="web-sub web-entra" style={{ '--d': '140ms' }}>{tr(f.sub)}</p>
         <div className="web-cta web-entra" style={{ '--d': '200ms' }}>
@@ -46,7 +45,6 @@ export default async function PaginaFuncion({ params }) {
         <div className="web-puntos">
           {f.puntos.map((p, k) => (
             <div key={p.t} data-r style={{ '--d': `${k * 80}ms` }}>
-              <span className="web-puntos-n">0{k + 1}</span>
               <h3>{tr(p.t)}</h3>
               <p>{tr(p.d)}</p>
             </div>
@@ -82,11 +80,10 @@ export default async function PaginaFuncion({ params }) {
       <Faq preguntas={f.faqs} titulo={tr('Preguntas sobre {tema}', { tema: tr(f.nombre) })} />
 
       <section className="web-sec">
-        <Encabezado kicker="Sigue explorando" titulo="Funciona mejor junto" />
+        <Encabezado titulo="Funciona mejor junto" />
         <div className="web-relacionadas">
           {otras.map((o, k) => (
             <Link key={o.slug} href={`/funciones/${o.slug}`} data-foco data-r className="web-fcard" style={{ '--d': `${k * 70}ms` }}>
-              <span className="web-fcard-ico"><Icono n={o.icono} /></span>
               <h3>{tr(o.nombre)}</h3>
               <p>{tr(o.corto)}</p>
               <span className="web-enlace">{tr('Descubrir')}<Flecha /></span>

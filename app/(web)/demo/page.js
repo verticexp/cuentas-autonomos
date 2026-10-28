@@ -21,7 +21,6 @@ export default async function Demo() {
   return (
     <>
       <section className="web-hero-pag">
-        <p className="web-kicker web-entra">{tr('Demo')}</p>
         <h1 className="web-entra" style={{ '--d': '60ms' }}>{conHuecos(tr('Recorre Fisquo {resalte}'), { resalte: <em>{tr('sin registrarte')}</em> })}</h1>
         <p className="web-sub web-entra" style={{ '--d': '120ms' }}>{tr('Cinco pasos, dos minutos y datos de ejemplo, como autónomo o como sociedad. Prueba a hacer una factura, leer un ticket con IA, ver tus impuestos, cuadrar el banco y compartirlo con tu gestoría.')}</p>
         <ul className="web-micro web-entra" style={{ '--d': '180ms' }}><li><Icono n="tic" />{tr('Sin registro ni tarjeta')}</li><li><Icono n="tic" />{tr('Datos de ejemplo')}</li><li><Icono n="tic" />{tr('No se guarda nada')}</li></ul>
@@ -32,22 +31,19 @@ export default async function Demo() {
       </section>
 
       <section className="web-sec">
-        <Encabezado kicker="Y mucho más" titulo="Esto es solo el principio" sub="Fisquo también lleva la contabilidad, el inventario, las nóminas y la previsión de caja. Míralo con calma en las funciones o aprende lo básico en nuestras guías." />
+        <Encabezado titulo="Esto es solo el principio" sub="Fisquo también lleva la contabilidad, el inventario, las nóminas y la previsión de caja. Míralo con calma en las funciones o aprende lo básico en nuestras guías." />
         <div className="web-relacionadas">
           <Link href="/funciones" data-foco data-r className="web-fcard">
-            <span className="web-fcard-ico"><Icono n="rayo" /></span>
             <h3>{tr('Todas las funciones')}</h3>
             <p>{tr('Nueve áreas que trabajan juntas, de la factura a la cuenta de resultados.')}</p>
             <span className="web-enlace">{tr('Ver funciones')}<Flecha /></span>
           </Link>
           <Link href="/guias" data-foco data-r className="web-fcard" style={{ '--d': '70ms' }}>
-            <span className="web-fcard-ico"><Icono n="documento" /></span>
             <h3>{tr('Guías fiscales')}</h3>
             <p>{tr('IVA, IRPF, Impuesto sobre Sociedades, retenciones, cuentas anuales y calendarios, para autónomos y sociedades.')}</p>
             <span className="web-enlace">{tr('Leer las guías')}<Flecha /></span>
           </Link>
           <Link href="/precios" data-foco data-r className="web-fcard" style={{ '--d': '140ms' }}>
-            <span className="web-fcard-ico"><Icono n="tienda" /></span>
             <h3>{tr('Precios')}</h3>
             <p>{tr('Desde {importe} € al mes, sin permanencia y con 30 días de prueba sin tarjeta.', { importe: PLANES.aut[0].p })}</p>
             <span className="web-enlace">{tr('Ver precios')}<Flecha /></span>

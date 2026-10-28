@@ -1,5 +1,4 @@
 import Link from '@/components/web/EnlacePublico';
-import Icono from '@/components/web/Icono';
 import { Cta, Flecha } from '@/components/web/Bloques';
 import { GUIAS, PUBLICOS, REVISION_GUIAS } from '@/data/web-guias';
 import { fechaLarga } from '@/lib/webCalendario';
@@ -16,7 +15,6 @@ export default function Guias() {
   return (
     <>
       <section className="web-hero-pag">
-        <p className="web-kicker web-entra">Guías fiscales</p>
         <h1 className="web-entra" style={{ '--d': '60ms' }}>Los impuestos de tu negocio, <em>explicados sin rodeos</em></h1>
         <p className="web-sub web-entra" style={{ '--d': '120ms' }}>Para autónomos y para sociedades: qué presentas, cuándo y cómo se calcula, con la norma citada y la fecha de revisión.</p>
       </section>
@@ -29,7 +27,6 @@ export default function Guias() {
             <div className="web-guias">
               {lista.map((g, k) => (
                 <Link key={g.slug} href={`/guias/${g.slug}`} data-foco data-r className="web-fcard" style={{ '--d': `${(k % 2) * 70}ms` }}>
-                  <span className="web-fcard-ico"><Icono n="documento" /></span>
                   <h3>{g.titulo}</h3>
                   <p>{g.resumen}</p>
                   <small className="web-guia-meta">{g.minutos} min de lectura · Revisada el {fechaLarga(REVISION_GUIAS, false)}</small>

@@ -124,11 +124,10 @@ export default async function Guia({ g }) {
       <Faq preguntas={g.faqs} titulo={tr('Preguntas sobre {tema}', { tema: g.corto.toLowerCase() })} />
 
       <section className="web-sec">
-        <Encabezado kicker="Sigue leyendo" titulo="Otras guías" />
+        <Encabezado titulo="Otras guías" />
         <div className="web-relacionadas">
           {otras.map((o, k) => (
             <Link key={o.slug} href={`/guias/${o.slug}`} data-foco data-r className="web-fcard" style={{ '--d': `${k * 70}ms` }}>
-              <span className="web-fcard-ico"><Icono n="documento" /></span>
               <h3>{o.titulo}</h3>
               <p>{o.resumen}</p>
               <span className="web-enlace">{tr('Leer la guía')}<Flecha /></span>

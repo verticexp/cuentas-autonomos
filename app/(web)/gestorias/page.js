@@ -35,7 +35,6 @@ export default async function Gestorias() {
   return (
     <section className="web-contacto">
       <div className="web-contacto-txt">
-        <p className="web-kicker web-entra">{tr('Gestorías partner')}</p>
         <h1 className="web-entra" style={{ '--d': '60ms' }}>{conHuecos(tr('Tus autónomos, con las cuentas al día {resalte}'), { resalte: <em>{tr('antes de que se las pidas')}</em> })}</h1>
         <p className="web-sub web-entra" style={{ '--d': '120ms' }}>{tr('Fisquo ayuda a tus clientes a llevar sus ingresos y gastos durante el trimestre. Tú recibes la información ordenada y dedicas el tiempo a asesorar.')}</p>
         <ol className="web-contacto-pasos">

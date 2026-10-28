@@ -6,11 +6,10 @@ import { textos } from '@/lib/idiomaServidor';
 // Piezas comunes de las páginas públicas.
 export const Flecha = () => <Icono n="flecha" className="ico web-flecha" />;
 
-export async function Encabezado({ kicker, titulo, sub, centro, claro }) {
+export async function Encabezado({ titulo, sub, centro, claro }) {
   const tr = await textos();
   return (
     <div className={`web-enc${centro ? ' centro' : ''}${claro ? ' claro' : ''}`}>
-      {kicker && <p className="web-kicker" data-r>{tr(kicker)}</p>}
       <h2 data-r style={{ '--d': '60ms' }}>{tr(titulo)}</h2>
       {sub && <p className="web-enc-sub" data-r style={{ '--d': '120ms' }}>{tr(sub)}</p>}
     </div>
@@ -22,7 +21,7 @@ export async function Faq({ preguntas, titulo = 'Preguntas frecuentes' }) {
   return (
     <section className="web-sec web-faq">
       <div className="web-faq-in">
-        <Encabezado kicker="Preguntas" titulo={titulo} />
+        <Encabezado titulo={titulo} />
         <div data-r>
           {preguntas.map(([q, a]) => (
             <details key={q}>
@@ -40,7 +39,6 @@ export async function Cta({ titulo = 'Empieza a ver tu dinero con claridad', sub
   const tr = await textos();
   return (
     <section className="web-cta-final" data-r>
-      <div className="web-cta-brillo" aria-hidden />
       <h2>{tr(titulo)}</h2>
       <p>{tr(sub)}</p>
       <div className="web-cta-btns">
@@ -55,17 +53,16 @@ export async function Cta({ titulo = 'Empieza a ver tu dinero con claridad', sub
 export async function Confianza({ titulo = 'Tus números, a salvo y siempre tuyos' }) {
   const tr = await textos();
   return (
-    <section className="web-sec">
-      <Encabezado kicker="Tus datos" titulo={titulo} sub="Es lo primero que nos preguntan antes de subir la primera factura. Esto es lo que hace Fisquo con ellos." />
-      <div className="web-extras cuatro">
-        {CONFIANZA.map((c, k) => (
-          <div key={c.t} data-foco data-r style={{ '--d': `${k * 70}ms` }}>
-            <span className="web-fcard-ico"><Icono n={c.i} /></span>
-            <b>{tr(c.t)}</b><p>{tr(c.d)}</p>
-          </div>
-        ))}
+    <section className="web-sec web-confianza">
+      <div className="web-confianza-enc">
+        <Encabezado titulo={titulo} sub="Es lo primero que nos preguntan antes de subir la primera factura. Esto es lo que hace Fisquo con ellos." />
+        <Link href="/seguridad" className="web-enlace">{tr('Cómo protege Fisquo tus datos')}<Flecha /></Link>
       </div>
-      <p className="web-centro"><Link href="/seguridad" className="web-enlace">{tr('Cómo protege Fisquo tus datos')}<Flecha /></Link></p>
+      <dl data-r>
+        {CONFIANZA.map((c) => (
+          <div key={c.t}><dt>{tr(c.t)}</dt><dd>{tr(c.d)}</dd></div>
+        ))}
+      </dl>
     </section>
   );
 }

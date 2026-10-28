@@ -16,7 +16,6 @@ export default async function PaginaPrecios() {
   return (
     <>
       <section className="web-hero-pag centro">
-        <p className="web-kicker web-entra">{tr('Precios')}</p>
         <h1 className="web-entra" style={{ '--d': '60ms' }}>{conHuecos(tr('Paga por lo que usas. {resalte}'), { resalte: <em>{tr('Ni un euro más.')}</em> })}</h1>
         <p className="web-sub web-entra" style={{ '--d': '120ms' }}>{tr('Elige tu tipo de negocio y el plan que encaja. Sin cuotas de alta, sin permanencia y con 30 días de prueba sin tarjeta. Cada suscripción incluye una empresa.')}</p>
       </section>
@@ -28,7 +27,6 @@ export default async function PaginaPrecios() {
       <section className="web-sec">
         <div className="web-mudanza" data-r>
           <div>
-            <p className="web-kicker">{tr('Antes de pagar')}</p>
             <h2>{tr('Pruébalo con tus propios papeles')}</h2>
             <p>{tr('La prueba incluye 50 páginas de lectura IA: de sobra para comprobar con tus tickets y facturas reales si te ahorra tiempo. Y si tu gestoría trabaja con Fisquo, con su código la prueba dura 3 meses, un trimestre entero.')}</p>
             <Link href="/registro" className="web-btn">{tr('Empieza gratis')}<Flecha /></Link>

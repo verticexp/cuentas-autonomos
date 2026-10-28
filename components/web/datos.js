@@ -5,7 +5,7 @@ export const DESCUENTO = 30;
 export const FUNCIONES = [
   {
     slug: 'facturacion', icono: 'factura', nombre: 'Facturación', corto: 'Facturas y presupuestos con tu marca',
-    titulo: 'Facturas y presupuestos que se hacen solos',
+    titulo: 'Facturas que se hacen solas',
     sub: 'Numeración correlativa, IVA e IRPF por actividad, tu logo y tu color. Envía, cobra y olvídate de las plantillas de Word.',
     demo: 'factura',
     puntos: [
@@ -26,7 +26,7 @@ export const FUNCIONES = [
   },
   {
     slug: 'gastos', icono: 'gasto', nombre: 'Gastos con IA', corto: 'Foto al ticket y listo',
-    titulo: 'Haz una foto al ticket. Fisquo hace el resto',
+    titulo: 'Foto al ticket. Fisquo hace el resto',
     sub: 'La IA lee tus tickets y facturas de proveedor, en foto o PDF, y rellena proveedor, fecha, base e IVA. Tú solo confirmas.',
     demo: 'ticket',
     puntos: [
@@ -45,7 +45,7 @@ export const FUNCIONES = [
   },
   {
     slug: 'impuestos', icono: 'impuestos', nombre: 'Impuestos y modelos', corto: '303, 130, 111, 390, 347, Sociedades…',
-    titulo: 'Tus impuestos, calculados antes de que te los pidan',
+    titulo: 'Tus impuestos, ya calculados',
     sub: 'Fisquo calcula tus modelos a partir de tus facturas y gastos. Sabes cuánto apartar cada trimestre, sin sustos en abril.',
     demo: 'calculadora',
     puntos: [
@@ -64,7 +64,7 @@ export const FUNCIONES = [
   },
   {
     slug: 'contabilidad', icono: 'contabilidad', nombre: 'Contabilidad', corto: 'Libros registro, balance y cuentas anuales',
-    titulo: 'La contabilidad se hace sola mientras facturas',
+    titulo: 'Contabilidad que se hace sola',
     sub: 'Si eres autónomo, tus libros registro del IVA y del IRPF salen solos con el formato de Hacienda. Si eres sociedad, cada factura, gasto, cobro e impuesto genera su asiento: balance y cuentas anuales siempre al día.',
     demo: 'contabilidad',
     puntos: [
@@ -107,7 +107,7 @@ export const FUNCIONES = [
   },
   {
     slug: 'banco', icono: 'banco', nombre: 'Banco y conciliación', corto: 'Sube el extracto, Fisquo concilia',
-    titulo: 'Sube tu extracto. Fisquo lo cuadra todo',
+    titulo: 'Sube el extracto. Fisquo lo cuadra',
     sub: 'Sube el extracto de tu banco en Norma 43, CSV, Excel o PDF. Fisquo empareja cada cobro con su factura y cada pago con su gasto, y lo que falta te sale para revisar.',
     demo: 'conciliacion',
     puntos: [
@@ -128,7 +128,7 @@ export const FUNCIONES = [
   },
   {
     slug: 'tesoreria', icono: 'tesoreria', nombre: 'Tesorería', corto: 'Previsión de caja a 12 meses',
-    titulo: 'Sabe hoy cuánto dinero tendrás en seis meses',
+    titulo: 'Tu caja, a seis meses vista',
     sub: 'La previsión de caja de Fisquo suma tus cobros pendientes, pagos, impuestos y nóminas, y te enseña mes a mes con cuánto cuentas.',
     demo: 'prevision',
     puntos: [
@@ -143,7 +143,7 @@ export const FUNCIONES = [
   },
   {
     slug: 'equipo', icono: 'equipo', nombre: 'Equipo y nóminas', corto: 'Nóminas, jornada y permisos',
-    titulo: 'Tu equipo, tus nóminas y tus permisos, en orden',
+    titulo: 'Tu equipo y sus nóminas, en orden',
     sub: 'Empleados, nóminas y registro de jornada en la misma herramienta que tus cuentas. Y cada persona ve solo lo que le toca.',
     demo: 'permisos',
     puntos: [
@@ -159,7 +159,7 @@ export const FUNCIONES = [
   },
   {
     slug: 'asistente', icono: 'asistente', nombre: 'Asistente IA', corto: 'Pregunta a tus cuentas',
-    titulo: 'Pregúntale a tus cuentas como a una persona',
+    titulo: 'Pregunta a tus cuentas',
     sub: 'El asistente de Fisquo responde con tus propias cifras: cuánto has facturado, quién te debe, cuánto IVA toca este trimestre.',
     demo: 'asistente',
     puntos: [
@@ -193,7 +193,7 @@ export const PROXIMAMENTE = [
 export const SEGMENTOS = [
   {
     id: 'aut', ruta: '/autonomos', icono: 'persona', n: 'Autónomos', desde: 9,
-    titulo: 'La gestión de un autónomo, sin perder tus tardes',
+    titulo: 'Tus cuentas sin perder la tarde',
     sub: 'Factura en segundos, apunta gastos con una foto y sabe cada trimestre cuánto apartar para Hacienda. Desde 9 € al mes sin IVA.',
     dolores: [
       ['Facturas en Word o Excel', 'Plantilla profesional, numeración correlativa y Verifactu en cada factura.'],
@@ -206,7 +206,7 @@ export const SEGMENTOS = [
   },
   {
     id: 'pym', ruta: '/pymes', icono: 'tienda', n: 'Pymes', desde: 25,
-    titulo: 'Facturas, contabilidad, equipo y caja de tu pyme en un solo sitio',
+    titulo: 'Toda tu pyme en un solo sitio',
     sub: 'Facturación, contabilidad y cuentas anuales, conciliación, nóminas y jornada desde 25 € al mes sin IVA. Añade operaciones y previsión de caja con Pro.',
     dolores: [
       ['Cada uno con su Excel', 'Un solo Fisquo con permisos por área para cada persona.'],
