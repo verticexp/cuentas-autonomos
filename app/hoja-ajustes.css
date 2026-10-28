@@ -13,9 +13,11 @@
 @media (max-width: 1023.98px) {
   html:has(.aj-marco), html:has(.aj-marco) body { overflow: hidden; overscroll-behavior: none; }
   body:has(.aj-marco) { background: var(--hoja-fondo); }
-  /* Con el teclado fuera, la hoja llega hasta él (components/HojaAjustes.js pone --vv-alto). */
-  .aj-marco, .hoja-espera { position: fixed; z-index: 2; top: var(--aj-cima); left: 0; right: 0; height: calc(var(--vv-alto, 100dvh) - var(--aj-cima)); overflow: hidden; border-radius: 12px 12px 0 0; background: var(--paper); }
-  .aj-desliza { position: absolute; inset: 0; overflow-y: auto; overscroll-behavior: contain; }
+  /* La hoja llega siempre hasta abajo, también con el teclado fuera: detrás del teclado (translúcido) se ve la hoja, como en
+     iOS, y no la pantalla de detrás. Lo que tapa el teclado se puede subir por encima con el hueco de --teclado
+     (components/HojaAjustes.js). Antes la hoja se encogía hasta el teclado y parecía cortada. */
+  .aj-marco, .hoja-espera { position: fixed; z-index: 2; top: var(--aj-cima); left: 0; right: 0; height: calc(100dvh - var(--aj-cima)); overflow: hidden; border-radius: 12px 12px 0 0; background: var(--paper); }
+  .aj-desliza { position: absolute; inset: 0; overflow-y: auto; overscroll-behavior: contain; padding-bottom: var(--teclado, 0px); }
   html[data-hoja-saliendo] .aj-marco { pointer-events: none; }
   /* La pantalla de detrás. Encogida como la deja la transición «hoja» (app/diseno.css vt-al-fondo) y con los mismos valores que
      lib/hojaAjustes.js FONDO, que la lleva hasta su tamaño al arrastrar. Nada de dentro se anima ni tiene nombre de transición. */

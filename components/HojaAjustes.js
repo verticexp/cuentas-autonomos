@@ -10,8 +10,9 @@ import { fondoDe, fondoGenerico } from '@/lib/hojaAjustes';
 //   (lib/hojaAjustes.js) o, si no la hay (se abrió Ajustes directamente o se recargó), un esqueleto.
 // - La hoja se desplaza por dentro (app/ajustes.css): cada ajuste que se abre empieza arriba del todo y, al volver a la
 //   lista, está donde se dejó. Next desplazaba la página entera hasta el ajuste y la hoja quedaba subida bajo la hora.
-// - Con el teclado fuera, la hoja llega hasta el teclado y la ventana no se mueve: iOS la desplazaba para enseñar el campo y
-//   la hoja se metía bajo la hora. Lo que se escribe se ve encima del teclado, dentro de la hoja.
+// - Con el teclado fuera, la hoja sigue llegando hasta abajo (el teclado es translúcido: detrás se ve la hoja) y la ventana no
+//   se mueve: iOS la desplazaba para enseñar el campo y la hoja se metía bajo la hora. --teclado deja debajo un hueco del
+//   alto del teclado, y lo que se escribe se sube por encima de él dentro de la hoja.
 let alturaLista = 0;
 
 export default function HojaAjustes() {
@@ -46,14 +47,16 @@ export default function HojaAjustes() {
       marco = requestAnimationFrame(() => {
         if (movil.matches && scrollY !== 0) scrollTo(0, 0);
         const teclado = movil.matches && vv.height < screen.height * 0.85;
-        if (!teclado) { html.style.removeProperty('--vv-alto'); return; }
-        html.style.setProperty('--vv-alto', `${Math.round(vv.height)}px`);
-        // El campo, a la vista dentro de la hoja (no con scrollIntoView: también desplazaría la ventana).
+        if (!teclado) { html.style.removeProperty('--teclado'); return; }
+        // Lo que tapa el teclado: del borde de abajo de lo que se ve al de la pantalla.
+        html.style.setProperty('--teclado', `${Math.max(0, Math.round(innerHeight - vv.height - vv.offsetTop))}px`);
+        // El campo, a la vista encima del teclado (no con scrollIntoView: también desplazaría la ventana).
         const hoja = ref.current?.parentElement.querySelector('.aj-desliza');
         const campo = document.activeElement;
         if (!hoja?.contains(campo)) return;
         const r = campo.getBoundingClientRect(), h = hoja.getBoundingClientRect();
-        if (r.bottom > h.bottom - 16) hoja.scrollTop += r.bottom - h.bottom + 16;
+        const abajo = Math.min(h.bottom, vv.offsetTop + vv.height);
+        if (r.bottom > abajo - 16) hoja.scrollTop += r.bottom - abajo + 16;
         else if (r.top < h.top + 56) hoja.scrollTop -= h.top + 56 - r.top;
       });
     };
@@ -67,7 +70,7 @@ export default function HojaAjustes() {
       vv.removeEventListener('scroll', ajustar);
       removeEventListener('scroll', ajustar);
       document.removeEventListener('focusin', ajustar);
-      html.style.removeProperty('--vv-alto');
+      html.style.removeProperty('--teclado');
     };
   }, []);
 
