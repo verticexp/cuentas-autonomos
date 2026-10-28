@@ -4,6 +4,7 @@ import Vacio from '@/components/Vacio';
 import { useEffect, useId, useRef, useState } from 'react';
 import { permisoIA } from '@/lib/permisoIA';
 import { useT } from '@/components/Idioma';
+import useTecladoChat from '@/components/useTecladoChat';
 
 // Chat con el asistente: la conversación vive en la pantalla (no se guarda) y cada respuesta dice de dónde salen las cifras.
 export default function Asistente({ listo, ejemplos, inicial = '' }) {
@@ -12,8 +13,14 @@ export default function Asistente({ listo, ejemplos, inicial = '' }) {
   const ayudaId = useId();
   const [texto, setTexto] = useState('');
   const [pensando, setPensando] = useState(false);
-  const fin = useRef(null);
-  useEffect(() => { if (mensajes.length) fin.current?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'end' }); }, [mensajes, pensando]);
+  // La conversación es lo único que se desplaza (en el móvil, a pantalla completa como un chat, asistente.css): lo último
+  // a la vista dentro de ella, sin mover la página. Con el teclado fuera, la pantalla se ajusta al hueco (useTecladoChat).
+  const lista = useRef(null);
+  const pegado = useRef(true);
+  const alFinal = (suave = false) => { const l = lista.current; if (l) l.scrollTo({ top: l.scrollHeight, behavior: suave && !matchMedia('(prefers-reduced-motion: reduce)').matches ? 'smooth' : 'auto' }); };
+  const alDesplazar = () => { const l = lista.current; if (l) pegado.current = l.scrollHeight - l.scrollTop - l.clientHeight < 80; };
+  useEffect(() => { if (mensajes.length) { pegado.current = true; alFinal(true); } }, [mensajes, pensando]); // eslint-disable-line react-hooks/exhaustive-deps
+  useTecladoChat(lista, '.asi-pagina', { pegado, alFinal });
 
   const enviar = async (pregunta) => {
     const p = pregunta.trim();
@@ -44,6 +51,7 @@ export default function Asistente({ listo, ejemplos, inicial = '' }) {
   if (!listo) return <Vacio icono="asistente" titulo={tr('El asistente no está disponible ahora mismo')}>{tr('Vuelve a intentarlo más tarde. Puedes seguir usando el resto de la app.')}</Vacio>;
   return (
     <div className="asi">
+      <div className="asi-conversacion" ref={lista} onScroll={alDesplazar}>
       {!mensajes.length && (
         <div className="asi-ejemplos">
           {ejemplos.map((e) => <button key={e} type="button" onClick={() => enviar(tr(e))}>{tr(e)}</button>)}
@@ -59,8 +67,8 @@ export default function Asistente({ listo, ejemplos, inicial = '' }) {
         ))}
         {pensando && <li className="asi-msg assistant pensando" aria-label={tr('Pensando')}><span /><span /><span /></li>}
       </ul>
-      <div ref={fin} />
-      {!texto.trim() && <p id={ayudaId} className="nota">{tr('Escribe tu pregunta para enviarla.')}</p>}
+      {!texto.trim() && <p id={ayudaId} className="nota asi-ayuda">{tr('Escribe tu pregunta para enviarla.')}</p>}
+      </div>
       <form className="asi-form" onSubmit={(e) => { e.preventDefault(); enviar(texto); }}>
         <input className="campo" value={texto} onChange={(e) => setTexto(e.target.value)} placeholder={tr('Pregunta por tus cuentas')} maxLength={500} aria-label={tr('Tu pregunta')} />
         <button className="boton pequeno" disabled={!texto.trim() || pensando} aria-describedby={!texto.trim() ? ayudaId : undefined} aria-label={tr('Enviar')}>{tr('Enviar')}</button>

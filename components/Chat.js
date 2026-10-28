@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import useTecladoChat from '@/components/useTecladoChat';
 import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
 import { diaDe, eur, fechaConDia, fechaCorta, hoy as hoyMadrid, hora } from '@/lib/formato';
@@ -58,46 +59,8 @@ export default function Chat({ mensajes, lado, leidoAntes = '', enviar, leer, co
   // Si se estaba viendo lo último (con margen), al cambiar el alto se sigue viendo lo último.
   const pegado = useRef(true);
   const alDesplazar = () => { const l = lista.current; if (l) pegado.current = l.scrollHeight - l.scrollTop - l.clientHeight < 80; };
-  // Teclado del móvil, como WhatsApp: la conversación a pantalla completa (.desp-chat-pagina, chat.css) se ajusta al hueco
-  // que de verdad queda a la vista. iOS no encoge la pantalla al sacar el teclado: la desplaza hacia arriba y la
-  // conversación quedaba por debajo, con los mensajes fuera de la vista. visualViewport dice cuánto se ve y desde dónde.
-  useEffect(() => {
-    const vv = window.visualViewport;
-    const pagina = lista.current?.closest('.desp-chat-pagina');
-    if (!vv || !pagina) return undefined;
-    const movil = matchMedia('(max-width: 1023.98px)');
-    const tactil = matchMedia('(pointer: coarse)');
-    // Teclado fuera: escribiendo en la página con el dedo (en algunos iPhone la pantalla entera encoge con el teclado y el
-    // alto por sí solo no lo dice) o la parte visible bastante más baja que la pantalla.
-    const conTeclado = () => (tactil.matches && pagina.contains(document.activeElement) && document.activeElement.matches('textarea, input:not([type="checkbox"]):not([type="radio"])'))
-      || vv.height < window.innerHeight * 0.8;
-    let marco = 0;
-    const ajustar = () => {
-      cancelAnimationFrame(marco);
-      marco = requestAnimationFrame(() => {
-        if (!movil.matches) { pagina.style.height = ''; pagina.style.top = ''; pagina.classList.remove('con-teclado'); return; }
-        pagina.style.height = `${Math.round(vv.height)}px`;
-        pagina.style.top = `${Math.round(vv.offsetTop)}px`;
-        pagina.classList.toggle('con-teclado', conTeclado());
-        if (pegado.current) alFinal();
-      });
-    };
-    vv.addEventListener('resize', ajustar);
-    vv.addEventListener('scroll', ajustar);
-    movil.addEventListener('change', ajustar);
-    pagina.addEventListener('focusin', ajustar);
-    pagina.addEventListener('focusout', ajustar);
-    ajustar();
-    return () => {
-      cancelAnimationFrame(marco);
-      vv.removeEventListener('resize', ajustar);
-      vv.removeEventListener('scroll', ajustar);
-      movil.removeEventListener('change', ajustar);
-      pagina.removeEventListener('focusin', ajustar);
-      pagina.removeEventListener('focusout', ajustar);
-      pagina.style.height = ''; pagina.style.top = ''; pagina.classList.remove('con-teclado');
-    };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // Teclado del móvil: la conversación a pantalla completa (.desp-chat-pagina, chat.css) se ajusta al hueco visible.
+  useTecladoChat(lista, '.desp-chat-pagina', { pegado, alFinal });
   // Lo nuevo llega solo: cada minuto, si la pantalla está a la vista y no se está escribiendo, se miran los mensajes (una
   // consulta pequeña) y solo si ha cambiado algo se recarga la pantalla.
   const actual = firma(mensajes);
