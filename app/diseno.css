@@ -271,7 +271,7 @@ fieldset.solo-ver:disabled .campo { opacity: 1; color: var(--ink); -webkit-text-
 /* Sin la barra lateral, tampoco su hueco: el cuestionario quedaba 124 px a la derecha del centro en el ordenador. */
 @media (min-width: 1024px) { body:has(.bienvenida):has(.tabbar) { padding-left: 0; } } /* gana a body:has(.tabbar) de pulido.css */
 .progreso { display: flex; gap: 6px; margin-top: 8px; }
-.progreso span { flex: 1; height: 4px; border-radius: 2px; background: var(--relleno); transition: background-color 0.3s ease; }
+.progreso span { flex: 1; height: 4px; border-radius: 2px; background: var(--relleno); transition: background-color 0.3s var(--salida); }
 .progreso span.hecho { background: var(--marca); }
 .hola { color: var(--muted); font-size: 15px; }
 .paso { display: flex; flex-direction: column; gap: 12px; animation: paso 0.32s cubic-bezier(0.2, 0.8, 0.2, 1); }
@@ -487,8 +487,8 @@ html[data-arranque=visto] #arranque { display: none; }
    Las distancias van en unidades del dibujo (components/Logo.js): 1351 = del centro de la F al centro del logotipo. */
 .arr-logo { display: block; width: min(70vw, 285px); height: auto; overflow: visible; }
 .arr-logo .logo-n { animation: arr-f 0.65s var(--vt-curva) 0.78s both; }
-.arr-logo .logo-trazo { stroke-width: 9; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: arr-dibujo 0.65s cubic-bezier(0.65, 0, 0.35, 1) 0.05s forwards, arr-apaga 0.3s ease 0.7s forwards; }
-.arr-logo .logo-f { opacity: 0; animation: arr-aparece 0.4s ease 0.55s forwards; }
+.arr-logo .logo-trazo { stroke-width: 9; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: arr-dibujo 0.65s cubic-bezier(0.65, 0, 0.35, 1) 0.05s forwards, arr-apaga 0.3s var(--salida) 0.7s forwards; }
+.arr-logo .logo-f { opacity: 0; animation: arr-aparece 0.4s var(--salida) 0.55s forwards; }
 .arr-logo .logo-l { opacity: 0; animation: arr-letra 0.5s var(--salida) calc(0.95s + var(--i) * 0.05s) forwards; }
 .arr-logo .logo-cola { transform-box: fill-box; transform-origin: center bottom; transform: scaleY(0); animation: arr-cola 0.4s var(--salida) 1.3s forwards; }
 @keyframes arr-f { from { transform: translateX(1351px); } }
@@ -498,7 +498,7 @@ html[data-arranque=visto] #arranque { display: none; }
 @keyframes arr-letra { from { opacity: 0; transform: translateX(-70px); } to { opacity: 1; transform: none; } }
 @keyframes arr-cola { to { transform: none; } }
 /* Barrita de carga: un hilo fino que avanza con lo que de verdad se va preparando (components/Arranque.js). */
-.arr-barra { position: absolute; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 56px); width: 96px; height: 2px; margin-left: -48px; border-radius: 2px; overflow: hidden; background: rgba(250, 250, 248, 0.12); opacity: 0; animation: arr-aparece 0.4s ease 0.35s forwards; }
+.arr-barra { position: absolute; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 56px); width: 96px; height: 2px; margin-left: -48px; border-radius: 2px; overflow: hidden; background: rgba(250, 250, 248, 0.12); opacity: 0; animation: arr-aparece 0.4s var(--salida) 0.35s forwards; }
 .arr-barra i { display: block; height: 100%; background: #86c9ab; border-radius: inherit; transform-origin: left; transform: scaleX(var(--avance, 0.15)); transition: transform 0.25s linear; }
 #arranque.panel .arr-barra { visibility: hidden; }
 @keyframes arr-seguro { to { opacity: 0; visibility: hidden; } }
@@ -579,7 +579,7 @@ button.enlace:disabled { opacity: 0.5; cursor: not-allowed; }
 /* Plegables de texto («Cómo se calcula», «Más herramientas»): con su flecha, para que se vea que se abren. */
 .como-se-calcula > summary, .gastos-mas > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; }
 .como-se-calcula > summary::-webkit-details-marker, .gastos-mas > summary::-webkit-details-marker { display: none; }
-.como-se-calcula > summary::after, .gastos-mas > summary::after { content: ''; flex: none; width: 7px; height: 7px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg) translateY(-2px); opacity: 0.6; transition: transform 0.2s ease; }
+.como-se-calcula > summary::after, .gastos-mas > summary::after { content: ''; flex: none; width: 7px; height: 7px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg) translateY(-2px); opacity: 0.6; transition: transform 0.2s var(--salida); }
 .como-se-calcula[open] > summary::after, .gastos-mas[open] > summary::after { transform: rotate(-135deg) translateY(-2px); }
 /* Sin red (components/SinRed.js) y página «Sin conexión» (app/sin-conexion). */
 .sin-red { position: fixed; left: 50%; transform: translateX(-50%); top: calc(env(safe-area-inset-top) + 8px); z-index: 30; margin: 0; padding: 8px 14px; max-width: calc(100vw - 32px); border-radius: 12px; background: var(--ink); color: var(--paper); font-size: 13px; text-align: center; box-shadow: 0 4px 16px rgb(0 0 0 / 0.18); }
