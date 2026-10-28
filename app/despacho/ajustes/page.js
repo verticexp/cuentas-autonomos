@@ -6,6 +6,7 @@ import { hoy } from '@/lib/formato';
 import { WEB } from '@/lib/web';
 import AjustesDespacho from '@/components/AjustesDespacho';
 import { usaEmpresaPropia } from '@/lib/despachos';
+import { esApp } from '@/lib/app';
 import { textos } from '@/lib/idiomaServidor';
 import '@/app/mk.css';
 import '@/app/despacho.css';
@@ -19,9 +20,11 @@ export default async function AjustesDelDespacho({ searchParams }) {
   const { d, rol } = await requerirDespacho();
   const q = (await searchParams) || {};
   const origen = (await headers()).get('host') ? `https://${(await headers()).get('host')}` : WEB;
-  const licencias = rol === 'titular' ? await licenciasDe(d, hoy()) : null;
+  // En la app de iOS no se enseñan precios ni el cobro con tarjeta (norma 3.1.1, lib/app.js): eso, en la web.
+  const app = esApp((await headers()).get('user-agent'));
+  const licencias = rol === 'titular' && !app ? await licenciasDe(d, hoy()) : null;
   // Oferta de lanzamiento: la que tiene (con su fin) o, si aún no cobra, las plazas que quedan.
-  const oferta = rol !== 'titular' || d.demo ? null : d.oferta
+  const oferta = rol !== 'titular' || d.demo || app ? null : d.oferta
     ? { hasta: d.oferta.hasta, activa: enOferta(d, hoy()), acaba: enOferta(d, hoy()) && new Date(`${d.oferta.hasta}T12:00:00Z`) - Date.now() < AVISO_OFERTA_DIAS * 86400000 }
     : !d.cobro?.activo && (await plazasLibres()) > 0 ? { plazas: await plazasLibres(), anios: OFERTA.anios } : null;
   const tarifa = Object.fromEntries(Object.entries(await tarifaDe(d, hoy())).map(([k, v]) => [k, v.map((x) => ({ hasta: x.hasta === Infinity ? null : x.hasta, cent: x.cent }))]));
