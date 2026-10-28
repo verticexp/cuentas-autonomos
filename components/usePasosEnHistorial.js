@@ -23,9 +23,14 @@ export default function usePasosEnHistorial({ paso, base, total, bloqueado, camb
     });
     historial.current = pasos;
     pasos.iniciar();
+    // Cada paso es una entrada: con la recolocación automática, al volver el navegador llevaba la pantalla a la altura de la
+    // entrada (abajo, donde estaba «Siguiente») justo cuando cambiaba el paso. Cada formulario coloca la pantalla él mismo.
+    const recolocacion = window.history.scrollRestoration;
+    try { window.history.scrollRestoration = 'manual'; } catch { /* sin soporte: da igual */ }
     window.addEventListener('popstate', pasos.alVolver);
     return () => {
       window.removeEventListener('popstate', pasos.alVolver);
+      try { window.history.scrollRestoration = recolocacion; } catch { /* sin soporte */ }
       historial.current = null;
     };
   }, [base, total]);

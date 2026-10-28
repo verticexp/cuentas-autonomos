@@ -276,6 +276,8 @@ fieldset.solo-ver:disabled .campo { opacity: 1; color: var(--ink); -webkit-text-
 .hola { color: var(--muted); font-size: 15px; }
 .paso { display: flex; flex-direction: column; gap: 12px; animation: paso 0.32s cubic-bezier(0.2, 0.8, 0.2, 1); }
 @keyframes paso { from { opacity: 0; transform: translateX(24px); } }
+.paso.paso-atras { animation-name: paso-atras; }
+@keyframes paso-atras { from { opacity: 0; transform: translateX(-24px); } }
 .paso .titulo { margin-bottom: 0; }
 .opciones { display: flex; flex-direction: column; background: var(--surface); border-radius: 12px; overflow: hidden; }
 .opcion { display: flex; align-items: center; gap: 12px; padding: 13px 16px; text-align: left; position: relative; border-radius: 0; color: var(--ink); }
