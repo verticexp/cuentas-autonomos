@@ -6,7 +6,7 @@ Todo lo que hace falta para mandar la versión 1.0 de Fisquo para iPhone a revis
 - `ficha.md`: textos de la ficha (nombre, subtítulo, descripción, palabras clave, URLs, categoría, edad).
 - `revision.md`: notas para el revisor de Apple (en inglés), cuenta de demostración y respuestas de cumplimiento.
 - `privacidad.md`: qué marcar en «Privacidad de la app» de App Store Connect.
-- `capturas/`: 6 capturas de iPhone de 6,9" (1320 × 2868), las que pide Apple.
+- `capturas/`: 6 capturas de iPhone de 6,9" (1320 × 2868), las que pide Apple: la app de verdad con la demo, con titular (28-10-2026).
 
 ## Qué está hecho en la app (y por qué)
 
