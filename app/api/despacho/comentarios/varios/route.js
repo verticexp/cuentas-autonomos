@@ -27,7 +27,7 @@ export async function POST(req) {
     const r = await escribir(c.id, quien, 'despacho', { texto, despacho: d.id });
     if (r.error) continue;
     await marcarLeido(c.id, 'despacho');
-    avisarCliente(c.empresa, { titulo: `Mensaje de ${d.nombre}`, cuerpo: texto });
+    avisarCliente(c.empresa, { titulo: d.nombre, cuerpo: texto, chat: true });
     enviados += 1;
   }
   await invalidarNoLeidos(d.id);

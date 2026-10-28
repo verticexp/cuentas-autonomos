@@ -1,5 +1,5 @@
 import { invalidarNoLeidos } from '@/lib/mensajesDespacho';
-import { avisarDespacho } from '@/lib/avisosDespacho';
+import { avisarDespacho, leidoCliente } from '@/lib/avisosDespacho';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { redis } from '@/lib/redis';
 import { hoy } from '@/lib/formato';
@@ -66,7 +66,7 @@ export async function PATCH(req) {
   if (!u.despachoCliente || u.despachoCliente.pendiente) return error('No tienes ninguna gestoría con acceso', 404);
   const b = await cuerpo(req);
   // { leer: true }: el cliente ha abierto la conversación.
-  if (b.leer === true) { await marcarLeido(u.empresa, 'cliente'); return Response.json({ ok: true }); }
+  if (b.leer === true) { await marcarLeido(u.empresa, 'cliente'); leidoCliente(u.empresa); return Response.json({ ok: true }); }
   const r = await responder(u.empresa, String(b.id || ''), u, 'cliente', { texto: b.texto, resuelto: b.resuelto, despacho: u.despachoCliente.id });
   return r.error ? error(r.error, r.status || 400) : Response.json(r);
 }
@@ -84,6 +84,6 @@ export async function PUT(req) {
   // El número de «Mensajes» del despacho se pone al día.
   await invalidarNoLeidos(u.despachoCliente.id);
   const [d, e] = await Promise.all([despachoDe(u.despachoCliente.id), redis.hget('empresas', u.empresa)]);
-  if (d && e) avisarDespacho(d, e, { titulo: `Mensaje de ${u.empresaNombre || e.nombre}`, cuerpo: String(b.texto || '') });
+  if (d && e) avisarDespacho(d, e, { titulo: u.empresaNombre || e.nombre, cuerpo: String(b.texto || ''), chat: true });
   return Response.json(r);
 }
