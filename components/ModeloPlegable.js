@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { useT } from '@/components/Idioma';
 
 // Cada modelo de Impuestos. En el móvil es una fila (número, nombre, cómo va y el importe) que se abre al tocarla
 // y enseña el desglose por trimestres; igual en el ordenador.
@@ -9,6 +10,7 @@ import { useEffect, useRef } from 'react';
 // `informativo`: los modelos que solo resumen (349, 347, 390, 180, 190, 193) dicen «No se paga» en vez de un importe que parezca un pago.
 // `parcial`: el periodo aún no ha terminado y el importe es el de hasta hoy (lo dice debajo, auditoría D4-07).
 export default function ModeloPlegable({ id, num, nombre, estado, detalle, dato, favor, informativo, parcial, children }) {
+  const tr = useT();
   const ref = useRef(null);
   useEffect(() => {
     const abrir = () => { if (window.location.hash === `#${id}` && ref.current) ref.current.open = true; };
@@ -27,7 +29,7 @@ export default function ModeloPlegable({ id, num, nombre, estado, detalle, dato,
         <summary>
           <span className="modelo-num">{num}</span>
           <span className="txt">{nombre}{detalle && <small className={estado ? `est-${estado}` : undefined}>{detalle}</small>}</span>
-          {informativo ? <span className="modelo-dato info">No se paga</span> : dato && <strong className={`modelo-dato${favor ? ' favor' : ''}`}>{dato}{parcial && <small>apuntado hasta hoy</small>}</strong>}
+          {informativo ? <span className="modelo-dato info">{tr('No se paga')}</span> : dato && <strong className={`modelo-dato${favor ? ' favor' : ''}`}>{dato}{parcial && <small>{tr('apuntado hasta hoy')}</small>}</strong>}
         </summary>
         {children}
       </details>

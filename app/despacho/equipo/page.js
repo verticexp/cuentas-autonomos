@@ -7,15 +7,17 @@ import { conversaciones } from '@/lib/mensajesDespacho';
 import { peticionesDe, pendientes } from '@/lib/peticionesDespacho';
 import { periodoDe } from '@/lib/despachoApi';
 import { hoy } from '@/lib/formato';
+import { textos } from '@/lib/idiomaServidor';
 import '@/app/mk.css';
 import '@/app/despacho.css';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Equipo · Mi despacho' };
+export async function generateMetadata() { return { title: (await textos())('Equipo · Mi despacho') }; }
 
 // Las personas del despacho y la carga de cada una (sus clientes, los trimestres por revisar, los mensajes sin leer y los
 // documentos que esperan), para repartir el trabajo; para el titular, invitar, cambiar el rol o quitar.
 export default async function Equipo() {
+  const tr = await textos();
   const { u, d, rol } = await requerirDespacho();
   const dia = hoy();
   const { anio, t } = periodoDe(undefined, undefined, dia);
@@ -33,8 +35,8 @@ export default async function Equipo() {
   const cartera = (id) => carga(id).clientes;
   return <main className="pagina mk-look despacho">
     <div className="volver-movil"><Volver href="/despacho/ajustes">Ajustes</Volver></div>
-    <h1 className="titulo">Equipo</h1>
-    <p className="desp-sub">{d.soloAsignados ? 'Cada gestor ve solo los clientes que tiene asignados; el titular, todos.' : 'Todo el equipo ve a todos los clientes. Puedes limitarlo en Ajustes.'}</p>
-    <EquipoDespacho equipo={equipo.map((x) => ({ ...x, rolTexto: ROLES_DESPACHO[x.rol], clientes: cartera(x.id), carga: carga(x.id) }))} sinAsignar={carga(null)} trimestre={`${t}T`} titular={rol === 'titular'} yo={u.id} />
+    <h1 className="titulo">{tr('Equipo')}</h1>
+    <p className="desp-sub">{d.soloAsignados ? tr('Cada gestor ve solo los clientes que tiene asignados; el titular, todos.') : tr('Todo el equipo ve a todos los clientes. Puedes limitarlo en Ajustes.')}</p>
+    <EquipoDespacho equipo={equipo.map((x) => ({ ...x, rolTexto: ROLES_DESPACHO[x.rol], clientes: cartera(x.id), carga: carga(x.id) }))} sinAsignar={carga(null)} t={t} titular={rol === 'titular'} yo={u.id} />
   </main>;
 }

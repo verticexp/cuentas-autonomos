@@ -11,10 +11,11 @@ import { empresaPorCodigo, normalizarRef } from '@/lib/recomendaciones';
 import { socialListo } from '@/lib/social';
 import { esApp } from '@/lib/app';
 import { leerAlta } from '@/lib/socialServidor';
+import { textos } from '@/lib/idiomaServidor';
 import '@/app/legal.css';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Crear cuenta' };
+export async function generateMetadata() { return { title: (await textos())('Crear cuenta') }; }
 
 // El plan y el periodo elegidos en Precios se conservan durante el alta. Con sesión, solo ?nueva=1: otra empresa
 // para la misma cuenta (Ajustes › Tus empresas), sin el paso de la cuenta.
@@ -22,6 +23,7 @@ export default async function Registro({ searchParams }) {
   const seleccion = await searchParams;
   if (seleccion.tipo === 'gra' || seleccion.tipo === 'business') redirect('/business');
   if (!redis) return <SinBD />;
+  const tr = await textos();
   const u = await usuarioActual();
   if (u && !seleccion.nueva) redirect('/');
   const { tipo, plan, periodo } = seleccion;
@@ -37,7 +39,7 @@ export default async function Registro({ searchParams }) {
       <PanelRegistro />
       <div className="form-entrar">
         <FormRegistro inicial={{ ...elegido, periodo: periodo === 'anio' ? 'anio' : 'mes', codigo: [seleccion.codigo, seleccion.gestoria].find((c) => typeof c === 'string') || '' }} recomendacion={ref} sesion={u ? { nombre: u.nombre, email: u.email } : null} social={social} listos={{ ...socialListo(), app: esApp((await headers()).get('user-agent')) }} />
-        <p className="nota login-legal"><a href="/privacidad">Privacidad</a> · <a href="/condiciones">Condiciones</a></p>
+        <p className="nota login-legal"><a href="/privacidad">{tr('Privacidad')}</a> · <a href="/condiciones">{tr('Condiciones')}</a></p>
       </div>
     </main></TransicionPublica>
   );

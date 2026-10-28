@@ -84,14 +84,14 @@ test('Contabilidad: sin asientos hay una explicación y las acciones que la llen
   assert.match(s, /ver === 'pyg' && anioVacio/);
   assert.match(s, /ver === 'balance' && sinAsientos/);
   assert.match(s, /ver === 'sumas' && anioVacio/);
-  assert.match(s, /\{!sinAsientos && <section className="bloque">\s*<h2 className="grupo-t">Balance de pymes/);
+  assert.match(s, /\{!sinAsientos && <section className="bloque">\s*<h2 className="grupo-t">(?:Balance de pymes|\{tr\('Balance de pymes)/);
   // Libros registro: sin anotaciones, nada de «0 anotaciones» ni botón de descarga vacío.
   assert.match(s, /!libros\.resumen\.ingresos && !libros\.resumen\.gastos && !libros\.resumen\.bienes/);
-  assert.match(s, /Aún no hay nada que anotar en \$\{anio\}/);
+  assert.match(s, /Aún no hay nada que anotar en (?:\$\{anio\}|\{anio\})/);
 });
 
 test('Mi despacho: escribir a varios sin clientes explica cómo conseguirlos', () => {
   const s = leer('app/despacho/mensajes/varios/page.js');
-  assert.match(s, /!filas\.length \? <Vacio icono="usuarios" titulo="Aún no tienes clientes a quienes escribir"/);
-  assert.match(s, /href: '\/despacho\/ajustes', texto: 'Invitar a un cliente'/);
+  assert.match(s, /!filas\.length \? <Vacio icono="usuarios" titulo=(?:"Aún no tienes clientes a quienes escribir"|\{tr\('Aún no tienes clientes a quienes escribir'\)\})/);
+  assert.match(s, /href: '\/despacho\/ajustes', texto: (?:'Invitar a un cliente'|tr\('Invitar a un cliente'\))/);
 });

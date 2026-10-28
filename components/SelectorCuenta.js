@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import Avatar from '@/components/Avatar';
+import { useT } from '@/components/Idioma';
 import { CONVERSACION, SIN_BARRA, alPulsar } from '@/lib/transicion';
 import '@/app/despacho.css';
 
@@ -34,6 +35,7 @@ const Marca = () => <svg className="sel-marca" viewBox="0 0 24 24" aria-hidden><
 // y empresaNombre, su nombre.
 export function SelectorCuenta({ actual, despacho, cliente = null, empresas = [], empresa = null, empresaNombre = '', usuario = '', className = '' }) {
   const router = useRouter();
+  const tr = useT();
   const [abierto, setAbierto] = useState(false);
   const [recientes, setRecientes] = useState([]);
   const [msg, setMsg] = useState('');
@@ -86,8 +88,8 @@ export function SelectorCuenta({ actual, despacho, cliente = null, empresas = []
 
   // Con una sola empresa propia, «Mi empresa» (su nombre suele ser el del despacho y confundía); con varias, su nombre.
   const variasPropias = empresas.length > 1;
-  const nombreEmpresa = (x) => (variasPropias ? x.nombre : 'Mi empresa');
-  const nombre = actual === 'despacho' ? despacho : actual === 'cliente' ? cliente?.nombre : variasPropias ? empresas.find((x) => x.id === empresa)?.nombre || empresaNombre : 'Mi empresa';
+  const nombreEmpresa = (x) => (variasPropias ? x.nombre : tr('Mi empresa'));
+  const nombre = actual === 'despacho' ? despacho : actual === 'cliente' ? cliente?.nombre : variasPropias ? empresas.find((x) => x.id === empresa)?.nombre || empresaNombre : tr('Mi empresa');
   return (
     <div className={`sel-cuenta ${className}${abierto ? ' abierto' : ''}`} ref={caja}>
       <button type="button" ref={pastilla} className="sel-pastilla" aria-haspopup="menu" aria-expanded={abierto} onClick={() => setAbierto(!abierto)}
@@ -97,30 +99,30 @@ export function SelectorCuenta({ actual, despacho, cliente = null, empresas = []
         <svg className="sel-flecha" viewBox="0 0 24 24" aria-hidden><path d="M7 10l5 5 5-5" /></svg>
       </button>
       {abierto && (
-        <div className="sel-menu" role="menu" aria-label="Cambiar de cuenta" tabIndex={-1} onKeyDown={recorrer}>
+        <div className="sel-menu" role="menu" aria-label={tr('Cambiar de cuenta')} tabIndex={-1} onKeyDown={recorrer}>
           {actual === 'cliente' && (
             <div className="sel-bloque">
-              <form method="post" action="/api/despacho/salir" role="none"><button type="submit" role="menuitem" className="sel-op">Volver a Mi despacho<svg viewBox="0 0 24 24" aria-hidden><path d="M9 14L4 9l5-5" /><path d="M4 9h10.5a5.5 5.5 0 010 11H11" /></svg></button></form>
-              <a role="menuitem" className="sel-op" href={`/despacho/${encodeURIComponent(cliente.id)}`}>Ficha y cierre del cliente<svg viewBox="0 0 24 24" aria-hidden><rect x="5" y="4" width="14" height="17" rx="2" /><path d="M9 4V3h6v1M9 11l2 2 4-4M9 17h6" /></svg></a>
+              <form method="post" action="/api/despacho/salir" role="none"><button type="submit" role="menuitem" className="sel-op">{tr('Volver a Mi despacho')}<svg viewBox="0 0 24 24" aria-hidden><path d="M9 14L4 9l5-5" /><path d="M4 9h10.5a5.5 5.5 0 010 11H11" /></svg></button></form>
+              <a role="menuitem" className="sel-op" href={`/despacho/${encodeURIComponent(cliente.id)}`}>{tr('Ficha y cierre del cliente')}<svg viewBox="0 0 24 24" aria-hidden><rect x="5" y="4" width="14" height="17" rx="2" /><path d="M9 4V3h6v1M9 11l2 2 4-4M9 17h6" /></svg></a>
             </div>
           )}
           <div className="sel-bloque">
             {actual === 'despacho'
-              ? <span role="menuitem" aria-current="page" className="sel-op activa"><span className="sel-izq"><Casa />Mi despacho</span><Marca /></span>
+              ? <span role="menuitem" aria-current="page" className="sel-op activa"><span className="sel-izq"><Casa />{tr('Mi despacho')}</span><Marca /></span>
               : actual === 'cliente'
                 ? null
-                : <Link role="menuitem" className="sel-op" href="/despacho" onClick={(e) => { setAbierto(false); alPulsar(router, '/despacho', 'tab-izq')(e); }}><span className="sel-izq"><Casa />Mi despacho</span></Link>}
+                : <Link role="menuitem" className="sel-op" href="/despacho" onClick={(e) => { setAbierto(false); alPulsar(router, '/despacho', 'tab-izq')(e); }}><span className="sel-izq"><Casa />{tr('Mi despacho')}</span></Link>}
             {empresas.map((x) => (x.id === empresa && actual === 'empresa'
               ? <span key={x.id} role="menuitem" aria-current="page" className="sel-op activa"><span className="sel-izq"><Avatar nombre={x.nombre} size={24} />{nombreEmpresa(x)}</span><Marca /></span>
               : <form key={x.id} method="post" action={`/api/despacho/salir?a=empresa&e=${encodeURIComponent(x.id)}`} role="none"><button type="submit" role="menuitem" className="sel-op"><span className="sel-izq"><Avatar nombre={x.nombre} size={24} />{nombreEmpresa(x)}</span></button></form>))}
           </div>
           {recientes.length > 0 && (
             <div className="sel-bloque">
-              <p className="sel-t">Clientes recientes</p>
+              <p className="sel-t">{tr('Clientes recientes')}</p>
               {recientes.map((x) => <button key={x.id} type="button" role="menuitem" className="sel-op" onClick={() => aCliente(x.id)}><span className="sel-izq"><Avatar nombre={x.nombre} size={24} />{x.nombre}</span></button>)}
             </div>
           )}
-          {msg && <p className="sel-msg" role="alert">{msg}</p>}
+          {msg && <p className="sel-msg" role="alert">{tr(msg)}</p>}
         </div>
       )}
     </div>
@@ -132,6 +134,7 @@ export function SelectorCuenta({ actual, despacho, cliente = null, empresas = []
 // tiene (la misma puerta, al revés). El selector, a la derecha. Sin barra en las conversaciones y, en el móvil, en Ajustes (lib/transicion.js SIN_BARRA)
 // ni en las pantallas sin sesión. noLeidos: mensajes de clientes (en el panel ya van sobre «Mensajes»).
 export default function BarraDespacho({ noLeidos = 0, ...selector }) {
+  const tr = useT();
   const path = usePathname() || '';
   const router = useRouter();
   const movil = useSyncExternalStore(alCambiarAncho, esMovil, () => false);
@@ -154,12 +157,12 @@ export default function BarraDespacho({ noLeidos = 0, ...selector }) {
   // «‹ Mi empresa» solo en las pestañas del panel: en una ficha o una subpantalla ya hay un «‹ atrás» de la página justo debajo
   // (salían dos seguidos), y Mi empresa sigue en el selector.
   const pestanaPanel = /^\/despacho(\/(hoy|mensajes|plazos|ajustes))?\/?$/.test(path);
-  const badge = noLeidos > 0 && <b className="sel-n"><span aria-hidden>{noLeidos > 99 ? '99+' : noLeidos}</span><span className="sr">{noLeidos === 1 ? '1 mensaje nuevo' : `${noLeidos} mensajes nuevos`}</span></b>;
+  const badge = noLeidos > 0 && <b className="sel-n"><span aria-hidden>{noLeidos > 99 ? '99+' : noLeidos}</span><span className="sr">{noLeidos === 1 ? tr('1 mensaje nuevo') : tr('{n} mensajes nuevos', { n: noLeidos })}</span></b>;
   const volver = enPanel
-    ? pestanaPanel && selector.empresas?.length > 0 && <form method="post" action="/api/despacho/salir?a=empresa"><button type="submit" className="barra-despacho-volver">‹ Mi empresa</button></form>
+    ? pestanaPanel && selector.empresas?.length > 0 && <form method="post" action="/api/despacho/salir?a=empresa"><button type="submit" className="barra-despacho-volver">‹ {tr('Mi empresa')}</button></form>
     : selector.actual === 'cliente'
-      ? <form method="post" action="/api/despacho/salir"><button type="submit" className="barra-despacho-volver">‹ Mi despacho{badge}</button></form>
-      : <Link href="/despacho" className="barra-despacho-volver" onClick={alPulsar(router, '/despacho', 'tab-izq')}>‹ Mi despacho{badge}</Link>;
+      ? <form method="post" action="/api/despacho/salir"><button type="submit" className="barra-despacho-volver">‹ {tr('Mi despacho')}{badge}</button></form>
+      : <Link href="/despacho" className="barra-despacho-volver" onClick={alPulsar(router, '/despacho', 'tab-izq')}>‹ {tr('Mi despacho')}{badge}</Link>;
   return (
     <div className="barra-despacho" data-cliente={(!enPanel && selector.actual === 'cliente') || undefined}>
       {volver || <span aria-hidden />}

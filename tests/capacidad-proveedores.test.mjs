@@ -26,6 +26,7 @@ async function cargar(ruta, salida) {
   codigo = codigo.replace(/(['"])@\/lib\/([^'"]+)\1/g, (_, comilla, nombre) => {
     const url = nombre === 'api' ? api : nombre === 'auth' ? auth
       : nombre === 'auditoria' ? modulo('export const auditar = async () => {};')
+        : nombre === 'idiomaServidor' ? modulo('export const textos = async () => (s, v) => (typeof s === "string" && v ? s.replace(/\\{(\\w+)\\}/g, (m, k) => (v[k] ?? m)) : s);')
         : new URL(`../lib/${nombre}.js`, import.meta.url).href;
     return JSON.stringify(url);
   }).replace("'next/navigation'", JSON.stringify(navigation));

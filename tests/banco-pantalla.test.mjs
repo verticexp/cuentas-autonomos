@@ -8,12 +8,12 @@ const leer = (archivo) => readFileSync(new URL(`../${archivo}`, import.meta.url)
 
 test('Banco empieza por lo pendiente: por revisar, luego emparejado e ignorado y al final saldo, importación, guía y reglas', () => {
   const s = leer('components/Banco.js');
-  const sitio = (t) => { const i = s.indexOf(t); assert.ok(i > 0, t); return i; };
-  const orden = ['className="bco-resumen"', 'className="grupo bco-historial"', '<h2 className="grupo-t">Por revisar', 'id="banco-emparejados"', 'id="banco-ignorados"',
+  const sitio = (t) => { const i = typeof t === 'string' ? s.indexOf(t) : s.search(t); assert.ok(i > 0, String(t)); return i; };
+  const orden = ['className="bco-resumen"', 'className="grupo bco-historial"', /<h2 className="grupo-t">(\{tr\('Por revisar'\)\}|Por revisar)/, 'id="banco-emparejados"', 'id="banco-ignorados"',
     'id="banco-cuentas"', '<GuiaExtracto />', '<BancoReglas'];
   orden.reduce((antes, t) => { const i = sitio(t); assert.ok(i > antes, `${t} debe ir después del anterior`); return i; }, 0);
   // Y cada parte, con lo que tenía.
-  for (const t of ['Confirmar las {seguras} seguras', 'Por confirmar', 'Sin pareja', 'estado="pendientes"', 'estado="emparejados"', 'estado="ignorados"', 'Saldo en tus cuentas',
+  for (const t of ['Confirmar las {n} seguras', 'Por confirmar', 'Sin pareja', 'estado="pendientes"', 'estado="emparejados"', 'estado="ignorados"', 'Saldo en tus cuentas',
     'Cuenta del extracto', 'Subir a esta cuenta', 'Conectar banco', 'Actualizar', '<CupoEscaneo />', 'Sube tu primer extracto', 'No tienes movimientos por revisar', 'Aún no hay movimientos',
     'Deshacer', 'Recuperar', 'Quitar filtros', 'Filtrar movimientos', 'Crear regla con esto']) assert.ok(s.includes(t), t);
   // El primer extracto y el saldo no se piden dos veces: un solo selector de archivo, que usan los dos botones «Subir extracto».

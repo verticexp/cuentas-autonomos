@@ -6,14 +6,16 @@ import { hoy } from '@/lib/formato';
 import { WEB } from '@/lib/web';
 import AjustesDespacho from '@/components/AjustesDespacho';
 import { usaEmpresaPropia } from '@/lib/despachos';
+import { textos } from '@/lib/idiomaServidor';
 import '@/app/mk.css';
 import '@/app/despacho.css';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Ajustes · Mi despacho' };
+export async function generateMetadata() { return { title: (await textos())('Ajustes · Mi despacho') }; }
 
 // Datos del despacho, cómo llegan los clientes, licencias y lo que hace (y no hace) Fisquo.
 export default async function AjustesDelDespacho({ searchParams }) {
+  const tr = await textos();
   const { d, rol } = await requerirDespacho();
   const q = (await searchParams) || {};
   const origen = (await headers()).get('host') ? `https://${(await headers()).get('host')}` : WEB;
@@ -24,7 +26,7 @@ export default async function AjustesDelDespacho({ searchParams }) {
     : !d.cobro?.activo && (await plazasLibres()) > 0 ? { plazas: await plazasLibres(), anios: OFERTA.anios } : null;
   const tarifa = Object.fromEntries(Object.entries(await tarifaDe(d, hoy())).map(([k, v]) => [k, v.map((x) => ({ hasta: x.hasta === Infinity ? null : x.hasta, cent: x.cent }))]));
   return <main className="pagina mk-look despacho">
-    <h1 className="titulo">Ajustes</h1>
+    <h1 className="titulo">{tr('Ajustes')}</h1>
     <AjustesDespacho
       despacho={{ nombre: d.nombre, nif: d.nif || '', email: d.email || '', codigo: d.codigo, soloAsignados: Boolean(d.soloAsignados), empresaPropia: usaEmpresaPropia(d), cobro: rol === 'titular' ? d.cobro || null : null, demo: Boolean(d.demo) }}
       titular={rol === 'titular'} licencias={licencias} tarifa={tarifa} oferta={oferta} nombres={NOMBRES_LICENCIA} diasGratis={DIAS_GRATIS} stripe={stripeListo()} sesion={typeof q.sesion === 'string' ? q.sesion : ''}

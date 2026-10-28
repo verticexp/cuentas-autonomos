@@ -3,12 +3,16 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { createRoot } from 'react-dom/client';
+import { traductorActual } from '@/components/Idioma';
 import '@/app/hoja.css';
+
+// El diálogo vive en su propia raíz de React, fuera del proveedor de idioma: traduce con traductorActual() (components/Idioma.js).
 
 // Serializar las peticiones evita superponer diálogos y perder la respuesta o el foco.
 let cola = Promise.resolve();
 function abrir(opciones) {
   const resultado = cola.then(() => new Promise((resolver) => {
+    const tr = traductorActual();
     const origen = document.activeElement;
     const host = document.createElement('div');
     document.body.append(host);
@@ -22,7 +26,7 @@ function abrir(opciones) {
       if (origen?.isConnected) origen.focus?.({ preventScroll: true });
       resolver(valor);
     };
-    root.render(<Hoja {...opciones} cerrar={cerrar} />);
+    root.render(<Hoja {...opciones} tr={tr} cerrar={cerrar} />);
   }));
   cola = resultado.then(() => undefined, () => undefined);
   return resultado;
@@ -40,7 +44,7 @@ export function avisar(texto) {
   return abrir({ titulo: 'No se ha podido completar la acción', texto, aceptar: 'Entendido', aviso: true });
 }
 
-function Hoja({ titulo, texto, aceptar, cancelar, peligro, entrada, etiqueta, valor, soloLectura, aviso, cerrar }) {
+function Hoja({ titulo, texto, aceptar, cancelar, peligro, entrada, etiqueta, valor, soloLectura, aviso, cerrar, tr }) {
   const id = useId();
   const panel = useRef(null);
   const capa = useRef(null);
@@ -84,16 +88,16 @@ function Hoja({ titulo, texto, aceptar, cancelar, peligro, entrada, etiqueta, va
   return createPortal(
     // El rol de diálogo va en el contenedor: un <form> no admite role="dialog" ni "alertdialog" (axe: aria-allowed-role).
     <div className="hoja confirmar-hoja" ref={capa} role={aviso || peligro ? 'alertdialog' : 'dialog'} aria-modal="true" aria-labelledby={`${id}-titulo`} aria-describedby={texto ? `${id}-texto` : undefined}>
-      <button type="button" className="hoja-fondo" aria-label={entrada && !soloLectura ? 'Cancelar' : 'Cerrar diálogo'} tabIndex={-1} onClick={cancelarHoja} />
+      <button type="button" className="hoja-fondo" aria-label={tr(entrada && !soloLectura ? 'Cancelar' : 'Cerrar diálogo')} tabIndex={-1} onClick={cancelarHoja} />
       <form ref={panel} className="hoja-panel formulario"
         onSubmit={(e) => { e.preventDefault(); cerrar(entrada ? contenido : true); }}>
         <span className="hoja-asa" aria-hidden="true" />
-        <h2 className="hoja-t" id={`${id}-titulo`}>{titulo}</h2>
-        {texto && <p id={`${id}-texto`} className="confirmar-texto">{texto}</p>}
-        {entrada && <label htmlFor={`${id}-entrada`}>{etiqueta}<input id={`${id}-entrada`} className="campo" value={contenido} readOnly={soloLectura} onChange={(e) => setContenido(e.target.value)} /></label>}
+        <h2 className="hoja-t" id={`${id}-titulo`}>{tr(titulo)}</h2>
+        {texto && <p id={`${id}-texto`} className="confirmar-texto">{tr(texto)}</p>}
+        {entrada && <label htmlFor={`${id}-entrada`}>{tr(etiqueta)}<input id={`${id}-entrada`} className="campo" value={contenido} readOnly={soloLectura} onChange={(e) => setContenido(e.target.value)} /></label>}
         <div className="confirmar-botones">
-          {!aviso && <button type="button" className="boton sec" data-cancelar onClick={cancelarHoja}>{cancelar}</button>}
-          <button type="submit" className={peligro ? 'boton confirmar-peligro' : 'boton'}>{aceptar}</button>
+          {!aviso && <button type="button" className="boton sec" data-cancelar onClick={cancelarHoja}>{tr(cancelar)}</button>}
+          <button type="submit" className={peligro ? 'boton confirmar-peligro' : 'boton'}>{tr(aceptar)}</button>
         </div>
       </form>
     </div>, document.body

@@ -5,14 +5,16 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Logo from '@/components/Logo';
 import Icono from '@/components/web/Icono';
+import { useT } from '@/components/Idioma';
 import { FUNCIONES, SEGMENTOS } from '@/components/web/datos';
 
 const MENUS = {
   producto: { t: 'Producto', items: FUNCIONES.map((f) => ({ href: `/funciones/${f.slug}`, icono: f.icono, t: f.nombre, d: f.corto })), pie: { href: '/funciones', t: 'Ver todas las funciones' } },
-  soluciones: { t: 'Soluciones', items: SEGMENTOS.map((s) => ({ href: s.ruta, icono: s.icono, t: s.n, d: s.id === 'business' ? 'Alcance y precio a medida' : `Desde ${s.desde} €/mes sin IVA` })), pie: { href: '/precios', t: 'Comparar planes' } },
+  soluciones: { t: 'Soluciones', items: SEGMENTOS.map((s) => ({ href: s.ruta, icono: s.icono, t: s.n, d: s.id === 'business' ? 'Alcance y precio a medida' : `Desde ${s.desde} €/mes sin IVA`, desde: s.desde })), pie: { href: '/precios', t: 'Comparar planes' } },
 };
 
 export default function Cabecera() {
+  const tr = useT();
   const ruta = usePathname();
   const [abierto, setAbierto] = useState(null); // menú desplegable en el ordenador
   const [movil, setMovil] = useState(false);
@@ -68,23 +70,23 @@ export default function Cabecera() {
   return (
     <header ref={cabecera} className={`web-cab${fondo || abierto ? ' con-fondo' : ''}${movil ? ' menu-abierto' : ''}`} onMouseLeave={salir}>
       <div className="web-cab-in">
-        <Link href="/" aria-label="Fisquo, inicio" className="web-marca"><Logo className="web-logo" /></Link>
-        <nav className="web-nav" aria-label="Principal">
+        <Link href="/" aria-label={tr('Fisquo, inicio')} className="web-marca"><Logo className="web-logo" /></Link>
+        <nav className="web-nav" aria-label={tr('Principal')}>
           {Object.entries(MENUS).map(([k, m]) => (
             <div key={k} className="web-nav-grupo" onMouseEnter={() => entrar(k)}>
               <button ref={(el) => { gatillos.current[k] = el; }} className={`web-nav-btn${enMenu(k) ? ' activo' : ''}`} aria-expanded={abierto === k} aria-controls={`web-menu-${k}`} onClick={() => setAbierto(abierto === k ? null : k)}>
-                {m.t}<Icono n="chevron" className="ico web-nav-chev" />
+                {tr(m.t)}<Icono n="chevron" className="ico web-nav-chev" />
               </button>
             </div>
           ))}
-          <Link href="/precios" className={`web-nav-btn${activo('/precios') ? ' activo' : ''}`} onMouseEnter={salir}>Precios</Link>
-          <Link href="/demo" className={`web-nav-btn${activo('/demo') ? ' activo' : ''}`} onMouseEnter={salir}>Demo</Link>
-          <Link href="/seguridad" className={`web-nav-btn${activo('/seguridad') ? ' activo' : ''}`} onMouseEnter={salir}>Seguridad</Link>
+          <Link href="/precios" className={`web-nav-btn${activo('/precios') ? ' activo' : ''}`} onMouseEnter={salir}>{tr('Precios')}</Link>
+          <Link href="/demo" className={`web-nav-btn${activo('/demo') ? ' activo' : ''}`} onMouseEnter={salir}>{tr('Demo')}</Link>
+          <Link href="/seguridad" className={`web-nav-btn${activo('/seguridad') ? ' activo' : ''}`} onMouseEnter={salir}>{tr('Seguridad')}</Link>
         </nav>
         <div className="web-cab-acciones">
-          <Link href="/login" className="web-cab-entrar">Entrar</Link>
-          <Link href="/registro" className="web-btn web-btn-peq">Empieza gratis</Link>
-          <button ref={hamburguesa} className="web-hamburguesa" aria-controls="web-menu-movil" aria-label={movil ? 'Cerrar menú' : 'Abrir menú'} aria-expanded={movil} onClick={() => setMovil(!movil)}>
+          <Link href="/login" className="web-cab-entrar">{tr('Entrar')}</Link>
+          <Link href="/registro" className="web-btn web-btn-peq">{tr('Empieza gratis')}</Link>
+          <button ref={hamburguesa} className="web-hamburguesa" aria-controls="web-menu-movil" aria-label={tr(movil ? 'Cerrar menú' : 'Abrir menú')} aria-expanded={movil} onClick={() => setMovil(!movil)}>
             <Icono n={movil ? 'cerrar' : 'menu'} />
           </button>
         </div>
@@ -97,36 +99,36 @@ export default function Cabecera() {
               {m.items.map((i, n) => (
                 <Link key={i.href} href={i.href} className="web-mega-item" style={{ '--n': n }} tabIndex={abierto === k ? 0 : -1}>
                   <span className="web-mega-ico"><Icono n={i.icono} /></span>
-                  <span><b>{i.t}</b><small>{i.d}</small></span>
+                  <span><b>{tr(i.t)}</b><small>{i.desde ? tr('Desde {desde} €/mes sin IVA', { desde: i.desde }) : tr(i.d)}</small></span>
                 </Link>
               ))}
             </div>
-            <Link href={m.pie.href} className="web-mega-pie" tabIndex={abierto === k ? 0 : -1}>{m.pie.t}<Icono n="flecha" className="ico web-flecha" /></Link>
+            <Link href={m.pie.href} className="web-mega-pie" tabIndex={abierto === k ? 0 : -1}>{tr(m.pie.t)}<Icono n="flecha" className="ico web-flecha" /></Link>
           </div>
         ))}
       </div>
 
       <div id="web-menu-movil" inert={!movil} className={`web-cajon${movil ? ' abierto' : ''}`} aria-hidden={!movil}>
         <div className="web-cajon-in">
-          <p className="web-cajon-t">Producto</p>
+          <p className="web-cajon-t">{tr('Producto')}</p>
           {FUNCIONES.map((f, n) => (
-            <Link key={f.slug} href={`/funciones/${f.slug}`} style={{ '--n': n }} tabIndex={movil ? 0 : -1}><Icono n={f.icono} />{f.nombre}</Link>
+            <Link key={f.slug} href={`/funciones/${f.slug}`} style={{ '--n': n }} tabIndex={movil ? 0 : -1}><Icono n={f.icono} />{tr(f.nombre)}</Link>
           ))}
-          <p className="web-cajon-t">Soluciones</p>
+          <p className="web-cajon-t">{tr('Soluciones')}</p>
           {SEGMENTOS.map((s, n) => (
-            <Link key={s.id} href={s.ruta} style={{ '--n': n + 7 }} tabIndex={movil ? 0 : -1}><Icono n={s.icono} />{s.n}</Link>
+            <Link key={s.id} href={s.ruta} style={{ '--n': n + 7 }} tabIndex={movil ? 0 : -1}><Icono n={s.icono} />{tr(s.n)}</Link>
           ))}
-          <p className="web-cajon-t">Más</p>
-          <Link href="/precios" style={{ '--n': 10 }} tabIndex={movil ? 0 : -1}><Icono n="rayo" />Precios</Link>
-          <Link href="/demo" style={{ '--n': 11 }} tabIndex={movil ? 0 : -1}><Icono n="ojo" />Demo sin registrarte</Link>
-          <Link href="/guias" style={{ '--n': 12 }} tabIndex={movil ? 0 : -1}><Icono n="documento" />Guías fiscales</Link>
-          <Link href="/comparativa" style={{ '--n': 13 }} tabIndex={movil ? 0 : -1}><Icono n="tienda" />Comparativas</Link>
-          <Link href="/seguridad" style={{ '--n': 14 }} tabIndex={movil ? 0 : -1}><Icono n="escudo" />Seguridad</Link>
-          <Link href="/verificado" style={{ '--n': 15 }} tabIndex={movil ? 0 : -1}><Icono n="tic" />Cálculos verificados</Link>
-          <Link href="/contacto" style={{ '--n': 16 }} tabIndex={movil ? 0 : -1}><Icono n="correo" />Contacto</Link>
+          <p className="web-cajon-t">{tr('Más')}</p>
+          <Link href="/precios" style={{ '--n': 10 }} tabIndex={movil ? 0 : -1}><Icono n="rayo" />{tr('Precios')}</Link>
+          <Link href="/demo" style={{ '--n': 11 }} tabIndex={movil ? 0 : -1}><Icono n="ojo" />{tr('Demo sin registrarte')}</Link>
+          <Link href="/guias" style={{ '--n': 12 }} tabIndex={movil ? 0 : -1}><Icono n="documento" />{tr('Guías fiscales')}</Link>
+          <Link href="/comparativa" style={{ '--n': 13 }} tabIndex={movil ? 0 : -1}><Icono n="tienda" />{tr('Comparativas')}</Link>
+          <Link href="/seguridad" style={{ '--n': 14 }} tabIndex={movil ? 0 : -1}><Icono n="escudo" />{tr('Seguridad')}</Link>
+          <Link href="/verificado" style={{ '--n': 15 }} tabIndex={movil ? 0 : -1}><Icono n="tic" />{tr('Cálculos verificados')}</Link>
+          <Link href="/contacto" style={{ '--n': 16 }} tabIndex={movil ? 0 : -1}><Icono n="correo" />{tr('Contacto')}</Link>
           <div className="web-cajon-cta">
-            <Link href="/login" className="web-btn web-btn-claro" tabIndex={movil ? 0 : -1}>Entrar</Link>
-            <Link href="/registro" className="web-btn" tabIndex={movil ? 0 : -1}>Empieza gratis</Link>
+            <Link href="/login" className="web-btn web-btn-claro" tabIndex={movil ? 0 : -1}>{tr('Entrar')}</Link>
+            <Link href="/registro" className="web-btn" tabIndex={movil ? 0 : -1}>{tr('Empieza gratis')}</Link>
           </div>
         </div>
       </div>

@@ -2,11 +2,13 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useT } from '@/components/Idioma';
 
 const OPCIONES = [['automatico', 'Automático'], ['claro', 'Claro'], ['oscuro', 'Oscuro']];
 
 export default function Apariencia({ inicial }) {
   const router = useRouter();
+  const tr = useT();
   const [tema, setTema] = useState(inicial === 'claro' || inicial === 'oscuro' ? inicial : 'automatico');
 
   function elegir(valor) {
@@ -21,13 +23,13 @@ export default function Apariencia({ inicial }) {
 
   return (
     <div>
-      <div className="segmentado apariencia" role="group" aria-label="Apariencia">
+      <div className="segmentado apariencia" role="group" aria-label={tr('Apariencia')}>
         {OPCIONES.map(([valor, etiqueta]) => (
           <button key={valor} type="button" className={tema === valor ? 'activo' : undefined}
-            aria-pressed={tema === valor} onClick={() => elegir(valor)}>{etiqueta}</button>
+            aria-pressed={tema === valor} onClick={() => elegir(valor)}>{tr(etiqueta)}</button>
         ))}
       </div>
-      <p className="nota">Se guarda en este dispositivo.</p>
+      <p className="nota">{tr('Se guarda en este dispositivo.')}</p>
     </div>
   );
 }

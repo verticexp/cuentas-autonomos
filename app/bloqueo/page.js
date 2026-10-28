@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { desbloqueada, usuarioActual } from '@/lib/auth';
 import RecargarBloqueo from '@/components/RecargarBloqueo';
+import { textos } from '@/lib/idiomaServidor';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,4 +14,4 @@ export default async function PaginaBloqueo({ searchParams }) {
   return <main className="pagina"><RecargarBloqueo /></main>;
 }
 
-export const metadata = { title: 'Desbloquear' };
+export async function generateMetadata() { return { title: (await textos())('Desbloquear') }; }

@@ -5,6 +5,8 @@ import { REVISION_GUIAS, guia } from '@/data/web-guias';
 import { calendarioSociedad, diaMes, fechaLarga, plazoTrimestre, plazosAnuales } from '@/lib/webCalendario';
 import { jsonLd } from '@/lib/webMeta';
 import { WEB } from '@/lib/web';
+import { textos } from '@/lib/idiomaServidor';
+import { conHuecos } from '@/lib/huecos';
 
 const ORDINAL = ['1.er', '2.º', '3.er', '4.º'];
 
@@ -50,7 +52,7 @@ async function CalendarioSociedad({ anio }) {
   return <TablaSimple etiqueta={`Calendario de una sociedad en ${anio}`} cab={['Último día', 'Qué se presenta o se hace', 'Domiciliado, hasta']} filas={filas} />;
 }
 
-function Bloque({ b, tabla }) {
+function Bloque({ b, tabla, tr }) {
   if (b.p) return <p><Rico t={b.p} /></p>;
   if (b.ul) return <ul className="web-art-lista">{b.ul.map((x) => <li key={x}><Icono n="tic" /><span><Rico t={x} /></span></li>)}</ul>;
   if (b.ol) return <ol className="web-art-num">{b.ol.map((x) => <li key={x}><Rico t={x} /></li>)}</ol>;
@@ -64,7 +66,7 @@ function Bloque({ b, tabla }) {
     const e = b.ejemplo;
     return (
       <figure className="web-ejemplo">
-        <figcaption><span>Ejemplo</span>{e.titulo}</figcaption>
+        <figcaption><span>{tr('Ejemplo')}</span>{e.titulo}</figcaption>
         <dl>{e.filas.map(([k, v, fuerte]) => <div key={k} className={fuerte ? 'total' : undefined}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>
         {e.pie && <p>{e.pie}</p>}
       </figure>
@@ -74,7 +76,8 @@ function Bloque({ b, tabla }) {
 }
 
 // Guía fiscal: cabecera, índice lateral, artículo, norma citada, preguntas, guías relacionadas y llamada a probar Fisquo.
-export default function Guia({ g }) {
+export default async function Guia({ g }) {
+  const tr = await textos();
   const otras = g.relacionadas.map(guia).filter(Boolean);
   const url = `${WEB}/guias/${g.slug}`;
   const datos = {
@@ -86,39 +89,39 @@ export default function Guia({ g }) {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(datos) }} />
       <section className="web-hero-pag">
-        <nav className="web-migas web-entra" aria-label="Estás en"><Link href="/guias">Guías fiscales</Link><Icono n="chevron" /><span>{g.corto}</span></nav>
+        <nav className="web-migas web-entra" aria-label={tr('Estás en')}><Link href="/guias">{tr('Guías fiscales')}</Link><Icono n="chevron" /><span>{g.corto}</span></nav>
         <h1 className="web-entra" style={{ '--d': '60ms' }}>{g.titulo}</h1>
         <p className="web-sub web-entra" style={{ '--d': '120ms' }}>{g.resumen}</p>
-        <p className="web-art-meta web-entra" style={{ '--d': '180ms' }}>Revisada el <time dateTime={REVISION_GUIAS}>{fechaLarga(REVISION_GUIAS, false)}</time> · {g.minutos} min de lectura</p>
+        <p className="web-art-meta web-entra" style={{ '--d': '180ms' }}>{conHuecos(tr('Revisada el {fecha} · {minutos} min de lectura'), { fecha: <time dateTime={REVISION_GUIAS}>{tr(fechaLarga(REVISION_GUIAS, false))}</time>, minutos: g.minutos })}</p>
       </section>
 
       <section className="web-sec web-art-sec">
         <div className="web-art-grid">
-          <nav className="web-toc" aria-label="En esta guía">
-            <p>En esta guía</p>
+          <nav className="web-toc" aria-label={tr('En esta guía')}>
+            <p>{tr('En esta guía')}</p>
             <ol>
               {g.secciones.map((s) => <li key={s.id}><a href={`#${s.id}`}>{s.t}</a></li>)}
-              <li><a href="#normas">Norma en la que se apoya</a></li>
+              <li><a href="#normas">{tr('Norma en la que se apoya')}</a></li>
             </ol>
           </nav>
           <article className="web-art">
             {g.secciones.map((s) => (
               <section key={s.id} id={s.id} aria-labelledby={`${s.id}-t`}>
                 <h2 id={`${s.id}-t`}>{s.t}</h2>
-                {s.bloques.map((b, i) => <Bloque key={i} b={b} tabla={s.t} />)}
+                {s.bloques.map((b, i) => <Bloque key={i} b={b} tabla={s.t} tr={tr} />)}
               </section>
             ))}
             <section id="normas" aria-labelledby="normas-t" className="web-art-normas">
-              <h2 id="normas-t">Norma en la que se apoya</h2>
+              <h2 id="normas-t">{tr('Norma en la que se apoya')}</h2>
               <ul>{g.normas.map((n) => <li key={n}>{n}</li>)}</ul>
               <p>{g.aviso}</p>
-              <p><b>Revisada el {fechaLarga(REVISION_GUIAS, false)}.</b> Las normas y los plazos pueden cambiar: comprueba siempre la fecha de revisión.</p>
+              <p><b>{tr('Revisada el {fecha}.', { fecha: tr(fechaLarga(REVISION_GUIAS, false)) })}</b> {tr('Las normas y los plazos pueden cambiar: comprueba siempre la fecha de revisión.')}</p>
             </section>
           </article>
         </div>
       </section>
 
-      <Faq preguntas={g.faqs} titulo={`Preguntas sobre ${g.corto.toLowerCase()}`} />
+      <Faq preguntas={g.faqs} titulo={tr('Preguntas sobre {tema}', { tema: g.corto.toLowerCase() })} />
 
       <section className="web-sec">
         <Encabezado kicker="Sigue leyendo" titulo="Otras guías" />
@@ -128,7 +131,7 @@ export default function Guia({ g }) {
               <span className="web-fcard-ico"><Icono n="documento" /></span>
               <h3>{o.titulo}</h3>
               <p>{o.resumen}</p>
-              <span className="web-enlace">Leer la guía<Flecha /></span>
+              <span className="web-enlace">{tr('Leer la guía')}<Flecha /></span>
             </Link>
           ))}
         </div>

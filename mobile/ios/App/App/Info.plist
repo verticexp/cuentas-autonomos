@@ -17,6 +17,8 @@
 	<key>CFBundleLocalizations</key>
 	<array>
 		<string>es</string>
+		<string>ca</string>
+		<string>en</string>
 	</array>
 	<key>CFBundleName</key>
 	<string>$(PRODUCT_NAME)</string>

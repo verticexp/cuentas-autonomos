@@ -48,12 +48,12 @@ public class BiometriaPlugin: CAPPlugin, CAPBridgedPlugin {
 
     @objc func guardar(_ call: CAPPluginCall) {
         guard let valor = call.getString("valor"), let datos = valor.data(using: .utf8) else {
-            call.reject("Falta la credencial", "error")
+            call.reject(NSLocalizedString("Falta la credencial", comment: ""), "error")
             return
         }
         var errorAcl: Unmanaged<CFError>?
         guard let acl = SecAccessControlCreateWithFlags(nil, kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly, .biometryCurrentSet, &errorAcl) else {
-            call.reject("Este iPhone no permite guardar con Face ID", "error")
+            call.reject(NSLocalizedString("Este iPhone no permite guardar con Face ID", comment: ""), "error")
             return
         }
         SecItemDelete(consulta() as CFDictionary)
@@ -65,7 +65,8 @@ public class BiometriaPlugin: CAPPlugin, CAPBridgedPlugin {
     }
 
     @objc func leer(_ call: CAPPluginCall) {
-        let motivo = call.getString("motivo") ?? "Entrar en Fisquo"
+        // El motivo llega de la web en castellano: iOS lo enseña en el idioma del iPhone (Localizable.strings).
+        let motivo = NSLocalizedString(call.getString("motivo") ?? "Entrar en Fisquo", comment: "")
         DispatchQueue.global(qos: .userInitiated).async {
             let contexto = LAContext()
             contexto.localizedReason = motivo
@@ -79,11 +80,11 @@ public class BiometriaPlugin: CAPPlugin, CAPBridgedPlugin {
             switch estado {
             case errSecSuccess:
                 if let datos = resultado as? Data, let valor = String(data: datos, encoding: .utf8) { call.resolve(["valor": valor]) }
-                else { call.reject("Credencial no válida", "error") }
+                else { call.reject(NSLocalizedString("Credencial no válida", comment: ""), "error") }
             case errSecUserCanceled, errSecAuthFailed:
                 call.reject("cancelado", "cancelado")
             case errSecItemNotFound:
-                call.reject("No hay Face ID activado en este iPhone", "sin-credencial")
+                call.reject(NSLocalizedString("No hay Face ID activado en este iPhone", comment: ""), "sin-credencial")
             default:
                 call.reject("No se ha podido usar Face ID (\(estado))", "error")
             }

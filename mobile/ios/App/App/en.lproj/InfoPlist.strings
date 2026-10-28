@@ -1,0 +1,4 @@
+/* Textos de los permisos (Info.plist) en en. */
+"NSCameraUsageDescription" = "Fisquo uses the camera to scan your receipts and expense invoices and read their amounts.";
+"NSPhotoLibraryUsageDescription" = "Fisquo accesses the photos you choose so you can attach receipts and invoices to your expenses.";
+"NSFaceIDUsageDescription" = "To sign in to Fisquo and unlock it with Face ID, without typing your password.";

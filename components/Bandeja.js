@@ -7,6 +7,7 @@ import { confirmar } from './Confirmar';
 import { eur, fechaCorta } from '@/lib/formato';
 import { ACEPTA, EVENTO, subirVarias } from '@/lib/bandejaCliente';
 import { leerCompartidos } from '@/lib/compartidoCliente';
+import { useT } from '@/components/Idioma';
 import '@/app/bandeja.css';
 
 // «Por revisar» (lib/bandeja.js), la pestaña de Gastos: las facturas subidas, reenviadas por correo o compartidas,
@@ -21,6 +22,9 @@ const GRUPOS = [
 ];
 
 export default function Bandeja({ inicial, resumenInicial, puedeGastar }) {
+  const tr = useT();
+  // Los errores de archivos subidos llegan como «nombre.pdf: motivo»: se traduce el motivo.
+  const errorArchivo = (e) => { const i = String(e).indexOf(': '); return i < 0 ? tr(e) : `${e.slice(0, i)}: ${tr(e.slice(i + 2))}`; };
   const router = useRouter();
   const input = useRef(null);
   const [docs, setDocs] = useState(inicial);
@@ -70,20 +74,20 @@ export default function Bandeja({ inicial, resumenInicial, puedeGastar }) {
     const q = new URLSearchParams(window.location.search).get('compartido');
     if (q === null) return;
     window.history.replaceState(null, '', '/gastos?ver=revisar');
-    if (q === 'sinsw') { setAviso('Fisquo aún se estaba preparando en este móvil: vuelve a compartir la factura.'); return; }
-    leerCompartidos().then((l) => (l.length ? subir(l, 'compartido') : setAviso('No ha llegado ningún archivo que se pueda leer (PDF, foto o XML de hasta 5 MB).')));
+    if (q === 'sinsw') { setAviso(tr('Fisquo aún se estaba preparando en este móvil: vuelve a compartir la factura.')); return; }
+    leerCompartidos().then((l) => (l.length ? subir(l, 'compartido') : setAviso(tr('No ha llegado ningún archivo que se pueda leer (PDF, foto o XML de hasta 5 MB).'))));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const aprobarCuadran = async () => {
     const ids = docs.filter((d) => d.cuadra).map((d) => d.id);
     if (!ids.length) return;
-    if (!(await confirmar({ titulo: 'Aprobar facturas', texto: ids.length === 1 ? 'Se guardará como gasto la factura que cuadra, con los datos leídos.' : `Se guardarán como gastos las ${ids.length} facturas que cuadran, con los datos leídos.`, aceptar: 'Aprobar' }))) return;
+    if (!(await confirmar({ titulo: tr('Aprobar facturas'), texto: ids.length === 1 ? tr('Se guardará como gasto la factura que cuadra, con los datos leídos.') : tr('Se guardarán como gastos las {n} facturas que cuadran, con los datos leídos.', { n: ids.length }), aceptar: tr('Aprobar') }))) return;
     setOcupado(true); setAviso('');
     try {
       const r = await fetch('/api/bandeja', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accion: 'aprobarVarias', ids }) });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.error || 'No se han podido aprobar');
-      setAviso(`${d.hechas.length === 1 ? '1 gasto guardado' : `${d.hechas.length} gastos guardados`}${d.fallidas.length ? `; ${d.fallidas.length} se han quedado para revisar` : ''}.`);
+      setAviso(`${d.hechas.length === 1 ? tr('1 gasto guardado') : tr('{n} gastos guardados', { n: d.hechas.length })}${d.fallidas.length ? `; ${tr('{n} se han quedado para revisar', { n: d.fallidas.length })}` : ''}.`);
     } catch (e) { setAviso(e.message); }
     setOcupado(false);
     await recargar();
@@ -91,7 +95,7 @@ export default function Bandeja({ inicial, resumenInicial, puedeGastar }) {
   };
 
   const accion = async (id, que) => {
-    if (que === 'descartar' && !(await confirmar({ titulo: 'Descartar factura', texto: 'Se quita de «Por revisar» y se borra su archivo.', aceptar: 'Descartar', peligro: true }))) return;
+    if (que === 'descartar' && !(await confirmar({ titulo: tr('Descartar factura'), texto: tr('Se quita de «Por revisar» y se borra su archivo.'), aceptar: tr('Descartar'), peligro: true }))) return;
     setOcupado(true);
     try {
       const r = await fetch('/api/bandeja', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accion: que, id }) });
@@ -101,13 +105,13 @@ export default function Bandeja({ inicial, resumenInicial, puedeGastar }) {
   };
 
   const avisos = <>
-    {errores.length > 0 && <div className="nota" role="alert"><strong>No se han podido subir:</strong><ul>{errores.map((e) => <li key={e}>{e}</li>)}</ul></div>}
-    {aviso && <p className="nota" role="status">{aviso}</p>}
+    {errores.length > 0 && <div className="nota" role="alert"><strong>{tr('No se han podido subir:')}</strong><ul>{errores.map((e) => <li key={e}>{errorArchivo(e)}</li>)}</ul></div>}
+    {aviso && <p className="nota" role="status">{tr(aviso)}</p>}
   </>;
   const cuadran = puedeGastar && resumen.cuadran > 0 && (
     <div className="bandeja-cuadran">
-      <span><strong>{resumen.cuadran === 1 ? '1 factura cuadra' : `${resumen.cuadran} facturas cuadran`}</strong>: base, IVA y total coinciden, con fecha clara y sin posibles duplicados.</span>
-      <button type="button" className="boton" disabled={ocupado} onClick={aprobarCuadran}>{resumen.cuadran === 1 ? 'Aprobarla' : `Aprobar las ${resumen.cuadran}`}</button>
+      <span><strong>{resumen.cuadran === 1 ? tr('1 factura cuadra') : tr('{n} facturas cuadran', { n: resumen.cuadran })}</strong>{tr(': base, IVA y total coinciden, con fecha clara y sin posibles duplicados.')}</span>
+      <button type="button" className="boton" disabled={ocupado} onClick={aprobarCuadran}>{resumen.cuadran === 1 ? tr('Aprobarla') : tr('Aprobar las {n}', { n: resumen.cuadran })}</button>
     </div>
   );
 
@@ -117,10 +121,10 @@ export default function Bandeja({ inicial, resumenInicial, puedeGastar }) {
       onDragOver={(e) => { e.preventDefault(); setEncima(true); }} onDragLeave={() => setEncima(false)}
       onDrop={(e) => { e.preventDefault(); setEncima(false); subir([...e.dataTransfer.files]); }}>
       <div>
-        <strong>Sube tus facturas de gasto</strong>
-        <small>Elige o arrastra aquí los PDF, las fotos o las facturas electrónicas (XML), todos los que quieras a la vez. Fisquo los lee y te los deja listos para revisar.</small>
+        <strong>{tr('Sube tus facturas de gasto')}</strong>
+        <small>{tr('Elige o arrastra aquí los PDF, las fotos o las facturas electrónicas (XML), todos los que quieras a la vez. Fisquo los lee y te los deja listos para revisar.')}</small>
       </div>
-      <button type="button" className="boton" disabled={Boolean(subiendo)} onClick={() => input.current?.click()}>{subiendo ? `Subiendo ${subiendo.hechos} de ${subiendo.total}…` : 'Elegir archivos'}</button>
+      <button type="button" className="boton" disabled={Boolean(subiendo)} onClick={() => input.current?.click()}>{subiendo ? tr('Subiendo {hechos} de {total}…', { hechos: subiendo.hechos, total: subiendo.total }) : tr('Elegir archivos')}</button>
       <input ref={input} type="file" multiple accept={ACEPTA} hidden onChange={(e) => { const l = [...e.target.files]; e.target.value = ''; subir(l); }} />
     </div>
   );
@@ -136,7 +140,7 @@ export default function Bandeja({ inicial, resumenInicial, puedeGastar }) {
         if (!lista.length) return null;
         return (
           <section key={estado} className="grupo-mes">
-            <h2><span>{titulo}</span><small>{lista.length}</small></h2>
+            <h2><span>{tr(titulo)}</span><small>{lista.length}</small></h2>
             <ul className="grupo-lista">
               {lista.map((d) => <Fila key={d.id} d={d} puedeGastar={puedeGastar} ocupado={ocupado} accion={accion} />)}
             </ul>
@@ -149,30 +153,31 @@ export default function Bandeja({ inicial, resumenInicial, puedeGastar }) {
 }
 
 function Fila({ d, puedeGastar, ocupado, accion }) {
+  const tr = useT();
   const p = d.propuesta;
   const titulo = p?.proveedor || p?.concepto || d.correo?.asunto || d.nombre;
   const detalle = [
     p?.fecha && fechaCorta(p.fecha),
-    d.correo ? `de ${d.correo.deNombre || d.correo.de}` : d.origen === 'compartido' ? 'compartida desde el móvil' : d.origen === 'whatsapp' ? 'enviada por WhatsApp' : null,
-    d.tipo === 'application/xml' ? 'factura electrónica' : null,
+    d.correo ? tr('de {quien}', { quien: d.correo.deNombre || d.correo.de }) : d.origen === 'compartido' ? tr('compartida desde el móvil') : d.origen === 'whatsapp' ? tr('enviada por WhatsApp') : null,
+    d.tipo === 'application/xml' ? tr('factura electrónica') : null,
   ].filter(Boolean).join(' · ');
   const contenido = <>
     <span className="txt">
       <strong>{titulo}</strong>
       <small>{detalle || d.nombre}</small>
-      {d.error && <small className="bandeja-error" role="alert">{d.error}</small>}
+      {d.error && <small className="bandeja-error" role="alert">{tr(d.error)}</small>}
       <span className="bandeja-chips">
-        {d.cuadra && <span className="chip-ok">Cuadra</span>}
-        {d.duplicados?.length > 0 && <span className="chip-aviso">¿Ya apuntada?</span>}
-        {d.banco && <span className="chip-info">Casa con el banco</span>}
-        {d.habitual && <span className="chip-info">Como la anterior</span>}
-        {p?.desglose && <span className="chip-info">Varios tipos de IVA</span>}
-        {p?.avisos?.length > 0 && !d.cuadra && <span className="chip-aviso">Revisar importes</span>}
+        {d.cuadra && <span className="chip-ok">{tr('Cuadra')}</span>}
+        {d.duplicados?.length > 0 && <span className="chip-aviso">{tr('¿Ya apuntada?')}</span>}
+        {d.banco && <span className="chip-info">{tr('Casa con el banco')}</span>}
+        {d.habitual && <span className="chip-info">{tr('Como la anterior')}</span>}
+        {p?.desglose && <span className="chip-info">{tr('Varios tipos de IVA')}</span>}
+        {p?.avisos?.length > 0 && !d.cuadra && <span className="chip-aviso">{tr('Revisar importes')}</span>}
       </span>
     </span>
     <span className="imp-col">
       {d.total > 0 && <span className="imp">{eur(d.total)}</span>}
-      {d.estado === 'leyendo' && <span className="estado-txt">Leyendo…</span>}
+      {d.estado === 'leyendo' && <span className="estado-txt">{tr('Leyendo…')}</span>}
     </span>
   </>;
   if (d.estado === 'leyendo') return <li><div className="fila">{contenido}</div></li>;
@@ -180,12 +185,12 @@ function Fila({ d, puedeGastar, ocupado, accion }) {
     <li className="bandeja-fila">
       <Link href={`/gastos/bandeja/${d.id}`} className="fila">{contenido}</Link>
       {puedeGastar && d.estado === 'cuarentena' && <div className="bandeja-acciones">
-        <button type="button" className="boton sec pequeno" disabled={ocupado} onClick={() => accion(d.id, 'releer')}>Leerla</button>
-        {d.correo && <button type="button" className="boton sec pequeno" disabled={ocupado} onClick={() => accion(d.id, 'permitir')}>Permitir siempre a {d.correo.de}</button>}
-        <button type="button" className="boton sec pequeno" disabled={ocupado} onClick={() => accion(d.id, 'descartar')}>Descartar</button>
+        <button type="button" className="boton sec pequeno" disabled={ocupado} onClick={() => accion(d.id, 'releer')}>{tr('Leerla')}</button>
+        {d.correo && <button type="button" className="boton sec pequeno" disabled={ocupado} onClick={() => accion(d.id, 'permitir')}>{tr('Permitir siempre a {correo}', { correo: d.correo.de })}</button>}
+        <button type="button" className="boton sec pequeno" disabled={ocupado} onClick={() => accion(d.id, 'descartar')}>{tr('Descartar')}</button>
       </div>}
       {puedeGastar && d.estado === 'error' && <div className="bandeja-acciones">
-        <button type="button" className="boton sec pequeno" disabled={ocupado} onClick={() => accion(d.id, 'releer')}>Leer otra vez</button>
+        <button type="button" className="boton sec pequeno" disabled={ocupado} onClick={() => accion(d.id, 'releer')}>{tr('Leer otra vez')}</button>
       </div>}
     </li>
   );

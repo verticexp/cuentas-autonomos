@@ -16,6 +16,8 @@ const dobles = {
   'next/link': modulo(`import React from ${JSON.stringify(react)}; export default function Link(p){return React.createElement('a',p);}`),
   // Estos flujos prueban remesas con documentos; el estado vacío se resuelve como dependencia de presentación.
   '@/components/Vacio': modulo('export default function Vacio(){return null;}'),
+  // El idioma de la app (components/Idioma.js): en castellano, el texto tal cual y con sus huecos rellenos.
+  '@/components/Idioma': modulo('export const useT = () => (s, v) => (typeof s === "string" && v ? s.replace(/\\{(\\w+)\\}/g, (m, k) => (v[k] ?? m)) : s);'),
   '@/components/Acciones': modulo('export async function llamar(){throw new Error("No debe haber escrituras durante el render");}'),
 };
 async function componente(nombre, extra = '') {

@@ -10,6 +10,7 @@ import { ahoraMadrid } from '@/lib/jornada';
 import { miEmpleado } from '@/lib/jornadaServidor';
 import { gruposVisibles } from '@/components/secciones';
 import { planesQueFaltan } from '@/lib/modulos';
+import { textos } from '@/lib/idiomaServidor';
 import '@/app/mk.css';
 import '@/app/mas.css';
 
@@ -44,15 +45,16 @@ export default async function Mas() {
     grupos.push({ titulo: 'Equipo', tono: 'violeta', enlaces: [{ href: '/jornada', nombre: 'Fichar', detalle: 'Entrada, salida, pausas y tus horas del mes', icono: <><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></> }] });
   }
   const asistente = !(u.plan?.version >= 2 && sinFuncion(u.plan, 'asistente'));
+  const tr = await textos();
   return (
     <main className="pagina mk-look mas-pagina">
       {/* El título grande y, a su derecha, «Ajustes» con su rueda (abre la hoja de Ajustes). Antes era tu avatar, como en
           App Store, pero no se entendía que llevaba a Ajustes: tu cuenta sale arriba dentro de la hoja. */}
       <div className="mas-cab">
-        <h1 className="titulo">Más</h1>
+        <h1 className="titulo">{tr('Más')}</h1>
         <Ir href="/ajustes" tipo="hoja" className="mas-ajustes">
           <svg viewBox="0 0 24 24" aria-hidden><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" /></svg>
-          <span>Ajustes</span>
+          <span>{tr('Ajustes')}</span>
         </Ir>
       </div>
       <MasLista grupos={grupos} asistente={asistente} />

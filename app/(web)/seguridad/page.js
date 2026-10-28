@@ -1,8 +1,13 @@
 import Link from 'next/link';
 import Icono from '@/components/web/Icono';
 import { Cta, Encabezado, Faq, Flecha } from '@/components/web/Bloques';
+import { textos } from '@/lib/idiomaServidor';
+import { conHuecos } from '@/lib/huecos';
 
-export const metadata = { title: 'Seguridad · Fisquo', description: 'Cómo protege Fisquo tus datos: tú decides quién entra, copia cifrada cada noche, conexión cifrada y sin vender tus datos ni usarlos para entrenar IA.' };
+export async function generateMetadata() {
+  const tr = await textos();
+  return { title: tr('Seguridad · Fisquo'), description: tr('Cómo protege Fisquo tus datos: tú decides quién entra, copia cifrada cada noche, conexión cifrada y sin vender tus datos ni usarlos para entrenar IA.') };
+}
 
 // Lo que pregunta el dueño del negocio, en lenguaje llano y solo con lo que es cierto (auditoría D1-36): la copia, en
 // .github/workflows/copia.yml (cada noche, cifrada, 90 días); los servidores, en vercel.json (fra1); lo de la IA, en la
@@ -29,13 +34,14 @@ const TECNICO = [
   ['¿Qué pasa con los archivos que subo y descargo?', 'Los Excel que subes se revisan antes de abrirlos para frenar archivos manipulados, y los CSV que descargas no pueden ejecutar fórmulas. Los enlaces de Fisquo no se filtran a otras webs.'],
 ];
 
-export default function Seguridad() {
+export default async function Seguridad() {
+  const tr = await textos();
   return (
     <>
       <section className="web-hero-pag centro">
         <span className="web-fcard-ico grande web-entra"><Icono n="escudo" /></span>
-        <h1 className="web-entra" style={{ '--d': '60ms' }}>Tus números son tuyos. <em>Y están a salvo.</em></h1>
-        <p className="web-sub web-entra" style={{ '--d': '120ms' }}>Tus facturas, tu equipo y tus impuestos son lo más delicado de tu negocio. Así los protege Fisquo.</p>
+        <h1 className="web-entra" style={{ '--d': '60ms' }}>{conHuecos(tr('Tus números son tuyos. {resalte}'), { resalte: <em>{tr('Y están a salvo.')}</em> })}</h1>
+        <p className="web-sub web-entra" style={{ '--d': '120ms' }}>{tr('Tus facturas, tu equipo y tus impuestos son lo más delicado de tu negocio. Así los protege Fisquo.')}</p>
       </section>
 
       <section className="web-sec web-sec-pegada">
@@ -43,7 +49,7 @@ export default function Seguridad() {
           {MEDIDAS.map((m, k) => (
             <div key={m.t} data-foco data-r style={{ '--d': `${(k % 3) * 70}ms` }}>
               <span className="web-fcard-ico"><Icono n={m.i} /></span>
-              <b>{m.t}</b><p>{m.d}</p>
+              <b>{tr(m.t)}</b><p>{tr(m.d)}</p>
             </div>
           ))}
         </div>
@@ -55,7 +61,7 @@ export default function Seguridad() {
           {IA.map((m, k) => (
             <div key={m.t} data-foco data-r style={{ '--d': `${k * 70}ms` }}>
               <span className="web-fcard-ico"><Icono n={m.i} /></span>
-              <b>{m.t}</b><p>{m.d}</p>
+              <b>{tr(m.t)}</b><p>{tr(m.d)}</p>
             </div>
           ))}
         </div>
@@ -63,21 +69,21 @@ export default function Seguridad() {
 
       <section className="web-sec">
         <Encabezado kicker="Quién hace qué" titulo="Fisquo calcula. Tú o tu gestoría presentáis." sub="Fisquo calcula tus modelos con tus facturas y gastos; tú o tu gestoría los revisáis y los presentáis en Hacienda. Tu gestoría entra con su propio acceso y ve tus datos sin poder tocarlos." />
-        <p className="web-centro"><Link href="/gestorias" className="web-enlace">Programa para gestorías<Flecha /></Link></p>
+        <p className="web-centro"><Link href="/gestorias" className="web-enlace">{tr('Programa para gestorías')}<Flecha /></Link></p>
       </section>
 
       <section className="web-sec">
         <div className="web-mudanza" data-r>
           <div>
-            <p className="web-kicker">Sin ataduras</p>
-            <h2>Te llevas tus datos cuando quieras</h2>
-            <p>Descarga tus facturas en PDF, tus registros en CSV y el paquete trimestral en Excel. Puedes guardar además una copia de tus facturas en tu Google Drive.</p>
-            <Link href="/privacidad" className="web-btn web-btn-oscuro">Leer la política de privacidad<Flecha /></Link>
+            <p className="web-kicker">{tr('Sin ataduras')}</p>
+            <h2>{tr('Te llevas tus datos cuando quieras')}</h2>
+            <p>{tr('Descarga tus facturas en PDF, tus registros en CSV y el paquete trimestral en Excel. Puedes guardar además una copia de tus facturas en tu Google Drive.')}</p>
+            <Link href="/privacidad" className="web-btn web-btn-oscuro">{tr('Leer la política de privacidad')}<Flecha /></Link>
           </div>
           <ol>
-            <li><b>PDF</b><span>Cada factura y presupuesto, listo para enviar o archivar.</span></li>
-            <li><b>CSV y Excel</b><span>Facturas, gastos y el paquete trimestral para tu gestoría.</span></li>
-            <li><b>Google Drive</b><span>Una copia de tus facturas en tu propia nube.</span></li>
+            <li><b>PDF</b><span>{tr('Cada factura y presupuesto, listo para enviar o archivar.')}</span></li>
+            <li><b>{tr('CSV y Excel')}</b><span>{tr('Facturas, gastos y el paquete trimestral para tu gestoría.')}</span></li>
+            <li><b>Google Drive</b><span>{tr('Una copia de tus facturas en tu propia nube.')}</span></li>
           </ol>
         </div>
       </section>

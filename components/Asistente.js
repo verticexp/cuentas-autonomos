@@ -3,9 +3,11 @@
 import Vacio from '@/components/Vacio';
 import { useEffect, useId, useRef, useState } from 'react';
 import { permisoIA } from '@/lib/permisoIA';
+import { useT } from '@/components/Idioma';
 
 // Chat con el asistente: la conversación vive en la pantalla (no se guarda) y cada respuesta dice de dónde salen las cifras.
 export default function Asistente({ listo, ejemplos, inicial = '' }) {
+  const tr = useT();
   const [mensajes, setMensajes] = useState([]);
   const ayudaId = useId();
   const [texto, setTexto] = useState('');
@@ -39,29 +41,29 @@ export default function Asistente({ listo, ejemplos, inicial = '' }) {
     enviar(inicial);
   }, [listo, inicial]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (!listo) return <Vacio icono="asistente" titulo="El asistente no está disponible ahora mismo">Vuelve a intentarlo más tarde. Puedes seguir usando el resto de la app.</Vacio>;
+  if (!listo) return <Vacio icono="asistente" titulo={tr('El asistente no está disponible ahora mismo')}>{tr('Vuelve a intentarlo más tarde. Puedes seguir usando el resto de la app.')}</Vacio>;
   return (
     <div className="asi">
       {!mensajes.length && (
         <div className="asi-ejemplos">
-          {ejemplos.map((e) => <button key={e} type="button" onClick={() => enviar(e)}>{e}</button>)}
-          {!ejemplos.length && <Vacio compacto icono="asistente" titulo="Aún no hay nada que consultar">Con tus permisos el asistente no tiene datos que mirar. Pídele al administrador de tu empresa que te dé acceso.</Vacio>}
+          {ejemplos.map((e) => <button key={e} type="button" onClick={() => enviar(tr(e))}>{tr(e)}</button>)}
+          {!ejemplos.length && <Vacio compacto icono="asistente" titulo={tr('Aún no hay nada que consultar')}>{tr('Con tus permisos el asistente no tiene datos que mirar. Pídele al administrador de tu empresa que te dé acceso.')}</Vacio>}
         </div>
       )}
       <ul className="asi-lista" aria-live="polite">
         {mensajes.map((m, i) => (
           <li key={i} className={`asi-msg ${m.role}${m.error ? ' error' : ''}`}>
-            <p>{m.content.replace(/\*\*/g, '')}</p>
-            {m.fuentes?.length > 0 && <small className="asi-fuentes">Datos de Fisquo: {m.fuentes.join(' · ')}</small>}
+            <p>{(m.error ? tr(m.content) : m.content).replace(/\*\*/g, '')}</p>
+            {m.fuentes?.length > 0 && <small className="asi-fuentes">{tr('Datos de Fisquo: {fuentes}', { fuentes: m.fuentes.join(' · ') })}</small>}
           </li>
         ))}
-        {pensando && <li className="asi-msg assistant pensando" aria-label="Pensando"><span /><span /><span /></li>}
+        {pensando && <li className="asi-msg assistant pensando" aria-label={tr('Pensando')}><span /><span /><span /></li>}
       </ul>
       <div ref={fin} />
-      {!texto.trim() && <p id={ayudaId} className="nota">Escribe tu pregunta para enviarla.</p>}
+      {!texto.trim() && <p id={ayudaId} className="nota">{tr('Escribe tu pregunta para enviarla.')}</p>}
       <form className="asi-form" onSubmit={(e) => { e.preventDefault(); enviar(texto); }}>
-        <input className="campo" value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="Pregunta por tus cuentas" maxLength={500} aria-label="Tu pregunta" />
-        <button className="boton pequeno" disabled={!texto.trim() || pensando} aria-describedby={!texto.trim() ? ayudaId : undefined} aria-label="Enviar">Enviar</button>
+        <input className="campo" value={texto} onChange={(e) => setTexto(e.target.value)} placeholder={tr('Pregunta por tus cuentas')} maxLength={500} aria-label={tr('Tu pregunta')} />
+        <button className="boton pequeno" disabled={!texto.trim() || pensando} aria-describedby={!texto.trim() ? ayudaId : undefined} aria-label={tr('Enviar')}>{tr('Enviar')}</button>
       </form>
     </div>
   );

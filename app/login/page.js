@@ -12,6 +12,7 @@ import { mensajeSeguro } from '@/lib/mensajes';
 import { AYUDA_CONTRASENA } from '@/lib/contrasena';
 import { socialListo } from '@/lib/social';
 import { esApp } from '@/lib/app';
+import { textos } from '@/lib/idiomaServidor';
 import '@/app/legal.css';
 
 export const dynamic = 'force-dynamic';
@@ -19,6 +20,7 @@ const ERRORES = { 1: 'Email o contraseña incorrectos.', bloqueado: 'Demasiados 
 
 export default async function Login({ searchParams }) {
   if (!redis) return <SinBD />;
+  const tr = await textos();
   const { error } = await searchParams;
   // Con sesión, el login no tiene nada que enseñar (al volver atrás hasta aquí, se sigue a la app): «/» resuelve bloqueo, email y estado.
   if (await usuarioActual()) redirect('/');
@@ -32,23 +34,23 @@ export default async function Login({ searchParams }) {
         <TrasArranque>
           <form method="post" action="/api/registro">
             <h1><Logo className="logo-login" /></h1>
-            <p className="nota">Crea la cuenta de administrador.</p>
-            {error && <p className="error" role="alert">{ERRORES[error] || mensajeSeguro(error)}</p>}
-            <label htmlFor="nombre">Nombre</label><input id="nombre" name="nombre" required />
-            <label htmlFor="email">Email</label>
+            <p className="nota">{tr('Crea la cuenta de administrador.')}</p>
+            {error && <p className="error" role="alert">{tr(ERRORES[error] || mensajeSeguro(error))}</p>}
+            <label htmlFor="nombre">{tr('Nombre')}</label><input id="nombre" name="nombre" required />
+            <label htmlFor="email">{tr('Email')}</label>
             <input id="email" name="email" type="email" autoComplete="username" required />
-            <label htmlFor="password">Contraseña</label>
+            <label htmlFor="password">{tr('Contraseña')}</label>
             <input id="password" name="password" type="password" autoComplete="new-password" minLength={10} aria-describedby="password-ayuda" required />
-            <p className="nota" id="password-ayuda">{AYUDA_CONTRASENA}</p>
-            <button type="submit">Crear cuenta</button>
+            <p className="nota" id="password-ayuda">{tr(AYUDA_CONTRASENA)}</p>
+            <button type="submit">{tr('Crear cuenta')}</button>
           </form>
         </TrasArranque>
         ) : <FormEntrar errorInicial={error ? ERRORES[error] || mensajeSeguro(error) : ''} listos={{ ...socialListo(), app: esApp((await headers()).get('user-agent')) }} />}
         {/* Fuera del formulario: los enlaces legales salen siempre, también sin JavaScript. */}
-        <p className="nota login-legal"><a href="/privacidad">Privacidad</a> · <a href="/condiciones">Condiciones</a></p>
+        <p className="nota login-legal"><a href="/privacidad">{tr('Privacidad')}</a> · <a href="/condiciones">{tr('Condiciones')}</a></p>
       </div>
     </main></TransicionPublica>
   );
 }
 
-export const metadata = { title: 'Iniciar sesión' };
+export async function generateMetadata() { return { title: (await textos())('Iniciar sesión') }; }

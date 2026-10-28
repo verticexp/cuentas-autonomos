@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { vibrar } from '@/lib/haptica';
+import { useT } from '@/components/Idioma';
 import '@/app/hecho.css';
 
 // Confirmación de «hecho» al estilo de Apple (como el «Hecho» de Apple Pay): un círculo y una ✓ que se dibujan, el texto
@@ -9,6 +10,7 @@ import '@/app/hecho.css';
 // tras guardar de verdad una factura, un gasto o los tickets escaneados. Un toque la cierra antes.
 
 export default function Hecho() {
+  const tr = useT();
   const [aviso, setAviso] = useState(null);
   const [saliendo, setSaliendo] = useState(false);
   const tiempos = useRef([]);
@@ -57,13 +59,13 @@ export default function Hecho() {
   return (
     <div className="hecho" role="status" aria-live="polite" aria-atomic="true">
       {aviso && <div key={aviso.id} className={`hecho-panel${saliendo ? ' hecho-saliendo' : ''}`}>
-        <button type="button" className="hecho-cerrar" aria-label="Cerrar confirmación" onClick={cerrar} />
+        <button type="button" className="hecho-cerrar" aria-label={tr('Cerrar confirmación')} onClick={cerrar} />
         <svg className="hecho-marca" viewBox="0 0 80 80" fill="none" aria-hidden="true">
           <circle className="hecho-circulo" cx="40" cy="40" r="33" pathLength="1" />
           <path className="hecho-trazo" d="M24 40l11 11 22-23" pathLength="1" />
         </svg>
-        <p className="hecho-texto">{aviso.texto}</p>
-        {aviso.detalle && <p className="hecho-detalle">{aviso.detalle}</p>}
+        <p className="hecho-texto">{tr(aviso.texto)}</p>
+        {aviso.detalle && <p className="hecho-detalle">{tr(aviso.detalle)}</p>}
       </div>}
     </div>
   );

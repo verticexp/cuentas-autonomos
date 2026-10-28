@@ -5,11 +5,13 @@ import { useRouter } from 'next/navigation';
 import { llamar } from './Acciones';
 import { confirmar } from './Confirmar';
 import useEnvio from './useEnvio';
+import { useT } from '@/components/Idioma';
 
 // Editar los mensajes guardados del despacho (app/despacho/ajustes/plantillas): cada uno con su nombre y su texto.
 export default function PlantillasDespacho({ plantillas }) {
   const [enviando, envolver] = useEnvio();
   const router = useRouter();
+  const tr = useT();
   const [editando, setEditando] = useState(null); // { id?, titulo, texto }
   const [msg, setMsg] = useState('');
   const guardar = async (e) => {
@@ -17,13 +19,13 @@ export default function PlantillasDespacho({ plantillas }) {
     try { await llamar('/api/despacho/plantillas', { method: 'POST', body: JSON.stringify(editando) }); setEditando(null); setMsg('✓ Guardado'); router.refresh(); } catch (err) { setMsg(err.message); }
   };
   const borrar = async (p) => {
-    if (!(await confirmar({ titulo: `¿Borrar «${p.titulo}»?`, aceptar: 'Borrar', peligro: true }))) return;
+    if (!(await confirmar({ titulo: tr('¿Borrar «{titulo}»?', { titulo: p.titulo }), aceptar: tr('Borrar'), peligro: true }))) return;
     try { await llamar(`/api/despacho/plantillas?id=${encodeURIComponent(p.id)}`, { method: 'DELETE' }); router.refresh(); } catch (err) { setMsg(err.message); }
   };
   const formulario = <form className="formulario tarjeta" onSubmit={envolver(guardar)}>
-    <label>Nombre<input className="campo" value={editando?.titulo || ''} maxLength={60} placeholder="Por ejemplo: Subir los tickets" onChange={(e) => setEditando({ ...editando, titulo: e.target.value })} required /></label>
-    <label>Mensaje<textarea className="campo" rows={5} value={editando?.texto || ''} maxLength={2000} onChange={(e) => setEditando({ ...editando, texto: e.target.value })} required /></label>
-    <div className="desp-acciones"><button className="boton" disabled={enviando}>Guardar</button><button type="button" className="boton sec" onClick={() => setEditando(null)}>Cancelar</button></div>
+    <label>{tr('Nombre')}<input className="campo" value={editando?.titulo || ''} maxLength={60} placeholder={tr('Por ejemplo: Subir los tickets')} onChange={(e) => setEditando({ ...editando, titulo: e.target.value })} required /></label>
+    <label>{tr('Mensaje')}<textarea className="campo" rows={5} value={editando?.texto || ''} maxLength={2000} onChange={(e) => setEditando({ ...editando, texto: e.target.value })} required /></label>
+    <div className="desp-acciones"><button className="boton" disabled={enviando}>{tr('Guardar')}</button><button type="button" className="boton sec" onClick={() => setEditando(null)}>{tr('Cancelar')}</button></div>
   </form>;
   return <>
     <ul className="grupo-lista desp-plantillas">
@@ -31,13 +33,13 @@ export default function PlantillasDespacho({ plantillas }) {
         {editando?.id === p.id ? formulario : <>
           <span className="txt"><strong>{p.titulo}</strong><small>{p.texto}</small></span>
           <span className="desp-acciones">
-            <button type="button" className="boton sec desp-mini" onClick={() => setEditando({ id: p.id, titulo: p.titulo, texto: p.texto })}>Cambiar</button>
-            <button type="button" className="boton sec desp-mini" onClick={() => borrar(p)}>Borrar</button>
+            <button type="button" className="boton sec desp-mini" onClick={() => setEditando({ id: p.id, titulo: p.titulo, texto: p.texto })}>{tr('Cambiar')}</button>
+            <button type="button" className="boton sec desp-mini" onClick={() => borrar(p)}>{tr('Borrar')}</button>
           </span>
         </>}
       </li>)}
     </ul>
-    {editando && !editando.id ? formulario : <button type="button" className="boton" onClick={() => setEditando({ titulo: '', texto: '' })}>Nuevo mensaje guardado</button>}
-    {msg && <p role="status" className={msg.startsWith('✓') ? 'nota guardado' : 'error'}>{msg}</p>}
+    {editando && !editando.id ? formulario : <button type="button" className="boton" onClick={() => setEditando({ titulo: '', texto: '' })}>{tr('Nuevo mensaje guardado')}</button>}
+    {msg && <p role="status" className={msg.startsWith('✓') ? 'nota guardado' : 'error'}>{tr(msg)}</p>}
   </>;
 }

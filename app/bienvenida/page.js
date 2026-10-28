@@ -4,6 +4,7 @@ import { puede } from '@/lib/permisos';
 import { actividadesDe, fiscalDe } from '@/lib/empresa';
 import Cuestionario from '@/components/Cuestionario';
 import Logo from '@/components/Logo';
+import { textos } from '@/lib/idiomaServidor';
 
 import '@/app/mk.css';
 import { todasFichas } from '@/lib/indices';
@@ -12,6 +13,7 @@ export const dynamic = 'force-dynamic';
 
 // Primer paso de una empresa nueva (o desde Ajustes para cambiarlo): cómo trabaja, sus datos y sus actividades.
 export default async function Bienvenida({ searchParams }) {
+  const tr = await textos();
   const u = await usuarioActual();
   if (!u) redirect('/login');
   await exigirDesbloqueo(u);
@@ -26,7 +28,7 @@ export default async function Bienvenida({ searchParams }) {
       {!editar && (
         <header className="bienvenida-cab">
           <Logo className="logo-bienvenida" />
-          <form method="post" action="/api/logout"><button type="submit" className="enlace">Cerrar sesión</button></form>
+          <form method="post" action="/api/logout"><button type="submit" className="enlace">{tr('Cerrar sesión')}</button></form>
         </header>
       )}
       <Cuestionario
@@ -45,5 +47,6 @@ export default async function Bienvenida({ searchParams }) {
 
 // Desde Ajustes («Actividades e impuestos») abre lo mismo para editarlo: la pestaña dice lo que es.
 export async function generateMetadata({ searchParams }) {
-  return { title: (await searchParams)?.editar ? 'Actividades e impuestos' : 'Bienvenida' };
+  const tr = await textos();
+  return { title: (await searchParams)?.editar ? tr('Actividades e impuestos') : tr('Bienvenida') };
 }
