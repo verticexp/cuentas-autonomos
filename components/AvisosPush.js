@@ -3,16 +3,20 @@
 import { useEffect, useState } from 'react';
 import { llamar } from './Acciones';
 import { useT } from '@/components/Idioma';
+import { activarAvisos, desactivarAvisos, estadoAvisos, hayAvisosNativos } from '@/lib/avisosNativos';
 
 const b64 = (s) => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - (s.length % 4)) % 4)), (c) => c.charCodeAt(0));
 
-// Ajustes → Avisos: activa las notificaciones push en este dispositivo.
+// Ajustes → Avisos: activa las notificaciones push en este dispositivo. En la app de iOS, las nativas (lib/avisosNativos.js).
 export default function AvisosPush({ listo }) {
   const tr = useT();
   const [estado, setEstado] = useState('cargando'); // cargando | no | ios | bloqueado | off | on
   const [msg, setMsg] = useState('');
 
+  const [nativo, setNativo] = useState(false);
+
   useEffect(() => {
+    if (hayAvisosNativos()) { setNativo(true); estadoAvisos().then(setEstado).catch(() => setEstado('no')); return; }
     (async () => {
       if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
         const ios = /iPhone|iPad/.test(navigator.userAgent) && !window.matchMedia('(display-mode: standalone)').matches;
@@ -26,6 +30,7 @@ export default function AvisosPush({ listo }) {
 
   async function activar() {
     setMsg('');
+    if (nativo) { try { setEstado(await activarAvisos()); } catch (e) { setMsg(e.message); } return; }
     try {
       if ((await Notification.requestPermission()) !== 'granted') return setEstado('bloqueado');
       const reg = await navigator.serviceWorker.register('/sw', { scope: '/' });
@@ -40,6 +45,7 @@ export default function AvisosPush({ listo }) {
 
   async function desactivar() {
     setMsg('');
+    if (nativo) { setEstado(await desactivarAvisos()); return; }
     try {
       const sub = await (await navigator.serviceWorker.getRegistration('/'))?.pushManager.getSubscription();
       if (sub) { await llamar('/api/push', { method: 'DELETE', body: JSON.stringify({ endpoint: sub.endpoint }) }); await sub.unsubscribe(); }
@@ -54,7 +60,7 @@ export default function AvisosPush({ listo }) {
       {!listo ? <p className="nota">{tr('Los avisos aún no están configurados en el servidor.')}</p>
         : estado === 'ios' ? <p className="nota">{tr('En iPhone, primero añade Fisquo a la pantalla de inicio (Compartir → Añadir a pantalla de inicio) y ábrela desde ahí.')}</p>
           : estado === 'no' ? <p className="nota">{tr('Este navegador no admite avisos.')}</p>
-            : estado === 'bloqueado' ? <p className="nota">{tr('Has bloqueado los avisos de Fisquo: actívalos en los ajustes del navegador o del móvil.')}</p>
+            : estado === 'bloqueado' ? <p className="nota">{tr(nativo ? 'Has desactivado los avisos de Fisquo: actívalos en Ajustes del iPhone › Notificaciones › Fisquo.' : 'Has bloqueado los avisos de Fisquo: actívalos en los ajustes del navegador o del móvil.')}</p>
               : estado === 'on' ? <><p className="nota">{tr('Activados en este dispositivo.')}</p><button type="button" className="borrar" onClick={desactivar}>{tr('Desactivar en este dispositivo')}</button></>
                 : estado === 'off' ? <button type="button" className="boton" onClick={activar}>{tr('Activar avisos en este dispositivo')}</button> : null}
       {msg && <p className="error" role="alert">{tr(msg)}</p>}

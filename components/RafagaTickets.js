@@ -1,5 +1,7 @@
 'use client';
 
+import { mostrarHecho } from '@/lib/hecho';
+
 import { TIPOS_IGIC } from '@/lib/igic';
 
 import { confirmar as confirmarAccion } from './Confirmar';
@@ -133,7 +135,7 @@ export default function RafagaTickets({ hoy, actividades, igic = false }) {
   const reintentar = (it) => { poner(it.id, { estado: 'leyendo', error: '' }); leerTodas([it]); };
 
   // Cada ticket se guarda con su foto como justificante (la huella va con el gasto para avisar de duplicados).
-  const guardar = async (it, confirmado = false) => {
+  const guardar = async (it, confirmado = false, enLote = false) => {
     poner(it.id, { estado: 'guardando', error: '' });
     try {
       const j = await preparar(null, it.foto);
@@ -145,12 +147,17 @@ export default function RafagaTickets({ hoy, actividades, igic = false }) {
       if (!r.ok) throw new Error(d.error || 'No se ha podido guardar el ticket. Revisa la conexión e inténtalo otra vez.');
       const fallo = j?.blob && d.gasto?.id ? await subir(d.gasto.id, j.blob, { alGuardar: true }) : '';
       poner(it.id, { estado: 'guardado', aviso: fallo ? tr('Sin la foto: {fallo}. Adjúntala desde la ficha del gasto.', { fallo: tr(fallo) }) : '' });
+      if (!enLote) mostrarHecho('Ticket guardado');
       return true;
     } catch (err) { poner(it.id, { estado: 'leido', error: err.message }); return false; }
   };
   // Los que no piden revisión aparte (sin avisos de la lectura ni varios tipos de IVA).
   const limpios = items.filter((x) => x.estado === 'leido' && !x.varios && !x.avisos?.length);
-  const guardarLimpios = async () => { for (const it of limpios) await guardar(it); };
+  const guardarLimpios = async () => {
+    let guardados = 0;
+    for (const it of limpios) if (await guardar(it, false, true)) guardados++;
+    if (guardados) mostrarHecho(guardados === 1 ? 'Ticket guardado' : `${guardados} tickets guardados`);
+  };
 
   const terminados = items.length > 0 && items.every((x) => ['guardado', 'descartado'].includes(x.estado));
   const pendientes = items.filter((x) => !['guardado', 'descartado'].includes(x.estado));

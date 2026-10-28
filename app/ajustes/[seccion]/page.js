@@ -107,8 +107,10 @@ export default async function Seccion({ params, searchParams }) {
   if (['gestoria', 'drive'].includes(seccion) && !puede(u, DETALLE)) return <SinAcceso texto={tr('Para elegir adónde se envían las facturas y los gastos necesitas poder ver el resumen, las facturas y los gastos. Pídeselo al administrador.')} />;
   if (seccion === 'whatsapp' && !puede(u, 'facturar')) return <SinAcceso texto={tr('Fisquo por WhatsApp crea facturas y presupuestos: necesitas el permiso para facturar. Pídeselo al administrador.')} />;
   if (seccion === 'recomienda' && u.rol !== 'admin') return <SinAcceso texto={tr('Solo el administrador de la empresa puede recomendar Fisquo con el enlace de la empresa.')} />;
+  // Face ID: las llaves de acceso (web) y el Face ID nativo de la app de iOS (app/api/dispositivo).
   const llaves = seccion === 'seguridad'
-    ? Object.entries((await redis.hgetall(`passkeys:${u.id}`)) || {}).map(([id, k]) => ({ id, nombre: k.nombre, creada: k.creada, usada: k.usada || null }))
+    ? [...Object.entries((await redis.hgetall(`passkeys:${u.id}`)) || {}).map(([id, k]) => ({ id, nombre: k.nombre, creada: k.creada, usada: k.usada || null, tipo: 'llave' })),
+      ...Object.entries((await redis.hgetall(`dispositivos:${u.id}`)) || {}).map(([id, k]) => ({ id, nombre: k.nombre, creada: k.creada, usada: k.usada || null, tipo: 'nativo' }))]
     : [];
   // Tu plan: lo que ha usado en la prueba y su plan no incluye (lib/planes.js), con el plan que lo cubre.
   const usoPlan = seccion === 'plan' && !esFundador(u.plan) && !u.plan.pagado

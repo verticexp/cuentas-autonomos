@@ -2,6 +2,7 @@
 
 import { conHuecos } from '@/lib/huecos';
 import { useT } from '@/components/Idioma';
+import { mostrarHecho } from '@/lib/hecho';
 
 import Termino from '@/components/Termino';
 import { confirmar } from '@/components/Confirmar';
@@ -248,6 +249,7 @@ export default function FormFactura({ factura, clientes, numeros, hoy, rectifica
         }
         throw new Error(d.error || 'No se ha podido guardar la factura. Revisa la conexión e inténtalo otra vez.');
       }
+      mostrarHecho(nueva ? 'Factura creada' : 'Factura guardada', { trasNavegar: nueva });
       await sinGuardar.guardado();
       if (nueva) navegar(router, `/facturas/${d.factura.id}`, 'fundido', undefined, true);
       router.refresh();

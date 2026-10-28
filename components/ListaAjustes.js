@@ -90,7 +90,7 @@ export default async function ListaAjustes({ u }) {
   // Idioma: el elegido en Ajustes, o «Automático» si sigue al del aparato.
   const idApp = await idiomaActual();
   const idioma = (await cookies()).get('idioma')?.value ? IDIOMAS_APP.find((x) => x.id === idApp)?.nombre : tr('Automático');
-  const [llaves, avisos, whatsapp] = await Promise.all([redis.hgetall(`passkeys:${u.id}`).then((x) => Object.keys(x || {}).length), redis.hlen(`push:${u.id}`), redis.get(`whatsapp:de:${u.id}`)]);
+  const [llaves, avisos, whatsapp] = await Promise.all([Promise.all([redis.hlen(`passkeys:${u.id}`), redis.hlen(`dispositivos:${u.id}`)]).then(([a, b]) => Number(a) + Number(b)), Promise.all([redis.hlen(`push:${u.id}`), redis.hlen(`apns:${u.id}`)]).then(([a, b]) => Number(a) + Number(b)), redis.get(`whatsapp:de:${u.id}`)]);
   const empresa = puede(u, 'empresa');
   const admin = u.rol === 'admin';
   const e = u.emisor || {};
@@ -157,8 +157,8 @@ export default async function ListaAjustes({ u }) {
       {fichar && <Grupo titulo={tr('Tu jornada')}><Fila href="/jornada" ico="reloj" tono="violeta" titulo={tr('Fichar')} /></Grupo>}
 
       <Grupo titulo={tr('Seguridad y avisos')}>
-        <Fila href="/ajustes/seguridad" ico="seguridad" tono="violeta" titulo={tr('Seguridad')} valor={tr(u.dosPasos?.secreto ? 'Dos pasos' : !app && llaves ? 'Face ID' : '')} />
-        {!app && <Fila href="/ajustes/avisos" ico="avisos" tono="rojo" titulo={tr('Avisos')} valor={tr(avisos ? 'Activados' : 'No')} />}
+        <Fila href="/ajustes/seguridad" ico="seguridad" tono="violeta" titulo={tr('Seguridad')} valor={tr(u.dosPasos?.secreto ? 'Dos pasos' : llaves ? 'Face ID' : '')} />
+        <Fila href="/ajustes/avisos" ico="avisos" tono="rojo" titulo={tr('Avisos')} valor={tr(avisos ? 'Activados' : 'No')} />
         {admin && <Fila href="/ajustes/actividad" ico="registro" tono="violeta" titulo={tr('Actividad')} />}
       </Grupo>
 

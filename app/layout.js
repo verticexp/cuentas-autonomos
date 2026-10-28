@@ -30,6 +30,7 @@ import { WEB } from '@/lib/web';
 import Barra from '@/components/Barra';
 import BarraDespacho from '@/components/SelectorCuenta';
 import SinRed from '@/components/SinRed';
+import Hecho from '@/components/Hecho';
 import { despachoDe, rolEn, usaEmpresaPropia } from '@/lib/despachos';
 import { noLeidosDespacho } from '@/lib/mensajesDespacho';
 import { idiomaActual, textos } from '@/lib/idiomaServidor';
@@ -118,6 +119,7 @@ export default async function RootLayout({ children }) {
         <RegistrarSw />
         <GestoAtras />
         <SinRed />
+        <Hecho />
         <ToqueSeguro />
         <script nonce={nonce} suppressHydrationWarning dangerouslySetInnerHTML={{ __html: 'window.__arranque=performance.now()' }} />
         {/* En Mi despacho no: el panel trabaja con su propio plan, no con el del cliente que tenga abierto (lib/planes.js LIBRES). */}
