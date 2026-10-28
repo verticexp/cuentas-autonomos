@@ -165,7 +165,7 @@ export default async function Facturas({ searchParams }) {
                           <FilaFactura href={`/facturas/${f.id}`}>
                             {/* En el móvil, el número, la fecha y la actividad van en una línea; en el ordenador, en columnas. */}
                             <span className="txt">
-                              <strong data-vt="cliente">{f.cliente.nombre}</strong>
+                              <strong data-vt="cliente">{f.caja ? tr(f.cliente.nombre) : f.cliente.nombre}</strong>
                               <small className="tf-meta"><span className="tf-num">{f.caja ? conHuecos(tr('{cierre} · {numero}'), { cierre: <span className="tf-caja">{tr('Cierre de caja')}</span>, numero: numeroFactura(f) }) : numeroFactura(f)}</span><span className="tf-fecha">{fechaCorta(f.fecha)}</span>{!a && Object.keys(ACTIVIDADES).length > 1 && <span className="tf-act">{ACTIVIDADES[f.actividad]}</span>}</small>
                             </span>
                             <span className="tf-base solo-pc">{eur(importes(f).base)}</span>

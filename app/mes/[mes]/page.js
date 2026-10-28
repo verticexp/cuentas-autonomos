@@ -86,7 +86,7 @@ export default async function Mes({ params }) {
               <Ir href={`/facturas/${f.id}`} className="fila">
                 <span className="num">{numeroFactura(f)}</span>
                 <span className="txt">
-                  <strong>{f.cliente.nombre}</strong>
+                  <strong>{f.caja ? tr(f.cliente.nombre) : f.cliente.nombre}</strong>
                   <small><span className="num-movil">{numeroFactura(f)} · </span>{fechaCorta(f.fecha)} · {ACTIVIDADES[f.actividad]}{f.cobrada ? '' : ` · ${tr('Pendiente')}`}</small>
                 </span>
                 <span className={`imp ${f.cobrada ? '' : 'pend'}`}>{eur(importes(f).total)}</span>
