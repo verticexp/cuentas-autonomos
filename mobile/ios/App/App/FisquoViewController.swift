@@ -76,15 +76,22 @@ class FisquoViewController: CAPBridgeViewController {
 
     private func terminoCarga() {
         webView?.scrollView.refreshControl?.endRefreshing()
-        guard !cargada else { return }
-        cargada = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
-            self?.webView?.backgroundColor = Self.fondoApp
-            self?.webView?.scrollView.backgroundColor = Self.fondoApp
+        if !cargada {
+            cargada = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
+                self?.webView?.backgroundColor = Self.fondoApp
+                self?.webView?.scrollView.backgroundColor = Self.fondoApp
+            }
+            if let ruta = rutaPendiente {
+                rutaPendiente = nil
+                abrir(ruta: ruta)
+                return
+            }
         }
-        if let ruta = rutaPendiente {
-            rutaPendiente = nil
-            abrir(ruta: ruta)
+        // Factura compartida sin sesión o con la app bloqueada: tras entrar o desbloquear, a Por revisar a subirla.
+        if CompartirPlugin.hayPendientes, let ruta = webView?.url?.path,
+           !["/login", "/bloqueo", "/registro", "/gastos"].contains(where: { ruta.hasPrefix($0) }) {
+            abrir(ruta: "/gastos?ver=revisar&compartido=1")
         }
     }
 

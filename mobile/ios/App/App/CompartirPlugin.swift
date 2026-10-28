@@ -16,6 +16,7 @@ public class CompartirPlugin: CAPPlugin, CAPBridgedPlugin {
 
     private static let maxBytes = 5 * 1024 * 1024
     private static var cola: [[String: String]] = []
+    static var hayPendientes: Bool { !cola.isEmpty }
 
     // Archivos recibidos → true si alguno se puede subir. Los que pasan de 5 MB o no se leen se quedan fuera
     // (la bandeja avisa de que no ha llegado nada que se pueda leer).
