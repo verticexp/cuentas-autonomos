@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { confirmar } from './Confirmar';
 import { eur, fechaCorta } from '@/lib/formato';
 import { ACEPTA, EVENTO, subirVarias } from '@/lib/bandejaCliente';
-import { leerCompartidos } from '@/lib/compartidoCliente';
+import { confirmarCompartidos, hayCompartidosNativos, leerCompartidos } from '@/lib/compartidoCliente';
 import { useT } from '@/components/Idioma';
 import '@/app/bandeja.css';
 
@@ -67,15 +67,23 @@ export default function Bandeja({ inicial, resumenInicial, puedeGastar }) {
     setSubiendo(null);
     await recargar();
     router.refresh();
+    return r;
   };
 
   // Lo compartido desde el móvil (app/sw lo deja en la caché y vuelve aquí con ?compartido=N): se sube una vez.
   useEffect(() => {
+    // En la app de iOS, además, lo que quede en el iPhone (p. ej. si al compartir estaba bloqueada): se borra al subirse.
     const q = new URLSearchParams(window.location.search).get('compartido');
-    if (q === null) return;
+    if (q === null) {
+      hayCompartidosNativos().then((hay) => hay && leerCompartidos().then(async (l) => { if (l.length && !(await subir(l, 'compartido')).bloqueada) confirmarCompartidos(); }));
+      return;
+    }
     window.history.replaceState(null, '', '/gastos?ver=revisar');
     if (q === 'sinsw') { setAviso(tr('Fisquo aún se estaba preparando en este móvil: vuelve a compartir la factura.')); return; }
-    leerCompartidos().then((l) => (l.length ? subir(l, 'compartido') : setAviso(tr('No ha llegado ningún archivo que se pueda leer (PDF, foto o XML de hasta 5 MB).'))));
+    leerCompartidos().then(async (l) => {
+      if (!l.length) { setAviso(tr('No ha llegado ningún archivo que se pueda leer (PDF, foto o XML de hasta 5 MB).')); return; }
+      if (!(await subir(l, 'compartido')).bloqueada) confirmarCompartidos();
+    });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const aprobarCuadran = async () => {
