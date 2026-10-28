@@ -17,6 +17,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         SceneDelegateProxy.shared.scene(scene, willConnectTo: session, options: connectionOptions)
         // Acceso rápido con la app cerrada: se abre en cuanto carga Fisquo.
         if let atajo = connectionOptions.shortcutItem { abrir(atajo) }
+        // Factura compartida con la app cerrada.
+        recibir(connectionOptions.urlContexts)
     }
 
     // Accesos rápidos al mantener pulsado el icono (UIApplicationShortcutItems en Info.plist).
@@ -32,7 +34,16 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     }
 
     func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
-        SceneDelegateProxy.shared.scene(scene, openURLContexts: URLContexts)
+        if !recibir(URLContexts) { SceneDelegateProxy.shared.scene(scene, openURLContexts: URLContexts) }
+    }
+
+    // Archivos compartidos con Fisquo (CompartirPlugin.swift): a Por revisar, que los sube. → true si eran archivos.
+    @discardableResult
+    private func recibir(_ contextos: Set<UIOpenURLContext>) -> Bool {
+        let archivos = contextos.map(\.url).filter(\.isFileURL)
+        guard !archivos.isEmpty else { return false }
+        fisquo?.abrir(ruta: CompartirPlugin.recibir(archivos) ? "/gastos?ver=revisar&compartido=1" : "/gastos?ver=revisar&compartido=0")
+        return true
     }
 
     func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
