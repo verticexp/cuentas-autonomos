@@ -17,23 +17,21 @@ export default function Comparativas() {
   return (
     <>
       <section className="web-hero-pag">
-        <p className="web-kicker web-entra">Comparativas</p>
         <h1 className="web-entra" style={{ '--d': '60ms' }}>Elige con los precios delante. <em>Y con honestidad.</em></h1>
         <p className="web-sub web-entra" style={{ '--d': '120ms' }}>Comparamos Fisquo con otros programas usando solo lo que publican en su web de precios, con la fecha en que lo comprobamos. Si te conviene otro, te lo decimos.</p>
         <p className="web-art-meta web-entra" style={{ '--d': '180ms' }}>Precios verificados el <time dateTime={FECHA_VERIFICACION}>{fechaLarga(FECHA_VERIFICACION, false)}</time></p>
       </section>
 
       <section className="web-sec">
-        <Encabezado kicker="Precios publicados" titulo="Cuánto cuesta cada uno" sub="Importes tal como los publica cada programa en su web pública. Comprueba en la suya si el precio lleva IVA y qué incluye cada plan: no todos los planes incluyen lo mismo." />
+        <Encabezado titulo="Cuánto cuesta cada uno" sub="Importes tal como los publica cada programa en su web pública. Comprueba en la suya si el precio lleva IVA y qué incluye cada plan: no todos los planes incluyen lo mismo." />
         <TablaPreciosComparativa />
       </section>
 
       <section className="web-sec">
-        <Encabezado kicker="Una a una" titulo="Fisquo frente a cada programa" />
+        <Encabezado titulo="Fisquo frente a cada programa" />
         <div className="web-relacionadas">
           {RIVALES.map((r, k) => (
             <Link key={r.slug} href={`/comparativa/${r.slug}`} data-foco data-r className="web-fcard" style={{ '--d': `${k * 70}ms` }}>
-              <span className="web-fcard-ico"><Icono n="tienda" /></span>
               <h3>{r.titulo}</h3>
               <p>{rellenar(r.intro)}</p>
               <span className="web-enlace">Ver la comparativa<Flecha /></span>

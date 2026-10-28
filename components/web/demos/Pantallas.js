@@ -21,7 +21,7 @@ export function VentanaApp() {
   const tr = useT();
   const barras = [38, 52, 44, 61, 58, 72, 66, 84, 79, 92, 88, 100];
   return (
-    <div className="mk-app" aria-hidden>
+    <div data-ui className="mk-app" aria-hidden>
       <div className="mk-app-barra"><i /><i /><i /><span>fisquo.com</span></div>
       <div className="mk-app-cuerpo">
         <aside className="mk-lateral">
@@ -56,7 +56,7 @@ const PANTALLAS = {
   factura: () => {
     const tr = useT();
     return (
-    <div className="mk mk-factura">
+    <div data-ui className="mk mk-factura">
       <div className="mk-factura-cab"><N className="mk-n" /><div><b>{tr('Factura F-0142')}</b><small>{tr('12 de octubre de 2026')}</small></div><i className="mk-qr" /></div>
       <div className="mk-factura-partes"><div><small>{tr('Para')}</small><b>Altamira Consultores SL</b><small>B12345678</small></div><div><small>{tr('Vence')}</small><b>{tr('11 nov 2026')}</b></div></div>
       <Fila a="Consultoría · octubre" b="1 × 900,00 €" c="900,00 €" />
@@ -68,7 +68,7 @@ const PANTALLAS = {
   gasto: () => {
     const tr = useT();
     return (
-    <div className="mk mk-gasto">
+    <div data-ui className="mk mk-gasto">
       <div className="mk-ticket-foto"><span /><span /><span /><span /><i /></div>
       <div className="mk-campos">
         <label>{tr('Proveedor')}<b>Suministros Vega SL</b></label>
@@ -83,7 +83,7 @@ const PANTALLAS = {
   impuestos: () => {
     const tr = useT();
     return (
-    <div className="mk">
+    <div data-ui className="mk">
       <div className="mk-cab"><b>{tr('3.er trimestre')}</b><span className="mk-chip pend">{tr('Presentar antes del 20/10')}</span></div>
       <div className="mk-modelos">
         <div><small>{tr('Modelo 303 · IVA')}</small><b>1.842,30 €</b><span className="mk-barra"><i style={{ '--w': '72%' }} /></span></div>
@@ -97,7 +97,7 @@ const PANTALLAS = {
   conciliacion: () => {
     const tr = useT();
     return (
-    <div className="mk">
+    <div data-ui className="mk">
       <div className="mk-cab"><b>{tr('Extracto · BBVA')}</b><span className="mk-chip ok">{tr('12 de 14 emparejados')}</span></div>
       <Fila a="Transferencia Altamira" b="→ Factura F-0142" c="+1.210,00 €" chip="✓" />
       <Fila a="Pago Suministros Vega SL" b="→ Gasto 10/10" c="−380,00 €" chip="✓" />
@@ -110,7 +110,7 @@ const PANTALLAS = {
     const tr = useT();
     const v = [62, 58, 70, 66, 78, 86];
     return (
-      <div className="mk">
+      <div data-ui className="mk">
         <div className="mk-cab"><b>{tr('Previsión de caja')}</b><span className="mk-seg"><i>{tr('3m')}</i><i className="on">{tr('6m')}</i><i>{tr('12m')}</i></span></div>
         <div className="mk-prev">{v.map((h, i) => <span key={i} style={{ '--h': `${h}%`, '--i': i }}><i /><small>{tr(['Nov', 'Dic', 'Ene', 'Feb', 'Mar', 'Abr'][i])}</small></span>)}</div>
         <div className="mk-leyenda"><span><i className="c1" />{tr('Saldo previsto')}</span><b>{tr('31.480 € en abril')}</b></div>
@@ -120,7 +120,7 @@ const PANTALLAS = {
   equipo: () => {
     const tr = useT();
     return (
-    <div className="mk">
+    <div data-ui className="mk">
       <div className="mk-cab"><b>{tr('Usuarios')}</b><span className="mk-chip ok">{tr('+ Invitar')}</span></div>
       {[['M', 'Marta Ruiz', 'Administradora', 'ok'], ['J', 'Jordi Sala', 'Facturar y gastos', 'neutro'], ['G', 'Gestoría Pons', 'Solo vista', 'pend']].map(([i, n, r, t]) => (
         <div key={n} className="mk-fila mk-usuario"><span className="mk-avatar">{i}</span><div><b>{n}</b><small>{tr(r)}</small></div><span className={`mk-chip ${t}`}>{tr(t === 'ok' ? 'Admin' : t === 'pend' ? 'Gestoría' : 'Miembro')}</span></div>
@@ -132,7 +132,7 @@ const PANTALLAS = {
   presupuesto: () => {
     const tr = useT();
     return (
-    <div className="mk">
+    <div data-ui className="mk">
       <div className="mk-cab"><b>{tr('Presupuesto P-0031')}</b><span className="mk-chip ok">{tr('Aceptado')}</span></div>
       <Fila a="Reforma del local" b="Obra y materiales" c="1.800,00 €" />
       <Fila a="Instalación eléctrica" b="Puntos de luz y cuadro" c="350,00 €" />
@@ -144,7 +144,7 @@ const PANTALLAS = {
   portal: () => {
     const tr = useT();
     return (
-    <div className="mk">
+    <div data-ui className="mk">
       <div className="mk-cab"><b>{tr('Tus documentos · Altamira')}</b><Icono n="documento" /></div>
       <Fila a="Factura F-0142" b="12/10/2026" c="1.060,00 €" chip="PDF" tipo="neutro" />
       <Fila a="Factura F-0128" b="08/09/2026" c="980,00 €" chip="PDF" tipo="neutro" />
@@ -155,7 +155,7 @@ const PANTALLAS = {
   recurrentes: () => {
     const tr = useT();
     return (
-    <div className="mk">
+    <div data-ui className="mk">
       <div className="mk-cab"><b>{tr('Recurrentes')}</b><span className="mk-chip ok">{tr('Activas')}</span></div>
       <Fila a="Servicio mensual · Altamira" b="Cada mes, día 1" c="1.200,00 €" d="Próxima: 1 nov" />
       <Fila a="Mantenimiento web" b="Cada trimestre" c="300,00 €" d="Próxima: 1 ene" />
@@ -166,7 +166,7 @@ const PANTALLAS = {
   dietas: () => {
     const tr = useT();
     return (
-    <div className="mk">
+    <div data-ui className="mk">
       <div className="mk-cab"><b>{tr('Desplazamiento · Valencia')}</b><span className="mk-chip neutro">{tr('Con pernocta')}</span></div>
       <Fila a="Kilometraje" b="350 km × 0,26 €" c="91,00 €" />
       <Fila a="Manutención" b="Límite exento 53,34 €/día" c="53,34 €" />
@@ -177,7 +177,7 @@ const PANTALLAS = {
   proveedores: () => {
     const tr = useT();
     return (
-    <div className="mk">
+    <div data-ui className="mk">
       <div className="mk-cab"><b>Suministros Vega SL</b><span className="mk-chip pend">{tr('380 € pendientes')}</span></div>
       <Fila a="Pedido de material · oct" b="Vence 30/10" c="−380,00 €" chip="Pendiente" tipo="pend" />
       <Fila a="Pedido de material · sep" b="Pagado 28/09" c="−380,00 €" chip="Pagado" />
@@ -188,7 +188,7 @@ const PANTALLAS = {
   paquete: () => {
     const tr = useT();
     return (
-    <div className="mk">
+    <div data-ui className="mk">
       <div className="mk-cab"><b>{tr('Paquete 3T · 2026')}</b><Icono n="importar" /></div>
       {[['Facturas emitidas', '38 documentos'], ['Gastos', '61 documentos'], ['Modelos 303 y 130', 'Casillas calculadas']].map(([a, b]) => <Fila key={a} a={a} b={b} chip="✓" />)}
       <div className="mk-dos"><span className="mk-btn">Excel</span><span className="mk-btn claro">PDF</span></div>
@@ -198,7 +198,7 @@ const PANTALLAS = {
   fraccionado: () => {
     const tr = useT();
     return (
-    <div className="mk">
+    <div data-ui className="mk">
       <div className="mk-cab"><b>{tr('Pagos fraccionados · 130')}</b><small>2026</small></div>
       <Fila a="1.er trimestre" b="Presentado 18/04" c="820,00 €" chip="✓" />
       <Fila a="2.º trimestre" b="Presentado 17/07" c="1.040,00 €" chip="✓" />
@@ -209,7 +209,7 @@ const PANTALLAS = {
   emparejado: () => {
     const tr = useT();
     return (
-    <div className="mk mk-par">
+    <div data-ui className="mk mk-par">
       <div className="mk-par-l"><small>{tr('Movimiento')}</small><b>+1.210,00 €</b><small>Transferencia Altamira · 14/10</small></div>
       <div className="mk-par-lazo"><i /><span>✓</span><i /></div>
       <div className="mk-par-l"><small>{tr('Factura')}</small><b>F-0142</b><small>{tr('Cobrada el 14/10')}</small></div>
@@ -220,7 +220,7 @@ const PANTALLAS = {
     const tr = useT();
     const b = [40, 55, 48, 66, 60, 74, 70, 86, 81, 92];
     return (
-      <div className="mk">
+      <div data-ui className="mk">
         <div className="mk-cab"><b>{tr('2026 frente a 2025')}</b><span className="mk-chip ok">+27 %</span></div>
         <div className="mk-barras peq">{b.map((h, i) => <i key={i} style={{ '--h': `${h}%`, '--i': i }} />)}</div>
         <Fila a="Mejor cliente" b="Altamira Consultores" c="12.480 €" />
@@ -230,7 +230,7 @@ const PANTALLAS = {
   invitaciones: () => {
     const tr = useT();
     return (
-    <div className="mk">
+    <div data-ui className="mk">
       <div className="mk-cab"><b>{tr('Invitar a tu equipo')}</b></div>
       <div className="mk-input">gestoria@pons.es<span className="mk-chip pend">{tr('Solo vista')}</span></div>
       <Fila a="jordi@tuempresa.es" b="Caduca en 6 días" chip="Enviada" tipo="neutro" />
@@ -241,7 +241,7 @@ const PANTALLAS = {
   contabilidad: () => {
     const tr = useT();
     return (
-    <div className="mk">
+    <div data-ui className="mk">
       <div className="mk-cab"><b>{tr('Pérdidas y ganancias · 2025')}</b><span className="mk-chip ok">{tr('Del diario')}</span></div>
       <Fila a="Cifra de negocios" b="Facturas del año" c="+148.300 €" />
       <Fila a="Gastos de explotación" b="Personal, compras y servicios" c="−93.870 €" />
@@ -253,7 +253,7 @@ const PANTALLAS = {
   inventario: () => {
     const tr = useT();
     return (
-    <div className="mk">
+    <div data-ui className="mk">
       <div className="mk-cab"><b>{tr('Inventario')}</b><span className="mk-chip ok">{tr('1.515 € en almacén')}</span></div>
       <Fila a="Cable XLR 10 m" b="XLR-10 · mínimo 20" c="16 ud." chip="Bajo mínimo" tipo="pend" />
       <Fila a="Lámpara LED PAR 64" b="PAR64-LED · mínimo 6" c="18 ud." />
@@ -264,7 +264,7 @@ const PANTALLAS = {
   pedido: () => {
     const tr = useT();
     return (
-    <div className="mk">
+    <div data-ui className="mk">
       <div className="mk-cab"><b>{tr('Qué pedir · Audio Pro')}</b><small>1.140,84 €</small></div>
       <Fila a="Cable XLR 10 m" b="Quedan 16 · mínimo 20" c="44 ud." />
       <Fila a="Micrófono inalámbrico" b="Queda 1 · mínimo 2" c="5 ud." />
@@ -275,7 +275,7 @@ const PANTALLAS = {
   margen: () => {
     const tr = useT();
     return (
-    <div className="mk">
+    <div data-ui className="mk">
       <div className="mk-cab"><b>Cable XLR 10 m</b><span className="mk-chip ok">{tr('Margen 58 %')}</span></div>
       <Fila a="Recuento" b="13/10 · había 18, hay 16" c="−2" />
       <Fila a="Venta · Factura A2026-031" b="10/10 · queda 18" c="−28" />
@@ -286,7 +286,7 @@ const PANTALLAS = {
   libros: () => {
     const tr = useT();
     return (
-    <div className="mk">
+    <div data-ui className="mk">
       <div className="mk-cab"><b>{tr('Libros registro · 2026')}</b><span className="mk-chip ok">{tr('Formato AEAT')}</span></div>
       <Fila a="Facturas expedidas e ingresos" b="48 anotaciones · IVA 7.812,00 €" chip="✓" />
       <Fila a="Facturas recibidas y gastos" b="112 anotaciones · con amortizaciones" chip="✓" />
@@ -298,7 +298,7 @@ const PANTALLAS = {
   anuales: () => {
     const tr = useT();
     return (
-    <div className="mk">
+    <div data-ui className="mk">
       <div className="mk-cab"><b>{tr('Cuentas anuales 2025')}</b><span className="mk-chip ok">{tr('Modelo de pymes')}</span></div>
       {[['Balance de pymes', 'Con 2024 al lado'], ['Pérdidas y ganancias', 'Epígrafes oficiales'], ['Cambios en el patrimonio neto', 'Calculado'], ['Memoria', '14 secciones con tus cifras']].map(([a, b]) => <Fila key={a} a={a} b={b} chip="✓" />)}
       <Fila a="Depositar en el Registro" b="Hasta el 30/07/2026" chip="Plazo" tipo="pend" />
@@ -308,7 +308,7 @@ const PANTALLAS = {
   amortizaciones: () => {
     const tr = useT();
     return (
-    <div className="mk">
+    <div data-ui className="mk">
       <div className="mk-cab"><b>{tr('Bienes de inversión')}</b><small>2026</small></div>
       {[['Furgoneta Renault Master', '16 % al año', 4560, 67], ['Mesa de luces y focos LED', '20 % al año', 1960, 52], ['Dos portátiles', '25 % al año', 1050, 46]].map(([a, b, c, w]) => (
         <div key={a} className="mk-fila"><div><b>{tr(a)}</b><small>{tr(b)}</small><span className="mk-barra"><i style={{ '--w': `${w}%` }} /></span></div><div className="mk-der"><em>{new Intl.NumberFormat('es-ES', { useGrouping: 'always' }).format(c)} €</em></div></div>
@@ -319,7 +319,7 @@ const PANTALLAS = {
   migracion: () => {
     const tr = useT();
     return (
-    <div className="mk">
+    <div data-ui className="mk">
       <div className="mk-cab"><b>{tr('Saldos a 31/12/2025')}</b><span className="mk-chip ok">{tr('Cuadra')}</span></div>
       <Fila a="100 · Capital social" b="Desde A3" c="3.000,00 €" />
       <Fila a="430 · 3 clientes" b="Subcuentas sumadas una vez" c="2.420,00 €" />
@@ -331,7 +331,7 @@ const PANTALLAS = {
   revision: () => {
     const tr = useT();
     return (
-    <div className="mk">
+    <div data-ui className="mk">
       <div className="mk-cab"><b>{tr('Gastos · En revisión')}</b><span className="mk-chip pend">3</span></div>
       <Fila a="Amazon EU" b="02/10 · falta la factura" c="−86,90 €" chip="Añadir" tipo="pend" />
       <Fila a="Leroy Merlin" b="04/10 · falta la factura" c="−142,35 €" chip="Añadir" tipo="pend" />
@@ -342,7 +342,7 @@ const PANTALLAS = {
   empresas: () => {
     const tr = useT();
     return (
-    <div className="mk">
+    <div data-ui className="mk">
       <div className="mk-cab"><b>{tr('Tus empresas')}</b><Icono n="edificio" /></div>
       {[['R', 'Ruiz & Asociados SL', 'Actual'], ['T', 'Taller Ruiz SL', ''], ['M', 'Marta Ruiz · Autónoma', '']].map(([i, n, a]) => (
         <div key={n} className={`mk-fila mk-usuario${a ? ' on' : ''}`}><span className="mk-avatar">{i}</span><div><b>{n}</b></div>{a && <span className="mk-chip ok">{tr(a)}</span>}</div>

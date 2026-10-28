@@ -32,7 +32,6 @@ export default async function Contacto({ searchParams }) {
   return (
     <section className="web-contacto">
       <div className="web-contacto-txt">
-        <p className="web-kicker web-entra">{tr(ampliacion ? 'Lectura de documentos' : business ? 'Fisquo Business' : 'Escríbenos')}</p>
         <h1 className="web-entra" style={{ '--d': '60ms' }}>{ampliacion ? conHuecos(tr('Más páginas para {resalte}'), { resalte: <em>{tr('tu negocio')}</em> }) : business ? conHuecos(tr('Una propuesta para {resalte}'), { resalte: <em>{tr('tu negocio')}</em> }) : conHuecos(tr('Cuéntanos qué {resalte}'), { resalte: <em>{tr('necesitas')}</em> })}</h1>
         <p className="web-sub web-entra" style={{ '--d': '120ms' }}>{ampliacion ? tr('Solicita una ampliación de tu bolsa de lectura IA. Te confirmaremos el precio y las condiciones antes de que decidas contratarla.') : business ? tr('Cuéntanos cómo trabajáis y qué necesitáis. Te responderemos para definir una propuesta a medida.') : conHuecos(tr('Resolvemos dudas de planes, implantación y cómo traer tus datos. Si ya quieres probar Fisquo, {enlace}: tienes 30 días sin tarjeta.'), { enlace: <a href="/registro">{tr('crea tu cuenta gratis')}</a> })}</p>
         <ol className="web-contacto-pasos">

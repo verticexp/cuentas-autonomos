@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import Icono from '@/components/web/Icono';
 import { Cta, Encabezado, Faq, Flecha } from '@/components/web/Bloques';
 import { textos } from '@/lib/idiomaServidor';
 import { conHuecos } from '@/lib/huecos';
@@ -39,7 +38,6 @@ export default async function Seguridad() {
   return (
     <>
       <section className="web-hero-pag centro">
-        <span className="web-fcard-ico grande web-entra"><Icono n="escudo" /></span>
         <h1 className="web-entra" style={{ '--d': '60ms' }}>{conHuecos(tr('Tus números son tuyos. {resalte}'), { resalte: <em>{tr('Y están a salvo.')}</em> })}</h1>
         <p className="web-sub web-entra" style={{ '--d': '120ms' }}>{tr('Tus facturas, tu equipo y tus impuestos son lo más delicado de tu negocio. Así los protege Fisquo.')}</p>
       </section>
@@ -48,7 +46,6 @@ export default async function Seguridad() {
         <div className="web-extras tres">
           {MEDIDAS.map((m, k) => (
             <div key={m.t} data-foco data-r style={{ '--d': `${(k % 3) * 70}ms` }}>
-              <span className="web-fcard-ico"><Icono n={m.i} /></span>
               <b>{tr(m.t)}</b><p>{tr(m.d)}</p>
             </div>
           ))}
@@ -56,11 +53,10 @@ export default async function Seguridad() {
       </section>
 
       <section className="web-sec">
-        <Encabezado kicker="Inteligencia artificial" titulo="La IA, con tus reglas" sub="Fisquo usa IA para leer tus tickets y responder a tus preguntas. Así la usa." />
+        <Encabezado titulo="La IA, con tus reglas" sub="Fisquo usa IA para leer tus tickets y responder a tus preguntas. Así la usa." />
         <div className="web-extras tres">
           {IA.map((m, k) => (
             <div key={m.t} data-foco data-r style={{ '--d': `${k * 70}ms` }}>
-              <span className="web-fcard-ico"><Icono n={m.i} /></span>
               <b>{tr(m.t)}</b><p>{tr(m.d)}</p>
             </div>
           ))}
@@ -68,14 +64,13 @@ export default async function Seguridad() {
       </section>
 
       <section className="web-sec">
-        <Encabezado kicker="Quién hace qué" titulo="Fisquo calcula. Tú o tu gestoría presentáis." sub="Fisquo calcula tus modelos con tus facturas y gastos; tú o tu gestoría los revisáis y los presentáis en Hacienda. Tu gestoría entra con su propio acceso y ve tus datos sin poder tocarlos." />
+        <Encabezado titulo="Fisquo calcula. Tú o tu gestoría presentáis." sub="Fisquo calcula tus modelos con tus facturas y gastos; tú o tu gestoría los revisáis y los presentáis en Hacienda. Tu gestoría entra con su propio acceso y ve tus datos sin poder tocarlos." />
         <p className="web-centro"><Link href="/gestorias" className="web-enlace">{tr('Programa para gestorías')}<Flecha /></Link></p>
       </section>
 
       <section className="web-sec">
         <div className="web-mudanza" data-r>
           <div>
-            <p className="web-kicker">{tr('Sin ataduras')}</p>
             <h2>{tr('Te llevas tus datos cuando quieras')}</h2>
             <p>{tr('Descarga tus facturas en PDF, tus registros en CSV y el paquete trimestral en Excel. Puedes guardar además una copia de tus facturas en tu Google Drive.')}</p>
             <Link href="/privacidad" className="web-btn web-btn-oscuro">{tr('Leer la política de privacidad')}<Flecha /></Link>
@@ -89,7 +84,7 @@ export default async function Seguridad() {
       </section>
 
       <section className="web-sec">
-        <Encabezado kicker="Banco" titulo="Tu banco, sin darnos las llaves" sub="Ahora trabajas con extractos que tú descargas y subes. Fisquo extrae los movimientos y te ayuda a conciliarlos, sin pedirte las claves de tu banca online. La conexión directa está prevista para más adelante y será de solo lectura." />
+        <Encabezado titulo="Tu banco, sin darnos las llaves" sub="Ahora trabajas con extractos que tú descargas y subes. Fisquo extrae los movimientos y te ayuda a conciliarlos, sin pedirte las claves de tu banca online. La conexión directa está prevista para más adelante y será de solo lectura." />
       </section>
 
       <Faq titulo="Detalles técnicos" preguntas={TECNICO} />

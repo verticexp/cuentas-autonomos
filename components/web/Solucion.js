@@ -31,7 +31,7 @@ export default async function Solucion({ id }) {
       </section>
 
       <section className="web-sec">
-        <Encabezado kicker="Lo que te quitamos de encima" titulo="Del caos de siempre a todo en orden" />
+        <Encabezado titulo="Del caos de siempre a todo en orden" />
         <div className="web-dolores">
           {s.dolores.map(([mal, bien], i) => (
             <div key={mal} data-foco data-r style={{ '--d': `${(i % 2) * 80}ms` }}>
@@ -43,13 +43,12 @@ export default async function Solucion({ id }) {
       </section>
 
       <section className="web-sec">
-        <Encabezado kicker="Funciones clave" titulo={id === 'business' ? 'Qué incluye tu propuesta' : tr('Lo que más usan los {tipo}', { tipo: tr(s.n.toLowerCase()) })} />
+        <Encabezado titulo={id === 'business' ? 'Qué incluye tu propuesta' : tr('Lo que más usan los {tipo}', { tipo: tr(s.n.toLowerCase()) })} />
         <div className="web-relacionadas cuatro">
           {s.funciones.map((slug, k) => {
             const f = funcion(slug);
             return (
               <Link key={slug} href={`/funciones/${slug}`} data-foco data-r className="web-fcard" style={{ '--d': `${k * 60}ms` }}>
-                <span className="web-fcard-ico"><Icono n={f.icono} /></span>
                 <h3>{tr(f.nombre)}</h3>
                 <p>{tr(f.corto)}</p>
                 <span className="web-enlace">{tr('Descubrir')}<Flecha /></span>
@@ -62,13 +61,13 @@ export default async function Solucion({ id }) {
       <section className="web-sec" id="planes">
         {id === 'business' ? (
           <>
-            <Encabezado kicker="Business" titulo="Un alcance acordado. Un precio cerrado." sub="Definimos contigo las sociedades, los equipos, los accesos y los servicios que necesitas." centro />
+            <Encabezado titulo="Un alcance acordado. Un precio cerrado." sub="Definimos contigo las sociedades, los equipos, los accesos y los servicios que necesitas." centro />
             <p className="web-centro">{tr('Los seis planes de Autónomos y Pymes incluyen una empresa por suscripción. Business permite acordar una propuesta para varias sociedades o equipos, con sus datos separados. La implantación, la personalización y el soporte se concretan en la oferta.')}</p>
             <p className="web-centro"><Link href="/contacto?plan=Business" className="web-btn">{tr('Solicitar propuesta')}<Flecha /></Link></p>
           </>
         ) : (
           <>
-            <Encabezado kicker="Planes" titulo={tr('Planes para {tipo}', { tipo: tr(s.n.toLowerCase()) })} sub="Todos con 30 días gratis y sin permanencia." centro />
+            <Encabezado titulo={tr('Planes para {tipo}', { tipo: tr(s.n.toLowerCase()) })} sub="Todos con 30 días gratis y sin permanencia." centro />
             <Precios inicial={id} solo />
             <p className="web-centro"><Link href="/precios" className="web-enlace">{tr('Ver la comparativa completa')}<Flecha /></Link></p>
           </>
@@ -77,11 +76,10 @@ export default async function Solucion({ id }) {
 
       {/* Guías del público de esta página (data/web-guias.js): de autónomos o de sociedades, más las que valen para los dos. */}
       <section className="web-sec">
-        <Encabezado kicker="Guías fiscales" titulo={id === 'aut' ? 'Los impuestos del autónomo, explicados' : 'Los impuestos de tu sociedad, explicados'} sub="Con la norma citada y la fecha de revisión." />
+        <Encabezado titulo={id === 'aut' ? 'Los impuestos del autónomo, explicados' : 'Los impuestos de tu sociedad, explicados'} sub="Con la norma citada y la fecha de revisión." />
         <div className="web-relacionadas cuatro">
           {[...GUIAS.filter((g) => g.para === (id === 'aut' ? 'autonomos' : 'pymes')), ...GUIAS.filter((g) => g.para === 'todos')].slice(0, 4).map((g, i) => (
             <Link key={g.slug} href={`/guias/${g.slug}`} data-foco data-r className="web-fcard" style={{ '--d': `${i * 70}ms` }}>
-              <span className="web-fcard-ico"><Icono n="documento" /></span>
               <h3>{g.corto}</h3>
               <p>{g.resumen}</p>
               <span className="web-enlace">{tr('Leer la guía')}<Flecha /></span>

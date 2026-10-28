@@ -46,7 +46,7 @@ export function Calculadora() {
   const parte = (x) => `${ing ? Math.max(0, (x / ing) * 100) : 0}%`;
 
   return (
-    <div className="dm dm-calc">
+    <div data-ui className="dm dm-calc">
       <div className="dm-calc-datos">
         <p className="dm-titulo"><Icono n="impuestos" />{tr('Tu trimestre')}</p>
         <Deslizador id="c-ing" label="Facturado (sin IVA)" valor={ing} set={setIng} max={60000} />
@@ -81,7 +81,7 @@ export function FacturaDemo() {
   const irpf = (importe * irpfP) / 100;
   const total = importe + iva - irpf;
   return (
-    <div className="dm dm-factura">
+    <div data-ui className="dm dm-factura">
       <form className="dm-form" onSubmit={(e) => e.preventDefault()}>
         <p className="dm-titulo"><Icono n="factura" />{tr('Prueba a hacer una factura')}</p>
         <label>{tr('Cliente')}<input value={cliente} onChange={(e) => setCliente(e.target.value)} maxLength={40} /></label>
@@ -132,7 +132,7 @@ export function TicketDemo() {
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
   const t = TICKETS[n];
   return (
-    <div className="dm dm-ticket" ref={ref}>
+    <div data-ui className="dm dm-ticket" ref={ref}>
       <div className={`dm-ticket-foto ${fase}`}>
         <div className="dm-ticket-papel"><b>{t.prov}</b><span /><span /><span /><span className="corta" /><b className="dm-ticket-total">TOTAL</b></div>
         <i className="dm-ticket-laser" />
@@ -167,7 +167,7 @@ export function ConciliacionDemo() {
     seguros.forEach((m, i) => timers.current.push(setTimeout(() => setHechos((h) => [...h, m.id]), quieto() ? 0 : i * 280)));
   };
   return (
-    <div className="dm dm-conc">
+    <div data-ui className="dm dm-conc">
       <div className="dm-conc-cab">
         <div><p className="dm-titulo"><Icono n="banco" />extracto_octubre.n43</p><small>{tr('{hechos} de {total} conciliados', { hechos: hechos.length, total: MOVS.length })}</small></div>
         {seguros.length ? <button className="web-btn web-btn-peq" onClick={confirmar}>{tr('Confirmar los seguros ({n})', { n: seguros.length })}</button> : <button className="web-btn web-btn-peq web-btn-claro-oscuro" onClick={() => setHechos([])}>{tr('Deshacer')}</button>}
@@ -209,7 +209,7 @@ export function PrevisionDemo() {
   const max = Math.max(...datos.map((d) => d.saldo)) * 1.08;
   const f = datos[foco ?? datos.length - 1];
   return (
-    <div className="dm dm-prev">
+    <div data-ui className="dm dm-prev">
       <div className="dm-prev-cab">
         <div><p className="dm-titulo"><Icono n="tesoreria" />{tr('Previsión de caja')}</p><small>{tr('Desde tu saldo real: {importe}', { importe: eur(18420, 0) })}</small></div>
         <div className="dm-seg" role="tablist" style={{ '--i': [3, 6, 12].indexOf(meses) }}>
@@ -246,7 +246,7 @@ export function PermisosDemo() {
   const [rol, setRol] = useState('Gestoría');
   const nombres = Object.keys(ROLES);
   return (
-    <div className="dm dm-perm">
+    <div data-ui className="dm dm-perm">
       <div className="dm-seg dm-seg-ancho" role="tablist" style={{ '--i': nombres.indexOf(rol), '--n': nombres.length }}>
         <span className="dm-seg-ind" aria-hidden />
         {nombres.map((r) => <button key={r} role="tab" aria-selected={rol === r} className={rol === r ? 'on' : undefined} onClick={() => setRol(r)}>{tr(r)}</button>)}
@@ -288,7 +288,7 @@ export function AsistenteDemo() {
     }, quieto() ? 0 : 900));
   };
   return (
-    <div className="dm dm-chat">
+    <div data-ui className="dm dm-chat">
       <div className="dm-chat-cab"><span className="dm-chat-ava"><Icono n="asistente" /></span><div><b>{tr('Asistente de Fisquo')}</b><small>{tr('Responde con tus cifras')}</small></div></div>
       <div className="dm-chat-msgs" ref={fin}>
         {chat.map((m, i) => <p key={i} className={m.yo ? 'yo' : undefined}>{tr(m.t)}</p>)}
@@ -318,7 +318,7 @@ export function ContabilidadDemo() {
   const nombres = Object.keys(VISTAS_CONT);
   const v = VISTAS_CONT[vista];
   return (
-    <div className="dm dm-perm dm-cont">
+    <div data-ui className="dm dm-perm dm-cont">
       <p className="dm-titulo"><Icono n="contabilidad" />{tr('Sonora Eventos S.L. · 2025')}</p>
       <div className="dm-seg dm-seg-ancho" role="tablist" style={{ '--i': nombres.indexOf(vista), '--n': nombres.length }}>
         <span className="dm-seg-ind" aria-hidden />
@@ -351,7 +351,7 @@ export function InventarioDemo() {
   const vender = (id) => setStock((l) => l.map((x) => (x.id === id && x.s > 0 ? { ...x, s: x.s - (x.min > 10 ? 4 : 1) < 0 ? 0 : x.s - (x.min > 10 ? 4 : 1) } : x)));
   const bajos = stock.filter((x) => x.s <= x.min);
   return (
-    <div className="dm dm-perm dm-inv">
+    <div data-ui className="dm dm-perm dm-inv">
       <p className="dm-titulo"><Icono n="inventario" />{tr('Inventario')}</p>
       <ul>
         {stock.map((x) => (

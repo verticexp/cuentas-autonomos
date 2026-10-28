@@ -21,7 +21,6 @@ export default async function Funciones() {
   return (
     <>
       <section className="web-hero-pag">
-        <p className="web-kicker web-entra">{tr('Funciones')}</p>
         <h1 className="web-entra" style={{ '--d': '60ms' }}>{conHuecos(tr('Todo lo que necesitas para llevar tus cuentas. {resalte}'), { resalte: <em>{tr('Nada que te sobre.')}</em> })}</h1>
         <p className="web-sub web-entra" style={{ '--d': '120ms' }}>{tr('Nueve áreas que trabajan juntas: lo que facturas, gastas y cobras alimenta tus impuestos, tu contabilidad, tu stock y tu previsión de caja sin que tengas que pasar nada a mano.')}</p>
         <nav className="web-indice web-entra" style={{ '--d': '180ms' }} aria-label={tr('Funciones')}>
@@ -34,7 +33,6 @@ export default async function Funciones() {
           {FUNCIONES.map((f, i) => (
             <article key={f.slug} className={`web-fila${i % 2 ? ' invertida' : ''}`}>
               <div className="web-fila-txt" data-r>
-                <span className="web-fcard-ico"><Icono n={f.icono} /></span>
                 <h2>{tr(f.titulo)}</h2>
                 <p>{tr(f.sub)}</p>
                 <ul className="web-lista">{f.puntos.map((p) => <li key={p.t}><Icono n="tic" /><span><b>{tr(p.t)}.</b> {tr(p.d)}</span></li>)}</ul>
@@ -49,11 +47,10 @@ export default async function Funciones() {
       </section>
 
       <section className="web-sec">
-        <Encabezado kicker="Y además" titulo="Los detalles que marcan la diferencia" />
+        <Encabezado titulo="Los detalles que marcan la diferencia" />
         <div className="web-extras">
           {EXTRAS.map((x, i) => (
             <div key={x.t} data-foco data-r style={{ '--d': `${(i % 3) * 60}ms` }}>
-              <span className="web-fcard-ico peq"><Icono n={x.icono} /></span>
               <b>{tr(x.t)}</b><p>{tr(x.d)}</p>
             </div>
           ))}
@@ -61,7 +58,7 @@ export default async function Funciones() {
       </section>
 
       <section className="web-sec web-oscura">
-        <Encabezado kicker="Próximamente" titulo="En lo que estamos trabajando" sub="Fisquo mejora cada semana. Esto es lo próximo que llega." claro />
+        <Encabezado titulo="En lo que estamos trabajando" sub="Fisquo mejora cada semana. Esto es lo próximo que llega." claro />
         <ol className="web-hoja">
           {PROXIMAMENTE.map((x, i) => (
             <li key={x.t} data-r style={{ '--d': `${i * 70}ms` }}><span className="web-hoja-punto" /><b>{tr(x.t)}</b><p>{tr(x.d)}</p></li>
