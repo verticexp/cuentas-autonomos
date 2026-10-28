@@ -101,3 +101,32 @@ test('una palabra con contexto usa su traducción propia y, sin ella, la de siem
   assert.equal(en('Activo', { contexto: 'balance' }), 'Assets');
   assert.equal(en('Facturas', { contexto: 'otro' }), 'Invoices');
 });
+
+test('correos de Fisquo en el idioma de quien los recibe; los de la empresa, en castellano', async () => {
+  const { componer, CORREOS } = await import('../lib/correos.js');
+  const es = componer('bienvenida', CORREOS.bienvenida.ejemplo);
+  assert.equal(es.asunto, 'Bienvenida a Fisquo: tus primeros pasos');
+  assert.match(es.html, /<html lang="es">/);
+  const en = componer('bienvenida', CORREOS.bienvenida.ejemplo, { idioma: 'en' });
+  assert.equal(en.asunto, 'Welcome to Fisquo: your first steps');
+  assert.match(en.html, /<html lang="en">/);
+  assert.match(en.texto, /The Fisquo team/);
+  assert.equal(componer('bienvenida', CORREOS.bienvenida.ejemplo, { idioma: 'fr' }).asunto, es.asunto);
+  const ca = componer('prueba-tres', CORREOS['prueba-tres'].ejemplo, { idioma: 'ca' });
+  assert.match(ca.texto, /19 de novembre del 2026/);
+  assert.match(ca.texto, /L'assistent amb IA|assistent/i);
+  // La factura a un cliente la escribe la empresa: no cambia con el idioma de quien la envía.
+  assert.deepEqual(componer('factura', CORREOS.factura.ejemplo, { idioma: 'en' }), componer('factura', CORREOS.factura.ejemplo));
+});
+
+test('avisos del día en el idioma de quien los recibe', async () => {
+  const { avisosDelDia } = await import('../lib/avisos.js');
+  const datos = { facturas: [], pagos: [], stockBajo: ['Cable XLR'], verifactu: { rechazadas: 2, atascadas: 1 } };
+  const lunes = '2026-11-02';
+  const es = avisosDelDia(datos, lunes);
+  assert.ok(es.some((a) => a.titulo === 'Verifactu: hay facturas que revisar' && a.cuerpo === '2 rechazadas por la AEAT y 1 sin enviar desde hace más de un día.'));
+  assert.ok(es.some((a) => a.titulo === 'Cable XLR: bajo mínimo'));
+  const en = avisosDelDia(datos, lunes, traductor(diccionario('en'), 'en'));
+  assert.ok(en.some((a) => a.titulo === 'Verifactu: some invoices need checking' && a.cuerpo === '2 rejected by the AEAT and 1 not sent for over a day.'));
+  assert.ok(en.some((a) => a.titulo === 'Cable XLR: below minimum'));
+});
