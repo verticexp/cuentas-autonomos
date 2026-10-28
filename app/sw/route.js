@@ -3,7 +3,7 @@
 const SW = `self.addEventListener('push', (e) => {
   let d = {};
   try { d = e.data.json(); } catch {}
-  e.waitUntil(self.registration.showNotification(d.titulo || 'Fisquo', { body: d.cuerpo || '', icon: '/apple-icon', badge: '/apple-icon', data: { url: d.url || '/' }, tag: d.tipo }));
+  e.waitUntil(self.registration.showNotification(d.titulo || 'Fisquo', { body: d.cuerpo || '', icon: '/apple-icon', badge: '/apple-icon', data: { url: d.url || '/' }, tag: d.hilo || d.tipo, renotify: Boolean(d.hilo) }));
 });
 self.addEventListener('notificationclick', (e) => {
   e.notification.close();

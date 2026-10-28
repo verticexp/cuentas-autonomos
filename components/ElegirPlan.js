@@ -8,20 +8,9 @@ import { DESCUENTO, PLANES } from '@/components/web/datos';
 import { diasPrueba, esFundador, TIPOS, VERSION_PLAN } from '@/lib/prueba';
 import CupoEscaneo from '@/components/CupoEscaneo';
 import { eurPrecio } from '@/lib/formato';
+import { traducirPerdida } from '@/lib/planes';
 import { useT } from '@/components/Idioma';
 import styles from './ElegirPlan.module.css';
-
-// Lo que se perdería, ya compuesto en lib/planes.js («El asistente IA (12 preguntas)»): se traduce por partes al pintar.
-const VECES = [['{n} movimiento conciliado', '{n} movimientos conciliados'], ['{n} movimiento de stock', '{n} movimientos de stock'], ['{n} cambio en la previsión', '{n} cambios en la previsión'], ['{n} pregunta', '{n} preguntas'], ['{n} mensaje', '{n} mensajes'], ['{n} nómina', '{n} nóminas'], ['{n} usos']];
-function perdida(tr, t) {
-  const m = /^(.+?) \((.+)\)$/.exec(t);
-  if (!m) return tr(t);
-  for (const clave of VECES.flat()) {
-    const c = new RegExp(`^${clave.replace('{n}', '(\\d+)')}$`).exec(m[2]);
-    if (c) return `${tr(m[1])} (${tr(clave, { n: c[1] })})`;
-  }
-  return `${tr(m[1])} (${tr(m[2])})`;
-}
 
 
 // Ajustes › Tu plan: contratar con Stripe Checkout, cambiar de plan y gestionar el pago en el portal de Stripe
@@ -117,7 +106,7 @@ export default function ElegirPlan({ plan, tipoEmpresa, uso, admin, app }) {
     {!paga && !fundador && uso?.perdidas?.length > 0 && <section className={styles.aviso}>
       <h2>{tr('Conserva las herramientas que has probado')}</h2>
       <p>{tr('Tu plan {plan} no incluye lo siguiente:', { plan: actual.nombre })}</p>
-      <ul>{uso.perdidas.map((t) => <li key={t}>{perdida(tr, t)}</li>)}</ul>
+      <ul>{uso.perdidas.map((t) => <li key={t}>{traducirPerdida(t, tr)}</li>)}</ul>
       {uso.recomendado ? <p>{planRecomendado[0]}<strong>{uso.recomendado}</strong>{planRecomendado[1]}{admin && <> <button type="button" className={styles.enlaceBoton} disabled={ocupado} onClick={() => { llamar({ tipo: actual.tipo, nombre: uso.recomendado, periodo }); }}>{tr('Elegir {plan}', { plan: uso.recomendado })}</button></>}</p>
         : <p>{tr('Contacta con nosotros para acordar un plan a medida.')}</p>}
     </section>}

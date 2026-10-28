@@ -31,10 +31,12 @@ export default async function PaginaAsistente({ searchParams }) {
   const { pregunta } = await searchParams;
   const inicial = typeof pregunta === 'string' ? pregunta.trim().slice(0, 500) : '';
   return (
-    <main className="pagina mk-look asistente">
-      <Volver href="/">Resumen</Volver>
-      <h1 className="titulo">{tr('Pregunta a Fisquo')}</h1>
-      <p className="asi-sub">{tr('Responde con las cifras que calcula la app, solo de {empresa} y de lo que tú puedes ver.', { empresa: u.empresaNombre || tr('tu empresa') })}</p>
+    <main className="pagina mk-look asistente asi-pagina">
+      <div className="asi-cabecera">
+        <Volver href="/">Resumen</Volver>
+        <h1 className="titulo">{tr('Pregunta a Fisquo')}</h1>
+        <p className="asi-sub">{tr('Responde con las cifras que calcula la app, solo de {empresa} y de lo que tú puedes ver.', { empresa: u.empresaNombre || tr('tu empresa') })}</p>
+      </div>
       <Asistente listo={iaLista()} inicial={inicial} ejemplos={Object.keys(EJEMPLOS).filter((k) => h.includes(k)).map((k) => EJEMPLOS[k])} />
     </main>
   );

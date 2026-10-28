@@ -26,7 +26,7 @@ async function contar(u, p, texto) {
   await escribir(u.empresa, u, 'cliente', { texto, ...(p.hilo ? { hilo: p.hilo } : {}), despacho: p.despacho }).catch(() => null);
   await marcarLeido(u.empresa, 'cliente');
   await invalidarNoLeidos(p.despacho);
-  if (d && e) avisarDespacho(d, e, { titulo: `${u.empresaNombre || 'Tu cliente'} ha subido un documento`, cuerpo: p.tipo === 'ticket' ? `El ticket de ${p.gasto?.texto || 'un gasto'}` : p.texto });
+  if (d && e) avisarDespacho(d, e, { titulo: `${u.empresaNombre || 'Tu cliente'} ha subido un documento`, cuerpo: p.tipo === 'ticket' ? `El ticket de ${p.gasto?.texto || 'un gasto'}` : p.texto, chat: true });
 }
 
 export async function GET() {
