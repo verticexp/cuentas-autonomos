@@ -21,18 +21,37 @@ export default function Hecho() {
   };
 
   useEffect(() => {
-    const mostrar = (e) => {
-      if (typeof e.detail?.texto !== 'string' || !e.detail.texto.trim()) return;
+    let cancelar = () => {};
+    const ensenar = ({ texto, detalle }) => {
       limpiar();
       setSaliendo(false);
-      setAviso({ texto: e.detail.texto, detalle: e.detail.detalle, id: ++secuencia.current });
+      setAviso({ texto, detalle, id: ++secuencia.current });
       vibrar('exito');
       // Primero se dibuja la marca; después queda un momento para leerla.
       tiempos.current.push(setTimeout(() => setSaliendo(true), 1700));
-      tiempos.current.push(setTimeout(() => setAviso(null), 1880));
+      tiempos.current.push(setTimeout(() => setAviso(null), 1900));
+    };
+    // Con la pantalla ya pintada y el hilo libre: dos fotogramas y, si el navegador lo admite, un hueco sin trabajo.
+    const cuandoLibre = (fn) => requestAnimationFrame(() => requestAnimationFrame(() => (window.requestIdleCallback ? requestIdleCallback(fn, { timeout: 120 }) : setTimeout(fn, 16))));
+    const mostrar = (e) => {
+      const d = e.detail || {};
+      if (typeof d.texto !== 'string' || !d.texto.trim()) return;
+      cancelar();
+      // Durante un cambio de pantalla (lib/transicion.js) el navegador congela lo que se pinta: se espera a que acabe.
+      // Si quien llama va a navegar y la transición aún no ha empezado, se le da un momento para empezar.
+      let hecho = false;
+      const ir = () => { if (hecho) return; hecho = true; cancelar(); cuandoLibre(() => ensenar(d)); };
+      const alFin = () => ir();
+      const alInicio = () => { clearTimeout(sinInicio); };
+      window.addEventListener('fisquo-vt-fin', alFin);
+      window.addEventListener('fisquo-vt-inicio', alInicio);
+      const sinInicio = !window.__vtActiva && d.trasNavegar ? setTimeout(() => { if (!window.__vtActiva) ir(); }, 400) : null;
+      const tope = setTimeout(ir, 2500); // por si la transición se pierde
+      cancelar = () => { clearTimeout(sinInicio); clearTimeout(tope); window.removeEventListener('fisquo-vt-fin', alFin); window.removeEventListener('fisquo-vt-inicio', alInicio); };
+      if (!window.__vtActiva && !d.trasNavegar) ir();
     };
     window.addEventListener('fisquo-hecho', mostrar);
-    return () => { window.removeEventListener('fisquo-hecho', mostrar); limpiar(); };
+    return () => { window.removeEventListener('fisquo-hecho', mostrar); cancelar(); limpiar(); };
   }, []);
 
   return (
