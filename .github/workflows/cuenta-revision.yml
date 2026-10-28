@@ -1,0 +1,24 @@
+name: Datos de la cuenta de revisión
+# Llena con facturas y gastos de ejemplo la cuenta con la que Apple revisa la app (scripts/cuenta-revision.mjs).
+# Solo a mano; no hace nada si la empresa ya tiene datos.
+on:
+  workflow_dispatch:
+    inputs:
+      email:
+        description: Email de la cuenta de revisión
+        required: true
+
+jobs:
+  datos:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: npm install --no-save @upstash/redis@1.39.0
+      - run: node scripts/cuenta-revision.mjs
+        env:
+          KV_REST_API_URL: ${{ secrets.KV_REST_API_URL }}
+          KV_REST_API_TOKEN: ${{ secrets.KV_REST_API_TOKEN }}
+          REVISION_EMAIL: ${{ inputs.email }}
