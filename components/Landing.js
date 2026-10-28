@@ -65,7 +65,7 @@ export default async function Landing() {
 
       <section className="web-sec">
         <Encabezado kicker="El producto" titulo="Todo tu negocio, en una sola app" sub="Deja de saltar entre Excel, el correo y la web del banco. Fisquo junta lo que mueve tu dinero y lo pone en orden." centro />
-        <div data-r><Tour /></div>
+        <div data-r="vis"><Tour /></div>
       </section>
 
       <section className="web-sec">
@@ -89,7 +89,7 @@ export default async function Landing() {
 
       <section className="web-sec web-oscura">
         <Encabezado kicker="Pruébalo ahora" titulo="¿Cuánto tienes que apartar este trimestre?" sub="Mueve los importes y mira tu IVA y tu IRPF al momento. En Fisquo se calcula solo con tus facturas y gastos reales." centro claro />
-        <div data-r><Calculadora /></div>
+        <div data-r="vis"><Calculadora /></div>
       </section>
 
       <section className="web-sec">

@@ -122,7 +122,7 @@ html[data-entrada] .tabbar { animation: entrada-barra 0.5s var(--vt-curva) 0.15s
 /* Pulsar y soltar: al tocar, lo pulsable se hunde al instante; al soltar, vuelve con suavidad en vez de saltar.
    :where() no suma especificidad: lo que ya define su propia transición la conserva. */
 :where(button, .boton, a.fila, .hcard.ir, .mas-tile, .filtro-boton, .chips a, .volver, .celda.ir, .opcion) {
-  transition: transform 0.32s var(--vt-curva), opacity 0.2s ease, background-color 0.2s ease;
+  transition: transform 0.32s var(--vt-curva), opacity 0.2s var(--salida), background-color 0.2s var(--salida);
 }
 :where(button:active, .boton:active, a.fila:active, .hcard.ir:active, .mas-tile:active, .filtro-boton:active, .chips a:active, .volver:active, .celda.ir:active, .opcion:active) {
   transition-duration: 0.06s;
@@ -131,8 +131,8 @@ html[data-entrada] .tabbar { animation: entrada-barra 0.5s var(--vt-curva) 0.15s
 /* Movimiento reducido: nada se desliza ni se escala entre pantallas, solo un fundido (lib/transicion.js usa «fundido»). */
 @media (prefers-reduced-motion: reduce) {
   html[data-vt]::view-transition-group(*) { animation-duration: 0s !important; }
-  html[data-vt]::view-transition-old(root) { animation: 0.15s ease both vt-fuera !important; }
-  html[data-vt]::view-transition-new(root) { animation: 0.2s ease both vt-dentro !important; }
+  html[data-vt]::view-transition-old(root) { animation: 0.15s var(--salida) both vt-fuera !important; }
+  html[data-vt]::view-transition-new(root) { animation: 0.2s var(--salida) both vt-dentro !important; }
 }
 /* Mes de prueba (components/AvisoPrueba.js) y Ajustes › Tu plan (components/ElegirPlan.js) */
 .aviso-prueba { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 0 0 12px; padding: 10px 14px; border-radius: 12px; background: var(--relleno); font-size: 14px; color: var(--ink); }
