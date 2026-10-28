@@ -36,6 +36,9 @@ Pregunta por tus cuentas en lenguaje normal: «¿cuánto IVA llevo este trimestr
 HECHO PARA TU EQUIPO Y TU GESTORÍA
 Usuarios con permisos, varias empresas en la misma cuenta y acceso para tu gestoría.
 
+DESDE CUALQUIER APP
+Comparte con Fisquo la factura en PDF que te llega por correo, una foto o una factura electrónica y queda lista para revisar en Gastos. Entra con Face ID, con Apple o con Google.
+
 TUS DATOS, TUYOS
 Descarga todos tus datos cuando quieras y elimina tu cuenta desde Ajustes. Fisquo no vende tus datos ni hace publicidad.
 
@@ -50,6 +53,6 @@ autónomo,facturas,gastos,IVA,impuestos,contabilidad,tickets,modelo 303,Hacienda
 **URL de marketing**: https://www.fisquo.com
 **URL de la política de privacidad**: https://www.fisquo.com/privacidad
 
-**Copyright**: 2026 <nombre legal de la empresa>
+**Copyright**: 2026 Xiverno Tecnologias y Eventos, S.L.
 
 **Información de contacto para la revisión**: nombre, teléfono y email de quien atienda a Apple.

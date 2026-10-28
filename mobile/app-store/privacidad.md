@@ -16,6 +16,7 @@ Todos están **vinculados a la identidad** del usuario (necesitan su cuenta) y *
 | Contenido del usuario › Fotos o vídeos | Fotos de tickets | Funcionalidad de la app |
 | Contenido del usuario › Otro contenido | Facturas PDF, justificantes, preguntas al asistente | Funcionalidad de la app |
 | Identificadores › ID de usuario | Identificador interno de la cuenta | Funcionalidad de la app |
+| Identificadores › ID del dispositivo | Credencial de Face ID de este iPhone y token de notificaciones | Funcionalidad de la app |
 | Datos de uso › Interacción con el producto | Actividad para el panel interno (qué funciones se usan) | Analítica |
 
 No se recoge: ubicación, contactos del teléfono, salud, historial de navegación, identificador de publicidad,
