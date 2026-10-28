@@ -166,15 +166,17 @@ export default async function Resumen({ searchParams }) {
   return (
     <main className="pagina mk-look">
       <AvisoPrueba plan={u.plan} app={esApp((await headers()).get('user-agent'))} />
-      <AvisoMensajes u={u} />
       <header className={`inicio${facturado > 0 ? '' : ' sin-saldo'}`}>
         <div className="inicio-barra">
           <Logo />
-          {!sinDatos && <nav className="anios" aria-label="Año">
-            <Ir href={`/?anio=${anio - 1}`} tipo="cifras" aria-label="Año anterior">‹</Ir>
-            <strong>{anio}</strong>
-            {anio < anioActual ? <Ir href={`/?anio=${anio + 1}`} tipo="cifras" aria-label="Año siguiente">›</Ir> : <span className="off">›</span>}
-          </nav>}
+          <div className="inicio-derecha">
+            {!sinDatos && <nav className="anios" aria-label="Año">
+              <Ir href={`/?anio=${anio - 1}`} tipo="cifras" aria-label="Año anterior">‹</Ir>
+              <strong>{anio}</strong>
+              {anio < anioActual ? <Ir href={`/?anio=${anio + 1}`} tipo="cifras" aria-label="Año siguiente">›</Ir> : <span className="off">›</span>}
+            </nav>}
+            <AvisoMensajes u={u} />
+          </div>
         </div>
         {/* La gestoría dentro de las cuentas de un cliente: no se saluda a sí misma ni le habla de «tu año» (son las del cliente) */}
         {u.viaDespacho

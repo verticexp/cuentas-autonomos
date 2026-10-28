@@ -177,13 +177,15 @@ button.celda.desp-celda-boton:disabled { opacity: 0.5; cursor: default; }
 .desp-mensajes-ficha .txt small { white-space: normal; }
 .desp-burbuja-mini { display: inline-block; max-width: 100%; margin-top: 6px; padding: 6px 10px; border-radius: 12px 12px 12px 4px; background: var(--relleno); color: var(--ink); font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .desp-burbuja-mini.mia { border-radius: 12px 12px 4px 12px; background: var(--marca); color: var(--sobre); }
-/* Aviso en el Resumen del cliente: su gestoría le ha escrito (components/AvisoMensajes.js). */
-.aviso-mensajes { display: flex; align-items: center; gap: 12px; margin: 0 0 14px; padding: 12px 16px; border-radius: 14px; background: var(--surface); color: var(--ink); text-decoration: none; box-shadow: inset 3px 0 0 var(--in-boton); }
-.aviso-mensajes .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.aviso-mensajes .txt small { color: var(--muted); font-size: 13px; margin-top: 2px; }
-.aviso-mensajes-ico { flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--in-boton); color: #fff; }
-.aviso-mensajes-ico svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
-.aviso-mensajes::after { content: ''; flex: none; width: 7px; height: 7px; border-right: 2px solid var(--muted); border-top: 2px solid var(--muted); transform: rotate(45deg); opacity: 0.55; }
+/* Globo de la gestoría en la cabecera del Resumen del cliente, con su número como en una app de chat
+   (components/AvisoMensajes.js). Mismo botón redondo que el selector de año de la cabecera oscura. */
+.inicio-derecha { display: flex; align-items: center; gap: 12px; }
+.globo-gestoria { position: relative; flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: color-mix(in srgb, var(--crema) 10%, transparent); color: var(--crema); text-decoration: none; }
+.globo-gestoria svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
+.globo-gestoria.con-nuevos { background: color-mix(in srgb, var(--crema) 18%, transparent); }
+.globo-numero { position: absolute; top: -4px; right: -5px; min-width: 18px; height: 18px; padding: 0 5px; box-sizing: border-box; border-radius: 9px; background: var(--out-boton); color: var(--crema); font-size: 11px; font-weight: 700; line-height: 18px; text-align: center; font-variant-numeric: tabular-nums; box-shadow: 0 0 0 2px var(--fondo-logo, #141414); animation: globo-entra 360ms cubic-bezier(.34, 1.5, .64, 1) both; }
+@keyframes globo-entra { from { transform: scale(0); } to { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .globo-numero { animation: none; } }
 /* Ajustes del despacho. */
 .desp-enlace { padding: 10px 12px; border-radius: 10px; background: var(--relleno); font-size: 14px; overflow-wrap: anywhere; }
 .desp-enlace code { font-family: inherit; }
