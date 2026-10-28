@@ -59,6 +59,8 @@ export default function Cuestionario({ inicial, editar, conFacturas, puedeFactur
   // Los datos fiscales del registro ya están guardados. Se revisan sin repetir dos pantallas.
   const datosCompletos = !editar && Boolean(inicial.emisor.nombre?.trim() && inicial.emisor.nif?.trim());
   const [paso, setPaso] = useState(0);
+  // Al volver, el paso entra desde la izquierda (app/diseno.css .paso-atras), como al ir hacia atrás en iOS.
+  const [haciaAtras, setHaciaAtras] = useState(false);
   const [terminado, setTerminado] = useState(false);
   const tituloRef = useRef(null);
   const errorRef = useRef(null);
@@ -261,7 +263,7 @@ export default function Cuestionario({ inicial, editar, conFacturas, puedeFactur
   const avisoAlVolver = useRef('');
   const historial = usePasosEnHistorial({
     paso, base: 0, total: pasos.length, bloqueado: guardando,
-    cambiarPaso: (n) => { setError(avisoAlVolver.current); avisoAlVolver.current = ''; setTerminado(false); setPaso(n); },
+    cambiarPaso: (n) => { setError(avisoAlVolver.current); avisoAlVolver.current = ''; setHaciaAtras(n < paso || terminado); setTerminado(false); setPaso(n); },
   });
 
   async function terminar() {
@@ -307,7 +309,7 @@ export default function Cuestionario({ inicial, editar, conFacturas, puedeFactur
     <div className="cuestionario" aria-busy={guardando}>
       {editar ? <p className="nota" role="status">{tr('Actividades e impuestos · Paso {paso} de {total}', { paso: paso + 1, total: pasos.length })}</p> : <ProgresoAlta paso={paso + 1} total={pasos.length} etiqueta={`${tr('Casi listo')} · ${tr(p.corto)}`} />}
       {paso === 0 && !editar && <p className="hola">{tr('Tu cuenta ya está creada. Son {n} pasos rápidos y todo se puede cambiar después en Ajustes.', { n: pasos.length })}</p>}
-      <div className="paso" key={paso}>
+      <div className={haciaAtras ? 'paso paso-atras' : 'paso'} key={paso}>
         <h1 className="titulo" ref={tituloRef} tabIndex={-1}>{tr(p.titulo)}</h1>
         <p className="grupo-pie arriba">{tr(p.texto)}</p>
         {p.cuerpo}

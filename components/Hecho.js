@@ -57,7 +57,7 @@ export default function Hecho() {
   }, []);
 
   return (
-    <div className="hecho" role="status" aria-live="polite" aria-atomic="true">
+    <div className="hecho-capa" role="status" aria-live="polite" aria-atomic="true">
       {aviso && <div key={aviso.id} className={`hecho-panel${saliendo ? ' hecho-saliendo' : ''}`}>
         <button type="button" className="hecho-cerrar" aria-label={tr('Cerrar confirmación')} onClick={cerrar} />
         <svg className="hecho-marca" viewBox="0 0 80 80" fill="none" aria-hidden="true">

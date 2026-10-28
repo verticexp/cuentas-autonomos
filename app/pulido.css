@@ -45,7 +45,8 @@ html[data-vt=abrir] .fh-total { view-transition-name: factura-total; }
   .pagina { max-width: 880px; padding: 36px 40px 64px; }
   /* Todas las pantallas empiezan en el mismo sitio: el borde izquierdo de la más ancha (Facturas, 1120 px) centrada. Antes
      cada una se centraba con su ancho (820, 880, 1040, 1120, 1200) y el título saltaba al cambiar de sección. */
-  body:has(.tabbar) > .pagina:not(.desp-chat-pagina) { margin-left: max(0px, calc((100% - 1120px) / 2)); margin-right: auto; }
+  body:has(.tabbar) > .pagina:not(.desp-chat-pagina):not(.bienvenida) { margin-left: max(0px, calc((100% - 1120px) / 2)); margin-right: auto; }
+  /* La bienvenida no lleva la barra lateral (app/diseno.css): va centrada, como el registro. */
   .inicio { margin: 0; --cima: 24px; border-radius: 28px; }
   .hcards { display: grid; grid-template-columns: 1fr 1fr; }
   .accesos { display: none; }
