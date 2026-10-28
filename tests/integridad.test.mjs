@@ -290,3 +290,28 @@ test('contadoresDe: el mayor número emitido o borrado de cada serie y año; las
   const { contadoresDe } = await import('../lib/integridad.js');
   assert.deepEqual(contadoresDe([{ anio: 2026, numero: 3 }, { anio: 2026, numero: 9, importada: '2026/9' }, { serie: 'R', anio: 2026, numero: 1 }], [{ anio: 2026, numero: 5 }]), { '-|2026': 5, 'R|2026': 1 });
 });
+
+// Auditoría 28-10-2026: la numeración ha de ser correlativa (art. 6.1.a del Reglamento de facturación).
+test('Numeración: saltar números se puede antes de emitir en la serie, pero no después (dejaría un hueco)', async () => {
+  const nueva = empresa();
+  assert.deepEqual(await F.saltarNumeracion(nueva, '', 2026, 41), { ok: true, siguiente: 41 });
+  assert.equal((await F.crearFactura(nueva, datos())).factura.numero, 41);
+  const u = empresa();
+  await F.crearFactura(u, datos(1));
+  const r = await F.saltarNumeracion(u, '', 2026, 50);
+  assert.match(r.error, /hueco/);
+  assert.equal((await F.crearFactura(u, datos(2))).factura.numero, 2);
+  // Otro año de la misma serie, sin facturas aún: sí.
+  assert.equal((await F.saltarNumeracion(u, '', 2027, 10)).ok, true);
+});
+
+test('Numeración: la revisión de integridad detecta los huecos, pero no el número de inicio ni las borradas', async () => {
+  const { comprobarIntegridad } = await import('../lib/integridad.js');
+  const f = (numero, extra = {}) => ({ id: `n${numero}`, anio: 2026, numero, emisor: {}, ...extra });
+  const huecos = (datos) => comprobarIntegridad(datos).filter((i) => i.tipo === 'hueco');
+  assert.deepEqual(huecos({ facturas: [f(1), f(2), f(4), f(7)] }).map((i) => i.detalle), ['-|2026: faltan 3, 5, 6']);
+  assert.equal(huecos({ facturas: [f(41), f(42), f(43)] }).length, 0);
+  assert.equal(huecos({ facturas: [f(1), f(3)], borradas: [f(2)] }).length, 0);
+  assert.equal(huecos({ facturas: [f(1), f(3, { importada: 'A-3' })] }).length, 0);
+  assert.equal(huecos({ facturas: [f(1), f(2, { serie: 'V' })] }).length, 0);
+});
