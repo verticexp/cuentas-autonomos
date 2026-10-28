@@ -29,3 +29,10 @@ test('el aviso de siempre pasa al formato de APNs y solo se aceptan tokens hexad
   assert.equal(esToken('xyz'), false);
   assert.equal(esToken('a'.repeat(64) + '/../'), false);
 });
+
+test('mensajes de chat: agrupados por conversación y con el número del icono; solo número al leer', () => {
+  assert.deepEqual(cargaDe({ titulo: 'Gestoría Ferrer', cuerpo: '¿Me pasas el ticket?', url: '/tu-gestoria', hilo: 'gestoria-e1', numero: 3 }),
+    { aps: { alert: { title: 'Gestoría Ferrer', body: '¿Me pasas el ticket?' }, sound: 'default', 'thread-id': 'gestoria-e1', badge: 3 }, url: '/tu-gestoria' });
+  assert.deepEqual(cargaDe({ soloNumero: true, numero: 0 }), { aps: { badge: 0 } });
+  assert.equal(cargaDe({ titulo: 'x', numero: -1 }).aps.badge, undefined);
+});

@@ -53,7 +53,7 @@ export async function POST(req) {
   await marcarLeido(e.id, 'despacho');
   await invalidarNoLeidos(d.id);
   await registrarAcceso(e.id, quien, 'Te ha pedido un documento', b.tipo === 'ticket' ? gasto.texto : r.peticion.texto);
-  avisarCliente(e, { titulo: `${d.nombre} te pide un documento`, cuerpo: b.tipo === 'ticket' ? `El ticket de ${gasto.texto}` : r.peticion.texto });
+  avisarCliente(e, { titulo: `${d.nombre} te pide un documento`, cuerpo: b.tipo === 'ticket' ? `El ticket de ${gasto.texto}` : r.peticion.texto, chat: true });
   return Response.json(r);
 }
 
