@@ -225,6 +225,12 @@ test('modelo: clasificar, avisos, correcciones, trimestres y paso a la contabili
   assert.deepEqual(avisosDe(doc, [doc]), []);
   assert.deepEqual(limpiarDatos({ ivaPct: 7 }).errores, { ivaPct: 'Tipo de IVA no válido' });
   assert.deepEqual(limpiarDatos({ base: '50', ivaPct: 10 }, { irpfPct: 0 }).datos, { irpfPct: 0, base: 50, ivaPct: 10, cuota: 5, irpf: 0, total: 55 });
+  // Ticket borroso que la gestoría completa: solo con la base, se calculan la cuota y el total, y el aviso se va.
+  const borroso = { id: 'd9', estado: 'revisar', tipo: 'gasto', legible: false, datos: { tercero: 'X', nif: 'B1', fecha: '2026-10-01', base: null, ivaPct: 21, cuota: null, irpf: null, irpfPct: 0, total: null } };
+  assert.ok(avisosDe(borroso, [borroso]).includes('ilegible'));
+  const completado = limpiarDatos({ base: '50' }, borroso.datos).datos;
+  assert.deepEqual({ cuota: completado.cuota, total: completado.total }, { cuota: 10.5, total: 60.5 });
+  assert.deepEqual(avisosDe({ ...borroso, datos: completado, corregido: { fecha: 'x' } }, []), []);
   assert.equal(delTrimestre([doc, { ...doc, id: 'd2', datos: { fecha: '2026-09-30' } }], 2026, 4).length, 1);
   assert.equal(resumen([doc]).baseGastos, 100);
   const { facturas, gastos } = aContabilidad([{ ...doc, tipo: 'ingreso', datos: { ...doc.datos, numero: 'V-1', desglose: [{ ivaPct: 21, base: 60 }, { ivaPct: 10, base: 40 }] } }, doc]);

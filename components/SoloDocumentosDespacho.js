@@ -6,7 +6,7 @@ import { useT } from '@/components/Idioma';
 import Ir from '@/components/Ir';
 import Vacio from '@/components/Vacio';
 import { fechaCorta } from '@/lib/formato';
-import { TRAMOS, textoTramo } from '@/lib/tarifasDocumentos';
+import { TRAMOS } from '@/lib/tarifasDocumentos';
 
 // Mi despacho › Solo documentos (app/despacho/solo-documentos): la suscripción del panel, el alta de clientes que solo
 // envían documentos (lib/documentos.js) y su lista, con su invitación.
@@ -47,6 +47,7 @@ export default function SoloDocumentosDespacho({ clientes, cuenta, tramo, panel,
   };
 
   const siguiente = TRAMOS[tramo]?.hasta === Infinity ? null : TRAMOS[tramo].hasta;
+  const nombreTramo = (i) => (TRAMOS[i].hasta === Infinity ? tr('Sin límite') : tr('Hasta {n} clientes', { n: TRAMOS[i].hasta }));
   return <>
     <section className="grupo" aria-labelledby="docs-sus">
       <h2 id="docs-sus" className="grupo-t">{tr('Suscripción del panel')}</h2>
@@ -56,14 +57,14 @@ export default function SoloDocumentosDespacho({ clientes, cuenta, tramo, panel,
             : panel.activo ? (panel.estado === 'trialing' && panel.finPrueba ? tr('Gratis hasta el {fecha}. Después, la cuota de tu tramo cada mes.', { fecha: fechaCorta(panel.finPrueba) }) : panel.estado === 'past_due' ? tr('El último pago no ha pasado: revisa la tarjeta para que tus clientes no se queden en solo lectura.') : tr('Tus clientes «solo documentos» no pagan nada.'))
             : panel.estado ? tr('Tus clientes «solo documentos» no pueden subir nada nuevo. Puedes seguir viendo y exportando lo que ya hay.') : tr('Para dar de alta clientes que solo envían documentos. Tus clientes no pagan nada.')}</small></span>
           <span className="v">{cuenta === 1 ? tr('1 cliente') : tr('{n} clientes', { n: cuenta })}</span></div>
-        {!app && <div className="celda"><span className="txt">{tr('Tu tramo: {tramo}', { tramo: tr(textoTramo(tramo)) })}<small>{siguiente !== null ? tr('Al pasar de {n} clientes, {precio} al mes', { n: siguiente, precio: euros(TRAMOS[tramo + 1].cent) }) : tr('Clientes sin límite')}</small></span><span className="v"><b>{euros(TRAMOS[tramo].cent)}</b><small> {tr('al mes')}</small></span></div>}
+        {!app && <div className="celda"><span className="txt">{tr('Tu tramo: {tramo}', { tramo: nombreTramo(tramo) })}<small>{siguiente !== null ? tr('Al pasar de {n} clientes, {precio} al mes', { n: siguiente, precio: euros(TRAMOS[tramo + 1].cent) }) : tr('Clientes sin límite')}</small></span><span className="v"><b>{euros(TRAMOS[tramo].cent)}</b><small> {tr('al mes')}</small></span></div>}
         {titular && !demo && !app && (panel.activo
           ? <button type="button" className="celda ir desp-celda-boton" onClick={() => activar(true)} disabled={estado.ocupado}><span className="txt">{tr('Tarjeta, facturas y baja')}<small>{tr('El tramo se ajusta solo según tus clientes')}</small></span></button>
           : <button type="button" className="celda ir desp-celda-boton" onClick={() => activar(false)} disabled={estado.ocupado}><span className="txt">{panel.pruebaUsada ? tr('Activar la suscripción') : tr('Empezar 30 días gratis')}<small>{tr('Cuota mensual del despacho, no por cliente')}</small></span></button>)}
         {!app && <details className="celda desp-plegable">
           <summary>{tr('Cómo funciona y cuánto cuesta')}</summary>
           <p>{tr('El panel de Mi despacho es gratis con los clientes que llevan sus cuentas en Fisquo. Para los clientes «solo documentos» pagas una cuota mensual según cuántos tengas, sin IVA:')}</p>
-          <ul>{TRAMOS.map((t, i) => <li key={i}><b>{tr(textoTramo(i))}</b>: {euros(t.cent)}</li>)}</ul>
+          <ul>{TRAMOS.map((t, i) => <li key={i}><b>{nombreTramo(i)}</b>: {euros(t.cent)}</li>)}</ul>
           <p>{tr('Si un cliente pasa a llevar sus cuentas en Fisquo, deja de contar y conserva lo que subió. Si la suscripción se cancela o no se paga, sus documentos quedan en solo lectura.')}</p>
         </details>}
       </div>

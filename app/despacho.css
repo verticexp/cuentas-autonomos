@@ -366,7 +366,7 @@ html[data-entrada-cliente] .barra-despacho-volver { visibility: hidden; }
 .desp-docs-avisos { color: var(--ambar) !important; }
 .desp-docs-editor { padding: 4px 16px 16px; }
 .desp-docs-form { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px 14px; }
-.desp-docs-form .ancho { grid-column: 1 / -1; }
+.desp-docs-form .dd-ancho { grid-column: 1 / -1; }
 .desp-docs-exportar { display: grid; gap: 10px; }
 .desp-docs-reenviar { margin: 0 16px 10px; }
 @media (max-width: 640px) {

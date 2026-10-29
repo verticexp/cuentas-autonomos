@@ -27,6 +27,7 @@ export default function DocumentosDespacho({ cliente, anio, t, hoy, titular, pet
   const [filtro, setFiltro] = useState('todos');
   const [abierto, setAbierto] = useState(null);
   const [form, setForm] = useState(null);
+  const [original, setOriginal] = useState(null);
   const [msg, setMsg] = useState('');
   const [ocupado, setOcupado] = useState(false);
   const [peticiones, setPeticiones] = useState(pet0);
@@ -65,11 +66,14 @@ export default function DocumentosDespacho({ cliente, anio, t, hoy, titular, pet
     if (abierto === d.id) { setAbierto(null); return; }
     setAbierto(d.id); setMsg('');
     const x = d.datos || vacio;
-    setForm({ tipo: d.tipo || 'gasto', ...Object.fromEntries(Object.keys(vacio).map((k) => [k, x[k] ?? vacio[k]])) });
+    const f = { tipo: d.tipo || 'gasto', ...Object.fromEntries(Object.keys(vacio).map((k) => [k, x[k] ?? vacio[k]])) };
+    setForm(f); setOriginal(f);
   };
   const guardar = async (d, revisar = false) => {
+    // Solo lo que se ha cambiado: así, al tocar la base o el tipo, el servidor recalcula la cuota, el IRPF y el total.
     const { tipo, ...campos } = form;
-    const ok = await accion({ accion: 'corregir', id: d.id, tipo, datos: { ...campos, base: campos.base === '' ? null : campos.base, cuota: campos.cuota === '' ? null : campos.cuota, irpf: campos.irpf === '' ? null : campos.irpf, total: campos.total === '' ? null : campos.total } });
+    const cambios = Object.fromEntries(Object.entries(campos).filter(([k, v]) => String(v ?? '') !== String(original[k] ?? '')).map(([k, v]) => [k, v === '' && ['base', 'cuota', 'irpf', 'total'].includes(k) ? null : v]));
+    const ok = await accion({ accion: 'corregir', id: d.id, tipo, datos: cambios });
     if (ok && revisar) await accion({ accion: 'revisado', id: d.id });
     if (ok) setAbierto(null);
   };
@@ -170,16 +174,16 @@ export default function DocumentosDespacho({ cliente, anio, t, hoy, titular, pet
               <label>{tr('NIF')}<input className="campo" value={form.nif} onChange={cambia('nif')} maxLength={20} /></label>
               <label>{tr('Fecha')}<input className="campo" type="date" value={form.fecha} onChange={cambia('fecha')} /></label>
               <label>{tr('Número')}<input className="campo" value={form.numero} onChange={cambia('numero')} maxLength={40} /></label>
-              <label className="ancho">{tr('Concepto')}<input className="campo" value={form.concepto} onChange={cambia('concepto')} maxLength={140} /></label>
+              <label className="dd-ancho">{tr('Concepto')}<input className="campo" value={form.concepto} onChange={cambia('concepto')} maxLength={140} /></label>
               <label>{tr('Base')}<input className="campo" inputMode="decimal" value={form.base ?? ''} onChange={cambia('base')} /></label>
               <label>{tr('Tipo de IVA')}<select className="campo" value={form.ivaPct} onChange={cambia('ivaPct')}>{IVA.map((v) => <option key={v} value={v}>{v} %</option>)}</select></label>
               <label>{tr('Cuota de IVA')}<input className="campo" inputMode="decimal" value={form.cuota ?? ''} onChange={cambia('cuota')} /></label>
               <label>{tr('Retención de IRPF')}<select className="campo" value={form.irpfPct} onChange={cambia('irpfPct')}>{IRPF.map((v) => <option key={v} value={v}>{v} %</option>)}</select></label>
               <label>{tr('Importe del IRPF')}<input className="campo" inputMode="decimal" value={form.irpf ?? ''} onChange={cambia('irpf')} /></label>
               <label>{tr('Total')}<input className="campo" inputMode="decimal" value={form.total ?? ''} onChange={cambia('total')} /></label>
-              <label className="ancho">{tr('Categoría')}<select className="campo" value={form.categoria} onChange={cambia('categoria')}>{categorias.map(([id, nombre]) => <option key={id} value={id}>{id} · {tr(nombre)}</option>)}</select></label>
-              {x?.desglose?.length > 1 && <p className="ancho desp-nota">{tr('Varios tipos de IVA leídos: {tipos}. Cambiar el tipo deja uno solo.', { tipos: x.desglose.map((l) => `${l.ivaPct} % · ${eur(l.base)}`).join(' · ') })}</p>}
-              <div className="ancho desp-acciones">
+              <label className="dd-ancho">{tr('Categoría')}<select className="campo" value={form.categoria} onChange={cambia('categoria')}>{categorias.map(([id, nombre]) => <option key={id} value={id}>{id} · {tr(nombre)}</option>)}</select></label>
+              {x?.desglose?.length > 1 && <p className="dd-ancho desp-nota">{tr('Varios tipos de IVA leídos: {tipos}. Cambiar el tipo deja uno solo.', { tipos: x.desglose.map((l) => `${l.ivaPct} % · ${eur(l.base)}`).join(' · ') })}</p>}
+              <div className="dd-ancho desp-acciones">
                 <button type="button" className="boton" onClick={() => guardar(d, true)} disabled={ocupado}>{d.estado === 'revisado' ? tr('Guardar') : tr('Guardar y marcar revisado')}</button>
                 {d.estado !== 'revisado' && <button type="submit" className="boton sec" disabled={ocupado}>{tr('Guardar sin revisar')}</button>}
                 {d.estado === 'revisado' && <button type="button" className="boton sec" onClick={() => accion({ accion: 'pendiente', id: d.id })} disabled={ocupado}>{tr('Volver a por revisar')}</button>}
