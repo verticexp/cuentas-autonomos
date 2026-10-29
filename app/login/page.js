@@ -12,6 +12,7 @@ import { mensajeSeguro } from '@/lib/mensajes';
 import { AYUDA_CONTRASENA } from '@/lib/contrasena';
 import { socialListo } from '@/lib/social';
 import { esApp } from '@/lib/app';
+import { esOrdenador } from '@/lib/biometria';
 import { textos } from '@/lib/idiomaServidor';
 import '@/app/legal.css';
 
@@ -25,6 +26,7 @@ export default async function Login({ searchParams }) {
   // Con sesión, el login no tiene nada que enseñar (al volver atrás hasta aquí, se sigue a la app): «/» resuelve bloqueo, email y estado.
   if (await usuarioActual()) redirect('/');
   const primera = !(await hayUsuarios());
+  const ua = (await headers()).get('user-agent');
   // Sin cuentas todavía: alta del administrador (formulario normal). Con cuentas: components/FormEntrar.js.
   return (
     <TransicionPublica acceso><main className="login">
@@ -45,7 +47,7 @@ export default async function Login({ searchParams }) {
             <button type="submit">{tr('Crear cuenta')}</button>
           </form>
         </TrasArranque>
-        ) : <FormEntrar errorInicial={error ? ERRORES[error] || mensajeSeguro(error) : ''} listos={{ ...socialListo(), app: esApp((await headers()).get('user-agent')) }} />}
+        ) : <FormEntrar errorInicial={error ? ERRORES[error] || mensajeSeguro(error) : ''} listos={{ ...socialListo(), app: esApp(ua) }} ordenador={esOrdenador(ua)} />}
         {/* Fuera del formulario: los enlaces legales salen siempre, también sin JavaScript. */}
         <p className="nota login-legal"><a href="/privacidad">{tr('Privacidad')}</a> · <a href="/condiciones">{tr('Condiciones')}</a></p>
       </div>
