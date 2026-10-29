@@ -5,8 +5,8 @@ import { pasado, respuesta429 } from '@/lib/limite';
 import { clienteDelDespacho, miDespacho } from '@/lib/despachoApi';
 import { clientesVisibles, registrarAcceso } from '@/lib/despachos';
 import { enviarInvitacionDocumentos } from '@/lib/invitacion';
-import { panelActivo, sincronizarPanel, soloDocumentosDe } from '@/lib/panelDocumentos';
-import { TRAMOS, tramoDe } from '@/lib/tarifasDocumentos';
+import { gratisDe, panelActivo, puedeDarDeAlta, sincronizarPanel, soloDocumentosDe } from '@/lib/panelDocumentos';
+import { GRATIS, TRAMOS, tramoDe } from '@/lib/tarifasDocumentos';
 import { altaSoloDocumentos, clientesDocumentos, nuevaInvitacion, pasarACompleto } from '@/lib/documentosServidor';
 
 export const dynamic = 'force-dynamic';
@@ -22,9 +22,8 @@ async function invitar(req, d, quien, usuario, codigo) {
 export async function GET() {
   const { u, d, res } = await miDespacho();
   if (res) return res;
-  const clientes = await clientesDocumentos(d, await clientesVisibles(d, u.id));
-  const n = await soloDocumentosDe(d);
-  return Response.json({ clientes, cuenta: n, tramo: tramoDe(n), panel: { activo: panelActivo(d), ...(d.panel ? { estado: d.panel.estado, finPrueba: d.panel.finPrueba, pruebaUsada: d.panel.pruebaUsada } : {}) } }, { headers: { 'Cache-Control': 'no-store' } });
+  const [clientes, n, gratis] = await Promise.all([clientesVisibles(d, u.id).then((v) => clientesDocumentos(d, v)), soloDocumentosDe(d), gratisDe(d)]);
+  return Response.json({ clientes: clientes.map((c) => ({ ...c, abierto: panelActivo(d) || gratis.includes(c.id) })), cuenta: n, gratis: GRATIS, tramo: tramoDe(n), panel: { activo: panelActivo(d), ...(d.panel ? { estado: d.panel.estado, finPrueba: d.panel.finPrueba, pruebaUsada: d.panel.pruebaUsada } : {}) } }, { headers: { 'Cache-Control': 'no-store' } });
 }
 
 // POST { accion: 'alta', nombre, nif, email, contacto, tipo } · { accion: 'reenviar', empresa } · { accion: 'completo', empresa }.
@@ -35,11 +34,12 @@ export async function POST(req) {
     const { d, quien, res } = await miDespacho({ titular: true });
     if (res) return res;
     if (d.demo) return error('Es un despacho de demostración: no admite clientes de verdad', 403);
-    if (!panelActivo(d)) return Response.json({ error: 'Para dar de alta clientes «solo documentos», activa antes la suscripción del panel.', sinPanel: true }, { status: 402 });
-    if (await pasado('alta-documentos', d.id, 60, 3600)) return respuesta429(3600, 'Has dado de alta muchos clientes seguidos. Espera un poco.');
     const antes = await soloDocumentosDe(d);
-    // Pasar de tramo se confirma en la pantalla (subirTramo): no se cobra más sin que lo vea.
-    if (tramoDe(antes + 1) > tramoDe(antes) && b.subirTramo !== true) return Response.json({ error: `Con este cliente pasas al tramo de ${TRAMOS[tramoDe(antes + 1)].cent / 100} € al mes.`, subirTramo: TRAMOS[tramoDe(antes + 1)].cent }, { status: 409 });
+    // Los GRATIS primeros, sin suscripción; desde el siguiente hay que activarla (lib/tarifasDocumentos.js).
+    if (!puedeDarDeAlta(d, antes)) return Response.json({ error: `Tienes ${GRATIS} clientes «solo documentos» gratis. Para dar de alta más, activa la suscripción del panel.`, sinPanel: true }, { status: 402 });
+    if (await pasado('alta-documentos', d.id, 60, 3600)) return respuesta429(3600, 'Has dado de alta muchos clientes seguidos. Espera un poco.');
+    // Con la suscripción activa, pasar de tramo se confirma en la pantalla (subirTramo): no se cobra más sin que lo vea.
+    if (panelActivo(d) && tramoDe(antes + 1) > tramoDe(antes) && b.subirTramo !== true) return Response.json({ error: `Con este cliente pasas al tramo de ${TRAMOS[tramoDe(antes + 1)].cent / 100} € al mes.`, subirTramo: TRAMOS[tramoDe(antes + 1)].cent }, { status: 409 });
     const r = await altaSoloDocumentos(d, quien, { nombre: b.nombre, nif: b.nif, email: b.email, contacto: b.contacto, tipo: b.tipo });
     if (r.error) return error(r.error, r.status || 400);
     await registrarAcceso(r.empresa.id, quien, 'Te dio de alta para enviar documentos');

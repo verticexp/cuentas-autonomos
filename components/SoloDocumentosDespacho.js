@@ -12,7 +12,8 @@ import { TRAMOS } from '@/lib/tarifasDocumentos';
 // envían documentos (lib/documentos.js) y su lista, con su invitación.
 const euros = (cent) => `${String(cent / 100).replace('.', ',')} €`;
 
-export default function SoloDocumentosDespacho({ clientes, cuenta, tramo, panel, titular, demo, app = false }) {
+// gratis: cuántos clientes «solo documentos» funcionan sin suscripción (lib/tarifasDocumentos.js GRATIS).
+export default function SoloDocumentosDespacho({ clientes, cuenta, tramo, gratis, panel, titular, demo, app = false }) {
   const tr = useT();
   const router = useRouter();
   const [form, setForm] = useState({ nombre: '', nif: '', email: '', contacto: '', tipo: 'autonomo' });
@@ -47,32 +48,37 @@ export default function SoloDocumentosDespacho({ clientes, cuenta, tramo, panel,
   };
 
   const siguiente = TRAMOS[tramo]?.hasta === Infinity ? null : TRAMOS[tramo].hasta;
+  const quedan = Math.max(0, gratis - cuenta);
+  // Sin suscripción se pueden tener hasta «gratis» clientes; dar de alta otro pide activarla.
+  const puedeAlta = panel.activo || cuenta < gratis;
   const nombreTramo = (i) => (TRAMOS[i].hasta === Infinity ? tr('Sin límite') : tr('Hasta {n} clientes', { n: TRAMOS[i].hasta }));
   return <>
     <section className="grupo" aria-labelledby="docs-sus">
       <h2 id="docs-sus" className="grupo-t">{tr('Suscripción del panel')}</h2>
       <div className="grupo-c">
-        <div className="celda"><span className="txt">{demo ? tr('Despacho de demostración') : panel.activo ? (panel.estado === 'trialing' ? tr('En prueba gratis') : panel.estado === 'past_due' ? tr('Pago pendiente') : tr('Activa')) : panel.estado ? tr('En pausa: solo lectura') : tr('Sin activar')}
+        <div className="celda"><span className="txt">{demo ? tr('Despacho de demostración') : panel.activo ? (panel.estado === 'trialing' ? tr('En prueba gratis') : panel.estado === 'past_due' ? tr('Pago pendiente') : tr('Activa')) : panel.estado ? tr('En pausa') : tr('Gratis hasta {n} clientes', { n: gratis })}
           <small>{demo ? tr('El panel está activo sin cobro.')
             : panel.activo ? (panel.estado === 'trialing' && panel.finPrueba ? tr('Gratis hasta el {fecha}. Después, la cuota de tu tramo cada mes.', { fecha: fechaCorta(panel.finPrueba) }) : panel.estado === 'past_due' ? tr('El último pago no ha pasado: revisa la tarjeta para que tus clientes no se queden en solo lectura.') : tr('Tus clientes «solo documentos» no pagan nada.'))
-            : panel.estado ? tr('Tus clientes «solo documentos» no pueden subir nada nuevo. Puedes seguir viendo y exportando lo que ya hay.') : tr('Para dar de alta clientes que solo envían documentos. Tus clientes no pagan nada.')}</small></span>
+            : cuenta > gratis ? tr('Tus {n} primeros clientes siguen funcionando gratis; los demás no pueden subir nada nuevo. Puedes seguir viendo y exportando todo.', { n: gratis })
+            : quedan > 0 ? tr('Te quedan {quedan} de {n}. Para tener más, activa la suscripción. Tus clientes no pagan nada.', { quedan, n: gratis }) : tr('Ya tienes los {n} gratis. Para dar de alta otro, activa la suscripción.', { n: gratis })}</small></span>
           <span className="v">{cuenta === 1 ? tr('1 cliente') : tr('{n} clientes', { n: cuenta })}</span></div>
-        {!app && <div className="celda"><span className="txt">{tr('Tu tramo: {tramo}', { tramo: nombreTramo(tramo) })}<small>{siguiente !== null ? tr('Al pasar de {n} clientes, {precio} al mes', { n: siguiente, precio: euros(TRAMOS[tramo + 1].cent) }) : tr('Clientes sin límite')}</small></span><span className="v"><b>{euros(TRAMOS[tramo].cent)}</b><small> {tr('al mes')}</small></span></div>}
+        {!app && !panel.activo && !demo && cuenta < gratis && <div className="celda"><span className="txt">{tr('Sin cuota')}<small>{tr('Con más de {n} clientes, {precio} al mes', { n: gratis, precio: euros(TRAMOS[0].cent) })}</small></span><span className="v"><b>0 €</b><small> {tr('al mes')}</small></span></div>}
+        {!app && (panel.activo || demo || cuenta >= gratis) && <div className="celda"><span className="txt">{tr('Tu tramo: {tramo}', { tramo: nombreTramo(tramo) })}<small>{siguiente !== null ? tr('Al pasar de {n} clientes, {precio} al mes', { n: siguiente, precio: euros(TRAMOS[tramo + 1].cent) }) : tr('Clientes sin límite')}</small></span><span className="v"><b>{euros(TRAMOS[tramo].cent)}</b><small> {tr('al mes')}</small></span></div>}
         {titular && !demo && !app && (panel.activo
           ? <button type="button" className="celda ir desp-celda-boton" onClick={() => activar(true)} disabled={estado.ocupado}><span className="txt">{tr('Tarjeta, facturas y baja')}<small>{tr('El tramo se ajusta solo según tus clientes')}</small></span></button>
-          : <button type="button" className="celda ir desp-celda-boton" onClick={() => activar(false)} disabled={estado.ocupado}><span className="txt">{panel.pruebaUsada ? tr('Activar la suscripción') : tr('Empezar 30 días gratis')}<small>{tr('Cuota mensual del despacho, no por cliente')}</small></span></button>)}
+          : <button type="button" className="celda ir desp-celda-boton" onClick={() => activar(false)} disabled={estado.ocupado}><span className="txt">{panel.pruebaUsada ? tr('Activar la suscripción') : tr('Empezar 30 días gratis')}<small>{cuenta < gratis ? tr('Solo hace falta para tener más de {n} clientes', { n: gratis }) : tr('Cuota mensual del despacho, no por cliente')}</small></span></button>)}
         {!app && <details className="celda desp-plegable">
           <summary>{tr('Cómo funciona y cuánto cuesta')}</summary>
-          <p>{tr('El panel de Mi despacho es gratis con los clientes que llevan sus cuentas en Fisquo. Para los clientes «solo documentos» pagas una cuota mensual según cuántos tengas, sin IVA:')}</p>
+          <p>{tr('El panel de Mi despacho es gratis con los clientes que llevan sus cuentas en Fisquo, y con tus {n} primeros clientes «solo documentos». Desde el siguiente pagas una cuota mensual según cuántos tengas en total, sin IVA:', { n: gratis })}</p>
           <ul>{TRAMOS.map((t, i) => <li key={i}><b>{nombreTramo(i)}</b>: {euros(t.cent)}</li>)}</ul>
-          <p>{tr('Si un cliente pasa a llevar sus cuentas en Fisquo, deja de contar y conserva lo que subió. Si la suscripción se cancela o no se paga, sus documentos quedan en solo lectura.')}</p>
+          <p>{tr('Si un cliente pasa a llevar sus cuentas en Fisquo, deja de contar y conserva lo que subió. Si la suscripción se cancela o no se paga, tus {n} primeros clientes siguen gratis y los demás quedan en solo lectura.', { n: gratis })}</p>
         </details>}
       </div>
       {app && <p className="grupo-pie">{tr('La suscripción se gestiona desde la web.')}</p>}
       {!titular && !panel.activo && <p className="grupo-pie">{tr('La activa el titular del despacho.')}</p>}
     </section>
 
-    {titular && panel.activo && !demo && <section className="grupo" aria-labelledby="docs-alta">
+    {titular && puedeAlta && !demo && <section className="grupo" aria-labelledby="docs-alta">
       <h2 id="docs-alta" className="grupo-t">{tr('Dar de alta un cliente')}</h2>
       <form className="formulario tarjeta" onSubmit={alta}>
         <label>{tr('Nombre o razón social')}<input className="campo" required value={form.nombre} onChange={cambia('nombre')} maxLength={80} autoComplete="off" /></label>
@@ -93,9 +99,9 @@ export default function SoloDocumentosDespacho({ clientes, cuenta, tramo, panel,
       {clientes.length ? <ul className="grupo-lista desp-lista">{clientes.map((c) => <li key={c.id}>
         <Ir prefetch={false} className="fila desp-fila" href={`/despacho/${encodeURIComponent(c.id)}`}>
           <span className="txt"><strong>{c.nombre}</strong><small>{[c.nif, c.contacto?.email, c.documentos === 1 ? tr('1 documento') : tr('{n} documentos', { n: c.documentos })].filter(Boolean).join(' · ')}</small></span>
-          {c.contacto?.pendiente && <span className="desp-estado e-listo">{tr('Sin entrar aún')}</span>}
+          {!c.abierto ? <span className="desp-estado e-cambios">{tr('Solo lectura')}</span> : c.contacto?.pendiente && <span className="desp-estado e-listo">{tr('Sin entrar aún')}</span>}
         </Ir>
-        {c.contacto?.pendiente && panel.activo && <button type="button" className="enlace desp-docs-reenviar" onClick={() => reenviar(c.id)}>{tr('Reenviar la invitación')}</button>}
+        {c.contacto?.pendiente && c.abierto && <button type="button" className="enlace desp-docs-reenviar" onClick={() => reenviar(c.id)}>{tr('Reenviar la invitación')}</button>}
       </li>)}</ul> : <Vacio compacto icono="usuarios" titulo={tr('Aún no tienes clientes «solo documentos»')}><p>{tr('Para los clientes que nunca llevarán sus cuentas en una app: te envían fotos y PDF desde el móvil y tú lo exportas a tu programa.')}</p></Vacio>}
     </section>
   </>;

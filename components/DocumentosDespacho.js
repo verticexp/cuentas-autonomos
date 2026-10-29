@@ -9,6 +9,7 @@ import { eur, fechaCorta } from '@/lib/formato';
 import { AVISOS, CATEGORIA_INGRESO, ESTADOS_TEXTO, TIPOS } from '@/lib/documentos';
 import { CATEGORIAS } from '@/lib/categorias';
 import { nombresUnicos, zipNavegador } from '@/lib/zipNavegador';
+import { GRATIS } from '@/lib/tarifasDocumentos';
 
 // Ficha de un cliente «solo documentos» en Mi despacho (lib/documentos.js): sus documentos del trimestre con lo que ha
 // leído la IA, para revisarlos y corregirlos; los avisos; pedirle algo; y exportar el trimestre a tu programa con un ZIP
@@ -129,7 +130,7 @@ export default function DocumentosDespacho({ cliente, anio, t, hoy, titular, pet
       <h1 className="titulo">{cliente.nombre}</h1>
       <p className="resumen-linea desp-linea"><span>{[cliente.nif, tr('Solo documentos'), cliente.contacto?.email].filter(Boolean).join(' · ')}</span>
         {cliente.contacto?.pendiente && datos.abierto && <button type="button" className="enlace" onClick={reenviar}>{tr('Aún no ha entrado · Reenviar la invitación')}</button>}</p>
-      {!datos.abierto && <p className="aviso-lectura" role="status"><span>{cliente.soloDocumentos ? tr('La suscripción del panel no está activa: este cliente no puede subir nada nuevo. Puedes ver y exportar lo que ya hay.') : tr('Ya lleva sus cuentas en Fisquo: estos son los documentos que envió antes.')}</span></p>}
+      {!datos.abierto && <p className="aviso-lectura" role="status"><span>{cliente.soloDocumentos ? tr('Sin la suscripción del panel, este cliente no puede subir nada nuevo: solo tus {n} primeros clientes «solo documentos» siguen gratis. Puedes ver y exportar lo que ya hay.', { n: GRATIS }) : tr('Ya lleva sus cuentas en Fisquo: estos son los documentos que envió antes.')}</span></p>}
     </header>
 
     <div className="desp-herramientas">

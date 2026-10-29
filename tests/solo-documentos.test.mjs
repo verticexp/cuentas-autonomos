@@ -169,16 +169,49 @@ test('la gestoría corrige, revisa y exporta el trimestre en el formato de su pr
   assert.equal(S.diarioDocumentos(ctx, docs, { anio: 2026, t: 3, formato: 'a3', fecha: '2026-10-29' }).n, 0, 'otro trimestre, nada');
 });
 
-test('si el despacho deja de pagar, solo lectura: no entra nada nuevo', async () => {
+test('si el despacho deja de pagar, su único cliente sigue funcionando: es de los gratis', async () => {
   const e = await R.redis.hget('empresas', cliente.id);
   assert.equal(await S.abiertoPara(e), true);
   await D.cambiarDespacho('d1', async (d) => ({ despacho: { ...d, panel: { ...d.panel, activo: false, estado: 'canceled' } } }));
-  assert.equal(await S.abiertoPara(e), false);
-  // El aviso del buzón tampoco lo guarda.
-  const { recibirCorreo } = await import('../lib/buzonEntrante.js');
-  assert.deepEqual(await recibirCorreo({ para: `${e.buzon.alias}@fisqal.com`, emailId: 'x' }), { ignorado: 'panel en pausa' });
+  assert.equal(await S.abiertoPara(e), true);
   await D.cambiarDespacho('d1', async (d) => ({ despacho: { ...d, panel: { ...d.panel, activo: true, estado: 'active' } } }));
   assert.equal(await S.abiertoPara(e), true);
+});
+
+test('los 3 primeros clientes «solo documentos» van gratis; desde el 4.º hace falta la suscripción', async () => {
+  await R.redis.hset('despachos', { d3: { id: 'd3', nombre: 'Gestoría d3', codigo: 'COD-d3', empresa: 'emp-d3', miembros: { g3: { rol: 'titular', desde: '2026-10-01' } }, soloAsignados: false } });
+  const d = await D.despachoDe('d3');
+  const { GRATIS } = await import('../lib/tarifasDocumentos.js');
+  assert.equal(GRATIS, 3);
+  const ids = [];
+  for (let i = 0; i < 4; i++) {
+    assert.equal(P.puedeDarDeAlta(d, i), i < GRATIS, `alta del cliente ${i + 1} sin suscripción`);
+    // La ruta (app/api/despacho/documentos/clientes) no deja dar de alta el 4.º; aquí se crea igual para ver qué pasa
+    // cuando se tienen más de los gratis (por ejemplo, al cancelar la suscripción).
+    const r = await S.altaSoloDocumentos(d, { id: 'g3', nombre: 'Carla' }, { nombre: `Cliente ${i + 1}`, email: `cliente${i + 1}@d3.test` });
+    assert.ok(!r.error, r.error);
+    ids.push(r.empresa.id);
+    // Cada uno, un día distinto (en la prueba se crean en el mismo milisegundo).
+    const e = await R.redis.hget('empresas', r.empresa.id);
+    await R.redis.hset('empresas', { [e.id]: { ...e, documentos: { ...e.documentos, desde: `2026-10-0${i + 1}T10:00:00.000Z` } } });
+  }
+  const abiertos = async () => Promise.all(ids.map(async (id) => S.abiertoPara(await R.redis.hget('empresas', id))));
+  assert.deepEqual(await P.gratisDe(d), ids.slice(0, 3), 'los gratis son los 3 primeros que dio de alta');
+  assert.deepEqual(await abiertos(), [true, true, true, false]);
+  // Con la suscripción, todos; al cancelarla, vuelven a ser solo los 3 primeros.
+  await D.cambiarDespacho('d3', async (x) => ({ despacho: { ...x, panel: { activo: true, estado: 'trialing' } } }));
+  assert.deepEqual(await abiertos(), [true, true, true, true]);
+  assert.equal(P.puedeDarDeAlta(await D.despachoDe('d3'), 4), true);
+  await D.cambiarDespacho('d3', async (x) => ({ despacho: { ...x, panel: { activo: false, estado: 'canceled' } } }));
+  assert.deepEqual(await abiertos(), [true, true, true, false]);
+  // El 4.º, en solo lectura: lo que reenvía a su buzón tampoco entra.
+  const cuarto = await R.redis.hget('empresas', ids[3]);
+  const { recibirCorreo } = await import('../lib/buzonEntrante.js');
+  assert.deepEqual(await recibirCorreo({ para: `${cuarto.buzon.alias}@fisqal.com`, emailId: 'x' }), { ignorado: 'panel en pausa' });
+  // Si uno de los gratis pasa a Fisquo completo, el siguiente ocupa su sitio.
+  assert.ok(!(await S.pasarACompleto(ids[0], 'd3')).error);
+  assert.deepEqual(await P.gratisDe(await D.despachoDe('d3')), ids.slice(1));
+  assert.deepEqual((await abiertos()).slice(1), [true, true, true]);
 });
 
 test('la suscripción del panel no pisa la de las licencias del mismo despacho', async () => {

@@ -3,8 +3,8 @@ import { requerirDespacho } from '@/lib/despachoPagina';
 import { clientesVisibles, despachoDe } from '@/lib/despachos';
 import { stripe } from '@/lib/stripe';
 import { esApp } from '@/lib/app';
-import { aplicarSuscripcionPanel, panelActivo, soloDocumentosDe } from '@/lib/panelDocumentos';
-import { tramoDe } from '@/lib/tarifasDocumentos';
+import { aplicarSuscripcionPanel, gratisDe, panelActivo, soloDocumentosDe } from '@/lib/panelDocumentos';
+import { GRATIS, tramoDe } from '@/lib/tarifasDocumentos';
 import { clientesDocumentos } from '@/lib/documentosServidor';
 import Volver from '@/components/Volver';
 import SoloDocumentosDespacho from '@/components/SoloDocumentosDespacho';
@@ -28,12 +28,14 @@ export default async function SoloDocumentos({ searchParams }) {
       d = (await despachoDe(d.id)) || d;
     }
   }
-  const [clientes, cuenta] = await Promise.all([clientesVisibles(d, u.id).then((v) => clientesDocumentos(d, v)), soloDocumentosDe(d)]);
+  const [lista, cuenta, gratis] = await Promise.all([clientesVisibles(d, u.id).then((v) => clientesDocumentos(d, v)), soloDocumentosDe(d), gratisDe(d)]);
+  // Sin suscripción, solo los GRATIS primeros pueden subir; los demás, en solo lectura.
+  const clientes = lista.map((c) => ({ ...c, abierto: panelActivo(d) || gratis.includes(c.id) }));
   const panel = { activo: panelActivo(d), ...(d.panel ? { estado: d.panel.estado, finPrueba: d.panel.finPrueba || null, pruebaUsada: Boolean(d.panel.pruebaUsada) } : {}) };
   return <main className="pagina mk-look despacho">
     <Volver href="/despacho">{tr('Clientes')}</Volver>
     <h1 className="titulo">{tr('Solo documentos')}</h1>
     <p className="resumen-linea desp-linea"><span>{tr('Clientes que no llevan sus cuentas en Fisquo: te envían tickets y facturas desde el móvil, la IA los lee y tú los revisas y exportas.')}</span></p>
-    <SoloDocumentosDespacho clientes={clientes} cuenta={cuenta} tramo={tramoDe(cuenta)} panel={panel} titular={rol === 'titular'} demo={Boolean(d.demo)} app={esApp((await headers()).get('user-agent'))} />
+    <SoloDocumentosDespacho clientes={clientes} cuenta={cuenta} tramo={tramoDe(cuenta)} gratis={GRATIS} panel={panel} titular={rol === 'titular'} demo={Boolean(d.demo)} app={esApp((await headers()).get('user-agent'))} />
   </main>;
 }
