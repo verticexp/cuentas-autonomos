@@ -12,7 +12,8 @@ import { enfocar, irALaApp, useTrasArranque } from '@/lib/arranque';
 import { useT } from '@/components/Idioma';
 
 // El formulario público ya se ve en el HTML inicial. Si falla, el error aparece aquí y el email se conserva.
-export default function FormEntrar({ errorInicial = '', listos = {} }) {
+// ordenador (del servidor, por el user agent): el email no ofrece llaves de acceso, solo la contraseña guardada.
+export default function FormEntrar({ errorInicial = '', listos = {}, ordenador = false }) {
   const tr = useT();
   const listo = useTrasArranque();
   const [error, setError] = useState(errorInicial);
@@ -47,7 +48,7 @@ export default function FormEntrar({ errorInicial = '', listos = {} }) {
       {(listos.google || listos.apple) && <p className="separador"><span>{tr('o con tu email')}</span></p>}
       {error && <p className="error" role="alert">{tr(error)}</p>}
       <label htmlFor="email">{tr('Email')}</label>
-      <input ref={email} id="email" name="email" type="email" autoComplete="username webauthn" required />
+      <input ref={email} id="email" name="email" type="email" autoComplete={ordenador ? 'username' : 'username webauthn'} required />
       <div className="login-etiqueta">
         <label htmlFor="password">{tr('Contraseña')}</label>
         <Link href="/recuperar">{tr('¿Has olvidado la contraseña?')}</Link>

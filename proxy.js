@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server';
 import { cabeceraCsp, EMBEBIBLE, modoCsp, politicaCsp } from '@/lib/csp';
 import { desvioApp } from '@/lib/app';
 import { PUBLICO } from '@/lib/rutasPublicas';
+import { RENOVADA, opcionesCookie, renovarSesion, toca } from '@/lib/sesion';
 
-export function proxy(req) {
+export async function proxy(req) {
   // Anti-CSRF en TODAS las rutas (también login, registro, invitación y llaves de acceso): lo que modifica datos solo
   // puede venir de la propia app. Con «Referrer-Policy: no-referrer» los formularios envían «Origin: null»; entonces
   // vale Sec-Fetch-Site, que pone el navegador. Sin Origin (Stripe, crons) pasa: esas rutas comprueban su firma o secreto.
@@ -24,7 +25,7 @@ export function proxy(req) {
     h.set('x-ruta', req.nextUrl.pathname + req.nextUrl.search);
     // x-metodo: para el modo solo lectura (lib/api.js usuarioApi).
     h.set('x-metodo', req.method);
-    if (modoCsp() === 'off') return NextResponse.next({ request: { headers: h } });
+    if (modoCsp() === 'off') return renovar(req, NextResponse.next({ request: { headers: h } }));
     // Nonce nuevo en cada petición: Next.js lo lee de la cabecera para sus scripts; x-nonce, para los nuestros (lib/csp.js).
     const nonce = btoa(crypto.randomUUID());
     const csp = politicaCsp(nonce, { embebible: EMBEBIBLE.test(req.nextUrl.pathname) });
@@ -32,10 +33,24 @@ export function proxy(req) {
     h.set(cabeceraCsp(), csp);
     const res = NextResponse.next({ request: { headers: h } });
     res.headers.set(cabeceraCsp(), csp);
-    return res;
+    return renovar(req, res);
   }
   if (req.nextUrl.pathname.startsWith('/api/')) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
   return NextResponse.redirect(new URL('/login', req.url));
+}
+
+// Ordenador: la sesión se alarga con el uso (lib/sesion.js), y con ella la empresa elegida (cookie «e»).
+async function renovar(req, res) {
+  const token = req.cookies.get('t')?.value;
+  if (!toca({ ua: req.headers.get('user-agent'), token, renovada: req.cookies.get(RENOVADA)?.value })) return res;
+  try {
+    if (!(await renovarSesion(token))) return res;
+    res.cookies.set('t', token, opcionesCookie);
+    const e = req.cookies.get('e')?.value;
+    if (e) res.cookies.set('e', e, opcionesCookie);
+    res.cookies.set(RENOVADA, '1', { ...opcionesCookie, maxAge: 60 * 60 * 24 });
+  } catch { /* sin Upstash, la sesión sigue como estaba */ }
+  return res;
 }
 
 export const config = {

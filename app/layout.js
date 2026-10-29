@@ -19,6 +19,7 @@ import { conEquipo } from '@/lib/empresa';
 import { leer } from '@/lib/redis';
 import { resumen as resumenBandeja } from '@/lib/bandeja';
 import Bloqueo from '@/components/Bloqueo';
+import { esOrdenador } from '@/lib/biometria';
 import Llegada from '@/components/Llegada';
 import Arranque from '@/components/Arranque';
 import RegistrarSw from '@/components/RegistrarSw';
@@ -86,14 +87,16 @@ export default async function RootLayout({ children }) {
   const porRevisar = u && puede(u, 'gastos') ? resumenBandeja((await leer(u, 'bandeja').catch(() => [])) || []).pendientes : 0;
   // «Equipo» en el menú solo con trabajadores (lib/empresa.js conEquipo); los empleados se leen solo si no lo dijo al empezar.
   const equipo = u && puede(u, 'nominas') && (u.fiscal?.trabajadores || conEquipo(u, (await leer(u, 'empleados').catch(() => [])) || []));
-  // Con el bloqueo del servidor activo y sin desbloquear, la pantalla de bloqueo sale aunque el navegador la diera por abierta.
-  const abierta = !u || bloqueoDe(u) !== 'activo' || (await desbloqueada().catch(() => false));
-  // Al abrir una página de la app sin desbloquear: redirección de verdad (307) antes de pintar nada. Desde la página, la
-  // redirección ya va dentro del HTML (app/loading.js) y el navegador recarga: dos documentos, fundido lento y barra «fantasma».
   const temaCookie = (await cookies()).get('tema')?.value;
   const tema = temaCookie === 'claro' || temaCookie === 'oscuro' ? temaCookie : undefined;
   const cab = await headers();
   const app = esApp(cab.get('user-agent'));
+  // En el ordenador no hay bloqueo (lib/biometria.js esOrdenador): la sesión se queda abierta.
+  const pantallaBloqueo = u?.bloqueoPantalla && !esOrdenador(cab.get('user-agent'));
+  // Con el bloqueo del servidor activo y sin desbloquear, la pantalla de bloqueo sale aunque el navegador la diera por abierta.
+  // Al abrir una página de la app sin desbloquear: redirección de verdad (307) antes de pintar nada. Desde la página, la
+  // redirección ya va dentro del HTML (app/loading.js) y el navegador recarga: dos documentos, fundido lento y barra «fantasma».
+  const abierta = !u || bloqueoDe(u, cab.get('user-agent')) !== 'activo' || (await desbloqueada().catch(() => false));
   const ruta = cab.get('x-ruta') || '/';
   const nonce = cab.get('x-nonce') || undefined;
   if (!abierta && !LIBRE.test(ruta)) redirect(`/bloqueo?a=${encodeURIComponent(ruta)}`);
@@ -140,7 +143,7 @@ export default async function RootLayout({ children }) {
           empresa={u.viaDespacho ? null : u.empresa} empresaNombre={u.viaDespacho ? '' : u.empresaNombre} />}
         {children}
         <Suspense><Barra despacho={rolDespacho ? { nombre: despacho.nombre, noLeidos: mensajesNuevos, titular: rolDespacho === 'titular' && usaEmpresaPropia(despacho) } : null} tabbar={u && !docs ? { despacho: rolDespacho ? (u.viaDespacho ? 'cliente' : usaEmpresaPropia(despacho) ? 'empresa' : 'cliente') : null, porRevisar, permisos: permisosDe(u), empresas: u.misEmpresas, empresa: u.empresa, admin: Boolean(u.admin), inventario: Boolean(u.fiscal?.inventario), equipo: Boolean(equipo), fiscal: { tipo: u.fiscal?.tipo, iva: u.fiscal?.iva }, faltan: planesQueFaltan(u.plan) } : null} /><Llegada /><BarraEstado /><TituloCompacto /></Suspense>
-        {u?.bloqueoPantalla && <Bloqueo email={u.email} servidor={abierta} />}
+        {pantallaBloqueo && <Bloqueo email={u.email} servidor={abierta} />}
         </ProveedorIdioma>
       </body>
     </html>

@@ -5,10 +5,12 @@ import { useRouter } from 'next/navigation';
 import { MARCA, activarFaceId, faceIdDisponible, nombreDispositivo } from '@/lib/faceid';
 import { ESTE, activarNativo, estadoNativo, nombreTipo, quitarDeEsteIphone } from '@/lib/faceidNativo';
 import { fechaCorta } from '@/lib/formato';
+import { enOrdenador } from '@/lib/biometria';
 import { useT } from '@/components/Idioma';
 
 // Ajustes → Face ID: activarlo en este dispositivo y ver en cuáles está. En la web, con llaves de acceso (lib/faceid.js);
 // en la app de iOS, con el Face ID nativo del iPhone (lib/faceidNativo.js), como en la app de un banco.
+// En el ordenador no se activa nada (ni Face ID ni el bloqueo): solo la lista, para quitar las que ya hubiera.
 // lista: [{ id, nombre, creada, usada, tipo: 'llave' | 'nativo' }].
 export default function FaceId({ lista, bloqueo = false }) {
   const tr = useT();
@@ -19,11 +21,13 @@ export default function FaceId({ lista, bloqueo = false }) {
   const [este, setEste] = useState('');
   const [msg, setMsg] = useState('');
   const [bloquear, setBloquear] = useState(bloqueo);
+  const [ordenador, setOrdenador] = useState(false);
 
   useEffect(() => {
     estadoNativo().then((e) => {
       setNativo(e);
       if (e) { setDisponible(e.disponible); try { setEste(localStorage.getItem(ESTE) || ''); } catch {} }
+      else if (enOrdenador()) setOrdenador(true);
       else faceIdDisponible().then(setDisponible);
     });
   }, []);
@@ -56,11 +60,13 @@ export default function FaceId({ lista, bloqueo = false }) {
   return (
     <section className="tarjeta formulario faceid">
       <h3>{tr(nombre)}</h3>
-      <p className="nota">{tr('Con {nombre} entras sin escribir la contraseña. Tu cara nunca sale del dispositivo.', { nombre: tr(nombre) })}</p>
-      <label className="check">
-        <input type="checkbox" checked={bloquear} onChange={cambiarBloqueo} />
-        {tr('Pedir {nombre} o contraseña cada vez que abra Fisquo', { nombre: tr(nombre) })}
-      </label>
+      {ordenador ? <p className="nota">{tr('En el ordenador la sesión se queda abierta: Face ID y el bloqueo de pantalla son solo para el móvil.')}</p> : <>
+        <p className="nota">{tr('Con {nombre} entras sin escribir la contraseña. Tu cara nunca sale del dispositivo.', { nombre: tr(nombre) })}</p>
+        <label className="check">
+          <input type="checkbox" checked={bloquear} onChange={cambiarBloqueo} />
+          {tr('Pedir {nombre} o contraseña cada vez que abra Fisquo', { nombre: tr(nombre) })}
+        </label>
+      </>}
       {lista.length > 0 && (
         <ul className="dispositivos">
           {lista.map((k) => (

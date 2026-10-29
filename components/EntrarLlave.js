@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { MARCA, autofillDisponible, entrarConFaceId } from '@/lib/faceid';
-import { nombreBiometria } from '@/lib/biometria';
+import { enOrdenador, nombreBiometria } from '@/lib/biometria';
 import { useT } from '@/components/Idioma';
 import { entrarNativo, estadoNativo, hayNativo, nombreTipo } from '@/lib/faceidNativo';
 import '@/app/login.css';
@@ -10,6 +10,8 @@ import '@/app/login.css';
 // «Entrar con Face ID» (o Touch ID, huella, Windows Hello: lib/biometria.js), y la llave en el autorrelleno del email.
 // En la app de iOS, Face ID nativo (lib/faceidNativo.js) en lugar de las llaves de acceso: solo sale si está activado
 // en este iPhone, y con auto se lanza solo al abrir, como en la app de un banco.
+// En el ordenador no sale (ni el botón ni la llave en el autorrelleno): la sesión se queda abierta y el autorrelleno es
+// solo el de la contraseña guardada.
 // alEntrar(r): qué hacer al entrar. auto: en el dispositivo donde ya se usó, se lanza sola al abrir (como hasta ahora).
 export default function EntrarLlave({ alEntrar = () => { location.href = '/'; }, auto = false }) {
   const tr = useT();
@@ -39,7 +41,7 @@ export default function EntrarLlave({ alEntrar = () => { location.href = '/'; },
       });
       return;
     }
-    if (!window.PublicKeyCredential) return;
+    if (!window.PublicKeyCredential || enOrdenador()) return;
     setNombre(nombreBiometria(navigator.userAgent));
     setVer(true);
     if (auto && localStorage.getItem(MARCA) && !location.search.includes('salir')) entrar();
