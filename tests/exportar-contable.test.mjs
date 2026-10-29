@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { diarioA3, diarioContaplus, diarioContasol, subcuenta } from '../lib/exportarContable.js';
-import { leerZip } from '../lib/zip.js';
+import { leerZip, zip } from '../lib/zip.js';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { generarAsientos } from '../lib/asientos.js';
@@ -208,7 +208,13 @@ function libroFisquo(datos, anio, hoy) {
   }));
 }
 const sinCeros = (o) => Object.fromEntries(Object.entries(o).filter(([, v]) => v));
-function comprobarIva(datos, anio, hoy) {
+// ContaPlus sale en un .zip con XDiario.txt y XSubCta.txt; sus subcuentas de IVA y de clientes y proveedores se suman en
+// su cuenta (los tres primeros dígitos) para compararlas con el diario de Fisquo.
+const diarioCp = (x) => (typeof x === 'string' ? x : leerZip(Buffer.from(x))['XDiario.txt'].toString('latin1'));
+const subctaCp = (x) => leerZip(Buffer.from(x))['XSubCta.txt'].toString('latin1').slice(0, -2).split('\r\n');
+const porCuenta = (o) => { const m = {}; for (const [c, v] of Object.entries(o)) m[c.slice(0, 3)] = (m[c.slice(0, 3)] || 0n) + v; return sinCeros(m); };
+// sinCajaContaplus: con criterio de caja, ContaPlus deja ese IVA fuera de sus libros (Auxiliar '*').
+function comprobarIva(datos, anio, hoy, { sinCajaContaplus = false } = {}) {
   const asientos = generarAsientos(datos, hoy);
   const iva = { facturas: datos.facturas || [], gastos: datos.gastos || [], fiscal: datos.fiscal || {}, productos: datos.productos || [] };
   const fisquo = libroFisquo(datos, anio, hoy);
@@ -217,16 +223,18 @@ function comprobarIva(datos, anio, hoy) {
     const con = exportarDiario(asientos, { anio, formato, fecha: hoy, iva });
     const v = validar(con, { anio }), sin = validar(exportarDiario(asientos, { anio, formato, fecha: hoy }), { anio });
     assert.deepEqual(v.errores, [], `${formato}: errores del validador`);
-    assert.deepEqual(sinCeros(v.saldos), sinCeros(sin.saldos), `${formato}: el diario importado es el de Fisquo`);
+    if (formato === 'a3') assert.deepEqual(sinCeros(v.saldos), sinCeros(sin.saldos), 'a3: el diario importado es el de Fisquo');
+    else assert.deepEqual(porCuenta(v.saldos), porCuenta(sin.saldos), 'contaplus: el diario importado es el de Fisquo');
     for (const q of [1, 2, 3, 4]) {
+      if (formato === 'contaplus' && sinCajaContaplus) continue;
       assert.deepEqual(v.libro[q].expedidas, fisquo[q].expedidas, `${formato} ${q}T: IVA repercutido`);
       if (formato === 'a3') assert.deepEqual({ ...v.libro[q].recibidas, baseDeducible: undefined }, { ...fisquo[q].recibidas, baseDeducible: undefined }, `a3 ${q}T: IVA soportado`);
       else assert.equal(v.libro[q].recibidas.deducible, fisquo[q].recibidas.deducible, `contaplus ${q}T: IVA deducible`);
     }
-    salida[formato] = { v, filas: lineas(con) };
+    salida[formato] = { v, filas: lineas(formato === 'a3' ? con : diarioCp(con)), ...(formato === 'contaplus' ? { subcuentas: subctaCp(con) } : {}) };
   }
   // El IVA deducible de ContaPlus (apuntes de la 472) es el de las líneas deducibles de A3, también en la base.
-  for (const q of [1, 2, 3, 4]) assert.equal(salida.contaplus.v.libro[q].recibidas.baseDeducible, salida.a3.v.libro[q].recibidas.baseDeducible);
+  if (!sinCajaContaplus) for (const q of [1, 2, 3, 4]) assert.equal(salida.contaplus.v.libro[q].recibidas.baseDeducible, salida.a3.v.libro[q].recibidas.baseDeducible);
   return salida;
 }
 const tipoA3 = (f) => campo(f, 15, 1);
@@ -332,19 +340,40 @@ test('A3 y ContaPlus: registro de IVA de facturas y gastos de todos los tipos, i
   assert.equal(campo(gasto('Abogado')[1], 173, 2), '05');
   assert.equal(campo(gasto('Servidor')[0], 58, 1), '3');
 
-  // ContaPlus: un apunte de IVA por tipo, con Contra, Factura, BaseEuro e IVA, sin Auxiliar '*'; al 0 %, a 0,00 €.
+  // ContaPlus: un apunte de IVA por subcuenta (tipo y porcentaje), con Contra (la subcuenta del cliente o proveedor),
+  // Factura, BaseEuro e IVA, sin Auxiliar '*'; al 0 %, a 0,00 €.
   const C = contaplus.filas, iva = C.filter((f) => /^47[27]/.test(campo(f, 15, 12)) && campo(f, 211, 1) !== '*');
   const de = (contra, factura) => iva.filter((f) => campo(f, 27, 8) === contra && campo(f, 96, 8).trim() === factura && campo(f, 212, 1) === ' ').map((f) => [campo(f, 15, 8), campo(f, 239, 16).trim(), campo(f, 255, 16).trim(), campo(f, 271, 16).trim(), campo(f, 120, 5).trim(), campo(f, 125, 5).trim()]);
-  assert.deepEqual(de('43000000', '1').filter((x) => x[0] === '47700000'), [['47700000', '0.00', '210.00', '1000.00', '21.00', '0.00'], ['47700000', '0.00', '50.00', '500.00', '10.00', '0.00']]);
-  assert.deepEqual(de('43000000', '2'), [['47700000', '0.00', '262.00', '1000.00', '21.00', '5.20']]);
-  assert.deepEqual(de('43000000', '3'), [['47700000', '0.00', '0.00', '1000.00', '0.00', '0.00']]);
+  assert.deepEqual(de('43000001', '1'), [['47700121', '0.00', '210.00', '1000.00', '21.00', '0.00'], ['47700110', '0.00', '50.00', '500.00', '10.00', '0.00']]);
+  assert.deepEqual(de('43000001', '2'), [['47790021', '0.00', '262.00', '1000.00', '21.00', '5.20']]);
+  // Al 0 %: entrega de bienes a la UE (X), servicios a la UE (Y), exportación (E) y exenta (G al 0 %), cada una con su cliente.
+  assert.deepEqual([de('43000002', '3'), de('43000003', '4'), de('43000004', '5'), de('43000001', '7')].map((x) => x.map((y) => [y[0], y[2], y[3]])),
+    [[['47700200', '0.00', '1000.00']], [['47700300', '0.00', '1000.00']], [['47700400', '0.00', '1000.00']], [['47700100', '0.00', '1000.00']]]);
+  // Sin NIF (ventanilla única a un particular): la 430 general.
+  assert.ok(C.some((f) => campo(f, 15, 8) === '43000000' && campo(f, 55, 25).includes('06-2026')));
   // Rectificativa: el IVA al debe con la base en negativo.
-  assert.deepEqual(iva.filter((f) => campo(f, 212, 1) === 'R').map((f) => [campo(f, 239, 16).trim(), campo(f, 271, 16).trim()]), [['42.00', '-200.00']]);
-  // Intracomunitaria: el mismo IVA soportado (472) y autorrepercutido (477), con el proveedor de contrapartida.
-  assert.ok(iva.some((f) => campo(f, 15, 8) === '47200000' && campo(f, 239, 16).trim() === '42.00' && campo(f, 271, 16).trim() === '200.00' && !campo(f, 27, 8).startsWith('43')));
-  assert.ok(iva.some((f) => campo(f, 15, 8) === '47700000' && campo(f, 255, 16).trim() === '42.00' && !campo(f, 27, 8).startsWith('43')));
-  // Los apuntes de IVA de la liquidación (303) siguen fuera de las declaraciones.
-  assert.ok(C.filter((f) => campo(f, 55, 25).startsWith('Liquidacion del IVA')).every((f) => campo(f, 211, 1) === '*'));
+  assert.deepEqual(iva.filter((f) => campo(f, 212, 1) === 'R').map((f) => [campo(f, 15, 8), campo(f, 239, 16).trim(), campo(f, 271, 16).trim()]), [['47700121', '42.00', '-200.00']]);
+  // Servicios de la UE (Z y V) e inversión del sujeto pasivo (P): el IVA soportado (472) y el autorrepercutido (477).
+  const conBase = (sub, base) => iva.filter((f) => campo(f, 15, 8) === sub && campo(f, 271, 16).trim() === base).map((f) => [campo(f, 239, 16).trim(), campo(f, 255, 16).trim()]);
+  assert.deepEqual([conBase('47200321', '200.00'), conBase('47700821', '200.00'), conBase('47200521', '300.00'), conBase('47700621', '300.00')], [[['42.00', '0.00']], [['0.00', '42.00']], [['63.00', '0.00']], [['0.00', '63.00']]]);
+  // Compensación del REAGP (A) al 12 %.
+  assert.equal(iva.filter((f) => campo(f, 15, 8) === '47200412').length, 1);
+  // Los apuntes de IVA de la liquidación (303) siguen fuera de las declaraciones, y la reparten entre las subcuentas.
+  const liquidacion = C.filter((f) => campo(f, 55, 25).startsWith('Liquidacion del IVA'));
+  assert.ok(liquidacion.length && liquidacion.every((f) => campo(f, 211, 1) === '*'));
+  assert.ok(liquidacion.some((f) => campo(f, 15, 8) === '47700121'));
+  // XSubCta: cada subcuenta con su tipo y porcentaje de IVA, o con el NIF, la clave y el país del cliente o proveedor.
+  const S = Object.fromEntries(contaplus.subcuentas.map((f) => [f.slice(0, 12).trim(), f]));
+  const ficha = (c) => [campo(S[c], 13, 40).trim(), campo(S[c], 53, 15).trim(), campo(S[c], 161, 1), campo(S[c], 208, 5).trim(), campo(S[c], 213, 5).trim(), campo(S[c], 383, 1), campo(S[c], 384, 2), campo(S[c], 148, 5).trim()];
+  assert.deepEqual(ficha('47700121'), ['IVA repercutido 21 %', '', 'G', '21.00', '0.00', ' ', '  ', '']);
+  assert.deepEqual(ficha('47790021'), ['IVA repercutido con recargo 21 %', '', 'G', '21.00', '5.20', ' ', '  ', '']);
+  assert.deepEqual(['47700200', '47700300', '47700400', '47200321', '47700821', '47200521', '47700621', '47200412'].map((c) => campo(S[c], 161, 1)), ['X', 'Y', 'E', 'Z', 'V', 'P', 'P', 'A']);
+  assert.deepEqual(ficha('43000001'), ['Congresos del Sur S.L.', 'B00000005', ' ', '0.00', '0.00', '1', 'ES', '28013']);
+  assert.deepEqual(ficha('43000002').slice(0, 2).concat(ficha('43000002').slice(5, 7)), ['Lyon Events', 'FR12345678901', '2', 'FR']);
+  assert.equal(campo(S['43000004'], 383, 1), '6');
+  assert.ok(contaplus.subcuentas.every((f) => f.length === 385));
+  // Base de cada tipo en el libro del IVA de ContaPlus: la entrega a la UE va al 349 y no al régimen general.
+  assert.deepEqual(contaplus.v.libro[2].tipos, { X: 100000n, Y: 100000n, E: 100000n, Z: 20000n, V: 20000n, P: 60000n });
 });
 
 test('A3 y ContaPlus: criterio de caja, IGIC y recargo de equivalencia soportado', () => {
@@ -352,7 +381,10 @@ test('A3 y ContaPlus: criterio de caja, IGIC y recargo de equivalencia soportado
   const caja = { fiscal: { tipo: 'autonomo', iva: 'general', recc: { desde: '2026-01-01' } },
     facturas: [fac('c1', 1, '2026-02-10', { cobrada: false, pagos: [{ fecha: '2026-05-10', importe: 600 }] }), fac('c2', 2, '2026-03-10', { cobrada: false })],
     gastos: [gas('cg1', '2026-02-20', { pagado: '2026-07-01' }), gas('cg2', '2026-03-20', { pendiente: true })] };
-  const { a3 } = comprobarIva(caja, 2026, '2026-12-31');
+  const { a3, contaplus } = comprobarIva(caja, 2026, '2026-12-31', { sinCajaContaplus: true });
+  // En ContaPlus, el criterio de caja va con campos que el diario clásico no tiene: su IVA queda fuera de los libros.
+  assert.equal(contaplus.v.resumen.apuntesIva, 0);
+  assert.ok(contaplus.filas.some((f) => campo(f, 15, 4) === '4779' && campo(f, 211, 1) === '*'));
   const c1 = facturaA3(a3.filas, '01-2026');
   assert.equal(campo(c1[1], 192, 8), '47790000');
   const cg = a3.filas.filter((f) => tipoA3(f) === '9' && campo(f, 192, 4) === '4729');
@@ -392,13 +424,15 @@ test('A3 y ContaPlus: la demo completa pasa el validador y su IVA es el de los l
     for (const anio of [anioHoy - 1, anioHoy]) {
       const exportar = async (formato) => { const r = await diarioConCierreDe(u, { anio, formato, codigo: 1, fecha: hoy }); assert.ok(!r.error, r.error); return r.contenido; };
       const a3 = validarA3(await exportar('a3'), { anio }), cp = validarContaplus(await exportar('contaplus'), { anio });
+      // Con el cierre, cada subcuenta de ContaPlus (clientes, proveedores e IVA por tipo) acaba el año a cero.
+      if (anio < anioHoy) assert.deepEqual(sinCeros(cp.saldos), {}, `ContaPlus ${anio}: subcuentas con saldo tras el cierre`);
       assert.deepEqual(a3.errores, []); assert.deepEqual(cp.errores, []);
       facturasA3 += a3.resumen.facturas;
       // El diario de ContaSol no lleva IVA (sus apuntes son los de Fisquo): las tres exportaciones dan los mismos saldos.
       const contasolSaldos = {};
       for (const f of contasol(await exportar('contasol'))) contasolSaldos[f[4]] = (contasolSaldos[f[4]] || 0n) + cents(f[8]) - cents(f[9]);
       assert.deepEqual(sinCeros(a3.saldos), sinCeros(contasolSaldos));
-      assert.deepEqual(sinCeros(cp.saldos), sinCeros(contasolSaldos));
+      assert.deepEqual(porCuenta(cp.saldos), porCuenta(contasolSaldos));
       const fisquo = libroFisquo({ facturas, gastos, nominas, fiscal: fiscalDe(u) }, anio, hoy);
       for (const q of [1, 2, 3, 4]) {
         assert.deepEqual(a3.libro[q].expedidas, fisquo[q].expedidas, `A3 ${anio} ${q}T`);
@@ -421,7 +455,8 @@ test('el validador independiente detecta los errores de formato, de cuadre y de 
   const iva = { facturas: datos.facturas, gastos: [], fiscal: datos.fiscal };
   const asientos = generarAsientos(datos, '2026-12-31');
   const a3 = lineas(exportarDiario(asientos, { anio, formato: 'a3', fecha: '2026-12-31', iva }));
-  const cp = lineas(exportarDiario(asientos, { anio, formato: 'contaplus', fecha: '2026-12-31', iva }));
+  const zipCp = exportarDiario(asientos, { anio, formato: 'contaplus', fecha: '2026-12-31', iva });
+  const cp = lineas(diarioCp(zipCp)), sc = subctaCp(zipCp);
   const con = (filas, i, desde, texto) => filas.map((f, k) => (k === i ? f.slice(0, desde - 1) + texto + f.slice(desde - 1 + texto.length) : f)).join('\r\n') + '\r\n';
   assert.deepEqual(validarA3(a3.join('\r\n') + '\r\n', { anio }).errores, []);
   const i9 = a3.findIndex((f) => tipoA3(f) === '9'), i4 = a3.findIndex((f) => tipoA3(f) === '4');
@@ -440,4 +475,10 @@ test('el validador independiente detecta los errores de formato, de cuadre y de 
     [con(cp, iIva, 120, '10.00'), /lejos de base/],
     [con(cp, iIva, 255, '          999.00'), /descuadrado/],
   ]) assert.match(validarContaplus(cambio, { anio }).errores.join('\n'), error);
+  // Con XSubCta: que falte una subcuenta o que su porcentaje no sea el del apunte.
+  assert.deepEqual(validarContaplus(zipCp, { anio }).errores, []);
+  const conSubcuentas = (s) => zip([{ nombre: 'XDiario.txt', datos: diarioCp(zipCp) }, { nombre: 'XSubCta.txt', datos: s.join('\r\n') + '\r\n' }]);
+  const i21 = sc.findIndex((f) => f.startsWith('47700121'));
+  assert.match(validarContaplus(conSubcuentas(sc.filter((_, k) => k !== i21)), { anio }).errores.join('\n'), /falta la subcuenta 47700121/);
+  assert.match(validarContaplus(conSubcuentas(sc.map((f, k) => (k === i21 ? f.slice(0, 207) + '10.00' + f.slice(212) : f))), { anio }).errores.join('\n'), /en la subcuenta 47700121 de 10\/0 %/);
 });

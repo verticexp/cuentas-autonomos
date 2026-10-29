@@ -1,10 +1,12 @@
 // Validador independiente de los ficheros de enlace contable, escrito desde los manuales (no usa lib/exportarContable.js):
 // - A3: «Enlace contable de entrada. Descripción de registros» (registros 0, 1, 2, 4 y 9, y la nota 2 sobre en qué columna
 //   va cada importe). https://media.a3software.com/a3responde/files/5081-Enlace_contable_descripcion_registros_WEB.pdf
-// - ContaPlus: «Protocolo de comunicación con Sage ContaPlus» (Diario, campos 1-31) y el importador de Sage 50 (formato
+// - ContaPlus: «Protocolo de comunicación con Sage ContaPlus» (Diario, campos 1-31; Subcuentas, 1-24) y el importador de Sage 50 (formato
 //   NominaPlus). https://grupo.sage.es/ayuda/documentacion/productos/contaplus/Manual_protocolos_ContaPlus.pdf
 // Devuelve los errores, el saldo de cada subcuenta (debe − haber, en céntimos) con los asientos tal como los generaría el
 // programa y su libro del IVA por trimestre, para compararlos con lo que dice Fisquo.
+
+import { leerZip } from '../../lib/zip.js';
 
 const fechaOk = (s) => /^\d{8}$/.test(s) && new Date(`${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6)}T00:00:00Z`).toISOString().slice(0, 10).replaceAll('-', '') === s;
 const trimestre = (s) => Math.ceil(Number(s.slice(4, 6)) / 3);
@@ -157,9 +159,49 @@ export function validarA3(contenido, { anio } = {}) {
   return { errores, saldos, libro, resumen: { ...resumen, digitos } };
 }
 
+// Subcuentas (XSubCta, campos 1-24 del protocolo en posiciones fijas, 385 caracteres): código, título, NIF, TipoIVA, TPC,
+// RecEquiv, IdNif y país. Los tipos de IVA (*3) que admite cada cuenta: repercutido (477) y soportado (472).
+const TIPOS_IVA = { 477: 'GNVXYEPJMH', 472: 'OICZARPJBK' };
+function leerSubcuentas(texto, err) {
+  const m = new Map();
+  if (texto && !texto.endsWith('\r\n')) err('XSubCta', 'sin CRLF al final');
+  (texto ? texto.slice(0, -2).split('\r\n') : []).forEach((f, i) => {
+    const p = (d, l) => f.slice(d - 1, d - 1 + l), n = `XSubCta ${i + 1}`;
+    if (f.length !== 385) err(n, `${f.length} caracteres (385)`);
+    if (/[^\x20-\x7e]/.test(f)) err(n, 'carácter que no es ASCII');
+    const cod = p(1, 12).trimEnd();
+    if (!/^\d+$/.test(cod)) err(n, `código «${p(1, 12)}»`);
+    if (m.has(cod)) err(n, `subcuenta ${cod} repetida`);
+    if (!p(13, 40).trim()) err(n, 'sin título');
+    for (const [d, campo] of [[153, 'Divisa'], [159, 'Documento'], [160, 'AjustaMe'], [195, 'LInterrump']]) if (!'FT'.includes(p(d, 1)) || p(d, 1) === ' ') err(n, campo);
+    for (const [d, campo] of [[208, 'TPC'], [213, 'RecEquiv']]) if (!/^ *\d{1,2}\.\d{2}$/.test(p(d, 5))) err(n, `${campo} «${p(d, 5)}»`);
+    const s = { tipoIva: p(161, 1).trim(), tpc: Number(p(208, 5)), re: Number(p(213, 5)), nif: p(53, 15).trim(), idNif: p(383, 1).trim(), pais: p(384, 2).trim(), cp: p(148, 5).trim() };
+    if (/^47[27]/.test(cod) && s.tipoIva && !TIPOS_IVA[cod.slice(0, 3)].includes(s.tipoIva)) err(n, `TipoIVA «${s.tipoIva}» en la ${cod.slice(0, 3)}`);
+    if (s.nif) {
+      if (!'1234567'.includes(s.idNif) || !s.idNif) err(n, `IdNif «${s.idNif}» con NIF`);
+      if (s.idNif === '1' && (s.pais !== 'ES' || !/^[0-9A-Z]{9}$/.test(s.nif))) err(n, `NIF español «${s.nif}» o país «${s.pais}»`);
+      if (s.idNif === '2' && (!/^[A-Z]{2}$/.test(s.pais) || !s.nif.startsWith(s.pais === 'GR' ? 'EL' : s.pais))) err(n, `NIF-IVA «${s.nif}» y país «${s.pais}»`);
+      if (s.cp && !/^\d{5}$/.test(s.cp)) err(n, `código postal «${s.cp}»`);
+    }
+    m.set(cod, s);
+  });
+  return m;
+}
+
+// contenido: el XDiario (texto) o el .zip con XDiario.txt y XSubCta.txt. Con las subcuentas, además: que existan todas,
+// que las de IVA lleven su tipo y su porcentaje (el del apunte) y que la contrapartida de los apuntes de IVA con NIF diga
+// de qué país es. libro[q].tipos: la base de cada tipo de IVA de ContaPlus (de la subcuenta), para el 303 y el 349.
 export function validarContaplus(contenido, { anio } = {}) {
   const errores = [], saldos = {}, libro = { 1: libroVacio(), 2: libroVacio(), 3: libroVacio(), 4: libroVacio() };
   const err = (n, m) => { if (errores.length < 50) errores.push(`línea ${n}: ${m}`); };
+  let subcuentas = null;
+  if (typeof contenido !== 'string') {
+    const z = leerZip(Buffer.from(contenido));
+    if (Object.keys(z).join() !== 'XDiario.txt,XSubCta.txt') err('zip', `ficheros ${Object.keys(z).join(', ')} (XDiario.txt y XSubCta.txt)`);
+    subcuentas = leerSubcuentas(z['XSubCta.txt']?.toString('latin1') || '', err);
+    contenido = z['XDiario.txt']?.toString('latin1') || '';
+  }
+  for (const q of [1, 2, 3, 4]) libro[q].tipos = {};
   const cent = (s) => { const t = s.trim(); return /^-?\d+\.\d{2}$/.test(t) ? BigInt(t.replace('.', '')) : null; };
   if (contenido && !contenido.endsWith('\r\n')) err('fin', 'sin CRLF al final');
   const filas = contenido ? contenido.slice(0, -2).split('\r\n') : [];
@@ -199,6 +241,13 @@ export function validarContaplus(contenido, { anio } = {}) {
       const signo = c.startsWith('477') ? -1n : 1n;
       if (abs(signo * importe - esperado) > 5n) err(n, `importe ${importe} lejos de base ${base} × ${piva + pre} %`);
       const q = libro[trimestre(p(7, 8))];
+      if (subcuentas) {
+        const s = subcuentas.get(c), t = subcuentas.get(contra);
+        if (s && !s.tipoIva) err(n, `subcuenta de IVA ${c} sin TipoIVA`);
+        if (s && (s.tpc !== piva || s.re !== pre)) err(n, `IVA ${piva}/${pre} % en la subcuenta ${c} de ${s.tpc}/${s.re} %`);
+        if (s?.tipoIva) q.tipos[s.tipoIva] = (q.tipos[s.tipoIva] || 0n) + base;
+        if (t?.nif && !t.pais && t.idNif !== '6') err(n, `contrapartida ${contra} sin país`);
+      }
       if (c.startsWith('477') && emitida) {
         const recargo = BigInt(Math.round((Number(base) * pre) / 100));
         q.expedidas.base += base; q.expedidas.recargo += recargo; q.expedidas.cuota += -importe - recargo;
@@ -209,6 +258,7 @@ export function validarContaplus(contenido, { anio } = {}) {
     porAsiento.set(a, (porAsiento.get(a) || 0n) + d - h);
     saldos[c] = (saldos[c] || 0n) + d - h;
   });
+  if (subcuentas) for (const c of new Set([...Object.keys(saldos), ...filas.map((f) => f.slice(26, 38).trim()).filter(Boolean)])) if (!subcuentas.has(c)) err('XSubCta', `falta la subcuenta ${c}`);
   for (const [a, s] of porAsiento) if (s) err(`asiento ${a}`, `descuadrado en ${s} céntimos`);
   const nums = [...porAsiento.keys()].map(Number);
   if (nums.some((x, i) => x !== i + 1)) err(0, 'asientos no consecutivos o desordenados');
