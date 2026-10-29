@@ -77,7 +77,8 @@ test('el despacho da de alta un cliente «solo documentos» con su invitación y
   assert.equal(cliente.despachoCliente.pendiente, undefined, 'ya aceptado: lo dio de alta el despacho');
   assert.ok((await D.clientesDe('d1')).includes(cliente.id));
   assert.deepEqual({ rol: usuario.rol, permisos: usuario.permisos, pass: usuario.pass }, { rol: 'miembro', permisos: [], pass: undefined });
-  assert.equal(await R.redis.hget('invitaciones', r.codigo), usuario.id);
+  // Un id solo con cifras (un 2 % de los de 8 hexadecimales) llega del cliente de Upstash como número: se compara como texto.
+  assert.ok(R.mismoId(await R.redis.hget('invitaciones', r.codigo), usuario.id));
   assert.ok(cliente.buzon?.alias, 'tiene su dirección para reenviar facturas');
   assert.deepEqual(cliente.buzon.remitentes, ['pepe@bar.test']);
   assert.equal(await P.soloDocumentosDe(d), 1);
