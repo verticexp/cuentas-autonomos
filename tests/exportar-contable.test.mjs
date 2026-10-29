@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { diarioA3, diarioContaplus, diarioContasol, subcuenta } from '../lib/exportarContable.js';
+import { leerZip } from '../lib/zip.js';
 
 const anio = 2026;
 const exportadores = [diarioA3, diarioContaplus, diarioContasol];
@@ -9,26 +10,19 @@ const lineas = (s) => s ? s.slice(0, -2).split('\r\n') : [];
 const campo = (s, desde, longitud) => s.slice(desde - 1, desde - 1 + longitud);
 const cents = (s) => BigInt(s.trim().replace(/[+.,]/g, ''));
 
-// Lector independiente para comprobar también campos con saltos de línea y comillas.
-function leerCsv(texto) {
-  const filas = [];
-  let fila = [], valor = '', comillas = false;
-  const s = texto.replace(/^\uFEFF/, '');
-  for (let i = 0; i < s.length; i++) {
-    const c = s[i];
-    if (c === '"') {
-      if (comillas && s[i + 1] === '"') { valor += '"'; i++; }
-      else comillas = !comillas;
-    } else if (!comillas && c === ';') { fila.push(valor); valor = ''; }
-    else if (!comillas && c === '\r' && s[i + 1] === '\n') {
-      fila.push(valor); filas.push(fila); fila = []; valor = ''; i++;
-    } else valor += c;
-  }
-  assert.equal(comillas, false);
-  assert.equal(valor, '');
-  assert.deepEqual(fila, []);
-  return filas;
+// Lector independiente del APU.ods: filas de celdas { tipo, valor, texto } leídas del content.xml.
+const desxml = (t) => t.replaceAll('&lt;', '<').replaceAll('&gt;', '>').replaceAll('&quot;', '"').replaceAll('&amp;', '&');
+function leerOds(buf) {
+  const z = leerZip(Buffer.from(buf));
+  assert.deepEqual(Object.keys(z), ['mimetype', 'META-INF/manifest.xml', 'content.xml']);
+  assert.equal(z.mimetype.toString(), 'application/vnd.oasis.opendocument.spreadsheet');
+  const xml = z['content.xml'].toString('utf8');
+  return [...xml.matchAll(/<table:table-row>(.*?)<\/table:table-row>/g)].map(([, fila]) =>
+    [...fila.matchAll(/<table:table-cell office:value-type="(\w+)"(?: office:(?:date-)?value="([^"]*)")?>(?:<text:p>(.*?)<\/text:p>)?<\/table:table-cell>|<table:table-cell\/>/g)]
+      .map(([, tipo = '', valor = '', texto = '']) => ({ tipo, valor, texto: desxml(texto) })));
 }
+// Columnas de la tabla «Apuntes» de ContaSol, A-Q.
+const contasol = (salida) => leerOds(salida).map((f) => f.map((c) => (c.tipo === 'string' ? c.texto : c.valor)));
 
 test('subcuentas: inserta ceros tras el prefijo y conserva el sufijo', () => {
   for (const [cuenta, digitos, esperado] of [
@@ -82,7 +76,7 @@ test('ContaPlus: 287 posiciones ASCII + CRLF, importes en euros y auxiliares', (
     assert.equal(campo(f, 271, 16).trim(), '0.00');
     assert.equal(campo(f, 287, 1), 'F');
   }
-  assert.equal(campo(filas[0], 15, 12), '430000000001');
+  assert.equal(campo(filas[0], 15, 12), '43000001    ');
   assert.equal(campo(filas[0], 239, 16).trim(), '121.00');
   assert.equal(campo(filas[0], 255, 16).trim(), '0.00');
   assert.equal(campo(filas[1], 239, 16).trim(), '0.00');
@@ -109,9 +103,10 @@ test('filtra el año y regularización, ordena y numera sin huecos sin mutar ent
   assert.deepEqual(a3.map((f) => campo(f, 7, 8)), ['20260102', '20260102', '20261220', '20261220']);
   const cp = lineas(diarioContaplus(entrada, { anio }));
   assert.deepEqual(cp.map((f) => campo(f, 1, 6).trim()), ['1', '1', '2', '2']);
-  const csv = leerCsv(diarioContasol(entrada, { anio })).slice(1);
-  assert.deepEqual(csv.map((f) => f[2]), ['1', '1', '2', '2']);
-  assert.deepEqual(csv.map((f) => f[3]), ['1', '2', '1', '2']);
+  const apu = contasol(diarioContasol(entrada, { anio }));
+  assert.deepEqual(apu.map((f) => f[2]), ['1', '1', '2', '2']);
+  assert.deepEqual(apu.map((f) => f[3]), ['1', '2', '1', '2']);
+  assert.deepEqual(apu.map((f) => f[1]), ['2026-01-02', '2026-01-02', '2026-12-20', '2026-12-20']);
   assert.deepEqual(entrada, copia);
 });
 
@@ -127,26 +122,41 @@ test('cuadre independiente de los tres ficheros con decimales y rectificativas',
   assert.equal(debe, 232n); assert.equal(haber, debe);
   for (const [d, h] of [
     lineas(diarioContaplus(entrada, { anio })).reduce(([d, h], f) => [d + cents(campo(f, 239, 16)), h + cents(campo(f, 255, 16))], [0n, 0n]),
-    leerCsv(diarioContasol(entrada, { anio })).slice(1).reduce(([d, h], f) => [d + cents(f[6]), h + cents(f[7])], [0n, 0n]),
+    contasol(diarioContasol(entrada, { anio })).reduce(([d, h], f) => [d + cents(f[8]), h + cents(f[9])], [0n, 0n]),
   ]) { assert.equal(d, debe); assert.equal(h, haber); }
 });
 
-test('Contasol: columnas, fecha, coma decimal y escapado de separadores y comillas', () => {
-  const concepto = 'Actuación; "Niño"\r\nSegunda línea';
-  const salida = diarioContasol([asiento('2026-03-02', concepto, 1234.56)], { anio });
-  assert.match(salida, /"Actuación; ""Niño""\r\nSegunda línea"/);
-  const filas = leerCsv(salida);
-  assert.deepEqual(filas[0], ['Diario', 'Fecha', 'Asiento', 'Orden', 'Cuenta', 'Concepto', 'Debe', 'Haber', 'Documento']);
-  assert.deepEqual(filas[1], ['1', '02/03/2026', '1', '1', '43000001', concepto, '1234,56', '0,00', '1']);
-  assert.equal(filas[2][7], '1234,56');
+test('ContaSol: APU.ods sin cabecera con las columnas A-Q del manual de DELSOL', () => {
+  const salida = diarioContasol([asiento('2026-03-02', 'Actuación', 1234.56)], { anio });
+  const filas = leerOds(salida);
+  assert.equal(filas.length, 2);
+  for (const f of filas) assert.equal(f.length, 17);
+  assert.deepEqual(filas[0].map((c) => c.tipo), ['float', 'date', 'float', 'float', 'float', 'float', 'string', 'string', 'float', 'float', 'string', 'float', '', 'float', 'float', 'float', '']);
+  assert.equal(filas[0][1].texto, '02/03/2026');
+  assert.deepEqual(contasol(salida), [
+    ['1', '2026-03-02', '1', '1', '43000001', '0', 'Actuación', '1', '1234.56', '0.00', 'E', '0', '', '0', '0', '0', ''],
+    ['1', '2026-03-02', '1', '2', '70500000', '0', 'Actuación', '1', '0.00', '1234.56', 'E', '0', '', '0', '0', '0', ''],
+  ]);
 });
 
-test('Contasol: los conceptos peligrosos se exportan como texto', () => {
-  for (const concepto of ['=1+1', '+SUM(1;2)', '-1+1', '@SUM(1)', '\t=1+1', '\r=1', '  =1+1', '\n@SUM(1)']) {
-    const filas = leerCsv(diarioContasol([asiento('2026-01-01', concepto)], { anio }));
-    assert.equal(filas[1][5], `'${concepto}`);
-    assert.equal(filas[1][6], '121,00');
-  }
+test('ContaSol: textos válidos en XML, Latin-1 y recortados a 60 (si no, descarta el registro)', () => {
+  const concepto = 'Actuación <b> & "Niño"\r\n\t🙂 Ωmega ' + 'X'.repeat(100);
+  const [fila] = contasol(diarioContasol([asiento('2026-03-02', concepto)], { anio }));
+  // \r\n\t, el emoji y la Ω (sin equivalente en Latin-1) pasan a espacios.
+  assert.equal(fila[6], ('Actuación <b> & "Niño"' + ' '.repeat(6) + 'mega ' + 'X'.repeat(100)).slice(0, 60));
+  assert.equal(fila[6].length, 60);
+  assert.match(fila[6], /^[\x20-\x7e\xa0-\xff]+$/);
+  for (const concepto of ['=1+1', '@SUM(1)']) assert.equal(contasol(diarioContasol([asiento('2026-01-01', concepto)], { anio }))[0][6], concepto);
+});
+
+test('dígitos de subcuenta: los de la empresa de destino, en los tres formatos', () => {
+  const a = [asiento('2026-01-01', 'Venta', 121)];
+  assert.equal(campo(diarioA3(a, { anio, digitos: 10 }), 16, 12), '4300000001  ');
+  assert.equal(campo(diarioContaplus(a, { anio }), 15, 12), '43000001    ');
+  assert.equal(campo(diarioContaplus(a, { anio, digitos: 10 }), 15, 12), '4300000001  ');
+  assert.equal(contasol(diarioContasol(a, { anio, digitos: 10 }))[0][4], '4300000001');
+  for (const fn of exportadores) for (const digitos of [5, 13, 8.5, '8']) assert.throws(() => fn(a, { anio, digitos }), /Dígitos de subcuenta/);
+  assert.throws(() => diarioContasol(a, { anio, digitos: 11 }), /Dígitos de subcuenta no válidos \(6-10\)/);
 });
 
 test('rechaza datos descuadrados, importes no finitos y fechas inválidas', () => {
@@ -161,7 +171,7 @@ test('rechaza datos descuadrados, importes no finitos y fechas inválidas', () =
     const doble = asiento(); doble.lineas[0].haber = 1;
     assert.throws(() => fn([doble], { anio }), /mismo apunte/);
     for (const y of [1999, 2101, 2026.5, NaN]) assert.throws(() => fn([], { anio: y }), /Año/);
-    assert.throws(() => fn([asiento()], { anio, digitos: 6 }), /supera los 6 dígitos/);
+    assert.throws(() => fn([{ ...asiento(), lineas: [{ cuenta: '4300001', debe: 1, haber: 0 }, { cuenta: '705', debe: 0, haber: 1 }] }], { anio, digitos: 6 }), /supera los 6 dígitos/);
   }
 });
 
@@ -171,6 +181,6 @@ test('límites del formato: errores claros, nunca recorta números', () => {
   assert.equal(campo(diarioA3([asiento('2026-01-01', '', 9999999999.99)], { anio }), 100, 14), '+9999999999.99');
   assert.equal(diarioA3([], { anio }), '');
   assert.equal(diarioContaplus([], { anio }), '');
-  assert.equal(leerCsv(diarioContasol([], { anio })).length, 1);
+  assert.equal(leerOds(diarioContasol([], { anio })).length, 0);
   assert.equal(campo(diarioA3([asiento()], { anio, digitos: 12 }), 16, 12), '430000000001');
 });
