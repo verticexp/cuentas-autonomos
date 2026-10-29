@@ -2,9 +2,12 @@ import { firmaStripe, stripe } from '@/lib/stripe';
 import { marcarPagada } from '@/lib/cobros';
 import { aplicarSuscripcion } from '@/lib/suscripcion';
 import { aplicarSuscripcionDespacho } from '@/lib/licencias';
+import { aplicarSuscripcionPanel, esPanel } from '@/lib/panelDocumentos';
 
 // La de un despacho (licencias de sus clientes, lib/licencias.js) lleva metadata.despacho; la de una empresa, metadata.empresa.
-const aplicar = (sub) => (sub?.metadata?.despacho ? aplicarSuscripcionDespacho(sub) : aplicarSuscripcion(sub));
+// La del panel «solo documentos» (lib/panelDocumentos.js) lleva además metadata.tipo = 'panel': va antes, para que no
+// pise la de las licencias del mismo despacho.
+const aplicar = (sub) => (esPanel(sub) ? aplicarSuscripcionPanel(sub) : sub?.metadata?.despacho ? aplicarSuscripcionDespacho(sub) : aplicarSuscripcion(sub));
 
 export const dynamic = 'force-dynamic';
 

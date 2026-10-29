@@ -13,6 +13,11 @@ import { peticionesDe } from '@/lib/peticionesDespacho';
 import { esCuota } from '@/lib/cuotas';
 import Volver from '@/components/Volver';
 import ClienteDespacho from '@/components/ClienteDespacho';
+import DocumentosDespacho from '@/components/DocumentosDespacho';
+import Ir from '@/components/Ir';
+import { esSoloDocumentos } from '@/lib/perfilDocumentos';
+import { delTrimestre, ordenar, paraGestoria, resumen as resumenDocs } from '@/lib/documentos';
+import { abiertoPara, documentosDe } from '@/lib/documentosServidor';
 import { textos } from '@/lib/idiomaServidor';
 import '@/app/mk.css';
 import '@/app/despacho.css';
@@ -28,6 +33,20 @@ export default async function ClienteDelDespacho({ params, searchParams }) {
   const q = (await searchParams) || {};
   const dia = hoy();
   const { anio, t } = periodoDe(q.anio, q.t, dia);
+  // Cliente «solo documentos» (lib/documentos.js), o los documentos que envió antes de pasar a Fisquo completo.
+  if (esSoloDocumentos(e) || (e.documentosAntes && q.vista === 'documentos')) {
+    const todos = await documentosDe(ctx);
+    const del = delTrimestre(todos, anio, t);
+    const enCurso = todos.filter((x) => ['leyendo', 'cuarentena'].includes(x.estado) && !del.includes(x));
+    const usuario = e.documentos?.usuario && (await redis.hget('usuarios', e.documentos.usuario));
+    const [peticiones, abierto] = await Promise.all([peticionesDe(e.id, { despacho: d.id, ctx }), abiertoPara(e)]);
+    return <main className="pagina mk-look despacho">
+      <Volver href={esSoloDocumentos(e) ? '/despacho/solo-documentos' : `/despacho/${encodeURIComponent(e.id)}`}>{esSoloDocumentos(e) ? 'Solo documentos' : 'Atrás'}</Volver>
+      <DocumentosDespacho cliente={{ id: e.id, nombre: e.nombre || e.emisor?.nombre || '', nif: e.emisor?.nif || '', soloDocumentos: esSoloDocumentos(e), contacto: usuario ? { email: usuario.email, pendiente: !usuario.pass && !usuario.social } : null }}
+        anio={anio} t={t} hoy={dia} titular={rol === 'titular'} peticiones={peticiones.filter((p) => p.tipo === 'documento')}
+        inicial={{ anio, t, documentos: ordenar([...del, ...enCurso]).map(paraGestoria), resumen: resumenDocs(del), abierto }} />
+    </main>;
+  }
   const [desde, hasta] = rangoTrimestre(anio, t);
   const [resumen, cierres, comentarios, leido, accesos, equipo, facturas, gastos, peticiones, informe] = await Promise.all([
     resumenCliente(ctx, anio, t, dia).catch(() => null), cierresDe(ctx), comentariosDe(e.id, { despacho: d.id }), leidoDe(e.id), leerAccesos(e.id, 40, { despacho: d.id }), equipoDe(d),
@@ -44,6 +63,7 @@ export default async function ClienteDelDespacho({ params, searchParams }) {
   const v = e.despachoCliente || {};
   return <main className="pagina mk-look despacho">
     <Volver href="/despacho">Mi despacho</Volver>
+    {e.documentosAntes && <p className="desp-linea desp-docs-acceso"><Ir prefetch={false} href={`/despacho/${encodeURIComponent(e.id)}?vista=documentos&anio=${anio}&t=${t}`}>{tr('Documentos que envió cuando era «solo documentos» ›')}</Ir></p>}
     <ClienteDespacho
       cliente={{ id: e.id, nombre: fila.nombre, nif: fila.nif, tipo: fila.tipo, territorio: fila.territorio, plan: fila.plan, desde: v.desde || null, gestor: v.gestor || null, licencia: v.licencia || null, pagaSuPlan: pagaSuPlan(e.plan), licenciaNombre: NOMBRES_LICENCIA[tipoLicencia(e)] }}
       anio={anio} t={t} hoy={dia} rol={rol} yo={u.id} estado={cierre?.cambios ? 'cambios' : fila.estado} limite={fila.limite} presentados={fila.presentados}

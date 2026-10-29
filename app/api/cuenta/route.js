@@ -14,6 +14,7 @@ import { limpiarModulos } from '@/lib/estimacionObjetiva';
 import { hoy } from '@/lib/formato';
 import { todasFichas } from '@/lib/indices';
 import { cambioDeForma, normalizarNif } from '@/lib/formaJuridica';
+import { NO_PERMITIDO, soloDocumentos } from '@/lib/perfilDocumentos';
 
 const CAMPOS = ['nombre', 'nif', 'direccion', 'ciudad', 'iban'];
 // Más datos del emisor (Ajustes): salen en la factura y se congelan con ella como los de arriba. [campo, largo máximo]
@@ -68,6 +69,8 @@ export async function PATCH(req) {
     && Object.keys(b).every((k) => ['bloqueoPantalla', 'actual', 'nueva', 'perfil'].includes(k));
   const { u, res } = await usuarioApi({ cuentaPersonal });
   if (res) return res;
+  // Un cliente «solo documentos» solo cambia lo suyo (nombre, contraseña, bloqueo), nunca datos de la empresa.
+  if (soloDocumentos(u) && !cuentaPersonal) return error(NO_PERMITIDO, 403);
   // Marcar modelos como presentados y los datos que deciden los impuestos piden «Contabilidad» (Codex H3).
   const sin = (p) => !puede(u, p) && error('No tienes permiso para esto. Pídeselo al administrador de tu empresa.', 403);
   // Bloqueo de pantalla opcional (Ajustes › Seguridad): personal, no de la empresa.

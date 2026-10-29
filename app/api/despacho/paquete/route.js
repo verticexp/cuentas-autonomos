@@ -6,6 +6,7 @@ import { clientesVisibles, registrarAcceso } from '@/lib/despachos';
 import { contextoCliente } from '@/lib/panelDespacho';
 import { construirPaquete } from '@/lib/gestoriaEnvio';
 import { concurrencia, respuesta429 } from '@/lib/limite';
+import { esSoloDocumentos } from '@/lib/perfilDocumentos';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -22,7 +23,8 @@ export async function GET(req) {
     if (res) return res;
     const r = await concurrencia('despacho-paquetes', d.id, 1, 300000, async () => {
       const archivos = [];
-      for (const c of await clientesVisibles(d, u.id)) {
+      // Sin los «solo documentos»: lo suyo se exporta desde su ficha (app/api/despacho/documentos/exportar).
+      for (const c of (await clientesVisibles(d, u.id)).filter((x) => !esSoloDocumentos(x.empresa))) {
         const ctx = contextoCliente(u, d, c.empresa);
         const [x, p] = await Promise.all([construirPaquete(ctx, anio, t, 'xlsx'), construirPaquete(ctx, anio, t, 'pdf')]);
         archivos.push({ nombre: `${carpeta(c.empresa)}/${x.nombre}.xlsx`, datos: x.cuerpo }, { nombre: `${carpeta(c.empresa)}/${p.nombre}.pdf`, datos: p.cuerpo });
