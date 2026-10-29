@@ -13,6 +13,7 @@ import { eur, fechaCorta, fechaHora } from '@/lib/formato';
 import VistaDocumento from './VistaDocumento';
 import AccionesDocumento from './AccionesDocumento';
 import { useT } from '@/components/Idioma';
+import ExportarDiario from '@/components/ExportarDiario';
 
 const fechaDe = (iso) => fechaCorta(String(iso || '').slice(0, 10));
 const horaDe = fechaHora;
@@ -24,9 +25,6 @@ export default function ClienteDespacho({ cliente, anio, t, hoy, rol, estado, li
   const tr = useT();
   const [ocupado, setOcupado] = useState('');
   const [msg, setMsg] = useState('');
-  const [formato, setFormato] = useState('a3');
-  const [codigo, setCodigo] = useState('1');
-  const [anioDiario, setAnioDiario] = useState(anio);
   const [ver, setVer] = useState(null);
   const [pedido, setPedido] = useState('');
   const titular = rol === 'titular';
@@ -173,13 +171,8 @@ export default function ClienteDespacho({ cliente, anio, t, hoy, rol, estado, li
         <a className="celda ir" href={`/api/despacho/paquete?empresa=${id}&anio=${anio}&t=${t}&formato=xlsx`} download><span className="txt">{tr('Solo el Excel')}</span></a>
         <a className="celda ir" href={`/api/despacho/paquete?empresa=${id}&anio=${anio}&t=${t}&formato=pdf`} download><span className="txt">{tr('Solo el PDF')}</span></a>
         <div className="celda columna desp-exportar">
-          <span className="txt">{tr('Contabilidad para tu programa')}<small>{tr('El libro diario del año, listo para importar.')}</small></span>
-          <div className="desp-exportar-campos">
-            <label>{tr('Programa')}<select className="campo" value={formato} onChange={(e) => setFormato(e.target.value)}><option value="a3">A3</option><option value="contaplus">ContaPlus</option><option value="contasol">ContaSol</option></select></label>
-            <label>{tr('Año')}<select className="campo" value={anioDiario} onChange={(e) => setAnioDiario(Number(e.target.value))}>{[anio, anio - 1].map((a) => <option key={a} value={a}>{a}</option>)}</select></label>
-            {formato === 'a3' && <label>{tr('Código en A3')}<input className="campo" inputMode="numeric" maxLength={5} value={codigo} onChange={(e) => setCodigo(e.target.value.replace(/\D/g, ''))} /></label>}
-            <a className="boton sec" href={`/api/despacho/contable?empresa=${id}&anio=${anioDiario}&formato=${formato}${formato === 'a3' ? `&codigo=${codigo || 1}` : ''}`} download>{tr('Exportar')}</a>
-          </div>
+          <span className="txt">{tr('Contabilidad para tu programa')}<small>{tr('El libro diario del año, listo para importar. Elige los dígitos que tienen las subcuentas de esta empresa en el programa.')}</small></span>
+          <ExportarDiario base={`/api/despacho/contable?empresa=${id}`} anios={[anio, anio - 1]} />
         </div>
       </div>
     </section>

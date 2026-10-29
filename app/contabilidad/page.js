@@ -14,6 +14,7 @@ import CuadreBanco from '@/components/contabilidad/CuadreBanco';
 import FormCuentasAnuales from '@/components/CuentasAnuales';
 import { eur, fechaCorta, hoy } from '@/lib/formato';
 import Volver from '@/components/Volver';
+import ExportarDiario from '@/components/ExportarDiario';
 import Ir from '@/components/Ir';
 import SinBD from '@/components/SinBD';
 import Deslizable from '@/components/Deslizable';
@@ -344,7 +345,10 @@ export default async function Contabilidad({ searchParams }) {
 
       <a className="boton sec cont-excel" href={`/api/contabilidad?anio=${anio}${p ? `&p=${p}` : ''}`} download>{tr('Descargar en Excel')}</a>
       <p className="grupo-pie arriba">{tr('Libro diario, mayor, sumas y saldos, pérdidas y ganancias, balance y bienes de inversión de {anio}, en una sola hoja de cálculo para tu gestor.', { anio })}</p>
-      <p className="grupo-pie">{conHuecos(tr('Libro diario de {anio} para importar en el programa de tu gestoría: {programas}', { anio }), { programas: <><a href={`/api/exportar/contable?formato=a3&anio=${anio}`} download>A3</a> · <a href={`/api/exportar/contable?formato=contaplus&anio=${anio}`} download>ContaPlus</a> · <a href={`/api/exportar/contable?formato=contasol&anio=${anio}`} download>Contasol</a></> })}</p>
+      <section className="bloque">
+        <ExportarDiario base="/api/exportar/contable" anios={[anio]} />
+        <p className="grupo-pie">{tr('Libro diario de {anio} para importar en el programa de tu gestoría (A3, ContaPlus o ContaSol). Pregúntale cuántos dígitos tienen sus subcuentas: el programa solo acepta los mismos.', { anio })}</p>
+      </section>
     </main>
   );
 }

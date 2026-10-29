@@ -5,6 +5,7 @@ import { readFile } from 'node:fs/promises';
 import { asientosCierreApertura, CUENTAS, generarAsientos, mayor, sumasYSaldos } from '../lib/asientos.js';
 import { balanceOficial, cambiosPatrimonio, csvPymes, cuentasAnuales, ESTRUCTURA_BALANCE, filasPygOficial, pygOficial, TOTALES_BALANCE } from '../lib/cuentasAnuales.js';
 import { cuadreBanco, exportarDiario, informe } from '../lib/contabilidad.js';
+import { leerZip } from '../lib/zip.js';
 
 const apunte = (fecha, concepto, pares, origen) => ({ fecha, concepto, lineas: pares.map(([cuenta, n]) => ({ cuenta, debe: Math.max(n, 0), haber: Math.max(-n, 0) })), ...(origen ? { origen: { tipo: origen } } : {}) });
 const cuadrado = (a) => assert.equal(a.lineas.reduce((s, l) => s + Math.round(l.debe * 100) - Math.round(l.haber * 100), 0), 0, a.concepto);
@@ -110,16 +111,18 @@ test('informe: añade cierre solo a diario, conserva asientos, mayor, sumas y cu
   assert.equal(c.pyg[0].D, 790);
 });
 
+// ContaSol sale en un .ods (ZIP sin comprimir): su content.xml se lee como texto.
+const aTexto = (s) => (typeof s === 'string' ? s : leerZip(Buffer.from(s))['content.xml'].toString('utf8'));
 test('exportación A3, ContaPlus y ContaSol: regularización antes de cierre y apertura al principio', () => {
   const conAplicacion = [...sociedad, apunte('2026-01-01', 'Aplicación del resultado', [['129', 895], ['120', -895]], 'cierre')];
   for (const formato of ['a3', 'contaplus', 'contasol']) {
-    const texto = exportarDiario(conAplicacion, { anio: 2025, formato, fecha: hoy });
-    const filas = texto.replace(/^\uFEFF/, '').trimEnd().split('\r\n');
-    const conceptos = filas.map((f) => formato === 'a3' ? f.slice(69, 99).trim() : formato === 'contaplus' ? f.slice(54, 79).trim() : f.split(';')[5]);
+    const texto = aTexto(exportarDiario(conAplicacion, { anio: 2025, formato, fecha: hoy }));
+    const filas = formato === 'contasol' ? [...texto.matchAll(/<table:table-row>.*?<\/table:table-row>/g)].map(([f]) => f) : texto.trimEnd().split('\r\n');
+    const conceptos = filas.map((f) => formato === 'a3' ? f.slice(69, 99).trim() : formato === 'contaplus' ? f.slice(54, 79).trim() : [...f.matchAll(/string"><text:p>([^<]*)/g)][0][1]);
     const ultimo = conceptos.at(-1);
     assert.match(ultimo, /Cierre contable de 2025/);
     assert.ok(conceptos.some((c) => /Regularizaci[oó]n/.test(c)));
-    const apertura = exportarDiario(conAplicacion, { anio: 2026, formato, fecha: hoy });
+    const apertura = aTexto(exportarDiario(conAplicacion, { anio: 2026, formato, fecha: hoy }));
     assert.ok(apertura.indexOf('Apertura contable de 2026') < apertura.indexOf('Aplicaci'));
   }
 });
@@ -195,8 +198,8 @@ test('lector de exportaciones: el mismo cierre en todos los formatos, sin escrit
     for (const formato of ['a3', 'contaplus', 'contasol']) {
       const r = await diarioConCierreDe(usuario, { anio: 2025, formato, fecha: hoy });
       assert.equal(r.error, undefined);
-      assert.match(r.contenido, /Regularizaci[oó]n de 2025/);
-      assert.match(r.contenido.split('\r\n').at(-2), /Cierre contable de 2025/);
+      assert.match(aTexto(r.contenido), /Regularizaci[oó]n de 2025/);
+      assert.match(formato === 'contasol' ? aTexto(r.contenido).split('<table:table-row>').at(-1) : r.contenido.split('\r\n').at(-2), /Cierre contable de 2025/);
     }
     assert.equal(lecturas.length, 24); // Ocho colecciones de esta empresa por exportación; solo existe «leer» en el doble.
   } finally { delete globalThis.__lectorContabilidad95; }

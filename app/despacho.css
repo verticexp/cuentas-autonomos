@@ -96,11 +96,6 @@ button.celda.desp-celda-boton:disabled { opacity: 0.5; cursor: default; }
 .desp-mini { flex: none; margin: 0 !important; min-height: 0; height: 34px; padding: 0 14px !important; font-size: 14px !important; display: inline-flex; align-items: center; }
 .desp-select-celda { flex: none; max-width: 55%; height: 34px; margin: 0; padding: 0 10px; border: 0; border-radius: 8px; background: var(--relleno); color: var(--ink); font: inherit; font-size: 15px; }
 .desp-exportar { gap: 12px; }
-.desp-exportar-campos { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; }
-.desp-exportar-campos label { display: flex; flex-direction: column; gap: 4px; flex: 1 1 120px; margin: 0; color: var(--muted); font-size: 13px; }
-.desp-exportar-campos .campo { margin: 0; }
-.desp-exportar-campos .boton { flex: 0 0 auto; align-self: stretch; margin: 0; padding: 0 20px; display: inline-flex; align-items: center; font-size: 15px; }
-.desp-exportar-campos label:has(.campo) + .boton, .desp-exportar-campos .boton { margin-top: 20px; }
 .despacho textarea { font: inherit; }
 .desp-preguntar .boton { margin-top: 4px; }
 .desp-docs .fila { display: flex; align-items: center; }

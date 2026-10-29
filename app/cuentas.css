@@ -106,3 +106,9 @@
 /* «¿Ya lo has presentado?»: el botón con el mismo margen que la fila, y el plazo entero en dos líneas si no cabe. */
 .grupo-lista .ya-presentado { padding: 0 16px 12px; flex-wrap: wrap; }
 .grupo-lista li:has(.ya-presentado) .txt small { white-space: normal; }
+
+/* Libro diario para el programa de la gestoría (components/ExportarDiario.js): Contabilidad y Mi despacho. */
+.exportar-diario { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; }
+.exportar-diario label { display: flex; flex-direction: column; gap: 4px; flex: 1 1 120px; margin: 0; color: var(--muted); font-size: 13px; }
+.exportar-diario .campo { margin: 0; }
+.exportar-diario .boton { flex: 0 0 auto; align-self: stretch; margin: 20px 0 0; padding: 0 20px; display: inline-flex; align-items: center; font-size: 15px; }
