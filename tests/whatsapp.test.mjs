@@ -62,12 +62,14 @@ test('del pedido de la IA a una factura válida con los tipos de la actividad', 
   assert.equal(datos.base, 300);
   const txt = resumenBorrador(datos, 'pepe@bar.es', { nombre: 'Marc DJ', nif: '87654321X', direccion: 'C/ Mayor 1', ciudad: 'Barcelona' });
   assert.match(txt, /Bar Pepe S\.L\./);
-  assert.match(txt, /De:\* Marc DJ\nNIF: 87654321X\nDirección: C\/ Mayor 1, Barcelona/);
-  assert.match(txt, /NIF: 12345678Z/);
-  assert.match(txt, /Para:[\s\S]*sin dirección/); // al cliente le falta la dirección: se avisa
+  assert.match(txt, /a nombre de Marc DJ \(87654321X\)/);
+  assert.match(txt, /\*Bar Pepe S\.L\.\* · 12345678Z/);
+  assert.match(txt, /Me falta su dirección\./); // al cliente le falta la dirección: se avisa, con naturalidad
+  assert.match(resumenBorrador(datos, 'pepe@bar.es', {}), /En Ajustes te falta tu NIF y tu dirección\./);
+  assert.doesNotMatch(txt, /🎙️|De:|Para:/); // sin formulario ni transcripción
   assert.match(txt, /318/); // 300 + 63 − 45
   assert.match(txt, /pepe@bar\.es/);
-  assert.match(txt, /¿La emito así\?/);
+  assert.match(txt, /¿Está bien\? ¿La emito y se la envío\?$/);
 });
 
 test('fecha inventada o mal escrita: se usa la de hoy; IVA raro: el de la actividad', () => {
@@ -125,11 +127,11 @@ test('presupuestos: la IA los marca y el resumen habla de presupuesto, validez y
   assert.ok(!limpio.error, limpio.error);
   const datos = { ...limpio, validez: 30 };
   const txt = resumenBorrador(datos, 'ana@x.es', { nombre: 'Marc' }, 'presupuesto');
-  assert.match(txt, /^Presupuesto con fecha 21\/10\/2026, válido 30 días/);
-  assert.match(txt, /se lo mando a ana@x\.es/);
-  assert.match(txt, /¿Lo creo así\?/);
-  assert.match(resumenBorrador(datos, 'ana@x.es', {}, 'presupuesto', 'whatsapp'), /te paso el PDF por aquí para que lo reenvíes tú\./);
-  assert.match(resumenBorrador(datos, 'ana@x.es', {}, 'factura', 'ambos'), /se la mando a ana@x\.es y a ti te paso el PDF/);
+  assert.match(txt, /21\/10\/2026 · válido 30 días/);
+  assert.match(txt, /Se lo mando a ana@x\.es para que lo acepte/);
+  assert.match(txt, /¿Está bien así\?$/);
+  assert.match(resumenBorrador(datos, 'ana@x.es', {}, 'presupuesto', 'whatsapp'), /Te paso el PDF por aquí para que se lo reenvíes\. ¿Lo hago así\?/);
+  assert.match(resumenBorrador(datos, 'ana@x.es', {}, 'factura', 'ambos'), /Se la mando a ana@x\.es y a ti te paso el PDF/);
   assert.match(resumenBorrador(datos, '', {}, 'factura', 'whatsapp'), /(no tengo su email)/);
   assert.equal(aplicarCambios({ cuerpo: b, email: '' }, { validez: 45 }, { actividad }).cuerpo.validez, 45);
 });
@@ -190,16 +192,16 @@ test('fotos y PDF de gastos llegan como archivo; otros documentos no', () => {
 test('resumen del gasto leído: importes, pagado o no, avisos y posibles repetidos', () => {
   const p = { proveedor: 'Repsol', proveedorNif: 'A12345678', concepto: 'Gasolina', fecha: '2026-10-26', base: 50, ivaPct: 21, irpfPct: null, avisos: [] };
   const t = resumenGasto(p);
-  assert.match(t, /\*Repsol\* \(A12345678\)/);
+  assert.match(t, /\*Repsol\* · A12345678/);
   assert.match(t, /26\/10\/2026/);
   assert.match(t, /60,50/); // 50 + 10,50
   assert.match(t, /como pagado/);
-  assert.match(t, /¿Lo apunto así\?/);
+  assert.doesNotMatch(t, /🧾|⚠️/);
   const t2 = resumenGasto({ ...p, pendiente: true, avisos: ['Los importes leídos no cuadran'] }, { duplicados: [{}] });
   assert.match(t2, /pendiente de pagar/);
-  assert.match(t2, /⚠️ Los importes leídos no cuadran/);
-  assert.match(t2, /ya lo tengas apuntado \(hay uno parecido\)/);
-  assert.match(resumenGasto({ ...p, base: null }), /No he podido leer el importe[\s\S]*¿Cuánto es, sin IVA\?/);
+  assert.match(t2, /Ojo: los importes leídos no cuadran/);
+  assert.match(t2, /ya lo tienes apuntado \(hay uno muy parecido\)/);
+  assert.match(resumenGasto({ ...p, base: null }), /no consigo ver el importe[\s\S]*¿Cuánto es, sin IVA\?/);
   // Varios tipos de IVA: se suman por tipo.
   assert.match(resumenGasto({ ...p, base: 100, desglose: [{ ivaPct: 21, base: 60 }, { ivaPct: 10, base: 40 }] }), /116,60/);
 });
