@@ -111,8 +111,8 @@ test('informe: añade cierre solo a diario, conserva asientos, mayor, sumas y cu
   assert.equal(c.pyg[0].D, 790);
 });
 
-// ContaSol sale en un .ods (ZIP sin comprimir): su content.xml se lee como texto.
-const aTexto = (s) => (typeof s === 'string' ? s : leerZip(Buffer.from(s))['content.xml'].toString('utf8'));
+// ContaSol sale en un .ods (ZIP sin comprimir) y ContaPlus en un .zip: su content.xml o su XDiario.txt, como texto.
+const aTexto = (s) => { if (typeof s === 'string') return s; const z = leerZip(Buffer.from(s)); return (z['content.xml'] || z['XDiario.txt']).toString('utf8'); };
 test('exportación A3, ContaPlus y ContaSol: regularización antes de cierre y apertura al principio', () => {
   const conAplicacion = [...sociedad, apunte('2026-01-01', 'Aplicación del resultado', [['129', 895], ['120', -895]], 'cierre')];
   for (const formato of ['a3', 'contaplus', 'contasol']) {
@@ -199,7 +199,7 @@ test('lector de exportaciones: el mismo cierre en todos los formatos, sin escrit
       const r = await diarioConCierreDe(usuario, { anio: 2025, formato, fecha: hoy });
       assert.equal(r.error, undefined);
       assert.match(aTexto(r.contenido), /Regularizaci[oó]n de 2025/);
-      assert.match(formato === 'contasol' ? aTexto(r.contenido).split('<table:table-row>').at(-1) : r.contenido.split('\r\n').at(-2), /Cierre contable de 2025/);
+      assert.match(formato === 'contasol' ? aTexto(r.contenido).split('<table:table-row>').at(-1) : aTexto(r.contenido).split('\r\n').at(-2), /Cierre contable de 2025/);
     }
     assert.equal(lecturas.length, 24); // Ocho colecciones de esta empresa por exportación; solo existe «leer» en el doble.
   } finally { delete globalThis.__lectorContabilidad95; }
