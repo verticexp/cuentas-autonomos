@@ -1,5 +1,4 @@
 /* Fichas de terceros y seguimiento del riesgo. */
-.fichas-pagina { max-width: 820px; }
 .fichas-pagina .titulo { overflow-wrap: anywhere; }
 .ficha-cabecera { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
 .ficha-cabecera .titulo { margin: 0; }
@@ -61,3 +60,30 @@
 .ficha-datos > summary > span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .ficha-datos > summary .ficha-titulo { margin: 0; }
 .ficha-datos > summary small { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Tablas de terceros: las columnas salen de la misma fila. */
+.fichas-cab, .fichas-tabla .txt .fichas-meta { display: none; }
+@media (min-width: 1024px) {
+  .ficha-filtros { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) auto; }
+  .ficha-filtros .boton { grid-column: auto; white-space: nowrap; }
+  .fichas-clientes { --fichas-cols: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1.8fr); }
+  .fichas-proveedores { --fichas-cols: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr); }
+  .fichas-cab { display: grid; grid-template-columns: var(--fichas-cols); column-gap: 16px; padding: 0 16px; margin: 14px 0 -4px; font-size: 12px; font-weight: 600; letter-spacing: .02em; text-transform: uppercase; color: var(--muted); }
+  .fichas-tabla .ficha-fila { display: grid; grid-template-columns: var(--fichas-cols); column-gap: 16px; align-items: center; padding-inline: 16px; }
+  .fichas-tabla .ficha-fila .txt, .fichas-tabla .txt .fichas-meta { display: contents; }
+  .fichas-tabla .fichas-movil { display: none; }
+  .fichas-tabla .txt > strong, .fichas-meta > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fichas-meta > span { font-size: 14px; color: var(--muted); }
+  .fichas-tabla .ficha-riesgo { max-width: 100%; width: 100%; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .fichas-tabla .ficha-riesgo strong { min-width: 0; }
+  .fichas-num, .fichas-tabla .imp { min-width: 0; text-align: right; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .fichas-tabla .imp { justify-self: end; max-width: 100%; white-space: normal; }
+  .fichas-ultimo { display: block; font-size: 12px; overflow: hidden; text-overflow: ellipsis; }
+  .fichas-meta > .fichas-vacio { color: var(--muted); }
+}
+/* En pantallas estrechas, los datos secundarios siguen dentro de la ficha. */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .fichas-clientes { --fichas-cols: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.8fr); }
+  .fichas-proveedores { --fichas-cols: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); }
+  .fichas-cab .fichas-comercial, .fichas-cab .fichas-forma, .fichas-cab .fichas-historial, .fichas-tabla .fichas-comercial, .fichas-tabla .fichas-forma, .fichas-tabla .fichas-historial { display: none; }
+}

@@ -28,20 +28,21 @@ export default async function Proveedores({ searchParams }) {
       {lista.length > 0 && <p className="resumen-linea"><span>{lista.length === 1 ? tr('1 proveedor') : tr('{n} proveedores', { n: lista.length })}</span>{debes > 0 && <span className="prov-debe">{tr('Les debes')} <strong>{eur(debes)}</strong></span>}</p>}
       {lista.length > 0 && <FiltrosFichas lista={lista.map((p) => p.ficha || {})} filtros={filtros} />}
       {visibles.length ? (
-        <ul className="grupo-lista">
+        <><div className="fichas-cab fichas-proveedores" aria-hidden><span>{tr('Proveedor')}</span><span>{tr('NIF')}</span><span>{tr('Zona')}</span><span className="fichas-comercial">{tr('Comercial')}</span><span className="fichas-forma">{tr('Forma de pago')}</span><span className="fichas-historial">{tr('Gastos')}</span><span className="fichas-num">{tr('Pendiente')}</span><span className="fichas-num">{tr('Total')}</span></div><ul className="grupo-lista fichas-tabla fichas-proveedores">
           {visibles.map((p) => (
             <li key={p.clave}>
               <Ir href={`/gastos/proveedores/${encodeURIComponent(p.clave)}`} className="fila ficha-fila">
                 <span className="txt">
                   <strong>{p.nombre}</strong>
-                  <small>{[p.nif, tr(nombreForma(p.ficha?.formaPago)), p.zona, p.comercial, p.n === 1 ? tr('1 gasto') : tr('{n} gastos', { n: p.n })].filter(Boolean).join(' · ')}{p.debe <= 0 && p.ultimo ? ` · ${tr('último {fecha}', { fecha: fechaCorta(p.ultimo) })}` : ''}</small>
-                  {p.debe > 0 && <small className="prov-debe">{tr('Le debes {importe}', { importe: eur(p.debe) })}</small>}
+                  <small className="fichas-movil">{[p.nif, tr(nombreForma(p.ficha?.formaPago)), p.zona, p.comercial, p.n === 1 ? tr('1 gasto') : tr('{n} gastos', { n: p.n })].filter(Boolean).join(' · ')}{p.debe <= 0 && p.ultimo ? ` · ${tr('último {fecha}', { fecha: fechaCorta(p.ultimo) })}` : ''}</small>
+                  {p.debe > 0 && <small className="prov-debe fichas-movil">{tr('Le debes {importe}', { importe: eur(p.debe) })}</small>}
+                  <small className="fichas-meta">{[['nif', p.nif], ['zona', p.zona], ['comercial', p.comercial], ['forma', tr(nombreForma(p.ficha?.formaPago))]].map(([k, v]) => <span key={k} className={`fichas-${k}${v ? '' : ' fichas-vacio'}`}>{v || '—'}</span>)}<span className="fichas-historial">{p.n === 1 ? tr('1 gasto') : tr('{n} gastos', { n: p.n })}{p.debe <= 0 && p.ultimo && <span className="fichas-ultimo">{tr('último {fecha}', { fecha: fechaCorta(p.ultimo) })}</span>}</span><span className="fichas-num prov-debe">{eur(p.debe)}</span></small>
                 </span>
                 <span className="imp">{eur(p.total)}</span>
               </Ir>
             </li>
           ))}
-        </ul>
+        </ul></>
       ) : <Vacio icono="cliente" tipo={lista.length ? 'resultados' : 'vacio'} titulo={lista.length ? tr('Ningún proveedor con estos filtros') : tr('Guarda tu primer proveedor')} accion={lista.length ? { href: '/gastos/proveedores', texto: tr('Quitar filtros') } : puede(u, 'gastar') && { href: '/gastos/proveedores/nuevo', texto: tr('Crear proveedor') }} secundaria={!lista.length && puede(u, 'empresa') && { href: '/ajustes/importar', texto: tr('Importar de Excel') }}>{!lista.length && tr('Reúne sus datos y pagos en una ficha.')}</Vacio>}
     </main>
   );

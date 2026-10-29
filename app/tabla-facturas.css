@@ -5,8 +5,6 @@
 .chips-sep { flex: none; align-self: stretch; width: 1px; margin: 6px 4px; background: var(--line); }
 
 @media (min-width: 1024px) {
-  /* La tabla necesita más ancho que el resto de pantallas. */
-  .pagina.ancha { max-width: 1120px; }
   /* La fecha (dd/mm/aaaa) mide 76 px a 14 px: con 64 se cortaba en «24/10/2…». */
   .tf-lista, .tf-cab { --tf-cols: minmax(0, 2.2fr) 100px 84px 104px 112px 96px; }
   .tf-lista.con-act, .tf-cab.con-act { --tf-cols: minmax(0, 2fr) 100px 84px minmax(0, 1.2fr) 104px 112px 96px; }

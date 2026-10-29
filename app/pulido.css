@@ -42,10 +42,16 @@ html[data-vt=abrir] .fh-total { view-transition-name: factura-total; }
   .tabs a svg { width: 21px; height: 21px; }
   ::view-transition-group(tabs), ::view-transition-group(mas) { border-radius: 0; -webkit-backdrop-filter: none; backdrop-filter: none; }
   ::view-transition-group(mas) { border-radius: 999px; }
-  .pagina { max-width: 880px; padding: 36px 40px 64px; }
-  /* Todas las pantallas empiezan en el mismo sitio: el borde izquierdo de la más ancha (Facturas, 1120 px) centrada. Antes
-     cada una se centraba con su ancho (820, 880, 1040, 1120, 1200) y el título saltaba al cambiar de sección. */
-  body:has(.tabbar) > .pagina:not(.desp-chat-pagina):not(.bienvenida) { margin-left: max(0px, calc((100% - 1120px) / 2)); margin-right: auto; }
+  /* Un solo ancho para todas las pantallas (hasta 1200 px de contenido): en un portátil llenan lo que deja la barra lateral
+     y el título no salta al cambiar de sección. Antes iban a 880 (Facturas a 1120) y sobraba media pantalla a la derecha. */
+  :root { --ancho-pagina: 1280px; }
+  .pagina { max-width: var(--ancho-pagina); padding: 36px 40px 64px; }
+  body:has(.tabbar) > .pagina:not(.desp-chat-pagina):not(.bienvenida) { margin-left: max(0px, calc((100% - var(--ancho-pagina)) / 2)); margin-right: auto; }
+  /* Con la página ancha, los formularios siguen a medida de lectura (un mes o un importe de 1.100 px no se lee mejor) y
+     sus botones, y los «.ancho», van a su tamaño en vez de ser barras de lado a lado. */
+  body:has(.tabbar) .pagina .formulario:not(.ff) { max-width: 760px; }
+  body:has(.tabbar) .pagina .formulario:not(.ff) > .boton { align-self: flex-start; padding-left: 28px; padding-right: 28px; }
+  body:has(.tabbar) .pagina .boton.ancho { display: inline-flex; justify-content: center; width: auto; align-self: flex-start; justify-self: start; padding-left: 28px; padding-right: 28px; }
   /* La bienvenida no lleva la barra lateral (app/diseno.css): va centrada, como el registro. */
   .inicio { margin: 0; --cima: 24px; border-radius: 28px; }
   .hcards { display: grid; grid-template-columns: 1fr 1fr; }
@@ -55,6 +61,13 @@ html[data-vt=abrir] .fh-total { view-transition-name: factura-total; }
   /* El logo ya está en la barra lateral: en la cabecera verde sobra */
   .inicio .inicio-barra > svg.logo-marca { display: none; }
   .inicio-barra { justify-content: flex-end; }
+}
+
+/* Tablet en vertical (768–1023 px): sigue la barra de abajo del móvil, pero el contenido usa el ancho (antes, 640 px en
+   medio de la pantalla) y las tarjetas van de dos en dos. */
+@media (min-width: 768px) and (max-width: 1023.98px) {
+  .pagina { max-width: 960px; }
+  .hcards { display: grid; grid-template-columns: 1fr 1fr; }
 }
 
 /* Ordenador: todas las pantallas cambian igual, con un fundido corto. Nada se desliza ni se transforma entre

@@ -85,7 +85,6 @@
 
 /* ───── Ordenador: el resumen aprovecha el ancho ───── */
 @media (min-width: 1024px) {
-  .pagina:has(> .inicio) { max-width: 1200px; }
   .hcards { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
   .graf-pila { height: 210px; } .graf-capa { height: 210px; } .graf-eje { height: 210px; }
   .graf-barras { height: 234px; background: linear-gradient(var(--line), var(--line)) 0 0 / 100% 1px no-repeat, linear-gradient(var(--line), var(--line)) 0 105px / 100% 1px no-repeat, linear-gradient(var(--line), var(--line)) 0 210px / 100% 1px no-repeat; }
@@ -137,6 +136,11 @@
   .gasto-rapido-botones { display: flex; }
   .gasto-escanear { grid-column: auto; }
 }
+/* En la tablet y en un ordenador estrecho los cuatro botones dejaban el título en una columna de 100 px: van debajo. */
+@media (min-width: 768px) and (max-width: 1023.98px), (min-width: 1024px) and (max-width: 1279.98px) {
+  .gasto-rapido { grid-template-columns: minmax(0, 1fr); }
+  .gasto-rapido-txt small { max-width: 60ch; }
+}
 
 /* ───── Crear factura: vista previa al lado (components/FormFactura.js) ───── */
 .ff-campos { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
@@ -146,7 +150,6 @@
 .totales { align-items: baseline; }
 .totales strong { font-family: var(--f-titulos), var(--font); font-size: 20px; letter-spacing: -0.02em; }
 @media (min-width: 1024px) {
-  .pagina:has(.ff) { max-width: 1120px; }
   .ff { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 32px; align-items: start; }
   .ff-vista { display: block; position: sticky; top: 28px; }
   /* El papel lleva siempre los colores del tema claro (como .fa en app/factura.css); en oscuro, un blanco atenuado. */
