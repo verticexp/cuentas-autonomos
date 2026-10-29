@@ -216,8 +216,9 @@ test('alta de autónomo y pyme con código válido guarda 90 días, vínculo y e
     assert.equal(empresa.plan.hasta, nuevoPlan(tipo, 'Pro', new Date(), 'anio', 90).hasta);
     assert.equal(empresa.plan.gestoria, g.codigo);
     assert.equal(empresa.plan.periodo, 'anio');
-    assert.deepEqual(await redis.smembers('gestoria-clientes:' + g.codigo), [empresa.id]);
-    assert.equal(await redis.hget('empresa-nif', tipo === 'aut' ? '12345678Z' : 'B12345674'), empresa.id);
+    // Como texto: un id solo con cifras llega del cliente de Upstash como número (lib/redis.js, mismoId).
+    assert.deepEqual((await redis.smembers('gestoria-clientes:' + g.codigo)).map(String), [empresa.id]);
+    assert.equal(String(await redis.hget('empresa-nif', tipo === 'aut' ? '12345678Z' : 'B12345674')), empresa.id);
   }
 });
 
