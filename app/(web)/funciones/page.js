@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '@/components/web/EnlacePublico';
 import Icono from '@/components/web/Icono';
 import Pantalla from '@/components/web/demos/Pantallas';
 import { Cta, Encabezado, Flecha } from '@/components/web/Bloques';

@@ -35,12 +35,15 @@ try {
     const [registro] = await p.evaluate(() => window.__movimientos);
     assert(!registro.omitida, 'La ruta precargada debe tener un fundido real');
     assert.equal(registro.yReady, 0, 'El scroll se coloca antes del fundido'); assert.equal(registro.root, '900px');
-    assert.deepEqual(registro.animaciones.map((a) => a.nombre), ['publico-fundido']);
-    assert.equal(registro.animaciones[0].pseudo, '::view-transition-new(root)');
-    assert(registro.animaciones[0].frames.every((f) => !f.transform && !f.height && !f.width), 'Solo cambia la opacidad');
+    // La página vieja se apaga y la nueva se enciende; la cabecera va en su propia capa (app/publico-motion.css).
+    const raiz = registro.animaciones.filter((a) => a.pseudo.endsWith('(root)'));
+    assert.deepEqual(raiz.map((a) => `${a.pseudo} ${a.nombre}`).sort(), ['::view-transition-new(root) publico-fundido', '::view-transition-old(root) publico-sale']);
+    assert(raiz.every((a) => a.frames.every((f) => !f.transform && !f.height && !f.width)), 'Solo cambia la opacidad');
+    assert(registro.animaciones.some((a) => a.pseudo.endsWith('(web-cab)')), 'La cabecera tiene su propia capa');
     assert.equal(await p.evaluate(() => window.__documentoMovimiento), 'mismo');
-    await p.goBack(); await p.waitForURL(BASE + '/'); await p.waitForFunction(() => window.__movimientos.length === 2 && window.__movimientos[1].fin);
-    assert(await p.evaluate(() => scrollY > 1000), 'Atrás restaura la posición anterior');
+    // Atrás: React pinta la página anterior en el mismo popstate, así que no hay captura que hacer; solo se restaura el scroll.
+    await p.goBack(); await p.waitForURL(BASE + '/');
+    await p.waitForFunction(() => scrollY > 1000 && !document.documentElement.hasAttribute('data-publico-transicion'));
     // El teclado y movimiento reducido navegan sin crear una captura.
     const n = await p.evaluate(() => window.__movimientos.length);
     if (width < 500) await p.getByRole('button', { name: 'Abrir menú' }).click();
@@ -51,7 +54,14 @@ try {
     const entrar = width < 500 ? p.locator('.web-cajon').getByRole('link', { name: 'Entrar', exact: true }) : p.locator('.web-cab').getByRole('link', { name: 'Entrar', exact: true });
     await entrar.click(); await p.waitForURL('**/login'); await p.locator('main.login').waitFor();
     assert.equal(await p.evaluate(() => window.__movimientos.length), n); assert.deepEqual(errors, []);
-    console.log(`${width}px: un fundido de viewport, sin geometría animada; scroll, Atrás, teclado y movimiento reducido correctos.`);
+    // Al llegar, el título de la página nueva entra escalonado.
+    await p.emulateMedia({ reducedMotion: 'no-preference' });
+    await p.goto(BASE + '/precios', { waitUntil: 'networkidle' });
+    if (width < 500) await p.getByRole('button', { name: 'Abrir menú' }).click();
+    await (width < 500 ? p.locator('.web-cajon') : p.locator('.web-cab')).getByRole('link', { name: 'Seguridad', exact: true }).click();
+    await p.waitForURL('**/seguridad'); await p.locator('.web-main h1').waitFor();
+    assert.equal(await p.evaluate(() => getComputedStyle(document.querySelector('.web-main h1')).animationName), 'web-sube', 'El título de la página nueva entra');
+    console.log(`${width}px: fundido de viewport sin geometría, cabecera quieta y título que entra; scroll, Atrás, teclado y movimiento reducido correctos.`);
     await p.close();
   }
   const p = await b.newPage({ viewport: { width: 1280, height: 900 } });

@@ -1,9 +1,31 @@
-/* Fundido del viewport: una sola capa nueva sobre la anterior, sin deslizar ni redimensionar páginas. */
+/* Cambio de página en la web pública, entrar y crear cuenta (lib/transicionPublica.js).
+   La cabecera de la web es la misma en todas las páginas: va en su propia capa y se funde consigo misma, así que no
+   parpadea. Las dos páginas se cruzan con la misma curva y plus-lighter: lo que comparten (el verde del héroe, el
+   fondo) no se mueve ni se oscurece, y un hueco entre una y otra haría parpadear la parte clara o la oscura. El texto
+   nuevo no se superpone al viejo porque empieza transparente: el título, el texto y los botones llegan escalonados
+   (components/web/web.css, «Movimiento», y la entrada de acceso de aquí abajo). Sin deslizar ni redimensionar páginas. */
 html[data-publico-transicion]::view-transition { pointer-events: none; }
+html[data-publico-transicion] .web-cab { view-transition-name: web-cab; }
 html[data-publico-transicion]::view-transition-group(root) { animation: none; }
-html[data-publico-transicion]::view-transition-old(root) { animation: none; mix-blend-mode: normal; }
-html[data-publico-transicion]::view-transition-new(root) { animation: publico-fundido 260ms cubic-bezier(0.23, 1, 0.32, 1) both; mix-blend-mode: normal; }
+html[data-publico-transicion]::view-transition-image-pair(root) { isolation: isolate; }
+html[data-publico-transicion]::view-transition-old(root) { animation: publico-sale 220ms cubic-bezier(0.23, 1, 0.32, 1) both; mix-blend-mode: plus-lighter; }
+html[data-publico-transicion]::view-transition-new(root) { animation: publico-fundido 220ms cubic-bezier(0.23, 1, 0.32, 1) both; mix-blend-mode: plus-lighter; }
+html[data-publico-transicion]::view-transition-group(web-cab) { animation-duration: 220ms; animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1); }
+html[data-publico-transicion]::view-transition-old(web-cab), html[data-publico-transicion]::view-transition-new(web-cab) { animation-duration: 220ms; }
+@keyframes publico-sale { to { opacity: 0; } }
 @keyframes publico-fundido { from { opacity: 0; } to { opacity: 1; } }
+@keyframes publico-sube { from { opacity: 0; transform: translateY(14px); } }
 @media (prefers-reduced-motion: reduce) {
-  html[data-publico-transicion]::view-transition-new(root) { animation: none; }
+  html[data-publico-transicion]::view-transition-old(root), html[data-publico-transicion]::view-transition-new(root) { animation: none; }
+}
+
+/* Al llegar a entrar o crear cuenta desde la web: el panel verde y el formulario entran escalonados.
+   Solo tras navegar (data-web-nav): abrir la app o volver a la pantalla de acceso sigue siendo inmediato. */
+@media (prefers-reduced-motion: no-preference) {
+  html[data-web-nav] main.login:not(.pantalla-bloqueo) :is(.login-marca:not(.registro-marca), .registro-marca-interior) > * { animation: publico-sube 480ms cubic-bezier(0.23, 1, 0.32, 1) backwards; }
+  html[data-web-nav] main.login:not(.pantalla-bloqueo) :is(.login-marca:not(.registro-marca), .registro-marca-interior) > :nth-child(2) { animation-delay: 60ms; }
+  html[data-web-nav] main.login:not(.pantalla-bloqueo) :is(.login-marca:not(.registro-marca), .registro-marca-interior) > :nth-child(3) { animation-delay: 120ms; }
+  html[data-web-nav] main.login:not(.pantalla-bloqueo) :is(.login-marca:not(.registro-marca), .registro-marca-interior) > :nth-child(n+4) { animation-delay: 180ms; }
+  html[data-web-nav] main.login:not(.pantalla-bloqueo) .form-entrar > * { animation: publico-sube 480ms cubic-bezier(0.23, 1, 0.32, 1) 100ms backwards; }
+  html[data-web-nav] main.login:not(.pantalla-bloqueo) .form-entrar > .login-legal { animation-delay: 200ms; }
 }

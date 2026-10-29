@@ -864,8 +864,9 @@ html:has(.web) #arranque { display: none; }
 }
 
 /* ───── Movimiento ─────
-   Al abrir la web por primera vez, la portada entra escalonada. Al navegar dentro de la web (html[data-web-nav])
-   el fundido de página ya hace de transición y nada se vuelve a animar.
+   Al abrir la web por primera vez, la portada entra escalonada. Al navegar dentro de la web (html[data-web-nav]) la
+   página nueva llega con el fundido de app/publico-motion.css y su cabecera entra escalonada, más corta y sin los globos.
+   Con movimiento reducido nada de esto se anima.
    Lo que está debajo de la primera pantalla aparece al llegar a ello con el scroll (Interacciones marca data-espera);
    lo que ya se ve al cargar nunca parpadea.
    Cada cosa entra según lo que es, no todas igual: el texto solo se funde (no baila mientras se lee), las tarjetas suben
@@ -882,7 +883,16 @@ html:not([data-web-nav]) .web-hero-vis { animation: web-sube-vis 820ms var(--e) 
 html:not([data-web-nav]) .web-flota.f1 { animation: web-pop 480ms var(--e) 700ms backwards; }
 html:not([data-web-nav]) .web-flota.f2 { animation: web-pop 480ms var(--e) 820ms backwards; }
 html:not([data-web-nav]) .web-flota.f3 { animation: web-pop 480ms var(--e) 940ms backwards; }
-html[data-web-nav] :is(.web-hero-txt > *, .web-entra, .web-hero-vis, .web-flota) { animation: none; }
+html[data-web-nav] .web-hero-txt > * { animation: web-sube 440ms var(--e) 40ms backwards; }
+html[data-web-nav] .web-hero-txt > :nth-child(2) { animation-delay: 90ms; }
+html[data-web-nav] .web-hero-txt > :nth-child(3) { animation-delay: 140ms; }
+html[data-web-nav] .web-hero-txt > :nth-child(n+4) { animation-delay: 190ms; }
+html[data-web-nav] .web-entra { animation: web-sube 440ms var(--e) calc(40ms + var(--d, 0ms) * 0.8) backwards; }
+html[data-web-nav] .web-hero-vis { animation: web-sube-vis 560ms var(--e) 140ms backwards; }
+html[data-web-nav] .web-flota { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .web :is(.web-hero-txt > *, .web-entra, .web-hero-vis, .web-flota) { animation: none !important; }
+}
 .web-js .web [data-r][data-espera] { opacity: 0; }
 .web-js .web [data-r].entra { animation: web-revela 480ms var(--e) min(var(--d, 0ms), 240ms) backwards; }
 .web-js .web :is(h2, h3, p, .web-kicker, .web-fila-txt)[data-r].entra { animation-name: web-aparece; animation-duration: 400ms; }
