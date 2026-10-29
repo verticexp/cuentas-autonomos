@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '@/components/web/EnlacePublico';
 import { Cta, Encabezado, Faq, Flecha } from '@/components/web/Bloques';
 import { textos } from '@/lib/idiomaServidor';
 import { conHuecos } from '@/lib/huecos';

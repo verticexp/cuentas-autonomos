@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '@/components/web/EnlacePublico';
 import { textos } from '@/lib/idiomaServidor';
 import { conHuecos } from '@/lib/huecos';
 

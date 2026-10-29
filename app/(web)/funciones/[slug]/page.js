@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '@/components/web/EnlacePublico';
 import { notFound } from 'next/navigation';
 import Icono from '@/components/web/Icono';
 import Demo from '@/components/web/demos/Demos';
