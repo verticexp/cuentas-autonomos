@@ -36,6 +36,8 @@ import { noLeidosDespacho } from '@/lib/mensajesDespacho';
 import { idiomaActual, textos } from '@/lib/idiomaServidor';
 import { diccionario } from '@/lib/textos';
 import { ProveedorIdioma } from '@/components/Idioma';
+import { PANTALLAS_DOCUMENTOS, soloDocumentos } from '@/lib/perfilDocumentos';
+import { PUBLICO } from '@/lib/rutasPublicas';
 
 // Pantalla de arranque de la web guardada en la pantalla de inicio del iPhone: el mismo verde que la animación de inicio,
 // así no hay destello blanco al abrirla. iOS elige la de su tamaño (ancho y alto en puntos, escala); public/inicio-ios/.
@@ -95,6 +97,11 @@ export default async function RootLayout({ children }) {
   const ruta = cab.get('x-ruta') || '/';
   const nonce = cab.get('x-nonce') || undefined;
   if (!abierta && !LIBRE.test(ruta)) redirect(`/bloqueo?a=${encodeURIComponent(ruta)}`);
+  // Cliente «solo documentos» (lib/perfilDocumentos.js): sin barra ni menús, y fuera de /documentos, de vuelta a ella
+  // (cada página lo comprueba también con requerir).
+  const docs = Boolean(u && soloDocumentos(u));
+  const rutaSola = ruta.split('?')[0];
+  if (docs && !PANTALLAS_DOCUMENTOS.test(rutaSola) && !LIBRE.test(rutaSola) && (rutaSola === '/' || !PUBLICO.test(rutaSola))) redirect('/documentos');
   // Mi despacho (app/despacho): su propia barra en lugar de la de la empresa.
   const despacho = u?.despacho && (await despachoDe(u.despacho).catch(() => null));
   const rolDespacho = despacho ? rolEn(despacho, u.id) : null;
@@ -132,7 +139,7 @@ export default async function RootLayout({ children }) {
           empresas={rolDespacho === 'titular' && usaEmpresaPropia(despacho) ? (u.misEmpresas || []).filter((x) => !x.cliente) : []}
           empresa={u.viaDespacho ? null : u.empresa} empresaNombre={u.viaDespacho ? '' : u.empresaNombre} />}
         {children}
-        <Suspense><Barra despacho={rolDespacho ? { nombre: despacho.nombre, noLeidos: mensajesNuevos, titular: rolDespacho === 'titular' && usaEmpresaPropia(despacho) } : null} tabbar={u ? { despacho: rolDespacho ? (u.viaDespacho ? 'cliente' : usaEmpresaPropia(despacho) ? 'empresa' : 'cliente') : null, porRevisar, permisos: permisosDe(u), empresas: u.misEmpresas, empresa: u.empresa, admin: Boolean(u.admin), inventario: Boolean(u.fiscal?.inventario), equipo: Boolean(equipo), fiscal: { tipo: u.fiscal?.tipo, iva: u.fiscal?.iva }, faltan: planesQueFaltan(u.plan) } : null} /><Llegada /><BarraEstado /><TituloCompacto /></Suspense>
+        <Suspense><Barra despacho={rolDespacho ? { nombre: despacho.nombre, noLeidos: mensajesNuevos, titular: rolDespacho === 'titular' && usaEmpresaPropia(despacho) } : null} tabbar={u && !docs ? { despacho: rolDespacho ? (u.viaDespacho ? 'cliente' : usaEmpresaPropia(despacho) ? 'empresa' : 'cliente') : null, porRevisar, permisos: permisosDe(u), empresas: u.misEmpresas, empresa: u.empresa, admin: Boolean(u.admin), inventario: Boolean(u.fiscal?.inventario), equipo: Boolean(equipo), fiscal: { tipo: u.fiscal?.tipo, iva: u.fiscal?.iva }, faltan: planesQueFaltan(u.plan) } : null} /><Llegada /><BarraEstado /><TituloCompacto /></Suspense>
         {u?.bloqueoPantalla && <Bloqueo email={u.email} servidor={abierta} />}
         </ProveedorIdioma>
       </body>

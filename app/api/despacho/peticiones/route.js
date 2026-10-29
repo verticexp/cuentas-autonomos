@@ -10,6 +10,8 @@ import { leerJustificante } from '@/lib/justificantes';
 import { respuestaArchivo } from '@/lib/documentoVista';
 import { avisarCliente } from '@/lib/avisosDespacho';
 import { fechaCorta } from '@/lib/formato';
+import { esSoloDocumentos } from '@/lib/perfilDocumentos';
+import { abiertoPara } from '@/lib/documentosServidor';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,6 +37,8 @@ export async function POST(req) {
   const b = await cuerpo(req);
   const { u, d, e, ctx, quien, res } = await clienteDelDespacho(b.empresa);
   if (res) return res;
+  // Cliente «solo documentos» con el panel en pausa: no puede subir nada, así que tampoco se le pide.
+  if (esSoloDocumentos(e) && !(await abiertoPara(e))) return error('La suscripción del panel no está activa: tu cliente no puede subir documentos.', 402);
   if (await pasado('peticiones', `${e.id}:${u.id}`, 60, 3600)) return respuesta429(600, 'Has pedido muchos documentos seguidos. Espera un poco.');
   let gasto = null, doc = null;
   if (b.tipo === 'ticket') {

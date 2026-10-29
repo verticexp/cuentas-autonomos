@@ -6,6 +6,7 @@ import { planificarDia, resumenTanda } from '@/lib/trabajosTareas';
 import { tanda } from '@/lib/trabajos';
 import { sincronizarTodas, TARIFA } from '@/lib/licencias';
 import { avisoFinOferta } from '@/lib/avisosCorreo';
+import { sincronizarPaneles } from '@/lib/panelDocumentos';
 
 const euros = (cent) => `${String(cent / 100).replace('.', ',')} €`;
 
@@ -25,6 +26,8 @@ export async function GET(req) {
   const bajas = await purgarBajas(dia);
   // Licencias de los despachos: las de los clientes cuyos días gratis acaban hoy empiezan a contar (lib/licencias.js).
   const despachos = await sincronizarTodas(dia, { avisar: (d) => avisoFinOferta(d, { aut: euros(TARIFA.aut[0].cent), pym: euros(TARIFA.pym[0].cent) }) }).catch((e) => { console.warn('[licencias]', e.message); return 0; });
+  // Panel «solo documentos» (lib/panelDocumentos.js): el tramo, según los clientes que tenga hoy (también baja de tramo).
+  await sincronizarPaneles().catch((e) => console.warn('[panel]', e.message));
   const planificados = await planificarDia(dia, req.nextUrl.origin, ['indices', 'recordatorios', 'push', 'verifactu', 'prueba', 'gestoria']);
   // La primera tanda, aquí mismo (su resumen va en la respuesta); si queda trabajo, encadena las siguientes.
   const r = await tanda(req.nextUrl.origin, 0, { hasta: inicio + 50000 });

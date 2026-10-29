@@ -354,3 +354,23 @@ html[data-entrada-cliente] .barra-despacho-volver { visibility: hidden; }
 @container (min-width: 640px) and (max-width: 799.98px) {
   .desp-cols, .desp-lista .fila.desp-fila { grid-template-columns: minmax(0, 1fr) 156px 96px 96px 12px; }
 }
+
+/* Clientes «solo documentos» (app/despacho/solo-documentos y su ficha, components/DocumentosDespacho.js). */
+.desp-docs-acceso { margin: 0 4px 12px; }
+.desp-docs-acceso a { font-weight: 600; }
+.desp-docs-cifras { margin: 0; color: var(--muted); font-size: 14px; }
+.desp-docs-lista > li { list-style: none; }
+.desp-docs-fila { display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; align-items: center; gap: 12px; width: 100%; text-align: left; background: none; border: 0; font: inherit; color: inherit; cursor: pointer; }
+.desp-docs-fila .txt { min-width: 0; }
+.desp-docs-fila .txt strong, .desp-docs-fila .txt small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.desp-docs-avisos { color: var(--ambar) !important; }
+.desp-docs-editor { padding: 4px 16px 16px; }
+.desp-docs-form { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px 14px; }
+.desp-docs-form .ancho { grid-column: 1 / -1; }
+.desp-docs-exportar { display: grid; gap: 10px; }
+.desp-docs-reenviar { margin: 0 16px 10px; }
+@media (max-width: 640px) {
+  .desp-docs-fila { grid-template-columns: minmax(0, 1fr) auto; }
+  .desp-docs-fila .desp-num:first-of-type { display: none; }
+  .desp-docs-fila .desp-col-estado { grid-column: 1 / -1; }
+}
