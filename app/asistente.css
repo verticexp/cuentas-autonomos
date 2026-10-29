@@ -40,8 +40,23 @@
   .asi-ayuda { margin: 12px 0 0; }
 }
 
+/* Ordenador: una ventana de conversación que llena la pantalla (antes, una columna estrecha con media pantalla vacía).
+   Cabecera arriba, la conversación en un panel que se desplaza por dentro y el cuadro de escribir al pie del panel; los
+   mensajes, en una columna de lectura centrada. */
 @media (min-width: 1024px) {
+  .asi-pagina { display: flex; flex-direction: column; height: 100dvh; padding-bottom: 28px; }
+  .asi-cabecera { flex: none; }
+  .asi-pagina > .vacio { flex: 1; display: flex; flex-direction: column; justify-content: center; border-radius: 22px; background: var(--surface); }
+  .asi { flex: 1; min-height: 0; display: flex; flex-direction: column; border-radius: 22px; background: var(--surface); box-shadow: 0 0 0 0.5px var(--line); overflow: hidden; }
+  .asi-conversacion { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 28px 32px 8px; }
+  .asi-conversacion > *, .asi-form { width: 100%; max-width: 880px; margin-left: auto; margin-right: auto; }
   .asi-ejemplos { flex-direction: row; flex-wrap: wrap; }
-  .asi-msg { max-width: 70%; }
-  .asi-form { bottom: 24px; }
+  .asi-ejemplos button, .asi-msg.assistant { background: var(--relleno); }
+  .asi-msg { max-width: 75%; }
+  .asi-form { position: static; flex: none; width: calc(100% - 48px); margin-top: 8px; margin-bottom: 20px; background: var(--paper); box-shadow: 0 0 0 0.5px var(--line); }
+  .asi-ayuda { margin: 12px auto 0; }
+  /* Sin mensajes, las preguntas de ejemplo en el centro del panel */
+  .asi-conversacion:has(> .asi-ejemplos) { display: flex; flex-direction: column; justify-content: center; }
+  .asi-conversacion > .asi-ejemplos { justify-content: center; margin-bottom: 0; }
+  .asi-conversacion:has(> .asi-ejemplos) .asi-ayuda { text-align: center; }
 }

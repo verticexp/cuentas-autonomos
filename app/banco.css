@@ -156,7 +156,6 @@
 
 /* Tres columnas por movimiento (qué es, pareja y botones) solo donde caben con el menú lateral */
 @media (min-width: 1280px) {
-  .pagina.banco { max-width: 1040px; }
   .bco-mov:not(.hecho) { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 320px) 264px; align-items: center; column-gap: 16px; }
   .bco-mov:not(.hecho) .bco-sug { margin: 0; }
   .bco-mov:not(.hecho) > .bco-quees { grid-column: 2 / 4; margin: 0; }
