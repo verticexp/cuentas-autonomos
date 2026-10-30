@@ -29,7 +29,7 @@ export default function NavDespacho({ nombre, noLeidos = 0, titular = false }) {
   const router = useRouter();
   const tr = useT();
   // Con el teclado fuera, la barra baja y se esconde (movil.css, solo en el móvil), como en TabBar.
-  const teclado = useTecladoFormulario(true);
+  const teclado = useTecladoFormulario(true, { marcar: true });
   // La pestaña en la que ya se está, como en iOS: en su pantalla sube arriba; desde una de dentro (la ficha de un cliente),
   // vuelve a ella. En el ordenador, la barra lateral lleva siempre a la pantalla.
   const pulsar = (t) => (e) => {

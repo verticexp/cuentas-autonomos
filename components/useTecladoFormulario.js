@@ -32,11 +32,20 @@ export function observarTecladoFormulario(ventana, documento, actualizar) {
   };
 }
 
-export default function useTecladoFormulario(activo) {
+// Con { marcar: true } también pone data-teclado en <html> mientras el teclado está fuera, para que cualquier pantalla baje
+// sus barras fijas abajo (el total y «Crear» de la factura nueva, «Facturar» de los albaranes) en lugar de subirlas encima
+// del teclado (movil.css). Lo marcan TabBar y NavDespacho, que están en todas las pantallas.
+export default function useTecladoFormulario(activo, { marcar = false } = {}) {
   const [abierto, setAbierto] = useState(false);
   useEffect(() => {
     if (!activo) { setAbierto(false); return; }
     return observarTecladoFormulario(window, document, setAbierto);
   }, [activo]);
-  return activo && abierto;
+  const fuera = activo && abierto;
+  useEffect(() => {
+    if (!marcar) return;
+    document.documentElement.toggleAttribute('data-teclado', fuera);
+    return () => document.documentElement.removeAttribute('data-teclado');
+  }, [marcar, fuera]);
+  return fuera;
 }

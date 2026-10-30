@@ -67,6 +67,9 @@ html, body { overscroll-behavior-y: none; }
     transition: opacity 0.18s var(--salida), transform 0.24s var(--vt-curva), visibility 0s linear 0.24s;
   }
   @media (prefers-reduced-motion: reduce) { .tabbar[data-teclado], .tabbar.tabbar-chat { transform: translateX(-50%); } }
+  /* Igual con las barras fijas abajo de un formulario: con el teclado fuera vuelven a su sitio al final del formulario en vez
+     de subirse encima del teclado y tapar media pantalla (data-teclado en <html>: components/useTecladoFormulario.js). */
+  html[data-teclado] .ff-nuevo .ff-campos > .ff-pie, html[data-teclado] .alb-facturar { position: static; }
   /* También protege los campos en horizontal, donde el notch ocupa un lateral. */
   .pagina.gastos-formulario, .pagina.modelos:not(.contabilidad):not(.analisis) {
     padding-left: max(16px, env(safe-area-inset-left, 0px));

@@ -61,7 +61,7 @@ export default function TabBar({ permisos = [], empresas = [], empresa, admin = 
   const nav = useRef(null);
   // Móvil: el «+» abre una hoja con lo que se puede crear. En el ordenador sigue siendo el botón «Nueva factura» de siempre.
   const [movil, setMovil] = useState(false);
-  const teclado = useTecladoFormulario(movil);
+  const teclado = useTecladoFormulario(movil, { marcar: true });
   const [hoja, setHoja] = useState(false);
   const botonMas = useRef(null);
   const panel = useRef(null);
