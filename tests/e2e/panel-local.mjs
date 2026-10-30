@@ -11,12 +11,22 @@ const PUERTO_STRIPE = Number(process.argv[3]) || 8097;
 const json = (res, d, s = 200) => { res.writeHead(s, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(d)); };
 const cuerpo = async (req) => { const t = []; for await (const x of req) t.push(x); return Buffer.concat(t).toString(); };
 
-// IA: alterna una venta del cliente, un gasto y un ticket borroso.
+// Un error en una petición rara no tumba el simulador: responde 500 y sigue.
+const seguro = (fn) => async (req, res) => {
+  try { await fn(req, res); } catch (e) { console.error('[simulador]', req.method, req.url, e.message); if (!res.headersSent) json(res, { error: { message: `Simulador: ${e.message}` } }, 500); }
+};
+// El contenido de un mensaje puede ser texto o una lista de bloques (texto, imagen, documento).
+const bloques = (m) => (typeof m?.content === 'string' ? [{ type: 'text', text: m.content }] : Array.isArray(m?.content) ? m.content : []);
+
+// IA: alterna una venta del cliente, un gasto y un ticket borroso. Lo que no lleva foto ni PDF (el asistente, emparejar
+// columnas al importar…) recibe una respuesta de texto genérica.
 let n = 0;
-http.createServer(async (req, res) => {
+http.createServer(seguro(async (req, res) => {
   const b = JSON.parse((await cuerpo(req)) || '{}');
   if (req.url.endsWith('/count_tokens')) return json(res, { input_tokens: 1500 });
-  const prompt = b.messages?.[0]?.content?.find((c) => c.type === 'text')?.text || '';
+  const contenido = bloques(b.messages?.[0]);
+  if (!contenido.some((c) => ['image', 'document'].includes(c.type))) return json(res, { model: b.model, usage: { input_tokens: 100, output_tokens: 20 }, stop_reason: 'end_turn', content: [{ type: 'text', text: 'Respuesta del simulador local.' }] });
+  const prompt = contenido.find((c) => c.type === 'text')?.text || '';
   const nif = (prompt.match(/con NIF ([A-Z0-9]+)/) || [])[1] || '';
   const tipos = [
     { proveedor: 'Recambios Norte SL', nif: 'B00000301', emisor: 'Recambios Norte SL', emisorNif: 'B00000301', receptor: 'Cliente', receptorNif: nif, sentido: 'compra', legible: true, numero: `RN-${2000 + n}`, fecha: '2026-10-20', concepto: 'Pastillas de freno', base: 150, ivaPct: 21, total: 181.5, desglose: [{ ivaPct: 21, base: 150, cuota: 31.5 }], irpf: null, irpfPct: 0 },
@@ -25,7 +35,7 @@ http.createServer(async (req, res) => {
   ];
   const d = tipos[n++ % tipos.length];
   json(res, { model: b.model, usage: { input_tokens: 1500, output_tokens: 300 }, content: [{ type: 'text', text: JSON.stringify(d) }] });
-}).listen(PUERTO_IA, '127.0.0.1');
+})).listen(PUERTO_IA, '127.0.0.1');
 
 // Stripe: precios por lookup_key, IVA, Checkout de suscripción (con su página que vuelve al success_url), suscripciones
 // y portal. Al «pagar», la suscripción queda en prueba (trialing) si se pidió.
@@ -33,7 +43,7 @@ const precios = {}, sesiones = {}, subs = {};
 let id = 0;
 const nuevo = (p) => `${p}_${++id}`;
 const plano = (s) => Object.fromEntries(new URLSearchParams(s));
-http.createServer(async (req, res) => {
+http.createServer(seguro(async (req, res) => {
   const url = new URL(req.url, 'http://x');
   const f = req.method === 'POST' ? plano(await cuerpo(req)) : {};
   const r = url.pathname;
@@ -67,5 +77,5 @@ http.createServer(async (req, res) => {
   }
   if (r === '/v1/billing_portal/sessions') return json(res, { url: `http://127.0.0.1:${PUERTO_STRIPE}/portal` });
   json(res, { error: { message: `Simulador: ${req.method} ${r}` } }, 404);
-}).listen(PUERTO_STRIPE, '127.0.0.1');
+})).listen(PUERTO_STRIPE, '127.0.0.1');
 console.log(`Simuladores listos: IA en ${PUERTO_IA}, Stripe en ${PUERTO_STRIPE}`);
