@@ -96,7 +96,7 @@ test('su primera pantalla es /documentos y solo esa', () => {
 const SIN_REQUERIR = {
   '/condiciones': 'pública', '/privacidad': 'pública', '/declaracion-responsable': 'pública', '/sin-conexion': 'pública',
   '/registro': 'pública', '/recuperar': 'pública', '/login': 'pública', '/login/dos-pasos': 'pública', '/bloqueo': 'pública',
-  '/confirmar-email': 'pública', '/invitacion/x': 'pública', '/invitacion/despacho': 'pública (acepta por POST)',
+  '/confirmar-email': 'pública', '/invitacion/x': 'pública', '/invitacion/despacho': 'pública (acepta por POST)', '/invitacion/unirse': 'pública (acepta por POST)',
   '/portal/x': 'enlace con token', '/pagar/x': 'enlace con token', '/p/x': 'enlace con token',
   '/gastos/bandeja': 'solo redirige a /gastos, que pide requerir',
   '/bienvenida': 'pide el permiso «empresa», que no tiene',

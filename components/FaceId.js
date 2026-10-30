@@ -22,6 +22,8 @@ export default function FaceId({ lista, bloqueo = false }) {
   const [msg, setMsg] = useState('');
   const [bloquear, setBloquear] = useState(bloqueo);
   const [ordenador, setOrdenador] = useState(false);
+  // El servidor pide la contraseña si hace rato que entró (lib/auth.js reautenticado).
+  const [pidePass, setPidePass] = useState(false);
 
   useEffect(() => {
     estadoNativo().then((e) => {
@@ -34,13 +36,19 @@ export default function FaceId({ lista, bloqueo = false }) {
   const nombre = nativo ? nombreTipo(nativo.tipo) : 'Face ID';
   const activadoAqui = nativo ? nativo.tiene && lista.some((k) => k.id === este) : false;
 
-  async function activar() {
+  async function activar(e) {
+    e?.preventDefault?.();
     setMsg('');
+    const password = e?.currentTarget ? new FormData(e.currentTarget).get('password') || undefined : undefined;
     try {
-      if (nativo) { const id = await activarNativo(nombreDispositivo()); setEste(id); setNativo({ ...nativo, tiene: true }); }
-      else await activarFaceId(nombreDispositivo());
+      if (nativo) { const id = await activarNativo(nombreDispositivo(), password); setEste(id); setNativo({ ...nativo, tiene: true }); }
+      else await activarFaceId(nombreDispositivo(), password);
+      setPidePass(false);
       setMsg(`Listo: la próxima vez entrarás con ${nombre}.`); router.refresh();
-    } catch (e) { setMsg(e.name === 'NotAllowedError' ? 'Cancelado.' : e.message); }
+    } catch (err) {
+      if (err.reautenticar) setPidePass(true);
+      setMsg(err.name === 'NotAllowedError' ? 'Cancelado.' : err.message);
+    }
   }
 
   async function cambiarBloqueo(e) {
@@ -78,7 +86,12 @@ export default function FaceId({ lista, bloqueo = false }) {
         </ul>
       )}
       {disponible === false && <p className="nota">{tr('Este dispositivo no tiene Face ID ni huella.')}</p>}
-      {disponible && !activadoAqui && <button type="button" className="boton" onClick={activar}>{nativo ? tr('Activar {nombre} en este iPhone', { nombre: tr(nombre) }) : tr('Activar en este dispositivo')}</button>}
+      {disponible && !activadoAqui && (pidePass ? (
+        <form onSubmit={activar}>
+          <label>{tr('Tu contraseña')}<input className="campo" name="password" type="password" required autoComplete="current-password" /></label>
+          <button className="boton">{tr('Confirmar y activar')}</button>
+        </form>
+      ) : <button type="button" className="boton" onClick={() => activar()}>{nativo ? tr('Activar {nombre} en este iPhone', { nombre: tr(nombre) }) : tr('Activar en este dispositivo')}</button>)}
       {msg && <p className={msg.startsWith('Listo') ? 'nota' : 'error'} role={msg.startsWith('Listo') ? 'status' : 'alert'}>{tr(msg)}</p>}
     </section>
   );

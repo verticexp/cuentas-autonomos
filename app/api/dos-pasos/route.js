@@ -1,4 +1,5 @@
 import { cuerpo, error, usuarioApi } from '@/lib/api';
+import { comprobar } from '@/lib/auth';
 import { activar, desactivar, dosPasosActivo, empezarAlta, nuevosCodigos } from '@/lib/dosPasos';
 
 // Ajustes › Seguridad › Verificación en dos pasos (components/DosPasos.js): empezar (QR y clave), activar con el primer
@@ -11,6 +12,8 @@ export async function POST(req) {
   const codigo = String(b.codigo || '').trim().slice(0, 12);
   if (b.accion === 'empezar') {
     if (dosPasosActivo(u)) return error('Ya la tienes activada.');
+    // Activarla cambia cómo se entra: pide la contraseña, igual que quitarla (con la sesión de un dispositivo ajeno no basta).
+    if (!(await comprobar(String(b.password || ''), u.pass))) return error('La contraseña no es correcta.');
     return Response.json(await empezarAlta(u));
   }
   const r = b.accion === 'activar' ? await activar(u, codigo)

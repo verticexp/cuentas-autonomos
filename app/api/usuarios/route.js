@@ -1,6 +1,6 @@
 import { mensajePlan } from '@/lib/app';
 import { randomBytes } from 'crypto';
-import { borrarEmpresa, cambiarUsuario, crearUsuario, quitarDeEmpresa } from '@/lib/auth';
+import { borrarEmpresa, cambiarUsuario, crearUsuario, invitacionPendiente, quitarDeEmpresa } from '@/lib/auth';
 import { mismoId, redis } from '@/lib/redis';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { limpiarPermisos, perfilDe, puede } from '@/lib/permisos';
@@ -56,12 +56,13 @@ export async function POST(req) {
   if (b.reenviar) {
     if (await pasado('usuarios-reenviar', u.empresa, 10, 3600)) return respuesta429(3600, 'Has reenviado demasiadas invitaciones. Espera una hora antes de reenviar otra.');
     const o = await deMiEmpresa(u, b.reenviar);
-    if (!o || o.pass) return error('Esa persona ya tiene acceso');
+    // Solo a quien nunca ha activado su cuenta: una cuenta de Google o Apple tampoco tiene contraseña y ya está activa.
+    if (!invitacionPendiente(o)) return error('Esa persona ya tiene acceso');
     if (esAdminDe(o, u.empresa) && u.rol !== 'admin') return error('Solo un administrador de la empresa puede dar o quitar el acceso de administrador', 403);
     // Bajo el cerrojo de la persona: si la acepta a la vez, no queda un código nuevo para una cuenta ya activa.
     const codigo = randomBytes(18).toString('base64url');
     const sigue = await cambiarUsuario(o.id, async (x) => {
-      if (x.pass) return null;
+      if (!invitacionPendiente(x)) return null;
       const todas = (await redis.hgetall('invitaciones')) || {};
       const viejas = Object.keys(todas).filter((c) => mismoId(todas[c], o.id));
       if (viejas.length) await redis.hdel('invitaciones', ...viejas);

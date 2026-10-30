@@ -17,7 +17,7 @@ import { textos } from '@/lib/idiomaServidor';
 import '@/app/legal.css';
 
 export const dynamic = 'force-dynamic';
-const ERRORES = { 1: 'Email o contraseña incorrectos.', bloqueado: 'Demasiados intentos. Espera 15 minutos.', caducado: 'Ha pasado demasiado tiempo. Vuelve a escribir tu email y contraseña.', social: 'No se ha podido entrar con esa cuenta. Vuelve a intentarlo o entra con tu email.', cancelado: 'Has cancelado el inicio de sesión.' };
+const ERRORES = { 1: 'Email o contraseña incorrectos.', bloqueado: 'Demasiados intentos. Espera 15 minutos.', caducado: 'Ha pasado demasiado tiempo. Vuelve a escribir tu email y contraseña.', social: 'No se ha podido entrar con esa cuenta. Vuelve a intentarlo o entra con tu email.', cancelado: 'Has cancelado el inicio de sesión.', 'sin-confirmar': 'Ese email tiene una cuenta de Fisquo sin confirmar. Entra con tu email y contraseña, o confírmalo desde el correo que te enviamos.' };
 
 export default async function Login({ searchParams }) {
   if (!redis) return <SinBD />;
