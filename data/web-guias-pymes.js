@@ -270,7 +270,7 @@ export const GUIAS_PYMES = [
       ['¿La retención del alquiler se calcula con el IVA?', 'No. Se calcula sobre la renta sin el IVA.'],
       ['¿Qué pasa si no coinciden el 190 y los 111?', 'Hacienda puede pedirte explicaciones. Antes de presentar el 190, comprueba que la suma de las retenciones coincide con lo ingresado en los cuatro 111 del año.'],
     ],
-    relacionadas: ['calendario-fiscal-sociedad-2026-2027', 'calendario-fiscal-autonomo-2026-2027', 'impuesto-sociedades-200-202'],
+    relacionadas: ['modelo-111', 'calendario-fiscal-sociedad-2026-2027', 'impuesto-sociedades-200-202'],
     cta: { titulo: 'Retenciones calculadas solas', sub: 'Fisquo calcula el 111 y el 115 con tus nóminas y gastos y prepara el 190 y el 180. 30 días gratis, sin tarjeta.' },
     aviso: DISCLAIMER,
   },

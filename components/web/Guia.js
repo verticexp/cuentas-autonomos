@@ -1,7 +1,7 @@
 import Link from '@/components/web/EnlacePublico';
 import Icono from '@/components/web/Icono';
 import { Cta, Encabezado, Faq, Flecha } from '@/components/web/Bloques';
-import { REVISION_GUIAS, guia } from '@/data/web-guias';
+import { guia, revisionDe } from '@/data/web-guias';
 import { calendarioSociedad, diaMes, fechaLarga, plazoTrimestre, plazosAnuales } from '@/lib/webCalendario';
 import JsonLd from '@/components/web/JsonLd';
 import { WEB } from '@/lib/web';
@@ -80,9 +80,10 @@ export default async function Guia({ g }) {
   const tr = await textos();
   const otras = g.relacionadas.map(guia).filter(Boolean);
   const url = `${WEB}/guias/${g.slug}`;
+  const revision = revisionDe(g);
   const datos = {
     '@context': 'https://schema.org', '@type': 'Article', headline: g.titulo, description: g.descripcion, inLanguage: 'es-ES',
-    datePublished: REVISION_GUIAS, dateModified: REVISION_GUIAS, mainEntityOfPage: url,
+    datePublished: revision, dateModified: revision, mainEntityOfPage: url,
     author: { '@type': 'Organization', name: 'Fisquo', url: WEB }, publisher: { '@type': 'Organization', name: 'Fisquo', url: WEB },
   };
   return (
@@ -92,7 +93,7 @@ export default async function Guia({ g }) {
         <nav className="web-migas web-entra" aria-label={tr('Estás en')}><Link href="/guias">{tr('Guías fiscales')}</Link><Icono n="chevron" /><span>{g.corto}</span></nav>
         <h1 className="web-entra" style={{ '--d': '60ms' }}>{g.titulo}</h1>
         <p className="web-sub web-entra" style={{ '--d': '120ms' }}>{g.resumen}</p>
-        <p className="web-art-meta web-entra" style={{ '--d': '180ms' }}>{conHuecos(tr('Revisada el {fecha} · {minutos} min de lectura'), { fecha: <time dateTime={REVISION_GUIAS}>{tr(fechaLarga(REVISION_GUIAS, false))}</time>, minutos: g.minutos })}</p>
+        <p className="web-art-meta web-entra" style={{ '--d': '180ms' }}>{conHuecos(tr('Revisada el {fecha} · {minutos} min de lectura'), { fecha: <time dateTime={revision}>{tr(fechaLarga(revision, false))}</time>, minutos: g.minutos })}</p>
       </section>
 
       <section className="web-sec web-art-sec">
@@ -115,7 +116,7 @@ export default async function Guia({ g }) {
               <h2 id="normas-t">{tr('Norma en la que se apoya')}</h2>
               <ul>{g.normas.map((n) => <li key={n}>{n}</li>)}</ul>
               <p>{g.aviso}</p>
-              <p><b>{tr('Revisada el {fecha}.', { fecha: tr(fechaLarga(REVISION_GUIAS, false)) })}</b> {tr('Las normas y los plazos pueden cambiar: comprueba siempre la fecha de revisión.')}</p>
+              <p><b>{tr('Revisada el {fecha}.', { fecha: tr(fechaLarga(revision, false)) })}</b> {tr('Las normas y los plazos pueden cambiar: comprueba siempre la fecha de revisión.')}</p>
             </section>
           </article>
         </div>
