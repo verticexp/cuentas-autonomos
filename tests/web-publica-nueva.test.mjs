@@ -94,8 +94,9 @@ test('comparativas: precios de los rivales comprobados el 23-10-2026 y los de Fi
 
 test('guías: para autónomos y para pymes, con norma, fecha de revisión, llamada final y todos los bloques conocidos', () => {
   assert.deepEqual(GUIAS.map((g) => g.slug), ['modelo-303', 'modelo-130', 'calendario-fiscal-autonomo-2026-2027', 'factura-simplificada',
-    'calendario-fiscal-sociedad-2026-2027', 'impuesto-sociedades-200-202', 'retenciones-111-115-190-180', 'cuentas-anuales-sociedad']);
+    'verifactu', 'modelo-111', 'calendario-fiscal-sociedad-2026-2027', 'impuesto-sociedades-200-202', 'retenciones-111-115-190-180', 'cuentas-anuales-sociedad']);
   assert.match(REVISION_GUIAS, /^2026-10-\d\d$/);
+  assert.ok(GUIAS.every((g) => !g.revision || g.revision >= REVISION_GUIAS), 'una guía no puede revisarse antes que el conjunto');
   // Cada guía en un grupo del índice, y ningún grupo vacío: tantas de pymes como de autónomos, como mínimo.
   const de = (p) => GUIAS.filter((g) => g.para === p).length;
   assert.ok(GUIAS.every((g) => PUBLICOS.some(([id]) => id === g.para)));

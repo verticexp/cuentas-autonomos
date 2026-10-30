@@ -4,7 +4,8 @@ import { GUIAS_PYMES } from './web-guias-pymes.js';
 // y lleva su fecha de revisión. Cuando cambie una norma o un plazo, se edita aquí y se sube REVISION_GUIAS.
 //
 // Cada guía: slug (URL), para (público: autonomos, pymes o todos), corto (nombre en menús y pie), titulo (h1), descripcion (SEO), resumen (índice), minutos de
-// lectura, normas (lo que se cita), secciones { id, t, bloques } y faqs. Bloques:
+// lectura, revision (opcional: su fecha si se revisó después de REVISION_GUIAS), normas (lo que se cita), secciones
+// { id, t, bloques } y faqs. Bloques:
 //   { p }  { ul: [] }  { ol: [] }  { pasos: [{ t, d }] }  { nota }  { tabla: { cab, filas } }
 //   { ejemplo: { titulo, filas: [[etiqueta, valor, destacada]], pie } }
 //   { plazos: [anios] }  { anuales: anio }  { calendarioSociedad: anio }   (tablas con fechas calculadas en lib/webCalendario.js)
@@ -305,7 +306,7 @@ export const GUIAS = [
       ['¿Todos los autónomos presentan los mismos modelos?', 'No. Depende de tu régimen de IVA y de IRPF, de si tienes empleados o pagas alquiler con retención y de si compras o vendes a otros países de la UE. Tu gestoría puede decirte cuáles te tocan.'],
       ['¿Está confirmado el aplazamiento de Verifactu hasta 2028?', 'No. Hacienda lo anunció el 5 de octubre de 2026, pero a 23 de octubre de 2026 no estaba publicado en el BOE. Mientras tanto rigen las fechas del Real Decreto-ley 15/2025.'],
     ],
-    relacionadas: ['modelo-303', 'modelo-130', 'retenciones-111-115-190-180'],
+    relacionadas: ['modelo-303', 'modelo-111', 'verifactu'],
     cta: { titulo: 'Que no se te pase ningún plazo', sub: 'Fisquo te avisa antes de cada presentación y calcula tus modelos. 30 días gratis, sin tarjeta.' },
     aviso: DISCLAIMER,
   },
@@ -390,8 +391,267 @@ export const GUIAS = [
       ['¿Puedo partir una venta en varias simplificadas para no superar el límite?', 'No lo recomendamos. El importe que cuenta es el de la operación; si supera el límite, lo prudente es emitir una factura completa.'],
       ['¿Mi cliente puede deducirse el IVA con una factura simplificada?', 'En general no. Si necesita deducirlo, pídele su NIF y emite una factura completa.'],
     ],
-    relacionadas: ['calendario-fiscal-autonomo-2026-2027', 'modelo-303', 'modelo-130'],
+    relacionadas: ['verifactu', 'modelo-303', 'modelo-130'],
     cta: { titulo: 'Factura sin pensar en el tipo de factura', sub: 'Fisquo elige la serie, controla el límite y genera el registro de cada factura. 30 días gratis, sin tarjeta.' },
+    aviso: DISCLAIMER,
+  },
+  {
+    slug: 'verifactu',
+    para: 'todos',
+    corto: 'Verifactu',
+    titulo: 'Verifactu: qué es, a quién afecta y desde cuándo',
+    descripcion: 'Qué es Verifactu, quién tiene que cumplirlo, las fechas vigentes (2027) y el aplazamiento anunciado, qué cambia en tus facturas y las sanciones.',
+    resumen: 'Qué exige el reglamento de facturación, a quién afecta, las fechas que están en el BOE y qué cambia en tus facturas.',
+    minutos: 8,
+    revision: '2026-10-30',
+    normas: [
+      'Ley 58/2003, General Tributaria: art. 29.2.j (sistemas de facturación que garanticen la integridad de los registros) y art. 201 bis (sanciones), en la redacción de la Ley 11/2021, de medidas de prevención y lucha contra el fraude fiscal.',
+      'Real Decreto 1007/2023, Reglamento de requisitos de los sistemas informáticos de facturación: arts. 3 (quién está obligado), 8 (requisitos), 13 (declaración responsable) y 16 (modalidad VERI*FACTU).',
+      'Orden HAC/1177/2024, especificaciones técnicas (registros, huella, código QR y leyenda).',
+      'Real Decreto-ley 15/2025 (fechas de obligado cumplimiento vigentes).',
+    ],
+    secciones: [
+      {
+        id: 'que-es', t: 'Qué es Verifactu',
+        bloques: [
+          { p: 'Verifactu es el nombre con el que se conoce el **Reglamento de requisitos de los sistemas informáticos de facturación** (Real Decreto 1007/2023). No es un programa de la AEAT ni un tipo de factura: es un conjunto de reglas que tiene que cumplir el programa con el que facturas.' },
+          { p: 'La idea es que una factura, una vez emitida, no se pueda cambiar ni borrar sin dejar rastro. Para eso, cada vez que emites una factura el programa genera un **registro de facturación** con sus datos principales y una **huella** (un código calculado a partir de esos datos y de la huella del registro anterior). Si alguien tocara una factura antigua, la cadena dejaría de cuadrar.' },
+          { p: 'Nace de la Ley 11/2021, contra el fraude fiscal, que prohibió el software de «doble uso»: programas que permiten llevar unas cuentas oficiales y otras ocultas, o borrar ventas sin dejar rastro.' },
+        ],
+      },
+      {
+        id: 'quien', t: 'A quién afecta (y a quién no)',
+        bloques: [
+          { p: 'Tienen que cumplirlo quienes **facturan con un programa informático** y son (art. 3 del reglamento):' },
+          { ul: [
+            'Sociedades y demás contribuyentes del Impuesto sobre Sociedades.',
+            'Autónomos y profesionales que tributan en el IRPF por actividades económicas.',
+            'No residentes con establecimiento permanente en España.',
+            'Comunidades de bienes, sociedades civiles y demás entidades en atribución de rentas, por las facturas de su actividad.',
+          ] },
+          { p: 'Quedan fuera, entre otros:' },
+          { ul: [
+            'Quienes llevan los libros registro del IVA por el **SII** (Suministro Inmediato de Información), porque ya envían sus facturas a la AEAT casi en tiempo real.',
+            'Quienes tienen su domicilio fiscal en el **País Vasco** o **Navarra**, que tienen sus propias normas (en el País Vasco, TicketBAI).',
+            'Quien no usa ningún programa para facturar (por ejemplo, un talonario de facturas en papel).',
+          ] },
+          { nota: 'Si facturas con una hoja de cálculo o un procesador de texto, o con un programa hecho a medida, tu caso tiene matices. La AEAT los trata en sus preguntas frecuentes sobre sistemas informáticos de facturación; si no lo tienes claro, consúltalo con tu gestoría.' },
+        ],
+      },
+      {
+        id: 'fechas', t: 'Desde cuándo es obligatorio',
+        bloques: [
+          { p: 'El calendario ha cambiado varias veces. A 30 de octubre de 2026, el que está en el BOE es el del **Real Decreto-ley 15/2025**:' },
+          { tabla: { cab: ['Quién', 'Desde'], filas: [
+            ['Sociedades y demás contribuyentes del Impuesto sobre Sociedades', '1 de enero de 2027'],
+            ['Resto de obligados, incluidos los autónomos', '1 de julio de 2027'],
+          ] } },
+          { nota: 'El 5 de octubre de 2026 el Ministerio de Hacienda anunció un nuevo aplazamiento, hasta octubre de 2028. A 30 de octubre de 2026 todavía no estaba publicado en el BOE, así que no podemos darlo por hecho: hasta que lo esté, las fechas vigentes son las del Real Decreto-ley 15/2025. Comprueba el BOE antes de tomar decisiones.' },
+          { p: 'Los fabricantes de programas de facturación ya tienen que ofrecer versiones adaptadas. Si cambias de programa ahora, lo prudente es elegir uno que ya cumpla, aunque la fecha te quede lejos.' },
+        ],
+      },
+      {
+        id: 'modalidades', t: 'Las dos formas de cumplir',
+        bloques: [
+          { p: 'El reglamento deja elegir entre dos modalidades:' },
+          { ul: [
+            '**VERI*FACTU**: el programa envía cada registro de facturación a la AEAT en el momento, de forma automática. Es la opción más sencilla para el usuario: no hace falta firmar los registros ni guardar un registro de eventos.',
+            '**Sin envío** (a veces llamada «no Verifactu»): el programa guarda los registros firmados electrónicamente y un registro de eventos (accesos, cortes, exportaciones…), y los pone a disposición de la AEAT si los pide en una comprobación.',
+          ] },
+          { p: 'La modalidad se elige al empezar a usar el sistema y, en general, se mantiene durante todo el año natural.' },
+        ],
+      },
+      {
+        id: 'facturas', t: 'Qué cambia en tus facturas',
+        bloques: [
+          { ul: [
+            '**Un código QR** en cada factura, con tu NIF, el número, la fecha y el importe. Tu cliente puede escanearlo y comprobar en la sede de la AEAT que la factura existe.',
+            'Si usas la modalidad VERI*FACTU, además la leyenda **«Factura verificable en la sede electrónica de la AEAT»** o **«VERI*FACTU»**.',
+            '**No se puede borrar ni modificar** una factura emitida. Si te equivocas, se emite una **rectificativa**; y si una factura no debió emitirse nunca, se genera un **registro de anulación** que queda encadenado como los demás.',
+            'La numeración sigue siendo correlativa dentro de cada serie, como hasta ahora.',
+          ] },
+          { p: 'Lo que no cambia: los datos obligatorios de una factura (Real Decreto 1619/2012), los tipos de IVA ni tus declaraciones. Verifactu tampoco es la factura electrónica entre empresas que exige la Ley Crea y Crece: es otra obligación, con su propio calendario.' },
+        ],
+      },
+      {
+        id: 'sanciones', t: 'Qué pasa si no se cumple',
+        bloques: [
+          { p: 'El art. 201 bis de la Ley General Tributaria fija multas de importe fijo:' },
+          { ul: [
+            '**50.000 € por cada ejercicio** a quien use un programa que no cumple, o que ha sido alterado.',
+            '**150.000 € por ejercicio y por cada tipo de programa** a quien lo fabrique o comercialice.',
+          ] },
+          { p: 'Por eso conviene que el cumplimiento dependa del programa que eliges, y no de lo que hagas tú a mano.' },
+        ],
+      },
+      {
+        id: 'elegir', t: 'Cómo saber si tu programa cumple',
+        bloques: [
+          { pasos: [
+            { t: 'Busca su declaración responsable', d: 'Todo fabricante tiene que firmar una declaración responsable de que su programa cumple el reglamento (art. 13) y tenerla a la vista de sus usuarios. Si no la encuentras, pregunta.' },
+            { t: 'Mira qué modalidad ofrece', d: 'La declaración dice si el programa funciona solo como VERI*FACTU o también sin envío. Para un autónomo o una pyme, la modalidad VERI*FACTU suele ser la más cómoda.' },
+            { t: 'Comprueba el QR de una factura de prueba', d: 'Una factura emitida con un programa adaptado lleva el código QR. Escanéalo: debe abrir la página de cotejo de la AEAT.' },
+            { t: 'Pregunta cómo se corrige un error', d: 'Un programa que cumple no te deja borrar ni editar una factura emitida: te lleva a rectificarla o anularla.' },
+          ] },
+        ],
+      },
+      {
+        id: 'fisquo', t: 'Cómo te ayuda Fisquo',
+        bloques: [
+          { p: 'Fisquo funciona en la modalidad VERI*FACTU: cada factura que emites genera su registro con la huella encadenada a la anterior y su código QR, y los errores se corrigen con rectificativas o anulaciones, nunca borrando. Su declaración responsable está publicada en fisquo.com/declaracion-responsable.' },
+        ],
+      },
+    ],
+    faqs: [
+      ['¿Está confirmado el aplazamiento de Verifactu hasta 2028?', 'No. Hacienda lo anunció el 5 de octubre de 2026, pero a 30 de octubre de 2026 no estaba publicado en el BOE. Mientras tanto rigen las fechas del Real Decreto-ley 15/2025: 1 de enero de 2027 para sociedades y 1 de julio de 2027 para el resto.'],
+      ['¿Tengo que darme de alta en algún sitio para usar Verifactu?', 'No hay un alta específica. Lo que necesitas es facturar con un programa que cumpla el reglamento; en la modalidad VERI*FACTU, el programa envía los registros a la AEAT.'],
+      ['¿Verifactu es lo mismo que la factura electrónica?', 'No. Verifactu regula el programa con el que facturas y el registro de cada factura. La factura electrónica entre empresas de la Ley Crea y Crece es otra obligación distinta, con su propio calendario.'],
+      ['Facturo con Excel o con Word: ¿me afecta?', 'Tiene matices, y la AEAT los trata en sus preguntas frecuentes sobre sistemas informáticos de facturación. Lo más seguro, antes de las fechas, es pasar a un programa que ya cumpla.'],
+    ],
+    relacionadas: ['factura-simplificada', 'calendario-fiscal-autonomo-2026-2027', 'calendario-fiscal-sociedad-2026-2027'],
+    cta: { titulo: 'Factura ya con Verifactu', sub: 'Cada factura de Fisquo lleva su huella encadenada y su código QR. 30 días gratis, sin tarjeta.' },
+    aviso: DISCLAIMER,
+  },
+  {
+    slug: 'modelo-111',
+    para: 'todos',
+    corto: 'Modelo 111',
+    titulo: 'Modelo 111 paso a paso',
+    descripcion: 'Qué es el modelo 111, quién lo presenta, los tipos de retención (nóminas, profesionales, administradores), los plazos y cómo se rellenan sus casillas.',
+    resumen: 'Las retenciones de nóminas, profesionales y administradores: quién lo presenta, los plazos y cómo se rellena.',
+    minutos: 8,
+    revision: '2026-10-30',
+    normas: [
+      'Ley 35/2006, del IRPF: art. 99 (obligación de practicar retenciones) y art. 101 (importe de las retenciones).',
+      'Reglamento del IRPF, Real Decreto 439/2007: art. 76 (obligados a retener), art. 78 (la obligación nace al pagar), art. 80 (retenciones del trabajo y de los administradores), art. 95 (actividades profesionales) y art. 108 (declaración trimestral y resumen anual).',
+      'Ley 39/2015, art. 30.5 (el plazo que acaba en día inhábil pasa al siguiente hábil).',
+      'Instrucciones del modelo 111 en la sede electrónica de la AEAT.',
+    ],
+    secciones: [
+      {
+        id: 'que-es', t: 'Qué es el modelo 111',
+        bloques: [
+          { p: 'El modelo 111 es la declaración en la que ingresas en Hacienda las **retenciones de IRPF** que has practicado al pagar nóminas, facturas de profesionales y retribuciones de administradores. Ese dinero no es tuyo: lo descuentas de lo que pagas y lo adelantas a Hacienda en nombre de quien cobra, que luego lo resta en su declaración de la renta.' },
+          { p: 'Es **trimestral** para casi todos los autónomos y pymes. Solo las empresas que el año anterior superaron 6.010.121,04 € de volumen de operaciones lo presentan cada mes.' },
+        ],
+      },
+      {
+        id: 'quien', t: 'Quién lo presenta',
+        bloques: [
+          { p: 'Lo presenta cualquier empresa o autónomo que, en el trimestre, haya **pagado** alguna renta sujeta a retención de las que van en este modelo. En la práctica:' },
+          { ul: [
+            'Si tienes **trabajadores** en nómina.',
+            'Si pagas facturas de **profesionales** que te aplican retención: tu gestoría, un abogado, un arquitecto, un diseñador o un formador autónomo.',
+            'Si eres una sociedad y pagas a tus **administradores** por su cargo.',
+          ] },
+          { p: 'Un autónomo sin empleados que no paga facturas de profesionales con retención **no presenta el 111**. Tampoco hace falta presentarlo en un trimestre en el que no has pagado ninguna de estas rentas. Pero si las has pagado, se presenta aunque la retención haya sido cero (por ejemplo, una nómina tan baja que no lleva retención).' },
+          { nota: 'Las retenciones del alquiler de un local van en otro modelo, el **115**; las de intereses y dividendos, en el **123**; y las de pagos a no residentes, en el **216**.' },
+        ],
+      },
+      {
+        id: 'tipos', t: 'Qué retenciones se declaran y a qué tipo',
+        bloques: [
+          { tabla: { cab: ['Qué pagas', 'Retención', 'Casillas'], filas: [
+            ['Nóminas de trabajadores', 'Según el sueldo y la situación familiar que el trabajador te comunica en el modelo 145', '01 a 03'],
+            ['Retribuciones en especie (coche, vivienda…)', 'Ingreso a cuenta calculado sobre su valor', '04 a 06'],
+            ['Administradores y consejeros', '35 %, o 19 % si la sociedad facturó menos de 100.000 € el año anterior', '01 a 03'],
+            ['Facturas de profesionales', '15 %, o 7 % en el año de inicio de su actividad y los dos siguientes', '07 a 09'],
+          ] } },
+          { p: 'El 7 % de los profesionales que empiezan solo se aplica si el profesional te lo comunica por escrito y no ha ejercido una actividad profesional en el año anterior al inicio. Si no te dice nada, se retiene el 15 %.' },
+          { p: 'La retención se calcula sobre el importe **sin IVA**. En una factura de 1.000 € más IVA de un profesional, la retención es de 150 €: le pagas 1.000 + 210 − 150 = 1.060 €, y los 150 € los ingresas tú con el 111.' },
+        ],
+      },
+      {
+        id: 'plazos', t: 'Plazos: cuándo se presenta',
+        bloques: [
+          { tabla: { cab: ['Trimestre', 'Se presenta', 'Con domiciliación (aprox.)'], filas: [
+            ['1.er trimestre', 'Del 1 al 20 de abril', 'Hasta el 15 de abril'],
+            ['2.º trimestre', 'Del 1 al 20 de julio', 'Hasta el 15 de julio'],
+            ['3.er trimestre', 'Del 1 al 20 de octubre', 'Hasta el 15 de octubre'],
+            ['4.º trimestre', 'Del 1 al 20 de enero (del año siguiente)', 'Hasta el 15 de enero'],
+          ] } },
+          { p: 'Ojo con el 4.º trimestre: el 111 acaba el **20 de enero**, no el 30 como el 303 y el 130. El del 4.º trimestre de 2026 se presenta hasta el miércoles 20 de enero de 2027. Si el último día cae en sábado, domingo o festivo, el plazo pasa al siguiente día hábil.' },
+        ],
+      },
+      {
+        id: 'cuando', t: 'En qué trimestre va cada retención',
+        bloques: [
+          { p: 'Una retención se declara en el trimestre en que **pagas** la renta, no en el de la fecha de la factura: según el art. 78 del reglamento, la obligación de retener nace cuando se paga.' },
+          { ejemplo: {
+            titulo: 'Ejemplo ficticio: una factura de marzo que se paga en abril',
+            filas: [
+              ['Factura de la gestoría, fecha 28 de marzo', '300,00 € + IVA'],
+              ['Retención (15 %)', '45,00 €'],
+              ['Fecha de pago', '5 de abril'],
+              ['Trimestre en que se declara', '2.º trimestre', true],
+            ],
+            pie: 'Los importes son inventados para explicar el cálculo; no representan a ninguna empresa.',
+          } },
+        ],
+      },
+      {
+        id: 'pasos', t: 'Cómo se rellena, paso a paso',
+        bloques: [
+          { pasos: [
+            { t: 'Reúne lo pagado en el trimestre', d: 'Las nóminas pagadas (con su retención), las facturas de profesionales con retención que has pagado y, si eres una sociedad, lo pagado a los administradores.' },
+            { t: 'Rendimientos del trabajo: casillas 01 a 03', d: 'En la 01, el número de perceptores (trabajadores y administradores distintos); en la 02, el importe íntegro pagado; en la 03, la suma de las retenciones. Lo pagado en especie va en las casillas 04 a 06.' },
+            { t: 'Actividades económicas: casillas 07 a 09', d: 'En la 07, el número de profesionales distintos a los que has pagado; en la 08, la suma de las bases de sus facturas (sin IVA); en la 09, la suma de las retenciones.' },
+            { t: 'Suma las retenciones', d: 'La casilla 28 recoge el total de retenciones e ingresos a cuenta. Si es una declaración complementaria, en la 29 va lo ingresado en la anterior, y la 30 es lo que queda por ingresar.' },
+            { t: 'Presenta y paga', d: 'Se presenta por internet en la sede electrónica de la AEAT, con certificado electrónico o con otro sistema de identificación que admita (por ejemplo, Cl@ve si eres persona física). Domicilia el pago o págalo con el NRC del banco, y guarda el justificante.' },
+          ] },
+        ],
+      },
+      {
+        id: 'ejemplo', t: 'Un ejemplo con números',
+        bloques: [
+          { ejemplo: {
+            titulo: 'Ejemplo ficticio: un autónomo con una trabajadora, 2.º trimestre',
+            filas: [
+              ['Nóminas pagadas (3 × 1.600 €), casilla 02', '4.800,00 €'],
+              ['Retenciones de las nóminas, casilla 03', '384,00 €'],
+              ['Facturas pagadas a la gestoría (3 × 100 €), casilla 08', '300,00 €'],
+              ['Retenciones de la gestoría (15 %), casilla 09', '45,00 €'],
+              ['Total a ingresar, casilla 28', '429,00 €', true],
+            ],
+            pie: 'Los importes son inventados para explicar el cálculo; no representan a ninguna empresa. La retención de cada nómina depende de la persona.',
+          } },
+        ],
+      },
+      {
+        id: 'resumen', t: 'El resumen anual: modelo 190',
+        bloques: [
+          { p: 'En enero, además del 111 del 4.º trimestre, se presenta el **modelo 190**: el resumen del año con cada trabajador, administrador y profesional, lo que cobró y lo que se le retuvo. El plazo acaba el **31 de enero**, o el siguiente día hábil.' },
+          { p: 'La suma de las retenciones del 190 tiene que coincidir con lo ingresado en los cuatro 111 del año. Si no cuadra, Hacienda puede pedirte explicaciones.' },
+        ],
+      },
+      {
+        id: 'errores', t: 'Errores frecuentes',
+        bloques: [
+          { ul: [
+            'Declarar la retención en el trimestre de la factura y no en el del pago.',
+            'Calcular la retención sobre el total con IVA, en lugar de sobre la base.',
+            'Aplicar el 7 % a un profesional que no te lo ha comunicado por escrito.',
+            'Olvidar las facturas de la propia gestoría o de un abogado, que también llevan retención.',
+            'Presentar el del 4.º trimestre el 30 de enero, con el 303: el 111 acaba el 20.',
+            'Presentar fuera de plazo: sin requerimiento previo se aplica un recargo que crece con el retraso (art. 27 de la Ley General Tributaria).',
+          ] },
+        ],
+      },
+      {
+        id: 'fisquo', t: 'Cómo te ayuda Fisquo',
+        bloques: [
+          { p: 'Fisquo calcula las casillas del 111 con las nóminas y los gastos con retención que ya has apuntado, cuenta cada retención en el trimestre en que la pagaste, te avisa antes del día 20 y prepara el 190 de enero. La presentación la haces tú o tu gestoría en la sede electrónica de la AEAT.' },
+        ],
+      },
+    ],
+    faqs: [
+      ['Soy autónomo sin empleados: ¿tengo que presentar el 111?', 'Solo si en el trimestre has pagado facturas con retención a profesionales (por ejemplo, a tu gestoría) u otras rentas de este modelo. Si no has pagado ninguna, no se presenta.'],
+      ['¿Qué pasa si un trimestre no he pagado nada con retención?', 'Si no has pagado ninguna renta sujeta a retención, no hay que presentarlo. Si has pagado alguna, aunque la retención sea cero, sí.'],
+      ['¿El 111 del 4.º trimestre se presenta con el 303?', 'No. El 303 y el 130 del 4.º trimestre acaban el 30 de enero, pero el 111 y el 115 acaban el 20 de enero.'],
+      ['¿Se retiene sobre el IVA?', 'No. La retención se calcula sobre la base, sin el IVA.'],
+    ],
+    relacionadas: ['retenciones-111-115-190-180', 'modelo-130', 'calendario-fiscal-autonomo-2026-2027'],
+    cta: { titulo: 'Tu 111 calculado cada trimestre', sub: 'Fisquo calcula las retenciones con tus nóminas y gastos y prepara el 190 de enero. 30 días gratis, sin tarjeta.' },
     aviso: DISCLAIMER,
   },
 ];
@@ -400,3 +660,4 @@ export const GUIAS = [
 GUIAS.push(...GUIAS_PYMES);
 export const PUBLICOS = [['pymes', 'Para pymes y sociedades'], ['autonomos', 'Para autónomos'], ['todos', 'Para autónomos y pymes']];
 export const guia = (slug) => GUIAS.find((g) => g.slug === slug);
+export const revisionDe = (g) => g.revision || REVISION_GUIAS;

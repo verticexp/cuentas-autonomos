@@ -1,6 +1,6 @@
 import Link from '@/components/web/EnlacePublico';
 import { Cta, Flecha } from '@/components/web/Bloques';
-import { GUIAS, PUBLICOS, REVISION_GUIAS } from '@/data/web-guias';
+import { GUIAS, PUBLICOS, revisionDe } from '@/data/web-guias';
 import { fechaLarga } from '@/lib/webCalendario';
 import { metaPagina } from '@/lib/webMeta';
 
@@ -29,7 +29,7 @@ export default function Guias() {
                 <Link key={g.slug} href={`/guias/${g.slug}`} data-foco data-r className="web-fcard" style={{ '--d': `${(k % 2) * 70}ms` }}>
                   <h3>{g.titulo}</h3>
                   <p>{g.resumen}</p>
-                  <small className="web-guia-meta">{g.minutos} min de lectura · Revisada el {fechaLarga(REVISION_GUIAS, false)}</small>
+                  <small className="web-guia-meta">{g.minutos} min de lectura · Revisada el {fechaLarga(revisionDe(g), false)}</small>
                   <span className="web-enlace">Leer la guía<Flecha /></span>
                 </Link>
               ))}
