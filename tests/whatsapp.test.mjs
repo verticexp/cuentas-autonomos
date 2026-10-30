@@ -105,6 +105,9 @@ test('corregir el borrador por el chat: solo cambia lo pedido', () => {
 test('la respuesta de la IA se convierte en una acción segura', () => {
   const uso = (name, input) => [{ type: 'text', text: 'x' }, { type: 'tool_use', name, input }];
   assert.equal(accionDe(uso('emitir', { mensaje: '¡Allá va!' })).accion, 'emitir');
+  // «Sí, y pásamela a mí también»: se emite con la entrega nueva, sin volver a enseñarla; lo que no vale se ignora.
+  assert.deepEqual(accionDe(uso('emitir', { entrega: 'ambos', email: ' Otro@Correo.es ' })).datos, { entrega: 'ambos', email: 'otro@correo.es' });
+  assert.deepEqual(accionDe(uso('emitir', { entrega: 'paloma' })).datos, {});
   assert.equal(accionDe(uso('cambiar_borrador', { cliente: { nif: 'X' } })).accion, 'cambiar');
   assert.equal(accionDe(uso('preparar_factura', { cliente: 'Pepe', lineas: [{ concepto: 'a', precio: 1 }] })).accion, 'preparar');
   // Sin cliente o sin líneas no es una factura: se responde.
