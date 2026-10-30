@@ -10,9 +10,10 @@ import { leerHoja } from '../lib/hoja.js';
 
 const base = crearBase();
 const fetchOriginal = globalThis.fetch;
-const entorno = { KV_REST_API_URL: process.env.KV_REST_API_URL, KV_REST_API_TOKEN: process.env.KV_REST_API_TOKEN };
+const entorno = { KV_REST_API_URL: process.env.KV_REST_API_URL, KV_REST_API_TOKEN: process.env.KV_REST_API_TOKEN, WHATSAPP_ESPERA_MS: process.env.WHATSAPP_ESPERA_MS };
 process.env.KV_REST_API_URL = 'https://seguridad.test';
 process.env.KV_REST_API_TOKEN = 'solo-pruebas';
+process.env.WHATSAPP_ESPERA_MS = '0'; // sin esperar a juntar mensajes seguidos
 let respuestaScript = null; // lo que devuelve «el Apps Script del usuario» (S10)
 globalThis.fetch = async (url, opciones) => {
   if (new URL(String(url)).origin === 'https://script.test' && respuestaScript) return respuestaScript();

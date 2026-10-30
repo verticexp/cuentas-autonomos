@@ -35,6 +35,8 @@ async function cargar(archivo) {
     else if (origen === 'react') destino = modulo('export const cache = (fn) => fn;');
     else if (['next/headers', 'next/headers.js'].includes(origen)) destino = modulo('const s=globalThis.__auditoriaCompleta; const p=()=>s.peticion.getStore()||s; export const cookies=async()=>{const c=p().cookies; return {get:(k)=>c.has(k)?{value:c.get(k)}:undefined,set:(k,v)=>c.set(k,v)};}; export const headers=async()=>p().headers;');
     else if (origen === 'next/server') destino = modulo('export const NextResponse = { redirect:(url,status=307)=>new Response(null,{status,headers:{location:url}}),json:Response.json }; export const after = () => {};');
+    // Un módulo de lib/ ya cargado con este método (con sus dobles), p. ej. presupuestosServidor.
+    else if (lib && modulos.has(`lib/${lib}.js`)) destino = modulos.get(`lib/${lib}.js`);
     else if (lib && DOBLES.includes(lib)) destino = modulo(nombres.split(',').map((x) => `export const ${x.trim()}=(...a)=>globalThis.__auditoriaCompleta[${JSON.stringify(x.trim())}](...a);`).join('\n'));
     else if (lib) destino = new URL(`../lib/${lib}.js`, import.meta.url).href;
     else destino = import.meta.resolve(origen === 'next/navigation' ? 'next/navigation.js' : origen);
@@ -124,6 +126,7 @@ test('presupuestos: dos a la vez tienen números distintos y ninguno pisa al otr
 });
 
 test('presupuestos: señal y resto a la vez no facturan más que el presupuesto', async () => {
+  await cargar('lib/presupuestosServidor.js'); // factura con el doble de crearFactura
   const f = await cargar('app/api/presupuestos/facturar/route.js');
   await entrar(); ruta('/api/presupuestos/facturar', 'POST');
   await R.redis.hset('presupuestos:e', { 'P2026-1': { id: 'P2026-1', numero: 1, anio: 2026, serie: 'P', fecha: '2026-10-01', validez: 90, actividad: 'eventos', cliente: { nombre: 'Cliente' }, concepto: 'Boda', base: 100, ivaPct: 21, irpfPct: 0, senalPct: 30, estado: 'aceptado', facturas: [] } });
