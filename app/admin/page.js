@@ -11,6 +11,8 @@ import Volver from '@/components/Volver';
 import AdminEmpresas from '@/components/AdminEmpresas';
 import AdminDespachos from '@/components/AdminDespachos';
 import AdminDosPasos from '@/components/AdminDosPasos';
+import AdminSoporte from '@/components/AdminSoporte';
+import { TEXTO_HORARIO } from '@/lib/soporte';
 import { PRUEBA_DIAS } from '@/lib/prueba';
 import { PRUEBA_GESTORIA_DIAS } from '@/lib/gestorias';
 import { RECOMENDACION_DIAS } from '@/lib/recomendaciones';
@@ -143,6 +145,12 @@ export default async function Admin() {
     <section className="adm-caja" aria-labelledby="adm-despachos-t">
       <h2 id="adm-despachos-t">Despachos asociados</h2>
       <AdminDespachos />
+    </section>
+
+    <section id="soporte" className="adm-caja" aria-labelledby="adm-soporte-t">
+      <h2 id="adm-soporte-t">Soporte: chat de ayuda</h2>
+      <p className="adm-pie">Responde el asistente; lo que no resuelve (o si el cliente lo pide) pasa aquí y te avisa en el móvil y por WhatsApp{process.env.SOPORTE_WHATSAPP ? '' : ' (falta SOPORTE_WHATSAPP con tu número)'}. Horario: {TEXTO_HORARIO.toLowerCase()}.</p>
+      <AdminSoporte />
     </section>
 
     <section className="adm-caja" aria-labelledby="adm-dos-pasos-t">
