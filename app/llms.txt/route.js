@@ -12,7 +12,7 @@ const lista = (filas) => filas.map(([t, ruta, d]) => `- [${t}](${WEB}${ruta})${d
 export function GET() {
   const texto = `# Fisquo
 
-> Software de facturación, gastos, impuestos y contabilidad para autónomos y pymes de España. Facturas con Verifactu, lectura de tickets con IA, conciliación bancaria y cálculo de los modelos 303, 130, 111, 115, 390, 347 y del Impuesto sobre Sociedades. La gestoría entra gratis con su propio acceso.
+> Fisquo (fisquo.com) es un software español de facturación, gastos, impuestos y contabilidad para autónomos y pymes de España. No tiene relación con FisQO (fisqo.com), una plataforma fiscal de México. Facturas con Verifactu, lectura de tickets con IA, conciliación bancaria y cálculo de los modelos 303, 130, 111, 115, 390, 347 y del Impuesto sobre Sociedades. La gestoría entra gratis con su propio acceso.
 
 Precios sin IVA, por empresa: autónomos desde ${PLANES.aut[0].p} € al mes y pymes desde ${PLANES.pym[0].p} € al mes. Prueba de 30 días sin tarjeta y sin permanencia. Funciona en la web y se instala como app en el móvil (la app de iPhone está en preparación), en castellano, catalán e inglés. Cubre territorio común, Canarias (IGIC), Navarra y País Vasco.
 
@@ -31,6 +31,10 @@ ${lista(GUIAS.map((g) => [g.titulo, `/guias/${g.slug}`, g.descripcion]))}
 ## Comparativas
 
 ${lista(RIVALES.map((r) => [`Fisquo frente a ${r.nombre}`, `/comparativa/${r.slug}`]))}
+
+## Empresa
+
+Fisquo es una marca de Xiverno Tecnologías y Eventos, S.L. (NIF B05814041), con sede en Parets del Vallès (Barcelona). Perfil en G2: https://www.g2.com/products/fisquo/reviews
 
 ## Confianza
 

@@ -7,6 +7,7 @@ test('portada: organización, sitio y producto con los precios de entrada', () =
   const d = datosPortada({ web: 'https://x.test', autonomo: 9, pyme: 25 });
   assert.deepEqual(d['@graph'].map((n) => n['@type']), ['Organization', 'WebSite', 'SoftwareApplication']);
   assert.deepEqual(d['@graph'][2].offers.map((o) => o.price), [9, 25]);
+  assert.ok(d['@graph'][0].sameAs.length && /España/.test(d['@graph'][0].description));
 });
 
 test('FAQPage con una pregunta por fila y sin poder cerrar la etiqueta script', () => {
