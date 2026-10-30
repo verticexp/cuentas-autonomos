@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
 import { accionDe } from '../lib/whatsappIA.js';
 import { cambiarGasto, resumenGasto } from '../lib/whatsapp.js';
-import { aplicarCambios, buscarCliente, cuerpoFactura, entregaDe, firmaValida, mensajesDe, resumenBorrador, siNo, telefonosAutorizados } from '../lib/whatsapp.js';
+import { aplicarCambios, buscarCliente, cuerpoFactura, entregaDe, firmaValida, mensajesDe, resumenBorrador, separarDireccion, siNo, telefonosAutorizados, textoEmitido } from '../lib/whatsapp.js';
 import { limpiar } from '../lib/facturas.js';
 
 test('firma de Meta: vale la buena, no la manipulada ni sin secreto', () => {
@@ -236,4 +236,37 @@ test('conversación natural: sin herramienta, el texto es la respuesta; con herr
   assert.equal(accionDe([texto('x'), { type: 'tool_use', name: 'preparar_factura', input: { tipo: 'factura', cliente: 'Pepe', lineas, mensaje: 'Ahí va 👇' } }]).mensaje, 'Ahí va 👇');
   // Sin nada útil, una repregunta amable.
   assert.match(accionDe([]).mensaje, /no te he pillado/);
+});
+
+test('dirección del cliente: el código postal y la población van en «ciudad», no detrás de la calle', () => {
+  const s = (direccion, ciudad = '', pais) => { const r = separarDireccion({ direccion, ciudad, ...(pais ? { pais } : {}) }); return [r.direccion, r.ciudad]; };
+  assert.deepEqual(s('C/ Major 12, 3º 2ª, 08301 Mataró'), ['C/ Major 12, 3º 2ª', '08301 Mataró']);
+  assert.deepEqual(s('C/ Major 12 3º 2ª 08301 Mataró (Barcelona)'), ['C/ Major 12 3º 2ª', '08301 Mataró (Barcelona)']);
+  assert.deepEqual(s('C/ Major 12, 3º 2ª, Mataró 08301'), ['C/ Major 12, 3º 2ª', '08301 Mataró']);
+  assert.deepEqual(s('C/ Major 12, 3º 2ª, 08301', 'Mataró'), ['C/ Major 12, 3º 2ª', '08301 Mataró']);
+  assert.deepEqual(s('C/ Major 12, 3º 2ª, 08301', '08301 Mataró'), ['C/ Major 12, 3º 2ª', '08301 Mataró']);
+  assert.deepEqual(s('C/ Major 12', 'Mataró, 08301'), ['C/ Major 12', '08301 Mataró']);
+  // Ya bien, números de calle normales y direcciones extranjeras: sin tocar.
+  assert.deepEqual(s('C/ Major 12, 3º 2ª', '08301 Mataró'), ['C/ Major 12, 3º 2ª', '08301 Mataró']);
+  assert.deepEqual(s('Avda. Diagonal 640', 'Barcelona'), ['Avda. Diagonal 640', 'Barcelona']);
+  assert.deepEqual(s('10 Downing St, SW1A 2AA', 'London', 'GB'), ['10 Downing St, SW1A 2AA', 'London']);
+});
+
+test('los datos del cliente del primer mensaje van al borrador, y al corregir también se ordena la dirección', () => {
+  const actividad = { id: 'dj', ivaPct: 21, irpfPct: 15 };
+  const b = cuerpoFactura({ cliente: 'Joan Puig', datosCliente: { nif: '12345678Z', direccion: 'C/ Riera 5, 1º, 08302 Mataró' }, lineas: [{ concepto: 'Sesión', precio: 300 }] }, { actividad, hoy: '2026-10-30' });
+  assert.deepEqual([b.cliente.nif, b.cliente.direccion, b.cliente.ciudad], ['12345678Z', 'C/ Riera 5, 1º', '08302 Mataró']);
+  const r = aplicarCambios({ cuerpo: b, email: '' }, { cliente: { direccion: 'C/ Sol 3, 2º 1ª, 08001 Barcelona' } }, { actividad });
+  assert.deepEqual([r.cuerpo.cliente.direccion, r.cuerpo.cliente.ciudad], ['C/ Sol 3, 2º 1ª', '08001 Barcelona']);
+});
+
+test('aviso de emitida: si ya ha salido por correo, el PDF es «por si lo quieres», no «para que se la reenvíes»', () => {
+  const base = { pres: false, num: 'F-7', email: 'a@b.es' };
+  assert.equal(textoEmitido({ ...base, entrega: 'correo', envio: { ok: true } }), '✅ Factura F-7 emitida y enviada a a@b.es.');
+  const ambos = textoEmitido({ ...base, entrega: 'ambos', envio: { ok: true } });
+  assert.match(ambos, /enviada a a@b\.es\. Aquí tienes también el PDF, por si la quieres/);
+  assert.doesNotMatch(ambos, /reenv|mandes tú/);
+  assert.match(textoEmitido({ ...base, entrega: 'ambos', envio: { error: 'buzón lleno' } }), /no se ha podido enviar a a@b\.es: buzón lleno\. Aquí tienes el PDF para que se la mandes tú/);
+  const p = textoEmitido({ pres: true, num: 'P-2', email: '', entrega: 'whatsapp', envio: null, enlace: 'https://x/p/t' });
+  assert.match(p, /^✅ Presupuesto P-2 creado\. Aquí tienes el PDF para que se lo mandes tú 👇\nSi se lo reenvías, también puede verlo y aceptarlo aquí: https:\/\/x\/p\/t$/);
 });
