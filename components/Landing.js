@@ -5,9 +5,9 @@ import Icono from '@/components/web/Icono';
 import Precios from '@/components/web/Precios';
 import PruebaSocial from '@/components/web/PruebaSocial';
 import Tour from '@/components/web/demos/Tour';
-import { Calculadora } from '@/components/web/demos/Demos';
+import { Calculadora, WhatsAppDemo } from '@/components/web/demos/Demos';
 import { VentanaApp } from '@/components/web/demos/Pantallas';
-import { Confianza, Cta, Encabezado, Faq, Flecha } from '@/components/web/Bloques';
+import { Confianza, Cta, Encabezado, Faq, Flecha, Lista } from '@/components/web/Bloques';
 import { GUIAS } from '@/data/web-guias';
 import { FAQ_GENERAL, FUNCIONES, PLANES, SEGMENTOS } from '@/components/web/datos';
 import JsonLd from '@/components/web/JsonLd';
@@ -15,7 +15,7 @@ import { datosPortada } from '@/lib/webMeta';
 import { textos } from '@/lib/idiomaServidor';
 import { conHuecos } from '@/lib/huecos';
 
-const CINTA = ['Facturas ilimitadas', 'Verifactu', 'Presupuestos online', 'Gastos con IA', 'Modelo 303', 'Modelo 130', 'Modelos 111 y 115', 'Modelos 390, 347 y 349', 'Impuesto de Sociedades', 'Renta (100)', 'Conciliación de extractos', 'Libros registro (formato AEAT)', 'Contabilidad por partida doble', 'Balance y resultados', 'Amortizaciones', 'Cuentas anuales', 'Inventario y stock', 'Previsión de caja', 'Nóminas', 'Registro de jornada', 'Permisos por área', 'Varias empresas', 'Portal del cliente', 'Asistente IA', 'Cámbiate desde Holded, A3 o Sage', 'Face ID'];
+const CINTA = ['Facturas por WhatsApp', 'Facturas ilimitadas', 'Verifactu', 'Presupuestos online', 'Gastos con IA', 'Modelo 303', 'Modelo 130', 'Modelos 111 y 115', 'Modelos 390, 347 y 349', 'Impuesto de Sociedades', 'Renta (100)', 'Conciliación de extractos', 'Libros registro (formato AEAT)', 'Contabilidad por partida doble', 'Balance y resultados', 'Amortizaciones', 'Cuentas anuales', 'Inventario y stock', 'Previsión de caja', 'Nóminas', 'Registro de jornada', 'Permisos por área', 'Varias empresas', 'Portal del cliente', 'Asistente IA', 'Cámbiate desde Holded, A3 o Sage', 'Face ID'];
 
 const CIFRAS = [
   { pre: 'desde', n: 9, suf: ' €', t: 'al mes', d: 'Sin cuotas de alta ni permanencia' },
@@ -36,7 +36,7 @@ export default async function Landing() {
       <section className="web-hero">
         <div className="web-hero-txt">
           <h1>{conHuecos(tr('Tus cuentas, {resalte}.'), { resalte: <em>{tr('por fin en orden')}</em> })}</h1>
-          <p className="web-sub">{tr('Haz tus facturas, apunta los gastos con una foto y sabrás cada trimestre cuánto pagar a Hacienda. Para autónomos y pymes, desde 9 € al mes + IVA.')}</p>
+          <p className="web-sub">{tr('Haz tus facturas en la app o con un audio por WhatsApp, apunta los gastos con una foto y sabrás cada trimestre cuánto pagar a Hacienda. Para autónomos y pymes, desde 9 € al mes + IVA.')}</p>
           <div className="web-cta">
             <Link className="web-btn web-btn-grande" href="/registro">{tr('Empieza gratis')}<Flecha /></Link>
             <Link className="web-btn web-btn-claro web-btn-grande" href="/funciones"><span><span className="web-solo-ancho">{tr('Ver cómo')}</span><span className="web-solo-movil">{tr('Cómo')}</span>{` ${tr('funciona')}`}</span></Link>
@@ -53,6 +53,18 @@ export default async function Landing() {
       </section>
 
       <CintaFunciones items={CINTA.map((x) => tr(x))} />
+
+      <section className="web-sec">
+        <article className="web-fila web-fila-wa">
+          <div className="web-fila-txt" data-r>
+            <h2>{tr('Factura desde WhatsApp. Con un audio.')}</h2>
+            <p>{tr('Al acabar un trabajo, mándale un audio a Fisquo: «factura a Estudio Norte, tres horas a 45». Te enseña la factura con el IVA y el IRPF ya calculados y, cuando le dices que sí, la emite y se la manda a tu cliente.')}</p>
+            <Lista items={['Escribe o habla, como con una persona', 'Facturas, presupuestos y gastos con una foto', 'Nada se emite sin tu visto bueno']} />
+            <Link href="/funciones/whatsapp" className="web-btn">{tr('Cómo funciona')}<Flecha /></Link>
+          </div>
+          <div className="web-fila-vis" data-r style={{ '--d': '100ms' }}><WhatsAppDemo /></div>
+        </article>
+      </section>
 
       <section className="web-sec">
         <div className="web-cifras">

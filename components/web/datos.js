@@ -25,6 +25,31 @@ export const FUNCIONES = [
     ],
   },
   {
+    // lib/whatsappIA.js (lo que entiende), lib/planes.js (TOPE_WHATSAPP, solo Pro y Plus) y app/privacidad.
+    slug: 'whatsapp', icono: 'movil', nombre: 'Fisquo por WhatsApp', corto: 'Facturas con un audio, sin abrir la app',
+    titulo: 'Factura desde WhatsApp. Con un audio.',
+    sub: 'Escribe o manda un audio al número de Fisquo y te prepara la factura, el presupuesto o el gasto. Te lo enseña antes y no hace nada hasta que dices que sí.',
+    demo: 'whatsapp',
+    puntos: [
+      { t: 'Como hablar con una persona', d: 'Sin menús ni botones: «factura a Estudio Norte, tres horas a 45». Si le falta un dato, te lo pregunta.' },
+      { t: 'Nada sale sin tu visto bueno', d: 'Siempre te enseña el borrador con el IVA y el IRPF calculados. La factura se emite solo cuando le dices que sí.' },
+      { t: 'Tu Fisquo de siempre', d: 'Lleva tu numeración, tu logo y Verifactu, y aparece al momento en la app, como cualquier otra factura.' },
+    ],
+    secciones: [
+      { t: 'Presupuestos que tu cliente acepta desde el móvil', d: 'Pide un presupuesto igual que una factura. Fisquo se lo manda a tu cliente con un enlace para aceptarlo, o te pasa el PDF para que se lo reenvíes tú.', l: ['Factura o presupuesto, según lo pidas', '«Lo de siempre» repite la última factura de ese cliente', 'Por correo a tu cliente o el PDF en el chat'], visual: 'waPresupuesto' },
+      { t: 'Gastos con una foto del ticket', d: 'Manda la foto de un ticket o el PDF de una factura de proveedor. Fisquo lee el proveedor, la fecha, la base y el IVA, te avisa si ya lo tenías apuntado y lo guarda cuando confirmas.', l: ['Foto o PDF', 'Aviso de gastos repetidos', 'Pagado o pendiente de pagar'], visual: 'waGasto' },
+      { t: 'Pregunta por tus cuentas', d: 'Quién te debe, cuánto llevas facturado o cuánto IVA te toca este trimestre. Fisquo responde con tus cifras, sin abrir la app.', l: ['Facturas pendientes y vencidas', 'IVA e IRPF del trimestre', 'Lo facturado y lo gastado'], visual: 'waConsulta' },
+    ],
+    faqs: [
+      ['¿Cómo lo conecto?', 'En Ajustes › WhatsApp. Fisquo te da un código, lo envías desde tu WhatsApp al número de Fisquo y queda conectado. Lo puedes desconectar cuando quieras desde el mismo sitio.'],
+      ['¿Necesito WhatsApp Business?', 'No. Vale tu WhatsApp de siempre: escribes al número de Fisquo como a cualquier contacto.'],
+      ['¿Puede emitir una factura sin que yo lo sepa?', 'No. Siempre te enseña el borrador con el cliente, las líneas y el total, y solo la emite cuando le dices que sí.'],
+      ['¿Entiende las notas de voz?', 'Sí. Le hablas como a una persona: Fisquo pasa el audio a texto y lo interpreta. Si algo no le queda claro, te lo pregunta.'],
+      ['¿En qué planes está?', 'En Pro y Plus, de Autónomos y de Pymes, y durante los 30 días de prueba. Cada mes incluye 100 facturas y presupuestos por WhatsApp en Autónomos Pro, 300 en Autónomos Plus y en Pymes Pro, y 1.000 en Pymes Plus.'],
+      ['¿Qué pasa con mis mensajes?', 'WhatsApp (Meta) los entrega a Fisquo y la IA los usa solo para preparar lo que pides, sin entrenar ningún modelo. La conversación reciente se borra a las 3 horas. Todo el detalle está en la política de privacidad.'],
+    ],
+  },
+  {
     slug: 'gastos', icono: 'gasto', nombre: 'Gastos con IA', corto: 'Foto al ticket y listo',
     titulo: 'Foto al ticket. Fisquo hace el resto',
     sub: 'La IA lee tus tickets y facturas de proveedor, en foto o PDF, y rellena proveedor, fecha, base e IVA. Tú solo confirmas.',
@@ -201,6 +226,7 @@ export const SEGMENTOS = [
       ['Sustos con el IVA y el 130', 'Tus modelos calculados y lo que debes apartar, siempre a la vista.'],
       ['Mil correos con tu gestoría', 'Acceso para tu gestoría o el paquete trimestral en un clic.'],
       ['Libros registro a mano', 'Tus libros de IVA e IRPF, con el formato de Hacienda y tus amortizaciones.'],
+      ['Facturas pendientes de hacer al llegar a casa', 'Pídesela a Fisquo por WhatsApp al acabar el trabajo, con un audio.'],
     ],
     funciones: ['facturacion', 'gastos', 'impuestos', 'banco'],
   },
@@ -240,12 +266,12 @@ export const segmento = (id) => SEGMENTOS.find((s) => s.id === id);
 export const PLANES = {
   aut: [
     { n: 'Esencial', p: 9, para: 'Facturar y declarar sin sustos', l: ['Facturas, presupuestos y recurrentes', 'Gastos y escaneo IA · 50 páginas/mes', 'Modelos aplicables y libros registro', 'Bienes de inversión y amortizaciones', 'Extractos, saldo y resumen', '1 empresa · 1 usuario interno + gestoría'] },
-    { n: 'Pro', p: 12, para: 'Banco, inventario, cartera y asistente IA', fuerte: true, herencia: 'Esencial', l: ['Conciliación, revisión del banco y previsión', 'Inventario, pedidos y albaranes', 'Cartera de cobros', 'Análisis de ventas, gastos y margen', 'Asistente IA con tus cifras', 'Escaneo IA · 200 páginas/mes'] },
+    { n: 'Pro', p: 12, para: 'WhatsApp, banco, inventario y asistente IA', fuerte: true, herencia: 'Esencial', l: ['Conciliación, revisión del banco y previsión', 'Inventario, pedidos y albaranes', 'Cartera de cobros', 'Análisis de ventas, gastos y margen', 'Facturas por WhatsApp y asistente IA', 'Escaneo IA · 200 páginas/mes'] },
     { n: 'Plus', p: 20, para: 'Para crecer con un pequeño equipo', herencia: 'Pro', l: ['Rentabilidad por proyecto', '1 empresa · 2 usuarios internos + gestoría', 'Nóminas y jornada para 1 empleado', 'Atención prioritaria', 'Escaneo IA · 500 páginas/mes'] },
   ],
   pym: [
     { n: 'Esencial', p: 25, para: 'Lo que una sociedad necesita', l: ['Facturación, presupuestos y recurrentes', 'Gastos y lectura IA · 200 páginas/mes', 'Contabilidad, cuentas anuales e Impuesto sobre Sociedades', 'Extractos, conciliación y revisión del banco', '1 empresa · 2 usuarios internos + gestoría', 'Nóminas y jornada para 3 empleados'] },
-    { n: 'Pro', p: 32, para: 'Cartera, remesas, inventario y análisis', fuerte: true, herencia: 'Esencial', l: ['Cartera de cobros y previsión de caja', 'Pedidos, albaranes e inventario', 'Remesas SEPA y análisis financiero con ratios', 'Rentabilidad por proyecto y asistente IA', '8 usuarios internos · 15 empleados', 'Escaneo IA · 600 páginas/mes · soporte prioritario'] },
+    { n: 'Pro', p: 32, para: 'WhatsApp, cartera, inventario y análisis', fuerte: true, herencia: 'Esencial', l: ['Cartera de cobros y previsión de caja', 'Pedidos, albaranes e inventario', 'Remesas SEPA, ratios y rentabilidad por proyecto', 'Facturas por WhatsApp y asistente IA', '8 usuarios internos · 15 empleados', 'Escaneo IA · 600 páginas/mes · soporte prioritario'] },
     { n: 'Plus', p: 55, para: 'Más capacidad con las funciones de Pro', herencia: 'Pro', l: ['1 empresa · 15 usuarios internos + gestoría', 'Nóminas y jornada para 30 empleados', 'Incorporación guiada', 'Escaneo IA · 1.500 páginas/mes'] },
   ],
   gra: [
@@ -274,6 +300,7 @@ const OPERACIONES = {
       ['Cartera de cobros', [false, true, true]],
       ['Análisis de ventas, gastos y margen', [false, true, true]],
       ['Asistente IA', [false, true, true]],
+      ['Facturas y presupuestos por WhatsApp (al mes)', [false, '100', '300']],
       ['Rentabilidad por proyecto', [false, false, true]],
     ]],
   ],
@@ -286,6 +313,7 @@ const OPERACIONES = {
       ['Análisis financiero y ratios', [false, true, true]],
       ['Rentabilidad por proyecto', [false, true, true]],
       ['Asistente IA', [false, true, true]],
+      ['Facturas y presupuestos por WhatsApp (al mes)', [false, '300', '1.000']],
     ]],
   ],
 };
@@ -363,6 +391,7 @@ export const FAQ_PRECIOS = [
   ['¿Necesito tarjeta para la prueba?', 'No. Puedes probar Fisquo durante 30 días sin tarjeta. Si tu gestoría trabaja con Fisquo, con su código la prueba dura 3 meses: un trimestre entero.'],
   ['Ya pago a una gestoría. ¿Para qué quiero Fisquo?', 'Fisquo no sustituye a tu gestoría: le deja el trabajo hecho. Apuntas facturas y gastos durante el trimestre, sabes cuánto apartar para Hacienda y tu gestoría entra gratis con su propio acceso para revisar y presentar.'],
   ['¿Qué hace la IA con mis tickets y mis datos?', 'Solo lee lo que tú le das: el ticket o la factura que subes y lo que preguntas al asistente. El proveedor de IA es Anthropic y tus datos no se usan para entrenar ningún modelo. Lo que lee te lo enseña para que lo revises antes de guardarlo (salvo los proveedores que tú marques de confianza), y si prefieres puedes rellenarlo todo a mano.'],
+  ['¿Qué planes incluyen Fisquo por WhatsApp?', 'Pro y Plus, de Autónomos y de Pymes, y la prueba de 30 días. Le escribes o le mandas un audio y te prepara facturas, presupuestos y gastos; nada se guarda hasta que le dices que sí. Cada mes incluye 100 facturas y presupuestos en Autónomos Pro, 300 en Autónomos Plus y en Pymes Pro, y 1.000 en Pymes Plus. Los gastos y las preguntas no cuentan.'],
   ['¿Mi gestoría consume un usuario?', 'No. Los seis planes incluyen 1 acceso separado para tu gestoría, además de los usuarios internos del plan.'],
   ['¿Qué diferencia hay entre Pro, Plus y Business?', 'Pro añade operaciones, previsión y análisis a Esencial. Plus conserva las funciones de Pro y amplía el equipo; en Autónomos añade nóminas, jornada y rentabilidad por proyecto, y en Pymes incorporación guiada. Business es una oferta a medida para varias sociedades o equipos, con alcance y precio acordados por contacto.'],
   ['¿Cuántas páginas de lectura IA incluye cada plan?', 'Autónomos: 50 en Esencial, 200 en Pro y 500 en Plus. Pymes: 200 en Esencial, 600 en Pro y 1.500 en Plus. La cuota se comparte por empresa con la gestoría, se renueva cada mes natural también en pago anual y no se acumula. La prueba incluye 50 páginas en total; la cuota mensual del plan empieza con el periodo de pago. Una imagen cuenta una página y cada página del PDF una lectura, hasta 10 páginas y 3 MB por PDF. Volver a enviar una lectura consume otra página. Cuentan las lecturas enviadas a la IA aunque no guardes el gasto.'],
