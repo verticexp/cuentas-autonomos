@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { requerir } from '@/lib/auth';
+import { invitacionPendiente, requerir } from '@/lib/auth';
 import { redis } from '@/lib/redis';
 import { PERFILES, perfilDe, permisosDe, puede } from '@/lib/permisos';
 import Usuarios from '@/components/Usuarios';
@@ -20,7 +20,7 @@ export default async function Page({ searchParams }) {
   const lista = usuarios
     .filter((o) => membresias(o)[yo.empresa])
     .map((o) => ({ o, m: membresias(o)[yo.empresa] }))
-    .map(({ o, m }) => ({ id: o.id, nombre: o.nombre, email: o.email, rol: m.rol || 'admin', permisos: permisosDe(m), perfil: perfilDe(m), activo: Boolean(o.pass) }))
+    .map(({ o, m }) => ({ id: o.id, nombre: o.nombre, email: o.email, rol: m.rol || 'admin', permisos: permisosDe(m), perfil: perfilDe(m), activo: !invitacionPendiente(o) }))
     .sort((a, b) => (a.rol === b.rol ? a.nombre.localeCompare(b.nombre) : a.rol === 'admin' ? -1 : 1));
   const listaEmpresas = empresas && Object.values(empresas).map((e) => ({
     id: e.id, nombre: e.nombre, personas: usuarios.filter((o) => membresias(o)[e.id]).length,

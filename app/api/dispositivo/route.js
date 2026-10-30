@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from 'crypto';
 import { cookies } from 'next/headers';
 import { mismoId, redis } from '@/lib/redis';
-import { crearSesion, desbloqueo, opcionesCookie, opcionesDesbloqueo, usuarioActual } from '@/lib/auth';
+import { crearSesion, desbloqueo, opcionesCookie, opcionesDesbloqueo, reautenticado, usuarioActual } from '@/lib/auth';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { esApp } from '@/lib/app';
 import { MUCHOS, ipDe, pasado } from '@/lib/limite';
@@ -23,10 +23,12 @@ export async function POST(req) {
   if (!esApp(req.headers.get('user-agent'))) return error('Solo en la app de Fisquo para iPhone', 404);
   const b = await cuerpo(req);
 
-  // Activar en este iPhone (con la sesión abierta).
+  // Activar en este iPhone: con la sesión abierta y recién entrado, o volviendo a escribir la contraseña.
   if (b.accion === 'alta') {
     const { u, res } = await usuarioApi();
     if (res) return res;
+    if (await pasado('dispositivo-alta', u.id, 10, 900)) return error(MUCHOS, 429);
+    if (!(await reautenticado(u, b.password))) return Response.json({ error: 'Por seguridad, vuelve a escribir tu contraseña para activar Face ID.', reautenticar: true }, { status: 401 });
     const mios = (await redis.hgetall(`dispositivos:${u.id}`)) || {};
     if (Object.keys(mios).length >= MAXIMO) return error(`Ya tienes Face ID en ${MAXIMO} dispositivos. Quita alguno en Ajustes › Seguridad.`);
     const id = randomBytes(9).toString('base64url');

@@ -424,3 +424,100 @@ test('Face ID nativo: alta con sesión, entrada sin ella, retirada y solo en la 
   assert.equal((await fuera.json()).retirada, true);
   assert.equal(await R.redis.hlen('dispositivo-credencial'), 0);
 });
+
+// Auditoría de seguridad de octubre de 2026 (skill security-audit): regresiones de identidad y sesiones.
+test('A1: reenviar o aceptar una invitación no pone contraseña a una cuenta activa de Google o Apple', async () => {
+  const s = await usuario({ social: { google: { sub: 'g1' } } });
+  assert.equal(A.invitacionPendiente(s), false, 'sin contraseña pero con Google: ya está activa');
+  assert.equal(A.invitacionPendiente({ ...s, social: undefined }), true);
+  await R.redis.hset('invitaciones', { cod1: s.id });
+  const r = await A.aceptarInvitacion('cod1', nueva);
+  assert.ok(r.error && !r.token);
+  assert.equal((await R.redis.hget('usuarios', s.id)).pass, undefined);
+});
+
+test('A2: Google o Apple no se enlazan por email a una cuenta con el email sin confirmar', async () => {
+  const S = await cargar('lib/socialServidor.js');
+  await usuario({ emailVerificado: false, pass: 'x' });
+  assert.deepEqual(await S.cuentaDe('google', { sub: 'g2', email: 'prueba@example.test' }), { sinConfirmar: true });
+  assert.equal(await R.redis.hget('social-usuario', 'google:g2'), null);
+  await R.redis.hset('usuarios', { u: { ...(await R.redis.hget('usuarios', 'u')), emailVerificado: true } });
+  assert.equal((await S.cuentaDe('google', { sub: 'g2', email: 'prueba@example.test' })).id, 'u');
+});
+
+test('A3: Face ID nativo pide haber entrado hace poco o la contraseña, y cambiar la contraseña lo quita', async () => {
+  const APP = 'Mozilla/5.0 (iPhone) FisquoApp/1';
+  const deApp = (b) => { const r = req('/api/dispositivo', b); r.headers.set('user-agent', APP); return r; };
+  const u = await usuario({ pass: await A.cifrar(antigua) });
+  const t = await sesion(u); cabeceras('/api/dispositivo', 'POST');
+  await R.redis.del(`sesion-reciente:${t}`);
+  const ruta = await cargar('app/api/dispositivo/route.js');
+  const sin = await ruta.POST(deApp({ accion: 'alta', nombre: 'iPhone' }));
+  assert.equal(sin.status, 401);
+  assert.equal((await sin.json()).reautenticar, true);
+  assert.equal((await ruta.POST(deApp({ accion: 'alta', nombre: 'iPhone', password: antigua }))).status, 200);
+  assert.equal(Object.keys((await R.redis.hgetall('dispositivos:u')) || {}).length, 1);
+  await A.cambiarPassword(await R.redis.hget('usuarios', 'u'), antigua, nueva);
+  assert.equal(Object.keys((await R.redis.hgetall('dispositivos:u')) || {}).length, 0, 'el cambio de contraseña retira Face ID');
+});
+
+test('A4: activar la verificación en dos pasos pide la contraseña', async () => {
+  const u = await usuario({ pass: await A.cifrar(antigua) });
+  await sesion(u); cabeceras('/api/dos-pasos', 'POST');
+  const ruta = await cargar('app/api/dos-pasos/route.js');
+  assert.equal((await ruta.POST(req('/api/dos-pasos', { accion: 'empezar' }))).status, 400);
+  const bien = await ruta.POST(req('/api/dos-pasos', { accion: 'empezar', password: antigua }));
+  assert.equal(bien.status, 200);
+  assert.ok((await bien.json()).clave);
+});
+
+test('A5: quitar los accesos sin contraseña también desconecta WhatsApp', async () => {
+  await usuario();
+  await R.redis.set('whatsapp:de:u', '34600000000'); await R.redis.set('whatsapp:tel:34600000000', { usuario: 'u', empresa: 'e' });
+  await A.borrarLlaves('u');
+  assert.equal(await R.redis.get('whatsapp:tel:34600000000'), null);
+});
+
+test('A6: el código de «Continuar con Google» de la app solo se canjea en la vista web que lo pidió', async () => {
+  const S = await cargar('lib/socialServidor.js');
+  const v = 'a'.repeat(64);
+  const c = await S.codigoCanje({ id: 'u' }, { token: 't' }, 'google', v);
+  assert.equal(await S.canjear(c, 'b'.repeat(64)), null, 'otra vista web (u otro navegador) no lo canjea');
+  const c2 = await S.codigoCanje({ id: 'u' }, { token: 't' }, 'google', v);
+  assert.equal((await S.canjear(c2, v)).id, 'u');
+  assert.equal(await S.canjear(c2, v), null, 'un solo uso');
+});
+
+test('A7: abrir el enlace para unirse a otra empresa no une; solo el POST con la sesión', async () => {
+  const u = await usuario();
+  await R.redis.hset('empresas', { e2: { id: 'e2', nombre: 'Otra', emisor: {} } });
+  await R.redis.set('union:c7', { usuario: 'u', empresa: 'e2', rol: 'miembro', permisos: [] });
+  await sesion(u); cabeceras('/api/invitacion/unirse', 'GET');
+  const ruta = await cargar('app/api/invitacion/unirse/route.js');
+  const abrir = await ruta.GET(req('/api/invitacion/unirse?c=c7', undefined, 'GET'));
+  assert.match(abrir.headers.get('location'), /\/invitacion\/unirse\?c=c7$/);
+  assert.equal(Boolean((await R.redis.hget('usuarios', 'u')).empresas?.e2), false);
+  const f = new FormData(); f.set('c', 'c7');
+  const post = Object.assign(new Request('http://fisquo.test/api/invitacion/unirse', { method: 'POST', body: f }), { nextUrl: new URL('http://fisquo.test/api/invitacion/unirse') });
+  // (el NextResponse de esta prueba no tiene cookies: basta con que la membresía se guarde)
+  await ruta.POST(post).catch(() => {});
+  assert.ok((await R.redis.hget('usuarios', 'u')).empresas?.e2);
+});
+
+test('A8: los ids nuevos de empresa y usuario son largos, con letra, y no pisan uno existente', async () => {
+  const { usuario: n } = await A.crearUsuario({ nombre: 'Nueva', email: 'nueva@example.test', password: nueva });
+  assert.match(n.id, /^[a-f0-9]{16}$/);
+  assert.match(n.id, /[a-df]/);
+  assert.ok(await R.redis.hget('empresas', n.id));
+  const { id } = await A.nuevaEmpresa(n.id, 'Segunda SL');
+  assert.ok(id && id !== n.id && /^[a-f0-9]{16}$/.test(id));
+});
+
+test('A9: borrar una empresa revoca sus enlaces de presupuesto y borra sus presupuestos', async () => {
+  await usuario({ admin: false }, {});
+  await R.redis.hset(R.clave({ empresa: 'e' }, 'presupuestos'), { P1: { id: 'P1', token: 'tokp1' } });
+  await R.redis.hset('presupuesto-enlaces', { tokp1: { empresa: 'e', id: 'P1' } });
+  await A.borrarEmpresa('e');
+  assert.equal(await R.redis.hget('presupuesto-enlaces', 'tokp1'), null);
+  assert.equal(await R.redis.hget(R.clave({ empresa: 'e' }, 'presupuestos'), 'P1'), null);
+});

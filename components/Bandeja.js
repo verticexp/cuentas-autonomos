@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { confirmar } from './Confirmar';
 import { eur, fechaCorta } from '@/lib/formato';
 import { ACEPTA, EVENTO, subirVarias } from '@/lib/bandejaCliente';
-import { confirmarCompartidos, hayCompartidosNativos, leerCompartidos } from '@/lib/compartidoCliente';
+import { descartarCompartidos, hayCompartidosNativos, leerCompartidos } from '@/lib/compartidoCliente';
 import { useT } from '@/components/Idioma';
 import '@/app/bandeja.css';
 
@@ -70,19 +70,28 @@ export default function Bandeja({ inicial, resumenInicial, puedeGastar }) {
     return r;
   };
 
-  // Lo compartido desde el móvil (app/sw lo deja en la caché y vuelve aquí con ?compartido=N): se sube una vez.
+  // Lo compartido desde el móvil (app/sw lo deja en la caché y vuelve aquí con ?compartido=N). Cualquier página puede
+  // dejar archivos en esa caché, así que no se sube nada sin preguntar: se enseñan los nombres y solo al aceptar se suben
+  // (a la empresa de la sesión actual). Al cancelar, la caché queda vacía.
+  const subirCompartidos = async (l) => {
+    const nombres = l.map((f) => f.name.slice(0, 60)).slice(0, 10).join(', ');
+    const si = await confirmar({ titulo: tr('Subir archivos compartidos'), texto: `${tr('Se han recibido estos archivos para subirlos a la Bandeja de facturas de tu empresa:')} ${nombres}. ${tr('Súbelos solo si los has compartido tú.')}`, aceptar: tr('Subir') });
+    if (!si) { await descartarCompartidos(); return; }
+    // Subidos (o cancelado) se limpia la caché y lo pendiente en el iPhone; si la app estaba bloqueada, se queda para después.
+    if (!(await subir(l, 'compartido')).bloqueada) await descartarCompartidos();
+  };
   useEffect(() => {
-    // En la app de iOS, además, lo que quede en el iPhone (p. ej. si al compartir estaba bloqueada): se borra al subirse.
+    // En la app de iOS, además, lo que quede en el iPhone (p. ej. si al compartir estaba bloqueada): se pregunta igual.
     const q = new URLSearchParams(window.location.search).get('compartido');
     if (q === null) {
-      hayCompartidosNativos().then((hay) => hay && leerCompartidos().then(async (l) => { if (l.length && !(await subir(l, 'compartido')).bloqueada) confirmarCompartidos(); }));
+      hayCompartidosNativos().then((hay) => hay && leerCompartidos({ conservar: true }).then((l) => l.length && subirCompartidos(l)));
       return;
     }
     window.history.replaceState(null, '', '/gastos?ver=revisar');
     if (q === 'sinsw') { setAviso(tr('Fisquo aún se estaba preparando en este móvil: vuelve a compartir la factura.')); return; }
-    leerCompartidos().then(async (l) => {
+    leerCompartidos({ conservar: true }).then(async (l) => {
       if (!l.length) { setAviso(tr('No ha llegado ningún archivo que se pueda leer (PDF, foto o XML de hasta 5 MB).')); return; }
-      if (!(await subir(l, 'compartido')).bloqueada) confirmarCompartidos();
+      await subirCompartidos(l);
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

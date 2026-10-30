@@ -47,6 +47,8 @@ const ok = (nombre, fn) => { try { fn(); console.log(`  ✓ ${nombre}`); } catch
 // Las empresas de prueba que facturan sin NIF del cliente por encima de 400 € se declaran de los sectores del art. 4.1.c
 // (minorista: simplificada hasta 3.000 €); la de «Importar» no, y comprueba el límite de 400 €.
 const EMPRESA = /^(ES)?[ABCDEFGHJNPQRSUVW]/i;
+// Aceptar la invitación a otra empresa: el enlace solo enseña la página; se acepta con su botón (POST).
+const unirse = (enlace, cookie) => { const f = new FormData(); f.set('c', new URL(enlace).searchParams.get('c')); return pedir('/api/invitacion/unirse', { metodo: 'POST', cookie, form: f }); };
 async function pedir(ruta, { metodo = 'GET', cuerpo, cookie, form, domicilioReal = false } = {}) {
   if (!domicilioReal && /^\/api\/(facturas|presupuestos|albaranes)$/.test(ruta) && ['POST', 'PATCH'].includes(metodo) && cuerpo?.cliente && EMPRESA.test(String(cuerpo.cliente.nif || '').replace(/\s/g, '')) && !cuerpo.cliente.direccion) cuerpo = { ...cuerpo, cliente: { ...cuerpo.cliente, direccion: 'Calle de Prueba, 1' } };
   if (ruta === '/api/facturas' && ['POST', 'PATCH'].includes(metodo) && cuerpo && !('forzarOrden' in cuerpo)) cuerpo = { ...cuerpo, forzarOrden: true };
@@ -828,7 +830,7 @@ console.log('Banco: extractos, conexión y emparejar');
     ok('quien no es el administrador de Fisquo no lista, conecta ni actualiza bancos (403)', () => assert.deepEqual([noLista.status, noConecta.status, noActualiza.status], [403, 403, 403]));
     // Ya tiene cuenta: la invitación queda pendiente hasta que él la acepta con su sesión (enlace /api/invitacion/unirse).
     const invitaAdmin = await (await pedir('/api/usuarios', { metodo: 'POST', cookie: bq, cuerpo: { nombre: 'Prueba', email: fd.get('email'), rol: 'admin' } })).json();
-    const acepta = await pedir(new URL(invitaAdmin.enlace).pathname + new URL(invitaAdmin.enlace).search, { cookie: yo });
+    const acepta = await unirse(invitaAdmin.enlace, yo);
     const ad = `${yo}; e=${/(?:^|,\s*)e=([^;]+)/.exec(acepta.headers.get('set-cookie') || '')?.[1]}`;
     ok('el administrador de Fisquo acepta la invitación y entra en la empresa que va a conectar', () => assert.ok(invitaAdmin.pendiente && ad.endsWith(`e=${empresa}`), JSON.stringify(invitaAdmin)));
     const sim = (ruta, cuerpo) => fetch(`${process.env.ENABLE_BANKING_URL}${ruta}`, cuerpo ? { method: 'POST', body: JSON.stringify(cuerpo) } : {}).then((r) => r.json());
@@ -983,11 +985,13 @@ console.log('Varias empresas en la misma cuenta');
   const antes = await pedir('/api/empresas', { metodo: 'POST', cookie: otro, cuerpo: { id: B } });
   ok('sin aceptar no puede pasar a B (403)', () => assert.equal(antes.status, 403));
   const ruta = new URL(inv.enlace).pathname + new URL(inv.enlace).search;
-  const ajenoUne = await pedir(ruta, { cookie: enB });
+  const soloAbrir = await pedir(ruta, { cookie: otro });
+  ok('abrir el enlace no une: lleva a la página que lo confirma', () => assert.ok(soloAbrir.status === 303 && (soloAbrir.headers.get('location') || '').includes('/invitacion/unirse?c=') && !eDe(soloAbrir)));
+  const ajenoUne = await unirse(inv.enlace, enB);
   ok('otra persona no puede aceptar su invitación', () => assert.ok((ajenoUne.headers.get('location') || '').includes('caducada')));
-  const acepta = await pedir(ruta, { cookie: otro });
+  const acepta = await unirse(inv.enlace, otro);
   ok('al aceptar con su sesión entra en B', () => assert.ok(acepta.status === 303 && eDe(acepta) === B, String(acepta.status)));
-  const otraVez = await pedir(ruta, { cookie: otro });
+  const otraVez = await unirse(inv.enlace, otro);
   ok('el enlace vale una sola vez', () => assert.ok((otraVez.headers.get('location') || '').includes('caducada')));
   const dos = await pedir('/api/usuarios', { metodo: 'POST', cookie: enB, cuerpo: { nombre: 'x', email: otroEmail, rol: 'miembro', permisos: [] } });
   ok('no se le puede invitar dos veces (400)', () => assert.equal(dos.status, 400));

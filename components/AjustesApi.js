@@ -83,7 +83,7 @@ export default function AjustesApi({ inicial, alcances, eventos }) {
       <div className="grupo-c">
         {!datos.webhooks.length && <Vacio compacto icono="aviso" titulo={tr('Todavía no hay webhooks')}>{tr('Un webhook avisa a otro programa cuando creas o cobras una factura. Añade su dirección en el formulario de abajo.')}</Vacio>}
         {datos.webhooks.map((w) => <div className="celda" key={w.id}>
-          <span className="txt" style={{ minWidth: 0, overflowWrap: 'anywhere' }}><strong>{w.url}</strong><small>{w.eventos.map((e) => tr(EVENTOS[e])).join(', ')} · {w.activo ? tr('Activo') : tr('Inactivo')}</small><small>{tr('Creado: {creado}', { creado: fecha(w.creado, tr) })}</small></span>
+          <span className="txt" style={{ minWidth: 0, overflowWrap: 'anywhere' }}><strong>{w.url}</strong><small>{w.eventos.map((e) => tr(EVENTOS[e])).join(', ')} · {w.activo ? tr('Activo') : tr('Inactivo')}</small><small>{tr('Creado: {creado}', { creado: fecha(w.creado, tr) })}</small><small>{tr('Creador')}: {w.creador || w.uid || tr('Sin registrar')}</small></span>
           <button className="borrar" type="button" disabled={ocupado} aria-label={tr('Borrar webhook {url}', { url: w.url })} onClick={() => revocar('webhook', w.id)}>{tr('Borrar')}</button>
         </div>)}
       </div>

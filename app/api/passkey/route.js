@@ -2,7 +2,7 @@ import { randomBytes } from 'crypto';
 import { cookies } from 'next/headers';
 import { generateAuthenticationOptions, generateRegistrationOptions, verifyAuthenticationResponse, verifyRegistrationResponse } from '@simplewebauthn/server';
 import { mismoId, redis } from '@/lib/redis';
-import { crearSesion, desbloqueo, opcionesCookie, opcionesDesbloqueo, usuarioActual } from '@/lib/auth';
+import { crearSesion, desbloqueo, opcionesCookie, opcionesDesbloqueo, reautenticado, usuarioActual } from '@/lib/auth';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { MUCHOS, ipDe, pasado } from '@/lib/limite';
 import { auditar } from '@/lib/auditoria';
@@ -52,6 +52,9 @@ export async function POST(req) {
     if (res) return res;
     const mias = (await redis.hgetall(`passkeys:${u.id}`)) || {};
     if (b.accion === 'registro-opciones') {
+      // Recién entrado o volviendo a escribir la contraseña: el reto de un solo uso liga el registro a estas opciones.
+      if (await pasado('passkey-alta', u.id, 10, 900)) return error(MUCHOS, 429);
+      if (!(await reautenticado(u, b.password))) return Response.json({ error: 'Por seguridad, vuelve a escribir tu contraseña para activar Face ID.', reautenticar: true }, { status: 401 });
       const opciones = await generateRegistrationOptions({
         rpName: 'Fisquo', rpID, userName: u.email, userDisplayName: u.nombre, userID: new TextEncoder().encode(u.id),
         attestationType: 'none',

@@ -33,6 +33,7 @@ async function vuelta(req, datos) {
   }
   const extra = proveedor === 'apple' && tokens.refresh_token ? { refresh: tokens.refresh_token, nativo: false } : {};
   const u = await cuentaDe(proveedor, persona, extra);
+  if (u?.sinConfirmar) return fallo('sin-confirmar');
   if (!u) {
     if (app) return fallo('sin-cuenta');
     const res = NextResponse.redirect(new URL('/registro?social=1', req.url), 303);
@@ -42,8 +43,8 @@ async function vuelta(req, datos) {
   }
   const abierta = await abrirSesion(u);
   if (app) {
-    if (!abierta) return fallo();
-    const res = NextResponse.redirect(`fisquo://acceso?c=${await codigoCanje(u, abierta, proveedor)}`, 303);
+    if (!abierta || !guardado.vinculo) return fallo();
+    const res = NextResponse.redirect(`fisquo://acceso?c=${await codigoCanje(u, abierta, proveedor, guardado.vinculo)}`, 303);
     res.cookies.delete({ name: 'social', path: '/api/login/social' });
     return res;
   }

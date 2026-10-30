@@ -8,11 +8,18 @@ import { auditar } from '@/lib/auditoria';
 
 export const dynamic = 'force-dynamic';
 
-// Enlace del email que recibe quien ya tenía cuenta al ser invitado a otra empresa (api/usuarios). Solo lo acepta esa
-// misma persona, con su sesión: así nadie entra en una empresa ajena sin quererlo.
+// Enlace del email que recibe quien ya tenía cuenta al ser invitado a otra empresa (api/usuarios). Abrirlo no cambia
+// nada: lleva a la página que la enseña (app/invitacion/unirse), y solo se acepta con su botón (POST, con la protección
+// de origen de proxy.js), con la sesión de esa misma persona y una sola vez. Así nadie entra en una empresa ajena sin quererlo.
 export async function GET(req) {
+  const c = String(req.nextUrl.searchParams.get('c') || '');
+  return NextResponse.redirect(new URL(`/invitacion/unirse?c=${encodeURIComponent(c)}`, req.url), 303);
+}
+
+export async function POST(req) {
   const ir = (q) => NextResponse.redirect(new URL(q, req.url), 303);
-  const codigo = String(req.nextUrl.searchParams.get('c') || '');
+  const form = await req.formData().catch(() => null);
+  const codigo = String(form?.get('c') || '');
   if (!redis || !codigo) return ir('/');
   const u = await usuarioActual();
   if (!u) return ir('/login?error=' + encodeURIComponent('Entra con tu cuenta y vuelve a abrir el enlace de la invitación.'));

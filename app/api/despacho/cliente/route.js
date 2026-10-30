@@ -29,7 +29,7 @@ export async function POST(req) {
   const dia = hoy();
   if (accion === 'cerrar' || accion === 'reabrir') {
     const { anio, t } = periodoDe(b.anio, b.t, dia);
-    const x = accion === 'cerrar' ? await cerrarTrimestre(ctx, anio, t, quien) : await reabrirTrimestre(ctx, anio, t);
+    const x = accion === 'cerrar' ? await cerrarTrimestre(ctx, anio, t, quien, dia) : await reabrirTrimestre(ctx, anio, t);
     if (x.error) return error(x.error);
     const texto = accion === 'cerrar' ? `Revisó y cerró el ${t}T ${anio}` : `Reabrió el ${t}T ${anio}`;
     await Promise.all([registrarAcceso(e.id, quien, texto), auditar(ctx, `${d.nombre}: ${texto.toLowerCase()}`, '', { enGestoria: false })]);

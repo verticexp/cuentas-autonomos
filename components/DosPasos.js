@@ -24,7 +24,7 @@ export default function DosPasos({ activa = null }) {
     setOcupado(false);
   };
   const datos = (e) => Object.fromEntries(new FormData(e.currentTarget));
-  const empezar = () => pedir({ accion: 'empezar' }, setAlta);
+  const empezar = (e) => { e.preventDefault(); pedir({ accion: 'empezar', ...datos(e) }, setAlta); };
   const activar = (e) => { e.preventDefault(); pedir({ accion: 'activar', ...datos(e) }, (d) => { setAlta(null); setCodigos(d.codigos); router.refresh(); }); };
   const nuevos = (e) => { e.preventDefault(); pedir({ accion: 'codigos', ...datos(e) }, (d) => { setModo(''); setCodigos(d.codigos); router.refresh(); }); };
   const quitar = (e) => { e.preventDefault(); pedir({ accion: 'desactivar', ...datos(e) }, () => { setModo(''); setMsg('Verificación en dos pasos desactivada.'); router.refresh(); }); };
@@ -93,7 +93,10 @@ export default function DosPasos({ activa = null }) {
       ) : (
         <>
           <p className="nota">{tr('Además de la contraseña, al entrar te pediremos un código de 6 cifras de una app de tu móvil. Así, aunque alguien sepa tu contraseña, no podrá entrar. Con Face ID no hace falta: ya es otra forma segura de entrar.')}</p>
-          <button type="button" className="boton" onClick={empezar} disabled={ocupado}>{ocupado ? tr('Preparando…') : tr('Activar')}</button>
+          <form onSubmit={empezar}>
+            <label>{tr('Tu contraseña')}<input className="campo" name="password" type="password" required autoComplete="current-password" /></label>
+            <button className="boton" disabled={ocupado}>{ocupado ? tr('Preparando…') : tr('Activar')}</button>
+          </form>
         </>
       )}
       {msg && <p className="nota" role="status">{tr(msg)}</p>}

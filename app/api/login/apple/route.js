@@ -37,6 +37,7 @@ export async function POST(req) {
     : {};
   const u = await cuentaDe('apple', persona, tokens.refresh_token ? { refresh: tokens.refresh_token, nativo: true } : {});
   const limpiar = (res) => { res.cookies.delete({ name: 'nonce-apple', path: '/api/login/apple' }); return res; };
+  if (u?.sinConfirmar) return limpiar(error('Ese email tiene una cuenta de Fisquo sin confirmar. Entra con tu email y contraseña, o confírmalo desde el correo que te enviamos.', 401));
   if (!u) return limpiar(NextResponse.json({ sinCuenta: true }));
   const abierta = await abrirSesion(u);
   if (!abierta) return limpiar(error('No se ha podido entrar. Vuelve a intentarlo.', 401));
