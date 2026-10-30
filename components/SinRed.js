@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useT } from '@/components/Idioma';
 
 // Aviso fijo cuando el móvil o el ordenador se queda sin red (eventos online/offline): lo que se ve puede no estar al día
@@ -17,6 +17,9 @@ const responde = () => fetch('/manifest.webmanifest', { method: 'HEAD', cache: '
 export default function SinRed() {
   const tr = useT();
   const [sinRed, setSinRed] = useState(false);
+  // Al volver la red, un momento «Conexión recuperada» y se va: como las apps del iPhone, sin dejar al usuario con la duda.
+  const [vuelta, setVuelta] = useState(false);
+  const antes = useRef(false);
   useEffect(() => {
     let vivo = true;
     const mirar = async () => {
@@ -34,6 +37,26 @@ export default function SinRed() {
     const t = setInterval(() => { responde().then((red) => { if (red) setSinRed(false); }); }, 15000);
     return () => clearInterval(t);
   }, [sinRed]);
-  if (!sinRed) return null;
-  return <p className="sin-red" role="status">{tr('Sin conexión: lo que ves puede no estar al día y los cambios no se guardarán hasta que vuelva.')}</p>;
+  useEffect(() => {
+    if (sinRed) { antes.current = true; setVuelta(false); return undefined; }
+    if (!antes.current) return undefined;
+    antes.current = false;
+    setVuelta(true);
+    const t = setTimeout(() => setVuelta(false), 2200);
+    return () => clearTimeout(t);
+  }, [sinRed]);
+  if (!sinRed && !vuelta) return null;
+  return (
+    <p className={`sin-red${sinRed ? '' : ' sin-red-vuelve'}`} role="status">
+      <svg viewBox="0 0 24 24" aria-hidden>
+        {sinRed
+          ? <><path d="M2.2 9.2a14.5 14.5 0 0 1 19.6 0M5.4 12.6a10 10 0 0 1 13.2 0M8.7 16a5.2 5.2 0 0 1 6.6 0M4.5 3.5l16 16" /><circle cx="12" cy="19.4" r="1.3" /></>
+          : <path d="M5 12.5l4.5 4.5L19 7.5" />}
+      </svg>
+      <span>
+        <strong>{sinRed ? tr('Sin conexión') : tr('Conexión recuperada')}</strong>
+        {sinRed && <small>{tr('Lo que ves puede no estar al día')}</small>}
+      </span>
+    </p>
+  );
 }
