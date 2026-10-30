@@ -8,7 +8,7 @@ import { desvioApp } from '../lib/app.js';
 import { PLANES } from '../components/web/datos.js';
 import * as social from '../data/web-social.js';
 import { GUIAS, PUBLICOS, REVISION_GUIAS, guia } from '../data/web-guias.js';
-import { FECHA_VERIFICACION, RIVALES } from '../data/web-comparativas.js';
+import { FECHA_VERIFICACION, RIVALES, euros } from '../data/web-comparativas.js';
 import { casosValidos, gestoriasValidas, notaValida, opinionesValidas, pruebaSocial } from '../lib/webSocial.js';
 import { datosDeclaracion, identidadLegal } from '../lib/webLegal.js';
 import { calendarioSociedad, plazoTrimestre, plazosAnuales, siguienteHabil } from '../lib/webCalendario.js';
@@ -75,10 +75,11 @@ test('sitemap: incluye guías, comparativas y demo; /aviso-legal solo si hay dat
   assert.equal(new Set(urls).size, urls.length);
 });
 
-test('comparativas: precios de los rivales comprobados el 23-10-2026 y los de Fisquo salen de la oferta pública', () => {
-  assert.equal(FECHA_VERIFICACION, '2026-10-23');
+test('comparativas: precios de los rivales comprobados el 30-10-2026 y los de Fisquo salen de la oferta pública', () => {
+  assert.equal(FECHA_VERIFICACION, '2026-10-30');
   const por = Object.fromEntries(RIVALES.map((r) => [r.slug, r]));
-  assert.deepEqual([por.holded.desde, por.holded.hasta, por.quipu.desde, por.quipu.hasta], [15, 199, 17, 59]);
+  assert.deepEqual(RIVALES.map((r) => [r.slug, r.desde, r.hasta]), [['holded', 15, 199], ['quipu', 17, 59], ['billin', 8, 28], ['contasimple', 0, 19.95], ['anfix', 5.99, 99.99]]);
+  assert.ok(por.holded);
   const p = preciosFisquo();
   assert.deepEqual(p.aut, PLANES.aut.map((x) => x.p));
   assert.deepEqual([p.aut.join('/'), p.pym.join('/'), p.min, p.max], ['9/12/20', '25/32/55', 9, 55]);
@@ -86,7 +87,8 @@ test('comparativas: precios de los rivales comprobados el 23-10-2026 y los de Fi
     // Los precios del rival escritos en sus textos son los de sus datos, y nada queda sin sustituir.
     const textos = [r.intro, ...r.publicado, ...r.convieneRival.flat(), ...r.convieneFisquo.flat(), ...r.faqs.flat()].map((t) => rellenar(t));
     for (const t of textos) assert.doesNotMatch(t, /[{}]/);
-    assert.match(textos.join(' '), new RegExp(`${r.desde} a ${r.hasta} €`));
+    assert.ok(textos.join(' ').includes(`${euros(r.desde)} a ${euros(r.hasta)} €`), r.slug);
+    assert.ok(r.descripcion.length <= 160, `${r.slug}: descripción larga`);
     assert.match(rellenar(r.intro), /de 9 a 55 €/);
   }
   assert.equal(rellenar('{aut}-{pym}-{min}-{max}'), '9-25-9-55');
@@ -94,7 +96,8 @@ test('comparativas: precios de los rivales comprobados el 23-10-2026 y los de Fi
 
 test('guías: para autónomos y para pymes, con norma, fecha de revisión, llamada final y todos los bloques conocidos', () => {
   assert.deepEqual(GUIAS.map((g) => g.slug), ['modelo-303', 'modelo-130', 'calendario-fiscal-autonomo-2026-2027', 'factura-simplificada',
-    'verifactu', 'modelo-111', 'calendario-fiscal-sociedad-2026-2027', 'impuesto-sociedades-200-202', 'retenciones-111-115-190-180', 'cuentas-anuales-sociedad']);
+    'verifactu', 'modelo-111', 'modelo-115', 'como-hacer-una-factura', 'gastos-deducibles-autonomo',
+    'modelo-390', 'modelo-347', 'calendario-fiscal-sociedad-2026-2027', 'impuesto-sociedades-200-202', 'retenciones-111-115-190-180', 'cuentas-anuales-sociedad']);
   assert.match(REVISION_GUIAS, /^2026-10-\d\d$/);
   assert.ok(GUIAS.every((g) => !g.revision || g.revision >= REVISION_GUIAS), 'una guía no puede revisarse antes que el conjunto');
   // Cada guía en un grupo del índice, y ningún grupo vacío: tantas de pymes como de autónomos, como mínimo.

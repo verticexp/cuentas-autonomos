@@ -137,7 +137,7 @@ export const GUIAS = [
       ['¿Puedo presentar el 303 fuera de plazo?', 'Sí, pero con recargo si lo haces sin requerimiento previo de la Administración. El recargo aumenta cuanto más tardes (art. 27 de la Ley General Tributaria).'],
       ['¿El 303 y el 130 tienen los mismos plazos?', 'Sí: del 1 al 20 de abril, julio y octubre, y del 1 al 30 de enero. Por eso muchos autónomos presentan los dos a la vez.'],
     ],
-    relacionadas: ['modelo-130', 'calendario-fiscal-sociedad-2026-2027', 'factura-simplificada'],
+    relacionadas: ['modelo-130', 'modelo-390', 'calendario-fiscal-sociedad-2026-2027'],
     cta: { titulo: 'Que tu 303 salga calculado', sub: 'Apunta tus facturas y gastos en Fisquo y ten las casillas listas cada trimestre. 30 días gratis, sin tarjeta.' },
     aviso: DISCLAIMER,
   },
@@ -239,7 +239,7 @@ export const GUIAS = [
       ['¿Qué pasa si en un trimestre tengo pérdidas?', 'Si el rendimiento acumulado es negativo, no ingresas nada. Como el cálculo es acumulado, el trimestre siguiente parte de esa situación.'],
       ['¿Puedo domiciliar el pago?', 'Sí. Hay que presentar antes: hasta el día 15 de abril, julio y octubre, y hasta el 25 de enero.'],
     ],
-    relacionadas: ['modelo-303', 'calendario-fiscal-autonomo-2026-2027', 'factura-simplificada'],
+    relacionadas: ['modelo-303', 'gastos-deducibles-autonomo', 'calendario-fiscal-autonomo-2026-2027'],
     cta: { titulo: 'Sabe cuánto apartar para tu 130', sub: 'Fisquo acumula tus ingresos, gastos y retenciones y calcula el pago de cada trimestre. 30 días gratis, sin tarjeta.' },
     aviso: DISCLAIMER,
   },
@@ -391,7 +391,7 @@ export const GUIAS = [
       ['¿Puedo partir una venta en varias simplificadas para no superar el límite?', 'No lo recomendamos. El importe que cuenta es el de la operación; si supera el límite, lo prudente es emitir una factura completa.'],
       ['¿Mi cliente puede deducirse el IVA con una factura simplificada?', 'En general no. Si necesita deducirlo, pídele su NIF y emite una factura completa.'],
     ],
-    relacionadas: ['verifactu', 'modelo-303', 'modelo-130'],
+    relacionadas: ['como-hacer-una-factura', 'verifactu', 'modelo-303'],
     cta: { titulo: 'Factura sin pensar en el tipo de factura', sub: 'Fisquo elige la serie, controla el límite y genera el registro de cada factura. 30 días gratis, sin tarjeta.' },
     aviso: DISCLAIMER,
   },
@@ -652,6 +652,565 @@ export const GUIAS = [
     ],
     relacionadas: ['retenciones-111-115-190-180', 'modelo-130', 'calendario-fiscal-autonomo-2026-2027'],
     cta: { titulo: 'Tu 111 calculado cada trimestre', sub: 'Fisquo calcula las retenciones con tus nóminas y gastos y prepara el 190 de enero. 30 días gratis, sin tarjeta.' },
+    aviso: DISCLAIMER,
+  },
+  {
+    slug: 'modelo-115',
+    para: 'todos',
+    corto: 'Modelo 115',
+    titulo: 'Modelo 115: la retención del alquiler del local',
+    descripcion: 'Qué es el modelo 115, cuándo hay que retener el 19 % del alquiler de un local u oficina, las excepciones, los plazos, las casillas y el resumen anual 180.',
+    resumen: 'Cuándo retienes el 19 % del alquiler de tu local, las excepciones, los plazos y cómo se rellena.',
+    minutos: 6,
+    revision: '2026-10-30',
+    normas: [
+      'Ley 35/2006, del IRPF: art. 99 (obligación de practicar retenciones) y art. 101 (importe de las retenciones).',
+      'Reglamento del IRPF, Real Decreto 439/2007: art. 75 (rentas sujetas a retención y excepciones), art. 78 (la obligación nace al pagar) y art. 108 (declaración trimestral y resumen anual).',
+      'Ley 39/2015, art. 30.5 (el plazo que acaba en día inhábil pasa al siguiente hábil).',
+      'Instrucciones de los modelos 115 y 180 en la sede electrónica de la AEAT.',
+    ],
+    secciones: [
+      {
+        id: 'que-es', t: 'Qué es el modelo 115',
+        bloques: [
+          { p: 'Cuando alquilas un local, una oficina o una nave para tu actividad, en general tienes que **retener el 19 %** de la renta e ingresarlo en Hacienda en nombre del propietario. Esa retención se declara cada trimestre con el modelo 115.' },
+          { p: 'Igual que con el 111, ese dinero no es tuyo: lo descuentas de lo que pagas al propietario y lo adelantas a Hacienda por él, que luego lo resta en su declaración.' },
+        ],
+      },
+      {
+        id: 'quien', t: 'Quién lo presenta',
+        bloques: [
+          { p: 'Lo presenta el **inquilino** que es autónomo o empresa y alquila un inmueble urbano para su actividad: un local, una oficina, un almacén o una nave. El propietario no lo presenta: lo que hace es declarar el alquiler y descontarse la retención.' },
+          { p: 'No se retiene, entre otros casos:' },
+          { ul: [
+            'Si lo que alquilas es una **vivienda** para vivir en ella, aunque seas autónomo.',
+            'Si el propietario te entrega un **certificado de la AEAT** que acredita que está exonerado de retención.',
+            'Si lo que pagas en todo el año al mismo propietario no pasa de **900 €**.',
+            'Si la empresa alquila una vivienda para uno de sus trabajadores.',
+          ] },
+          { nota: 'Si el propietario no reside en España, la retención no va en el 115 sino en el modelo 216. Y si alquilas una nave o un local como parte de un negocio ya montado (con su maquinaria, licencias…), puede ser un arrendamiento de negocio, que no va en el 115 sino en el 111 o en el 123. Ante la duda, consúltalo con tu gestoría.' },
+        ],
+      },
+      {
+        id: 'calculo', t: 'Cómo se calcula la retención',
+        bloques: [
+          { p: 'La retención es el **19 % de la renta sin IVA**. El IVA del alquiler (en general, el 21 %) va aparte y lo puedes deducir en tu 303.' },
+          { ejemplo: {
+            titulo: 'Ejemplo ficticio: un local por 1.000 € al mes',
+            filas: [
+              ['Renta mensual', '1.000,00 €'],
+              ['IVA (21 %)', '+ 210,00 €'],
+              ['Retención (19 % de la renta)', '− 190,00 €'],
+              ['Lo que pagas al propietario cada mes', '1.020,00 €', true],
+              ['Lo que ingresas con el 115 cada trimestre (3 × 190 €)', '570,00 €', true],
+            ],
+            pie: 'Los importes son inventados para explicar el cálculo; no representan a ninguna empresa.',
+          } },
+          { p: 'La retención se declara en el trimestre en que **pagas** el alquiler (art. 78 del reglamento): si pagas en abril la mensualidad de marzo, va en el 2.º trimestre.' },
+        ],
+      },
+      {
+        id: 'plazos', t: 'Plazos: cuándo se presenta',
+        bloques: [
+          { tabla: { cab: ['Trimestre', 'Se presenta', 'Con domiciliación (aprox.)'], filas: [
+            ['1.er trimestre', 'Del 1 al 20 de abril', 'Hasta el 15 de abril'],
+            ['2.º trimestre', 'Del 1 al 20 de julio', 'Hasta el 15 de julio'],
+            ['3.er trimestre', 'Del 1 al 20 de octubre', 'Hasta el 15 de octubre'],
+            ['4.º trimestre', 'Del 1 al 20 de enero (del año siguiente)', 'Hasta el 15 de enero'],
+          ] } },
+          { p: 'Son los mismos plazos que el 111, y el del 4.º trimestre también acaba el **20 de enero**, no el 30. Si el último día cae en sábado, domingo o festivo, pasa al siguiente día hábil. Las empresas que facturaron más de 6.010.121,04 € el año anterior lo presentan cada mes.' },
+        ],
+      },
+      {
+        id: 'pasos', t: 'Cómo se rellena',
+        bloques: [
+          { pasos: [
+            { t: 'Casilla 01: perceptores', d: 'El número de propietarios distintos a los que has pagado alquiler en el trimestre. Si el local tiene dos propietarios, son dos.' },
+            { t: 'Casilla 02: base', d: 'La suma de las rentas pagadas en el trimestre, sin IVA.' },
+            { t: 'Casilla 03: retenciones', d: 'La suma de lo retenido: el 19 % de la casilla 02.' },
+            { t: 'Casillas 04 y 05: resultado', d: 'Si es una declaración complementaria, en la 04 va lo ingresado en la anterior. La 05 es lo que queda por ingresar.' },
+            { t: 'Presenta y paga', d: 'Por internet en la sede electrónica de la AEAT, con certificado electrónico o con otro sistema de identificación que admita. Domicilia el pago o págalo con el NRC del banco, y guarda el justificante.' },
+          ] },
+        ],
+      },
+      {
+        id: 'resumen', t: 'El resumen anual: modelo 180',
+        bloques: [
+          { p: 'En enero se presenta el **modelo 180** con cada propietario: su NIF, la referencia catastral del inmueble, lo que le pagaste en el año y lo que le retuviste. El plazo acaba el **31 de enero**, o el siguiente día hábil.' },
+          { p: 'Lo que sume el 180 tiene que coincidir con lo ingresado en los cuatro 115 del año, y el propietario usa esos datos en su renta: un error en tu 180 le complica la declaración a él.' },
+        ],
+      },
+      {
+        id: 'errores', t: 'Errores frecuentes',
+        bloques: [
+          { ul: [
+            'Calcular el 19 % sobre el total con IVA, en lugar de sobre la renta.',
+            'No retener porque «el propietario no lo pide»: la obligación es tuya como inquilino.',
+            'Dejar de presentar el 115 un trimestre en el que sí pagaste alquiler.',
+            'Presentar el 4.º trimestre el 30 de enero, con el 303: el 115 acaba el 20.',
+            'Olvidar la referencia catastral del local en el 180.',
+          ] },
+        ],
+      },
+      {
+        id: 'fisquo', t: 'Cómo te ayuda Fisquo',
+        bloques: [
+          { p: 'Cuando apuntas el alquiler del local como gasto con retención, Fisquo calcula el 115 de cada trimestre con lo pagado, prepara el 180 de enero y te avisa antes del día 20. La presentación la haces tú o tu gestoría en la sede electrónica de la AEAT.' },
+        ],
+      },
+    ],
+    faqs: [
+      ['¿La retención del alquiler se calcula con el IVA?', 'No. Se calcula sobre la renta sin el IVA. El IVA se paga entero al propietario y lo deduces en tu 303.'],
+      ['Trabajo desde casa, que es de alquiler: ¿tengo que presentar el 115?', 'En general no: si alquilas una vivienda para vivir en ella no hay retención, aunque uses una parte para trabajar.'],
+      ['¿Qué pasa si el propietario es una empresa?', 'También se retiene, salvo que te acredite con un certificado de la AEAT que está exonerada de retención.'],
+      ['¿El 115 se presenta si un trimestre no he pagado el alquiler?', 'Si en el trimestre no has pagado ninguna renta sujeta a retención, no hace falta presentarlo.'],
+    ],
+    relacionadas: ['modelo-111', 'retenciones-111-115-190-180', 'modelo-303'],
+    cta: { titulo: 'Tu 115 calculado cada trimestre', sub: 'Apunta el alquiler una vez y Fisquo calcula la retención, el 115 y el 180. 30 días gratis, sin tarjeta.' },
+    aviso: DISCLAIMER,
+  },
+  {
+    slug: 'como-hacer-una-factura',
+    para: 'todos',
+    corto: 'Cómo hacer una factura',
+    titulo: 'Cómo hacer una factura: datos obligatorios, IVA y retención',
+    descripcion: 'Cómo hacer una factura de autónomo o de empresa: los datos obligatorios, el IVA, cuándo lleva retención de IRPF, la numeración, las rectificativas y un ejemplo.',
+    resumen: 'Los datos que debe llevar una factura completa, cuándo lleva IVA y retención, cómo se numera y cómo se corrige.',
+    minutos: 7,
+    revision: '2026-10-30',
+    normas: [
+      'Real Decreto 1619/2012, Reglamento por el que se regulan las obligaciones de facturación: art. 6 (contenido de la factura), art. 11 (plazo para expedirla), art. 15 (facturas rectificativas) y art. 19 (conservación).',
+      'Ley 35/2006, del IRPF, art. 101, y su Reglamento (Real Decreto 439/2007), art. 95 (retención de los profesionales).',
+      'Ley 37/1992, del IVA: arts. 90 y 91 (tipos impositivos).',
+      'Código de Comercio, art. 30 (conservación de los documentos durante seis años).',
+    ],
+    secciones: [
+      {
+        id: 'datos', t: 'Los datos que debe llevar',
+        bloques: [
+          { p: 'Una factura completa (la ordinaria) tiene que incluir, según el art. 6 del Reglamento de facturación:' },
+          { ul: [
+            '**Número y, si la hay, serie.** La numeración es correlativa: sin saltos ni repeticiones dentro de cada serie.',
+            '**Fecha de expedición**, y la fecha de la operación si es distinta (por ejemplo, un servicio prestado el mes anterior).',
+            '**Tus datos**: nombre y apellidos o razón social, NIF y domicilio.',
+            '**Los datos del cliente**: nombre o razón social, NIF y domicilio. Si es un particular, su NIF solo es obligatorio en algunos casos; si es una empresa o un profesional, siempre.',
+            '**Descripción** de lo que vendes o del servicio, con el precio unitario sin impuestos y los descuentos que apliques.',
+            '**Base imponible, tipo de IVA y cuota**, separados por tipo si hay varios.',
+            '**Retención de IRPF**, si corresponde.',
+            '**Total** a pagar.',
+          ] },
+          { p: 'Algunas operaciones llevan además una **mención especial**: «Operación exenta» con el artículo de la ley que la exime, «Inversión del sujeto pasivo» si el IVA lo declara el cliente, o «Régimen especial del criterio de caja» si estás en ese régimen.' },
+        ],
+      },
+      {
+        id: 'iva', t: 'El IVA de la factura',
+        bloques: [
+          { p: 'El tipo depende de lo que vendas, no de quién seas:' },
+          { tabla: { cab: ['Tipo', 'Para qué', 'Ejemplos'], filas: [
+            ['21 % (general)', 'La mayoría de productos y servicios', 'Consultoría, diseño, informática, reparaciones, ropa'],
+            ['10 % (reducido)', 'Lo que la ley enumera', 'Hostelería, transporte de viajeros, algunas obras en vivienda'],
+            ['4 % (superreducido)', 'Lo que la ley enumera', 'Pan, leche, frutas y verduras, libros, medicamentos'],
+          ] } },
+          { p: 'Hay actividades **exentas** de IVA (algunas sanitarias, educativas o de seguros, art. 20 de la ley): en ellas no se repercute IVA y la factura lo indica. Si vendes a una empresa de otro país de la UE con NIF-IVA, normalmente tampoco repercutes IVA y el cliente lo declara en su país.' },
+          { nota: 'En Canarias no hay IVA sino IGIC, con sus propios tipos (el general es el 7 %).' },
+        ],
+      },
+      {
+        id: 'retencion', t: 'Cuándo lleva retención de IRPF',
+        bloques: [
+          { p: 'Una factura lleva retención cuando la emite un **profesional** (una actividad de las secciones segunda y tercera del IAE: abogados, arquitectos, diseñadores, consultores, formadores…) a una **empresa o a otro autónomo**. El cliente descuenta la retención y la ingresa en Hacienda con su modelo 111.' },
+          { ul: [
+            '**15 %**: el tipo general.',
+            '**7 %**: en el año en que empiezas la actividad y los dos siguientes, si no la ejerciste el año anterior y se lo comunicas por escrito al cliente.',
+          ] },
+          { p: 'No llevan retención las facturas a **particulares**, ni las de actividades **empresariales** (un comercio, un taller, una tienda online), salvo algunos casos especiales, como ciertas actividades en módulos.' },
+        ],
+      },
+      {
+        id: 'ejemplo', t: 'Un ejemplo con números',
+        bloques: [
+          { ejemplo: {
+            titulo: 'Ejemplo ficticio: una diseñadora autónoma factura a una empresa',
+            filas: [
+              ['Base imponible (diseño de un logotipo)', '1.000,00 €'],
+              ['IVA (21 %)', '+ 210,00 €'],
+              ['Retención de IRPF (15 %)', '− 150,00 €'],
+              ['Total a cobrar', '1.060,00 €', true],
+            ],
+            pie: 'Los importes son inventados para explicar el cálculo; no representan a ninguna empresa. La retención se calcula sobre la base, nunca sobre el IVA.',
+          } },
+          { p: 'La diseñadora declara los 210 € de IVA en su 303; los 150 € de retención los ingresa la empresa con su 111, y la diseñadora se los resta en su renta.' },
+        ],
+      },
+      {
+        id: 'cuando', t: 'Cuándo se emite y cuánto tiempo se guarda',
+        bloques: [
+          { ul: [
+            'Se emite **al hacer la operación**. Si el cliente es una empresa o un profesional, puedes emitirla hasta el **día 16 del mes siguiente** (art. 11), y agrupar en una sola factura las operaciones de un mes.',
+            'Las facturas se pueden enviar en PDF por correo, siempre que el cliente lo acepte.',
+            'Hay que **guardar** las facturas emitidas y recibidas mientras Hacienda pueda revisarlas (cuatro años desde que acaba el plazo de la declaración) y, a efectos mercantiles, seis años.',
+          ] },
+        ],
+      },
+      {
+        id: 'errores-factura', t: 'Si te equivocas: la factura rectificativa',
+        bloques: [
+          { p: 'Una factura emitida **no se borra ni se edita**. Si tiene un error, o si después haces un descuento o te devuelven la mercancía, se emite una **factura rectificativa** (art. 15):' },
+          { ul: [
+            'En su propia serie (por ejemplo, R-2026-001).',
+            'Indicando qué factura rectifica y por qué.',
+            'Con la diferencia (que puede ser negativa) o con los importes correctos completos.',
+          ] },
+          { p: 'Con Verifactu, además, cada factura y cada rectificativa queda registrada con su huella y su código QR.' },
+        ],
+      },
+      {
+        id: 'fallos', t: 'Errores frecuentes',
+        bloques: [
+          { ul: [
+            'Saltarse números o reutilizar uno al anular una factura.',
+            'Olvidar el NIF o el domicilio del cliente cuando es una empresa.',
+            'Aplicar retención a un particular, o no aplicarla a una empresa cuando eres profesional.',
+            'Calcular la retención sobre el total con IVA.',
+            'Corregir una factura editándola en lugar de hacer una rectificativa.',
+          ] },
+        ],
+      },
+      {
+        id: 'fisquo', t: 'Cómo te ayuda Fisquo',
+        bloques: [
+          { p: 'Fisquo numera tus facturas sin saltos, rellena tus datos y los del cliente, calcula el IVA y la retención, añade el código QR de Verifactu y la envía por correo en PDF con tu logo. Si te equivocas, te guía para hacer la rectificativa.' },
+        ],
+      },
+    ],
+    faqs: [
+      ['¿Tengo que poner retención en todas mis facturas?', 'No. Solo si eres profesional y facturas a una empresa o a otro autónomo. A los particulares no se les aplica retención, y las actividades empresariales en general tampoco la llevan.'],
+      ['¿Puedo hacer una factura sin los datos del cliente?', 'Solo si puede ser una factura simplificada: importes pequeños o ventas al público dentro de los límites del reglamento. Si el cliente es una empresa que quiere deducirse el IVA, necesita una factura completa.'],
+      ['¿Puedo empezar la numeración cada año?', 'Sí. Es habitual incluir el año en la serie (2026-001, 2026-002…), y cada año empieza de nuevo, siempre que dentro de cada serie no haya saltos.'],
+      ['¿Una factura en PDF es válida?', 'Sí, si el cliente acepta recibirla así y se garantiza que no se ha modificado. Es la forma más habitual de enviarlas.'],
+    ],
+    relacionadas: ['factura-simplificada', 'verifactu', 'modelo-303'],
+    cta: { titulo: 'Tu primera factura en un minuto', sub: 'Con tus datos, el IVA, la retención y el QR de Verifactu ya puestos. 30 días gratis, sin tarjeta.' },
+    aviso: DISCLAIMER,
+  },
+  {
+    slug: 'gastos-deducibles-autonomo',
+    para: 'autonomos',
+    corto: 'Gastos deducibles',
+    titulo: 'Gastos deducibles del autónomo: qué puedes deducir',
+    descripcion: 'Qué gastos puede deducir un autónomo en el IRPF y en el IVA: requisitos, cuota de autónomos, suministros de casa, dietas, vehículo, seguro médico y límites.',
+    resumen: 'Los requisitos de un gasto deducible y los casos que más dudas dan: casa, coche, comidas, seguro médico.',
+    minutos: 9,
+    revision: '2026-10-30',
+    normas: [
+      'Ley 35/2006, del IRPF: art. 28 (remisión a la Ley del Impuesto sobre Sociedades), art. 29 (elementos afectos) y art. 30.2 (reglas especiales: seguro de enfermedad, suministros de la vivienda y manutención).',
+      'Reglamento del IRPF, Real Decreto 439/2007: art. 22 (afectación de vehículos) y art. 30 (gastos de difícil justificación en estimación directa simplificada).',
+      'Ley 27/2014, del Impuesto sobre Sociedades, art. 15 (gastos no deducibles y atenciones a clientes).',
+      'Ley 37/1992, del IVA: arts. 95 y 96 (limitaciones del derecho a deducir) y art. 97 (factura como requisito).',
+    ],
+    secciones: [
+      {
+        id: 'requisitos', t: 'Los cuatro requisitos de un gasto deducible',
+        bloques: [
+          { p: 'Un gasto reduce tu rendimiento en el IRPF (y tu IVA, si lleva IVA) cuando cumple a la vez:' },
+          { pasos: [
+            { t: 'Está relacionado con tu actividad', d: 'Lo necesitas para trabajar o para generar ingresos. Un gasto personal no se deduce, aunque lo pagues con la cuenta del negocio.' },
+            { t: 'Tienes la factura', d: 'A tu nombre y con tu NIF. Para deducir el IVA hace falta factura completa; un ticket sin tus datos no sirve para el IVA y es un justificante débil para el IRPF.' },
+            { t: 'Está apuntado', d: 'En tu libro registro de gastos (o de facturas recibidas).' },
+            { t: 'Es del periodo', d: 'Se deduce en el año (y el trimestre) al que corresponde, por la fecha de la factura.' },
+          ] },
+        ],
+      },
+      {
+        id: 'claros', t: 'Los gastos que casi siempre se deducen',
+        bloques: [
+          { ul: [
+            '**Cuota de autónomos** (RETA): se deduce entera en el IRPF. No lleva IVA.',
+            '**Gestoría, asesoría y abogados** de la actividad.',
+            '**Alquiler del local u oficina**, con su IVA (y su retención, que declaras con el 115).',
+            '**Material, mercancías y herramientas** que usas para trabajar.',
+            '**Software, dominios, hosting** y suscripciones de la actividad.',
+            '**Publicidad**: anuncios, web, tarjetas.',
+            '**Formación** relacionada con tu actividad.',
+            '**Comisiones bancarias** de la cuenta que usas para el negocio, y los intereses de préstamos para la actividad.',
+            '**Seguros** de la actividad: responsabilidad civil, del local.',
+            '**Amortización** de los bienes que duran varios años (ordenador, mobiliario, maquinaria), repartida según las tablas oficiales.',
+          ] },
+        ],
+      },
+      {
+        id: 'casa', t: 'Si trabajas desde casa',
+        bloques: [
+          { p: 'Si dedicas una parte de tu vivienda a la actividad (y lo comunicas en tu alta censal), puedes deducir:' },
+          { ul: [
+            '**IBI, comunidad, seguro del hogar, intereses de la hipoteca y amortización** (si es tuya), o el **alquiler**: en proporción a los metros que usas para trabajar.',
+            '**Suministros** (luz, agua, gas, internet y teléfono fijo): el **30 %** de la parte proporcional a esos metros (art. 30.2.5.ª b de la Ley del IRPF).',
+          ] },
+          { ejemplo: {
+            titulo: 'Ejemplo ficticio: un despacho de 15 m² en un piso de 75 m²',
+            filas: [
+              ['Parte de la vivienda afecta (15 ÷ 75)', '20 %'],
+              ['Suministros: el 30 % de ese 20 %', '6 %'],
+              ['Factura de la luz del mes (sin IVA)', '100,00 €'],
+              ['Gasto deducible en el IRPF', '6,00 €', true],
+            ],
+            pie: 'Los importes son inventados para explicar el cálculo; no representan a nadie.',
+          } },
+          { nota: 'El IVA de los suministros de una vivienda es un tema discutido: Hacienda suele rechazarlo si no se prueba el uso para la actividad. Consúltalo con tu gestoría antes de deducirlo.' },
+        ],
+      },
+      {
+        id: 'comidas', t: 'Comidas y viajes',
+        bloques: [
+          { p: 'Tus propias comidas se deducen en el IRPF (art. 30.2.5.ª c) si se cumplen todas estas condiciones:' },
+          { ul: [
+            'En un **restaurante u hotel**, durante un día de trabajo.',
+            'Pagadas con **tarjeta u otro medio electrónico**, no en efectivo.',
+            'En un municipio **distinto** del de tu lugar de trabajo habitual y del de tu residencia.',
+            'Con un máximo de **26,67 € al día en España y 48,08 € en el extranjero**, o **53,34 € y 91,35 €** si además pasas la noche fuera.',
+          ] },
+          { p: 'Los desplazamientos (tren, avión, taxi) y el alojamiento de un viaje de trabajo se deducen con su factura. Las comidas con clientes son **atenciones a clientes**: se deducen con un límite del 1 % de tu cifra de negocio del año.' },
+        ],
+      },
+      {
+        id: 'coche', t: 'El coche: IVA sí, IRPF casi nunca',
+        bloques: [
+          { p: 'Es el gasto que más dudas genera, porque el IVA y el IRPF lo tratan distinto:' },
+          { ul: [
+            '**IVA**: si usas el coche para trabajar, aunque también lo uses en tu vida personal, Hacienda presume un **50 %** de uso en la actividad (art. 95 de la Ley del IVA). Puedes deducir la mitad del IVA de su compra, del combustible, de las reparaciones y del parking.',
+            '**IRPF**: solo se deduce si el coche está **afecto en exclusiva** a la actividad, cosa que Hacienda casi nunca acepta en un turismo. Hay excepciones (art. 22 del reglamento): transporte de mercancías o de viajeros, autoescuelas, agentes comerciales y vigilancia.',
+          ] },
+          { p: 'Sí se deducen en el IRPF los gastos de un desplazamiento concreto de trabajo bien justificado: un peaje, un aparcamiento, un taxi.' },
+        ],
+      },
+      {
+        id: 'limites', t: 'Otros gastos con límites',
+        bloques: [
+          { tabla: { cab: ['Gasto', 'Límite en el IRPF'], filas: [
+            ['Seguro de salud tuyo, de tu pareja y de tus hijos menores de 25 años', '500 € al año por persona (1.500 € si tiene discapacidad)'],
+            ['Atenciones a clientes (comidas, regalos)', '1 % de la cifra de negocio del año'],
+            ['Gastos de difícil justificación (solo en estimación directa simplificada)', '5 % del rendimiento neto, hasta 2.000 € al año'],
+          ] } },
+          { p: 'Los gastos de difícil justificación no hay que probarlos: se aplican solos en la renta (y en el 130) como un porcentaje del rendimiento.' },
+        ],
+      },
+      {
+        id: 'no', t: 'Lo que no se deduce',
+        bloques: [
+          { ul: [
+            'Las **multas y sanciones**, los recargos por presentar tarde y los intereses de demora.',
+            'El propio **IRPF** que pagas.',
+            'Los **gastos personales** o familiares: ropa de calle, gimnasio, comidas en tu ciudad, vacaciones.',
+            'Los **donativos** y regalos que no sean atenciones a clientes dentro del límite.',
+            'Los gastos sin factura ni justificante.',
+          ] },
+        ],
+      },
+      {
+        id: 'fisquo', t: 'Cómo te ayuda Fisquo',
+        bloques: [
+          { p: 'Haces una foto al ticket o subes la factura y Fisquo lee el proveedor, la base y el IVA. En cada gasto puedes indicar qué parte es de la actividad (por ejemplo, el 6 % de la luz de casa o el 50 % del IVA del coche), y Fisquo lo aplica por separado en el 303 y en el 130, con la difícil justificación ya calculada.' },
+        ],
+      },
+    ],
+    faqs: [
+      ['¿Puedo deducir la cuota de autónomos?', 'Sí, entera, como gasto en el IRPF. No lleva IVA.'],
+      ['¿Puedo deducir el móvil?', 'Sí, la parte que uses para la actividad. Si es una línea solo para el trabajo, todo; si es mixta, una proporción razonable que puedas justificar.'],
+      ['¿Un ticket me sirve para deducir?', 'Para el IVA no: hace falta una factura completa con tus datos. Para el IRPF es un justificante débil; pide siempre factura a tu nombre.'],
+      ['¿Puedo deducir la gasolina?', 'El IVA, en general al 50 % si usas el coche para trabajar. En el IRPF solo si el coche está afecto en exclusiva o eres de una de las actividades exceptuadas.'],
+    ],
+    relacionadas: ['modelo-130', 'modelo-303', 'como-hacer-una-factura'],
+    cta: { titulo: 'Tus gastos, con foto y sin dudas', sub: 'Fisquo lee el ticket con IA y aplica a cada gasto la parte deducible en el 303 y en el 130. 30 días gratis, sin tarjeta.' },
+    aviso: DISCLAIMER,
+  },
+  {
+    slug: 'modelo-390',
+    para: 'todos',
+    corto: 'Modelo 390',
+    titulo: 'Modelo 390: el resumen anual del IVA',
+    descripcion: 'Qué es el modelo 390, quién lo presenta y quién está exonerado, el plazo de enero, qué datos lleva y cómo cuadrarlo con tus cuatro 303 del año.',
+    resumen: 'El resumen del IVA del año: quién lo presenta, el plazo de enero y cómo cuadrarlo con los 303.',
+    minutos: 6,
+    revision: '2026-10-30',
+    normas: [
+      'Ley 37/1992, del IVA: art. 164 (obligaciones de los sujetos pasivos).',
+      'Reglamento del IVA, Real Decreto 1624/1992: art. 71.4 (declaración resumen anual y exoneraciones).',
+      'Ley 39/2015, art. 30.5 (el plazo que acaba en día inhábil pasa al siguiente hábil).',
+      'Instrucciones del modelo 390 en la sede electrónica de la AEAT.',
+    ],
+    secciones: [
+      {
+        id: 'que-es', t: 'Qué es el modelo 390',
+        bloques: [
+          { p: 'El 390 es la **declaración resumen anual del IVA**. Recoge, sumadas, todas las operaciones que has declarado en tus 303 del año, pero con más detalle: separa las ventas y las compras por tipo de IVA y por régimen, distingue los bienes de inversión y añade datos como el volumen de operaciones.' },
+          { p: 'Es una declaración **informativa**: no se paga nada con ella. El IVA ya lo pagaste (o lo compensaste) en cada 303.' },
+        ],
+      },
+      {
+        id: 'quien', t: 'Quién lo presenta y quién no',
+        bloques: [
+          { p: 'En general, lo presenta quien presenta el 303: autónomos y sociedades con actividades sujetas a IVA.' },
+          { p: 'No lo presentan, entre otros:' },
+          { ul: [
+            'Quienes llevan los libros registro por el **SII**.',
+            'Quienes presentan el 303 trimestral, tributan solo ante la AEAT y su actividad es únicamente el **alquiler de inmuebles urbanos** o está en el **régimen simplificado** (módulos) o en el de la **agricultura, ganadería y pesca**. En esos casos, el 303 del 4.º trimestre lleva unos datos adicionales en su lugar.',
+            'Quienes solo hacen operaciones **exentas** de IVA y no presentan el 303.',
+          ] },
+          { nota: 'Si tu actividad está en el País Vasco o en Navarra, el resumen anual es el de su hacienda foral. Ante la duda sobre si estás exonerado, consúltalo con tu gestoría.' },
+        ],
+      },
+      {
+        id: 'plazo', t: 'Plazo',
+        bloques: [
+          { p: 'Se presenta **del 1 al 30 de enero** del año siguiente, junto con el 303 del 4.º trimestre. Si el 30 cae en sábado, domingo o festivo, pasa al siguiente día hábil: el 390 de 2026 se puede presentar hasta el **lunes 1 de febrero de 2027**, porque el 30 de enero es sábado.' },
+        ],
+      },
+      {
+        id: 'contenido', t: 'Qué datos lleva',
+        bloques: [
+          { ul: [
+            '**Datos generales**: tu actividad principal (con su epígrafe del IAE) y si has estado en algún régimen especial.',
+            '**IVA devengado**: las bases y cuotas de tus ventas, separadas por tipo (4 %, 10 % y 21 %), más las adquisiciones a la UE y las operaciones con inversión del sujeto pasivo.',
+            '**IVA deducible**: el de tus compras y gastos, separando las operaciones interiores, las importaciones, las adquisiciones a la UE y los **bienes de inversión**.',
+            '**Resultado** de cada trimestre y del año, y lo que queda a compensar.',
+            '**Volumen de operaciones** del año: lo que has facturado, con el detalle de las operaciones exentas y de las que dan derecho a deducir.',
+          ] },
+        ],
+      },
+      {
+        id: 'cuadrar', t: 'Cómo cuadrarlo con tus 303',
+        bloques: [
+          { pasos: [
+            { t: 'Suma tus cuatro 303', d: 'El IVA devengado, el deducible y el resultado del 390 tienen que coincidir con la suma de lo declarado en los 303 del año, incluidas las complementarias.' },
+            { t: 'Repasa los tipos', d: 'El 303 junta casillas que el 390 separa. Comprueba que cada venta está en su tipo de IVA y cada compra en su apartado (bienes corrientes o de inversión).' },
+            { t: 'Revisa las rectificativas', d: 'Las facturas rectificativas emitidas y recibidas restan en su trimestre; tienen que estar también en el 390.' },
+            { t: 'Comprueba lo que queda a compensar', d: 'Si el 4.º trimestre salió a compensar, ese saldo pasa al año siguiente; si pediste la devolución, la casilla de compensar queda a cero.' },
+          ] },
+          { p: 'Si al cuadrar ves un error en un 303 ya presentado, corrígelo con una autoliquidación rectificativa de ese trimestre: el 390 no sirve para corregir los 303.' },
+        ],
+      },
+      {
+        id: 'errores', t: 'Errores frecuentes',
+        bloques: [
+          { ul: [
+            'Que la suma del 390 no coincida con la de los 303: Hacienda lo detecta y puede pedirte explicaciones.',
+            'Poner los bienes de inversión (un ordenador, una máquina) como gasto corriente.',
+            'Olvidar el volumen de operaciones o el epígrafe de la actividad.',
+            'Presentarlo con el 303 del 4.º trimestre en tu cabeza, pero no en la sede: son dos declaraciones distintas.',
+          ] },
+        ],
+      },
+      {
+        id: 'fisquo', t: 'Cómo te ayuda Fisquo',
+        bloques: [
+          { p: 'Fisquo prepara el 390 con las mismas facturas y gastos con los que calculó tus 303, separados por tipo y por apartado, y te avisa si algo no cuadra. La presentación la haces tú o tu gestoría en la sede electrónica de la AEAT.' },
+        ],
+      },
+    ],
+    faqs: [
+      ['¿Se paga algo con el 390?', 'No. Es una declaración informativa: resume lo que ya declaraste y pagaste en los 303.'],
+      ['¿Lo tengo que presentar si soy autónomo?', 'En general sí, si presentas el 303. Estás exonerado si llevas el SII o si solo alquilas inmuebles urbanos o estás en módulos o en el régimen agrario y presentas el 303 trimestral.'],
+      ['¿Qué pasa si no coincide con los 303?', 'Lo normal es que Hacienda te pida explicaciones. Si el error está en un 303, corrígelo con una autoliquidación rectificativa de ese trimestre.'],
+    ],
+    relacionadas: ['modelo-303', 'modelo-347', 'calendario-fiscal-autonomo-2026-2027'],
+    cta: { titulo: 'Tu 390 sale de tus 303', sub: 'Fisquo prepara el resumen anual con las mismas facturas y gastos de cada trimestre. 30 días gratis, sin tarjeta.' },
+    aviso: DISCLAIMER,
+  },
+  {
+    slug: 'modelo-347',
+    para: 'todos',
+    corto: 'Modelo 347',
+    titulo: 'Modelo 347: operaciones con terceros de más de 3.005,06 €',
+    descripcion: 'Qué es el modelo 347, a qué clientes y proveedores incluye (más de 3.005,06 € al año), qué no se declara, el plazo de febrero y cómo evitar descuadres.',
+    resumen: 'A qué clientes y proveedores declaras, qué queda fuera, el plazo de febrero y cómo evitar descuadres.',
+    minutos: 7,
+    revision: '2026-10-30',
+    normas: [
+      'Reglamento general de gestión e inspección tributaria, Real Decreto 1065/2007: arts. 31 a 35 (declaración anual de operaciones con terceras personas; exclusiones del art. 33).',
+      'Orden EHA/3012/2008, por la que se aprueba el modelo 347, y sus modificaciones.',
+      'Ley 39/2015, art. 30.5 (el plazo que acaba en día inhábil pasa al siguiente hábil).',
+      'Instrucciones del modelo 347 en la sede electrónica de la AEAT.',
+    ],
+    secciones: [
+      {
+        id: 'que-es', t: 'Qué es el modelo 347',
+        bloques: [
+          { p: 'El 347 es la **declaración anual de operaciones con terceras personas**. En ella le dices a Hacienda con qué clientes y proveedores has superado los **3.005,06 €** en el año, sumando todas las operaciones con cada uno, y cuánto fue en cada trimestre.' },
+          { p: 'Es informativa: no se paga nada. Hacienda la usa para cruzar datos: lo que tú declaras como venta a un cliente tiene que coincidir con lo que él declara como compra a ti.' },
+        ],
+      },
+      {
+        id: 'quien', t: 'Quién lo presenta',
+        bloques: [
+          { p: 'Lo presentan autónomos y sociedades que, en el año, han tenido operaciones con alguna persona o empresa por más de 3.005,06 €. Si no has superado esa cifra con nadie, no se presenta.' },
+          { p: 'No lo presentan, entre otros, quienes llevan los libros registro por el **SII**.' },
+        ],
+      },
+      {
+        id: 'importe', t: 'Cómo se calcula el importe',
+        bloques: [
+          { ul: [
+            'Se suma **todo lo facturado** con cada cliente (o recibido de cada proveedor) en el año, **IVA incluido**.',
+            'Clientes y proveedores van **por separado**: si a una empresa le vendes y le compras, se mira cada cosa por su lado.',
+            'Se indica también el **importe de cada trimestre**.',
+            'Los **cobros en efectivo** de más de 6.000 € de un mismo cliente se declaran aparte.',
+          ] },
+          { ejemplo: {
+            titulo: 'Ejemplo ficticio: un cliente con tres facturas',
+            filas: [
+              ['Factura de marzo (base 1.000 € + 21 % de IVA)', '1.210,00 €'],
+              ['Factura de junio (base 800 € + 21 % de IVA)', '968,00 €'],
+              ['Factura de noviembre (base 900 € + 21 % de IVA)', '1.089,00 €'],
+              ['Total del año con este cliente', '3.267,00 €', true],
+            ],
+            pie: 'Supera los 3.005,06 €, así que se declara, con 1.210 € en el 1.er trimestre, 968 € en el 2.º y 1.089 € en el 4.º. Sin el IVA (2.700 €) no llegaría: por eso el IVA cuenta. Importes inventados.',
+          } },
+        ],
+      },
+      {
+        id: 'fuera', t: 'Qué no se declara',
+        bloques: [
+          { ul: [
+            'Las operaciones que ya van en otra declaración informativa: las ventas y compras a empresas de otros países de la UE (**349**), y lo que lleva retención (**190** y **180**: facturas de profesionales con retención y alquiler del local con retención).',
+            'Las **importaciones y exportaciones** de mercancías.',
+            'Las ventas a **particulares sin sus datos**: tickets y facturas simplificadas sin NIF del cliente.',
+            'Las **nóminas**, las cotizaciones a la Seguridad Social, la cuota de autónomos y los impuestos.',
+          ] },
+          { p: 'El alquiler de un local **sin** retención (por ejemplo, porque el propietario está exonerado) sí se declara, como arrendamiento de local de negocio.' },
+        ],
+      },
+      {
+        id: 'plazo', t: 'Plazo',
+        bloques: [
+          { p: 'Se presenta durante el **mes de febrero** del año siguiente. Si el último día cae en sábado, domingo o festivo, pasa al siguiente día hábil: el 347 de 2026 se puede presentar hasta el **lunes 1 de marzo de 2027**, porque el 28 de febrero es domingo.' },
+        ],
+      },
+      {
+        id: 'descuadres', t: 'Cómo evitar descuadres',
+        bloques: [
+          { pasos: [
+            { t: 'Compara antes de presentar', d: 'Manda a tus clientes y proveedores habituales el total que vas a declarar con ellos. Si su cifra es distinta, aclaradlo antes de febrero.' },
+            { t: 'Usa la misma fecha', d: 'Las facturas se declaran por la fecha que cuenta para el IVA. Una factura de diciembre que tu cliente apunta en enero acaba en años distintos y descuadra.' },
+            { t: 'Revisa los NIF', d: 'Un NIF mal escrito hace que Hacienda no pueda cruzar la operación. Comprueba los de tus clientes y proveedores grandes.' },
+            { t: 'Incluye las rectificativas', d: 'Los abonos restan del total con ese cliente o proveedor.' },
+          ] },
+        ],
+      },
+      {
+        id: 'fisquo', t: 'Cómo te ayuda Fisquo',
+        bloques: [
+          { p: 'Fisquo suma tus operaciones con cada cliente y proveedor, deja fuera lo que va en el 349, el 190 y el 180, separa los trimestres y los cobros en efectivo, y prepara el 347 con su fichero para la sede de la AEAT. Presentas tú o tu gestoría.' },
+        ],
+      },
+    ],
+    faqs: [
+      ['¿Los 3.005,06 € son con IVA o sin IVA?', 'Con IVA. Se suma el total de las facturas, IVA incluido.'],
+      ['¿Tengo que presentarlo si no supero esa cifra con nadie?', 'No. Si no has tenido operaciones de más de 3.005,06 € con ninguna persona o empresa en el año, no hay que presentarlo.'],
+      ['¿Se declaran las facturas de mi gestoría?', 'Si llevan retención de IRPF, no: ya van en el 190. Si no la llevan y superan el límite, sí.'],
+      ['¿Qué pasa si mi cliente declara otra cifra?', 'Hacienda puede pedir explicaciones a los dos. Por eso conviene comparar las cifras antes de presentar.'],
+    ],
+    relacionadas: ['modelo-390', 'modelo-303', 'calendario-fiscal-sociedad-2026-2027'],
+    cta: { titulo: 'El 347 sin hacer sumas', sub: 'Fisquo suma tus operaciones con cada cliente y proveedor y prepara el fichero. 30 días gratis, sin tarjeta.' },
     aviso: DISCLAIMER,
   },
 ];
