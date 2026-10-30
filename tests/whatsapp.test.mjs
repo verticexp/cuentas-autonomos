@@ -340,3 +340,8 @@ test('saludo del correo de la factura con la persona de contacto', async () => {
   assert.match(mensajeFactura(f, { nombre: 'Fisquo' }, {}), /^Hola,\n\nTe adjunto/);
   assert.match(mensajeFactura({ ...f, idioma: 'en' }, { nombre: 'Fisquo' }, {}, 'Pepe'), /^Hello Pepe,/);
 });
+
+test('WhatsApp no mezcla idiomas: la IA contesta en castellano, como los resúmenes de Fisquo', async () => {
+  const fuente = await (await import('node:fs/promises')).readFile(new URL('../lib/whatsappIA.js', import.meta.url), 'utf8');
+  assert.match(fuente, /Siempre en castellano, también si te escriben en catalán/);
+});
