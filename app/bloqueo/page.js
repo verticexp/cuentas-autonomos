@@ -4,6 +4,7 @@ import { desbloqueada, usuarioActual } from '@/lib/auth';
 import RecargarBloqueo from '@/components/RecargarBloqueo';
 import { esOrdenador } from '@/lib/biometria';
 import { textos } from '@/lib/idiomaServidor';
+import { destinoInterno } from '@/lib/destinoInterno';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,7 +13,7 @@ export const dynamic = 'force-dynamic';
 export default async function PaginaBloqueo({ searchParams }) {
   if (!(await usuarioActual())) redirect('/login');
   const a = String((await searchParams).a || '/');
-  if (esOrdenador((await headers()).get('user-agent')) || (await desbloqueada())) redirect(/^\/(?![/\\])/.test(a) && !a.startsWith('/bloqueo') ? a : '/');
+  if (esOrdenador((await headers()).get('user-agent')) || (await desbloqueada())) redirect(destinoInterno(a));
   return <main className="pagina"><RecargarBloqueo /></main>;
 }
 

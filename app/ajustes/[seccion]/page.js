@@ -150,7 +150,8 @@ export default async function Seccion({ params, searchParams }) {
         const cuentas = estadoVerifactu(regs || [], { modo: u.verifactu || undefined, facturas: Object.fromEntries((facturas || []).map((f) => [f.id, f])) });
         return <Verifactu modo={u.verifactu || null} admin={u.rol === 'admin'} listo={certificadoListo()} faltaEmisor={!u.emisor?.nif || !u.emisor?.nombre} fisquo={{ razon: process.env.FISQUO_RAZON || '', nif: process.env.FISQUO_NIF || '' }} cuentas={cuentas} />;
       })()}
-      {['facturacion', 'cobros', 'marca', 'perfil', 'drive', 'seguridad'].includes(seccion) && <Ajustes seccion={seccion} emisor={u.emisor || {}} drive={u.drive} driveError={u.driveError} sociedad={fiscalDe(u).tipo === 'sociedad'} nombre={u.nombre}
+      {/* La ficha de Drive lleva el token del Apps Script: solo viaja al navegador en su sección (que exige empresa y DETALLE). */}
+      {['facturacion', 'cobros', 'marca', 'perfil', 'drive', 'seguridad'].includes(seccion) && <Ajustes seccion={seccion} emisor={u.emisor || {}} drive={seccion === 'drive' ? u.drive : null} driveError={seccion === 'drive' ? u.driveError : null} sociedad={fiscalDe(u).tipo === 'sociedad'} nombre={u.nombre}
         extra={seccion === 'cobros' ? <StripeConnect estado={u.stripeConnect?.estado || null} admin={u.rol === 'admin'} listo={stripeListo()} aviso={(await searchParams)?.stripe} /> : null} />}
       {seccion === 'perfil' && (
         <section className="grupo">

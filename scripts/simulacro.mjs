@@ -4,7 +4,7 @@ import { pathToFileURL } from 'node:url';
 import { performance } from 'node:perf_hooks';
 import assert from 'node:assert/strict';
 import { Redis } from '@upstash/redis';
-import { hacerCopia, copiaDeDatos, descifrar, verificarCopia, restaurar, seleccionarDatos, datosIntegridad } from '../lib/copias.js';
+import { hacerCopia, copiaDeDatos, descifrar, verificarCopia, restaurar, seleccionarParaRestaurar, datosIntegridad } from '../lib/copias.js';
 import { comprobarIntegridad } from '../lib/integridad.js';
 import { arrancar } from '../tests/apoyo/upstash-mem.mjs';
 
@@ -94,7 +94,7 @@ export async function simulacro(rutaOCopia, { clave = process.env.COPIA_CLAVE } 
       const parcial = await paso('copiarEmpresa', () => hacerCopia(clientes[1]));
       await paso('comprobarEmpresa', async () => {
         // Comparar todo el ámbito detecta también contaminación de otras empresas/usuarios.
-        const seleccion = Object.fromEntries(Object.entries(seleccionarDatos(copia, empresa))
+        const seleccion = Object.fromEntries(Object.entries(seleccionarParaRestaurar(copia, empresa))
           .filter(([k, d]) => !['cuentas:empresas', 'cuentas:usuarios', 'cuentas:emails'].includes(k) || Object.keys(d.valor).length));
         informe.parcial = comparar(seleccion, parcial.datos);
         informe.integridadEmpresa = integridad(parcial);
