@@ -7,6 +7,7 @@ import { notFound, redirect } from 'next/navigation';
 import { normalizarIdFactura } from '@/lib/idFactura';
 import { requerir } from '@/lib/auth';
 import { leer, leerUno } from '@/lib/redis';
+import { idCliente } from '@/lib/terceros';
 import { leerRango } from '@/lib/indices';
 import { apartar, margenIrpf, resumenAnual, trimestre, desglose, emisorDe, importes, numeroFactura, pagadoDe, pendienteDe, vencida, vencimiento } from '@/lib/calculos';
 import { eur, fechaCorta, fechaTexto, hoy } from '@/lib/formato';
@@ -53,6 +54,8 @@ export default async function Factura({ params }) {
   const actividades = actividadesDe(u);
   // Riesgo de los clientes con límite (para avisar al editar si la factura subiría por encima).
   const conLimite = editar ? clientes.filter(tieneLimite) : [];
+  // Persona de contacto de su ficha, para el saludo del correo.
+  const contacto = clientes.find((c) => idCliente(c.nombre) === idCliente(f?.cliente?.nombre))?.contacto;
   const debe = conLimite.length ? await riesgosPendientes(u) : new Map();
   const riesgos = Object.fromEntries(conLimite.map((c) => [c.id, debe.get(c.id) || 0]));
   const i = importes(f);
@@ -128,7 +131,7 @@ export default async function Factura({ params }) {
       {/* Lo de cada día arriba (PDF, enviar, duplicar); lo de vez en cuando, en «Más opciones», con Borrar al final. Sin
           enviar todavía, lo principal es mandársela al cliente (auditoría U-10); después, el PDF. */}
       {sinEnviar && <EnviarFactura principal id={f.id} email={f.cliente.email} envios={f.envios} editar={editar}
-        asunto={asuntoFactura(f, emisorDe(f, u), u.envio)} mensaje={mensajeFactura(f, emisorDe(f, u), u.envio)} asuntoFijo={diasPrueba(u.plan) > 0} />}
+        asunto={asuntoFactura(f, emisorDe(f, u), u.envio)} mensaje={mensajeFactura(f, emisorDe(f, u), u.envio, contacto)} asuntoFijo={diasPrueba(u.plan) > 0} />}
       <div className="acciones-factura">
         <Ir href={`/facturas/${f.id}/pdf`} className={sinEnviar ? 'boton sec' : 'boton'}>{tr('Ver / descargar PDF')}</Ir>
         {editar && <>
@@ -137,7 +140,7 @@ export default async function Factura({ params }) {
         </>}
       </div>
       {!sinEnviar && (editar || f.envios?.length > 0) && <EnviarFactura id={f.id} email={f.cliente.email} envios={f.envios} editar={editar}
-        asunto={asuntoFactura(f, emisorDe(f, u), u.envio)} mensaje={mensajeFactura(f, emisorDe(f, u), u.envio)} asuntoFijo={diasPrueba(u.plan) > 0} />}
+        asunto={asuntoFactura(f, emisorDe(f, u), u.envio)} mensaje={mensajeFactura(f, emisorDe(f, u), u.envio, contacto)} asuntoFijo={diasPrueba(u.plan) > 0} />}
       {(String(f.cliente?.nif || '').trim() || portal || editar) && <details className="mas-opciones">
         <summary>{tr('Más opciones')}</summary>
         <div className="mas-opciones-c">

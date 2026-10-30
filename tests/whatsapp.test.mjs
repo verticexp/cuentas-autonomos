@@ -319,3 +319,24 @@ test('factura de un presupuesto: la misma que el botón de la pantalla (resto tr
   assert.match(r.datos.concepto, /descontada la señal de la factura F2026-003\) · Presupuesto P2026-001/);
   assert.match(facturaDePresupuesto({ ...p, facturas: [...p.facturas, { tipo: 'resto' }] }, 'resto', '2026-10-30').error, /facturado/);
 });
+
+test('«factura a Pepe»: el cliente por su persona de contacto o por cómo lo llama la persona; si no, nada', () => {
+  const cs = [{ nombre: 'Restaurant Can Joan SL', contacto: 'Pepe García' }, { nombre: 'Sala Apolo' }, { nombre: 'Bar Pepe S.L.' }, { nombre: 'Hotel Mar', contacto: 'Pepa' }];
+  assert.equal(buscarCliente(cs, 'Sala Apolo').cliente.nombre, 'Sala Apolo');
+  // «Pepe» puede ser el contacto de Can Joan o el Bar Pepe: pregunta, y dice quién es quién.
+  assert.deepEqual(buscarCliente(cs, 'pepe').varios, ['Restaurant Can Joan SL (Pepe García)', 'Bar Pepe S.L.']);
+  assert.equal(buscarCliente(cs, 'Pepe García').cliente.nombre, 'Restaurant Can Joan SL');
+  assert.equal(buscarCliente(cs, 'pepa').cliente.nombre, 'Hotel Mar');
+  // Lo que ya ha aclarado por WhatsApp manda.
+  assert.equal(buscarCliente(cs, 'Pepe', { pepe: 'Restaurant Can Joan SL' }).cliente.nombre, 'Restaurant Can Joan SL');
+  assert.equal(buscarCliente(cs, 'el de mataro', { 'el de mataro': 'Restaurant Can Joan SL' }).cliente.nombre, 'Restaurant Can Joan SL');
+  assert.deepEqual(buscarCliente(cs, 'Jordi'), {});
+});
+
+test('saludo del correo de la factura con la persona de contacto', async () => {
+  const { mensajeFactura } = await import('../lib/plantillaEnvio.js');
+  const f = { serie: 'F', anio: 2026, numero: 7, fecha: '2026-10-30', cliente: { nombre: 'Can Joan' }, base: 100, ivaPct: 21, irpfPct: 0 };
+  assert.match(mensajeFactura(f, { nombre: 'Fisquo' }, {}, 'Pepe'), /^Hola, Pepe:\n\nTe adjunto la factura F2026-007/);
+  assert.match(mensajeFactura(f, { nombre: 'Fisquo' }, {}), /^Hola,\n\nTe adjunto/);
+  assert.match(mensajeFactura({ ...f, idioma: 'en' }, { nombre: 'Fisquo' }, {}, 'Pepe'), /^Hello Pepe,/);
+});
