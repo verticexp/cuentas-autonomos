@@ -36,6 +36,8 @@
 .chat-adjuntar:focus-within { outline: 2px solid var(--marca); }
 .chat-linea textarea { flex: 1; min-height: 44px; max-height: 140px; margin: 0; padding: 11px 16px; border: 0; border-radius: 22px; background: var(--surface); color: var(--ink); font: inherit; font-size: 16px; line-height: 1.35; resize: none; box-shadow: 0 1px 1px rgba(0, 0, 0, 0.08); }
 .chat-linea textarea:focus { outline: 2px solid var(--marca); outline-offset: 0; }
+/* Con el dedo, como en Mensajes: sin anillo al escribir (el cursor y el teclado ya dicen dónde se escribe). */
+@media (pointer: coarse) { .chat-linea textarea:focus { outline: none; } }
 .chat-enviar { flex: none; display: grid; place-items: center; width: 44px; height: 44px; margin: 0; padding: 0; border: 0; border-radius: 50%; background: var(--marca); color: var(--sobre); box-shadow: none; cursor: pointer; }
 .chat-enviar:disabled { opacity: 0.4; cursor: default; }
 .chat-enviar svg { width: 20px; height: 20px; fill: currentColor; }
@@ -88,3 +90,25 @@ a.chat-sobre { text-decoration: none; color: inherit; }
 .adm-soporte summary small { color: var(--muted); }
 .adm-soporte .pendiente { color: var(--out); font-weight: 700; }
 .adm-soporte textarea { font: inherit; }
+
+/* Chat de ayuda a pantalla completa (app/ayuda): el icono del equipo en la cabecera, el horario como una nota del día,
+   «Hablar con una persona» como una pastilla encima del cuadro de escribir y los tres puntos mientras responde. */
+.ayuda-chat-ico { flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--marca); color: var(--sobre); }
+.ayuda-chat-ico svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linejoin: round; }
+.ayuda-horario { max-width: 34ch; text-align: center; font-weight: 500; line-height: 1.35; }
+.ayuda-chat .chat-escribir > .error { margin: 0 6px; }
+.ayuda-persona { align-self: center; min-height: 34px; margin: 0; padding: 0 14px; border: 0; border-radius: 17px; background: var(--surface); box-shadow: 0 1px 1px rgba(0, 0, 0, 0.08); color: var(--marca); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+.ayuda-persona:disabled { opacity: 0.5; }
+.ayuda-escribiendo { display: flex; gap: 4px; padding: 12px 14px; }
+.ayuda-escribiendo span { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); animation: asi-punto 1s infinite ease-in-out; }
+.ayuda-escribiendo span:nth-child(2) { animation-delay: 0.15s; }
+.ayuda-escribiendo span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes asi-punto { 0%, 80%, 100% { opacity: 0.3; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
+@media (prefers-reduced-motion: reduce) { .ayuda-escribiendo span { animation: none; } }
+/* Ordenador: una ventana de conversación que llena el alto, como el asistente. */
+@media (min-width: 1024px) {
+  .ayuda-chat-pagina { display: flex; flex-direction: column; height: 100dvh; padding-bottom: 28px; }
+  .ayuda-chat-pagina .chat-cabecera { flex: none; }
+  .ayuda-chat-pagina .ayuda-chat { flex: 1; min-height: 0; }
+  .ayuda-chat-pagina .chat-mensajes { flex: 1; max-height: none; }
+}

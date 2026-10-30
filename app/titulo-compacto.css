@@ -13,6 +13,9 @@
     opacity: 0; visibility: hidden; pointer-events: none;
     transition: opacity 0.2s var(--salida, ease-out), visibility 0s 0.2s;
     -webkit-user-select: none; user-select: none;
+    /* Con el teclado fuera, iOS sube lo que se ve sin mover la página (visualViewport.offsetTop): la barra baja con ello y
+       sigue arriba de la pantalla, como en una app (si no, se iba y el texto quedaba bajo la hora). */
+    transform: translateY(var(--vv-arriba, 0px));
   }
   .titulo-compacto.visible { opacity: 1; visibility: visible; pointer-events: auto; transition: opacity 0.2s var(--salida, ease-out), visibility 0s; }
   /* Mientras el dedo lleva la pantalla hacia atrás (components/GestoAtras.js), la barra se aparta con ella. */

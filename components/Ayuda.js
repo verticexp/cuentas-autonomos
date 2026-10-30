@@ -4,7 +4,6 @@ import { useState } from 'react';
 import Ir from '@/components/Ir';
 import { llamar } from './Acciones';
 import { PREGUNTAS, TEMAS_SOPORTE } from '@/lib/soporte';
-import AyudaChat from './AyudaChat';
 import { useT } from '@/components/Idioma';
 
 
@@ -25,7 +24,13 @@ export default function Ayuda({ contacto, app = false }) {
   };
   return (
     <>
-      <AyudaChat />
+      {/* El chat, en su pantalla (app/ayuda): aquí dentro de la hoja de Ajustes el teclado lo tapaba y no parecía de una app. */}
+      <section className="grupo">
+        <h2 className="grupo-t">{tr('Chat de ayuda')}</h2>
+        <div className="grupo-c">
+          <Ir href="/ayuda" className="celda ir"><span className="txt">{tr('Escribir al equipo de Fisquo')}<small>{tr('Te responde al momento el asistente y, si hace falta, una persona del equipo.')}</small></span></Ir>
+        </div>
+      </section>
 
       <section className="grupo">
         <h2 className="grupo-t">{tr('Preguntas frecuentes')}</h2>

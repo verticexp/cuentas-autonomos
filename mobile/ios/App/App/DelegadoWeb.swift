@@ -16,6 +16,8 @@ final class DelegadoWeb: NSObject, WKNavigationDelegate, WKUIDelegate, WKDownloa
     private var destinos: [ObjectIdentifier: URL] = [:]
     var alTerminarCarga: (() -> Void)?
     var alEmpezarPagina: (() -> Void)?
+    // No se pudo abrir una pantalla de Fisquo (sin red): cuál era, para volver a ella cuando haya conexión.
+    var alFallarPagina: ((URL?) -> Void)?
 
     init(capacitor: WebViewDelegationHandler, servidor: URL?, presentador: UIViewController) {
         self.capacitor = capacitor
@@ -78,6 +80,15 @@ final class DelegadoWeb: NSObject, WKNavigationDelegate, WKUIDelegate, WKDownloa
     func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
         (capacitor as WKNavigationDelegate).webView?(webView, didCommit: navigation)
         if webView === presentador?.view { alEmpezarPagina?() }
+    }
+
+    // Sin conexión, Capacitor pone la pantalla de server.errorPath (www/sin-conexion.html). Una navegación cancelada (otra la
+    // sustituye o se convierte en descarga) no es falta de red: antes también sacaba esa pantalla.
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        let e = error as NSError
+        if (e.domain == NSURLErrorDomain && e.code == NSURLErrorCancelled) || (e.domain == "WebKitErrorDomain" && e.code == 102) { return }
+        if webView === presentador?.view { alFallarPagina?(e.userInfo[NSURLErrorFailingURLErrorKey] as? URL) }
+        capacitor.webView(webView, didFailProvisionalNavigation: navigation, withError: error)
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
