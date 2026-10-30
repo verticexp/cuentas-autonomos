@@ -45,7 +45,7 @@ export default function AyudaChat() {
       <div className="chat">
         {horario && <p className="nota">{horario.enHorario ? tr('Equipo conectado ahora. {horario}.', { horario: tr(horario.texto) }) : tr('Ahora responde el asistente. Una persona del equipo vuelve {cuando} ({horario}).', { cuando: tr(horario.vuelve), horario: tr(horario.texto).toLowerCase() })}</p>}
         <div className="chat-mensajes" ref={lista} aria-live="polite">
-          {!mensajes.length && <p className="chat-vacio">{tr('Cuéntanos qué te pasa o qué quieres hacer. Te responde al momento el asistente y, si hace falta, una persona del equipo.')}</p>}
+          {horario && !mensajes.length && <p className="chat-vacio">{tr('Cuéntanos qué te pasa o qué quieres hacer. Te responde al momento el asistente y, si hace falta, una persona del equipo.')}</p>}
           {mensajes.map((m, i) => (
             <div key={i} className="chat-grupo">
               <div className={`chat-burbuja${m.de === 'cliente' ? ' mia' : ''}`}>

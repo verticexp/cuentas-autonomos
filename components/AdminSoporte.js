@@ -29,7 +29,9 @@ export default function AdminSoporte() {
         <details key={c.id} open={c.estado === 'persona' && c.leidaEquipo === false}>
           <summary>
             <b>{c.empresaNombre || c.nombre}</b>
-            <span className={c.estado === 'persona' ? 'pendiente' : ''}>{ESTADO[c.estado]}{c.estado === 'persona' && c.leidaEquipo === false ? ' · sin leer' : ''}</span>
+            {c.estado === 'persona' && c.mensajes.at(-1)?.de === 'equipo'
+              ? <span>Respondida · esperando al cliente</span>
+              : <span className={c.estado === 'persona' ? 'pendiente' : ''}>{ESTADO[c.estado]}{c.estado === 'persona' && c.leidaEquipo === false ? ' · sin leer' : ''}</span>}
             <small>{c.nombre} &lt;{c.email}&gt; · {cuando(c.actualizada)}</small>
             {c.motivo && <small>Motivo: {c.motivo}</small>}
           </summary>

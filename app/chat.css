@@ -87,3 +87,4 @@ a.chat-sobre { text-decoration: none; color: inherit; }
 .adm-soporte summary { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; cursor: pointer; }
 .adm-soporte summary small { color: var(--muted); }
 .adm-soporte .pendiente { color: var(--out); font-weight: 700; }
+.adm-soporte textarea { font: inherit; }

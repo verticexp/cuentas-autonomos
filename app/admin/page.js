@@ -13,6 +13,7 @@ import AdminDespachos from '@/components/AdminDespachos';
 import AdminDosPasos from '@/components/AdminDosPasos';
 import AdminSoporte from '@/components/AdminSoporte';
 import { TEXTO_HORARIO } from '@/lib/soporte';
+import { recientes } from '@/lib/soporteServidor';
 import { PRUEBA_DIAS } from '@/lib/prueba';
 import { PRUEBA_GESTORIA_DIAS } from '@/lib/gestorias';
 import { RECOMENDACION_DIAS } from '@/lib/recomendaciones';
@@ -44,6 +45,7 @@ export default async function Admin() {
   const [empresas, usuarios, actividad, ultima] = await Promise.all([redis.hgetall('empresas'), redis.hgetall('usuarios'), actividadReciente(30), ultimaActividad()]);
   const r = resumenAdmin({ empresas: Object.values(empresas || {}), usuarios: Object.values(usuarios || {}), actividad, ultima });
   const k = r.kpis;
+  const pendientes = (await recientes()).filter((c) => c.estado === 'persona' && c.mensajes.at(-1)?.de !== 'equipo').length;
   // Embudo de activación (lib/embudo.js): solo índices y contadores, no documentos.
   const embudo = await embudoDe({ filas: r.filas, empresas: empresas || {}, ultima });
   const remitente = process.env.RESEND_FROM || '';
@@ -63,6 +65,7 @@ export default async function Admin() {
     <p className="adm-intro">Solo lo ves tú. Las cifras son sin IVA; las empresas Fundador no cuentan en ingresos ni en conversión.</p>
 
     <nav className="adm-accesos" aria-label="Accesos directos">
+      <a href="#soporte"><strong>Soporte</strong><span>{pendientes ? `${pendientes} por responder` : 'Nada por responder'}</span></a>
       <a href="/admin/correos"><strong>Correos</strong><span>Verlos y enviarte una prueba</span></a>
       <a href="#adm-ajustes"><strong>Ajustes</strong><span>Remitente, dominio y cobros</span></a>
       <a href="#adm-empresas"><strong>Empresas</strong><span>Planes, pruebas y Fundador</span></a>
