@@ -14,7 +14,7 @@ export function GET() {
 
 > Software de facturación, gastos, impuestos y contabilidad para autónomos y pymes de España. Facturas con Verifactu, lectura de tickets con IA, conciliación bancaria y cálculo de los modelos 303, 130, 111, 115, 390, 347 y del Impuesto sobre Sociedades. La gestoría entra gratis con su propio acceso.
 
-Precios sin IVA, por empresa: autónomos desde ${PLANES.aut[0].p} € al mes y pymes desde ${PLANES.pym[0].p} € al mes. Prueba de 30 días sin tarjeta y sin permanencia. Funciona en la web y en iPhone; también en castellano, catalán e inglés. Cubre territorio común, Canarias (IGIC), Navarra y País Vasco.
+Precios sin IVA, por empresa: autónomos desde ${PLANES.aut[0].p} € al mes y pymes desde ${PLANES.pym[0].p} € al mes. Prueba de 30 días sin tarjeta y sin permanencia. Funciona en la web y se instala como app en el móvil (la app de iPhone está en preparación), en castellano, catalán e inglés. Cubre territorio común, Canarias (IGIC), Navarra y País Vasco.
 
 ## Producto
 
