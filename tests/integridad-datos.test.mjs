@@ -327,7 +327,8 @@ test('C1-01: restaurar una empresa conserva correo, hash, sesiones y otras membr
 test('C1-01: si no existe el usuario se recrea con su identidad de la copia', async () => {
   const origen = { id: 'u', empresa: 'e', email: 'antiguo@example.com', password: 'hash-antiguo', empresas: { e: { rol: 'admin' } } };
   await COP.restaurar(crudo, copiaUsuario(origen), { empresa: 'e', sobrescribir: true, escribir: true });
-  assert.deepEqual(JSON.parse(base.run(['hget', 'cuentas:usuarios', 'u'])), origen);
+  // Vuelve con su identidad y su papel en la empresa (el rol de arriba sigue a la principal).
+  assert.deepEqual(JSON.parse(base.run(['hget', 'cuentas:usuarios', 'u'])), { ...origen, rol: 'admin' });
   assert.equal(base.run(['hget', 'cuentas:emails', origen.email]), 'u');
 });
 test('C1-02: sin registros, las facturas vivas y borradas y la cabeza siguen comprobándose', () => {

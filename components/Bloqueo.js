@@ -7,6 +7,7 @@ import Logo from '@/components/Logo';
 import CampoPassword from '@/components/CampoPassword';
 import PanelMarca from '@/components/PanelMarca';
 import { entrada } from '@/lib/transicion';
+import { destinoInterno } from '@/lib/destinoInterno';
 import { enfocar, useTrasArranque } from '@/lib/arranque';
 import { useT } from '@/components/Idioma';
 
@@ -87,7 +88,7 @@ export default function Bloqueo({ email, servidor = true }) {
   const entro = (otra) => {
     if (otra) { marcarAbierta(); location.reload(); return; }
     const a = new URLSearchParams(location.search).get('a') || '/';
-    const destino = location.pathname !== '/bloqueo' ? null : /^\/(?![/\\])/.test(a) && !a.startsWith('/bloqueo') ? a : '/';
+    const destino = location.pathname !== '/bloqueo' ? null : destinoInterno(a);
     setEsperando(true);
     refrescar(() => { router.refresh(); if (destino) router.replace(destino); });
   };

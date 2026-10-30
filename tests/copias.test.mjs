@@ -10,7 +10,7 @@ import './apoyo/cargador.mjs';
 import { Redis } from '@upstash/redis';
 import { arrancar, crearBase } from './apoyo/upstash-mem.mjs';
 import { hacerCopia, cifrar, descifrar, verificarCopia, restaurar, copiaDeDatos, seleccionarDatos } from '../lib/copias.js';
-import { conMembresia, membresias } from '../lib/membresias.js';
+import { conMembresia, membresias, activaDe } from '../lib/membresias.js';
 
 const clave = randomBytes(32).toString('base64');
 const hash = (v) => Array.isArray(v) ? Object.fromEntries(Array.from({ length: v.length / 2 }, (_, i) => [v[2 * i], v[2 * i + 1]])) : v;
@@ -169,8 +169,28 @@ test('N03: la copia de B selecciona un administrador con principal A creado con 
   assert.equal(seleccion['cuentas:emails'].valor['compartido@ejemplo.test'], 'compartido');
   assert.equal(seleccion['cuentas:emails'].valor['alias@ejemplo.test'], 'compartido');
   await restaurar(b, copia, { empresa: 'B', escribir: true });
-  assert.deepEqual(JSON.parse(await b.hget('cuentas:usuarios', 'compartido')), usuario);
+  // Una identidad recreada vuelve solo con su papel en B: sin A (otra empresa del origen).
+  assert.deepEqual(JSON.parse(await b.hget('cuentas:usuarios', 'compartido')), { id: 'compartido', empresa: 'B', empresas: { B: { rol: 'admin' } }, rol: 'admin' });
   assert.equal(await b.hget('cuentas:emails', 'compartido@ejemplo.test'), 'compartido');
+});
+
+test('S01: recuperar una empresa no devuelve a una identidad borrada su acceso a otras (con y sin sobrescribir)', async () => {
+  const a = memoria();
+  await sembrar(a, 'X');
+  await sembrar(a, 'Y');
+  const m = conMembresia(conMembresia({ id: 'M', empresa: 'X', admin: true, despacho: 'd1' }, 'X', { rol: 'admin' }), 'Y', { rol: 'admin' });
+  await a.hset('cuentas:usuarios', { M: JSON.stringify(m) });
+  await a.hset('cuentas:emails', { 'm@ejemplo.test': 'M' });
+  const copia = await hacerCopia(a);
+  for (const sobrescribir of [false, true]) {
+    const b = memoria();
+    await restaurar(b, copia, { empresa: 'X', sobrescribir, escribir: true });
+    const r = JSON.parse(await b.hget('cuentas:usuarios', 'M'));
+    assert.deepEqual(Object.keys(membresias(r)), ['X'], `sobrescribir=${sobrescribir}`);
+    assert.notEqual(activaDe(r, 'Y'), 'Y');
+    assert.equal(r.despacho, undefined);
+    assert.equal(r.admin, undefined);
+  }
 });
 
 test('N03: sobrescribir B preserva principal, roles, permisos y correos de las otras empresas del destino', async () => {
