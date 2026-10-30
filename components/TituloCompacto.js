@@ -42,7 +42,10 @@ export default function TituloCompacto() {
       pendiente = 0;
       const { h1 } = partes.current;
       const alto = barra.current?.offsetHeight || 0;
-      setVer(Boolean(h1 && h1.isConnected && alto && h1.getBoundingClientRect().bottom <= alto));
+      // Lo que iOS ha subido la vista con el teclado fuera (la barra baja con ello, app/titulo-compacto.css).
+      const arriba = movil.matches ? Math.max(0, Math.round(window.visualViewport?.offsetTop || 0)) : 0;
+      barra.current?.style.setProperty('--vv-arriba', `${arriba}px`);
+      setVer(Boolean(h1 && h1.isConnected && alto && h1.getBoundingClientRect().bottom <= alto + arriba));
     };
     const pedir = () => { if (!pendiente) pendiente = requestAnimationFrame(medir); };
     buscar();
@@ -55,11 +58,15 @@ export default function TituloCompacto() {
     });
     mo.observe(document.body, { childList: true, subtree: true, characterData: true });
     addEventListener('scroll', pedir, { passive: true });
+    window.visualViewport?.addEventListener('scroll', pedir);
+    window.visualViewport?.addEventListener('resize', pedir);
     addEventListener('resize', buscar);
     movil.addEventListener('change', buscar);
     return () => {
       clearTimeout(t); clearTimeout(mo.t); mo.disconnect(); cancelAnimationFrame(pendiente);
       removeEventListener('scroll', pedir);
+      window.visualViewport?.removeEventListener('scroll', pedir);
+      window.visualViewport?.removeEventListener('resize', pedir);
       removeEventListener('resize', buscar);
       movil.removeEventListener('change', buscar);
     };

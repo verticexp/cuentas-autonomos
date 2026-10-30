@@ -1,5 +1,6 @@
 import UIKit
 import WebKit
+import Network
 import Capacitor
 
 // Controlador principal: el WebView de Capacitor que carga www.fisquo.com, con lo que una app de iOS necesita además:
@@ -14,12 +15,17 @@ import Capacitor
 // - la vibración del sistema al tocar las pestañas, cobrar o marcar como pagado (Haptica, abajo; lib/haptica.js);
 // - tirar hacia abajo para recargar y los accesos rápidos del icono (SceneDelegate.swift);
 // - el teclado sin la barra de formulario de iOS («^ ˅ ✓»), como en las apps de mensajería (quitarBarraDelTeclado, abajo);
-// - sin arrastrar enlaces ni imágenes al mantenerlos pulsados (sinArrastrar, abajo).
+// - sin arrastrar enlaces ni imágenes al mantenerlos pulsados (sinArrastrar, abajo);
+// - sin conexión, la animación de inicio y un aviso como el de las apps de Apple (www/sin-conexion.html), y Fisquo se abre
+//   sola, en la pantalla que no pudo abrir, en cuanto vuelve la red (Conexion, abajo).
 class FisquoViewController: CAPBridgeViewController {
     private var delegado: DelegadoWeb?
     private var gestoAtras: GestoAtras?
     private var rutaPendiente: String?
     private var cargada = false
+    private var empezada = false
+    private let red = NWPathMonitor()
+    private var paginaSinAbrir: URL?
 
     // Verde de marca: el de la pantalla de lanzamiento, la ventana y el fondo de la web mientras carga (capacitor.config.json),
     // igual que el de la animación de inicio de la web: del icono a la app no hay ningún cambio de color.
@@ -58,7 +64,20 @@ class FisquoViewController: CAPBridgeViewController {
         let gestoAtras = GestoAtras(webView: webView)
         webView.configuration.userContentController.add(gestoAtras, name: "gestoAtras")
         self.gestoAtras = gestoAtras
-        delegado.alEmpezarPagina = { [weak gestoAtras] in gestoAtras?.bloquear(false) } // la anterior pudo dejarlo bloqueado
+        delegado.alEmpezarPagina = { [weak self, weak gestoAtras] in
+            self?.empezada = true
+            gestoAtras?.bloquear(false) // la anterior pudo dejarlo bloqueado
+        }
+        delegado.alFallarPagina = { [weak self] url in
+            if let url, url.scheme?.hasPrefix("http") == true { self?.paginaSinAbrir = url }
+        }
+        webView.configuration.userContentController.add(Conexion { [weak self] in self?.volverAConectar() }, name: "conexion")
+        // La pantalla sin conexión comprueba si responde el servidor de la app (el de capacitor.config.json).
+        if let servidor = bridge?.config.serverURL.absoluteString.replacingOccurrences(of: "\"", with: "") {
+            let guion = "window.fisquoServidor = \"\(servidor)\";"
+            webView.configuration.userContentController.addUserScript(WKUserScript(source: guion, injectionTime: .atDocumentStart, forMainFrameOnly: true))
+        }
+        vigilarLaRed()
         webView.configuration.userContentController.add(Haptica(), name: "haptica")
 
         quitarBarraDelTeclado(webView)
@@ -68,6 +87,36 @@ class FisquoViewController: CAPBridgeViewController {
         recargar.addTarget(self, action: #selector(recargar(_:)), for: .valueChanged)
         webView.scrollView.refreshControl = recargar
     }
+
+    // Sin red, la pantalla de www/sin-conexion.html. Al volver la conexión (o al tocar «Reintentar» allí), a la pantalla que no
+    // se pudo abrir. Con cobertura muy mala la primera carga podía quedarse un minuto en verde: a los 12 s sin respuesta, el
+    // aviso (que sigue probando solo).
+    private var sinConexion: Bool { webView?.url?.lastPathComponent == "sin-conexion.html" }
+
+    private func vigilarLaRed() {
+        red.pathUpdateHandler = { [weak self] camino in
+            guard camino.status == .satisfied else { return }
+            DispatchQueue.main.async {
+                guard let self, self.sinConexion else { return }
+                self.webView?.evaluateJavaScript("window.fisquoVuelveLaRed && window.fisquoVuelveLaRed()") { _, error in
+                    if error != nil { self.volverAConectar() }
+                }
+            }
+        }
+        red.start(queue: DispatchQueue(label: "com.fisquo.red"))
+        DispatchQueue.main.asyncAfter(deadline: .now() + 12) { [weak self] in
+            guard let self, !self.empezada, !self.sinConexion, let aviso = self.bridge?.config.errorPathURL else { return }
+            self.webView?.stopLoading()
+            self.webView?.load(URLRequest(url: aviso))
+        }
+    }
+
+    private func volverAConectar() {
+        guard sinConexion, let destino = paginaSinAbrir ?? bridge?.config.serverURL else { return }
+        webView?.load(URLRequest(url: destino))
+    }
+
+    deinit { red.cancel() }
 
     @objc private func recargar(_ control: UIRefreshControl) {
         webView?.reload()
@@ -151,6 +200,16 @@ private final class GestoAtras: NSObject, WKScriptMessageHandler, UIGestureRecog
     }
 }
 
+// «Reintentar» de la pantalla sin conexión (www/sin-conexion.html), cuando ya ha comprobado que hay red.
+private final class Conexion: NSObject, WKScriptMessageHandler {
+    private let volver: () -> Void
+    init(volver: @escaping () -> Void) { self.volver = volver }
+
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        volver()
+    }
+}
+
 // Vibración del sistema (lib/haptica.js): «toque» al cambiar de pestaña o abrir algo, «exito» al cobrar o pagar, «aviso» y
 // «error». navigator.vibrate no existe en iOS, y el truco del interruptor de la web (iOS 18) solo da un tipo de toque.
 private final class Haptica: NSObject, WKScriptMessageHandler {
@@ -191,6 +250,24 @@ private func quitarBarraDelTeclado(_ webView: WKWebView) {
         let ninguna: @convention(block) (AnyObject) -> UIView? = { _ in nil }
         if let original = class_getInstanceMethod(base, selector) {
             class_addMethod(nueva, selector, imp_implementationWithBlock(ninguna), method_getTypeEncoding(original))
+        }
+        // La sugerencia «Contraseñas» encima del teclado salía en cualquier campo (un buscador, el chat): en una app solo sale
+        // en los de usuario y contraseña. Los campos sin tipo de autorrelleno (autocomplete) dicen ser de un código de un
+        // solo uso, que no ofrece nada si no llega un SMS con un código.
+        let rasgos = NSSelectorFromString("textInputTraits")
+        if let original = class_getInstanceMethod(base, rasgos) {
+            typealias Rasgos = @convention(c) (AnyObject, Selector) -> AnyObject?
+            let anterior = unsafeBitCast(method_getImplementation(original), to: Rasgos.self)
+            let sinContrasenas: @convention(block) (AnyObject) -> AnyObject? = { yo in
+                let r = anterior(yo, rasgos)
+                if let r = r as? NSObject, r.responds(to: NSSelectorFromString("textContentType")),
+                   (r.value(forKey: "textContentType") as? String ?? "").isEmpty,
+                   (r.value(forKey: "secureTextEntry") as? Bool) != true {
+                    r.setValue(UITextContentType.oneTimeCode.rawValue, forKey: "textContentType")
+                }
+                return r
+            }
+            class_addMethod(nueva, rasgos, imp_implementationWithBlock(sinContrasenas), method_getTypeEncoding(original))
         }
         objc_registerClassPair(nueva)
         clase = nueva

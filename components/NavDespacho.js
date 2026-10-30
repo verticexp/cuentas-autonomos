@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { SIN_BARRA, alPulsar, subirArriba, volverHasta } from '@/lib/transicion';
 import Logo from '@/components/Logo';
+import useTecladoFormulario from '@/components/useTecladoFormulario';
 import { useT } from '@/components/Idioma';
 import '@/app/lateral.css';
 
@@ -27,6 +28,8 @@ export default function NavDespacho({ nombre, noLeidos = 0, titular = false }) {
   const path = usePathname();
   const router = useRouter();
   const tr = useT();
+  // Con el teclado fuera, la barra baja y se esconde (movil.css, solo en el móvil), como en TabBar.
+  const teclado = useTecladoFormulario(true);
   // La pestaña en la que ya se está, como en iOS: en su pantalla sube arriba; desde una de dentro (la ficha de un cliente),
   // vuelve a ella. En el ordenador, la barra lateral lleva siempre a la pantalla.
   const pulsar = (t) => (e) => {
@@ -39,7 +42,7 @@ export default function NavDespacho({ nombre, noLeidos = 0, titular = false }) {
   };
   return (
     // Dentro de una conversación, en el móvil, la barra de abajo se esconde (como en WhatsApp): deja sitio para escribir.
-    <div role="region" aria-label={tr('Navegación de Mi despacho')} className={`tabbar tabbar-despacho${SIN_BARRA.test(path || '') ? ' tabbar-chat' : ''}`}>
+    <div role="region" aria-label={tr('Navegación de Mi despacho')} className={`tabbar tabbar-despacho${SIN_BARRA.test(path || '') ? ' tabbar-chat' : ''}`} data-teclado={teclado || undefined}>
       <Link href="/despacho" className="tabbar-logo" aria-label={tr('{nombre}, clientes', { nombre })}><Logo /></Link>
       <nav className="tabs" aria-label={tr('Mi despacho')}>
         {TABS.map((t) => (

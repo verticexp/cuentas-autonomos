@@ -14,7 +14,7 @@ const NOMBRES = {
   '/tesoreria': 'Tesorería', '/banco': 'Banco', '/inventario': 'Inventario', '/albaranes': 'Pedidos y albaranes', '/nominas': 'Equipo y nóminas',
   '/proyectos': 'Proyectos', '/cartera': 'Cartera de cobros', '/analisis': 'Análisis', '/contabilidad': 'Contabilidad', '/modelos': 'Impuestos', '/asistente': 'Pregunta a Fisquo', '/usuarios': 'Usuarios',
   '/jornada': 'Registro de jornada', '/facturas/recurrentes': 'Facturas recurrentes', '/facturas/caja': 'Caja', '/facturas/catalogo': 'Catálogo',
-  '/gastos/proveedores': 'Proveedores', '/gastos/bandeja': 'Por revisar', '/clientes': 'Clientes', '/ajustes/gestoria': 'Tu gestoría', '/tu-gestoria': 'Mensajes', '/despacho': 'Mi despacho', '/despacho/mensajes': 'Mensajes', '/despacho/plazos': 'Plazos',
+  '/gastos/proveedores': 'Proveedores', '/gastos/bandeja': 'Por revisar', '/clientes': 'Clientes', '/ajustes/gestoria': 'Tu gestoría', '/ajustes/ayuda': 'Ayuda', '/ayuda': 'Chat de ayuda', '/tu-gestoria': 'Mensajes', '/despacho': 'Mi despacho', '/despacho/mensajes': 'Mensajes', '/despacho/plazos': 'Plazos',
 };
 
 // «Atrás»: vuelve a la pantalla de la que se viene (el botón dice su nombre); si se abrió esta directamente, va al destino de siempre.

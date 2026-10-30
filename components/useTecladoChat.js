@@ -21,7 +21,11 @@ export default function useTecladoChat(lista, selector, { pegado, alFinal }) {
     let marco = 0;
     const ajustar = () => {
       cancelAnimationFrame(marco);
+      // La ventana no se desplaza (la conversación ya se ajusta al hueco): iOS la subía para enseñar el cuadro de escribir y,
+      // mientras salía el teclado, la cabecera se iba un instante por arriba. Como en la hoja de Ajustes (HojaAjustes.js).
+      if (movil.matches && scrollY !== 0) scrollTo(0, 0);
       marco = requestAnimationFrame(() => {
+        if (movil.matches && scrollY !== 0) scrollTo(0, 0);
         if (!movil.matches) { pagina.style.height = ''; pagina.style.top = ''; pagina.classList.remove('con-teclado'); return; }
         pagina.style.height = `${Math.round(vv.height)}px`;
         pagina.style.top = `${Math.round(vv.offsetTop)}px`;
@@ -31,6 +35,7 @@ export default function useTecladoChat(lista, selector, { pegado, alFinal }) {
     };
     vv.addEventListener('resize', ajustar);
     vv.addEventListener('scroll', ajustar);
+    addEventListener('scroll', ajustar, { passive: true });
     movil.addEventListener('change', ajustar);
     pagina.addEventListener('focusin', ajustar);
     pagina.addEventListener('focusout', ajustar);
@@ -39,6 +44,7 @@ export default function useTecladoChat(lista, selector, { pegado, alFinal }) {
       cancelAnimationFrame(marco);
       vv.removeEventListener('resize', ajustar);
       vv.removeEventListener('scroll', ajustar);
+      removeEventListener('scroll', ajustar);
       movil.removeEventListener('change', ajustar);
       pagina.removeEventListener('focusin', ajustar);
       pagina.removeEventListener('focusout', ajustar);
