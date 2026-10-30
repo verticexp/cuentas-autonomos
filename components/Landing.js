@@ -10,7 +10,8 @@ import { VentanaApp } from '@/components/web/demos/Pantallas';
 import { Confianza, Cta, Encabezado, Faq, Flecha } from '@/components/web/Bloques';
 import { GUIAS } from '@/data/web-guias';
 import { FAQ_GENERAL, FUNCIONES, PLANES, SEGMENTOS } from '@/components/web/datos';
-import { datosPortada, jsonLd } from '@/lib/webMeta';
+import JsonLd from '@/components/web/JsonLd';
+import { datosPortada } from '@/lib/webMeta';
 import { textos } from '@/lib/idiomaServidor';
 import { conHuecos } from '@/lib/huecos';
 
@@ -31,7 +32,7 @@ export default async function Landing() {
   const tr = await textos();
   return (
     <Marco>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(datosPortada({ autonomo: PLANES.aut[0].p, pyme: PLANES.pym[0].p })) }} />
+      <JsonLd datos={datosPortada({ autonomo: PLANES.aut[0].p, pyme: PLANES.pym[0].p })} />
       <section className="web-hero">
         <div className="web-hero-txt">
           <h1>{conHuecos(tr('Tus cuentas, {resalte}.'), { resalte: <em>{tr('por fin en orden')}</em> })}</h1>

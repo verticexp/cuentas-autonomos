@@ -3,7 +3,7 @@ import Icono from '@/components/web/Icono';
 import { Cta, Encabezado, Faq, Flecha } from '@/components/web/Bloques';
 import { REVISION_GUIAS, guia } from '@/data/web-guias';
 import { calendarioSociedad, diaMes, fechaLarga, plazoTrimestre, plazosAnuales } from '@/lib/webCalendario';
-import { jsonLd } from '@/lib/webMeta';
+import JsonLd from '@/components/web/JsonLd';
 import { WEB } from '@/lib/web';
 import { textos } from '@/lib/idiomaServidor';
 import { conHuecos } from '@/lib/huecos';
@@ -87,7 +87,7 @@ export default async function Guia({ g }) {
   };
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(datos) }} />
+      <JsonLd datos={datos} />
       <section className="web-hero-pag">
         <nav className="web-migas web-entra" aria-label={tr('Estás en')}><Link href="/guias">{tr('Guías fiscales')}</Link><Icono n="chevron" /><span>{g.corto}</span></nav>
         <h1 className="web-entra" style={{ '--d': '60ms' }}>{g.titulo}</h1>
