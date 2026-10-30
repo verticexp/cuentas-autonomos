@@ -62,7 +62,7 @@ export async function generateMetadata() {
   const tr = await textos();
   return {
     title: { absolute: (await usuarioActual()) ? tr('Resumen · Fisquo') : tr('Fisquo · Facturas, gastos e impuestos en orden') },
-    description: tr('Software de gestión financiera para autónomos, pymes y empresas: facturas, gastos con IA, conciliación bancaria, impuestos y nóminas.'),
+    description: tr('Fisquo, software español de facturación para autónomos y pymes: facturas con Verifactu, gastos con IA, conciliación bancaria, impuestos y nóminas.'),
   };
 }
 
