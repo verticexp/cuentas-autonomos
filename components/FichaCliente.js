@@ -17,7 +17,7 @@ export function FormularioFicha({ datos = {}, id, proveedor = false, editar = tr
   const tr = useT();
   const prefijo = useId();
   const ocupado = useRef(false);
-  const campos = ['nombre', 'nif', 'pais', 'direccion', 'ciudad', 'email', 'telefono', 'formaCobro', 'formaPago', 'plazo', 'comercial', 'zona', 'riesgoMax', 'idioma', 'moneda', 'notas'];
+  const campos = ['nombre', 'nif', 'pais', 'direccion', 'ciudad', 'contacto', 'email', 'telefono', 'formaCobro', 'formaPago', 'plazo', 'comercial', 'zona', 'riesgoMax', 'idioma', 'moneda', 'notas'];
   const [f, setF] = useState(() => Object.fromEntries(campos.map((k) => [k, datos[k] ?? ''])));
   const [error, setError] = useState('');
   const [errores, setErrores] = useState({});
@@ -73,6 +73,7 @@ export function FormularioFicha({ datos = {}, id, proveedor = false, editar = tr
       {campo('nif', 'NIF', { maxLength: 20, autoCapitalize: 'characters', autoCorrect: 'off', spellCheck: false })}
       {campo('pais', 'País', { maxLength: 2, placeholder: 'ES', ayuda: tr('Dos letras, si no es ES') })}
       {campo('direccion', 'Dirección', { maxLength: 120 })}{campo('ciudad', 'Ciudad', { maxLength: 120 })}
+      {campo('contacto', 'Persona de contacto', { maxLength: 80, autoComplete: 'off', ayuda: tr('Con quien tratas. Saldrá en el saludo de los correos («Hola, Pepe»)') })}
       {campo('email', 'Email', { tipo: 'email', autoComplete: 'email' })}{campo('telefono', 'Teléfono', { tipo: 'tel', autoComplete: 'tel', inputMode: 'tel', maxLength: 30 })}
       {campo(proveedor ? 'formaPago' : 'formaCobro', proveedor ? 'Forma de pago' : 'Forma de cobro', { tipo: 'select' })}
       {campo('plazo', 'Plazo en días', { inputMode: 'numeric', placeholder: tr('Según Ajustes') })}
