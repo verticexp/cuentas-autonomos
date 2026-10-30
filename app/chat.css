@@ -78,3 +78,13 @@ a.chat-sobre { text-decoration: none; color: inherit; }
 .chat-guardados button:hover, .chat-guardados button:focus-visible { background: var(--relleno); }
 .chat-guardados span { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .desp-mensajes-acciones { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 14px; }
+
+/* Chat de ayuda (components/AyudaChat.js) y su bandeja en /admin (components/AdminSoporte.js). */
+.chat-acciones { display: flex; flex-wrap: wrap; gap: 8px; }
+.chat-acciones .boton { margin: 0; }
+.adm-soporte { display: flex; flex-direction: column; gap: 8px; }
+.adm-soporte details { border-radius: 12px; background: var(--surface); padding: 10px 12px; }
+.adm-soporte summary { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; cursor: pointer; }
+.adm-soporte summary small { color: var(--muted); }
+.adm-soporte .pendiente { color: var(--out); font-weight: 700; }
+.adm-soporte textarea { font: inherit; }
