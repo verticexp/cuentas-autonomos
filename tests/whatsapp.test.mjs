@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
 import { accionDe } from '../lib/whatsappIA.js';
 import { cambiarGasto, resumenGasto } from '../lib/whatsapp.js';
-import { aplicarCambios, buscarCliente, cuerpoFactura, entregaDe, firmaValida, mensajesDe, resumenBorrador, separarDireccion, siNo, telefonosAutorizados, textoEmitido } from '../lib/whatsapp.js';
+import { aplicarCambios, buscarCliente, cuerpoFactura, elegirDocumento, entregaDe, firmaValida, lineasDeUltima, mensajesDe, resumenBorrador, separarDireccion, siNo, telefonosAutorizados, textoEmitido } from '../lib/whatsapp.js';
 import { limpiar } from '../lib/facturas.js';
 
 test('firma de Meta: vale la buena, no la manipulada ni sin secreto', () => {
@@ -272,4 +272,50 @@ test('aviso de emitida: si ya ha salido por correo, el PDF es «por si lo quiere
   assert.match(textoEmitido({ ...base, entrega: 'ambos', envio: { error: 'buzón lleno' } }), /no se ha podido enviar a a@b\.es: buzón lleno\. Aquí tienes el PDF para que se la mandes tú/);
   const p = textoEmitido({ pres: true, num: 'P-2', email: '', entrega: 'whatsapp', envio: null, enlace: 'https://x/p/t' });
   assert.match(p, /^✅ Presupuesto P-2 creado\. Aquí tienes el PDF para que se lo mandes tú 👇\nSi se lo reenvías, también puede verlo y aceptarlo aquí: https:\/\/x\/p\/t$/);
+});
+
+test('facturas ya hechas: por número («la 12»), por cliente y, para cobrar, solo las pendientes', () => {
+  const f = (numero, cliente, fecha, extra = {}) => ({ id: `2026-${numero}`, serie: 'F', anio: 2026, numero, fecha, cliente: { nombre: cliente }, base: 100, ivaPct: 21, irpfPct: 0, ...extra });
+  const docs = [f(12, 'Bar Pepe S.L.', '2026-10-01'), f(13, 'Bar Pepe S.L.', '2026-10-20'), f(14, 'Ana López', '2026-10-21', { cobrada: true })];
+  assert.equal(elegirDocumento(docs, { numero: 'F2026-012' }).doc.numero, 12);
+  assert.equal(elegirDocumento(docs, { numero: 'la 12' }).doc.numero, 12);
+  // Reenviar o pasar el PDF: la más reciente de ese cliente.
+  assert.equal(elegirDocumento(docs, { cliente: 'bar pepe' }).doc.numero, 13);
+  // Cobrar: si hay dos pendientes, pregunta cuál.
+  assert.deepEqual(elegirDocumento(docs, { cliente: 'Pepe' }, { pendientes: true }).varios, ['F2026-013', 'F2026-012']);
+  assert.deepEqual(elegirDocumento(docs, { cliente: 'Ana' }, { pendientes: true }), {});
+  assert.deepEqual(elegirDocumento(docs, { numero: '99' }), {});
+});
+
+test('«lo de siempre»: las líneas de la última factura a ese cliente', () => {
+  const facturas = [
+    { serie: 'F', anio: 2026, numero: 3, fecha: '2026-09-05', cliente: { nombre: 'Bar Pepe' }, concepto: 'Sesión DJ', base: 300, ivaPct: 21 },
+    { serie: 'F', anio: 2026, numero: 8, fecha: '2026-10-04', cliente: { nombre: 'Bar Pepe S.L.' }, lineas: [{ concepto: 'Sesión DJ', cantidad: 1, precio: 320, ivaPct: 21 }, { concepto: 'Luces', cantidad: 2, precio: 40 }], ivaPct: 21 },
+  ];
+  const u = lineasDeUltima(facturas, 'bar pepe');
+  assert.equal(u.numero, 'F2026-008');
+  assert.deepEqual(u.lineas, [{ concepto: 'Sesión DJ', cantidad: 1, precio: 320, ivaPct: 21 }, { concepto: 'Luces', cantidad: 2, precio: 40, ivaPct: 21 }]);
+  assert.deepEqual(lineasDeUltima(facturas.slice(0, 1), 'Bar Pepe').lineas, [{ concepto: 'Sesión DJ', cantidad: 1, precio: 300, ivaPct: 21 }]);
+  assert.equal(lineasDeUltima(facturas, 'Otro'), null);
+});
+
+test('la IA puede repetir la última, actuar sobre documentos hechos, guardar clientes y mandar fotos a gastos', () => {
+  const uso = (name, input) => [{ type: 'tool_use', name, input }];
+  assert.equal(accionDe(uso('preparar_factura', { tipo: 'factura', cliente: 'Pepe', repetir: true })).accion, 'preparar');
+  assert.equal(accionDe(uso('preparar_factura', { tipo: 'factura', cliente: 'Pepe' })).accion, 'responder');
+  assert.deepEqual(accionDe(uso('documento', { que: 'cobrada', numero: ' 12 ', cliente: '' })).datos, { que: 'cobrada', doc: 'factura', numero: '12' });
+  assert.equal(accionDe(uso('documento', { que: 'facturar_presupuesto', cliente: 'Ana' })).datos.doc, 'presupuesto');
+  assert.equal(accionDe(uso('documento', { que: 'borrar' })).accion, 'responder');
+  assert.equal(accionDe(uso('guardar_cliente', { nombre: 'Joan Puig', nif: '12345678Z' })).accion, 'guardar_cliente');
+  assert.equal(accionDe(uso('guardar_cliente', { nombre: ' ' })).accion, 'responder');
+  assert.equal(accionDe(uso('apuntar_gasto', {})).accion, 'apuntar_gasto');
+});
+
+test('factura de un presupuesto: la misma que el botón de la pantalla (resto tras la señal) y no si ya está facturado', async () => {
+  const { facturaDePresupuesto } = await import('../lib/presupuestosServidor.js');
+  const p = { id: 'P2026-1', numero: 1, anio: 2026, serie: 'P', fecha: '2026-10-01', validez: 90, actividad: 'dj', cliente: { nombre: 'Ana' }, concepto: 'Boda', base: 1000, ivaPct: 21, irpfPct: 15, senalPct: 30, estado: 'aceptado', facturas: [{ id: 'f1', numero: 'F2026-003', tipo: 'senal', base: 300 }] };
+  const r = facturaDePresupuesto(p, 'resto', '2026-10-30');
+  assert.equal(r.base, 700);
+  assert.match(r.datos.concepto, /descontada la señal de la factura F2026-003\) · Presupuesto P2026-001/);
+  assert.match(facturaDePresupuesto({ ...p, facturas: [...p.facturas, { tipo: 'resto' }] }, 'resto', '2026-10-30').error, /facturado/);
 });

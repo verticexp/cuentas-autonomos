@@ -70,6 +70,7 @@ export function crearBase() {
       case 'rpush': { const l = L(a[0]); l.m.push(...a.slice(1)); return l.m.length; }
       case 'lrange': { const m = vivo(a[0])?.m || []; return m.slice(idx(Number(a[1]), m.length), idx(Number(a[2]), m.length) + 1); }
       case 'ltrim': { const l = vivo(a[0]); if (l) l.m = l.m.slice(idx(Number(a[1]), l.m.length), idx(Number(a[2]), l.m.length) + 1); return 'OK'; }
+      case 'lpop': { const l = vivo(a[0]); if (!l) return null; const n = a[1] === undefined ? 0 : Number(a[1]); const sacados = l.m.splice(0, n || 1); if (!l.m.length) db.delete(a[0]); return n ? sacados : sacados[0]; }
       case 'llen': return vivo(a[0])?.m.length || 0;
       case 'zadd': { const m = Z(a[0]); let n = 0; for (let i = 1; i < a.length; i += 2) { if (!m.has(a[i + 1])) n++; m.set(a[i + 1], Number(a[i])); } return n; }
       case 'zrem': { const v = vivo(a[0]); let n = 0; for (const x of a.slice(1)) if (v?.m.delete(x)) n++; if (v && !v.m.size) db.delete(a[0]); return n; }
