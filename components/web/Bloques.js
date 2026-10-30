@@ -2,6 +2,7 @@ import Link from '@/components/web/EnlacePublico';
 import Icono from '@/components/web/Icono';
 import { CONFIANZA } from '@/components/web/datos';
 import { textos } from '@/lib/idiomaServidor';
+import { datosFaq, jsonLd } from '@/lib/webMeta';
 
 // Piezas comunes de las páginas públicas.
 export const Flecha = () => <Icono n="flecha" className="ico web-flecha" />;
@@ -20,6 +21,7 @@ export async function Faq({ preguntas, titulo = 'Preguntas frecuentes' }) {
   const tr = await textos();
   return (
     <section className="web-sec web-faq">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(datosFaq(preguntas.map(([q, a]) => [tr(q), tr(a)]))) }} />
       <div className="web-faq-in">
         <Encabezado titulo={titulo} />
         <div data-r>
