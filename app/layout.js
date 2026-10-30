@@ -64,7 +64,10 @@ const metadata = {
 export async function generateMetadata() {
   const ruta = (await headers()).get('x-ruta')?.split('?')[0] || '/';
   const web = /^\/(precios|pymes|grandes-empresas|autonomos|gestorias|funciones|verificado|business|contacto|seguridad)(?:\/|$)/.test(ruta);
-  return web ? { ...metadata, title: { default: 'Fisquo', template: '%s' } } : metadata;
+  // Canónica de toda página pública (sin parámetros ni la variante sin www); las que la fijan con metaPagina la sustituyen.
+  const publica = /^\/(?:$|(?:funciones|precios|autonomos|pymes|business|seguridad|verificado|contacto|gestorias|demo|guias|comparativa|privacidad|condiciones|aviso-legal)(?:\/|$))/.test(ruta);
+  const canonica = publica ? { alternates: { canonical: `${WEB}${ruta === '/' ? '' : ruta.replace(/\/$/, '')}` } } : {};
+  return web ? { ...metadata, ...canonica, title: { default: 'Fisquo', template: '%s' } } : { ...metadata, ...canonica };
 }
 
 export async function generateViewport() {
