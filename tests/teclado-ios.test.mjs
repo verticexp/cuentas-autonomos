@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { CAMPO_CON_TECLADO } from '../components/useTecladoFormulario.js';
 import { SIN_BARRA } from '../lib/transicion.js';
 
@@ -22,7 +23,9 @@ test('chat de ayuda: pantalla propia a pantalla completa, sin barra de pestañas
   assert.match(await leer('lib/soporteServidor.js'), /url: '\/ayuda'/);
 });
 
-test('sin conexión: animación de inicio, aviso en tres idiomas y vuelta sola al servidor de la app', async () => {
+// La carpeta mobile/ no se sube a Vercel (.vercelignore): allí no se comprueba.
+const conApp = existsSync(new URL('../mobile/www/sin-conexion.html', import.meta.url));
+test('sin conexión: animación de inicio, aviso en tres idiomas y vuelta sola al servidor de la app', { skip: !conApp }, async () => {
   const h = await leer('mobile/www/sin-conexion.html');
   assert.match(h, /class="logo-trazo"/);
   for (const t of ['Sin conexión a internet', 'Sense connexió a internet', 'No internet connection']) assert.ok(h.includes(t), t);
