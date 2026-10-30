@@ -40,6 +40,14 @@ test('sin conexión: animación de inicio, aviso en tres idiomas y vuelta sola a
   for (const t of ['Sin conexión a internet', 'Sense connexió a internet', 'No internet connection']) assert.ok(h.includes(t), t);
   assert.match(h, /window\.fisquoServidor/);
   assert.match(h, /addEventListener\('online'/);
+  // La misma pantalla de inicio que la web: logo centrado (el aviso va fuera del flujo) y barrita que se llena, no que va y viene.
+  assert.match(h, /\.texto \{ position: absolute; top: 100%/);
+  assert.match(h, /@keyframes llena/);
+  assert.doesNotMatch(h, /@keyframes busca/);
+  // Con la app ya abierta: el aspecto de la app, «‹ Atrás» y buscando conexión, sin el verde de la marca.
+  assert.match(h, /html\.dentro \{ --fondo: #F3F4F1/);
+  assert.match(h, /history\.back\(\)/);
+  for (const t of ['Buscando conexión…', 'Buscant connexió…', 'Looking for a connection…']) assert.ok(h.includes(t), t);
   const vc = await leer('mobile/ios/App/App/FisquoViewController.swift');
   assert.match(vc, /NWPathMonitor/);
   assert.match(vc, /name: "conexion"/);
@@ -47,4 +55,12 @@ test('sin conexión: animación de inicio, aviso en tres idiomas y vuelta sola a
   assert.match(vc, /_updateTextInputTraits:/);
   // Una navegación cancelada no es falta de red.
   assert.match(await leer('mobile/ios/App/App/DelegadoWeb.swift'), /NSURLErrorCancelled/);
+});
+
+test('sin red dentro de la app: aviso corto arriba y «Conexión recuperada» al volver', async () => {
+  const js = await leer('components/SinRed.js');
+  assert.match(js, /tr\('Conexión recuperada'\)/);
+  assert.match(js, /tr\('Lo que ves puede no estar al día'\)/);
+  const textos = await leer('lib/textos/comunes.js');
+  for (const t of ['"Conexión recuperada"', '"Lo que ves puede no estar al día"', '"Sin conexión"']) assert.ok(textos.includes(t), t);
 });
