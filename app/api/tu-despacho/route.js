@@ -4,9 +4,10 @@ import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { redis } from '@/lib/redis';
 import { hoy } from '@/lib/formato';
 import { auditar } from '@/lib/auditoria';
-import { despachoDe, despachoPorCodigo, leerAccesos, separarCliente, unirCliente } from '@/lib/despachos';
+import { despachoDe, despachoPorCodigo, leerAccesos, PERMISOS_DESPACHO, separarCliente, unirCliente } from '@/lib/despachos';
 import { comentariosDe, escribir, marcarLeido, responder } from '@/lib/comentariosDespacho';
 import { planSinLicencia, sincronizarLicencias } from '@/lib/licencias';
+import { reabrirTrimestre } from '@/lib/cierres';
 import { pasado, respuesta429 } from '@/lib/limite';
 
 export const dynamic = 'force-dynamic';
@@ -34,9 +35,9 @@ export async function GET(req) {
   return Response.json({ despacho: u.despachoCliente || null, accesos, comentarios });
 }
 
-// Dar acceso a un despacho con su código (administrador o «Datos de la empresa»). { codigo }
+// Dar acceso a un despacho exige poder ver todo lo que verá la gestoría. { codigo }
 export async function POST(req) {
-  const { u, res } = await cliente({ permiso: 'empresa' });
+  const { u, res } = await cliente({ permiso: ['empresa', ...PERMISOS_DESPACHO] });
   if (res) return res;
   if (await pasado('tu-despacho-codigo', u.empresa, 20, 3600)) return respuesta429(3600, 'Demasiados intentos. Espera una hora.');
   const d = await despachoPorCodigo((await cuerpo(req)).codigo);
@@ -61,10 +62,19 @@ export async function DELETE() {
 
 // Responder a una pregunta de la gestoría o marcarla como resuelta ({ id, texto?, resuelto? }), o marcar leído ({ leer: true }).
 export async function PATCH(req) {
-  const { u, res } = await cliente({ permiso: 'resumen' });
-  if (res) return res;
-  if (!u.despachoCliente || u.despachoCliente.pendiente) return error('No tienes ninguna gestoría con acceso', 404);
   const b = await cuerpo(req);
+  // Sin despacho, el administrador puede quitar también los cierres antiguos que no guardaban su procedencia.
+  const reabrir = b.accion === 'reabrir';
+  const { u, res } = await cliente(reabrir ? { permiso: 'empresa' } : { permiso: 'resumen' });
+  if (res) return res;
+  if (reabrir) {
+    if (u.rol !== 'admin' || u.despachoCliente) return error('Solo el administrador sin gestoría puede reabrir estos trimestres', 403);
+    const r = await reabrirTrimestre(u, Number(b.anio), Number(b.t));
+    if (r.error) return error(r.error);
+    await auditar(u, 'Trimestre reabierto', `${b.t}T ${b.anio}`);
+    return Response.json(r);
+  }
+  if (!u.despachoCliente || u.despachoCliente.pendiente) return error('No tienes ninguna gestoría con acceso', 404);
   // { leer: true }: el cliente ha abierto la conversación.
   if (b.leer === true) { await marcarLeido(u.empresa, 'cliente'); leidoCliente(u.empresa); return Response.json({ ok: true }); }
   const r = await responder(u.empresa, String(b.id || ''), u, 'cliente', { texto: b.texto, resuelto: b.resuelto, despacho: u.despachoCliente.id });

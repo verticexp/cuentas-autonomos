@@ -32,7 +32,7 @@ export const POST = (req) => respuestaPublica(async () => {
   return errorPublico('Acción no válida');
 });
 export const DELETE = (req) => respuestaPublica(async () => {
-  const { u, res } = await usuarioApi({ permiso: 'empresa' });
+  const { u, res } = await usuarioApi({ permiso: 'empresa', revocacion: true });
   if (res) return res;
   const q = new URL(req.url).searchParams, id = q.get('clave') || q.get('webhook');
   if (!id || !/^[a-f0-9-]{36}$/.test(id) || q.has('clave') === q.has('webhook')) return errorPublico('Indica una clave o un webhook');
