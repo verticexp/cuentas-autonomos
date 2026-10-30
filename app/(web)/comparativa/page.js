@@ -8,8 +8,8 @@ import { rellenar } from '@/lib/webComparativa';
 import { metaPagina } from '@/lib/webMeta';
 
 export const metadata = metaPagina({
-  titulo: 'Comparativas de Fisquo: Holded y Quipu',
-  descripcion: 'Fisquo frente a Holded y Quipu con sus precios publicados, verificados el 23 de octubre de 2026, y una guía honesta de cuándo te conviene cada uno.',
+  titulo: 'Comparativas de Fisquo: Holded, Quipu, Anfix y más',
+  descripcion: 'Fisquo frente a Holded, Quipu, TS Facturas (Billin), Contasimple y Anfix con sus precios publicados, verificados el 30 de octubre de 2026.',
   ruta: '/comparativa',
 });
 

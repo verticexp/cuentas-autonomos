@@ -137,7 +137,7 @@ export const GUIAS = [
       ['¿Puedo presentar el 303 fuera de plazo?', 'Sí, pero con recargo si lo haces sin requerimiento previo de la Administración. El recargo aumenta cuanto más tardes (art. 27 de la Ley General Tributaria).'],
       ['¿El 303 y el 130 tienen los mismos plazos?', 'Sí: del 1 al 20 de abril, julio y octubre, y del 1 al 30 de enero. Por eso muchos autónomos presentan los dos a la vez.'],
     ],
-    relacionadas: ['modelo-130', 'calendario-fiscal-sociedad-2026-2027', 'factura-simplificada'],
+    relacionadas: ['modelo-130', 'modelo-390', 'calendario-fiscal-sociedad-2026-2027'],
     cta: { titulo: 'Que tu 303 salga calculado', sub: 'Apunta tus facturas y gastos en Fisquo y ten las casillas listas cada trimestre. 30 días gratis, sin tarjeta.' },
     aviso: DISCLAIMER,
   },
@@ -1021,6 +1021,196 @@ export const GUIAS = [
     ],
     relacionadas: ['modelo-130', 'modelo-303', 'como-hacer-una-factura'],
     cta: { titulo: 'Tus gastos, con foto y sin dudas', sub: 'Fisquo lee el ticket con IA y aplica a cada gasto la parte deducible en el 303 y en el 130. 30 días gratis, sin tarjeta.' },
+    aviso: DISCLAIMER,
+  },
+  {
+    slug: 'modelo-390',
+    para: 'todos',
+    corto: 'Modelo 390',
+    titulo: 'Modelo 390: el resumen anual del IVA',
+    descripcion: 'Qué es el modelo 390, quién lo presenta y quién está exonerado, el plazo de enero, qué datos lleva y cómo cuadrarlo con tus cuatro 303 del año.',
+    resumen: 'El resumen del IVA del año: quién lo presenta, el plazo de enero y cómo cuadrarlo con los 303.',
+    minutos: 6,
+    revision: '2026-10-30',
+    normas: [
+      'Ley 37/1992, del IVA: art. 164 (obligaciones de los sujetos pasivos).',
+      'Reglamento del IVA, Real Decreto 1624/1992: art. 71.4 (declaración resumen anual y exoneraciones).',
+      'Ley 39/2015, art. 30.5 (el plazo que acaba en día inhábil pasa al siguiente hábil).',
+      'Instrucciones del modelo 390 en la sede electrónica de la AEAT.',
+    ],
+    secciones: [
+      {
+        id: 'que-es', t: 'Qué es el modelo 390',
+        bloques: [
+          { p: 'El 390 es la **declaración resumen anual del IVA**. Recoge, sumadas, todas las operaciones que has declarado en tus 303 del año, pero con más detalle: separa las ventas y las compras por tipo de IVA y por régimen, distingue los bienes de inversión y añade datos como el volumen de operaciones.' },
+          { p: 'Es una declaración **informativa**: no se paga nada con ella. El IVA ya lo pagaste (o lo compensaste) en cada 303.' },
+        ],
+      },
+      {
+        id: 'quien', t: 'Quién lo presenta y quién no',
+        bloques: [
+          { p: 'En general, lo presenta quien presenta el 303: autónomos y sociedades con actividades sujetas a IVA.' },
+          { p: 'No lo presentan, entre otros:' },
+          { ul: [
+            'Quienes llevan los libros registro por el **SII**.',
+            'Quienes presentan el 303 trimestral, tributan solo ante la AEAT y su actividad es únicamente el **alquiler de inmuebles urbanos** o está en el **régimen simplificado** (módulos) o en el de la **agricultura, ganadería y pesca**. En esos casos, el 303 del 4.º trimestre lleva unos datos adicionales en su lugar.',
+            'Quienes solo hacen operaciones **exentas** de IVA y no presentan el 303.',
+          ] },
+          { nota: 'Si tu actividad está en el País Vasco o en Navarra, el resumen anual es el de su hacienda foral. Ante la duda sobre si estás exonerado, consúltalo con tu gestoría.' },
+        ],
+      },
+      {
+        id: 'plazo', t: 'Plazo',
+        bloques: [
+          { p: 'Se presenta **del 1 al 30 de enero** del año siguiente, junto con el 303 del 4.º trimestre. Si el 30 cae en sábado, domingo o festivo, pasa al siguiente día hábil: el 390 de 2026 se puede presentar hasta el **lunes 1 de febrero de 2027**, porque el 30 de enero es sábado.' },
+        ],
+      },
+      {
+        id: 'contenido', t: 'Qué datos lleva',
+        bloques: [
+          { ul: [
+            '**Datos generales**: tu actividad principal (con su epígrafe del IAE) y si has estado en algún régimen especial.',
+            '**IVA devengado**: las bases y cuotas de tus ventas, separadas por tipo (4 %, 10 % y 21 %), más las adquisiciones a la UE y las operaciones con inversión del sujeto pasivo.',
+            '**IVA deducible**: el de tus compras y gastos, separando las operaciones interiores, las importaciones, las adquisiciones a la UE y los **bienes de inversión**.',
+            '**Resultado** de cada trimestre y del año, y lo que queda a compensar.',
+            '**Volumen de operaciones** del año: lo que has facturado, con el detalle de las operaciones exentas y de las que dan derecho a deducir.',
+          ] },
+        ],
+      },
+      {
+        id: 'cuadrar', t: 'Cómo cuadrarlo con tus 303',
+        bloques: [
+          { pasos: [
+            { t: 'Suma tus cuatro 303', d: 'El IVA devengado, el deducible y el resultado del 390 tienen que coincidir con la suma de lo declarado en los 303 del año, incluidas las complementarias.' },
+            { t: 'Repasa los tipos', d: 'El 303 junta casillas que el 390 separa. Comprueba que cada venta está en su tipo de IVA y cada compra en su apartado (bienes corrientes o de inversión).' },
+            { t: 'Revisa las rectificativas', d: 'Las facturas rectificativas emitidas y recibidas restan en su trimestre; tienen que estar también en el 390.' },
+            { t: 'Comprueba lo que queda a compensar', d: 'Si el 4.º trimestre salió a compensar, ese saldo pasa al año siguiente; si pediste la devolución, la casilla de compensar queda a cero.' },
+          ] },
+          { p: 'Si al cuadrar ves un error en un 303 ya presentado, corrígelo con una autoliquidación rectificativa de ese trimestre: el 390 no sirve para corregir los 303.' },
+        ],
+      },
+      {
+        id: 'errores', t: 'Errores frecuentes',
+        bloques: [
+          { ul: [
+            'Que la suma del 390 no coincida con la de los 303: Hacienda lo detecta y puede pedirte explicaciones.',
+            'Poner los bienes de inversión (un ordenador, una máquina) como gasto corriente.',
+            'Olvidar el volumen de operaciones o el epígrafe de la actividad.',
+            'Presentarlo con el 303 del 4.º trimestre en tu cabeza, pero no en la sede: son dos declaraciones distintas.',
+          ] },
+        ],
+      },
+      {
+        id: 'fisquo', t: 'Cómo te ayuda Fisquo',
+        bloques: [
+          { p: 'Fisquo prepara el 390 con las mismas facturas y gastos con los que calculó tus 303, separados por tipo y por apartado, y te avisa si algo no cuadra. La presentación la haces tú o tu gestoría en la sede electrónica de la AEAT.' },
+        ],
+      },
+    ],
+    faqs: [
+      ['¿Se paga algo con el 390?', 'No. Es una declaración informativa: resume lo que ya declaraste y pagaste en los 303.'],
+      ['¿Lo tengo que presentar si soy autónomo?', 'En general sí, si presentas el 303. Estás exonerado si llevas el SII o si solo alquilas inmuebles urbanos o estás en módulos o en el régimen agrario y presentas el 303 trimestral.'],
+      ['¿Qué pasa si no coincide con los 303?', 'Lo normal es que Hacienda te pida explicaciones. Si el error está en un 303, corrígelo con una autoliquidación rectificativa de ese trimestre.'],
+    ],
+    relacionadas: ['modelo-303', 'modelo-347', 'calendario-fiscal-autonomo-2026-2027'],
+    cta: { titulo: 'Tu 390 sale de tus 303', sub: 'Fisquo prepara el resumen anual con las mismas facturas y gastos de cada trimestre. 30 días gratis, sin tarjeta.' },
+    aviso: DISCLAIMER,
+  },
+  {
+    slug: 'modelo-347',
+    para: 'todos',
+    corto: 'Modelo 347',
+    titulo: 'Modelo 347: operaciones con terceros de más de 3.005,06 €',
+    descripcion: 'Qué es el modelo 347, a qué clientes y proveedores incluye (más de 3.005,06 € al año), qué no se declara, el plazo de febrero y cómo evitar descuadres.',
+    resumen: 'A qué clientes y proveedores declaras, qué queda fuera, el plazo de febrero y cómo evitar descuadres.',
+    minutos: 7,
+    revision: '2026-10-30',
+    normas: [
+      'Reglamento general de gestión e inspección tributaria, Real Decreto 1065/2007: arts. 31 a 35 (declaración anual de operaciones con terceras personas; exclusiones del art. 33).',
+      'Orden EHA/3012/2008, por la que se aprueba el modelo 347, y sus modificaciones.',
+      'Ley 39/2015, art. 30.5 (el plazo que acaba en día inhábil pasa al siguiente hábil).',
+      'Instrucciones del modelo 347 en la sede electrónica de la AEAT.',
+    ],
+    secciones: [
+      {
+        id: 'que-es', t: 'Qué es el modelo 347',
+        bloques: [
+          { p: 'El 347 es la **declaración anual de operaciones con terceras personas**. En ella le dices a Hacienda con qué clientes y proveedores has superado los **3.005,06 €** en el año, sumando todas las operaciones con cada uno, y cuánto fue en cada trimestre.' },
+          { p: 'Es informativa: no se paga nada. Hacienda la usa para cruzar datos: lo que tú declaras como venta a un cliente tiene que coincidir con lo que él declara como compra a ti.' },
+        ],
+      },
+      {
+        id: 'quien', t: 'Quién lo presenta',
+        bloques: [
+          { p: 'Lo presentan autónomos y sociedades que, en el año, han tenido operaciones con alguna persona o empresa por más de 3.005,06 €. Si no has superado esa cifra con nadie, no se presenta.' },
+          { p: 'No lo presentan, entre otros, quienes llevan los libros registro por el **SII**.' },
+        ],
+      },
+      {
+        id: 'importe', t: 'Cómo se calcula el importe',
+        bloques: [
+          { ul: [
+            'Se suma **todo lo facturado** con cada cliente (o recibido de cada proveedor) en el año, **IVA incluido**.',
+            'Clientes y proveedores van **por separado**: si a una empresa le vendes y le compras, se mira cada cosa por su lado.',
+            'Se indica también el **importe de cada trimestre**.',
+            'Los **cobros en efectivo** de más de 6.000 € de un mismo cliente se declaran aparte.',
+          ] },
+          { ejemplo: {
+            titulo: 'Ejemplo ficticio: un cliente con tres facturas',
+            filas: [
+              ['Factura de marzo (base 1.000 € + 21 % de IVA)', '1.210,00 €'],
+              ['Factura de junio (base 800 € + 21 % de IVA)', '968,00 €'],
+              ['Factura de noviembre (base 900 € + 21 % de IVA)', '1.089,00 €'],
+              ['Total del año con este cliente', '3.267,00 €', true],
+            ],
+            pie: 'Supera los 3.005,06 €, así que se declara, con 1.210 € en el 1.er trimestre, 968 € en el 2.º y 1.089 € en el 4.º. Sin el IVA (2.700 €) no llegaría: por eso el IVA cuenta. Importes inventados.',
+          } },
+        ],
+      },
+      {
+        id: 'fuera', t: 'Qué no se declara',
+        bloques: [
+          { ul: [
+            'Las operaciones que ya van en otra declaración informativa: las ventas y compras a empresas de otros países de la UE (**349**), y lo que lleva retención (**190** y **180**: facturas de profesionales con retención y alquiler del local con retención).',
+            'Las **importaciones y exportaciones** de mercancías.',
+            'Las ventas a **particulares sin sus datos**: tickets y facturas simplificadas sin NIF del cliente.',
+            'Las **nóminas**, las cotizaciones a la Seguridad Social, la cuota de autónomos y los impuestos.',
+          ] },
+          { p: 'El alquiler de un local **sin** retención (por ejemplo, porque el propietario está exonerado) sí se declara, como arrendamiento de local de negocio.' },
+        ],
+      },
+      {
+        id: 'plazo', t: 'Plazo',
+        bloques: [
+          { p: 'Se presenta durante el **mes de febrero** del año siguiente. Si el último día cae en sábado, domingo o festivo, pasa al siguiente día hábil: el 347 de 2026 se puede presentar hasta el **lunes 1 de marzo de 2027**, porque el 28 de febrero es domingo.' },
+        ],
+      },
+      {
+        id: 'descuadres', t: 'Cómo evitar descuadres',
+        bloques: [
+          { pasos: [
+            { t: 'Compara antes de presentar', d: 'Manda a tus clientes y proveedores habituales el total que vas a declarar con ellos. Si su cifra es distinta, aclaradlo antes de febrero.' },
+            { t: 'Usa la misma fecha', d: 'Las facturas se declaran por la fecha que cuenta para el IVA. Una factura de diciembre que tu cliente apunta en enero acaba en años distintos y descuadra.' },
+            { t: 'Revisa los NIF', d: 'Un NIF mal escrito hace que Hacienda no pueda cruzar la operación. Comprueba los de tus clientes y proveedores grandes.' },
+            { t: 'Incluye las rectificativas', d: 'Los abonos restan del total con ese cliente o proveedor.' },
+          ] },
+        ],
+      },
+      {
+        id: 'fisquo', t: 'Cómo te ayuda Fisquo',
+        bloques: [
+          { p: 'Fisquo suma tus operaciones con cada cliente y proveedor, deja fuera lo que va en el 349, el 190 y el 180, separa los trimestres y los cobros en efectivo, y prepara el 347 con su fichero para la sede de la AEAT. Presentas tú o tu gestoría.' },
+        ],
+      },
+    ],
+    faqs: [
+      ['¿Los 3.005,06 € son con IVA o sin IVA?', 'Con IVA. Se suma el total de las facturas, IVA incluido.'],
+      ['¿Tengo que presentarlo si no supero esa cifra con nadie?', 'No. Si no has tenido operaciones de más de 3.005,06 € con ninguna persona o empresa en el año, no hay que presentarlo.'],
+      ['¿Se declaran las facturas de mi gestoría?', 'Si llevan retención de IRPF, no: ya van en el 190. Si no la llevan y superan el límite, sí.'],
+      ['¿Qué pasa si mi cliente declara otra cifra?', 'Hacienda puede pedir explicaciones a los dos. Por eso conviene comparar las cifras antes de presentar.'],
+    ],
+    relacionadas: ['modelo-390', 'modelo-303', 'calendario-fiscal-sociedad-2026-2027'],
+    cta: { titulo: 'El 347 sin hacer sumas', sub: 'Fisquo suma tus operaciones con cada cliente y proveedor y prepara el fichero. 30 días gratis, sin tarjeta.' },
     aviso: DISCLAIMER,
   },
 ];
