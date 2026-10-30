@@ -341,7 +341,24 @@ test('saludo del correo de la factura con la persona de contacto', async () => {
   assert.match(mensajeFactura({ ...f, idioma: 'en' }, { nombre: 'Fisquo' }, {}, 'Pepe'), /^Hello Pepe,/);
 });
 
-test('WhatsApp no mezcla idiomas: la IA contesta en castellano, como los resúmenes de Fisquo', async () => {
+test('WhatsApp no mezcla idiomas: la IA contesta en el idioma del perfil, como los resúmenes de Fisquo', async () => {
   const fuente = await (await import('node:fs/promises')).readFile(new URL('../lib/whatsappIA.js', import.meta.url), 'utf8');
-  assert.match(fuente, /Siempre en castellano, también si te escriben en catalán/);
+  assert.match(fuente, /Siempre en \$\{lengua\}, también si te escriben en otro idioma/);
+});
+
+test('WhatsApp en el idioma del perfil: catalán e inglés en el resumen, el aviso de emitida y el gasto', async () => {
+  const { traductorDe } = await import('../lib/textos/index.js');
+  const datos = { fecha: '2026-10-30', cliente: { nombre: 'Can Joan SL', nif: 'B12345678', direccion: 'C/ Riera 5', ciudad: '08302 Mataró' }, lineas: [{ concepto: 'Sesión', cantidad: 1, precio: 100, ivaPct: 21 }], ivaPct: 21, irpfPct: 0, base: 100 };
+  const emisor = { nombre: 'Fisquo', nif: 'B05814041', direccion: 'C/ Aragó 6' };
+  const ca = resumenBorrador(datos, 'a@b.cat', emisor, 'factura', 'correo', { tr: traductorDe('ca') });
+  assert.match(ca, /D'acord, aquesta seria la factura:|T'ho deixo així:|Mira, quedaria així:/);
+  assert.match(ca, /L'envio a a@b\.cat\. Està bé\? L'emeto i l'hi envio\?/);
+  assert.match(ca, /a nom de Fisquo/);
+  const en = resumenBorrador(datos, '', emisor, 'factura', 'whatsapp', { tr: traductorDe('en') });
+  assert.match(en, /\+ VAT /);
+  assert.match(en, /I'll send you the PDF here so you can send it yourself\. \(I don't have their email\) Is it OK\? Shall I issue it\?/);
+  assert.equal(textoEmitido({ pres: false, num: 'F-7', email: 'a@b.cat', entrega: 'correo', envio: { ok: true }, tr: traductorDe('ca') }), '✅ Factura F-7 emesa i enviada a a@b.cat.');
+  assert.match(resumenGasto({ proveedor: 'Repsol', base: 50, ivaPct: 21 }, { tr: traductorDe('en') }), /VAT 21% /);
+  // Sin idioma (o castellano): exactamente como antes.
+  assert.match(resumenBorrador(datos, 'a@b.cat', emisor, 'factura', 'correo'), /Se la mando a a@b\.cat\. ¿Está bien\? ¿La emito y se la envío\?/);
 });
