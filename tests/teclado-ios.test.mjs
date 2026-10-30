@@ -15,6 +15,15 @@ test('teclado: la barra de pestañas se esconde con cualquier campo, en cualquie
   assert.doesNotMatch(CAMPO_CON_TECLADO, /\.formulario/);
 });
 
+test('teclado: las barras fijas de abajo de un formulario no se suben encima del teclado', async () => {
+  // En la factura nueva, el total y «Crear factura» tapaban media pantalla mientras se escribía un concepto.
+  assert.match(await leer('components/TabBar.js'), /useTecladoFormulario\(movil, \{ marcar: true \}\)/);
+  assert.match(await leer('components/NavDespacho.js'), /useTecladoFormulario\(true, \{ marcar: true \}\)/);
+  assert.match(await leer('components/useTecladoFormulario.js'), /toggleAttribute\('data-teclado'/);
+  const css = await leer('app/movil.css');
+  for (const s of ['.ff-nuevo .ff-campos > .ff-pie', '.alb-facturar']) assert.ok(css.includes(`html[data-teclado] ${s}`), s);
+});
+
 test('chat de ayuda: pantalla propia a pantalla completa, sin barra de pestañas en el móvil', async () => {
   assert.ok(SIN_BARRA.test('/ayuda'));
   assert.ok(!SIN_BARRA.test('/ayudas'));
@@ -34,6 +43,8 @@ test('sin conexión: animación de inicio, aviso en tres idiomas y vuelta sola a
   const vc = await leer('mobile/ios/App/App/FisquoViewController.swift');
   assert.match(vc, /NWPathMonitor/);
   assert.match(vc, /name: "conexion"/);
+  // «Contraseñas» encima del teclado: se quita donde WebKit rellena los rasgos que lee iOS, no solo en textInputTraits.
+  assert.match(vc, /_updateTextInputTraits:/);
   // Una navegación cancelada no es falta de red.
   assert.match(await leer('mobile/ios/App/App/DelegadoWeb.swift'), /NSURLErrorCancelled/);
 });

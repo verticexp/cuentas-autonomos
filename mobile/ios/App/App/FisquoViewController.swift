@@ -253,21 +253,23 @@ private func quitarBarraDelTeclado(_ webView: WKWebView) {
         }
         // La sugerencia «Contraseñas» encima del teclado salía en cualquier campo (un buscador, el chat): en una app solo sale
         // en los de usuario y contraseña. Los campos sin tipo de autorrelleno (autocomplete) dicen ser de un código de un
-        // solo uso, que no ofrece nada si no llega un SMS con un código.
-        let rasgos = NSSelectorFromString("textInputTraits")
-        if let original = class_getInstanceMethod(base, rasgos) {
-            typealias Rasgos = @convention(c) (AnyObject, Selector) -> AnyObject?
-            let anterior = unsafeBitCast(method_getImplementation(original), to: Rasgos.self)
-            let sinContrasenas: @convention(block) (AnyObject) -> AnyObject? = { yo in
-                let r = anterior(yo, rasgos)
-                if let r = r as? NSObject, r.responds(to: NSSelectorFromString("textContentType")),
-                   (r.value(forKey: "textContentType") as? String ?? "").isEmpty,
-                   (r.value(forKey: "secureTextEntry") as? Bool) != true {
-                    r.setValue(UITextContentType.oneTimeCode.rawValue, forKey: "textContentType")
-                }
-                return r
+        // solo uso, que no ofrece nada si no llega un SMS con un código. Se cambia en _updateTextInputTraits:, por donde WebKit
+        // rellena tanto los rasgos clásicos (textInputTraits) como los que iOS lee hoy (extendedTraitsDelegate); retocar solo
+        // textInputTraits no bastaba: en los conceptos de una factura y en su buscador de clientes seguía saliendo.
+        let actualizar = NSSelectorFromString("_updateTextInputTraits:")
+        if let original = class_getInstanceMethod(base, actualizar) {
+            typealias Actualizar = @convention(c) (AnyObject, Selector, AnyObject?) -> Void
+            let anterior = unsafeBitCast(method_getImplementation(original), to: Actualizar.self)
+            let sinContrasenas: @convention(block) (AnyObject, AnyObject?) -> Void = { yo, rasgos in
+                anterior(yo, actualizar, rasgos)
+                guard let r = rasgos as? NSObject, r.responds(to: NSSelectorFromString("setTextContentType:")),
+                      r.responds(to: NSSelectorFromString("textContentType")),
+                      (r.value(forKey: "textContentType") as? String ?? "").isEmpty,
+                      !(r.responds(to: NSSelectorFromString("isSecureTextEntry")) && r.value(forKey: "secureTextEntry") as? Bool == true)
+                else { return }
+                r.setValue(UITextContentType.oneTimeCode.rawValue, forKey: "textContentType")
             }
-            class_addMethod(nueva, rasgos, imp_implementationWithBlock(sinContrasenas), method_getTypeEncoding(original))
+            class_addMethod(nueva, actualizar, imp_implementationWithBlock(sinContrasenas), method_getTypeEncoding(original))
         }
         objc_registerClassPair(nueva)
         clase = nueva
