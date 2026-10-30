@@ -141,6 +141,39 @@ const PANTALLAS = {
     </div>
     );
   },
+  // Fisquo por WhatsApp: conversaciones de ejemplo con los textos de lib/whatsapp.js. Un fontanero: sin retención.
+  waPresupuesto: () => {
+    const tr = useT();
+    return (
+    <div data-ui className="mk mk-chat">
+      <p className="yo">{tr('Presupuesto para Bar Lluna: cambiar el calentador, 450, y la mano de obra, 120')}</p>
+      <p>{tr('Te lo dejo así:')}<br /><br /><b>Bar Lluna</b><br />{tr('Calentador · 450,00 €')}<br />{tr('Mano de obra · 120,00 €')}<br />{tr('Total')} <b>689,70 €</b> (570,00 € + {tr('IVA')} 119,70 €)<br /><br />{tr('Se lo mando a reservas@barlluna.es para que lo acepte. ¿Está bien así?')}</p>
+      <p className="yo">{tr('Perfecto')}</p>
+      <div className="mk-aviso"><Icono n="tic" />{tr('Bar Lluna lo aceptó desde el móvil · hace 5 min')}</div>
+    </div>
+    );
+  },
+  waGasto: () => {
+    const tr = useT();
+    return (
+    <div data-ui className="mk mk-chat">
+      <span className="mk-wa-ticket" aria-label={tr('Foto del ticket')}><i /><i /><i /><i /><b /></span>
+      <p>{tr('Leído. Te lo apunto así:')}<br /><br /><b>Ferretería Soler</b><br />{tr('Material de fontanería · 28/10/2026')}<br />{tr('Total')} <b>84,70 €</b> (70,00 € + {tr('IVA')} 21 % 14,70 €)<br /><br />{tr('¿Lo apunto como pagado?')}</p>
+      <p className="yo">{tr('Sí')}</p>
+    </div>
+    );
+  },
+  waConsulta: () => {
+    const tr = useT();
+    return (
+    <div data-ui className="mk mk-chat">
+      <p className="yo">{tr('¿Quién me debe dinero?')}</p>
+      <p>{tr('Tienes 3 facturas sin cobrar por 1.940,00 €. La más antigua es la F-0128 de Estudio Norte, de 640,00 €, que venció hace 12 días.')}</p>
+      <p className="yo">{tr('¿Y cuánto IVA me toca este trimestre?')}</p>
+      <p>{tr('Por ahora, 1.212,40 € en el 303 del cuarto trimestre. Se presenta hasta el 30 de enero.')}</p>
+    </div>
+    );
+  },
   portal: () => {
     const tr = useT();
     return (

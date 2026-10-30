@@ -497,6 +497,25 @@ body:has(.web):has(.tabbar) { padding-left: 0 !important; }
 .dm-chat-sug button:active { transform: scale(0.96); } .dm-chat-sug button:disabled { opacity: 0.5; }
 @media (hover: hover) and (pointer: fine) { .dm-chat-sug button:not(:disabled):hover { box-shadow: 0 0 0 1.5px var(--acc) inset; color: var(--acc2); } }
 
+/* Fisquo por WhatsApp: la conversación entera cabe sin que el borrador quede cortado. */
+.dm-wa .dm-chat-msgs { height: 440px; }
+.dm-wa .dm-chat-ava svg { width: 16px; height: 16px; }
+.dm-wa .dm-chat-sug { align-items: center; justify-content: space-between; }
+.dm-wa-pie { color: var(--g); font-size: 13px; }
+.dm-wa-b { max-width: 86%; display: grid; gap: 8px; padding: 10px 14px; border-radius: 16px 16px 16px 4px; background: #F0F3F1; font-size: 13.5px; line-height: 1.45; justify-self: start; animation: web-sube 0.3s var(--e) both; }
+.dm-wa-b.yo { justify-self: end; background: var(--v); color: var(--c); border-radius: 16px 16px 4px 16px; }
+.dm-wa-audio { display: flex; align-items: center; gap: 2px; min-width: 210px; }
+.dm-wa-audio i { width: 3px; border-radius: 2px; background: currentColor; opacity: 0.7; }
+.dm-wa-audio i.dm-wa-play { width: 0; height: 0; margin-right: 10px; border-radius: 0; background: none; opacity: 1; border-style: solid; border-width: 7px 0 7px 11px; border-color: transparent transparent transparent currentColor; }
+.dm-wa-audio small { margin-left: 10px; font-size: 12px; opacity: 0.75; font-variant-numeric: tabular-nums; }
+.dm-wa-trans { font-size: 12.5px; font-style: italic; opacity: 0.75; }
+.dm-wa-pdf { display: flex; align-items: center; gap: 12px; }
+.dm-wa-pdf small { display: block; color: var(--g); font-size: 12px; }
+.dm-wa-pdf-ico { display: grid; place-items: center; width: 38px; height: 44px; border-radius: 6px; background: var(--rojo); color: #fff; font-size: 10.5px; font-weight: 800; letter-spacing: 0.04em; }
+.mk-wa-ticket { justify-self: end; display: grid; gap: 7px; width: 96px; padding: 14px 12px; border-radius: 12px; background: var(--v); }
+.mk-wa-ticket i, .mk-wa-ticket b { height: 4px; border-radius: 2px; background: rgba(250, 250, 248, 0.45); }
+.mk-wa-ticket i:nth-child(2n) { width: 70%; } .mk-wa-ticket b { height: 7px; width: 55%; justify-self: end; background: var(--luz); }
+
 /* ───── Precios ───── */
 .web-controles { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 28px; }
 .web-precios:has(.web-seg) .web-controles { justify-content: space-between; } .web-precios:not(:has(.web-seg)) .web-controles { justify-content: center; }

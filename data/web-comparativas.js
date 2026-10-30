@@ -36,6 +36,7 @@ export const RIVALES = [
       ['Eres autónomo o una pyme y quieres facturar y leer tus tickets con IA en el mismo sitio.', 'Fisquo calcula también tus modelos (303, 130, 111…) con lo que ya has apuntado.'],
       ['Quieres traerte tus datos de Holded.', 'Fisquo importa clientes, facturas y gastos desde Holded o desde un Excel, y para la contabilidad, el balance de sumas y saldos y los bienes de inversión.'],
       ['Quieres que tu gestoría entre sin ocupar un usuario.', 'Cada suscripción incluye un acceso de gestoría aparte, que no consume usuarios del plan.'],
+      ['Quieres facturar desde el móvil sin abrir ningún programa.', 'Con Fisquo Pro y Plus escribes o mandas un audio por WhatsApp y te prepara la factura, el presupuesto o el gasto; nada se emite hasta que dices que sí. Si Holded ofrece algo parecido, compruébalo en su web.'],
     ],
     faqs: [
       ['¿Puedo importar mis datos de Holded a Fisquo?', 'Sí. Fisquo importa clientes, facturas y gastos desde Holded o desde cualquier Excel, y para la contabilidad el balance de sumas y saldos y los bienes de inversión con lo ya amortizado.'],
@@ -65,6 +66,7 @@ export const RIVALES = [
       ['Quieres lectura de tickets con IA, inventario, nóminas y previsión de caja en el mismo programa.', 'La lectura con IA está en todos los planes; el inventario y la previsión de caja, desde el plan Pro; las nóminas, desde Pymes Esencial y Autónomos Plus.'],
       ['Quieres el precio de entrada más bajo.', 'Fisquo Autónomos Esencial parte de {aut} € al mes; el plan más barato de Quipu parte de 17 €. No incluyen lo mismo: compara con lo que necesitas.'],
       ['Eres gestoría y quieres un panel con todos tus clientes.', 'Fisquo tiene un programa para gestorías, con el panel Mi despacho, gratis para la gestoría.'],
+      ['Quieres facturar desde el móvil sin abrir ningún programa.', 'Con Fisquo Pro y Plus escribes o mandas un audio por WhatsApp y te prepara la factura, el presupuesto o el gasto; nada se emite hasta que dices que sí. Si Quipu ofrece algo parecido, compruébalo en su web.'],
     ],
     faqs: [
       ['¿Puedo traer mis datos de Quipu a Fisquo?', 'Fisquo importa clientes, facturas y gastos desde un Excel. Si tu programa actual te deja exportar a Excel, súbelo y empareja las columnas. Si tienes dudas, escríbenos a corporate@fisquo.com y te echamos una mano.'],
@@ -94,6 +96,7 @@ export const RIVALES = [
       ['Quieres que el programa te calcule los impuestos.', 'Fisquo calcula el 303, el 130, el 111, el 115 y el resto de tus modelos con lo que ya has apuntado, y te avisa de cada plazo.'],
       ['Quieres leer tus tickets y facturas de gasto con IA.', 'Todos los planes de Fisquo incluyen lectura con IA, desde 50 páginas al mes en Autónomos Esencial.'],
       ['Tienes una sociedad.', 'Fisquo Pymes lleva la contabilidad por partida doble, las cuentas anuales y el Impuesto sobre Sociedades.'],
+      ['Quieres facturar desde el móvil sin abrir ningún programa.', 'Con Fisquo Pro y Plus escribes o mandas un audio por WhatsApp y te prepara la factura, el presupuesto o el gasto; nada se emite hasta que dices que sí. Si TS Facturas ofrece algo parecido, compruébalo en su web.'],
     ],
     faqs: [
       ['¿Billin y TS Facturas son lo mismo?', 'Sí: en su web, billin.net, el programa aparece ahora como TS Facturas, de TeamSystem.'],
@@ -124,6 +127,7 @@ export const RIVALES = [
       ['Trabajas con alguien más.', 'Los planes de Contasimple son de un usuario. En Fisquo, tu gestoría entra gratis con su propio acceso, y los planes superiores añaden usuarios.'],
       ['Tienes una sociedad o vas a tenerla.', 'Fisquo Pymes, desde {pym} € al mes, lleva la contabilidad por partida doble, las cuentas anuales y el Impuesto sobre Sociedades.'],
       ['Quieres que el programa te avise y te diga cuánto apartar.', 'Fisquo calcula tus modelos con lo que apuntas y te dice cada trimestre cuánto apartar para Hacienda.'],
+      ['Quieres facturar desde el móvil sin abrir ningún programa.', 'Con Fisquo Pro y Plus escribes o mandas un audio por WhatsApp y te prepara la factura, el presupuesto o el gasto; nada se emite hasta que dices que sí. Si Contasimple ofrece algo parecido, compruébalo en su web.'],
     ],
     faqs: [
       ['¿Puedo traer mis datos de Contasimple a Fisquo?', 'Fisquo importa clientes, facturas y gastos desde un Excel. Si puedes exportarlos a Excel, súbelo y empareja las columnas. Si tienes dudas, escríbenos a corporate@fisquo.com.'],
@@ -153,6 +157,7 @@ export const RIVALES = [
       ['Quieres el inventario dentro del plan.', 'En Fisquo el inventario viene desde el plan Pro; en Anfix, el control de stock es un módulo aparte.'],
       ['Quieres que tu gestoría entre sin ocupar un usuario.', 'Cada suscripción de Fisquo incluye un acceso de gestoría aparte, gratis.'],
       ['Quieres leer tus tickets con IA y saber cuánto apartar para Hacienda.', 'Fisquo lee los tickets en todos los planes y calcula tus modelos con lo que ya has apuntado.'],
+      ['Quieres facturar desde el móvil sin abrir ningún programa.', 'Con Fisquo Pro y Plus escribes o mandas un audio por WhatsApp y te prepara la factura, el presupuesto o el gasto; nada se emite hasta que dices que sí. Si Anfix ofrece algo parecido, compruébalo en su web.'],
     ],
     faqs: [
       ['¿Puedo traer mis datos de Anfix a Fisquo?', 'Fisquo importa clientes, facturas y gastos desde un Excel, y para la contabilidad el balance de sumas y saldos. Si tienes dudas, escríbenos a corporate@fisquo.com.'],

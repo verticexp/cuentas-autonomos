@@ -299,6 +299,73 @@ export function AsistenteDemo() {
   );
 }
 
+/* ───────── Fisquo por WhatsApp ───────── */
+// Los textos de Fisquo siguen los de lib/whatsapp.js (resumenBorrador, textoEmitido). Una diseñadora que factura a una
+// empresa: lleva retención del 15 %.
+const CONVERSACION = [
+  { yo: true, audio: '0:08', t: '«Factura a Estudio Norte: tres horas de diseño a 45 € y el logotipo, 300 €»' },
+  { borrador: true },
+  { yo: true, t: 'Sí, y pásamela a mí también' },
+  { t: '✅ Factura F-0143 emitida y enviada a hola@estudionorte.es. Aquí tienes también el PDF, por si la quieres 👇' },
+  { pdf: true },
+];
+// Cuándo sale cada mensaje (ms) y cuándo escribe Fisquo antes de los suyos.
+const PASOS = [400, 2700, 4700, 6500, 7100];
+const ESCRIBE = [[1100, 2700], [5300, 6500]];
+const ONDA = [6, 10, 14, 9, 16, 12, 7, 13, 18, 11, 8, 15, 10, 6, 12, 17, 9, 13, 7, 11, 15, 8, 5, 9];
+
+function MensajeWa({ m }) {
+  const tr = useT();
+  if (m.audio) return (
+    <div className="dm-wa-b yo">
+      <span className="dm-wa-audio" aria-label={tr('Nota de voz')}><i className="dm-wa-play" />{ONDA.map((h, i) => <i key={i} style={{ height: h }} />)}<small>{m.audio}</small></span>
+      <small className="dm-wa-trans">{tr(m.t)}</small>
+    </div>
+  );
+  if (m.borrador) return (
+    <div className="dm-wa-b">
+      <span>{tr('Mira, así quedaría:')}</span>
+      <span><b>Estudio Norte SL</b><br />{tr('3 × Diseño gráfico · 45,00 €')}<br />{tr('Logotipo · 300,00 €')}</span>
+      <span>{tr('Total')} <b>461,10 €</b> (435,00 € + {tr('IVA')} 91,35 € − IRPF 65,25 €)</span>
+      <span>{tr('Se la mando a hola@estudionorte.es. ¿Está bien? ¿La emito y se la envío?')}</span>
+    </div>
+  );
+  if (m.pdf) return (
+    <div className="dm-wa-b dm-wa-pdf"><span className="dm-wa-pdf-ico">PDF</span><span><b>F-0143.pdf</b><small>{tr('1 página')}</small></span></div>
+  );
+  return <div className={`dm-wa-b${m.yo ? ' yo' : ''}`}><span>{tr(m.t)}</span></div>;
+}
+
+export function WhatsAppDemo() {
+  const tr = useT();
+  const [vistos, setVistos] = useState(0);
+  const [escribiendo, setEscribiendo] = useState(false);
+  const fin = useRef(null);
+  const timers = useRef([]);
+  const reproducir = () => {
+    timers.current.forEach(clearTimeout);
+    timers.current = [];
+    if (quieto()) { setVistos(CONVERSACION.length); return; }
+    setVistos(0);
+    PASOS.forEach((t, i) => timers.current.push(setTimeout(() => setVistos(i + 1), t)));
+    ESCRIBE.forEach(([a, b]) => timers.current.push(setTimeout(() => setEscribiendo(true), a), setTimeout(() => setEscribiendo(false), b)));
+  };
+  const ref = useAlVer(reproducir);
+  useEffect(() => () => timers.current.forEach(clearTimeout), []);
+  useEffect(() => { fin.current?.scrollTo({ top: fin.current.scrollHeight, behavior: quieto() ? 'auto' : 'smooth' }); }, [vistos, escribiendo]);
+  const terminado = vistos === CONVERSACION.length;
+  return (
+    <div data-ui className="dm dm-chat dm-wa" ref={ref}>
+      <div className="dm-chat-cab"><span className="dm-chat-ava"><N /></span><div><b>Fisquo</b><small>{tr('En tu WhatsApp')}</small></div></div>
+      <div className="dm-chat-msgs" ref={fin}>
+        {CONVERSACION.slice(0, vistos).map((m, i) => <MensajeWa key={i} m={m} />)}
+        {escribiendo && <p className="dm-chat-esc" aria-label={tr('Escribiendo')}><i /><i /><i /></p>}
+      </div>
+      <div className="dm-chat-sug"><span className="dm-wa-pie">{tr('Conversación de ejemplo')}</span><button onClick={reproducir} disabled={!terminado}>{tr('Volver a verla')}</button></div>
+    </div>
+  );
+}
+
 /* ───────── Contabilidad ───────── */
 const VISTAS_CONT = {
   Resultados: { pie: 'Sale solo del libro diario. Toca otra pestaña.', filas: [
@@ -368,7 +435,7 @@ export function InventarioDemo() {
   );
 }
 
-const DEMOS = { inventario: InventarioDemo, contabilidad: ContabilidadDemo, calculadora: Calculadora, factura: FacturaDemo, ticket: TicketDemo, conciliacion: ConciliacionDemo, prevision: PrevisionDemo, permisos: PermisosDemo, asistente: AsistenteDemo };
+const DEMOS = { inventario: InventarioDemo, contabilidad: ContabilidadDemo, calculadora: Calculadora, factura: FacturaDemo, ticket: TicketDemo, conciliacion: ConciliacionDemo, prevision: PrevisionDemo, permisos: PermisosDemo, asistente: AsistenteDemo, whatsapp: WhatsAppDemo };
 
 export default function Demo({ tipo }) {
   const D = DEMOS[tipo];
