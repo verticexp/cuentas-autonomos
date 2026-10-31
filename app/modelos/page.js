@@ -18,8 +18,9 @@ import Prorrata from '@/components/Prorrata';
 import Rend130 from '@/components/Rend130';
 import SaldoIva from '@/components/SaldoIva';
 import { modelo111, MESES } from '@/lib/nominas';
-import { borradorRenta, borradorSociedades, TIPOS_DEDUCCION_IS, modelo115, modelo180, modelo190, modelo309, modelo202, modelo202Art403, modelo347, modelo349, periodos349, modelo390, ETIQUETAS390, ORDEN390, TOTALES390, retencionesProfesionales, MINIMO_PERSONAL, RET_ALQUILER, modelo216, modelo296 } from '@/lib/modelos';
+import { borradorRenta, borradorSociedades, TIPOS_DEDUCCION_IS, modelo232, TIPOS_OPERACION_232, PARAISOS_FISCALES, LIMITE_232, LIMITE_232_ESPECIFICAS, PCT_232_CIFRA, modelo115, modelo180, modelo190, modelo309, modelo202, modelo202Art403, modelo347, modelo349, periodos349, modelo390, ETIQUETAS390, ORDEN390, TOTALES390, retencionesProfesionales, MINIMO_PERSONAL, RET_ALQUILER, modelo216, modelo296 } from '@/lib/modelos';
 import { SUBCLAVES_296, nombrePais } from '@/lib/noResidentes';
+import { nombreVinculo } from '@/lib/terceros';
 import CuotaIS, { ImporteAnio } from '@/components/CuotaIS';
 import DeduccionesIS from '@/components/DeduccionesIS';
 import { Presentado, Presentado202, PresentadoRet } from '@/components/Acciones';
@@ -156,9 +157,11 @@ export default async function Modelos({ searchParams }) {
   const c420 = igic && usa303(f);
   // La valoración del almacén requiere el histórico completo; las retenciones se imputan al pago,
   // que puede pertenecer a otro año que la factura de proveedor.
-  const [{ facturas, gastos }, nominas, empleados, productos, ajustes, albaranes, manuales, capitalLeido, recurrentes, saldo] = await Promise.all([
+  const [{ facturas, gastos }, nominas, empleados, productos, ajustes, albaranes, manuales, capitalLeido, recurrentes, saldo, fichasCli, fichasProv] = await Promise.all([
     datosImpuestos(u, anio), leer(u, 'nominas'), leer(u, 'empleados'), leer(u, 'productos'), leer(u, 'stock'), leer(u, 'albaranes'), leer(u, 'asientos'), leer(u, 'capital'),
     anio === actual ? leer(u, 'recurrentes') : null, anio === actual ? redis.get(clave(u, 'saldo')) : null,
+    // Las fichas solo hacen falta para el 232 (la vinculación marcada en cada una): no se leen en un autónomo.
+    f.tipo === 'sociedad' ? leer(u, 'clientes') : null, f.tipo === 'sociedad' ? leer(u, 'fichasProv') : null,
   ]);
   const capital = capitalLeido || [];
   const h = hoy();
@@ -204,6 +207,8 @@ export default async function Modelos({ searchParams }) {
   const hay216 = gastos.some((g) => g.noResidente);
   const m296 = hay216 && modelo296(gastos, anio);
   const m347 = modelo347(facturas, gastos, anio, { recc: iva.recc });
+  // 232: operaciones con los terceros marcados como vinculados en su ficha y operaciones con paraísos fiscales.
+  const m232 = f.tipo === 'sociedad' && modelo232(facturas, gastos, anio, { clientes: fichasCli || [], proveedores: fichasProv || [] });
   const c303 = !igic && usa303(f);
   const ids = actividadesDe(u).map((a) => a.id);
   const rendAnterior = u.rend130?.[anio - 1];
@@ -1001,6 +1006,73 @@ export default async function Modelos({ searchParams }) {
             {!soloLectura && <ImporteAnio campo="binsPrevias" anio={null} valor={null} anioEditable titulo="Añadir una base negativa de otro año" ayuda="Año de origen e importe pendiente." />}
             <DeduccionesIS anio={anio} deducciones={u.deduccionesIS || []} soloLectura={soloLectura} />
           </div>}
+        </ModeloPlegable>
+      )}
+
+      {/* 232: operaciones vinculadas y con paraísos fiscales. Informativo (no se paga) y se presenta solo si se pasa de
+          alguno de sus límites; la vinculación de cada cliente o proveedor se marca en su ficha. */}
+      {m232 && (
+        <ModeloPlegable id="m232" num="232" nombre={tr('Operaciones vinculadas y paraísos fiscales')} informativo
+          estado={m232.obligado ? 'listo' : undefined}
+          detalle={m232.obligado ? `${tr('Hay que presentarlo')} · ${tr('hasta el {fecha}', { fecha: tr(plazoAnual('11-30')) })}`
+            : m232.vinculadas ? tr('No pasas de ningún límite: no se presenta')
+            : tr('Sin partes vinculadas marcadas')}>
+          <h2 className="grupo-t">{tr('Modelo 232 de {anio}', { anio })}</h2>
+          <p className="grupo-pie arriba">{tr('Declaración informativa de las operaciones con personas o entidades vinculadas y de las operaciones con países o territorios calificados como paraísos fiscales (art. 13.4 del Reglamento del Impuesto sobre Sociedades y Orden HFP/816/2017).')} <strong>{tr('No se paga nada: se presenta igual, del 1 al 30 de noviembre del año siguiente.')}</strong> {tr('Fisquo suma las operaciones de los clientes y proveedores que hayas marcado como vinculados en su ficha: la vinculación la decides tú, no se deduce de los datos.')}</p>
+          {m232.vinculadas === 0 && !m232.obligado ? (
+            <div className="tarjeta">
+              <Vacio compacto icono="hacienda" titulo={tr('No has marcado ninguna parte vinculada')}>
+                {tr('Abre la ficha de tu socio, administrador, consejero, familiar o sociedad del grupo (en Clientes o en Proveedores) y marca «Parte vinculada (modelo 232)». Con eso, Fisquo suma sus operaciones del año y te dice si toca presentarlo.')}
+              </Vacio>
+              <p className="nota">{tr('Si no tienes operaciones con ninguno de ellos ni con un paraíso fiscal, no hay nada que presentar.')}</p>
+            </div>
+          ) : (
+            <div className="tarjeta">
+              {m232.obligado ? (
+                <>
+                  <p><strong>{tr('Toca presentarlo: se pasa de estos límites')}</strong></p>
+                  <ul className="lista-pagos">
+                    {m232.motivos.map((m, i) => (
+                      <li key={`${m.regla}-${i}`}><span>{tr(m.texto, { ...(m.tercero ? { tercero: m.tercero } : {}), ...(m.tipo ? { tipo: tr(TIPOS_OPERACION_232[m.tipo]) } : {}), importe: eur(Math.abs(m.importe)), ...(m.limite ? { limite: eur(m.limite) } : {}) })}</span></li>
+                    ))}
+                  </ul>
+                </>
+              ) : (
+                <p className="nota">{tr('No hay obligación de presentarlo este año: con ninguna vinculada se pasa de 250.000 €, no hay operaciones específicas por encima de 100.000 € y no hay operaciones con paraísos fiscales.')} {m232.limite50 !== null ? tr('Y ninguna clase de operación llega al 50 % de la cifra de negocios del año ({limite}).', { limite: eur(m232.limite50) }) : tr('Y este año no has facturado nada, así que el límite del 50 % de la cifra de negocios no se puede cruzar.')}</p>
+              )}
+              {m232.terceros.length > 0 && (
+                <TablaPersonas titulo="Operaciones del año por persona o entidad vinculada" columnas={['Ingresos', 'Pagos', 'Total']} filas={m232.terceros.map((t, i) => ({
+                  clave: `${i}-${t.clave}`, nombre: t.nombre,
+                  detalle: [t.nif || tr('Sin NIF'), `${tr(nombreVinculo(t.vinculo) || t.vinculo)}${t.letra ? ` (${t.letra})` : ''}`,
+                    t.pais && PARAISOS_FISCALES[t.pais] && tr('Paraíso fiscal: {pais}', { pais: tr(PARAISOS_FISCALES[t.pais]) }),
+                    t.especifica && tr('Operaciones específicas (módulos con el 25 %)'),
+                    t.supera250 && tr('Pasa de los 250.000 €')].filter(Boolean).join(' · '),
+                  cifras: [t.ingresos, t.pagos, t.total],
+                }))} />
+              )}
+              {m232.filas.length > 0 && (
+                <TablaPersonas titulo="Registros del cuadro I: por tipo de operación, sin compensar ingresos con pagos" columnas={['Importe sin IVA']} filas={m232.filas.map((g, i) => ({
+                  clave: `${i}-${g.nif || g.nombre}-${g.tipo}-${g.lado}`, nombre: g.nombre,
+                  detalle: `${tr(TIPOS_OPERACION_232[g.tipo])} · ${tr(g.lado === 'I' ? 'Ingreso' : 'Pago')}`,
+                  cifras: [g.importe],
+                }))} />
+              )}
+              {m232.porTipo.length > 0 && <p className="nota">{tr('Por clase de operación: {lista}.', { lista: m232.porTipo.map((x) => `${tr(TIPOS_OPERACION_232[x.tipo])} ${eur(x.total)}${x.especificas ? ` (${tr('específicas {importe}', { importe: eur(x.especificas) })})` : ''}`).join('; ') })} {tr('Los límites de las operaciones específicas ({especificas}) y del {pct} % de la cifra de negocios se miran por clase de operación en el conjunto del año, no con cada vinculada; el de {limite}, con cada una.', { especificas: eur(LIMITE_232_ESPECIFICAS), pct: PCT_232_CIFRA, limite: eur(LIMITE_232) })} {m232.limite50 !== null ? tr('Tu cifra de negocios de {anio} es {incn}, así que el 50 % son {limite}.', { anio, incn: eur(m232.incn), limite: eur(m232.limite50) }) : tr('Sin facturación este año no se puede mirar el límite del 50 %.')}</p>}
+              {m232.sinOperaciones.length > 0 && <p className="nota">{tr('Marcados como vinculados pero sin operaciones en {anio}: {lista}. No se declaran.', { anio, lista: m232.sinOperaciones.map((x) => x.nombre).join(', ') })}</p>}
+              {m232.paraisos.length > 0 && (
+                <>
+                  <TablaPersonas titulo="Cuadro III: operaciones con países o territorios calificados como paraísos fiscales" columnas={['Importe sin IVA']} filas={m232.paraisos.map((x, i) => ({
+                    clave: `${i}-${x.pais}-${x.nif || x.nombre}-${x.lado}`, nombre: x.nombre,
+                    detalle: [tr(x.nombrePais), x.nif || tr('Sin NIF'), tr(x.lado === 'I' ? 'Ingreso' : 'Pago')].filter(Boolean).join(' · '),
+                    cifras: [x.importe],
+                  }))} />
+                  <p className="nota">{tr('En el cuadro III van todas las operaciones con esos territorios, estén o no vinculadas y sea cual sea su importe. La lista es la de jurisdicciones no cooperativas de la Orden HFP/115/2023, con las bajas de la Orden HAC/649/2026.')}</p>
+                </>
+              )}
+              <p className="nota">{tr('Qué no sale de aquí y tienes que repasar con tu gestoría: el método de valoración del art. 18.4 de la Ley del Impuesto sobre Sociedades (Fisquo supone uno solo por clase de operación) y la clave del tipo de operación, que se eligen en la Sede; qué operaciones son específicas, salvo las de una persona física en módulos con el 25 % que marques en su ficha (la transmisión de un negocio, de valores, de un inmueble o de un intangible no se distingue de una venta cualquiera); el cuadro II de las rentas de intangibles del art. 23, que la app no calcula; y del cuadro III, la tenencia de valores al cierre.')}</p>
+              <p className="nota">{tr('Tampoco entran las nóminas ni la Seguridad Social: la retribución del administrador por el ejercicio de sus funciones no es operación vinculada (art. 18.2.b), y Fisquo no la distingue del sueldo por otro trabajo. Y si estás en un grupo de consolidación fiscal, o eres una AIE o una UTE, esas operaciones quedan fuera del modelo (art. 2.2 de la Orden): Fisquo no lo sabe.')}</p>
+            </div>
+          )}
         </ModeloPlegable>
       )}
 

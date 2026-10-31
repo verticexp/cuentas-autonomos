@@ -6,7 +6,7 @@ import { useId, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { volverA } from '@/lib/transicion';
 import useCambiosSinGuardar from './useCambiosSinGuardar';
-import { FORMAS, valoresDe } from '@/lib/terceros';
+import { FORMAS, TIPOS_VINCULO, valoresDe } from '@/lib/terceros';
 import { eur } from '@/lib/formato';
 import { IDIOMAS_FACTURA, MONEDAS } from '@/lib/idiomas';
 import { conHuecos } from '@/lib/huecos';
@@ -17,8 +17,8 @@ export function FormularioFicha({ datos = {}, id, proveedor = false, editar = tr
   const tr = useT();
   const prefijo = useId();
   const ocupado = useRef(false);
-  const campos = ['nombre', 'nif', 'pais', 'direccion', 'ciudad', 'contacto', 'email', 'telefono', 'formaCobro', 'formaPago', 'plazo', 'comercial', 'zona', 'riesgoMax', 'idioma', 'moneda', 'notas'];
-  const [f, setF] = useState(() => Object.fromEntries(campos.map((k) => [k, datos[k] ?? ''])));
+  const campos = ['nombre', 'nif', 'pais', 'direccion', 'ciudad', 'contacto', 'email', 'telefono', 'formaCobro', 'formaPago', 'plazo', 'comercial', 'zona', 'riesgoMax', 'idioma', 'moneda', 'vinculo', 'vinculoModulos', 'notas'];
+  const [f, setF] = useState(() => Object.fromEntries(campos.map((k) => [k, k === 'vinculoModulos' ? Boolean(datos[k]) : datos[k] ?? ''])));
   const [error, setError] = useState('');
   const [errores, setErrores] = useState({});
   const [aviso, setAviso] = useState('');
@@ -82,6 +82,16 @@ export function FormularioFicha({ datos = {}, id, proveedor = false, editar = tr
       {!proveedor && campo('riesgoMax', 'Riesgo máximo (€)', { inputMode: 'decimal', ayuda: `${tr('Vacío = sin límite · 0 = solo al contado. No se podrán emitir facturas que lo superen.')}${!puedeRiesgo ? ` ${tr('Solo quien administra la empresa puede cambiarlo.')}` : ''}` })}
       {!proveedor && <div className="ficha-campo"><label htmlFor={`${prefijo}-idioma`}>{tr('Idioma de sus facturas')}</label><select id={`${prefijo}-idioma`} className="campo" value={f.idioma || 'es'} disabled={!editar || enviando} onChange={(e) => setF((x) => ({ ...x, idioma: e.target.value }))}>{IDIOMAS_FACTURA.map((x) => <option key={x.id} value={x.id}>{tr(x.nombre)}</option>)}</select></div>}
       {!proveedor && <div className="ficha-campo"><label htmlFor={`${prefijo}-moneda`}>{tr('Moneda de sus facturas')}</label><select id={`${prefijo}-moneda`} className="campo" value={f.moneda || 'EUR'} disabled={!editar || enviando} onChange={(e) => setF((x) => ({ ...x, moneda: e.target.value }))}>{MONEDAS.map((m) => <option key={m} value={m}>{m === 'EUR' ? tr('Euros (EUR)') : m}</option>)}</select><div><small className="ficha-ayuda">{tr('La factura nueva sale en este idioma y esta moneda (con el cambio del BCE).')}</small></div></div>}
+      {/* Parte vinculada del modelo 232 (art. 18.2 LIS): la marca la empresa, Fisquo no la deduce de los datos. */}
+      <div className="ficha-campo ficha-ancho">
+        <label htmlFor={`${prefijo}-vinculo`}>{tr('Parte vinculada (modelo 232)')}</label>
+        <select id={`${prefijo}-vinculo`} className="campo" value={f.vinculo || ''} disabled={!editar || enviando} onChange={(e) => { setF((x) => ({ ...x, vinculo: e.target.value, vinculoModulos: e.target.value ? x.vinculoModulos : false })); setAviso(''); }}>
+          <option value="">{tr('No está vinculado')}</option>
+          {Object.entries(TIPOS_VINCULO).map(([k, v]) => <option key={k} value={k}>{tr(v.nombre)} ({v.norma})</option>)}
+        </select>
+        {f.vinculo && <label className="check"><input type="checkbox" checked={Boolean(f.vinculoModulos)} disabled={!editar || enviando} onChange={(e) => { setF((x) => ({ ...x, vinculoModulos: e.target.checked })); setAviso(''); }} />{tr('Es una persona física en módulos con el 25 % o más de la sociedad (sus operaciones son «específicas»)')}</label>}
+        <div><small className="ficha-ayuda">{tr('Si es socio, administrador, consejero, familiar de alguno de ellos o sociedad de tu grupo, márcalo aquí: Impuestos suma sus operaciones del año y te dice si toca presentar el modelo 232.')}</small></div>
+      </div>
       {campo('notas', 'Notas', { tipo: 'textarea' })}
     </div>
     <datalist id={`${prefijo}-comerciales`}>{comerciales.map((v) => <option key={v} value={v} />)}</datalist>
