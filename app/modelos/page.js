@@ -18,9 +18,10 @@ import Prorrata from '@/components/Prorrata';
 import Rend130 from '@/components/Rend130';
 import SaldoIva from '@/components/SaldoIva';
 import { modelo111, MESES } from '@/lib/nominas';
-import { borradorRenta, borradorSociedades, modelo115, modelo180, modelo190, modelo309, modelo202, modelo202Art403, modelo347, modelo349, periodos349, modelo390, ETIQUETAS390, ORDEN390, TOTALES390, retencionesProfesionales, MINIMO_PERSONAL, RET_ALQUILER, modelo216, modelo296 } from '@/lib/modelos';
+import { borradorRenta, borradorSociedades, TIPOS_DEDUCCION_IS, modelo115, modelo180, modelo190, modelo309, modelo202, modelo202Art403, modelo347, modelo349, periodos349, modelo390, ETIQUETAS390, ORDEN390, TOTALES390, retencionesProfesionales, MINIMO_PERSONAL, RET_ALQUILER, modelo216, modelo296 } from '@/lib/modelos';
 import { SUBCLAVES_296, nombrePais } from '@/lib/noResidentes';
 import CuotaIS, { ImporteAnio } from '@/components/CuotaIS';
+import DeduccionesIS from '@/components/DeduccionesIS';
 import { Presentado, Presentado202, PresentadoRet } from '@/components/Acciones';
 import { eur, fechaTexto, hoy, pctCorto, textoResumenModelos, textoSituacion } from '@/lib/formato';
 import { conPagoDomiciliable, finDomiciliacion } from '@/lib/domiciliacion';
@@ -189,8 +190,10 @@ export default async function Modelos({ searchParams }) {
     m190.perceptores = [...juntos('A', 'trabajador', 'trabajadores'), ...juntos('E', 'administrador', 'administradores'), ...juntos('L', 'indemnización exenta', 'indemnizaciones exentas'), ...m190.perceptores.filter((p) => !['A', 'E', 'L'].includes(p.clave))];
   }
   // Impuesto sobre Sociedades: con las bases negativas de antes de Fisquo y el incremento de los fondos propios apuntados.
-  const opIS = { ivaCoste: !usa303(f), iva, productos: productos || [], ajustes: ajustes || [], albaranes: albaranes || [], manuales: manuales || [], capital, constitucion: f.constitucion, cuotaIS: u.cuotaIS || {}, territorio: f.territorio, binsPrevias: u.binsPrevias || {}, fondosPropios: u.fondosPropios || {}, pagos202: u.pagos202 || {} };
+  const opIS = { ivaCoste: !usa303(f), iva, productos: productos || [], ajustes: ajustes || [], albaranes: albaranes || [], manuales: manuales || [], capital, constitucion: f.constitucion, cuotaIS: u.cuotaIS || {}, territorio: f.territorio, binsPrevias: u.binsPrevias || {}, fondosPropios: u.fondosPropios || {}, deduccionesIS: u.deduccionesIS || [], pagos202: u.pagos202 || {} };
   const is = f.tipo === 'sociedad' && borradorSociedades(facturas, gastos, anio, { ...opIS, hasta: h < `${anio}-12-31` ? h : `${anio}-12-31` });
+  // Hubo algo que restar de la cuota íntegra: la tabla separa entonces la cuota íntegra de la líquida.
+  const conDeducciones = Boolean(is) && (is.ddi > 0 || is.bonificaciones > 0 || is.donativos > 0 || is.deduccionesCapIV > 0);
   // 202: con más de 6 M de cifra de negocios, el del art. 40.3 (sobre la base de los 3, 9 y 11 primeros meses); si no, el
   // del art. 40.2 (el 18 % de la cuota apuntada). Lo que sale del borrador de cada año en Fisquo se propone como esa cuota.
   const pagos202 = f.tipo === 'sociedad' && !dForal ? (is.obligado403 ? modelo202Art403(facturas, gastos, anio, opIS) : modelo202(u.cuotaIS, anio)) : null;
@@ -951,7 +954,7 @@ export default async function Modelos({ searchParams }) {
         <ModeloPlegable id="m200" num={dForal ? dForal.is.num : '200'} nombre={tr('Impuesto de Sociedades {anio}', { anio })} favor={is.resultado < 0}
           detalle={`${tr('Borrador')} · ${tr(is.resultado >= 0 ? 'saldría a pagar' : 'saldría a devolver')} · ${dForal ? tr('en julio de {anio}', { anio: anio + 1 }) : tr('hasta el {fecha}', { fecha: tr(plazoAnual('07-25')) })}`} dato={importeFila(Math.abs(is.resultado))} parcial={anio === actual}>
           <h2 className="grupo-t">{tr('Borrador del Impuesto sobre Sociedades {anio}', { anio })}</h2>
-          <p className="grupo-pie arriba">{tr('Solo con lo que hay en Fisquo: con la amortización de tus bienes de inversión, sin los gastos que no son deducibles')}{is.foral ? '' : `, ${tr('con las pérdidas de años anteriores y la reserva de capitalización que apuntes')}`}; {tr('sin deducciones ni otros ajustes: tómalo como una idea de cuánto saldrá.')} {dForal ? tr('Se presenta en julio de {anio}.', { anio: anio + 1 }) : tr('Se presenta del 1 de julio al {fecha}.', { fecha: tr(plazoAnual('07-25')) })}</p>
+          <p className="grupo-pie arriba">{tr('Solo con lo que hay en Fisquo: con la amortización de tus bienes de inversión, sin los gastos que no son deducibles')}{is.foral ? '' : `, ${tr('con las pérdidas de años anteriores, la reserva de capitalización y las deducciones y bonificaciones que apuntes')}`}; {tr('sin otros ajustes: tómalo como una idea de cuánto saldrá.')} {dForal ? tr('Se presenta en julio de {anio}.', { anio: anio + 1 }) : tr('Se presenta del 1 de julio al {fecha}.', { fecha: tr(plazoAnual('07-25')) })}</p>
           <div className="tarjeta">
             <Casillas sinNumeros={Boolean(foralT)} filas={[
               ['Ingresos', is.ingresos], ['Gastos', menos(is.gastos)], is.amortizacion && ['de ellos, amortizaciones', menos(is.amortizacion)], is.ajustesContables && ['Ingresos y gastos de asientos manuales', is.ajustesContables],
@@ -962,13 +965,22 @@ export default async function Modelos({ searchParams }) {
               is.compensacion > 0 && ['Pérdidas de años anteriores compensadas (art. 26)', menos(is.compensacion)],
               is.perdida > 0 && ['Resultado (pérdida)', -is.perdida], ['Base imponible (beneficio)', is.base, true],
               ...is.tramos.map((x) => [is.tramos.length > 1 ? tr('{pct} % de {importe}', { pct: x.pct, importe: eur(x.base) }) : `Cuota al ${x.pct} %`, x.cuota]),
-              ['Cuota', is.cuota, true], is.retenciones && ['Retenciones soportadas', menos(is.retenciones)], [dForal ? 'Pagos fraccionados marcados' : 'Pagos del 202 marcados', menos(is.pagos)],
+              [conDeducciones ? 'Cuota íntegra' : 'Cuota', is.cuota, true],
+              is.ddi > 0 && ['Deducciones para evitar la doble imposición (arts. 30 a 32)', menos(is.ddi)],
+              is.bonificaciones > 0 && ['Bonificaciones (arts. 33 y 34)', menos(is.bonificaciones)],
+              is.donativos > 0 && ['Donativos a entidades sin fines lucrativos (Ley 49/2002)', menos(is.donativos)],
+              is.deduccionesCapIV > 0 && [tr('Deducciones del capítulo IV, I+D+i incluida (límite del {pct} %, art. 39.1)', { pct: is.pct39 }), menos(is.deduccionesCapIV)],
+              conDeducciones && ['Cuota líquida', is.cuotaLiquida, true],
+              is.retenciones && ['Retenciones soportadas', menos(is.retenciones)], [dForal ? 'Pagos fraccionados marcados' : 'Pagos del 202 marcados', menos(is.pagos)],
               [is.resultado >= 0 ? 'Saldría a pagar' : 'Saldría a devolver', Math.abs(is.resultado), true],
             ]} />
             {is.noDeducibles?.length > 0 && <p className="nota">{tr('No se restan por no ser deducibles (art. 15 de la Ley del Impuesto sobre Sociedades): {lista}. Revísalo: si alguno sí es deducible, ábrelo en Gastos y quita la marca «No es deducible en el Impuesto sobre Sociedades».', { lista: is.noDeducibles.map((x) => `${x.concepto} (${eur(x.importe)}, ${tr(x.motivo)})`).join('; ') })}</p>}
             {is.perdida > 0 && <p className="nota">{tr('Con pérdidas no hay cuota: los {importe} se compensan con los beneficios de los años siguientes (base imponible negativa), y lo pagado a cuenta en el 202 se devuelve al presentar el 200. Los pagos del 202 se siguen haciendo: salen de la cuota del año anterior.', { importe: eur(is.perdida) })}</p>}
             {!is.foral && is.basePrevia > 0 && (is.compensacion > 0 || is.binsPendientes?.length > 0) && <p className="nota">{tr('Pérdidas de años anteriores pendientes al empezar {anio}: {lista}.', { anio, lista: is.binsPendientes.map((x) => `${x.de}, ${eur(x.importe)}`).join('; ') })} {tr('Se compensan de la más antigua a la más reciente,')} {is.sinLimiteBIN ? tr('sin el límite del 70 % (de los tres primeros años con beneficio de una sociedad de nueva creación, art. 26.3)') : tr('hasta {importe} (el 70 % de la base previa o, en todo caso, 1 millón)', { importe: eur(is.limiteBIN) })}. {tr('Las de los años que llevas en Fisquo salen de lo apuntado: si alguno no está completo aquí, pon la de verdad abajo (manda sobre la calculada).')}</p>}
             {!is.foral && is.binsQuedan?.length > 0 && <p className="nota">{tr('Quedan por compensar en los años siguientes: {lista}.', { lista: is.binsQuedan.map((x) => `${x.de}, ${eur(x.importe)}`).join('; ') })}</p>}
+            {is.donativos > 0 && is.donativosDetalle?.recortado && <p className="nota">{tr('De los donativos, solo deducen {base} de los {donado} donados: la base de la deducción no puede pasar del {pct} % de la base imponible del año (art. 20 de la Ley 49/2002). Lo que sobra se pierde.', { base: eur(is.donativosDetalle.limite), donado: eur(is.donativosDetalle.donado), pct: anio >= 2024 ? 15 : 10 })}</p>}
+            {is.deduccionesCapIV > 0 && <p className="nota">{tr('Las deducciones del capítulo IV (I+D+i, empleo de personas con discapacidad y las demás) caben hasta {limite}: el {pct} % de la cuota tras las bonificaciones y la doble imposición (art. 39.1).', { limite: eur(is.limite39), pct: is.pct39 })} {is.pct39 === 50 ? tr('Es el 50 % porque las deducciones de I+D+i generadas este año pasan del 10 % de esa cuota.') : ''}</p>}
+            {is.deduccionesQuedan?.length > 0 && <p className="nota">{tr('Quedan deducciones por aplicar en los años siguientes: {lista}.', { lista: is.deduccionesQuedan.map((x) => `${tr(TIPOS_DEDUCCION_IS[x.tipo]?.nombre || x.tipo)} de ${x.de}, ${eur(x.importe)}`).join('; ') })}</p>}
             {is.reserva?.pendiente > 0 && <p className="nota">{tr('De la reserva de capitalización quedan {importe} sin aplicar (límite del {pct} % de la base previa): se pueden aplicar en los dos años siguientes, pero Fisquo no los arrastra.', { importe: eur(is.reserva.pendiente), pct: is.reserva.limitePct ?? 20 })}</p>}
             {is.foral ? <p className="nota">{tr('Tipo de la {hacienda} según tu cifra de negocios', { hacienda: tr(foralT.hacienda) })}{is.conAnterior ? ` ${tr('de {anio}', { anio: anio - 1 })}` : ` ${tr('de este año (no hay datos del anterior)')}`} ({eur(is.incn)}): {is.tramos[0]?.pct ?? '—'} %. {tr('Fisquo no sabe tu plantilla ni tu activo, que también cuentan para ser micro o pequeña empresa: confírmalo con tu gestor. Las pérdidas de años anteriores siguen las reglas de tu Hacienda foral: no se compensan aquí.')}</p> :
             <p className="nota">{tr(is.tamano === 'micro' ? 'Tipo de microempresa (facturación de menos de 1 millón)' : is.tamano === 'reducida' ? 'Tipo de empresa de reducida dimensión (menos de 10 millones)' : 'Tipo de general')}{is.conAnterior ? ` ${tr('según lo facturado en {anio}', { anio: anio - 1 })}` : `, ${tr('con lo facturado este año (no hay datos del anterior)')}`}{is.incnAnual !== is.incn ? ` (${tr('{a} en el año de constitución, {b} elevado al año para la reducida dimensión', { a: eur(is.incn), b: eur(is.incnAnual) })})` : ''}.{' '}
@@ -987,6 +999,7 @@ export default async function Modelos({ searchParams }) {
               <ImporteAnio key={y} campo="binsPrevias" anio={Number(y)} valor={v} soloLectura={soloLectura} titulo={`Base imponible negativa de ${y}`} ayuda="Lo que quedaba por compensar. Vacío y Guardar la quita." />
             ))}
             {!soloLectura && <ImporteAnio campo="binsPrevias" anio={null} valor={null} anioEditable titulo="Añadir una base negativa de otro año" ayuda="Año de origen e importe pendiente." />}
+            <DeduccionesIS anio={anio} deducciones={u.deduccionesIS || []} soloLectura={soloLectura} />
           </div>}
         </ModeloPlegable>
       )}
