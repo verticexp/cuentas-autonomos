@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { pasado, respuesta429 } from '@/lib/limite';
 import { cookies } from 'next/headers';
 import { congelarInstantaneas, saltarNumeracion } from '@/lib/facturas';
@@ -10,6 +11,7 @@ import { clave, leer, mismoId, redis } from '@/lib/redis';
 import { auditar } from '@/lib/auditoria';
 import { contrasenaCambiada } from '@/lib/avisosCorreo';
 import { leerImporte } from '@/lib/calculos';
+import { limpiarDeduccionIS, TIPOS_DEDUCCION_IS } from '@/lib/modelos';
 import { limpiarModulos } from '@/lib/estimacionObjetiva';
 import { hoy } from '@/lib/formato';
 import { todasFichas } from '@/lib/indices';
@@ -229,6 +231,29 @@ export async function PATCH(req) {
     if (valor === null) delete datos[anio]; else datos[anio] = valor;
     await actualizarUsuario(u, { [porAnio]: datos });
     await auditar(u, { rend130: `Rendimiento de ${anio} para el 130`, cuotaIS: `Cuota del Impuesto sobre Sociedades de ${anio}`, binsPrevias: `Base imponible negativa pendiente de ${anio}`, fondosPropios: `Incremento de los fondos propios de ${anio}` }[porAnio], valor === null ? 'quitado' : String(valor));
+    return Response.json({ ok: true });
+  }
+  // Las deducciones y bonificaciones del Impuesto sobre Sociedades que apunta la empresa (lib/modelos.js
+  // TIPOS_DEDUCCION_IS): una entrada por tipo y ejercicio de origen. Con id y sin importe, se borra.
+  if (b.deduccionIS) {
+    if (sin('contabilidad')) return sin('contabilidad');
+    const lista = Array.isArray(u.deduccionesIS) ? u.deduccionesIS : [];
+    const id = String(b.deduccionIS.id || '').slice(0, 60);
+    const vacio = b.deduccionIS.importe === null || String(b.deduccionIS.importe ?? '').trim() === '';
+    if (id && vacio) {
+      const antes = lista.find((x) => x.id === id);
+      if (!antes) return error('Esa deducción ya no existe', 404);
+      await actualizarUsuario(u, { deduccionesIS: lista.filter((x) => x.id !== id) });
+      await auditar(u, 'Deducción del Impuesto sobre Sociedades borrada', `${TIPOS_DEDUCCION_IS[antes.tipo]?.nombre || antes.tipo} de ${antes.de}`);
+      return Response.json({ ok: true });
+    }
+    const d = limpiarDeduccionIS({ ...b.deduccionIS, importe: leerImporte(String(b.deduccionIS.importe ?? '')) });
+    if (d.error) return error(d.error);
+    const resto = lista.filter((x) => x.id !== id);
+    if (resto.length >= 200) return error('Demasiadas deducciones apuntadas: borra alguna antes de añadir otra');
+    const entrada = { id: id && lista.some((x) => x.id === id) ? id : randomUUID(), ...d };
+    await actualizarUsuario(u, { deduccionesIS: [...resto, entrada].sort((x, y) => x.de - y.de || x.tipo.localeCompare(y.tipo)) });
+    await auditar(u, 'Deducción del Impuesto sobre Sociedades apuntada', `${TIPOS_DEDUCCION_IS[d.tipo].nombre} de ${d.de}: ${d.importe}`);
     return Response.json({ ok: true });
   }
   if (b.marca) {

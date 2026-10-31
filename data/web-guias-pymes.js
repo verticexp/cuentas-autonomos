@@ -96,7 +96,8 @@ export const GUIAS_PYMES = [
     resumen: 'Los tipos que te tocan según lo que facturas, cómo se llega a la cuota y cómo funcionan los pagos fraccionados del 202.',
     minutos: 9,
     normas: [
-      'Ley 27/2014, del Impuesto sobre Sociedades: art. 10 (base imponible), art. 15 (gastos no deducibles), art. 25 (reserva de capitalización), art. 26 (bases imponibles negativas), art. 29 (tipos de gravamen, con la Ley 7/2024), art. 40 (pagos fraccionados) y art. 101 (entidades de reducida dimensión).',
+      'Ley 27/2014, del Impuesto sobre Sociedades: art. 10 (base imponible), art. 15 (gastos no deducibles), art. 25 (reserva de capitalización), art. 26 (bases imponibles negativas), art. 29 (tipos de gravamen, con la Ley 7/2024), arts. 30 a 32 (doble imposición), arts. 33 y 34 (bonificaciones), arts. 35 a 39 (deducciones por I+D+i y otras), art. 40 (pagos fraccionados) y art. 101 (entidades de reducida dimensión).',
+      'Ley 49/2002, de régimen fiscal de las entidades sin fines lucrativos y de los incentivos fiscales al mecenazgo: art. 20 (deducción por donativos), con los porcentajes del Real Decreto-ley 6/2023.',
       'Manual práctico de Sociedades 2025 de la AEAT.',
       'Instrucciones de los modelos 200 y 202 en la sede electrónica de la AEAT.',
     ],
@@ -185,7 +186,7 @@ export const GUIAS_PYMES = [
       {
         id: 'fisquo', t: 'Cómo te ayuda Fisquo',
         bloques: [
-          { p: 'Fisquo prepara un borrador del Impuesto sobre Sociedades con lo que hay en tu contabilidad: el resultado, los gastos no deducibles, la reserva de capitalización, las bases negativas que apuntes y el tipo que te toca por tu cifra de negocios. También calcula los pagos del 202 y te avisa de cuándo toca cada uno. Es un borrador para revisar con tu gestoría.' },
+          { p: 'Fisquo prepara un borrador del Impuesto sobre Sociedades con lo que hay en tu contabilidad: el resultado, los gastos no deducibles, la reserva de capitalización, las bases negativas que apuntes y el tipo que te toca por tu cifra de negocios. Desde la cuota íntegra aplica también las **deducciones y bonificaciones que apuntes** —doble imposición, Ceuta y Melilla, donativos, I+D+i y las demás del capítulo IV— con sus límites y lo que queda pendiente para los años siguientes, y llega a la cuota líquida. También calcula los pagos del 202 y te avisa de cuándo toca cada uno. Es un borrador para revisar con tu gestoría.' },
         ],
       },
     ],
