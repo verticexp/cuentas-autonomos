@@ -63,7 +63,7 @@ const empresaDespacho = (await r.hget(`${P}usuarios`, idTitular))?.empresa || 'd
 // ---- Clientes generados (además de Sonora). tipo: autónomo o sociedad; los importes, en euros sin IVA.
 const CLIENTES = [
   {
-    id: 'dcli0001', contacto: 'Marta Soler', nombre: 'Marta Soler Ribas', nif: '00000101S', ciudad: '08012 Barcelona', direccion: 'C/ de Verdi, 44',
+    id: 'dcli0001', contacto: 'Marta Soler', nombre: 'Marta Soler Ribas', nif: '00000101D', ciudad: '08012 Barcelona', direccion: 'C/ de Verdi, 44',
     fiscal: { tipo: 'autonomo', iva: 'general', retenidas: false }, actividad: { id: 'diseno-grafico', nombre: 'Diseño gráfico', serie: '', ivaPct: 21, irpfPct: 15 },
     clientes: ['Editorial Mar Blava S.L.', 'Cervezas del Poblenou S.L.', 'Agencia Brisa Incentivos S.L.', 'Fundació Música Viva'], ventas: [3, 6], importe: [450, 2200],
     conceptos: ['Diseño de identidad corporativa', 'Maquetación de catálogo', 'Diseño de packaging', 'Campaña gráfica para redes'],
@@ -73,7 +73,7 @@ const CLIENTES = [
     cuota: 294, gestor: 'titular', plan: 'prueba', estado3T: 'revisado',
   },
   {
-    id: 'dcli0002', contacto: 'Jordi Puig', nombre: 'Jordi Puig Instal·lacions', nif: '00000102Q', ciudad: '08905 L\'Hospitalet de Llobregat', direccion: 'Rambla de Just Oliveras, 70',
+    id: 'dcli0002', contacto: 'Jordi Puig', nombre: 'Jordi Puig Instal·lacions', nif: '00000102X', ciudad: '08905 L\'Hospitalet de Llobregat', direccion: 'Rambla de Just Oliveras, 70',
     fiscal: { tipo: 'autonomo', iva: 'general', retenidas: false }, actividad: { id: 'fontaneria', nombre: 'Fontanería y electricidad', serie: '', ivaPct: 21, irpfPct: 0 },
     clientes: ['Comunidad de propietarios Pere IV, 102', 'Laura Puig Ferrer', 'Restaurant Can Roca S.L.', 'Albert Mas Pons', 'Finques Diagonal S.L.'], ventas: [6, 11], importe: [120, 1900],
     conceptos: ['Reparación de fuga y cambio de llaves de paso', 'Instalación eléctrica de cocina', 'Sustitución de termo eléctrico', 'Boletín y revisión de la instalación'],
@@ -83,7 +83,7 @@ const CLIENTES = [
     cuota: 294, gestor: 'gestor', plan: 'licencia', estado3T: 'listo',
   },
   {
-    id: 'dcli0003', contacto: 'Núria Costa', nombre: 'Bar La Plaça (Núria Costa)', nif: '00000103V', ciudad: '08024 Barcelona', direccion: 'Plaça del Diamant, 3',
+    id: 'dcli0003', contacto: 'Núria Costa', nombre: 'Bar La Plaça (Núria Costa)', nif: '00000103B', ciudad: '08024 Barcelona', direccion: 'Plaça del Diamant, 3',
     fiscal: { tipo: 'autonomo', iva: 'general', retenidas: false, trabajadores: true, alquiler: true }, actividad: { id: 'bar', nombre: 'Bar y cafetería', serie: '', ivaPct: 10, irpfPct: 0 },
     caja: true, clientes: ['Associació de Veïns de Gràcia'], ventas: [1, 1], importe: [180, 420],
     conceptos: ['Catering para la asamblea de la asociación'],
@@ -93,7 +93,7 @@ const CLIENTES = [
     cuota: 320, gestor: 'gestor', plan: 'prueba', estado3T: 'cambios',
   },
   {
-    id: 'dcli0004', contacto: 'Lucía Hernández', nombre: 'Lucía Hernández Fotografía', nif: '00000104H', ciudad: '35003 Las Palmas de Gran Canaria', direccion: 'C/ Triana, 58',
+    id: 'dcli0004', contacto: 'Lucía Hernández', nombre: 'Lucía Hernández Fotografía', nif: '00000104N', ciudad: '35003 Las Palmas de Gran Canaria', direccion: 'C/ Triana, 58',
     fiscal: { tipo: 'autonomo', iva: 'general', retenidas: false, territorio: 'canarias' }, actividad: { id: 'fotografia', nombre: 'Fotografía', serie: '', ivaPct: 7, irpfPct: 0 },
     clientes: ['Hotel Playa Canteras S.A.', 'Bodas Atlántico S.L.', 'Ayuntamiento de Telde', 'Carmen Suárez Déniz'], ventas: [2, 6], importe: [250, 1800],
     conceptos: ['Reportaje de boda', 'Fotografía de producto para catálogo', 'Sesión corporativa del equipo', 'Cobertura fotográfica de evento'],
@@ -103,7 +103,7 @@ const CLIENTES = [
     cuota: 294, gestor: 'titular', plan: 'prueba', estado3T: 'presentado',
   },
   {
-    id: 'dcli0005', contacto: 'Iñaki Etxeberria', nombre: 'Iñaki Etxeberria Consultoría', nif: '00000105L', ciudad: '31001 Pamplona', direccion: 'Calle Estafeta, 12',
+    id: 'dcli0005', contacto: 'Iñaki Etxeberria', nombre: 'Iñaki Etxeberria Consultoría', nif: '00000105J', ciudad: '31001 Pamplona', direccion: 'Calle Estafeta, 12',
     fiscal: { tipo: 'autonomo', iva: 'general', retenidas: false, territorio: 'navarra' }, actividad: { id: 'consultoria', nombre: 'Consultoría informática', serie: '', ivaPct: 21, irpfPct: 15 },
     clientes: ['Cooperativa Agraria Ribera S.Coop.', 'Talleres Arga S.L.', 'Ingeniería Baztán S.A.'], ventas: [2, 4], importe: [900, 3600],
     conceptos: ['Mantenimiento de sistemas (mensual)', 'Implantación de ERP', 'Auditoría de seguridad informática'],
@@ -113,7 +113,7 @@ const CLIENTES = [
     cuota: 294, gestor: 'gestor', plan: 'prueba', estado3T: 'listo', atrasado: true,
   },
   {
-    id: 'dcli0006', contacto: 'Elena Ruiz', nombre: 'Nexo Consultores S.L.', nif: 'B00000106', ciudad: '08008 Barcelona', direccion: 'Passeig de Gràcia, 92',
+    id: 'dcli0006', contacto: 'Elena Ruiz', nombre: 'Nexo Consultores S.L.', nif: 'B00001065', ciudad: '08008 Barcelona', direccion: 'Passeig de Gràcia, 92',
     fiscal: { tipo: 'sociedad', iva: 'general', retenidas: false, trabajadores: true, alquiler: true }, actividad: { id: 'consultoria-rrhh', nombre: 'Consultoría de recursos humanos', serie: '', ivaPct: 21, irpfPct: 0 },
     clientes: ['Grupo Hotelero Costa Brava S.A.', 'Logística Prat S.L.', 'Clínica Dental Sant Gervasi S.L.', 'Asociación de Comerciantes del Born'], ventas: [4, 8], importe: [1200, 5200],
     conceptos: ['Proceso de selección de personal', 'Plan de igualdad', 'Formación en liderazgo', 'Auditoría retributiva'],
@@ -306,7 +306,7 @@ for (const [i, c] of CLIENTES.entries()) {
   };
   const { pres303, pagos130, cierres } = trimestresDe(e, facturas, gastos, estadoReal(c), c.gestor);
   // Cambios tras el cierre: un gasto que entró después de cerrar (el ticket de una reparación).
-  if (c.estado3T === 'cambios') gastos.push({ id: 'g-tras-cierre', fecha: FECHA_TRAS_CIERRE, actividad: c.actividad.id, concepto: 'Reparación de la cámara frigorífica', proveedor: 'Fred Industrial S.L.', proveedorNif: 'B0000777Z', base: 640, ivaPct: 21 });
+  if (c.estado3T === 'cambios') gastos.push({ id: 'g-tras-cierre', fecha: FECHA_TRAS_CIERRE, actividad: c.actividad.id, concepto: 'Reparación de la cámara frigorífica', proveedor: 'Fred Industrial S.L.', proveedorNif: 'B00007773', base: 640, ivaPct: 21 });
   await limpiar(c.id);
   const conta = await cuadrar(c.id, e, facturas, gastos, { pres303, pagos130 });
   await r.hset(`${P}empresas`, { [c.id]: { ...e, pres303, pagos130, cuotaIS: conta.cuotaIS, pagos202: conta.pagos202, despachoCliente: vinculo(c, i, c.plan === 'licencia') } });
@@ -432,7 +432,7 @@ for (const c of CLIENTES) {
     }
   }
   await limpiar(empresaDespacho);
-  await r.hset(`${P}empresas`, { [empresaDespacho]: { id: empresaDespacho, nombre: 'Gestoría Ferrer (demo)', creada: fechaHora(inicio, 8), pendiente: false, demo: true, emisor: { nombre: 'GESTORÍA FERRER (DEMO)', nif: 'B00000100', direccion: 'C/ de Sants, 150', ciudad: '08028 Barcelona', plazo: 15 }, actividades: [actividad], fiscal: FISCAL_DESPACHO, plan: { fundador: true, despacho: true, tipo: 'pym', nombre: 'Pro', desde: inicio } } });
+  await r.hset(`${P}empresas`, { [empresaDespacho]: { id: empresaDespacho, nombre: 'Gestoría Ferrer (demo)', creada: fechaHora(inicio, 8), pendiente: false, demo: true, emisor: { nombre: 'GESTORÍA FERRER (DEMO)', nif: 'B00001008', direccion: 'C/ de Sants, 150', ciudad: '08028 Barcelona', plazo: 15 }, actividades: [actividad], fiscal: FISCAL_DESPACHO, plan: { fundador: true, despacho: true, tipo: 'pym', nombre: 'Pro', desde: inicio } } });
   await r.hset(`${P}facturas:${empresaDespacho}`, porId(facturas));
   await r.hset(`${P}gastos:${empresaDespacho}`, porId(gastos));
   await indices(empresaDespacho, facturas, gastos);
@@ -451,7 +451,7 @@ for (const c of CLIENTES) {
     [idGestor]: { id: idGestor, nombre: 'Pol Martí', email: GESTOR, admin: false, creado: fechaHora(inicio, 8), emailVerificado: true, empresa: empresaDespacho, rol: 'miembro', permisos: [], pv: 2, pass, despacho: idDespacho },
   });
   await r.hset(`${P}emails`, { [TITULAR]: idTitular, [GESTOR]: idGestor });
-  await r.hset(`${P}despachos`, { [idDespacho]: { id: idDespacho, nombre: 'Gestoría Ferrer (demo)', nif: 'B00000100', email: TITULAR, codigo: CODIGO, empresa: empresaDespacho, creado: fechaHora(inicio, 8), miembros: { [idTitular]: { rol: 'titular', desde: fechaHora(inicio, 8) }, [idGestor]: { rol: 'gestor', desde: fechaHora(mas(inicio, 30), 8) } }, soloAsignados: false, empresaPropia: true, demo: true } });
+  await r.hset(`${P}despachos`, { [idDespacho]: { id: idDespacho, nombre: 'Gestoría Ferrer (demo)', nif: 'B00001008', email: TITULAR, codigo: CODIGO, empresa: empresaDespacho, creado: fechaHora(inicio, 8), miembros: { [idTitular]: { rol: 'titular', desde: fechaHora(inicio, 8) }, [idGestor]: { rol: 'gestor', desde: fechaHora(mas(inicio, 30), 8) } }, soloAsignados: false, empresaPropia: true, demo: true } });
   await r.hset(`${P}despacho-codigos`, { [CODIGO]: idDespacho });
   await r.del(`${P}despacho-clientes:${idDespacho}`);
   await r.sadd(`${P}despacho-clientes:${idDespacho}`, ...CLIENTES.map((c) => c.id), 'ddoc0001', 'ddoc0002');
@@ -460,8 +460,8 @@ for (const c of CLIENTES) {
 // Clientes «solo documentos»: perfiles pequeños para enseñar la bandeja y las peticiones del despacho.
 {
   const contactos = [
-    { id: 'ddoc0001', uid: 'udoc0001', nombre: 'Taller Mecánico Ruiz', nif: '00000201K', contacto: 'Antonio Ruiz', email: 'taller-demo@verticexp.com', tipo: 'autonomo', alias: 'taller-ruiz-demo', entro: true },
-    { id: 'ddoc0002', uid: 'udoc0002', nombre: 'Floristería Lila S.L.', nif: 'B00000202', contacto: 'Lila Martín', email: 'floristeria-demo@verticexp.com', tipo: 'sociedad', entro: false },
+    { id: 'ddoc0001', uid: 'udoc0001', nombre: 'Taller Mecánico Ruiz', nif: '00000201V', contacto: 'Antonio Ruiz', email: 'taller-demo@verticexp.com', tipo: 'autonomo', alias: 'taller-ruiz-demo', entro: true },
+    { id: 'ddoc0002', uid: 'udoc0002', nombre: 'Floristería Lila S.L.', nif: 'B00002022', contacto: 'Lila Martín', email: 'floristeria-demo@verticexp.com', tipo: 'sociedad', entro: false },
   ];
   const anterior = await r.hgetall(`${P}invitaciones`) || {};
   const codigosAnteriores = Object.keys(anterior).filter((codigo) => contactos.some((c) => String(anterior[codigo]) === c.uid));
@@ -499,14 +499,14 @@ for (const c of CLIENTES) {
   const actualInicio = trimestreInicio(hoy);
   const fechas = [mas(actualInicio, -35), mas(actualInicio, -24), mas(actualInicio, -12), mas(actualInicio, 5), mas(actualInicio, 18), mas(actualInicio, 31), mas(actualInicio, 44), mas(actualInicio, 57), mas(actualInicio, 70), mas(actualInicio, 82)].map((f) => f > hoy ? mas(hoy, -1) : f);
   const lineas = [
-    { tercero: 'Recambios Norte SL', nif: 'B00000301', numero: 'RN-1042', concepto: 'Recambios para reparación', base: 240, ivaPct: 21, irpfPct: 0, categoria: '600', estado: 'revisado' },
-    { tercero: 'Repsol', nif: 'A00000302', numero: 'R-8821', concepto: 'Gasolina de la grúa', base: 85, ivaPct: 21, irpfPct: 0, categoria: '628', estado: 'revisado' },
-    { tercero: 'Mapfre', nif: 'A00000303', numero: 'M-2026-18', concepto: 'Seguro de la grúa', base: 420, ivaPct: 0, irpfPct: 0, categoria: '625', estado: 'revisado' },
-    { tipo: 'ingreso', tercero: 'Transportes Costa SL', nif: 'B00000311', numero: 'TR-2026-07', concepto: 'Reparación de motor', base: 680, ivaPct: 21, irpfPct: 0, categoria: '705', estado: 'revisado' },
+    { tercero: 'Recambios Norte SL', nif: 'B00003012', numero: 'RN-1042', concepto: 'Recambios para reparación', base: 240, ivaPct: 21, irpfPct: 0, categoria: '600', estado: 'revisado' },
+    { tercero: 'Repsol', nif: 'A00003020', numero: 'R-8821', concepto: 'Gasolina de la grúa', base: 85, ivaPct: 21, irpfPct: 0, categoria: '628', estado: 'revisado' },
+    { tercero: 'Mapfre', nif: 'A00003038', numero: 'M-2026-18', concepto: 'Seguro de la grúa', base: 420, ivaPct: 0, irpfPct: 0, categoria: '625', estado: 'revisado' },
+    { tipo: 'ingreso', tercero: 'Transportes Costa SL', nif: 'B00003111', numero: 'TR-2026-07', concepto: 'Reparación de motor', base: 680, ivaPct: 21, irpfPct: 0, categoria: '705', estado: 'revisado' },
     { tipo: 'ingreso', tercero: 'Marta Soler', nif: '12345678Z', numero: 'TR-2026-08', concepto: 'Cambio de embrague', base: 510, ivaPct: 21, irpfPct: 0, categoria: '705', estado: 'revisado' },
-    { tercero: 'Suministros Garaje SL', nif: 'B00000312', numero: 'SG-531', concepto: 'Material de taller', base: 92, ivaPct: 21, irpfPct: 0, categoria: '600', estado: 'revisar' },
-    { tercero: 'Recambios Norte SL', nif: 'B00000301', numero: 'RN-1042', concepto: 'Recambios para reparación', base: 240, ivaPct: 21, irpfPct: 0, categoria: '600', estado: 'revisar' },
-    { tercero: 'Talleres García', nif: 'B00000313', numero: 'TG-240', concepto: 'Reparación auxiliar', base: null, ivaPct: 21, irpfPct: 0, categoria: '600', estado: 'revisar', legible: false },
+    { tercero: 'Suministros Garaje SL', nif: 'B00003129', numero: 'SG-531', concepto: 'Material de taller', base: 92, ivaPct: 21, irpfPct: 0, categoria: '600', estado: 'revisar' },
+    { tercero: 'Recambios Norte SL', nif: 'B00003012', numero: 'RN-1042', concepto: 'Recambios para reparación', base: 240, ivaPct: 21, irpfPct: 0, categoria: '600', estado: 'revisar' },
+    { tercero: 'Talleres García', nif: 'B00003137', numero: 'TG-240', concepto: 'Reparación auxiliar', base: null, ivaPct: 21, irpfPct: 0, categoria: '600', estado: 'revisar', legible: false },
     { tercero: 'Papelería Central', nif: '', numero: 'PC-719', concepto: 'Material de oficina', base: 28, ivaPct: 21, irpfPct: 0, categoria: '629', estado: 'revisar' },
     { tercero: 'Endesa', nif: 'A81948077', numero: 'ED-2026-55', concepto: 'Luz del taller', base: 130, ivaPct: 21, irpfPct: 0, categoria: '628', estado: 'revisar', origen: 'correo' },
   ];
@@ -521,7 +521,7 @@ for (const c of CLIENTES) {
     const pdf = await PDFDocument.create();
     const pagina = pdf.addPage();
     const fuente = await pdf.embedFont(StandardFonts.Helvetica);
-    const texto = [`Factura${x.legible === false ? ' (foto borrosa)' : ''}`, ...(x.tipo === 'ingreso' ? ['Taller Mecánico Ruiz · NIF 00000201K', `Cliente: ${x.tercero}`] : [x.tercero]), `NIF${x.tipo === 'ingreso' ? ' del cliente' : ''}: ${x.nif || 'No indicado'}`, `Número: ${x.numero}`, `Fecha: ${fechas[i]}`, `Base: ${x.base ?? 'No legible'} €`, `IVA: ${x.ivaPct}% · ${cuota ?? 'No legible'} €`, `Total: ${total ?? 'No legible'} €`];
+    const texto = [`Factura${x.legible === false ? ' (foto borrosa)' : ''}`, ...(x.tipo === 'ingreso' ? ['Taller Mecánico Ruiz · NIF 00000201V', `Cliente: ${x.tercero}`] : [x.tercero]), `NIF${x.tipo === 'ingreso' ? ' del cliente' : ''}: ${x.nif || 'No indicado'}`, `Número: ${x.numero}`, `Fecha: ${fechas[i]}`, `Base: ${x.base ?? 'No legible'} €`, `IVA: ${x.ivaPct}% · ${cuota ?? 'No legible'} €`, `Total: ${total ?? 'No legible'} €`];
     texto.forEach((t, j) => pagina.drawText(t, { x: 48, y: 780 - j * 30, size: 12, font: fuente }));
     const subida = await subirJustificante({ empresa: 'ddoc0001' }, id, Buffer.from(await pdf.save()));
     if (subida.error) resumen.push(`${id}: archivo de ejemplo no guardado (${subida.error})`);

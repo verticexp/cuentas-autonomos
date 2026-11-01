@@ -29,7 +29,7 @@ http.createServer(seguro(async (req, res) => {
   const prompt = contenido.find((c) => c.type === 'text')?.text || '';
   const nif = (prompt.match(/con NIF ([A-Z0-9]+)/) || [])[1] || '';
   const tipos = [
-    { proveedor: 'Recambios Norte SL', nif: 'B00000301', emisor: 'Recambios Norte SL', emisorNif: 'B00000301', receptor: 'Cliente', receptorNif: nif, sentido: 'compra', legible: true, numero: `RN-${2000 + n}`, fecha: '2026-10-20', concepto: 'Pastillas de freno', base: 150, ivaPct: 21, total: 181.5, desglose: [{ ivaPct: 21, base: 150, cuota: 31.5 }], irpf: null, irpfPct: 0 },
+    { proveedor: 'Recambios Norte SL', nif: 'B00003012', emisor: 'Recambios Norte SL', emisorNif: 'B00003012', receptor: 'Cliente', receptorNif: nif, sentido: 'compra', legible: true, numero: `RN-${2000 + n}`, fecha: '2026-10-20', concepto: 'Pastillas de freno', base: 150, ivaPct: 21, total: 181.5, desglose: [{ ivaPct: 21, base: 150, cuota: 31.5 }], irpf: null, irpfPct: 0 },
     { proveedor: 'Taller', nif, emisor: 'Taller', emisorNif: nif, receptor: 'Autocares Vidal SL', receptorNif: 'B00000399', sentido: 'venta', legible: true, numero: `TR-2026-${20 + n}`, fecha: '2026-10-21', concepto: 'Revisión de autocar', base: 900, ivaPct: 21, total: 1089, desglose: [{ ivaPct: 21, base: 900, cuota: 189 }], irpf: null, irpfPct: 0 },
     { proveedor: 'Gasolinera', nif: '', emisor: 'Gasolinera', emisorNif: '', legible: false, fecha: '2026-10-22', base: null, ivaPct: 21, total: null },
   ];

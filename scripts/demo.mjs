@@ -66,14 +66,14 @@ const elegir = (xs) => xs[Math.floor(azar() * xs.length)];
 const dia = (y, m, d) => `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 
 const CLIENTES = [
-  { nombre: 'Hotel Mirador del Port S.A.', nif: 'A00000001', direccion: 'Passeig de Colom, 12', ciudad: '08002 Barcelona' },
-  { nombre: 'Agencia Brisa Incentivos S.L.', nif: 'B00000002', direccion: 'C/ de Balmes, 210', ciudad: '08006 Barcelona' },
-  { nombre: 'Celebra Bodas y Eventos S.L.', nif: 'B00000003', direccion: 'Av. Diagonal, 455', ciudad: '08036 Barcelona' },
-  { nombre: 'Ajuntament de Vilamar', nif: 'P0800000A', direccion: 'Plaça Major, 1', ciudad: '08390 Vilamar' },
-  { nombre: 'Beach Club Levante S.L.', nif: 'B00000004', direccion: 'Passeig Marítim, 30', ciudad: '08005 Barcelona' },
-  { nombre: 'Congresos Mediterrània S.L.', nif: 'B00000005', direccion: 'C/ de Pujades, 77', ciudad: '08005 Barcelona' },
-  { nombre: 'Fundació Música Viva', nif: 'G00000006', direccion: 'C/ del Rec, 15', ciudad: '08003 Barcelona' },
-  { nombre: 'Laura Puig Ferrer', nif: '00000007T', direccion: 'C/ de Sants, 102', ciudad: '08014 Barcelona' },
+  { nombre: 'Hotel Mirador del Port S.A.', nif: 'A00000018', direccion: 'Passeig de Colom, 12', ciudad: '08002 Barcelona' },
+  { nombre: 'Agencia Brisa Incentivos S.L.', nif: 'B00000026', direccion: 'C/ de Balmes, 210', ciudad: '08006 Barcelona' },
+  { nombre: 'Celebra Bodas y Eventos S.L.', nif: 'B00000034', direccion: 'Av. Diagonal, 455', ciudad: '08036 Barcelona' },
+  { nombre: 'Ajuntament de Vilamar', nif: 'P0800000B', direccion: 'Plaça Major, 1', ciudad: '08390 Vilamar' },
+  { nombre: 'Beach Club Levante S.L.', nif: 'B00000042', direccion: 'Passeig Marítim, 30', ciudad: '08005 Barcelona' },
+  { nombre: 'Congresos Mediterrània S.L.', nif: 'B00000059', direccion: 'C/ de Pujades, 77', ciudad: '08005 Barcelona' },
+  { nombre: 'Fundació Música Viva', nif: 'G00000067', direccion: 'C/ del Rec, 15', ciudad: '08003 Barcelona' },
+  { nombre: 'Laura Puig Ferrer', nif: '00000007F', direccion: 'C/ de Sants, 102', ciudad: '08014 Barcelona' },
 ];
 const CONCEPTOS = {
   'sonido-e-iluminacion': ['Sonorización e iluminación de evento corporativo', 'Montaje técnico de sonido para congreso', 'Iluminación escénica para gala', 'Técnico de sonido y equipo para boda'],
@@ -124,7 +124,7 @@ for (let d = inicio; d.toISOString().slice(0, 10) <= hoy; d = new Date(Date.UTC(
     if (fecha <= hoy) gastos.push({ id: `demo-${gastos.length + 1}`, fecha, actividad, concepto, base, ivaPct, ...extra });
   };
   // El almacén es alquilado: la empresa retiene el 19 % al propietario (modelos 115 y 180).
-  g(1, 'Alquiler del almacén', 950, 21, 'sonido-e-iluminacion', { proveedor: 'Finques Poblenou S.L.', proveedorNif: 'B00000301', alquiler: true });
+  g(1, 'Alquiler del almacén', 950, 21, 'sonido-e-iluminacion', { proveedor: 'Finques Poblenou S.L.', proveedorNif: 'B00003012', alquiler: true });
   g(5, 'Gestoría', 180);
   g(5, 'Seguro de responsabilidad civil', 62, 0);
   g(8, 'Teléfono e internet', 75);
@@ -677,14 +677,14 @@ await r.hset(`${P}productos:${id}`, porId(PRODUCTOS));
 await r.hset(`${P}stock:${id}`, porId(ajustesStock));
 // Fichas: forma de cobro, plazo, comercial, zona y riesgo máximo (lib/terceros.js). Sin límite en el ayuntamiento y la fundación.
 const FICHAS_CLIENTE = {
-  A00000001: { formaCobro: 'transferencia', plazo: 30, comercial: 'Marta Soler', zona: 'Barcelona ciudad', riesgoMax: 20000 },
-  B00000002: { formaCobro: 'domiciliacion', plazo: 30, comercial: 'Marta Soler', zona: 'Barcelona ciudad', riesgoMax: 12000 },
-  B00000003: { formaCobro: 'transferencia', plazo: 15, comercial: 'Jordi Vidal', zona: 'Barcelona ciudad', riesgoMax: 6000 },
-  P0800000A: { formaCobro: 'transferencia', plazo: 60, comercial: 'Jordi Vidal', zona: 'Costa del Maresme' },
-  B00000004: { formaCobro: 'tarjeta', plazo: 0, comercial: 'Jordi Vidal', zona: 'Barcelona ciudad', riesgoMax: 3000 },
-  B00000005: { formaCobro: 'domiciliacion', plazo: 30, comercial: 'Marta Soler', zona: 'Barcelona ciudad', riesgoMax: 15000 },
-  G00000006: { formaCobro: 'transferencia', plazo: 45, comercial: 'Jordi Vidal', zona: 'Costa del Maresme' },
-  '00000007T': { formaCobro: 'bizum', plazo: 0, comercial: 'Marta Soler', zona: 'Barcelona ciudad', riesgoMax: 1500 },
+  A00000018: { formaCobro: 'transferencia', plazo: 30, comercial: 'Marta Soler', zona: 'Barcelona ciudad', riesgoMax: 20000 },
+  B00000026: { formaCobro: 'domiciliacion', plazo: 30, comercial: 'Marta Soler', zona: 'Barcelona ciudad', riesgoMax: 12000 },
+  B00000034: { formaCobro: 'transferencia', plazo: 15, comercial: 'Jordi Vidal', zona: 'Barcelona ciudad', riesgoMax: 6000 },
+  P0800000B: { formaCobro: 'transferencia', plazo: 60, comercial: 'Jordi Vidal', zona: 'Costa del Maresme' },
+  B00000042: { formaCobro: 'tarjeta', plazo: 0, comercial: 'Jordi Vidal', zona: 'Barcelona ciudad', riesgoMax: 3000 },
+  B00000059: { formaCobro: 'domiciliacion', plazo: 30, comercial: 'Marta Soler', zona: 'Barcelona ciudad', riesgoMax: 15000 },
+  G00000067: { formaCobro: 'transferencia', plazo: 45, comercial: 'Jordi Vidal', zona: 'Costa del Maresme' },
+  '00000007F': { formaCobro: 'bizum', plazo: 0, comercial: 'Marta Soler', zona: 'Barcelona ciudad', riesgoMax: 1500 },
 };
 await r.hset(`${P}clientes:${id}`, porId([...CLIENTES, CLIENTE_UE].map((c) => ({ id: c.nombre.toUpperCase(), ...c, ...FICHAS_CLIENTE[c.nif] }))));
 await r.hset(`${P}fichasProv:${id}`, porId(cuentasProv.map((c, i) => ({ id: c.id, nombre: c.nombre, formaPago: 'transferencia', plazo: [30, 45, 60][i % 3], comercial: 'Marta Soler', zona: 'Barcelona ciudad' }))));
