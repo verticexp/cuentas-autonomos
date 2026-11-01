@@ -95,10 +95,12 @@ const hoy = new Date().toISOString().slice(0, 10);
 const mas = (f, d) => new Date(Date.parse(`${f}T12:00:00Z`) + d * 864e5).toISOString().slice(0, 10);
 const antes = (d) => mas(hoy, -d);
 const creado = (fecha) => `${fecha}T10:00:00.000Z`;
-// Desde el 1 de enero de hace dos años, no desde «hoy menos dos años»: así los dos primeros ejercicios de la demo
-// siempre están completos. Con la ventana móvil, al entrar noviembre el año más antiguo se quedaba con dos meses de
-// facturas pero con la compra inicial del equipo entera, salía en pérdidas y la comprobación del final de este guion
-// (que la demo tiene beneficio) fallaba sola un día cualquiera, rompiendo también `npm test` y el build.
+// Desde el 1 de enero de hace dos años: así los dos primeros ejercicios de la demo están siempre completos y el
+// resultado no depende del día en que se ejecute el guion. Antes la ventana empezaba el día 1 del mes de hace dos
+// años, y al entrar noviembre el año más antiguo se quedaba con dos meses de facturas frente a los gastos fijos y la
+// compra inicial del equipo: salía en pérdidas y la comprobación del final de este guion (que la demo gana dinero)
+// fallaba sola, rompiendo con ella `npm test` y el build. Se parcheó topando el mes en octubre, que dejaba el primer
+// año con un trimestre; con el año entero, además, los tres ejercicios son comparables.
 const inicio = new Date(Date.UTC(new Date().getUTCFullYear() - 2, 0, 1));
 for (let d = inicio; d.toISOString().slice(0, 10) <= hoy; d = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1))) {
   const y = d.getUTCFullYear(), m = d.getUTCMonth() + 1;

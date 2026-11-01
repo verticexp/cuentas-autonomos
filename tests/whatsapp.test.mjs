@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
 import { accionDe } from '../lib/whatsappIA.js';
 import { cambiarGasto, resumenGasto } from '../lib/whatsapp.js';
-import { aplicarCambios, buscarCliente, cuerpoFactura, elegirDocumento, entregaDe, firmaValida, lineasDeUltima, mensajesDe, resumenBorrador, separarDireccion, siNo, telefonosAutorizados, textoEmitido } from '../lib/whatsapp.js';
+import { aplicarCambios, avisosStock, buscarCliente, cuerpoFactura, elegirDocumento, entregaDe, firmaValida, lineasDeUltima, mensajesDe, resumenBorrador, separarDireccion, siNo, telefonosAutorizados, textoEmitido } from '../lib/whatsapp.js';
 import { limpiar } from '../lib/facturas.js';
 
 test('firma de Meta: vale la buena, no la manipulada ni sin secreto', () => {
@@ -361,4 +361,34 @@ test('WhatsApp en el idioma del perfil: catalán e inglés en el resumen, el avi
   assert.match(resumenGasto({ proveedor: 'Repsol', base: 50, ivaPct: 21 }, { tr: traductorDe('en') }), /VAT 21% /);
   // Sin idioma (o castellano): exactamente como antes.
   assert.match(resumenBorrador(datos, 'a@b.cat', emisor, 'factura', 'correo'), /Se la mando a a@b\.cat\. ¿Está bien\? ¿La emito y se la envío\?/);
+});
+
+test('catálogo: «3 sesiones de DJ» toma precio e IVA del producto, queda enlazada para el stock y avisa si falta', () => {
+  const catalogo = [
+    { id: 'a1b2c3d4e5f6', nombre: 'Sesión DJ', precio: 120, ivaPct: 21, servicio: true },
+    { id: 'b1b2c3d4e5f6', nombre: 'Parquet roble (m²)', precio: 25, ivaPct: 10 },
+  ];
+  const actividad = { id: 'dj', ivaPct: 21, irpfPct: 15 };
+  const b = cuerpoFactura({ cliente: 'Ana', lineas: [{ producto: 'a1b2c3d4e5f6', cantidad: 3 }, { producto: 'b1b2c3d4e5f6', cantidad: 4, precio: 22 }, { producto: 'inventado', concepto: 'Transporte', cantidad: 1, precio: 30 }] }, { actividad, hoy: '2026-11-01', catalogo });
+  assert.deepEqual(b.lineas, [
+    { concepto: 'Sesión DJ', cantidad: 3, precio: 120, ivaPct: 21, producto: 'a1b2c3d4e5f6' },
+    // Otro precio dicho por la persona manda; el IVA, el del producto.
+    { concepto: 'Parquet roble (m²)', cantidad: 4, precio: 22, ivaPct: 10, producto: 'b1b2c3d4e5f6' },
+    // Un id que no está en el catálogo: línea normal, sin enlazar.
+    { concepto: 'Transporte', cantidad: 1, precio: 30, ivaPct: 21 },
+  ]);
+  // Corregir las líneas por el chat también usa el catálogo.
+  const r = aplicarCambios({ cuerpo: b, email: '' }, { lineas: [{ producto: 'b1b2c3d4e5f6', cantidad: 6 }] }, { actividad, catalogo });
+  assert.deepEqual(r.cuerpo.lineas, [{ concepto: 'Parquet roble (m²)', cantidad: 6, precio: 25, ivaPct: 10, producto: 'b1b2c3d4e5f6' }]);
+  // Stock: avisa si pide más de lo que queda o si está agotado; los servicios no cuentan.
+  assert.deepEqual(avisosStock(r.cuerpo.lineas, catalogo, { b1b2c3d4e5f6: 2.5 }), ['Ojo: de Parquet roble (m²) solo te quedan 2,5 según tu inventario.']);
+  assert.deepEqual(avisosStock(r.cuerpo.lineas, catalogo, { b1b2c3d4e5f6: 0 }), ['Ojo: Parquet roble (m²) está agotado según tu inventario.']);
+  assert.deepEqual(avisosStock(r.cuerpo.lineas, catalogo, { b1b2c3d4e5f6: 10 }), []);
+  assert.deepEqual(avisosStock(b.lineas.slice(0, 1), catalogo, {}), []);
+});
+
+test('el resumen del borrador enseña los avisos de stock antes de la pregunta', () => {
+  const datos = { fecha: '2026-11-01', cliente: { nombre: 'Ana', nif: '12345678Z', direccion: 'C/ Sol 1', ciudad: '08001 Barcelona' }, lineas: [{ concepto: 'Parquet', cantidad: 4, precio: 25, ivaPct: 10 }], ivaPct: 10, irpfPct: 0, base: 100 };
+  const t = resumenBorrador(datos, 'a@b.es', { nombre: 'X', nif: 'B1', direccion: 'C/ Y' }, 'factura', 'correo', { avisos: ['Ojo: de Parquet solo te quedan 2 según tu inventario.'] });
+  assert.match(t, /4 × Parquet · 25,00\s€[\s\S]*Ojo: de Parquet solo te quedan 2[\s\S]*¿La emito y se la envío\?$/);
 });
