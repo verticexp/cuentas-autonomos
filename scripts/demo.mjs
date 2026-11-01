@@ -91,7 +91,9 @@ const hoy = new Date().toISOString().slice(0, 10);
 const mas = (f, d) => new Date(Date.parse(`${f}T12:00:00Z`) + d * 864e5).toISOString().slice(0, 10);
 const antes = (d) => mas(hoy, -d);
 const creado = (fecha) => `${fecha}T10:00:00.000Z`;
-const inicio = new Date(Date.UTC(new Date().getUTCFullYear() - 2, new Date().getUTCMonth(), 1));
+// Dos años atrás, pero el primer año con al menos su último trimestre: empezando en noviembre o diciembre, ese año solo
+// tenía uno o dos meses de ventas frente a los gastos fijos y salía en pérdidas (la comprobación del final fallaba el 1-11).
+const inicio = new Date(Date.UTC(new Date().getUTCFullYear() - 2, Math.min(new Date().getUTCMonth(), 9), 1));
 for (let d = inicio; d.toISOString().slice(0, 10) <= hoy; d = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1))) {
   const y = d.getUTCFullYear(), m = d.getUTCMonth() + 1;
   const dias = [];
