@@ -246,8 +246,8 @@ function facturaA3(filas, numero) {
   return filas.slice(i, j);
 }
 
-const cli = { nombre: 'Congresos del Sur S.L.', nif: 'B00000005', direccion: 'C/ Mayor, 3', ciudad: '28013 Madrid' };
-const prov = (n, nif = 'B00000301') => ({ proveedor: n, proveedorNif: nif });
+const cli = { nombre: 'Congresos del Sur S.L.', nif: 'B00000059', direccion: 'C/ Mayor, 3', ciudad: '28013 Madrid' };
+const prov = (n, nif = 'B00003012') => ({ proveedor: n, proveedorNif: nif });
 const fac = (id, numero, fecha, extra) => ({ id, numero, anio: 2026, serie: '', fecha, actividad: 'dj', concepto: 'Servicio', cliente: cli, base: 1000, ivaPct: 21, irpfPct: 0, cobrada: true, ...extra });
 const gas = (id, fecha, extra) => ({ id, fecha, actividad: 'dj', concepto: 'Compra', base: 100, ivaPct: 21, ...prov('Suministros S.L.'), ...extra });
 const PRODUCTO = 'abcdef123456';
@@ -272,7 +272,7 @@ const general = {
     gas('g2', '2026-02-15', { base: 150, porTipo: [{ base: 100, ivaPct: 21 }, { base: 50, ivaPct: 10 }] }),
     gas('g3', '2026-04-15', { concepto: 'Software', base: 200, ivaPct: 0, ...prov('Ireland Ltd', 'IE6388047V') }),
     gas('g4', '2026-04-16', { concepto: 'Obra', base: 300, ivaPct: 0, origen: 'isp' }),
-    gas('g5', '2026-07-15', { concepto: 'Fruta', base: 400, ivaPct: 0, compensacion: 12, ...prov('Pagès Joan', '00000007T') }),
+    gas('g5', '2026-07-15', { concepto: 'Fruta', base: 400, ivaPct: 0, compensacion: 12, ...prov('Pagès Joan', '00000007F') }),
     gas('g6', '2026-07-16', { concepto: 'Alquiler', base: 1000, alquiler: true }),
     gas('g7', '2026-01-20', { concepto: 'Servidor', base: 4000, inversion: { tipo: 'informatica' } }),
     gas('g8', '2026-10-15', { concepto: 'Abogado', base: 500, irpfPct: 15 }),
@@ -288,7 +288,7 @@ test('A3 y ContaPlus: registro de IVA de facturas y gastos de todos los tipos, i
   assert.equal(campo(f1[0], 16, 12).trim(), '43000000');
   assert.equal(campo(f1[0], 58, 1), '1');
   assert.equal(campo(f1[0], 100, 14), '+0000001535.00');
-  assert.equal(campo(f1[0], 176, 14).trim(), 'B00000005');
+  assert.equal(campo(f1[0], 176, 14).trim(), 'B00000059');
   assert.equal(campo(f1[0], 230, 5), '28013');
   assert.deepEqual(f1.slice(1, 4).map((f) => [campo(f, 16, 8), campo(f, 100, 2), campo(f, 102, 14), campo(f, 116, 5), campo(f, 121, 14), campo(f, 154, 5), campo(f, 159, 14), campo(f, 173, 2), campo(f, 192, 8), campo(f, 216, 8)]), [
     ['70000000', '01', '+0000000600.00', '21.00', '+0000000126.00', '15.00', '+0000000090.00', '  ', '47700000', '47300000'],
@@ -368,7 +368,7 @@ test('A3 y ContaPlus: registro de IVA de facturas y gastos de todos los tipos, i
   assert.deepEqual(ficha('47700121'), ['IVA repercutido 21 %', '', 'G', '21.00', '0.00', ' ', '  ', '']);
   assert.deepEqual(ficha('47790021'), ['IVA repercutido con recargo 21 %', '', 'G', '21.00', '5.20', ' ', '  ', '']);
   assert.deepEqual(['47700200', '47700300', '47700400', '47200321', '47700821', '47200521', '47700621', '47200412'].map((c) => campo(S[c], 161, 1)), ['X', 'Y', 'E', 'Z', 'V', 'P', 'P', 'A']);
-  assert.deepEqual(ficha('43000001'), ['Congresos del Sur S.L.', 'B00000005', ' ', '0.00', '0.00', '1', 'ES', '28013']);
+  assert.deepEqual(ficha('43000001'), ['Congresos del Sur S.L.', 'B00000059', ' ', '0.00', '0.00', '1', 'ES', '28013']);
   assert.deepEqual(ficha('43000002').slice(0, 2).concat(ficha('43000002').slice(5, 7)), ['Lyon Events', 'FR12345678901', '2', 'FR']);
   assert.equal(campo(S['43000004'], 383, 1), '6');
   assert.ok(contaplus.subcuentas.every((f) => f.length === 385));

@@ -36,11 +36,11 @@ const mas = (f, d) => new Date(Date.parse(`${f}T12:00:00Z`) + d * 864e5).toISOSt
 const dias = (desde) => Math.round((Date.parse(hoy) - Date.parse(desde)) / 864e5);
 
 const CLIENTES = [
-  { nombre: 'Hotel Mirador del Port S.A.', nif: 'A00000001', direccion: 'Passeig de Colom, 12', ciudad: '08002 Barcelona' },
-  { nombre: 'Agencia Brisa Incentivos S.L.', nif: 'B00000002', direccion: 'C/ de Balmes, 210', ciudad: '08006 Barcelona' },
-  { nombre: 'Celebra Bodas y Eventos S.L.', nif: 'B00000003', direccion: 'Av. Diagonal, 455', ciudad: '08036 Barcelona' },
-  { nombre: 'Congresos Mediterrània S.L.', nif: 'B00000005', direccion: 'C/ de Pujades, 77', ciudad: '08005 Barcelona' },
-  { nombre: 'Fundació Música Viva', nif: 'G00000006', direccion: 'C/ del Rec, 15', ciudad: '08003 Barcelona' },
+  { nombre: 'Hotel Mirador del Port S.A.', nif: 'A00000018', direccion: 'Passeig de Colom, 12', ciudad: '08002 Barcelona' },
+  { nombre: 'Agencia Brisa Incentivos S.L.', nif: 'B00000026', direccion: 'C/ de Balmes, 210', ciudad: '08006 Barcelona' },
+  { nombre: 'Celebra Bodas y Eventos S.L.', nif: 'B00000034', direccion: 'Av. Diagonal, 455', ciudad: '08036 Barcelona' },
+  { nombre: 'Congresos Mediterrània S.L.', nif: 'B00000059', direccion: 'C/ de Pujades, 77', ciudad: '08005 Barcelona' },
+  { nombre: 'Fundació Música Viva', nif: 'G00000067', direccion: 'C/ del Rec, 15', ciudad: '08003 Barcelona' },
 ];
 const CONCEPTOS = ['Diseño de identidad visual', 'Campaña para redes sociales', 'Maquetación de catálogo', 'Diseño de la web corporativa', 'Cartelería y folletos del evento', 'Mantenimiento mensual de la web'];
 const actividades = empresa.actividades;
@@ -73,7 +73,7 @@ const g = (fecha, concepto, proveedor, proveedorNif, base, ivaPct = 21) => {
 for (let m = 5; m >= 0; m--) {
   const d = new Date(Date.UTC(Number(hoy.slice(0, 4)), Number(hoy.slice(5, 7)) - 1 - m, 1));
   const dia = (n) => `${d.toISOString().slice(0, 8)}${String(n).padStart(2, '0')}`;
-  g(dia(1), 'Alquiler del espacio de coworking', 'Coworking Poblenou S.L.', 'B00000301', 320);
+  g(dia(1), 'Alquiler del espacio de coworking', 'Coworking Poblenou S.L.', 'B00003012', 320);
   g(dia(4), 'Adobe Creative Cloud', 'Adobe Systems Software Ireland Ltd', 'IE6364992H', 66.54);
   g(dia(8), 'Teléfono e internet', 'Telefónica de España S.A.U.', 'A82018474', 48.6);
   g(dia(12), 'Gestoría', 'Assessoria Vila S.L.', 'B00000302', 95);
