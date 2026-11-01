@@ -76,13 +76,14 @@ const plazo = (t, anio, dia = 30) => { const l = limiteTrimestre(t, anio, dia); 
 // Resta en un desglose; sin «−0,00 €» cuando es cero.
 const menos = (v) => (v ? -v : 0);
 // Fichero para el botón «Importar» del formulario de la Sede (app/api/aeat): sin NIF en Ajustes no se puede generar.
-// Sin t, un modelo anual; con mes, un 349 mensual. boe: declaración informativa, que se presenta con el fichero entero
-// («Presentación mediante fichero» de la Sede) en lugar de importarlo en el formulario.
-const Fichero = async ({ modelo, anio, t, mes, nif, aeat, aviso, foral, boe = false }) => {
+// Sin t, un modelo anual; con mes, un 349 mensual; con p, uno de los tres pagos del 202. boe: declaración informativa,
+// que se presenta con el fichero entero («Presentación mediante fichero» de la Sede) en lugar de importarlo en el
+// formulario. tabla: el 200 no se importa, se descarga la relación de casillas para teclearla en Sociedades WEB.
+const Fichero = async ({ modelo, anio, t, mes, p, nif, aeat, aviso, foral, boe = false, tabla = false }) => {
   const tr = await textos();
   return foral ? <p className="descargas"><a href={foral.sede} target="_blank" rel="noopener noreferrer">{tr('Abrir la sede de la {hacienda}', { hacienda: tr(foral.hacienda) })}</a></p> : (
     <p className="descargas">{aviso ? tr(aviso) : (nif
-      ? <><a href={`/api/aeat?${new URLSearchParams({ modelo, anio: String(anio), ...(t ? { t: String(t) } : {}), ...(mes ? { mes: String(mes) } : {}) })}`} download>{boe ? tr('Descargar fichero para presentar (formato BOE)') : tr('Descargar fichero para la Sede (.txt, para «Importar»)')}</a>{aeat && <> · <a href={aeat} target="_blank" rel="noopener noreferrer">{tr('Abrir la Sede')}</a></>}</>
+      ? <><a href={`/api/aeat?${new URLSearchParams({ modelo, anio: String(anio), ...(t ? { t: String(t) } : {}), ...(mes ? { mes: String(mes) } : {}), ...(p ? { p: String(p) } : {}) })}`} download>{tabla ? tr('Descargar las casillas calculadas (.csv, para teclear en Sociedades WEB)') : boe ? tr('Descargar fichero para presentar (formato BOE)') : tr('Descargar fichero para la Sede (.txt, para «Importar»)')}</a>{aeat && <> · <a href={aeat} target="_blank" rel="noopener noreferrer">{tr('Abrir la Sede')}</a></>}</>
       : <>{tr('Para descargar el fichero de la Sede,')} <a href="/ajustes">{tr('rellena tu NIF en Ajustes')}</a>.</>)}</p>
   );
 };
@@ -91,12 +92,14 @@ const Importe = async ({ texto, v }) => {
   const tr = await textos();
   return <p className={`resumen-importe${v ? '' : ' cero'}`}>{v ? <><span>{tr(texto)}</span><strong>{eur(v)}</strong></> : <span>{tr('Sin importe a ingresar')}</span>}</p>;
 };
-// Página de cada modelo en la Sede de la AEAT (G414: 303 · IVA; G601: 130 · IRPF).
+// Página de cada modelo en la Sede de la AEAT (G414: 303 · IVA; G601: 130 · IRPF; GE04: 200 · Sociedades; GE00: 202).
 const AEAT = {
   m303: 'https://sede.agenciatributaria.gob.es/Sede/procedimientoini/G414.shtml',
   m130: 'https://sede.agenciatributaria.gob.es/Sede/procedimientoini/G601.shtml',
   m131: 'https://sede.agenciatributaria.gob.es/Sede/procedimientoini/G602.shtml',
   m216: 'https://sede.agenciatributaria.gob.es/Sede/procedimientoini/GF05.shtml',
+  m200: 'https://sede.agenciatributaria.gob.es/Sede/procedimientoini/GE04.shtml',
+  m202: 'https://sede.agenciatributaria.gob.es/Sede/procedimientoini/GE00.shtml',
 };
 // Desglose por casillas plegado en el móvil (el importe ya se ve arriba); en el ordenador, siempre abierto.
 const Plegable = async ({ children }) => <details className="casillas-plegable"><summary>{(await textos())('Ver las casillas')}</summary>{children}</details>;
@@ -707,6 +710,11 @@ export default async function Modelos({ searchParams }) {
                   : <p className="nota">{tr('La cuota de {anio} fue cero: no se presenta.', { anio: x.de })}</p>}
                 {x.modalidad === '40.3' && x.resultado < 0 && <p className="nota">{tr('Sale negativo: con más de 6 millones se presenta igual, sin importe.')}</p>}
                 <p className="nota">{tr('Hasta el {fecha}.', { fecha: tr(conAnio(x.fecha, 0)) })}</p>
+                {/* El fichero se importa en el formulario de la Sede. Lo que el diseño pide y Fisquo no tiene se dice aquí. */}
+                {(x.modalidad === '40.3' || x.pago > 0) && <>
+                  <Fichero modelo="202" anio={anio} p={x.p} nif={u.emisor?.nif} aeat={AEAT.m202} />
+                  <p className="nota">{tr('Al importarlo, en la Sede quedan por elegir el C.N.A.E. de la actividad (Fisquo guarda el epígrafe del IAE, que es otra clasificación), el tipo de gravamen del ejercicio en curso y la cuenta de domiciliación. Las marcas de datos adicionales salen de tu cifra de negocios: si estás en algún régimen especial (Canarias, ZEC, Ceuta y Melilla, cooperativa, tonelaje, SOCIMI), márcalo tú.')}</p>
+                </>}
               </div>
             ))}
           </div>
@@ -1037,6 +1045,12 @@ export default async function Modelos({ searchParams }) {
                 : is.nuevaCreacion?.falta ? tr('No hay datos de {anio} en Fisquo para saber si aún toca el 15 % de nueva creación: confírmalo con tu gestor.', { anio: is.nuevaCreacion.falta })
                 : is.nuevaCreacion?.primero && is.nuevaCreacion.primero < anio - 1 ? tr('El 15 % de nueva creación ya se aplicó en {a} y {b}.', { a: is.nuevaCreacion.primero, b: is.nuevaCreacion.primero + 1 }) : ''}</p>}
           </div>
+          {/* El 200 no se importa: su diseño de registro son 77 páginas con las cuentas anuales enteras (lib/ficheroIs.js).
+              Se descargan las casillas calculadas, numeradas como en el modelo, para teclearlas en Sociedades WEB. */}
+          {!is.foral && <>
+            <Fichero tabla modelo="200" anio={anio} nif={u.emisor?.nif} aeat={AEAT.m200} />
+            <p className="nota">{tr('El 200 no se puede importar desde un fichero sin las cuentas anuales enteras, así que se descargan las casillas que Fisquo calcula, con su número y su página, para teclearlas en Sociedades WEB.')} {tr('Lo que tienes que completar allí: el balance, la cuenta de pérdidas y ganancias y el estado de cambios en el patrimonio neto (páginas 3 a 11), los datos de identificación y el C.N.A.E., el detalle de las correcciones al resultado contable, los cuadros de bases negativas y de deducciones pendientes, y cualquier régimen especial o ajuste que no esté en Fisquo. Repásalo con tu gestoría.')}</p>
+          </>}
           {!is.foral && <div className="tarjetas">
             <ImporteAnio campo="fondosPropios" anio={anio} valor={u.fondosPropios?.[anio] ?? null} soloLectura={soloLectura}
               titulo={`Incremento de los fondos propios en ${anio}`}

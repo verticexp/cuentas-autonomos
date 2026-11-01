@@ -3,7 +3,8 @@ import { actividadesDe, fiscalDe, usa130, usa303, ajustesIva, modelosDe, usaIgic
 import { casillas303, liquidaciones303, opciones130, r2, rectificativa303, resumenAnual } from '@/lib/calculos';
 import { declarante, fichero111, fichero115, fichero130, fichero303, fichero390, nombreFichero } from '@/lib/ficheroAeat';
 import { fichero180, fichero190, fichero347, fichero349 } from '@/lib/ficherosInformativas';
-import { modelo115, modelo180, modelo190, modelo347, modelo349, modelo390, periodos349, retencionesProfesionales } from '@/lib/modelos';
+import { csvCasillas200, fichero202, nombreCsv200 } from '@/lib/ficheroIs';
+import { borradorSociedades, modelo115, modelo180, modelo190, modelo202, modelo202Art403, modelo347, modelo349, modelo390, periodos349, retencionesProfesionales } from '@/lib/modelos';
 import { modelo111 } from '@/lib/nominas';
 import { leer } from '@/lib/redis';
 import { puede } from '@/lib/permisos';
@@ -27,10 +28,13 @@ export async function GET(req) {
   const anio = q.has('anio') ? Number(q.get('anio')) : Number(hoy().slice(0, 4));
   const mes = q.has('mes') ? Number(q.get('mes')) : null;
   const t = q.has('t') ? Number(q.get('t')) : modelo === '349' && mes ? Math.ceil(mes / 3) : null;
-  const anual = ['180', '190', '347', '390'].includes(modelo);
-  if (!['303', '130', '111', '115', '349', '180', '190', '347', '390'].includes(modelo)
+  // 202: el pago fraccionado (?p=1|2|3), que no va por trimestres. 200: anual, y no es un fichero sino la tabla de casillas.
+  const p = q.has('p') ? Number(q.get('p')) : null;
+  const anual = ['180', '190', '347', '390', '200'].includes(modelo);
+  if (!['303', '130', '111', '115', '349', '180', '190', '347', '390', '200', '202'].includes(modelo)
     || !Number.isInteger(anio) || anio < 2000 || anio > 9999
-    || (!anual && ![1, 2, 3, 4].includes(t))
+    || (!anual && modelo !== '202' && ![1, 2, 3, 4].includes(t))
+    || (modelo === '202' ? ![1, 2, 3].includes(p) : p !== null)
     || (mes !== null && (modelo !== '349' || !Number.isInteger(mes) || mes < 1 || mes > 12 || Math.ceil(mes / 3) !== t))) {
     return Response.json({ error: 'Modelo, ejercicio, trimestre o mes no válido' }, { status: 400 });
   }
@@ -39,10 +43,15 @@ export async function GET(req) {
   const yo = declarante(u.emisor);
   if (yo.error) return Response.json({ error: yo.error }, { status: 400 });
 
-  const [{ facturas, gastos }, nominas, empleados] = await Promise.all([
+  // El Impuesto sobre Sociedades (200 y 202) necesita lo mismo que el borrador de Impuestos: almacén, albaranes,
+  // asientos manuales y los dividendos e intereses pagados.
+  const esIS = ['200', '202'].includes(modelo);
+  const [{ facturas, gastos }, nominas, empleados, productos, stock, albaranes, manuales, capital] = await Promise.all([
     datosImpuestos(u, anio),
     ['111', '190'].includes(modelo) ? leer(u, 'nominas') : [],
     modelo === '190' ? leer(u, 'empleados') : [],
+    esIS ? leer(u, 'productos') : [], esIS ? leer(u, 'stock') : [], esIS ? leer(u, 'albaranes') : [],
+    esIS ? leer(u, 'asientos') : [], esIS ? leer(u, 'capital') : [],
   ]);
   // Se muestra el modelo si los ajustes o los datos lo piden, como en Modelos. Los diseños AEAT no son los forales.
   if (!['303', '130'].includes(modelo)) {
@@ -69,6 +78,22 @@ export async function GET(req) {
       r = fichero130(yo, anio, resumenAnual(facturas, gastos, anio, u.pagos130?.[anio] || {}, ids, { ivaCoste: !usa303(f), hasta, ...opciones130(f, u.rend130, anio), iva }).trimestres[t - 1]);
     } else if (modelo === '111') r = fichero111(yo, anio, t, modelo111(nominas || [], anio, t), retencionesProfesionales(gastos, anio, t));
     else if (modelo === '115') r = fichero115(yo, anio, t, modelo115(gastos, anio, t));
+    else if (esIS) {
+      // Mismas opciones que el borrador de Impuestos (app/modelos/page.js), para que las cifras coincidan.
+      const opIS = { ivaCoste: !usa303(f), iva, productos: productos || [], ajustes: stock || [], albaranes: albaranes || [], manuales: manuales || [],
+        capital: capital || [], constitucion: f.constitucion, cuotaIS: u.cuotaIS || {}, territorio: f.territorio,
+        binsPrevias: u.binsPrevias || {}, fondosPropios: u.fondosPropios || {}, deduccionesIS: u.deduccionesIS || [], pagos202: u.pagos202 || {} };
+      const is = borradorSociedades(facturas, gastos, anio, { ...opIS, hasta });
+      // El 200 no se importa: su diseño de registro son 77 páginas con las cuentas anuales enteras (lib/ficheroIs.js). Se
+      // descarga la relación de casillas que sale del borrador, para teclearla en Sociedades WEB.
+      if (modelo === '200') {
+        const tabla = csvCasillas200(is, anio, { pagos: u.pagos202?.[anio] || {} });
+        return new Response(tabla, { headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="${nombreCsv200(anio)}"`, 'Cache-Control': 'no-store' } });
+      }
+      const pagos = is.obligado403 ? modelo202Art403(facturas, gastos, anio, opIS) : modelo202(u.cuotaIS, anio);
+      r = fichero202(yo, anio, pagos.find((x) => x.p === p), { is, constitucion: f.constitucion });
+      periodo = `${p}P`;
+    }
     else if (modelo === '390') {
       // Las marcas de caja no se deducen de los importes: puede haber actividad sin cobros ni pagos.
       const trimestres = [1, 2, 3, 4].map((t) => casillas303(facturas, gastos, anio, t, iva));
