@@ -80,7 +80,11 @@ const CONCEPTOS = {
   'alquiler-de-equipos': ['Alquiler de equipo de sonido (fin de semana)', 'Alquiler de focos LED y mesa de luces', 'Alquiler de pantalla LED 3x2 m'],
   'dj-y-musica': ['Sesión de DJ (4 horas) con equipo', 'Música en vivo para cóctel', 'DJ para fiesta de empresa'],
 };
-const IMPORTES = { 'sonido-e-iluminacion': [1600, 6400], 'alquiler-de-equipos': [260, 1400], 'dj-y-musica': [450, 1300] };
+// Precios por evento. Con los de antes (un 25 % más bajos) los 79 eventos del año daban unos 140.000 € de ingresos, y
+// entre las nóminas de cuatro personas (6.520 € de bruto al mes) y los demás gastos la empresa quedaba al filo de las
+// pérdidas: cualquier año podía salir negativo según cómo cayeran los importes al azar, y la comprobación del final
+// fallaba sola. Una S.L. de sonido con cinco personas factura más que eso, así que la demo ahora gana dinero con holgura.
+const IMPORTES = { 'sonido-e-iluminacion': [2000, 8000], 'alquiler-de-equipos': [325, 1750], 'dj-y-musica': [560, 1625] };
 // Más trabajo de mayo a septiembre y en diciembre.
 const EVENTOS_MES = [3, 3, 4, 5, 8, 10, 11, 7, 9, 6, 5, 8];
 
@@ -91,7 +95,11 @@ const hoy = new Date().toISOString().slice(0, 10);
 const mas = (f, d) => new Date(Date.parse(`${f}T12:00:00Z`) + d * 864e5).toISOString().slice(0, 10);
 const antes = (d) => mas(hoy, -d);
 const creado = (fecha) => `${fecha}T10:00:00.000Z`;
-const inicio = new Date(Date.UTC(new Date().getUTCFullYear() - 2, new Date().getUTCMonth(), 1));
+// Desde el 1 de enero de hace dos años, no desde «hoy menos dos años»: así los dos primeros ejercicios de la demo
+// siempre están completos. Con la ventana móvil, al entrar noviembre el año más antiguo se quedaba con dos meses de
+// facturas pero con la compra inicial del equipo entera, salía en pérdidas y la comprobación del final de este guion
+// (que la demo tiene beneficio) fallaba sola un día cualquiera, rompiendo también `npm test` y el build.
+const inicio = new Date(Date.UTC(new Date().getUTCFullYear() - 2, 0, 1));
 for (let d = inicio; d.toISOString().slice(0, 10) <= hoy; d = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1))) {
   const y = d.getUTCFullYear(), m = d.getUTCMonth() + 1;
   const dias = [];
@@ -443,11 +451,14 @@ for (let t = Date.parse(`${mesesJornada[0]}-01T12:00:00Z`); new Date(t).toISOStr
   g.manual = 'Trabajó desde la feria de proveedores y lo apuntó al volver';
 }
 
-// Nóminas de cada mes cerrado, como las genera Nóminas (app/api/nominas): las pagas extra de Pau en junio y diciembre;
-// las horas del registro de jornada (y las extra de Aina) desde que hay registro. Todas pagadas el último día del mes.
+// Nóminas de cada mes cerrado desde que arranca la demo, como las genera Nóminas (app/api/nominas): las pagas extra de
+// Pau en junio y diciembre; las horas del registro de jornada (y las extra de Aina) desde que hay registro. Todas
+// pagadas el último día del mes. Van desde `inicio` y no desde hace 24 meses porque, si no, el primer ejercicio tenía
+// doce meses de facturas y solo dos de sueldos: salía con un beneficio que no se parecía a nada.
 const MESES_PAGAS = { 1: [12], 2: [6, 12], 3: [3, 6, 12], 4: [3, 6, 9, 12] };
 const nominas = [];
-for (let k = 24; k >= 1; k--) {
+const mesesCerrados = (Number(hoy.slice(0, 4)) - inicio.getUTCFullYear()) * 12 + (Number(hoy.slice(5, 7)) - 1 - inicio.getUTCMonth());
+for (let k = mesesCerrados; k >= 1; k--) {
   const mes = hace(k, 1).slice(0, 7);
   for (const e of empleados.filter((x) => activoEn(x, mes))) {
     const x = jornada.some((f) => f.fecha.startsWith(mes)) ? extrasNomina(resumenMes(jornada, e, mes), e) : null;
@@ -698,8 +709,13 @@ await r.hset(`${P}banco:${id}`, porId(conIds));
 await r.hset(`${P}bancos:${id}`, { extracto: { id: 'extracto', nombre: 'CaixaBank', origen: 'extracto', subido: hoy, saldo: banco, fechaSaldo: hoy } });
 
 console.log(`Demo lista: ${EMAIL} · ${facturas.length} facturas · ${gastos.length} gastos · ${nominas.length} nóminas · ${jornada.length} fichajes · ${presupuestos.length} presupuestos · desde ${inicio.toISOString().slice(0, 10)}`);
-for (let y = Y - 2; y <= Y; y++) {
-  const { base } = borradorSociedades(facturas, gastos, y);
-  console.log(`  · ${y}: beneficio antes de impuestos ${base} €`);
-  assert.ok(base > 0, `La demo tiene pérdidas en ${y}`);
+// Los dos ejercicios cerrados tienen que salir con beneficio: una demo en pérdidas no se puede enseñar. El año en curso
+// va por meses (en enero apenas hay facturas y las nóminas se pagan a fin de mes), así que de él solo se exige que no
+// esté en pérdidas.
+const ejercicios = [];
+for (let y = Y - 2; y <= Y; y++) ejercicios.push({ y, ...borradorSociedades(facturas, gastos, y) });
+for (const { y, base, perdida, ingresos, gastos: g } of ejercicios) console.log(`  · ${y}: ingresos ${ingresos} €, gastos ${g} €, beneficio antes de impuestos ${base} €${perdida ? ` (pérdida de ${perdida} €)` : ''}`);
+for (const { y, base, perdida } of ejercicios) {
+  if (y < Y) assert.ok(base > 0, `La demo tiene pérdidas en ${y}`);
+  else assert.ok(!perdida, `La demo tiene pérdidas en el año en curso (${y})`);
 }
