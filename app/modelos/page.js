@@ -14,11 +14,12 @@ import { NOMBRES_UE, modelo369, plazo369 } from '@/lib/oss';
 import { TIPOS_RENDIMIENTO, casillas123, modelo123, modelo193 } from '@/lib/capitalMobiliario';
 import PagosCapital from '@/components/PagosCapital';
 import { avisosFiscales } from '@/lib/revisionFiscal';
+import { UMBRAL_IAE, modelo840 } from '@/lib/iae';
 import Prorrata from '@/components/Prorrata';
 import Rend130 from '@/components/Rend130';
 import SaldoIva from '@/components/SaldoIva';
 import { modelo111, MESES } from '@/lib/nominas';
-import { borradorRenta, borradorSociedades, TIPOS_DEDUCCION_IS, modelo232, TIPOS_OPERACION_232, LIMITE_232, LIMITE_232_ESPECIFICAS, PCT_232_CIFRA, modelo115, modelo180, modelo190, modelo309, modelo202, modelo202Art403, modelo347, modelo349, periodos349, modelo390, ETIQUETAS390, ORDEN390, TOTALES390, retencionesProfesionales, MINIMO_PERSONAL, RET_ALQUILER, modelo216, modelo296 } from '@/lib/modelos';
+import { borradorRenta, borradorSociedades, TIPOS_DEDUCCION_IS, modelo232, TIPOS_OPERACION_232, LIMITE_232, LIMITE_232_ESPECIFICAS, PCT_232_CIFRA, modelo115, modelo180, modelo190, modelo309, modelo202, modelo202Art403, modelo347, modelo415, exentoDel415, modelo349, periodos349, modelo390, ETIQUETAS390, ORDEN390, TOTALES390, retencionesProfesionales, MINIMO_PERSONAL, RET_ALQUILER, modelo216, modelo296 } from '@/lib/modelos';
 import { SUBCLAVES_296, nombrePais } from '@/lib/noResidentes';
 import { nombreVinculo } from '@/lib/terceros';
 import CuotaIS, { ImporteAnio } from '@/components/CuotaIS';
@@ -209,6 +210,13 @@ export default async function Modelos({ searchParams }) {
   const m347 = modelo347(facturas, gastos, anio, { recc: iva.recc });
   // 232: operaciones con los terceros marcados como vinculados en su ficha y operaciones con paraísos fiscales.
   const m232 = f.tipo === 'sociedad' && modelo232(facturas, gastos, anio, { clientes: fichasCli || [], proveedores: fichasProv || [] });
+  // 415: lo mismo que el 347 con las reglas del Decreto 192/2000, solo para quien está en el IGIC.
+  const m415 = igic && modelo415(facturas, gastos, anio);
+  // Persona física en el simplificado del IGIC: el Decreto 192/2000 (art. 1.4.c) no le exige el 415.
+  const simplificado415 = exentoDel415(f);
+  // 840: si la cifra de negocios hace que a la sociedad le toque darse de alta en el IAE (lib/iae.js). Navarra y el País
+  // Vasco tienen su propio IAE.
+  const m840 = f.tipo === 'sociedad' && !dForal && modelo840(facturas, gastos, anio, { constitucion: f.constitucion, hoy: h });
   const c303 = !igic && usa303(f);
   const ids = actividadesDe(u).map((a) => a.id);
   const rendAnterior = u.rend130?.[anio - 1];
@@ -342,6 +350,13 @@ export default async function Modelos({ searchParams }) {
   // Casos que Fisquo no resuelve solo (lib/revisionFiscal.js): presentar algo aparte o revisar antes del 4T.
   const a111 = (t) => r2(modelo111(nominas || [], anio, t).retenciones + retencionesProfesionales(gastos, anio, t).retenciones);
   const avisos = avisosFiscales({ facturas, gastos, anio, hoy: h, c303, c130: Boolean(r130), retenidas: f.tipo === 'autonomo' && !usa131(f) && !dForal ? Boolean(f.retenidas) : null, liquidaciones, r130, pagos130: u.pagos130?.[anio] || {}, a111: hay111 ? a111 : null });
+  // IAE: la sociedad que pierde la exención (alta) o la recupera (baja) lo tiene que presentar en diciembre del año siguiente.
+  if (m840 && ['alta', 'baja'].includes(m840.situacion)) {
+    const par = { anio, siguiente: anio + 1, desde: anio + 2, fecha: conAnio(m840.plazo.hasta, 4) };
+    avisos.push({ id: 'iae-840', href: '#m840', texto: tr(m840.situacion === 'alta'
+      ? 'Tu cifra de negocios de {anio} llega a 1.000.000 €: pierdes la exención del IAE. Presenta el alta (modelo 840) en diciembre de {siguiente}, hasta el {fecha}; pagarás desde {desde}.'
+      : 'Tu cifra de negocios de {anio} baja de 1.000.000 €: recuperas la exención del IAE desde {desde}. Si estás de alta, presenta la baja (modelo 840) en diciembre de {siguiente}, hasta el {fecha}.', par) });
+  }
   // Prorrata: se enseña si hay operaciones exentas este año o el anterior, o si se ha guardado un porcentaje.
   const prorrata = c303 && { especial: Boolean(u.prorrata?.especial?.[anio]), guardado: u.prorrata?.[anio] ?? null, provisional: prorrataProvisional(facturas, anio, 4, iva), definitiva: prorrataAnio(facturas, anio), anterior: prorrataAnio(facturas, anio - 1) };
   const verProrrata = prorrata && (prorrata.guardado !== null || prorrata.definitiva !== null || prorrata.anterior !== null);
@@ -914,6 +929,34 @@ export default async function Modelos({ searchParams }) {
         {m347.ventas.length + m347.compras.length > 0 && !m347.sinNif.length && <Fichero foral={foralT} boe modelo="347" anio={anio} nif={u.emisor?.nif} />}
       </ModeloPlegable>
 
+      {/* 415: el equivalente canario del 347 (Agencia Tributaria Canaria; Decreto 192/2000). Solo con IGIC. Informativo. */}
+      {m415 && (
+        <ModeloPlegable id="m415" num="415" nombre={tr('Operaciones con terceros (Canarias)')} informativo={m415.ventas.length + m415.compras.length > 0 && !simplificado415}
+          estado={!simplificado415 && m415.sinNif.length ? 'fuera' : undefined}
+          detalle={simplificado415 ? tr('No te toca: persona física en el simplificado del IGIC')
+            : m415.sinNif.length ? tr(m415.sinNif.length === 1 ? 'Falta el NIF de {n} cliente o proveedor' : 'Falta el NIF de {n} clientes o proveedores', { n: m415.sinNif.length })
+            : m415.ventas.length + m415.compras.length ? `${m415.ventas.length + m415.compras.length === 1 ? tr('1 cliente o proveedor') : tr('{n} clientes y proveedores', { n: m415.ventas.length + m415.compras.length })} · ${tr('hasta el {fecha}', { fecha: tr(plazoAnual(finFebrero)) })}` : tr('Nadie pasa de 3.005,06 €: no se presenta')}>
+          <h2 className="grupo-t">415 · {tr('Operaciones de más de 3.005,06 € (Canarias)')}</h2>
+          <p className="grupo-pie arriba">{tr('Declaración anual de la Agencia Tributaria Canaria: clientes y proveedores con los que pasas de 3.005,06 € en el año, con el IGIC incluido; las ventas y las compras se miden por separado. A diferencia del 347, entran también las facturas con retención y el alquiler del local, cada operación cuenta el día de su factura (también las rectificativas) y no hay trimestres: solo el total del año. Quedan fuera las exportaciones, las importaciones, lo que no está sujeto al IGIC, los tickets sin NIF, los sueldos y los impuestos. Se presenta durante febrero, hasta el {fecha}, y no se paga: es informativo.', { fecha: tr(plazoAnual(finFebrero)) })}{notaHastaHoy}</p>
+          {simplificado415 && <p className="nota aviso">{tr('Eres persona física en el régimen simplificado del IGIC: no estás obligado a presentar el 415, salvo por las operaciones que queden fuera de ese régimen (art. 1.4.c del Decreto 192/2000). Lo de abajo es lo que saldría si lo presentaras.')}</p>}
+          {m415.ventas.length || m415.compras.length ? (
+            <div className="tarjetas">
+              {[['Clientes (clave B)', m415.ventas], ['Proveedores (clave A)', m415.compras]].filter(([, l]) => l.length).map(([t, l]) => (
+                <div key={t} className="tarjeta ancha"><h3>{tr(t)}</h3>
+                  <TablaPersonas columnas={['Total']} filas={l.map((o, i) => ({
+                    clave: `${i}-${o.nif}-${o.nombre}`, nombre: o.nombre,
+                    detalle: [o.nif || (o.nifComunitario && `NIF-IVA ${o.nifComunitario}`), o.provincia === '99' && (o.pais ? tr('No residente · {pais}', { pais: nombrePais(o.pais) }) : tr('No residente: falta su país')), o.isp && tr('Inversión del sujeto pasivo')].filter(Boolean).join(' · '),
+                    cifras: [o.total],
+                  }))} />
+                </div>
+              ))}
+            </div>
+          ) : <div className="tarjeta"><p className="nota">{tr('Nadie pasa de 3.005,06 € este año: no se presenta.')}</p></div>}
+          {m415.sinNif.length > 0 && <p className="nota">{tr('Sin NIF: {lista}. Añádelo en sus facturas o gastos (si es de fuera de España, su país en la ficha del cliente): sin él no se puede declarar.', { lista: m415.sinNif.map((o) => o.nombre).join(', ') })}</p>}
+          <p className="nota">{tr('Qué no sale de aquí y tienes que repasar con tu gestoría: las entregas y adquisiciones exentas de bienes de inversión, que van en su propia declaración (Decreto 81/2004); los anticipos que cobras o pagas antes de la factura (art. 4.3 del Decreto 192/2000); los pagos a no residentes; y las claves C a G del modelo (mediación, entes públicos, subvenciones y agencias de viaje). Fisquo todavía no genera el fichero: rellena el formulario de la sede de la Agencia Tributaria Canaria con estos datos. Tampoco sustituye al 347, que es de la AEAT: si solo operas con IGIC, confirma con tu gestoría si además te hace falta.')}</p>
+        </ModeloPlegable>
+      )}
+
       {m180 && (
         <ModeloPlegable id="m180" num="180" nombre={tr('Resumen anual del alquiler')} detalle={m180.arrendadores.length ? tr('Hasta el {fecha}', { fecha: tr(plazoAnual('01-31')) }) : tr('Sin alquileres este año')} informativo={m180.arrendadores.length > 0}>
           <h2 className="grupo-t">180 · {tr('Resumen anual del alquiler')}</h2>
@@ -1073,6 +1116,41 @@ export default async function Modelos({ searchParams }) {
               <p className="nota">{tr('Tampoco entran las nóminas ni la Seguridad Social: la retribución del administrador por el ejercicio de sus funciones no es operación vinculada (art. 18.2.b), y Fisquo no la distingue del sueldo por otro trabajo. Y si estás en un grupo de consolidación fiscal, o eres una AIE o una UTE, esas operaciones quedan fuera del modelo (art. 2.2 de la Orden): Fisquo no lo sabe.')}</p>
             </div>
           )}
+        </ModeloPlegable>
+      )}
+
+      {/* 840: alta, variación o baja en el IAE. No hay cuota que calcular (la fija el ayuntamiento): Fisquo dice si la cifra de
+          negocios hace que le toque a la sociedad y cuándo (lib/iae.js). */}
+      {m840 && (
+        <ModeloPlegable id="m840" num="840" nombre={tr('Impuesto sobre Actividades Económicas (IAE)')}
+          estado={['alta', 'baja'].includes(m840.situacion) ? 'listo' : undefined}
+          detalle={{
+            'sin-datos': tr('Sin datos de {anio} para saberlo', { anio }),
+            'en-curso': tr('Llevas {importe} este año: de momento, sin IAE', { importe: eur(m840.incn) }),
+            exenta: tr('Exenta: tu cifra de negocios no llega a 1.000.000 €'),
+            alta: `${tr('Hay que darse de alta')} · ${tr('en diciembre de {anio}', { anio: anio + 1 })}`,
+            sigue: tr('Ya tributas por el IAE: nada nuevo que presentar'),
+            baja: `${tr('Recuperas la exención')} · ${tr('baja en diciembre de {anio}', { anio: anio + 1 })}`,
+          }[m840.situacion]}>
+          <h2 className="grupo-t">{tr('Modelo 840 del IAE: ¿te toca en {anio}?', { anio })}</h2>
+          <p className="grupo-pie arriba">{tr('El 840 es el alta, la variación o la baja en el Impuesto sobre Actividades Económicas. No tiene cálculo: la cuota la fija la ordenanza de tu ayuntamiento y él te la liquida. Las sociedades están exentas si su importe neto de la cifra de negocios es inferior a 1.000.000 € (art. 82.1.c del texto refundido de la Ley reguladora de las Haciendas Locales); con 1.000.000 € exactos ya no. La cifra que vale es la del ejercicio cuyo plazo del Impuesto sobre Sociedades acabó el año anterior al del devengo: la de {anio} decide el IAE de {desde}, que se devenga el 1 de enero.', { anio, desde: anio + 2 })}{notaHastaHoy}</p>
+          <div className="tarjeta">
+            <Casillas sinNumeros filas={[
+              [tr('Cifra de negocios de {anio}', { anio }), m840.incn, true],
+              m840.elevada && [tr('Real de {anio}, antes de elevarla a un año', { anio }), m840.incnReal],
+              [tr('Cifra de negocios de {anio}', { anio: anio - 1 }), m840.anterior === null ? tr('Sin datos') : m840.anterior],
+              [tr('Límite de la exención'), UMBRAL_IAE],
+            ]} />
+            {m840.situacion === 'sin-datos' && <p className="nota aviso">{tr('No hay facturas ni gastos apuntados en {anio}: Fisquo no puede saber si tu cifra de negocios llega al millón.', { anio })}</p>}
+            {m840.situacion === 'en-curso' && <p className="nota">{tr('Aún no ha terminado {anio}: si acaba en 1.000.000 € o más, el alta se presenta en diciembre de {siguiente}.', { anio, siguiente: anio + 1 })}</p>}
+            {m840.situacion === 'exenta' && <p className="nota">{tr('Tu cifra de negocios de {anio} no llega a 1.000.000 €: por ella no pagas IAE en {desde}.', { anio, desde: anio + 2 })}</p>}
+            {m840.situacion === 'alta' && <p className="nota aviso">{tr('Tu cifra de negocios de {anio} llega a 1.000.000 €: pierdes la exención. Presenta el modelo 840 de alta durante diciembre de {siguiente} (hasta el {fecha}) y pagarás el IAE desde el 1 de enero de {desde} (art. 5.3 del Real Decreto 243/1995). El alta se presenta en la Agencia Tributaria y el ayuntamiento te manda después la liquidación.', { anio, siguiente: anio + 1, desde: anio + 2, fecha: conAnio(m840.plazo.hasta, 4) })}</p>}
+            {m840.situacion === 'alta' && m840.anteriorSinDatos && <p className="nota">{tr('No hay nada apuntado en {anio}: si ya llegaste al millón entonces, ya tendrías que estar de alta desde {desde} y no hay un alta nueva.', { anio: anio - 1, desde: anio + 1 })}</p>}
+            {m840.situacion === 'sigue' && <p className="nota">{tr('Llegas al millón en {anio} y en {anterior}: ya tributas por el IAE y no hay un alta nueva por la cifra. Un cambio de local, de actividad o de domicilio se comunica como variación.', { anio, anterior: anio - 1 })}</p>}
+            {m840.situacion === 'baja' && <p className="nota aviso">{tr('Tu cifra de negocios baja de 1.000.000 € en {anio} y en {anterior} llegaba: recuperas la exención desde {desde}. Si estás de alta en el IAE, presenta la baja (modelo 840) durante diciembre de {siguiente}, hasta el {fecha}, para dejar de pagar (art. 7.4 del Real Decreto 243/1995).', { anio, anterior: anio - 1, desde: anio + 2, siguiente: anio + 1, fecha: conAnio(m840.plazo.hasta, 4) })}</p>}
+            {m840.cerca && <p className="nota aviso">{tr('Estás a menos de un 10 % del millón: confirma la cifra con tus cuentas anuales antes de dar nada por hecho.')}</p>}
+            <p className="nota">{tr('Qué Fisquo no puede saber y tienes que repasar con tu gestoría: si formas parte de un grupo de sociedades (art. 42 del Código de Comercio), cuenta la cifra de todo el grupo; la cifra que vale es la de tus cuentas anuales (art. 35.2 del Código de Comercio), que puede no coincidir con lo facturado en Fisquo si empezaste a usarlo a mitad de año; y se supone que tu ejercicio es el año natural. Una sociedad nueva tampoco paga en los dos primeros períodos del IAE en que desarrolla la actividad: el del alta, hasta el 31 de diciembre, y el siguiente (art. 82.1.b). Fisquo no calcula la cuota ni genera el modelo 840.')}</p>
+          </div>
         </ModeloPlegable>
       )}
 
