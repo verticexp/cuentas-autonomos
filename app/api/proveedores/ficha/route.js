@@ -7,7 +7,8 @@ export const dynamic = 'force-dynamic';
 const fallo = (r) => Response.json({ error: r.error, ...(r.errores ? { errores: r.errores } : {}) }, { status: r.status || 400 });
 
 // Ficha de proveedor (lib/terceros.js): { id?, nombre, nif, direccion, ciudad, email, pais, telefono, formaPago, plazo,
-// comercial, zona, notas }. id es la clave del proveedor (la de /gastos/proveedores/<clave>): con ficha, se cambia (su nombre
+// comercial, zona, notas, vinculo, vinculoModulos }. id es la clave del proveedor (la de /gastos/proveedores/<clave>): con
+// ficha, se cambia (su nombre
 // no cambia); sin ella, se crea. Sin id, un proveedor nuevo con la clave de su NIF o nombre.
 export async function POST(req) {
   const { u, res } = await usuarioApi({ permiso: 'gastar' });

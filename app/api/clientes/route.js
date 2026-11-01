@@ -10,7 +10,8 @@ export const dynamic = 'force-dynamic';
 const fallo = (r) => Response.json({ error: r.error, ...(r.errores ? { errores: r.errores } : {}) }, { status: r.status || 400 });
 
 // Ficha de cliente (lib/terceros.js): { id?, nombre, nif, direccion, ciudad, email, pais, telefono, formaCobro, plazo,
-// comercial, zona, riesgoMax, notas }. Con id se cambia ese cliente (su nombre no cambia); sin id, se crea uno nuevo.
+// comercial, zona, riesgoMax, notas, vinculo, vinculoModulos }. Con id se cambia ese cliente (su nombre no cambia); sin
+// id, se crea uno nuevo.
 // El riesgo máximo solo lo cambia quien tiene el permiso «empresa» (administrador).
 export async function POST(req) {
   const { u, res } = await usuarioApi({ permiso: 'facturar' });
