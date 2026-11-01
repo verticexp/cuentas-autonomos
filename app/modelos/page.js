@@ -18,7 +18,7 @@ import Prorrata from '@/components/Prorrata';
 import Rend130 from '@/components/Rend130';
 import SaldoIva from '@/components/SaldoIva';
 import { modelo111, MESES } from '@/lib/nominas';
-import { borradorRenta, borradorSociedades, TIPOS_DEDUCCION_IS, modelo232, TIPOS_OPERACION_232, PARAISOS_FISCALES, LIMITE_232, LIMITE_232_ESPECIFICAS, PCT_232_CIFRA, modelo115, modelo180, modelo190, modelo309, modelo202, modelo202Art403, modelo347, modelo349, periodos349, modelo390, ETIQUETAS390, ORDEN390, TOTALES390, retencionesProfesionales, MINIMO_PERSONAL, RET_ALQUILER, modelo216, modelo296 } from '@/lib/modelos';
+import { borradorRenta, borradorSociedades, TIPOS_DEDUCCION_IS, modelo232, TIPOS_OPERACION_232, LIMITE_232, LIMITE_232_ESPECIFICAS, PCT_232_CIFRA, modelo115, modelo180, modelo190, modelo309, modelo202, modelo202Art403, modelo347, modelo349, periodos349, modelo390, ETIQUETAS390, ORDEN390, TOTALES390, retencionesProfesionales, MINIMO_PERSONAL, RET_ALQUILER, modelo216, modelo296 } from '@/lib/modelos';
 import { SUBCLAVES_296, nombrePais } from '@/lib/noResidentes';
 import { nombreVinculo } from '@/lib/terceros';
 import CuotaIS, { ImporteAnio } from '@/components/CuotaIS';
@@ -1044,7 +1044,7 @@ export default async function Modelos({ searchParams }) {
                 <TablaPersonas titulo="Operaciones del año por persona o entidad vinculada" columnas={['Ingresos', 'Pagos', 'Total']} filas={m232.terceros.map((t, i) => ({
                   clave: `${i}-${t.clave}`, nombre: t.nombre,
                   detalle: [t.nif || tr('Sin NIF'), `${tr(nombreVinculo(t.vinculo) || t.vinculo)}${t.letra ? ` (${t.letra})` : ''}`,
-                    t.pais && PARAISOS_FISCALES[t.pais] && tr('Paraíso fiscal: {pais}', { pais: tr(PARAISOS_FISCALES[t.pais]) }),
+                    t.pais && m232.listaParaisos[t.pais] && tr('Paraíso fiscal: {pais}', { pais: tr(m232.listaParaisos[t.pais]) }),
                     t.especifica && tr('Operaciones específicas (módulos con el 25 %)'),
                     t.supera250 && tr('Pasa de los 250.000 €')].filter(Boolean).join(' · '),
                   cifras: [t.ingresos, t.pagos, t.total],
@@ -1066,10 +1066,10 @@ export default async function Modelos({ searchParams }) {
                     detalle: [tr(x.nombrePais), x.nif || tr('Sin NIF'), tr(x.lado === 'I' ? 'Ingreso' : 'Pago')].filter(Boolean).join(' · '),
                     cifras: [x.importe],
                   }))} />
-                  <p className="nota">{tr('En el cuadro III van todas las operaciones con esos territorios, estén o no vinculadas y sea cual sea su importe. La lista es la de jurisdicciones no cooperativas de la Orden HFP/115/2023, con las bajas de la Orden HAC/649/2026.')}</p>
+                  <p className="nota">{tr('En el cuadro III van todas las operaciones con esos territorios, estén o no vinculadas y sea cual sea su importe. La lista es la de jurisdicciones no cooperativas de la Orden HFP/115/2023.')} {anio <= 2026 ? tr('La Orden HAC/649/2026 dio de baja Barbados, Dominica, Gibraltar, Seychelles y Trinidad y Tobago, pero su disposición transitoria mantiene la lista anterior en los ejercicios que estaban abiertos el 28 de junio de 2026: en {anio} siguen contando, y dejan de contar desde 2027.', { anio }) : tr('Desde 2027 ya no están Barbados, Dominica, Gibraltar, Seychelles ni Trinidad y Tobago (bajas de la Orden HAC/649/2026).')}</p>
                 </>
               )}
-              <p className="nota">{tr('Qué no sale de aquí y tienes que repasar con tu gestoría: el método de valoración del art. 18.4 de la Ley del Impuesto sobre Sociedades (Fisquo supone uno solo por clase de operación) y la clave del tipo de operación, que se eligen en la Sede; qué operaciones son específicas, salvo las de una persona física en módulos con el 25 % que marques en su ficha (la transmisión de un negocio, de valores, de un inmueble o de un intangible no se distingue de una venta cualquiera); el cuadro II de las rentas de intangibles del art. 23, que la app no calcula; y del cuadro III, la tenencia de valores al cierre.')}</p>
+              <p className="nota">{tr('Qué no sale de aquí y tienes que repasar con tu gestoría: el método de valoración del art. 18.4 de la Ley del Impuesto sobre Sociedades (Fisquo supone uno solo por clase de operación) y la clave del tipo de operación, que se eligen en la Sede; qué operaciones son específicas, salvo las de una persona física en módulos con el 25 % que marques en su ficha (la transmisión de un negocio, de valores, de un inmueble o de un intangible no se distingue de una venta cualquiera); el cuadro II de las rentas de intangibles del art. 23, que la app no calcula; y del cuadro III, la tenencia de valores al cierre y las dos jurisdicciones que lo son solo por un régimen fiscal perjudicial y no enteras (Samoa, por su offshore business, y la Federación de Rusia, por sus international holding companies): una operación con una empresa de allí no entra sola, hay que saber si se acoge a ese régimen.')}</p>
               <p className="nota">{tr('Tampoco entran las nóminas ni la Seguridad Social: la retribución del administrador por el ejercicio de sus funciones no es operación vinculada (art. 18.2.b), y Fisquo no la distingue del sueldo por otro trabajo. Y si estás en un grupo de consolidación fiscal, o eres una AIE o una UTE, esas operaciones quedan fuera del modelo (art. 2.2 de la Orden): Fisquo no lo sabe.')}</p>
             </div>
           )}

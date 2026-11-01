@@ -5,7 +5,7 @@
 // la cifra de negocios del período. La vinculación se marca en la ficha (lib/terceros.js), no se deduce de los datos.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { LIMITE_232, LIMITE_232_ESPECIFICAS, PARAISOS_FISCALES, PCT_232_CIFRA, TIPOS_OPERACION_232, esParaiso, modelo232 } from '../lib/modelos.js';
+import { LIMITE_232, LIMITE_232_ESPECIFICAS, PCT_232_CIFRA, TIPOS_OPERACION_232, esParaiso, modelo232, paraisosDe } from '../lib/modelos.js';
 import { CAMPOS_FICHA, TIPOS_VINCULO, limpiarFicha } from '../lib/terceros.js';
 
 const ANIO = 2026;
@@ -21,12 +21,40 @@ const reglas = (r) => r.motivos.map((x) => x.regla).sort();
 
 test('los límites son los de la Orden HFP/816/2017 y la lista de paraísos, la de la Orden HFP/115/2023', () => {
   assert.deepEqual([LIMITE_232, LIMITE_232_ESPECIFICAS, PCT_232_CIFRA], [250000, 100000, 50]);
-  // Bajas de la Orden HAC/649/2026: Gibraltar, Barbados, Dominica, Seychelles y Trinidad y Tobago ya no son paraísos.
-  assert.ok(esParaiso('KY') && esParaiso('vu') && esParaiso('JE'));
-  assert.ok(!esParaiso('GI') && !esParaiso('BB') && !esParaiso('DM') && !esParaiso('SC') && !esParaiso('TT'));
-  // Rusia solo lo es por su régimen fiscal perjudicial: no se marca sola (no toda operación con Rusia va al cuadro III).
-  assert.ok(!esParaiso('RU') && !esParaiso('') && !esParaiso(undefined));
-  assert.equal(PARAISOS_FISCALES.KY, 'Islas Caimán');
+  // Los que siguen en la lista lo son en cualquier ejercicio.
+  for (const y of [2025, 2026, 2027, 2030]) assert.ok(esParaiso('KY', y) && esParaiso('vu', y) && esParaiso('JE', y), String(y));
+  assert.equal(paraisosDe(2027).KY, 'Islas Caimán');
+  // Ni Samoa ni Rusia: lo son solo «por lo que respecta al régimen fiscal perjudicial», no enteras (puntos 20 y 25),
+  // así que una operación con una empresa de allí no entra sola en el cuadro III.
+  for (const y of [2025, 2026, 2027, 2030]) assert.ok(!esParaiso('WS', y) && !esParaiso('RU', y), String(y));
+  assert.ok(!esParaiso('', 2026) && !esParaiso(undefined, 2026) && !esParaiso('ES', 2026));
+});
+
+test('las bajas de la Orden HAC/649/2026 solo valen desde 2027 (su disposición transitoria única)', () => {
+  // La orden entró en vigor el 28 de junio de 2026, pero manda aplicar la lista anterior a los tributos cuyo período
+  // impositivo no hubiera concluido: el ejercicio 2026 de una sociedad con el año natural estaba abierto.
+  const bajas = ['GI', 'BB', 'DM', 'SC', 'TT'];
+  for (const p of bajas) {
+    for (const y of [2023, 2025, 2026]) assert.ok(esParaiso(p, y), `${p} en ${y} todavía es paraíso`);
+    for (const y of [2027, 2028]) assert.ok(!esParaiso(p, y), `${p} en ${y} ya no es paraíso`);
+  }
+  assert.deepEqual([paraisosDe(2026).GI, paraisosDe(2027).GI], ['Gibraltar', undefined]);
+  // La lista de 2026 son los 18 que quedan más las 5 bajas; la de 2027, solo los 18.
+  assert.deepEqual([Object.keys(paraisosDe(2026)).length, Object.keys(paraisosDe(2027)).length], [23, 18]);
+});
+
+test('una operación con Gibraltar entra en el cuadro III en 2026 y no en 2027', () => {
+  const con = (anio, pais) => modelo232([{ fecha: `${anio}-05-10`, base: 1200, ivaPct: 0, cliente: { nombre: 'Rock Ltd', nif: 'GI1234567', pais } }], [], anio);
+  const gi2026 = con(2026, 'GI');
+  assert.deepEqual([gi2026.obligado, gi2026.paraisos.length, gi2026.paraisos[0].nombrePais], [true, 1, 'Gibraltar']);
+  assert.deepEqual(gi2026.motivos.map((x) => x.regla), ['paraiso']);
+  const gi2027 = con(2027, 'GI');
+  assert.deepEqual([gi2027.obligado, gi2027.paraisos.length], [false, 0]);
+  // Lo mismo con Seychelles, otra de las retiradas, en un gasto.
+  const gasto = (anio) => modelo232([], [{ fecha: `${anio}-07-01`, base: 800, ivaPct: 0, proveedor: 'Victoria Ltd', proveedorNif: 'SC55555', proveedorPais: 'SC', concepto: 'Servicios' }], anio);
+  assert.deepEqual([gasto(2026).obligado, gasto(2026).paraisos[0].nombrePais, gasto(2027).obligado], [true, 'Seychelles', false]);
+  // Y uno que no se va de la lista entra en los dos ejercicios.
+  assert.deepEqual([con(2026, 'KY').obligado, con(2027, 'KY').obligado], [true, true]);
 });
 
 test('límite de 250.000 € con la misma persona o entidad vinculada (art. 2.1.a)', () => {
