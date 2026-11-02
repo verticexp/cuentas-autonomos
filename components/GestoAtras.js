@@ -10,7 +10,9 @@ import { hayAvisoEncima, hayCambiosSinGuardar, instalarSinGuardar, salirSinGuard
 //   iOS: entre las pestañas de abajo (Resumen, Facturas, Gastos…) o las de una pantalla (Gastos › Por revisar) no hay gesto.
 // - Con una hoja o un diálogo abiertos ([aria-modal]): en Android, el botón o el gesto de atrás los cierra (como Escape) en
 //   vez de salir de la pantalla; en la app de iOS, el gesto de volver se apaga mientras están abiertos, como en las apps
-//   nativas (mobile/ios/App/App/FisquoViewController.swift). La pantalla de bloqueo no se cierra así.
+//   nativas (mobile/ios/App/App/FisquoViewController.swift). La pantalla de bloqueo no se cierra así. En la app de Android, el
+//   WebView no avisa a CloseWatcher: el botón de atrás pregunta antes a window.fisquoAtras (MainActivity.java), que cierra la
+//   capa de arriba y dice si lo ha hecho.
 // - Web guardada en la pantalla de inicio del iPhone: ahí iOS no tiene gesto de volver. Deslizar desde el borde izquierdo
 //   lleva la pantalla con el dedo y, al soltar, vuelve como «‹ Atrás» (lib/transicion.js volverA).
 const BORDE = 24; // px desde el borde izquierdo en los que empieza el gesto
@@ -36,6 +38,16 @@ export default function GestoAtras() {
   useEffect(() => {
     instalarHistorial();
     const nativo = window.webkit?.messageHandlers?.gestoAtras;
+    if (document.documentElement.dataset.app === 'android') {
+      window.fisquoAtras = () => {
+        const capa = capas().filter((el) => !el.closest('.pantalla-bloqueo')).at(-1);
+        if (!capa) return false;
+        if (capa.matches('dialog')) capa.close();
+        else document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+        return true;
+      };
+      return () => { delete window.fisquoAtras; };
+    }
     const conCierre = typeof window.CloseWatcher === 'function' && matchMedia('(pointer: coarse)').matches;
     if (!nativo && !conCierre) return undefined;
     let gestoActivo = null; // la primera vez se dice siempre (la página anterior pudo dejarlo apagado)

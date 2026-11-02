@@ -31,7 +31,8 @@
     },
     "SystemBars": {
       "insetsHandling": "css",
-      "initialViewportFitValueHint": "cover"
+      "initialViewportFitValueHint": "cover",
+      "style": "DARK"
     }
   }
 }

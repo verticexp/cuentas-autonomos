@@ -71,7 +71,7 @@ export default function FaceId({ lista, bloqueo = false }) {
     <section className="tarjeta formulario faceid">
       <h3>{android ? tr(nombre === 'huella' ? 'Huella' : 'Desbloqueo facial') : tr(nombre)}</h3>
       {ordenador ? <p className="nota">{tr('En el ordenador la sesión se queda abierta: Face ID y el bloqueo de pantalla son solo para el móvil.')}</p> : <>
-        <p className="nota">{android ? tr('Con {nombre} entras sin escribir la contraseña. Tus datos biométricos nunca salen del móvil.', { nombre: tr(nombre) }) : tr('Con {nombre} entras sin escribir la contraseña. Tu cara nunca sale del dispositivo.', { nombre: tr(nombre) })}</p>
+        <p className="nota">{android ? tr('Entras sin escribir la contraseña. Tus datos biométricos nunca salen del móvil.') : tr('Con {nombre} entras sin escribir la contraseña. Tu cara nunca sale del dispositivo.', { nombre: tr(nombre) })}</p>
         <label className="check">
           <input type="checkbox" checked={bloquear} onChange={cambiarBloqueo} />
           {tr('Pedir {nombre} o contraseña cada vez que abra Fisquo', { nombre: tr(nombre) })}

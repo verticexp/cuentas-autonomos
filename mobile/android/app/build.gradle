@@ -40,6 +40,9 @@ dependencies {
     implementation "androidx.biometric:biometric:$androidxBiometricVersion"
     implementation "com.google.android.gms:play-services-base:$playServicesBaseVersion"
     implementation "com.google.android.gms:play-services-mlkit-document-scanner:$playServicesMlkitDocumentScannerVersion"
+    // Pestañas de Chrome (enlaces de fuera y acceso con Google/Apple) y avisos con Firebase
+    implementation "androidx.browser:browser:$androidxBrowserVersion"
+    implementation "com.google.firebase:firebase-messaging:$firebaseMessagingVersion"
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
