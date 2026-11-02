@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 11 o anterior (android:fullBackupContent): la credencial cifrada de la huella/cara
+     (BiometriaPlugin) no entra en la copia de seguridad; su clave del Keystore no sale del móvil. -->
+<full-backup-content>
+    <exclude domain="sharedpref" path="fisquo-biometria.xml" />
+</full-backup-content>
