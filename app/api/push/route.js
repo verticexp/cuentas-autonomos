@@ -4,6 +4,7 @@ import { clavePublica, enviarPush, pushListo } from '@/lib/push';
 import { pasado, respuesta429 } from '@/lib/limite';
 import { conCerrojo } from '@/lib/cerrojo';
 import { esToken } from '@/lib/apns';
+import { esTokenFcm } from '@/lib/fcm';
 import { esApp } from '@/lib/app';
 
 export const dynamic = 'force-dynamic';
@@ -11,6 +12,7 @@ const SERVICIOS = /(^|\.)(fcm\.googleapis\.com|push\.apple\.com|push\.services\.
 const MAX_SUSCRIPCIONES = 10;
 
 // GET: clave pública. POST { sub }: guarda la suscripción de este móvil. POST { prueba: true }: aviso de prueba. DELETE { endpoint }: la quita.
+// Apps nativas: POST { fcm, nombre } guarda el token de Android; DELETE { fcm } lo quita.
 // App de iOS (lib/avisosNativos.js): POST { apns, nombre } guarda el token de APNs de este iPhone; DELETE { apns } lo quita.
 export async function GET() {
   const { res } = await usuarioApi();
@@ -27,12 +29,26 @@ export async function POST(req) {
     if (await pasado('push-prueba', u.id, 5, 600)) return respuesta429(600, 'Has enviado demasiados avisos de prueba. Espera 10 minutos antes de enviar otro.');
     return Response.json({ ok: true, enviados: await enviarPush(u.id, { titulo: 'Avisos activados', cuerpo: 'Así te llegarán los plazos de Hacienda y las facturas vencidas.', url: '/ajustes/avisos' }) });
   }
+  if (b.fcm !== undefined) {
+    if (!esApp(req.headers.get('user-agent')) || !esTokenFcm(b.fcm)) return error('Dispositivo no válido');
+    return conCerrojo(`push:${u.id}`, async () => {
+      const clave = `fcm:${u.id}`;
+      const existe = await redis.hget(clave, b.fcm);
+      if (!existe && Number(await redis.hlen(clave)) + Number(await redis.hlen(`push:${u.id}`)) + Number(await redis.hlen(`apns:${u.id}`)) >= MAX_SUSCRIPCIONES) return error('Ya tienes avisos en 10 dispositivos. Desactívalos en uno antes de añadir otro.');
+      // Un móvil, una cuenta: si antes entró otra persona en este móvil, deja de recibir aquí sus avisos.
+      const antes = await redis.hget('fcm-usuario', b.fcm);
+      if (antes && String(antes) !== String(u.id)) await redis.hdel(`fcm:${antes}`, b.fcm);
+      await redis.hset(clave, { [b.fcm]: { nombre: String(b.nombre || 'Android').slice(0, 60), creado: existe?.creado || new Date().toISOString() } });
+      await redis.hset('fcm-usuario', { [b.fcm]: u.id });
+      return Response.json({ ok: true });
+    });
+  }
   if (b.apns !== undefined) {
     if (!esApp(req.headers.get('user-agent')) || !esToken(b.apns)) return error('Dispositivo no válido');
     return conCerrojo(`push:${u.id}`, async () => {
       const clave = `apns:${u.id}`;
       const existe = await redis.hget(clave, b.apns);
-      if (!existe && Number(await redis.hlen(clave)) + Number(await redis.hlen(`push:${u.id}`)) >= MAX_SUSCRIPCIONES) return error('Ya tienes avisos en 10 dispositivos. Desactívalos en uno antes de añadir otro.');
+      if (!existe && Number(await redis.hlen(clave)) + Number(await redis.hlen(`push:${u.id}`)) + Number(await redis.hlen(`fcm:${u.id}`)) >= MAX_SUSCRIPCIONES) return error('Ya tienes avisos en 10 dispositivos. Desactívalos en uno antes de añadir otro.');
       // Un iPhone, una cuenta: si antes entró otra persona en este iPhone, deja de recibir aquí sus avisos.
       const antes = await redis.hget('apns-usuario', b.apns);
       if (antes && String(antes) !== String(u.id)) await redis.hdel(`apns:${antes}`, b.apns);
@@ -52,7 +68,7 @@ export async function POST(req) {
   return conCerrojo(`push:${u.id}`, async () => {
     const clave = `push:${u.id}`;
     const existe = await redis.hget(clave, s.endpoint);
-    if (!existe && await redis.hlen(clave) >= MAX_SUSCRIPCIONES) return error('Ya tienes avisos en 10 dispositivos. Desactívalos en uno antes de añadir otro.');
+    if (!existe && Number(await redis.hlen(clave)) + Number(await redis.hlen(`apns:${u.id}`)) + Number(await redis.hlen(`fcm:${u.id}`)) >= MAX_SUSCRIPCIONES) return error('Ya tienes avisos en 10 dispositivos. Desactívalos en uno antes de añadir otro.');
     await redis.hset(clave, { [s.endpoint]: { endpoint: s.endpoint, keys: { p256dh: s.keys.p256dh, auth: s.keys.auth } } });
     return Response.json({ ok: true });
   });
@@ -61,8 +77,9 @@ export async function POST(req) {
 export async function DELETE(req) {
   const { u, res } = await usuarioApi();
   if (res) return res;
-  const { endpoint, apns } = await cuerpo(req);
+  const { endpoint, apns, fcm } = await cuerpo(req);
   if (endpoint) await redis.hdel(`push:${u.id}`, endpoint);
   if (typeof apns === 'string' && apns) await redis.hdel(`apns:${u.id}`, apns);
+  if (typeof fcm === 'string' && fcm) await redis.hdel(`fcm:${u.id}`, fcm);
   return Response.json({ ok: true });
 }
