@@ -36,8 +36,8 @@
 :is(h1, h2, h3)[tabindex="-1"]:focus { outline: none; }
 html, body { height: 100%; }
 /* El servidor identifica la app antes de pintar, también sin JavaScript. */
-html[data-app="ios"] .solo-web { display: none !important; }
-html:not([data-app="ios"]) .solo-app { display: none !important; }
+html[data-app] .solo-web { display: none !important; }
+html:not([data-app]) .solo-app { display: none !important; }
 /* Como una app: la página nunca se desplaza de lado aunque algo sobresalga (clip, no hidden, para no romper position: sticky) */
 html, body { overflow-x: clip; overscroll-behavior-x: none; }
 body { background: var(--paper); color: var(--ink); font-family: var(--font); font-size: 16px; line-height: 1.4; font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; }

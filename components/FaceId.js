@@ -6,10 +6,11 @@ import { MARCA, activarFaceId, faceIdDisponible, nombreDispositivo } from '@/lib
 import { ESTE, activarNativo, estadoNativo, nombreTipo, quitarDeEsteIphone } from '@/lib/faceidNativo';
 import { fechaCorta } from '@/lib/formato';
 import { enOrdenador } from '@/lib/biometria';
+import { enAndroid } from '@/lib/app';
 import { useT } from '@/components/Idioma';
 
 // Ajustes → Face ID: activarlo en este dispositivo y ver en cuáles está. En la web, con llaves de acceso (lib/faceid.js);
-// en la app de iOS, con el Face ID nativo del iPhone (lib/faceidNativo.js), como en la app de un banco.
+// en las apps de iOS y Android, con el Face ID o la huella del sistema (lib/faceidNativo.js), como en la app de un banco.
 // En el ordenador no se activa nada (ni Face ID ni el bloqueo): solo la lista, para quitar las que ya hubiera.
 // lista: [{ id, nombre, creada, usada, tipo: 'llave' | 'nativo' }].
 export default function FaceId({ lista, bloqueo = false }) {
@@ -34,6 +35,7 @@ export default function FaceId({ lista, bloqueo = false }) {
     });
   }, []);
   const nombre = nativo ? nombreTipo(nativo.tipo) : 'Face ID';
+  const android = Boolean(nativo) && enAndroid();
   const activadoAqui = nativo ? nativo.tiene && lista.some((k) => k.id === este) : false;
 
   async function activar(e) {
@@ -67,9 +69,9 @@ export default function FaceId({ lista, bloqueo = false }) {
 
   return (
     <section className="tarjeta formulario faceid">
-      <h3>{tr(nombre)}</h3>
+      <h3>{android ? tr(nombre === 'huella' ? 'Huella' : 'Desbloqueo facial') : tr(nombre)}</h3>
       {ordenador ? <p className="nota">{tr('En el ordenador la sesión se queda abierta: Face ID y el bloqueo de pantalla son solo para el móvil.')}</p> : <>
-        <p className="nota">{tr('Con {nombre} entras sin escribir la contraseña. Tu cara nunca sale del dispositivo.', { nombre: tr(nombre) })}</p>
+        <p className="nota">{android ? tr('Con {nombre} entras sin escribir la contraseña. Tus datos biométricos nunca salen del móvil.', { nombre: tr(nombre) }) : tr('Con {nombre} entras sin escribir la contraseña. Tu cara nunca sale del dispositivo.', { nombre: tr(nombre) })}</p>
         <label className="check">
           <input type="checkbox" checked={bloquear} onChange={cambiarBloqueo} />
           {tr('Pedir {nombre} o contraseña cada vez que abra Fisquo', { nombre: tr(nombre) })}
@@ -79,7 +81,7 @@ export default function FaceId({ lista, bloqueo = false }) {
         <ul className="dispositivos">
           {lista.map((k) => (
             <li key={`${k.tipo}-${k.id}`}>
-              <span className="txt"><strong>{k.nombre}{k.tipo === 'nativo' && k.id === este ? ` ${tr('(este iPhone)')}` : ''}</strong><small>{k.tipo === 'nativo' ? `${tr('App de Fisquo')} · ` : ''}{tr('Activado el {fecha}', { fecha: fechaCorta(k.creada.slice(0, 10)) })}{k.usada ? ` · ${tr('último uso {fecha}', { fecha: fechaCorta(k.usada.slice(0, 10)) })}` : ''}</small></span>
+              <span className="txt"><strong>{k.nombre}{k.tipo === 'nativo' && k.id === este ? ` ${tr(android ? '(este móvil)' : '(este iPhone)')}` : ''}</strong><small>{k.tipo === 'nativo' ? `${tr('App de Fisquo')} · ` : ''}{tr('Activado el {fecha}', { fecha: fechaCorta(k.creada.slice(0, 10)) })}{k.usada ? ` · ${tr('último uso {fecha}', { fecha: fechaCorta(k.usada.slice(0, 10)) })}` : ''}</small></span>
               <button type="button" className="borrar" onClick={() => quitar(k)}>{tr('Quitar')}</button>
             </li>
           ))}
@@ -91,7 +93,7 @@ export default function FaceId({ lista, bloqueo = false }) {
           <label>{tr('Tu contraseña')}<input className="campo" name="password" type="password" required autoComplete="current-password" /></label>
           <button className="boton">{tr('Confirmar y activar')}</button>
         </form>
-      ) : <button type="button" className="boton" onClick={() => activar()}>{nativo ? tr('Activar {nombre} en este iPhone', { nombre: tr(nombre) }) : tr('Activar en este dispositivo')}</button>)}
+      ) : <button type="button" className="boton" onClick={() => activar()}>{nativo ? (android ? tr('Activar {nombre} en este móvil', { nombre: tr(nombre) }) : tr('Activar {nombre} en este iPhone', { nombre: tr(nombre) })) : tr('Activar en este dispositivo')}</button>)}
       {msg && <p className={msg.startsWith('Listo') ? 'nota' : 'error'} role={msg.startsWith('Listo') ? 'status' : 'alert'}>{tr(msg)}</p>}
     </section>
   );

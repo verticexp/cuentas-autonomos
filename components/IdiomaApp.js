@@ -1,13 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { IDIOMAS_APP } from '@/lib/i18n';
+import { enAndroid } from '@/lib/app';
 import { useT } from '@/components/Idioma';
 
 // Ajustes › Idioma: el del iPhone o el navegador (automático) o uno fijo. Se guarda en este dispositivo, como la apariencia,
 // y en la ficha de la persona (para sus correos y avisos); la app se vuelve a cargar entera para que todo salga ya en el idioma nuevo.
 export default function IdiomaApp({ inicial }) {
   const tr = useT();
+  // Tras montar: en el servidor no se sabe si es la app de Android.
+  const [android, setAndroid] = useState(false);
+  useEffect(() => setAndroid(enAndroid()), []);
   const [idioma, setIdioma] = useState(IDIOMAS_APP.some((x) => x.id === inicial) ? inicial : 'automatico');
 
   async function elegir(valor) {
@@ -26,7 +30,7 @@ export default function IdiomaApp({ inicial }) {
         {[{ id: 'automatico', nombre: tr('Automático') }, ...IDIOMAS_APP].map((x) => (
           <button key={x.id} type="button" role="radio" aria-checked={idioma === x.id} className="celda aj-opcion" onClick={() => elegir(x.id)}
             lang={x.id === 'automatico' ? undefined : x.id}>
-            <span className="txt">{x.nombre}{x.id === 'automatico' && <small>{tr('El del iPhone o el navegador')}</small>}</span>
+            <span className="txt">{x.nombre}{x.id === 'automatico' && <small>{tr(android ? 'El del móvil o el navegador' : 'El del iPhone o el navegador')}</small>}</span>
             {idioma === x.id && <svg viewBox="0 0 24 24" aria-hidden className="aj-check"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>}
           </button>
         ))}

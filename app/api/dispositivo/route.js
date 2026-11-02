@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { mismoId, redis } from '@/lib/redis';
 import { crearSesion, desbloqueo, opcionesCookie, opcionesDesbloqueo, reautenticado, usuarioActual } from '@/lib/auth';
 import { cuerpo, error, usuarioApi } from '@/lib/api';
-import { esApp } from '@/lib/app';
+import { esApp, plataformaApp } from '@/lib/app';
 import { MUCHOS, ipDe, pasado } from '@/lib/limite';
 import { auditar } from '@/lib/auditoria';
 import { apuntarAcceso } from '@/lib/accesos';
@@ -12,7 +12,8 @@ import { apuntarAcceso } from '@/lib/accesos';
 // lib/faceidNativo.js): al activarlo, una credencial aleatoria para este iPhone que la app guarda en el llavero protegida
 // con Face ID. Aquí solo se guarda su huella (SHA-256): con la base de datos no se puede entrar.
 // dispositivos:<usuario> → id → { huella, nombre, creada, usada } · dispositivo-credencial: huella → «usuario:id»
-// Las llaves de acceso (app/api/passkey) siguen para la web; este es el camino de la app.
+// Las llaves de acceso (app/api/passkey) siguen para la web; este es el camino de la app. La de Android hace lo mismo con la
+// huella (BiometriaPlugin.java: la credencial va cifrada con una clave del Keystore que pide la huella).
 export const dynamic = 'force-dynamic';
 
 const MAXIMO = 10;
@@ -20,7 +21,8 @@ const huellaDe = (valor) => createHash('sha256').update(String(valor)).digest('h
 
 export async function POST(req) {
   if (!redis) return error('Base de datos no conectada', 503);
-  if (!esApp(req.headers.get('user-agent'))) return error('Solo en la app de Fisquo para iPhone', 404);
+  if (!esApp(req.headers.get('user-agent'))) return error('Solo en la app de Fisquo', 404);
+  const android = plataformaApp(req.headers.get('user-agent')) === 'android';
   const b = await cuerpo(req);
 
   // Activar en este iPhone: con la sesión abierta y recién entrado, o volviendo a escribir la contraseña.
@@ -28,13 +30,13 @@ export async function POST(req) {
     const { u, res } = await usuarioApi();
     if (res) return res;
     if (await pasado('dispositivo-alta', u.id, 10, 900)) return error(MUCHOS, 429);
-    if (!(await reautenticado(u, b.password))) return Response.json({ error: 'Por seguridad, vuelve a escribir tu contraseña para activar Face ID.', reautenticar: true }, { status: 401 });
+    if (!(await reautenticado(u, b.password))) return Response.json({ error: android ? 'Por seguridad, vuelve a escribir tu contraseña para activar la huella.' : 'Por seguridad, vuelve a escribir tu contraseña para activar Face ID.', reautenticar: true }, { status: 401 });
     const mios = (await redis.hgetall(`dispositivos:${u.id}`)) || {};
     if (Object.keys(mios).length >= MAXIMO) return error(`Ya tienes Face ID en ${MAXIMO} dispositivos. Quita alguno en Ajustes › Seguridad.`);
     const id = randomBytes(9).toString('base64url');
     const valor = randomBytes(32).toString('base64url');
     const huella = huellaDe(valor);
-    const nombre = String(b.nombre || 'iPhone').slice(0, 60);
+    const nombre = String(b.nombre || (android ? 'Android' : 'iPhone')).slice(0, 60);
     await redis.hset(`dispositivos:${u.id}`, { [id]: { huella, nombre, creada: new Date().toISOString() } });
     await redis.hset('dispositivo-credencial', { [huella]: `${u.id}:${id}` });
     await auditar(u, 'Face ID activado', nombre);
@@ -49,7 +51,7 @@ export async function POST(req) {
     const [dueno, id] = String((await redis.hget('dispositivo-credencial', huella)) || '').split(':');
     const d = dueno && id && (await redis.hget(`dispositivos:${dueno}`, id));
     // Desactivado desde Ajustes o tras recuperar la contraseña: la app borra la suya y pide la contraseña.
-    if (!d || d.huella !== huella) return Response.json({ error: 'Face ID ya no está activado en este iPhone. Entra con tu contraseña y vuelve a activarlo en Ajustes.', retirada: true }, { status: 401 });
+    if (!d || d.huella !== huella) return Response.json({ error: android ? 'La huella ya no está activada en este móvil. Entra con tu contraseña y vuelve a activarla en Ajustes.' : 'Face ID ya no está activado en este iPhone. Entra con tu contraseña y vuelve a activarlo en Ajustes.', retirada: true }, { status: 401 });
     if (!(await redis.hget('usuarios', dueno))) return error('Esta cuenta ya no existe', 401);
     await redis.hset(`dispositivos:${dueno}`, { [id]: { ...d, usada: new Date().toISOString() } });
     const u = await usuarioActual();
