@@ -212,7 +212,6 @@ export const PROXIMAMENTE = [
   { t: 'Conexión directa con tu banco', d: 'Movimientos al día sin subir extractos.' },
   { t: 'Cobros con tarjeta y Bizum', d: 'Que tus clientes paguen la factura desde el enlace.' },
   { t: 'App para iPhone', d: 'En la App Store.' },
-  { t: 'Entrar con Google y Apple', d: 'Sin contraseñas que recordar.' },
 ];
 
 export const SEGMENTOS = [
