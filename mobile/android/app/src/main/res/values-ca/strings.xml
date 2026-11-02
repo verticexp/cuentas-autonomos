@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="aceptar">D\'acord</string>
+    <string name="cancelar">Cancel·la</string>
+    <string name="cerrar">Tanca</string>
+    <string name="descargando">S\'està baixant…</string>
+    <string name="descargado">%1$s desat a Baixades</string>
+    <string name="descarga_fallida">No s\'ha pogut baixar. Revisa la connexió i torna-ho a provar.</string>
+    <string name="canal_avisos">Avisos</string>
+    <string name="canal_avisos_desc">Terminis d\'Hisenda, factures vençudes i missatges de la teva gestoria</string>
+    <string name="acceso_ticket">Escaneja un tiquet</string>
+    <string name="acceso_factura">Nova factura</string>
+    <string name="acceso_impuestos">Impostos</string>
+</resources>

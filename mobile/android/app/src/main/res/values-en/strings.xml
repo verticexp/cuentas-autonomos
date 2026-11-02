@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="aceptar">OK</string>
+    <string name="cancelar">Cancel</string>
+    <string name="cerrar">Close</string>
+    <string name="descargando">Downloading…</string>
+    <string name="descargado">%1$s saved to Downloads</string>
+    <string name="descarga_fallida">Couldn\'t download. Check your connection and try again.</string>
+    <string name="canal_avisos">Notifications</string>
+    <string name="canal_avisos_desc">Tax deadlines, overdue invoices and messages from your accountant</string>
+    <string name="acceso_ticket">Scan receipt</string>
+    <string name="acceso_factura">New invoice</string>
+    <string name="acceso_impuestos">Taxes</string>
+</resources>

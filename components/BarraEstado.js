@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 
 // Color de la barra de estado del móvil (hora, batería): acompaña a la cabecera del resumen,
 // al arranque de marca o al fondo de la pantalla. iOS pone el texto en blanco o negro según el color, así siempre se lee.
+// En la app de Android, el mismo color va a la parte nativa (NavegadorPlugin.java, barras), que hace lo mismo.
 export default function BarraEstado() {
   const path = usePathname();
   useEffect(() => {
@@ -27,6 +28,10 @@ export default function BarraEstado() {
       for (const m of metas) {
         if (m.content !== color) m.content = color;
         if (m.media) m.removeAttribute('media');
+      }
+      if (html.dataset.app === 'android' && html.dataset.barras !== color) {
+        html.dataset.barras = color;
+        window.Capacitor?.Plugins?.Navegador?.barras({ color }).catch(() => {});
       }
     };
     poner();

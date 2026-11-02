@@ -1,0 +1,18 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Fisquo</string>
+    <string name="title_activity_main">Fisquo</string>
+    <string name="package_name">com.fisquo.app</string>
+    <string name="custom_url_scheme">com.fisquo.app</string>
+    <string name="aceptar">Aceptar</string>
+    <string name="cancelar">Cancelar</string>
+    <string name="cerrar">Cerrar</string>
+    <string name="descargando">Descargando…</string>
+    <string name="descargado">%1$s guardado en Descargas</string>
+    <string name="descarga_fallida">No se ha podido descargar. Revisa la conexión y vuelve a intentarlo.</string>
+    <string name="canal_avisos">Avisos</string>
+    <string name="canal_avisos_desc">Plazos de Hacienda, facturas vencidas y mensajes de tu gestoría</string>
+    <string name="acceso_ticket">Escanear ticket</string>
+    <string name="acceso_factura">Nueva factura</string>
+    <string name="acceso_impuestos">Impuestos</string>
+</resources>

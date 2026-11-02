@@ -11,7 +11,7 @@ import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { bloqueoDe, desbloqueada, usuarioActual } from '@/lib/auth';
 import { SOLO_LECTURA_APP, soloLectura } from '@/lib/planes';
-import { esApp } from '@/lib/app';
+import { esApp, plataformaApp } from '@/lib/app';
 import { COLOR_BASE } from '@/lib/marca';
 import { fuente, titulos } from '@/components/fuente';
 import { permisosDe, puede } from '@/lib/permisos';
@@ -118,7 +118,7 @@ export default async function RootLayout({ children }) {
   const idioma = await idiomaActual();
   const tr = await textos();
   return (
-    <html lang={idioma} data-tema={tema} data-app={app ? 'ios' : undefined} suppressHydrationWarning>
+    <html lang={idioma} data-tema={tema} data-app={plataformaApp(cab.get('user-agent')) || undefined} suppressHydrationWarning>
       <head>
         {INICIO_IOS.map(([an, al, e]) => (
           <link key={`${an}x${al}x${e}`} rel="apple-touch-startup-image" href={`/inicio-ios/${an * e}x${al * e}.png`}

@@ -3,9 +3,12 @@
   "private": true,
   "scripts": {
     "sync": "cap sync ios",
-    "ios": "cap open ios"
+    "ios": "cap open ios",
+    "sync:android": "cap sync android",
+    "android": "cap open android"
   },
   "dependencies": {
+    "@capacitor/android": "8.5.3",
     "@capacitor/core": "8.5.3",
     "@capacitor/ios": "8.5.3",
     "@capacitor/splash-screen": "8.0.2"

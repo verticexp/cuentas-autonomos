@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12 o posterior (android:dataExtractionRules): lo mismo que copia_reglas.xml, tanto para la copia en la
+     nube como para la transferencia de móvil a móvil. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="sharedpref" path="fisquo-biometria.xml" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="sharedpref" path="fisquo-biometria.xml" />
+    </device-transfer>
+</data-extraction-rules>

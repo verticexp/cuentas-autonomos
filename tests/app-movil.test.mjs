@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { desvioApp, esApp, mensajePlan } from '../lib/app.js';
+import { desvioApp, esApp, mensajePlan, plataformaApp } from '../lib/app.js';
 
 const APP = 'Mozilla/5.0 (iPhone; CPU iPhone OS 27_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 FisquoApp/1';
 const SAFARI = 'Mozilla/5.0 (iPhone; CPU iPhone OS 27_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Mobile/15E148 Safari/604.1';
@@ -60,4 +60,14 @@ test('en la app, el panel, el login y lo legal siguen igual', () => {
   for (const ruta of ['/login', '/privacidad', '/condiciones', '/facturas', '/ajustes/seguridad', '/preciosx']) {
     assert.equal(desvioApp({ ua: APP, ruta, conSesion: false }), null);
   }
+});
+
+test('distingue la app de iOS de la de Android, y en la de Android sigue escondiendo la web pública', () => {
+  const android = 'Mozilla/5.0 (Linux; Android 16; Pixel 8 Build/BP2A; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/141.0.0.0 Mobile Safari/537.36 FisquoApp/1';
+  assert.equal(plataformaApp(APP), 'ios');
+  assert.equal(plataformaApp(android), 'android');
+  assert.equal(plataformaApp('Mozilla/5.0 (Linux; Android 16; Pixel 8) Chrome/141.0.0.0 Mobile Safari/537.36'), null);
+  assert.equal(plataformaApp(''), null);
+  assert.equal(desvioApp({ ua: android, ruta: '/precios', conSesion: false }), '/login');
+  assert.equal(desvioApp({ ua: android, ruta: '/registro', conSesion: true }), '/');
 });

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Solo en las compilaciones de depuración: deja cargar una copia local por http (mobile/README.md). La de la tienda
+     (release) no lleva esto y solo habla con https://www.fisquo.com. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
+    <application android:networkSecurityConfig="@xml/red_local" tools:ignore="UnusedAttribute" />
+</manifest>

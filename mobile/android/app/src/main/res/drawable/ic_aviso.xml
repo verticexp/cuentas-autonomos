@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Icono pequeño de los avisos (barra de estado): la F del logo, en blanco como pide Android. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <group android:translateX="4.2" android:translateY="3.8" android:scaleX="0.0306" android:scaleY="0.0306">
+        <path android:fillColor="#FFFFFFFF" android:pathData="M140 0H430C475 0 510 35 510 80S475 164 425 164H230C198 164 175 174 150 192L0 298V136C0 61 63 0 140 0Z M0 345L160 229C182 213 204 204 235 204H350C392 204 424 238 424 280S392 357 350 357H235C199 357 170 381 170 413V445C170 492 132 530 85 530S0 492 0 445Z" />
+    </group>
+</vector>

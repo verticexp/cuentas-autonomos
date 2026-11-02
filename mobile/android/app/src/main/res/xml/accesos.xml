@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Accesos directos al mantener pulsado el icono, los mismos que en iOS (Info.plist, UIApplicationShortcutItems).
+     MainActivity abre la ruta del extra «ruta». -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut android:shortcutId="ticket" android:enabled="true" android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/acceso_ticket">
+        <intent android:action="android.intent.action.VIEW" android:targetPackage="com.fisquo.app" android:targetClass="com.fisquo.app.MainActivity">
+            <extra android:name="ruta" android:value="/gastos?escanear=1" />
+        </intent>
+    </shortcut>
+    <shortcut android:shortcutId="factura" android:enabled="true" android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/acceso_factura">
+        <intent android:action="android.intent.action.VIEW" android:targetPackage="com.fisquo.app" android:targetClass="com.fisquo.app.MainActivity">
+            <extra android:name="ruta" android:value="/facturas/nueva" />
+        </intent>
+    </shortcut>
+    <shortcut android:shortcutId="impuestos" android:enabled="true" android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/acceso_impuestos">
+        <intent android:action="android.intent.action.VIEW" android:targetPackage="com.fisquo.app" android:targetClass="com.fisquo.app.MainActivity">
+            <extra android:name="ruta" android:value="/modelos" />
+        </intent>
+    </shortcut>
+</shortcuts>
