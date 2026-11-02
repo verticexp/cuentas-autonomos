@@ -149,7 +149,12 @@ test('firmas: vector HMAC, alteración de cuerpo/firma, caducidad, futuro y form
   const firma = W.firmar(secreto, cuerpo, t);
   assert.equal(firma, `t=${t},v1=${createHmac('sha256', secreto).update(`${t}.${cuerpo}`).digest('hex')}`);
   assert.equal(W.verificarFirma(secreto, cuerpo, firma), true);
-  for (const cabecera of [W.firmar(secreto, cuerpo, t - 301), W.firmar(secreto, cuerpo, t + 301), `t=${t},v1=${'0'.repeat(64)}`, 't=NaN,v1=bad', `${firma},t=${t}`, null]) assert.equal(W.verificarFirma(secreto, cuerpo, cabecera), false);
+  // El margen es de una hora, no de los 301 s justos: con la tolerancia de 300 s, una firma de t + 301 cae exactamente
+  // en el borde si pasa un segundo entre esta línea y la comprobación, y la daba por válida en una máquina lenta.
+  for (const cabecera of [W.firmar(secreto, cuerpo, t - 3600), W.firmar(secreto, cuerpo, t + 3600), `t=${t},v1=${'0'.repeat(64)}`, 't=NaN,v1=bad', `${firma},t=${t}`, null]) assert.equal(W.verificarFirma(secreto, cuerpo, cabecera), false);
+  // Y la tolerancia se respeta: con dos horas de margen, esa misma firma de hace una hora vale.
+  assert.equal(W.verificarFirma(secreto, cuerpo, W.firmar(secreto, cuerpo, t - 3600), { tolerancia: 7200 }), true);
+  for (const tolerancia of [-1, NaN, Infinity, '300', null]) assert.equal(W.verificarFirma(secreto, cuerpo, firma, { tolerancia }), false);
   assert.equal(W.verificarFirma(secreto, `${cuerpo} `, firma), false);
   assert.equal(W.verificarFirma('otra', cuerpo, firma), false);
 });
