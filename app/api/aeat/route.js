@@ -1,11 +1,13 @@
 import { usuarioApi } from '@/lib/api';
 import { actividadesDe, fiscalDe, usa130, usa303, ajustesIva, modelosDe, usaIgic } from '@/lib/empresa';
 import { casillas303, liquidaciones303, opciones130, r2, rectificativa303, resumenAnual } from '@/lib/calculos';
-import { declarante, fichero111, fichero115, fichero130, fichero303, fichero390, nombreFichero } from '@/lib/ficheroAeat';
-import { fichero180, fichero190, fichero347, fichero349 } from '@/lib/ficherosInformativas';
+import { declarante, fichero111, fichero115, fichero123, fichero130, fichero216, fichero303, fichero390, nombreFichero } from '@/lib/ficheroAeat';
+import { fichero180, fichero190, fichero193, fichero347, fichero349 } from '@/lib/ficherosInformativas';
+import { fichero232 } from '@/lib/ficheroVinculadas';
 import { csvCasillas200, fichero202, nombreCsv200 } from '@/lib/ficheroIs';
-import { borradorSociedades, modelo115, modelo180, modelo190, modelo202, modelo202Art403, modelo347, modelo349, modelo390, periodos349, retencionesProfesionales } from '@/lib/modelos';
+import { borradorSociedades, modelo115, modelo180, modelo190, modelo202, modelo202Art403, modelo216, modelo232, modelo347, modelo349, modelo390, periodos349, provinciaDe, retencionesProfesionales } from '@/lib/modelos';
 import { modelo111 } from '@/lib/nominas';
+import { casillas123, modelo193 } from '@/lib/capitalMobiliario';
 import { leer } from '@/lib/redis';
 import { puede } from '@/lib/permisos';
 import { datosImpuestos } from '@/lib/datosImpuestos';
@@ -30,8 +32,8 @@ export async function GET(req) {
   const t = q.has('t') ? Number(q.get('t')) : modelo === '349' && mes ? Math.ceil(mes / 3) : null;
   // 202: el pago fraccionado (?p=1|2|3), que no va por trimestres. 200: anual, y no es un fichero sino la tabla de casillas.
   const p = q.has('p') ? Number(q.get('p')) : null;
-  const anual = ['180', '190', '347', '390', '200'].includes(modelo);
-  if (!['303', '130', '111', '115', '349', '180', '190', '347', '390', '200', '202'].includes(modelo)
+  const anual = ['180', '190', '193', '232', '347', '390', '200'].includes(modelo);
+  if (!['303', '130', '111', '115', '123', '193', '216', '232', '349', '180', '190', '347', '390', '200', '202'].includes(modelo)
     || !Number.isInteger(anio) || anio < 2000 || anio > 9999
     || (!anual && modelo !== '202' && ![1, 2, 3, 4].includes(t))
     || (modelo === '202' ? ![1, 2, 3].includes(p) : p !== null)
@@ -46,17 +48,21 @@ export async function GET(req) {
   // El Impuesto sobre Sociedades (200 y 202) necesita lo mismo que el borrador de Impuestos: almacén, albaranes,
   // asientos manuales y los dividendos e intereses pagados.
   const esIS = ['200', '202'].includes(modelo);
-  const [{ facturas, gastos }, nominas, empleados, productos, stock, albaranes, manuales, capital] = await Promise.all([
+  const esCapital = ['123', '193'].includes(modelo);
+  const [{ facturas, gastos }, nominas, empleados, productos, stock, albaranes, manuales, capital, fichasCli, fichasProv] = await Promise.all([
     datosImpuestos(u, anio),
     ['111', '190'].includes(modelo) ? leer(u, 'nominas') : [],
     modelo === '190' ? leer(u, 'empleados') : [],
     esIS ? leer(u, 'productos') : [], esIS ? leer(u, 'stock') : [], esIS ? leer(u, 'albaranes') : [],
-    esIS ? leer(u, 'asientos') : [], esIS ? leer(u, 'capital') : [],
+    esIS ? leer(u, 'asientos') : [], esIS || esCapital ? leer(u, 'capital') : [],
+    modelo === '232' ? leer(u, 'clientes') : [], modelo === '232' ? leer(u, 'fichasProv') : [],
   ]);
   // Se muestra el modelo si los ajustes o los datos lo piden, como en Modelos. Los diseños AEAT no son los forales.
   if (!['303', '130'].includes(modelo)) {
     const hay349 = modelo === '349' ? modelo349(facturas, anio, undefined, gastos) : null;
     const ajustes = { ...f, trabajadores: f.trabajadores || nominas?.length > 0 || gastos.some((g) => Number(g.irpfPct) > 0),
+      capital: f.capital || (capital || []).length > 0,
+      noResidentes: f.noResidentes || gastos.some((g) => g.noResidente),
       alquiler: f.alquiler || gastos.some((g) => g.alquiler),
       intracom: f.intracom || (hay349 && (hay349.total > 0 || hay349.rectificaciones.length > 0)) };
     if (!modelosDe(ajustes).some((m) => m.id === modelo)) return Response.json({ error: `Según tus ajustes y datos no presentas el ${modelo} en la AEAT` }, { status: 400 });
@@ -78,6 +84,8 @@ export async function GET(req) {
       r = fichero130(yo, anio, resumenAnual(facturas, gastos, anio, u.pagos130?.[anio] || {}, ids, { ivaCoste: !usa303(f), hasta, ...opciones130(f, u.rend130, anio), iva }).trimestres[t - 1]);
     } else if (modelo === '111') r = fichero111(yo, anio, t, modelo111(nominas || [], anio, t), retencionesProfesionales(gastos, anio, t));
     else if (modelo === '115') r = fichero115(yo, anio, t, modelo115(gastos, anio, t));
+    else if (modelo === '123') r = fichero123(yo, anio, t, casillas123(capital || [], anio, t));
+    else if (modelo === '216') r = fichero216(yo, anio, t, modelo216(gastos, anio, t));
     else if (esIS) {
       // Mismas opciones que el borrador de Impuestos (app/modelos/page.js), para que las cifras coincidan.
       const opIS = { ivaCoste: !usa303(f), iva, productos: productos || [], ajustes: stock || [], albaranes: albaranes || [], manuales: manuales || [],
@@ -107,6 +115,12 @@ export async function GET(req) {
       // Provincia de cada tercero: del «Ciudad y CP» de las fichas de clientes y proveedores (o de la factura).
       const domicilios = await domiciliosDe(u);
       if (modelo === '180') r = fichero180(contacto, anio, modelo180(gastos, anio, { domicilios }));
+      else if (modelo === '193') {
+        // La provincia de cada perceptor sale de su ficha, como en el 180 y el 347; modelo193 no la trae.
+        const m = modelo193(capital || [], anio);
+        r = fichero193(contacto, anio, { perceptores: m.perceptores.map((p) => ({ ...p, provincia: provinciaDe(domicilios, p.nif, p.nombre) })) });
+      }
+      else if (modelo === '232') r = fichero232(contacto, anio, modelo232(facturas, gastos, anio, { clientes: fichasCli || [], proveedores: fichasProv || [] }), { domicilios, constitucion: f.constitucion });
       else if (modelo === '190') {
         const m = modelo190(nominas || [], empleados || [], anio, gastos, { domicilios });
         // La página oculta las identidades y sueldos sin este permiso; un fichero BOE no permite agruparlos.

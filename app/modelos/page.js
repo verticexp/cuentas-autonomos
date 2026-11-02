@@ -784,6 +784,7 @@ export default async function Modelos({ searchParams }) {
                 ]} /></Plegable> : <p className="nota">{tr('Sin pagos a no residentes este trimestre: no se presenta.')}</p>}
                 {m.negativa && <p className="nota">{tr('Solo rentas exentas: se presenta igual, como declaración negativa.')}</p>}
                 {m.rentas > 0 && <p className="nota">{tr('Hasta el {fecha}.', { fecha: tr(plazoT(t, 20)) })}</p>}
+                {m.rentas > 0 && <Fichero foral={foralT} modelo="216" anio={anio} t={t} nif={u.emisor?.nif} aeat={AEAT.m216} />}
                 {m.rentas > 0 && <PresentadoRet modelo="216" anio={anio} t={t} hecho={Boolean(u.pres216?.[anio]?.[t])} soloLectura={soloLectura} />}
               </div>
             ); })}
@@ -844,6 +845,7 @@ export default async function Modelos({ searchParams }) {
                   k['07'] > 0 && ['07 · Retenciones: dividendos', k['07']], k['08'] > 0 && ['08 · Retenciones: intereses y otras rentas', k['08']], ['09 · Total de retenciones', k['09']],
                   ['14 · A ingresar', k['14'], true],
                 ]} /></Plegable> : <p className="nota">{tr('Sin pagos en este trimestre: no se presenta.')}</p>}
+                {m.base > 0 && <Fichero foral={foralT} modelo="123" anio={anio} t={t} nif={u.emisor?.nif} />}
                 {m.base > 0 && <PresentadoRet modelo="123" anio={anio} t={t} hecho={Boolean(u.pres123?.[anio]?.[t])} soloLectura={soloLectura} />}
               </div>
             ); })}
@@ -856,6 +858,7 @@ export default async function Modelos({ searchParams }) {
         <ModeloPlegable id="m193" num="193" nombre={tr('Resumen anual de dividendos e intereses')} detalle={m193.perceptores.length ? tr('Hasta el {fecha}', { fecha: tr(plazoAnual('01-31')) }) : tr('Sin pagos este año')} informativo={m193.perceptores.length > 0}>
           <h2 className="grupo-t">193 · {tr('Resumen anual')}</h2>
           {m193.perceptores.length ? <Casillas sinNumeros={Boolean(foralT)} filas={[...m193.perceptores.map((p) => [`${p.nif ? `${p.nif} · ` : ''}${p.nombre} · ${tr(TIPOS_RENDIMIENTO[p.tipo])} ${tr('(clave {clave}, naturaleza {naturaleza})', { clave: p.clave, naturaleza: p.naturaleza })}`, `${eur(p.base)} · ${tr('ret. {importe}', { importe: eur(p.retenciones) })}`]), ['Retenciones del año', m193.retenciones, true]]} /> : <p className="nota">{tr('Sin pagos de dividendos ni intereses en {anio}.', { anio })}</p>}
+          {m193.perceptores.length > 0 && <Fichero foral={foralT} boe modelo="193" anio={anio} nif={u.emisor?.nif} />}
         </ModeloPlegable>
       )}
 
@@ -1126,7 +1129,8 @@ export default async function Modelos({ searchParams }) {
                   <p className="nota">{tr('En el cuadro III van todas las operaciones con esos territorios, estén o no vinculadas y sea cual sea su importe. La lista es la de jurisdicciones no cooperativas de la Orden HFP/115/2023.')} {anio <= 2026 ? tr('La Orden HAC/649/2026 dio de baja Barbados, Dominica, Gibraltar, Seychelles y Trinidad y Tobago, pero su disposición transitoria mantiene la lista anterior en los ejercicios que estaban abiertos el 28 de junio de 2026: en {anio} siguen contando, y dejan de contar desde 2027.', { anio }) : tr('Desde 2027 ya no están Barbados, Dominica, Gibraltar, Seychelles ni Trinidad y Tobago (bajas de la Orden HAC/649/2026).')}</p>
                 </>
               )}
-              <p className="nota">{tr('Qué no sale de aquí y tienes que repasar con tu gestoría: el método de valoración del art. 18.4 de la Ley del Impuesto sobre Sociedades (Fisquo supone uno solo por clase de operación) y la clave del tipo de operación, que se eligen en la Sede; qué operaciones son específicas, salvo las de una persona física en módulos con el 25 % que marques en su ficha (la transmisión de un negocio, de valores, de un inmueble o de un intangible no se distingue de una venta cualquiera); el cuadro II de las rentas de intangibles del art. 23, que la app no calcula; y del cuadro III, la tenencia de valores al cierre y las dos jurisdicciones que lo son solo por un régimen fiscal perjudicial y no enteras (Samoa, por su offshore business, y la Federación de Rusia, por sus international holding companies): una operación con una empresa de allí no entra sola, hay que saber si se acoge a ese régimen.')}</p>
+              <p className="nota">{tr('Qué no sale de aquí y tienes que repasar con tu gestoría: el método de valoración del art. 18.4 de la Ley del Impuesto sobre Sociedades, que el fichero deja en blanco para que lo elijas en la Sede; qué operaciones son específicas, salvo las de una persona física en módulos con el 25 % que marques en su ficha (la transmisión de un negocio, de valores, de un inmueble o de un intangible no se distingue de una venta cualquiera); el cuadro II de las rentas de intangibles del art. 23, que la app no calcula; y del cuadro III, la tenencia de valores al cierre y las dos jurisdicciones que lo son solo por un régimen fiscal perjudicial y no enteras (Samoa, por su offshore business, y la Federación de Rusia, por sus international holding companies): una operación con una empresa de allí no entra sola, hay que saber si se acoge a ese régimen.')}</p>
+              {m232.obligado && <Fichero foral={foralT} modelo="232" anio={anio} nif={u.emisor?.nif} />}
               <p className="nota">{tr('Tampoco entran las nóminas ni la Seguridad Social: la retribución del administrador por el ejercicio de sus funciones no es operación vinculada (art. 18.2.b), y Fisquo no la distingue del sueldo por otro trabajo. Y si estás en un grupo de consolidación fiscal, o eres una AIE o una UTE, esas operaciones quedan fuera del modelo (art. 2.2 de la Orden): Fisquo no lo sabe.')}</p>
             </div>
           )}
