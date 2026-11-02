@@ -18,12 +18,20 @@
     "scrollEnabled": true,
     "preferredContentMode": "mobile"
   },
+  "android": {
+    "appendUserAgent": "FisquoApp/1",
+    "backgroundColor": "#0F1F1B"
+  },
   "plugins": {
     "SplashScreen": {
       "launchShowDuration": 0,
       "launchFadeOutDuration": 0,
       "backgroundColor": "#0F1F1B",
       "showSpinner": false
+    },
+    "SystemBars": {
+      "insetsHandling": "css",
+      "initialViewportFitValueHint": "cover"
     }
   }
 }
