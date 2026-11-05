@@ -1,9 +1,72 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { cambioDePlan, estadoEmpresa, mensualDe, resumenAdmin } from '../lib/admin.js';
+import { cambioDePlan, estadoEmpresa, historialPagoTrasCambio, mensualDe, resumenAdmin } from '../lib/admin.js';
 
 const HOY = new Date('2026-10-19T12:00:00Z');
 const empresa = (id, plan, creada = '2026-10-01') => ({ id, nombre: id, creada: `${creada}T10:00:00Z`, emisor: { nif: 'X' }, plan });
+
+const dePago = { tipo: 'aut', nombre: 'Pro', pagado: true, estado: 'active' };
+const cambioPago = (fecha, antes, despues) => ({ fecha: `${fecha}T12:00:00.000Z`, antes, despues });
+
+test('bajas: empresas que pagaban, incluidas las dadas de baja; base real del día 1, sin nuevas altas ni duplicados', () => {
+  const empresas = [
+    empresa('sigue', dePago, '2026-08-01'),
+    { ...empresa('cancelada', { ...dePago, pagado: false }, '2026-08-01'), historialPagoAdmin: [cambioPago('2026-10-05', true, false)] },
+    { ...empresa('baja', dePago, '2026-08-01'), baja: { fecha: '2026-10-08' }, historialPagoAdmin: [cambioPago('2026-10-08', true, false)] },
+    { ...empresa('reactivada', dePago, '2026-08-01'), historialPagoAdmin: [cambioPago('2026-10-02', true, false), cambioPago('2026-10-03', false, true), cambioPago('2026-10-04', true, false), cambioPago('2026-10-05', false, true)] },
+    // Se registró antes, pero solo empezó a pagar este mes: no pertenece a la base del día 1.
+    { ...empresa('convertida', dePago, '2026-08-01'), historialPagoAdmin: [cambioPago('2026-10-03', false, true)] },
+    empresa('alta-nueva', dePago, '2026-10-02'),
+    { ...empresa('vieja-baja', dePago, '2026-07-01'), baja: { fecha: '2026-09-15' }, historialPagoAdmin: [cambioPago('2026-09-15', true, false)] },
+    empresa('fundador', { ...dePago, fundador: true }, '2026-08-01'),
+    empresa('prueba', { tipo: 'aut', nombre: 'Pro', hasta: '2026-10-01' }, '2026-08-01'),
+  ];
+  const { kpis: k } = resumenAdmin({ empresas, hoy: HOY, bajasDesde: '2026-09-01T00:00:00.000Z' });
+  assert.equal(k.bajasMes, 3);
+  assert.equal(k.bajasPct, 75, '3 empresas distintas sobre las 4 que pagaban el día 1');
+  assert.equal(k.bajasDesde, '2026-09-01');
+});
+
+test('bajas: sin historia no se inventan fechas; primer mes parcial y base cero dan porcentaje nulo', () => {
+  const e = { ...empresa('baja', dePago, '2026-08-01'), baja: { fecha: '2026-10-02' } };
+  const sinHistoria = resumenAdmin({ empresas: [e], hoy: HOY });
+  assert.equal(sinHistoria.kpis.bajasMes, 0);
+  assert.equal(sinHistoria.kpis.bajasDesde, null);
+  assert.equal(sinHistoria.kpis.bajasPct, null);
+  e.historialPagoAdmin = [cambioPago('2026-10-02', true, false), cambioPago('2026-11-01', true, false)];
+  const parcial = resumenAdmin({ empresas: [e], hoy: HOY, bajasDesde: '2026-10-02T10:00:00.000Z' }).kpis;
+  assert.equal(parcial.bajasMes, 1);
+  assert.equal(parcial.bajasPct, null);
+  assert.equal(parcial.bajasDesde, '2026-10-02');
+  assert.equal(resumenAdmin({ hoy: HOY, bajasDesde: '2026-09-01T00:00:00.000Z' }).kpis.bajasPct, null);
+  assert.equal(resumenAdmin({ empresas: [empresa('sigue', dePago, '2026-08-01')], hoy: HOY, bajasDesde: '2026-09-01T00:00:00.000Z' }).kpis.bajasPct, 0);
+});
+
+test('bajas: no cuenta pruebas de Stripe, Fundador ni licencias de gestoría; los reintentos de cobro no son bajas', () => {
+  for (const plan of [undefined, { ...dePago, fundador: true }, { ...dePago, estado: 'trialing' }, { ...dePago, pagado: false }, { ...dePago, porDespacho: 'd1' }]) {
+    const antes = empresa('e', plan), despues = { ...antes, baja: { fecha: HOY.toISOString() } };
+    assert.deepEqual(historialPagoTrasCambio(antes, despues, HOY), []);
+  }
+  const antes = empresa('pago', dePago);
+  assert.deepEqual(historialPagoTrasCambio(antes, { ...antes, plan: { ...dePago, estado: 'past_due' } }, HOY), []);
+  const despues = { ...antes, plan: { ...dePago, pagado: false, estado: 'canceled' } };
+  despues.historialPagoAdmin = historialPagoTrasCambio(antes, despues, HOY);
+  assert.deepEqual(despues.historialPagoAdmin, [{ fecha: HOY.toISOString(), antes: true, despues: false }]);
+  assert.deepEqual(historialPagoTrasCambio(despues, { ...despues, baja: { fecha: HOY.toISOString() } }, HOY), despues.historialPagoAdmin);
+});
+
+test('bajas: el cambio de mes respeta el límite exacto y no arrastra bajas del mes anterior', () => {
+  const e = { ...empresa('baja', { ...dePago, pagado: false }, '2026-08-01'), historialPagoAdmin: [
+    cambioPago('2026-09-30', true, false), cambioPago('2026-09-30', false, true),
+    { fecha: '2026-10-01T00:00:00.000Z', antes: true, despues: false },
+  ] };
+  const octubre = resumenAdmin({ empresas: [e], hoy: HOY, bajasDesde: '2026-09-01T00:00:00.000Z' }).kpis;
+  assert.equal(octubre.bajasMes, 1);
+  assert.equal(octubre.bajasPct, 100);
+  const noviembre = resumenAdmin({ empresas: [e], hoy: new Date('2026-11-02T12:00:00Z'), bajasDesde: '2026-09-01T00:00:00.000Z' }).kpis;
+  assert.equal(noviembre.bajasMes, 0);
+  assert.equal(noviembre.bajasPct, null);
+});
 
 test('estado de cada empresa: fundador, prueba, caducada, pago, impago y cancelada', () => {
   assert.equal(estadoEmpresa(empresa('a'), HOY), 'fundador');
