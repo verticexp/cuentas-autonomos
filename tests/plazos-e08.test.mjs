@@ -60,17 +60,21 @@ test('E08: cerrar una sesión bancaria con 204 no se considera un fallo del prov
 
 test('E08: timeout cubre fetch lento y la lectura lenta del cuerpo', async (t) => {
   const log = t.mock.method(console, 'error', () => {});
+  // Node puede emitir avisos por console.error: comprobar solo los errores del envío.
+  const erroresEnvio = () => log.mock.calls.filter((c) => c.arguments[0] === '[email] No se ha podido enviar:');
   T.PLAZOS_PROVEEDOR.timeoutMs = 20;
   globalThis.fetch = async () => { await dormir(300); return ok(); };
   const inicio = performance.now();
   const r = await E.enviarEmail({ para: 'a@b.test', asunto: 'Prueba', html: '' });
   assert.equal(r.error, 'No se ha podido enviar el email. Inténtalo de nuevo en unos minutos.');
-  assert.match(log.mock.calls[0].arguments[1].message, /tiempo máximo/);
+  assert.equal(erroresEnvio().length, 1);
+  assert.match(erroresEnvio()[0].arguments[1].message, /tiempo máximo/);
   assert.ok(performance.now() - inicio < 200);
   globalThis.fetch = async () => ({ ok: true, json: async () => { await dormir(60); return {}; } });
   const cuerpo = await E.enviarEmail({ para: 'a@b.test', asunto: 'Prueba', html: '' });
   assert.equal(cuerpo.error, 'No se ha podido enviar el email. Inténtalo de nuevo en unos minutos.');
-  assert.match(log.mock.calls[1].arguments[1].message, /tiempo máximo/);
+  assert.equal(erroresEnvio().length, 2);
+  assert.match(erroresEnvio()[1].arguments[1].message, /tiempo máximo/);
   globalThis.fetch = async () => ok({ id: 'recuperado' });
   assert.equal((await E.enviarEmail({ para: 'a@b.test', asunto: 'Prueba', html: '' })).id, 'recuperado');
 });
