@@ -3,8 +3,19 @@ import { cabeceraCsp, EMBEBIBLE, modoCsp, politicaCsp } from '@/lib/csp';
 import { desvioApp } from '@/lib/app';
 import { PUBLICO } from '@/lib/rutasPublicas';
 import { RENOVADA, opcionesCookie, renovarSesion, toca } from '@/lib/sesion';
+import { accesoCifras } from '@/lib/secreto';
 
 export async function proxy(req) {
+  // Excepción exacta: solo lectura con su Bearer, sin consultar ni renovar cookies de sesión.
+  // No se añade /api/admin al patrón público ni se admiten subrutas.
+  if (req.nextUrl.pathname === '/api/admin/cifras') {
+    const status = accesoCifras(req);
+    if (status) return new Response(null, { status, headers: { 'Cache-Control': 'no-store' } });
+    if (req.method !== 'GET') return new Response(null, { status: 405, headers: { Allow: 'GET', 'Cache-Control': 'no-store' } });
+    const res = NextResponse.next();
+    res.headers.set('Cache-Control', 'no-store');
+    return res;
+  }
   // Anti-CSRF en TODAS las rutas (también login, registro, invitación y llaves de acceso): lo que modifica datos solo
   // puede venir de la propia app. Con «Referrer-Policy: no-referrer» los formularios envían «Origin: null»; entonces
   // vale Sec-Fetch-Site, que pone el navegador. Sin Origin (Stripe, crons) pasa: esas rutas comprueban su firma o secreto.

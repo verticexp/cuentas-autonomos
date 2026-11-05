@@ -1,8 +1,7 @@
 import { requerirAdmin } from '@/lib/auth';
 import { eur, fechaCorta } from '@/lib/formato';
-import { redis } from '@/lib/redis';
-import { actividadReciente, ultimaActividad } from '@/lib/actividad';
-import { ESTADOS, ORIGENES, resumenAdmin } from '@/lib/admin';
+import { ESTADOS, ORIGENES } from '@/lib/admin';
+import { iniciarBajasAdmin, leerResumenAdmin } from '@/lib/adminServidor';
 import { textoDias } from '@/lib/embudo';
 import { embudoDe } from '@/lib/embudoServidor';
 import { emailListo } from '@/lib/email';
@@ -42,8 +41,8 @@ function Barras({ datos, etiqueta, valor, titulo }) {
 // Panel del administrador de Fisquo: negocio (ingresos, pruebas, conversión), uso y todas las empresas.
 export default async function Admin() {
   await requerirAdmin();
-  const [empresas, usuarios, actividad, ultima] = await Promise.all([redis.hgetall('empresas'), redis.hgetall('usuarios'), actividadReciente(30), ultimaActividad()]);
-  const r = resumenAdmin({ empresas: Object.values(empresas || {}), usuarios: Object.values(usuarios || {}), actividad, ultima });
+  await iniciarBajasAdmin();
+  const { empresas, ultima, resumen: r } = await leerResumenAdmin();
   const k = r.kpis;
   const pendientes = (await recientes()).filter((c) => c.estado === 'persona' && c.mensajes.at(-1)?.de !== 'equipo').length;
   // Embudo de activación (lib/embudo.js): solo índices y contadores, no documentos.
@@ -78,6 +77,7 @@ export default async function Admin() {
       <div><small>En prueba</small><strong>{r.porEstado.prueba}</strong><span>{k.pruebasQueAcabanEn7} {k.pruebasQueAcabanEn7 === 1 ? 'acaba' : 'acaban'} esta semana</span></div>
       <div><small>Conversión</small><strong>{k.conversion === null ? '—' : `${k.conversion} %`}</strong><span>Pruebas acabadas que pagan</span></div>
       <div><small>Altas este mes</small><strong>{k.altasMes}</strong><span>Registros con prueba</span></div>
+      <div><small>Bajas este mes</small><strong>{k.bajasMes}</strong><span>{k.bajasPct === null ? 'Sin base de pago a principio de mes' : `${k.bajasPct} % sobre las empresas de pago a principio de mes`}{k.bajasDesde && <><br />Se cuenta desde el {fecha(k.bajasDesde)}</>}</span></div>
       <div><small>Personas activas</small><strong>{k.activos7}</strong><span>7 días · {k.activosHoy} hoy · {k.activos30} en 30 días</span></div>
     </section>
 
