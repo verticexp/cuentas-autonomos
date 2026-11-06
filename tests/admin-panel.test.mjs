@@ -68,6 +68,76 @@ test('bajas: el cambio de mes respeta el límite exacto y no arrastra bajas del 
   assert.equal(noviembre.bajasPct, null);
 });
 
+test('bajas: una nueva conversión que se cancela cuenta en el total, pero no en el porcentaje de la base del día 1', () => {
+  const empresas = [
+    empresa('sigue', dePago, '2026-08-01'),
+    { ...empresa('nueva', { ...dePago, pagado: false }, '2026-08-01'), historialPagoAdmin: [cambioPago('2026-10-03', false, true), cambioPago('2026-10-04', true, false)] },
+  ];
+  const { kpis: k } = resumenAdmin({ empresas, hoy: HOY, bajasDesde: '2026-09-01T00:00:00.000Z' });
+  assert.equal(k.bajasMes, 1);
+  assert.equal(k.bajasPct, 0);
+  assert.equal(k.bajasMesParcial, false);
+});
+
+test('hoja del 16-11: semanas cerradas con límites exactos, sin duplicar bajas ni arrastrar las del lunes', () => {
+  const empresas = [
+    { ...empresa('baja', { ...dePago, pagado: false }, '2026-08-01'), historialPagoAdmin: [cambioPago('2026-11-09', true, false), cambioPago('2026-11-10', false, true), cambioPago('2026-11-11', true, false)] },
+    { ...empresa('domingo', dePago, '2026-08-01'), baja: { fecha: '2026-11-15' }, historialPagoAdmin: [{ fecha: '2026-11-15T23:59:59.999Z', antes: true, despues: false }] },
+    { ...empresa('lunes', { ...dePago, pagado: false }, '2026-08-01'), historialPagoAdmin: [{ fecha: '2026-11-16T00:00:00.000Z', antes: true, despues: false }] },
+  ];
+  const hoy = new Date('2026-11-16T08:00:00.000Z');
+  const r = resumenAdmin({ empresas, hoy, bajasDesde: '2026-11-06T10:00:00.000Z' });
+  assert.deepEqual(r.bajasSemanas.at(-2), { desde: '2026-11-09', hasta: '2026-11-16', n: 2, completa: true });
+  assert.deepEqual(r.bajasSemanas.at(-1), { desde: '2026-11-16', hasta: '2026-11-23', n: 1, completa: false });
+  assert.equal(r.bajasSemanas.at(-3).completa, false);
+  assert.equal(r.kpis.bajasMes, 3);
+  assert.equal(r.kpis.bajasMesParcial, true);
+  const sinHistoria = resumenAdmin({ empresas, hoy });
+  assert.ok(sinHistoria.bajasSemanas.every((s) => s.n === 0 && !s.completa));
+  const parcial = resumenAdmin({ empresas, hoy, bajasDesde: '2026-11-11T10:00:00.000Z' });
+  assert.deepEqual(parcial.bajasSemanas.at(-2), { desde: '2026-11-09', hasta: '2026-11-16', n: 2, completa: false });
+});
+
+test('altas de prueba: cerrar una cuenta no borra su alta; regalos, Fundador, despacho y fechas futuras no cuentan', () => {
+  const prueba = { tipo: 'aut', nombre: 'Pro', hasta: '2026-11-30' };
+  const r = resumenAdmin({ hoy: HOY, empresas: [
+    empresa('prueba', prueba, '2026-10-13'),
+    { ...empresa('cerrada', prueba, '2026-10-14'), baja: { fecha: '2026-10-15' } },
+    empresa('convertida', dePago, '2026-10-15'),
+    empresa('fundador', undefined, '2026-10-16'),
+    empresa('regalada', { ...prueba, fundador: true }, '2026-10-16'),
+    empresa('licencia', { ...dePago, porDespacho: { id: 'd' } }, '2026-10-16'),
+    empresa('despacho', { ...prueba, despacho: true }, '2026-10-16'),
+    empresa('futura', prueba, '2026-10-20'),
+  ] });
+  assert.equal(r.kpis.altasMes, 3);
+  assert.deepEqual(r.altas.slice(-2).map((s) => s.n), [3, 0]);
+});
+
+test('prueba de Stripe: acceso habilitado no significa ingresos ni conversión de pago', () => {
+  const e = empresa('stripe', { ...dePago, estado: 'trialing' });
+  assert.equal(estadoEmpresa(e, HOY), 'prueba');
+  const r = resumenAdmin({ empresas: [e], hoy: HOY });
+  assert.equal(r.kpis.mrr, 0);
+  assert.equal(r.kpis.conversion, null);
+  assert.equal(r.porEstado.pago, 0);
+  assert.equal(r.porEstado.prueba, 1);
+});
+
+test('ingreso mensual sin IVA: descuentos vigentes, anual dividido entre doce y exclusión de gratis e impagos', () => {
+  const empresas = [
+    empresa('mensual', { ...dePago, descuento: { pct: 25, hasta: '2026-10-20' } }),
+    empresa('anual', { ...dePago, periodo: 'anio', descuento: { cent: 1200 } }),
+    empresa('gratis', { ...dePago, fundador: true }),
+    empresa('impago', { ...dePago, estado: 'past_due' }),
+    empresa('licencia', { ...dePago, porDespacho: { id: 'd' } }),
+  ];
+  const r = resumenAdmin({ empresas, hoy: HOY });
+  assert.equal(r.kpis.mrr, 900 + 740);
+  assert.equal(r.kpis.arr, 1640 * 12);
+  assert.equal(mensualDe({ ...dePago, descuento: { pct: 25, hasta: '2026-10-18' } }, HOY), 1200);
+});
+
 test('estado de cada empresa: fundador, prueba, caducada, pago, impago y cancelada', () => {
   assert.equal(estadoEmpresa(empresa('a'), HOY), 'fundador');
   assert.equal(estadoEmpresa(empresa('b', { tipo: 'aut', nombre: 'Pro', hasta: '2026-11-01', fundador: true }), HOY), 'fundador');
@@ -97,7 +167,7 @@ test('ingresos al mes: el anual se reparte en 12; fundador y pruebas no cuentan'
   assert.equal(r.kpis.empresas, 5);
   assert.equal(r.kpis.mrr, 2040);
   assert.equal(r.kpis.conversion, 67);
-  assert.equal(r.kpis.altasMes, 1);
+  assert.equal(r.kpis.altasMes, 2, 'el alta de la empresa que se dio de baja se conserva');
   assert.equal(r.kpis.activosHoy, 2);
   assert.equal(r.kpis.activos7, 2);
   assert.equal(r.kpis.verificados, 1);

@@ -16,9 +16,10 @@ export async function GET(req) {
   return Response.json({
     generado: hoy.toISOString(), mrr: k.mrr / 100, arr: k.arr / 100,
     pago: r.porEstado.pago, impago: r.porEstado.impago, prueba: r.porEstado.prueba,
-    conversion: k.conversion, altasMes: k.altasMes, bajasMes: k.bajasMes, bajasPct: k.bajasPct, bajasDesde: k.bajasDesde,
+    conversion: k.conversion, altasMes: k.altasMes, bajasMes: k.bajasMes, bajasPct: k.bajasPct, bajasDesde: k.bajasDesde, bajasMesParcial: k.bajasMesParcial,
     pruebasQueAcabanEn7: k.pruebasQueAcabanEn7, activos7: k.activos7, activos30: k.activos30,
     altasSemanas: r.altas.map(({ desde, n }) => ({ desde, n })),
+    bajasSemanas: r.bajasSemanas.map(({ desde, hasta, n, completa }) => ({ desde, hasta, n, completa })),
     origenes: r.origenes.map(({ origen, total, prueba, pagan, conversion }) => ({ origen, total, prueba, pagan, conversion })),
   }, { headers });
 }
