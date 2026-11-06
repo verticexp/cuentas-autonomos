@@ -8,3 +8,8 @@
 "Credencial no válida" = "Invalid credential";
 "No hay Face ID activado en este iPhone" = "Face ID isn't turned on on this iPhone";
 "No se ha podido registrar el iPhone para los avisos" = "Couldn't register this iPhone for notifications";
+/* Compras dentro de la app (ComprasPlugin.swift) en en. */
+"No se han podido cargar los planes del App Store." = "Couldn't load the App Store plans.";
+"Ese plan no está disponible en el App Store." = "That plan isn't available in the App Store.";
+"Apple no ha podido verificar la compra." = "Apple couldn't verify the purchase.";
+"No se ha podido abrir la gestión de la suscripción." = "Couldn't open subscription management.";

@@ -71,6 +71,12 @@
 .aviso ul { padding-left: 20px; }
 .enlaceBoton { padding: 0; border: 0; background: none; font: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; color: var(--ink); cursor: pointer; }
 .condiciones, .alerta { font-size: 14px; line-height: 1.5; }
+/* App de iOS (components/PlanesApple.js): lo que Apple pide junto a una suscripción, en letra pequeña pero legible. */
+.legal { margin-top: 22px; color: var(--muted); font-size: 13px; line-height: 1.6; }
+.legal p { max-width: 85ch; margin: 0 0 12px; }
+.legal a { color: var(--ink); text-underline-offset: 3px; }
+.legal .botonGestion { min-height: 44px; }
+.comparacion + .comparacion, .resumen + .comparacion { margin-top: 8px; }
 .alerta { margin: 12px 0 0; }
 .mensaje { position: sticky; bottom: 100px; z-index: 1; padding: 16px; border: 1px solid var(--ink); border-radius: 10px; background: var(--surface); color: var(--ink); font-size: 14px; box-shadow: 0 6px 20px #0001; }
 @media (max-width: 1050px) and (min-width: 900px), (max-width: 700px) {

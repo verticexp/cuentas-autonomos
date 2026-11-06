@@ -8,13 +8,16 @@ import { DESCUENTO, PLANES } from '@/components/web/datos';
 import { diasPrueba, esFundador, TIPOS, VERSION_PLAN } from '@/lib/prueba';
 import CupoEscaneo from '@/components/CupoEscaneo';
 import { eurPrecio } from '@/lib/formato';
-import { traducirPerdida } from '@/lib/planes';
+import { appleVigente, traducirPerdida } from '@/lib/planes';
+import PlanesApple from '@/components/PlanesApple';
 import { useT } from '@/components/Idioma';
 import styles from './ElegirPlan.module.css';
 
 
 // Ajustes › Tu plan: contratar con Stripe Checkout, cambiar de plan y gestionar el pago en el portal de Stripe
-// (app/api/suscripcion). En la app de iOS no se enseña la compra (lib/app.js); solo el administrador puede cambiarlo.
+// (app/api/suscripcion). En la app de iOS, con compras dentro de la app (components/PlanesApple.js, lib/compraApple.js);
+// en la de Android no se enseña la compra (lib/app.js). Solo el administrador puede cambiarlo.
+// Lo que se paga en el App Store (plan.apple) se cambia o se cancela desde el iPhone: en la web solo se enseña.
 // El tipo de negocio sale de los datos fiscales de la empresa: una sociedad ve solo Pymes; un autónomo ve los suyos y puede
 // mirar los de Pymes (antes de pasar a sociedad tiene que tener uno, lib/formaJuridica.js).
 export default function ElegirPlan({ plan, tipoEmpresa, uso, admin, app }) {
@@ -30,6 +33,8 @@ export default function ElegirPlan({ plan, tipoEmpresa, uso, admin, app }) {
   const fundador = esFundador(actual);
   // Lo paga su gestoría (lib/licencias.js): no contrata nada mientras dure.
   const despacho = actual?.porDespacho || null;
+  // Lo paga una suscripción del App Store comprada en la app de iOS (lib/compraApple.js).
+  const apple = appleVigente(actual);
 
   async function llamar(datos) {
     setEstado('enviando');
@@ -59,16 +64,18 @@ export default function ElegirPlan({ plan, tipoEmpresa, uso, admin, app }) {
   const dias = diasPrueba(actual);
   const ocupado = estado === 'enviando';
   const esActual = (n) => actual?.tipo === tipo && actual?.nombre === n && (actual.periodo || 'mes') === periodo;
-  const estadoPlan = tr(fundador ? 'Gratis de por vida' : despacho ? 'Incluido por tu gestoría' : paga ? actual.estado === 'past_due' ? 'Revisar pago' : actual.estado === 'trialing' ? 'Prueba con tarjeta' : 'Activo'
+  const estadoPlan = tr(fundador ? 'Gratis de por vida' : despacho ? 'Incluido por tu gestoría' : apple ? actual.apple.estado === 'grace' ? 'Revisar pago' : 'Activo' : paga ? actual.estado === 'past_due' ? 'Revisar pago' : actual.estado === 'trialing' ? 'Prueba con tarjeta' : 'Activo'
     : dias === 0 ? 'Prueba finalizada' : dias > 0 ? `Prueba · ${dias} días` : actual?.nombre ? 'Pendiente de activación' : 'Condiciones anteriores');
 
-  // En la app de iOS, solo el plan y su estado: sin precios, botones de pago ni enlaces para contratar (norma 3.1.1).
+  // En la app: el plan y su estado. En la de iOS, debajo, los planes con compras dentro de la app (PlanesApple, que no sale
+  // en la de Android ni en una versión de la app sin el plugin): sin precios de la web ni enlaces para pagar fuera (3.1.1).
+  const detalleApple = apple ? tr('Suscripción del App Store · {periodo}', { periodo: actual.periodo === 'anio' ? tr('anual') : tr('mensual') }) : '';
   if (app) return <div className={styles.contenido}>
     <div className={styles.resumen}>
       <section className={styles.actual} aria-labelledby="plan-actual">
         <div className={styles.cabeceraActual}><h2 id="plan-actual">{tr('Tu suscripción')}</h2><span className={styles.estado}>{estadoPlan}</span></div>
         <p className={styles.nombreActual}>{fundador ? tr('Plan Fundador') : actual?.nombre ? `${tr(TIPOS[actual.tipo])} ${actual.nombre}` : tr('Periodo de prueba')}</p>
-        <p className={styles.detalleActual}>{fundador ? tr('Todas las funciones, sin límites de usuarios ni cuotas.') : despacho ? tr('Incluido por {nombre}.', { nombre: despacho.nombre }) : paga ? tr('Facturación {periodo} · una empresa por suscripción', { periodo: actual.periodo === 'anio' ? tr('anual') : tr('mensual') })
+        <p className={styles.detalleActual}>{fundador ? tr('Todas las funciones, sin límites de usuarios ni cuotas.') : despacho ? tr('Incluido por {nombre}.', { nombre: despacho.nombre }) : apple ? detalleApple : paga ? tr('Facturación {periodo} · una empresa por suscripción', { periodo: actual.periodo === 'anio' ? tr('anual') : tr('mensual') })
           : dias === 0 ? tr('Tu periodo de prueba ha terminado. Puedes consultar y exportar todos tus datos.')
           : dias > 0 ? (dias === 1 ? tr('Te queda 1 día de prueba con todas las funciones.') : tr('Te quedan {n} días de prueba con todas las funciones.', { n: dias })) : ''}</p>
         {paga && actual.estado === 'past_due' && <p className={styles.alerta}>{tr('El último cobro ha fallado.')}</p>}
@@ -78,6 +85,7 @@ export default function ElegirPlan({ plan, tipoEmpresa, uso, admin, app }) {
         <CupoEscaneo />
       </section>
     </div>
+    {!fundador && !despacho && <PlanesApple actual={actual} tipoEmpresa={tipoEmpresa} alCambiar={setActual} />}
   </div>;
 
   const planRecomendado = tr('El plan {plan} cubre este uso.', { plan: '\u0001' }).split('\u0001');
@@ -87,12 +95,12 @@ export default function ElegirPlan({ plan, tipoEmpresa, uso, admin, app }) {
       <section className={styles.actual} aria-labelledby="plan-actual">
         <div className={styles.cabeceraActual}><h2 id="plan-actual">{tr('Tu suscripción')}</h2><span className={styles.estado}>{estadoPlan}</span></div>
         <p className={styles.nombreActual}>{fundador ? tr('Plan Fundador') : `${tr(TIPOS[actual.tipo])} ${actual.nombre}`}</p>
-        <p className={styles.detalleActual}>{fundador ? tr('Todas las funciones, sin límites de usuarios ni cuotas. Abajo tienes los planes que ven los clientes nuevos.') : despacho ? tr('Lo paga {nombre} dentro de lo que te cobra. Si deja de incluirlo, tendrás tiempo para elegir tu plan.', { nombre: despacho.nombre }) : paga ? tr('Facturación {periodo} · una empresa por suscripción', { periodo: actual.periodo === 'anio' ? tr('anual') : tr('mensual') })
+        <p className={styles.detalleActual}>{fundador ? tr('Todas las funciones, sin límites de usuarios ni cuotas. Abajo tienes los planes que ven los clientes nuevos.') : despacho ? tr('Lo paga {nombre} dentro de lo que te cobra. Si deja de incluirlo, tendrás tiempo para elegir tu plan.', { nombre: despacho.nombre }) : apple ? tr('Lo pagas con el App Store. Para cambiarlo o cancelarlo, abre la app de Fisquo en el iPhone (Ajustes › Tu plan) o los ajustes del iPhone (tu nombre › Suscripciones).') : paga ? tr('Facturación {periodo} · una empresa por suscripción', { periodo: actual.periodo === 'anio' ? tr('anual') : tr('mensual') })
           : dias === 0 ? tr('Tu cuenta está en solo lectura: puedes consultar y exportar todos tus datos. Elige un plan y vuelves a crear y editar al momento, sin perder nada.')
           : dias > 0 ? tr('Prueba sin tarjeta: no se cobra nada si no activas un plan. Si al acabar no has elegido, tu cuenta pasa a solo lectura: ves y exportas todo, pero no puedes crear ni editar.')
           : tr('Consulta las opciones disponibles para tu empresa.')}</p>
         {paga && actual.estado === 'past_due' && <p className={styles.alerta}>{tr('El último cobro ha fallado. Revisa tu método de pago.')}</p>}
-        {admin && !fundador && !despacho && <div className={styles.gestion}>
+        {admin && !fundador && !despacho && !apple && <div className={styles.gestion}>
           {paga ? <button type="button" className={styles.botonGestion} disabled={ocupado} onClick={() => llamar({ portal: true })}>{tr('Gestionar facturación')} <span aria-hidden="true">↗</span></button>
             : actual?.nombre && <button type="button" className={styles.botonGestion} disabled={ocupado} onClick={() => llamar({ tipo: actual.tipo, nombre: actual.nombre, periodo: actual.periodo || 'mes' })}>{tr('Activar {plan} · pago {periodo}', { plan: actual.nombre, periodo: actual.periodo === 'anio' ? tr('anual') : tr('mensual') })}</button>}
           {paga && <span>{tr('Tarjeta, facturas y cancelación')}</span>}
@@ -103,7 +111,7 @@ export default function ElegirPlan({ plan, tipoEmpresa, uso, admin, app }) {
         <CupoEscaneo />
       </section>
     </div>
-    {!paga && !fundador && uso?.perdidas?.length > 0 && <section className={styles.aviso}>
+    {!paga && !fundador && !apple && uso?.perdidas?.length > 0 && <section className={styles.aviso}>
       <h2>{tr('Conserva las herramientas que has probado')}</h2>
       <p>{tr('Tu plan {plan} no incluye lo siguiente:', { plan: actual.nombre })}</p>
       <ul>{uso.perdidas.map((t) => <li key={t}>{traducirPerdida(t, tr)}</li>)}</ul>
@@ -132,7 +140,7 @@ export default function ElegirPlan({ plan, tipoEmpresa, uso, admin, app }) {
             <p className={styles.para}>{p.fuerte ? tr('Operaciones, previsión y análisis en un solo plan') : tr(p.para)}</p>
             <p className={styles.precio}><strong>{eurPrecio(periodo === 'anio' ? anual / 12 : p.p)}</strong><span>{tr('/mes')}</span></p>
             <p className={styles.facturacion}>{periodo === 'anio' ? tr('{importe} facturados al año', { importe: eurPrecio(anual) }) : tr('Facturación mensual')} · {tr('sin IVA')}</p>
-            {fundador || despacho ? <p className={styles.incluido}><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m3 8 3 3 7-7" /></svg>{fundador ? tr('Incluido en tu plan Fundador') : elegido ? tr('Tu plan actual, incluido por tu gestoría') : tr('Lo gestiona tu gestoría')}</p> : elegido ? <p className={styles.planElegido}>{tr('Tu plan actual')}</p> : admin ? <button type="button" className={`${styles.botonPlan} ${p.fuerte ? styles.botonPro : ''}`} disabled={ocupado} onClick={() => elegir(p.n)}>{paga ? tr('Cambiar a {plan}', { plan: p.n }) : tr('Elegir {plan}', { plan: p.n })}</button> : <p className={styles.soloAdmin}>{tr('Gestionado por el administrador')}</p>}
+            {apple ? elegido ? <p className={styles.planElegido}>{tr('Tu plan actual')}</p> : <p className={styles.soloAdmin}>{tr('Se cambia desde la app de iOS')}</p> : fundador || despacho ? <p className={styles.incluido}><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m3 8 3 3 7-7" /></svg>{fundador ? tr('Incluido en tu plan Fundador') : elegido ? tr('Tu plan actual, incluido por tu gestoría') : tr('Lo gestiona tu gestoría')}</p> : elegido ? <p className={styles.planElegido}>{tr('Tu plan actual')}</p> : admin ? <button type="button" className={`${styles.botonPlan} ${p.fuerte ? styles.botonPro : ''}`} disabled={ocupado} onClick={() => elegir(p.n)}>{paga ? tr('Cambiar a {plan}', { plan: p.n }) : tr('Elegir {plan}', { plan: p.n })}</button> : <p className={styles.soloAdmin}>{tr('Gestionado por el administrador')}</p>}
             </div><div className={styles.funciones}>
               <p>{p.herencia ? tr('Todo lo de {plan}, más:', { plan: p.herencia }) : tr('Lo esencial para tu día a día:')}</p>
               <ul>{p.l.map((t) => <li key={t}><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m3 8 3 3 7-7" /></svg><span>{tr(t)}</span></li>)}</ul>

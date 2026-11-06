@@ -28,7 +28,7 @@ export async function GET(req) {
   const despachos = await sincronizarTodas(dia, { avisar: (d) => avisoFinOferta(d, { aut: euros(TARIFA.aut[0].cent), pym: euros(TARIFA.pym[0].cent) }) }).catch((e) => { console.warn('[licencias]', e.message); return 0; });
   // Panel «solo documentos» (lib/panelDocumentos.js): el tramo, según los clientes que tenga hoy (también baja de tramo).
   await sincronizarPaneles().catch((e) => console.warn('[panel]', e.message));
-  const planificados = await planificarDia(dia, req.nextUrl.origin, ['indices', 'recordatorios', 'push', 'verifactu', 'prueba', 'gestoria']);
+  const planificados = await planificarDia(dia, req.nextUrl.origin, ['indices', 'recordatorios', 'push', 'verifactu', 'prueba', 'gestoria', 'apple']);
   // La primera tanda, aquí mismo (su resumen va en la respuesta); si queda trabajo, encadena las siguientes.
   const r = await tanda(req.nextUrl.origin, 0, { hasta: inicio + 50000 });
   return Response.json({ ok: true, planificados, bajas, despachos, ...resumenTanda(r) });

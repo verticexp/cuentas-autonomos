@@ -1,0 +1,365 @@
+{
+  "appPolicies": {
+    "eula": "",
+    "policies": [
+      {
+        "locale": "es_ES",
+        "policyText": "",
+        "policyURL": "https://www.fisquo.com/privacidad"
+      }
+    ]
+  },
+  "identifier": "F15C0001",
+  "nonRenewingSubscriptions": [],
+  "products": [],
+  "settings": {
+    "_developerTeamID": "M8D85NH9U7",
+    "_failTransactionsEnabled": false,
+    "_locale": "es_ES",
+    "_storefront": "ESP",
+    "_storeKitErrors": []
+  },
+  "subscriptionGroups": [
+    {
+      "id": "21590001",
+      "localizations": [
+        {
+          "customAppName": "Fisquo",
+          "displayName": "Fisquo",
+          "locale": "es_ES"
+        }
+      ],
+      "name": "Fisquo",
+      "subscriptions": [
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "10.99",
+          "familyShareable": false,
+          "groupNumber": 6,
+          "internalID": "6590000001",
+          "introductoryOffer": null,
+          "localizations": [
+            {
+              "description": "Facturar y declarar sin sustos",
+              "displayName": "Autónomo Esencial",
+              "locale": "es_ES"
+            },
+            {
+              "description": "Facturar y declarar sin sustos",
+              "displayName": "Freelancer Esencial",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.fisquo.app.aut.esencial.mes",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Autónomo Esencial mensual",
+          "subscriptionGroupID": "21590001",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "91.99",
+          "familyShareable": false,
+          "groupNumber": 6,
+          "internalID": "6590000002",
+          "introductoryOffer": null,
+          "localizations": [
+            {
+              "description": "Facturar y declarar sin sustos",
+              "displayName": "Autónomo Esencial",
+              "locale": "es_ES"
+            },
+            {
+              "description": "Facturar y declarar sin sustos",
+              "displayName": "Freelancer Esencial",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.fisquo.app.aut.esencial.anio",
+          "recurringSubscriptionPeriod": "P1Y",
+          "referenceName": "Autónomo Esencial anual",
+          "subscriptionGroupID": "21590001",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "14.99",
+          "familyShareable": false,
+          "groupNumber": 5,
+          "internalID": "6590000003",
+          "introductoryOffer": null,
+          "localizations": [
+            {
+              "description": "WhatsApp, banco, inventario y asistente IA",
+              "displayName": "Autónomo Pro",
+              "locale": "es_ES"
+            },
+            {
+              "description": "WhatsApp, banco, inventario y asistente IA",
+              "displayName": "Freelancer Pro",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.fisquo.app.aut.pro.mes",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Autónomo Pro mensual",
+          "subscriptionGroupID": "21590001",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "121.99",
+          "familyShareable": false,
+          "groupNumber": 5,
+          "internalID": "6590000004",
+          "introductoryOffer": null,
+          "localizations": [
+            {
+              "description": "WhatsApp, banco, inventario y asistente IA",
+              "displayName": "Autónomo Pro",
+              "locale": "es_ES"
+            },
+            {
+              "description": "WhatsApp, banco, inventario y asistente IA",
+              "displayName": "Freelancer Pro",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.fisquo.app.aut.pro.anio",
+          "recurringSubscriptionPeriod": "P1Y",
+          "referenceName": "Autónomo Pro anual",
+          "subscriptionGroupID": "21590001",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "24.99",
+          "familyShareable": false,
+          "groupNumber": 4,
+          "internalID": "6590000005",
+          "introductoryOffer": null,
+          "localizations": [
+            {
+              "description": "Para crecer con un pequeño equipo",
+              "displayName": "Autónomo Plus",
+              "locale": "es_ES"
+            },
+            {
+              "description": "Para crecer con un pequeño equipo",
+              "displayName": "Freelancer Plus",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.fisquo.app.aut.plus.mes",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Autónomo Plus mensual",
+          "subscriptionGroupID": "21590001",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "203.99",
+          "familyShareable": false,
+          "groupNumber": 4,
+          "internalID": "6590000006",
+          "introductoryOffer": null,
+          "localizations": [
+            {
+              "description": "Para crecer con un pequeño equipo",
+              "displayName": "Autónomo Plus",
+              "locale": "es_ES"
+            },
+            {
+              "description": "Para crecer con un pequeño equipo",
+              "displayName": "Freelancer Plus",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.fisquo.app.aut.plus.anio",
+          "recurringSubscriptionPeriod": "P1Y",
+          "referenceName": "Autónomo Plus anual",
+          "subscriptionGroupID": "21590001",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "30.99",
+          "familyShareable": false,
+          "groupNumber": 3,
+          "internalID": "6590000007",
+          "introductoryOffer": null,
+          "localizations": [
+            {
+              "description": "Lo que una sociedad necesita",
+              "displayName": "Pyme Esencial",
+              "locale": "es_ES"
+            },
+            {
+              "description": "Lo que una sociedad necesita",
+              "displayName": "SME Esencial",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.fisquo.app.pym.esencial.mes",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Pyme Esencial mensual",
+          "subscriptionGroupID": "21590001",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "254.99",
+          "familyShareable": false,
+          "groupNumber": 3,
+          "internalID": "6590000008",
+          "introductoryOffer": null,
+          "localizations": [
+            {
+              "description": "Lo que una sociedad necesita",
+              "displayName": "Pyme Esencial",
+              "locale": "es_ES"
+            },
+            {
+              "description": "Lo que una sociedad necesita",
+              "displayName": "SME Esencial",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.fisquo.app.pym.esencial.anio",
+          "recurringSubscriptionPeriod": "P1Y",
+          "referenceName": "Pyme Esencial anual",
+          "subscriptionGroupID": "21590001",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "38.99",
+          "familyShareable": false,
+          "groupNumber": 2,
+          "internalID": "6590000009",
+          "introductoryOffer": null,
+          "localizations": [
+            {
+              "description": "WhatsApp, cartera, inventario y análisis",
+              "displayName": "Pyme Pro",
+              "locale": "es_ES"
+            },
+            {
+              "description": "WhatsApp, cartera, inventario y análisis",
+              "displayName": "SME Pro",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.fisquo.app.pym.pro.mes",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Pyme Pro mensual",
+          "subscriptionGroupID": "21590001",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "325.99",
+          "familyShareable": false,
+          "groupNumber": 2,
+          "internalID": "6590000010",
+          "introductoryOffer": null,
+          "localizations": [
+            {
+              "description": "WhatsApp, cartera, inventario y análisis",
+              "displayName": "Pyme Pro",
+              "locale": "es_ES"
+            },
+            {
+              "description": "WhatsApp, cartera, inventario y análisis",
+              "displayName": "SME Pro",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.fisquo.app.pym.pro.anio",
+          "recurringSubscriptionPeriod": "P1Y",
+          "referenceName": "Pyme Pro anual",
+          "subscriptionGroupID": "21590001",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "66.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "6590000011",
+          "introductoryOffer": null,
+          "localizations": [
+            {
+              "description": "Más capacidad con las funciones de Pro",
+              "displayName": "Pyme Plus",
+              "locale": "es_ES"
+            },
+            {
+              "description": "Más capacidad con las funciones de Pro",
+              "displayName": "SME Plus",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.fisquo.app.pym.plus.mes",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Pyme Plus mensual",
+          "subscriptionGroupID": "21590001",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "559.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "6590000012",
+          "introductoryOffer": null,
+          "localizations": [
+            {
+              "description": "Más capacidad con las funciones de Pro",
+              "displayName": "Pyme Plus",
+              "locale": "es_ES"
+            },
+            {
+              "description": "Más capacidad con las funciones de Pro",
+              "displayName": "SME Plus",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.fisquo.app.pym.plus.anio",
+          "recurringSubscriptionPeriod": "P1Y",
+          "referenceName": "Pyme Plus anual",
+          "subscriptionGroupID": "21590001",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
+        }
+      ]
+    }
+  ],
+  "version": {
+    "major": 4,
+    "minor": 0
+  }
+}

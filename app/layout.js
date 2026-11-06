@@ -11,7 +11,7 @@ import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { bloqueoDe, desbloqueada, usuarioActual } from '@/lib/auth';
 import { SOLO_LECTURA_APP, soloLectura } from '@/lib/planes';
-import { esApp, plataformaApp } from '@/lib/app';
+import { esApp, plataformaApp, sinCompras } from '@/lib/app';
 import { COLOR_BASE } from '@/lib/marca';
 import { fuente, titulos } from '@/components/fuente';
 import { permisosDe, puede } from '@/lib/permisos';
@@ -32,6 +32,7 @@ import Barra from '@/components/Barra';
 import BarraDespacho from '@/components/SelectorCuenta';
 import SinRed from '@/components/SinRed';
 import Hecho from '@/components/Hecho';
+import SincronizarCompras from '@/components/SincronizarCompras';
 import { despachoDe, rolEn, usaEmpresaPropia } from '@/lib/despachos';
 import { noLeidosDespacho } from '@/lib/mensajesDespacho';
 import { idiomaActual, textos } from '@/lib/idiomaServidor';
@@ -93,7 +94,6 @@ export default async function RootLayout({ children }) {
   const temaCookie = (await cookies()).get('tema')?.value;
   const tema = temaCookie === 'claro' || temaCookie === 'oscuro' ? temaCookie : undefined;
   const cab = await headers();
-  const app = esApp(cab.get('user-agent'));
   // En el ordenador no hay bloqueo (lib/biometria.js esOrdenador): la sesión se queda abierta.
   const pantallaBloqueo = u?.bloqueoPantalla && !esOrdenador(cab.get('user-agent'));
   // Con el bloqueo del servidor activo y sin desbloquear, la pantalla de bloqueo sale aunque el navegador la diera por abierta.
@@ -134,10 +134,12 @@ export default async function RootLayout({ children }) {
         <SinRed />
         <Hecho />
         <ToqueSeguro />
+        {/* App de iOS: las suscripciones del App Store al servidor (lib/compraApple.js). */}
+        {u && plataformaApp(cab.get('user-agent')) === 'ios' && <SincronizarCompras />}
         <script nonce={nonce} suppressHydrationWarning dangerouslySetInnerHTML={{ __html: 'window.__arranque=performance.now()' }} />
         {/* En Mi despacho no: el panel trabaja con su propio plan, no con el del cliente que tenga abierto (lib/planes.js LIBRES). */}
         {u && soloLectura(u.plan) && !ruta.startsWith('/ajustes/plan') && !/^\/despacho([/?]|$)/.test(ruta) && (
-          <p className="aviso-lectura" role="status"><span>{tr(u.viaDespacho ? 'La prueba de este cliente ha terminado: puedes ver y exportar todo, pero no crear ni editar hasta que elija un plan o le des una licencia.' : app ? SOLO_LECTURA_APP : puede(u, 'empresa') ? 'Tu prueba ha terminado: puedes ver y exportar todo, pero no crear ni editar.' : 'La prueba de tu empresa ha terminado: puedes ver y exportar todo. Para crear o editar, pídele al administrador que elija un plan.')}</span>{!app && puede(u, 'empresa') && <a href="/ajustes/plan">{tr('Elegir plan')}</a>}</p>
+          <p className="aviso-lectura" role="status"><span>{tr(u.viaDespacho ? 'La prueba de este cliente ha terminado: puedes ver y exportar todo, pero no crear ni editar hasta que elija un plan o le des una licencia.' : sinCompras(cab.get('user-agent')) ? SOLO_LECTURA_APP : puede(u, 'empresa') ? 'Tu prueba ha terminado: puedes ver y exportar todo, pero no crear ni editar.' : 'La prueba de tu empresa ha terminado: puedes ver y exportar todo. Para crear o editar, pídele al administrador que elija un plan.')}</span>{!sinCompras(cab.get('user-agent')) && puede(u, 'empresa') && <a href="/ajustes/plan">{tr('Elegir plan')}</a>}</p>
         )}
         {/* La gente de un despacho, fuera del panel: «‹ Mi despacho» y el selector de cuenta (se esconde sola en el panel). */}
         {rolDespacho && <BarraDespacho actual={u.viaDespacho ? 'cliente' : 'empresa'} despacho={despacho.nombre} noLeidos={mensajesNuevos} usuario={u.id}
