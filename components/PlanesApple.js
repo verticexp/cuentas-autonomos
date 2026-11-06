@@ -109,7 +109,7 @@ export default function PlanesApple({ actual, tipoEmpresa, alCambiar }) {
   const puedeElegir = !apple || mia;
   const tipos = datos.tipos?.length ? datos.tipos : ['aut', 'pym'];
 
-  return <section className={styles.comparacion} aria-labelledby="planes-app" aria-busy={Boolean(ocupado)}>
+  return <section className={styles.comparacion} aria-label={tr('Tu plan')} aria-busy={Boolean(ocupado)}>
     {apple && <div className={styles.aviso}>
       <h2>{tr('Suscripción del App Store')}</h2>
       <p>{apple.estado === 'grace' ? tr('Apple no ha podido cobrar la renovación. Revisa tu forma de pago en el App Store para no perder el acceso.')
@@ -119,6 +119,7 @@ export default function PlanesApple({ actual, tipoEmpresa, alCambiar }) {
       {mia ? <button type="button" className={styles.botonGestion} disabled={Boolean(ocupado)} onClick={gestionar}>{tr('Gestionar suscripción')}</button>
         : <p>{tr('La contrató otra persona con su ID de Apple: solo ella puede cambiarla o cancelarla.')}</p>}
     </div>}
+    {puedeElegir && <>
     <div className={styles.cabecera}><div>
       <h2 id="planes-app">{tr(apple ? 'Cambiar de plan' : 'Elige tu plan')}</h2>
       <p>{tr('Planes para {quien}. Todos incluyen una empresa y un acceso separado para tu gestoría.', { quien: tr(tipo === 'pym' ? 'pymes y sociedades' : 'autónomos') })}</p>
@@ -153,6 +154,7 @@ export default function PlanesApple({ actual, tipoEmpresa, alCambiar }) {
         </article>;
       })}
     </div>}
+    </>}
     <div className={styles.legal}>
       <p>{tr('Suscripción con renovación automática, mensual o anual según elijas, para una empresa ({tipo}). El pago se carga a tu cuenta de Apple al confirmar la compra, aunque te queden días de prueba, y la suscripción se renueva sola al mismo precio salvo que la canceles al menos 24 horas antes de que acabe el periodo. Puedes cambiarla o cancelarla cuando quieras en «Gestionar suscripción» o en los ajustes de tu cuenta del App Store.', { tipo: tr(TIPOS[tipo]) })}</p>
       <p><a href="/condiciones" target="_blank" rel="noopener">{tr('Condiciones de uso')}</a> · <a href="/privacidad" target="_blank" rel="noopener">{tr('Política de privacidad')}</a></p>
