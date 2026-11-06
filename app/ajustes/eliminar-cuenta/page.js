@@ -4,6 +4,7 @@ import Volver from '@/components/Volver';
 import EliminarCuenta from '@/components/EliminarCuenta';
 import SinAcceso from '@/components/SinAcceso';
 import { textos } from '@/lib/idiomaServidor';
+import { appleVigente } from '@/lib/planes';
 
 import '@/app/mk.css';
 
@@ -25,6 +26,8 @@ export default async function Page() {
         <ul className="nota">
           <li>{tr('Se borran tu nombre, tu email, tu contraseña y tus accesos con Face ID, y se cierran tus sesiones en todos los dispositivos.')}</li>
           <li>{tr('Dejas de tener acceso a tus empresas. Si eres la única persona de una empresa, la empresa se da de baja y deja de renovarse su suscripción.')}</li>
+          {/* La suscripción del App Store (lib/compraApple.js) solo la puede cancelar quien la tiene, en Apple (5.1.1(v)). */}
+          {appleVigente(u.plan) && <li><strong>{tr('Tu suscripción del App Store no se cancela sola: cancélala en el iPhone, en Ajustes › tu nombre › Suscripciones, o en Fisquo › Ajustes › Tu plan › Gestionar suscripción.')}</strong></li>}
           <li>{tr('Las facturas, los gastos y el resto de registros que la ley obliga a conservar se guardan bloqueados {n} años y después se borran solos. Nadie puede verlos ni usarlos.', { n: CONSERVAR })}</li>
         </ul>
         <p className="nota">{previo}<a href="/api/exportar/todo" download>{tr('descarga todos tus datos')}</a>{posterior}</p>

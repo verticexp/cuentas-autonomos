@@ -38,12 +38,14 @@ test('en la app con sesión, recomendaciones vuelven a Ajustes; Tu plan y Avisos
   }
 });
 
-test('los errores de plan son neutros solo para la app', () => {
+test('los errores de plan son neutros solo en la app de Android (la de iOS tiene compras dentro de la app)', () => {
   const texto = 'El plan Esencial admite 1 usuarios. Puedes cambiar de plan en Ajustes › Tu plan.';
-  assert.equal(mensajePlan(texto, APP), 'Esta acción no está disponible en tu cuenta.');
+  const ANDROID = 'Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Mobile Safari/537.36 FisquoApp/1';
+  assert.equal(mensajePlan(texto, ANDROID), 'Esta acción no está disponible en tu cuenta.');
+  assert.equal(mensajePlan(texto, APP), texto);
   assert.equal(mensajePlan(texto, SAFARI), texto);
   assert.equal(mensajePlan(texto, null), texto);
-  assert.equal(mensajePlan(null, APP), null);
+  assert.equal(mensajePlan(null, ANDROID), null);
 });
 
 test('en la app, la web pública manda al login o al panel', () => {

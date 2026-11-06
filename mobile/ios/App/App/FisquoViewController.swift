@@ -10,6 +10,7 @@ import Capacitor
 // - las notificaciones nativas de los avisos (AvisosPlugin.swift);
 // - recibir facturas con «Compartir» desde otras apps (CompartirPlugin.swift);
 // - Face ID nativo para entrar y desbloquear, con una credencial en el llavero (BiometriaPlugin.swift);
+// - la suscripción a Fisquo con compras dentro de la app, StoreKit 2 (ComprasPlugin.swift);
 // - deslizar desde el borde izquierdo para volver atrás, solo donde la pantalla tiene «‹ Atrás» y sin hojas encima, y nunca
 //   hacia delante (GestoAtras, abajo);
 // - la vibración del sistema al tocar las pestañas, cobrar o marcar como pagado (Haptica, abajo; lib/haptica.js);
@@ -55,6 +56,7 @@ class FisquoViewController: CAPBridgeViewController {
         bridge?.registerPluginInstance(AvisosPlugin())
         bridge?.registerPluginInstance(CompartirPlugin())
         bridge?.registerPluginInstance(BiometriaPlugin())
+        bridge?.registerPluginInstance(ComprasPlugin())
         guard let webView = webView, let capacitor = webView.navigationDelegate as? WebViewDelegationHandler else { return }
         let delegado = DelegadoWeb(capacitor: capacitor, servidor: bridge?.config.serverURL, presentador: self)
         delegado.alTerminarCarga = { [weak self] in self?.terminoCarga() }

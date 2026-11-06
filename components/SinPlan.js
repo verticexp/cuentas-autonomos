@@ -1,6 +1,6 @@
 import Ir from './Ir';
 import { headers } from 'next/headers';
-import { esApp } from '@/lib/app';
+import { sinCompras } from '@/lib/app';
 import { textos } from '@/lib/idiomaServidor';
 import styles from './SinPlan.module.css';
 
@@ -17,7 +17,8 @@ const MENSAJES = {
 
 export default async function SinPlan({ usuario, funcion }) {
   const tr = await textos();
-  const app = esApp((await headers()).get('user-agent'));
+  // En la app de Android no se habla de planes (sin compras dentro de la app); en la de iOS, sí (lib/compraApple.js).
+  const app = sinCompras((await headers()).get('user-agent'));
   const [titulo, descripcion] = (MENSAJES[funcion] || ['Más herramientas para tu negocio', 'Esta herramienta está disponible a partir del plan Pro.']).map((x) => tr(x));
   const [antesPlan, despuesPlan = ''] = tr('Tu plan actual: {plan}.', { plan: '\u0001' }).split('\u0001');
   return <main className="pagina mk-look"><section className={styles.aviso} aria-labelledby="sin-plan-titulo">

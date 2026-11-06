@@ -15,6 +15,7 @@ Todos están **vinculados a la identidad** del usuario (necesitan su cuenta) y *
 | Información financiera › Otra información financiera | Facturas, gastos, impuestos, IBAN | Funcionalidad de la app |
 | Contenido del usuario › Fotos o vídeos | Fotos de tickets | Funcionalidad de la app |
 | Contenido del usuario › Otro contenido | Facturas PDF, justificantes, preguntas al asistente | Funcionalidad de la app |
+| Compras › Historial de compras | La suscripción a Fisquo comprada en la app (plan, fechas y renovación, de Apple) | Funcionalidad de la app |
 | Identificadores › ID de usuario | Identificador interno de la cuenta | Funcionalidad de la app |
 | Identificadores › ID del dispositivo | Credencial de Face ID de este iPhone y token de notificaciones | Funcionalidad de la app |
 | Datos de uso › Interacción con el producto | Actividad para el panel interno (qué funciones se usan) | Analítica |
@@ -24,4 +25,5 @@ datos de diagnóstico de terceros.
 
 Proveedores que reciben datos para dar el servicio (los nombra la política de privacidad): Vercel (servidores),
 Upstash (base de datos), Enable Banking (si se conecta el banco), Anthropic (lectura de tickets y asistente, con permiso previo en la app), Resend (emails),
-Stripe (cobros de facturas a clientes y suscripción en la web).
+Stripe (cobros de facturas a clientes y suscripción en la web). Las suscripciones compradas en la app las cobra Apple:
+Fisquo solo recibe de Apple la transacción firmada (plan, fechas y estado), nunca datos de pago.

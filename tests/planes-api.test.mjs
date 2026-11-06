@@ -62,25 +62,34 @@ test('el perfil de gestoría no adquiere permisos de escritura por estar incluid
   assert.match((await r.res.json()).error, /No tienes permiso/);
 });
 
-test('el error 402 conserva la señal de solo lectura y adapta solo el texto a la app', async () => {
+// La app de iOS tiene compras dentro de la app (lib/compraApple.js): puede llevar a Ajustes › Tu plan como la web. La de
+// Android, aún sin compras, no habla de planes.
+const ANDROID = 'Mozilla/5.0 (Linux; Android 15) AppleWebKit/537.36 Chrome/140.0 Mobile Safari/537.36 FisquoApp/1';
+const IOS = 'Mozilla/5.0 (iPhone; CPU iPhone OS 27_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 FisquoApp/1';
+
+test('el error 402 conserva la señal de solo lectura y adapta solo el texto a la app de Android', async () => {
   globalThis.__planUsuario.plan = { ...nuevoPlan('pym', 'Esencial'), hasta: '2020-01-01' };
-  for (const ua of ['Mozilla/5.0 Safari/604.1', 'Mozilla/5.0 FisquoApp/1']) {
+  for (const ua of ['Mozilla/5.0 Safari/604.1', IOS, ANDROID]) {
     globalThis.__planCabeceras = new Headers({ 'x-ruta': '/api/facturas', 'x-metodo': 'POST', 'user-agent': ua });
     const { res } = await usuarioApi();
     assert.equal(res.status, 402);
-    assert.deepEqual(await res.json(), { error: ua.includes('FisquoApp/') ? SOLO_LECTURA_APP : SOLO_LECTURA, soloLectura: true });
+    assert.deepEqual(await res.json(), { error: ua === ANDROID ? SOLO_LECTURA_APP : SOLO_LECTURA, soloLectura: true });
     globalThis.__planCabeceras.set('x-ruta', '/api/exportar/todo');
     globalThis.__planCabeceras.set('x-metodo', 'GET');
     assert.ok((await usuarioApi()).u);
   }
 });
 
-test('las funciones no disponibles siguen bloqueadas en la app sin anunciar planes', async () => {
-  globalThis.__planCabeceras.set('user-agent', 'Mozilla/5.0 FisquoApp/1');
+test('las funciones no disponibles siguen bloqueadas en las apps; solo la de Android calla los planes', async () => {
   for (const funcion of ['remesas', 'albaranes', 'cartera', 'analisis', 'proyectos', 'tesoreria', 'asistente', 'inventario']) {
-    const { res } = await usuarioApi({ funcion });
+    globalThis.__planCabeceras.set('user-agent', ANDROID);
+    let { res } = await usuarioApi({ funcion });
     assert.equal(res.status, 403);
     assert.deepEqual(await res.json(), { error: 'Esta acción no está disponible en tu cuenta.' });
+    globalThis.__planCabeceras.set('user-agent', IOS);
+    ({ res } = await usuarioApi({ funcion }));
+    assert.equal(res.status, 403);
+    assert.match((await res.json()).error, /Ajustes › Tu plan/);
   }
   assert.deepEqual(globalThis.__planUsos, []);
 });

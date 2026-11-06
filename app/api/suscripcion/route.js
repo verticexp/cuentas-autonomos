@@ -1,6 +1,6 @@
 import { cuerpo, error, usuarioApi } from '@/lib/api';
 import { esApp } from '@/lib/app';
-import { PERIODOS } from '@/lib/planes';
+import { appleVigente, PERIODOS } from '@/lib/planes';
 import { esFundador, planDe } from '@/lib/prueba';
 import { fiscalDe } from '@/lib/empresa';
 import { tiposContratables } from '@/lib/formaJuridica';
@@ -20,6 +20,8 @@ export async function POST(req) {
   if (!stripeListo()) return error('Los pagos no están activados todavía. Escríbenos a corporate@fisquo.com.', 503);
   if (esFundador(u.plan)) return error('Tu empresa tiene el plan Fundador: es gratis de por vida y no tienes que contratar nada.', 400);
   if (u.plan?.porDespacho) return error(`Tu plan lo paga ${u.plan.porDespacho.nombre}: no tienes que contratar nada mientras lo incluya.`, 400);
+  // Comprado en la app de iOS (lib/compraApple.js): se cambia o se cancela en el App Store, desde el iPhone.
+  if (appleVigente(u.plan)) return error('Tu suscripción se paga con el App Store: cámbiala o cancélala desde la app de Fisquo en el iPhone (Ajustes › Tu plan) o en los ajustes del iPhone (tu nombre › Suscripciones).', 409);
   const b = await cuerpo(req);
   const volver = new URL('/ajustes/plan', req.url).toString();
   if (b.portal) {
