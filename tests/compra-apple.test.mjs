@@ -23,15 +23,17 @@ const redis = {
 globalThis.__compraAppleRedis = redis;
 const correos = [];
 globalThis.__compraAppleCorreos = correos;
+const llamadasStripe = [];
+globalThis.__compraAppleStripe = llamadasStripe;
 let usuario = null;
 globalThis.__compraAppleUsuario = () => usuario;
-const entorno = Object.fromEntries(['VERCEL', 'APPLE_RAIZ_PRUEBAS', 'APPLE_XCODE', 'APPLE_IAP_KEY_ID', 'APPLE_IAP_ISSUER_ID', 'APPLE_IAP_PRIVATE_KEY', 'STRIPE_SECRET_KEY'].map((k) => [k, process.env[k]]));
+const entorno = Object.fromEntries(['KV_REST_API_URL', 'VERCEL', 'APPLE_RAIZ_PRUEBAS', 'APPLE_XCODE', 'APPLE_IAP_KEY_ID', 'APPLE_IAP_ISSUER_ID', 'APPLE_IAP_PRIVATE_KEY', 'STRIPE_SECRET_KEY'].map((k) => [k, process.env[k]]));
 const modulo = (s) => ({ url: `data:text/javascript,${encodeURIComponent(s)}`, shortCircuit: true });
 const stubs = {
   'lib/redis.js': 'export const redis = globalThis.__compraAppleRedis; export const leer = async () => []; export const leerUno = async () => null; export const mismoId = (a, b) => String(a) === String(b);',
   'lib/avisosCorreo.js': 'export const avisarSuscripcion = async (empresa, antes, ahora) => { globalThis.__compraAppleCorreos.push({ empresa, antes: antes?.estado, ahora: ahora?.estado }); };',
   'lib/recomendaciones.js': 'export const premiarRecomendacion = async () => {};',
-  'lib/stripe.js': 'export const stripe = async () => { throw new Error("Stripe externo no permitido en esta prueba"); }; export const stripeListo = () => true;',
+  'lib/stripe.js': 'export const stripe = async (ruta, datos) => { globalThis.__compraAppleStripe.push([ruta, datos]); return { id: "sub_x" }; }; export const stripeListo = () => true;',
   'lib/metricas.js': 'export const metrica = () => {};',
   'lib/actividad.js': 'export const actividadReciente = async () => []; export const ultimaActividad = async () => ({});',
   'lib/limite.js': 'export const pasado = async () => false; export const MUCHOS = "Demasiados intentos";',
@@ -87,6 +89,9 @@ beforeEach(() => {
   delete process.env.APPLE_XCODE;
   for (const k of ['APPLE_IAP_KEY_ID', 'APPLE_IAP_ISSUER_ID', 'APPLE_IAP_PRIVATE_KEY']) delete process.env[k];
   process.env.APPLE_RAIZ_PRUEBAS = RAIZ_PRUEBAS;
+  process.env.KV_REST_API_URL = 'http://127.0.0.1:8079';
+  delete process.env.STRIPE_SECRET_KEY;
+  llamadasStripe.length = 0;
   usuario = null;
 });
 
@@ -117,6 +122,12 @@ test('solo valen las transacciones firmadas por la cadena de confianza, de esta 
   process.env.VERCEL = '1';
   assert.ok(ca.verificarTransaccion(jws).error);
   delete process.env.VERCEL;
+  // Ni contra una base de datos que no esté en esta máquina.
+  process.env.KV_REST_API_URL = 'https://fisquo.upstash.io';
+  assert.ok(ca.verificarTransaccion(jws).error);
+  process.env.KV_REST_API_URL = 'http://localhost.atacante.com';
+  assert.ok(ca.verificarTransaccion(jws).error);
+  process.env.KV_REST_API_URL = 'http://127.0.0.1:8079';
   delete process.env.APPLE_RAIZ_PRUEBAS;
   assert.ok(ca.verificarTransaccion(jws).error);
 });
@@ -214,6 +225,41 @@ test('una suscripción terminada de otro ID de Apple no quita la que sigue vigen
   assert.equal((await planDe('e1')).pagado, true);
 });
 
+test('el periodo de gracia no se pierde cuando la app reenvía la transacción sin datos de renovación', async () => {
+  await empresa('e1', PRUEBA);
+  const t = tx({ appAccountToken: await ca.tokenDe('e1'), expiresDate: AHORA - DIA });
+  await ca.aplicarTransaccion(t, { renovacion: { autoRenewStatus: 1, gracePeriodExpiresDate: AHORA + 5 * DIA }, hoy });
+  assert.deepEqual([(await planDe('e1')).pagado, (await planDe('e1')).estado], [true, 'past_due']);
+  await ca.aplicarTransaccion(t, { hoy });
+  const plan = await planDe('e1');
+  assert.deepEqual([plan.pagado, plan.estado, plan.apple.estado, plan.apple.gracia], [true, 'past_due', 'grace', AHORA + 5 * DIA]);
+});
+
+test('una suscripción de Apple que ya no vale no quita lo que se paga con Stripe o con la licencia de la gestoría', async () => {
+  const STRIPE = { ...PRUEBA, pagado: true, suscripcion: 'sub_1', estado: 'active', cliente: 'cus_1' };
+  const LICENCIA = { ...PRUEBA, pagado: true, porDespacho: { id: 'd1', nombre: 'Gestoría', desde: '2026-10-01' } };
+  for (const plan of [STRIPE, LICENCIA]) {
+    base.run(['flushdb']);
+    await empresa('e1', plan);
+    const token = await ca.tokenDe('e1');
+    await ca.aplicarTransaccion(tx({ appAccountToken: token, expiresDate: AHORA - DIA }), { hoy });
+    await ca.aplicarTransaccion(tx({ appAccountToken: token, revocationDate: AHORA - 1000 }), { hoy });
+    assert.deepEqual(await planDe('e1'), plan);
+  }
+});
+
+test('comprar en Apple con Stripe aún cobrando: manda Apple y Stripe deja de renovarse', async () => {
+  process.env.STRIPE_SECRET_KEY = 'sk_test_x';
+  await empresa('e1', { ...PRUEBA, pagado: true, suscripcion: 'sub_1', estado: 'active', cliente: 'cus_1' });
+  await ca.aplicarTransaccion(tx({ appAccountToken: await ca.tokenDe('e1') }), { hoy });
+  const plan = await planDe('e1');
+  assert.deepEqual([plan.pagado, plan.apple.estado, plan.suscripcion, plan.cliente], [true, 'active', undefined, 'cus_1']);
+  assert.deepEqual(llamadasStripe, [['subscriptions/sub_1', { cancel_at_period_end: 'true' }]]);
+  // El aviso de Stripe de esa cancelación (aún activa hasta fin de periodo) no cambia el plan de Apple.
+  await aplicarSuscripcion({ id: 'sub_1', status: 'active', cancel_at_period_end: true, customer: 'cus_1', metadata: { empresa: 'e1', tipo: 'pym', nombre: 'Plus', periodo: 'anio' } });
+  assert.deepEqual(await planDe('e1'), plan);
+});
+
 test('Fundador y empresas de baja no cambian', async () => {
   await empresa('f', { fundador: true });
   const token = await ca.tokenDe('f');
@@ -302,6 +348,11 @@ test('ruta de la app: datos para comprar y compras enviadas', async () => {
   r = await enviar([compra]);
   assert.equal((await r.json()).cambiado, false);
   assert.equal((await enviar(['basura'])).status, 400);
+  // Sin token y de nadie: solo la asigna un administrador.
+  usuario = { ...usuario, rol: 'usuario' };
+  assert.equal((await enviar([firmar(tx({ originalTransactionId: '5000000001' }))])).status, 400);
+  assert.equal(await redis.hget('apple-original', '5000000001'), null);
+  usuario = { ...usuario, rol: 'admin' };
   assert.equal((await enviar([])).status, 400);
   // Una de otra empresa: se guarda allí y aquí no cambia nada.
   await empresa('e2', PRUEBA);

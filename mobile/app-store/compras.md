@@ -20,7 +20,9 @@ con el App Store; en la web, con Stripe, como siempre. Son los mismos planes y l
   - `POST /api/appstore`: avisos de Apple (renovaciones, cambios de plan, cobros fallidos, bajas, reembolsos).
   - Cron del día (`dia-apple`): una suscripción que ha pasado su fecha sin aviso se pregunta a la App Store Server API
     (si está su clave) o, sin ella, se da por terminada a los 7 días. Si seguía pagada, vuelve sola al abrir la app.
-- **Sin cobrar dos veces**: con una suscripción del App Store vigente, la web no deja contratar con Stripe, el panel
+- **Sin cobrar dos veces**: si alguien que paga con Stripe compra en la app, manda Apple y la suscripción de Stripe deja de
+  renovarse (sin devolver el periodo pagado). Una suscripción de Apple que termina nunca quita un plan pagado con Stripe o
+  con la licencia de la gestoría. Con una suscripción del App Store vigente, la web no deja contratar con Stripe, el panel
   /admin no deja regalar Fundador ni cambiar el plan, una gestoría no puede incluir a ese cliente en su cuota y que
   termine una suscripción vieja de Stripe no quita el plan. Al revés, quien paga con Stripe ve en la app su plan, sin
   botones de compra.
@@ -97,5 +99,5 @@ Localización de cada producto (español; en inglés igual cambiando «Autónomo
   hasta instalar sus componentes: `sudo xcodebuild -runFirstLaunch` (pide tu contraseña). Sin eso se puede compilar e
   instalar con `xcrun simctl`, pero sin StoreKit Testing: la pantalla sale con «No se han podido cargar los planes».
   Contra una copia local, arrancar la web con `APPLE_XCODE=1` (acepta sin firma las compras del entorno Xcode; solo fuera
-  de Vercel).
+  de Vercel y con la base de datos en la propia máquina, upstash-mem: nunca contra la de producción).
 - TestFlight: las compras son de sandbox y gratis; las suscripciones se renuevan cada pocos minutos y terminan solas.

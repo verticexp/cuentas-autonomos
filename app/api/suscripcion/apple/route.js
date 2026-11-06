@@ -48,7 +48,8 @@ export async function POST(req) {
   for (const jws of lista) {
     const t = verificarTransaccion(jws);
     if (t.error) { fallo = t.error; continue; }
-    const r = await aplicarTransaccion(t.tx, { empresa: u.empresa });
+    // Una compra que aún no es de ninguna empresa (sin token: un código de oferta) solo la asigna su administrador.
+    const r = await aplicarTransaccion(t.tx, { empresa: u.rol === 'admin' ? u.empresa : null });
     if (r.error) { fallo = r.error; continue; }
     aplicadas += 1;
     if (r.cambiado && r.empresa === String(u.empresa)) cambiado = true;
