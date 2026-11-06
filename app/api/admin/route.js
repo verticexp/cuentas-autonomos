@@ -1,5 +1,6 @@
 import { cuerpo, error, usuarioApi } from '@/lib/api';
-import { cambioDePlan } from '@/lib/admin';
+import { cambioDePlan, historialPagoTrasCambio } from '@/lib/admin';
+import { iniciarBajasAdmin } from '@/lib/adminServidor';
 import { conCerrojo } from '@/lib/cerrojo';
 import { metrica } from '@/lib/metricas';
 import { redis } from '@/lib/redis';
@@ -18,7 +19,9 @@ export async function POST(req) {
     if (!e || e.baja) return error('Esa empresa no existe', 404);
     const r = cambioDePlan(e, String(b.accion || ''), { dias: b.dias, tipo: String(b.tipo || ''), nombre: String(b.nombre || '') });
     if (r.error) return error(r.error);
-    await redis.hset('empresas', { [id]: { ...e, plan: r.plan } });
+    await iniciarBajasAdmin();
+    const despues = { ...e, plan: r.plan };
+    await redis.hset('empresas', { [id]: { ...despues, historialPagoAdmin: historialPagoTrasCambio(e, despues) } });
     metrica('admin-plan', { empresa: id, accion: b.accion, por: u.id });
     return Response.json({ ok: true, plan: r.plan });
   });

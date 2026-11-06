@@ -33,6 +33,8 @@ const stubs = {
   'lib/avisosCorreo.js': 'export const avisarSuscripcion = async () => {};',
   'lib/recomendaciones.js': 'export const premiarRecomendacion = async () => {};',
   'lib/stripe.js': 'export const stripe = async () => { throw new Error("Stripe externo no permitido en esta prueba"); };',
+  'lib/api.js': 'export const usuarioApi = async () => ({ u: { id: "admin_PRUEBA" } }); export const cuerpo = (req) => req.json(); export const error = (error, status = 400) => Response.json({ error }, { status });',
+  'lib/metricas.js': 'export const metrica = () => {};',
 };
 const raiz = new URL('../', import.meta.url);
 const hooks = registerHooks({
@@ -57,6 +59,7 @@ after(() => {
 });
 beforeEach(() => { base.run(['flushdb']); ordenes = []; delete process.env.OFICINA_CIFRAS_TOKEN; });
 const { GET } = await import('../app/api/admin/cifras/route.js');
+const { POST: cambiarPlanAdmin } = await import('../app/api/admin/route.js');
 const { proxy } = await import('../proxy.js');
 const { leerResumenAdmin, iniciarBajasAdmin } = await import('../lib/adminServidor.js');
 const { aplicarSuscripcion } = await import('../lib/suscripcion.js');
@@ -121,7 +124,7 @@ test('200: forma exacta, euros sin IVA, mismos agregados del panel; sin datos pe
   assert.equal(r.headers.get('Cache-Control'), 'no-store');
   assert.equal(r.headers.get('set-cookie'), null);
   const b = await r.json();
-  assert.deepEqual(Object.keys(b).sort(), ['generado', 'mrr', 'arr', 'pago', 'impago', 'prueba', 'conversion', 'altasMes', 'bajasMes', 'bajasPct', 'bajasDesde', 'pruebasQueAcabanEn7', 'activos7', 'activos30', 'altasSemanas', 'origenes'].sort());
+  assert.deepEqual(Object.keys(b).sort(), ['generado', 'mrr', 'arr', 'pago', 'impago', 'prueba', 'conversion', 'altasMes', 'bajasMes', 'bajasPct', 'bajasDesde', 'bajasMesParcial', 'pruebasQueAcabanEn7', 'activos7', 'activos30', 'altasSemanas', 'bajasSemanas', 'origenes'].sort());
   assert.equal(new Date(b.generado).toISOString(), b.generado);
   assert.equal(b.mrr, 20.4);
   assert.equal(b.arr, 244.8);
@@ -133,12 +136,14 @@ test('200: forma exacta, euros sin IVA, mismos agregados del panel; sin datos pe
   assert.equal(b.activos7, 1);
   assert.equal(b.activos30, 1);
   for (const a of b.altasSemanas) assert.deepEqual(Object.keys(a), ['desde', 'n']);
+  for (const a of b.bajasSemanas) assert.deepEqual(Object.keys(a), ['desde', 'hasta', 'n', 'completa']);
   for (const o of b.origenes) assert.deepEqual(Object.keys(o), ['origen', 'total', 'prueba', 'pagan', 'conversion']);
   assert.doesNotMatch(JSON.stringify(b), /PRIVAD|nombre|nif|email|cliente|suscripcion|\bid\b|filas|usuarios/);
   assert.ok(ordenes.every(([c]) => ['get', 'hgetall', 'smembers'].includes(c)), 'la ruta solo lee');
   const { resumen: panel } = await leerResumenAdmin(new Date(b.generado));
-  for (const k of ['conversion', 'altasMes', 'bajasMes', 'bajasPct', 'bajasDesde', 'pruebasQueAcabanEn7', 'activos7', 'activos30']) assert.deepEqual(b[k], panel.kpis[k], k);
+  for (const k of ['conversion', 'altasMes', 'bajasMes', 'bajasPct', 'bajasDesde', 'bajasMesParcial', 'pruebasQueAcabanEn7', 'activos7', 'activos30']) assert.deepEqual(b[k], panel.kpis[k], k);
   assert.deepEqual(b.altasSemanas, panel.altas);
+  assert.deepEqual(b.bajasSemanas, panel.bajasSemanas);
   assert.deepEqual(b.origenes, panel.origenes);
 });
 
@@ -148,6 +153,8 @@ test('sin seguimiento aún: fecha y porcentaje nulos; la consulta no inicia el s
   assert.equal(b.bajasDesde, null);
   assert.equal(b.bajasPct, null);
   assert.equal(b.bajasMes, 0);
+  assert.equal(b.bajasMesParcial, true);
+  assert.ok(b.bajasSemanas.every((s) => !s.completa));
   assert.equal(await redis.get('admin-bajas-desde'), null);
 });
 
@@ -239,4 +246,15 @@ test('Stripe: una prueba cuyo primer cobro falla no se convierte en baja de pago
   // Si el reintento finalmente cobra, la cancelación siguiente sí es una baja.
   for (const estado of ['active', 'past_due', 'canceled']) await aplicarSuscripcion(sub(estado));
   assert.equal((await leerResumenAdmin()).resumen.kpis.bajasMes, 1);
+});
+
+test('panel: regalar un plan que se pagaba conserva la baja; repetir la acción no duplica el historial', async () => {
+  await redis.hset('empresas', { empresa_PRIVADA: empresa('empresa_PRIVADA', { ...pago, suscripcion: undefined }) });
+  const regalar = () => cambiarPlanAdmin(new Request('https://fisquo.test/api/admin', { method: 'POST', body: JSON.stringify({ empresa: 'empresa_PRIVADA', accion: 'fundador' }) }));
+  assert.equal((await regalar()).status, 200);
+  assert.equal((await regalar()).status, 400);
+  const e = await redis.hget('empresas', 'empresa_PRIVADA');
+  assert.equal(e.historialPagoAdmin.length, 1);
+  assert.equal((await leerResumenAdmin()).resumen.kpis.bajasMes, 1);
+  assert.ok(await redis.get('admin-bajas-desde'));
 });
