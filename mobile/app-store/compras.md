@@ -75,8 +75,11 @@ Localización de cada producto (español; en inglés igual cambiando «Autónomo
 5. Opcional, recomendado: **clave de In-App Purchase** (Usuarios y acceso › Integraciones › Compra dentro de la app):
    en Vercel (Production) `APPLE_IAP_KEY_ID`, `APPLE_IAP_ISSUER_ID` y `APPLE_IAP_PRIVATE_KEY` (el contenido de la .p8).
    Con ella el cron confirma con Apple las renovaciones si un aviso no llega.
-6. **Versión de la app**: en «Compras dentro de la app y suscripciones», añadir los 12 productos (las primeras compras
-   se revisan junto con una versión). Subir el build nuevo (lleva `ComprasPlugin.swift`).
+6. **Build nuevo y versión**: subir un build que lleve `ComprasPlugin.swift` (`cd mobile && npm ci && npx cap sync ios`,
+   abrir `ios/App/App.xcodeproj` en un Mac con tu Apple ID en *Xcode › Settings › Accounts*, *Product › Archive* y
+   *Distribute App › App Store Connect*). El Mac mini no tiene tu cuenta ni certificados en Xcode, y este portátil ya no
+   tiene Xcode. Después, en la versión, «Compras dentro de la app y suscripciones»: añadir los 12 productos (las
+   primeras compras se revisan junto con una versión).
 7. **Descripción de la app**: añadir al final «Condiciones de uso: https://www.fisquo.com/condiciones · Privacidad:
    https://www.fisquo.com/privacidad» (o poner las condiciones como EULA propio). La norma 3.1.2 pide el enlace a las
    condiciones de uso en la ficha cuando hay suscripciones.
@@ -90,6 +93,9 @@ Localización de cada producto (español; en inglés igual cambiando «Autónomo
 - Pruebas automáticas: `tests/compra-apple.test.mjs` (compras, avisos, cron, rutas, Stripe y panel) y
   `tests/apple-firma.test.mjs` (firmas de Apple con una cadena de pruebas, `tests/apoyo/apple-pruebas`).
 - Simulador con Xcode: el esquema compartido `App` usa `App/Fisquo.storekit` (StoreKit Testing, sin App Store Connect).
+  En el Mac mini, Xcode 27.2 avisa de que CoreSimulator está desactualizado y no deja lanzar en el simulador desde Xcode
+  hasta instalar sus componentes: `sudo xcodebuild -runFirstLaunch` (pide tu contraseña). Sin eso se puede compilar e
+  instalar con `xcrun simctl`, pero sin StoreKit Testing: la pantalla sale con «No se han podido cargar los planes».
   Contra una copia local, arrancar la web con `APPLE_XCODE=1` (acepta sin firma las compras del entorno Xcode; solo fuera
   de Vercel).
 - TestFlight: las compras son de sandbox y gratis; las suscripciones se renuevan cada pocos minutos y terminan solas.
