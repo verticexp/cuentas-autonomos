@@ -108,7 +108,6 @@ export default function PlanesApple({ actual, tipoEmpresa, alCambiar }) {
   const deOtra = !apple && vigentes.some((v) => v.token && v.token !== datos.token);
   const puedeElegir = !apple || mia;
   const tipos = datos.tipos?.length ? datos.tipos : ['aut', 'pym'];
-  const cobro = (p) => (p?.periodo === 'anio' ? tr('{precio} al año', { precio: p.precio }) : tr('{precio} al mes', { precio: p?.precio }));
 
   return <section className={styles.comparacion} aria-labelledby="planes-app" aria-busy={Boolean(ocupado)}>
     {apple && <div className={styles.aviso}>
@@ -142,7 +141,7 @@ export default function PlanesApple({ actual, tipoEmpresa, alCambiar }) {
           <div className={styles.planPrincipal}><div className={styles.planCabecera}><h3 id={`plan-app-${p.n}`}>{p.n}</h3>{p.fuerte && <span className={styles.recomendado}>{tr('Recomendado')}</span>}</div>
           <p className={styles.para}>{p.fuerte ? tr('Operaciones, previsión y análisis en un solo plan') : tr(p.para)}</p>
           <p className={styles.precio}><strong>{prod ? prod.precio : '—'}</strong><span>{tr(periodo === 'anio' ? '/año' : '/mes')}</span></p>
-          <p className={styles.facturacion}>{prod ? `${cobro(prod)} · ${tr('renovación automática')}` : tr('No disponible ahora mismo')}</p>
+          <p className={styles.facturacion}>{prod ? tr(periodo === 'anio' ? 'Se cobra una vez al año · renovación automática' : 'Se cobra cada mes · renovación automática') : tr('No disponible ahora mismo')}</p>
           {elegido ? <p className={styles.planElegido}>{tr('Tu plan actual')}</p>
             : puedeElegir && !deOtra && prod ? <button type="button" className={`${styles.botonPlan} ${p.fuerte ? styles.botonPro : ''}`} disabled={Boolean(ocupado)} onClick={() => comprar(pid)}>
               {ocupado === pid ? tr('Abriendo el App Store…') : apple ? tr('Cambiar a {plan}', { plan: p.n }) : tr('Suscribirme a {plan}', { plan: p.n })}</button>
