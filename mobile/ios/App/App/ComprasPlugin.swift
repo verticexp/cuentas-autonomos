@@ -37,8 +37,9 @@ public class ComprasPlugin: CAPPlugin, CAPBridgedPlugin {
             for await resultado in Transaction.updates {
                 guard case .verified(let transaccion) = resultado else { continue }
                 await transaccion.finish()
+                guard let plugin = self else { return }
                 let datos = ComprasPlugin.datos(resultado, transaccion)
-                await MainActor.run { self?.notifyListeners("transaccion", data: datos, retainUntilConsumed: true) }
+                await MainActor.run { plugin.notifyListeners("transaccion", data: datos, retainUntilConsumed: true) }
             }
         }
     }
