@@ -60,7 +60,7 @@ const { POST: avisoApple } = await import('../app/api/appstore/route.js');
 const { POST: stripeSuscripcion } = await import('../app/api/suscripcion/route.js');
 const { aplicarSuscripcion } = await import('../lib/suscripcion.js');
 const { pagaSuPlan } = await import('../lib/licencias.js');
-const { estadoEmpresa } = await import('../lib/admin.js');
+const { cambioDePlan, estadoEmpresa } = await import('../lib/admin.js');
 const { PUBLICO } = await import('../lib/rutasPublicas.js');
 const { soloLectura } = await import('../lib/planes.js');
 
@@ -151,6 +151,10 @@ test('planTrasApple: vigente, en gracia, terminada y reembolsada', () => {
   const fin = ca.planTrasApple(antes, tx({ expiresDate: AHORA - DIA }), { autoRenewStatus: 0 }, hoy);
   assert.deepEqual([fin.pagado, fin.estado, fin.apple.estado, fin.hasta], [false, 'canceled', 'expired', new Date(AHORA - DIA).toISOString().slice(0, 10)]);
   assert.equal(soloLectura(fin, hoy), true);
+
+  // Sandbox (TestFlight, revisión de Apple): al terminar vuelve a la prueba que le quedaba.
+  const sandbox = ca.planTrasApple(antes, tx({ expiresDate: AHORA - DIA, environment: 'Sandbox' }), { autoRenewStatus: 0 }, hoy);
+  assert.deepEqual([sandbox.pagado, sandbox.hasta, soloLectura(sandbox, hoy)], [false, antes.hasta, false]);
 
   const reembolso = ca.planTrasApple(antes, tx({ revocationDate: AHORA - 1000, revocationReason: 0 }), null, hoy);
   assert.deepEqual([reembolso.pagado, reembolso.apple.estado], [false, 'revoked']);
@@ -306,13 +310,15 @@ test('ruta de la app: datos para comprar y compras enviadas', async () => {
   assert.equal((await planDe('e2')).pagado, true);
 });
 
-test('lo pagado en el App Store no se paga dos veces ni lo quita Stripe', async () => {
+test('lo pagado en el App Store no se paga dos veces ni lo quita Stripe ni el panel', async () => {
   await empresa('e1', PRUEBA);
   await ca.aplicarTransaccion(tx({ appAccountToken: await ca.tokenDe('e1') }), { hoy });
   const plan = await planDe('e1');
   assert.equal(pagaSuPlan(plan), true);
   assert.equal(estadoEmpresa({ plan }, hoy), 'pago');
   assert.equal(estadoEmpresa({ plan: { ...plan, apple: { ...plan.apple, entorno: 'Sandbox' } } }, hoy), 'prueba');
+  assert.match(cambioDePlan({ plan }, 'fundador').error, /App Store/);
+  assert.match(cambioDePlan({ plan }, 'plan', { tipo: 'aut', nombre: 'Plus' }).error, /App Store/);
   // Contratar en la web: no.
   process.env.STRIPE_SECRET_KEY = 'sk_test_x';
   usuario = { id: 'u1', empresa: 'e1', rol: 'admin', plan, fiscal: { tipo: 'autonomo' }, email: 'a@b.c' };
