@@ -1,0 +1,69 @@
+{
+  "fecha": "2026-11-07",
+  "baseActual": "4adf21b03478219a7521dffc96ac087e671f6438",
+  "npmCi": {
+    "resultado": "167 paquetes instalados; versiones intactas",
+    "cache": "copia temporal del cache local",
+    "red": false,
+    "scripts": true
+  },
+  "ejecuciones": {
+    "gastos": {
+      "comando": "npm test",
+      "codigoSalida": 1,
+      "resultado": {
+        "tests": 2307,
+        "pass": 1926,
+        "fail": 381,
+        "cancelled": 0,
+        "skipped": 0
+      },
+      "log": "/tmp/fisquo-gastos-npm-test.log",
+      "sha256Log": "cdcada25c9f37258bf45f6e3edc600bf702459f889c5a14c2dedc03d15724795",
+      "errores": {
+        "Error: listen EPERM: operation not permitted 127.0.0.1": 361,
+        "TypeError [Error]: Cannot read properties of undefined (reading 'cerrar')": 19,
+        "TypeError [Error]: Cannot read properties of undefined (reading 'closeAllConnections')": 1,
+        "Error: Command failed: /opt/homebrew/Cellar/node/26.13.0_2/bin/node --import ./tests/apoyo/cargador.mjs scripts/cuenta-simulada.mjs": 1
+      }
+    },
+    "lecturas": {
+      "comando": "npm test",
+      "codigoSalida": 1,
+      "resultado": {
+        "tests": 2297,
+        "pass": 1917,
+        "fail": 380,
+        "cancelled": 0,
+        "skipped": 0
+      },
+      "log": "/tmp/fisquo-lecturas-npm-test.log",
+      "sha256Log": "09b1eb97a67b472adf64651d28d7065fb5322899a455dda9de5790a9ac5e5cd4",
+      "errores": {
+        "Error: listen EPERM: operation not permitted 127.0.0.1": 359,
+        "TypeError [Error]: Cannot read properties of undefined (reading 'cerrar')": 20,
+        "TypeError [Error]: Cannot read properties of undefined (reading 'closeAllConnections')": 1,
+        "Error: Command failed: /opt/homebrew/Cellar/node/26.13.0_2/bin/node --import ./tests/apoyo/cargador.mjs scripts/cuenta-simulada.mjs": 1
+      }
+    },
+    "conjunto": {
+      "comando": "npm test",
+      "codigoSalida": 1,
+      "resultado": {
+        "tests": 2308,
+        "pass": 1927,
+        "fail": 381,
+        "cancelled": 0,
+        "skipped": 0
+      },
+      "log": "/tmp/fisquo-final-npm-test.log",
+      "sha256Log": "84bea280788e0ab38fa6a4de22ccf963a6a701309995210f8824dc97ca864980",
+      "errores": {
+        "Error: listen EPERM: operation not permitted 127.0.0.1": 361,
+        "TypeError [Error]: Cannot read properties of undefined (reading 'cerrar')": 19,
+        "TypeError [Error]: Cannot read properties of undefined (reading 'closeAllConnections')": 1,
+        "Error: Command failed: /opt/homebrew/Cellar/node/26.13.0_2/bin/node --import ./tests/apoyo/cargador.mjs scripts/cuenta-simulada.mjs": 1
+      }
+    }
+  }
+}
