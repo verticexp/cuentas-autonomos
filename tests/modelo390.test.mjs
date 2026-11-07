@@ -1,8 +1,8 @@
-// 390 con las casillas del diseño de registro de 2025 (DR390e2025 v1.02 e instrucciones del 390 de 2025, AEAT).
+// Importes del 390: casillas comunes de 2025 y 2026. Estas pruebas no validan las posiciones del fichero.
 // Esperados calculados a mano; el 390 tiene que cuadrar con la suma de los cuatro 303 (27, 45 y 46).
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { casillas303 } from '../lib/calculos.js';
+import { casillas303, liquidaciones303 } from '../lib/calculos.js';
 import { modelo390 } from '../lib/modelos.js';
 
 const fac = (id, fecha, base, ivaPct, x = {}) => ({ id, fecha, actividad: 'a', cliente: { nombre: 'Cliente', nif: 'B12345674' }, base, ivaPct, irpfPct: 0, ...x });
@@ -76,3 +76,62 @@ test('390 y prorrata: la venta de un bien de inversión va en la 107, se resta d
   assert.equal(prorrataAnio(F, 2025), 60);
   assert.equal(c['118'], 60);
 });
+
+// Esperados independientes en céntimos. Hay actividad en los cuatro trimestres;
+// el tercero tiene resultado negativo. Las dos facturas de fuera del ejercicio
+// y el gasto de 2027 no deben entrar en el anual ni en sus cuatro 303.
+for (const anio of [2025, 2026]) {
+  test(`390 ${anio}: cuatro trimestres, tipos distintos, rectificación y deducción parcial sin cambiar importes`, () => {
+    const F = [
+      fac('t1', `${anio}-01-01`, 1000, 21),
+      fac('t2', `${anio}-04-01`, 2000, 10),
+      fac('t3', `${anio}-07-01`, 300, 4),
+      fac('abono', `${anio}-09-30`, -100, 21, { rectifica: { id: 't1', fecha: `${anio}-01-01`, motivo: 'incobrable' } }),
+      fac('t4', `${anio}-12-31`, 4000, 21),
+      fac('anterior', `${anio - 1}-12-31`, 9000, 21),
+      fac('siguiente', `${anio + 1}-01-01`, 8000, 21),
+    ];
+    const G = [
+      gas('t1', `${anio}-03-31`, 200, 21),
+      gas('t2', `${anio}-06-30`, 500, 10),
+      gas('t3', `${anio}-09-30`, 1000, 21),
+      gas('t4', `${anio}-12-31`, 1000, 21, { deduciblePct: 50 }),
+      gas('siguiente', `${anio + 1}-01-01`, 7000, 21),
+    ];
+    // Cuotas devengadas: 210, 200, 12 - 21, 840.
+    // Cuotas deducibles: 42, 50, 210, 105 (el 50 % de 210).
+    const devengado = [21000, 20000, -900, 84000];
+    const deducible = [4200, 5000, 21000, 10500];
+    const resultados = [16800, 15000, -21900, 73500];
+    const centimos = (x) => Math.round(x * 100);
+    const q = [1, 2, 3, 4].map((t) => casillas303(F, G, anio, t));
+    assert.deepEqual(q.map((c) => centimos(c['27'])), devengado);
+    assert.deepEqual(q.map((c) => centimos(c['45'])), deducible);
+    assert.deepEqual(q.map((c) => centimos(c['46'])), resultados);
+    const m = modelo390(F, G, anio);
+    assert.deepEqual(m.avisos, []);
+    assert.deepEqual(m.trimestres.map(centimos), resultados);
+    for (const [k390, k303, esperado] of [['47', '27', 124100], ['64', '45', 40700], ['65', '46', 83400]]) {
+      assert.equal(centimos(m.c[k390]), esperado, `casilla ${k390}: esperado independiente`);
+      assert.equal(centimos(m.c[k390]), q.reduce((s, c) => s + centimos(c[k303]), 0), `casilla ${k390}: suma de los cuatro 303`);
+    }
+    assert.equal(centimos(m.resultado), 83400);
+    assert.equal(centimos(m.devengado), 124100);
+    assert.equal(centimos(m.deducible), 40700);
+    assert.equal(centimos(m.c['95']), 83400);
+    assert.equal(centimos(m.c['95']), liquidaciones303(F, G, anio).reduce((s, l) => s + centimos(l.ingresar), 0));
+  });
+
+  test(`390 ${anio}: año sin actividad y saldo a compensar tras los cuatro trimestres`, () => {
+    const vacio = modelo390([], [], anio);
+    assert.deepEqual(vacio.trimestres, [0, 0, 0, 0]);
+    assert.deepEqual([vacio.c['47'], vacio.c['64'], vacio.c['65'], vacio.resultado], [0, 0, 0, 0]);
+    const F = [fac('venta', `${anio}-06-30`, 1000, 21)];
+    const G = [gas('compra', `${anio}-03-31`, 10000, 21), gas('ultima', `${anio}-12-31`, 1000, 21)];
+    const m = modelo390(F, G, anio);
+    assert.deepEqual(m.trimestres, [-2100, 210, 0, -210]);
+    assert.deepEqual([m.c['47'], m.c['64'], m.c['65'], m.resultado], [210, 2310, -2100, -2100]);
+    // 1.890 pendientes de los primeros trimestres y 210 nuevos en el cuarto.
+    assert.deepEqual([m.c['95'], m.c['97'], m.c['98'], m.c['662']], [0, 210, 0, 1890]);
+  });
+}
