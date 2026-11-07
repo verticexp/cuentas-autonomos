@@ -1,4 +1,4 @@
-// Oráculo de posiciones externo al serializador: DR 2025 y extracción fiscal de DR 2026.
+// Oráculo de posiciones externo al serializador: diseños oficiales DR 2025 y DR 2026.
 // Las fuentes se conservan en fixtures; estas pruebas no descargan nada ni leen constantes de lib/.
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -7,19 +7,23 @@ import { fichero390 } from '../lib/ficheroAeat.js';
 import { modelo390 } from '../lib/modelos.js';
 
 const fuente = (nombre) => readFileSync(new URL(`./fixtures/aeat/${nombre}`, import.meta.url), 'utf8');
-const tablas2025 = {};
-for (const [, hoja, contenido] of fuente('dr390e2025.txt').matchAll(/===== HOJA: Pág\. (.*?) =====\n([\s\S]*?)(?=\n===== HOJA:|$)/g)) {
-  if (hoja === '0') continue;
-  const id = hoja === '2 bis' ? '02B' : hoja.padStart(2, '0');
-  const campos = contenido.split('\n').flatMap((linea) => {
-    const columnas = linea.split('|').map((c) => c.trim());
-    if (!columnas.slice(0, 3).every((v) => /^\d+$/.test(v))) return [];
-    return [{ pos: Number(columnas[1]), lon: Number(columnas[2]), tipo: columnas[3],
-      descripcion: columnas[['05', '07'].includes(id) ? 5 : 4], soloCero: /Nota 2/.test(linea) }];
-  });
-  tablas2025[id] = { longitud: Number(contenido.match(/TOTAL \|\s*\| (\d+)/)[1]), campos };
+function tablas(texto) {
+  const paginas = {};
+  for (const [, hoja, contenido] of texto.matchAll(/===== HOJA: Pág\. (.*?) =====\n([\s\S]*?)(?=\n===== HOJA:|$)/g)) {
+    if (hoja === '0') continue;
+    const id = hoja === '2 bis' ? '02B' : hoja.padStart(2, '0');
+    const campos = contenido.split('\n').flatMap((linea) => {
+      const columnas = linea.split('|').map((c) => c.trim());
+      if (!columnas.slice(0, 3).every((v) => /^\d+$/.test(v))) return [];
+      return [{ pos: Number(columnas[1]), lon: Number(columnas[2]), tipo: columnas[3],
+        descripcion: columnas[['05', '07'].includes(id) ? 5 : 4], soloCero: ['Num', 'N'].includes(columnas[3]) && /Nota 2/.test(linea) }];
+    });
+    paginas[id] = { longitud: Number(contenido.match(/TOTAL \|\s*\| (\d+)/)[1]), campos };
+  }
+  return paginas;
 }
-const tablas2026 = { ...tablas2025, ...JSON.parse(fuente('dr390e2026-posiciones.json')).paginas };
+const tablas2025 = tablas(fuente('dr390e2025.txt'));
+const tablas2026 = tablas(fuente('dr390e2026.txt'));
 const orden = ['01', '02', '02B', '03', '04', '05', '06', '07', '08'];
 const yo = { nif: '12345678Z', nombre: 'Ana García López' };
 const campo = (s, pos, lon) => s.slice(pos - 1, pos - 1 + lon);
@@ -47,6 +51,7 @@ function paginas(contenido, anio, tablas) {
       // El DR llama Num al identificador 02B00; las constantes de cabecera se comprueban arriba.
       if (f.tipo === 'Num' && f.pos > 12) assert.match(v, /^\d+$/, `${id}:${f.pos}`);
       if (f.tipo === 'N') assert.match(v, /^(?:N\d+|\d+)$/, `${id}:${f.pos}`);
+      if (f.soloCero) assert.equal(v, '0'.repeat(f.lon), `${id}:${f.pos}: solo cero`);
       if (/RESERVADO|Reservado/.test(f.descripcion)) assert.equal(v, ' '.repeat(f.lon), `${id}:${f.pos}`);
     }
     assert.equal(siguiente, tabla.longitud + 1);
@@ -57,15 +62,16 @@ function paginas(contenido, anio, tablas) {
 }
 
 // Valores distintos por casilla: un desplazamiento o un intercambio no puede pasar por tener todo a cero.
-function importesDePrueba() {
+function importesDePrueba(tablas) {
   const c = {};
   for (const id of orden.filter((id) => !['01', '05'].includes(id))) {
-    for (const f of tablas2025[id].campos) {
+    for (const f of tablas[id].campos) {
       const k = casilla(f);
       if (!k || !['Num', 'N'].includes(f.tipo) || f.soloCero) continue;
       c[k] = (Number(k) + 0.37) * (f.tipo === 'N' && Number(k) % 2 ? -1 : 1);
     }
   }
+  c['112'] = 0; // Pago a cuenta de carburantes: Fisquo no lo calcula.
   c['117'] = 'G'; c['118'] = 60;
   return { c, resultado: -123.45 };
 }
@@ -73,7 +79,7 @@ function importesDePrueba() {
 for (const anio of [2025, 2026, 2027]) {
   const tablas = anio === 2025 ? tablas2025 : tablas2026;
   test(`390 ${anio}: posiciones y longitudes de todas las páginas contra las tablas AEAT conservadas`, () => {
-    const m = importesDePrueba();
+    const m = importesDePrueba(tablas);
     const copia = structuredClone(m);
     const r = fichero390(yo, anio, m, { actividades, criterioCaja: true, destinatarioCaja: true, declara347: true });
     assert.deepEqual(m, copia, 'el formato no modifica los importes');
@@ -90,6 +96,8 @@ for (const anio of [2025, 2026, 2027]) {
       assert.equal(campo(p[id], f.pos, f.lon), texto, `${anio} página ${id}, casilla ${k}, posición ${f.pos}`);
     }
     const cambios = anio >= 2026;
+    // La Nota 2 de estos indicadores alfanuméricos admite blanco, «1» o «2»; no exige cero.
+    for (const pos of [1203, 1204]) assert.equal(campo(p['05'], pos, 1), ' ');
     assert.equal(campo(p['01'], 131, 2), '11');
     assert.equal(campo(p['01'], cambios ? 134 : 133, 2), '00');
     if (cambios) assert.equal(campo(p['01'], 133, 1), '2', 'No según DR (no N)');

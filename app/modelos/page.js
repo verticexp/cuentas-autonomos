@@ -900,6 +900,7 @@ export default async function Modelos({ searchParams }) {
           <h2 className="grupo-t">390 · {dForal ? tr('Autoliquidación final del IVA (con el 4T)') : tr('Resumen anual del IVA')}</h2>
           {!dForal && <p className="grupo-pie arriba">{tr('No se paga: resume los cuatro 303 del año.')}{notaHastaHoy} {tr('Si cuadra con lo que presentaste, solo hay que enviarlo. Salen las casillas con importe')}{anio > 2025 ? `, ${tr('con la numeración del formulario de 2025 (el de {anio} aún no se ha publicado)', { anio })}` : ''}.</p>}
           {m390.avisos.map((a) => <p key={a} className="nota aviso">{tr(a)}</p>)}
+          {!dForal && anio >= 2026 && actividadesDe(u).some((a) => String(a.iae || '').replace(/\./g, '') === '6553') && <p className="nota">{tr('Si has presentado el modelo 319 este año, revisa el resumen anual con tu gestor: Fisquo contesta No a la pregunta de carburantes y deja la casilla 112 a cero')}</p>}
           <div className="tarjeta">
             <Casillas sinNumeros={Boolean(foralT)} filas={[
               ...ORDEN390.filter((k) => TOTALES390.includes(k) || (m390.c[k] !== undefined && m390.c[k] !== 0)).map((k) => [`${k} · ${ETIQUETAS390[k]}`, k === '118' ? `${String(m390.c[k]).replace('.', ',')} %` : m390.c[k] ?? 0, TOTALES390.includes(k)]),
