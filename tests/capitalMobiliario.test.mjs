@@ -122,10 +122,10 @@ test('modelo193: agrupa por perceptor y tipo, filtra el año y ordena por nombre
   ];
   assert.deepEqual(modelo193(pagos, 2026), {
     perceptores: [
-      { nif: '12345678Z', nombre: 'Ana', tipo: 'dividendos', clave: 'A', naturaleza: '02', base: 150, retenciones: 28.5 },
-      { nif: '12345678Z', nombre: 'Ana', tipo: 'intereses', clave: 'B', naturaleza: '03', base: 25, retenciones: 4.75 },
-      { nif: '', nombre: 'Bruno', tipo: 'intereses', clave: 'B', naturaleza: '03', base: 150, retenciones: 9.5 },
-      { nif: '', nombre: 'Zoe', tipo: 'dividendos', clave: 'A', naturaleza: '02', base: 200, retenciones: 38 },
+      { nif: '12345678Z', nombre: 'Ana', tipo: 'dividendos', clave: 'A', naturaleza: '02', base: 150, retenciones: 28.5, pct: 19 },
+      { nif: '12345678Z', nombre: 'Ana', tipo: 'intereses', clave: 'B', naturaleza: '03', base: 25, retenciones: 4.75, pct: 19 },
+      { nif: '', nombre: 'Bruno', tipo: 'intereses', clave: 'B', naturaleza: '03', base: 150, retenciones: 9.5, pct: 19 },
+      { nif: '', nombre: 'Zoe', tipo: 'dividendos', clave: 'A', naturaleza: '02', base: 200, retenciones: 38, pct: 19 },
     ], base: 525, retenciones: 80.75,
   });
 });
@@ -166,4 +166,35 @@ test('123: casillas de 2024 en adelante, con dividendos y resto de rentas aparte
   assert.deepEqual([c['04'], c['05'], c['06']], [10000, 2000, 12000]);
   assert.deepEqual([c['07'], c['08'], c['09'], c['12'], c['14']], [1900, 380, 2280, 2280, 2280]);
   assert.equal(casillas123(pagos, 2026, 1)['03'], 0);
+});
+
+// Auditoría de noviembre de 2026: cada naturaleza de la clave C del 193 tiene su porcentaje, que el diseño exige en las
+// posiciones 165-168, y no el 19 % general del capital mobiliario.
+test('el porcentaje que se propone depende de la naturaleza de la clave C', () => {
+  const pago = (naturaleza, nif = '12345678Z') => limpiarPago({ fecha: '2026-03-10', tipo: 'otros', naturaleza, perceptor: { nombre: 'Ana Pérez Gil', nif }, bruto: 1000 });
+  // Propiedad intelectual cuando el perceptor no es el autor y anticipos de derechos de autor: art. 101.9 LIRPF.
+  assert.equal(pago('01').retencionPct, 15);
+  assert.equal(pago('15').retencionPct, 7);
+  // Cesión de derechos de imagen: art. 101.2 RIRPF, tanto del perceptor del IRPF (06) como del IS (08).
+  assert.equal(pago('06').retencionPct, 24);
+  assert.equal(pago('08').retencionPct, 24);
+  // La 06 es la del perceptor del IRPF: a una entidad le toca la 08, y con la 06 no se le propone el 24 %.
+  assert.equal(pago('06', 'B12345674').retencionPct, 19);
+  // El resto de naturalezas y los dividendos e intereses, el 19 % general.
+  assert.equal(pago('12').retencionPct, 19);
+  assert.equal(pago('13').retencionPct, 19);
+  assert.equal(limpiarPago({ fecha: '2026-03-10', tipo: 'dividendos', perceptor: { nombre: 'Ana Pérez Gil', nif: '12345678Z' }, bruto: 1000 }).retencionPct, 19);
+  // Y lo que se ponga a mano manda sobre la propuesta.
+  assert.equal(limpiarPago({ fecha: '2026-03-10', tipo: 'otros', naturaleza: '01', perceptor: { nombre: 'Ana Pérez Gil', nif: '12345678Z' }, bruto: 1000, retencionPct: 9 }).retencionPct, 9);
+});
+
+test('el 193 guarda el último porcentaje aplicado en el año a cada registro', () => {
+  const pago = (fecha, retencionPct) => limpiarPago({ fecha, tipo: 'intereses', perceptor: { nombre: 'Ana Pérez Gil', nif: '12345678Z' }, bruto: 1000, retencionPct });
+  // Desordenados a propósito: el porcentaje del registro es el del pago más reciente, no el del último de la lista.
+  const m = modelo193([pago('2026-11-20', 15), pago('2026-02-10', 19)], 2026);
+  assert.equal(m.perceptores.length, 1);
+  assert.equal(m.perceptores[0].pct, 15);
+  // Las retenciones son el total de las dos, que no es el 15 % de los 2.000 € de base.
+  assert.equal(m.perceptores[0].base, 2000);
+  assert.equal(m.perceptores[0].retenciones, 340);
 });

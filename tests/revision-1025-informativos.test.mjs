@@ -52,7 +52,10 @@ test('193: C.06 por defecto retiene el 24 %, también con porcentaje vacío, y l
 });
 
 test('193: las demás naturalezas conservan el 19 % y se respeta el porcentaje explícito', () => {
-  for (const naturaleza of NATURALEZAS_C.filter((n) => n !== '06')) assert.equal(pago({ naturaleza }).retencionPct, 19);
+  // Las que tienen su propio tipo (01 y 15 al 15 % y 7 % del art. 101.9 LIRPF, 06 y 08 al 24 % del 101.2 RIRPF) se
+  // comprueban en tests/capitalMobiliario.test.mjs; el resto se queda en el 19 % general del capital mobiliario.
+  const PROPIO = ['01', '06', '08', '15'];
+  for (const naturaleza of NATURALEZAS_C.filter((n) => !PROPIO.includes(n))) assert.equal(pago({ naturaleza }).retencionPct, 19);
   for (const tipo of ['dividendos', 'intereses']) assert.equal(pago({ tipo }).retencionPct, 19);
   assert.equal(pago({ perceptor: { nombre: 'Sociedad', nif: 'B12345674' } }).retencionPct, 19);
   for (const retencionPct of [0, 19, '24']) assert.equal(pago({ retencionPct }).retencionPct, Number(retencionPct));
