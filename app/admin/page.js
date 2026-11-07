@@ -46,7 +46,7 @@ export default async function Admin() {
   const k = r.kpis;
   const pendientes = (await recientes()).filter((c) => c.estado === 'persona' && c.mensajes.at(-1)?.de !== 'equipo').length;
   // Embudo de activación (lib/embudo.js): solo índices y contadores, no documentos.
-  const embudo = await embudoDe({ filas: r.filas, empresas: empresas || {}, ultima });
+  const embudo = await embudoDe({ filas: r.filas.filter((f) => !f.interna), empresas: empresas || {}, ultima });
   const remitente = process.env.RESEND_FROM || '';
   const rem = leerRemitente(remitente || 'Fisquo <no-reply@fisquo.com>');
   const dkim = await dkimResend(rem.dominio);
@@ -62,6 +62,7 @@ export default async function Admin() {
     <Volver href="/ajustes">Ajustes</Volver>
     <h1 className="titulo">Panel de Fisquo</h1>
     <p className="adm-intro">Solo lo ves tú. Las cifras son sin IVA; las empresas Fundador no cuentan en ingresos ni en conversión.</p>
+    <p className="adm-intro"><strong>{k.excluidas} {k.excluidas === 1 ? 'cuenta interna/demo excluida' : 'cuentas internas/demo excluidas'} de las cifras.</strong> Incluye las cerradas para corregir también las altas y bajas anteriores. Puedes revisar las cuentas activas y su marca en <a href="#adm-empresas">Empresas</a>.</p>
 
     <nav className="adm-accesos" aria-label="Accesos directos">
       <a href="#soporte"><strong>Soporte</strong><span>{pendientes ? `${pendientes} por responder` : 'Nada por responder'}</span></a>
@@ -137,7 +138,7 @@ export default async function Admin() {
       <h2 id="adm-forma-t">Planes que no cuadran{k.formaNoCuadra ? ` (${k.formaNoCuadra})` : ''}</h2>
       {k.formaNoCuadra ? <>
         <p className="adm-pie">Sociedades con un plan de Autónomos que ya estaban así antes del bloqueo. No se les ha cambiado nada ni se les ha escrito.</p>
-        <ul className="adm-lista">{r.filas.filter((f) => f.forma === 'no-cuadra').map((f) => <li key={f.id}>
+        <ul className="adm-lista">{r.filas.filter((f) => !f.interna && f.forma === 'no-cuadra').map((f) => <li key={f.id}>
           <span><strong>{f.nombre}</strong> · {f.nif || 'sin NIF'} · {f.tipo} {f.plan}{f.periodo === 'anio' ? ' anual' : ''}</span>
           <b><span className={`adm-estado adm-${f.estado}`}>{ESTADOS[f.estado]}</span> {f.motivoForma}</b>
         </li>)}</ul>
