@@ -18,14 +18,15 @@ export default function AdminEmpresas({ filas }) {
   const [estado, setEstado] = useState('');
   const [origen, setOrigen] = useState('');
   const [forma, setForma] = useState('');
+  const [cuentas, setCuentas] = useState('');
   const [abierta, setAbierta] = useState('');
   const [msg, setMsg] = useState('');
   const [ocupado, setOcupado] = useState(false);
   const router = useRouter();
   const lista = useMemo(() => {
     const q = busca.trim().toLowerCase();
-    return filas.filter((f) => (!estado || f.estado === estado) && (!origen || f.origen === origen) && (!forma || f.forma === forma) && (!q || `${f.nombre} ${f.nif} ${f.id}`.toLowerCase().includes(q)));
-  }, [filas, busca, estado, origen, forma]);
+    return filas.filter((f) => (!cuentas || (cuentas === 'internas' ? f.interna : !f.interna)) && (!estado || f.estado === estado) && (!origen || f.origen === origen) && (!forma || f.forma === forma) && (!q || `${f.nombre} ${f.nif} ${f.id}`.toLowerCase().includes(q)));
+  }, [filas, busca, estado, origen, forma, cuentas]);
   const noCuadran = filas.filter((f) => f.forma === 'no-cuadra').length;
 
   async function accion(empresa, datos, pregunta) {
@@ -42,6 +43,11 @@ export default function AdminEmpresas({ filas }) {
     <h2 id="adm-empresas-t">Empresas</h2>
     <div className="adm-filtros">
       <input className="campo" type="search" placeholder="Buscar por nombre, NIF o id" value={busca} onChange={(e) => setBusca(e.target.value)} aria-label="Buscar empresa" />
+      <select className="campo" value={cuentas} onChange={(e) => setCuentas(e.target.value)} aria-label="Filtrar por cuenta interna/demo">
+        <option value="">Todas las cuentas</option>
+        <option value="comerciales">Incluidas en las cifras</option>
+        <option value="internas">Internas/demo (excluidas)</option>
+      </select>
       <select className="campo" value={estado} onChange={(e) => setEstado(e.target.value)} aria-label="Filtrar por estado">
         <option value="">Todos los estados</option>
         {Object.entries(ESTADOS).map(([k, t]) => <option key={k} value={k}>{t}</option>)}
@@ -57,11 +63,11 @@ export default function AdminEmpresas({ filas }) {
     </div>
     {msg && <p className={msg === 'Hecho.' ? 'adm-ok' : 'adm-mal'} role="status">{msg}</p>}
     <p className="adm-pie">{lista.length} de {filas.length}</p>
-    {!lista.length && <Vacio compacto tipo="resultados" icono="cliente" titulo="Ninguna empresa con estos filtros" accion={<button type="button" className="boton sec" onClick={() => { setBusca(''); setEstado(''); setOrigen(''); setForma(''); }}>Quitar filtros</button>} />}
+    {!lista.length && <Vacio compacto tipo="resultados" icono="cliente" titulo="Ninguna empresa con estos filtros" accion={<button type="button" className="boton sec" onClick={() => { setBusca(''); setEstado(''); setOrigen(''); setForma(''); setCuentas(''); }}>Quitar filtros</button>} />}
     <ul className="adm-tabla">
       {lista.map((f) => <li key={f.id} className={abierta === f.id ? 'abierta' : ''}>
         <button type="button" className="adm-fila" aria-expanded={abierta === f.id} onClick={() => setAbierta(abierta === f.id ? '' : f.id)}>
-          <span className="adm-nombre"><strong>{f.nombre}</strong><small>{f.nif || f.id} · alta {f.creada || '—'}{f.forma === 'no-cuadra' ? <b className="adm-mal"> · plan que no cuadra</b> : ''}</small></span>
+          <span className="adm-nombre"><strong>{f.nombre}</strong>{f.interna && <span className="adm-estado">Interna/demo · excluida</span>}<small>{f.nif || f.id} · alta {f.creada || '—'}{f.forma === 'no-cuadra' ? <b className="adm-mal"> · plan que no cuadra</b> : ''}</small></span>
           <span className={`adm-estado adm-${f.estado}`}>{ESTADOS[f.estado]}{f.estado === 'prueba' && f.dias !== null ? ` · ${f.dias} d` : ''}</span>
           <span className="adm-plan">{f.plan ? `${f.tipo} ${f.plan}${f.periodo === 'anio' ? ' anual' : ''}` : '—'}</span>
           <span className="adm-num">{f.mensual ? `${euros(f.mensual)}/mes` : ''}</span>
@@ -69,6 +75,8 @@ export default function AdminEmpresas({ filas }) {
           <span className="adm-num">{f.ultima ? `Activa ${f.ultima}` : 'Sin actividad'}</span>
         </button>
         {abierta === f.id && <div className="adm-acciones">
+          <p className="adm-pie">{f.interna ? 'Cuenta interna/demo: excluida de las cifras del panel y de la oficina.' : 'Cuenta incluida en las cifras del panel y de la oficina.'} La marca solo cambia los recuentos.</p>
+          {f.demo ? <p className="adm-pie">Cuenta de demostración: siempre se excluye de las cifras.</p> : <button type="button" className="boton pequeno sec" disabled={ocupado} onClick={() => accion(f.id, { accion: 'interna', interna: !f.interna })}>{f.interna ? 'Incluir en las cifras' : 'Marcar como interna/demo'}</button>}
           <p className="adm-pie">Id {f.id} · {ORIGENES[f.origen]}{f.hasta && !f.suscripcion ? ` · prueba hasta ${f.hasta}` : ''}{f.gestoria ? ` · gestoría ${f.gestoria}` : ''}{f.recomendadaPor ? ` · recomendada por ${f.recomendadaPor}${f.premiada ? ` (premio dado el ${f.premiada})` : ''}` : ''}{f.cupon ? ` · cupón ${f.cupon}` : ''}{f.mesesGanados ? ` · ${f.mesesGanados} meses ganados recomendando` : ''}{f.motivoForma ? ` · plan de Autónomos que no cuadra: ${f.motivoForma}` : ''}</p>
           {!f.registrada && <p className="adm-pie">Cuenta anterior a los planes (o tuya): es gratis, no tiene límites ni caduca. No hay nada que cambiar.</p>}
           {f.estado !== 'fundador' && !f.suscripcion && <button type="button" className="boton pequeno" disabled={ocupado} onClick={() => accion(f.id, { accion: 'fundador' }, `¿Dar a ${f.nombre} el plan Fundador, gratis de por vida?`)}>Regalar plan Fundador</button>}

@@ -1,12 +1,83 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { cambioDePlan, estadoEmpresa, historialPagoTrasCambio, mensualDe, resumenAdmin } from '../lib/admin.js';
+import { calcularEmbudo } from '../lib/embudo.js';
 
 const HOY = new Date('2026-10-19T12:00:00Z');
 const empresa = (id, plan, creada = '2026-10-01') => ({ id, nombre: id, creada: `${creada}T10:00:00Z`, emisor: { nif: 'X' }, plan });
 
 const dePago = { tipo: 'aut', nombre: 'Pro', pagado: true, estado: 'active' };
 const cambioPago = (fecha, antes, despues) => ({ fecha: `${fecha}T12:00:00.000Z`, antes, despues });
+
+test('cinco pruebas internas/demo: cero clientes, pruebas, altas e ingresos; siguen accesibles en administración', () => {
+  const empresas = Array.from({ length: 5 }, (_, i) => ({
+    ...empresa(`interna-${i}`, { tipo: 'aut', nombre: 'Pro', hasta: '2026-10-22' }, '2026-10-17'),
+    ...(i < 3 ? { demo: true } : { interna: true }),
+  }));
+  const antes = structuredClone(empresas);
+  const r = resumenAdmin({ empresas, hoy: HOY });
+  assert.equal(r.kpis.excluidas, 5);
+  assert.equal(r.kpis.empresas, 0);
+  assert.equal(r.porEstado.prueba, 0);
+  assert.equal(r.kpis.pruebasQueAcabanEn7, 0);
+  assert.equal(r.kpis.altasMes, 0);
+  assert.equal(r.kpis.conversion, null);
+  assert.equal(r.kpis.mrr, 0);
+  assert.equal(r.kpis.arr, 0);
+  assert.equal(r.kpis.bajasMes, 0);
+  assert.equal(r.filas.length, 5);
+  assert.ok(r.filas.every((f) => f.interna));
+  assert.ok(r.altas.every((a) => a.n === 0));
+  assert.deepEqual(r.planes, []);
+  assert.ok(r.origenes.every((o) => o.total === 0 && o.prueba === 0));
+  assert.deepEqual(empresas, antes, 'el cálculo no escribe ni modifica las cuentas');
+});
+
+test('las demos antiguas siguen excluidas aunque interna sea falsa, y no inflan la activación', () => {
+  const empresas = [empresa('real', dePago), { ...empresa('demo', dePago), demo: true, interna: false }, { ...empresa('equipo', dePago), interna: true }];
+  const r = resumenAdmin({ empresas, hoy: HOY });
+  assert.equal(r.kpis.excluidas, 2);
+  assert.equal(r.porEstado.pago, 1);
+  const embudo = calcularEmbudo({ empresas: r.filas, hitos: { demo: { factura: '2026-10-05' }, equipo: { factura: '2026-10-05' } }, hoy: HOY });
+  const todas = embudo.find((v) => v.id === 'todas');
+  assert.equal(todas.altas, 1);
+  assert.equal(todas.pasos.find((p) => p.id === 'factura').n, 0);
+});
+
+test('marcas explícitas: exclusión completa incluso de bajas históricas, sin deducir por nombre, correo o plan', () => {
+  const reales = [
+    empresa('demo-cliente-real', dePago, '2026-08-01'),
+    empresa('real-prueba', { tipo: 'aut', nombre: 'Pro', hasta: '2026-10-22' }),
+    { ...empresa('real-cerrada', dePago, '2026-08-01'), baja: { fecha: '2026-10-08' }, historialPagoAdmin: [cambioPago('2026-10-08', true, false)] },
+    { ...empresa('marca-falsa', { tipo: 'aut', nombre: 'Pro', hasta: '2026-10-22' }), interna: false, demo: false },
+  ];
+  const internas = [
+    { ...empresa('demo-pago', { ...dePago, recomendacion: { empresa: 'demo-pago', premiada: '2026-10-10' } }), demo: true, recomienda: { meses: 10 } },
+    { ...empresa('interna-impago', { ...dePago, estado: 'past_due' }), interna: true },
+    { ...empresa('demo-caducada', { tipo: 'aut', nombre: 'Pro', hasta: '2026-09-01' }), demo: true },
+    { ...empresa('interna-baja', dePago, '2026-08-01'), interna: true, baja: { fecha: '2026-10-08' }, historialPagoAdmin: [cambioPago('2026-10-08', true, false)] },
+    { ...empresa('demo-cancelada', { ...dePago, pagado: false, hasta: '2026-09-01', suscripcion: 'sub' }, '2026-08-01'), demo: true, historialPagoAdmin: [cambioPago('2026-10-08', true, false)] },
+  ];
+  const usuariosReales = [
+    { id: 'equipo', email: 'demo@verticexp.com', empresa: reales[0].id, emailVerificado: true },
+    { id: 'mixto', empresa: 'demo-pago', empresas: { 'demo-pago': { rol: 'admin' }, 'real-prueba': { rol: 'miembro' } } },
+  ];
+  const usuariosInternos = [{ id: 'solo-interna', empresa: 'demo-pago', emailVerificado: true }, { id: 'varias-internas', empresas: { 'demo-pago': { rol: 'admin' }, 'interna-baja': { rol: 'admin' } } }];
+  const actividad = { '2026-10-19': { usuarios: ['equipo', 'mixto'], empresas: [reales[0].id, 'real-prueba'] } };
+  const opciones = { hoy: HOY, bajasDesde: '2026-09-01T00:00:00.000Z' };
+  const esperado = resumenAdmin({ ...opciones, empresas: reales, usuarios: usuariosReales, actividad });
+  const empresas = [...reales, ...internas];
+  const antes = structuredClone(empresas);
+  const r = resumenAdmin({ ...opciones, empresas, usuarios: [...usuariosReales, ...usuariosInternos], actividad: {
+    '2026-10-19': { usuarios: [...actividad['2026-10-19'].usuarios, 'solo-interna', 'varias-internas'], empresas: [...actividad['2026-10-19'].empresas, 'demo-pago'] },
+  } });
+  assert.deepEqual(r.kpis, { ...esperado.kpis, excluidas: 5 });
+  for (const clave of ['porEstado', 'origenes', 'recomendaciones', 'planes', 'altas', 'bajasSemanas', 'diario']) assert.deepEqual(r[clave], esperado[clave], clave);
+  assert.equal(r.kpis.bajasMes, 1);
+  assert.equal(r.kpis.bajasPct, 50, 'la base mensual también excluye las internas');
+  assert.equal(r.kpis.usuarios, 2, 'el acceso a una empresa real se conserva aunque también tenga demos');
+  assert.deepEqual(empresas, antes);
+});
 
 test('bajas: empresas que pagaban, incluidas las dadas de baja; base real del día 1, sin nuevas altas ni duplicados', () => {
   const empresas = [

@@ -50,6 +50,8 @@ test('el embudo: pasos acumulados, porcentaje sobre el anterior y mediana de dí
     fila('f', '2026-10-05'), // banco sin factura: no cuenta en el banco, que va después de la factura
     fila('g', '2026-10-24', { regalo: true }), // Fundador regalado: fuera
     fila('h', '2026-10-24', { registrada: false }), // cuenta anterior a los planes: fuera
+    fila('i', '2026-10-24', { interna: true }), // prueba del equipo: fuera
+    fila('j', '2026-10-24', { demo: true }), // demo antigua: fuera
   ];
   const hitos = {
     a: { factura: '2026-10-20', gasto: '2026-10-22', banco: '2026-10-24', modelo: '2026-10-25' },

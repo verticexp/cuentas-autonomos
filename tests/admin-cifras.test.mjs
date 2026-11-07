@@ -33,7 +33,7 @@ const stubs = {
   'lib/avisosCorreo.js': 'export const avisarSuscripcion = async () => {};',
   'lib/recomendaciones.js': 'export const premiarRecomendacion = async () => {};',
   'lib/stripe.js': 'export const stripe = async () => { throw new Error("Stripe externo no permitido en esta prueba"); };',
-  'lib/api.js': 'export const usuarioApi = async () => ({ u: { id: "admin_PRUEBA" } }); export const cuerpo = (req) => req.json(); export const error = (error, status = 400) => Response.json({ error }, { status });',
+  'lib/api.js': 'export const usuarioApi = async (opciones) => { if (!opciones.admin) throw new Error("Falta control de administrador"); return globalThis.__adminCifrasAutorizado === false ? { res: new Response(null, { status: 403 }) } : { u: { id: "admin_PRUEBA" } }; }; export const cuerpo = (req) => req.json(); export const error = (error, status = 400) => Response.json({ error }, { status });',
   'lib/metricas.js': 'export const metrica = () => {};',
 };
 const raiz = new URL('../', import.meta.url);
@@ -53,11 +53,12 @@ const hooks = registerHooks({
 after(() => {
   hooks.deregister();
   delete globalThis.__adminCifrasRedis;
+  delete globalThis.__adminCifrasAutorizado;
   for (const [k, v] of Object.entries(entorno)) {
     if (v === undefined) delete process.env[k]; else process.env[k] = v;
   }
 });
-beforeEach(() => { base.run(['flushdb']); ordenes = []; delete process.env.OFICINA_CIFRAS_TOKEN; });
+beforeEach(() => { base.run(['flushdb']); ordenes = []; delete process.env.OFICINA_CIFRAS_TOKEN; globalThis.__adminCifrasAutorizado = true; });
 const { GET } = await import('../app/api/admin/cifras/route.js');
 const { POST: cambiarPlanAdmin } = await import('../app/api/admin/route.js');
 const { proxy } = await import('../proxy.js');
@@ -75,6 +76,82 @@ const req = ({ token, ruta = '/api/admin/cifras', metodo = 'GET', cookie = false
 const pago = { tipo: 'aut', nombre: 'Pro', periodo: 'mes', pagado: true, estado: 'active', suscripcion: 'sub_PRIVADO', cliente: 'cus_PRIVADO' };
 const empresa = (id, plan = pago, extra = {}) => ({ id, nombre: 'Nombre PRIVADO', emisor: { nif: 'NIF_PRIVADO' }, creada: '2026-01-01T12:00:00.000Z', plan, ...extra });
 const sub = (estado, extra = {}) => ({ id: pago.suscripcion, customer: pago.cliente, status: estado, metadata: { empresa: 'empresa_PRIVADA' }, ...extra });
+const marcar = (id, interna, extra = {}) => cambiarPlanAdmin(new Request('https://fisquo.test/api/admin', {
+  method: 'POST', body: JSON.stringify({ empresa: id, accion: 'interna', interna, ...extra }),
+}));
+
+test('marca interna: solo administrador, validación estricta y ninguna escritura en rechazos', async () => {
+  await redis.hset('empresas', { e: empresa('e'), demo: empresa('demo', pago, { demo: true }) });
+  globalThis.__adminCifrasAutorizado = false;
+  ordenes = [];
+  assert.equal((await marcar('e', true)).status, 403);
+  assert.equal(ordenes.length, 0);
+  globalThis.__adminCifrasAutorizado = true;
+  for (const valor of [undefined, null, 'true', 'false', 0, 1, {}, []]) {
+    ordenes = [];
+    assert.equal((await marcar('e', valor)).status, 400);
+    assert.ok(!ordenes.some(([c]) => c === 'hset'));
+  }
+  assert.equal((await marcar('no-existe', true)).status, 404);
+  assert.equal((await marcar('demo', false)).status, 400);
+  assert.equal((await redis.hget('empresas', 'demo')).demo, true);
+});
+
+test('marcar y desmarcar, incluso cuentas cerradas: solo cambia interna; no toca plan, documentos ni historial', async () => {
+  for (const baja of [undefined, { fecha: '2026-10-01' }]) {
+    const original = empresa('e', pago, { baja, demo: false, campoDesconocido: { conservar: 1 }, historialPagoAdmin: [{ fecha: '2026-10-01T12:00:00.000Z', antes: true, despues: false }] });
+    const almacenado = JSON.parse(JSON.stringify(original));
+    await redis.hset('empresas', { e: original });
+    await redis.hset('facturas:e', { f1: { id: 'f1', base: 100 } });
+    for (const interna of [true, true, false]) {
+      ordenes = [];
+      const r = await marcar('e', interna, { plan: { fundador: true }, demo: true, dias: 90 });
+      assert.equal(r.status, 200);
+      assert.deepEqual(await r.json(), { ok: true, interna });
+      assert.deepEqual(ordenes.filter(([c]) => c === 'hset').map(([, k]) => k), ['empresas']);
+      assert.ok(!ordenes.some(([c, k]) => c === 'set' && k === 'admin-bajas-desde'));
+      assert.deepEqual(await redis.hget('empresas', 'e'), { ...almacenado, interna });
+      assert.deepEqual(await redis.hget('facturas:e', 'f1'), { id: 'f1', base: 100 });
+    }
+  }
+});
+
+test('cinco pruebas marcadas: panel y oficina dan cero pruebas reales y cinco excluidas, sin escrituras de lectura', async () => {
+  process.env.OFICINA_CIFRAS_TOKEN = TOKEN;
+  const hoy = new Date(), dia = hoy.toISOString().slice(0, 10);
+  for (let i = 0; i < 5; i++) {
+    const id = `interna_PRIVADA_${i}`;
+    await redis.hset('empresas', { [id]: empresa(id, { tipo: 'aut', nombre: 'Pro', hasta: dia }, { creada: `${dia}T00:00:00.000Z`, ...(i === 0 ? { demo: true } : {}) }) });
+    if (i > 0) assert.equal((await marcar(id, true)).status, 200);
+  }
+  ordenes = [];
+  const b = await (await GET(req({ token: TOKEN }))).json();
+  assert.equal(b.excluidas, 5);
+  for (const k of ['prueba', 'pago', 'impago', 'altasMes', 'mrr', 'arr', 'bajasMes', 'pruebasQueAcabanEn7']) assert.equal(b[k], 0, k);
+  assert.equal(b.conversion, null);
+  assert.ok(b.altasSemanas.every((s) => s.n === 0));
+  assert.ok(ordenes.every(([c]) => ['get', 'hgetall', 'smembers'].includes(c)));
+  assert.doesNotMatch(JSON.stringify(b), /PRIVAD|nombre|nif|email|cliente|suscripcion|\bid\b|filas|usuarios/);
+  const panel = (await leerResumenAdmin(new Date(b.generado))).resumen;
+  assert.equal(panel.kpis.excluidas, b.excluidas);
+  assert.equal(panel.porEstado.prueba, b.prueba);
+  assert.equal(panel.filas.length, 5);
+  assert.equal((await marcar('interna_PRIVADA_1', false)).status, 200);
+  const restaurado = await (await GET(req({ token: TOKEN }))).json();
+  assert.equal(restaurado.excluidas, 4);
+  assert.equal(restaurado.prueba, 1);
+  assert.equal(restaurado.altasMes, 1);
+});
+
+test('marca concurrente con Stripe: conserva tanto la clasificación como el nuevo estado de pago', async () => {
+  await redis.hset('empresas', { empresa_PRIVADA: empresa('empresa_PRIVADA') });
+  await Promise.all([marcar('empresa_PRIVADA', true), aplicarSuscripcion(sub('canceled'))]);
+  const e = await redis.hget('empresas', 'empresa_PRIVADA');
+  assert.equal(e.interna, true);
+  assert.equal(e.plan.pagado, false);
+  assert.equal(e.historialPagoAdmin.length, 1);
+  assert.equal((await leerResumenAdmin()).resumen.kpis.bajasMes, 0);
+});
 
 for (const tokenEnv of [undefined, '', '   ']) test(`cifras apagadas: 404 con variable ${JSON.stringify(tokenEnv)}, incluso con token y sesión`, async () => {
   if (tokenEnv !== undefined) process.env.OFICINA_CIFRAS_TOKEN = tokenEnv;
@@ -124,7 +201,8 @@ test('200: forma exacta, euros sin IVA, mismos agregados del panel; sin datos pe
   assert.equal(r.headers.get('Cache-Control'), 'no-store');
   assert.equal(r.headers.get('set-cookie'), null);
   const b = await r.json();
-  assert.deepEqual(Object.keys(b).sort(), ['generado', 'mrr', 'arr', 'pago', 'impago', 'prueba', 'conversion', 'altasMes', 'bajasMes', 'bajasPct', 'bajasDesde', 'bajasMesParcial', 'pruebasQueAcabanEn7', 'activos7', 'activos30', 'altasSemanas', 'bajasSemanas', 'origenes'].sort());
+  assert.deepEqual(Object.keys(b).sort(), ['generado', 'excluidas', 'mrr', 'arr', 'pago', 'impago', 'prueba', 'conversion', 'altasMes', 'bajasMes', 'bajasPct', 'bajasDesde', 'bajasMesParcial', 'pruebasQueAcabanEn7', 'activos7', 'activos30', 'altasSemanas', 'bajasSemanas', 'origenes'].sort());
+  assert.equal(b.excluidas, 0);
   assert.equal(new Date(b.generado).toISOString(), b.generado);
   assert.equal(b.mrr, 20.4);
   assert.equal(b.arr, 244.8);
@@ -141,7 +219,7 @@ test('200: forma exacta, euros sin IVA, mismos agregados del panel; sin datos pe
   assert.doesNotMatch(JSON.stringify(b), /PRIVAD|nombre|nif|email|cliente|suscripcion|\bid\b|filas|usuarios/);
   assert.ok(ordenes.every(([c]) => ['get', 'hgetall', 'smembers'].includes(c)), 'la ruta solo lee');
   const { resumen: panel } = await leerResumenAdmin(new Date(b.generado));
-  for (const k of ['conversion', 'altasMes', 'bajasMes', 'bajasPct', 'bajasDesde', 'bajasMesParcial', 'pruebasQueAcabanEn7', 'activos7', 'activos30']) assert.deepEqual(b[k], panel.kpis[k], k);
+  for (const k of ['excluidas', 'conversion', 'altasMes', 'bajasMes', 'bajasPct', 'bajasDesde', 'bajasMesParcial', 'pruebasQueAcabanEn7', 'activos7', 'activos30']) assert.deepEqual(b[k], panel.kpis[k], k);
   assert.deepEqual(b.altasSemanas, panel.altas);
   assert.deepEqual(b.bajasSemanas, panel.bajasSemanas);
   assert.deepEqual(b.origenes, panel.origenes);

@@ -52,7 +52,7 @@ ACTIVIDADES.push({ id: 'tienda-de-material', nombre: 'Tienda de material', serie
 const actividadesEventos = ACTIVIDADES.filter((a) => a.id !== 'tienda-de-material');
 const ahora = new Date().toISOString();
 const empresa = {
-  id, nombre: process.env.DEMO_EMPRESA || 'Sonora Eventos S.L.', creada: ahora, pendiente: false, verifactu: 'pruebas',
+  id, nombre: process.env.DEMO_EMPRESA || 'Sonora Eventos S.L.', creada: ahora, pendiente: false, demo: true, verifactu: 'pruebas',
   emisor: { nombre: (process.env.DEMO_EMPRESA || 'SONORA EVENTOS S.L.').toUpperCase(), nif: 'B00000000', direccion: 'C/ de la Marina, 19', ciudad: '08005 Barcelona', iban: 'ES91 2100 0418 4502 0005 1332', plazo: 30, bic: 'CAIXESBBXXX', acreedorSepa: identificadorAcreedor('B00000000') },
   actividades: ACTIVIDADES,
   fiscal: { tipo: 'sociedad', iva: 'general', retenidas: false, trabajadores: true, alquiler: true, intracom: true, inventario: true },
