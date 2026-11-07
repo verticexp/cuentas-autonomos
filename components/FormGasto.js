@@ -14,7 +14,7 @@ import Deslizable from './Deslizable';
 import { eur, fechaCorta } from '@/lib/formato';
 import { TIPOS_IGIC } from '@/lib/igic';
 import { importes, nifUE, origenGasto, r2, trimestre } from '@/lib/calculos';
-import { conIva, costeAfecto, partirIva, pctAfecto, pctDeducible, tipoAutoliquidado } from '@/lib/ivaDeducible';
+import { conIva, costeAfecto, faltaAfectacionIRPF, partirIva, pctAfecto, pctDeducible, tipoAutoliquidado } from '@/lib/ivaDeducible';
 import { parseImporte } from '@/lib/importe';
 import { CATEGORIAS, categoria, categoriaDe, noDeducibleIRPF, noDeducibleIS, pareceBien } from '@/lib/categorias';
 import { CAUSAS_SIN_RETENCION, SITUACIONES_INMUEBLE, SUBCLAVES_190, clave190De } from '@/lib/modelos';
@@ -307,6 +307,7 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
     <form id="apuntar-gasto" tabIndex={-1} className="formulario tarjeta" onSubmit={enviar}>
       <fieldset disabled={enviando || procesando || Boolean(archivoPendiente)} style={{ border: 0, padding: 0, margin: 0, minWidth: 0, gap: 12 }}>
       <h3 aria-level={2}>{gasto ? tr('Editar gasto') : documento ? tr('Revisar factura') : movimiento ? tr('Gasto del banco') : tr('Añadir gasto deducible')}</h3>
+      {regimen !== 'sociedad' && faltaAfectacionIRPF(g) && !noDeducibleIRPF(g) && <p className="nota" role="status">{tr('Este gasto tiene IVA parcial y falta confirmar qué parte cuenta en el IRPF. Elige el porcentaje antes de guardar, aunque corresponda el 100 %.')}</p>}
       {movimiento && <p className="nota">{tr('Cargo del {fecha} por {importe} ({concepto}). Sube la factura para que Fisquo lea la base y el {impuesto}; al guardar queda emparejado con el banco.', { fecha: fechaCorta(movimiento.fecha), importe: eur(Math.abs(movimiento.importe)), concepto: movimiento.concepto, impuesto })}</p>}
       {actividades.length > 1 && <Deslizable className={`tipo ${actividades.length === 2 ? 'dos' : 'varias'}`}>
         {actividades.map(({ id, nombre }) => (
@@ -406,18 +407,20 @@ export default function FormGasto({ hoy, gasto, actividades, alquiler = false, p
       {regimen !== 'sociedad' && (verAfecto || pctDeducible(g) < 100 ? (() => {
         const p = pctDeducible(g), a = g.afectoPct === undefined || g.afectoPct === null || g.afectoPct === '' ? null : pctAfecto(g);
         const vivienda = Math.round(p * 30) / 100;
-        const valor = afectoOtro ? 'otro' : a === null ? '100' : a === 0 ? '0' : p < 100 && a === p ? 'iva' : p < 100 && a === vivienda ? 'vivienda' : a === 100 ? '100' : 'otro';
+        const pendiente = faltaAfectacionIRPF(g) && !noDeducibleIRPF(g);
+        const valor = afectoOtro ? 'otro' : pendiente ? '' : a === null ? '100' : a === 0 ? '0' : p < 100 && a === p ? 'iva' : p < 100 && a === vivienda ? 'vivienda' : a === 100 ? '100' : 'otro';
         return <>
-          <select className="campo" value={valor} aria-label={tr('Parte que cuenta como gasto en el IRPF')}
-            onChange={(e) => { const v = e.target.value; setAfectoOtro(v === 'otro'); poner('afectoPct', v === '100' ? undefined : v === 'iva' ? p : v === 'vivienda' ? vivienda : v === 'otro' ? (a ?? '') : Number(v)); }}>
+          <select className="campo" value={valor} required={pendiente} aria-label={tr('Parte que cuenta como gasto en el IRPF')}
+            onChange={(e) => { const v = e.target.value; setAfectoOtro(v === 'otro'); poner('afectoPct', v === 'iva' ? p : v === 'vivienda' ? vivienda : v === 'otro' ? (a ?? '') : Number(v)); }}>
+            <option value="" disabled>{tr('Confirma qué parte cuenta en el IRPF')}</option>
             <option value="100">{tr('En el IRPF cuenta entero (solo lo uso para la actividad)')}</option>
             {p < 100 && <option value="iva">{tr('En el IRPF, la misma parte que en el {impuesto} ({pct} %)', { impuesto, pct: String(p).replace('.', ',') })}</option>}
             {p < 100 && <option value="vivienda">{tr('Suministros de casa con despacho: el 30 % de esa parte ({pct} %)', { pct: String(vivienda).replace('.', ',') })}</option>}
             <option value="0">{tr('En el IRPF no cuenta (turismo sin uso exclusivo, gasto personal)')}</option>
             <option value="otro">{tr('En el IRPF cuenta otro porcentaje…')}</option>
           </select>
-          {valor === 'otro' && <label>{tr('% que cuenta en el IRPF')}<input className="campo" inputMode="decimal" value={g.afectoPct ?? ''} onChange={(e) => poner('afectoPct', e.target.value)} placeholder={tr('Ej.: 30')} /></label>}
-          <p className="nota">{tr('El 130 y la renta solo restan la parte del gasto que es de tu actividad. Un coche que también usas para lo tuyo, para Hacienda no cuenta en el IRPF aunque te deduzcas la mitad del {impuesto}; los suministros de casa con despacho, el 30 % de la parte del despacho.', { impuesto })}{gn.base > 0 ? ` ${tr('En el IRPF restas {importe}.', { importe: eur(costeAfecto(gn)) })}` : ''}</p>
+          {valor === 'otro' && <label>{tr('% que cuenta en el IRPF')}<input className="campo" inputMode="decimal" required value={g.afectoPct ?? ''} onChange={(e) => poner('afectoPct', e.target.value)} placeholder={tr('Ej.: 30')} /></label>}
+          <p className="nota">{tr('El 130 y la renta solo restan la parte del gasto que es de tu actividad. Un coche que también usas para lo tuyo, para Hacienda no cuenta en el IRPF aunque te deduzcas la mitad del {impuesto}; los suministros de casa con despacho, el 30 % de la parte del despacho.', { impuesto })}{gn.base > 0 && !pendiente ? ` ${tr('En el IRPF restas {importe}.', { importe: eur(costeAfecto(gn)) })}` : ''}</p>
         </>;
       })() : <button type="button" className="enlace" onClick={() => setVerAfecto(true)}>{tr('¿Lo usas también para lo tuyo? Indica la parte que es de tu actividad')}</button>)}
       {gn.base > 0 && <dl className="gasto-importes" aria-label={tr('Importes del gasto')}>

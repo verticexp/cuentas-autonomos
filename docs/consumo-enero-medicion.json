@@ -1,0 +1,439 @@
+{
+  "fecha": "2026-11-07",
+  "fechaSimulada": "2027-01-15",
+  "baseAnterior": "82d664a6de33560fa71a5d6b01870b4032b4d753",
+  "transporte": "SDK real con fetch local; sin red",
+  "fuentes": {
+    "lib/datosImpuestos.js": "608a1f9b541953ab5ff7ad666cad09106d81e0eae6b81cf11de98a0056e7e6fd",
+    "lib/indices.js": "91ed9843f144eae0291aa05ab417cc23ab74a20c5e25a0531e022860899d861f",
+    "lib/panelCache.js": "13071d56af17ffe60ddfcec37a5db09af747583bb5477081f56d1b2f66295449",
+    "app/page.js": "5d2c0df30b8017adeb43102f7a3ba07ebb25b09aa94adeb72636f3850bc76595",
+    "app/modelos/page.js": "f49d5cb3e769b405953dbd0bae4cc67ed1fe32027df7de00fd04d957c37635bc",
+    "app/facturas/page.js": "7370d88a9e785061586632501eac881515b98c396cef7cd5c9814e63c25a3f34",
+    "app/gastos/page.js": "8dda8322daea4f5be53cac64141bdb0820b30b4a31c0ff05dbc5c0d2b67f5e3d"
+  },
+  "escenarios": [
+    {
+      "documentos": 0,
+      "modelosPorAnio": {
+        "2022": {
+          "antes": 21,
+          "despues": 10
+        },
+        "2023": {
+          "antes": 21,
+          "despues": 10
+        },
+        "2024": {
+          "antes": 19,
+          "despues": 9
+        },
+        "2025": {
+          "antes": 17,
+          "despues": 8
+        },
+        "2026": {
+          "antes": 15,
+          "despues": 7
+        },
+        "2027": {
+          "antes": 12,
+          "despues": 6
+        },
+        "2028": {
+          "antes": 12,
+          "despues": 6
+        }
+      },
+      "modelosPorAnioFrio": {
+        "2022": {
+          "antes": 33,
+          "despues": 13
+        },
+        "2023": {
+          "antes": 33,
+          "despues": 13
+        },
+        "2024": {
+          "antes": 31,
+          "despues": 12
+        },
+        "2025": {
+          "antes": 29,
+          "despues": 11
+        },
+        "2026": {
+          "antes": 27,
+          "despues": 10
+        },
+        "2027": {
+          "antes": 18,
+          "despues": 9
+        },
+        "2028": {
+          "antes": 18,
+          "despues": 9
+        }
+      },
+      "fiscalVarios": {
+        "antes": 48,
+        "despues": 10
+      },
+      "resumen": {
+        "antes": 52,
+        "despues": 32
+      },
+      "resumenFrio": {
+        "antes": 58,
+        "despues": 38
+      },
+      "resumenRepetido": {
+        "antes": 11,
+        "despues": 11
+      },
+      "modelos": {
+        "antes": 22,
+        "despues": 14
+      },
+      "facturas": 7,
+      "gastos": 12,
+      "dia": {
+        "antes": 167,
+        "despues": 131
+      },
+      "enero": {
+        "100": {
+          "antes": 776550,
+          "despues": 609150
+        },
+        "500": {
+          "antes": 3882750,
+          "despues": 3045750
+        },
+        "1000": {
+          "antes": 7765500,
+          "despues": 6091500
+        }
+      }
+    },
+    {
+      "documentos": 40,
+      "modelosPorAnio": {
+        "2022": {
+          "antes": 25,
+          "despues": 11
+        },
+        "2023": {
+          "antes": 25,
+          "despues": 11
+        },
+        "2024": {
+          "antes": 23,
+          "despues": 10
+        },
+        "2025": {
+          "antes": 21,
+          "despues": 9
+        },
+        "2026": {
+          "antes": 19,
+          "despues": 8
+        },
+        "2027": {
+          "antes": 14,
+          "despues": 7
+        },
+        "2028": {
+          "antes": 14,
+          "despues": 7
+        }
+      },
+      "modelosPorAnioFrio": {
+        "2022": {
+          "antes": 37,
+          "despues": 14
+        },
+        "2023": {
+          "antes": 37,
+          "despues": 14
+        },
+        "2024": {
+          "antes": 35,
+          "despues": 13
+        },
+        "2025": {
+          "antes": 33,
+          "despues": 12
+        },
+        "2026": {
+          "antes": 31,
+          "despues": 11
+        },
+        "2027": {
+          "antes": 20,
+          "despues": 10
+        },
+        "2028": {
+          "antes": 20,
+          "despues": 10
+        }
+      },
+      "fiscalVarios": {
+        "antes": 58,
+        "despues": 11
+      },
+      "resumen": {
+        "antes": 60,
+        "despues": 35
+      },
+      "resumenFrio": {
+        "antes": 66,
+        "despues": 41
+      },
+      "resumenRepetido": {
+        "antes": 11,
+        "despues": 11
+      },
+      "modelos": {
+        "antes": 26,
+        "despues": 15
+      },
+      "facturas": 10,
+      "gastos": 19,
+      "dia": {
+        "antes": 203,
+        "despues": 156
+      },
+      "enero": {
+        "100": {
+          "antes": 943950,
+          "despues": 725400
+        },
+        "500": {
+          "antes": 4719750,
+          "despues": 3627000
+        },
+        "1000": {
+          "antes": 9439500,
+          "despues": 7254000
+        }
+      }
+    },
+    {
+      "documentos": 5000,
+      "modelosPorAnio": {
+        "2022": {
+          "antes": 31,
+          "despues": 15
+        },
+        "2023": {
+          "antes": 33,
+          "despues": 15
+        },
+        "2024": {
+          "antes": 31,
+          "despues": 14
+        },
+        "2025": {
+          "antes": 29,
+          "despues": 13
+        },
+        "2026": {
+          "antes": 27,
+          "despues": 12
+        },
+        "2027": {
+          "antes": 22,
+          "despues": 11
+        },
+        "2028": {
+          "antes": 20,
+          "despues": 10
+        }
+      },
+      "modelosPorAnioFrio": {
+        "2022": {
+          "antes": 43,
+          "despues": 18
+        },
+        "2023": {
+          "antes": 45,
+          "despues": 18
+        },
+        "2024": {
+          "antes": 43,
+          "despues": 17
+        },
+        "2025": {
+          "antes": 41,
+          "despues": 16
+        },
+        "2026": {
+          "antes": 39,
+          "despues": 15
+        },
+        "2027": {
+          "antes": 28,
+          "despues": 14
+        },
+        "2028": {
+          "antes": 26,
+          "despues": 13
+        }
+      },
+      "fiscalVarios": {
+        "antes": 82,
+        "despues": 15
+      },
+      "resumen": {
+        "antes": 84,
+        "despues": 47
+      },
+      "resumenFrio": {
+        "antes": 90,
+        "despues": 53
+      },
+      "resumenRepetido": {
+        "antes": 11,
+        "despues": 11
+      },
+      "modelos": {
+        "antes": 34,
+        "despues": 19
+      },
+      "facturas": 13,
+      "gastos": 24,
+      "dia": {
+        "antes": 259,
+        "despues": 192
+      },
+      "enero": {
+        "100": {
+          "antes": 1204350,
+          "despues": 892800
+        },
+        "500": {
+          "antes": 6021750,
+          "despues": 4464000
+        },
+        "1000": {
+          "antes": 12043500,
+          "despues": 8928000
+        }
+      }
+    },
+    {
+      "documentos": 20000,
+      "modelosPorAnio": {
+        "2022": {
+          "antes": 57,
+          "despues": 27
+        },
+        "2023": {
+          "antes": 63,
+          "despues": 30
+        },
+        "2024": {
+          "antes": 61,
+          "despues": 29
+        },
+        "2025": {
+          "antes": 59,
+          "despues": 28
+        },
+        "2026": {
+          "antes": 57,
+          "despues": 27
+        },
+        "2027": {
+          "antes": 46,
+          "despues": 23
+        },
+        "2028": {
+          "antes": 40,
+          "despues": 20
+        }
+      },
+      "modelosPorAnioFrio": {
+        "2022": {
+          "antes": 69,
+          "despues": 30
+        },
+        "2023": {
+          "antes": 75,
+          "despues": 33
+        },
+        "2024": {
+          "antes": 73,
+          "despues": 32
+        },
+        "2025": {
+          "antes": 71,
+          "despues": 31
+        },
+        "2026": {
+          "antes": 69,
+          "despues": 30
+        },
+        "2027": {
+          "antes": 52,
+          "despues": 26
+        },
+        "2028": {
+          "antes": 46,
+          "despues": 23
+        }
+      },
+      "fiscalVarios": {
+        "antes": 166,
+        "despues": 30
+      },
+      "resumen": {
+        "antes": 165,
+        "despues": 89
+      },
+      "resumenFrio": {
+        "antes": 171,
+        "despues": 95
+      },
+      "resumenRepetido": {
+        "antes": 11,
+        "despues": 11
+      },
+      "modelos": {
+        "antes": 64,
+        "despues": 34
+      },
+      "facturas": 23,
+      "gastos": 47,
+      "dia": {
+        "antes": 466,
+        "despues": 330
+      },
+      "enero": {
+        "100": {
+          "antes": 2166900,
+          "despues": 1534500
+        },
+        "500": {
+          "antes": 10834500,
+          "despues": 7672500
+        },
+        "1000": {
+          "antes": 21669000,
+          "despues": 15345000
+        }
+      }
+    }
+  ],
+  "lectoresParalelos": {
+    "lectores": 200,
+    "comandos": 2200,
+    "errores": 0,
+    "alcance": "Resumen ya calculado, misma empresa, simulador en proceso; no mide RPS del proveedor"
+  },
+  "rectificativas": {
+    "antes": 31,
+    "despues": 11
+  }
+}

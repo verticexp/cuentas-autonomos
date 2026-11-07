@@ -12,7 +12,7 @@ before(async () => {
   process.env.KV_REST_API_TOKEN = 'pruebas';
   [R, I, C] = await Promise.all([import('../lib/redis.js'), import('../lib/indices.js'), import('../lib/calculos.js')]);
 });
-after(() => srv.cerrar());
+after(() => srv?.cerrar());
 
 let n = 0;
 const empresa = () => ({ id: `u${++n}`, empresa: `tot${n}` });

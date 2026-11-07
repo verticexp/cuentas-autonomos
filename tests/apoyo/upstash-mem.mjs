@@ -197,10 +197,18 @@ export function arrancar({ puerto = 0, base = crearBase() } = {}) {
       res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(out));
     });
   });
-  return new Promise((ok) => server.listen(puerto, '127.0.0.1', () => ok({
-    url: `http://127.0.0.1:${server.address().port}`, base, fallos, ganchos,
-    cerrar: () => new Promise((c) => { server.closeAllConnections?.(); server.close(() => c()); }),
-  })));
+  return new Promise((ok, fallo) => {
+    // Si listen falla, el before debe rechazar con la causa original. Sin este listener
+    // queda una promesa pendiente y las suites se bloquean antes de comprobar los totales.
+    server.once('error', fallo);
+    server.listen(puerto, '127.0.0.1', () => {
+      server.removeListener('error', fallo);
+      ok({
+        url: `http://127.0.0.1:${server.address().port}`, base, fallos, ganchos,
+        cerrar: () => new Promise((c) => { server.closeAllConnections?.(); server.close(() => c()); }),
+      });
+    });
+  });
 }
 
 // Como script: node tests/apoyo/upstash-mem.mjs 8079 (para levantar la app en local contra una base vacía).

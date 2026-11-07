@@ -2,6 +2,8 @@ import test, { after, before } from 'node:test';
 import assert from 'node:assert/strict';
 import './apoyo/cargador.mjs';
 import { arrancar } from './apoyo/upstash-mem.mjs';
+import { gastoEditado } from '../lib/gastoCuerpo.js';
+import { gastosSinAfectacion } from '../lib/revisionGastosIRPF.js';
 
 let srv, G, R;
 before(async () => {
@@ -17,6 +19,30 @@ let n = 0;
 const empresa = () => ({ id: `u-gastos-${++n}`, empresa: `e-gastos-${n}` });
 const datos = (id, extra = {}) => ({ id, fecha: '2026-10-13', actividad: 'servicios', concepto: 'Alquiler de equipo', proveedor: 'Sonido S.L.', proveedorNif: 'B12345674', numero: 'F-001', base: 100, ivaPct: 21, ...extra });
 const todas = async (u) => (await R.leer(u, 'gastos')) || [];
+
+test('IRPF antiguo: corregir bajo cerrojo persiste la confirmación y aísla las empresas', async () => {
+  const u = empresa(), otra = empresa();
+  const g = datos('antiguo', { deduciblePct: 50, archivo: { clave: 'prueba' } });
+  await R.guardar(u, 'gastos', g);
+  await R.guardar(otra, 'gastos', g);
+  assert.equal(gastosSinAfectacion(await todas(u), 2026).length, 1);
+  const r = await G.editarGasto(u, g.id, (antes) => gastoEditado(u, { ...antes, afectoPct: 100 }, antes));
+  assert.equal(r.error, undefined);
+  assert.equal((await R.leerUno(u, 'gastos', g.id)).afectoPct, 100);
+  assert.deepEqual(gastosSinAfectacion(await todas(u), 2026), []);
+  assert.deepEqual(await R.leerUno(otra, 'gastos', g.id), g);
+  assert.equal(gastosSinAfectacion(await todas(otra), 2026).length, 1);
+});
+
+test('IRPF antiguo: una corrección de afectación no se salta el cierre de la gestoría', async () => {
+  const u = empresa(), g = datos('cerrado', { fecha: '2026-02-01', deduciblePct: 50 });
+  await R.guardar(u, 'gastos', g);
+  await R.redis.hset(`cierres:${u.empresa}`, { '2026-1': { fecha: '2026-04-01', por: { nombre: 'Gestoría ficticia' } } });
+  const r = await G.editarGasto(u, g.id, (antes) => gastoEditado(u, { ...antes, afectoPct: 0 }, antes));
+  assert.equal(r.status, 409);
+  assert.match(r.error, /cerrado/);
+  assert.deepEqual(await R.leerUno(u, 'gastos', g.id), g);
+});
 
 test('C4: la misma factura del proveedor avisa sin guardar y se guarda al confirmar', async () => {
   const u = empresa();

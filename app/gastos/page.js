@@ -4,13 +4,13 @@ import { sinFuncion } from '@/lib/planes';
 import { requerir } from '@/lib/auth';
 import { nombresProyectos } from '@/lib/proyectos';
 import { leer, redis } from '@/lib/redis';
-import { contar, contarMarcados, documentos, fechaCursor, fichasRango, leerMarcados, leerRango, pagina, totales } from '@/lib/indices';
+import { contar, contarMarcados, documentos, fechaCursor, fichasRango, leerMarcados, leerRango, pagina, totales, unir } from '@/lib/indices';
 import { agendaPagos, aPagar, estadoPago, textoVence } from '@/lib/pagos';
 import { agruparGastosNomina, veSueldos } from '@/lib/nominas';
 import { candidatosConciliacion } from '@/lib/bancoServidor';
 import { importes, origenGasto, r2 } from '@/lib/calculos';
 import { partirIva } from '@/lib/ivaDeducible';
-import { usaIgic, actividadesDe, fiscalDe, nombresActividad, trimestresPresentados } from '@/lib/empresa';
+import { usaIgic, usa131, actividadesDe, fiscalDe, nombresActividad, trimestresPresentados } from '@/lib/empresa';
 import { DEDUCCIONES_GENERALES } from '@/lib/empresa';
 import { DEDUCCIONES, cubierta } from '@/lib/deducciones';
 import { eur, fechaCorta, hoy } from '@/lib/formato';
@@ -26,6 +26,8 @@ import { DETALLE, puede } from '@/lib/permisos';
 import Link from 'next/link';
 import { revisionGastos } from '@/lib/revisionGastos';
 import RevisionGastos from '@/components/RevisionGastos';
+import RevisionIRPF from '@/components/RevisionIRPF';
+import { gastosSinAfectacion } from '@/lib/revisionGastosIRPF';
 import { ordenar, paraPantalla, resumen as resumenBandeja } from '@/lib/bandeja';
 import { adelantarLecturas, documentosBandeja } from '@/lib/bandejaServidor';
 import { correoEntranteListo } from '@/lib/correoEntrante';
@@ -48,11 +50,12 @@ export default async function Gastos({ searchParams }) {
   // Informe de capacidad E01: la lista va por páginas sobre el índice; el año, lo pendiente y los bienes de inversión se
   // leen aparte (lib/indices.js), y la conciliación solo con lo que puede casar (candidatosConciliacion).
   if (!redis) return <SinBD />;
-  const { q, estado, banco, desde, escanear, subir, ver, aviso } = await searchParams;
+  const { q, estado, banco, desde, escanear, subir, ver, aviso, irpf } = await searchParams;
   // Tres vistas con sus pestañas: los gastos ya apuntados, las facturas que esperan revisión y lo que hay que pagar.
   const vista = ver === 'revisar' ? 'revisar' : ['sinpagar', 'vencidos'].includes(estado) ? 'pagar' : 'gastos';
   const h = hoy();
   const anio = h.slice(0, 4);
+  const anioIRPF = /^20\d{2}$/.test(String(irpf)) ? String(irpf) : anio;
   // E06: lo que se debe y lo que queda sin pagar salen de los totales precalculados.
   const [movs, productos, total, delAnioTodos, agr, nBienes, cupoIA, bandeja, sinPagarDocs] = await Promise.all([leer(u, 'banco'), leer(u, 'productos'), contar(u, 'gastos'), leerRango(u, 'gastos', `${anio}-01-01`, `${anio}-12-31`), totales(u, 'gastos', ['dc', 'sn']), contarMarcados(u, 'gastos', 'i'), puede(u, 'gastar') ? cupoEscaneos(u).catch(() => null) : null, documentosBandeja(u), leerMarcados(u, 'gastos', 'p')]);
   // «Por revisar» (lib/bandeja.js): las facturas subidas o reenviadas que esperan, en esta misma pantalla.
@@ -93,6 +96,13 @@ export default async function Gastos({ searchParams }) {
   // Lista de deducciones: la de DJ para las cuentas de antes; la general para el resto (sin la cuota si es sociedad).
   const LISTA = !actividades.some((a) => a.id === 'dj') ? DEDUCCIONES_GENERALES.filter((d) => !d.soloAutonomo || fiscalDe(u).tipo === 'autonomo') : DEDUCCIONES;
   const delAnio = delAnioTodos.filter((g) => !g.migrado);
+  const revisarIRPF = fiscalDe(u).tipo === 'autonomo' && !usa131(fiscalDe(u));
+  // Los bienes comprados en años anteriores pueden seguir amortizándose y afectar al 130 del año elegido.
+  const [ejercicioIRPF, bienesIRPF] = revisarIRPF ? await Promise.all([
+    anioIRPF === anio ? delAnioTodos : leerRango(u, 'gastos', `${anioIRPF}-01-01`, `${anioIRPF}-12-31`),
+    nBienes > 0 ? leerMarcados(u, 'gastos', 'i') : [],
+  ]) : [[], []];
+  const gastosIRPF = gastosSinAfectacion(unir(ejercicioIRPF, bienesIRPF), anioIRPF);
   const pendientes = LISTA.filter((d) => !cubierta(d, delAnio)).length;
   // Lo que debes a proveedores: los gastos sin pagar (con proveedor), sean del año que sean.
   const debes = agr.dc;
@@ -183,6 +193,7 @@ export default async function Gastos({ searchParams }) {
         </>}
 
         {vista === 'gastos' && <>
+          {revisarIRPF && <RevisionIRPF gastos={gastosIRPF} anio={anioIRPF} abierto={Boolean(irpf)} tr={tr} />}
           {/* Primero lo que más se hace: escanear el ticket o subir las facturas. El formulario entero se abre al escanear o al pedirlo. */}
           {puede(u, 'gastar') && !movimiento && <FormGasto presentados={trimestresPresentados(u)} igic={usaIgic(fiscalDe(u))} especial={Object.values(u.prorrata?.especial || {}).some(Boolean)} recargo={fiscalDe(u).iva === 'recargo'} cupoInicial={cupoIA} hoy={h} actividades={actividades} alquiler={fiscalDe(u).alquiler} retenciones={fiscalDe(u).trabajadores} regimen={fiscalDe(u).tipo} productos={stockProductos} plegado destacar={Boolean(escanear || subir)} proyectos={proyectos} correo={correo} />}
 

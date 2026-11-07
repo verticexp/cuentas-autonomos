@@ -1,0 +1,12 @@
+{
+  "empresa": { "id": "ejemplo-irpf", "actividades": [{ "id": "servicios", "nombre": "Servicios ficticios" }], "fiscal": { "tipo": "autonomo", "iva": "general", "irpf": "normal" } },
+  "facturas": [{ "id": "ingreso", "fecha": "2026-01-15", "actividad": "servicios", "numero": 1, "anio": 2026, "cliente": { "nombre": "Cliente ficticio", "nif": "B12345674" }, "base": 10000, "ivaPct": 21, "irpfPct": 0 }],
+  "gastos": [
+    { "id": "turismo", "fecha": "2026-02-01", "actividad": "servicios", "concepto": "Turismo de uso mixto (ficticio)", "proveedor": "Proveedor ficticio", "base": 1000, "ivaPct": 21, "deduciblePct": 50, "pendiente": true, "archivo": { "clave": "justificante-ficticio" } },
+    { "id": "luz", "fecha": "2026-05-01", "actividad": "servicios", "concepto": "Luz de vivienda con despacho (ficticio)", "proveedor": "Proveedor ficticio", "base": 100, "ivaPct": 21, "deduciblePct": 20 },
+    { "id": "profesional", "fecha": "2026-08-01", "actividad": "servicios", "concepto": "Gasto íntegramente profesional (ficticio)", "proveedor": "Proveedor ficticio", "base": 300, "ivaPct": 21, "deduciblePct": 50 },
+    { "id": "material", "fecha": "2026-10-01", "actividad": "servicios", "concepto": "Material ficticio", "proveedor": "Proveedor ficticio", "base": 200, "ivaPct": 21 }
+  ],
+  "confirmaciones": { "turismo": 0, "luz": 6, "profesional": 100 },
+  "esperados": { "gastosAntes": 1753.3, "gastosDespues": 537.5, "rendimientoAntes": 8246.7, "rendimientoDespues": 9462.5, "pagoAntes": 1649.34, "pagoDespues": 1892.5 }
+}
