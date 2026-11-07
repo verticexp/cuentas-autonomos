@@ -1,4 +1,4 @@
-// Posiciones contrastadas con DR111e16v18, DR115e15v13, DR390e2025 y diseños BOE 180/190/347/349.
+// Posiciones contrastadas con DR111e16v18, DR115e15v13, DR390e2025, dr390e2026 y diseños BOE 180/190/347/349.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
@@ -233,14 +233,14 @@ test('390: nueve páginas con longitudes del diseño, sobre 0A, casillas de deve
   const F = [factura('f', '2026-02-01', 1000), factura('f2', '2026-05-01', 2000)];
   const G = [gasto('g', '2026-02-01', 200)];
   const m = modelo390(F, G, 2026);
-  const p = paginas(fichero390(yo, 2026, m).contenido, '390', '0A', { '01': 1187, '02': 1806, '02B': 531, '03': 1840, '04': 854, '05': 1519, '06': 828, '07': 776, '08': 1092 });
+  const p = paginas(fichero390(yo, 2026, m).contenido, '390', '0A', { '01': 1188, '02': 1806, '02B': 531, '03': 1840, '04': 854, '05': 1519, '06': 862, '07': 781, '08': 1092 });
   assert.deepEqual(leer(p['01'], { nif: [14, 9], apellidos: [23, 60], nombre: [83, 20], ejercicio: [103, 4, 'numero'], periodo: [107, 2] }),
     { nif: yo.nif, apellidos: 'GARCIA LOPEZ', nombre: 'ANA', ejercicio: 2026, periodo: '' });
   assert.deepEqual(leer(p['02'], { base21: [217, 17, 'importe'], cuota21: [234, 17, 'importe'], baseTotal: [1611, 17, 'importe'], cuotaTotal: [1628, 17, 'importe'] }), { base21: 300000, cuota21: 63000, baseTotal: 300000, cuotaTotal: 63000 });
   assert.equal(campo(p['02B'], 353, 17), '00000000000063000');
   assert.deepEqual(leer(p['03'], { base21: [183, 17, 'importe'], cuota21: [200, 17, 'importe'], baseTotal: [217, 17, 'importe'], cuotaTotal: [234, 17, 'importe'] }), { base21: 20000, cuota21: 4200, baseTotal: 20000, cuotaTotal: 4200 });
   assert.deepEqual(leer(p['04'], { deducciones: [659, 17, 'importe'], resultado: [676, 17, 'importe'] }), { deducciones: 4200, resultado: 58800 });
-  assert.deepEqual(leer(p['06'], { anual: [30, 17, 'importe'], resultado: [81, 17, 'importe'], ingresar: [225, 17, 'numero'], general: [361, 17, 'importe'], volumen: [650, 17, 'importe'] }), { anual: 58800, resultado: 58800, ingresar: 58800, general: 300000, volumen: 300000 });
+  assert.deepEqual(leer(p['06'], { anual: [30, 17, 'importe'], resultado: [98, 17, 'importe'], ingresar: [259, 17, 'numero'], general: [395, 17, 'importe'], volumen: [684, 17, 'importe'] }), { anual: 58800, resultado: 58800, ingresar: 58800, general: 300000, volumen: 300000 });
   assert.equal(campo(p['07'], 64, 17), '0'.repeat(17));
   assert.equal(campo(p['08'], 13, 918), '0'.repeat(918));
 });
@@ -248,13 +248,13 @@ test('390: nueve páginas con longitudes del diseño, sobre 0A, casillas de deve
 test('390: negativos N, prorrata G, recargo y rechazo de casillas históricas no exportables', () => {
   const F = [factura('re', '2026-02-01', 1000, { recargo: true }), factura('ex', '2026-02-01', 1000, { ivaPct: 0, operacion: 'exenta' })];
   const G = [gasto('g', '2026-02-01', 5000)];
-  const p = paginas(fichero390(yo, 2026, modelo390(F, G, 2026)).contenido, '390', '0A', { '01': 1187, '02': 1806, '02B': 531, '03': 1840, '04': 854, '05': 1519, '06': 828, '07': 776, '08': 1092 });
+  const p = paginas(fichero390(yo, 2026, modelo390(F, G, 2026)).contenido, '390', '0A', { '01': 1188, '02': 1806, '02B': 531, '03': 1840, '04': 854, '05': 1519, '06': 862, '07': 781, '08': 1092 });
   assert.equal(campo(p['02B'], 217, 17), '00000000000100000');
   assert.equal(campo(p['02B'], 234, 17), '00000000000005200');
   assert.equal(campo(p['04'], 676, 1), 'N');
-  assert.equal(campo(p['07'], 243, 17), '00000000000200000');
-  assert.equal(campo(p['07'], 260, 17), '00000000000100000');
-  assert.equal(campo(p['07'], 277, 6), 'G05000');
+  assert.equal(campo(p['07'], 244, 17), '00000000000200000');
+  assert.equal(campo(p['07'], 261, 17), '00000000000100000');
+  assert.equal(campo(p['07'], 278, 6), 'G05000');
   assert.throws(() => fichero390(yo, 2026, modelo390([factura('x', '2026-02-01', 100, { ivaPct: 5 })], [], 2026)), /Revisa el 390/);
   assert.throws(() => fichero390(yo, 2026, { c: { 667: 100 } }), /debe ser cero/);
 });
@@ -262,12 +262,12 @@ test('390: negativos N, prorrata G, recargo y rechazo de casillas históricas no
 test('390: las marcas de caja y 347 no dependen de que haya cobros o pagos, y conserva actividad e IAE', () => {
   const r = fichero390(yo, 2026, modelo390([], [], 2026), { criterioCaja: true, destinatarioCaja: true, declara347: true,
     actividades: [{ nombre: 'Servicios de producción', iae: '9651' }] });
-  const p = r.contenido.slice(328, 328 + 1187);
+  const p = r.contenido.slice(328, 328 + 1188);
   assert.equal(campo(p, 131, 2), '11');
-  assert.equal(campo(p, 430, 1), '1');
-  assert.equal(campo(p, 148, 40).trim(), 'SERVICIOS DE PRODUCCION');
-  assert.equal(campo(p, 188, 3), '   ');
-  assert.equal(campo(p, 191, 4), '9651');
+  assert.equal(campo(p, 431, 1), '1');
+  assert.equal(campo(p, 149, 40).trim(), 'SERVICIOS DE PRODUCCION');
+  assert.equal(campo(p, 189, 3), '   ');
+  assert.equal(campo(p, 192, 4), '9651');
 });
 
 test('campos compartidos: sin truncar importes negativos, enteros estrictos y registros sin solapamiento', () => {
